@@ -91,5 +91,4 @@
 Subsystem	sftp	/usr/libexec/sftp-server
 
 # where to store the pid of sshd process
-# should be $localstatedir/sshd.pid => $globus_location/var/sshd.pid
 PidFile		/var/run/sshd.pid
