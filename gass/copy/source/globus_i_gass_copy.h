@@ -154,8 +154,8 @@ typedef struct globus_i_gass_copy_state_target_s
 	   * same as n_simultaneous and n_pending, and there's
 	   * already an ftp_handle in the copy_handle
 	   */
-	    globus_ftp_client_handle_t *		handle;
-	    globus_i_gass_copy_monitor_t        monitor;
+	    globus_ftp_client_handle_t *        handle;
+	    globus_bool_t                       completed;
 	    int					n_channels;
 	    int					n_reads_posted;
 	} ftp;

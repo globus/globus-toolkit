@@ -418,6 +418,7 @@ globus_i_ftp_target_state_to_string(
     static const char * ready_for_data          = "READY_FOR_DATA";
     static const char * need_last_block         = "NEED_LAST_BLOCK";
     static const char * need_empty_queue        = "NEED_EMPTY_QUEUE";
+    static const char * need_empty_and_complete = "NEED_EMPTY_AND_COMPLETE";
     static const char * need_complete           = "NEED_COMPLETE";
     static const char * completed_operation     = "COMPLETED_OPERATION";
     static const char * noop                    = "NOOP";
@@ -591,6 +592,9 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE:
             return need_empty_queue;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE:
+            return need_empty_and_complete;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE:
             return need_complete;

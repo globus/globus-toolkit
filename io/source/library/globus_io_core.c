@@ -2690,7 +2690,12 @@ globus_l_io_activate(void)
     {
        return rc;
     }
-
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+       return rc;
+    }
+    
     tmp_string = globus_module_getenv("GLOBUS_IO_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
@@ -3197,11 +3202,8 @@ globus_l_io_deactivate(void)
     globus_module_deactivate(GLOBUS_ERROR_MODULE);
     globus_mutex_destroy(&globus_i_io_mutex);
     globus_cond_destroy(&globus_i_io_cond);
-    rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    if(rc != GLOBUS_SUCCESS)
-    {
-       return rc;
-    }
+    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return GLOBUS_SUCCESS;
 }
