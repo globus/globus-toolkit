@@ -31,6 +31,8 @@ PBS_JOB_SCRIPT="${local_tmpdir}/pbs_job_script."$$
 PBS_JOB_OUT="${PBS_JOB_SCRIPT}.out"
 PBS_JOB_ERR="${PBS_JOB_SCRIPT}.err"
 
+is_cluster=false
+
 arg_file=$1
 
 # Check for the argument file. If it does not exist
@@ -248,17 +250,42 @@ echo "cd $grami_directory" >> $PBS_JOB_SCRIPT
 
 echo "\n# Executing job as requested by user\n" >> $PBS_JOB_SCRIPT
 if [ $pbs_jobtype = "mpi" ] ; then
-    echo "${mpirun} -np $grami_count $grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
+   if ${is_cluster} ; then
+      echo "${mpirun} -np $grami_count "\
+                     "-machinefile \$PBS_NODEFILE "\
+                     "$grami_program $new_grami_args "\
+                     < $grami_stdin" >> $PBS_JOB_SCRIPT
+   else
+      echo "${mpirun} -np $grami_count "\
+                      "$grami_program $new_grami_args "\
+                      < $grami_stdin" >> $PBS_JOB_SCRIPT
+   fi
 elif [ $pbs_jobtype = "multiple" ] ; then
-    counter=0
-    while (test "$counter" -lt "$grami_count")
+   if ${is_cluster} ; then
+      echo 'for $i in `cat $PBS_NODEFILE`' >> $PBS_JOB_SCRIPT
+      echo 'do' >> $PBS_JOB_SCRIPT
+      echo '   starting job on $i' >> $PBS_JOB_SCRIPT
+      echo "   rsh \$i \"cd ${grami_directory};"\
+           " $grami_program $new_grami_args < $grami_stdin\" &"\
+           >> $PBS_JOB_SCRIPT
+      echo 'done' >> $PBS_JOB_SCRIPT
+      echo 'wait' >> $PBS_JOB_SCRIPT
+   else
+      counter=0
+      while (test "$counter" -lt "$grami_count")
         do
-            echo "$grami_program $new_grami_args < $grami_stdin &" >> $PBS_JOB_SCRIPT
-        counter=`expr $counter + 1`
+           echo "$grami_program $new_grami_args < $grami_stdin &" \
+                >> $PBS_JOB_SCRIPT
+           counter=`expr $counter + 1`
         done
         echo "wait" >> $PBS_JOB_SCRIPT;
 else
     echo "$grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
+fi
+
+if ${is_cluster} ; then
+   echo "#ctrans nfs_in ${grami_directory}" >> $PBS_JOB_SCRIPT
+   echo "#ctrans nfs_out ${grami_directory}" >> $PBS_JOB_SCRIPT
 fi
 
 $DEBUG_ECHO PBS job script successfully built >> $grami_logfile
