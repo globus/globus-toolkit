@@ -1638,6 +1638,20 @@ globus_l_gss_assist_gridmap_lookup(
                 (_GASL("Could not map %s to %s\n"),
                  peer_name_buffer.value,
                  desired_identity));
+            goto error;
+        }
+
+        if(strlen(desired_identity) + 1 > identity_buffer_length)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL,
+                (_GASL("Desired identity length: %d Buffer length: %d\n"),
+                 strlen(desired_identity), identity_buffer_length));
+        }
+        else
+        {
+            strcpy(identity_buffer, desired_identity);
         }
     }
 
