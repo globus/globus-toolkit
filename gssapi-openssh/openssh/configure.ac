@@ -515,6 +515,124 @@ int main(void){struct dirent d;exit(sizeof(d.d_name)<=sizeof(char));}
 	]
 )
 
+# Check whether the user wants GSSAPI mechglue support
+AC_ARG_WITH(mechglue,
+	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
+	[
+		AC_MSG_CHECKING(for mechglue library)
+
+		if test -e ${withval}/libgssapi.a ; then
+		    mechglue_lib=${withval}/libgssapi.a
+		elif test -e ${withval}/lib/libgssapi.a ; then
+		    mechglue_lib=${withval}/lib/libgssapi.a
+		else
+		    AC_MSG_ERROR("Can't find libgssapi in ${withval}");
+		fi
+		LIBS="$LIBS ${mechglue_lib}"
+		AC_MSG_RESULT(${mechglue_lib})
+
+		AC_CHECK_LIB(dl, dlopen, , )
+		if test $ac_cv_lib_dl_dlopen = yes; then
+		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
+		fi
+
+		AC_DEFINE(GSSAPI)
+		AC_DEFINE(MECHGLUE)
+		GSSAPI="mechglue"
+
+	]
+)
+
+
+# Check whether the user wants GSI (Globus) support
+gsi_path="no"
+AC_ARG_WITH(gsi,
+	[  --with-gsi=PATH         Enable GSI/Globus authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus,
+	[  --with-globus=PATH      Enable GSI/Globus authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+# Check whether the user has a Globus flavor type
+globus_flavor_type="no"
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=TYPE         Describe Globus flavor type (ex: gcc32dbg, etc.)],
+	[
+		globus_flavor_type="$withval"
+	]
+)
+
+if test "x$gsi_path" != "xno" ; then
+	# Globus GSSAPI configuration
+	AC_MSG_CHECKING(for Globus GSI)
+	AC_DEFINE(GSI)
+
+	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus/GSI.])
+	fi
+	if test -z "$GSSAPI"; then
+		AC_DEFINE(GSSAPI)
+		GSSAPI="GSI"
+	fi
+
+	if test "x$globus_install_dir" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus=PATH must specify a path)
+	fi
+
+        if test "x$globus_flavor_type" = "xno" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must be specified)
+	fi
+        if test "x$globus_flavor_type" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
+	fi
+
+	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+	if test ! -d "$GLOBUS_INCLUDE" ; then
+		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+	fi
+	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
+	
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header -static -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		GSI_LDFLAGS="-L${gsi_path}/lib"
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	else
+		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
+	fi
+	if test -z "$GSI_LIBS" ; then
+		AC_MSG_ERROR(globus-makefile-header failed)
+	fi
+
+	LIBS="$LIBS $GSI_LIBS"
+	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
+	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+
+	# test that we got the libraries OK
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR(link with Globus libraries failed)
+		]
+	)
+	INSTALL_GSISSH="yes"
+else
+	INSTALL_GSISSH=""
+fi
+AC_SUBST(INSTALL_GSISSH)
+# End Globus/GSI section
+
 # Check whether user wants S/Key support
 SKEY_MSG="no" 
 AC_ARG_WITH(skey,
@@ -618,6 +736,9 @@ AC_CHECK_FUNCS(\
 )
 
 AC_SEARCH_LIBS(nanosleep, rt posix4, AC_DEFINE(HAVE_NANOSLEEP))
+
+dnl IRIX has basename() in libgen
+AC_SEARCH_LIBS(basename, gen, AC_DEFINE(HAVE_BASENAME))
 
 dnl Make sure strsep prototype is defined before defining HAVE_STRSEP
 AC_CHECK_DECL(strsep, [AC_CHECK_FUNCS(strsep)])
@@ -736,6 +857,7 @@ AC_ARG_WITH(pam,
 			AC_CHECK_LIB(dl, dlopen, , )
 			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
 			AC_CHECK_FUNCS(pam_getenvlist)
+			AC_CHECK_FUNCS(pam_putenv)
 
 			disable_shadow=yes
 			PAM_MSG="yes"
@@ -804,7 +926,9 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
+if test -z "$GSI_LIBS" ; then
 LIBS="$LIBS -lcrypto"
+fi
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
 	[
 		dnl Check default openssl install dir
@@ -1831,6 +1955,47 @@ AC_ARG_WITH(kerberos5,
                         fi
                         AC_CHECK_LIB(resolv, dn_expand, , )
 
+			# If we're using some other GSSAPI
+			if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+				AC_MSG_ERROR([$GSSAPI GSSAPI library conflicts with Kerberos support.  Use mechglue instead.])
+			fi
+			AC_CHECK_LIB(gssapi,gss_init_sec_context,
+				[ AC_DEFINE(GSSAPI)
+				  K5LIBS="-lgssapi $K5LIBS" ],
+				[ AC_CHECK_LIB(gssapi_krb5,gss_init_sec_context,
+					[ AC_DEFINE(GSSAPI)
+				  	  K5LIBS="-lgssapi_krb5 $K5LIBS" ],
+					AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]),
+					$K5LIBS)
+				],
+				$K5LIBS)
+		
+			AC_CHECK_HEADER(gssapi.h, ,
+				[ unset ac_cv_header_gssapi_h
+				  CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi" 
+				  AC_CHECK_HEADERS(gssapi.h, ,
+					AC_MSG_WARN([Cannot find any suitable gss-api header - build may fail])
+				  ) 
+				]
+			)
+
+			AC_CHECK_LIB(gssapi, gss_krb5_copy_ccache, /bin/true,
+				[ K5LIBS="-lgssapi_krb5 $K5LIBS"
+				  AC_CHECK_LIB(gssapi_krb5, gss_krb5_copy_ccache, /bin/true,
+					AC_MSG_WARN([Cannot find gss_krb5_copy_ccache -- build may fail]),
+					$K5LIBS)
+				],
+				$K5LIBS)
+
+			oldCPP="$CPPFLAGS"
+			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
+			AC_CHECK_HEADER(gssapi_krb5.h, ,
+					[ CPPFLAGS="$oldCPP" ])
+
+			if test -z "$GSSAPI"; then
+				GSSAPI="KRB5";
+			fi
+
                         KRB5=yes
                 fi
         ]
@@ -1886,6 +2051,33 @@ AC_ARG_WITH(kerberos4,
 			KRB4=yes
 			KRB4_MSG="yes" 
 			AC_DEFINE(KRB4)
+		fi
+	]
+)
+
+# Check whether user wants AFS_KRB5 support
+AFS_KRB5_MSG="no"
+AC_ARG_WITH(afs-krb5,
+	[  --with-afs-krb5[[=AKLOG_PATH]]  Enable aklog to get token (default=/usr/bin/aklog).],
+	[
+		if test "x$withval" != "xno" ; then
+
+			if test "x$withval" != "xyes" ; then
+				AC_DEFINE_UNQUOTED(AKLOG_PATH, "$withval")
+			else
+				AC_DEFINE_UNQUOTED(AKLOG_PATH, "/usr/bin/aklog")
+			fi
+
+			if test -z "$KRB5" ; then
+				AC_MSG_WARN([AFS_KRB5 requires Kerberos 5 support, build may fail])
+			fi
+
+			LIBS="-lkrbafs $LIBS"
+			if test ! -z "$AFS_LIBS" ; then
+				LIBS="$LIBS $AFS_LIBS"
+			fi
+			AC_DEFINE(AFS_KRB5)
+			AFS_KRB5_MSG="yes"
 		fi
 	]
 )
