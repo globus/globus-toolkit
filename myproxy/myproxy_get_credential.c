@@ -12,8 +12,8 @@
 
 static char usage[] = \
 "\n"
-"Syntax: myproxy-get-credential [-l username] ...\n"
-"        myproxy-get-delegation [-usage|-help] [-version]\n"
+"Syntax: myproxy-retrieve [-l username] ...\n"
+"        myproxy-retrieve [-usage|-help] [-version]\n"
 "\n"
 "   Options\n"
 "       -h | --help                       Displays usage\n"
@@ -22,7 +22,6 @@ static char usage[] = \
 "       -v | --verbose                    Display debugging messages\n"
 "       -V | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
-"       -o | --out             <path>     Location of end entity credential\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -a | --authorization   <path>     Use credential for authorization\n"
@@ -62,7 +61,7 @@ struct option long_options[] =
 static char short_options[] = "hus:p:l:t:o:c:y:vVa:dk:Sn";
 
 static char version[] =
-"myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
+"myproxy-retrieve version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 void 
 init_arguments(int argc, char *argv[], 
