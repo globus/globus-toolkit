@@ -228,21 +228,6 @@ globus_result_t globus_gsi_cred_read(
         {
         case GLOBUS_PROXY:
 
-            if(proxy)
-            {
-                free(proxy);
-            }
-            
-            if(cert)
-            {
-                free(cert);
-            }
-            
-            if(key)
-            {
-                free(key);
-            }
-            
             results[result_index] = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(
                 &proxy, 
                 GLOBUS_PROXY_FILE_INPUT);
@@ -327,21 +312,6 @@ globus_result_t globus_gsi_cred_read(
             goto exit;
 
         case GLOBUS_USER:
-            
-            if(proxy)
-            {
-                free(proxy);
-            }
-            
-            if(cert)
-            {
-                free(cert);
-            }
-            
-            if(key)
-            {
-                free(key);
-            }
             
             results[result_index] = 
                 GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(&cert, &key);
@@ -466,21 +436,6 @@ globus_result_t globus_gsi_cred_read(
 
         case GLOBUS_HOST:
             
-            if(proxy)
-            {
-                free(proxy);
-            }
-            
-            if(cert)
-            {
-                free(cert);
-            }
-            
-            if(key)
-            {
-                free(key);
-            }
-            
             results[result_index] = 
                 GLOBUS_GSI_SYSCONFIG_GET_HOST_CERT_FILENAME(&cert, &key);
             if(results[result_index] != GLOBUS_SUCCESS)
@@ -604,21 +559,6 @@ globus_result_t globus_gsi_cred_read(
             
         case GLOBUS_SERVICE:
 
-            if(proxy)
-            {
-                free(proxy);
-            }
-            
-            if(cert)
-            {
-                free(cert);
-            }
-            
-            if(key)
-            {
-                free(key);
-            }
-            
             if(desired_subject != NULL)
             { 
                 results[result_index] =
@@ -781,6 +721,24 @@ globus_result_t globus_gsi_cred_read(
             goto exit;
         }
 
+        if(proxy)
+        {
+            free(proxy);
+            proxy = NULL;
+        }
+        
+        if(cert)
+        {
+            free(cert);
+            cert = NULL;
+        }
+        
+        if(key)
+        {
+            free(key);
+            key = NULL;
+        }
+            
         result_index++;
     } while(++index);
     
