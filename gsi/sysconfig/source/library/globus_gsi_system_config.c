@@ -3075,7 +3075,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
             goto exit;
         }
 
-        result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+        result = GLOBUS_GSI_SYSCONFIG_CHECK_FILE_EXISTS(
             authz_filename);
 
         if(result != GLOBUS_SUCCESS)
@@ -3097,7 +3097,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
             goto exit;
         }
 
-        result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+        result = GLOBUS_GSI_SYSCONFIG_CHECK_FILE_EXISTS(
             authz_filename);
 
         if(result != GLOBUS_SUCCESS)
@@ -3133,7 +3133,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
                     goto exit;
                 }
                 
-                result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+                result = GLOBUS_GSI_SYSCONFIG_CHECK_FILE_EXISTS(
                     authz_filename);
                 
                 if(result != GLOBUS_SUCCESS)
@@ -3170,7 +3170,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
                     GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
                     goto exit;
                 }
-                result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+                result = GLOBUS_GSI_SYSCONFIG_CHECK_FILE_EXISTS(
                     authz_filename);
                 
                 if(result != GLOBUS_SUCCESS)
@@ -3355,7 +3355,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
                     GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
                     goto exit;
                 }
-                result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+                result = GLOBUS_GSI_SYSCONFIG_CHECK_FILE_EXISTS(
                     authz_lib_filename);
                 
                 if(result != GLOBUS_SUCCESS)
