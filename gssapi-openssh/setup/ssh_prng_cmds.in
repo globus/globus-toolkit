@@ -72,3 +72,4 @@
 "tail -200 /var/log/maillog"		@PROG_TAIL@	0.01
 "tail -200 /var/adm/maillog"		@PROG_TAIL@	0.01
 "tail -200 /var/adm/syslog/mail.log"	@PROG_TAIL@	0.01
+
