@@ -421,6 +421,8 @@ typedef struct globus_i_gsc_server_handle_s
     globus_hashtable_t                  data_object_table;
     struct globus_i_gsc_op_s *          outstanding_op;
 
+    globus_bool_t                       terminating;
+
     int                                 idle_timeout;
     int                                 preauth_timeout;
 } globus_i_gsc_server_handle_t;

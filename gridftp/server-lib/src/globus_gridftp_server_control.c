@@ -562,6 +562,7 @@ globus_l_gsc_read_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
+        server_handle->ref--;
         if(result != GLOBUS_SUCCESS)
         {
             res = result;
@@ -639,6 +640,7 @@ globus_l_gsc_read_cb(
                     {
                         goto err_unlock;
                     }
+                    server_handle->ref++;
                 }
                 else
                 {
@@ -665,6 +667,7 @@ globus_l_gsc_read_cb(
                         {
                             goto err_unlock;
                         }
+                        server_handle->ref++;
                     }
                     else
                     {
@@ -729,9 +732,7 @@ err_alloc_unlock:
         globus_free(command_name);
     }
     server_handle->cached_res = res;
-    server_handle->ref--;
     globus_l_gsc_terminate(server_handle);
-    globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
 
     GlobusGridFTPServerDebugInternalExitWithError();
@@ -784,6 +785,21 @@ globus_l_gsc_terminate(
 
     GlobusGridFTPServerDebugInternalEnter();
 
+    /* can do this with the states but this is more explict for debugging */
+    /* is ok to call this twice stopped twice:
+       ex: client quits, read callback returns with error, then user
+           quits before getting the done callback.  
+       In these cases there is nothing to be done. */
+    if(server_handle->terminating)
+    {
+        globus_l_gsc_server_ref_check(server_handle);
+        globus_assert(
+            server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
+            server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
+        return;
+    }
+    server_handle->terminating = GLOBUS_TRUE;
+
     dh_to_abort = GLOBUS_FALSE;
     if(server_handle->data_object)
     {
@@ -814,6 +830,26 @@ globus_l_gsc_terminate(
                 break;
         }
     }
+
+    while(!globus_fifo_empty(&server_handle->reply_q))
+    {
+        globus_l_gsc_reply_ent_t *      reply_ent;
+
+        reply_ent = (globus_l_gsc_reply_ent_t *)
+                globus_fifo_dequeue(&server_handle->reply_q);
+
+        if(reply_ent->final)
+        {
+            globus_i_gsc_op_destroy(reply_ent->op);
+        }
+
+        if(reply_ent->msg != NULL)
+        {
+            globus_free(reply_ent->msg);
+        }
+        globus_free(reply_ent);
+    }
+
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_OPENING:
@@ -857,10 +893,12 @@ globus_l_gsc_terminate(
                     server_handle->outstanding_op->aborted = GLOBUS_FALSE;
                 }
             }
+
             /* ignore return code, we are stopping so it doesn' matter */
             globus_l_gsc_flush_reads(
                 server_handle,
-                _FSMSL("421 Service not available, closing control connection.\r\n"));
+                _FSMSL("421 Service not available, "
+                        "closing control connection.\r\n"));
 /* XXX     res = globus_l_gsc_final_reply(server_handle, msg); */
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
@@ -872,13 +910,11 @@ globus_l_gsc_terminate(
                 server_handle, GLOBUS_L_GSC_STATE_ABORTING_STOPPING);
             break;
 
-        /* these two cases can only happen if the server is stopped twice:
-           ex: client quits, read callback returns with error, then user
-               quits before getting the done callback.  
-           In these cases there is nothing to be done. */
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
         case GLOBUS_L_GSC_STATE_STOPPING:
         case GLOBUS_L_GSC_STATE_STOPPED:
+            /* the check at the top makes these state no possible */
+            globus_assert(0 && "possible memory corruption");
             break;
 
         /* no other states */
@@ -886,6 +922,10 @@ globus_l_gsc_terminate(
             globus_assert(0);
             break;
     }
+
+    /* remove self reference */
+    server_handle->ref--;
+    globus_l_gsc_server_ref_check(server_handle);
 
     GlobusGridFTPServerDebugInternalExit();
 }
@@ -956,6 +996,7 @@ globus_l_gsc_finished_op(
                 server_handle->outstanding_op = NULL;
                 msg = _FSMSL("500 Command not supported.\r\n");
             }
+            /* if not done with the chain yet */
             if(msg == NULL)
             {
                 GlobusLGSCRegisterCmd(op);
@@ -1010,6 +1051,7 @@ globus_l_gsc_finished_op(
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+            globus_i_gsc_op_destroy(op);
             res = globus_l_gsc_final_reply(
                     server_handle,
                     (_FSMSL("421 Server terminated\r\n")));
@@ -1020,14 +1062,11 @@ globus_l_gsc_finished_op(
             server_handle->outstanding_op = NULL;
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_STOPPING);
-            globus_i_gsc_op_destroy(op);
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
             server_handle->outstanding_op = NULL;
             globus_i_gsc_op_destroy(op);
-            server_handle->ref--;
-            globus_l_gsc_server_ref_check(server_handle);
             break;
 
         case GLOBUS_L_GSC_STATE_OPENING:
@@ -1044,8 +1083,6 @@ globus_l_gsc_finished_op(
 
   err:
     globus_l_gsc_terminate(server_handle);
-    server_handle->ref--;
-    globus_l_gsc_server_ref_check(server_handle);
 
     GlobusGridFTPServerDebugInternalExitWithError();
 }
@@ -1098,6 +1135,7 @@ globus_l_gsc_220_write_cb(
         {
             goto err_unlock;
         }
+        server_handle->ref++;
     }
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -1110,7 +1148,6 @@ globus_l_gsc_220_write_cb(
   err:
 
     globus_xio_attr_init(&close_attr);
-    server_handle->ref--;
     globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -1238,9 +1275,9 @@ globus_l_gsc_final_reply_cb(
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        server_handle->ref--;
                         globus_l_gsc_terminate(server_handle);
                     }
+                    server_handle->ref++;
                     GlobusGSCHandleStateChange(
                         server_handle, GLOBUS_L_GSC_STATE_OPEN);
                 }
@@ -1273,7 +1310,6 @@ globus_l_gsc_final_reply_cb(
   err:
 
     globus_l_gsc_terminate(server_handle);
-    globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
     GlobusGridFTPServerDebugInternalExitWithError();
     return;
@@ -1302,6 +1338,7 @@ globus_l_gsc_intermediate_reply_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
+        server_handle->reply_outstanding = GLOBUS_FALSE;
         server_handle->ref--;
         if(result != GLOBUS_SUCCESS)
         {
@@ -1333,16 +1370,13 @@ globus_l_gsc_intermediate_reply_cb(
             }
             globus_free(reply_ent);
         }
-        else
-        {
-            server_handle->reply_outstanding = GLOBUS_FALSE;
-        }
     }
     globus_mutex_unlock(&server_handle->mutex);
     GlobusGridFTPServerDebugInternalExit();
 
     return;
 free_error:
+
     if(reply_ent->msg != NULL)
     {
         globus_free(reply_ent->msg);
@@ -1350,12 +1384,27 @@ free_error:
     globus_free(reply_ent->msg);
     globus_free(reply_ent);
 error:
-    server_handle->reply_outstanding = GLOBUS_FALSE;
+    while(!globus_fifo_empty(&server_handle->reply_q))
+    {
+        reply_ent = (globus_l_gsc_reply_ent_t *)
+                globus_fifo_dequeue(&server_handle->reply_q);
+
+        if(reply_ent->final)
+        {
+            globus_i_gsc_op_destroy(reply_ent->op);
+        }
+
+        if(reply_ent->msg != NULL)
+        {
+            globus_free(reply_ent->msg);
+        }
+        globus_free(reply_ent);
+    }
     globus_l_gsc_terminate(server_handle);
     /* dec again here for the op because the final_reply_cb
        won't come */
-    /*server_handle->ref--;*/
-    globus_l_gsc_server_ref_check(server_handle);
+    /*server_handle->ref--;
+    globus_l_gsc_server_ref_check(server_handle); */
     globus_mutex_unlock(&server_handle->mutex);
     GlobusGridFTPServerDebugInternalExitWithError();
 }
@@ -1718,7 +1767,6 @@ globus_l_gsc_flush_reads(
         tmp_res = globus_l_gsc_final_reply(server_handle, reply_msg);
         if(tmp_res != GLOBUS_SUCCESS)
         {
-            server_handle->ref--;
             res = tmp_res;
         }
     }
@@ -2151,6 +2199,7 @@ globus_l_gsc_intermediate_reply(
     {
         goto err;
     }
+    server_handle->reply_outstanding = GLOBUS_TRUE;
     server_handle->ref++;
 
     GlobusGridFTPServerDebugInternalExit();
@@ -2573,6 +2622,7 @@ globus_gridftp_server_control_start(
     server_handle->prot = 'C';
     server_handle->dcau = 'N';
 
+    server_handle->terminating = GLOBUS_FALSE;
     server_handle->preauth_timeout = i_attr->preauth_timeout;
     server_handle->idle_timeout = i_attr->idle_timeout;
 
@@ -2737,7 +2787,7 @@ globus_gsc_959_finished_command(
 {
     globus_i_gsc_server_handle_t *      server_handle;
     globus_l_gsc_reply_ent_t *          reply_ent;
-    GlobusGridFTPServerName(globus_gsc_finished_op);
+    GlobusGridFTPServerName(globus_gsc_959_finished_command);
 
     GlobusGridFTPServerDebugInternalEnter();
 
@@ -2796,13 +2846,11 @@ globus_i_gsc_intermediate_reply(
     }
     else
     {
-        server_handle->reply_outstanding = GLOBUS_TRUE;
         res = globus_l_gsc_intermediate_reply(
                 server_handle,
                 reply_msg);
         if(res != GLOBUS_SUCCESS)
         {
-            server_handle->reply_outstanding = GLOBUS_FALSE;
             globus_l_gsc_terminate(server_handle);
         }
     }
