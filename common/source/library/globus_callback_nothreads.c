@@ -905,7 +905,7 @@ globus_callback_space_is_valid(
 {
     globus_l_callback_space_t *         i_space;
     
-    if(space = GLOBUS_CALLBACK_GLOBAL_SPACE)
+    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
         return GLOBUS_TRUE;
     }
