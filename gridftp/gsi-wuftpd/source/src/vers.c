@@ -18,7 +18,7 @@ typedef struct
 #include "config.h"
 #include "version.h"
 
-// Global, allocated at runtime
+/* Global, allocated at runtime */
 char* version;
 
 #define GSI_WUFTP_VER_LEN_MAX 1024
