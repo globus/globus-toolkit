@@ -1,4 +1,4 @@
-#! @PERL@
+#!/usr/bin/env perl
 
 =head1 Tests for the globus IO authorization modes
 
