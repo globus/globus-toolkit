@@ -1,3 +1,6 @@
+/* This File Doesn't Build Under Windows */
+#ifndef WIN32
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_io_udp.c Globus I/O toolset for UDP/IP sockets.
@@ -1917,3 +1920,5 @@ globus_io_udp_recvfrom(
     return result;
 }
 /* globus_io_udp_recvfrom() */
+
+#endif /* WIN32 */
