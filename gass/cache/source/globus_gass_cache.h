@@ -63,11 +63,8 @@ Codes returned by globus_gass_cache module
 #define GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION        -20
 
 
-#if !defined(FILENAME_MAX) && defined(MAXPATHLEN)
-#   define FILENAME_MAX MAXPATHLEN
-#endif
-#if !defined(FILENAME_MAX) && defined(PATH_MAX)
-#   define FILENAME_MAX PATH_MAX
+#if !defined(PATH_MAX) && defined(MAXPATHLEN)
+#   define PATH_MAX MAXPATHLEN
 #endif
 
 /******************************************************************************
@@ -93,13 +90,13 @@ typedef struct
     char           comment[COMMENT_LENGHT];
     int            version;  /* version number read out of the state file */
     
-    char           cache_directory_path[FILENAME_MAX+1];
+    char           cache_directory_path[PATH_MAX+1];
     
     /* just to not have to biuld them every time: */
-    char           state_file_path[FILENAME_MAX+1];
+    char           state_file_path[PATH_MAX+1];
     int            state_file_fd;
-    char           state_file_lock_path[FILENAME_MAX+1];   
-    char           temp_file_path[FILENAME_MAX+1];
+    char           state_file_lock_path[PATH_MAX+1];   
+    char           temp_file_path[PATH_MAX+1];
     int            temp_file_fd;
     FILE*          log_FILE;
     int            nb_entries;
