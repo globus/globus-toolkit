@@ -217,12 +217,6 @@ init_arguments(int argc,
 	exit(1);
     }
 
-    /* Check to see that lifetime is < MYPROXY_SERVER_MAX_DELEG_HOURS */
-    if (request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS) {
-        fprintf(stderr, "The delegated credential lifetime cannot be greater than %d.\n", MYPROXY_SERVER_MAX_DELEG_HOURS);
-        exit(1);
-    } 
-
     return;
 }
 
