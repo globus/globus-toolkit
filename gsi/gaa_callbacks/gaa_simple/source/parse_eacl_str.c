@@ -75,7 +75,7 @@ gaa_simple_parse_restrictions(
     char                                rval[MAX_WORD_LEN];
     char                                object_name_type[MAX_WORD_LEN];
     char                                object_name[MAX_WORD_LEN];
-    char *                              clean_obj_name_type;
+    char *                              clean_obj_name_type = 0;
     char *                              clean_obj_name;
     char *                              clean_service_type;
     char *                              clean_service_action;
@@ -92,7 +92,8 @@ gaa_simple_parse_restrictions(
     int                                 policycount = 0;
     int                                 i;
     int                                 urlbase_len = 0;
-    
+
+   
     /*Check for null input values*/
     if (gaa == NULL || policy == NULL ||
         in_object == NULL || params == NULL)
@@ -231,7 +232,7 @@ gaa_simple_parse_restrictions(
                 object_name[MAX_WORD_LEN-1] = 0;
                 /*remove leading white chars from object name*/
                 clean_obj_name = cleanup(object_name);
-                
+		       
                 if (cb_arg->urlbase)
                 {
                     urlbase_len = strlen(cb_arg->urlbase);
@@ -241,6 +242,14 @@ gaa_simple_parse_restrictions(
                     }
                 }
                 
+		if (clean_obj_name_type == 0)
+		{
+		    snprintf(ebuf, sizeof(ebuf),
+			     "gaasimple_parse_restrictions: no object name type");
+		    gaa_set_callback_err(ebuf);
+		    return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
+		}
+
                 /*Strip off trailing /'s before compare 
                   Assumes that object name is an absolute path,
                   ie the first char is a '/' */
@@ -255,30 +264,48 @@ gaa_simple_parse_restrictions(
 #ifdef DEBUG                
                 fprintf(stderr, "Clean object name: %s\n", clean_obj_name);
 #endif /* DEBUG */
-                        
-                /*Object names in policy file may end in *, which indicates subtrees*/
-                if(clean_obj_name[len] == '*')
-                {
-                    if(clean_obj_name[len-1] == '/')
-                    {
-                        /*add a '/' to the input object*/
-                        object[strlen(object)+1] = '\0';
-                        object[strlen(object)]   = '/';
-                    }
-                    /* compare the two values upto but not
-                       including the *.  */
-                    if(!strncmp(clean_obj_name,object,len))
-                    {
-                        found_obj = 1;
-                    }
-                }
-                else
-                {
-                    if(!strcmp(clean_obj_name, object))
-                    {
-                        found_obj = 1;
-                    }
-                }
+
+		if (strcmp(clean_obj_name_type, "wildcard") == 0)
+		{                        
+		    /*Object names in policy file may end in *, which indicates subtrees*/
+		    if(clean_obj_name[len] == '*')
+		    {
+			if(clean_obj_name[len-1] == '/')
+			{
+			    /*add a '/' to the input object*/
+			    object[strlen(object)+1] = '\0';
+			    object[strlen(object)]   = '/';
+			}
+			/* compare the two values upto but not
+			   including the *.  */
+			if(!strncmp(clean_obj_name,object,len))
+			{
+			    found_obj = 1;
+			}
+		    }
+		    else
+		    {
+			if(!strcmp(clean_obj_name, object))
+			{
+			    found_obj = 1;
+			}
+		    }
+		}
+		else if (strcmp(clean_obj_name_type, "exact") == 0)
+		{
+		    if(!strcmp(clean_obj_name, object))
+		    {
+			found_obj = 1;
+		    }
+		}
+		else
+		{
+		    snprintf(ebuf, sizeof(ebuf),
+			     "gaasimple_parse_restrictions: unrecognized object name type '%s'",
+			     clean_obj_name_type);
+		    gaa_set_callback_err(ebuf);
+		    return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
+		}
 #ifdef DEBUG
                 fprintf(stderr, "Object \"%s\" %s match\n",
                         clean_obj_name,
