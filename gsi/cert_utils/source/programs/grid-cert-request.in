@@ -11,18 +11,15 @@ fi
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
 
-if [ ! -z "${GRID_SECURITY_DIR}" ] &&
-   [ -w "${GRID_SECURITY_DIR}" ] ; then
+if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
     secconfdir="${GRID_SECURITY_DIR}"
     trusted_certs_dir="${secconfdir}/certificates"
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
-     [ -r "/etc/grid-security/globus-host-ssl.conf" ] &&
-     [ -w "/etc/grid-security" ] ; then
+     [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
     secconfdir="/etc/grid-security"
     trusted_certs_dir="${secconfdir}/certificates"
 elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
-     [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] &&
-     [ -w "${GLOBUS_LOCATION}/etc" ] ; then
+     [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
     secconfdir="${GLOBUS_LOCATION}/etc"
     trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
 else
