@@ -59,7 +59,6 @@ diff -u -r openssl-0.9.6c/crypto/asn1/a_d2i_fp.c openssl-0.9.6c-patched/crypto/a
 
 Changed
 
-crypto/cversion.c
 crypto/buildinf.h.in
 crypto/opensslconf.h.in
 tools/c_rehash.in

@@ -3,9 +3,14 @@ dnl
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
-GLOBUS_INIT
+OPENSSL_INIT
 
+# libtool hack
+
+save_LD=$LD
+LD=
 AM_PROG_LIBTOOL
+LD=$save_LD
 
 dnl config header goes here
 

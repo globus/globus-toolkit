@@ -99,6 +99,29 @@ LDFLAGS = $(GPT_LDFLAGS)
 
 noinst_PROGRAMS = $(Test_Programs)
 
+nodist_exptest_SOURCES = exptest.c
+nodist_bntest_SOURCES = bntest.c
+nodist_ideatest_SOURCES = ideatest.c
+nodist_shatest_SOURCES = shatest.c
+nodist_sha1test_SOURCES = sha1test.c
+nodist_mdc2test_SOURCES = mdc2test.c
+nodist_rmdtest_SOURCES = rmdtest.c
+nodist_md2test_SOURCES = md2test.c
+nodist_md4test_SOURCES = md4test.c
+nodist_md5test_SOURCES = md5test.c
+nodist_hmactest_SOURCES = hmactest.c
+nodist_rc2test_SOURCES = rc2test.c
+nodist_rc4test_SOURCES = rc4test.c
+nodist_rc5test_SOURCES = rc5test.c
+nodist_bftest_SOURCES = bftest.c
+nodist_casttest_SOURCES = casttest.c
+nodist_destest_SOURCES = destest.c
+nodist_randtest_SOURCES = randtest.c
+nodist_dhtest_SOURCES = dhtest.c
+nodist_dsatest_SOURCES = dsatest.c
+nodist_ssltest_SOURCES = ssltest.c
+nodist_rsa_test_SOURCES = rsa_test.c
+
 tests: $(Test_Programs) $(Test_Targets)
 
 test_des:
