@@ -107,8 +107,9 @@ main(int argc, char *argv[])
     }
 
     /* Allow user to provide a passphrase */
-    if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1, 
-                        MIN_PASS_LEN, MAX_PASS_LEN) < 0) {
+    if (myproxy_read_passphrase(client_request->passphrase,
+				sizeof(client_request->passphrase) == -1))
+    {
         fprintf(stderr, "error in myproxy_read_passphrase()\n");
         exit(1);
     }

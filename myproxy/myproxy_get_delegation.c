@@ -114,8 +114,9 @@ main(int argc, char *argv[])
     init_arguments(argc, argv, socket_attrs, client_request);
 
     /* Allow user to provide a passphrase */
-    if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1,
-                                       MIN_PASS_LEN, MAX_PASS_LEN) < 0) {
+    if (myproxy_read_passphrase(client_request->passphrase,
+				sizeof(client_request->passphrase)) == -1)
+    {
         fprintf(stderr, "Error reading passphrase\n");
         exit(1);
     }

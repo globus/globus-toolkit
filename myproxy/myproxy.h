@@ -10,9 +10,8 @@
 
 #include "gsi_socket.h"
 
-/* Maximum and minimum lengths for password */
-#define MAX_PASS_LEN  10
-#define MIN_PASS_LEN  5
+/* Maximum pass phrase length */
+#define MAX_PASS_LEN  1024 /* Arbitrary */
 
 /* Define default myproxy-server -- should probably be put in config file */
 #define MYPROXY_SERVER_PORT            7512

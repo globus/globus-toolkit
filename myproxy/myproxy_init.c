@@ -64,9 +64,6 @@ int  grid_proxy_init(int hours, const char *proxyfile);
 
 int  grid_proxy_destroy(const char *proxyfile);
 
-int  read_passphrase(char *passphrase, const int passlen, 
-                     const int min, const int max);
-
 void receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response); 
 
 int
@@ -128,9 +125,10 @@ main(int argc, char *argv[])
     }
 
     /* Allow user to provide a passphrase */
-    if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1, 
-                                       MIN_PASS_LEN, MAX_PASS_LEN) < 0) {
-        fprintf(stderr, "error in myproxy_read_passphrase(): %s\n", verror_get_string());
+    if (myproxy_read_verified_passphrase(client_request->passphrase,
+					 sizeof(client_request->passphrase)) == -1) {
+        fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
+		verror_get_string());
         exit(1);
     }
     
@@ -259,44 +257,6 @@ init_arguments(int argc,
     return;
 }
 
-
-/* read_passphrase()
- * 
- * Reads a passphrase from stdin. The passphrase must be allocated and
- * be less than min and greater than max characters
- */
-int
-read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
-{
-    int  i;
-    char pass[1024];
-    int  done = 0;
-
-    assert(passphrase != NULL);
-    assert(passlen < 1024);
-
-    /* Get user's passphrase */    
-    do {
-        printf("Enter password to protect proxy on  myproxy-server:\n");
-        
-        if (!(fgets(pass, 1024, stdin))) {
-            fprintf(stderr,"Failed to read password from stdin\n");   
-            return -1;
-        }	
-        i = strlen(pass) - 1;
-        if ((i < min) || (i > max)) {
-            printf("Password must be between %d and %d characters\n", min, max);
-        } else {
-            done = 1;
-        }
-    } while (!done);
-    
-    if (pass[i] == '\n') {
-        pass[i] = '\0';
-    }
-    strncpy(passphrase, pass, passlen);
-    return 0;
-}
 
 /* grid_proxy_init()
  *

@@ -39,9 +39,10 @@ TEST_PROGS	=	gsi-socket-test
 
 COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
 			verror.o ssl_utils.o
-INIT_OBJS	= myproxy_init.o $(COMMON_OBJS)
-DESTROY_OBJS	= myproxy_destroy.o $(COMMON_OBJS) 
-GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS)
+CLIENT_OBJS	= myproxy_read_pass.o
+INIT_OBJS	= myproxy_init.o $(COMMON_OBJS) $(CLIENT_OBJS)
+DESTROY_OBJS	= myproxy_destroy.o $(COMMON_OBJS) $(CLIENT_OBJS)
+GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS) $(CLIENT_OBJS)
 SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
 			myproxy_log.o vparse.o myproxy_server_config.o \
 			$(COMMON_OBJS)
