@@ -1378,7 +1378,8 @@ sub package_source_bootstrap()
     } elsif ( $custom eq "pnb" ){
        patch_package($package);
     } elsif ( $custom eq "tar" ) {
-      ; # nothing to do
+       log_system("cp pkgdata/pkg_data_src.gpt pkgdata/pkg_data_src.gpt.in", "$pkglog/$package");
+       log_system("cp pkgdata/filelist filelist", "$pkglog/$package");
     }
 }
 
