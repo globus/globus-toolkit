@@ -714,7 +714,7 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
 	    goto globus_i_rsl_assist_get_ldap_param_ERR;
 	}
     }
-    if ((tmp_base_dn =globus_libc_getenv("GLOBUS_MDS_BASE_DN"))!=GLOBUS_NULL)
+    if ((tmp_base_dn =globus_libc_getenv("GLOBUS_MDS_BASEDN"))!=GLOBUS_NULL)
     {
 	globus_libc_lock();
 	*base_dn=strdup(tmp_base_dn);
@@ -730,32 +730,20 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
 	*base_dn ==GLOBUS_NULL)
     {
 	/* try to get them from conf file */
-	inst_path=globus_libc_getenv("GLOBUS_INSTALL_PATH");
-	if (inst_path!=GLOBUS_NULL)
-	{
-	    mds_conf_path=globus_libc_malloc(strlen(inst_path)+
-					     strlen("etc/grid-info.conf")+1);
-	    if (mds_conf_path==GLOBUS_NULL)
-	    {
-		goto globus_i_rsl_assist_get_ldap_param_ERR;
-	    }
-	    globus_libc_sprintf(mds_conf_path,
-			   "%s%s",
-			   inst_path,
-			   "etc/grid-info.conf");
-	}
-	else
-	{
-	    mds_conf_path=globus_libc_malloc(
-		strlen(GLOBUS_SYSCONFDIR "/grid-info.conf")+1);
-	    if (mds_conf_path==GLOBUS_NULL)
-	    {
-		goto globus_i_rsl_assist_get_ldap_param_ERR;
-	    }
-	    globus_libc_sprintf(mds_conf_path,
-			   "%s",
-			   GLOBUS_SYSCONFDIR "/grid-info.conf");
-	}
+	globus_result_t res = globus_common_install_path( &inst_path );
+	if (res != GLOBUS_SUCCESS)
+	    goto globus_i_rsl_assist_get_ldap_param_ERR;
+
+	mds_conf_path=globus_libc_malloc(strlen(inst_path)+
+					 strlen("etc/grid-info.conf")+1);
+	if (mds_conf_path==GLOBUS_NULL)
+	    goto globus_i_rsl_assist_get_ldap_param_ERR;
+
+	globus_libc_sprintf(mds_conf_path,
+			    "%s%s",
+			    inst_path,
+			    "etc/grid-info.conf");
+
 	mds_conf = fopen(mds_conf_path, "r");
 	globus_libc_free(mds_conf_path);
         if(mds_conf != GLOBUS_NULL)
