@@ -1,3 +1,15 @@
+ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_cert_utils.c
+ * @author Sam Lang
+ * @author Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ *
+ */
+#endif
 
 #include "globus_i_gsi_cert_utils.h"
 #include "proxycertinfo.h"
@@ -8,6 +20,8 @@
 #include "version.h"
 #include "config.h"
 #include <ctype.h>
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 int                               globus_i_gsi_cert_utils_debug_level = 0;
 FILE *                            globus_i_gsi_cert_utils_debug_fstream = NULL;
@@ -108,6 +122,24 @@ globus_l_gsi_cert_utils_deactivate(void)
 }
 /* globus_l_gsi_cert_utils_deactivate() */
 
+#endif
+
+/**
+ * @name Convert ASN1_UTCTIME to time_t
+ * @ingroup globus_gsi_cert_utils
+ */
+/* @{ */
+/**
+ * Convert a ASN1_UTCTIME structure to a time_t
+ *
+ * @param ctm
+ *        The ASN1_UTCTIME to convert
+ * @param newtime
+ *        The converted time
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
 globus_result_t
 globus_gsi_cert_utils_make_time(
     ASN1_UTCTIME *                      ctm,
@@ -200,7 +232,25 @@ globus_gsi_cert_utils_make_time(
 
     return result;
 }
+/* @} */
 
+/**
+ * @name Get the X509 certificate type (EEC, CA, proxy type, etc.)
+ * @ingroup globus_gsi_cert_utils
+ */
+/* @{ */
+/**
+ * Determine the type of the given X509 certificate For the list of possible
+ * values returned, see globus_gsi_cert_utils_cert_type_t.
+ *
+ * @param cert
+ *        The X509 certificate 
+ * @param type
+ *        The returned X509 certificate type
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
 globus_result_t
 globus_gsi_cert_utils_get_cert_type(
     X509 *                              cert,
@@ -448,7 +498,7 @@ globus_gsi_cert_utils_get_cert_type(
 /* @} */
 
 /**
- * @name Get X509 Name
+ * @name Get the certificate name
  * @ingroup globus_gsi_cert_utils
  */
 /* @{ */
@@ -637,19 +687,20 @@ globus_gsi_cert_utils_get_x509_name(
 /* @} */
 
 /**
- * @name Get Base Name
+ * @name Get the base certificate name
  * @ingroup globus_gsi_cert_utils
  */
 /* @{ */
 /**
- * Ge the base name of a proxy certificate.  Given an X509 name, strip
+ * Get the base name of a proxy certificate.  Given an X509 name, strip
  * off the proxy related /CN components to get the base name of the
  * certificate's subject
  *
  * @param subject
  *        Pointer to an X509_NAME object which gets stripped
- * @param proxy_depth
- *        Number of components to strip
+ * @param cert_chain
+ *        The certificate chain used to detect the number of CNs to strip. This
+ *        is done by figuring out the number of proxies in the chain.
  * @return
  *        GLOBUS_SUCCESS
  */
@@ -710,105 +761,3 @@ globus_gsi_cert_utils_get_base_name(
     return GLOBUS_SUCCESS;
 }
 /* @} */
-
-char *
-globus_gsi_cert_utils_create_string(
-    const char *                        format,
-    ...)
-{
-    va_list                             ap;
-    char *                              new_string;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cert_utils_create_string";
-    
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-
-    va_start(ap, format);
-
-    new_string = globus_gsi_cert_utils_v_create_string(format, ap);
-
-    va_end(ap);
-
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
-    return new_string;
-}
-
-char *
-globus_gsi_cert_utils_create_nstring(
-    int                                 length,
-    const char *                        format,
-    ...)
-{
-    va_list                             ap;
-    char *                              new_string;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cert_utils_create_nstring";
-    
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-
-    va_start(ap, format);
-
-    new_string = globus_gsi_cert_utils_v_create_nstring(length, format, ap);
-
-    va_end(ap);
-
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
-    return new_string;
-}
-
-char *
-globus_gsi_cert_utils_v_create_string(
-    const char *                        format,
-    va_list                             ap)
-{
-    int                                 len;
-    char *                              new_string = NULL;
-    va_list                             ap_copy;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cert_utils_v_create_string";
-
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-
-    globus_libc_va_copy(ap_copy,ap);
-    
-    len = globus_libc_vprintf_length(format,ap_copy);
-
-    va_end(ap_copy);
-
-    len++;
-
-    if((new_string = malloc(len)) == NULL)
-    {
-        return NULL;
-    }
-    
-    globus_libc_vsnprintf(new_string,
-                          len,
-                          format,
-                          ap);
-    
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
-    return new_string;
-}
-
-char *
-globus_gsi_cert_utils_v_create_nstring(
-    int                                 length,
-    const char *                        format,
-    va_list                             ap)
-{
-    char *                              new_string = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cert_utils_v_create_string";
-
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-    if((new_string = malloc(length + 1)) == NULL)
-    {
-        return NULL;
-    }
-
-    globus_libc_vsnprintf(new_string, length + 1, format, ap);
-
-    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
-    return new_string;
-}

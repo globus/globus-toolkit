@@ -185,7 +185,7 @@ GSS_CALLCONV gss_export_cred(
             goto exit;
         }                                       
 
-        export_buffer->value = globus_gsi_cert_utils_create_string(
+        export_buffer->value = globus_common_create_string(
             "X509_USER_PROXY=%s",
             proxy_filename);
         export_buffer->length = strlen((char *) export_buffer->value);

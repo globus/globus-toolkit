@@ -21,7 +21,7 @@
                                        _ERRSTR_) \
     { \
          char *                         tmpstr = \
-             globus_gsi_cert_utils_create_string _ERRSTR_; \
+             globus_common_create_string _ERRSTR_; \
          *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result( \
              _MIN_, __FILE__, _function_name_, \
              __LINE__, tmpstr, NULL); \
@@ -32,7 +32,7 @@
                                                _ERRORTYPE_, _ERRORSTR_) \
     { \
          char *                         tmpstr = \
-             globus_gsi_cert_utils_create_string _ERRORSTR_; \
+             globus_common_create_string _ERRORSTR_; \
          *_MIN_RESULT_ = \
              (OM_uint32) globus_i_gsi_gssapi_openssl_error_result( \
              _ERRORTYPE_, __FILE__, _function_name_, __LINE__, tmpstr, NULL); \
@@ -50,7 +50,7 @@
                                             _ERRSTR_, _LONG_DESC_) \
     { \
          char *                         tmpstr = \
-             globus_gsi_cert_utils_create_string _ERRSTR_; \
+             globus_common_create_string _ERRSTR_; \
          *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result( \
              _MIN_, __FILE__, _function_name_, \
              __LINE__, tmpstr, _LONG_DESC_); \
@@ -63,7 +63,7 @@
                                                     _LONG_DESC_) \
     { \
          char *                         tmpstr = \
-             globus_gsi_cert_utils_create_string _ERRORSTR_; \
+             globus_common_create_string _ERRORSTR_; \
          *_MIN_RESULT_ = \
              (OM_uint32) globus_i_gsi_gssapi_openssl_error_result( \
              _ERRORTYPE_, __FILE__, _function_name_, \
@@ -99,7 +99,7 @@
                                                _ERRORTYPE_, _ERRORSTR_) \
     { \
         char *                          _tmp_str_ = \
-             globus_gsi_cert_utils_create_string _ERRORSTR_; \
+             globus_common_create_string _ERRORSTR_; \
         *_MIN_RESULT_ = (OM_uint32) globus_error_put( \
             globus_error_wrap_errno_error( \
                 GLOBUS_GSI_GSSAPI_MODULE, \
@@ -137,7 +137,7 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
         if (GLOBUS_I_GSI_GSSAPI_DEBUG(_LEVEL_)) \
         { \
            char *                       _tmp_str_ = \
-               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+               globus_common_create_nstring _MESSAGE_; \
            globus_libc_fprintf(globus_i_gsi_gssapi_debug_fstream, \
                                _tmp_str_); \
            globus_libc_free(_tmp_str_); \

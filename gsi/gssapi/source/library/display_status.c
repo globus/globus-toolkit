@@ -103,7 +103,7 @@ GSS_CALLCONV gss_display_status(
             break;
         } 
 
-        status_string->value = globus_gsi_cert_utils_create_string(
+        status_string->value = globus_common_create_string(
             "GSS Major Status: %s\n",reason);
 
         status_string->length = strlen(status_string->value);
@@ -115,7 +115,7 @@ GSS_CALLCONV gss_display_status(
         error_obj = globus_error_get((globus_result_t) status_value);
         error_chain_string = globus_error_print_friendly(error_obj);
 
-        status_string->value = globus_gsi_cert_utils_create_string(
+        status_string->value = globus_common_create_string(
             "GSS Minor Status Error Chain:\n%s",
             error_chain_string == NULL ? "(null)" : error_chain_string);
         

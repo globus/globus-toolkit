@@ -92,7 +92,7 @@ extern char *                    globus_l_gsi_cert_utils_error_strings[];
                                                    _ERRORTYPE_, _ERRSTR_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_cert_utils_openssl_error_result(_ERRORTYPE_, \
                                                           __FILE__, \
                                                           _function_name_, \
@@ -105,7 +105,7 @@ extern char *                    globus_l_gsi_cert_utils_error_strings[];
 #define GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_cert_utils_error_result(_ERRORTYPE_, \
                                                   __FILE__, \
                                                   _function_name_, \
@@ -130,7 +130,7 @@ extern char *                    globus_l_gsi_cert_utils_error_strings[];
                                                         _LONG_DESC_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_cert_utils_openssl_error_result( \
              _ERRORTYPE_, \
              __FILE__, \
@@ -147,7 +147,7 @@ extern char *                    globus_l_gsi_cert_utils_error_strings[];
                                                 _LONG_DESC_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_cert_utils_error_result(_ERRORTYPE_, \
                                                         __FILE__, \
                                                         _function_name_, \

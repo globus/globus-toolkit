@@ -2,7 +2,8 @@
 /**
  * @file globus_gsi_cert_utils.h
  * Globus GSI Cert Utils Library
- * @author Sam Lang, Sam Meder
+ * @author Sam Lang
+ * @author Sam Meder
  *
  * $RCSfile$
  * $Revision$
@@ -26,6 +27,17 @@
 EXTERN_C_BEGIN
 
 #include "globus_common.h"
+
+/**
+ * @mainpage Globus GSI Certificate Handling Utilities
+ *
+ * The Globus GSI Certificate Handling Utilities library. This library contains
+ * helper functions for dealing with certificates.
+ *
+ * - @ref globus_gsi_cert_utils_activation
+ * - @ref globus_gsi_cert_utils
+ * - @ref globus_gsi_cert_utils_constants
+ */
 
 /**
  * @defgroup globus_gsi_cert_utils_activation Activation
@@ -56,7 +68,8 @@ EXTERN_C_BEGIN
  *
  */
 
-/** Module descriptor
+/**
+ * Module descriptor
  * @ingroup globus_gsi_cert_utils_activation
  * @hideinitializer
  */
@@ -126,26 +139,6 @@ globus_result_t globus_gsi_cert_utils_get_x509_name(
     char *                              subject_string,
     int                                 length,
     X509_NAME *                         x509_name);
-
-char * globus_gsi_cert_utils_create_string(
-    const char *                        format,
-    ...);
-
-char * globus_gsi_cert_utils_create_nstring(
-    int                                 length,
-    const char *                        format,
-    ...);
-
-char *
-globus_gsi_cert_utils_v_create_string(
-    const char *                        format,
-    va_list                             ap);
-
-char *
-globus_gsi_cert_utils_v_create_nstring(
-    int                                 length,
-    const char *                        format,
-    va_list                             ap);
 
 #endif /* DOXYGEN */
 
