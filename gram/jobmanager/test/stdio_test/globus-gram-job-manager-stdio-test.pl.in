@@ -14,7 +14,10 @@ my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
 my $gridftp_server_installed = &check_gridftp;
 
 my @test_cases=qw(
-    stdio001 stdio002 stdio003
+    stdio001 stdio002 stdio003 stdio004 stdio005
+    stdio006 stdio007 stdio008 stdio009 stdio010
+    stdio011 stdio012 stdio013 stdio014 stdio015
+    stdio016 stdio017 stdio018 stdio019
 );
 
 sub test_rsl
@@ -26,9 +29,13 @@ sub test_rsl
     my $test_rsl_fp = new IO::File("$testdatadir/$testrsl", '<');
     my $out_rsl_fp = new IO::File($additionalrslfile, '>');
     my $rsl_list;
+    my $out_count;
 
     $rsl_list = join('', <$test_rsl_fp>);
     $rsl_list =~ s/&//;
+    $rsl_list =~ m/\(\*\s+(\d+)\s+\*\)/;
+    $out_count = $1;
+
     $test_rsl_fp->close();
 
     $out_rsl_fp->print('&');
@@ -49,37 +56,41 @@ sub test_rsl
 
     if($rc != 0)
     {
-	foreach(glob("$testdatadir/$testname.out.*"),
-		glob("$testdatadir/$testname.err.*"))
+	for(my $i = 0; $i < $out_count; $i++)
 	{
-	    my $compare_filename;
+	    my $out_name = sprintf("%s.%03d",
+	                           "$testtmp/$testname.out.",
+				   $i+1);
+	    my $err_name = sprintf("%s.%03d",
+	                           "$testtmp/$testname.err.",
+				   $i+1);
+            my $canonical_out = "$testdatadir/$testname.out";
+            my $canonical_err = "$testdatadir/$testname.err";
 
-	    if($_ =~ m/\.out\.[0-9]+$/)
+	    if(File::Compare::compare($out_name, $canonical_out) != 0)
 	    {
-		$compare_filename = "$testdatadir/$testname.out";
+		$rc = "comparison of output file " . $i+1 . " failed";
+		last;
 	    }
-	    elsif($_ =~ m/\.err\.[0-9]+$/)
+	    if(File::Compare::compare($err_name, $canonical_err) != 0)
 	    {
-		$compare_filename = "$testdatadir/$testname.err";
-	    }
-	    if(File::Compare::compare($_, "$compare_filename") != 0)
-	    {
-		$rc = "comparison of $_ failed";
+		$rc = "comparison of error file " . $i+1 . " failed";
 		last;
 	    }
 	}
     }
 
-    ok("$testname:$additional_rsl:$rc", "$testname:$additional_rsl:0");
+    ok("$testname:$rc", "$testname:0");
 }
 
 foreach(@test_cases)
 {
-    my $testtmprsl = "(rsl_substitution = "
-                   . "   (TEST_STDOUT \\\"$testtmp/$_.out\\\")"
-                   . "   (TEST_STDERR \\\"$testtmp/$_.err\\\")"
-		   . "   (TEST_HOST \\\"". hostname . "\\\")"
-	           . ")";
+    my $testtmprsl
+        = "(rsl_substitution = "
+        . "   (TEST_STDOUT \\\"$testtmp/$_.out\\\")"
+        . "   (TEST_STDERR \\\"$testtmp/$_.err\\\")"
+	. "   (TEST_FTP_PREFIX \\\"gsiftp://". hostname . "/%2F\\\")"
+	. ")";
     push(@tests, "test_rsl(\"$_\", \"$testtmprsl\")");
     if(! $gridftp_server_installed)
     {

@@ -1,4 +1,6 @@
-&(executable	=	/bin/echo)
- (arguments	=	hello)
- (stdout	=	$(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001" )
- (stderr	=	$(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".001" )
+(* 1 *)
+&(executable = $(GLOBUS_LOCATION) # '/bin/globus-sh-exec')
+ (arguments = -e '$GLOBUS_PERL -e ''print STDERR "stderr\n"; '
+            #                      'print STDOUT "stdout\n";''')
+ (stdout = $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001" )
+ (stderr = $(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".001" )
