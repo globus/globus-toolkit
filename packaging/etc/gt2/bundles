@@ -2,6 +2,7 @@ BUNDLE globus-resource-management-server
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -50,6 +51,7 @@ BUNDLE globus-resource-management-sdk
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -95,6 +97,7 @@ BUNDLE globus-resource-management-client
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -135,6 +138,7 @@ BUNDLE globus-data-management-server
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -177,6 +181,7 @@ BUNDLE globus-data-management-sdk
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -207,6 +212,7 @@ BUNDLE globus-data-management-client
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -238,6 +244,7 @@ BUNDLE globus-information-services-server THREADED
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -270,6 +277,7 @@ BUNDLE globus-information-services-sdk THREADED
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -298,6 +306,7 @@ BUNDLE globus-information-services-client THREADED
 	globus_core
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -370,6 +379,7 @@ BUNDLE globus-gsi
 	globus_common_setup
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_core
 	gssapi_error
 BUNDLE globus-rls-server THREADED
@@ -377,6 +387,7 @@ BUNDLE globus-rls-server THREADED
 	globus_callout
         globus_common
 	globus_icu4c
+	globus_i18n
         globus_common_setup
         globus_libtool
         globus_openssl
@@ -412,6 +423,7 @@ BUNDLE gt2-unthreaded
 	globus_callout
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_core
 	globus_data_conversion
@@ -474,6 +486,7 @@ BUNDLE gt2-threaded THREADED
 	globus_callout
 	globus_common
 	globus_icu4c
+	globus_i18n
 	globus_common_setup
 	globus_core
 	globus_cyrus-sasl
