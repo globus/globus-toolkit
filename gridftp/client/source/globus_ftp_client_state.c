@@ -1100,6 +1100,7 @@ redo:
 	{
 	    goto finish_dcau;
 	}
+
 	/* changing DCAU forces us to trash our old data connections */
 	memset(&target->cached_data_conn,
 	       '\0',

@@ -843,6 +843,7 @@ globus_l_ftp_client_target_new(
     globus_i_ftp_client_target_t *		target;
     globus_result_t				result;
     globus_object_t *				err;
+    globus_ftp_control_dcau_t			dcau;
     int						i;
 
     target = globus_libc_malloc(sizeof(globus_i_ftp_client_target_t));
@@ -929,6 +930,17 @@ globus_l_ftp_client_target_new(
     /* We bind the authentication state right away, however */
     if(target->url.scheme_type != GLOBUS_URL_SCHEME_GSIFTP)
     {
+	dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+
+	result = globus_ftp_client_operationattr_set_dcau(
+		&target->attr,
+		&dcau);
+
+	if(result)
+	{
+	    goto destroy_attr;
+	}
+
 	result = globus_ftp_control_auth_info_init(&target->auth_info,
 						   GSS_C_NO_CREDENTIAL,
 						   GLOBUS_FALSE,

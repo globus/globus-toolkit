@@ -75,6 +75,16 @@ globus_l_ftp_client_extended_third_party_transfer(
     globus_ftp_client_complete_callback_t       complete_callback,
     void *                                      callback_arg);
 
+static
+globus_object_t *
+globus_l_ftp_client_transfer_normalize_attrs(
+    const char *			source_url,
+    globus_ftp_client_operationattr_t *	source_attr,
+    globus_ftp_client_operationattr_t * normalized_source_attr,
+    const char *			dest_url,
+    globus_ftp_client_operationattr_t *	dest_attr,
+    globus_ftp_client_operationattr_t * normalized_dest_attr);
+
 /**
  * @name Make Directory
  */
@@ -3125,6 +3135,10 @@ globus_l_ftp_client_extended_third_party_transfer(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
+    globus_ftp_client_operationattr_t 		normalized_source_attr;
+    globus_ftp_client_operationattr_t 		normalized_dest_attr;
+    globus_i_ftp_client_operationattr_t *	use_attr;
+
     static char * myname = "globus_ftp_client_partial_third_party_transfer";
 
     /* Check arguments for validity */
@@ -3202,6 +3216,22 @@ globus_l_ftp_client_extended_third_party_transfer(
 
 	goto unlock_exit;
     }
+    /* Make sure the attributes are compatible for a 3rd party operation,
+     * tweaking things like default DCAU -> no DCAU when mixing GSI
+     * and non-GSI servers
+     */
+    err = globus_l_ftp_client_transfer_normalize_attrs(
+	    source_url,
+	    source_attr,
+	    &normalized_source_attr,
+	    dest_url,
+	    dest_attr,
+	    &normalized_dest_attr);
+
+    if(err != GLOBUS_SUCCESS)
+    {
+	goto unlock_exit;
+    }
 
     /* Setup handle for third-party transfer operation */
     handle->op = GLOBUS_FTP_CLIENT_TRANSFER;
@@ -3266,10 +3296,23 @@ globus_l_ftp_client_extended_third_party_transfer(
 
 	goto free_source_url_exit;
     }
+
+    if(normalized_source_attr)
+    {
+	use_attr = normalized_source_attr;
+    }
+    else if(source_attr)
+    {
+	use_attr = *source_attr;
+    }
+    else
+    {
+	use_attr = GLOBUS_NULL;
+    }
     /* Obtain a connection to the source FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
 					  source_url,
-					  source_attr ? *source_attr : GLOBUS_NULL,
+					  use_attr,
 					  &handle->source);
     if(err != GLOBUS_SUCCESS)
     {
@@ -3277,9 +3320,21 @@ globus_l_ftp_client_extended_third_party_transfer(
     }
 
     /* Obtain a connection to the destination FTP server, maybe cached */
+    if(normalized_dest_attr)
+    {
+	use_attr = normalized_dest_attr;
+    }
+    else if(source_attr)
+    {
+	use_attr = *source_attr;
+    }
+    else
+    {
+	use_attr = GLOBUS_NULL;
+    }
     err = globus_i_ftp_client_target_find(handle,
 					  dest_url,
-					  dest_attr ? *dest_attr : GLOBUS_NULL,
+					  use_attr,
 					  &handle->dest);
 
     if(err != GLOBUS_SUCCESS)
@@ -3355,6 +3410,14 @@ globus_l_ftp_client_extended_third_party_transfer(
 	}
     }
 
+    if(normalized_source_attr)
+    {
+	globus_ftp_client_operationattr_destroy(&normalized_source_attr);
+    }
+    if(normalized_dest_attr)
+    {
+	globus_ftp_client_operationattr_destroy(&normalized_dest_attr);
+    }
     globus_i_ftp_client_handle_unlock(handle);
     return GLOBUS_SUCCESS;
 
@@ -3370,6 +3433,16 @@ free_dest_url_exit:
 free_source_url_exit:
     globus_libc_free(handle->source_url);
 reset_handle_exit:
+    /* Free normalized attrs, if created */
+    if(normalized_source_attr)
+    {
+	globus_ftp_client_operationattr_destroy(&normalized_source_attr);
+    }
+    if(normalized_dest_attr)
+    {
+	globus_ftp_client_operationattr_destroy(&normalized_dest_attr);
+    }
+
     /* Reset the state of the handle. */
     handle->op = GLOBUS_FTP_CLIENT_IDLE;
     handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
@@ -4766,4 +4839,103 @@ globus_l_ftp_client_abort_callback(
     return GLOBUS_TRUE;
 }
 /* globus_l_ftp_client_abort_callback() */
+
+static
+globus_object_t *
+globus_l_ftp_client_transfer_normalize_attrs(
+    const char *			source_url,
+    globus_ftp_client_operationattr_t *	source_attr,
+    globus_ftp_client_operationattr_t * normalized_source_attr,
+    const char *			dest_url,
+    globus_ftp_client_operationattr_t *	dest_attr,
+    globus_ftp_client_operationattr_t * normalized_dest_attr)
+{
+    globus_result_t			result;
+    globus_ftp_control_dcau_t		normalized_dcau;
+    globus_object_t *			err;
+
+    *normalized_source_attr = GLOBUS_NULL;
+    *normalized_dest_attr = GLOBUS_NULL;
+
+    normalized_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+
+    if(strncmp(source_url, dest_url, 3) != 0)
+    {
+	/* Different URL schemes---need to normalize */
+	if(source_attr && *source_attr)
+	{
+	    result = globus_ftp_client_operationattr_copy(
+		    normalized_source_attr,
+		    source_attr);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		err = globus_error_get(result);
+
+		goto error_exit;
+	    }
+	    result = globus_ftp_client_operationattr_set_dcau(
+		    normalized_source_attr,
+		    &normalized_dcau);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		err = globus_error_get(result);
+
+		goto destroy_source_attr;
+	    }
+	}
+	if(dest_attr && *dest_attr)
+	{
+	    result = globus_ftp_client_operationattr_copy(
+		    normalized_dest_attr,
+		    dest_attr);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		err = globus_error_get(result);
+
+		goto destroy_source_attr;
+	    }
+	    result = globus_ftp_client_operationattr_set_dcau(
+		    normalized_dest_attr,
+		    &normalized_dcau);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		err = globus_error_get(result);
+
+		goto destroy_dest_attr;
+	    }
+	}
+    }
+
+    if(*normalized_source_attr && *normalized_dest_attr)
+    {
+	/* Another potentional incompatibility: Mode */
+	if((*normalized_source_attr)->mode !=
+	   (*normalized_dest_attr)->mode)
+	{
+		err = globus_error_construct_string(
+			GLOBUS_FTP_CLIENT_MODULE,
+			GLOBUS_NULL,
+			"Incompatible mode attributes for 3rd party transfer.");
+
+		goto destroy_dest_attr;
+	}
+    }
+
+    return GLOBUS_SUCCESS;
+
+destroy_dest_attr:
+    if(*normalized_dest_attr)
+    {
+	globus_ftp_client_operationattr_destroy(normalized_dest_attr);
+    }
+destroy_source_attr:
+    if(*normalized_source_attr)
+    {
+	globus_ftp_client_operationattr_destroy(normalized_source_attr);
+    }
+error_exit:
+    return err;
+}
+/* globus_l_ftp_client_transfer_normalize_attrs() */
+
 #endif
