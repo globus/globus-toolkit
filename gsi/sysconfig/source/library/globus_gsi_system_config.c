@@ -4819,7 +4819,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         goto exit;
     }
 
-    dir_handle = opendir(ca_cert_dir);
+    dir_handle = globus_libc_opendir(ca_cert_dir);
     if(dir_handle == NULL)
     {
         result = globus_error_put(
@@ -4831,7 +4831,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         goto exit;
     }
 
-    while((tmp_entry = readdir(dir_handle)) != NULL)
+    while((tmp_entry = globus_libc_readdir(dir_handle)) != NULL)
     {
         file_length = strlen(tmp_entry->d_name);
         /* check the following:
@@ -4866,6 +4866,11 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
     }
 
  exit:
+
+    if(dir_handle != NULL)
+    {
+        globus_libc_closedir(dir_handle);
+    }
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
@@ -4886,7 +4891,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
         "globus_gsi_sysconfig_remove_all_proxy_files_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    secure_tmp_dir = opendir(DEFAULT_SECURE_TMP_DIR);
+    secure_tmp_dir = globus_libc_opendir(DEFAULT_SECURE_TMP_DIR);
     if(!secure_tmp_dir)
     {
         result = globus_error_put(
@@ -4901,7 +4906,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
         goto exit;
     }
 
-    while((dir_entry = readdir(secure_tmp_dir)))
+    while((dir_entry = globus_libc_readdir(secure_tmp_dir)))
     {
         if((default_filename && 
             !strcmp(dir_entry->d_name, default_filename)) ||
@@ -4956,6 +4961,11 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
     }
 
  exit:
+
+    if(secure_tmp_dir != NULL)
+    {
+        globus_libc_closedir(secure_tmp_dir);
+    }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
