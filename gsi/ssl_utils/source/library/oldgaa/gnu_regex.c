@@ -88,7 +88,7 @@ char *realloc ();
 /* Define the syntax stuff for \<, \>, etc.  */
 
 /* This must be nonzero for the wordchar and notwordchar pattern
-   commands in gaa_regex_gaa_regex_re_match_2.  */
+   commands in oldgaa_regex_oldgaa_regex_re_match_2.  */
 #ifndef Sword 
 #define Sword 1
 #endif
@@ -185,7 +185,7 @@ init_syntax_once ()
 
 /* Should we use malloc or alloca?  If REGEX_MALLOC is not defined, we
    use `alloca' instead of `malloc'.  This is because using malloc in
-   gaa_regex_re_search* or gaa_regex_re_match* could cause memory leaks when C-g is used in
+   oldgaa_regex_re_search* or oldgaa_regex_re_match* could cause memory leaks when C-g is used in
    Emacs; also, malloc is slower and causes storage fragmentation.  On
    the other hand, malloc is more portable, and easier to debug.  
    
@@ -288,7 +288,7 @@ typedef enum
            field.  Then followed by one byte with the number of groups
            inner to this one.  (This last has to be part of the
            start_memory only because we need it in the on_failure_jump
-           of gaa_regex_gaa_regex_re_match_2.)  */
+           of oldgaa_regex_oldgaa_regex_re_match_2.)  */
   start_memory,
 
         /* Stop remembering the text that is matched and store it in a
@@ -487,9 +487,9 @@ static int debug = 0;
 #define DEBUG_PRINT3(x1, x2, x3) if (debug) printf (x1, x2, x3)
 #define DEBUG_PRINT4(x1, x2, x3, x4) if (debug) printf (x1, x2, x3, x4)
 #define DEBUG_PRINT_COMPILED_PATTERN(p, s, e) 				\
-  if (debug) gaa_regex_print_partial_compiled_pattern (s, e)
+  if (debug) oldgaa_regex_print_partial_compiled_pattern (s, e)
 #define DEBUG_PRINT_DOUBLE_STRING(w, s1, sz1, s2, sz2)			\
-  if (debug) gaa_regex_print_double_string (w, s1, sz1, s2, sz2)
+  if (debug) oldgaa_regex_print_double_string (w, s1, sz1, s2, sz2)
 
 
 #define printchar(c) putchar(c)
@@ -497,7 +497,7 @@ static int debug = 0;
 /* Print the fastmap in human-readable form.  */
 
 void
-gaa_regex_print_fastmap (fastmap)
+oldgaa_regex_print_fastmap (fastmap)
     char *fastmap;
 {
   unsigned was_a_range = 0;
@@ -529,7 +529,7 @@ gaa_regex_print_fastmap (fastmap)
    the START pointer into it and ending just before the pointer END.  */
 
 void
-gaa_regex_print_partial_compiled_pattern (start, end)
+oldgaa_regex_print_partial_compiled_pattern (start, end)
     unsigned char *start;
     unsigned char *end;
 {
@@ -737,18 +737,18 @@ gaa_regex_print_partial_compiled_pattern (start, end)
 
 
 void
-gaa_regex_print_compiled_pattern (bufp)
+oldgaa_regex_print_compiled_pattern (bufp)
     struct re_pattern_buffer *bufp;
 {
   unsigned char *buffer = bufp->buffer;
 
-  gaa_regex_print_partial_compiled_pattern (buffer, buffer + bufp->used);
+  oldgaa_regex_print_partial_compiled_pattern (buffer, buffer + bufp->used);
   printf ("%d bytes used/%d bytes allocated.\n", bufp->used, bufp->allocated);
 
   if (bufp->fastmap_accurate && bufp->fastmap)
     {
       printf ("fastmap: ");
-      gaa_regex_print_fastmap (bufp->fastmap);
+      oldgaa_regex_print_fastmap (bufp->fastmap);
     }
 
   printf ("re_nsub: %d\t", bufp->re_nsub);
@@ -764,7 +764,7 @@ gaa_regex_print_compiled_pattern (bufp)
 
 
 void
-gaa_regex_print_double_string (where, string1, size1, string2, size2)
+oldgaa_regex_print_double_string (where, string1, size1, string2, size2)
     const char *where;
     const char *string1;
     const char *string2;
@@ -805,7 +805,7 @@ gaa_regex_print_double_string (where, string1, size1, string2, size2)
 
 #endif /* not DEBUG */
 
-/* Set by `gaa_regex_re_set_syntax' to the current regexp syntax to recognize.  Can
+/* Set by `oldgaa_regex_re_set_syntax' to the current regexp syntax to recognize.  Can
    also be assigned to arbitrarily: each pattern buffer stores its own
    syntax, so it can be changed between regex compilations.  */
 reg_syntax_t re_syntax_options = RE_SYNTAX_EMACS;
@@ -819,7 +819,7 @@ reg_syntax_t re_syntax_options = RE_SYNTAX_EMACS;
    defined in gnu_regex.h.  We return the old syntax.  */
 
 reg_syntax_t
-gaa_regex_re_set_syntax (syntax)
+oldgaa_regex_re_set_syntax (syntax)
     reg_syntax_t syntax;
 {
   reg_syntax_t ret = re_syntax_options;
@@ -851,7 +851,7 @@ static const char *re_error_msg[] =
     "Unmatched ) or \\)",			/* REG_ERPAREN */
   };
 
-/* Subroutine declarations and macros for gaa_regex_regex_compile.  */
+/* Subroutine declarations and macros for oldgaa_regex_regex_compile.  */
 
 static void store_op1 (), store_op2 ();
 static void insert_op1 (), insert_op2 ();
@@ -1054,7 +1054,7 @@ typedef struct
     || STREQ (string, "punct") || STREQ (string, "graph")		\
     || STREQ (string, "cntrl") || STREQ (string, "blank"))
 
-/* `gaa_regex_regex_compile' compiles PATTERN (of length SIZE) according to SYNTAX.
+/* `oldgaa_regex_regex_compile' compiles PATTERN (of length SIZE) according to SYNTAX.
    Returns one of error codes defined in `gnu_regex.h', or zero for success.
 
    Assumes the `allocated' (and perhaps `buffer') and `translate'
@@ -1073,7 +1073,7 @@ typedef struct
    examined nor set.  */
 
 static reg_errcode_t
-gaa_regex_regex_compile (pattern, size, syntax, bufp)
+oldgaa_regex_regex_compile (pattern, size, syntax, bufp)
      const char *pattern;
      int size;
      reg_syntax_t syntax;
@@ -1648,7 +1648,7 @@ gaa_regex_regex_compile (pattern, size, syntax, bufp)
                 { /* Push a dummy failure point at the end of the
                      alternative for a possible future
                      `pop_failure_jump' to pop.  See comments at
-                     `push_dummy_failure' in `gaa_regex_gaa_regex_re_match_2'.  */
+                     `push_dummy_failure' in `oldgaa_regex_oldgaa_regex_re_match_2'.  */
                   BUF_PUSH (push_dummy_failure);
                   
                   /* We allocated space for this jump when we assigned
@@ -1848,7 +1848,7 @@ gaa_regex_regex_compile (pattern, size, syntax, bufp)
                      /* Initialize lower bound of the `succeed_n', even
                         though it will be set during matching by its
                         attendant `set_number_at' (inserted next),
-                        because `gaa_regex_gaa_regex_re_compile_fastmap' needs to know.
+                        because `oldgaa_regex_oldgaa_regex_re_compile_fastmap' needs to know.
                         Jump to the `jump_n' we might insert below.  */
                      INSERT_JUMP2 (succeed_n, laststart,
                                    b + 5 + (upper_bound > 1) * 5,
@@ -2062,14 +2062,14 @@ gaa_regex_regex_compile (pattern, size, syntax, bufp)
   if (debug)
     {
       DEBUG_PRINT1 ("\nCompiled pattern: ");
-      gaa_regex_print_compiled_pattern (bufp);
+      oldgaa_regex_print_compiled_pattern (bufp);
     }
 #endif /* DEBUG */
 
   return REG_NOERROR;
-} /* gaa_regex_regex_compile */
+} /* oldgaa_regex_regex_compile */
 
-/* Subroutines for `gaa_regex_regex_compile'.  */
+/* Subroutines for `oldgaa_regex_regex_compile'.  */
 
 /* Store OP at LOC followed by two-byte integer parameter ARG.  */
 
@@ -2208,7 +2208,7 @@ group_in_compile_stack (compile_stack, regnum)
    Return an error code.
    
    We use these short variable names so we can use the same macros as
-   `gaa_regex_regex_compile' itself.  */
+   `oldgaa_regex_regex_compile' itself.  */
 
 static reg_errcode_t
 compile_range (p_ptr, pend, translate, syntax, b)
@@ -2255,8 +2255,8 @@ compile_range (p_ptr, pend, translate, syntax, b)
   return REG_NOERROR;
 }
 
-/* Failure stack declarations and macros; both gaa_regex_gaa_regex_re_compile_fastmap and
-   gaa_regex_gaa_regex_re_match_2 use a failure stack.  These have to be macros because of
+/* Failure stack declarations and macros; both oldgaa_regex_oldgaa_regex_re_compile_fastmap and
+   oldgaa_regex_oldgaa_regex_re_match_2 use a failure stack.  These have to be macros because of
    REGEX_ALLOCATE.  */
    
 
@@ -2528,10 +2528,10 @@ typedef struct
   DEBUG_STATEMENT (nfailure_points_popped++);				\
 } /* POP_FAILURE_POINT */
 
-/* gaa_regex_gaa_regex_re_compile_fastmap computes a ``fastmap'' for the compiled pattern in
+/* oldgaa_regex_oldgaa_regex_re_compile_fastmap computes a ``fastmap'' for the compiled pattern in
    BUFP.  A fastmap records which of the (1 << BYTEWIDTH) possible
    characters can start a string that matches the pattern.  This fastmap
-   is used by gaa_regex_re_search to skip quickly over impossible starting points.
+   is used by oldgaa_regex_re_search to skip quickly over impossible starting points.
 
    The caller must supply the address of a (1 << BYTEWIDTH)-byte data
    area as BUFP->fastmap.
@@ -2542,7 +2542,7 @@ typedef struct
    Returns 0 if we succeed, -2 if an internal error.   */
 
 int
-gaa_regex_gaa_regex_re_compile_fastmap (bufp)
+oldgaa_regex_oldgaa_regex_re_compile_fastmap (bufp)
      struct re_pattern_buffer *bufp;
 {
   int j, k;
@@ -2600,7 +2600,7 @@ gaa_regex_gaa_regex_re_compile_fastmap (bufp)
         /* I guess the idea here is to simply not bother with a fastmap
            if a backreference is used, since it's too hard to figure out
            the fastmap for the corresponding group.  Setting
-           `can_be_null' stops `gaa_regex_gaa_regex_re_search_2' from using the fastmap, so
+           `can_be_null' stops `oldgaa_regex_oldgaa_regex_re_search_2' from using the fastmap, so
            that is all we do.  */
 	case duplicate:
 	  bufp->can_be_null = 1;
@@ -2811,7 +2811,7 @@ gaa_regex_gaa_regex_re_compile_fastmap (bufp)
      pattern is empty).  */
   bufp->can_be_null |= path_can_be_null;
   return 0;
-} /* gaa_regex_gaa_regex_re_compile_fastmap */
+} /* oldgaa_regex_oldgaa_regex_re_compile_fastmap */
 
 /* Set REGS to hold NUM_REGS registers, storing them in STARTS and
    ENDS.  Subsequent matches using PATTERN_BUFFER and REGS will use
@@ -2827,7 +2827,7 @@ gaa_regex_gaa_regex_re_compile_fastmap (bufp)
    freeing the old data.  */
 
 void
-gaa_regex_re_set_registers (bufp, regs, num_regs, starts, ends)
+oldgaa_regex_re_set_registers (bufp, regs, num_regs, starts, ends)
     struct re_pattern_buffer *bufp;
     struct re_registers *regs;
     unsigned num_regs;
@@ -2850,17 +2850,17 @@ gaa_regex_re_set_registers (bufp, regs, num_regs, starts, ends)
 
 /* Searching routines.  */
 
-/* Like gaa_regex_gaa_regex_re_search_2, below, but only one string is specified, and
+/* Like oldgaa_regex_oldgaa_regex_re_search_2, below, but only one string is specified, and
    doesn't let you say where to stop matching. */
 
 int
-gaa_regex_re_search (bufp, string, size, startpos, range, regs)
+oldgaa_regex_re_search (bufp, string, size, startpos, range, regs)
      struct re_pattern_buffer *bufp;
      const char *string;
      int size, startpos, range;
      struct re_registers *regs;
 {
-  return gaa_regex_gaa_regex_re_search_2 (bufp, NULL, 0, string, size, startpos, range, 
+  return oldgaa_regex_oldgaa_regex_re_search_2 (bufp, NULL, 0, string, size, startpos, range, 
 		      regs, size);
 }
 
@@ -2887,7 +2887,7 @@ gaa_regex_re_search (bufp, string, size, startpos, range, regs)
    stack overflow).  */
 
 int
-gaa_regex_gaa_regex_re_search_2 (bufp, string1, size1, string2, size2, startpos, range, regs, stop)
+oldgaa_regex_oldgaa_regex_re_search_2 (bufp, string1, size1, string2, size2, startpos, range, regs, stop)
      struct re_pattern_buffer *bufp;
      const char *string1, *string2;
      int size1, size2;
@@ -2925,7 +2925,7 @@ gaa_regex_gaa_regex_re_search_2 (bufp, string1, size1, string2, size2, startpos,
 
   /* Update the fastmap now if not correct already.  */
   if (fastmap && !bufp->fastmap_accurate)
-    if (gaa_regex_gaa_regex_re_compile_fastmap (bufp) == -2)
+    if (oldgaa_regex_oldgaa_regex_re_compile_fastmap (bufp) == -2)
       return -2;
   
   /* Loop through the string, looking for a place to start matching.  */
@@ -2977,7 +2977,7 @@ gaa_regex_gaa_regex_re_search_2 (bufp, string1, size1, string2, size2, startpos,
           && !bufp->can_be_null)
 	return -1;
 
-      val = gaa_regex_gaa_regex_re_match_2 (bufp, string1, size1, string2, size2,
+      val = oldgaa_regex_oldgaa_regex_re_match_2 (bufp, string1, size1, string2, size2,
 	                startpos, regs, stop);
       if (val >= 0)
 	return startpos;
@@ -3000,9 +3000,9 @@ gaa_regex_gaa_regex_re_search_2 (bufp, string1, size1, string2, size2, startpos,
         }
     }
   return -1;
-} /* gaa_regex_gaa_regex_re_search_2 */
+} /* oldgaa_regex_oldgaa_regex_re_search_2 */
 
-/* Declarations and macros for gaa_regex_gaa_regex_re_match_2.  */
+/* Declarations and macros for oldgaa_regex_oldgaa_regex_re_match_2.  */
 
 static int bcmp_translate ();
 static boolean alt_match_null_string_p (),
@@ -3068,7 +3068,7 @@ typedef union
 #define REG_UNSET(e) ((e) == REG_UNSET_VALUE)
 
 
-/* Macros for dealing with the split strings in gaa_regex_gaa_regex_re_match_2.  */
+/* Macros for dealing with the split strings in oldgaa_regex_oldgaa_regex_re_match_2.  */
 
 #define MATCHING_IN_FIRST_STRING  (dend == end_match_1)
 
@@ -3143,21 +3143,21 @@ typedef union
 /* Matching routines.  */
 
 #ifndef emacs   /* Emacs never uses this.  */
-/* gaa_regex_re_match is like gaa_regex_gaa_regex_re_match_2 except it takes only a single string.  */
+/* oldgaa_regex_re_match is like oldgaa_regex_oldgaa_regex_re_match_2 except it takes only a single string.  */
 
 int
-gaa_regex_re_match (bufp, string, size, pos, regs)
+oldgaa_regex_re_match (bufp, string, size, pos, regs)
      struct re_pattern_buffer *bufp;
      const char *string;
      int size, pos;
      struct re_registers *regs;
  {
-  return gaa_regex_gaa_regex_re_match_2 (bufp, NULL, 0, string, size, pos, regs, size); 
+  return oldgaa_regex_oldgaa_regex_re_match_2 (bufp, NULL, 0, string, size, pos, regs, size); 
 }
 #endif /* not emacs */
 
 
-/* gaa_regex_gaa_regex_re_match_2 matches the compiled pattern in BUFP against the
+/* oldgaa_regex_oldgaa_regex_re_match_2 matches the compiled pattern in BUFP against the
    the (virtual) concatenation of STRING1 and STRING2 (of length SIZE1
    and SIZE2, respectively).  We start matching at POS, and stop
    matching at STOP.
@@ -3171,7 +3171,7 @@ gaa_regex_re_match (bufp, string, size, pos, regs)
    matched substring.  */
 
 int
-gaa_regex_gaa_regex_re_match_2 (bufp, string1, size1, string2, size2, pos, regs, stop)
+oldgaa_regex_oldgaa_regex_re_match_2 (bufp, string1, size1, string2, size2, pos, regs, stop)
      struct re_pattern_buffer *bufp;
      const char *string1, *string2;
      int size1, size2;
@@ -3274,7 +3274,7 @@ gaa_regex_gaa_regex_re_match_2 (bufp, string1, size1, string2, size2, pos, regs,
   unsigned num_regs_pushed = 0; 	
 #endif
 
-  DEBUG_PRINT1 ("\n\nEntering gaa_regex_gaa_regex_re_match_2.\n");
+  DEBUG_PRINT1 ("\n\nEntering oldgaa_regex_oldgaa_regex_re_match_2.\n");
   
   INIT_FAIL_STACK ();
   
@@ -3520,7 +3520,7 @@ gaa_regex_gaa_regex_re_match_2 (bufp, string1, size1, string2, size2, pos, regs,
 			    ? string1 
 			    : string2 - size1);
 
-          DEBUG_PRINT2 ("Returning %d from gaa_regex_gaa_regex_re_match_2.\n", mcnt);
+          DEBUG_PRINT2 ("Returning %d from oldgaa_regex_oldgaa_regex_re_match_2.\n", mcnt);
 
           return mcnt;
         }
@@ -4351,9 +4351,9 @@ gaa_regex_gaa_regex_re_match_2 (bufp, string1, size1, string2, size2, pos, regs,
   FREE_VARIABLES ();
 
   return -1;         			/* Failure to match.  */
-} /* gaa_regex_gaa_regex_re_match_2 */
+} /* oldgaa_regex_oldgaa_regex_re_match_2 */
 
-/* Subroutine definitions for gaa_regex_gaa_regex_re_match_2.  */
+/* Subroutine definitions for oldgaa_regex_oldgaa_regex_re_match_2.  */
 
 
 /* We are passed P pointing to a register number after a start_memory.
@@ -4617,17 +4617,17 @@ bcmp_translate (s1, s2, len, translate)
 
 /* Entry points for GNU code.  */
 
-/* gaa_regex_gaa_regex_re_compile_pattern is the GNU regular expression compiler: it
+/* oldgaa_regex_oldgaa_regex_re_compile_pattern is the GNU regular expression compiler: it
    compiles PATTERN (of length SIZE) and puts the result in BUFP.
    Returns 0 if the pattern was valid, otherwise an error string.
    
    Assumes the `allocated' (and perhaps `buffer') and `translate' fields
    are set in BUFP on entry.
    
-   We call gaa_regex_regex_compile to do the actual compilation.  */
+   We call oldgaa_regex_regex_compile to do the actual compilation.  */
 
 const char *
-gaa_regex_gaa_regex_re_compile_pattern (pattern, length, bufp)
+oldgaa_regex_oldgaa_regex_re_compile_pattern (pattern, length, bufp)
      const char *pattern;
      int length;
      struct re_pattern_buffer *bufp;
@@ -4639,14 +4639,14 @@ gaa_regex_gaa_regex_re_compile_pattern (pattern, length, bufp)
   bufp->regs_allocated = REGS_UNALLOCATED;
   
   /* And GNU code determines whether or not to get register information
-     by passing null for the REGS argument to gaa_regex_re_match, etc., not by
+     by passing null for the REGS argument to oldgaa_regex_re_match, etc., not by
      setting no_sub.  */
   bufp->no_sub = 0;
   
   /* Match anchors at newline.  */
   bufp->newline_anchor = 1;
   
-  ret = gaa_regex_regex_compile (pattern, length, re_syntax_options, bufp);
+  ret = oldgaa_regex_regex_compile (pattern, length, re_syntax_options, bufp);
 
   return re_error_msg[(int) ret];
 }     
@@ -4657,40 +4657,40 @@ gaa_regex_gaa_regex_re_compile_pattern (pattern, length, bufp)
 #if !defined (emacs) && !defined (_POSIX_SOURCE)
 
 /* BSD has one and only one pattern buffer.  */
-static struct re_pattern_buffer gaa_regex_re_comp_buf;
+static struct re_pattern_buffer oldgaa_regex_re_comp_buf;
 
 char *
-gaa_regex_re_comp (s)
+oldgaa_regex_re_comp (s)
     const char *s;
 {
   reg_errcode_t ret;
   
   if (!s)
     {
-      if (!gaa_regex_re_comp_buf.buffer)
+      if (!oldgaa_regex_re_comp_buf.buffer)
 	return "No previous regular expression";
       return 0;
     }
 
-  if (!gaa_regex_re_comp_buf.buffer)
+  if (!oldgaa_regex_re_comp_buf.buffer)
     {
-      gaa_regex_re_comp_buf.buffer = (unsigned char *) malloc (200);
-      if (gaa_regex_re_comp_buf.buffer == NULL)
+      oldgaa_regex_re_comp_buf.buffer = (unsigned char *) malloc (200);
+      if (oldgaa_regex_re_comp_buf.buffer == NULL)
         return "Memory exhausted";
-      gaa_regex_re_comp_buf.allocated = 200;
+      oldgaa_regex_re_comp_buf.allocated = 200;
 
-      gaa_regex_re_comp_buf.fastmap = (char *) malloc (1 << BYTEWIDTH);
-      if (gaa_regex_re_comp_buf.fastmap == NULL)
+      oldgaa_regex_re_comp_buf.fastmap = (char *) malloc (1 << BYTEWIDTH);
+      if (oldgaa_regex_re_comp_buf.fastmap == NULL)
 	return "Memory exhausted";
     }
 
-  /* Since `gaa_regex_re_exec' always passes NULL for the `regs' argument, we
+  /* Since `oldgaa_regex_re_exec' always passes NULL for the `regs' argument, we
      don't need to initialize the pattern buffer fields which affect it.  */
 
   /* Match anchors at newlines.  */
-  gaa_regex_re_comp_buf.newline_anchor = 1;
+  oldgaa_regex_re_comp_buf.newline_anchor = 1;
 
-  ret = gaa_regex_regex_compile (s, strlen (s), re_syntax_options, &gaa_regex_re_comp_buf);
+  ret = oldgaa_regex_regex_compile (s, strlen (s), re_syntax_options, &oldgaa_regex_re_comp_buf);
   
   /* Yes, we're discarding `const' here.  */
   return (char *) re_error_msg[(int) ret];
@@ -4698,12 +4698,12 @@ gaa_regex_re_comp (s)
 
 
 int
-gaa_regex_re_exec (s)
+oldgaa_regex_re_exec (s)
     const char *s;
 {
   const int len = strlen (s);
   return
-    0 <= gaa_regex_re_search (&gaa_regex_re_comp_buf, s, len, 0, len, (struct re_registers *) 0);
+    0 <= oldgaa_regex_re_search (&oldgaa_regex_re_comp_buf, s, len, 0, len, (struct re_registers *) 0);
 }
 #endif /* not emacs and not _POSIX_SOURCE */
 
@@ -4711,7 +4711,7 @@ gaa_regex_re_exec (s)
 
 #ifndef emacs
 
-/* gaa_regex_regcomp takes a regular expression as a string and compiles it.
+/* oldgaa_regex_regcomp takes a regular expression as a string and compiles it.
 
    PREG is a regex_t *.  We do not expect any fields to be initialized,
    since POSIX says we shouldn't.  Thus, we set
@@ -4733,12 +4733,12 @@ gaa_regex_re_exec (s)
      use POSIX basic syntax.
 
      If REG_NEWLINE is set, then . and [^...] don't match newline.
-     Also, gaa_regex_regexec will try a match beginning after every newline.
+     Also, oldgaa_regex_regexec will try a match beginning after every newline.
 
      If REG_ICASE is set, then we considers upper- and lowercase
      versions of letters to be equivalent when matching.
 
-     If REG_NOSUB is set, then when PREG is passed to gaa_regex_regexec, that
+     If REG_NOSUB is set, then when PREG is passed to oldgaa_regex_regexec, that
      routine will report only success or failure, and nothing about the
      registers.
 
@@ -4746,7 +4746,7 @@ gaa_regex_re_exec (s)
    the return codes and their meanings.)  */
 
 int
-gaa_regex_regcomp (preg, pattern, cflags)
+oldgaa_regex_regcomp (preg, pattern, cflags)
     regex_t *preg;
     const char *pattern; 
     int cflags;
@@ -4756,7 +4756,7 @@ gaa_regex_regcomp (preg, pattern, cflags)
     = (cflags & REG_EXTENDED) ?
       RE_SYNTAX_POSIX_EXTENDED : RE_SYNTAX_POSIX_BASIC;
 
-  /* gaa_regex_regex_compile will allocate the space for the compiled pattern.  */
+  /* oldgaa_regex_regex_compile will allocate the space for the compiled pattern.  */
   preg->buffer = 0;
   preg->allocated = 0;
   
@@ -4796,7 +4796,7 @@ gaa_regex_regcomp (preg, pattern, cflags)
 
   /* POSIX says a null character in the pattern terminates it, so we 
      can use strlen here in compiling the pattern.  */
-  ret = gaa_regex_regex_compile (pattern, strlen (pattern), syntax, preg);
+  ret = oldgaa_regex_regex_compile (pattern, strlen (pattern), syntax, preg);
   
   /* POSIX doesn't distinguish between an unmatched open-group and an
      unmatched close-group: both are REG_EPAREN.  */
@@ -4806,11 +4806,11 @@ gaa_regex_regcomp (preg, pattern, cflags)
 }
 
 
-/* gaa_regex_regexec searches for a given pattern, specified by PREG, in the
+/* oldgaa_regex_regexec searches for a given pattern, specified by PREG, in the
    string STRING.
    
    If NMATCH is zero or REG_NOSUB was set in the cflags argument to
-   `gaa_regex_regcomp', we ignore PMATCH.  Otherwise, we assume PMATCH has at
+   `oldgaa_regex_regcomp', we ignore PMATCH.  Otherwise, we assume PMATCH has at
    least NMATCH elements, and we set them to the offsets of the
    corresponding matched substrings.
    
@@ -4821,7 +4821,7 @@ gaa_regex_regcomp (preg, pattern, cflags)
    We return 0 if we find a match and REG_NOMATCH if not.  */
 
 int
-gaa_regex_regexec (preg, string, nmatch, pmatch, eflags)
+oldgaa_regex_regexec (preg, string, nmatch, pmatch, eflags)
     const regex_t *preg;
     const char *string; 
     size_t nmatch; 
@@ -4854,7 +4854,7 @@ gaa_regex_regexec (preg, string, nmatch, pmatch, eflags)
     }
 
   /* Perform the searching operation.  */
-  ret = gaa_regex_re_search (&private_preg, string, len,
+  ret = oldgaa_regex_re_search (&private_preg, string, len,
                    /* start: */ 0, /* range: */ len,
                    want_reg_info ? &regs : (struct re_registers *) 0);
   
@@ -4877,16 +4877,16 @@ gaa_regex_regexec (preg, string, nmatch, pmatch, eflags)
       free (regs.end);
     }
 
-  /* We want zero return to mean success, unlike `gaa_regex_re_search'.  */
+  /* We want zero return to mean success, unlike `oldgaa_regex_re_search'.  */
   return ret >= 0 ? (int) REG_NOERROR : (int) REG_NOMATCH;
 }
 
 
 /* Returns a message corresponding to an error code, ERRCODE, returned
-   from either gaa_regex_regcomp or gaa_regex_regexec.   We don't use PREG here.  */
+   from either oldgaa_regex_regcomp or oldgaa_regex_regexec.   We don't use PREG here.  */
 
 size_t
-gaa_regex_regerror (errcode, preg, errbuf, errbuf_size)
+oldgaa_regex_regerror (errcode, preg, errbuf, errbuf_size)
     int errcode;
     const regex_t *preg;
     char *errbuf;
@@ -4930,7 +4930,7 @@ gaa_regex_regerror (errcode, preg, errbuf, errbuf_size)
 /* Free dynamically allocated space used by PREG.  */
 
 void
-gaa_regex_regfree (preg)
+oldgaa_regex_regfree (preg)
     regex_t *preg;
 {
   if (preg->buffer != NULL)

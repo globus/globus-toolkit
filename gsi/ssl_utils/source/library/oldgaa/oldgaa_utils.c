@@ -1,8 +1,8 @@
 /**********************************************************************
- gaa_utils.c:
+ oldgaa_utils.c:
 
 Description:
-	This file is used internally by the gaa routines
+	This file is used internally by the oldgaa routines
 **********************************************************************/
 
 
@@ -25,8 +25,8 @@ Description:
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "globus_gaa.h" 
-#include "gaa_utils.h"
+#include "globus_oldgaa.h" 
+#include "oldgaa_utils.h"
 
 #include "gnu_regex.h"
 
@@ -42,7 +42,7 @@ static char   *parse_error  = NULL;
 
 /******************************************************************************
 
-Function:   gaa_gaa_handle_error
+Function:   oldgaa_oldgaa_handle_error
 Description:
 	Given and error message and a pointer to a pointer to be
 	allocated handle the allocation and setting of the pointer.
@@ -59,7 +59,7 @@ Returns:
 ******************************************************************************/
 
 void
-gaa_handle_error(char       **errstring,
+oldgaa_handle_error(char       **errstring,
                  const char *const message)
 {
     /* If this fails we're hosed so don't bother checking */
@@ -73,11 +73,11 @@ gaa_handle_error(char       **errstring,
         }
       }
    
-} /* gaa_handle_error() */
+} /* oldgaa_handle_error() */
 
 /**********************************************************************
 
-Function: gaa_strings_match() 
+Function: oldgaa_strings_match() 
 
 Description:
 	Compare two strings.
@@ -93,7 +93,7 @@ Returns:
 **********************************************************************/
 
 int
-gaa_strings_match(
+oldgaa_strings_match(
   const char * const			string1,
   const char * const 			string2)
 {
@@ -109,20 +109,20 @@ gaa_strings_match(
 
 
 /*****************************************************************************
- * gaa_strcopy - copy a string allocating space if necessary
+ * oldgaa_strcopy - copy a string allocating space if necessary
  *
- *     GAA_STRCOPY takes a conventional string, S, as an argument, and a pointer to
+ *     OLDGAA_STRCOPY takes a conventional string, S, as an argument, and a pointer to
  *     a second  string, R, which is to be replaced by S.  If R is long enough
  *     to hold S, S is copied.  Otherwise, new space is allocated, and R is
  *     freed.  S is then copied to the newly allocated space.  If S is
  *     NULL, then R is freed and NULL is returned.
  *
- *     In any event, GAA_STRCOPY returns a pointer to the new copy of S,
+ *     In any event, OLDGAA_STRCOPY returns a pointer to the new copy of S,
  *     or a NULL pointer.
  *****************************************************************************/
 
 char *
-gaa_strcopy(const char *s, char *r)
+oldgaa_strcopy(const char *s, char *r)
 {
     int	slen;
  
@@ -149,14 +149,14 @@ gaa_strcopy(const char *s, char *r)
  **********************************************************************/
 
 int
-gaa_compare_principals(gaa_principals_ptr element,
-                   gaa_principals_ptr new)
+oldgaa_compare_principals(oldgaa_principals_ptr element,
+                   oldgaa_principals_ptr new)
 {
   /* Do the principal's names match? */
 
- if(gaa_strings_match(element->type,      new->type)     &&
-    gaa_strings_match(element->authority, new->authority) &&
-    gaa_strings_match(element->value,     new->value) )
+ if(oldgaa_strings_match(element->type,      new->type)     &&
+    oldgaa_strings_match(element->authority, new->authority) &&
+    oldgaa_strings_match(element->value,     new->value) )
  return TRUE;   
  else return FALSE;
 }  
@@ -166,11 +166,11 @@ gaa_compare_principals(gaa_principals_ptr element,
 
 
 int
-gaa_compare_rights(gaa_rights_ptr element, gaa_rights_ptr new)
+oldgaa_compare_rights(oldgaa_rights_ptr element, oldgaa_rights_ptr new)
 {
-  if(gaa_strings_match(element->type,      new->type)     &&
-     gaa_strings_match(element->authority, new->authority) &&
-     gaa_strings_match(element->value,     new->value) )
+  if(oldgaa_strings_match(element->type,      new->type)     &&
+     oldgaa_strings_match(element->authority, new->authority) &&
+     oldgaa_strings_match(element->value,     new->value) )
   return TRUE;
   else return FALSE;
 }
@@ -179,12 +179,12 @@ gaa_compare_rights(gaa_rights_ptr element, gaa_rights_ptr new)
 
 
 int
-gaa_compare_conditions(gaa_conditions_ptr element, 
-                   gaa_conditions_ptr new)
+oldgaa_compare_conditions(oldgaa_conditions_ptr element, 
+                   oldgaa_conditions_ptr new)
 {
-  if(gaa_strings_match(element->type,      new->type)     &&
-     gaa_strings_match(element->authority, new->authority) &&
-     gaa_strings_match(element->value,     new->value) )
+  if(oldgaa_strings_match(element->type,      new->type)     &&
+     oldgaa_strings_match(element->authority, new->authority) &&
+     oldgaa_strings_match(element->value,     new->value) )
   return TRUE;
   else return FALSE;
 }
@@ -192,12 +192,12 @@ gaa_compare_conditions(gaa_conditions_ptr element,
 /****************************************************************************-*/
 
 int
-gaa_compare_sec_attrbs(gaa_sec_attrb_ptr element, 
-                       gaa_sec_attrb_ptr new)
+oldgaa_compare_sec_attrbs(oldgaa_sec_attrb_ptr element, 
+                       oldgaa_sec_attrb_ptr new)
 {
-  if(gaa_strings_match(element->type,      new->type)     &&
-     gaa_strings_match(element->authority, new->authority) &&
-     gaa_strings_match(element->value,     new->value) )
+  if(oldgaa_strings_match(element->type,      new->type)     &&
+     oldgaa_strings_match(element->authority, new->authority) &&
+     oldgaa_strings_match(element->value,     new->value) )
   return TRUE;
   else return FALSE;
 }
@@ -206,21 +206,21 @@ gaa_compare_sec_attrbs(gaa_sec_attrb_ptr element,
   Add new element to a list
  **********************************************************************/
 
-gaa_principals_ptr
-gaa_add_principal(gaa_policy_ptr   *list, 
-                  gaa_principals_ptr new)
+oldgaa_principals_ptr
+oldgaa_add_principal(oldgaa_policy_ptr   *list, 
+                  oldgaa_principals_ptr new)
 {
-  gaa_principals_ptr element;
+  oldgaa_principals_ptr element;
 
   element = *list;
 
-   if (gaa_compare_principals(element, new)) return element; /* found
+   if (oldgaa_compare_principals(element, new)) return element; /* found
       this principal in the list */ 
 
     while(element->next ) 
     {
      element = element->next;
-     if (gaa_compare_principals(element, new)) return element; /* found
+     if (oldgaa_compare_principals(element, new)) return element; /* found
                                                    this principal in the list */    
     }
 
@@ -231,11 +231,11 @@ gaa_add_principal(gaa_policy_ptr   *list,
 
 /*****************************************************************************/
 
-gaa_rights_ptr
-gaa_add_rights(gaa_rights_ptr *list, 
-           gaa_rights_ptr  new)
+oldgaa_rights_ptr
+oldgaa_add_rights(oldgaa_rights_ptr *list, 
+           oldgaa_rights_ptr  new)
 {
-  gaa_rights_ptr element;
+  oldgaa_rights_ptr element;
 
   element = *list; 
 
@@ -246,11 +246,11 @@ gaa_add_rights(gaa_rights_ptr *list,
 }  
 
 /*****************************************************************************/
-gaa_cond_bindings_ptr
-gaa_add_cond_binding(gaa_cond_bindings_ptr *list,
-                 gaa_cond_bindings_ptr  new)
+oldgaa_cond_bindings_ptr
+oldgaa_add_cond_binding(oldgaa_cond_bindings_ptr *list,
+                 oldgaa_cond_bindings_ptr  new)
 {
-  gaa_cond_bindings_ptr element;
+  oldgaa_cond_bindings_ptr element;
 
   element = *list;
  
@@ -265,11 +265,11 @@ gaa_add_cond_binding(gaa_cond_bindings_ptr *list,
 /*****************************************************************************/
 
 
-gaa_conditions_ptr
-gaa_add_condition(gaa_conditions_ptr *list, 
-                  gaa_conditions_ptr  new)
+oldgaa_conditions_ptr
+oldgaa_add_condition(oldgaa_conditions_ptr *list, 
+                  oldgaa_conditions_ptr  new)
 {
-  gaa_conditions_ptr element;
+  oldgaa_conditions_ptr element;
  
   element = *list;
 
@@ -279,14 +279,14 @@ gaa_add_condition(gaa_conditions_ptr *list,
  *if its the same as one already on the list. 
  */
 
-  if (gaa_compare_conditions(element, new)) 
+  if (oldgaa_compare_conditions(element, new)) 
 	{
 		return element; /* found this condition in the list */ 
 	}
     while(element->next) 
     {       
       element = element->next;
-      if (gaa_compare_conditions(element, new)) 
+      if (oldgaa_compare_conditions(element, new)) 
 		{
 			return element; /* found this condition in the list */
 		}
@@ -300,20 +300,20 @@ gaa_add_condition(gaa_conditions_ptr *list,
   Add new element to a list
  **********************************************************************/
 
-gaa_sec_attrb_ptr
-gaa_add_attribute(gaa_sec_attrb_ptr *list, gaa_sec_attrb_ptr new)
+oldgaa_sec_attrb_ptr
+oldgaa_add_attribute(oldgaa_sec_attrb_ptr *list, oldgaa_sec_attrb_ptr new)
 {
-  gaa_sec_attrb_ptr element;
+  oldgaa_sec_attrb_ptr element;
 
   element = *list;
 
-   if (gaa_compare_sec_attrbs(element, new)) return element; /* found
+   if (oldgaa_compare_sec_attrbs(element, new)) return element; /* found
       this attribute in the list */ 
 
     while(element->next) 
     {
      element = element->next;
-     if (gaa_compare_sec_attrbs(element, new)) return element; /* found
+     if (oldgaa_compare_sec_attrbs(element, new)) return element; /* found
                                                    this attribute in the list */    
     }
 
@@ -327,10 +327,10 @@ gaa_add_attribute(gaa_sec_attrb_ptr *list, gaa_sec_attrb_ptr new)
  **********************************************************************/
 
 int
-gaa_bind_rights_to_principals(gaa_principals_ptr start, 
-                          gaa_rights_ptr     rights)
+oldgaa_bind_rights_to_principals(oldgaa_principals_ptr start, 
+                          oldgaa_rights_ptr     rights)
 {
- gaa_principals_ptr element = start;
+ oldgaa_principals_ptr element = start;
 
  while(element != NULL)
   {  
@@ -338,23 +338,23 @@ gaa_bind_rights_to_principals(gaa_principals_ptr start,
 	rights->reference_count++;
 
 #ifdef DEBUG
-fprintf(stderr,"gaa_bind_rights_to_principals:Principal:%p->rights:%p\n",
+fprintf(stderr,"oldgaa_bind_rights_to_principals:Principal:%p->rights:%p\n",
 		element, rights);
 #endif
     element         = element->next;
   }
  
- return GAA_SUCCESS;
+ return OLDGAA_SUCCESS;
 }  
 
 
 /*****************************************************************************/
 
 void
-gaa_bind_rights_to_conditions(gaa_rights_ptr        start,
-                              gaa_cond_bindings_ptr cond_bind)
+oldgaa_bind_rights_to_conditions(oldgaa_rights_ptr        start,
+                              oldgaa_cond_bindings_ptr cond_bind)
 {
- gaa_rights_ptr element = start;
+ oldgaa_rights_ptr element = start;
 
 /*DEE - Looks like all the rights will point to this cond_bind*/
 /* With Globus we only have 1, so should not be a problem */
@@ -363,7 +363,7 @@ gaa_bind_rights_to_conditions(gaa_rights_ptr        start,
     element->cond_bindings = cond_bind;
 	cond_bind->reference_count++;
 #ifdef DEBUG
-fprintf(stderr,"gaa_bind_rights_to_conditions:rights:%p->cond_bind:%p\n",
+fprintf(stderr,"oldgaa_bind_rights_to_conditions:rights:%p->cond_bind:%p\n",
 		element, cond_bind);
 #endif
     element                = element->next;
@@ -376,7 +376,7 @@ fprintf(stderr,"gaa_bind_rights_to_conditions:rights:%p->cond_bind:%p\n",
 
 /**********************************************************************
 
-Function: gaa_check_reg_expr() 
+Function: oldgaa_check_reg_expr() 
 
 Description:
 	Goes throug the list of reg expressions and looks for a match
@@ -393,13 +393,13 @@ Returns:
 
 **********************************************************************/
 int
-gaa_check_reg_expr(char  *reg_expr, 
+oldgaa_check_reg_expr(char  *reg_expr, 
                    char **reg_expr_list)
 { 
  char **pregex;
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_check_reg_expr:\n");
+fprintf(stderr, "\noldgaa_check_reg_expr:\n");
 #endif /* DEBUG */
 
 /* Check arguments */
@@ -418,7 +418,7 @@ fprintf(stderr, "\ngaa_check_reg_expr:\n");
 fprintf(stderr, "reg_exp  %s\n*pregex %s\n\n", reg_expr, *pregex);
 #endif /* DEBUG */
    
-       if (gaa_regex_matches_string(reg_expr, *pregex) == 1)
+       if (oldgaa_regex_matches_string(reg_expr, *pregex) == 1)
        return 1; /* We have a match */		
       }
 
@@ -429,7 +429,7 @@ fprintf(stderr, "reg_exp  %s\n*pregex %s\n\n", reg_expr, *pregex);
 
 /**********************************************************************
 
-Function: gaa_regex_matches_string()
+Function: oldgaa_regex_matches_string()
 
 Description:
 	Determine if a regex matches a given string.
@@ -447,7 +447,7 @@ Returns:
 **********************************************************************/
 
 int
-gaa_regex_matches_string(const char * const  string,
+oldgaa_regex_matches_string(const char * const  string,
                          const char * const  regex)
 {
   /* Compiled regex */
@@ -470,30 +470,30 @@ gaa_regex_matches_string(const char * const  string,
     return -1;
   }
 
-  if (gaa_regex_regcomp(&preg, regex, cflags) != 0)
+  if (oldgaa_regex_regcomp(&preg, regex, cflags) != 0)
     return -1;
 
-  result = (gaa_regex_regexec(&preg, string,
+  result = (oldgaa_regex_regexec(&preg, string,
 			       0, NULL, /* We don't care about matches */
 			       eflags) == 0);
 
-  gaa_regex_regfree(&preg);
+  oldgaa_regex_regfree(&preg);
 
   return result;
 
-} /* gaa_regex_matches_string() */
+} /* oldgaa_regex_matches_string() */
 
 
 
 /**********************************************************************
 
-Function: gaa_parse_regex() 
+Function: oldgaa_parse_regex() 
 
 Description:
 	Walks throug condition list and evaluates each condition.
 
 Parameters:
-        condition, pointer to gaa_conditions structure
+        condition, pointer to oldgaa_conditions structure
 
 Returns:
        list of regex
@@ -501,7 +501,7 @@ Returns:
 **********************************************************************/
 
 char **
-gaa_parse_regex(char * str)
+oldgaa_parse_regex(char * str)
                 
 {
   char **subject_regexes = NULL; 
@@ -513,7 +513,7 @@ gaa_parse_regex(char * str)
   int    end = FALSE;			
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_parse_regex:\n");
+fprintf(stderr, "\noldgaa_parse_regex:\n");
 #endif /* DEBUG */
 
  
@@ -568,24 +568,24 @@ fprintf(stderr, "\ngaa_parse_regex:\n");
        
     } /* end of if(compound) */
 
-    if (gaa_rfc1779_name_parse(new_str,
+    if (oldgaa_rfc1779_name_parse(new_str,
 			      &uncnv_regex,
 			       NULL) != 0)
 
     {
-      gaa_handle_error(&parse_error,
-		   "gaa_globus_parse_conditions: error parsing rfc1779 name");
+      oldgaa_handle_error(&parse_error,
+		   "oldgaa_globus_parse_conditions: error parsing rfc1779 name");
       return NULL;
     }
 
-    cnv_regex = gaa_to_regex(uncnv_regex);
+    cnv_regex = oldgaa_to_regex(uncnv_regex);
 
     free(uncnv_regex);
 
     if (cnv_regex == NULL)
     {
-     gaa_handle_error(&parse_error,
-		  "gaa_globus_parse_conditions: error parsing regular expression"); 
+     oldgaa_handle_error(&parse_error,
+		  "oldgaa_globus_parse_conditions: error parsing regular expression"); 
      return NULL;
     }
 
@@ -595,7 +595,7 @@ fprintf(stderr, "\ngaa_parse_regex:\n");
 
     if (tmp_regexes == NULL)
     {
-      gaa_handle_error(&parse_error, "gaa_globus_parse_conditions: out of memory");
+      oldgaa_handle_error(&parse_error, "oldgaa_globus_parse_conditions: out of memory");
       free(cnv_regex);
       return NULL;
     }
@@ -614,8 +614,8 @@ fprintf(stderr, "\ngaa_parse_regex:\n");
   {
     /* No subject regexes were found */
   
-    gaa_handle_error(&parse_error,
-   		    "gaa_globus_parse_conditions: no subject regexes found");
+    oldgaa_handle_error(&parse_error,
+   		    "oldgaa_globus_parse_conditions: no subject regexes found");
     return NULL;
 
   }
@@ -627,7 +627,7 @@ fprintf(stderr, "\ngaa_parse_regex:\n");
 
 /**********************************************************************
 
-Function:	gaa_to_regex()
+Function:	oldgaa_to_regex()
 
 Description:    
 	Convert a shell-style regex to a regex suitable
@@ -656,7 +656,7 @@ Returns:
 
 static
 char *
-gaa_to_regex(const char * const glob_regex)
+oldgaa_to_regex(const char * const glob_regex)
 {
   char *converted_regex;
   const char *globp;
@@ -728,7 +728,7 @@ gaa_to_regex(const char * const glob_regex)
 
   return converted_regex;
 
-} /* gaa_to_regex() */
+} /* oldgaa_to_regex() */
 
 
 /**********************************************************************/

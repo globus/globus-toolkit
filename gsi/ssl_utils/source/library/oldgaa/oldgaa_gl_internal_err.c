@@ -3,11 +3,11 @@
  * Part of GOST library
  */
 
-#include "gaa_gl_internal_err.h"
+#include "oldgaa_gl_internal_err.h"
 #include <stdio.h>
 
 void
-gaa_gl__function_internal_error_helper(const char file[], int line, const char msg[])
+oldgaa_gl__function_internal_error_helper(const char file[], int line, const char msg[])
 {
     if (internal_error_handler)   
         (*internal_error_handler)(file, line, msg);   
@@ -26,19 +26,19 @@ gaa_gl__function_internal_error_helper(const char file[], int line, const char m
 }
 
 
-/* This is set by gaa_gl__fout_of_memory(). */
+/* This is set by oldgaa_gl__fout_of_memory(). */
 
-int gaa_gl__is_out_of_memory = 0;
+int oldgaa_gl__is_out_of_memory = 0;
 
-void (*gaa_gl_out_of_memory_handler)(const char file[], int line) = NULL;
+void (*oldgaa_gl_out_of_memory_handler)(const char file[], int line) = NULL;
 
 
 void
-gaa_gl__fout_of_memory(const char file[], int line) 
+oldgaa_gl__fout_of_memory(const char file[], int line) 
 {
-    if (gaa_gl_out_of_memory_handler)
-	(*gaa_gl_out_of_memory_handler)(file, line);
-    gaa_gl__is_out_of_memory++;
-    gaa_gl__function_internal_error_helper(file, line, "Out of Memory");
+    if (oldgaa_gl_out_of_memory_handler)
+	(*oldgaa_gl_out_of_memory_handler)(file, line);
+    oldgaa_gl__is_out_of_memory++;
+    oldgaa_gl__function_internal_error_helper(file, line, "Out of Memory");
 }
 

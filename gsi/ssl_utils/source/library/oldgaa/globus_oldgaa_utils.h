@@ -1,12 +1,12 @@
 /**********************************************************************
- globus_gaa-utils.h:
+ globus_oldgaa-utils.h:
 
 Description:
-	This header file used internally by theGlobus-GAA routines
+	This header file used internally by theGlobus-OLDGAA routines
 **********************************************************************/
 
-#ifndef _GLOBUS_GAA_UTILS_H
-#define _GLOBUS_GAA_UTILS_H
+#ifndef _GLOBUS_OLDGAA_UTILS_H
+#define _GLOBUS_OLDGAA_UTILS_H
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
@@ -33,7 +33,7 @@ EXTERN_C_BEGIN
 
 #define GRID_CA_POLICY_FILENAME "ca-signing-policy.conf"
 
-#define GAA_X509_AUTHORITY        "X509"
+#define OLDGAA_X509_AUTHORITY        "X509"
  
 #define POSITIVE_RIGHTS           "pos_rights"
 #define NEGATIVE_RIGHTS           "neg_rights"
@@ -73,54 +73,54 @@ struct policy_file_context_struct {
  **********************************************************************/
 
 /**********************************************************************
-  GAA Cleanup Functions 
+  OLDGAA Cleanup Functions 
  **********************************************************************/
 
-gaa_error_code
-gaa_globus_cleanup(gaa_sec_context_ptr *gaa_sc,
-                   gaa_rights_ptr      *rights,
-                   gaa_options_ptr      options,
-                   gaa_answer_ptr      *answer,  
-                   gaa_data_ptr         policy_db,
-                   gaa_sec_attrb_ptr   *attributes);
+oldgaa_error_code
+oldgaa_globus_cleanup(oldgaa_sec_context_ptr *oldgaa_sc,
+                   oldgaa_rights_ptr      *rights,
+                   oldgaa_options_ptr      options,
+                   oldgaa_answer_ptr      *answer,  
+                   oldgaa_data_ptr         policy_db,
+                   oldgaa_sec_attrb_ptr   *attributes);
 
 /**********************************************************************
-  GAA Initialization Functions 
+  OLDGAA Initialization Functions 
  **********************************************************************/
 
-gaa_error_code
-gaa_globus_initialize(gaa_sec_context_ptr       *gaa_sc,
-                      gaa_rights_ptr            *rights,
-                      gaa_options_ptr           *options,
-                      gaa_data_ptr              *policy_db, 
+oldgaa_error_code
+oldgaa_globus_initialize(oldgaa_sec_context_ptr       *oldgaa_sc,
+                      oldgaa_rights_ptr            *rights,
+                      oldgaa_options_ptr           *options,
+                      oldgaa_data_ptr              *policy_db, 
                       char                      *subject, 
                       char                      *signer,
                       char                      *path);
 
 
-gaa_sec_context_ptr
-gaa_globus_allocate_sec_context(char *signer);
+oldgaa_sec_context_ptr
+oldgaa_globus_allocate_sec_context(char *signer);
 
-gaa_rights_ptr
-gaa_globus_allocate_rights();
+oldgaa_rights_ptr
+oldgaa_globus_allocate_rights();
 
 /**********************************************************************
   Policy Retrieving Functions 
  **********************************************************************/
 
-gaa_policy_ptr
-gaa_globus_policy_retrieve(uint32      *minor_status,
-                           gaa_data_ptr object,
-                           gaa_data_ptr policy_db, ...);
+oldgaa_policy_ptr
+oldgaa_globus_policy_retrieve(uint32      *minor_status,
+                           oldgaa_data_ptr object,
+                           oldgaa_data_ptr policy_db, ...);
 static
 int
-get_default_policy_file(gaa_data_ptr policy_db);
+get_default_policy_file(oldgaa_data_ptr policy_db);
 
 policy_file_context_ptr 
-gaa_globus_policy_file_open(const char *filename);
+oldgaa_globus_policy_file_open(const char *filename);
 
 void
-gaa_globus_policy_file_close(policy_file_context_ptr  pcontext);
+oldgaa_globus_policy_file_close(policy_file_context_ptr  pcontext);
 
 
 /**********************************************************************
@@ -129,61 +129,61 @@ gaa_globus_policy_file_close(policy_file_context_ptr  pcontext);
 
 static
 int
-gaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
+oldgaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
                  char                    *str, 
                  const char              *message);
 static
 int
-gaa_globus_read_string (policy_file_context_ptr  pcontext,
+oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
                         char                    *str,
                         char                    **errstring);
 static
 int
-gaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
+oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
                             char                    *str);
 static
 int
-gaa_globus_omit_comment_line(policy_file_context_ptr  pcontext);
+oldgaa_globus_omit_comment_line(policy_file_context_ptr  pcontext);
 
 
 
-gaa_error_code  
-gaa_globus_parse_policy (policy_file_context_ptr  pcontext,
-                         gaa_policy_ptr          *policy_handle);
+oldgaa_error_code  
+oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
+                         oldgaa_policy_ptr          *policy_handle);
 
-gaa_error_code
-gaa_globus_parse_principals(policy_file_context_ptr  pcontext,
-                 gaa_policy_ptr          *policy,
+oldgaa_error_code
+oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
+                 oldgaa_policy_ptr          *policy,
                  char                    *tmp_str,
-                 gaa_principals_ptr      *start);
+                 oldgaa_principals_ptr      *start);
 
-gaa_error_code
-gaa_globus_parse_rights(policy_file_context_ptr  pcontext,
+oldgaa_error_code
+oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
              char                    *tmp_str,
-             gaa_rights_ptr          *start,
+             oldgaa_rights_ptr          *start,
              int                     *cond_present,
              int                     *end_of_entry);
 
-gaa_error_code
-gaa_globus_parse_conditions( policy_file_context_ptr  pcontext,
-                  gaa_conditions_ptr      *conditions,                  
+oldgaa_error_code
+oldgaa_globus_parse_conditions( policy_file_context_ptr  pcontext,
+                  oldgaa_conditions_ptr      *conditions,                  
                   char                    *tmp_str,
-                  gaa_cond_bindings_ptr   *list, 
+                  oldgaa_cond_bindings_ptr   *list, 
                   int                     *end_of_entry );
 
 void
-gaa_globus_print_rights(gaa_rights_ptr rights);
+oldgaa_globus_print_rights(oldgaa_rights_ptr rights);
 
 
 void
-gaa_globus_print_attributes(gaa_sec_attrb_ptr attributes);
+oldgaa_globus_print_attributes(oldgaa_sec_attrb_ptr attributes);
 
 
-gaa_error_code
-gaa_globus_get_trusted_ca_list(gaa_sec_attrb_ptr *attributes,
-                               gaa_policy_ptr     policy_handle,
-                               gaa_rights_ptr     rights);
+oldgaa_error_code
+oldgaa_globus_get_trusted_ca_list(oldgaa_sec_attrb_ptr *attributes,
+                               oldgaa_policy_ptr     policy_handle,
+                               oldgaa_rights_ptr     rights);
 
 EXTERN_C_END
 
-#endif /* _GLOBUS_GAA_UTILS_H */
+#endif /* _GLOBUS_OLDGAA_UTILS_H */

@@ -75,7 +75,7 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
-	library/gaa/Makefile
+	library/oldgaa/Makefile
 	programs/Makefile
 	programs/grid-cert-info
 	programs/grid-cert-renew

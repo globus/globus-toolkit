@@ -1,0 +1,32 @@
+include $(top_srcdir)/globus_automake_config
+include $(top_srcdir)/globus_automake_targets
+
+Sources= \
+	oldgaa_alloc.c \
+	oldgaa_api.c \
+	oldgaa_gl_internal_err.c \
+	oldgaa_gl_internal_err.h \
+	oldgaa_policy_evaluator.c \
+	oldgaa_policy_evaluator.h \
+	oldgaa_release.c \
+	oldgaa_utils.c \
+	oldgaa_utils.h \
+	globus_oldgaa.h \
+	globus_oldgaa_utils.c \
+	globus_oldgaa_utils.h \
+	gnu_regex.c \
+	gnu_regex.h \
+	rfc1779.c
+
+noinst_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
+
+INCLUDES = $(GPT_INCLUDES)
+
+AM_CFLAGS = -DDEBUG
+
+libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+
+libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+
+include $(top_srcdir)/globus_automake_rules

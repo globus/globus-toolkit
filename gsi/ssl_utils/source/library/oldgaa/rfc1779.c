@@ -87,7 +87,7 @@ Returns:
 ******************************************************************************/
 
 int
-gaa_rfc1779_name_parse(
+oldgaa_rfc1779_name_parse(
   char *				rfc1779_string,
   char **				imported_name,
   char **				errstring)

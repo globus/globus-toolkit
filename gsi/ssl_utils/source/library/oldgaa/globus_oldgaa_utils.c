@@ -1,8 +1,8 @@
 /**********************************************************************
- globus_gaa-utils.c:
+ globus_oldgaa-utils.c:
 
 Description:
-        Globus-GAA routines
+        Globus-OLDGAA routines
 **********************************************************************/
 
 
@@ -10,10 +10,10 @@ Description:
                              Include header files
 **********************************************************************/
 
-#include "globus_gaa.h"
-#include "globus_gaa_utils.h" 
+#include "globus_oldgaa.h"
+#include "globus_oldgaa_utils.h" 
 
-#include "gaa_utils.h"
+#include "oldgaa_utils.h"
 #include "config.h"
 
 #include <string.h>	/* for strerror() */
@@ -31,116 +31,116 @@ static  uint32  m_status     = 0;
 
 
 /**********************************************************************
-  GAA Cleanup Functions 
+  OLDGAA Cleanup Functions 
  **********************************************************************/
 
-gaa_error_code
-gaa_globus_cleanup(gaa_sec_context_ptr *gaa_sc,
-                   gaa_rights_ptr      *rights,
-                   gaa_options_ptr      options,
-                   gaa_answer_ptr      *answer,  
-                   gaa_data_ptr         policy_db, 
-                   gaa_sec_attrb_ptr   *attributes)
+oldgaa_error_code
+oldgaa_globus_cleanup(oldgaa_sec_context_ptr *oldgaa_sc,
+                   oldgaa_rights_ptr      *rights,
+                   oldgaa_options_ptr      options,
+                   oldgaa_answer_ptr      *answer,  
+                   oldgaa_data_ptr         policy_db, 
+                   oldgaa_sec_attrb_ptr   *attributes)
 {
-  gaa_error_code gaa_status;
+  oldgaa_error_code oldgaa_status;
   uint32         minor_status;
         
- if(gaa_sc)    gaa_status = gaa_release_sec_context(&minor_status, gaa_sc); 
- if(rights)    gaa_status = gaa_release_rights(&minor_status, rights);   
- if(options)   gaa_status = gaa_release_options(&minor_status, options);  
- if(answer)    gaa_status = gaa_release_answer(&minor_status, answer);
- if(policy_db) gaa_status = gaa_release_data(&minor_status, policy_db);
- if(attributes)gaa_status = gaa_release_sec_attrb(&minor_status, attributes); 
+ if(oldgaa_sc)    oldgaa_status = oldgaa_release_sec_context(&minor_status, oldgaa_sc); 
+ if(rights)    oldgaa_status = oldgaa_release_rights(&minor_status, rights);   
+ if(options)   oldgaa_status = oldgaa_release_options(&minor_status, options);  
+ if(answer)    oldgaa_status = oldgaa_release_answer(&minor_status, answer);
+ if(policy_db) oldgaa_status = oldgaa_release_data(&minor_status, policy_db);
+ if(attributes)oldgaa_status = oldgaa_release_sec_attrb(&minor_status, attributes); 
 
- return gaa_status;
+ return oldgaa_status;
 }
 
 
 
 /**********************************************************************
-  GAA Initialization Functions 
+  OLDGAA Initialization Functions 
  **********************************************************************/
 
-gaa_error_code
-gaa_globus_initialize(gaa_sec_context_ptr *gaa_sc,
-                      gaa_rights_ptr      *rights,
-                      gaa_options_ptr     *options,
-                      gaa_data_ptr        *policy_db, 
+oldgaa_error_code
+oldgaa_globus_initialize(oldgaa_sec_context_ptr *oldgaa_sc,
+                      oldgaa_rights_ptr      *rights,
+                      oldgaa_options_ptr     *options,
+                      oldgaa_data_ptr        *policy_db, 
                       char                *signer, 
                       char                *subject,
                       char                *path)
 { 
   int error=0;
 
- /* Allocate and fill in GAA-Globus data structures */
+ /* Allocate and fill in OLDGAA-Globus data structures */
 
- if(gaa_sc) *gaa_sc = gaa_globus_allocate_sec_context(signer); 
- if(rights) *rights = gaa_globus_allocate_rights();
+ if(oldgaa_sc) *oldgaa_sc = oldgaa_globus_allocate_sec_context(signer); 
+ if(rights) *rights = oldgaa_globus_allocate_rights();
     
  if(options) 
    {
-      gaa_allocate_options(options);
-    (*options)->value  = gaa_strcopy(subject, (*options)->value);  
+      oldgaa_allocate_options(options);
+    (*options)->value  = oldgaa_strcopy(subject, (*options)->value);  
     (*options)->length = strlen(subject); 
    }
 
  if(policy_db)
    {       
-     gaa_allocate_data(policy_db);
+     oldgaa_allocate_data(policy_db);
    
-     if(path) (*policy_db)->str = gaa_strcopy(path,(*policy_db)->str);
+     if(path) (*policy_db)->str = oldgaa_strcopy(path,(*policy_db)->str);
      else
      error = get_default_policy_file(*policy_db);
    }
 
-   if(error)return GAA_FAILURE;
+   if(error)return OLDGAA_FAILURE;
    else
-   return GAA_SUCCESS;
+   return OLDGAA_SUCCESS;
 }
 
 
 /**********************************************************************
 
-Function: gaa_globus_allocate_sec_context
+Function: oldgaa_globus_allocate_sec_context
 
 Description:
-	Allocates GAA security context and fills in globus-specific 
+	Allocates OLDGAA security context and fills in globus-specific 
         information.
 
 Parameters:
 	signer, pointer to string with name of credential signer.
 
 Returns:
-	Pointer to a gaa_sec_context if successful
+	Pointer to a oldgaa_sec_context if successful
 **********************************************************************/
 
-gaa_sec_context_ptr
-gaa_globus_allocate_sec_context(char *signer)
+oldgaa_sec_context_ptr
+oldgaa_globus_allocate_sec_context(char *signer)
 {
-  gaa_sec_context_ptr sc = NULL;
+  oldgaa_sec_context_ptr sc = NULL;
   
-  gaa_allocate_sec_context(&sc);
+  oldgaa_allocate_sec_context(&sc);
   
-  if(strcmp(signer, GAA_ANYBODY) == 0) 
+  if(strcmp(signer, OLDGAA_ANYBODY) == 0) 
     {
-      sc->identity_cred->principal->type = gaa_strcopy(GAA_ANYBODY, 
+      sc->identity_cred->principal->type = oldgaa_strcopy(OLDGAA_ANYBODY, 
                                     sc->identity_cred->principal->type);
 
-      sc->identity_cred->principal->authority = gaa_strcopy(" ",
+      sc->identity_cred->principal->authority = oldgaa_strcopy(" ",
                                     sc->identity_cred->principal->authority);
 
-      sc->identity_cred->principal->value = gaa_strcopy(" ", 
+      sc->identity_cred->principal->value = oldgaa_strcopy(" ", 
                                     sc->identity_cred->principal->value);
     }
   else
     {
-     sc->identity_cred->principal->type = gaa_strcopy(GAA_CA, 
+     sc->identity_cred->principal->type = oldgaa_strcopy(OLDGAA_CA, 
                                     sc->identity_cred->principal->type);
    
-     sc->identity_cred->principal->authority = gaa_strcopy(GAA_X509_AUTHORITY, 
+     sc->identity_cred->principal->authority = oldgaa_strcopy(OLDGAA_X509_AUTHORITY, 
                                     sc->identity_cred->principal->authority);
     
-     sc->identity_cred->principal->value = gaa_strcopy(signer, 
+     sc->identity_cred->principal->value = oldgaa_strcopy(signer, 
                                     sc->identity_cred->principal->value); 
     }
 
@@ -149,30 +149,30 @@ gaa_globus_allocate_sec_context(char *signer)
 
 /**********************************************************************
 
-Function: gaa_globus_allocate_rights() 
+Function: oldgaa_globus_allocate_rights() 
 
 Description:
-	Allocates GAA rights stracture and fills in globus-specific 
+	Allocates OLDGAA rights stracture and fills in globus-specific 
         information..
 
 Parameters:
 	none
 
 Returns:
-	Pointer to a gaa_rights if successful
+	Pointer to a oldgaa_rights if successful
 **********************************************************************/
 
-gaa_rights_ptr
-gaa_globus_allocate_rights()
+oldgaa_rights_ptr
+oldgaa_globus_allocate_rights()
 {
- gaa_rights_ptr rights = NULL;
+ oldgaa_rights_ptr rights = NULL;
 
- gaa_allocate_rights(&rights);
+ oldgaa_allocate_rights(&rights);
  rights->reference_count++;
       
- rights->type       = gaa_strcopy(POSITIVE_RIGHTS,     rights->type);
- rights->authority  = gaa_strcopy(AUTH_GLOBUS,         rights->authority);
- rights->value      = gaa_strcopy(GLOBUS_RIGHTS_VALUE, rights->value);
+ rights->type       = oldgaa_strcopy(POSITIVE_RIGHTS,     rights->type);
+ rights->authority  = oldgaa_strcopy(AUTH_GLOBUS,         rights->authority);
+ rights->value      = oldgaa_strcopy(GLOBUS_RIGHTS_VALUE, rights->value);
 
  return rights;
 
@@ -184,7 +184,7 @@ gaa_globus_allocate_rights()
 
 /**********************************************************************
 
-Function: gaa_globus_policy_retrieve() 
+Function: oldgaa_globus_policy_retrieve() 
 
 Description:
         Upcall function for the retrieval of the object policy.
@@ -200,34 +200,34 @@ Returns:
 
 **********************************************************************/
 
-gaa_policy_ptr 
-gaa_globus_policy_retrieve(uint32      *minor_status,
-                           gaa_data_ptr object,
-                           gaa_data_ptr policy_db, ...)
+oldgaa_policy_ptr 
+oldgaa_globus_policy_retrieve(uint32      *minor_status,
+                           oldgaa_data_ptr object,
+                           oldgaa_data_ptr policy_db, ...)
 { 
  policy_file_context_ptr   pcontext      = NULL; 
- gaa_policy_ptr            policy_handle = NULL;
+ oldgaa_policy_ptr            policy_handle = NULL;
  int                       error_type    =  1;
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_policy_retrieve:\n");
+fprintf(stderr, "\noldgaa_globus_policy_retrieve:\n");
 #endif /* DEBUG */
 
  *minor_status = 0;
 
-  pcontext = (policy_file_context_ptr)gaa_globus_policy_file_open(policy_db->str);
+  pcontext = (policy_file_context_ptr)oldgaa_globus_policy_file_open(policy_db->str);
 
   if (pcontext)  /* parse policy */
  {
-  if(gaa_globus_parse_policy(pcontext, 
-		             &policy_handle) == GAA_SUCCESS)
+  if(oldgaa_globus_parse_policy(pcontext, 
+		             &policy_handle) == OLDGAA_SUCCESS)
   {
 #ifdef DEBUG
 	{
-		gaa_principals_ptr pp;
-		gaa_rights_ptr     rp;
-		gaa_cond_bindings_ptr bp;
-		gaa_conditions_ptr    cp;
+		oldgaa_principals_ptr pp;
+		oldgaa_rights_ptr     rp;
+		oldgaa_cond_bindings_ptr bp;
+		oldgaa_conditions_ptr    cp;
 
 		pp = policy_handle;
 		while (pp) {
@@ -265,7 +265,7 @@ fprintf(stderr, "\ngaa_globus_policy_retrieve:\n");
    if(error_type) /* policy retrieve error */
      {          
         policy_db->error_code = ERROR_WHILE_RETRIEVING_POLICY;
-        policy_db->error_str  = gaa_strcopy("error retrieving file ",
+        policy_db->error_str  = oldgaa_strcopy("error retrieving file ",
                                             policy_db->error_str);
         policy_db->error_str  = strcat(policy_db->error_str, policy_db->str);       
 
@@ -288,7 +288,7 @@ fprintf(stderr, "\ngaa_globus_policy_retrieve:\n");
 
 static
 int
-get_default_policy_file(gaa_data_ptr policy_db)
+get_default_policy_file(oldgaa_data_ptr policy_db)
 {
   char *ca_policy_file_path  = NULL;
   char *cert_dir             = NULL;
@@ -313,14 +313,14 @@ get_default_policy_file(gaa_data_ptr policy_db)
 
     sprintf(ca_policy_file_path, "%s/%s", cert_dir, ca_policy_filename);
 
-    policy_db->str = gaa_strcopy(ca_policy_file_path, policy_db->str) ;
+    policy_db->str = oldgaa_strcopy(ca_policy_file_path, policy_db->str) ;
 
   }
   
  if (!ca_policy_file_path)
   {    	   
    policy_db->error_str = 
-   gaa_strcopy("Can not find default policy location. X509_CERT_DIR is not defined.\n",
+   oldgaa_strcopy("Can not find default policy location. X509_CERT_DIR is not defined.\n",
                 policy_db->error_str);
    policy_db->error_code = ERROR_WHILE_GETTING_DEFAULT_POLICY_LOCATION;
 
@@ -334,7 +334,7 @@ get_default_policy_file(gaa_data_ptr policy_db)
 
 /**********************************************************************
 
-Function: gaa_globus_policy_file_open() 
+Function: oldgaa_globus_policy_file_open() 
 
 Description:
 	Open the specified policy file for reading, returning a
@@ -350,13 +350,13 @@ Returns:
 **********************************************************************/
 
 policy_file_context_ptr 
-gaa_globus_policy_file_open(const char *filename)
+oldgaa_globus_policy_file_open(const char *filename)
 {
   char *		   open_mode = "r";
   policy_file_context_ptr  pcontext  = NULL;
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_policy_file_open:\n");
+fprintf(stderr, "\noldgaa_globus_policy_file_open:\n");
 #endif /* DEBUG */
 
   /* Check arguments */
@@ -374,8 +374,8 @@ fprintf(stderr, "\ngaa_globus_policy_file_open:\n");
   pcontext->parse_error = NULL;
   pcontext->str         = NULL;
 
-  gaa_handle_error(&(pcontext->parse_error),"not defined");
-  gaa_handle_error(&(pcontext->str),"not defined");
+  oldgaa_handle_error(&(pcontext->parse_error),"not defined");
+  oldgaa_handle_error(&(pcontext->str),"not defined");
 
 
   pcontext->stream = fopen(filename, open_mode);
@@ -395,7 +395,7 @@ fprintf(stderr, "\ngaa_globus_policy_file_open:\n");
 
 /**********************************************************************
 
-Function: gaa_globus_policy_file_close()
+Function: oldgaa_globus_policy_file_close()
 
 Description:
 	Close the policy file and deallocate memory assigned to the
@@ -410,11 +410,11 @@ Returns:
 **********************************************************************/
 
 void
-gaa_globus_policy_file_close(policy_file_context_ptr  pcontext)
+oldgaa_globus_policy_file_close(policy_file_context_ptr  pcontext)
 {
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_policy_file_close:\n");
+fprintf(stderr, "\noldgaa_globus_policy_file_close:\n");
 #endif /* DEBUG */
 
   if (pcontext)
@@ -435,16 +435,16 @@ fprintf(stderr, "\ngaa_globus_policy_file_close:\n");
 
 static
 int
-gaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
+oldgaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
                             char                    *str, 
                             const char              *message)
 {
 
- if (gaa_globus_read_string(pcontext, str, NULL)) return 1;
+ if (oldgaa_globus_read_string(pcontext, str, NULL)) return 1;
 
  if (end_of_file == TRUE) 
      {       
-       gaa_handle_error(&(pcontext->parse_error), message);
+       oldgaa_handle_error(&(pcontext->parse_error), message);
        return 1;         
      }  
      	 
@@ -455,7 +455,7 @@ gaa_globus_help_read_string(policy_file_context_ptr  pcontext,
 
 /**********************************************************************
 
-Function: gaa_globus_read_string
+Function: oldgaa_globus_read_string
 
 Description:
 	Read a string from a given stream up to and including the newline
@@ -478,7 +478,7 @@ Returns:
 
 static
 int
-gaa_globus_read_string (policy_file_context_ptr  pcontext,
+oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
                         char                    *str,
                         char                    **errstring)
 {   
@@ -488,15 +488,15 @@ gaa_globus_read_string (policy_file_context_ptr  pcontext,
     return 0; 
   }
 
-  gaa_handle_error(&(pcontext->str),str); /* set the string value to
+  oldgaa_handle_error(&(pcontext->str),str); /* set the string value to
                              report it in the case there is an error */
 
   
   if (str[0]== STRING_DELIMITER) /* get strings with white spaces */
   {
-   if(gaa_globus_get_string_with_whitespaces(pcontext, str) == -1)
+   if(oldgaa_globus_get_string_with_whitespaces(pcontext, str) == -1)
     {
-      gaa_handle_error(&(pcontext->parse_error),
+      oldgaa_handle_error(&(pcontext->parse_error),
 		        "error while reading string");      
       return 1;
     }
@@ -505,17 +505,17 @@ gaa_globus_read_string (policy_file_context_ptr  pcontext,
 
   if (str[0]== COMMENT) /* omit comment line */
   { 
-    if(gaa_globus_omit_comment_line(pcontext))
+    if(oldgaa_globus_omit_comment_line(pcontext))
     {
-     gaa_handle_error(&(pcontext->parse_error),
+     oldgaa_handle_error(&(pcontext->parse_error),
 		       "error while reading string"); 
      return 1;
     }
 
-    if(gaa_globus_read_string(pcontext, str, errstring))
+    if(oldgaa_globus_read_string(pcontext, str, errstring))
     {
       
-     gaa_handle_error(&(pcontext->parse_error),
+     oldgaa_handle_error(&(pcontext->parse_error),
 		      "error while reading string"); 
      return 1;
     }
@@ -527,7 +527,7 @@ gaa_globus_read_string (policy_file_context_ptr  pcontext,
 
 /**********************************************************************
 
-Function: gaa_globus_get_string_with_whitespaces
+Function: oldgaa_globus_get_string_with_whitespaces
 
 Description:
 	Read a string from a given stream up to it finds STRING_DELIMITER.
@@ -544,7 +544,7 @@ Returns:
 **********************************************************************/
 static
 int
-gaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
+oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
                                        char                    *str)
 {
  int  i, len = strlen(str);
@@ -568,8 +568,8 @@ gaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
     {     
       end_of_file = TRUE;
 
-      gaa_handle_error(&(pcontext->parse_error),
-		 "gaa_globus_get_string_with_white_spaces: Missing string delimiter \'");
+      oldgaa_handle_error(&(pcontext->parse_error),
+		 "oldgaa_globus_get_string_with_white_spaces: Missing string delimiter \'");
       return -1;
     }        
       if (chr == STRING_DELIMITER) break;
@@ -579,7 +579,7 @@ gaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
 
   if(i >= MAX_STRING_SIZE)/* string is too long */
     {
-      gaa_handle_error(&(pcontext->parse_error),
+      oldgaa_handle_error(&(pcontext->parse_error),
 		 "get_string_with_white_spaces: String is too long");
       return -1;
     }
@@ -591,7 +591,7 @@ gaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
 
 /**********************************************************************
 
-Function: gaa_globus_omit_comment_line
+Function: oldgaa_globus_omit_comment_line
 
 Description:
 	omit comment from the stream
@@ -607,7 +607,7 @@ Returns:
 
 static
 int
-gaa_globus_omit_comment_line(policy_file_context_ptr  pcontext)
+oldgaa_globus_omit_comment_line(policy_file_context_ptr  pcontext)
 {
  int chr;  
  
@@ -625,37 +625,37 @@ gaa_globus_omit_comment_line(policy_file_context_ptr  pcontext)
 
 /**********************************************************************
 
-Function: gaa_globus_parse_policy() 
+Function: oldgaa_globus_parse_policy() 
 
 Description:
-        Parses the policy file, filling gaa_policy structure. The format of
+        Parses the policy file, filling oldgaa_policy structure. The format of
         the [olicy file is described in ?
 
 Parameters:
         minor_status, mechanism-specific status code
         pcontext, handle to a structure, containing the stream to read from.
-        policy_handle, pointer to gaa_policy structure to be filled in. 
+        policy_handle, pointer to oldgaa_policy structure to be filled in. 
                    
 Returns:
-	GAA_SUCCESS or GAA_RETREIVE_ERROR
+	OLDGAA_SUCCESS or OLDGAA_RETREIVE_ERROR
 
 **********************************************************************/
 
-gaa_error_code  
-gaa_globus_parse_policy (policy_file_context_ptr  pcontext,
-                         gaa_policy_ptr          *policy_handle)
+oldgaa_error_code  
+oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
+                         oldgaa_policy_ptr          *policy_handle)
 
 {
-  gaa_policy_ptr        ptr_policy       = NULL;
-  gaa_conditions_ptr    all_conditions   = NULL;
+  oldgaa_policy_ptr        ptr_policy       = NULL;
+  oldgaa_conditions_ptr    all_conditions   = NULL;
 /*
  *DEE all_conditions is only used in this routine to look for
  * duplicate conditions.
  */
-  gaa_principals_ptr    start_principals = NULL;
-  gaa_rights_ptr        start_rights     = NULL;
-  gaa_cond_bindings_ptr cond_bind        = NULL;
-  gaa_error_code        gaa_error;
+  oldgaa_principals_ptr    start_principals = NULL;
+  oldgaa_rights_ptr        start_rights     = NULL;
+  oldgaa_cond_bindings_ptr cond_bind        = NULL;
+  oldgaa_error_code        oldgaa_error;
 
   char                  str[MAX_STRING_SIZE] = {NUL};
   int                   cond_present     = FALSE;
@@ -666,7 +666,7 @@ gaa_globus_parse_policy (policy_file_context_ptr  pcontext,
   *policy_handle = NULL;
 	 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_parse_policy:\n");
+fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
 #endif /* DEBUG */
  
   while (!end_of_file)    
@@ -678,13 +678,13 @@ fprintf(stderr, "\ngaa_globus_parse_policy:\n");
 
   /* get principals */
                         
-    if(gaa_globus_parse_principals(pcontext,
+    if(oldgaa_globus_parse_principals(pcontext,
                         policy_handle,
                         str,
-                        &start_principals) != GAA_SUCCESS)
+                        &start_principals) != OLDGAA_SUCCESS)
      { 
-      gaa_handle_error(&(pcontext->parse_error),
-		 "gaa_globus_parse_policy: error while parsing principal: ");
+      oldgaa_handle_error(&(pcontext->parse_error),
+		 "oldgaa_globus_parse_policy: error while parsing principal: ");
       m_status = ERROR_WHILE_PARSING_PRINCIPALS;
 
       goto err;
@@ -696,15 +696,15 @@ fprintf(stderr, "\ngaa_globus_parse_policy:\n");
 
      /* get rights */
 
-       gaa_error = gaa_globus_parse_rights(pcontext,                              
+       oldgaa_error = oldgaa_globus_parse_rights(pcontext,                              
                                            str,
                                           &start_rights,         
                                           &cond_present,
                                           &new_entry);
-    if(gaa_error != GAA_SUCCESS)
+    if(oldgaa_error != OLDGAA_SUCCESS)
      {       
-        gaa_handle_error(&(pcontext->parse_error),
-		 "gaa_globus_parse_policy: error while parsing right: ");       
+        oldgaa_handle_error(&(pcontext->parse_error),
+		 "oldgaa_globus_parse_policy: error while parsing right: ");       
         m_status = ERROR_WHILE_PARSING_RIGHTS;
        goto err;
 
@@ -713,22 +713,22 @@ fprintf(stderr, "\ngaa_globus_parse_policy:\n");
     /* bind paresed rights for this entry to the paresed principals 
       from this entry */
 
-    gaa_bind_rights_to_principals(start_principals, start_rights);
+    oldgaa_bind_rights_to_principals(start_principals, start_rights);
  
    /* get conditions, if any */
   
    if(cond_present == TRUE)
   {
-    gaa_error = gaa_globus_parse_conditions(pcontext,
+    oldgaa_error = oldgaa_globus_parse_conditions(pcontext,
                                 &all_conditions,
                                  str,
                                 &cond_bind,
                                 &new_entry);
    
-   if (gaa_error != GAA_SUCCESS)               
+   if (oldgaa_error != OLDGAA_SUCCESS)               
    {
-     gaa_handle_error(&(pcontext->parse_error),
-		 "gaa_globus_parse_policy: error while parsing condition: ");
+     oldgaa_handle_error(&(pcontext->parse_error),
+		 "oldgaa_globus_parse_policy: error while parsing condition: ");
   
      m_status = ERROR_WHILE_PARSING_CONDITIONS; 
      goto err;
@@ -738,7 +738,7 @@ fprintf(stderr, "\ngaa_globus_parse_policy:\n");
   /* bind paresed conditions for this entry to the paresed rights 
     from this entry */
 
-  else  gaa_bind_rights_to_conditions(start_rights, cond_bind);   
+  else  oldgaa_bind_rights_to_conditions(start_rights, cond_bind);   
    
  } /* if(cond_present == TRUE) */
   
@@ -753,7 +753,7 @@ fprintf(stderr, "\ngaa_globus_parse_policy:\n");
  */
 
   {
-	gaa_conditions_ptr   c1p, c2p;
+	oldgaa_conditions_ptr   c1p, c2p;
 
 	c1p = all_conditions;
     while(c1p)
@@ -764,113 +764,113 @@ fprintf(stderr, "\ngaa_globus_parse_policy:\n");
     }
   }
 	
-  if (pcontext) gaa_globus_policy_file_close(pcontext);
+  if (pcontext) oldgaa_globus_policy_file_close(pcontext);
 
-  return GAA_SUCCESS;
+  return OLDGAA_SUCCESS;
 
  err:
 
- gaa_release_principals(&m_status, policy_handle);
- gaa_globus_policy_file_close(pcontext);
+ oldgaa_release_principals(&m_status, policy_handle);
+ oldgaa_globus_policy_file_close(pcontext);
 
- return GAA_RETRIEVE_ERROR;
+ return OLDGAA_RETRIEVE_ERROR;
       
 }
 
 /**********************************************************************
 
-Function: gaa_globus_parse_principals() 
+Function: oldgaa_globus_parse_principals() 
 
 Description:
-        Parses the policy file, filling gaa_rincipals structure. 
+        Parses the policy file, filling oldgaa_rincipals structure. 
 
 Parameters:
         pcontext, handle to a structure, containing the stream to read from.
-        policy, pointer to gaa_policy structure to be filled in. 
+        policy, pointer to oldgaa_policy structure to be filled in. 
         tmp_str, contains a string which will be evaluated and in the end,
                new value is stored here.
-        start, stores a pointer to gaa_principals structure of the set
+        start, stores a pointer to oldgaa_principals structure of the set
         of principals which will be read by this invokation. This is needed
         by the  bind_rights_to_principals function.       
 Returns:
-       GAA_SUCCESS or GAA_PARSE_ERROR
+       OLDGAA_SUCCESS or OLDGAA_PARSE_ERROR
 
 **********************************************************************/
 
 
-gaa_error_code
-gaa_globus_parse_principals(policy_file_context_ptr  pcontext,
-                            gaa_policy_ptr          *policy,
+oldgaa_error_code
+oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
+                            oldgaa_policy_ptr          *policy,
                             char                    *tmp_str /* IN&OUT */,
-                            gaa_principals_ptr      *start)
+                            oldgaa_principals_ptr      *start)
 {
   char               str[MAX_STRING_SIZE],*type;
   int                first     = TRUE, ret_val;
-  gaa_principals_ptr principal = NULL;
+  oldgaa_principals_ptr principal = NULL;
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_parse principals:\n");
+fprintf(stderr, "\noldgaa_globus_parse principals:\n");
 #endif /* DEBUG */
 
  if (*policy == NULL) /* first principal in the policy file */
   {
-   if (gaa_globus_help_read_string(pcontext, str,"parse principals: Empty policy"))
-   return GAA_RETRIEVE_ERROR;   
+   if (oldgaa_globus_help_read_string(pcontext, str,"parse principals: Empty policy"))
+   return OLDGAA_RETRIEVE_ERROR;   
   }
  else strcpy(str, tmp_str); /* get the value of read principal from tmp_str */
 
 do 
   {   /* get principal's type */
 
-   if(strcmp(str, GAA_ANYBODY) == 0) /* do not check for authority and value */  
-      type = GAA_ANYBODY;        
+   if(strcmp(str, OLDGAA_ANYBODY) == 0) /* do not check for authority and value */  
+      type = OLDGAA_ANYBODY;        
    else
-    if(strcmp(str,GAA_USER) == 0)
-       type = GAA_USER;
+    if(strcmp(str,OLDGAA_USER) == 0)
+       type = OLDGAA_USER;
     else 
-      if(strcmp(str,GAA_CA) == 0)
-          type = GAA_CA;
+      if(strcmp(str,OLDGAA_CA) == 0)
+          type = OLDGAA_CA;
      else 
-      if (strcmp(str,GAA_GROUP) == 0)
-          type = GAA_GROUP;
+      if (strcmp(str,OLDGAA_GROUP) == 0)
+          type = OLDGAA_GROUP;
        else 
-         if(strcmp(str,GAA_HOST) == 0)
-            type = GAA_HOST;
+         if(strcmp(str,OLDGAA_HOST) == 0)
+            type = OLDGAA_HOST;
            else 
-             if(strcmp(str,GAA_APPLICATION) == 0)
-                type = GAA_APPLICATION;
+             if(strcmp(str,OLDGAA_APPLICATION) == 0)
+                type = OLDGAA_APPLICATION;
              else 
              {
-               gaa_handle_error(&(pcontext->parse_error), 
+               oldgaa_handle_error(&(pcontext->parse_error), 
                                 "parse_principals: Bad principal type");
-               return GAA_RETRIEVE_ERROR;
+               return OLDGAA_RETRIEVE_ERROR;
              }
           
-    gaa_allocate_principals(&principal);
+    oldgaa_allocate_principals(&principal);
 
     if (type) 
-    principal->type  = gaa_strcopy(type, principal->type);
+    principal->type  = oldgaa_strcopy(type, principal->type);
         
-    if(strcmp(type, GAA_ANYBODY)== 0) /* fill in default values */
+    if(strcmp(type, OLDGAA_ANYBODY)== 0) /* fill in default values */
      {   
-       principal->authority = gaa_strcopy(" ", principal->authority);
-       principal->value     = gaa_strcopy(" ", principal->value);
+       principal->authority = oldgaa_strcopy(" ", principal->authority);
+       principal->value     = oldgaa_strcopy(" ", principal->value);
      }
    else /* read defyining authority and value from the policy */
     {  
-      if (gaa_globus_help_read_string(pcontext, str,
+      if (oldgaa_globus_help_read_string(pcontext, str,
                          "parse_principals: Missing principal defining authority"))
-      return GAA_RETRIEVE_ERROR;
+      return OLDGAA_RETRIEVE_ERROR;
         
       if (str) /* expecting defining authority */ 
-      principal->authority = gaa_strcopy(str, principal->authority);     
+      principal->authority = oldgaa_strcopy(str, principal->authority);     
 
-      if (gaa_globus_help_read_string(pcontext, str,
+      if (oldgaa_globus_help_read_string(pcontext, str,
                          "parse_principals: Missing principals value"))
-      return GAA_RETRIEVE_ERROR;
+      return OLDGAA_RETRIEVE_ERROR;
         
       if (str) /* expecting value */ 
-      principal->value = gaa_strcopy(str, principal->value);
+      principal->value = oldgaa_strcopy(str, principal->value);
        
    
    } /* end of if(type != "access_id_ANYBODY")*/ 
@@ -879,155 +879,155 @@ do
 
     if(first == TRUE){ *start = principal;  first = FALSE; } 
 
-   gaa_add_principal(policy, principal); /* add new principal to the list */
+   oldgaa_add_principal(policy, principal); /* add new principal to the list */
 
-    if (gaa_globus_help_read_string(pcontext, str,
+    if (oldgaa_globus_help_read_string(pcontext, str,
                          "parse_principals: Missing rights"))
-    return GAA_RETRIEVE_ERROR;
+    return OLDGAA_RETRIEVE_ERROR;
 
     strcpy(tmp_str, str); /* return the read string */
 
    if( !strcmp(str,POSITIVE_RIGHTS) ||
        !strcmp(str,NEGATIVE_RIGHTS) )  /* operation set starts */  
-   return GAA_SUCCESS;    
+   return OLDGAA_SUCCESS;    
 
   } while(!end_of_file);
    
-   return  GAA_SUCCESS;
+   return  OLDGAA_SUCCESS;
 }
 
 
 /**********************************************************************
 
-Function: gaa_globus_parse_rights() 
+Function: oldgaa_globus_parse_rights() 
 
 Description:
-        Parses the policy file, filling gaa_rights structure. 
+        Parses the policy file, filling oldgaa_rights structure. 
 
 Parameters:
         pcontext, handle to a structure, containing the stream to read from.
         tmp_str,  contains a string which will be evaluated and in the end,
                   new value is stored here.
-        start,    stores a pointer to gaa_rights structure of the set
+        start,    stores a pointer to oldgaa_rights structure of the set
                   of rights which will be read by this invokation. This is needed
                   by the  bind_rights_to_conditions function.
                   cond_present, indicates if condition set starts
         end_of_entry, indicates if new entry starts     
 Returns:
-       GAA_SUCCESS or GAA_RETRIEVE_ERROR
+       OLDGAA_SUCCESS or OLDGAA_RETRIEVE_ERROR
 
 **********************************************************************/
 
-gaa_error_code
-gaa_globus_parse_rights(policy_file_context_ptr  pcontext,
+oldgaa_error_code
+oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
                         char                    *tmp_str,
-                        gaa_rights_ptr          *start,
+                        oldgaa_rights_ptr          *start,
                         int                     *cond_present,
                         int                     *end_of_entry)
 {
   char            str[MAX_STRING_SIZE];
   int             first  = TRUE, ret_val;
-  gaa_rights_ptr  rights = NULL;
+  oldgaa_rights_ptr  rights = NULL;
   
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_parse rights:\n");
+fprintf(stderr, "\noldgaa_globus_parse rights:\n");
 #endif /* DEBUG */
 
   strcpy(str, tmp_str); 
 
 do{
-  if( (gaa_strings_match(str,POSITIVE_RIGHTS) ||
-       gaa_strings_match(str,NEGATIVE_RIGHTS))== FALSE)  /* expecting operation
+  if( (oldgaa_strings_match(str,POSITIVE_RIGHTS) ||
+       oldgaa_strings_match(str,NEGATIVE_RIGHTS))== FALSE)  /* expecting operation
                                                         set starts */
         {
-          gaa_handle_error(&(pcontext->parse_error), "Bad right type");
-          return GAA_RETRIEVE_ERROR;
+          oldgaa_handle_error(&(pcontext->parse_error), "Bad right type");
+          return OLDGAA_RETRIEVE_ERROR;
 	}
  
   
-    /* allocate fill in the gaa_rights structure */
+    /* allocate fill in the oldgaa_rights structure */
 
-    gaa_allocate_rights(&rights);
+    oldgaa_allocate_rights(&rights);
     if (str)
-    rights->type = gaa_strcopy(str, rights->type);
+    rights->type = oldgaa_strcopy(str, rights->type);
       
-    if (gaa_globus_help_read_string(pcontext, str,
+    if (oldgaa_globus_help_read_string(pcontext, str,
                         "parse_rights: Missing right authority"))
-    return GAA_RETRIEVE_ERROR;  
+    return OLDGAA_RETRIEVE_ERROR;  
  
     if (str) /* expecting defining authority */ 
-    rights->authority = gaa_strcopy(str, rights->authority);
+    rights->authority = oldgaa_strcopy(str, rights->authority);
      
-    if(gaa_globus_help_read_string(pcontext, str,
+    if(oldgaa_globus_help_read_string(pcontext, str,
                         "parse_rights: Missing right value"))
-    return GAA_RETRIEVE_ERROR;  
+    return OLDGAA_RETRIEVE_ERROR;  
   
     if (str)/* expecting value */      
-    rights->value = gaa_strcopy(str, rights->value);
+    rights->value = oldgaa_strcopy(str, rights->value);
        
     if(first == TRUE){ *start = rights; first = FALSE; } 
-    else gaa_add_rights(start, rights);
+    else oldgaa_add_rights(start, rights);
 
-    if (gaa_globus_read_string(pcontext, str, NULL))     
-    return GAA_RETRIEVE_ERROR;
+    if (oldgaa_globus_read_string(pcontext, str, NULL))     
+    return OLDGAA_RETRIEVE_ERROR;
       
     strcpy(tmp_str, str); /* return the read string */
        
        if(!strncmp(str,COND_PREFIX, 5))  /* condition set starts */
        {
         *cond_present = TRUE;
-         return GAA_SUCCESS;   
+         return OLDGAA_SUCCESS;   
        }
    
        if(!strncmp(str,PRINCIPAL_ACCESS_PREFIX, 6) ||
           !strncmp(str,PRINCIPAL_GRANTOR_PREFIX, 7))  /* new entry starts */        
        {
         *end_of_entry = TRUE;      
-         return GAA_SUCCESS; 
+         return OLDGAA_SUCCESS; 
        }     
 
  } while(!end_of_file);
 
-   return GAA_SUCCESS;
+   return OLDGAA_SUCCESS;
 }
 
 
 /**********************************************************************
-Function: gaa_globus_parse_conditions() 
+Function: oldgaa_globus_parse_conditions() 
 
 Description:
-        Parses the policy file, filling gaa_conditions structure. 
+        Parses the policy file, filling oldgaa_conditions structure. 
 
 Parameters:
         pcontext,   handle to a structure, containing the stream to read from.
-        conditions, pointer to gaa_conditions structure to be filled in. 
+        conditions, pointer to oldgaa_conditions structure to be filled in. 
         tmp_str,    contains a string which will be evaluated and in the end,
                     new value is stored here.
-        list,       stores a pointer to gaa_cond_bindings structure of the set
+        list,       stores a pointer to oldgaa_cond_bindings structure of the set
                     of conditions which will be read by this invokation. 
                     This is needed by the bind_rights_to_conditions function.
         end_of_entry, indicates if new entry starts     
 Returns:
-       GAA_SUCCESS or GAA_RETRIEVE_ERROR
+       OLDGAA_SUCCESS or OLDGAA_RETRIEVE_ERROR
 
 
 **********************************************************************/
 
-gaa_error_code
-gaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
-                            gaa_conditions_ptr      *conditions,                  
+oldgaa_error_code
+oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
+                            oldgaa_conditions_ptr      *conditions,                  
                             char                    *tmp_str,
-                            gaa_cond_bindings_ptr   *list, 
+                            oldgaa_cond_bindings_ptr   *list, 
                             int                     *end_of_entry )
 {
   char                  str[MAX_STRING_SIZE];
   int                   first = TRUE, ret_val;
-  gaa_conditions_ptr    cond;
-  gaa_cond_bindings_ptr cond_bind;
+  oldgaa_conditions_ptr    cond;
+  oldgaa_cond_bindings_ptr cond_bind;
   uint32        inv_minor_status = 0, inv_major_status = 0;
 
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_parse conditions:\n");
+fprintf(stderr, "\noldgaa_globus_parse conditions:\n");
 #endif /* DEBUG */
 
   strcpy(str, tmp_str); 
@@ -1036,31 +1036,31 @@ do
 {
    if(strncmp(str,"cond_", 5) != 0)/* expecting condition set starts */
        {
-          gaa_handle_error(&(pcontext->parse_error),"Bad condition type");
-          return GAA_RETRIEVE_ERROR;
+          oldgaa_handle_error(&(pcontext->parse_error),"Bad condition type");
+          return OLDGAA_RETRIEVE_ERROR;
        }
 
- /* allocate fill in the gaa_conditions structure */
+ /* allocate fill in the oldgaa_conditions structure */
 
-   gaa_allocate_conditions(&cond);
-   if (str) cond->type = gaa_strcopy(str,cond->type) ;
+   oldgaa_allocate_conditions(&cond);
+   if (str) cond->type = oldgaa_strcopy(str,cond->type) ;
     
-   if (gaa_globus_help_read_string(pcontext, str,
+   if (oldgaa_globus_help_read_string(pcontext, str,
                         "parse_conditions: Missing condition authority"))
-   return GAA_RETRIEVE_ERROR;
+   return OLDGAA_RETRIEVE_ERROR;
 
-   if (str) cond->authority = gaa_strcopy(str, cond->authority);
+   if (str) cond->authority = oldgaa_strcopy(str, cond->authority);
    
-   if (gaa_globus_help_read_string(pcontext, str,
+   if (oldgaa_globus_help_read_string(pcontext, str,
                        "parse_conditions: Missing condition value"))
-   return GAA_RETRIEVE_ERROR;
+   return OLDGAA_RETRIEVE_ERROR;
 
-   if (str) cond->value = gaa_strcopy(str, cond->value);
+   if (str) cond->value = oldgaa_strcopy(str, cond->value);
     
-   gaa_allocate_cond_bindings(&cond_bind);
+   oldgaa_allocate_cond_bindings(&cond_bind);
 
    if(*conditions == NULL) { *conditions = cond; }
-   cond_bind->condition =gaa_add_condition(conditions, cond);
+   cond_bind->condition =oldgaa_add_condition(conditions, cond);
    cond_bind->condition->reference_count++;
 #ifdef DEBUG
    fprintf(stderr,"binding cond_bind:%p->conditions:%p\n",
@@ -1073,16 +1073,16 @@ do
 	 fprintf(stderr,"Duplicate conditions, free:%p\n",cond);
 #endif
 	 cond->reference_count++; /* keep all the ducks in a row */
-	 gaa_release_conditions(&inv_minor_status, &cond);
+	 oldgaa_release_conditions(&inv_minor_status, &cond);
    }
 
    if(first == TRUE){ *list = cond_bind; first = FALSE; } 
-   else  gaa_add_cond_binding(list, cond_bind);
+   else  oldgaa_add_cond_binding(list, cond_bind);
  
-   if (gaa_globus_read_string(pcontext, str, NULL))    
-   return GAA_RETRIEVE_ERROR;
+   if (oldgaa_globus_read_string(pcontext, str, NULL))    
+   return OLDGAA_RETRIEVE_ERROR;
       
-   if(end_of_file == TRUE)  return  GAA_SUCCESS;
+   if(end_of_file == TRUE)  return  OLDGAA_SUCCESS;
     
    strcpy(tmp_str, str); /* return the read string */
 
@@ -1090,27 +1090,27 @@ do
        !strncmp(str,PRINCIPAL_GRANTOR_PREFIX, 7))  /* new entry starts */        
        {
         *end_of_entry = TRUE;      
-         return GAA_SUCCESS; 
+         return OLDGAA_SUCCESS; 
        }  
 
     if(!strncmp(str,POS_RIGHTS_PREFIX, 3) ||
        !strncmp(str,NEG_RIGHTS_PREFIX, 3)) /* new rights set starts */          
-    return GAA_SUCCESS;
+    return OLDGAA_SUCCESS;
      
 
  } while (!end_of_file);
 
-   return  GAA_SUCCESS;
+   return  OLDGAA_SUCCESS;
 }
 
 
 /*****************************************************************************/
   
 void
-gaa_globus_print_rights(gaa_rights_ptr rights)
+oldgaa_globus_print_rights(oldgaa_rights_ptr rights)
 {
- gaa_rights_ptr        ptr = rights;
- gaa_cond_bindings_ptr cond;
+ oldgaa_rights_ptr        ptr = rights;
+ oldgaa_cond_bindings_ptr cond;
 
  while(ptr != NULL)
     {  
@@ -1139,9 +1139,9 @@ gaa_globus_print_rights(gaa_rights_ptr rights)
 
 /**********************************************************************/
 void
-gaa_globus_print_attributes(gaa_sec_attrb_ptr attributes)
+oldgaa_globus_print_attributes(oldgaa_sec_attrb_ptr attributes)
 {
- gaa_sec_attrb_ptr        ptr = attributes;
+ oldgaa_sec_attrb_ptr        ptr = attributes;
 
 
  while(ptr != NULL)
@@ -1157,33 +1157,33 @@ gaa_globus_print_attributes(gaa_sec_attrb_ptr attributes)
 
 /**********************************************************************/
 
-gaa_error_code
-gaa_globus_get_trusted_ca_list(gaa_sec_attrb_ptr *attributes,
-                               gaa_policy_ptr     policy_handle,
-                               gaa_rights_ptr     rights)
+oldgaa_error_code
+oldgaa_globus_get_trusted_ca_list(oldgaa_sec_attrb_ptr *attributes,
+                               oldgaa_policy_ptr     policy_handle,
+                               oldgaa_rights_ptr     rights)
 {
-  gaa_error_code     gaa_status    = GAA_SUCCESS;
+  oldgaa_error_code     oldgaa_status    = OLDGAA_SUCCESS;
   uint32             minor_status  = 0;
-  gaa_principals_ptr principal= NULL;     
+  oldgaa_principals_ptr principal= NULL;     
    
 #ifdef DEBUG
-fprintf(stderr, "\ngaa_globus_get_trusted_ca_list:\n");
+fprintf(stderr, "\noldgaa_globus_get_trusted_ca_list:\n");
 #endif /* DEBUG */
 
 
-  gaa_allocate_principals(&principal);
-  principal->type      = gaa_strcopy(GAA_CA,             principal->type);   
-  principal->authority = gaa_strcopy(GAA_X509_AUTHORITY, principal->authority);
-  /* principal->value     = gaa_strcopy("\"*\"",            principal->value); */
+  oldgaa_allocate_principals(&principal);
+  principal->type      = oldgaa_strcopy(OLDGAA_CA,             principal->type);   
+  principal->authority = oldgaa_strcopy(OLDGAA_X509_AUTHORITY, principal->authority);
+  /* principal->value     = oldgaa_strcopy("\"*\"",            principal->value); */
 
-  gaa_status = gaa_get_authorized_principals(attributes, 
+  oldgaa_status = oldgaa_get_authorized_principals(attributes, 
                                              policy_handle,
                                              principal, 
                                              rights);
 
- gaa_status = gaa_release_principals(&minor_status, &principal);
+ oldgaa_status = oldgaa_release_principals(&minor_status, &principal);
 
- return gaa_status;   
+ return oldgaa_status;   
 
 }
 

@@ -213,7 +213,7 @@ extern reg_syntax_t re_syntax_options;
 #define RE_DUP_MAX ((1 << 15) - 1) 
 
 
-/* POSIX `cflags' bits (i.e., information for `gaa_regex_regcomp').  */
+/* POSIX `cflags' bits (i.e., information for `oldgaa_regex_regcomp').  */
 
 /* If this bit is set, then use extended regular expression syntax.
    If not set, then use basic regular expression syntax.  */
@@ -228,12 +228,12 @@ extern reg_syntax_t re_syntax_options;
    If not set, then anchors do match at newlines.  */
 #define REG_NEWLINE (REG_ICASE << 1)
 
-/* If this bit is set, then report only success or fail in gaa_regex_regexec.
+/* If this bit is set, then report only success or fail in oldgaa_regex_regexec.
    If not set, then returns differ between not matching and errors.  */
 #define REG_NOSUB (REG_NEWLINE << 1)
 
 
-/* POSIX `eflags' bits (i.e., information for gaa_regex_regexec).  */
+/* POSIX `eflags' bits (i.e., information for oldgaa_regex_regexec).  */
 
 /* If this bit is set, then the beginning-of-line operator doesn't match
      the beginning of the string (presumably because it's not the
@@ -251,9 +251,9 @@ extern reg_syntax_t re_syntax_options;
 typedef enum
 {
   REG_NOERROR = 0,	/* Success.  */
-  REG_NOMATCH,		/* Didn't find a match (for gaa_regex_regexec).  */
+  REG_NOMATCH,		/* Didn't find a match (for oldgaa_regex_regexec).  */
 
-  /* POSIX gaa_regex_regcomp return error codes.  (In the order listed in the
+  /* POSIX oldgaa_regex_regcomp return error codes.  (In the order listed in the
      standard.)  */
   REG_BADPAT,		/* Invalid pattern.  */
   REG_ECOLLATE,		/* Not implemented.  */
@@ -271,7 +271,7 @@ typedef enum
   /* Error codes we've added.  */
   REG_EEND,		/* Premature end.  */
   REG_ESIZE,		/* Compiled pattern bigger than 2^16 bytes.  */
-  REG_ERPAREN		/* Unmatched ) or \); not returned from gaa_regex_regcomp.  */
+  REG_ERPAREN		/* Unmatched ) or \); not returned from oldgaa_regex_regcomp.  */
 } reg_errcode_t;
 
 /* This data structure represents a compiled pattern.  Before calling
@@ -297,7 +297,7 @@ struct re_pattern_buffer
         /* Syntax setting with which the pattern was compiled.  */
   reg_syntax_t syntax;
 
-        /* Pointer to a fastmap, if any, otherwise zero.  gaa_regex_re_search uses
+        /* Pointer to a fastmap, if any, otherwise zero.  oldgaa_regex_re_search uses
            the fastmap, if there is one, to skip over impossible
            starting points for matches.  */
   char *fastmap;
@@ -312,9 +312,9 @@ struct re_pattern_buffer
   size_t re_nsub;
 
         /* Zero if this pattern cannot match the empty string, one else.
-           Well, in truth it's used only in `gaa_regex_gaa_regex_re_search_2', to see
+           Well, in truth it's used only in `oldgaa_regex_oldgaa_regex_re_search_2', to see
            whether or not we should use the fastmap, so we don't set
-           this absolutely perfectly; see `gaa_regex_gaa_regex_re_compile_fastmap' (the
+           this absolutely perfectly; see `oldgaa_regex_oldgaa_regex_re_compile_fastmap' (the
            `duplicate' case).  */
   unsigned can_be_null : 1;
 
@@ -327,11 +327,11 @@ struct re_pattern_buffer
 #define REGS_FIXED 2
   unsigned regs_allocated : 2;
 
-        /* Set to zero when `gaa_regex_regex_compile' compiles a pattern; set to one
-           by `gaa_regex_gaa_regex_re_compile_fastmap' if it updates the fastmap.  */
+        /* Set to zero when `oldgaa_regex_regex_compile' compiles a pattern; set to one
+           by `oldgaa_regex_oldgaa_regex_re_compile_fastmap' if it updates the fastmap.  */
   unsigned fastmap_accurate : 1;
 
-        /* If set, `gaa_regex_gaa_regex_re_match_2' does not return information about
+        /* If set, `oldgaa_regex_oldgaa_regex_re_match_2' does not return information about
            subexpressions.  */
   unsigned no_sub : 1;
 
@@ -370,7 +370,7 @@ struct re_registers
 
 
 /* If `regs_allocated' is REGS_UNALLOCATED in the pattern buffer,
-   `gaa_regex_gaa_regex_re_match_2' returns information about at least this many registers
+   `oldgaa_regex_oldgaa_regex_re_match_2' returns information about at least this many registers
    the first time a `regs' structure is passed.  */
 #ifndef RE_NREGS
 #define RE_NREGS 30
@@ -406,12 +406,12 @@ typedef struct
 
 /* Sets the current default syntax to SYNTAX, and return the old syntax.
    You can also simply assign to the `re_syntax_options' variable.  */
-extern reg_syntax_t gaa_regex_re_set_syntax _RE_ARGS ((reg_syntax_t syntax));
+extern reg_syntax_t oldgaa_regex_re_set_syntax _RE_ARGS ((reg_syntax_t syntax));
 
 /* Compile the regular expression PATTERN, with length LENGTH
    and syntax given by the global `re_syntax_options', into the buffer
    BUFFER.  Return NULL if successful, and an error string if not.  */
-extern const char *gaa_regex_gaa_regex_re_compile_pattern
+extern const char *oldgaa_regex_oldgaa_regex_re_compile_pattern
   _RE_ARGS ((const char *pattern, int length,
              struct re_pattern_buffer *buffer));
 
@@ -419,7 +419,7 @@ extern const char *gaa_regex_gaa_regex_re_compile_pattern
 /* Compile a fastmap for the compiled pattern in BUFFER; used to
    accelerate searches.  Return 0 if successful and -2 if was an
    internal error.  */
-extern int gaa_regex_gaa_regex_re_compile_fastmap _RE_ARGS ((struct re_pattern_buffer *buffer));
+extern int oldgaa_regex_oldgaa_regex_re_compile_fastmap _RE_ARGS ((struct re_pattern_buffer *buffer));
 
 
 /* Search in the string STRING (with length LENGTH) for the pattern
@@ -427,28 +427,28 @@ extern int gaa_regex_gaa_regex_re_compile_fastmap _RE_ARGS ((struct re_pattern_b
    characters.  Return the starting position of the match, -1 for no
    match, or -2 for an internal error.  Also return register
    information in REGS (if REGS and BUFFER->no_sub are nonzero).  */
-extern int gaa_regex_re_search
+extern int oldgaa_regex_re_search
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string,
             int length, int start, int range, struct re_registers *regs));
 
 
-/* Like `gaa_regex_re_search', but search in the concatenation of STRING1 and
+/* Like `oldgaa_regex_re_search', but search in the concatenation of STRING1 and
    STRING2.  Also, stop searching at index START + STOP.  */
-extern int gaa_regex_gaa_regex_re_search_2
+extern int oldgaa_regex_oldgaa_regex_re_search_2
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string1,
              int length1, const char *string2, int length2,
              int start, int range, struct re_registers *regs, int stop));
 
 
-/* Like `gaa_regex_re_search', but return how many characters in STRING the regexp
+/* Like `oldgaa_regex_re_search', but return how many characters in STRING the regexp
    in BUFFER matched, starting at position START.  */
-extern int gaa_regex_re_match
+extern int oldgaa_regex_re_match
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string,
              int length, int start, struct re_registers *regs));
 
 
-/* Relates to `gaa_regex_re_match' as `gaa_regex_gaa_regex_re_search_2' relates to `gaa_regex_re_search'.  */
-extern int gaa_regex_gaa_regex_re_match_2 
+/* Relates to `oldgaa_regex_re_match' as `oldgaa_regex_oldgaa_regex_re_search_2' relates to `oldgaa_regex_re_search'.  */
+extern int oldgaa_regex_oldgaa_regex_re_match_2 
   _RE_ARGS ((struct re_pattern_buffer *buffer, const char *string1,
              int length1, const char *string2, int length2,
              int start, struct re_registers *regs, int stop));
@@ -466,23 +466,23 @@ extern int gaa_regex_gaa_regex_re_match_2
    Unless this function is called, the first search or match using
    PATTERN_BUFFER will allocate its own register data, without
    freeing the old data.  */
-extern void gaa_regex_re_set_registers
+extern void oldgaa_regex_re_set_registers
   _RE_ARGS ((struct re_pattern_buffer *buffer, struct re_registers *regs,
              unsigned num_regs, regoff_t *starts, regoff_t *ends));
 
 /* 4.2 bsd compatibility.  */
-extern char *gaa_regex_re_comp _RE_ARGS ((const char *));
-extern int gaa_regex_re_exec _RE_ARGS ((const char *));
+extern char *oldgaa_regex_re_comp _RE_ARGS ((const char *));
+extern int oldgaa_regex_re_exec _RE_ARGS ((const char *));
 
 /* POSIX compatibility.  */
-extern int gaa_regex_regcomp _RE_ARGS ((regex_t *preg, const char *pattern, int cflags));
-extern int gaa_regex_regexec
+extern int oldgaa_regex_regcomp _RE_ARGS ((regex_t *preg, const char *pattern, int cflags));
+extern int oldgaa_regex_regexec
   _RE_ARGS ((const regex_t *preg, const char *string, size_t nmatch,
              regmatch_t pmatch[], int eflags));
-extern size_t gaa_regex_regerror
+extern size_t oldgaa_regex_regerror
   _RE_ARGS ((int errcode, const regex_t *preg, char *errbuf,
              size_t errbuf_size));
-extern void gaa_regex_regfree _RE_ARGS ((regex_t *preg));
+extern void oldgaa_regex_regfree _RE_ARGS ((regex_t *preg));
 
 #endif /* not __REGEXP_LIBRARY_H__ */
 

@@ -3,7 +3,7 @@
  * Part of GOST library
  */
 
-#ifndef GAA_GL_INTERNAL_ERR_H
+#ifndef OLDGAA_GL_INTERNAL_ERR_H
 
 /* OUT OF MEMORY */
 extern int gl__is_out_of_memory;    /* used internally by gl__fout_of_memory() */
@@ -108,4 +108,4 @@ void gl_function_arguments_error(const char *format, ...);
 int (*internal_error_handler)(const char file[], int line, const char mesg[]) = 0;
 
 
-#endif /* GAA_GL_INTERNAL_ERR_H */
+#endif /* OLDGAA_GL_INTERNAL_ERR_H */

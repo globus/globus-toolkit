@@ -81,9 +81,9 @@ static char *rcsid = "$Header$";
 #endif
 
 #ifndef BUILD_FOR_K5CERT_ONLY
-#ifndef NO_GAA_API
-#include "globus_gaa.h"
-#include "globus_gaa_utils.h"
+#ifndef NO_OLDGAA_API
+#include "globus_oldgaa.h"
+#include "globus_oldgaa_utils.h"
 #else
 #include "ca_policy_file_parse.h"
 #endif
@@ -1373,7 +1373,7 @@ proxy_app_verify_callback(X509_STORE_CTX *ctx)
 #endif
 
 /* Ifdef out all extra code not needed for k5cert
- * This includes the GAA
+ * This includes the OLDGAA
  */
 
 #ifndef BUILD_FOR_K5CERT_ONLY
@@ -1852,19 +1852,19 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 			char *error_string = NULL;
 			char *issuer_name;
 			char *subject_name;
-#ifndef NO_GAA_API
-   gaa_rights_ptr            rights          = NULL;
-   gaa_policy_ptr            policy_handle   = NULL;
-   gaa_answer_ptr            detailed_answer = NULL;
-   gaa_sec_context_ptr       gaa_sc          = NULL;
-   gaa_options_ptr           options         = NULL;
-   gaa_error_code            result;
-   gaa_data_ptr              policy_db       = GAA_NO_DATA;
+#ifndef NO_OLDGAA_API
+   oldgaa_rights_ptr            rights          = NULL;
+   oldgaa_policy_ptr            policy_handle   = NULL;
+   oldgaa_answer_ptr            detailed_answer = NULL;
+   oldgaa_sec_context_ptr       oldgaa_sc          = NULL;
+   oldgaa_options_ptr           options         = NULL;
+   oldgaa_error_code            result;
+   oldgaa_data_ptr              policy_db       = OLDGAA_NO_DATA;
    uint32                    minor_status;
 #else /* Von's code */
 			int result;
 
-#endif /* #ifndef NO_GAA_API */
+#endif /* #ifndef NO_OLDGAA_API */
 
 
 			subject_name = X509_NAME_oneline(X509_get_subject_name(ctx->current_cert),
@@ -1872,16 +1872,16 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 			issuer_name = X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),
 																			NULL, 0);
 
-#ifndef NO_GAA_API
+#ifndef NO_OLDGAA_API
  
-      if(gaa_globus_initialize(&gaa_sc,
+      if(oldgaa_globus_initialize(&oldgaa_sc,
                                     &rights,
                                     &options,
                                     &policy_db,
                                     issuer_name,
                                     subject_name,
                                     ca_policy_file_path  
-                                    )!= GAA_SUCCESS) 
+                                    )!= OLDGAA_SUCCESS) 
 
     {
 		char buf[256];
@@ -1893,11 +1893,11 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
      }
 
 
-     if(gaa_get_object_policy_info(&minor_status,  
-                                    GAA_NO_DATA,
+     if(oldgaa_get_object_policy_info(&minor_status,  
+                                    OLDGAA_NO_DATA,
                                     policy_db,
-                                    gaa_globus_policy_retrieve,
-                                   &policy_handle) != GAA_SUCCESS)
+                                    oldgaa_globus_policy_retrieve,
+                                   &policy_handle) != OLDGAA_SUCCESS)
      {
 		char buf[256];
 		sprintf(buf,"Minor status=%d", minor_status);
@@ -1907,8 +1907,8 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 		goto fail_verify;
      }
 
-  result = gaa_check_authorization (&minor_status,   
-                                     gaa_sc,   
+  result = oldgaa_check_authorization (&minor_status,   
+                                     oldgaa_sc,   
                                      policy_handle,     
                                      rights, 
                                      options,
@@ -1916,21 +1916,21 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 
 		
 #ifdef DEBUG
-fprintf(stderr,"gaa result: %d(0 yes, 1 no, -1 maybe)\n", result);
+fprintf(stderr,"oldgaa result: %d(0 yes, 1 no, -1 maybe)\n", result);
 if(detailed_answer) 
 { 
  fprintf(stderr, "\nprint detailed answer:\n\n");
 #ifndef WIN32
- if(detailed_answer->rights) gaa_globus_print_rights(detailed_answer->rights);
+ if(detailed_answer->rights) oldgaa_globus_print_rights(detailed_answer->rights);
 #endif
 }
 #endif
 
               if (policy_handle) {
-			    gaa_release_principals(&minor_status, &policy_handle);
+			    oldgaa_release_principals(&minor_status, &policy_handle);
 			  }
 
-              gaa_globus_cleanup(&gaa_sc,
+              oldgaa_globus_cleanup(&oldgaa_sc,
                                  &rights,
                                   options,
                                  &detailed_answer,  
@@ -1945,7 +1945,7 @@ if(detailed_answer)
 													&error_string,
 													pvd->certdir);
 
-#endif /* #ifndef NO_GAA_API */
+#endif /* #ifndef NO_OLDGAA_API */
 
 
 			free(ca_policy_file_path);
@@ -3065,7 +3065,7 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 		}
 	}
 	
-#ifdef NO_GAA_API
+#ifdef NO_OLDGAA_API
 	/* 
 	 * DEE-Get a list of all the CAs from the ca-signing-policy.conf
 	 * Problem with this method is that the names are in the 

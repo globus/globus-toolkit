@@ -1,7 +1,7 @@
 include $(top_srcdir)/globus_automake_config
 include $(top_srcdir)/globus_automake_targets
 
-SUBDIRS = gaa
+SUBDIRS = oldgaa
 
 Sources= \
 	scutils.c \
@@ -15,14 +15,14 @@ include_HEADERS= \
 
 lib_LTLIBRARIES = libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I $top_srcdir/library/gaa -I ./gaa
+INCLUDES = $(GPT_INCLUDES) -I $top_srcdir/library/oldgaa -I ./oldgaa
 
 AM_CFLAGS = -DDEBUG
 
 libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
 libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) \
-	./gaa/libglobus_gaa_$(GLOBUS_FLAVOR_NAME).la
+	./oldgaa/libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
