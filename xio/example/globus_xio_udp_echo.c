@@ -139,13 +139,13 @@ main(
         /* be server */
         while(1)
         {
-            char                            buffer[LINE_LEN];
+            char                            buffer[LINE_LEN + 1];
             int                             nbytes;
             
             res = globus_xio_read(
                 xio_handle,
                 buffer,
-                sizeof(buffer),
+                sizeof(buffer) - 1,
                 1,
                 &nbytes,
                 dd);
@@ -153,8 +153,8 @@ main(
             
             if(print_reads)
             {
-                buffer[nbytes] = '\0';
-                fprintf(stdout, "%s\n", (char *) buffer);
+                buffer[nbytes++] = '\n';
+                write(STDOUT_FILENO, buffer, nbytes);
             }
             else
             {
