@@ -353,14 +353,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
 				   "Invalid username received.\n");
     }
 
-    /* XXX Put real pass word policy here */
-    /* Allow credentials with no passwords to be stored but not retrieved. */
-    if (client_request->passphrase && strlen(client_request->passphrase) &&
-	strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN) {
-	myproxy_log("client %s Pass phrase too short", client_name);
-	respond_with_error_and_die(attrs, "Pass phrase too short.\n");
-    }
-
     /* All authorization policies are enforced in this function. */
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
@@ -953,8 +945,9 @@ become_daemon(myproxy_server_context_t *context)
 }
 
 /*
- * Check new passphrase against our passphrase policy by running
- * the external passphrase policy program.
+ * Check for good passphrases:
+ * 1. Make sure the passphrase is at least MIN_PASS_PHRASE_LEN long.
+ * 2. Optionally run an external passphrase policy program.
  *
  * Returns 0 if passphrase is accepted and -1 otherwise.
  */
@@ -968,6 +961,20 @@ check_passphrase_policy(const char *passphrase,
     int p0[2], p1[2], p2[2];
     size_t passphrase_len = 0;
     int exit_status;
+
+    if (passphrase) {
+	passphrase_len = strlen(passphrase);
+    }
+
+    /* Zero length passphrase is allowed, for authentication methods
+       that don't use a passphrase, like credential renewal
+       or Kerberos. */
+    if (passphrase_len != 0 && passphrase_len < MIN_PASS_PHRASE_LEN) {
+	verror_put_string("Pass phrase too short.  "
+			  "Must be at least %d characters long.",
+			  MIN_PASS_PHRASE_LEN);
+	return -1;
+    }
 
     if (!context->passphrase_policy_pgm) return 0;
 
@@ -1011,9 +1018,6 @@ check_passphrase_policy(const char *passphrase,
     close(p0[0]); close(p1[1]); close(p2[1]);
 
     /* send passphrase to child's stdin */
-    if (passphrase) {
-	passphrase_len = strlen(passphrase);
-    }
     if (passphrase_len) {
 	write(p0[1], passphrase, passphrase_len);
     }
