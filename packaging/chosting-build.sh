@@ -5,35 +5,36 @@ GT2PKGS="core common xio gsi callout user_env side_tools mds/libtool tarfiles"
 GT3PKGS=chosting
 
 PKGLIST=\
-globus_core,\
-globus_common,\
-globus_common_setup,\
-globus_user_env,\
-globus_xio,\
-globus_proxy_utils,\
-globus_gssapi_gsi,\
-gssapi_error,\
-globus_gss_assist,\
-globus_callout,\
-globus_libtool,\
-globus_gsi_proxy_core,\
-globus_gsi_credential,\
-globus_gsi_callback,\
-globus_gsi_sysconfig,\
-globus_gsi_cert_utils,\
-globus_openssl_module,\
-globus_gsi_proxy_ssl,\
-globus_gsi_openssl_error,\
-globus_proxy_wrapper,\
-globus_openssl,\
-globus_gcs_b38b4d8c_setup,\
 globus_axiscpp,\
 globus_expat,\
 globus_axiscpp_wsdl2ws,\
 globus_axiscpp_transport_stdio,\
-globus_axis_server_engine,\
-globus_axis_server_test,\
-globus_service_GetQuoteCPP
+globus_axiscpp_server_engine,\
+globus_axiscpp_stdio_server_test,\
+globus_service_GetQuoteCPP,\
+globus_core,\
+globus_common,\
+globus_common_setup
+#globus_user_env,\
+#globus_xio,\
+#globus_proxy_utils,\
+#globus_gssapi_gsi,\
+#gssapi_error,\
+#globus_gss_assist,\
+#globus_callout,\
+#globus_libtool,\
+#globus_gsi_proxy_core,\
+#globus_gsi_credential,\
+#globus_gsi_callback,\
+#globus_gsi_sysconfig,\
+#globus_gsi_cert_utils,\
+#globus_openssl_module,\
+#globus_gsi_proxy_ssl,\
+#globus_gsi_openssl_error,\
+#globus_proxy_wrapper,\
+#globus_openssl,\
+#globus_gcs_b38b4d8c_setup,\
+#globus_axis_http_transport
 
 if test ! -d $BASEDIR/source-trees; then
 	mkdir $BASEDIR/source-trees
@@ -73,7 +74,7 @@ GT3CVS=$CVSBASE:/home/globdev/CVS/gridservices
 
 cd $BASEDIR/source-trees/gt2-cvs
 
-cvs -d$GT2CVS co $GT2PKGS
+#cvs -d$GT2CVS co $GT2PKGS
 if test ! $? = 0; then
 	echo ""
 	echo "cvs checkout of $GT2PKGS failed. check CVSROOT env."
@@ -83,7 +84,7 @@ fi
  
 cd $BASEDIR/source-trees/cbindings
 
-cvs -d$GT3CVS co $GT3PKGS
+#cvs -d$GT3CVS co $GT3PKGS
 if test ! $? = 0; then
 	echo ""
 	echo "cvs checkout of $GT3PKGS failed"
@@ -134,7 +135,7 @@ fi
 
 echo "GLOBUS_LOCATION IS: :${GLOBUS_LOCATION}:"
 
-$GPT_LOCATION/sbin/gpt-build globus_chosting-0.1-src_bundle.tar.gz gcc32dbg
+$GPT_LOCATION/sbin/gpt-build -force globus_chosting-0.1-src_bundle.tar.gz gcc32dbg
 if test ! $? = 0; then
 	echo ""
 	echo "Failed to build chosting bundle."
