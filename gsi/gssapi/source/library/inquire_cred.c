@@ -99,13 +99,20 @@ GSS_CALLCONV gss_inquire_cred(
             *cred_usage = cred_handle->cred_usage;
         }
 
-        /* DEE? should look at end time 
-         * but we are not using this option for globus
-         */
 
         if (lifetime != NULL)
         {
-            *lifetime = 0;
+            time_t                time_after;
+            time_t                time_now;
+            ASN1_UTCTIME *        asn1_time = NULL;
+            
+            asn1_time = ASN1_UTCTIME_new();
+            X509_gmtime_adj(asn1_time,0);
+            time_now = ASN1_UTCTIME_mktime(asn1_time);
+            time_after = ASN1_UTCTIME_mktime(
+                X509_get_notAfter(cred_handle->pcd->ucert));
+            *lifetime = (OM_uint32) time_after - time_now;
+            ASN1_UTCTIME_free(asn1_time);
         }
 
         if (name != NULL)

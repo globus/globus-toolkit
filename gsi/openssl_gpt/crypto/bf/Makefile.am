@@ -29,6 +29,8 @@ INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
 
 libbf___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
+EXTRA_libbf___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Extra_Sources)
+
 libbf___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) @BF_OBJ@
 
 libbf___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)

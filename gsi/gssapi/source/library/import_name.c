@@ -50,18 +50,7 @@ Description:
 		We will make up a name with only /CN=service/FQDN
 		This is done to match the Kerberos service names.          
 		For example the service name of host is used for logins etc. 
-        (1) /x=y/x=y... i.e. x500 type name
-        (2) commonname@globus.org
-	(3) commonname
-
-	With (2) or (3) the commonname is used to generate
-	an x509 name using /C=US/O=globus/CN=commonname
-	
-	Thus:
-	 dengert,
-	 dengert@globus.org 
-	 /C=US/O=Globus/CN=dengert
-	are equivlent.
+    (1) /x=y/x=y... i.e. x500 type name
 
 Parameters:
 
@@ -127,7 +116,7 @@ GSS_CALLCONV gss_import_name(
     }
    
     /*
-     * copy input, so has trailing zero, and can be written over
+     * copy input, so it has trailing zero, and can be written over
      * during parse
      */
     
@@ -154,11 +143,11 @@ GSS_CALLCONV gss_import_name(
 
     if (g_OID_equal(GSS_C_NT_HOSTBASED_SERVICE, input_name_type))
     {
-	vp = strchr(cp,'@');
-	if (vp)
+        vp = strchr(cp,'@');
+        if (vp)
         {
             *vp = '/';   /* replace with a / */
-	}
+        }
         
         ne=X509_NAME_ENTRY_create_by_NID(&ne,
                                          OBJ_txt2nid("CN"),
@@ -173,12 +162,9 @@ GSS_CALLCONV gss_import_name(
      * so we will define one here. 
      * Accept names in three forms:
      * /xx=yy/xx=yy i.e. the X500 type, which allows any name. 
-     * commonname
-     * commonname@globus.org
      *
      * The first case assumes that there are no "/"s in the name
      * The xx must be valid short or long names in the objects
-     * the last two, assume /C=US/O=Globus/CN=commonname
      */
 
     else
@@ -263,30 +249,10 @@ GSS_CALLCONV gss_import_name(
         }
         else
         {
-            ne=X509_NAME_ENTRY_create_by_NID(&ne,
-                                             OBJ_txt2nid("C"),
-                                             V_ASN1_APP_CHOOSE,
-                                             (unsigned char *)"US",
-                                             -1);
-            X509_NAME_add_entry(x509n,ne,0,0);
-            
-            ne=X509_NAME_ENTRY_create_by_NID(&ne,
-                                             OBJ_txt2nid("O"),
-                                             V_ASN1_APP_CHOOSE,
-                                             (unsigned char *)"Globus",
-                                             -1);
-            X509_NAME_add_entry(x509n,ne,1,0);
-            
-            if (!memcmp(&cp[len-11],"@globus.org",11))
-            {
-                len = len - 11;
-            }
-            ne=X509_NAME_ENTRY_create_by_NID(&ne,
-                                             OBJ_txt2nid("CN"),
-                                             V_ASN1_APP_CHOOSE,
-                                             (unsigned char *)cp,
-                                             len);
-            X509_NAME_add_entry(x509n,ne,2,0);
+            GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
+            *minor_status = gsi_generate_minor_status();
+            major_status = GSS_S_BAD_NAME;
+            goto err;
         }
     }
   

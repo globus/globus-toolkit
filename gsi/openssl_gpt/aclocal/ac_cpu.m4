@@ -25,9 +25,9 @@ AC_DEFUN(LAC_CPU_SET,
             lac_cv_CPU=`uname -m`
         ;;
         *irix6*)
-            lac_tmp_CPU=`(hinv -t cpu) 2>/dev/null | head -1 |sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
+            lac_tmp_CPU=`(hinv -t cpu) 2>/dev/null | head -1 |sed 's/^CPU:[[^R]]*R\([[0-9]]*\).*/\1/'`
             lac_tmp_CPU=${lac_tmp_CPU:-0}
-            if [ $lac_tmp_CPU -ge 5000 ]; then
+            if test $lac_tmp_CPU -ge 5000; then
                 lac_cv_CPU=mips4
             else
                 lac_cv_CPU=mips3

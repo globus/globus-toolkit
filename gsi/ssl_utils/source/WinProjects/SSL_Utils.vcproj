@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="SSL_Utils">
+	Name="ssl_utils">
 	<Build>
 		<Settings>
 			<Platform
@@ -18,7 +18,7 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)\include;$(OPENSSL_DIR)\inc32;c:\cygwin\home\bresnaha\Dev\gsi\ssl_utils\source\library\oldgaa"
+					IncludePaths="$(GLOBUS_LOCATION)\include;$(ProjFileName)\oldgaa"
 					Defines="WIN32;_DEBUG;_CONSOLE"
 					MinimalRebuild="TRUE"
 					FullRuntimeChecks="TRUE"

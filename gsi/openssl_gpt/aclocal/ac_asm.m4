@@ -23,7 +23,6 @@ dnl LAC_ASM()
 AC_DEFUN(LAC_ASM,
 [
     AC_REQUIRE([AC_CANONICAL_HOST])
-    AC_REQUIRE([AM_PROG_AS])
     AC_REQUIRE([LAC_CPU])
     LAC_ASM_ARGS
     LAC_ASM_SET
@@ -38,6 +37,7 @@ AC_DEFUN(LAC_ASM,
     LAC_SUBSTITUTE_VAR(MD5_OBJ)
     LAC_SUBSTITUTE_VAR(RMD_OBJ)
     LAC_SUBSTITUTE_VAR(CFLAGS)
+    AC_REQUIRE([LAC_PROG_AS])
 ])
 
 dnl LAC_ASM_SET
@@ -45,7 +45,7 @@ AC_DEFUN(LAC_ASM_SET,
 [
     lac_CFLAGS="$CFLAGS "
     lac_BN_OBJ="bn_asm.lo"
-    lac_BF_OBJ=" "
+    lac_BF_OBJ="bf_enc.lo"
     lac_DES_OBJ="des_enc.lo fcrypt_b.lo"
     lac_CAST_OBJ="c_enc.lo"
     lac_RC4_OBJ="rc4_enc.lo"

@@ -168,10 +168,6 @@ main(int argc, char* argv[])
 	args_error_message(buf); \
     }
 
-    if (argc == 1)
-	args_show_short_help();
-
-
     /* Parsing phase 1: check all arguments that they are valid */
     for (i=1; i<argc; i++)
     {
@@ -414,6 +410,31 @@ main(int argc, char* argv[])
 	    i++;
 	    continue;
 	}
+    }
+
+    if (argc == 1)
+    {
+        printf("subject  : %s\n" 
+               "issuer   : %s\n" 
+               "type     : %s\n" 
+               "strength : %d bits\n"
+               "timeleft : ",
+               subject,
+               issuer,
+               proxy_type,
+               strength );
+        
+        if (time_diff <= 0)
+            time_diff = 0;
+        
+        printf("%ld:%02ld:%02ld",
+               (long)(time_diff / 3600),
+               (long)(time_diff % 3600) / 60,
+               (long)time_diff % 60 );
+        
+        if (time_diff > 3600 * 24)
+            printf("  (%.1f days)", (float)(time_diff / 3600) / 24.0);
+        printf("\n");
     }
 
     free(subject);

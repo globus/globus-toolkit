@@ -87,16 +87,19 @@ GSS_CALLCONV gss_acquire_cred(
 
     *minor_status = 0;
   
-    if (actual_mechs != NULL) {
+    if (actual_mechs != NULL)
+    {
         major_status = gss_indicate_mechs(minor_status,
                                           actual_mechs);
-        if (major_status != GSS_S_COMPLETE) {
+        if (major_status != GSS_S_COMPLETE)
+        {
             *minor_status = gsi_generate_minor_status();
             return  major_status;
         }
     }
 
-    if (time_rec != NULL) {
+    if (time_rec != NULL)
+    {
         *time_rec = GSS_C_INDEFINITE ;
     }
 

@@ -118,6 +118,8 @@ noinst_HEADERS = \
 	testdsa.h \
 	testrsa.h
 
+INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
+
 bin_PROGRAMS = \
 	openssl
 
@@ -129,7 +131,7 @@ openssl_LDADD = ../ssl/libssl_$(GLOBUS_FLAVOR_NAME).la \
 		../crypto/libcrypto_$(GLOBUS_FLAVOR_NAME).la \
 		@GPT_PGM_LINKS@
 
-openssl_LDFLAGS = -all-static @GPT_LDFLAGS@
+openssl_LDFLAGS = @GPT_LDFLAGS@
 
 openssl.o: progs.h openssl.c
 	$(COMPILE) -c openssl.c

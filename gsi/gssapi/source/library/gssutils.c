@@ -726,7 +726,8 @@ gs_retrieve_peer(
     STACK *                             group = NULL;
     ASN1_BIT_STRING *                   group_types = NULL;
     int                                 i;
-    int                                 j=0;
+    int                                 j = 0;
+    int                                 k;
     int                                 cert_count;
     char *                              subgroup;
         
@@ -810,10 +811,10 @@ gs_retrieve_peer(
             goto err;
         }
     
-        while(cert_count-- &&
-              (cert = sk_X509_value(context_handle->pvd.cert_chain,
-                                    cert_count)))
+        for(k=0;k<cert_count;k++)
         {
+            cert = sk_X509_value(context_handle->pvd.cert_chain,k);
+
             extensions = cert->cert_info->extensions;
 
             for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
@@ -1059,6 +1060,7 @@ gss_create_and_fill_cred(
     int                                 status;
     int                                 i;
     int                                 j = 0;
+    int                                 k;
     int                                 cert_count;
     char *                              subgroup;
 
@@ -1243,11 +1245,13 @@ gss_create_and_fill_cred(
     proxy_get_base_name(newcred->globusid->x509n);
 
     
-    cert_count = 1;
-
     if(newcred->pcd->cert_chain)
     {
-        cert_count += sk_X509_num(newcred->pcd->cert_chain);
+        cert_count = sk_X509_num(newcred->pcd->cert_chain);
+    }
+    else
+    {
+        cert_count = 0;
     }
         
     newcred->globusid->group = sk_new_null();
@@ -1270,7 +1274,7 @@ gss_create_and_fill_cred(
 
     cert = newcred->pcd->ucert;
     previous_cert=NULL;
-    cert_count--;
+    k = 0;
 
     do
     {
@@ -1368,8 +1372,9 @@ gss_create_and_fill_cred(
 
         }
         
-    } while(cert_count-- &&
-            (cert = sk_X509_value(newcred->pcd->cert_chain,cert_count)));
+    } while(k < cert_count &&
+            (cert = sk_X509_value(newcred->pcd->cert_chain,k)) &&
+            k++);
 
     *output_cred_handle = newcred;
     

@@ -2551,7 +2551,7 @@ proxy_verify_callback(
         pvd->cert_chain = sk_X509_new_null();
     }
     
-    sk_X509_push(pvd->cert_chain, X509_dup(ctx->current_cert));
+    sk_X509_insert(pvd->cert_chain, X509_dup(ctx->current_cert),0);
 
     pvd->cert_depth++;
 
