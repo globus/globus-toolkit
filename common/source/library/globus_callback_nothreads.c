@@ -904,7 +904,12 @@ globus_callback_space_is_valid(
     globus_callback_space_t             space)
 {
     globus_l_callback_space_t *         i_space;
-
+    
+    if(space = GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        return GLOBUS_TRUE;
+    }
+    
     i_space = (globus_l_callback_space_t *)
         globus_handle_table_lookup(
                 &globus_l_callback_space_table, space);
@@ -913,7 +918,7 @@ globus_callback_space_is_valid(
         return GLOBUS_FALSE;
     }
 
-    return GLOBUS_SUCCESS;
+    return GLOBUS_TRUE;
 }
 
  
@@ -1143,7 +1148,7 @@ globus_callback_space_poll(
                 restart_info.timeout = (globus_abstime_t *) timestop;
             }
             
-            if(globus_abstime_cmp(&time_now, &restart_info.timeout) > 0)
+            if(globus_abstime_cmp(&time_now, restart_info.timeout) > 0)
             {
                 restart_info.timeout = &time_now;
             }
