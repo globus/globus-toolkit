@@ -2173,7 +2173,8 @@ globus_gfs_ipc_set_user(
 
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2247,7 +2248,8 @@ globus_gfs_ipc_set_user_buffer(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2324,7 +2326,8 @@ globus_gfs_ipc_set_cred(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2531,7 +2534,8 @@ globus_gfs_ipc_request_recv(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2601,7 +2605,8 @@ globus_gfs_ipc_request_send(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2664,7 +2669,8 @@ globus_gfs_ipc_request_list(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2735,7 +2741,8 @@ globus_gfs_ipc_request_command(
     /* XXX parameter checlking */
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2995,7 +3002,8 @@ globus_gfs_ipc_request_active_data(
     /* XXX parameter checlking */
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3076,7 +3084,8 @@ globus_gfs_ipc_request_passive_data(
     /* XXX parameter checlking */
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3157,7 +3166,8 @@ globus_gfs_ipc_request_stat(
     ipc = ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3268,7 +3278,8 @@ globus_gfs_ipc_request_data_destroy(
 
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3552,7 +3563,8 @@ globus_gfs_ipc_handle_release(
 
     globus_mutex_lock(&globus_l_ipc_mutex);
     {
-        if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc_handle->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc_handle");
             goto err;
