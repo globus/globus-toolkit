@@ -40,6 +40,8 @@ struct _ssl_credentials
     X509		*certificate;
     EVP_PKEY		*private_key;
     STACK		*certificate_chain;
+
+    globus_gsi_proxy_handle_t	proxy_req;
 };
 
 struct _ssl_proxy_restrictions
@@ -454,95 +456,6 @@ end:
 }
 
 /*
- * ssl_proxy_generate_name()
- *
- * Given a certificate, and the restrictions associated with the
- * proxy we are generating return the name of the proxy certificate
- * that would be generated from the certificate. If no certificate
- * is supplied, a blank name is used.
- *
- * Returns name or NULL on error.
- */
-static X509_NAME *
-ssl_proxy_generate_name(X509				*certificate,
-			SSL_PROXY_RESTRICTIONS		*restrictions)
-{
-    X509_NAME			*name = NULL;
-    X509_NAME_ENTRY		*name_entry =NULL;
-    unsigned char		*proxy_name_extension = PROXY_EXTENSION;
-    
-    if (restrictions != NULL)
-    {
-	/* Handle restrictions */
-	if (restrictions->limited_proxy == 1)
-	{
-	    proxy_name_extension = LIMITED_PROXY_EXTENSION;
-	}
-    }
-    
-    if (certificate != NULL)
-    {
-	name = X509_NAME_dup(X509_get_subject_name(certificate));
-	
-	if (name == NULL)
-	{
-	    verror_put_string("Error reading name from user certificate generateing new proxy request");
-	    ssl_error_to_verror();
-	    goto error;
-	}
-    }
-    else
-    {
-	name = X509_NAME_new();
-	
-	if (name == NULL)
-	{
-	    verror_put_string("Error generating name generateing new proxy request");
-	    ssl_error_to_verror();
-	    goto error;
-	}
-    }
-
-    name_entry = X509_NAME_ENTRY_create_by_NID(NULL,
-					       NID_commonName,
-					       V_ASN1_APP_CHOOSE,
-					       proxy_name_extension,
-					       -1);
-    
-    if (name_entry == NULL)
-    {
-	verror_put_string("Error generating name (proxy extension) generating new proxy_request");
-	ssl_error_to_verror();
-	
-	X509_NAME_free(name);
-	name = NULL;
-	goto error;
-    }
-    
-    if (X509_NAME_add_entry(name, name_entry,
-			    X509_NAME_entry_count(name),
-			    0 /* new set */) == SSL_ERROR)
-    {
-	verror_put_string("Error generating name (appending suffix) generating new proxy_request");
-	ssl_error_to_verror();
-	
-	X509_NAME_free(name);
-	name = NULL;
-	goto error;
-    }
-
-  error:
-    if (name_entry != NULL)
-    {
-	X509_NAME_ENTRY_free(name_entry);
-    }
-    
-    return name;
-}
-
-
-
-/*
  * my_init()
  *
  * Do any needed initialization for these routines.
@@ -562,6 +475,9 @@ my_init()
 	SSL_load_error_strings();
 
 	SSLeay_add_ssl_algorithms();
+
+	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
+	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
     }
 }
 
@@ -596,698 +512,6 @@ my_pass_phrase_callback(char			*buffer,
 }
 	     
 
-/*
- * ssl_keys_check_match()
- *
- * Check to make sure a private and public key go together.
- * Currently only checks RSA keys.
- *
- * Returns SSL_KEYS_MATCH, SSL_KEYS_MISMATCH or SSL_ERROR.
- */
-static int
-ssl_keys_check_match(X509			*certificate,
-		     EVP_PKEY			*private_key)
-{
-    int					return_status = SSL_ERROR;
-    EVP_PKEY				*public_key;
-    
-    assert(certificate != NULL);
-    assert(private_key != NULL);
-    
-    public_key = X509_PUBKEY_get(X509_get_X509_PUBKEY(certificate));
-    
-    if (public_key == NULL)
-    {
-	verror_put_string("Could not certificate key");
-	goto error;
-    }
-
-    if (EVP_MD_type(public_key) != EVP_MD_type(private_key))
-    {
-	verror_put_string("Keys types do not match");
-	return_status = SSL_KEYS_MISMATCH;
-	goto error;
-    }
-    
-    switch (EVP_MD_type(public_key))
-    {
-      case EVP_PKEY_RSA:
-	{
-	    RSA			*private_rsa;
-	    RSA			*public_rsa;
-
-	    private_rsa = private_key->pkey.rsa;
-	    public_rsa = public_key->pkey.rsa;
-	    
-	    if ((public_rsa == NULL) ||
-		(public_rsa->n == NULL))
-	    {
-		verror_put_string("Public key malformed");
-		goto error;
-	    }
-	
-	    if ((private_rsa == NULL) ||
-		(private_rsa->n == NULL))
-	    {
-		verror_put_string("Private key malformed");
-		goto error;
-	    }
-	
-	    if (BN_cmp(public_rsa->n, private_rsa->n) == 1)
-	    {
-		return_status = SSL_KEYS_MISMATCH;
-	    }
-	    else
-	    {
-		return_status = SSL_KEYS_MATCH;
-	    }
-	}
-	
-	break;
-	
-      default:
-	verror_put_string("Unrecognized key type");
-	goto error;
-    }
-
-  error:
-    return return_status;
-}
-
-    
-
-
-/*
- * ssl_x509_request_to_buffer()
- *
- * Dump the given X509 request structure to an allocated buffer.
- *
- * Returns SSL_SUCCESS or SSL_ERROR
- */
-static int
-ssl_x509_request_to_buffer(X509_REQ		*request,
-			   unsigned char	**buffer,
-			   int			*buffer_length)
-{
-    int				return_status = SSL_ERROR;
-    BIO				*bio = NULL;
-    
-    assert(request != NULL);
-    assert(buffer != NULL);
-    assert(buffer_length != NULL);
-
-    bio = BIO_new(BIO_s_mem());
-    
-    if (bio == NULL)
-    {
-	verror_put_string("Failed dumping X509 request to buffer (BIO_new() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    
-    if (i2d_X509_REQ_bio(bio, request) == SSL_ERROR)
-    {
-	verror_put_string("Failed dumping X509 request to buffer");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR)
-    {
-	goto error;
-    }
-        
-    /* Success */
-    return_status = SSL_SUCCESS;
-    
-  error:
-    if (bio != NULL)
-    {
-	BIO_free(bio);
-    }
-    
-    return return_status;
-}
-
-
-/*
- * ssl_x509_request_from_buffer()
- *
- * Parse a buffer as generated by ssl_x509_request_to_buffer() and
- * return the X509_REQ object.
- *
- * Returns SSL_SUCCESS or SSL_ERROR.
- */
-static int
-ssl_x509_request_from_buffer(unsigned char	*buffer,
-			     int		buffer_length,
-			     X509_REQ		**p_request)
-{
-    X509_REQ			*request = NULL;
-    BIO				*bio = NULL;
-    int				return_status = SSL_ERROR;
-    
-    assert(buffer != NULL);
-    assert(p_request != NULL);
-    
-    bio = bio_from_buffer(buffer, buffer_length);
-    
-    if (bio == NULL)
-    {
-	verror_put_string("Failed unpacking X509 request from buffer");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    request = d2i_X509_REQ_bio(bio, NULL /* make new req */);
-    
-    if (request == NULL)
-    {
-	verror_put_string("Failed unpacking X509 request from buffer");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    /* Success */
-    *p_request = request;
-    return_status = SSL_SUCCESS;
-
-  error:
-    if (bio)
-    {
-	BIO_free(bio);
-    }
-    
-    if (return_status == SSL_ERROR)
-    {
-	if (request)
-	{
-	    X509_REQ_free(request);
-	}
-    }
-    
-    return return_status;
-}
-
-/*
- * ssl_x509_request_verify()
- *
- * Check the X509_REQUEST object and make sure it's properly formed
- * and signed. Note that this does not look at the name.
- *
- * Returns SSL_SUCCESS or SSL_ERROR.
- */
-static int
-ssl_x509_request_verify(X509_REQ		*request)
-{
-    int				return_status = SSL_ERROR;
-    EVP_PKEY			*request_public_key = NULL;
-    int				verify_result;
-    
-    assert(request != NULL);
-    
-    /* Make sure all the data appears to be present */
-    if ((request->req_info == NULL) ||
-	(request->req_info->pubkey == NULL) ||
-	(request->req_info->pubkey->public_key == NULL) ||
-	(request->req_info->pubkey->public_key->data == NULL))
-    {
-	verror_put_string("X509 request missing data");
-	goto error;
-    }
-
-    /* Check signature on request */
-    request_public_key = X509_REQ_get_pubkey(request);
-    
-    if (request_public_key == NULL)
-    {
-	verror_put_string("Error getting public key from X509 request");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    verify_result = X509_REQ_verify(request, request_public_key);
-    
-    if (verify_result < 0)
-    {
-	verror_put_string("Error verifying X509 request");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    if (verify_result == 0)
-    {
-	verror_put_string("Bad signature on request");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Success */
-    return_status = SSL_SUCCESS;
-    
-  error:
-    return return_status;
-}
-
-    
-/**********************************************************************
- *
- * These are fairly major internal functions that rely on a lot
- * of the internal function above.
- *
- */
-
-
-/*
- * ssl_x509_request_generate()
- *
- * Generate a certificate request.
- *
- * p_creds is filled in with a pointer to the start of the new
- * credentials.
- *
- * p_request is filled in with a pointer to the new request.
- *
- * requested_bits is the number of bits to used for the keys
- * of the new certificate. May be zero in which case a default
- * of 512 is used.
- *
- * callback is a function to be called back during the RSA key
- * generation. See SSLeay's doc/rsa.doc RSA_generate_key()
- * function for details.
- *
- * Returns SSL_ERROR or SSL_SUCCESS
- */
-static int
-ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
-			  X509_REQ		**p_request,
-			  X509_NAME		*requested_name,
-			  int			requested_bits,
-			  void			 (*callback)(int,int,void *))
-{
-    const int			default_key_size = 512;	/* bits */
-    SSL_CREDENTIALS		*creds = NULL;
-    X509_NAME			*name = NULL;
-    int				return_status = SSL_ERROR;
-    EVP_PKEY			*key = NULL;
-    RSA				*rsa = NULL;
-    X509_REQ			*request = NULL;
-    
-    assert(p_creds != NULL);
-    assert(p_request != NULL);
- 
-    /* Make new credentials structure to hold new certificate */
-    creds = ssl_credentials_new();
-    
-    if (creds == NULL)
-    {
-	goto error;
-    }
-    
-    /* How many bits do we want the new key to be? */
-    if (requested_bits == 0)
-    {
-	requested_bits = default_key_size;
-    }
-
-    /* XXX DK: feed RAND_seed() with enough data */
-     /* Generate key for request */
-    rsa = RSA_generate_key(requested_bits,
-			   RSA_F4 /* public exponent */,
-			   callback,
-			   NULL /* callback argument */);
-    
-    if (rsa == NULL)
-    {
-	verror_put_string("Error generating new keys for proxy request");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Build the request */
-    request = X509_REQ_new();
-    
-    if (request == NULL)
-    {
-	verror_put_string("Error generating new proxy request structure");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Not sure what this does */
-    if (X509_REQ_set_version(request, 0L) == SSL_ERROR)
-    {
-	verror_put_string("Error generating new proxy request (setting version)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /*
-     * Just use an empty name and let signer fill in the correct name.
-     */
-    if (requested_name != NULL)
-    {
-	name = X509_NAME_dup(requested_name);
-
-	if (name == NULL)
-	{
-	    verror_put_string("Error generating new proxy request (duping name)");
-	    ssl_error_to_verror();
-	    goto error;
-	}
-    }
-    else
-    {
-	X509_NAME_ENTRY			*name_entry = NULL;
-
-	/*
-	 * We have no name to go on, however we can't just use an empty
-	 * name as this causes d2i_X509_REQ_bio() to fail if we ever
-	 * take this req and turn it into a buffer and then convert
-	 * it back. I'm guessing this means that a req with an empty
-	 * is probably illegal.
-	 *
-	 * So for now we will just create a bogus name to use. The
-	 * idea is that whomever signs this certificate will put in
-	 * whatever name they want anyways.
-	 */
-	name = X509_NAME_new();
-
-	if (name == NULL)
-	{
-	    verror_put_string("Error generating new proxy request (generating name)");
-	    ssl_error_to_verror();
-	    goto error;
-	}
-
-	/* "certreq" is the bogus name I picked arbitratily */
-	name_entry = X509_NAME_ENTRY_create_by_NID(NULL /* make new entry */,
-						   NID_commonName,
-						   V_ASN1_APP_CHOOSE,
-						   (unsigned char *) "certreq",
-						   -1 /* use strlen() */);
-	
-	if (name_entry == NULL)
-	{
-	    verror_put_string("Error generating new proxy request (generating empty name)");
-	    ssl_error_to_verror();
-	    goto error;
-	}
-
-	if (X509_NAME_add_entry(name, name_entry,
-				X509_NAME_entry_count(name),
-				0 /* create new set */) == SSL_ERROR)
-	{
-	   X509_NAME_ENTRY_free(name_entry);
-	   verror_put_string("Error generating new proxy request (adding name entry)");
-	   ssl_error_to_verror();
-	   goto error;
-	}
-
-	X509_NAME_ENTRY_free(name_entry);
-	
-    }
-    
-    if (name == NULL)
-    {
-	verror_put_string("Error generating new proxy request (generating name)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    if (X509_REQ_set_subject_name(request, name) == SSL_ERROR)
-    {
-	verror_put_string("Error generating new proxy request (setting name)");
-	ssl_error_to_verror();
-	goto error;
-    }	
-
-    key = EVP_PKEY_new();
-    
-    if (key == NULL)
-    {
-	verror_put_string("Error generating new proxy keys");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    if (EVP_PKEY_assign_RSA(key, rsa) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy request (assigning RSA key)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    if (X509_REQ_set_pubkey(request, key) == SSL_ERROR)
-    {
-	verror_put_string("Error generating new proxy request (setting public key)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    if (X509_REQ_sign(request, key, EVP_md5()) == SSL_ERROR)
-    {
-	verror_put_string("Error generating new proxy request (signing request)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Success */
-    creds->private_key = key;
-
-    *p_creds = creds;
-    creds = NULL;
-    
-    *p_request = request;
-    request = NULL;
-
-    return_status = SSL_SUCCESS;
-    
-
-  error:
-    if (name != NULL)
-    {
-	X509_NAME_free(name);
-    }
-
-    if (return_status == SSL_ERROR)
-    {
-    
-	if (key != NULL)
-	{
-	    EVP_PKEY_free(key);
-	}
-    
-	if (request != NULL)
-	{
-	    X509_REQ_free(request);
-	}
-
-	if (rsa != NULL)
-	{
-	    RSA_free(rsa);
-	}
-
-	if (creds != NULL)
-	{
-	    ssl_credentials_destroy(creds);
-	}
-    }
-    
-    return return_status;
-}
-
-
-/*
- * ssl_proxy_request_sign()
- *
- * Given the credentials and a certificate request, generate a proxy
- * certificate. ssl_x509_request_verify() is used to check the request.
- *
- * restrictions, if non-NULL, will be applied.
- *
- * Returns SSL_SUCCESS or SSL_ERROR
- */
-static int
-ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
-		       X509_REQ			*request,
-		       SSL_PROXY_RESTRICTIONS	*restrictions,
-		       X509			**p_proxy_cert)
-{
-    long			lifetime = PROXY_DEFAULT_LIFETIME;
-    X509_NAME			*proxy_name = NULL;
-    X509			*proxy_certificate = NULL;
-    ASN1_INTEGER		*serial_number = NULL;
-    EVP_PKEY                    *request_public_key = NULL;
-    int				return_status = SSL_ERROR;
-    
-    assert(creds != NULL);
-    assert(request != NULL);
-    assert(p_proxy_cert != NULL);
-    
-    if (ssl_x509_request_verify(request) == SSL_ERROR)
-    {
-	goto error;
-    }
-
-    if (restrictions != NULL)
-    {
-	/* Parse restrictions */
-	if (restrictions->lifetime != 0)
-	{
-	    lifetime = restrictions->lifetime;
-	}
-    }
-
-    /* Make the certificate we will turn into the proxy */
-    proxy_certificate = X509_new();
-    
-    if (proxy_certificate == NULL)
-    {
-	verror_put_string("Error generating proxy certificate (X509_new() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Generate the name the proxy certificate will have */
-    proxy_name = ssl_proxy_generate_name(creds->certificate, restrictions);
-    
-    if (proxy_name == NULL)
-    {
-	goto error;
-    }
-
-    if (X509_set_subject_name(proxy_certificate, proxy_name) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy_certificate (error setting name)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    if (X509_set_issuer_name(proxy_certificate,
-			     X509_get_subject_name(creds->certificate)) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy_certificate (error setting issuer name)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    /* Assign proxy same serial number as user certificate */
-    serial_number = X509_get_serialNumber(creds->certificate);
-    
-    if (X509_set_serialNumber(proxy_certificate, serial_number) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy_certificate (setting serial number)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Allow for clock skew */
-    X509_gmtime_adj(X509_get_notBefore(proxy_certificate),
-		    -(PROXY_CLOCK_SKEW_ALLOWANCE));
-
-    /* Set expiration time */
-    if (lifetime == -1L)
-    {
-	ASN1_UTCTIME		*user_cert_expires;
-	
-	/*
-	 * Maximum lifetime requested, so set to the lifetime of the
-	 * signing certificate.
-	 */
-	user_cert_expires = X509_get_notAfter(creds->certificate);
-	
-	X509_set_notAfter(proxy_certificate, user_cert_expires);
-	}
-    else
-    {
-	/* Set to requested lifetime */
-	X509_gmtime_adj(X509_get_notAfter(proxy_certificate), lifetime);
-    }
-
-    /* Copy public key from request to certificate */
-    request_public_key = X509_REQ_get_pubkey(request);
-    if (X509_set_pubkey(proxy_certificate, request_public_key) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy_certificate (setting public key)");
-	ssl_error_to_verror();
-	goto error;
-    }	
-
-    /* Set the certificate version */
-    if (X509_set_version(proxy_certificate, PROXY_DEFAULT_VERSION) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy_certificate (setting version)");
-	ssl_error_to_verror();
-	goto error;
-    }	
-    
-    /* Clear any extensions on certificate */
-    if (proxy_certificate->cert_info->extensions != NULL)
-    {
-	sk_X509_EXTENSION_pop_free(proxy_certificate->cert_info->extensions,
-				   X509_EXTENSION_free);
-    }
- 
-    /*
-     * This is were we would add any extensions
-     */
-
-#ifndef NO_DSA
-    {
-	EVP_PKEY *pktmp = NULL;
-	
-	/* DEE? not sure what this is doing, I think
-	 * it is adding from the key to be used to sign to the 
-	 * new certificate any info DSA may need
-	 */
-	pktmp = X509_get_pubkey(proxy_certificate);
-
-	if (EVP_PKEY_missing_parameters(pktmp) &&
-	    !EVP_PKEY_missing_parameters(creds->private_key))
-	{
-	    EVP_PKEY_copy_parameters(pktmp, creds->private_key);
-	}
-    }
-#endif
-
-    if (X509_sign(proxy_certificate,
-		  creds->private_key,
-		  EVP_md5()) == SSL_ERROR)
-    {
-	verror_put_string("Error generating proxy_certificate (signing certificate)");
-	ssl_error_to_verror();
-	goto error;
-    }	
-    
-    /* Success */
-    *p_proxy_cert = proxy_certificate;
-
-    return_status = SSL_SUCCESS;
-    
-  error:
-    if (proxy_name != NULL)
-    {
-	X509_NAME_free(proxy_name);
-    }
-
-    /* XXX Need to free serial_number? */
-
-    if (return_status == SSL_ERROR)
-    {
-	if (proxy_certificate != NULL)
-	{
-	    X509_free(proxy_certificate);
-	}
-    }
-    
-    return return_status;
-}
-
-    
-    
-    
 /**********************************************************************
  *
  * API Functions
@@ -1930,53 +1154,46 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 			  int			requested_bits,
 			  void			(*callback)(int,int,void *))
 {
-    SSL_CREDENTIALS		*creds = NULL;
-    X509_REQ			*request = NULL;
     int				return_status = SSL_ERROR;
+    globus_result_t		local_result;
+    BIO	      			*bio = NULL;
 
-    
     my_init();
     
     assert(new_creds != NULL);
     assert(buffer != NULL);
     assert(buffer_length != NULL);
 
-    /* Generate the request */
-    if (ssl_x509_request_generate(&creds,
-				  &request,
-				  NULL /* no name */,
-				  requested_bits,
-				  callback) == SSL_ERROR)
-    {
+    *new_creds = ssl_credentials_new();
+
+    local_result = globus_gsi_proxy_handle_init(&(*new_creds)->proxy_req,
+						NULL);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_proxy_handle_init() failed");
+	goto error;
+    }
+    bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+	verror_put_string("BIO_new() failed");
+	goto error;
+    }
+    local_result = globus_gsi_proxy_create_req((*new_creds)->proxy_req, bio);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_proxy_create_req() failed");
+	goto error;
+    }
+    if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR) {
+	verror_put_string("bio_to_buffer() failed");
 	goto error;
     }
     
-    /* Request successfully generated, now dump to buffer */
-    if (ssl_x509_request_to_buffer(request,
-				   buffer,
-				   buffer_length) == SSL_ERROR)
-    {
-	goto error;
-    }
-
     /* Success */
     return_status = SSL_SUCCESS;
 
-    *new_creds = creds;
-    creds = NULL;
-
   error:
-    if (request != NULL)
-    {
-	X509_REQ_free(request);
-    }
-    
-    if (return_status == -1)
-    {
-	if (creds != NULL)
-	{
-	    ssl_credentials_destroy(creds);
-	}
+
+    if (bio) {
+	BIO_free(bio);
     }
     
     return return_status;
@@ -1991,9 +1208,8 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
     BIO				*bio = NULL;
     int				return_status = SSL_ERROR;
     unsigned char		number_of_certs;
-    X509			*proxy_cert = NULL;
-    int				cert_index = 0;
-    STACK			*cert_chain = NULL;
+    globus_result_t		local_result;
+    globus_gsi_cred_handle_t	cred_handle;
 
     assert(creds != NULL);
     assert(buffer != NULL);
@@ -2014,7 +1230,7 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
      *          -the certificate chain
      */
 
-    /* Read number of certificates */
+    /* Read number of certificates for backward compatibility */
     if (BIO_read(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR)
     {
 	verror_put_string("Failed unpacking proxy certificate from buffer (reading number of certificates)");
@@ -2029,67 +1245,37 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
 	goto error;
     }
 
-    /* Now read the proxy certificate */
-    proxy_cert = d2i_X509_bio(bio, NULL /* make new cert */);
-    
-    if (proxy_cert == NULL)
-    {
-	verror_put_string("Failed unpacking proxy certificate from buffer (reading proxy certificate)");
-	ssl_error_to_verror();
-	goto error;
-    }	
-
-    /*
-     * Check to make sure new proxy certificate matches private key we
-     * generated earlier.
-     */
-    switch(ssl_keys_check_match(proxy_cert, creds->private_key))
-    {
-      case SSL_KEYS_MATCH:
-	break;
-	
-      case SSL_KEYS_MISMATCH:
-	verror_put_string("Proxy certificate does not match private key");
-	goto error;
-	
-      default:
+    /* read the proxy certificate and certificate chain */
+    local_result = globus_gsi_proxy_assemble_cred(creds->proxy_req,
+						  &cred_handle, bio);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_proxy_assemble_cred() failed");
 	goto error;
     }
-    
-    cert_index++;
-    
-    /* Now read the certificate chain */
-    cert_chain = sk_new_null();
-    
-    while (cert_index < number_of_certs)
-    {
-	X509		*cert;
-	
-	cert = d2i_X509_bio(bio, NULL /* make new cert */);
-    
-	if (cert == NULL)
-	{
-	    verror_put_string("Failed unpacking proxy certificate from buffer (reading cert chain)");
-	    ssl_error_to_verror();
-	    goto error;
-	}
 
-	if (sk_push(cert_chain, (char *) cert) == SSL_ERROR)
-	{
-	    verror_put_string("Failed unpacking proxy certificate from buffer (building cert chain)");
-	    ssl_error_to_verror();
-	    X509_free(cert);
-	    goto error;
-	}
+    /* don't need the proxy_req anymore */
+    globus_gsi_proxy_handle_destroy(creds->proxy_req);
 
-	cert_index++;
+    /* pull out what we need from the cred_handle */
+    local_result = globus_gsi_cred_get_cert(cred_handle,
+					    &creds->certificate);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_get_cert() failed");
+	goto error;
     }
-    
-    /* Success */
-
-    /* XXX Should free any current contents first */
-    creds->certificate = proxy_cert;
-    creds->certificate_chain = cert_chain;
+    local_result = globus_gsi_cred_get_key(cred_handle,
+					   &creds->private_key);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_get_key() failed");
+	goto error;
+    }
+    local_result = globus_gsi_cred_get_cert_chain(cred_handle,
+						  &creds->certificate_chain);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_get_cert_chain() failed");
+	goto error;
+    }
+    globus_gsi_cred_handle_destroy(cred_handle);
 
     return_status = SSL_SUCCESS;
     
@@ -2099,19 +1285,6 @@ ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
 	BIO_free(bio);
     }
     
-    if (return_status == SSL_ERROR)
-    {
-	if (proxy_cert != NULL)
-	{
-	    X509_free(proxy_cert);
-	}
-	
-	if (cert_chain != NULL)
-	{
-	    ssl_cert_chain_free(cert_chain);
-	}
-    }
-
     return return_status;
 }
 
@@ -2129,6 +1302,13 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     BIO				*bio = NULL;
     unsigned char		number_of_certs;
     int				index;
+    globus_gsi_proxy_handle_t	proxy_handle;
+    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs;
+    globus_gsi_cred_handle_t	cred_handle;
+    globus_result_t		local_result;
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* handle API changes */
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+#endif
     
     assert(creds != NULL);
     assert(creds->certificate);
@@ -2138,41 +1318,117 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     assert(output_buffer_length != NULL);
 
     my_init();
-    
-    /* Get the request for the buffer */
-    if (ssl_x509_request_from_buffer(input_buffer,
-				     input_buffer_length,
-				     &request) == SSL_ERROR)
-    {
+
+    /* initialize cred_handle with our credential so we can use
+       Globus GSI API */
+    local_result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_handle_init() failed");
 	goto error;
     }
-    
-    /* Verify request and make certificate */
-    if (ssl_proxy_request_sign(creds,
-			       request,
-			       restrictions,
-			       &proxy_certificate) == SSL_ERROR)
-    {
+    local_result = globus_gsi_cred_set_cert(cred_handle, creds->certificate);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_set_cert() failed");
+	goto error;
+    }
+    local_result = globus_gsi_cred_set_key(cred_handle, creds->private_key);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_set_key() failed");
+	goto error;
+    }
+    local_result = globus_gsi_cred_set_cert_chain(cred_handle,
+						  creds->certificate_chain);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cred_set_cert_chain() failed");
 	goto error;
     }
 
-    /* Now dump certificate and cert chain to buffer */
+    /* Set lifetime in proxy_handle_attrs for GT 2.2 compatibility. */
+    globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
+#if !defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
+    if (!restrictions || !restrictions->lifetime) {
+	globus_gsi_proxy_handle_attrs_set_time_valid(proxy_handle_attrs, PROXY_DEFAULT_LIFETIME/60);
+    } else if (restrictions->lifetime > 0) {
+	globus_gsi_proxy_handle_attrs_set_time_valid(proxy_handle_attrs, restrictions->lifetime/60);
+    }
+#endif
+
+    /* proxy handle is the proxy we're going to sign */
+    local_result = globus_gsi_proxy_handle_init(&proxy_handle,
+						proxy_handle_attrs);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_proxy_handle_init() failed");
+	goto error;
+    }
+
+    /* done with proxy_handle_attrs now */
+    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+
+    /* get proxy request */
     bio = BIO_new(BIO_s_mem());
-    
-    if (bio == NULL)
-    {
-	verror_put_string("Failed dumping proxy certificate to buffer (BIO_new() failed)");
-	ssl_error_to_verror();
+    if (bio == NULL) {
+	verror_put_string("BIO_new() failed");
 	goto error;
     }
+    if (BIO_write(bio, input_buffer, input_buffer_length) < 0) {
+	verror_put_string("BIO_write() failed");
+	goto error;
+    }
+    local_result = globus_gsi_proxy_inquire_req(proxy_handle, bio);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_proxy_inquire_req() failed");
+	goto error;
+    }
+    BIO_free(bio);
+    bio = NULL;
 
-    /*
-     * Determine the number of certificates we are going to write to
-     * to the buffer. We add two - one for the signer's certificate
-     * and one for the proxy certificate.
-     */
+    /* Set lifetime and limited options on proxy before signing. */
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
+    local_result = globus_gsi_cert_utils_get_cert_type(creds->certificate,
+						       &cert_type);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+	goto error;
+    }
+    if (GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
+	local_result = globus_gsi_proxy_handle_set_type(proxy_handle,
+							cert_type);
+	if (local_result != GLOBUS_SUCCESS) {
+	    verror_put_string("globus_gsi_proxy_handle_set_type() failed");
+	    goto error;
+	}
+    }
+    if (restrictions && restrictions->limited_proxy) {
+	globus_gsi_proxy_handle_get_type(proxy_handle, &cert_type);
+	if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)) {
+	    globus_gsi_proxy_handle_set_type(proxy_handle, GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
+	} else if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) {
+	    globus_gsi_proxy_handle_set_type(proxy_handle, GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
+	} else {
+	    verror_put_string("unknown proxy type for limited proxy");
+	    goto error;
+	}
+    }
+    if (!restrictions || !restrictions->lifetime) {
+	globus_gsi_proxy_handle_set_time_valid(proxy_handle,
+					       PROXY_DEFAULT_LIFETIME/60);
+    } else if (restrictions->lifetime > 0) {
+	globus_gsi_proxy_handle_set_time_valid(proxy_handle,
+					       restrictions->lifetime/60);
+    }
+#else
+    if (restrictions && restrictions->limited_proxy) {
+	globus_gsi_proxy_handle_set_is_limited(proxy_handle, 1);
+    }
+#endif
+
+    /* send number of certificates in reply for backward compatibility */
+    bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+	verror_put_string("BIO_new() failed");
+	goto error;
+    }
     number_of_certs = sk_num(creds->certificate_chain) + 2;
-
     if (BIO_write(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR)
     {
 	verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
@@ -2180,17 +1436,14 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	goto error;
     }
 
-    /*
-     * Now write out proxy certificate, followed by the signing certificate
-     * and then the signing certificate's chain.
-     */
-    if (i2d_X509_bio(bio, proxy_certificate) == SSL_ERROR)
-    {
-	verror_put_string("Failed dumping proxy certificate to buffer (write of proxy cert failed)");
-	ssl_error_to_verror();
+    /* sign request and write out proxy certificate to bio */
+    local_result = globus_gsi_proxy_sign_req(proxy_handle, cred_handle, bio);
+    if (local_result != GLOBUS_SUCCESS) {
+	verror_put_string("globus_gsi_proxy_sign_req() failed");
 	goto error;
     }
 
+    /* then write out our signing certificate... */
     if (i2d_X509_bio(bio, creds->certificate) == SSL_ERROR)
     {
 	verror_put_string("Failed dumping proxy certificate to buffer (write of signing cert failed)");
@@ -2198,6 +1451,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	goto error;
     }
 
+    /* ...and any other certificates in the chain. */
     for (index = 0; index < sk_num(creds->certificate_chain); index++)
     {
 	X509		*cert;
