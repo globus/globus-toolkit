@@ -1048,6 +1048,7 @@ gss_create_and_fill_cred(
     gss_cred_id_desc **                 output_cred_handle = 
         (gss_cred_id_desc**) output_cred_handle_P ;
     OM_uint32                           major_status = GSS_S_NO_CRED;
+    OM_uint32                           minor_status;
     gss_cred_id_desc *                  newcred;
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
@@ -1064,6 +1065,8 @@ gss_create_and_fill_cred(
 #ifdef DEBUG
     fprintf(stderr,"gss_create_and_fill_cred\n");
 #endif
+
+    *output_cred_handle = NULL;
 
     newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc)) ;
 
@@ -1370,11 +1373,12 @@ gss_create_and_fill_cred(
     
     major_status = GSS_S_COMPLETE;
 
+    return major_status;
+    
 err:
-    /* user will call delete_sec_context to cleanup the cred. */
 
-    *output_cred_handle = newcred;
-
+    gss_release_cred(&minor_status,(gss_cred_id_t *) &newcred);
+    
 #ifdef DEBUG
     fprintf(stderr,"gss_create_and_fill_cred:major_status:%08x\n",major_status);
 #endif
