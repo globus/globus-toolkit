@@ -1418,7 +1418,7 @@ globus_l_gram_job_manager_print_rsl_value(
 	    fputc('\'', fp);
 	    while(*tmp)
 	    {
-		if(*tmp == '\'')
+		if(*tmp == '\'' || *tmp == '\\')
 		{
 		    fputc('\\', fp);
 		    fputc(*tmp, fp);
