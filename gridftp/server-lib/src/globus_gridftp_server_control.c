@@ -165,6 +165,7 @@ static globus_gridftp_server_control_attr_t globus_l_gsc_default_attr;
 static globus_xio_driver_t              globus_l_gsc_tcp_driver;
 static globus_xio_driver_t              globus_l_gsc_gssapi_ftp_driver;
 static globus_xio_driver_t              globus_l_gsc_telnet_driver;
+static globus_xio_driver_t              globus_l_gsc_queue_driver;
 
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_CONTROL);
 
@@ -191,6 +192,11 @@ globus_l_gsc_activate()
         return GLOBUS_FAILURE;
     }
     res = globus_xio_driver_load("tcp", &globus_l_gsc_tcp_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return GLOBUS_FAILURE;
+    }
+    res = globus_xio_driver_load("queue", &globus_l_gsc_queue_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -488,6 +494,7 @@ globus_l_gsc_read_cb(
                 {
                     if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
                     {
+                        /* for final reply use the ref on the read cb */
                         server_handle->state=GLOBUS_L_GSC_STATE_PROCESSING;
                         res = globus_l_gsc_final_reply(
                             server_handle,
@@ -511,13 +518,12 @@ globus_l_gsc_read_cb(
                     }
                     else
                     {
-                        server_handle->ref--;
                         server_handle->state = GLOBUS_L_GSC_STATE_ABORTING;
                         /*
                          *  cancel the outstanding command.  In its callback
                          *  we flush the q and respond to the ABOR
                          */
-                        globus_assert(server_handle->outstanding_op!=NULL);
+                        globus_assert(server_handle->outstanding_op != NULL);
 
                         server_handle->outstanding_op->aborted = GLOBUS_TRUE;
                         if(server_handle->outstanding_op->event.event_mask &
@@ -948,7 +954,6 @@ globus_l_gsc_final_reply_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        server_handle->ref--;
         server_handle->reply_outstanding = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
@@ -956,6 +961,7 @@ globus_l_gsc_final_reply_cb(
             goto err;
         }
 
+        server_handle->ref--;
         switch(server_handle->state)
         {
             case GLOBUS_L_GSC_STATE_ABORTING:
@@ -985,6 +991,7 @@ globus_l_gsc_final_reply_cb(
                         server_handle->ref--;
                         globus_i_gsc_terminate(server_handle);
                     }
+                    server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
                 }
                 break;
 
@@ -1970,6 +1977,13 @@ globus_gridftp_server_control_start(
             res = globus_xio_stack_push_driver(
                 xio_stack, globus_l_gsc_telnet_driver);
         }
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_unlock(&server_handle->mutex);
+            goto err;
+        }
+        res = globus_xio_stack_push_driver(
+            xio_stack, globus_l_gsc_queue_driver);
         if(res != GLOBUS_SUCCESS)
         {
             globus_mutex_unlock(&server_handle->mutex);
