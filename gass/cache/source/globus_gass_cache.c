@@ -1179,10 +1179,8 @@ globus_l_gass_cache_lock_file(
     int    return_code=GLOBUS_SUCCESS;
 
 #   ifdef LOCK_TOUT
-    {
 	int    lock_tout=0;
 	struct timeval tv;
-    }
 #   endif
 
     /* build the name of the file used to lock "file_to_be_locked" */
