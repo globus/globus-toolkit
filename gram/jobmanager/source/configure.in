@@ -5,12 +5,18 @@ AC_INIT(Makefile.am)
 
 GLOBUS_INIT
 
+if test "x$AKENTI_LOCATION" = "x"; then
+	echo "ERROR Please specify AKENTI_LOCATION" >&2
+	exit 1
+fi
+
+
 AM_PROG_LIBTOOL
+
+AC_PROG_CXX
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
-
-LAC_DOXYGEN("../", "*.dox")
 
 GLOBUS_FINALIZE
 
@@ -19,7 +25,6 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	scripts/Makefile
-	doxygen/Makefile
-	doxygen/Doxyfile
-	doxygen/Doxyfile-internal
+        Makefile
+        version.h
 )
