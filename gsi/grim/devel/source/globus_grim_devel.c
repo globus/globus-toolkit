@@ -1323,7 +1323,7 @@ globus_l_grim_port_type_end(
         s = info->port_type;
         len = info->port_type_len;
         
-        while((*s == ' ' || *s == '\n' || s == '\r') && *s != '\0')
+        while((*s == ' ' || *s == '\n' || *s == '\r') && *s != '\0')
         {
             s++;
             len--;
@@ -1352,13 +1352,11 @@ globus_l_grim_port_type_end(
 
         if(info->remove)
         {
-fprintf(stderr, "removing %s\n", info->port_type);
             for(list = info->list; 
                 !globus_list_empty(list); 
                 list = globus_list_rest(list))
             {
                 pt = (char *) globus_list_first(list);
-fprintf(stderr, "######## %s == %s\n", pt, info->port_type);
                 if(strcmp(pt, info->port_type) == 0)
                 {
                     globus_list_remove(&info->list, list);
@@ -1384,8 +1382,6 @@ globus_l_grim_port_type_cdata(
     int                                     len)
 {   
     struct globus_l_grim_port_type_info_s * info;
-    globus_list_t *                         list;
-    char *                                  pt;
     
     info = (struct globus_l_grim_port_type_info_s *) data;
 
