@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(SolutionDir)&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;\core\source\win32\nonthreaded;\gsi\openssl_error\source\library;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\callback\source\library;\gsi\cert_utils\source\library;\gsi\openssl_module\source\library"
+				AdditionalIncludeDirectories="\include;&quot;$(SolutionDir)&quot;;\include\nonthreaded;\core\source\win32\nonthreaded;\gsi\openssl_error\source\library;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\callback\source\library;\gsi\cert_utils\source\library;\gsi\openssl_module\source\library"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
