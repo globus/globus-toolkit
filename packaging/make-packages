@@ -70,6 +70,7 @@ checkout_cvs_generic() {
 		mkdir $checkoutdir
 		cd $checkoutdir
 		cvs co $cvs_opts all 
+		cd ..
 	elif [ $update = 1 ]; then
 		echo "Updating CVS checkout."
 		# cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
@@ -351,7 +352,8 @@ install_bundle() {
 read_args() {
 	dir=""
 	install=-1
-	onlyc=-1
+	buildjava=1
+	buildc=1
 	package=""
 	release=-1
 	tag=""
@@ -380,7 +382,12 @@ read_args() {
 			usage
 			exit
 		elif [ $1 = "-c" ]; then
-			onlyc=1;
+			buildjava=-1;
+			buildc=1;
+			shift;
+		elif [ $1 = "-j" ]; then
+			buildjava=1;
+			buildc=-1;
 			shift;
 		elif [ $1 = "-a" ]; then
 			anonymous=1;
@@ -392,7 +399,7 @@ read_args() {
 		fi
 	done
 
-	export install tag update package onlyc release;
+	export buildc buildjava install tag update package onlyc release;
 }
 
 
@@ -418,18 +425,20 @@ checkout_cvs $tag
 
 #This is the poor man's dependency code ...
 
-if [ $onlyc != 1 ]; then
+if [ $buildjava = 1 ]; then
 	echo Building Java-only packages
 	dir_iter package-list
 	echo
 fi
 
-echo Building GT2 from CVS ...
-install_gt2_source `pwd`/gt2-installation
+if [ $buildc = 1 ]; then
+	echo Building GT2 from CVS ...
+	install_gt2_source `pwd`/gt2-installation
 
-echo Building C-dependent packages
-install_cdeps
-dir_iter package-list-cdeps
+	echo Building C-dependent packages
+	install_cdeps
+	dir_iter package-list-cdeps
+fi
 
 collate_packages
 
