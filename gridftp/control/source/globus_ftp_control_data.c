@@ -5550,7 +5550,7 @@ globus_l_ftp_data_stripe_poll(
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 /*
@@ -6094,6 +6094,7 @@ globus_l_ftp_control_send_data_kickout(
     globus_l_ftp_handle_table_entry_t *          entry;
     globus_ftp_data_connection_t *               data_conn;
     globus_ftp_data_stripe_t *                   stripe;
+    globus_bool_t                               poll;
     globus_l_ftp_send_eof_entry_t *              send_eof_ent = GLOBUS_NULL;
 
     entry = (globus_l_ftp_handle_table_entry_t *)user_args;
@@ -6179,12 +6180,14 @@ globus_l_ftp_control_send_data_kickout(
         /*
          *  decrement the reference this callback has
          */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
-
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
     globus_free(entry);
 }
 
@@ -6664,6 +6667,7 @@ globus_l_ftp_control_command_kickout(
     globus_l_ftp_handle_table_entry_t *          entry;
     globus_i_ftp_dc_handle_t *                   dc_handle;
     globus_i_ftp_dc_transfer_handle_t *          transfer_handle;
+    globus_bool_t                               poll;
 
     entry = (globus_l_ftp_handle_table_entry_t *)user_args;
     dc_handle = entry->dc_handle;
@@ -6685,7 +6689,7 @@ globus_l_ftp_control_command_kickout(
     globus_mutex_lock(&dc_handle->mutex);
     {
         dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -6697,7 +6701,10 @@ globus_l_ftp_control_command_kickout(
     globus_free(entry);
     
     /* purge any callbacks registered before eof was sent */
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 static
@@ -6871,6 +6878,7 @@ globus_l_ftp_control_dc_dec_ref(
         globus_handle_table_destroy(&transfer_handle->handle_table);
         globus_free(transfer_handle->stripes);
         globus_free(transfer_handle);
+        dc_handle->transfer_handle = NULL;
 
         globus_cond_signal(&globus_l_ftp_control_data_cond);
     }
@@ -7339,10 +7347,13 @@ globus_l_ftp_io_close_callback(
         }
     }
 
+    /*
+    This is not needed and introduces a race
     if(poll)
     {
         globus_l_ftp_data_stripe_poll(dc_handle);
     }
+    */
 }
 
 
@@ -7366,6 +7377,7 @@ globus_l_ftp_stream_write_eof_callback(
     void *					big_buffer_cb_arg;
     globus_ftp_control_data_callback_t 		big_buffer_cb = GLOBUS_NULL;
     globus_byte_t *				big_buffer = GLOBUS_NULL;
+    globus_bool_t                               poll;
 
     entry = (globus_l_ftp_handle_table_entry_t *) arg;
 
@@ -7426,13 +7438,16 @@ globus_l_ftp_stream_write_eof_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         globus_l_ftp_control_stripes_destroy(dc_handle, GLOBUS_NULL);
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(data_conn);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
     if(error)
     {
         globus_object_free(error);
@@ -7461,6 +7476,7 @@ globus_l_ftp_stream_listen_callback(
     unsigned int                                stripe_ndx;
     globus_ftp_control_handle_t    *            control_handle;
     const globus_object_type_t *                type;
+    globus_bool_t                               poll;
 
     callback_info = (globus_l_ftp_data_callback_info_t *)callback_arg;
 
@@ -7565,7 +7581,7 @@ globus_l_ftp_stream_listen_callback(
             dc_handle->connect_error = globus_object_copy(error);
         }
         
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -7580,12 +7596,15 @@ globus_l_ftp_stream_listen_callback(
          */
         globus_mutex_lock(&dc_handle->mutex);
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
         globus_mutex_unlock(&dc_handle->mutex);
     }
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
     if(error)
     {
         globus_object_free(error);
@@ -7627,6 +7646,7 @@ globus_l_ftp_stream_accept_connect_callback(
     void *                                      user_arg;
     unsigned int                                stripe_ndx;
     const globus_object_type_t *                type;
+    globus_bool_t                               poll;
 
     callback_info = (globus_l_ftp_data_callback_info_t *)callback_arg;
 
@@ -7722,7 +7742,7 @@ globus_l_ftp_stream_accept_connect_callback(
         /*
          * since conncet came back dec ref
          */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -7741,7 +7761,7 @@ globus_l_ftp_stream_accept_connect_callback(
     {
         if(callback != GLOBUS_NULL)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
@@ -7750,7 +7770,10 @@ globus_l_ftp_stream_accept_connect_callback(
     /*
      *  poll the command_q on all stripes
      */
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 
@@ -7788,6 +7811,7 @@ globus_l_ftp_stream_write_callback(
     globus_bool_t                               fire_callback = GLOBUS_TRUE;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_size_t                               nl_nbytes;
+    globus_bool_t                               poll;
 
     nl_nbytes = nbytes;
 
@@ -7884,7 +7908,7 @@ globus_l_ftp_stream_write_callback(
     }
     globus_mutex_lock(&dc_handle->mutex);
     {
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -7895,7 +7919,10 @@ globus_l_ftp_stream_write_callback(
     /*
      *  poll the command_q on all stripes
      */
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 /*
@@ -7933,6 +7960,7 @@ globus_l_ftp_stream_read_callback(
     globus_result_t                             res;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_bool_t                               fire_callback = GLOBUS_TRUE;
+    globus_bool_t                               poll;
     globus_size_t                               nl_nbytes;
 
     nl_nbytes = nbyte;
@@ -8085,7 +8113,7 @@ globus_l_ftp_stream_read_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -8096,7 +8124,10 @@ globus_l_ftp_stream_read_callback(
     /*
      *  poll the command_q on all stripes
      */
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 /******************************************************************
@@ -8134,6 +8165,7 @@ globus_l_ftp_eb_listen_callback(
     unsigned int                                stripe_ndx;
     globus_ftp_control_handle_t    *            control_handle;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
+    globus_bool_t                               poll;
 
     data_conn = (globus_ftp_data_connection_t *)callback_arg;
     stripe = data_conn->whos_my_daddy;
@@ -8257,7 +8289,7 @@ globus_l_ftp_eb_listen_callback(
             dc_handle->connect_error = globus_object_copy(error);
         }
         
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -8275,7 +8307,7 @@ globus_l_ftp_eb_listen_callback(
          */
         globus_mutex_lock(&dc_handle->mutex);
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
         globus_mutex_unlock(&dc_handle->mutex);
     }
@@ -8284,7 +8316,10 @@ globus_l_ftp_eb_listen_callback(
     {
         globus_object_free(error);
     }
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 /*
@@ -8309,6 +8344,7 @@ globus_l_ftp_eb_accept_callback(
     globus_l_ftp_eb_header_t *                  eb_header;
     const globus_object_type_t *                type;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
+    globus_bool_t                               poll;
 
     data_conn = (globus_ftp_data_connection_t *) callback_arg;
     stripe = data_conn->whos_my_daddy;
@@ -8413,7 +8449,7 @@ globus_l_ftp_eb_accept_callback(
         /*
          *  since the accept came back, dec ref
          */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -8431,7 +8467,7 @@ globus_l_ftp_eb_accept_callback(
          */
         globus_mutex_lock(&dc_handle->mutex);
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
         globus_mutex_unlock(&dc_handle->mutex);
     }
@@ -8439,6 +8475,10 @@ globus_l_ftp_eb_accept_callback(
     if(error)
     {
         globus_object_free(error);
+    }
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
 }
 
@@ -8741,6 +8781,7 @@ globus_l_ftp_eb_read_callback(
     const globus_object_type_t *                type;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_size_t                               nl_bytes;
+    globus_bool_t                               poll;
 
     nl_bytes = nbyte;
     entry = (globus_l_ftp_handle_table_entry_t *)arg;
@@ -8912,7 +8953,7 @@ globus_l_ftp_eb_read_callback(
         {
             dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
         }
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
     
@@ -8924,7 +8965,10 @@ globus_l_ftp_eb_read_callback(
     /*
      *  poll the command_q on all stripes
      */
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 /*
@@ -8951,6 +8995,7 @@ globus_l_ftp_eb_connect_callback(
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_ftp_control_data_callback_t          eof_callback = GLOBUS_NULL;
     globus_l_ftp_handle_table_entry_t *         eof_cb_ent;
+    globus_bool_t                               poll = GLOBUS_TRUE;
 
     callback_info = (globus_l_ftp_data_callback_info_t *)callback_arg;
 
@@ -8967,7 +9012,8 @@ globus_l_ftp_eb_connect_callback(
         /*
          * since conncet came back dec ref
          */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        globus_assert(poll);
 
         callback = data_conn->callback;
         control_handle = dc_handle->whos_my_daddy;
@@ -9121,19 +9167,22 @@ globus_l_ftp_eb_connect_callback(
          */
         if(eof_callback != GLOBUS_NULL)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
 
         if(callback != GLOBUS_NULL)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(callback_info);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 /*
@@ -9165,6 +9214,7 @@ globus_l_ftp_eb_write_callback(
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_l_ftp_send_eof_entry_t *             send_eof_ent = GLOBUS_NULL;
     globus_size_t                               nl_bytes;
+    globus_bool_t                               poll = GLOBUS_TRUE;
 
     nl_bytes = nbytes;
 
@@ -9404,7 +9454,7 @@ globus_l_ftp_eb_write_callback(
          */
         if(callback != GLOBUS_NULL)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
 
             if(entry->eof)
             {
@@ -9414,17 +9464,19 @@ globus_l_ftp_eb_write_callback(
         }
         if(eof_callback != GLOBUS_NULL && !entry->eof)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
         if(send_eof_ent != GLOBUS_NULL)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
-
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
     globus_free(entry);
     globus_free(iov);
     globus_free(eb_header);
@@ -9491,6 +9543,7 @@ globus_l_ftp_eb_send_eof_callback(
     globus_bool_t                               fire_cb = GLOBUS_FALSE;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     const globus_object_type_t *                type;
+    globus_bool_t                               poll;
 
     eof_ent = (globus_l_ftp_send_eof_entry_t *)arg;
     data_conn = eof_ent->whos_my_daddy;
@@ -9566,7 +9619,7 @@ globus_l_ftp_eb_send_eof_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -9577,7 +9630,10 @@ globus_l_ftp_eb_send_eof_callback(
     {
         globus_object_free(error);
     }
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 /*
@@ -9604,6 +9660,7 @@ globus_l_ftp_eb_eof_eod_callback(
     const globus_object_type_t *                type;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_l_ftp_send_eof_entry_t *             send_eof_ent = GLOBUS_NULL;
+    globus_bool_t                               poll;
 
     callback_info = ( globus_l_ftp_data_callback_info_t *)arg;
 
@@ -9619,9 +9676,12 @@ globus_l_ftp_eb_eof_eod_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         globus_assert(dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-
-        if(result != GLOBUS_SUCCESS ||
-           dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
+        /* if stripes destroy was called */
+        if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
+        {
+        }
+        /* if an error occured */
+        else if(result != GLOBUS_SUCCESS)
         {
             error = globus_error_get(result);
             type = globus_object_get_type(error);
@@ -9738,12 +9798,14 @@ globus_l_ftp_eb_eof_eod_callback(
         /*
          *  decrement the reference this callback has
          */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
-
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
     globus_free(callback_info);
     globus_free(eb_header);
     if(error)
