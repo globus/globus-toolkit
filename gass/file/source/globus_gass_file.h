@@ -29,8 +29,6 @@ CVS Information:
 #include <stdio.h>
 #include <fcntl.h>
 
-#include "globus_gass_common.h"
-
 EXTERN_C_BEGIN
 
 int

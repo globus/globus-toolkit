@@ -26,7 +26,8 @@ CVS Information:
 
 #include "globus_gass_file.h"
 #include "globus_gass_cache.h"
-#include "globus_gass_transfer_assist.h"
+#include "globus_gass_transfer.h"
+#include "globus_gass_copy.h"
 
 /******************************************************************************
                                Type definitions
@@ -158,7 +159,7 @@ globus_l_gass_file_activate(void)
     globus_reltime_t                    delay_time;
     globus_reltime_t                    period_time;
     
-    globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GASS_COPY_MODULE);
     globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
 
     globus_mutex_init(&globus_l_gass_file_mutex, GLOBUS_NULL);
@@ -246,7 +247,7 @@ globus_l_gass_file_deactivate(void)
     globus_cond_destroy(&globus_l_gass_file_cond);
     
     globus_module_deactivate(GLOBUS_GASS_CACHE_MODULE);
-    globus_module_deactivate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
+    globus_module_deactivate(GLOBUS_GASS_COPY_MODULE);
 
     return GLOBUS_SUCCESS;
 }
@@ -293,7 +294,7 @@ globus_gass_open(
     
     if(globus_l_gass_file_inited == GLOBUS_FALSE)
     {
-	return(-GLOBUS_GASS_ERROR_NOT_INITIALIZED);
+	return(-GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED);
     }
 
     rc = globus_url_parse(url, &globus_url);
@@ -455,7 +456,7 @@ globus_gass_open(
 	    globus_gass_transfer_append(&append->request,
 					GLOBUS_NULL,
 					url,
-					GLOBUS_GASS_LENGTH_UNKNOWN);
+					GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN);
 	    switch(globus_gass_transfer_request_get_status(append->request))
 	    {
 	    case GLOBUS_GASS_TRANSFER_REQUEST_REFERRED:
@@ -516,7 +517,7 @@ globus_gass_open(
     default:
 	globus_free(file);
 	globus_gass_file_exit();
-	return GLOBUS_GASS_ERROR_NOT_SUPPORTED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_SUPPORTED;
     }
     globus_gass_file_exit();
     return file->fd;
@@ -745,23 +746,65 @@ globus_gass_close(
 		break;
 	      case (O_WRONLY):
 	      case (O_RDWR):
-		rc = globus_gass_transfer_assist_put_file_to_url(
-		    &request,
-		    GLOBUS_NULL,
-		    file->url,
-		    file->filename,
-		    GLOBUS_NULL,
-		    GLOBUS_TRUE);
+	      {
+		  globus_gass_copy_handle_t          gass_copy_handle;
+		  globus_result_t                    result;
+		  char *                             tmp_filename;
+		  
+		  globus_gass_copy_handle_init(&gass_copy_handle, GLOBUS_NULL);
 
-		if(rc != GLOBUS_SUCCESS ||
-		   globus_gass_transfer_request_get_status(request) !=
-		   GLOBUS_GASS_TRANSFER_REQUEST_DONE)
-		{
-		    rc = GLOBUS_GASS_ERROR_TRANSFER_FAILED;
-		}
-		globus_gass_transfer_request_destroy(request);
+		  tmp_filename = (char*) globus_libc_malloc
+		      (strlen("file:/") +
+		       strlen(file->filename) + 2);
 
-		globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+		  if(strncmp(file->filename, "/", 1) == 0)
+		  {
+		      globus_libc_sprintf(
+			  tmp_filename,
+			  "file:%s",
+			  file->filename);
+		  }
+		  else
+		  {
+		      globus_libc_sprintf(
+			  tmp_filename,
+			  "file:/%s",
+			  file->filename);
+		  }
+		  /* put file to url */
+		  result = globus_gass_copy_url_to_url(
+		      &gass_copy_handle,
+		      tmp_filename,
+		      GLOBUS_NULL,
+		      file->url,
+		      GLOBUS_NULL);
+
+		  if (result != GLOBUS_SUCCESS)
+		  {
+		      globus_libc_fprintf(stderr, "error: %s\n",
+			      globus_object_printable_to_string(globus_error_get(result)));
+		      rc = GLOBUS_GASS_TRANSFER_ERROR_TRANSFER_FAILED;
+		  }
+		  globus_gass_copy_handle_destroy(&gass_copy_handle);
+		  globus_libc_free(tmp_filename);
+		  
+	/* 	rc = globus_gass_transfer_assist_put_file_to_url( */
+/* 		    &request, */
+/* 		    GLOBUS_NULL, */
+/* 		    file->url, */
+/* 		    file->filename, */
+/* 		    GLOBUS_NULL, */
+/* 		    GLOBUS_TRUE); */
+
+/* 		if(rc != GLOBUS_SUCCESS || */
+/* 		   globus_gass_transfer_request_get_status(request) != */
+/* 		   GLOBUS_GASS_TRANSFER_REQUEST_DONE) */
+/* 		{ */
+/* 		    rc = GLOBUS_GASS_TRANSFER_ERROR_TRANSFER_FAILED; */
+/* 		} */
+/* 		globus_gass_transfer_request_destroy(request); */
+	      }
+	        globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
 					 file->url,
 					 globus_l_gass_file_tag,
 					 file->timestamp,
@@ -836,7 +879,7 @@ globus_l_gass_add_and_get(
 	       create new file
 	   else
 	       globus_gass_cache_delete
-	       return GLOBUS_GASS_ERROR_NOT_FOUND
+	       return GLOBUS_GASS_TRANSFER_ERROR_NOT_FOUND
 	   endif
        else
            get url to local file
@@ -866,25 +909,63 @@ globus_l_gass_add_and_get(
 			    file->timestamp);
 	break;
     case GLOBUS_GASS_CACHE_ADD_NEW:
-        rc = globus_gass_transfer_assist_get_file_from_url(
-	    &request,
+    {
+	globus_gass_copy_handle_t          gass_copy_handle;
+	globus_result_t                    result;
+	char *                             tmp_filename;
+	
+	globus_gass_copy_handle_init(&gass_copy_handle, GLOBUS_NULL);
+	
+	tmp_filename = (char*) globus_libc_malloc
+	    (strlen("file:/") +
+	     strlen(file->filename) + 2);
+	
+	if(strncmp(file->filename, "/", 1) == 0)
+	{
+	    globus_libc_sprintf(
+		tmp_filename,
+		"file:%s",
+		file->filename);
+	}
+	else
+	{
+	    globus_libc_sprintf(
+		tmp_filename,
+		"file:/%s",
+		file->filename);
+	}
+
+	/* get file from url */
+	result = globus_gass_copy_url_to_url(
+	    &gass_copy_handle,
+	    file->url, 
 	    GLOBUS_NULL,
-	    file->url,
-	    file->filename,
-	    GLOBUS_NULL,
-	    GLOBUS_TRUE);
-	globus_gass_transfer_request_destroy(request);
+	    tmp_filename,
+	    GLOBUS_NULL);
+	
+	globus_gass_copy_handle_destroy(&gass_copy_handle);
+	globus_libc_free(tmp_filename);
+		  
+       /*  rc = globus_gass_transfer_assist_get_file_from_url( */
+/* 	    &request, */
+/* 	    GLOBUS_NULL, */
+/* 	    file->url, */
+/* 	    file->filename, */
+/* 	    GLOBUS_NULL, */
+/* 	    GLOBUS_TRUE); */
+/* 	globus_gass_transfer_request_destroy(request); */
 
 
-	if(rc != GLOBUS_SUCCESS &&
+/*	if(rc != GLOBUS_SUCCESS && */
+	if(result != GLOBUS_SUCCESS &&
 	   ((oflag & O_CREAT) != O_CREAT))
 	{
-		globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
-					 file->url,
-					 globus_l_gass_file_tag,
-					 file->timestamp,
-					 GLOBUS_TRUE);
-		return GLOBUS_GASS_ERROR_NOT_FOUND;
+	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+				     file->url,
+				     globus_l_gass_file_tag,
+				     file->timestamp,
+				     GLOBUS_TRUE);
+	    return GLOBUS_GASS_TRANSFER_ERROR_NOT_FOUND;
 	}
 	else
 	{
@@ -893,6 +974,7 @@ globus_l_gass_add_and_get(
 				       globus_l_gass_file_tag,
 				       file->timestamp);
 	}
+    }
 	break;
     default:
 	return rc;
