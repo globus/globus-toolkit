@@ -205,36 +205,41 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_R_PROCESS_CERTS         115
 #define PRXYERR_R_NO_TRUSTED_CERTS      116
 #define PRXYERR_R_PROBLEM_KEY_FILE      117
-#define PRXYERR_R_PROBLEM_NOCERT_FILE   118
-#define PRXYERR_R_PROBLEM_NOKEY_FILE    119
-#define PRXYERR_R_CERT_EXPIRED          120
-#define PRXYERR_R_CRL_SIGNATURE_FAILURE 121
-#define PRXYERR_R_CRL_NEXT_UPDATE_FIELD 122
-#define PRXYERR_R_CRL_HAS_EXPIRED       123
-#define PRXYERR_R_CERT_REVOKED          124
-#define PRXYERR_R_NO_HOME               125
-#define PRXYERR_R_LPROXY_MISSED_USED    126
-#define PRXYERR_R_LPROXY_REJECTED       127
-#define PRXYERR_R_KEY_CERT_MISMATCH     128
-#define PRXYERR_R_WRONG_PASSPHRASE      129
-#define PRXYERR_R_CA_POLICY             130
-#define PRXYERR_R_CA_POLICY_RETRIEVE    131
-#define PRXYERR_R_CA_POLICY_PARSE       132
-#define PRXYERR_R_PROBLEM_CLIENT_CA     133
-#define PRXYERR_R_CB_NO_PW              134
-#define PRXYERR_R_CB_CALLED_WITH_ERROR  135
-#define PRXYERR_R_CLASS_ADD_OID         136
-#define PRXYERR_R_CLASS_ADD_EXT         137
-#define PRXYERR_R_DELEGATE_VERIFY       138
-#define PRXYERR_R_EXT_ADD               139
-#define PRXYERR_R_DELEGATE_COPY         140
-#define PRXYERR_R_DELEGATE_CREATE       141
-#define PRXYERR_R_BUFFER_TOO_SMALL      142
-#define PRXYERR_R_PROXY_EXPIRED         143
-#define PRXYERR_R_CA_UNKNOWN            144
-#define PRXYERR_R_CA_NOPATH             145
-#define PRXYERR_R_CA_NOFILE             146
-#define PRXYERR_R_CA_POLICY_ERR         147
+#define PRXYERR_R_ZERO_LENGTH_KEY_FILE  118
+#define PRXYERR_R_ZERO_LENGTH_CERT_FILE 119
+
+#define PRXYERR_R_PROBLEM_NOCERT_FILE   120
+#define PRXYERR_R_PROBLEM_NOKEY_FILE    121
+#define PRXYERR_R_USER_CERT_EXPIRED     122
+#define PRXYERR_R_SERVER_CERT_EXPIRED   123
+#define PRXYERR_R_CRL_SIGNATURE_FAILURE 124
+#define PRXYERR_R_CRL_NEXT_UPDATE_FIELD 125
+#define PRXYERR_R_CRL_HAS_EXPIRED       126
+#define PRXYERR_R_CERT_REVOKED          127
+#define PRXYERR_R_NO_HOME               128
+#define PRXYERR_R_LPROXY_MISSED_USED    129
+#define PRXYERR_R_LPROXY_REJECTED       130
+#define PRXYERR_R_KEY_CERT_MISMATCH     131
+#define PRXYERR_R_WRONG_PASSPHRASE      132
+#define PRXYERR_R_CA_POLICY_VIOLATION   133
+#define PRXYERR_R_CA_POLICY_RETRIEVE    134
+#define PRXYERR_R_CA_POLICY_PARSE       135
+#define PRXYERR_R_PROBLEM_CLIENT_CA     136
+#define PRXYERR_R_CB_NO_PW              137
+#define PRXYERR_R_CB_CALLED_WITH_ERROR  138
+#define PRXYERR_R_CLASS_ADD_OID         139
+#define PRXYERR_R_CLASS_ADD_EXT         140
+#define PRXYERR_R_DELEGATE_VERIFY       141
+#define PRXYERR_R_EXT_ADD               142
+#define PRXYERR_R_DELEGATE_COPY         143
+#define PRXYERR_R_DELEGATE_CREATE       144
+#define PRXYERR_R_BUFFER_TOO_SMALL      145
+#define PRXYERR_R_PROXY_EXPIRED         146
+#define PRXYERR_R_NO_PROXY              147
+#define PRXYERR_R_CA_UNKNOWN            148
+#define PRXYERR_R_CA_NOPATH             149
+#define PRXYERR_R_CA_NOFILE             150
+#define PRXYERR_R_CA_POLICY_ERR         151
 
 /* constants for gsi error messages 
  *  this information is kept internally by the
@@ -243,8 +248,8 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 
 #define CRED_TYPE_PERMANENT             0
 #define CRED_TYPE_PROXY                 1
-#define CRED_OWNER_USER                 0  
-#define CRED_OWNER_SERVER               1 
+#define CRED_OWNER_SERVER               0  
+#define CRED_OWNER_USER                 1 
 
 
 
@@ -266,8 +271,8 @@ typedef struct proxy_cred_desc_struct
     char *                              certdir;
     char *                              certfile;
     int                                 num_null_enc_ciphers;
-    int                                 type; /*  for gsi err messages */
-    int                                 owner; /* for gsi error messages */
+    int                      	        type;  /* for gsi error messages */
+    int              			        owner; /* for gsi error messages */
 } proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */
@@ -316,6 +321,7 @@ proxy_cred_desc_free(proxy_cred_desc * pcd);
 
 int
 proxy_get_filenames(
+    proxy_cred_desc *                   pcd, 
     int                                 proxy_in,
     char **                             p_cert_file,
     char **                             p_cert_dir,
