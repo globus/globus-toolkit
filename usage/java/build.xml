@@ -27,25 +27,18 @@
     </javac>
     <jar destfile = "UDPSender.jar">
       <fileset dir="./dist/">
-	<include name="UsageMonitorPacket.class"/>
-	<include name="IPTimeMonitorPacket.class"/>
-	<include name="GFTPMonitorPacket.class"/>
-	<include name="ExampleGFTPSender.class"/>
+	<include name="**/UsageMonitorPacket.class"/>
+	<include name="**/IPTimeMonitorPacket.class"/>
+	<include name="**/GFTPMonitorPacket.class"/>
+	<include name="**/ExampleGFTPSender.class"/>
       </fileset>
       <fileset file="./udpUsage.properties"/>
       <fileset file="./log4j.properties"/>
     </jar>
     <jar destfile = "UDPReceiver.jar">
       <fileset dir="./dist/">
-        <include name="DefaultPacketHandler.java"/>
-        <include name="GFTPMonitorPacket.java"/>
-        <include name="GridFTPPacketHandler.java"/>
-        <include name="IPTimeMonitorPacket.java"/>
-        <include name="PacketHandler.java"/>
-        <include name="Receiver.java"/>
-        <include name="ReceiverExample.java"/>
-        <include name="RingBuffer.java"/>
-        <include name="UsageMonitorPacket.java"/>
+        <include name="**/*.class"/>
+	<exclude name="**/ExampleGFTPSender.class"/>
       </fileset>
       <fileset file="./udpUsage.properties"/>
       <fileset file="./log4j.properties"/>
@@ -55,7 +48,7 @@
   <target name="run-receiver" depends="compile">
     <java classname="org.globus.usage.ReceiverExample" fork="true">
       <classpath>
-	<pathelement location="./Usage_UDPReceiver.jar"/>
+	<pathelement location="./UDPReceiver.jar"/>
 	<path refid="lib.classpath"/>
       </classpath>
     </java>
@@ -64,7 +57,7 @@
   <target name="run-sender" depends="compile">
     <java classname="org.globus.usage.ExampleGFTPSender">
       <classpath>
-	<pathelement location="./Usage_UDPSender.jar"/>
+	<pathelement location="./UDPSender.jar"/>
         <path refid="lib.classpath"/>
       </classpath>
     </java>
