@@ -5996,6 +5996,8 @@ typedef struct
     char *                             glob_pattern;
     char *                             list_buffer;
     globus_l_gass_copy_ftp_op_t        list_op;
+    globus_gass_copy_handle_t *        handle;
+    globus_gass_copy_attr_t *          attr;
 } globus_l_gass_copy_glob_info_t; 
 
 static
@@ -6024,6 +6026,12 @@ static
 globus_result_t
 globus_l_gass_copy_glob_parse_ftp_list(
     globus_l_gass_copy_glob_info_t *   info);
+    
+static
+globus_result_t
+globus_l_gass_copy_glob_ftp_list(
+    globus_l_gass_copy_glob_info_t *   info);
+    
 
 static    
 void
@@ -6035,6 +6043,7 @@ globus_l_gass_copy_ftp_client_list_read_callback(
     globus_size_t                      length,
     globus_off_t                       offset,
     globus_bool_t                      eof);
+
 
 #define GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE 256*1024
 
@@ -6176,6 +6185,9 @@ globus_l_gass_copy_glob_expand_file_url(
     globus_url_t                       parsed_url;
     char *                             matched_url;
     int                                i;
+    char *                             base_url;
+    char *                             p;
+    int                                base_url_len;
     
     retval = globus_url_parse_loose(url, &parsed_url);
     
@@ -6192,47 +6204,20 @@ globus_l_gass_copy_glob_expand_file_url(
         goto error_url;
     }    
                 
+    p = strstr(url, parsed_url.url_path);
+    base_url_len = p - url;
+    
+    base_url = globus_libc_strdup(url);
+    base_url[base_url_len] = '\0';
+    
     retval = glob(
         parsed_url.url_path,
         GLOB_MARK,
         NULL,
         &file_list);
 
-    switch(retval)
+    if(retval != 0 && retval != GLOB_NOMATCH)
     {
-      case 0:
-        for(i = 0; i < file_list.gl_pathc; i++)
-        {
-            file_len = strlen(file_list.gl_pathv[i]);
-            if(file_list.gl_pathv[i][file_len - 1] == '/')
-            {
-                continue;
-            }
-            
-            matched_url = (char *) 
-                globus_malloc((file_len + 8) * sizeof(char));
-             
-            if(matched_url == GLOBUS_NULL)
-            {
-                 result = globus_error_put(
-                    globus_error_construct_string(
-                        GLOBUS_GASS_COPY_MODULE,
-                        GLOBUS_NULL,
-                        "[%s]: Memory allocation error",
-                        myname));
-                goto error_malloc;
-            }
-            
-            sprintf(matched_url, "file://%s", file_list.gl_pathv[i]);
-            
-            globus_fifo_enqueue(url_list, matched_url);
-        }
-        break;
-      
-      case GLOB_NOMATCH:
-        break;
-      
-      default:
         result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_GASS_COPY_MODULE,
@@ -6241,21 +6226,83 @@ globus_l_gass_copy_glob_expand_file_url(
                 myname,
                 retval));
         goto error_glob;
-        break;
-    }  
+    }
+
+    for(i = 0; i < file_list.gl_pathc; i++)
+    {
+        file_len = strlen(file_list.gl_pathv[i]);
+
+        matched_url = (char *) 
+            globus_malloc((base_url_len + file_len + 1) * sizeof(char));
+         
+        if(matched_url == GLOBUS_NULL)
+        {
+             result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Memory allocation error",
+                    myname));
+            goto error_malloc;
+        }
+        
+        sprintf(matched_url, "%s%s", base_url, file_list.gl_pathv[i]);
+
+
+        if(file_list.gl_pathv[i][file_len - 1] == '/')
+        {
+            if(0)
+            {
+                matched_url[file_len + 7] = '*';
+                matched_url[file_len + 8] = '\0';
+          
+                retval = glob(
+                    (matched_url + 7),
+                    GLOB_MARK | GLOB_APPEND,
+                    NULL,
+                    &file_list);
+                
+                if(retval != 0 && retval != GLOB_NOMATCH)
+                {
+                    result = globus_error_put(
+                        globus_error_construct_string(
+                            GLOBUS_GASS_COPY_MODULE,
+                            GLOBUS_NULL,
+                            "[%s]: glob() returned %d",
+                            myname,
+                            retval));
+        
+                    goto error_recurse;
+                }
+        
+                matched_url[file_len + 7] = '\0';
+            }
+            else
+            {
+                //continue;
+            }
+        }
+        
+        globus_fifo_enqueue(url_list, matched_url);        
+    }
+  
+  
       
     globfree(&file_list);    
     globus_url_destroy(&parsed_url);
+    globus_free(base_url);
     
     return GLOBUS_SUCCESS;    
 
     
 error_malloc:
+error_recurse:
     globfree(&file_list);
     
 error_glob:
     globus_url_destroy(&parsed_url);
-    
+    globus_free(matched_url);
+    globus_free(base_url);
 error_url:
 
     return result;
@@ -6296,27 +6343,13 @@ globus_l_gass_copy_glob_expand_ftp_url(
     *(info.glob_pattern++) = '\0';
     
     info.base_url_len = strlen(info.base_url);
-    info.list_buffer = NULL;
+    info.list_buffer = GLOBUS_NULL;
     info.buffer_length = 0;
     info.url_list = url_list;
     info.result = GLOBUS_SUCCESS;
+    info.handle = handle;
+    info.attr = attr;
     
-    read_buffer = (globus_byte_t *)
-        globus_malloc(GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE * 
-            sizeof(globus_byte_t));
-
-    if(read_buffer == GLOBUS_NULL)
-    {
-        result = globus_error_put(
-            globus_error_construct_string(
-            GLOBUS_GASS_COPY_MODULE,
-            GLOBUS_NULL,
-            "[%s]: Memory allocation error",
-            myname));
-        goto error_malloc;
-    }        
-
-
     globus_mutex_init(&info.mutex, GLOBUS_NULL);
     globus_cond_init(&info.cond, GLOBUS_NULL);
 
@@ -6364,69 +6397,39 @@ globus_l_gass_copy_glob_expand_ftp_url(
         goto error_feat;
     }
     
-    info.callbacks_left = 2;        
     if(feature_response == GLOBUS_FTP_CLIENT_TRUE)
     {       
         info.list_op = GLOBUS_GASS_COPY_FTP_OP_MLSD;
-        result = globus_ftp_client_machine_list(
-                     &handle->ftp_handle,
-                     info.base_url,
-                     attr->ftp_attr,
-                     globus_l_gass_copy_ftp_client_op_done_callback,
-                     &info);
     }
     else    
     {
         info.list_op = GLOBUS_GASS_COPY_FTP_OP_NLST;
-        result = globus_ftp_client_list(
-                     &handle->ftp_handle,
-                     info.base_url,
-                     attr->ftp_attr,
-                     globus_l_gass_copy_ftp_client_op_done_callback,
-                     &info);
     }
 
+    globus_ftp_client_features_destroy(&features);
+    
+
+    result = globus_l_gass_copy_glob_ftp_list(&info);    
+         
     if(result != GLOBUS_SUCCESS)
     {
         goto error_list;
     }
 
-    result = globus_ftp_client_register_read(
-                 &handle->ftp_handle,
-                 read_buffer,
-                 GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE,
-                 globus_l_gass_copy_ftp_client_list_read_callback,
-                 &info);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_ftp_client_abort(&handle->ftp_handle);
-        
-        globus_mutex_lock(&info.mutex);
-        info.callbacks_left--;
-        while(info.callbacks_left > 0)
-        {
-            globus_cond_wait(&info.cond, &info.mutex);
-        }
-        globus_mutex_unlock(&info.mutex);
-        
-        goto error_read;    
-    }
-
-    globus_mutex_lock(&info.mutex);
-    while(info.callbacks_left > 0)
-    {
-        globus_cond_wait(&info.cond, &info.mutex);
-    }
-    result = info.result;
-    globus_mutex_unlock(&info.mutex);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_read;
-    }
+    result = globus_l_gass_copy_glob_parse_ftp_list(&info);   
     
-    globus_ftp_client_features_destroy(&features);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_list;
+    } 
+
+    if(info.list_buffer != GLOBUS_NULL)
+    {        
+        globus_free(info.list_buffer);
+    }
+
+
+    
     globus_cond_destroy(&info.cond);
     globus_mutex_destroy(&info.mutex);
     
@@ -6438,7 +6441,6 @@ globus_l_gass_copy_glob_expand_ftp_url(
 error_read:
 error_list:
 error_feat:
-    globus_ftp_client_features_destroy(&features);
     globus_cond_destroy(&info.cond);
     globus_mutex_destroy(&info.mutex);
 
@@ -6449,6 +6451,116 @@ error_malloc:
     return result;
 }
 
+static
+globus_result_t
+globus_l_gass_copy_glob_ftp_list(
+    globus_l_gass_copy_glob_info_t *    info)
+{
+    static char *   myname = "globus_l_gass_copy_glob_ftp_list";    
+
+    globus_result_t                     result;
+    globus_byte_t *                     read_buffer;
+    
+    read_buffer = (globus_byte_t *)
+        globus_malloc(GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE * 
+            sizeof(globus_byte_t));
+
+    if(read_buffer == GLOBUS_NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+            GLOBUS_GASS_COPY_MODULE,
+            GLOBUS_NULL,
+            "[%s]: Memory allocation error",
+            myname));
+        goto error_malloc;
+    }        
+
+    
+    info->callbacks_left = 2;        
+    if(info->list_op == GLOBUS_GASS_COPY_FTP_OP_MLSD)
+    {
+        result = globus_ftp_client_machine_list(
+                     &info->handle->ftp_handle,
+                     info->base_url,
+                     info->attr->ftp_attr,
+                     globus_l_gass_copy_ftp_client_op_done_callback,
+                     info);
+    }
+    else    
+    {
+        result = globus_ftp_client_list(
+                     &info->handle->ftp_handle,
+                     info->base_url,
+                     info->attr->ftp_attr,
+                     globus_l_gass_copy_ftp_client_op_done_callback,
+                     info);
+    }
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_list;
+    }
+
+    result = globus_ftp_client_register_read(
+                 &info->handle->ftp_handle,
+                 read_buffer,
+                 GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE,
+                 globus_l_gass_copy_ftp_client_list_read_callback,
+                 info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_ftp_client_abort(&info->handle->ftp_handle);
+        
+        globus_mutex_lock(&info->mutex);
+        info->callbacks_left--;
+        while(info->callbacks_left > 0)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+        globus_mutex_unlock(&info->mutex);
+        
+        goto error_read;    
+    }
+
+    globus_mutex_lock(&info->mutex);
+    while(info->callbacks_left > 0)
+    {
+        globus_cond_wait(&info->cond, &info->mutex);
+    }
+    result = info->result;
+    globus_mutex_unlock(&info->mutex);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_read;
+    }
+
+    if(read_buffer != info->list_buffer)
+    {        
+        globus_free(read_buffer);
+    }
+
+
+
+    return GLOBUS_SUCCESS;
+
+
+error_read:
+error_list:
+
+    if(read_buffer != GLOBUS_NULL)
+    {        
+        globus_free(read_buffer);
+    }
+
+
+error_malloc:
+    return result;
+
+
+}
 
 
 static
@@ -6485,6 +6597,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
     static char *   myname = "globus_l_gass_copy_glob_parse_ftp_list";
     globus_result_t                    result;
     int                                i;
+    int                                filename_len;
     globus_l_gass_copy_ftp_list_entry_t     filetype;
     char *                             space;
     char *                             temp_p;
@@ -6496,6 +6609,10 @@ globus_l_gass_copy_glob_parse_ftp_list(
     char *                             startfact;
     char *                             endfact;
     char *                             factval;
+    
+    int base_url_len;
+    char * base_url;
+    char * glob_pattern;
    
     startline = info->list_buffer;
     
@@ -6573,16 +6690,17 @@ globus_l_gass_copy_glob_parse_ftp_list(
                 startfact = endfact + 1;                                 
             } 
         }
-        
+
+        temp_p = strrchr(filename, '/');
+        if (temp_p != GLOBUS_NULL)
+        {
+            filename = temp_p + 1;
+        }
+
         switch(filetype)
         {
           case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_FILE:
           case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_ASSUMED_FILE:
-            temp_p = strrchr(filename, '/');
-            if (temp_p != GLOBUS_NULL)
-            {
-                filename = temp_p + 1;
-            }
             
             if(fnmatch(
                    info->glob_pattern,
@@ -6611,18 +6729,63 @@ globus_l_gass_copy_glob_parse_ftp_list(
             }
             break;
           
-          case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_DIR: 
+          case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_DIR:
+            if(0)
+            { 
+                filename_len = strlen(filename);
+     
+                matched_url = (char *) 
+                    globus_malloc((info->base_url_len + filename_len + 4) * 
+                                   sizeof(char));
+                
+                if(matched_url == GLOBUS_NULL)
+                {
+                    result = globus_error_put(
+                        globus_error_construct_string(
+                            GLOBUS_GASS_COPY_MODULE,
+                            GLOBUS_NULL,
+                            "[%s]: Memory allocation error",
+                            myname));
+                    goto error_malloc;
+                }
+    
+                sprintf(matched_url, "%s/%s", info->base_url, filename);
+                
+                globus_fifo_enqueue(info->url_list, matched_url);
+                
+                printf("%s\n",matched_url);
+                glob_pattern = info->glob_pattern;
+                base_url = info->base_url;
+                base_url_len = info->base_url_len;
+                
+                
+                info->glob_pattern = "*";
+                info->base_url = matched_url;
+                info->base_url_len += filename_len + 1;
+                result = globus_l_gass_copy_glob_ftp_list(info);
+                                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_recurse;
+                }
+                info->glob_pattern = glob_pattern;
+                info->base_url = base_url ;
+                info->base_url_len = base_url_len;
+            }            
+            break;
+            
           case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_OTHER: 
           default:
             
             break;
+              
         }
         startline = endline + 1;
     }
-
+    
     return GLOBUS_SUCCESS;
     
-    
+error_recurse:   
 error_invalid_mlsd:
 error_malloc:
 
@@ -6704,26 +6867,12 @@ globus_l_gass_copy_ftp_client_list_read_callback(
     }
     else
     {
-        result = globus_l_gass_copy_glob_parse_ftp_list(info);    
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_parsing;
-        } 
         
         globus_mutex_lock(&info->mutex);
         info->callbacks_left--;
         globus_cond_signal(&info->cond);
         globus_mutex_unlock(&info->mutex);
 
-        if(info->list_buffer != GLOBUS_NULL)
-        {        
-            globus_free(info->list_buffer);
-        }
-        if(buffer != GLOBUS_NULL)
-        {        
-            globus_free(buffer);
-        }
 
     }        
 
@@ -6734,15 +6883,6 @@ error_parsing:
 error_register_read:
 error_malloc:
 error_before_callback:
-
-    if(info->list_buffer != GLOBUS_NULL)
-    {        
-        globus_free(info->list_buffer);
-    }
-    if(buffer != GLOBUS_NULL)
-    {        
-        globus_free(buffer);
-    }
 
     globus_mutex_lock(&info->mutex);
     if (info->result != GLOBUS_SUCCESS)
