@@ -1898,6 +1898,8 @@ globus_l_guc_gass_attr_init(
         globus_gass_copy_attr_set_gass(gass_copy_attr, gass_t_attr);
     }
 
+    globus_url_destroy(&url_info);    
+	
     return 0;
 }
 

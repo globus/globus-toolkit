@@ -1042,7 +1042,10 @@ globus_l_gass_copy_mkdir_ftp(
     
     info.callbacks_left = 1;
     info.result = GLOBUS_SUCCESS;
-    
+    globus_cond_init(&info.cond, GLOBUS_NULL);
+    globus_mutex_init(&info.mutex, GLOBUS_NULL);
+   
+ 
     result = globus_ftp_client_mkdir(
         &handle->ftp_handle,
         url,
@@ -1135,7 +1138,8 @@ globus_l_gass_copy_mkdir_file(
                 rc));
         goto error_mkdir;
     }
-    
+   
+    globus_url_destroy(&parsed_url); 
     return GLOBUS_SUCCESS;
 
 error_mkdir:    
