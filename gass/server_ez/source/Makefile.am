@@ -1,6 +1,11 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
+# doxygen stuff
+
+LAC_DOXYGEN("../")
+
+
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
