@@ -607,14 +607,13 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
     {
 	/* Unset environment variables so libs use default */
 	myunsetenv("X509_USER_PROXY");
-	myunsetenv("X509_USER_KEY");
-	myunsetenv("X509_USER_CERT");
+	myunsetenv("X509_USER_KEY"); 
+	myunsetenv("X509_USER_CERT"); 
 	return_code = GSI_SOCKET_SUCCESS;
     }
     else
     {
-	return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ?
-	    GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
+        return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
     }
 #endif /* GSI_SOCKET_SSLEAY */
 
@@ -1010,7 +1009,6 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 {
     gss_ctx_id_t		tmp_gss_context = GSS_C_NO_CONTEXT;
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
-    int				token_status;
     OM_uint32			req_flags = 0;
     int				return_value = GSI_SOCKET_ERROR;
     gss_buffer_desc		output_token;
