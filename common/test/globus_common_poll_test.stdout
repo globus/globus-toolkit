@@ -1,0 +1,57 @@
+==================================
+   Starting poll tests pass 0
+==================================
+----------------------------------
+Performing basic one_shot test [pass 0]
+Basic test passed [pass 0]
+----------------------------------
+Performing basic periodic test [pass 0]
+Basic Periodic test passed [pass 0]
+----------------------------------
+Performing nested wait test [pass 0]
+Nested test passed [pass 0]
+----------------------------------
+Performing Time/Starvation Test [pass 0]
+Time/Starvation test passed [pass 0]
+----------------------------------
+Cancel Test [pass 0]
+Cancel test passed [pass 0]
+----------------------------------
+CPU HOG Test [pass 0]
+CPU HOG test test passed [pass 0]
+----------------------------------
+Random Stress Test [pass 0]
+Random Stress test passed [pass 0]
+----------------------------------
+Adjust Period Test [pass 0]
+Adjust Period test passed [pass 0]
+==================================
+   Starting poll tests pass 1
+==================================
+----------------------------------
+Performing basic one_shot test [pass 1]
+Basic test passed [pass 1]
+----------------------------------
+Performing basic periodic test [pass 1]
+Basic Periodic test passed [pass 1]
+----------------------------------
+Performing nested wait test [pass 1]
+Nested test passed [pass 1]
+----------------------------------
+Performing Time/Starvation Test [pass 1]
+Time/Starvation test passed [pass 1]
+----------------------------------
+Cancel Test [pass 1]
+Cancel test passed [pass 1]
+----------------------------------
+CPU HOG Test [pass 1]
+CPU HOG test test passed [pass 1]
+----------------------------------
+Random Stress Test [pass 1]
+Random Stress test passed [pass 1]
+----------------------------------
+Adjust Period Test [pass 1]
+Adjust Period test passed [pass 1]
+==================================
+        End poll tests 
+==================================

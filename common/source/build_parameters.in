@@ -1,0 +1,13 @@
+#globus_common_flavor information=
+
+globus_common_version="@VERSION@"
+
+globus_common_provides=
+
+globus_common_requires_build=
+
+globus_common_requires_runtime=
+
+globus_common_libraries= "-L $(GLOBUS_INSTALL_PATH)/lib -lglobus_common_@GLOBUS_FLAVOR_NAME@ @THREAD_LIB_FLAGS@"
+
+

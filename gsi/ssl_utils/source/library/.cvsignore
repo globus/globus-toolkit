@@ -1,0 +1,5 @@
+Makefile
+Makefile.in
+.libs
+libglobus_ssl_utils*
+*.lo
