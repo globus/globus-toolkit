@@ -79,6 +79,9 @@ genfilename(char * prefix, char * path, char * sufix);
 static void
 graml_stage_file(char **url, int mode);
 
+static int 
+grami_add_job_to_rsl();
+
 static int
 globus_l_job_manager_duct_environment(int count,
 				      char *myjob,
@@ -115,8 +118,10 @@ static nexus_handler_t graml_handlers[] =
 
 static char * graml_env_home;
 static char graml_callback_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-static char graml_job_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-static char graml_my_globusid[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+static char * graml_job_contact = NULL;
+static char * graml_my_globusid = NULL;
+static char * graml_job_status  = NULL;
+static globus_rsl_t * graml_rsl_tree;
 
 static char *                      graml_jm_status_dir = NULL;
 static int                         graml_my_count;
@@ -158,7 +163,7 @@ main(int argc,
     int                    message_handled;
     int                    print_debug_flag = 0;
     int                    save_files_flag = 0;
-    char                   description[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+    char                   rsl_spec[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     char                   test_dat_file[256];
     char                   tmp_buffer[256];
     char *                 jm_home_dir = NULL;
@@ -174,7 +179,7 @@ main(int argc,
     nexus_byte_t           buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     nexus_buffer_t         reply_buffer;
     nexus_startpoint_t     reply_sp;
-    globus_rsl_t *         description_tree;
+    globus_rsl_t *         rsl_tree;
     globus_gass_cache_t           cache_handle;
     globus_gass_cache_entry_t   * cache_entries;
     int                    cache_size;
@@ -395,10 +400,13 @@ main(int argc,
  
     if ((globusid_ptr = (char*) getenv("GLOBUSID")) == NULL)
     {
-        strcpy(graml_my_globusid, "unknown_globusid");
+        graml_my_globusid = (char *) globus_malloc (sizeof(char *) * 17);
+        strcpy(graml_my_globusid, "unknown globusid");
     }
     else
     {
+        graml_my_globusid = (char *) globus_malloc (sizeof(char *) *
+                            (strlen(globusid_ptr) + 1));
         strcpy(graml_my_globusid, globusid_ptr);
     }
  
@@ -455,8 +463,8 @@ main(int argc,
 
     ptr = buffer;
     nexus_user_get_int(&ptr, &count, 1, format);
-    nexus_user_get_char(&ptr, description, count, format);
-    *(description+count)= '\0';
+    nexus_user_get_char(&ptr, rsl_spec, count, format);
+    *(rsl_spec+count)= '\0';
     nexus_user_get_int(&ptr, &graml_job_state_mask, 1, format);
     nexus_user_get_int(&ptr, &count, 1, format);
     if (count == 0)
@@ -471,7 +479,7 @@ main(int argc,
     nexus_user_get_startpoint(&ptr, &reply_sp, 1, format);
 
     grami_fprintf( grami_log_fp,
-                   "JM: description = %s\n", description);
+                   "JM: rsl_specification = %s\n", rsl_spec);
     grami_fprintf( grami_log_fp, 
                    "JM: job state mask = %i\n",graml_job_state_mask);
     grami_fprintf( grami_log_fp, 
@@ -505,21 +513,26 @@ main(int argc,
     } 
     else
     {
-        sprintf(graml_job_contact, "x-nexus://%s:%hu/%lu/%lu/", 
+        sprintf(tmp_buffer, "x-nexus://%s:%hu/%lu/%lu/", 
                               my_host,
                               my_port,
                               (unsigned long) getpid(),
                               (unsigned long) time(0));
+
+        graml_job_contact = (char *) globus_malloc (sizeof(char *) *
+                                     (strlen(tmp_buffer) + 1));
+        strcpy(graml_job_contact, tmp_buffer);
+
         grami_setenv("GRAM_JOB_CONTACT", graml_job_contact, 1);
     }
 
     /* call the RSL routine to parse the user request
      */
-    description_tree = globus_rsl_parse(description);
+    rsl_tree = globus_rsl_parse(rsl_spec);
 
 /*
         printf("\n------------  after parse  ---------------\n\n");
-        globus_rsl_print_recursive(description_tree);
+        globus_rsl_print_recursive(rsl_tree);
 */
 
     my_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
@@ -555,7 +568,7 @@ main(int argc,
 			    (void *) "GLOBUS_PREFIX",
 			    (void *) my_globus_prefix);
     
-    if (globus_rsl_eval(description_tree, symbol_table) != 0)
+    if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
     {
         job_status = GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED;
     }
@@ -563,14 +576,16 @@ main(int argc,
     {
 /*
             printf("\n------------  after eval  ---------------\n\n");
-            globus_rsl_print_recursive(description_tree);
+            globus_rsl_print_recursive(rsl_tree);
 */
+
+        graml_rsl_tree = rsl_tree;
 
         /*
          * Start the job.  If successful reply with graml_job_contact else
          * send error status.
          */
-        job_status = grami_jm_job_request(graml_job_contact, description_tree);
+        job_status = grami_jm_job_request(graml_job_contact, rsl_tree);
     }
 
 
@@ -695,14 +710,16 @@ main(int argc,
 				    cache_size);
 	globus_gass_cache_close(&cache_handle);
     }
-    globus_rsl_free_recursive(description_tree);
+
+    grami_fprintf( grami_log_fp, "JM: freeing RSL.\n");
+    globus_rsl_free_recursive(graml_rsl_tree);
 
     nexus_disallow_attach(my_port);
 
     nexus_mutex_destroy(&graml_jm_monitor.mutex);
     nexus_cond_destroy(&graml_jm_monitor.cond);
 
-    grami_fprintf( grami_log_fp, "JM: exiting gram_job_request\n");
+    grami_fprintf( grami_log_fp, "JM: starting deactivate routines.\n");
 
     rc = globus_module_deactivate(GLOBUS_DUCT_CONTROL_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -740,6 +757,8 @@ main(int argc,
 	fprintf(stderr, "nexus deactivation failed with rc=%d\n", rc);
 	exit(1);
     }
+
+    grami_fprintf( grami_log_fp, "JM: exiting gram_job_request\n");
 
     return(0);
 
@@ -832,7 +851,7 @@ graml_status_file_gen(int job_status)
     char               status_file[256];
     FILE *             status_fp;
     struct stat        statbuf;
-    char               job_status_str[80];
+    char *             request_string = NULL;
 
     grami_fprintf( grami_log_fp, "JM: in graml_status_file_gen\n");
 
@@ -877,37 +896,59 @@ graml_status_file_gen(int job_status)
         }
         else
         {
-            /* convert status integer to a string for printing
+            /* if the job status variable has not been initialized then
+             * add the job data to the rsl only this once.
+             */ 
+            if (graml_job_status == NULL)
+            {
+                graml_job_status = (char *) globus_malloc(sizeof(char *) * 51);
+
+                if (graml_add_job_to_rsl() == 0)
+                {
+                    grami_fprintf( grami_log_fp, 
+                        "JM: ERROR adding job data to the RSL.\n");
+                }
+            }
+
+            /* convert status integer to a string.  graml_job_status will
+             * update the JM_job_status parameter in the RSL  
              */
             switch(job_status)
             {
                 case GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING:
-                    strcpy(job_status_str, "PENDING");
+                    strcpy(graml_job_status, "PENDING");
                     break;
                 case GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE:
-                    strcpy(job_status_str, "ACTIVE");
+                    strcpy(graml_job_status, "ACTIVE");
                     break;
                 case GLOBUS_GRAM_CLIENT_JOB_STATE_DONE:
-                    strcpy(job_status_str, "DONE");
+                    strcpy(graml_job_status, "DONE");
                     break;
                 case GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED:
-                    strcpy(job_status_str, "FAILED");
+                    strcpy(graml_job_status, "FAILED");
+                    break;
+                case GLOBUS_GRAM_CLIENT_JOB_STATE_SUSPENDED:
+                    strcpy(graml_job_status, "SUSPENDED");
                     break;
                 default:
-                    strcpy(job_status_str, "UNKNOWN");
+                    strcpy(graml_job_status, "UNKNOWN");
                     break;
             }
 
             /* output data into the status file in the format that the
              * gram-reporter is expecting it.
-             *
              */
             fprintf(status_fp, "---___start___---\n");
-            fprintf(status_fp, "%s;%s;%s;%d\n",
-		    graml_my_globusid,
-		    job_status_str,
-		    graml_job_contact,
-		    graml_my_count);
+
+            if ((request_string = globus_rsl_unparse(graml_rsl_tree)) == NULL)
+            {
+                fprintf(status_fp, "Job data unknown\n"); 
+            }
+            else
+            {
+                fprintf(status_fp, "%s\n", request_string);
+            }
+
             fprintf(status_fp, "---___end___---\n");
             fclose(status_fp);
         }
@@ -917,6 +958,89 @@ graml_status_file_gen(int job_status)
 
 } /* graml_status_file_gen() */
 
+
+/******************************************************************************
+Function:       graml_add_job_to_rsl()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int 
+graml_add_job_to_rsl()
+{
+
+   globus_list_t * new_list;
+   globus_rsl_t * rsl_ptr;
+   char * tmp_job_attribute;
+
+   if (globus_rsl_is_boolean(graml_rsl_tree))
+   {
+
+       /*
+        * create the RSL relation for the job contact
+        */
+       new_list = NULL;
+
+       tmp_job_attribute = (char *) globus_malloc (sizeof(char *) * 12);
+       strcpy(tmp_job_attribute, "job_contact");
+
+       globus_list_insert(&new_list, (void *)
+           globus_rsl_value_make_literal(graml_job_contact));
+
+       globus_list_insert(
+           globus_rsl_boolean_get_operand_list_ref(graml_rsl_tree),
+           (void *) globus_rsl_make_relation(
+                         GLOBUS_RSL_EQ,
+                         tmp_job_attribute,
+                         globus_rsl_value_make_sequence(new_list)));
+
+       /*
+        * create the RSL relation for the globus id
+        */
+       new_list = NULL;
+
+       tmp_job_attribute = (char *) globus_malloc (sizeof(char *) * 10);
+       strcpy(tmp_job_attribute, "globus_id");
+
+       globus_list_insert(&new_list, (void *)
+           globus_rsl_value_make_literal(graml_my_globusid));
+
+       globus_list_insert(
+           globus_rsl_boolean_get_operand_list_ref(graml_rsl_tree),
+           (void *) globus_rsl_make_relation(
+                         GLOBUS_RSL_EQ,
+                         tmp_job_attribute,
+                         globus_rsl_value_make_sequence(new_list)));
+
+       /*
+        * create the RSL relation for the job status
+        */
+       new_list = NULL;
+
+       globus_list_insert(&new_list, (void *)
+           globus_rsl_value_make_literal(graml_job_status));
+
+       tmp_job_attribute = (char *) globus_malloc (sizeof(char *) * 11);
+       strcpy(tmp_job_attribute, "job_status");
+
+       globus_list_insert(
+           globus_rsl_boolean_get_operand_list_ref(graml_rsl_tree),
+           (void *) globus_rsl_make_relation(
+                         GLOBUS_RSL_EQ,
+                         tmp_job_attribute,
+                         globus_rsl_value_make_sequence(new_list)));
+   }
+   else
+   {
+       return(1);
+   }
+
+   return(0);
+
+} /* graml_add_job_to_rsl() */
+
+
+
 /******************************************************************************
 Function:       grami_jm_request_params()
 Description:
@@ -924,7 +1048,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-grami_jm_request_params(globus_rsl_t * description_tree,
+grami_jm_request_params(globus_rsl_t * rsl_tree,
                         gram_request_param_t * params)
 {
     char * tmp_dir;
@@ -932,13 +1056,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     struct stat statbuf;
     char ** tmp_param;
 
-    if (description_tree == NULL)
+    if (rsl_tree == NULL)
         return(GLOBUS_GRAM_CLIENT_ERROR_NULL_SPECIFICATION_TREE);
  
     /********************************** 
      *  GET PROGRAM (executable) PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_EXECUTABLE_PARAM,
 		             &tmp_param) != 0)
     {
@@ -955,7 +1079,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET PROGRAM ARGUMENTS PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
 		       GLOBUS_GRAM_CLIENT_ARGUMENTS_PARAM, 
                        &(params->pgm_args)) != 0)
     {
@@ -965,7 +1089,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET DIR PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
 		             GLOBUS_GRAM_CLIENT_DIR_PARAM,
 		             &tmp_param) != 0)
     {
@@ -980,7 +1104,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET STDIN PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_STDIN_PARAM,
 		             &tmp_param) != 0)
     {
@@ -995,7 +1119,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET STDOUT PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_STDOUT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1010,7 +1134,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET STDERR PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_STDERR_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1025,7 +1149,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET COUNT PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_COUNT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1051,7 +1175,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET MAXTIME PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_MAXTIME_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1073,7 +1197,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET HOST_COUNT PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1095,7 +1219,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET PARADYN PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_PARADYN_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1110,7 +1234,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET JOBTYPE PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1125,7 +1249,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET MYJOB PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_MYJOB_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1140,7 +1264,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /**********************************
      *  GET QUEUE PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_QUEUE_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1155,7 +1279,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /**********************************
      *  GET PROJECT PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_GRAM_CLIENT_PROJECT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1170,7 +1294,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET ENVIRONMENT PARAM
      */
-    if (globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(rsl_tree,
 	                     GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
                              &(params->pgm_env)) != 0)
     {
