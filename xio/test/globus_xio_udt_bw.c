@@ -63,6 +63,12 @@ main(
     res = globus_xio_stack_push_driver(stack, udt_driver);
     test_res(res);
 
+    if (argc < 6)
+    {   
+        help();
+        exit(1);
+    }
+
     for(ctr = 1; ctr < argc; ctr++)
     {
         if(strcmp(argv[ctr], "-h") == 0)
@@ -70,8 +76,13 @@ main(
             help();
             return 0;
         }
-        else if(strcmp(argv[ctr], "-c") == 0 && ctr + 1 < argc)
+        else if(strcmp(argv[ctr], "-c") == 0)
         {
+            if (argc < 7)
+            {
+                help();
+                exit(1);
+            }
             cs = argv[ctr + 1];
             ctr++;
         }
@@ -81,6 +92,11 @@ main(
         }
         else if(strcmp(argv[ctr], "-p") == 0 && ctr + 1 < argc)
         {
+            if (argc < 8)
+            {
+                help();
+                exit(1);
+            }
             test_res(globus_xio_attr_init(&attr));
             test_res(globus_xio_attr_cntl(
                 attr,
@@ -88,13 +104,29 @@ main(
                 GLOBUS_XIO_UDT_SET_PORT,
                 atoi(argv[ctr + 1])));
         } 
-	else if(strcmp(argv[ctr], "-r") == 0 && ctr + 1 < argc)
+	else if(strcmp(argv[ctr], "-r") == 0)
 	{
-	    REPEAT_COUNT = atoi(argv[ctr+1]);
+            if (ctr + 1 < argc)
+            {
+	        REPEAT_COUNT = atoi(argv[ctr+1]);
+            }
+            else
+            {
+                help();
+                exit(1);
+            }
 	}
-	else if(strcmp(argv[ctr], "-b") == 0 && ctr + 1 < argc)
+	else if(strcmp(argv[ctr], "-b") == 0)
 	{
-	    CHUNK_SIZE = atoi(argv[ctr+1]) * 1000000;
+            if (ctr + 1 < argc)
+            {
+	        CHUNK_SIZE = atoi(argv[ctr+1]) * 1000000;
+            }
+            else
+            {
+                help();
+                exit(1);
+            }
 	}
     }
     
@@ -114,6 +146,8 @@ main(
 	globus_abstime_t start_time, end_time;
         res = globus_xio_server_create(&server, attr, stack);
         test_res(res);
+        globus_xio_server_get_contact_string(server, &cs);
+        fprintf(stdout, "Contact: %s\n", cs);   
         res = globus_xio_server_accept(&xio_handle, server);
         test_res(res);
         res = globus_xio_open(xio_handle, NULL, attr);
