@@ -24,6 +24,8 @@ LibSources= \
 	myproxy_delegation.h \
 	myproxy_read_pass.c \
 	myproxy_read_pass.h \
+	myproxy_log.c \
+	myproxy_log.h \
 	ssl_utils.c \
 	ssl_utils.h \
 	sslutil.h \
@@ -36,8 +38,6 @@ LibSources= \
 ServerSources= \
 	myproxy_creds.c \
 	myproxy_creds.h \
-	myproxy_log.c \
-	myproxy_log.h \
 	myproxy_server.c \
 	myproxy_server.h \
 	myproxy_server_config.c \
