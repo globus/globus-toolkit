@@ -207,5 +207,35 @@ int ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
  */
 void ssl_free_buffer(unsigned char *buffer);
 
+
+/*
+ * ssl_proxy_restrictions_new()
+ *
+ * Generate a new SSL_PROXY_RESTRICTIONS object.
+ *
+ * Returns object on success, NULL on error setting verror.
+ */
+SSL_PROXY_RESTRICTIONS *ssl_proxy_restrictions_new();
+
+/*
+ * ssl_proxy_restrictions_destroy()
+ *
+ * Destroy a SSL_PROXY_RESTRICTIONS object, deallocating all memory
+ * associated with it.
+ */
+void ssl_proxy_restrictions_destroy(SSL_PROXY_RESTRICTIONS *restrictions);
+
+/*
+ * ssl_proxy_restrictions_set_lifetime()
+ *
+ * Set the lifetime in the given SSL_PROXY_RESTRICTIONS object to
+ * the given number of seconds. A values of zero for seconds means
+ * to use the default.
+ *
+ * Returns SSL_SUCCESS on success, SSL_ERROR otherwise setting verror.
+ */
+int ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS *restrictions,
+					long seconds);
+
 			   
 #endif /* _SSL_UTILS_H */
