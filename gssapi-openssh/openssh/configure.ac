@@ -608,10 +608,11 @@ if test "x$gsi_path" != "xno" ; then
 
 	AC_MSG_CHECKING(for Globus linkline)
 	if test -x $GPT_LOCATION/sbin/gpt_build_config ; then
-		$GPT_LOCATION/sbin/gpt_build_config -f ${globus_flavor_type} -link static -src pkg_data_src.gpt
+		$GPT_LOCATION/sbin/gpt_build_config -f ${globus_flavor_type} -link shared -src pkg_data_src.gpt
 		. ./gpt_build_temp.sh
 		GSI_LDFLAGS="-L${gsi_path}/lib"
 		GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
+		export LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
 	else
 		AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
 	fi
