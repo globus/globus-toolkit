@@ -97,6 +97,10 @@ globus_list_remove (globus_list_t * volatile *headp, globus_list_t *entry);
 extern void
 globus_list_free (globus_list_t *head);
 
+void globus_list_destroy_all(
+    globus_list_t *                     head,
+    void                                (*data_free)(void *));
+
 EXTERN_C_END
 
 #endif /* GLOBUS_LIST_H */

@@ -865,68 +865,69 @@ Returns:
 int
 globus_libc_gethostname(char *name, int len)
 {
-    static char hostname[MAXHOSTNAMELEN];
-    static size_t hostname_length = 0;
-    static globus_mutex_t gethostname_mutex;
-    static int initialized = GLOBUS_FALSE;
-    char *env;
+    static char                         hostname[MAXHOSTNAMELEN];
+    static size_t                       hostname_length = 0;
+    static globus_mutex_t               gethostname_mutex;
+    static int                          initialized = GLOBUS_FALSE;
+    char *                              env;
     
     globus_libc_lock();
     if(initialized == GLOBUS_FALSE)
     {
-	globus_mutex_init(&gethostname_mutex,
-			  (globus_mutexattr_t *) GLOBUS_NULL);
-	initialized = GLOBUS_TRUE;
+        globus_mutex_init(&gethostname_mutex,
+                          (globus_mutexattr_t *) GLOBUS_NULL);
+        initialized = GLOBUS_TRUE;
     }
     globus_libc_unlock();
-
+    
     globus_mutex_lock(&gethostname_mutex);
     
     if (hostname_length == 0U &&
         (env = globus_libc_getenv("GLOBUS_HOSTNAME")) != GLOBUS_NULL)
     {
         strncpy(hostname, env, MAXHOSTNAMELEN);
-	hostname_length = strlen(hostname);
+        hostname_length = strlen(hostname);
     }
     if (hostname_length == 0U)
     {
-        struct hostent *        hp_ptr = GLOBUS_NULL;
-	struct hostent hp2;
-	char hp_tsdbuffer[500];
-	int hp_errnop;
+        struct hostent *                hp_ptr = GLOBUS_NULL;
+        struct hostent                  hp2;
+        char                            hp_tsdbuffer[500];
+        int                             hp_errnop;
 
         if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
         {
             globus_mutex_unlock(&gethostname_mutex);
             return(-1);
         }
+        
         hostname_length = strlen(hostname);
         if(strchr(hostname, '.') != GLOBUS_NULL)
-	    {
-            unsigned int                    i = 0;
+        {
+            unsigned int                i = 0;
             for (i=0; i<hostname_length; i++)
             {
                 hostname[i] = tolower(hostname[i]);
             }
-	        strncpy(name, hostname, len);
+            strncpy(name, hostname, len);
             globus_mutex_unlock(&gethostname_mutex);
-	        return 0;
-	    }
-
-	hp_ptr = globus_libc_gethostbyname_r(hostname,
-					     &hp2,
-					     hp_tsdbuffer,
-					     500,
-					     &hp_errnop);
+            return 0;
+        }
+        
+        hp_ptr = globus_libc_gethostbyname_r(hostname,
+                                             &hp2,
+                                             hp_tsdbuffer,
+                                             500,
+                                             &hp_errnop);
         if (hp_ptr != NULL)
         {
-            struct in_addr      addr;
-	    struct hostent      hostent_by_addr;
-	    char                buf[500];
-	    int                 errno_by_addr;
-	    
+            struct in_addr              addr;
+            struct hostent              hostent_by_addr;
+            char                        buf[500];
+            int                         errno_by_addr;
+            
 #           if defined (TARGET_ARCH_CRAYT3E) \
-			|| defined (TARGET_ARCH_CRAYT90)
+                        || defined (TARGET_ARCH_CRAYT90)
             {
                 memcpy(&(addr.s_da),
                        hp_ptr->h_addr,
@@ -937,13 +938,13 @@ globus_libc_gethostname(char *name, int len)
                 memcpy(&(addr.s_addr), hp_ptr->h_addr, hp_ptr->h_length);
             }
 #           endif
-	    hp_ptr = globus_libc_gethostbyaddr_r((void *) &addr,
-						 sizeof(addr),
-						 AF_INET,
-						 &hostent_by_addr,
-						 buf,
-						 500,
-						 &errno_by_addr);
+            hp_ptr = globus_libc_gethostbyaddr_r((void *) &addr,
+                                                 sizeof(addr),
+                                                 AF_INET,
+                                                 &hostent_by_addr,
+                                                 buf,
+                                                 500,
+                                                 &errno_by_addr);
 
             if (hp_ptr != NULL && strcmp(hp_ptr->h_name, hostname) != 0)
             {
@@ -954,7 +955,7 @@ globus_libc_gethostname(char *name, int len)
                 if(strchr(hostname, '.') == GLOBUS_NULL &&
                    hp_ptr != GLOBUS_NULL)
                 {
-                    int i;
+                    int                 i;
                     for(i = 0; hp_ptr->h_aliases[i] != GLOBUS_NULL; i++)
                     {
                         if(strchr(hp_ptr->h_aliases[i], '.') != GLOBUS_NULL)
@@ -973,12 +974,12 @@ globus_libc_gethostname(char *name, int len)
        (env = globus_libc_getenv("GLOBUS_DOMAIN_NAME")) != GLOBUS_NULL)
     {
         if(strlen(hostname) +
-	   strlen(env) + 2 < MAXHOSTNAMELEN)
-	{
-	    strcat(hostname, ".");
-	    strcat(hostname,
-		   globus_libc_getenv("GLOBUS_DOMAIN_NAME"));
-	}
+           strlen(env) + 2 < MAXHOSTNAMELEN)
+        {
+            strcat(hostname, ".");
+            strcat(hostname,
+                   globus_libc_getenv("GLOBUS_DOMAIN_NAME"));
+        }
     }
 
     hostname_length = strlen(hostname);
@@ -1211,19 +1212,20 @@ Parameters:
 Returns:
 ******************************************************************************/
 struct hostent *
-globus_libc_gethostbyname_r(char *hostname,
-			    struct hostent *result,
-                            char *buffer,
-			    int buflen,
-			    int *h_errnop)
+globus_libc_gethostbyname_r(
+    char *                              hostname,
+    struct hostent *                    result,
+    char *                              buffer,
+    int                                 buflen,
+    int *                               h_errnop)
 {
-    struct hostent *hp=GLOBUS_NULL;
+    struct hostent *                    hp = GLOBUS_NULL;
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
-        struct hostent_data hp_data;
-	    int rc;
+    struct hostent_data                 hp_data;
+    int                                 rc;
 #   endif
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_6)
-	   int rc;
+    int                                 rc;
 #   endif
 
     globus_libc_lock();

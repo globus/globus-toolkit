@@ -466,3 +466,21 @@ globus_list_free (globus_list_t *head)
         globus_list_remove (&head, head);
     }
 }
+
+
+void globus_list_destroy_all(
+    globus_list_t *                     head,
+    void                                (*data_free)(void *))
+{
+    void *                              data;
+    
+    while (! globus_list_empty (head)) 
+    {
+        if((data = globus_list_remove (&head, head)) != NULL)
+        {
+            data_free(data);
+        }
+    }
+
+    return;
+}
