@@ -30,37 +30,6 @@ EXTERN_C_BEGIN
 /******************************************************************************
 			  Module Specific Constants
 ******************************************************************************/
-/*
-  enum 
-{
-    GLOBUS_L_DEFAULT_HTTP_PORT			= 80,
-    GLOBUS_L_DEFAULT_HTTPS_PORT			= 443,
-    GLOBUS_L_GASS_RESPONSE_LEN			= 256
-};
-
-typedef enum
-{
-    GLOBUS_L_LINE_MODE_UNKNOWN,
-    GLOBUS_L_LINE_MODE_CR,
-    GLOBUS_L_LINE_MODE_LF,
-    GLOBUS_L_LINE_MODE_CRLF
-} globus_gass_transfer_http_line_mode_t;
-*/
-
-/*
- * Local text format to convert requests with the text_mode attribute
- * set. Always LF, which is used by the C language. Conversion from LF
- *  ode to the local storage is up to the user (or Globus I/O library).
- */
-/*
-const globus_gass_transfer_http_line_mode_t
-globus_l_gass_transfer_http_line_mode =
-    GLOBUS_L_LINE_MODE_LF;
-    */
-/* For 8-bit Text:
-#define GLOBUS_L_TEXT_BYTE(text) (text)
-*/
-#define GLOBUS_L_TEXT_BYTE(text) (text & 0x7f)
 
 static globus_mutex_t globus_l_gass_transfer_ftp_mutex;
 static globus_cond_t globus_l_gass_transfer_ftp_cond;
@@ -76,72 +45,7 @@ static globus_cond_t globus_l_gass_transfer_ftp_cond;
 			 &globus_l_gass_transfer_ftp_mutex)
 #define globus_l_gass_transfer_ftp_signal() \
 	globus_cond_signal(&globus_l_gass_transfer_ftp_cond)
-/*
-static char * globus_l_gass_transfer_ftp_subject_name;
-*/
-	    
-/* Some handy, common values in the HTTP protocol */
-/*
-#define CR				'\015'
-#define LF				'\012'
-#define CRLF				"\015\012"
-#define CR_STRING			"\015"
-#define LF_STRING			"\012"
-*/
-/* Commands the client issues to the server */
-/*
-#define GLOBUS_GASS_FTP_VERSION	"Globus-GASS-FTP/1.1.0"
-
-#define GLOBUS_L_APPEND_URI		"/globus-bins/GASSappend?"
-
-#define GLOBUS_L_GET_COMMAND		"GET %s HTTP/1.1" CRLF \
-                                        "Host: %s" CRLF \
-					"Connection: close" CRLF \
-					"User-Agent: " GLOBUS_GASS_HTTP_VERSION CRLF
-
-#define GLOBUS_L_PUT_COMMAND		"PUT %s HTTP/1.1" CRLF \
-					"Host: %s" CRLF \
-					"Connection: close" CRLF \
-					"User-Agent: " GLOBUS_GASS_HTTP_VERSION CRLF
-
-#define GLOBUS_L_APPEND_COMMAND		"POST " GLOBUS_L_APPEND_URI "%s " \
-					     "HTTP/1.1" CRLF \
-					"Host: %s" CRLF \
-					"Connection: close" CRLF \
-					"User-Agent: " GLOBUS_GASS_HTTP_VERSION CRLF
-
-#define GLOBUS_L_REFER_RESPONSE		"HTTP/1.1 302 Moved Temporarily" CRLF \
-					"Connection: close" CRLF \
-					"Server: " GLOBUS_GASS_HTTP_VERSION CRLF
-
-#define GLOBUS_L_CONTINUE_RESPONSE	"HTTP/1.1 100 Continue" CRLF
-
-#define GLOBUS_L_GENERIC_RESPONSE	"HTTP/1.%d %d %s" CRLF \
-					"Connection: close" CRLF \
-					"Server: " GLOBUS_GASS_HTTP_VERSION CRLF
-#define GLOBUS_L_OK			"Ok"
-
-#define GLOBUS_L_DENIAL_RESPONSE	"HTTP/1.1 %d %s" CRLF \
-					"Connection: close" CRLF \
-					"Server: " GLOBUS_GASS_HTTP_VERSION CRLF
-
-#define GLOBUS_L_DEFAULT_DENIAL_MESSAGE	"Internal Server Error"
-
-#define GLOBUS_L_CONTENT_LENGTH_HEADER	"Content-Length: %d" CRLF
-#define GLOBUS_L_CHUNKED_HEADER		"Transfer-Encoding: chunked" CRLF
-#define GLOBUS_L_BINARY_HEADER		"Content-Type: " \
-					    "application/octet-stream" CRLF
-#define GLOBUS_L_TEXT_HEADER		"Content-Type: text/plain" CRLF
-#define GLOBUS_L_HTML_HEADER		"Content-Type: text/html" CRLF
-#define GLOBUS_L_HTML_REFERRAL_BODY_HEAD	\
-					"<html><head><title>Document Moved</title></head><body>"
-#define GLOBUS_L_HTML_REFERRAL_BODY_TAIL	\
-					"</body></html>"
-#define GLOBUS_L_HTML_DENIAL_BODY	"<html><head><title>%d %s</title></head><body>" CRLF \
-					"<h1>%d %s</h1></body></html>" CRLF
-#define GLOBUS_L_HTML_HREF		"<a href=\"%s\">%s</a><br>"
-#define GLOBUS_L_LOCATION_HEADER	"Location: %s" CRLF
-*/					
+				
 #define GLOBUS_L_DEFAULT_FAILURE_CODE	400
 #define GLOBUS_L_DEFAULT_FAILURE_REASON	"Bad Request"
 
@@ -257,6 +161,8 @@ typedef struct globus_gass_transfer_ftp_request_proto_s
     globus_bool_t				chunked;
     /* sending-side: are we handling the last data block? */
     globus_bool_t				last_data;
+    /* sending-side, number of writes that have been issued, used to compute the offset */
+    /*  globus_size_t                               num_writes_sent; */
 
     globus_bool_t				client_side;
     /* Amount of data from the current chunk still needs to
@@ -338,6 +244,7 @@ globus_l_gass_transfer_ftp_writev_callback(
     globus_size_t				iovcnt,
     globus_size_t				nbytes);
 
+
 static
 void
 globus_l_gass_transfer_ftp_write_callback(
@@ -349,6 +256,8 @@ globus_l_gass_transfer_ftp_write_callback(
     globus_size_t                               offset,
     globus_bool_t		                eof);
 
+#ifdef TEMP_DEF
+
 static
 void
 globus_l_gass_transfer_ftp_write_response(
@@ -357,6 +266,8 @@ globus_l_gass_transfer_ftp_write_response(
     globus_result_t			result,
     globus_byte_t *			buf,
     globus_size_t			nbytes);
+
+#endif
 
 static
 void
@@ -386,6 +297,7 @@ globus_l_gass_transfer_ftp_put_done_callback(
     globus_ftp_client_handle_t *               handle,
     globus_object_t *	                       error);
 
+#ifdef TEMP_DEF
 static
 void
 globus_l_gass_transfer_ftp_read_buffered_callback(
@@ -406,17 +318,8 @@ globus_bool_t
 globus_l_gass_transfer_ftp_callback_ready_callback(
     globus_abstime_t *                          time_stop,
     void *					arg);
-/*
-void
-globus_l_gass_transfer_ftp_copy_text_buffer(
-    globus_byte_t *				output,
-    globus_byte_t *				input,
-    globus_gass_transfer_ftp_line_mode_t *	line_mode,
-    globus_size_t				input_max_to_copy,
-    globus_size_t				output_max_to_copy,
-    globus_size_t *				input_copied,
-    globus_size_t *				output_copied);
-    */
+#endif
+
 static
 void
 globus_l_gass_transfer_ftp_fail(
@@ -430,6 +333,7 @@ globus_l_gass_transfer_ftp_close_callback(
     globus_io_handle_t *			handle,
     globus_result_t				result);
 
+#ifdef TEMP_DEF
 static
 void
 globus_l_gass_transfer_ftp_accept_callback(
@@ -437,6 +341,7 @@ globus_l_gass_transfer_ftp_accept_callback(
     globus_io_handle_t *			handle,
     globus_result_t				result);
 
+#endif
 
 static
 void
@@ -455,6 +360,7 @@ globus_object_t *
 globus_l_gass_transfer_ftp_new_requestattr(
     char *                              	url_scheme);
 
+#ifdef TEMP_DEF
 static
 globus_object_t *
 globus_l_gass_transfer_ftp_new_listenerattr(
@@ -591,6 +497,7 @@ globus_bool_t
 globus_l_gass_transfer_ftp_callback_send_callback(
     globus_abstime_t *                          time_stop,
     void *					arg);
+#endif
 
 static
 void
@@ -606,6 +513,7 @@ globus_result_t
 globus_l_gass_transfer_ftp_register_read(
     globus_gass_transfer_ftp_request_proto_t *		proto);
 
+#ifdef TEMP_DEF
 static
 char *
 globus_l_gass_transfer_ftp_construct_request(
@@ -637,6 +545,7 @@ globus_l_gass_transfer_ftp_extract_referral(
     globus_gass_transfer_ftp_request_proto_t *		proto,
     char ***						referral,
     globus_size_t *					referral_count);
+#endif
 
 static
 globus_bool_t
@@ -654,10 +563,12 @@ void
 globus_l_gass_transfer_ftp_register_close(
     globus_gass_transfer_ftp_request_proto_t *		proto);
 
+#ifdef TEMP_DEF
 static
 void
 globus_l_gass_transfer_ftp_listener_close(
     globus_gass_transfer_ftp_listener_proto_t * proto);
+#endif
 
 EXTERN_C_END
 
