@@ -19,10 +19,3 @@
 #undef _REENTRANT
 #undef _SGI_MP_SOURCE
 #undef __USE_FIXED_PROTOTYPES__
-
-/* Name of package */
-#undef PACKAGE
-
-/* Version number of package */
-#undef VERSION
-

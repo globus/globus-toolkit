@@ -1,7 +1,7 @@
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE(,0)
+AM_INIT_AUTOMAKE(globus_core, 2.0.0,0)
 AM_CONFIG_HEADER(globus_config.h)
 
 LAC_COMPILERS_ARGS
