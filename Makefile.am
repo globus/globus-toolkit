@@ -46,8 +46,7 @@ INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
 	myproxy-test \
-	myproxy-admin-adduser \
-	myproxy-admin-adduser-config
+	myproxy-admin-adduser
 
 sbin_SCRIPTS = $(Scripts)
 
