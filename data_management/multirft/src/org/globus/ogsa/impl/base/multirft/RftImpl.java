@@ -736,6 +736,7 @@ extends GridServiceImpl {
                         , restartMarkerServiceData, restartMarkerDataType
                         , gridFTPRestartMarkerSD, gridFTPRestartMarkerSDE
                         , gridFTPPerfMarkerSD, gridFTPPerfMarkerSDE );
+                        myMarkerListener.setTransferId(tempId);
                         transferClient.setMyMarkerListener( myMarkerListener );
                         transferClient.setStatus( TransferJob.STATUS_ACTIVE );
                     }

@@ -48,7 +48,7 @@ public class MyMarkerListener
      */
     public ByteRangeList list;
     TransferDbAdapter dbAdapter;
-    int transferid;
+    int transferid =-1;
     private static Logger logger = Logger.getLogger( MyMarkerListener.class.getName() );
     FileTransferProgressType transferProgress;
     ServiceDataSet serviceData;
@@ -282,10 +282,10 @@ public class MyMarkerListener
             list.merge( marker.toVector() );
 
             String temp = list.toFtpCmdArgument();
-            dbAdapter.setRestartMarker( transferid, temp );
+            dbAdapter.setRestartMarker( this.transferid, temp );
             logger.info(
                     "Current transfer state: " + temp + " for transferId: " +
-                    transferid );
+                    this.transferid );
 
             GridFTPRestartMarkerType gridFTPRestartMarkerType =
                     new GridFTPRestartMarkerType();
