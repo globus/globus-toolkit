@@ -223,7 +223,7 @@ int main()
            (char*) output_name.value);
 
     maj_stat = gss_delete_sec_context(&min_stat,
-                                      init_context,
+                                      &init_context,
                                       GSS_C_NO_BUFFER);
     if(maj_stat != GSS_S_COMPLETE)
     {
@@ -238,7 +238,7 @@ int main()
     }
 
     maj_stat = gss_delete_sec_context(&min_stat,
-                                      accept_context,
+                                      &accept_context,
                                       GSS_C_NO_BUFFER);
     if(maj_stat != GSS_S_COMPLETE)
     {
