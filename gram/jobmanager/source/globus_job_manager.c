@@ -5175,6 +5175,7 @@ globus_l_jm_http_query_handler(
 	     * NOTE: old code set state to FAILED. Shouldn't it be DONE?
 	     */
 	    status = request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
     	    /*
 	     * wake up the timed() wait in the main routine
 	     */
@@ -5454,6 +5455,7 @@ globus_l_jm_http_query_send_reply:
 
     GRAM_LOCK;
     graml_jm_can_exit = GLOBUS_TRUE;
+    globus_cond_signal(&graml_api_cond);
     GRAM_UNLOCK;
 
     return GLOBUS_FALSE;
