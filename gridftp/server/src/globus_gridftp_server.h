@@ -352,7 +352,9 @@ typedef struct globus_l_gfs_data_operation_s *  globus_gfs_operation_t;
 typedef globus_result_t
 (*globus_gfs_storage_init_t)(
     globus_gfs_operation_t              op,
-    const char *                        user_id);
+    const char *                        user_id,
+    gss_cred_id_t                       del_cred);
+    
 /*
  * This will be called when the client session ends.  Final cleanup 
  * should be done here.

@@ -108,6 +108,13 @@ typedef struct
     void *                              user_arg;
 } globus_l_gfs_data_bounce_t;
 
+
+typedef struct
+{
+    gss_cred_id_t                       del_cred;   
+    void *                              session_arg;
+} globus_l_gfs_data_session_t;
+    
 typedef struct globus_l_gfs_data_operation_s
 {
     globus_i_gfs_server_instance_t *    instance;
@@ -225,7 +232,10 @@ globus_i_gfs_data_request_stat(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_stat_request);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
 
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
@@ -243,7 +253,7 @@ globus_i_gfs_data_request_stat(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    result = globus_l_gfs_dsi->stat_func(op, stat_info, (void *) session_id);
+    result = globus_l_gfs_dsi->stat_func(op, stat_info, session_handle->session_arg);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("hook", result);
@@ -321,7 +331,20 @@ globus_gridftp_server_operation_finished(
 {
     finished_info->id = op->id;
     finished_info->result = result;
-    
+
+    switch(finished-info->type)
+    {
+        case GLOBUS_GFS_OP_SESSION_START:
+            if(op->session_handle)
+            {
+                op->session_handle->session_arg = finished_info->session_id;
+            }
+            finished_info->session_id = op->session_handle;
+            break;
+        default:
+            break;
+    }
+
     if(op->callback != NULL)
     {
         op->callback(
@@ -543,7 +566,10 @@ globus_i_gfs_data_request_command(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_command_request);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
 
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
@@ -560,7 +586,7 @@ globus_i_gfs_data_request_command(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    result = globus_l_gfs_dsi->command_func(op, cmd_info, (void *) session_id);
+    result = globus_l_gfs_dsi->command_func(op, cmd_info, session_handle->session_arg);
       
     if(result != GLOBUS_SUCCESS)
     {
@@ -757,11 +783,14 @@ globus_i_gfs_data_destroy_handle(
 {
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
     
     if(globus_l_gfs_dsi->data_destroy_func != NULL)
     {
-        globus_l_gfs_dsi->data_destroy_func(data_connection_id, (void *) session_id);
+        globus_l_gfs_dsi->data_destroy_func(data_connection_id, session_handle->session_arg);
     }
     else
     {
@@ -865,7 +894,10 @@ globus_i_gfs_data_request_passive(
     char *                              cs;
     globus_l_gfs_data_passive_bounce_t * bounce_info;
     globus_l_gfs_data_operation_t *     op;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_request_passive);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
 
     if(globus_l_gfs_dsi->active_func != NULL)
     {
@@ -883,7 +915,7 @@ globus_i_gfs_data_request_passive(
         op->pathname = data_info->pathname;
         op->callback = cb;
         op->user_arg = user_arg;
-        result = globus_l_gfs_dsi->passive_func(op, data_info, (void *) session_id);
+        result = globus_l_gfs_dsi->passive_func(op, data_info, session_handle->session_arg);
     }
     else
     {
@@ -1032,7 +1064,10 @@ globus_i_gfs_data_request_active(
     int                                 i;
     globus_l_gfs_data_active_bounce_t * bounce_info;
     globus_l_gfs_data_operation_t *     op;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_request_active);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
 
     if(globus_l_gfs_dsi->active_func != NULL)
     {
@@ -1050,7 +1085,7 @@ globus_i_gfs_data_request_active(
         op->pathname = data_info->pathname;
         op->callback = cb;
         op->user_arg = user_arg;
-        result = globus_l_gfs_dsi->active_func(op, data_info, (void *) session_id);
+        result = globus_l_gfs_dsi->active_func(op, data_info, session_handle->session_arg);
     }
     else
     {
@@ -1166,8 +1201,10 @@ globus_i_gfs_data_request_recv(
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_recv_request);
 
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
     data_handle = (globus_i_gfs_data_handle_t *)
         recv_info->data_handle_id;
 
@@ -1199,7 +1236,7 @@ globus_i_gfs_data_request_recv(
     op->stripe_count = recv_info->stripe_count;
     
     /* XXX */
-    result = globus_l_gfs_dsi->recv_func(op, recv_info, (void *) session_id);
+    result = globus_l_gfs_dsi->recv_func(op, recv_info, session_handle->session_arg);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("recv_hook", result);
@@ -1239,8 +1276,10 @@ globus_i_gfs_data_request_send(
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_send_request);
 
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
     data_handle = (globus_i_gfs_data_handle_t *)
         send_info->data_handle_id;
 
@@ -1277,7 +1316,7 @@ globus_i_gfs_data_request_send(
 
     
     /* XXX */
-    result = globus_l_gfs_dsi->send_func(op, send_info, (void *) session_id);
+    result = globus_l_gfs_dsi->send_func(op, send_info, session_handle->session_arg);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("send_hook", result);
@@ -1390,9 +1429,11 @@ globus_i_gfs_data_request_list(
     globus_l_gfs_data_operation_t *     data_op;
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        data_handle;
-    globus_gfs_stat_info_t *       stat_info;
+    globus_gfs_stat_info_t *            stat_info;
+    globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_list_request);
 
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
     data_handle = (globus_i_gfs_data_handle_t *)
         list_info->data_handle_id;
 
@@ -1424,7 +1465,7 @@ globus_i_gfs_data_request_list(
     
     if(globus_l_gfs_dsi->list_func != NULL)
     {
-        result = globus_l_gfs_dsi->list_func(data_op, list_info, (void *) session_id);
+        result = globus_l_gfs_dsi->list_func(data_op, list_info, session_handle->session_arg);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed("list_hook", result);
@@ -1451,7 +1492,7 @@ globus_i_gfs_data_request_list(
         stat_info->file_only = GLOBUS_FALSE;
     
         /* XXX */
-        result = globus_l_gfs_dsi->stat_func(stat_op, stat_info, (void *) session_id);
+        result = globus_l_gfs_dsi->stat_func(stat_op, stat_info, session_handle->session_arg);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed("list_hook", result);
@@ -2339,11 +2380,14 @@ globus_i_gfs_data_request_transfer_event(
 {
     globus_result_t                     result;
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
+    globus_l_gfs_data_session_t *       session_handle;
     GlobusGFSName(globus_i_gfs_data_kickoff_event);
 
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
     if(globus_l_gfs_dsi->trev_func != NULL)
     {
-        globus_l_gfs_dsi->trev_func(transfer_id, event_type, (void *) session_id);
+        globus_l_gfs_dsi->trev_func(
+            transfer_id, event_type, session_handle->session_arg);
     }
     else
     {    
@@ -2435,12 +2479,17 @@ globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     const char *                        user_dn,
+    gss_cred_id_t                       del_cred,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
-    globus_gfs_finished_info_t *        finished_info;            
+    globus_gfs_finished_info_t *        finished_info; 
+    globus_l_gfs_data_session_t *       session_handle;    
+    gss_buffer_desc                     buffer;
+    int                                 maj_stat;
+    int                                 min_stat;    
     GlobusGFSName(globus_i_gfs_data_session_start);
 
     result = globus_l_gfs_data_operation_init(&op);
@@ -2450,7 +2499,41 @@ globus_i_gfs_data_session_start(
             "globus_i_gfs_data_session_start", result);
         goto error_op;
     }
+    session_handle = (globus_l_gfs_data_session_t *)
+        globus_calloc(1, sizeof(globus_l_gfs_data_session_t));
+
+    if(del_cred != NULL)
+    {    
+        maj_stat = gss_export_cred(
+            &min_stat, del_cred, NULL, 0, &buffer);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_export_cred", min_stat);
+            goto error_cred;
+        }
+        maj_stat = gss_import_cred(
+            &min_stat, 
+            &session_handle->del_cred, 
+            GSS_C_NO_OID, 
+            0, 
+            &buffer, 
+            NULL, 
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
+            goto error_import;
+        }
+        maj_stat = gss_release_buffer(&min_stat, buffer);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
+            goto error_import;
+        }
+        
+    }
     
+    op->session_handle = session_handle;
     op->ipc_handle = ipc_handle;
     op->id = id;
     op->uid = getuid();
@@ -2461,7 +2544,7 @@ globus_i_gfs_data_session_start(
     
     if(globus_l_gfs_dsi->init_func != NULL)
     {
-        result = globus_l_gfs_dsi->init_func(op, user_dn);
+        result = globus_l_gfs_dsi->init_func(op, user_dn, del_cred);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed("hook", result);
@@ -2474,7 +2557,7 @@ globus_i_gfs_data_session_start(
             globus_calloc(1, sizeof(globus_gfs_finished_info_t)); 
                                                                   
         finished_info->type = GLOBUS_GFS_OP_SESSION_START;          
-        finished_info->session_id = 0;                          
+        finished_info->session_id = (int) session_handle;                          
                                                                   
         globus_gridftp_server_operation_finished(                 
             op,                                                   
@@ -2492,9 +2575,25 @@ globus_i_gfs_data_session_start(
     
     return;
 
+error_import:
+    gss_release_buffer(&min_stat, buffer);
+error_cred:
 error_hook:
+
+    finished_info = (globus_gfs_finished_info_t *)            
+        globus_calloc(1, sizeof(globus_gfs_finished_info_t)); 
+                                                              
+    finished_info->type = GLOBUS_GFS_OP_SESSION_START;          
+    finished_info->session_id = (int) session_handle;
+    finished_info->result = result;                          
+                                                              
+    globus_gridftp_server_operation_finished(                 
+        op,                                                   
+        result,                                               
+        finished_info);
+    globus_free(finished_info);                                      
     globus_l_gfs_data_operation_destroy(op);
-    
+
 error_op:
     return;
 }
@@ -2504,8 +2603,15 @@ globus_i_gfs_data_session_stop(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id)
 {
+    globus_l_gfs_data_session_t *       session_handle;    
+    GlobusGFSName(globus_i_gfs_data_session_stop);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_id;
+
     if(globus_l_gfs_dsi->destroy_func != NULL)
     {
-        globus_l_gfs_dsi->destroy_func((void *) session_id);
+        globus_l_gfs_dsi->destroy_func(session_handle->session_arg);
     }
+
+    globus_free(session_handle);
 }

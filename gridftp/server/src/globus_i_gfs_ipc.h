@@ -300,6 +300,7 @@ typedef void
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     const char *                        user_dn,
+    gss_cred_id_t                       del_cred,
     globus_i_gfs_ipc_data_callback_t    cb,
     void *                              user_arg);
 
@@ -308,6 +309,7 @@ globus_gfs_ipc_start_session(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
     const char *                        user_dn,
+    gss_cred_id_t                       del_cred,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 

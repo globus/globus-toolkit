@@ -870,7 +870,8 @@ static
 globus_result_t
 globus_l_gfs_remote_init(
     globus_gfs_operation_t              op,
-    const char *                        user_id)
+    const char *                        user_id,
+    gss_cred_id_t                       del_cred)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_gfs_remote_handle_t *      my_handle;
