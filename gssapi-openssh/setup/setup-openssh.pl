@@ -2,15 +2,15 @@
 #
 # setup-openssh.pl
 #
-# Adapts the installed gsi-ssh environment to the current machine,
+# Adapts the installed gsi-openssh environment to the current machine,
 # performing actions that originally occurred during the package's
 # 'make install' phase.
-#
-# Parts adapted from 'fixpath', a tool found in openssh-3.0.2p1.
 #
 # Send comments/fixes/suggestions to:
 # Chase Phillips <cphillip@ncsa.uiuc.edu>
 #
+
+use Data::Dumper;
 
 printf("setup-openssh.pl: Configuring gsi-openssh package\n");
 
@@ -48,7 +48,6 @@ else
 require Grid::GPT::Setup;
 
 my $globusdir = $gpath;
-my $setupdir = "$globusdir/setup/globus";
 my $myname = "setup-openssh.pl";
 
 #
@@ -58,20 +57,14 @@ my $myname = "setup-openssh.pl";
 $prefix = ${globusdir};
 $exec_prefix = "${prefix}";
 $bindir = "${exec_prefix}/bin";
-$sbindir = "${exec_prefix}/sbin";
-$mandir = "${prefix}/man";
-$mansubdir = "man";
-$libexecdir = "${exec_prefix}/libexec";
-$sysconfdir = "/etc/ssh";
-$piddir = "/var/run";
-$xauth_path = "/usr/bin/X11/xauth";
+$sysconfdir = "$prefix/etc/ssh";
+$localsshdir = "/etc/ssh";
 
-#
-# Backup-related variables
-#
-
-$curr_time = time();
-$backupdir = "/etc/ssh/globus_backup_${curr_time}";
+my $keyfiles = {
+                 "dsa" => "ssh_host_dsa_key",
+                 "rsa" => "ssh_host_rsa_key",
+                 "rsa1" => "ssh_host_key",
+               };
 
 #
 # Check that we are running as root
@@ -85,126 +78,108 @@ if ($uid != 0)
     exit 0;
 }
 
-#
-# We need to make sure it's okay to copy our setup files (if some files are already
-# present).  If we do copy any files, we backup the old files so the user can (possibly)
-# reverse any damage.
-#
-
-sub test_dirs
+sub copyKeyFiles
 {
-    print "\nPreparatory: Checking for existence of critical directories..\n";
+    my($copylist) = @_;
+    my($regex, $basename);
 
-    #
-    # Remember to put in check for /etc
-    #
+    print "Copying ssh host keys...\n";
 
-    #
-    # Test for /etc/ssh
-    #
-
-    if ( ! -d "$sysconfdir" )
+    for my $f (@$copylist)
     {
-        print "Could not find directory: '${sysconfdir}'.. creating.\n";
-        mkdir($sysconfdir, 16877);
-        # 16877 should be 755, or drwxr-xr-x
-    }
+        $f =~ s:/+:/:g;
 
-    #
-    # Test for /etc/ssh/globus_backup_<curr>
-    #
+        if (length($f) > 0)
+        {
+            $keyfile = "$f";
+            $pubkeyfile = "$f.pub";
 
-    if ( ! -d "${backupdir}" )
-    {
-        print "Could not find directory: '${backupdir}'.. creating.\n";
-        mkdir($backupdir, 16877);
-    }
-
-    return 0;
-}
-
-sub backup_files
-{
-    print "\nStage 1: Backing up configuration files to '${backupdir}/'..\n";
-
-    if ( -e "${sysconfdir}/ssh_config" )
-    {
-        action("cp ${sysconfdir}/ssh_config ${backupdir}/ssh_config");
-    }
-    else
-    {
-        print "${sysconfdir}/ssh_config does not exist.\n";
-    }
-
-    if ( -e "${sysconfdir}/sshd_config" )
-    {
-        action("cp ${sysconfdir}/sshd_config ${backupdir}/sshd_config");
-    }
-    else
-    {
-        print "${sysconfdir}/sshd_config does not exist.\n";
-    }
-
-    if ( -e "${sysconfdir}/moduli" )
-    {
-        action("cp ${sysconfdir}/moduli ${backupdir}/moduli");
-    }
-    else
-    {
-        print "${sysconfdir}/moduli does not exist.\n";
+#            printf("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
+#            printf("\n");
+#            printf("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
+#            printf("\n");
+            action("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
+            action("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
+        }
     }
 }
 
-sub copy_setup_files
+sub isReadable
 {
-    my $response;
+    my($file) = @_;
 
-    print "\nStage 2: Copying configuration files into '${sysconfdir}'..\n";
-
-    action("cp ${globusdir}/setup/globus/ssh_config ${sysconfdir}/ssh_config");
-    action("cp ${globusdir}/setup/globus/sshd_config ${sysconfdir}/sshd_config");
-    action("cp ${globusdir}/setup/globus/moduli ${sysconfdir}/moduli");
-}
-
-sub runkeygen
-{
-    print "\nStage 3: Generating ssh host keys..\n";
-
-    if ( ! -d "${sysconfdir}" )
+    if ( ( -e $file ) && ( -r $file ) )
     {
-        print "Could not find ${sysconfdir} directory... creating\n";
-        mkdir($sysconfdir, 16877);
-        # 16877 should be 755, or drwxr-xr-x
-    }
-
-    if ( -e "${sysconfdir}/ssh_host_key" )
-    {
-        print "${sysconfdir}/ssh_host_key already exists, skipping.\n";
+        return 1;
     }
     else
     {
+        return 0;
+    }
+}
+
+sub determineKeys
+{
+    my($keyhash, $keylist);
+    my($count);
+
+    $count = 0;
+
+    $keyhash = {};
+    $keyhash->{gen} = [];   # a list of keytypes to generate
+    $keyhash->{copy} = [];  # a list of files to copy from the 
+    $genlist = $keyhash->{gen};
+    $copylist = $keyhash->{copy};
+
+    for my $keytype (keys %$keyfiles)
+    {
+        $basekeyfile = $keyfiles->{$keytype};
+        $keyfile = "$localsshdir/$basekeyfile";
+        $pubkeyfile = "$keyfile.pub";
+
+        if ( !isReadable($keyfile) || !isReadable($pubkeyfile) )
+        {
+            push(@$genlist, $keytype);
+            $count++;
+        }
+    }
+
+    for my $keytype (keys %$keyfiles)
+    {
+        if ( !grep(/^$keytype$/, @$genlist) )
+        {
+            $keyfile = $keyfiles->{$keytype};
+            push(@$copylist, $keyfile);
+            $count++;
+        }
+    }
+
+    if ($count > 0)
+    {
+        if ( ! -d $sysconfdir )
+        {
+            print "Could not find ${sysconfdir} directory... creating\n";
+            action("mkdir -p $sysconfdir");
+        }
+    }
+
+    return $keyhash;
+}
+
+sub runKeyGen
+{
+    my($gen_keys) = @_;
+
+    print "Generating ssh host keys...\n";
+
+    for my $k (@$gen_keys)
+    {
+        $keyfile = $keyfiles->{$k};
+
         # if $sysconfdir/ssh_host_key doesn't exist..
-        action("$bindir/ssh-keygen -t rsa1 -f $sysconfdir/ssh_host_key -N \"\"");
-    }
-
-    if ( -e "${sysconfdir}/ssh_host_dsa_key" )
-    {
-        print "${sysconfdir}/ssh_host_dsa_key already exists, skipping.\n";
-    }
-    else
-    {
-        # if $sysconfdir/ssh_host_dsa_key doesn't exist..
-        action("$bindir/ssh-keygen -t dsa -f $sysconfdir/ssh_host_dsa_key -N \"\"");
-    }
-
-    if ( -e "${sysconfdir}/ssh_host_rsa_key" )
-    {
-        print "${sysconfdir}/ssh_host_rsa_key already exists, skipping.\n";
-    }
-    else
-    {
-        # if $sysconfdir/ssh_host_rsa_key doesn't exist..
-        action("$bindir/ssh-keygen -t rsa -f $sysconfdir/ssh_host_rsa_key -N \"\"");
+#        printf("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
+#        printf("\n");
+        action("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
     }
 
     return 0;
@@ -214,119 +189,68 @@ sub fixpaths
 {
     my $g, $h;
 
-    print "\nStage 4: Translating strings in config and man files..\n";
+    print "Fixing sftp-server path in sshd_config...\n";
 
-    #
-    # Set up path translations for the installation files
-    #
+    $f = "$gpath/etc/ssh/sshd_config";
+    $g = "$f.tmp";
 
-    %def = (
-        "/etc/ssh_config" => "${sysconfdir}/ssh_config",
-        "/etc/ssh_known_hosts" => "${sysconfdir}/ssh_known_hosts",
-        "/etc/sshd_config" => "${sysconfdir}/sshd_config",
-        "/usr/libexec" => "${libexecdir}",
-        "/etc/shosts.equiv" => "${sysconfdir}/shosts.equiv",
-        "/etc/ssh_host_key" => "${sysconfdir}/ssh_host_key",
-        "/etc/ssh_host_dsa_key" => "${sysconfdir}/ssh_host_dsa_key",
-        "/etc/ssh_host_rsa_key" => "${sysconfdir}/ssh_host_rsa_key",
-        "/var/run/sshd.pid" => "${piddir}/sshd.pid",
-        "/etc/moduli" => "${sysconfdir}/moduli",
-        "/etc/sshrc" => "${sysconfdir}/sshrc",
-        "/usr/X11R6/bin/xauth" => "${xauth_path}",
-        "/usr/bin:/bin:/usr/sbin:/sbin" => "/usr/bin:/bin:/usr/sbin:/sbin:${bindir}",
-        );
-
-    #
-    # Files on which to perform path translations
-    #
-
-    @files = (
-        "${sysconfdir}/ssh_config",
-        "${sysconfdir}/sshd_config",
-        "${sysconfdir}/moduli",
-        "${mandir}/${mansubdir}1/scp.1",
-        "${mandir}/${mansubdir}1/ssh-add.1",
-        "${mandir}/${mansubdir}1/ssh-agent.1",
-        "${mandir}/${mansubdir}1/ssh-keygen.1",
-        "${mandir}/${mansubdir}1/ssh-keyscan.1",
-        "${mandir}/${mansubdir}1/ssh.1",
-        "${mandir}/${mansubdir}8/sshd.8",
-        "${mandir}/${mansubdir}8/sftp-server.8",
-        "${mandir}/${mansubdir}1/sftp.1",
-        );
-
-    for my $f (@files)
+    if ( ! -f "$f" )
     {
-        $f =~ /(.*\/)*(.*)$/;
+        die("Cannot find $f!");
+    }
 
-        #
-        # we really should create a random filename and make sure that it
-        # doesn't already exist (based off current time_t or something)
-        #
+    #
+    # Grab the current mode/uid/gid for use later
+    #
 
-        $g = "$f.tmp";
+    $mode = (stat($f))[2];
+    $uid = (stat($f))[4];
+    $gid = (stat($f))[5];
 
-        #
-        # What is $f's filename? (taken from the qualified path)
-        #
+    #
+    # Move $f into a .tmp file for the translation step
+    #
 
-        $h = $f;
-        $h =~ s#^.*/##;
+    $result = system("mv $f $g 2>&1");
+    if ($result or $?)
+    {
+        die "ERROR: Unable to execute command: $!\n";
+    }
 
-        #
-        # Grab the current mode/uid/gid for use later
-        #
+    open(IN, "<$g") || die ("$0: input file $g missing!\n");
+    open(OUT, ">$f") || die ("$0: unable to open output file $f!\n");
 
-        $mode = (stat($f))[2];
-        $uid = (stat($f))[4];
-        $gid = (stat($f))[5];
-
-        #
-        # Move $f into a .tmp file for the translation step
-        #
-
-        $result = system("mv $f $g 2>&1");
-        if ($result or $?)
+    while (<IN>)
+    {
+        if ( /Subsystem\s+sftp\s+\S+/ )
         {
-            die "ERROR: Unable to execute command: $!\n";
+            $_ = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
+            $_ =~ s:/+:/:g;
         }
+        print OUT "$_";
+    } # while <IN>
 
-        open(IN, "<$g") || die ("$0: input file $g missing!\n");
-        open(OUT, ">$f") || die ("$0: unable to open output file $f!\n");
+    close(OUT);
+    close(IN);
 
-        while (<IN>)
-        {
-            for $s (keys(%def))
-            {
-                s#$s#$def{$s}#;
-            } # for $s
-            print OUT "$_";
-        } # while <IN>
+    #
+    # Remove the old .tmp file
+    #
 
-        close(OUT);
-        close(IN);
+    $result = system("rm $g 2>&1");
 
-        #
-        # Remove the old .tmp file
-        #
+    if ($result or $?)
+    {
+        die "ERROR: Unable to execute command: $!\n";
+    }
 
-        $result = system("rm $g 2>&1");
+    #
+    # An attempt to revert the new file back to the original file's
+    # mode/uid/gid
+    #
 
-        if ($result or $?)
-        {
-            die "ERROR: Unable to execute command: $!\n";
-        }
-
-        #
-        # An attempt to revert the new file back to the original file's
-        # mode/uid/gid
-        #
-
-        chmod($mode, $f);
-        chown($uid, $gid, $f);
-
-        print "$h\n";
-    } # for $f
+    chmod($mode, $f);
+    chown($uid, $gid, $f);
 
     return 0;
 }
@@ -336,7 +260,7 @@ sub alterFileGlobusLocation
     my ($file) = @_;
 
     $data = readFile($file);
-    $data =~ s|@GSI_OPENSSH_GLOBUS_LOCATION@|$gpath|g;
+    $data =~ s|\@GSI_OPENSSH_GLOBUS_LOCATION\@|$gpath|g;
     writeFile($file, $data);
 }
 
@@ -404,19 +328,12 @@ sub writeFile
 print "---------------------------------------------------------------\n";
 print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
 print "are some last minute details that I've got to set straight\n";
-print "in the config and man files, along with generating the ssh keys\n";
+print "in the sshd config file, along with generating the ssh keys\n";
 print "for this machine (if it doesn't already have them).\n";
 print "\n";
-print "I like to install my config-related files in:\n";
-print "  ${sysconfdir}/\n";
-print "\n";
-print "These files may overwrite your previously existing configuration\n";
-print "files.  If you choose to continue, you will find a backup of\n";
-print "those original files in:\n";
-print "  ${backupdir}/\n";
-print "\n";
-print "Your host keys will remain untouched if they are already present.\n";
-print "If they aren't present, this script will generate them for you.\n";
+print "If I find a pair of host keys in /etc/ssh, I will copy them into\n";
+print "$gpath/etc/ssh.  If they aren't present, I will generate them\n";
+print "for you.\n";
 print "\n";
 
 $response = query_boolean("Do you wish to continue with the setup package?","y");
@@ -429,10 +346,9 @@ if ($response eq "n")
     exit 0;
 }
 
-test_dirs();
-backup_files();
-copy_setup_files();
-runkeygen();
+$keyhash = determineKeys();
+runKeyGen($keyhash->{gen});
+copyKeyFiles($keyhash->{copy});
 fixpaths();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
