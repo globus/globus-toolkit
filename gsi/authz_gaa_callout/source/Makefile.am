@@ -17,7 +17,7 @@ lib_LTLIBRARIES = libglobus_authz_gaa_callout_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_authz_gaa_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_authz_gaa_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) -module $(GPT_LDADD)
+libglobus_authz_gaa_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) -module
 
 libglobus_authz_gaa_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
