@@ -107,7 +107,7 @@ main()
     
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
-    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 
     exit(0);
 }
