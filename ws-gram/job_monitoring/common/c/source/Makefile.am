@@ -8,13 +8,6 @@ SUBDIRS= \
 	doxygen \
 	pkgdata 
 
-# Sources contains all of the source files in the directory.
-# Header files are included because automake will generate dependency targets 
-# for them and include them in a source distribution.
-#
-# If this directory builds multiple programs or libraries than these sources
-# will need to be seperated into seperate macros.
-Sources= globus_scheduler_event_generator.h
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -25,19 +18,23 @@ INCLUDES += $(GPT_INCLUDES)
 
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
-flavorinclude_HEADERS= \
-	globus_gram_client.h
+flavorinclude_HEADERS = globus_scheduler_event_generator.h
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
 lib_LTLIBRARIES = libglobus_scheduler_event_generator_$(GLOBUS_FLAVOR_NAME).la
 
-libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libexec_PROGRAMS = globus-scheduler-event-generator
+
+libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_SOURCES = globus_scheduler_event_generator.h globus_scheduler_event_generator.c
 libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_scheduler_event_generator___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
-EXTRA_DIST= resource_manager_contact.dox \
-	version.h.in
+globus_scheduler_event_generator_SOURCES = main.c
+globus_scheduler_event_generator_LDFLAGS = $(GPT_LDFLAGS)
+globus_scheduler_event_generator_LDADD = $(GPT_LIB_LINKS) libglobus_scheduler_event_generator_$(GLOBUS_FLAVOR_NAME).la
+
+EXTRA_DIST= version.h.in
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
