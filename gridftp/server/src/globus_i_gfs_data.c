@@ -139,6 +139,7 @@ typedef struct globus_l_gfs_data_operation_s
     int *                               eof_count;
     int                                 node_count;
     int                                 node_ndx;
+    int                                 write_stripe;
     
     /* command stuff */
     globus_gfs_command_type_t           command;
@@ -320,6 +321,7 @@ globus_gridftp_server_operation_finished(
     globus_gfs_finished_info_t *        finished_info)
 {
     finished_info->id = op->id;
+    finished_info->result = result;
     
     if(op->callback != NULL)
     {
@@ -1131,13 +1133,13 @@ globus_i_gfs_data_request_active(
         }
         else
         {
-            layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
-            layout.partitioned.size = data_info->blocksize;
+//            layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
+//            layout.partitioned.size = data_info->blocksize;
 
             result = globus_ftp_control_local_spor(
                 &handle->data_channel, addresses, data_info->cs_count);
-            result = globus_ftp_control_local_layout(
-                &handle->data_channel, &layout, 0);
+//            result = globus_ftp_control_local_layout(
+//                &handle->data_channel, &layout, 0);
         }
         if(result != GLOBUS_SUCCESS)
         {
@@ -1961,15 +1963,45 @@ globus_gridftp_server_register_write(
     bounce_info->op = op;
     bounce_info->callback.write = callback;
     bounce_info->user_arg = user_arg;
-    
-    result = globus_ftp_control_data_write(
-        &op->data_handle->data_channel,
-        buffer,
-        length,
-        offset,
-        GLOBUS_FALSE,
-        globus_l_gfs_data_write_cb,
-        bounce_info);
+
+    if(op->data_handle->attr.mode == 'E')
+    {
+        globus_mutex_lock(&op->lock);
+        {
+            if(stripe_ndx != -1)
+            {
+                op->write_stripe = stripe_ndx;
+            }
+            if(op->write_stripe >= op->stripe_count)
+            {
+                op->write_stripe %= op->stripe_count;
+            }    
+            printf("%d->%d: %d:%d\n", op->node_ndx, op->write_stripe, length, offset); 
+            result = globus_ftp_control_data_write_stripe(
+                &op->data_handle->data_channel,
+                buffer,
+                length,
+                offset,
+                GLOBUS_FALSE,
+                op->write_stripe,
+                globus_l_gfs_data_write_cb,
+                bounce_info);
+                
+            op->write_stripe++;
+        }    
+        globus_mutex_unlock(&op->lock);
+    }
+    else
+    {
+        result = globus_ftp_control_data_write(
+            &op->data_handle->data_channel,
+            buffer,
+            length,
+            offset,
+            GLOBUS_FALSE,
+            globus_l_gfs_data_write_cb,
+            bounce_info);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -2196,9 +2228,22 @@ globus_gridftp_server_get_write_range(
     return;
 }
 
+
+/*
+    stripe_block_size * node_ndx = start_offset
+    start_offset + stripe_block_size - 1 = end_offset;
+
+
+copy list
+remove 0-start_offset
+remove end_offset--1
+use that list
+if it has multiple set flag to not use next list i guess
+
+*/
 void
 globus_gridftp_server_get_read_range(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_off_t *                      offset,
     globus_off_t *                      length,
     globus_off_t *                      write_delta)
@@ -2271,7 +2316,9 @@ globus_l_gfs_data_transfer_event_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
-    globus_gfs_ipc_event_reply_t *      event_reply;   
+    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_off_t                        tmp_off;   
+    globus_off_t                        tmp_len;   
     GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
 
     bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
@@ -2281,43 +2328,49 @@ globus_l_gfs_data_transfer_event_kickout(
     event_reply->id = bounce_info->op->id;
     event_reply->node_ndx = bounce_info->op->node_ndx;
     globus_mutex_lock(&bounce_info->op->lock);
-    {
-        event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
-        bounce_info->op->recvd_bytes = 0;
-    
-        globus_range_list_merge(
-            &event_reply->recvd_ranges, bounce_info->op->recvd_ranges, NULL);
-        globus_range_list_destroy(bounce_info->op->recvd_ranges);
-        globus_range_list_init(&bounce_info->op->recvd_ranges);
+    {    
+        switch(bounce_info->event_type)
+        {
+          case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
+                event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
+                bounce_info->op->recvd_bytes = 0;
+                event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+            break;
+            
+          case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
+                event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
+                event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
+            break;
+            
+          default:
+            break;
+        } 
+        if(bounce_info->op->event_callback != NULL)
+        {
+            bounce_info->op->event_callback(
+                event_reply,
+                bounce_info->op->user_arg);        
+        }
+        else
+        {
+            globus_gfs_ipc_reply_event(
+                bounce_info->op->ipc_handle,
+                event_reply);
+        }
+        if(bounce_info->event_type == 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART)
+        {
+            while(globus_range_list_size(bounce_info->op->range_list))
+            {
+                globus_range_list_remove_at(   
+                    bounce_info->op->range_list,
+                    0,
+                    &tmp_off,
+                    &tmp_len);
+            }
+        }
     }
     globus_mutex_unlock(&bounce_info->op->lock);
-    
-    switch(bounce_info->event_type)
-    {
-      case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
-            event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-        break;
-        
-      case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
-            event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
-        break;
-        
-      default:
-        break;
-    } 
-    if(bounce_info->op->event_callback != NULL)
-    {
-        bounce_info->op->event_callback(
-            event_reply,
-            bounce_info->op->user_arg);        
-    }
-    else
-    {
-        globus_gfs_ipc_reply_event(
-            bounce_info->op->ipc_handle,
-            event_reply);
-    }
-    
         
     globus_free(bounce_info);       
 }

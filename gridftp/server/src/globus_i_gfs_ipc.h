@@ -300,7 +300,7 @@ typedef void
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     const char *                        user_dn,
-    globus_gfs_ipc_callback_t           cb,
+    globus_i_gfs_ipc_data_callback_t    cb,
     void *                              user_arg);
 
 globus_result_t
