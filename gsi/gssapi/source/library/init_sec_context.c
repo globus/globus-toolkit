@@ -177,6 +177,7 @@ GSS_CALLCONV gss_init_sec_context(
         major_status = gs_handshake(minor_status,
                                     context);
 
+
         if (major_status == GSS_S_CONTINUE_NEEDED)
         {
             break;
@@ -390,17 +391,18 @@ GSS_CALLCONV gss_init_sec_context(
     case(GS_CON_ST_CERT): ;
     case(GS_CON_ST_DONE): ;
     } /* end of switch for gs_con_st */
-
-    gs_get_token(minor_status,context,output_token);
-    if (context->gs_state != GS_CON_ST_DONE)
+    if (!GSS_ERROR(major_status))
     {
-        major_status |=GSS_S_CONTINUE_NEEDED;
+        gs_get_token(minor_status,context,output_token);
+        if (context->gs_state != GS_CON_ST_DONE)
+        {
+            major_status |=GSS_S_CONTINUE_NEEDED;
+        }
+        if (ret_flags != NULL)
+        {
+            *ret_flags = context->ret_flags;
+        }
     }
-    if (ret_flags != NULL)
-    {
-        *ret_flags = context->ret_flags;
-    }
-
 #if defined(DEBUG) || defined(DEBUGX)
     fprintf(stderr,"init_sec_context:major_status:%08x:gs_state:%d req_flags=%08x:ret_flags=%08x\n",
             major_status,context->gs_state,req_flags,context->ret_flags);
@@ -408,7 +410,6 @@ GSS_CALLCONV gss_init_sec_context(
     {
         ERR_print_errors_fp(stderr);
     }
-
 #endif
     return major_status;
 
