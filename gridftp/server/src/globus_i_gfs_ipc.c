@@ -264,7 +264,7 @@ globus_l_gfs_ipc_hashtable_session_hash(
     globus_assert(s->host_id);
     globus_assert(s->community);
     tmp_str = globus_common_create_string(
-        "%s%s##", hash_str, s->host_id, s->community);
+        "%s%s%s##", hash_str, s->host_id, s->community);
     globus_free(hash_str);
     hash_str = tmp_str;
 
@@ -1791,6 +1791,7 @@ globus_l_gfs_ipc_handle_lookup(
 {
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
+    globus_i_gfs_ipc_handle_t *         insert_ipc = NULL;
 
     list = (globus_list_t *) globus_hashtable_remove(
         &globus_l_ipc_handle_table,
@@ -1800,9 +1801,10 @@ globus_l_gfs_ipc_handle_lookup(
         ipc = (globus_i_gfs_ipc_handle_t *) globus_list_remove(&list, list);
         if(!globus_list_empty(list))
         {
+            insert_ipc = globus_list_first(list);
             globus_hashtable_insert(
                 &globus_l_ipc_handle_table,
-                connection_info,
+                &insert_ipc->connection_info,
                 list);
         }
     }
@@ -1843,7 +1845,7 @@ globus_gfs_ipc_handle_obtain_by_path(
         }
 
         memset(&tmp_ci, '\0', sizeof(globus_l_gfs_ipc_connection_t));
-        tmp_ci.version = globus_l_gfs_local_version;
+        tmp_ci.version = (char *) globus_l_gfs_local_version;
         tmp_ci.community = community->name;
         tmp_ci.cookie = session_info->cookie;
         tmp_ci.username = session_info->username;

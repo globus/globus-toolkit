@@ -1502,7 +1502,11 @@ globus_l_gfs_file_read_cb(
                 monitor->read_length -= nbytes;
             }
         }
-        
+        else
+        {
+            globus_list_insert(&monitor->buffer_list, buffer);
+        }
+                    
         if(monitor->read_length == 0)
         {
             monitor->first_read = GLOBUS_TRUE;

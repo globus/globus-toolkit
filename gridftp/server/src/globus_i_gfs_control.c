@@ -958,9 +958,8 @@ globus_l_gfs_request_recv(
             &recv_info->partial_offset);
         recv_info->partial_length = -1;
         
-        /* it seems that ESTO A 0 /file is not the same as
-            STOR /file... ESTO doesn't truncate the file.  I'm not sure
-            if I like that, but it is how the test suite expects it 
+        /*  ESTO A 0 /file is not the same as STOR /file
+            ESTO doesn't truncate the file. 
         */
         recv_info->truncate = GLOBUS_FALSE;
 

@@ -18,9 +18,6 @@ striping:
 -- verify eofc handling, should move out of remote into data.c
 ** configuration of layout/buffer sizes/1-1,ALL-ALL, etc
 ** verify _get_read_range()
-** file trunc issue
-    send first _ipc_request_recv() with trunc set, wait for BEGIN,
-    then send the rest with no trunc.  
     
 ipc:
 ** encryption
@@ -67,4 +64,7 @@ DONE
     query data channel for number of streams, use that as reply to 
     _get_optimal_concurrency
 -- password file / plaintext password authentication
+** file trunc issue
+    send first _ipc_request_recv() with trunc set, wait for BEGIN,
+    then send the rest with no trunc.  
 
