@@ -12,11 +12,11 @@ include $(top_srcdir)/globus_automake_pre_top
 setup_SCRIPTS = \
 	setup-ssl-utils-sh-scripts \
 	setup-ssl-utils \
-	setup-ssl-utils.pl
+	setup-ssl-utils.pl \
+	grid-cert-request-config.in \
+	grid-security-config.in
 
 setup_DATA = \
-	grid-cert-request-config.in \
-	grid-security-config.in \
 	globus-ssl.conf \
 	grid-security.conf \
 	42864e48.0 \
