@@ -198,6 +198,8 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->queue = NULL;
     r->project = NULL;
     r->maxtime = 0;
+    r->min_memory = 0;
+    r->max_memory = 0;
     r->filename_callback_func = NULL;
 
     graml_env_krb5ccname = (char *) getenv("KRB5CCNAME");
@@ -683,6 +685,8 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
     fprintf(script_arg_fp,"grami_stderr='%s'\n", stderr_filename);
     fprintf(script_arg_fp,"grami_maxtime='%d'\n", request->maxtime);
+    fprintf(script_arg_fp,"grami_min_memory='%d'\n", request->min_memory);
+    fprintf(script_arg_fp,"grami_max_memory='%d'\n", request->max_memory);
     fprintf(script_arg_fp,"grami_host_count='%d'\n", request->host_count);
     fprintf(script_arg_fp,"grami_jobtype='%d'\n", request->jobtype);
     globus_l_gram_param_prepare(request->queue, new_param);

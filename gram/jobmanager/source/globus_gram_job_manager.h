@@ -144,6 +144,14 @@ typedef struct
                             * system default
                             */
 
+ unsigned long min_memory;    /* Minimum amount of memory in MB needed for job,
+                               * 0 is the default.
+                               */
+
+ unsigned long max_memory;    /* Maximum amount of memory in MB needed for job,
+                               * 0 is the default which means unlimited.
+                               */
+
  globus_bool_t dryrun;    /* GLOBUS_TRUE if this is a dryrun */
 
  /* Other opaque fields may be added here */
@@ -154,6 +162,7 @@ typedef struct
 
 typedef struct globus_l_gram_scheduler_s
 {
+    int add_entries_flag;
     int maxtime;
     int maxcputime;
     int maxcount;
@@ -163,6 +172,7 @@ typedef struct globus_l_gram_scheduler_s
     int maxsinglememory;
     int totalnodes;
     int freenodes;
+    char * queuename;
     char * whenactive;
     char * status;
     char * dispatchtype;
