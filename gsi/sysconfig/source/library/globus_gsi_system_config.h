@@ -173,7 +173,7 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 #    define GLOBUS_GSI_SYSCONFIG_MAKE_ABSOLUTE_PATH_FOR_FILENAME \
             globus_gsi_sysconfig_make_absolute_path_for_filename_win32
 #    define GLOBUS_GSI_SYSCONFIG_SPLIT_DIR_AND_FILENAME \
-            globus_gsi_sysconfig_split_dir_and_fliename_win32
+            globus_gsi_sysconfig_split_dir_and_filename_win32
 #    define GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES \
             globus_gsi_sysconfig_remove_all_owned_files_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
