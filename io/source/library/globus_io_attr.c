@@ -5412,7 +5412,7 @@ globus_i_io_socket_copy_attr(
     globus_i_io_socketattr_instance_t *	dst,
     globus_i_io_socketattr_instance_t *	src)
 {
-    globus_callback_space_destroy(src->space);
+    globus_callback_space_destroy(dst->space);
     
     memcpy(dst,
 	   src,
