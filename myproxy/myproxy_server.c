@@ -6,7 +6,9 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#ifndef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
+#endif
 
 static char usage[] = \
 "\n"\
