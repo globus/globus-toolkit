@@ -85,8 +85,8 @@ static globus_bool_t                    globus_l_gfs_ipc_requester;
  *  id:      4 bytes of message id
  *  size:    remaining size of message
  */
-#define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t)*3 + 1)
-#define GFS_IPC_HEADER_SIZE_OFFSET  (sizeof(uint32_t)*2 + 1)
+#define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t)*2 + 1)
+#define GFS_IPC_HEADER_SIZE_OFFSET  (sizeof(uint32_t)*1 + 1)
 #define GFS_IPC_DEFAULT_BUFFER_SIZE 8 * 1024
 #define GFS_IPC_VERSION             '\1'
 
@@ -885,22 +885,28 @@ globus_l_gfs_ipc_read_new_body_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    int size;
+    globus_byte_t * ptr;
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_list_t *                     list;
     GlobusGFSName(globus_l_gfs_ipc_read_new_body_cb);
+
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
+    size = len;
+    ptr = in_buffer;
 
-    GFSDecodeString(in_buffer, len, ipc->connection_info.version);
-    GFSDecodeString(in_buffer, len, ipc->connection_info.community);
-    GFSDecodeString(in_buffer, len, ipc->connection_info.cookie);
-    GFSDecodeString(in_buffer, len, ipc->connection_info.subject);
-    GFSDecodeString(in_buffer, len, ipc->connection_info.host_id);
+    GFSDecodeString(ptr, size, ipc->connection_info.version);
+    GFSDecodeString(ptr, size, ipc->connection_info.community);
+    GFSDecodeString(ptr, size, ipc->connection_info.cookie);
+    GFSDecodeString(ptr, size, ipc->connection_info.subject);
+    GFSDecodeString(ptr, size, ipc->connection_info.host_id);
 
-    if(strcmp(ipc->connection_info.version, globus_l_gfs_local_version) == 0)
+    if(strcmp(ipc->connection_info.version, globus_l_gfs_local_version) != 0)
     {
         goto version_error;
     }
@@ -945,8 +951,8 @@ globus_l_gfs_ipc_read_new_body_cb(
     else
     {
         ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
-        ipc->iface->session_start_func(
-            ipc, NULL, ipc->session_info, NULL, NULL);
+//        ipc->iface->session_start_func(
+//            ipc, NULL, ipc->session_info, NULL, NULL);
     }
 
     globus_free(in_buffer);
@@ -1151,7 +1157,7 @@ globus_l_gfs_ipc_add_server_accept_cb(
     }
     ipc->state = GLOBUS_GFS_IPC_STATE_SERVER_OPENING;
 
-    if(!globus_l_gfs_ipc_requester)
+//    if(!globus_l_gfs_ipc_requester)
     {
         ipc->iface = &globus_gfs_ipc_default_iface;
     }
@@ -1237,7 +1243,7 @@ globus_gfs_ipc_handle_create(
         result = GlobusGFSErrorMemory("ipc");
         goto attr_error;
     }
-    ipc->iface = (globus_gfs_ipc_iface_t *) user_arg;
+    ipc->iface = &globus_gfs_ipc_default_iface;
     ipc->state = GLOBUS_GFS_IPC_STATE_SERVER_OPENING;
     /* ipc->requestor = GLOBUS_FALSE; */
     /* ipc->cached_res = GLOBUS_SUCCESS; */
@@ -1359,7 +1365,7 @@ globus_l_gfs_ipc_client_open_cb(
         ptr = buffer;
 
         GFSEncodeChar(buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_HANDSHAKE);
-        GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, 0);
+        GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
         GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.version);
