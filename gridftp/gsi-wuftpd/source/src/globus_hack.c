@@ -1669,11 +1669,12 @@ g_receive_data(
 	    &five_seconds,
 	    globus_l_wu_perf_update_callback,
 	    &g_monitor);
+        globus_l_wu_perf_update(&g_monitor);
+        g_monitor.callback_count = 0; 
+
 #ifndef BUILD_LITE
         /** XXX JoeL
          */
-        globus_l_wu_perf_update(&g_monitor);
-        g_monitor.callback_count = 0; 
         for(ctr = 0; ctr < data_connection_count; ctr++)
         {
 #endif
