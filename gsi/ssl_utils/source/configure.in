@@ -77,9 +77,6 @@ AC_OUTPUT(
 	library/Makefile
 	library/oldgaa/Makefile
 	programs/Makefile
-	programs/grid-cert-info
-	programs/grid-cert-renew
-	programs/grid-cert-request-config
 	programs/grid-change-pass-phrase
 	programs/grid-cert-request
 	,

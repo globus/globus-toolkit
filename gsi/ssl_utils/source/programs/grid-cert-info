@@ -61,10 +61,7 @@ EOF
 
 #SSL related needs
 PATH=${GLOBUS_LOCATION}/bin:${PATH}
-SSLEAY="${GLOBUS_LOCATION}/bin/ssleay"
-if [ -r ${GLOBUS_LOCATION}/bin/openssl ]; then
-	SSLEAY="${GLOBUS_LOCATION}/bin/openssl"
-fi
+SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
 	
 
 # DEFault Generated Files
@@ -140,7 +137,7 @@ if [ ! \( -f "${certfile}" -a -r "${certfile}" \) ]; then
     exit 1
 fi
  
-command_stub="${SSLEAY} x509 -noout -in ${certfile}"
+command_stub="${SSL_EXEC} x509 -noout -in ${certfile}"
 
 # Will probably need this...
 subject=`eval "${command_stub}" -subject | ${GLOBUS_SH_SED-sed} 's%^subject=%%'`

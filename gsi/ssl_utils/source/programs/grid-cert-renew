@@ -17,7 +17,7 @@ fi
 # hard-coded for now... Change defintion of ssl_exec_name to get this
 # script to work with other SSL implementations, such as openSSL.
 # we will replace this with openssl if we find openssl
-ssl_exec_name=ssleay
+ssl_exec_name=openssl
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
@@ -89,10 +89,6 @@ trap bailout 1 2 3 6 15
 # start
 
 sslexec=${GLOBUS_LOCATION}/bin/${ssl_exec_name}
-if [ -r ${GLOBUS_LOCATION}/bin/openssl ]; then
-	sslexec=${GLOBUS_LOCATION}/bin/openssl
-	ssl_exec_name="openssl"
-fi
 proxy_init=${bindir}/grid-proxy-init
 proxy_destroy=${bindir}/grid-proxy-destroy
 tmpproxy=/tmp/globus-cert-renewal-temp-proxy.$$
