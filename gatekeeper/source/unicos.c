@@ -350,7 +350,7 @@ static	void	unicos_auth_failed	P_(( void* context ));
 /*------------------ Globus stubs for debug(), fatal() --------------*/
 
 extern void gatekeeper_notice(int, char*);
-extern void gatekeeper_failure(char*);
+extern void gatekeeper_failure(short, char*);
 
 
 /* Debugging messages that should not be logged during normal operation. */
@@ -394,7 +394,7 @@ void fatal(const char *fmt, ...)
   vsprintf(buf, fmt, args);
   va_end(args);
 
-  gatekeeper_failure(buf); /* Does not return. */
+  gatekeeper_failure(0,buf); /* Does not return. */
 
   exit(1); /* Not reached. */
 }
@@ -404,7 +404,7 @@ void fatal(const char *fmt, ...)
 
 void packet_disconnect(char *msg)
 {
-  gatekeeper_failure(msg); /* Does not return. */
+  gatekeeper_failure(0,msg); /* Does not return. */
 
   exit(1); /* Not reached. */
 }

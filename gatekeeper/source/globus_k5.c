@@ -100,6 +100,36 @@ FILE *stderrX;
                        Define module specific variables
 ******************************************************************************/
 
+/******************************************************************************
+Function:   gatekeeper_notice()
+Description: Used by the UNICOS routines in the gatekeeper_utils
+	when they are linked with this modult. 
+Parameters:
+Returns:
+******************************************************************************/
+#if defined(TARGET_ARCH_CRAYT3E)
+void
+gatekeeper_notice(int prty,char * msg)
+{
+	fprintf(stderr,"%s\n",msg);
+}
+#endif
+
+/******************************************************************************
+Function:   gatekeeper_failure()
+Description: Used by the UNICOS routines in the gatekeeper_utils
+		when they are linked with this module.
+Parameters:
+Returns:
+******************************************************************************/
+#if defined(TARGET_ARCH_CRAYT3E)
+void
+gatekeeper_failure(short failure_type,
+					char * msg)
+{
+	fprintf(stderr,"failure:%d:%s\n",failure_type,msg);
+}
+#endif
 
 /******************************************************************************
 Function:   globus_gram_k5_kinit()
