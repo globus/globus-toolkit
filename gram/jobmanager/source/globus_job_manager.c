@@ -216,13 +216,6 @@ globus_l_jm_http_query_callback(
     globus_size_t                       nbytes,
     int                                 errorcode);
 
-void
-graml_jm_close_connection_after_write(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes);
 
 /******************************************************************************
                        Define variables for external use
@@ -325,8 +318,6 @@ int main(int argc,
     int                    tmp_status;
     int                    publish_jobs_flag = 0;
     char                   *rsl_spec = GLOBUS_NULL; /* Must free! */
-    char                   read_rsl_file[256];
-    char                   write_rsl_file[256];
     char                   tmp_buffer[256];
     char                   job_status_file_path[512];
     char *                 job_status_dir = GLOBUS_NULL;
@@ -340,14 +331,14 @@ int main(int argc,
     FILE *                 test_fp;
     struct stat            statbuf;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-    globus_byte_t *                     reply;
+    globus_byte_t *                     reply = NULL;
     globus_size_t                       replysize;
     globus_byte_t *                     sendbuf;
     globus_size_t                       sendsize;
-    globus_rsl_t *                      rsl_tree;
+    globus_rsl_t *                      rsl_tree = NULL;
     globus_gass_cache_entry_t *         cache_entries;
     int                                 cache_size;
-    globus_symboltable_t *              symbol_table; 
+    globus_symboltable_t *              symbol_table = NULL; 
     globus_gram_jobmanager_request_t *  request;
     globus_bool_t                       jm_request_failed = GLOBUS_FALSE;
     globus_l_gram_client_contact_t *    client_contact_node;
@@ -357,6 +348,7 @@ int main(int argc,
     globus_callback_handle_t		stat_cleanup_poll_handle;
     char *                              sleeptime_str;
     long                                sleeptime;
+    int					debugging_without_client = 0;
     
     /* gssapi */
 
@@ -369,6 +361,7 @@ int main(int argc,
 #endif
 	
     size_t				jrbuf_size;
+    int					args_fd=0;
 
     /* 
      * Stdin and stdout point at socket to client
@@ -458,8 +451,6 @@ int main(int argc,
 
     GRAM_LOCK;
 
-    *read_rsl_file = '\0';
-    *write_rsl_file = '\0';
     *job_status_file_path = '\0';
 
     /* if -conf is passed then get the arguments from the file
@@ -520,17 +511,7 @@ int main(int argc,
      */
     for (i = 1; i < argc; i++)
     {
-        if ((strcmp(argv[i], "-read-rsl-file") == 0)
-                 && (i + 1 < argc))
-        {
-            strcpy(read_rsl_file, argv[i+1]); i++;
-        }
-        else if ((strcmp(argv[i], "-write-rsl-file") == 0)
-                 && (i + 1 < argc))
-        {
-            strcpy(write_rsl_file, argv[i+1]); i++;
-        }
-        else if ((strcmp(argv[i], "-save-logfile") == 0)
+	if ((strcmp(argv[i], "-save-logfile") == 0)
                  && (i + 1 < argc))
         {
             if (strcmp(argv[i+1], "always") == 0)
@@ -545,6 +526,19 @@ int main(int argc,
             }
             i++;
         }
+	else if(strcmp(argv[i], "-rsl") == 0)
+	{
+	    if(i + 1 < argc)
+	    {
+		rsl_spec = globus_libc_strdup(argv[++i]);
+		debugging_without_client = 1;
+	    }
+	    else
+	    {
+		fprintf(stderr, "-rsl argument requires and rsl\n");
+		exit(1);
+	    }
+	}
         else if (strcmp(argv[i], "-k") == 0)
         {
             krbflag = 1;
@@ -895,40 +889,24 @@ int main(int argc,
     grami_fprintf( request->jobmanager_log_fp,
           "JM: jobmanager_libexecdir = %s\n", request->jobmanager_libexecdir);
 
-    /* Read RSL */
+    if(! debugging_without_client)
     {
-        int    args_fd;
+	char *  args_fd_str;
 
-	if (strlen(read_rsl_file))
+	args_fd_str = globus_libc_getenv("GRID_SECURITY_HTTP_BODY_FD");
+	
+	if ((!args_fd_str)
+	    || ((args_fd = atoi(args_fd_str)) == 0))
 	{
-	    if ((args_fd = open(read_rsl_file, O_RDONLY)) == -1)
-	    {
-		GRAM_UNLOCK;
-		grami_fprintf( request->jobmanager_log_fp,
-			       "JM: Cannot open test file %s.\n",
-			       read_rsl_file);
-		exit(1);
-	    }
-	}
-	else
-	{
-	    char *  args_fd_str;
-
-	    args_fd_str = globus_libc_getenv("GRID_SECURITY_HTTP_BODY_FD");
+	    GRAM_UNLOCK;
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: Cannot open HTTP Body file\n" );
+	    exit(1);
 	    
-	    if ((!args_fd_str)
-		|| ((args_fd = atoi(args_fd_str)) == 0))
-	    {
-		GRAM_UNLOCK;
-		grami_fprintf( request->jobmanager_log_fp,
-			       "JM: Cannot open HTTP Body file\n" );
-		exit(1);
-	    }
 	}
-
         jrbuf_size = lseek(args_fd, 0, SEEK_END);
         lseek(args_fd, 0, SEEK_SET);
-        if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE) 
+        if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE)
         {
             grami_fprintf( request->jobmanager_log_fp,
                 "JM: RSL file to big\n");
@@ -941,78 +919,52 @@ int main(int argc,
             exit (1);
         }
         (void *) close(args_fd);
-    }
 
-    if (strlen(read_rsl_file)==0)
-    {
 	rc = globus_gram_http_unpack_job_request(
-		       buffer, 
-		       jrbuf_size,
-		       &job_state_mask,
-		       &client_contact_str,
-		       &rsl_spec );
-
-	if (rc == GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
-	{
-	    grami_fprintf(
+	    buffer, 
+	    jrbuf_size,
+	    &job_state_mask,
+	    &client_contact_str,
+	    &rsl_spec );
+    }
+    
+    if (rc == GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
+    {
+	grami_fprintf(
 		request->jobmanager_log_fp,
 		"JM: ERROR: globus gram protocol version mismatch!\n");
-	    grami_fprintf( request->jobmanager_log_fp,
-			   "JM: gram protocol version = %d\n",
-			   GLOBUS_GRAM_PROTOCOL_VERSION);
-	    fprintf( stderr,
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: gram protocol version = %d\n",
+		       GLOBUS_GRAM_PROTOCOL_VERSION);
+	fprintf( stderr,
 		     "ERROR: globus gram protocol version mismatch!\n");
-	    fprintf( stderr, 
-		     "gram job manager version = %d\n",
-		     GLOBUS_GRAM_PROTOCOL_VERSION);
-	} 
-	else if (rc) 
-	{
-	    grami_fprintf( request->jobmanager_log_fp,
-			   "JM: ERROR: globus gram protocol failure!\n");
-	    return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-	}
+	fprintf( stderr, 
+		 "gram job manager version = %d\n",
+		 GLOBUS_GRAM_PROTOCOL_VERSION);
+    } 
+    else if (rc) 
+    {
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: ERROR: globus gram protocol failure!\n");
+	return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+    }
 
+    if (!debugging_without_client)
+    {
 	if (globus_gss_assist_import_sec_context(
-	                   &minor_status,
-			   &context_handle,
-			   &token_status,
-			   -1,
-			   request->jobmanager_log_fp) != GSS_S_COMPLETE)
+	    &minor_status,
+	    &context_handle,
+	    &token_status,
+	    -1,
+	    request->jobmanager_log_fp) != GSS_S_COMPLETE)
 	{
 	    grami_fprintf( request->jobmanager_log_fp,
 			   "JM:Failed to load security context\n");
-	    return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+	return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
 	}
-
-        grami_fprintf(request->jobmanager_log_fp,
-            "JM: context loaded\n");
-    }
-
-    /*
-     *  if a test_dat_file has been defined, pass data to the file and
-     *  return immediately.
-     */
-    if (strlen(write_rsl_file) > 0)
-    {
-        /*
-         * Open the test jm data file
-         */
-        if ((test_fp = fopen(write_rsl_file, "w")) == NULL)
-        {
-	    grami_fprintf( request->jobmanager_log_fp,
-		       "JM: Cannot open test data file\n");
-            exit(1);
-        }
-        setbuf(test_fp, NULL);
-
-        /*
-         * Pass the message data on to the test data file
-         */
-        fwrite(buffer, 1, jrbuf_size, test_fp);
-        fclose(test_fp);
-
-        exit(0);
+	
+	grami_fprintf(request->jobmanager_log_fp,
+		      "JM: context loaded\n");
     }
 
     if (client_contact_str!=NULL)
@@ -1056,6 +1008,11 @@ int main(int argc,
 	    my_port,
 	    (unsigned long) getpid(),
 	    (unsigned long) time(0));
+
+    if (debugging_without_client)
+    {
+	printf("Job Contact: %s\n", tmp_buffer);
+    }
     
     graml_job_contact = (char *) globus_libc_strdup (tmp_buffer);
     
@@ -1377,7 +1334,7 @@ int main(int argc,
 
     if (!krbflag) 
     {
-    if (rc == GLOBUS_SUCCESS)
+    if (rc == GLOBUS_SUCCESS && ! debugging_without_client)
     {
         grami_fprintf( request->jobmanager_log_fp,
 		       "JM: user proxy relocation\n");
@@ -1488,29 +1445,32 @@ int main(int argc,
         }
     }
 
-    rc = globus_gram_http_pack_job_request_reply(
-	(jm_request_failed) ? request->failure_code : GLOBUS_SUCCESS,
-	(jm_request_failed) ? GLOBUS_NULL           : graml_job_contact,
-	&reply,
-	&replysize);
+    if(!debugging_without_client)
+    {
+	rc = globus_gram_http_pack_job_request_reply(
+	    (jm_request_failed) ? request->failure_code : GLOBUS_SUCCESS,
+	    (jm_request_failed) ? GLOBUS_NULL           : graml_job_contact,
+	    &reply,
+	    &replysize);
 
-    if (rc==GLOBUS_SUCCESS)
-    {
-	rc = globus_gram_http_frame_reply(
-	    200,
-	    reply,
-	    replysize,
-	    &sendbuf,
-	    &sendsize);
-    }
-    if (rc!=GLOBUS_SUCCESS)
-    {
-	rc = globus_gram_http_frame_reply(
-	    400,
-	    GLOBUS_NULL,
-	    0,
-	    &sendbuf,
-	    &sendsize);
+	if (rc==GLOBUS_SUCCESS)
+	{
+	    rc = globus_gram_http_frame_reply(
+		200,
+		reply,
+		replysize,
+		&sendbuf,
+		&sendsize);
+	}
+	if (rc!=GLOBUS_SUCCESS)
+	{
+	    rc = globus_gram_http_frame_reply(
+		400,
+		GLOBUS_NULL,
+		0,
+		&sendbuf,
+		&sendsize);
+	}
     }
 
     if (reply)
@@ -1520,7 +1480,7 @@ int main(int argc,
 		   "JM: before sending to client: rc=%d (%s)\n", 
 		   rc, globus_gram_client_error_string(rc));
 
-    if (rc == GLOBUS_SUCCESS)
+    if (rc == GLOBUS_SUCCESS && !debugging_without_client)
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: sending to client:\n");
@@ -1813,6 +1773,14 @@ int main(int argc,
 
     globus_gram_http_callback_disallow(graml_job_contact);
 
+    rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "%s activation failed with rc=%d\n",
+		GLOBUS_GRAM_CLIENT_MODULE->module_name, rc);
+	exit(1);
+    }
+
     rc = globus_module_deactivate(GLOBUS_GRAM_JOBMANAGER_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -1859,7 +1827,6 @@ int main(int argc,
 
     /* 
      * make sure we issue any last outstanding queries
-     */
     {
 	globus_list_t *                list;
 	globus_gram_http_monitor_t *   monitor;
@@ -1885,6 +1852,7 @@ int main(int argc,
 	    globus_list_free(graml_jm_outstanding_connections);
 	
     }
+     */
     
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -4013,7 +3981,6 @@ globus_l_jm_http_query_callback( void *               arg,
 {
     globus_gram_jobmanager_request_t *   request;
     globus_l_gram_client_contact_t *     callback;
-    globus_gram_http_monitor_t *         monitor;
     globus_list_t *                      tmp_list;
     globus_list_t *                      next_list;
     globus_size_t                        replysize;
@@ -4036,23 +4003,23 @@ globus_l_jm_http_query_callback( void *               arg,
 
     rc = errorcode;
 
-    if ((rc==GLOBUS_SUCCESS) && done)
-	rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL;
-    else
-    {    
-	rc = globus_gram_http_unpack_status_request(
-	    buf,
-	    nbytes,
-	    &query );
-
-	globus_libc_free(buf);
-    }
-
-    if (rc != GLOBUS_SUCCESS)
-	goto globus_l_jm_http_query_send_reply;
+     if ((rc==GLOBUS_SUCCESS) && done) 
+     {
+	 rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL; 
+     }
+     else 
+     {    
+	 rc = globus_gram_http_unpack_status_request(
+	     buf,
+	     nbytes,
+	     &query );
+     }
 
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &request );
+
+    if (rc != GLOBUS_SUCCESS)
+	goto globus_l_jm_http_query_send_reply;
 
     grami_fprintf( request->jobmanager_log_fp,
 		   "JM : in globus_l_gram_http_query_callback, query=%s\n",
@@ -4202,51 +4169,18 @@ globus_l_jm_http_query_send_reply:
 	grami_fprintf( request->jobmanager_log_fp, "-------------------\n");
     }
 
-    monitor = (globus_gram_http_monitor_t *)
-	globus_libc_malloc(sizeof(globus_gram_http_monitor_t));
-
-    globus_mutex_init(&monitor->mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor->cond, GLOBUS_NULL);
-    monitor->done = GLOBUS_FALSE;
 
     globus_io_register_write(
 	handle,
 	sendbuf,
 	sendsize,
-	graml_jm_close_connection_after_write,
-	monitor );
+	globus_gram_http_close_after_write,
+	GLOBUS_NULL );
 
     GRAM_LOCK;
     graml_jm_can_exit = GLOBUS_TRUE;
-    globus_list_insert(&graml_jm_outstanding_connections,
-		       (void *) monitor);
     GRAM_UNLOCK;
 }
     
 
-void
-graml_jm_close_connection_after_write(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes)
-{
-    globus_gram_http_monitor_t *  monitor;
-
-    monitor = (globus_gram_http_monitor_t *) arg;
-
-    globus_mutex_lock(&monitor->mutex);
-    {
-	monitor->done = GLOBUS_TRUE;
-	globus_cond_signal(&monitor->cond);
-    }
-    globus_mutex_unlock(&monitor->mutex);
-
-    globus_gram_http_close_after_write( arg,
-					handle,
-					result,
-					buf,
-					nbytes);
-}
 
