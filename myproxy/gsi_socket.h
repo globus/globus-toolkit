@@ -146,14 +146,6 @@ int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
  * of appropriate size.  It is the caller's responsibility to
  * free() the buffer after use.
  *
- * Note that data is read like individual datagrams and not like a 
- * stream. So if three writes are done of 150, 75 and 50 bytes, and
- * then reads are done, the first read will
- * read 150 bytes, the second 75 bytes and the third 50 bytes.
- *
- * NB: The datagram implementation assumes application-level messages
- * correspond to SSL records but that is not guaranteed by SSL!!!
- *
  * Returns number of bytes put into buffer, GSI_SOCKET_ERROR on error.
  */
 int GSI_SOCKET_read_buffer(GSI_SOCKET *gsi_socket,
