@@ -1307,7 +1307,7 @@ data_read_callback(
 
 	    globus_i_wu_insert_range(&monitor->ranges, offset, length);
 
-	    if(t - monitor->last_range_update > 10)
+	    if(t - monitor->last_range_update > 5)
 	    {
                 g_send_range = GLOBUS_TRUE;
                 monitor->last_range_update = t;
