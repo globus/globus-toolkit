@@ -92,8 +92,11 @@ globus_ftp_client_plugin_command_mask_t;
  * instantiate method.
  *
  * @param plugin_template
- *        A plugin with all of the plugin-specific attributes, as set
+ *        A plugin previously initialized by a call to the plugin-specific
+ *        initialization function.
  *        by the user.
+ * @param plugin_specific
+ *        Plugin-specific data.
  *
  * @return A pointer to a plugin. This plugin copy must remain valid
  *         until the copy's
@@ -116,6 +119,8 @@ typedef globus_ftp_client_plugin_t * (*globus_ftp_client_plugin_copy_t)(
  * @param plugin
  *        The plugin, created by the create function, which is to be
  *        destroyed.
+ * @param plugin_specific
+ *        Plugin-specific data.
  */
 typedef void (*globus_ftp_client_plugin_destroy_t)(
     globus_ftp_client_plugin_t *		plugin,
@@ -135,7 +140,9 @@ typedef void (*globus_ftp_client_plugin_destroy_t)(
  * unsuccessfully).
  *
  * @param plugin
- *        The plugin-specific data structure
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the connection.
  *
@@ -162,11 +169,16 @@ typedef void (*globus_ftp_client_plugin_connect_t)(
  * unsuccessfully).
  *
  * @param plugin
- *        The plugin-specific data structure
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the connection.
- * @param URL
+ * @param url
  *        The URL of the server to connect to.
+ * @param auth_info
+ *        Authentication and authorization info being used to
+ *        authenticate with the FTP or GridFTP server.
  */
 typedef void (*globus_ftp_client_plugin_authenticate_t)(
     globus_ftp_client_plugin_t *		plugin,
@@ -188,11 +200,13 @@ typedef void (*globus_ftp_client_plugin_authenticate_t)(
  * callbacks associated with the delete will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the delete operation.
  * @param url
- *        The url of the delete operation.
+ *        The url to be deleted.
  * @param attr
  *        The attributes to be used during this operation.
  * @param restart
@@ -221,11 +235,13 @@ typedef void (*globus_ftp_client_plugin_delete_t)(
  * callbacks associated with the mkdir will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the mkdir operation.
  * @param url
- *        The url of the mkdir operation.
+ *        The url of the directory to create.
  * @param attr
  *        The attributes to be used during this operation.
  * @param restart
@@ -255,7 +271,9 @@ typedef void (*globus_ftp_client_plugin_mkdir_t)(
  * callbacks associated with the rmdir will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the rmdir operation.
  * @param url
@@ -289,7 +307,9 @@ typedef void (*globus_ftp_client_plugin_rmdir_t)(
  * callbacks associated with the list will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the list operation.
  * @param url
@@ -322,7 +342,9 @@ typedef void (*globus_ftp_client_plugin_list_t)(
  * callbacks associated with the list will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the list operation.
  * @param url
@@ -356,7 +378,9 @@ typedef void (*globus_ftp_client_plugin_verbose_list_t)(
  * callbacks associated with the move will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the move operation.
  * @param source_url
@@ -392,7 +416,9 @@ typedef void (*globus_ftp_client_plugin_move_t)(
  * callbacks associated with the get will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the get operation.
  * @param url
@@ -425,7 +451,9 @@ typedef void (*globus_ftp_client_plugin_get_t)(
  * callbacks associated with the put will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the put operation.
  * @param url
@@ -458,7 +486,9 @@ typedef void (*globus_ftp_client_plugin_put_t)(
  * callbacks associated with the third-party transfer will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the transfer operation.
  * @param source_url
@@ -497,7 +527,9 @@ typedef void (*globus_ftp_client_plugin_third_party_transfer_t)(
  * callbacks associated with the modification time request will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the list operation.
  * @param url
@@ -530,7 +562,9 @@ typedef void (*globus_ftp_client_plugin_modification_time_t)(
  * callbacks associated with the size request will be called.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the list operation.
  * @param url
@@ -560,7 +594,9 @@ typedef void (*globus_ftp_client_plugin_size_t)(
  * active request.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
  */
@@ -578,7 +614,9 @@ typedef void (*globus_ftp_client_plugin_abort_t)(
  * processing a get.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
  * @param buffer
@@ -602,11 +640,17 @@ typedef void (*globus_ftp_client_plugin_read_t)(
  * processing a put.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
+ * @param buffer
+ *        The buffer which is being written.
  * @param buffer_length
- *        The amount of data to send
+ *        The amount of data in the buffer.
+ * @param offset
+ *        The offset within the file where the buffer is to be written.
  * @param eof
  *        This value is set to GLOBUS_TRUE if this is the last data
  *        buffer to be sent for this put request.
@@ -630,19 +674,20 @@ typedef void (*globus_ftp_client_plugin_write_t)(
  * callback.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
  * @param buffer
  *        The buffer which was successfully transferred over the network.
- * @param buffer_length
+ * @param length
  *        The amount of data to read or written.
+ * @param offset
+ *        The offset into the file where this data buffer belongs.
  * @param eof
- *        This value is set to GLOBUS_TRUE if this was the last data
- *        buffer to be sent for this put request, or if an EOF has been
- *        read on any data channels for a get .
- * @param called_from_plugin
- *        This value is set to GLOBUS_TRUE 
+ *        This value is set to GLOBUS_TRUE if end-of-file is being processed
+ *        for this transfer.
  */
 typedef void (*globus_ftp_client_plugin_data_t)(
     globus_ftp_client_plugin_t *		plugin,
@@ -665,26 +710,23 @@ typedef void (*globus_ftp_client_plugin_data_t)(
  * ftp operations with a defined callback in the plugin.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
- * @param error
- *        An error which occurred while processing this
- *	  command/response pair.
- * @param cmdspec
- *        The command which is being sent to the FTP server.
  * @param url
  *        The URL which this command is being sent to.
- * @param command_name
- *        A string containing the name of the command which will be
- *        sent to the server (such as STOR, TYPE, etc).
+ * @param command
+ *        A string containing the command which is being sent
+ *        to the server (TYPE I, for example).
  */
 typedef void (*globus_ftp_client_plugin_command_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    const char *				command_name);
+    const char *				command);
 
 /**
  * Response callback.
@@ -699,7 +741,9 @@ typedef void (*globus_ftp_client_plugin_command_t)(
  * ftp operations with a defined callback in the plugin.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
  * @param url
@@ -727,7 +771,9 @@ typedef void (*globus_ftp_client_plugin_response_t)(
  * generated, or come from a call to another library.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the request.
  * @param url
@@ -753,7 +799,9 @@ typedef void (*globus_ftp_client_plugin_fault_t)(
  * internal state associated with the operation at this point.
  *
  * @param plugin
- *        The plugin-specific data structure.
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
  * @param handle
  *        The handle associated with the operation.
  */
