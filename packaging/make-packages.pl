@@ -357,6 +357,9 @@ sub generate_build_list()
        install_gt2_autotools();
        print "Final package build list:\n";
 
+       print "all: \@prewsgram\@ \@prewsgridftp\@ \@prewsmds\@ \@rls\@ \@wsjava\@ \@wsmds\@ \@wsdel\@ \@wsrft\@ \@wsgram\@ \@wscas\@ \@wsc\@ \@tests\@ postinstall\n";
+       print "GLOBUS_IODBC_PATH=\@globus_iodbc\@\n";
+
        foreach my $bun ( @user_bundles )
        {
             my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
@@ -387,7 +390,7 @@ sub generate_build_list()
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
 
-            #package_source_bootstrap($pack, $subdir, $tree);
+            package_source_bootstrap($pack, $subdir, $tree) unless $noupdates;
        }
 
        print "postinstall:\n\t\${GPT_LOCATION}/sbin/gpt-postinstall\n";
