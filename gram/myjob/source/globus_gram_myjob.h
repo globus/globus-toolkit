@@ -24,33 +24,19 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#include "gram_client.h"
 
 
 /******************************************************************************
 			       Define constants
 ******************************************************************************/
-#if (!defined(GRAM_FALSE))
-#   define GRAM_FALSE				0
-#endif
-
-#if (!defined(GRAM_TRUE))
-#   define GRAM_TRUE				1
-#endif
-
-
 #define GRAM_MYJOB_MAX_BUFFER_LENGTH	4096
 
-#define GRAM_MYJOB_ERROR_BASE			0
-#define GRAM_MYJOB_SUCCESS			0
-#define GRAM_MYJOB_ERROR_NOT_INITIALIZED	(GRAM_MYJOB_ERROR_BASE + 0)
-#define GRAM_MYJOB_ERROR_COMM_FAILURE		(GRAM_MYJOB_ERROR_BASE + 1)
-#define GRAM_MYJOB_ERROR_BAD_RANK		(GRAM_MYJOB_ERROR_BASE + 2)
 
 /******************************************************************************
 				Type definition
 ******************************************************************************/
-typedef char gram_byte_t;
-typedef int gram_bool_t;
+
 
 /******************************************************************************
 			      Function prototypes
@@ -67,20 +53,19 @@ Description:	initialize GRAM's communication subsystem
 		If any node in the job calls gram_myjob_init(), all nodes must
 		make the call; failure to do so may result in the job hanging.
 
-		This routines assumes that any underlying message passing
-		system has already been initialized.  For example, if MPI were
-		being used, then mpi_init() must be called before this routine.
-		This assumption is made since the message passing
-		initialization may require information unavailable to
-		gram_myjob_init().
+Parameters:	argc
+			pointer to number of command line arguments
 
-Parameters:	size
+		argv
+			pointer to array of command line arguments
+
+		size
 			pointer to storage; will be set to the number of
-			processes participating in the job
+			processes participating in the job; pointer may be NULL
 
 		rank
 			pointer to storage; will be set to the rank of the
-			current process
+			current process; pointer may be NULL
 
 Returns:	TODO: define all possible values
 
@@ -93,8 +78,8 @@ Returns:	TODO: define all possible values
 ******************************************************************************/
 int
 gram_myjob_init(
-    int *				size,
-    int *				rank);
+    int *				argc,
+    char ***				argv);
 
 
 /******************************************************************************
@@ -125,6 +110,57 @@ gram_myjob_done();
 
 
 /******************************************************************************
+Function:	gram_myjob_size()
+
+Description:	obtains the number processes participating in the current job
+
+Parameters:	size
+			pointer to storage; will be set to the number of
+			processes participating in the job; pointer may be NULL
+
+Returns:	TODO: define all possible values
+
+		GRAM_MYJOB_SUCCESS
+			size successfully obtained
+
+		GRAM_MYJOB_ERROR_NOT_INITIALIZED
+			gram_myjob_init() has not been called
+
+		GRAM_MYJOB_BAD_PARAM
+			size does not point to valid storage
+******************************************************************************/
+int
+gram_myjob_size(
+    int *				size);
+
+
+/******************************************************************************
+Function:	gram_myjob_rank()
+
+Description:	obtains the ordinal of the current process with respect to
+		all of the processes participating in the current job
+
+Parameters:	rank
+			pointer to storage; will be set to the rank of the
+			current process; pointer may be NULL
+
+Returns:	TODO: define all possible values
+
+		GRAM_MYJOB_SUCCESS
+			rank successfully obtained
+
+		GRAM_MYJOB_ERROR_NOT_INITIALIZED
+			gram_myjob_init() has not been called
+
+		GRAM_MYJOB_BAD_PARAM
+			rank does not point to valid storage
+******************************************************************************/
+int
+gram_myjob_rank(
+    int *				rank);
+
+
+/******************************************************************************
 Function:	gram_myjob_send()
 
 Description:	send a message to another process in this job
@@ -151,6 +187,10 @@ Returns:	TODO: define all possible values
 		GRAM_MYJOB_ERROR_BAD_RANK
 			the specified destination rank is outside of the
 			valid range
+
+		GRAM_MYJOB_BAD_SIZE
+			the job must contain two or more processes before the
+			communication routines may be used
 
 		GRAM_MYJOB_COMM_FAILURE
 			message was not properly sent; this is likely the
@@ -185,6 +225,10 @@ Returns:	TODO: define all possible values
 
 		GRAM_MYJOB_SUCCESS
 			receive completed successfully
+
+		GRAM_MYJOB_BAD_SIZE
+			the job must contain two or more processes before the
+			communication routines may be used
 
 		GRAM_MYJOB_COMM_FAILURE
 			message was not properly received; this is likely the
