@@ -26,9 +26,4 @@ AC_OUTPUT(
 	doxygen/Makefile
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
-	globus_io_authorization_test.pl
-	globus_io_file_test.pl
-	globus_io_tcp_test.pl
-	globus_io_udp_test.pl
-	run-io-tests.pl
 )
