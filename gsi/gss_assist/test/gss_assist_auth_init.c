@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
     hostname = gethostbyname(argv[1]);
     if(hostname == 0)
     {
-        fprintf(stderr, "%s: uknown host", argv[1]);
+        fprintf(stdout, "%s: uknown host", argv[1]);
         exit(2);
     }
 
@@ -63,7 +63,7 @@ int main(int argc, char * argv[])
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITIATOR: Couldn't acquire initiator's credentials",
             major_status,
             minor_status,
@@ -86,7 +86,7 @@ int main(int argc, char * argv[])
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITIATOR: Couldn't authenticate as initiator\n",
             major_status,
             minor_status,
@@ -109,11 +109,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_send_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITATOR: Couldn't wrap and send message\n",
             major_status,
             minor_status,
@@ -129,17 +129,17 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_get_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
-        fprintf(stderr, "INITIATOR ERROR\n");
+        fprintf(stdout, "INITIATOR ERROR\n");
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITIATOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
             0);
-        fprintf(stderr, "INITIATOR ERROR FINISHED\n");
+        fprintf(stdout, "INITIATOR ERROR FINISHED\n");
         exit(1);
     }
 
@@ -164,11 +164,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_send_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITATOR: Couldn't wrap and send message\n",
             major_status,
             minor_status,
@@ -184,17 +184,17 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_get_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
-        fprintf(stderr, "INITIATOR ERROR\n");
+        fprintf(stdout, "INITIATOR ERROR\n");
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITIATOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
             0);
-        fprintf(stderr, "INITIATOR ERROR FINISHED\n");
+        fprintf(stdout, "INITIATOR ERROR FINISHED\n");
         exit(1);
     }
     
@@ -217,7 +217,7 @@ int main(int argc, char * argv[])
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITIATOR: Couldn't delete security context\n",
             major_status,
             minor_status,
@@ -230,7 +230,7 @@ int main(int argc, char * argv[])
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "INITIATOR: Couldn't delete security context\n",
             major_status,
             minor_status,

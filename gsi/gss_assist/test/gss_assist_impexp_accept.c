@@ -35,6 +35,8 @@ int main(int argc, char * argv[])
     
     verbose_env = getenv("GSS_ASSIST_VERBOSE_TEST");
 
+    setbuf(stdout, NULL);
+    
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if(sock < 0)
     {
@@ -58,7 +60,7 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    fprintf(stderr, "Socket has port #%d\n", ntohs(sockaddr.sin_port));
+    fprintf(stdout, "Socket has port #%d\n", ntohs(sockaddr.sin_port));
 
     /* Start accepting connection */
     listen(sock, 1);
@@ -80,7 +82,7 @@ int main(int argc, char * argv[])
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't acquire acceptor's credentials",
             major_status,
             minor_status,
@@ -104,7 +106,7 @@ int main(int argc, char * argv[])
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't authenticate as acceptor\n",
             major_status,
             minor_status,
@@ -120,6 +122,8 @@ int main(int argc, char * argv[])
                 " for initiator: %s\n", __LINE__, init_name);
     }
 
+    /*
+    
     major_status = globus_gss_assist_get_unwrap(
         &minor_status,
         accept_context,
@@ -128,11 +132,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_get_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
@@ -153,6 +157,8 @@ int main(int argc, char * argv[])
     free(print_buffer);
     free(recv_buffer);
 
+    */
+    
     context_outfile = fopen(ACCEPT_CONTEXT_FILE, "w");
     if(!context_outfile)
     {
@@ -190,7 +196,7 @@ int main(int argc, char * argv[])
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't delete export "
             "token for security context\n",
             major_status,
@@ -217,11 +223,11 @@ int main(int argc, char * argv[])
         &accept_context,
         &token_status,
         fileno(context_infile),
-        stderr);
+        stdout);
     if(major_status != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't import security context from file\n",
             major_status,
             minor_status,
@@ -250,11 +256,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_get_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
@@ -283,11 +289,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_send_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't encrypt and send message\n",
             major_status,
             minor_status,
@@ -303,11 +309,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_get_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
@@ -336,11 +342,11 @@ int main(int argc, char * argv[])
         &token_status,
         globus_gss_assist_token_send_fd,
         (void *) (stre),
-        stderr);
+        stdout);
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
-            stderr,
+            stdout,
             "ACCEPTOR: Couldn't encrypt and send message\n",
             major_status,
             minor_status,
