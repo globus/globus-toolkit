@@ -166,6 +166,7 @@ main(int argc, char *argv[])
     /* Check version */
     if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
         fprintf(stderr, "Invalid version number received from server\n");
+	return 1;
     } 
 
     /* Check response */
@@ -173,7 +174,7 @@ main(int argc, char *argv[])
     case MYPROXY_ERROR_RESPONSE:
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
 		server_response->error_string);
-        break;
+	return 1;
     case MYPROXY_OK_RESPONSE:
 	if (client_request->credname) {
 	    printf("MyProxy credential '%s' for user %s was succesfully removed.\n",
@@ -185,7 +186,7 @@ main(int argc, char *argv[])
         break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
-        break;
+	return 1;
     }
     
     /* free memory allocated */
