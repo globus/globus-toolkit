@@ -30,6 +30,7 @@
 
 #include "auth.h"
 #include "ssh2.h"
+#include "ssh1.h"
 #include "xmalloc.h"
 #include "log.h"
 #include "dispatch.h"
@@ -41,7 +42,17 @@
 #include "ssh-gss.h"
 
 extern ServerOptions options;
+unsigned char ssh1_key_digest[16];
 
+static int
+userauth_external(Authctxt *authctxt)
+{
+        packet_check_eom();
+
+        return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
+}
+
+static void ssh_gssapi_userauth_error(Gssctxt *ctxt);
 static void input_gssapi_token(int type, u_int32_t plen, void *ctxt);
 static void input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt);
 static void input_gssapi_errtok(int, u_int32_t, void *);
@@ -105,14 +116,26 @@ userauth_gssapi(Authctxt *authctxt)
 
 	authctxt->methoddata=(void *)ctxt;
 
+	if (!compat20) {
+
+	packet_start(SSH_SMSG_AUTH_GSSAPI_RESPONSE);
+	packet_put_string(oid.elements,oid.length);
+
+	} else {
+
 	packet_start(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE);
 
 	/* Return OID in same format as we received it*/
 	packet_put_string(doid, len);
 
+	} /* !compat20 */
+
 	packet_send();
 	xfree(doid);
 
+ 	if (!compat20)
+ 	dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, &input_gssapi_token);
+ 	else
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, &input_gssapi_token);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, &input_gssapi_errtok);
 	authctxt->postponed = 1;
@@ -145,22 +168,34 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 	xfree(recv_tok.value);
 
 	if (GSS_ERROR(maj_status)) {
+        	ssh_gssapi_userauth_error(gssctxt);
 		if (send_tok.length != 0) {
+			if (!compat20)
+			packet_start(SSH_MSG_AUTH_GSSAPI_TOKEN);
+			else
 			packet_start(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK);
 			packet_put_string(send_tok.value, send_tok.length);
 			packet_send();
 		}
 		authctxt->postponed = 0;
+		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
 		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 		userauth_finish(authctxt, 0, "gssapi");
 	} else {
 		if (send_tok.length != 0) {
+			if (!compat20)
+			packet_start(SSH_MSG_AUTH_GSSAPI_TOKEN);
+			else
 			packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
 			packet_put_string(send_tok.value, send_tok.length);
 			packet_send();
 		}
 		if (maj_status == GSS_S_COMPLETE) {
+		    	dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
 			dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+			if (!compat20)
+			input_gssapi_exchange_complete(0, 0, ctxt);
+			else
 			dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,
 				     &input_gssapi_exchange_complete);
 		}
@@ -195,6 +230,7 @@ input_gssapi_errtok(int type, u_int32_t plen, void *ctxt)
 	xfree(recv_tok.value);
 
 	/* We can't return anything to the client, even if we wanted to */
+	dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, NULL);
 
@@ -219,7 +255,50 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
 		fatal("No authentication or GSSAPI context");
 
+	if ((strcmp(authctxt->user, "") == 0) && (authctxt->pw == NULL)) {
+	    char *lname = NULL;
+	    PRIVSEP(ssh_gssapi_localname(&lname));
+	    if (lname && lname[0] != '\0') {
+		xfree(authctxt->user);
+		authctxt->user = lname;
+		debug("set username to %s from gssapi context", lname);
+		authctxt->pw = PRIVSEP(getpwnamallow(authctxt->user));
+	    } else {
+		debug("failed to set username from gssapi context");
+	    }
+	}
+	if (authctxt->pw) {
+#ifdef USE_PAM
+	    PRIVSEP(start_pam(authctxt->pw->pw_name));
+#endif
+	} else {
+	    authctxt->valid = 0;
+	    authenticated = 0;
+	    goto finish;
+	}
+
 	gssctxt = authctxt->methoddata;
+
+	/* ssh1 needs to exchange the hash of the keys */
+	if (!compat20) {
+
+		OM_uint32 min_status;
+		gss_buffer_desc dummy, msg_tok;
+
+		/* ssh1 wraps the keys, in the monitor */
+
+		dummy.value=malloc(sizeof(ssh1_key_digest));
+		memcpy(dummy.value,ssh1_key_digest,sizeof(ssh1_key_digest));
+		dummy.length=sizeof(ssh1_key_digest);
+		if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(gssctxt,&dummy,&msg_tok))))
+		    fatal("Couldn't wrap keys");
+ 
+		packet_start(SSH_SMSG_AUTH_GSSAPI_HASH);
+		packet_put_string((char *)msg_tok.value,msg_tok.length);
+		packet_send();
+		packet_write_wait();
+		gss_release_buffer(&min_status,&msg_tok);
+	}
 
 	/*
 	 * We don't need to check the status, because the stored credentials
@@ -231,6 +310,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 
 	authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 
+finish:
 	authctxt->postponed = 0;
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, NULL);
@@ -238,6 +318,33 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	userauth_finish(authctxt, authenticated, "gssapi");
 }
 
+static void ssh_gssapi_userauth_error(Gssctxt *ctxt) {
+	char *errstr;
+	OM_uint32 maj,min;
+	
+	errstr=PRIVSEP(ssh_gssapi_last_error(ctxt,&maj,&min));
+	if (errstr) {
+	    if (!compat20) {
+		packet_send_debug(errstr);
+	    } else {
+		packet_start(SSH2_MSG_USERAUTH_GSSAPI_ERROR);
+		packet_put_int(maj);
+		packet_put_int(min);
+		packet_put_cstring(errstr);
+		packet_put_cstring("");
+		packet_send();
+		packet_write_wait();
+		xfree(errstr);
+	    }
+	}
+}
+
+Authmethod method_external = {
+	"external-keyx",
+	userauth_external,
+	&options.gss_authentication
+};
+	
 Authmethod method_gssapi = {
 	"gssapi",
 	userauth_gssapi,
