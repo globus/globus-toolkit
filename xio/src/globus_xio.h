@@ -422,6 +422,37 @@ globus_xio_server_register_accept(
  *
  *  This funtion will initialize a target for active opens (client side 
  *  connections).
+ * 
+ *  @param contact_string
+ *     An url describing the resource.  NULL is allowed.
+ *     Drivers interpret the various parts
+ *     of this url as descibed in their documentation.  An alternative
+ *     form is also supported:  if contact_string does not specify a scheme
+ *     (e.g. http://) and it contains a ':', it will be parsed as a host:port
+ *     pair.  if it does not contain a ':', it will be parsed as the path
+ * 
+ *  the following are examples of valid formats:
+ *    <path to file>
+ *    host-name ":" <service or port>
+ *    "file:" <path to file>
+ *    <scheme> "://" [ "/" [ <path to resource> ]  ]
+ *    <scheme> "://" location [ "/" [ <path to resource> ] ]
+ *      location:
+ *          [ auth-part ] host-part
+ *      auth-part:
+ *          <user> [ ":" <password> ] "@" 
+ *      host-part:
+ *          [ "<" <subject> ">:" ] host-name [ ":" <port or service> ]
+ *      host-name:
+ *          <hostname> | <dotted quad> | "[" <ipv6 address> "]"
+ * 
+ *    Except for use as the above delimeters, the following special characters
+ *    MUST be encoded with the %HH format where H == hex char.
+ *    
+ *    "/" and "@" in location except subject
+ *    "<" and ">" in location
+ *    ":" everywhere except subject
+ *    "%" everywhere (can be encoded with %HH or %%)
  */
 globus_result_t
 globus_xio_target_init(

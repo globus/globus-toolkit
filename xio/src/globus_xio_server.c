@@ -1,5 +1,6 @@
 #include "globus_xio.h"
 #include "globus_i_xio.h"
+#include <ctype.h>
 
 /*
  *  note:
@@ -1376,6 +1377,388 @@ globus_xio_target_cntl(
     return res;
 }
 
+#define GlobusLXioFreeNull(_member)                                         \
+    {                                                                       \
+        if((_member))                                                       \
+        {                                                                   \
+            globus_free((_member));                                         \
+        }                                                                   \
+    }
+    
+void
+globus_xio_contact_destroy(
+    globus_xio_contact_t *                  contact_info)
+{
+    GlobusXIOName(globus_xio_contact_destroy);
+
+    GlobusXIODebugInternalEnter();
+    
+    GlobusLXioFreeNull(contact_info->unparsed);
+    GlobusLXioFreeNull(contact_info->resource);
+    GlobusLXioFreeNull(contact_info->host);
+    GlobusLXioFreeNull(contact_info->port);
+    GlobusLXioFreeNull(contact_info->scheme);
+    GlobusLXioFreeNull(contact_info->user);
+    GlobusLXioFreeNull(contact_info->pass);
+    GlobusLXioFreeNull(contact_info->subject);
+    
+    GlobusXIODebugInternalExit();
+}
+
+static
+void
+globus_l_xio_decode_hex(
+    char *                              s)
+{
+    char *                              d;
+    char                                t;
+    
+    if(!s || !(s = strchr(s, '%')))
+    {
+        return;
+    }
+    d = s;
+    
+    while(*s)
+    {
+        t = *s;
+	if(t == '%')
+	{
+	    if(*(s + 1) == '%')
+	    {
+	        s++;
+	    }
+	    else if(isxdigit(*(s + 1)) && isxdigit(*(s + 2)))
+	    {
+		char                    hexstring[3];
+                
+		hexstring[0] = *(++s);
+		hexstring[1] = *(++s);
+		hexstring[2] = 0;
+
+		t = (char) strtol(hexstring, NULL, 16);
+	    }
+	}
+	
+	*d = t;
+	s++;
+	d++;
+    }
+
+    *d = 0;
+}
+
+/**
+ *
+ * -unparsed (up till end)
+ * 
+ * if("://" before "/")
+ *     -scheme (up till "://")
+ *     if(^ "/")
+ *         -path (up till end)
+ *     else
+ *         if("@" before "/" or "<")
+ *             -user (up till ":" or "@")
+ *             if(^ ":")
+ *                 -pass (up till "@")
+ *         if(^ "<")
+ *             -subject (up till ">:")
+ *         if(^ "[")
+ *             -host (up till "]")
+ *         else
+ *             -host (up till ":" or "/")
+ *         if(^ ":")
+ *             -port (up till "/")
+ *         if(^ "/")
+ *             -path (up till end)
+ * else
+ *     if(^ "file:")
+ *         -path (up till end)
+ *     else if(":" before end)
+ *         -host (up till ":")
+ *         -port (up till end)
+ *     else
+ *         -path (up till end)
+ */
+
+globus_result_t
+globus_xio_contact_parse(
+    globus_xio_contact_t *                  contact_info,
+    const char *                            contact_string)
+{
+    char *                                  working;
+    char *                                  save = NULL;
+    char *                                  s;
+    char *                                  p;
+    globus_result_t                         result;
+    GlobusXIOName(globus_xio_contact_parse);
+
+    GlobusXIODebugInternalEnter();
+    
+    memset(contact_info, 0, sizeof(globus_xio_contact_t));
+    if(contact_string && *contact_string)
+    {
+        contact_info->unparsed = globus_libc_strdup(contact_string);
+        if(!contact_info->unparsed)
+        {
+            goto error_alloc;
+        }
+        
+        save = globus_libc_strdup(contact_string);
+        if(!save)
+        {
+            goto error_alloc;
+        }
+        working = save;
+        
+        /* look for scheme */
+        for(s = working; *s && *s != ':' && *s != '/'; s++);
+        if(*s == ':' && *(s + 1) == '/' && *(s + 2) == '/')
+        {
+            *s = 0;
+            contact_info->scheme = globus_libc_strdup(working);
+            if(!contact_info->scheme)
+            {
+                goto error_alloc;
+            }
+            working = s + 3;
+            
+            if(*working != '/')
+            {
+                /* look for user:pass */
+                for(s = working;    
+                    *s && *s != '@' && *s != '<' && *s != '/';
+                    s++);
+                
+                if(*s == '@')
+                {
+                    p = s + 1;
+                    *s = 0;
+                    if((s = strchr(working, ':')))
+                    {
+                        *(s++) = 0;
+                        if(*s)
+                        {
+                            contact_info->pass = globus_libc_strdup(s);
+                            if(!contact_info->pass)
+                            {
+                                goto error_alloc;
+                            }
+                        }
+                    }
+                    if(*working)
+                    {
+                        contact_info->user = globus_libc_strdup(working);
+                        if(!contact_info->user)
+                        {
+                            goto error_alloc;
+                        }
+                    }
+                    working = p;
+                }
+                
+                /* look for subject */
+                if(*working == '<')
+                {
+                    working++;
+                    s = strchr(working, '>');
+                    if(!s)
+                    {
+                        result = GlobusXIOErrorContactString("expecting >");
+                        goto error_format;
+                    }
+                    *s = 0;
+                    
+                    if(*working)
+                    {
+                        contact_info->subject = globus_libc_strdup(working);
+                        if(!contact_info->subject)
+                        {
+                            goto error_alloc;
+                        }
+                    }
+                    
+                    working = s + 1;
+                    if(*working == ':')
+                    {
+                        working++;
+                    }
+                }
+                
+                /* find host:port */
+                if(*working == '[')
+                {
+                    working++;
+                    s = strchr(working, ']');
+                    if(!s)
+                    {
+                        result = GlobusXIOErrorContactString("expecting ]");
+                        goto error_format;
+                    }
+                    *(s++) = 0;
+                }
+                else
+                {
+                    for(s = working; *s && *s != ':' && *s != '/'; s++);
+                }
+                
+                if(*s == ':')
+                {
+                    *(s++) = 0;
+                    if((p = strchr(s, '/')))
+                    {
+                        *p = 0;
+                    }
+                    
+                    if(*s)
+                    {
+                        contact_info->port = globus_libc_strdup(s);
+                        if(!contact_info->port)
+                        {
+                            goto error_alloc;
+                        }
+                    }
+                    
+                    if(p)
+                    {
+                        s = p + 1;
+                    }
+                    else
+                    {
+                        /* no path, just end it here */
+                        *s = 0;
+                    }
+                }
+                else if(*s == '/')
+                {
+                    *(s++) = 0;
+                }
+                else if(*s)
+                {
+                    result = GlobusXIOErrorContactString("expecting : or /");
+                    goto error_format;
+                }
+                
+                if(*working)
+                {
+                    contact_info->host = globus_libc_strdup(working);
+                    if(!contact_info->host)
+                    {
+                        goto error_alloc;
+                    }
+                }
+                
+                working = s;
+            }
+            else
+            {
+                working++;
+            }
+            
+            /* copy path portion */
+            if(*working)
+            {
+                contact_info->resource = globus_libc_strdup(working);
+                if(!contact_info->resource)
+                {
+                    goto error_alloc;
+                }
+            }
+        }
+        else
+        {
+            /* see if its file or host:port form */
+            if(strncmp(working, "file:", 5) == 0)
+            {
+                working += 5;
+                if(*working)
+                {
+                    contact_info->resource = globus_libc_strdup(working);
+                    if(!contact_info->resource)
+                    {
+                        goto error_alloc;
+                    }
+                }
+                
+                contact_info->scheme = globus_libc_strdup("file");
+                if(!contact_info->scheme)
+                {
+                    goto error_alloc;
+                }
+            }
+            else if((s = strrchr(working, ':')))
+            {
+                *(s++) = 0;
+                if(*s)
+                {
+                    contact_info->port = globus_libc_strdup(s);
+                    if(!contact_info->port)
+                    {
+                        goto error_alloc;
+                    }
+                }
+                if(*working == '[')
+                {
+                    working++;
+                    s = strchr(working, ']');
+                    if(!s)
+                    {
+                        result = GlobusXIOErrorContactString("expecting ]");
+                        goto error_format;
+                    }
+                    
+                    *s = 0;
+                }
+                if(*working)
+                {
+                    contact_info->host = globus_libc_strdup(working);
+                    if(!contact_info->host)
+                    {
+                        goto error_alloc;
+                    }
+                }
+            }
+            else
+            {
+                contact_info->resource = globus_libc_strdup(working);
+                if(!contact_info->resource)
+                {
+                    goto error_alloc;
+                }
+                contact_info->scheme = globus_libc_strdup("file");
+                if(!contact_info->scheme)
+                {
+                    goto error_alloc;
+                }
+            }
+        }
+    }
+    
+    globus_l_xio_decode_hex(contact_info->resource);
+    globus_l_xio_decode_hex(contact_info->host);   
+    globus_l_xio_decode_hex(contact_info->port);   
+    globus_l_xio_decode_hex(contact_info->scheme); 
+    globus_l_xio_decode_hex(contact_info->user);   
+    globus_l_xio_decode_hex(contact_info->pass);   
+    globus_l_xio_decode_hex(contact_info->subject);
+                            
+    /* XXX validate some of the fields */
+                            
+    return GLOBUS_SUCCESS;  
+                            
+error_alloc:                
+    result = GlobusXIOErrorMemory("contact_info");
+
+error_format:
+    if(save)
+    {
+        globus_free(save);
+    }
+    globus_xio_contact_destroy(contact_info);
+    GlobusXIODebugInternalExitWithError();
+    return result;
+}
+
 /*
  *
  */
@@ -1393,6 +1776,7 @@ globus_xio_target_init(
     int                                     ndx;
     globus_list_t *                         list;
     void *                                  driver_attr;
+    globus_xio_contact_t                    contact_info;
     GlobusXIOName(globus_xio_target_init);
 
     GlobusXIODebugEnter();
@@ -1402,26 +1786,25 @@ globus_xio_target_init(
     if(target == NULL)
     {
         res = GlobusXIOErrorParameter("target");
-        goto err;
-    }
-    if(contact_string == NULL)
-    {
-        res = GlobusXIOErrorParameter("contact_string");
-        goto err;
+        goto err_param;
     }
     if(stack == NULL)
     {
         res = GlobusXIOErrorParameter("stack");
-        goto err;
+        goto err_param;
     }
-
     stack_size = globus_list_size(stack->driver_stack);
     if(stack_size == 0)
     {
         res = GlobusXIOErrorParameter("stack_size");
-        goto err;
+        goto err_param;
     }
-
+    res = globus_xio_contact_parse(&contact_info, contact_string);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err_param;
+    }
+    
     /* TODO: check stack, make sure it meets requirements */
     xio_target = (globus_i_xio_target_t *)
                     globus_malloc(sizeof(globus_i_xio_target_t) +
@@ -1460,15 +1843,15 @@ globus_xio_target_init(
             res = xio_target->entry[ndx].driver->target_init_func(
                     &xio_target->entry[ndx].target,
                     driver_attr,
-                    contact_string);
+                    &contact_info);
             if(res != GLOBUS_SUCCESS)
             {
                 /* loop back through and destroy all inited targets */
                 for(ctr = 0; ctr < ndx; ctr++)
                 {
                     /* ignore the result, but it must be passed */
-                    xio_target->entry[ndx].driver->target_destroy_func(
-                        xio_target->entry[ndx].target);
+                    xio_target->entry[ctr].driver->target_destroy_func(
+                        xio_target->entry[ctr].target);
                 }
                 globus_free(xio_target);
                 goto err;
@@ -1481,12 +1864,15 @@ globus_xio_target_init(
     globus_assert(ndx == stack_size);
 
     *target = (globus_xio_target_t) xio_target;
-
+    
+    globus_xio_contact_destroy(&contact_info);
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   err:
-
+    globus_xio_contact_destroy(&contact_info);
+    
+  err_param:
     GlobusXIODebugExitWithError();
     return res;
 }

@@ -282,7 +282,7 @@ globus_result_t
 globus_l_xio_file_target_init(
     void **                             out_target,
     void *                              driver_attr,
-    const char *                        contact_string)
+    globus_xio_contact_t *              contact_info)
 {
     globus_l_target_t *                 target;
     globus_l_attr_t *                   attr;
@@ -306,7 +306,13 @@ globus_l_xio_file_target_init(
     
     if(!attr || attr->handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
     {
-        target->pathname = globus_libc_strdup(contact_string);
+        if(!contact_info->resource)
+        {
+            result = GlobusXIOErrorContactString("missing path");
+            goto error_pathname;
+        }
+    
+        target->pathname = globus_libc_strdup(contact_info->resource);
         if(!target->pathname)
         {
             result = GlobusXIOErrorMemory("pathname");

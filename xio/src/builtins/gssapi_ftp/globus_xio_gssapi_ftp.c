@@ -2028,19 +2028,22 @@ static globus_result_t
 globus_l_xio_gssapi_ftp_target_init(
     void **                                 out_target,
     void *                                  driver_attr,
-    const char *                            contact_string)
+    globus_xio_contact_t *                  contact_info)
 {
     globus_l_xio_gssapi_ftp_target_t *      target;
     char *                                  tmp_ptr;
     GlobusXIOName(globus_l_xio_gssapi_ftp_target_init);
-
+    
+    if(!contact_info->host)
+    {
+        return GlobusXIOErrorContactString("missing host");
+    }
+    
     target = (globus_l_xio_gssapi_ftp_target_t *)
                 globus_malloc(sizeof(globus_l_xio_gssapi_ftp_target_t));
 
     target->client = GLOBUS_TRUE;
-    target->host = globus_libc_strdup(contact_string);
-    tmp_ptr = strchr(target->host, ':');
-    *tmp_ptr = '\0';
+    target->host = globus_libc_strdup(contact_info->host);
 
     *out_target = target;
 

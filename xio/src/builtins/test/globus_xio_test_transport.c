@@ -320,7 +320,7 @@ globus_result_t
 globus_l_xio_test_target_init(
     void **                             out_target,
     void *                              driver_attr,
-    const char *                        contact_string)
+    globus_xio_contact_t *              contact_info)
 {
     return GLOBUS_SUCCESS;
 }

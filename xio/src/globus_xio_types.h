@@ -102,4 +102,16 @@ typedef enum
     GLOBUS_XIO_DEBUG_INFO_VERBOSE = 64,
 } globus_xio_debug_levels_t;
 
+typedef struct
+{
+    char *                                  unparsed;
+    char *                                  resource;
+    char *                                  host;
+    char *                                  port;
+    char *                                  scheme;
+    char *                                  user;
+    char *                                  pass;
+    char *                                  subject;
+} globus_xio_contact_t;
+
 #endif

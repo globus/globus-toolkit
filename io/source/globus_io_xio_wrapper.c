@@ -1623,7 +1623,7 @@ globus_l_io_file_open(
         }
         
         result = globus_xio_target_init(
-            &target, target_attr, "", globus_l_io_file_stack);
+            &target, target_attr, GLOBUS_NULL, globus_l_io_file_stack);
         globus_xio_attr_destroy(target_attr);
     }
     if(result != GLOBUS_SUCCESS)
@@ -1842,7 +1842,7 @@ globus_l_io_tcp_register_connect(
             goto error_target;
         }
         
-        result = globus_xio_target_init(&target, target_attr, "", stack);
+        result = globus_xio_target_init(&target, target_attr, GLOBUS_NULL, stack);
         globus_xio_attr_destroy(target_attr);
     }
     if(result != GLOBUS_SUCCESS)

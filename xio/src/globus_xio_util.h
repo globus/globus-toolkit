@@ -302,4 +302,13 @@ globus_bool_t
 globus_xio_error_is_timeout(
     globus_result_t                             res);
 
+void
+globus_xio_contact_destroy(
+    globus_xio_contact_t *                  contact_info);
+
+globus_result_t
+globus_xio_contact_parse(
+    globus_xio_contact_t *                  contact_info,
+    const char *                            contact_string);
+
 #endif

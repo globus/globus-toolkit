@@ -676,7 +676,10 @@ typedef globus_result_t
  *
  *  This function is only called when the user is setting up a client
  *  target.  It does not imply any i/o operation will be preformed.  It
- *  mearly gives the driver a chance to set up memory for a client target.
+ *  merely gives the driver a chance to set up memory for a client target.
+ * 
+ *  this function is called for each driver from top (transform) to bottom
+ *  (transport)
  *
  *  @param out_target
  *         An output parameter.  upon return from this function this should
@@ -687,14 +690,14 @@ typedef globus_result_t
  *         If the user added any driver specific attributes for this 
  *         operation this will point to a driver specific operation.
  *
- *  @param contact_string
- *         The contact string to which the user wishes to open a connection.
- *
- *  @param stack
- *         The stack object.  This contains information explaining
- *         the stack of drivers that the user wished to use.  I can be used
- *         to create driver_handles and will be valid until server_destroy is 
- *         called. 
+ *  @param contact_info
+ *         A globus_xio_contact_t with describing the user's resource request.
+ *         Driver's should document which portions of this they look at.
+ *         see globus_target_init for more details.
+ * 
+ *         A driver may change the fields in this before returning.  it should
+ *         free any memory it is replacing and leave any memory it allocates
+ *         for xio to free.
  *
  *  @param driver_target
  *         The internal reference to the xio target.  If the driver will not
@@ -705,7 +708,7 @@ typedef globus_result_t
 (*globus_xio_driver_target_init_t)(
     void **                                 out_target,
     void *                                  driver_attr,
-    const char *                            contact_string);
+    globus_xio_contact_t *                  contact_info);
 
 /**
  *  @ingroup driver_pgm

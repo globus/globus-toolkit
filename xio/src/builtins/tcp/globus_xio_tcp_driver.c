@@ -116,7 +116,8 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
  */
 typedef struct
 {
-    char *                              contact_string;
+    char *                              host;
+    char *                              port;
     globus_xio_system_handle_t          handle;
 } globus_l_target_t;
 
@@ -776,7 +777,7 @@ globus_result_t
 globus_l_xio_tcp_target_init(
     void **                             out_target,
     void *                              driver_attr,
-    const char *                        contact_string)
+    globus_xio_contact_t *              contact_info)
 {
     globus_l_target_t *                 target;
     globus_l_attr_t *                   attr;
@@ -794,14 +795,29 @@ globus_l_xio_tcp_target_init(
     }
     
     target->handle = GLOBUS_XIO_TCP_INVALID_HANDLE;
-    target->contact_string = GLOBUS_NULL;
+    target->host = GLOBUS_NULL;
+    target->port = GLOBUS_NULL;
     
     if(!attr || attr->handle == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
-        target->contact_string = globus_libc_strdup(contact_string);
-        if(!target->contact_string)
+        if(contact_info->host && contact_info->port)
         {
-            result = GlobusXIOErrorMemory("contact_string");
+            target->host = globus_libc_strdup(contact_info->host);
+            if(!target->host)
+            {
+                result = GlobusXIOErrorMemory("host");
+                goto error_contact_string;
+            }
+            target->port = globus_libc_strdup(contact_info->port);
+            if(!target->port)
+            {
+                result = GlobusXIOErrorMemory("port");
+                goto error_contact_string2;
+            }
+        }
+        else
+        {
+            result = GlobusXIOErrorContactString("missing host or port");
             goto error_contact_string;
         }
     }
@@ -814,6 +830,9 @@ globus_l_xio_tcp_target_init(
 
     return GLOBUS_SUCCESS;
 
+error_contact_string2:
+    globus_free(target->host);
+    
 error_contact_string:
     globus_free(target);
     
@@ -885,9 +904,13 @@ globus_l_xio_tcp_target_destroy(
     
     target = (globus_l_target_t *) driver_target;
     
-    if(target->contact_string)
+    if(target->host)
     {
-        globus_free(target->contact_string);
+        globus_free(target->host);
+    }
+    if(target->port)
+    {
+        globus_free(target->port);
     }
     if(target->handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
@@ -1203,7 +1226,8 @@ globus_l_xio_tcp_server_accept(
     }
     
     target->handle = GLOBUS_XIO_TCP_INVALID_HANDLE;
-    target->contact_string = GLOBUS_NULL;
+    target->host = GLOBUS_NULL;
+    target->port = GLOBUS_NULL;
     
     if(attr && attr->handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
@@ -1612,33 +1636,14 @@ globus_l_xio_tcp_connect(
     globus_xio_operation_t              op,
     globus_l_handle_t *                 handle,
     const globus_l_attr_t *             attr,
-    const char *                        contact_string)
+    const char *                        host,
+    const char *                        port)
 {
     globus_result_t                     result;
     globus_addrinfo_t *                 addrinfo;
     globus_addrinfo_t                   addrinfo_hints;
     globus_l_connect_info_t *           connect_info;
-    char *                              host;
-    char *                              port;
     GlobusXIOName(globus_l_xio_tcp_connect);
-    
-    /* XXXX need to define/parse out ipv6 addr... [] */
-    host = globus_libc_strdup(contact_string);
-    if(!host)
-    {
-        result = GlobusXIOErrorMemory("cs_copy");
-        goto error_cs_copy;
-    }
-    
-    port = strrchr(host, ':');
-    if(!port)
-    {
-        result = GlobusXIOErrorContactString("missing ':'");
-        goto error_bad_contact;
-    }
-    
-    *port = 0;
-    port++;
     
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
@@ -1685,8 +1690,6 @@ globus_l_xio_tcp_connect(
         goto error_connect_next;
     }
     
-    globus_free(host);
-    
     return GLOBUS_SUCCESS;
 
 error_connect_next:
@@ -1699,10 +1702,6 @@ error_info:
     globus_libc_freeaddrinfo(addrinfo);
 
 error_getaddrinfo:
-error_bad_contact:
-    globus_free(host);
-
-error_cs_copy:
     return result;
 }
 
@@ -1738,7 +1737,7 @@ globus_l_xio_tcp_open(
     if(target->handle == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
         result = globus_l_xio_tcp_connect(
-            op, handle, attr, target->contact_string);
+            op, handle, attr, target->host, target->port);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
