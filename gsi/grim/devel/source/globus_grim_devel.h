@@ -88,14 +88,6 @@ globus_grim_assertion_set_port_types_array(
     globus_grim_assertion_t                 assertion,
     char **                                 port_types_array);
 
-globus_result_t
-grim_build_assertion(
-    char **                                 out_assertion_string,
-    char *                                  subject,
-    char *                                  username,
-    char **                                 dna,
-    char **                                 port_types);
-
 /**
  *
  */

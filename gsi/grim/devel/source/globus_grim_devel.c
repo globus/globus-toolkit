@@ -33,6 +33,14 @@ struct globus_l_grim_conf_info_s
     char *                                  port_type_filename;
 }; 
 
+struct globus_l_grim_assertion_s
+{
+    char *                                  subject;
+    char *                                  username;
+    char **                                 dna;
+    char **                                 port_types;
+}
+
 /*************************************************************************
  *              internal function signatures
  ************************************************************************/
@@ -67,6 +75,91 @@ globus_module_descriptor_t globus_i_grim_devel_module =
 /*************************************************************************
  *              external api functions
  ************************************************************************/
+
+/*
+ *  Assertion parsing
+ */
+globus_result_t
+globus_grim_assertion_init(
+    globus_grim_assertion_t *               assertion,
+    char *                                  subject,
+    char *                                  username)
+{
+    struct globus_l_grim_assertion_s *      ass;
+
+    ass = (struct globus_l_grim_assertion_s *)
+                globus_malloc(sizeof(struct globus_l_grim_assertion_s *));
+
+    ass = (struct globus_l_grim_assertion_ *) assertion;
+}
+
+globus_result_t
+globus_grim_assertion_init_from_buffer(
+    globus_grim_assertion_t *               assertion,
+    char *                                  buffer,
+    int                                     buffer_length)
+{
+}
+    
+globus_result_t
+globus_grim_assertion_serialize(
+    globus_grim_assertion_t                 assertion,
+    char **                                 out_assertion_string)
+{
+}
+ 
+globus_result_t
+globus_grim_assertion_destroy(
+    globus_grim_assertion_t                 assertion)
+{
+}
+    
+globus_result_t
+globus_grim_assertion_get_subject(
+    globus_grim_assertion_t                 assertion,
+    char **                                 subject)
+{
+}
+
+globus_result_t
+globus_grim_assertion_get_username(
+    globus_grim_assertion_t                 assertion,
+    char **                                 username)
+{
+}
+
+globus_result_t
+globus_grim_assertion_get_dn_array(
+    globus_grim_assertion_t                 assertion,
+    char ***                                dn_array)
+{
+}
+
+globus_result_t
+globus_grim_assertion_set_dn_array(
+    globus_grim_assertion_t                 assertion,
+    char **                                 dn_array)
+{
+}
+
+globus_result_t
+globus_grim_assertion_get_port_types_array(
+    globus_grim_assertion_t                 assertion,
+    char ***                                port_types_array)
+{
+}
+
+globus_result_t
+globus_grim_assertion_set_port_types_array(
+    globus_grim_assertion_t                 assertion,
+    char **                                 port_types_array)
+{
+}
+
+
+/*
+ *  Config file parsing functions
+ */
 
 #define GlobusLGrimConfInfoInit(info)                                       \
 {                                                                           \
@@ -843,3 +936,62 @@ globus_l_grim_parse_conf_file(
     }
     return rc;
 }
+
+
+char *
+grim_build_assertion(
+    char *                                  subject,
+    char *                                  username,
+    char **                                 dna,
+    char **                                 port_types)
+{
+    char *                                  buffer;
+    int                                     ctr;
+    int                                     buffer_size = 1024;
+    int                                     buffer_ndx = 0;
+    char                                    hostname[MAXHOSTNAMELEN];
+
+    globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
+    buffer = globus_malloc(sizeof(char) * buffer_size);
+
+    GrowString(buffer, buffer_size, "<GrimAssertion>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, "    <Version>", buffer_ndx);
+    GrowString(buffer, buffer_size, GRIM_ASSERTION_FORMAT_VERSION, buffer_ndx);
+    GrowString(buffer, buffer_size, "    </Version>\n", buffer_ndx);
+    GrowString(buffer, buffer_size,
+        "    <ServiceGridId Format=\"#X509SubjectName\">",
+        buffer_ndx);
+    GrowString(buffer, buffer_size, subject, buffer_ndx);
+    GrowString(buffer, buffer_size, "</ServerGridId>\n", buffer_ndx);
+    GrowString(buffer, buffer_size,
+        "    <ServiceLocalId Format=\"#UnixAccountName\" \n",
+        buffer_ndx);
+    GrowString(buffer, buffer_size, "        NameQualifier=\"", buffer_ndx);
+    GrowString(buffer, buffer_size, hostname, buffer_ndx);
+    GrowString(buffer, buffer_size, "\">", buffer_ndx);
+    GrowString(buffer, buffer_size, username, buffer_ndx);
+    GrowString(buffer, buffer_size, "</ServiceLocalId>\n", buffer_ndx);
+
+    /* add all mapped dns */
+    for(ctr = 0; dna[ctr] != NULL; ctr++)
+    {
+        GrowString(buffer, buffer_size,
+            "<authorizedClientId Format=\"#X509SubjectName\">",
+            buffer_ndx);
+        GrowString(buffer, buffer_size, dna[ctr], buffer_ndx);
+        GrowString(buffer, buffer_size, "</AuthorizedClientId>\n", buffer_ndx);
+    }
+
+    /* add in port_types */
+    for(ctr = 0; port_types[ctr] != NULL; ctr++)
+    {
+        GrowString(buffer, buffer_size, "<authorizedPortType>", buffer_ndx);
+        GrowString(buffer, buffer_size, port_types[ctr], buffer_ndx);
+        GrowString(buffer, buffer_size, "</authorizedPortType>\n", buffer_ndx);
+    }
+
+    GrowString(buffer, buffer_size, "</GRIMAssertion>\n", buffer_ndx);
+
+    return buffer;
+}
+
