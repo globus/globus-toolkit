@@ -1,7 +1,7 @@
-#! @SH@
+#! /bin/sh -f
 
-# This is inserted by configure.
-@globus_script_initializer@
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${libexecdir}/globus-sh-tools.sh
 
 #  CVS Information:
 #     $Source$

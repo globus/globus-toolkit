@@ -32,8 +32,10 @@ INCLUDES += $(GPT_INCLUDES)
 # libexec is $prefix/libexec
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
-bin_PROGRAMS= \
-	globus-gass-cache 
+bin_PROGRAMS = \
+	globus-gass-cache
+bin_SCRIPTS = \
+	globus-gass-cache-destroy
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
@@ -53,8 +55,7 @@ globus_gass_cache_LDFLAGS = $(GPT_LDFLAGS)
 # from the dependent packages
 globus_gass_cache_LDADD = $(GPT_PGM_LINKS)
 
-
-
+EXTRA_DIST = globus-gass-cache-destroy
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

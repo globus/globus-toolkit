@@ -22,7 +22,7 @@ CVS Information:
 #include <string.h>
 
 #include "globus_gram_client.h"
-#include "globus_gass_transfer_assist.h"
+#include "globus_gass_copy.h"
 #include "globus_gass_server_ez.h"
 #include "globus_gass_cache.h"
 
@@ -239,6 +239,8 @@ main(int argc, char **argv)
 			       &argv,
 			       n_args,
 			       args_options,
+			       PACKAGE,
+			       VERSION,
 			       oneline_usage,
 			       long_usage,
 			       &options_found,
@@ -312,7 +314,7 @@ main(int argc, char **argv)
 	    {
 		globus_libc_fprintf(stderr,
 				    "ERROR initializing GRAM: %s\n",
-				    globus_gram_client_error_string(rc));
+				    globus_gram_protocol_error_string(rc));
 		globus_l_args_usage();
 	    }
 	    if (globus_gram_client_ping(resource))
@@ -492,8 +494,8 @@ globus_l_cache_callback_func(void *arg,
 			     int state,
 			     int errorcode)
 {
-    if(state == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED ||
-       state == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE)
+    if(state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED ||
+       state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
     {
 	globus_mutex_lock(&globus_l_cache_monitor_mutex);
 	globus_l_cache_monitor_done = GLOBUS_TRUE;
@@ -537,7 +539,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     if ( rc != GLOBUS_SUCCESS )
     {
 	printf("Error allowing GRAM callback: %s\n",
-	       globus_gram_client_error_string(rc));
+	       globus_gram_protocol_error_string(rc));
 	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 	exit(1);
     }
@@ -626,7 +628,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
     int                          i;
     int                          size             = 0;
     
-    rc = globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
+    rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -666,23 +668,28 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	}
 	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
-	    globus_gass_transfer_request_t 	request;
-	    rc = globus_gass_transfer_assist_get_file_from_url(
-		&request,
-		GLOBUS_NULL,
-		url,
-		local_filename,
-		GLOBUS_NULL,
-		GLOBUS_TRUE);
+	    globus_gass_copy_handle_t  copy_handle;
+	    globus_result_t result;
 
-	    if(rc != GLOBUS_SUCCESS ||
-	       globus_gass_transfer_request_get_status(request) !=
-	       GLOBUS_GASS_TRANSFER_REQUEST_DONE)
+	    char * fileurl = globus_libc_malloc(strlen(local_filename) +
+		                                strlen("file://") + 1);
+	    sprintf(fileurl, "file://%s", local_filename);
+
+	    globus_gass_copy_handle_init(&copy_handle, GLOBUS_NULL);
+
+	    result = globus_gass_copy_url_to_url(
+		    &copy_handle,
+		    url,
+		    GLOBUS_NULL,
+		    fileurl,
+		    GLOBUS_NULL);
+	    globus_gass_copy_handle_destroy(&copy_handle);
+
+	    if(result != GLOBUS_SUCCESS)
 	    {
 		printf("Error transferring %s\n",
 		       url);
 
-		globus_gass_transfer_request_destroy(request);
 		rc = globus_gass_cache_delete(&cache_handle,
 					      name,
 					      tag,
@@ -701,7 +708,6 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
                 globus_libc_printf("Could not unlock cache entry because %s\n",
                                    globus_gass_cache_error_string(rc));
             }
-		
 	}
 	else
 	{
