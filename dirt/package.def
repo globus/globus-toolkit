@@ -95,3 +95,8 @@ globus_mds_gris_setup		mds/gris/setup			dirt.sh
 globus_mds_back_giis		mds/openldap/giis-ldapmodules	dirt.sh
 globus_ldapmodules		mds/openldap/ldapmodules	dirt.sh
 globus_user_env			user_env/source			dirt.sh
+globus_gram_job_manager_setup_condor gram/jobmanager/setup/condor dirt.sh
+globus_gram_job_manager_setup_fork gram/jobmanager/setup/fork dirt.sh
+globus_gram_job_manager_setup_lsf gram/jobmanager/setup/lsf dirt.sh
+globus_gram_job_manager_setup_pbs gram/jobmanager/setup/pbs dirt.sh
+globus_gram_job_manager_setup_remote gram/jobmanager/setup/remote dirt.sh
