@@ -307,6 +307,17 @@ globus_gss_assist_will_handle_restrictions(
  * globus_gss_assist_import_sec_context - read a security context
  */
 extern OM_uint32
+globus_gss_assist_export_sec_context(
+    OM_uint32 *                         minor_status,
+    gss_ctx_id_t *                      context_handle,
+    int *                               token_status,
+    int                                 fdp,
+    FILE *                              fperr);
+
+/*
+ * globus_gss_assist_import_sec_context - read a security context
+ */
+extern OM_uint32
 globus_gss_assist_import_sec_context(
     OM_uint32 *                         minor_status,
     gss_ctx_id_t *                      context_handle,

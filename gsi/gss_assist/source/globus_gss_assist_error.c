@@ -28,7 +28,10 @@ globus_l_gsi_gss_assist_error_strings[GLOBUS_GSI_GSS_ASSIST_ERROR_LAST] =
 /* 5 */   "Invalid gridmap file format",
 /* 6 */   "System Error",
 /* 7 */   "Error during context initialization",
-/* 8 */   "Error during message wrap"
+/* 8 */   "Error during message wrap",
+/* 9 */   "Error with token",
+/* 10 */  "Error exporting context",
+/* 11 */  "Error importing context"
 
 };
 

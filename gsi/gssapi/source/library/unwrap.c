@@ -266,7 +266,7 @@ GSS_CALLCONV gss_unwrap(
         {
             ssl_error = SSL_get_error(context->gss_ssl, rc);
             
-            if(!ssl_error == SSL_ERROR_WANT_READ)
+            if(!(ssl_error == SSL_ERROR_WANT_READ))
             {
                 /* Problem, we should have some data here! */
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(

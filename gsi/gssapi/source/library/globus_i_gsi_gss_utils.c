@@ -758,9 +758,25 @@ globus_i_gsi_gss_get_token(
             goto exit;
         }
 
-        BIO_read(write_bio,
-                 output_token->value,
-                 output_token->length);
+        while(len < output_token->length)
+        { 
+            rc = BIO_read(write_bio,
+                          output_token->value,
+                          output_token->length);
+            if(rc > 0)
+            {
+                len += rc;
+            }
+            else
+            {
+                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status, 
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN,
+                    ("Error reading token from BIO: %d\n", rc));
+                major_status = GSS_S_FAILURE;
+                goto exit;
+            }
+        }            
 
         if(GLOBUS_I_GSI_GSSAPI_DEBUG(3))
         {

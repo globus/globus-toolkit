@@ -73,7 +73,7 @@ extern FILE *                           globus_i_gsi_gss_assist_debug_fstream;
 #define GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT \
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF( \
                 2, (globus_i_gsi_gss_assist_debug_fstream, \
-                    "%s entering\n", _function_name_))
+                    "%s exiting\n", _function_name_))
 
 /* ERROR MACROS */
 

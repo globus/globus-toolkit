@@ -16,6 +16,7 @@ Sources= \
 	globus_gss_assist.h \
 	gridmap.c \
 	import_sec_context.c \
+	export_sec_context.c \
 	init.c \
 	tokens_f.c \
 	unwrap.c \

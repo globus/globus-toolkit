@@ -54,6 +54,7 @@ globus_gss_assist_import_sec_context(
     int  				fdp,
     FILE *				fperr)
 {
+    globus_result_t                     local_result;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status = 0;
     gss_buffer_desc                     context_token = GSS_C_EMPTY_BUFFER;
@@ -73,11 +74,22 @@ globus_gss_assist_import_sec_context(
             == NULL)
         {
             *token_status = GLOBUS_GSS_ASSIST_TOKEN_NOT_FOUND;
+            major_status = GSS_S_FAILURE;
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
+                ("environment variable: GRID_SECURITY_CONTEXT_FD not set"));
             goto err;
         }
         if ((fd = atoi(context_fd_char)) <= 0)
         {
             *token_status = GLOBUS_GSS_ASSIST_TOKEN_NOT_FOUND;
+            major_status = GSS_S_FAILURE;
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
+                ("Environment variable GRID_SECURITY_CONTEXT_FD set to "
+                 "invalid valie"));
             goto err;
         }
     }
@@ -89,6 +101,11 @@ globus_gss_assist_import_sec_context(
     if ((read(fd, ibuf,4)) != 4)
     {
         *token_status = GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
+            ("Couldn't read token size bytes from file descriptor."));
+        major_status = GSS_S_FAILURE;
         goto err;
     }
 
@@ -101,6 +118,12 @@ globus_gss_assist_import_sec_context(
          (void *) malloc(context_token.length)) == NULL)
     {
         *token_status = GLOBUS_GSS_ASSIST_TOKEN_ERR_MALLOC;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            local_result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
+            ("Couldn't allocate memory for context token."));
+        *minor_status = (OM_uint32) local_result;
+        major_status = GSS_S_FAILURE;
         goto err;
     }
 
@@ -108,36 +131,63 @@ globus_gss_assist_import_sec_context(
               context_token.length)) !=context_token.length)
     {
         *token_status = GLOBUS_GSS_ASSIST_TOKEN_EOF;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            local_result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
+            ("Couldn't read %d bytes of data for context token.",
+             context_token.length));
+        *minor_status = (OM_uint32) local_result;
+        major_status = GSS_S_FAILURE;
         goto err;
     }
 		
-    major_status = gss_import_sec_context(minor_status,
+    major_status = gss_import_sec_context(&local_minor_status,
                                           &context_token,
                                           context_handle);
+    if(GSS_ERROR(major_status))
+    {
+        local_result = (globus_result_t) local_minor_status;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            local_result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN);
+        *minor_status = (OM_uint32) local_result;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
 
  err:
+
     if (fdp < 0 && fd >= 0)
     {
         (void *) close(fd);
     }
 
-    if (*token_status) {
-        major_status = GSS_S_FAILURE;
-    }
-
     gss_release_buffer(&local_minor_status,
                        &context_token);
 
-    if (fperr && (major_status != GSS_S_COMPLETE 
-                  || *token_status != 0)) 
+    if(major_status != GSS_S_COMPLETE)
     {
-        globus_gss_assist_display_status(
-            fperr,
-            "gss_assist_import_sec_context failure:",
-            major_status,
-            *minor_status,
-            *token_status);
-        fprintf(fperr, "token_status%d\n", *token_status);
+        if(fperr)
+        {
+            globus_object_t *               error_obj;
+            globus_object_t *               error_copy;
+            
+            error_obj = globus_error_get((globus_result_t) *minor_status);
+            error_copy = globus_object_copy(error_obj);
+            
+            *minor_status = (OM_uint32) globus_error_put(error_obj);
+
+            globus_gss_assist_display_status(
+                fperr,
+                "gss_assist_import_sec_context failure:",
+                major_status,
+                *minor_status,
+                *token_status);
+
+            *minor_status = (OM_uint32) globus_error_put(error_copy);
+            
+            fprintf(fperr, "token_status%d\n", *token_status);
+        }
     }
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
