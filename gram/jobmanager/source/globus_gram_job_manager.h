@@ -252,6 +252,20 @@ extern int
 globus_gram_scheduler_queue_list_free(
 	globus_list_t * queue_list);
 
+/*-----------------------------------------------------------------------
+ * This function initializes the passed in scheduler queue node
+ */
+extern void
+globus_i_gram_q_init(
+        globus_gram_scheduler_t * q_node);
+
+/*-----------------------------------------------------------------------
+ * This function initializes the passed in scheduler queue entry node
+ */
+extern void
+globus_i_gram_q_entry_init(
+        globus_gram_scheduler_entry_t * q_entry_node);
+
 /******************************************************************************
                                Define constants
 ******************************************************************************/
@@ -260,6 +274,12 @@ globus_gram_scheduler_queue_list_free(
 #define GRAM_SECURITY "@GSSAPI_TYPE@"
 #define GLOBUS_MPIRUN_PATH "${GLOBUS_SH_MPIRUN-mpirun}"
 #define GLOBUS_POE_PATH "${GLOBUS_SH_POE-poe}"
+
+/* remove or ignore old status files after no activity for
+ * GRAM_JOB_MANAGER_STATUS_FILE_SECONDS
+ */
+#define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 600
+
 
 /******************************************************************************
  *                    Module Definition
