@@ -88,6 +88,9 @@ extern globus_module_descriptor_t		globus_i_gass_transfer_module;
  */
 #define GLOBUS_GASS_TRANSFER_MODULE		(&globus_i_gass_transfer_module)
 
+#define _GTSL(s) globus_common_i18n_get_string( \
+		    GLOBUS_GASS_TRANSFER_MODULE, \
+		    s)
 /**
  * @struct globus_gass_transfer_request_t
  * @ingroup globus_gass_transfer_request
