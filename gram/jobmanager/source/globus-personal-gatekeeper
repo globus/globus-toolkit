@@ -71,7 +71,7 @@ EOF
 }
 
 
-. ${libexecdir}/globus-args-parser-header
+globus_source ${libexecdir}/globus-args-parser-header $*
 
 debug=:
 
