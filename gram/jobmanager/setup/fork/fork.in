@@ -53,6 +53,7 @@ sub submit
     my $merge_file = undef;
     my $merge_filename;
     my $pipe;
+    my @cmdline;
     
     chdir $description->directory() or
         return Globus::GRAM::Error::INVALID_DIRECTORY;
@@ -74,6 +75,7 @@ sub submit
     elsif($description->jobtype() eq 'mpi' && $mpirun ne 'no')
     {
 	$count = 1;
+	@cmdline = ($mpirun, '-np', $description->count());
     }
     else
     {
@@ -96,6 +98,13 @@ sub submit
 
 	    $merge_file = new IO::File(">$merge_filename");
 	}
+    }
+
+
+    push(@cmdline, $description->executable());
+    if(defined($description->arguments()))
+    {
+	push(@cmdline, $description->arguments());
     }
 
     for(my $i = 0; $i < $count; $i++)
@@ -139,42 +148,11 @@ sub submit
 	    open(STDIN, "<" . $description->stdin());
 	    open(STDOUT, ">>$job_stdout");
 	    open(STDERR, ">>$job_stderr");
-
-	    if($description->jotype() eq 'mpi' &&
-	       defined($description->arguments()))
-	    {
-		exec ($mpirun, '-np',
-		      $description->count(),
-		      $description->executable(),
-		      $description->arguments());
-		$pipe->print('X');
-		$pipe->close();
-		exit(1);
-	    }
-	    elsif($description->jobtype() eq 'mpi')
-	    {
-		exec ($mpirun, '-np',
-		      $description->count(),
-		      $description->executable());
-		$pipe->print('X');
-		$pipe->close();
-		exit(1);
-	    }
-	    elsif(defined($description->arguments()))
-	    {
-		exec ($description->executable(),
-		      $description->arguments());
-		$pipe->print('X');
-		$pipe->close();
-		exit(1);
-	    }
-	    else
-	    {
-		exec ($description->executable());
-		$pipe->print('X');
-		$pipe->close();
-		exit(1);
-	    }
+	    
+	    exec (@cmdline);
+	    $pipe->print('X');
+	    $pipe->close();
+	    exit(1);
 	}
 	else
 	{
@@ -261,10 +239,9 @@ sub _merge_multi_output
     my ($type, $local_filename, $offset, $stat);
     my $tmpfile;
 
-    if($merge_filename)
+    chomp($merge_filename);
+    if($merge_filename ne '')
     {
-	chomp($merge_filename);
-
 	$stdout = new IO::File('>>'.$description->stdout());
 	$stderr = new IO::File('>>'.$description->stderr());
 
