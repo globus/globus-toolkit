@@ -617,6 +617,7 @@ globus_l_xio_http_client_read_response_callback(
     globus_bool_t                       finish_read = GLOBUS_FALSE;
     globus_bool_t                       registered_again = GLOBUS_FALSE;
     globus_i_xio_http_attr_t *          descriptor;
+    globus_result_t                     save_result = result;
     GlobusXIOName(globus_l_xio_http_client_read_response_callback);
 
     globus_mutex_lock(&http_handle->mutex);
@@ -715,6 +716,8 @@ reregister_read:
     if (eof)
     {
         /* Header block wasn't complete before eof. */
+        result = save_result;
+
         goto error_exit;
     }
 
@@ -759,17 +762,20 @@ error_exit:
 
         finish_read = GLOBUS_TRUE;
     }
-    descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
-    if (descriptor == NULL)
+    if (result == GLOBUS_SUCCESS)
     {
-        result = GlobusXIOErrorMemory("descriptor");
-    }
-    else
-    {
-        globus_i_xio_http_response_destroy(&descriptor->response);
-        result = globus_i_xio_http_response_copy(
-                &descriptor->response,
-                &http_handle->response_info);
+        descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
+        if (descriptor == NULL)
+        {
+            result = GlobusXIOErrorMemory("descriptor");
+        }
+        else
+        {
+            globus_i_xio_http_response_destroy(&descriptor->response);
+            result = globus_i_xio_http_response_copy(
+                    &descriptor->response,
+                    &http_handle->response_info);
+        }
     }
 
     globus_mutex_unlock(&http_handle->mutex);
