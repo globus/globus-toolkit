@@ -3,12 +3,14 @@
 
 <gpt_package_metadata Name="@PACKAGE@" Version="@VERSION@" Format_Version="0.01">
 <src_pkg>
-
+<Source_Dependencies>
+	<Compile_Dependencies>globus_gaa</Compile_Dependencies>
+</Source_Dependencies>
 <With_Flavors build="yes" />
 <Build_Environment>
 <cflags>@GPT_CFLAGS@</cflags>
-<external_includes>@GPT_INCLUDES@</external_includes>
-<external_libs>@GPT_LIBS@</external_libs>
+<external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
+<external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
 <pkg_libs>-lglobus_ssl_utils</pkg_libs>
 </Build_Environment>
 
