@@ -636,6 +636,7 @@ globus_l_xio_timeout_callback(
         {
             /* decremenet the target reference count and insist that it is
                not zero yet */
+            op->_op_handle_timeout_cb = NULL;
             op->ref--;
             globus_assert(op->ref > 0);
         }

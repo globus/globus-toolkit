@@ -165,6 +165,8 @@ parse_parameters(
     globus_l_test_info.chunk_size = chunk_size;
     globus_mutex_init(&globus_l_test_info.mutex, NULL);
 
+    GlobusTimeReltimeSet(globus_l_test_info.delay, 0, delay);
+
     globus_l_test_info.nwritten = 0;
     globus_l_test_info.nread = 0;
     globus_l_test_info.total_write_bytes = total_write_bytes;
@@ -264,6 +266,10 @@ main(
         &globus_l_test_hash, 
         "framework",
         framework_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "timeout",
+        timeout_main);
 
     for(ctr = 1; ctr < argc && !done; ctr++)
     {

@@ -93,6 +93,7 @@ globus_i_xio_timer_register_timeout(
     entry = globus_malloc(sizeof(globus_i_xio_timer_entry_t));
     entry->datum = datum;
     entry->progress_ptr = progress_ptr;
+    entry->timer_cb = timeout_cb;
     GlobusTimeReltimeCopy(entry->rel_timeout, *timeout);
     GlobusTimeAbstimeGetCurrent(entry->abs_timeout);
     GlobusTimeAbstimeInc(entry->abs_timeout, *timeout);
@@ -164,12 +165,15 @@ globus_i_xio_timer_poller_callback(
     globus_reltime_t                                tmp_rel;
     globus_i_xio_timer_entry_t *                    entry;
     globus_list_t *                                 call_list = NULL;
+    globus_list_t *                                 tmp_list = NULL;
 
     timer = (globus_i_xio_timer_t *)user_arg;
 
+    GlobusTimeAbstimeGetCurrent(now);
     globus_mutex_lock(&timer->mutex);
     {
-        for(list = timer->op_list; 
+        tmp_list = globus_list_copy(timer->op_list);
+        for(list = tmp_list; 
             !globus_list_empty(list);
             list = globus_list_rest(list))
         {
@@ -192,7 +196,8 @@ globus_i_xio_timer_poller_callback(
                 else
                 {
                     globus_list_insert(&call_list, entry);
-                    /* TODO: remove from main list */
+                    globus_list_remove(&timer->op_list,
+                        globus_list_search(timer->op_list, entry));
                 }
             }
         }

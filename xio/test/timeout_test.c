@@ -7,6 +7,7 @@ static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
+#define USEC_THRESHHOLD  10000000
 
 static globus_bool_t
 timeout_cb(
@@ -23,6 +24,21 @@ close_cb(
     globus_result_t                             result,
     void *                                      user_arg)
 {
+    char *                                      timeout_type;
+
+    timeout_type = (char *) user_arg;
+    if(strcmp(timeout_type, "C") == 0)
+    {
+        if(result == GLOBUS_SUCCESS ||
+            !globus_error_match(
+                globus_error_peek(result),
+                GLOBUS_XIO_MODULE,
+                GLOBUS_XIO_ERROR_TIMEDOUT))
+        {
+            failed_exit("Read/Write did not timeout.");
+        }
+    }
+
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_l_closed = GLOBUS_TRUE;
@@ -42,6 +58,20 @@ data_cb(
     void *                                      user_arg)
 {
     globus_result_t                             res;
+    char *                                      timeout_type;
+
+    timeout_type = (char *) user_arg;
+    if(strcmp(timeout_type, "D") == 0)
+    {
+        if(result == GLOBUS_SUCCESS ||
+            !globus_error_match(
+                globus_error_peek(result),
+                GLOBUS_XIO_MODULE,
+                GLOBUS_XIO_ERROR_TIMEDOUT))
+        {
+            failed_exit("Read/Write did not timeout.");
+        }
+    }
 
     globus_mutex_lock(&globus_l_mutex);
     {
@@ -64,30 +94,55 @@ open_cb(
     globus_result_t                             res;
     globus_byte_t *                             buffer;
     globus_size_t                               buffer_length = 1024;
+    char *                                      timeout_type;
 
-    if(globus_l_test_info.write_count > 0)
+    timeout_type = (char *) user_arg;
+    if(strcmp(timeout_type, "O") == 0)
     {
-        res = globus_xio_register_write(
-                handle,
-                buffer,
-                buffer_length,
-                buffer_length,
-                NULL,
-                data_cb,
-                user_arg);
+        if(result == GLOBUS_SUCCESS ||
+            !globus_error_match(
+                globus_error_peek(result),
+                GLOBUS_XIO_MODULE,
+                GLOBUS_XIO_ERROR_TIMEDOUT))
+        {
+            failed_exit("Open did not timeout.");
+        }
+        else
+        {
+            globus_mutex_lock(&globus_l_mutex);
+            {
+                globus_l_closed = GLOBUS_TRUE;
+                globus_cond_signal(&globus_l_cond);
+            }
+            globus_mutex_unlock(&globus_l_mutex);
+        }
     }
     else
     {
-        res = globus_xio_register_read(
-                handle,
-                buffer,
-                buffer_length,
-                buffer_length,
-                NULL,
-                data_cb,
-                user_arg);
+        if(globus_l_test_info.write_count > 0)
+        {
+            res = globus_xio_register_write(
+                    handle,
+                    buffer,
+                    buffer_length,
+                    buffer_length,
+                    NULL,
+                    data_cb,
+                    user_arg);
+        }
+        else
+        {
+            res = globus_xio_register_read(
+                    handle,
+                    buffer,
+                    buffer_length,
+                    buffer_length,
+                    NULL,
+                    data_cb,
+                    user_arg);
+        }
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 }
 
 int
@@ -98,47 +153,65 @@ timeout_main(
     int                                     rc;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_driver_t                     driver;
     globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_xio_attr_t                       attr;
     int                                     opt_offset;
+    int                                     secs;
+    int                                     usecs;
+    globus_reltime_t                        delay;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 
-    globus_xio_driver_load("test", &driver);
-
     res = globus_xio_attr_init(&attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
-    opt_offset = parse_parameters(argc, argv, driver, attr);
+    res = globus_xio_stack_init(&stack, NULL);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
+    opt_offset = parse_parameters(argc, argv, stack, attr);
+    if(opt_offset == argc)
+    {
+        fprintf(stderr, "ERROR: please specify O | D | C.\n");
+        return 1;
+    }
+
+    GlobusTimeReltimeGet(globus_l_test_info.delay, secs, usecs);
+
+    if(secs == 0 && usecs < USEC_THRESHHOLD)
+    {
+        fprintf(stderr, "ERROR: delay time must be at least %d usecs.\n",
+            USEC_THRESHHOLD);
+        return 1;
+    }
+
+    GlobusTimeReltimeSet(delay, secs / 10, usecs / 10);
     /* set up timeouts */
     if(strcmp(argv[opt_offset], "O") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
                     timeout_cb,
-                    &globus_l_test_info.delay);
+                    &delay);
     }
     else if(strcmp(argv[opt_offset], "D") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL,
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
                     timeout_cb,
-                    &globus_l_test_info.delay);
+                    &delay);
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
                     timeout_cb,
-                    &globus_l_test_info.delay);
+                    &delay);
     }
     else if(strcmp(argv[opt_offset], "C") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE,
                     timeout_cb,
-                    &globus_l_test_info.delay);
+                    &delay);
     }
     else
     {
@@ -150,12 +223,6 @@ timeout_main(
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
 
-    res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
-    res = globus_xio_stack_push_driver(stack, driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
@@ -164,7 +231,7 @@ timeout_main(
             attr,
             target,
             open_cb,
-            NULL);
+            argv[opt_offset]);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
@@ -175,8 +242,6 @@ timeout_main(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
-    
-    globus_xio_driver_unload("test", driver);
     
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);

@@ -71,6 +71,10 @@ globus_xio_attr_cntl(
     globus_result_t                             res;
     void *                                      ds;
     globus_i_xio_attr_t *                       attr;
+    globus_xio_attr_cmd_t                       general_cmd;
+    globus_xio_timeout_server_callback_t        server_timeout_cb;
+    globus_xio_timeout_callback_t               timeout_cb;
+    globus_reltime_t *                          delay_time;
     GlobusXIOName(globus_xio_attr_cntl);
 
     if(user_attr == NULL)
@@ -80,6 +84,16 @@ globus_xio_attr_cntl(
 
     attr = user_attr;
 
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
     if(driver != NULL)
     {
         GlobusIXIOAttrGetDS(ds, attr, driver);
@@ -88,7 +102,7 @@ globus_xio_attr_cntl(
             res = driver->attr_init_func(&ds);
             if(res != GLOBUS_SUCCESS)
             {
-                return res;
+                goto exit;
             }
             if(attr->ndx >= attr->max)
             {
@@ -101,28 +115,84 @@ globus_xio_attr_cntl(
             attr->entry[attr->ndx].driver_data = ds;
             attr->ndx++;
         }
-#       ifdef HAVE_STDARG_H
-        {
-            va_start(ap, cmd);
-        }
-#       else
-        {
-            va_start(ap);
-        }
-#       endif
         res = driver->attr_cntl_func(ds, cmd, ap);
         if(res != GLOBUS_SUCCESS)
         {
-            return res;
+            goto exit;
         }
-        va_end(ap);
     }
     else
     {
-        /* set non driver specific attributes.  none defined yet */
+        general_cmd = cmd;
+
+        switch(general_cmd)
+        {
+            case GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL:
+                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                delay_time = va_arg(ap, globus_reltime_t *);
+
+                attr->open_timeout_cb = timeout_cb;
+                attr->close_timeout_cb = timeout_cb;
+                attr->read_timeout_cb = timeout_cb;
+                attr->write_timeout_cb = timeout_cb;
+
+                GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
+                GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
+                GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
+                GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
+
+                break;
+
+            case GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN:
+                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                delay_time = va_arg(ap, globus_reltime_t *);
+
+                attr->open_timeout_cb = timeout_cb;
+                GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
+                break;
+
+            case GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE:
+                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                delay_time = va_arg(ap, globus_reltime_t *);
+
+                attr->close_timeout_cb = timeout_cb;
+                GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
+                break;
+
+            case GLOBUS_XIO_ATTR_SET_TIMEOUT_READ:
+                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                delay_time = va_arg(ap, globus_reltime_t *);
+
+                attr->read_timeout_cb = timeout_cb;
+                GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
+                break;
+
+            case GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE:
+                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                delay_time = va_arg(ap, globus_reltime_t *);
+
+                attr->write_timeout_cb = timeout_cb;
+                GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
+                break;
+
+            case GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT:
+                server_timeout_cb = 
+                    va_arg(ap, globus_xio_timeout_server_callback_t);
+                delay_time = va_arg(ap, globus_reltime_t *);
+
+                attr->accept_timeout_cb = server_timeout_cb;
+                GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
+                break;
+        } 
+
+        res = GLOBUS_SUCCESS;
     }
 
-    return GLOBUS_SUCCESS;
+  exit:
+
+    va_end(ap);
+
+    return res;
 }
 
 /*

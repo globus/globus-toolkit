@@ -281,6 +281,12 @@ globus_xio_attr_cntl(
     int                                         cmd,
     ...);
 
+
+globus_result_t
+globus_xio_attr_copy(
+    globus_xio_attr_t *                         dst,
+    globus_xio_attr_t                           src);
+
 /**
  *  Clean up resources associated with an attribute.
  *
@@ -445,7 +451,7 @@ typedef globus_bool_t
 
 typedef globus_bool_t
 (*globus_xio_timeout_server_callback_t)(
-    globus_xio_server_t                         handle,
+    globus_xio_server_t                         server,
     globus_xio_operation_type_t                 type);
 
 

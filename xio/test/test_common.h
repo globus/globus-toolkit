@@ -67,5 +67,10 @@ framework_main(
     int                                     argc,
     char **                                 argv);
 
+int
+timeout_main(
+    int                                     argc,
+    char **                                 argv);
+
 
 #endif
