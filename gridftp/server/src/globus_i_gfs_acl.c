@@ -291,9 +291,17 @@ globus_i_gfs_acl_destroy(
         }
         globus_free(acl_handle->grpent.gr_mem);
     }
+    if(acl_handle->auth_action)
+    {
+        globus_free(acl_handle->auth_action);
+    }
+    if(acl_handle->auth_object)
+    {
+        globus_free(acl_handle->auth_object);
+    }
 }
 
-globus_result_t
+int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const char *                        action,
@@ -307,10 +315,19 @@ globus_gfs_acl_authorize(
     acl_handle->type = GLOBUS_L_GFS_ACL_TYPE_AUTHORIZE;
     acl_handle->cb = cb;
     acl_handle->user_arg = user_arg;
+
+    if(acl_handle->auth_action)
+    {
+        globus_free(acl_handle->auth_action);
+    }
     acl_handle->auth_action = strdup(action);
     if(acl_handle->auth_action == NULL)
     {
         goto err;
+    }
+    if(acl_handle->auth_object)
+    {
+        globus_free(acl_handle->auth_object);
     }
     acl_handle->auth_object = strdup(object);
     if(acl_handle->auth_object == NULL)

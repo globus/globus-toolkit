@@ -23,7 +23,7 @@ typedef void
     globus_result_t                     result);
 
 
-globus_result_t
+int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const char *                        action,
