@@ -761,7 +761,7 @@ sub install_gpt()
 	paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
     }
 
-    @INC = (@INC, "$gpt_dir/lib/perl", "$gpt_dir/lib/perl/$Config{'archname'}");
+    @INC = (@INC, "$target/lib/perl", "$target/lib/perl/$Config{'archname'}");
     print "\n";
 }
 
@@ -1081,9 +1081,11 @@ sub package_sources()
 
 	if ( $faster )
 	{
-	    if ( -e <$package_output/${package}-.*> )
+	    my ($glob) = glob("$package_output/${package}-*");
+	    if ( -f $glob )
 	    {
-		print "-faster set.  ${package} exists, skipping.\n";
+		my $file = `basename $glob`;
+                print "On $package, --faster set.  Using existing $file";
 		next;
 	    }
 	}
