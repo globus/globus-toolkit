@@ -7,21 +7,21 @@
 char * strdup(const char *);
 
 static
-int
+unsigned
 globus_l_debug_get_level(
     const char *                        env_name,
     const char *                        level_names,
     char *                              levels  /* gets mangled */)
 {
-    int                                 level;
+    unsigned                            level;
     
-    level = atoi(levels);
+    level = (unsigned) strtoul(levels, NULL, 10);
     if(level == 0)
     {
         char *                          my_names;
         char *                          name;
         char *                          next_name;
-        char *                          my_levels[31];
+        char *                          my_levels[32];
         int                             i;
         
         my_names = strdup(level_names);
@@ -33,7 +33,7 @@ globus_l_debug_get_level(
         /* check for level names */
         /* prune whitespace */
         name = my_names + strspn(my_names, " \t\n");
-        for(i = 0; i < 31; i++)
+        for(i = 0; i < 32; i++)
         {
             if(*name)
             {
@@ -65,13 +65,17 @@ globus_l_debug_get_level(
             }
             
             for(i = 0;
-                i < 31 && my_levels[i] && strcmp(levels, my_levels[i]) != 0;
+                i < 32 && my_levels[i] && strcmp(levels, my_levels[i]) != 0;
                 i++);
             
-            if(i < 31 && my_levels[i])
+            if(i < 32 && my_levels[i])
             {
                 /* matched name */
-                level |= 1 << i;
+                level |= 1U << i;
+            }
+            else if(strcmp(levels, "ALL") == 0)
+            {
+                level = ~(0U);
             }
             else
             {
@@ -84,10 +88,6 @@ globus_l_debug_get_level(
         
         free(my_names);
     }
-    else if(level < 0)
-    {
-        level = 0;
-    }
     
     return level;
 }
@@ -96,13 +96,18 @@ void
 globus_debug_init(
     const char *                        env_name,
     const char *                        level_names,
-    int *                               debug_level,
+    unsigned *                          debug_level,
     FILE **                             out_file,
     globus_bool_t *                     using_file,
     globus_bool_t *                     show_tids)
 {
     char *                              tmp;
 
+    if(*out_file)
+    {
+        return;
+    }
+    
     *debug_level = 0;
     *out_file = stderr;
     *using_file = GLOBUS_FALSE;
@@ -140,10 +145,17 @@ globus_debug_init(
         {
             if(filename && *filename)
             {
+                if(*filename == '#')
+                {
+                    filename += 1;
+                    truncate(filename, 0);
+                }
+                
                 *out_file = fopen(filename, "a");
                 if(*out_file)
                 {
                     *using_file = GLOBUS_TRUE;
+                    setvbuf(*out_file, GLOBUS_NULL, _IONBF, 0);
                     fprintf(*out_file, "### %d: %s ###\n", getpid(), env_name);
                 }
                 else

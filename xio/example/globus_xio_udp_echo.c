@@ -51,7 +51,7 @@ main(
     globus_xio_handle_t                     xio_handle;
     globus_xio_target_t                     target;
     globus_xio_attr_t                       attr = NULL;
-    char *                                  cs = "";
+    char *                                  cs = NULL;
     globus_result_t                         res;
     int                                     ctr;
     globus_bool_t                           be_server = GLOBUS_FALSE;

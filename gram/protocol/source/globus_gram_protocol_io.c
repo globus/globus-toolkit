@@ -1684,12 +1684,17 @@ globus_l_gram_protocol_free_old_credentials()
 	while(!globus_list_empty(conn_list))
 	{
 	    conn = (globus_i_gram_protocol_connection_t *) globus_list_first(conn_list);
-
-	    if (conn->io_handle != GLOBUS_NULL &&
-		conn->io_handle->securesocket_attr.credential == cred)
+            
+	    if (conn->io_handle != GLOBUS_NULL)
 	    {
-		dead_cred = GLOBUS_NULL;
-		break;
+	        gss_cred_id_t           cur_cred;
+	        
+	        globus_io_tcp_get_credential(conn->io_handle, &cur_cred);
+	        if (cur_cred == cred)
+                {
+                    dead_cred = GLOBUS_NULL;
+                    break;
+                }
 	    }
 
 	    conn_list = globus_list_rest(conn_list);
@@ -1735,7 +1740,7 @@ globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials)
     while(!globus_list_empty(tmp_list))
     {
 	listener = (globus_i_gram_protocol_listener_t *) globus_list_first(tmp_list);
-	listener->handle->securesocket_attr.credential = new_credentials;
+        globus_io_tcp_set_credential(listener->handle, new_credentials);
 
 	tmp_list = globus_list_rest(tmp_list);
     }
@@ -2291,9 +2296,13 @@ globus_l_gram_protocol_accept_delegation(
 
     if(input_token->length != 0)
     {
+        gss_ctx_id_t                    context;
+	    
+        globus_io_tcp_get_security_context(connection->io_handle, &context);
+	        
 	connection->delegation_major_status = gss_accept_delegation(
 		&connection->delegation_minor_status,
-		connection->io_handle->context,
+		context,
 		connection->delegation_restriction_oids,
 		connection->delegation_restriction_buffers,
 		input_token,
@@ -2394,9 +2403,14 @@ globus_l_gram_protocol_init_delegation(
 	if((input_token != GSS_C_NO_BUFFER  && input_token->length != 0) ||
 	   input_token == GSS_C_NO_BUFFER)
 	{
+	    gss_ctx_id_t                context;
+	    
+	    globus_io_tcp_get_security_context(
+	        connection->io_handle, &context);
+	        
 	    connection->delegation_major_status = gss_init_delegation(
 		    &connection->delegation_minor_status,
-		    connection->io_handle->context,
+		    context,
 		    connection->delegation_cred,
 		    GSS_C_NO_OID,
 		    connection->delegation_restriction_oids,

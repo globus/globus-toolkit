@@ -109,12 +109,21 @@ struct gaaint_sc {
 
 typedef struct gaaint_sc gaaint_sc;
 
+struct gaaint_x_get_authorization_identity_callback {
+    gaa_x_get_authorization_identity_func func;	/* function to get policy */
+    void *param;		/* parameters always passed to getf */
+    gaa_freefunc free;		/* function to free param */
+};
+
+typedef struct gaaint_x_get_authorization_identity_callback gaaint_x_get_authorization_identity_callback;
+
 struct gaaint_gaa {
     gaa_list_ptr mechinfo;	/* how to translate raw credentials */
     gaaint_getpolicy_callback *getpolicy; /* callback to get policy */
     gaaint_matchrights_callback *matchrights; /* match rights in policy */
     gaa_list_ptr cond_callbacks;	/* list of gaaint_cond_eval_entry */
     gaa_list_ptr authinfo;	/* list of gaaint_authinfo */
+    gaaint_x_get_authorization_identity_callback *authorization_identity_callback;
 };
 
 typedef struct gaaint_gaa gaaint_gaa;
@@ -182,10 +191,10 @@ gaa_i_list_clear(gaaint_list *list);
 extern void
 gaa_i_free_simple(void *val);
 
-extern
+extern int
 gaa_i_policy_order(gaa_policy_entry *e1, gaa_policy_entry *e2);
 
-extern
+extern int
 gaa_i_list_empty(gaaint_list *list);
 
 extern gaaint_authinfo *
@@ -210,7 +219,7 @@ extern gaa_status
 gaa_i_list_add_unique_entry(gaa_list_ptr list, void *data,
 			    gaa_listcompfunc checkdups);
 
-extern
+extern int
 gaa_i_tsdata_supported();
 
 #endif /* _GAA_PRIVATE_H */

@@ -28,10 +28,18 @@ unlink("test_results.txt");
             space-test.pl
             server2-test.pl
             block-barrier-test.pl
+            stack-test.pl
+            unload-test.pl
             );
 
 my $runserver;
 my $server_pid;
+
+$ENV{'xio-test-output-dir'}="test_output/$$";
+
+my $test_dir=$ENV{'xio-test-output-dir'};
+
+system("rm -rf $test_dir");
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 

@@ -12,6 +12,7 @@ typedef enum  globus_i_xio_gssapi_ftp_state_s
     GSSAPI_FTP_STATE_SERVER_GSSAPI_READ,
     GSSAPI_FTP_STATE_SERVER_READING_ADAT,
     GSSAPI_FTP_STATE_SERVER_ADAT_REPLY,
+    GSSAPI_FTP_STATE_SERVER_QUITING,
                                                                                 
     /* client authenticating states */
     GSSAPI_FTP_STATE_CLIENT_READING_220,
@@ -20,7 +21,7 @@ typedef enum  globus_i_xio_gssapi_ftp_state_s
     GSSAPI_FTP_STATE_CLIENT_SENDING_ADAT,
                                                                                 
     /* open state is final state xio takes care of closing */
-    GSSAPI_FTP_STATE_OPEN,
+    GSSAPI_FTP_STATE_OPEN
 } globus_i_xio_gssapi_ftp_state_t;
                                                                                 
 typedef enum
@@ -28,7 +29,7 @@ typedef enum
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT,
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_START_STATE,
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_ENCRYPT,
-    GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE,
+    GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE
 } globus_xio_gssapi_attr_type_t;
 
 
@@ -88,7 +89,7 @@ while(0)
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,                              \
             "[%s:%d] Authentication Error: %s",                             \
-            _xio_name, __LINE__))
+            _xio_name, __LINE__, str))
 
 
 
@@ -97,7 +98,7 @@ enum
     GLOBUS_XIO_GSSAPI_FTP_OUTSTANDING_OP,
     GLOBUS_XIO_GSSAPI_FTP_ERROR_ENCODING,
     GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,
-    GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH,
+    GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH
 };
 
 #endif

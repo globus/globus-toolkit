@@ -1,5 +1,5 @@
-#include <globus_ftp_control_test.h>
-#include <globus_common.h>
+#include "globus_ftp_control_test.h"
+#include "globus_common.h"
 
 static globus_ftp_control_test_monitor_t        connect_monitor;
 

@@ -118,6 +118,12 @@ typedef struct
 /* Fill in the data structure pointed to by url */
 int globus_url_parse(const char *url_string, globus_url_t *url);
 
+/* Fill in the data structure pointed to by url */
+int globus_url_parse_rfc1738(const char *url_string, globus_url_t *url);
+
+/* Fill in the data structure pointed to by url */
+int globus_url_parse_loose(const char *url_string, globus_url_t *url);
+
 /* Destroy the fields of the data structure pointed to by url */
 int globus_url_destroy(globus_url_t *url);
 

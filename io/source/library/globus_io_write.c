@@ -795,7 +795,7 @@ globus_io_register_writev(
     }
     if(handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED &&
        handle->type != GLOBUS_IO_HANDLE_TYPE_FILE &&
-       handle->type != GLOBUS_IO_HANDLE_TYPE_UDSS_CONNECTED)
+       handle->type != GLOBUS_IO_HANDLE_TYPE_UDP_CONNECTED)
     {
 	err = globus_io_error_construct_invalid_type(
 	    GLOBUS_IO_MODULE,
@@ -805,7 +805,7 @@ globus_io_register_writev(
 	    myname,
 	    "GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED or " 
 	    "GLOBUS_IO_HANDLE_TYPE_FILE or " 
-	    "GLOBUS_IO_HANDLE_TYPE_UDSS_CONNECTED");
+	    "GLOBUS_IO_HANDLE_TYPE_UDP_CONNECTED");
 	
 	goto error_exit;
     }

@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-
 typedef struct _gridmap_line_s {
   char *dn;
   char **user_ids;
@@ -1537,7 +1536,7 @@ globus_l_gss_assist_gridmap_lookup(
 
     if(GSS_ERROR(major_status))
     {
-        result = (void *) minor_status;
+        result =  minor_status;
         GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
@@ -1556,7 +1555,7 @@ globus_l_gss_assist_gridmap_lookup(
 
     if(GSS_ERROR(major_status))
     {
-        result = (void *) minor_status;
+        result =  minor_status;
         GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
@@ -1569,7 +1568,7 @@ globus_l_gss_assist_gridmap_lookup(
                                     GLOBUS_NULL);
     if(GSS_ERROR(major_status))
     {
-        result = (void *) minor_status;
+        result =  minor_status;
         GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);

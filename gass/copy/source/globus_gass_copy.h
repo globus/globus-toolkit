@@ -26,7 +26,8 @@
 #include "globus_gass_transfer.h"
 #include "globus_ftp_client.h"
 #include "globus_io.h"
-
+#include <glob.h>
+#include <fnmatch.h>
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 #define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
@@ -487,6 +488,24 @@ globus_gass_copy_attr_set_secure_channel(
 /**
  * Get Attribute functions
  */
+
+
+
+
+globus_result_t 
+globus_gass_copy_glob_expand_url( 
+     globus_gass_copy_handle_t *         handle, 
+     const char *                        url, 
+     globus_gass_copy_attr_t *           attr, 
+     globus_fifo_t *                     url_list); 
+globus_result_t
+globus_gass_copy_mkdir(
+    globus_gass_copy_handle_t * handle,
+    char * url,
+    globus_gass_copy_attr_t * attr,
+    globus_gass_copy_callback_t callback_func,
+    void * callback_arg);
+
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 

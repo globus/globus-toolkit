@@ -24,9 +24,9 @@
 
 EXTERN_C_BEGIN
 
-#include <globus_common.h>
+#include "globus_common.h"
 #include "globus_gsi_cert_utils.h"
-#include <openssl/x509.h>
+#include "openssl/x509.h"
 
 /** 
  * @defgroup globus_gsi_callback_activation Activation
@@ -99,7 +99,8 @@ int globus_gsi_callback_check_issued(
 
 int 
 globus_gsi_callback_X509_verify_cert(
-    X509_STORE_CTX *                    context);
+    X509_STORE_CTX *                    context,
+    void *                              arg);
 
 globus_result_t
 globus_gsi_callback_data_init(

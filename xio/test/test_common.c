@@ -1,6 +1,13 @@
-#include "test_common.h"
-#include "globus_hashtable.h"
 #include "globus_common.h"
+#include "globus_hashtable.h"
+#include "globus_xio_bounce.h"
+#include "globus_xio_op.h"
+#include "globus_xio_null.h"
+#include "globus_xio_null_pass.h"
+#include "globus_xio_debug.h"
+#include "globus_xio_stack_driver.h"
+#include "globus_xio_verify.h"
+#include "test_common.h"
 
 typedef  int
 (*main_func_t)(
@@ -39,14 +46,15 @@ failed_exit(
 
     va_end(ap);
 
-    globus_assert(0);
+    abort();
 }
     
 void
 test_res(
     int                                     location,
     globus_result_t                         res,
-    int                                     line)
+    int                                     line,
+    char *                                  file)
 {
     if(res != GLOBUS_SUCCESS)
     {
@@ -60,13 +68,15 @@ test_res(
             exit(0);
         }
 
-        failed_exit("error at line %d.", line);
+        failed_exit("error :%s: at %s:%d.", 
+            globus_object_printable_to_string(globus_error_get(res)), 
+            file, line);
     }
     else if(location == globus_l_test_info.failure &&
             location != GLOBUS_XIO_TEST_FAIL_NONE)
     {
-        failed_exit("Should have failed at point %d on line %d.", 
-            location, line);
+        failed_exit("Should have failed at point %d on line %s:%d.", 
+            location, file, line);
     }
 }
 
@@ -99,9 +109,9 @@ parse_parameters(
 
     /* get the transport driver, and put it on the stack */
     res = globus_xio_driver_load("test", &base_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_stack_push_driver(stack, base_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_list_insert(&globus_l_driver_list, base_driver);
 
@@ -118,9 +128,9 @@ parse_parameters(
 
             case 'D':
                 res = globus_xio_driver_load(optarg, &driver);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
                 res = globus_xio_stack_push_driver(stack, driver);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     
                 globus_list_insert(&globus_l_driver_list, driver);
                 break;
@@ -195,35 +205,35 @@ parse_parameters(
             base_driver,
             GLOBUS_XIO_TEST_SET_INLINE,
             inline_finish);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_SET_FAILURES,
             failure);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_SET_USECS,
             delay);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_CHUNK_SIZE,
             chunk_size);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_READ_EOF_BYTES,
             eof_bytes);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     if(seed != 0)
     {
@@ -232,7 +242,7 @@ parse_parameters(
                 base_driver,
                 GLOBUS_XIO_TEST_RANDOM,
                 seed);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
 
     return optind;
@@ -323,73 +333,91 @@ main(
     int                                         ctr;
     int                                         rc = 0;
     globus_bool_t                               done = GLOBUS_FALSE;
-    globus_bool_t                               activate = GLOBUS_TRUE;
     globus_bool_t                               file = GLOBUS_FALSE;
     char *                                      name = NULL;
 
     globus_l_program_name = argv[0];
 
-    globus_module_activate(GLOBUS_COMMON_MODULE);
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_assert(rc == 0);
 
     /* add all the known tests to hash table */
-    globus_hashtable_init(
+    rc = globus_hashtable_init(
         &globus_l_test_hash, 
         16,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "read_barrier",
         read_barrier_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "close_barrier",
         close_barrier_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "framework",
         framework_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "timeout",
         timeout_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "cancel",
         cancel_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "attr",
         attr_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "close_cancel",
         close_cancel_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "space",
         space_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "server2",
         server2_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "block_barrier",
         block_barrier_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "blocking_dd",
         blocking_dd_main);
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "unload",
+        unload_main);
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "stack",
+        stack_main);
+    globus_assert(rc == 0);
 
 
     for(ctr = 1; ctr < argc && !done; ctr++)
     {
-        if(strcmp(argv[ctr], "-A") == 0)
-        {
-            activate = GLOBUS_FALSE;
-        }
-        else if (strcmp(argv[ctr], "-D") == 0)
+        if (strcmp(argv[ctr], "-D") == 0)
         {
             file = GLOBUS_TRUE;
         }
@@ -408,13 +436,25 @@ main(
         return 1;
     }
 
-    /* actiavte now to prevent xio from getting actiavted and deactivated
-        in every test */
-    if(activate)
-    {
-        rc = globus_module_activate(GLOBUS_XIO_MODULE);
-        globus_assert(rc == GLOBUS_SUCCESS);
-    }
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_TEST_DRIVER_BOUNCE_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_DEBUG_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_NULL_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_NULL_PASS_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_OP_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_STACK_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_VERIFY_DRIVER_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+
     if(file)
     {
         FILE *                          in;
@@ -448,22 +488,8 @@ main(
         rc = call_test(argc, argv);
     }
 
-    if(activate)
-    {
-        globus_module_deactivate(GLOBUS_XIO_MODULE);
-    }
-
-    globus_hashtable_remove(&globus_l_test_hash, "read_barrier");
-    globus_hashtable_remove(&globus_l_test_hash, "close_barrier");
-    globus_hashtable_remove(&globus_l_test_hash, "framework");
-    globus_hashtable_remove(&globus_l_test_hash, "timeout");
-    globus_hashtable_remove(&globus_l_test_hash, "cancel");
-    globus_hashtable_remove(&globus_l_test_hash, "attr");
-    globus_hashtable_remove(&globus_l_test_hash, "close_cancel");
-    globus_hashtable_remove(&globus_l_test_hash, "space");
     globus_hashtable_destroy(&globus_l_test_hash);
 
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate_all();
 
     return rc;

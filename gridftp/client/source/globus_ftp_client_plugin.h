@@ -190,6 +190,90 @@ typedef void (*globus_ftp_client_plugin_authenticate_t)(
     const globus_ftp_control_auth_info_t *	auth_info);
 
 /**
+ * Plugin chmod notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a chmod is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a chmod, and when a plugin restarts the currently
+ * active chmod request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the chmod will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the delete operation.
+ * @param url
+ *        The url to chmod.
+ * @param mode
+ *        The file mode to be applied.
+ * @param attr
+ *        The attributes to be used during this operation.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current delete operation;
+ *	  otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_chmod_t)(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int         				mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t				restart);
+
+/**
+ * Plugin chmod notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a chmod is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a chmod, and when a plugin restarts the currently
+ * active chmod request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the chmod will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the delete operation.
+ * @param url
+ *        The url to chmod.
+ * @param offset
+ *        File offset to start calculating checksum.    
+ * @param length
+ *        Length of data to read from the starting offset.  Use -1 to read the
+ *        entire file.
+ * @param algorithm
+ *        A pointer to a string to be filled with the checksum of the
+ *        file. On error the value pointed to by it is undefined.          
+ * @param attr
+ *        The attributes to be used during this operation.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current delete operation;
+ *	  otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_cksm_t)(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_off_t				offset,
+    globus_off_t				length,
+    const char *				algorithm,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t				restart);
+
+/**
  * Plugin delete notification callback.
  * @ingroup globus_ftp_client_plugins
  *
@@ -429,6 +513,41 @@ typedef void (*globus_ftp_client_plugin_verbose_list_t)(
  *	  otherwise, this is set to GLOBUS_FALSE.
  */
 typedef void (*globus_ftp_client_plugin_machine_list_t)(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t				restart);
+
+/**
+ * Plugin mlst notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a mlst is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a list, and when a plugin restarts the currently
+ * active list request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the list will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the list operation.
+ * @param url
+ *        The url of the list operation.
+ * @param attr
+ *        The attributes to be used during this transfer.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current list transfer;
+ *	  otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_mlst_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -906,9 +1025,34 @@ globus_ftp_client_plugin_restart_machine_list(
     const globus_abstime_t *            	when);
 
 globus_result_t
+globus_ftp_client_plugin_restart_mlst(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
+
+globus_result_t
 globus_ftp_client_plugin_restart_delete(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_chmod(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_cksm(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_off_t				offset,
+    globus_off_t				length,
+    const char *				algorithm,
     const globus_ftp_client_operationattr_t *	attr,
     const globus_abstime_t *            	when);
 
@@ -1029,6 +1173,16 @@ globus_ftp_client_plugin_set_destroy_func(
     globus_ftp_client_plugin_destroy_t		destroy);
 
 globus_result_t
+globus_ftp_client_plugin_set_chmod_func(
+    globus_ftp_client_plugin_t *		plugin,
+    globus_ftp_client_plugin_chmod_t		chmod_func);
+
+globus_result_t
+globus_ftp_client_plugin_set_cksm_func(
+    globus_ftp_client_plugin_t *		plugin,
+    globus_ftp_client_plugin_cksm_t		cksm_func);
+
+globus_result_t
 globus_ftp_client_plugin_set_delete_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_delete_t		delete_func);
@@ -1067,6 +1221,11 @@ globus_result_t
 globus_ftp_client_plugin_set_list_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_list_t		list_func);
+
+globus_result_t
+globus_ftp_client_plugin_set_mlst_func(
+    globus_ftp_client_plugin_t *		plugin,
+    globus_ftp_client_plugin_mlst_t		mlst_func);
 
 globus_result_t
 globus_ftp_client_plugin_set_get_func(

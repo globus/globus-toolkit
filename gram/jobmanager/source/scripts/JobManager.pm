@@ -890,7 +890,7 @@ undef'ed in this case.
 sub pipe_out_cmd
 {
     my $self = shift;
-    my $result;
+    my @result;
     local(*READ);
 
     my $pid = open( READ, "-|" );
@@ -899,7 +899,7 @@ sub pipe_out_cmd
     if ( $pid )
     {
         # parent
-        chomp($result = scalar <READ>);
+        chomp(@result = <READ>);
         close(READ);
     } else {
         # child
@@ -911,7 +911,7 @@ sub pipe_out_cmd
             exit(127);
         }
     }
-    $result;
+    wantarray ? @result : $result[0];
 }
 
 =item ($stder, $rc) = $manager->pipe_err_cmd(@arg)

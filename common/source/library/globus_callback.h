@@ -136,7 +136,7 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  * @hideinitializer
  *
  * Specifies that globus_callback_space_poll() should poll on the global space
- * with an imediate timeout (at most, one callback will be fired)
+ * with an immediate timeout
  *
  * @see globus_callback_space_poll()
  */
@@ -147,7 +147,7 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  * @hideinitializer
  *
  * Specifies that globus_callback_space_poll() should poll on the global space
- * with an imediate timeout (at most, one callback will be fired)
+ * with an immediate timeout
  *
  * @see globus_callback_space_poll()
  */
@@ -454,11 +454,11 @@ globus_callback_adjust_period(
  *
  * This function (when not yielding) will block up to timestop or until 
  * globus_callback_signal_poll() is called by one of the fired callbacks.  It
- * will always try and kick out one ready callback, regardless of the timestop.
+ * will always try and kick out ready callbacks, regardless of the timestop.
  *
  * @param timestop
  *        The time to block until.  If this is NULL or less than the cuurent
- *        time, an attempt to fire one ready callback is made.
+ *        time, an attempt to fire only ready callbacks is made (no blocking).
  *
  * @param space
  *        The callback space to poll.  Note: regardless of what space is passed

@@ -52,8 +52,10 @@ sub basic_func
        $ENV{X509_CERT_DIR} = cwd();
        $ENV{X509_USER_PROXY} = "";       
    }
-
-   $server_pid = open(SERVER, "$server_prog $server_args |");
+   
+   my $command = "$server_prog $server_args |";
+   #print "Running server: $command\n";
+   $server_pid = open(SERVER, $command);
 
    if($server_pid == -1)
    {
@@ -65,7 +67,9 @@ sub basic_func
    chomp($port);
    $port =~ s/listening on port //;
 
-   $client_pid = open(CLIENT, "$client_prog -h localhost -p $port $client_args |");
+   $command = "$client_prog -h localhost -p $port $client_args |";
+   #print "Running client: $command\n";
+   $client_pid = open(CLIENT, $command);
 
    if($client_pid == -1)
    {
@@ -121,7 +125,6 @@ push(@tests, "basic_func(\"\",\"\",1,2);");
 push(@tests, "basic_func(\"-g\",\"-g\",0,0);");
 push(@tests, "basic_func(\"-g\",\"-g\",1,1);");
 push(@tests, "basic_func(\"-g\",\"-g\",1,2);");
-push(@tests, "basic_func(\"-g\",\"\",1,0);");
 push(@tests, "basic_func(\"\",\"-g\",1,0);");
 push(@tests, "basic_func(\"-s\",\"-s\",0,0);");
 push(@tests, "basic_func(\"-s\",\"-s\",1,1);");
@@ -159,6 +162,9 @@ push(@tests, "basic_func(\"-b\",\"-b\",0,0);");
 push(@tests, "basic_func(\"-b -g\",\"-b -g\",0,0);");
 push(@tests, "basic_func(\"-b -s\",\"-b -s\",1,0);");
 push(@tests, "basic_func(\"-b -c\",\"-b -c\",0,0);");
+push(@tests, "basic_func(\"-g -P none\",\"-g -P none\",0,0);");
+push(@tests, "basic_func(\"-g -P integrity\",\"-g -P integrity\",0,0);");
+push(@tests, "basic_func(\"-g -P privacy\",\"-g -P privacy\",0,0);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

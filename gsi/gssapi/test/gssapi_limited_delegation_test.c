@@ -1,6 +1,6 @@
 
 #define EXT_SIZE 16
-#include <gssapi.h>
+#include "gssapi.h"
 #include "gssapi_openssl.h"
 #include "globus_gss_assist.h"
 
@@ -38,6 +38,10 @@ int main()
     char *                              error_str;
     globus_result_t                     result;
     X509 *                              cert;
+
+    /* Activate Modules */
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
     /* Initialize variables */
     
@@ -436,6 +440,8 @@ int main()
         exit(1);
     }
 
+    /* ToDo: Memory is lost from X509_NAME_oneline, below, but it doesn't
+             matter since exit(0); is called at the end of the routine */
     printf("%s:%d: Received subject name: %s\n",
            __FILE__,
            __LINE__,
@@ -447,6 +453,8 @@ int main()
      * context.
      * This is a post GT 2.0 feature.
      */
+
+    globus_module_deactivate_all();
     
     exit(0);    
 }

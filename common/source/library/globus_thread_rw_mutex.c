@@ -1,4 +1,6 @@
+
 #include "globus_thread_rw_mutex.h"
+#include "globus_libc.h"
 
 #ifndef BUILD_LITE
 

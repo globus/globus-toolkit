@@ -4,7 +4,7 @@
  * the thread interface
  */
 
-#include <globus_external_threads.h>
+#include "globus_external_threads.h"
 
 /*
  * The file above should implement/define the following: it's basically

@@ -82,12 +82,7 @@ globus_xio_attr_cntl(
 {
     va_list                                 ap;
     globus_result_t                         res;
-    void *                                  ds;
     globus_i_xio_attr_t *                   attr;
-    globus_xio_attr_cmd_t                   general_cmd;
-    globus_xio_timeout_server_callback_t    server_timeout_cb;
-    globus_xio_timeout_callback_t           timeout_cb;
-    globus_reltime_t *                      delay_time;
     GlobusXIOName(globus_xio_attr_cntl);
 
     GlobusXIODebugEnter();
@@ -110,102 +105,11 @@ globus_xio_attr_cntl(
     }
 #   endif
 
-    if(driver != NULL)
+    res = globus_i_xio_driver_attr_cntl(attr, driver, cmd, ap);
+    if(res != GLOBUS_SUCCESS)
     {
-        GlobusIXIOAttrGetDS(ds, attr, driver);
-        if(ds == NULL)
-        {
-            res = driver->attr_init_func(&ds);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
-            if(attr->ndx >= attr->max)
-            {
-                attr->max *= 2;
-                attr->entry = (globus_i_xio_attr_ent_t *)
-                    globus_realloc(attr->entry, attr->max *
-                            sizeof(globus_i_xio_attr_ent_t));
-            }
-            attr->entry[attr->ndx].driver = driver;
-            attr->entry[attr->ndx].driver_data = ds;
-            attr->ndx++;
-        }
-        res = driver->attr_cntl_func(ds, cmd, ap);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-    }
-    else
-    {
-        general_cmd = cmd;
-
-        switch(general_cmd)
-        {
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->open_timeout_cb = timeout_cb;
-                attr->close_timeout_cb = timeout_cb;
-                attr->read_timeout_cb = timeout_cb;
-                attr->write_timeout_cb = timeout_cb;
-
-                GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
-                GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
-                GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
-                GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
-
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->open_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->close_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_READ:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->read_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->write_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT:
-                server_timeout_cb = 
-                    va_arg(ap, globus_xio_timeout_server_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->accept_timeout_cb = server_timeout_cb;
-                GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_SPACE:
-                attr->space = va_arg(ap, globus_callback_space_t);
-                break;
-        } 
-
-        res = GLOBUS_SUCCESS;
+        va_end(ap);
+        goto err;
     }
 
     va_end(ap);
@@ -214,8 +118,6 @@ globus_xio_attr_cntl(
     return GLOBUS_SUCCESS;
 
   err:
-
-    va_end(ap);
 
     GlobusXIODebugExitWithError();
     return res;
@@ -252,7 +154,8 @@ globus_xio_attr_destroy(
             res = tmp_res;
         }
     }
-
+    
+    globus_callback_space_destroy(attr->space);
     globus_free(attr->entry);
     globus_free(attr);
     if(res != GLOBUS_SUCCESS)
@@ -325,7 +228,8 @@ globus_xio_attr_copy(
     xio_attr_dst->max = xio_attr_src->max;
     xio_attr_dst->ndx = xio_attr_src->ndx;
     xio_attr_dst->space = xio_attr_src->space;
- 
+    globus_callback_space_reference(xio_attr_dst->space);
+    
     for(ctr = 0; ctr < xio_attr_dst->ndx; ctr++)
     {
         xio_attr_dst->entry[ctr].driver = xio_attr_src->entry[ctr].driver;
@@ -399,11 +303,12 @@ globus_xio_data_descriptor_init(
     globus_mutex_lock(&context->mutex);
     {
         GlobusXIOOperationCreate(op, context);
-        op->ref = 1;
         if(op != NULL)
         {
             op->type = GLOBUS_XIO_OPERATION_TYPE_DD;
             handle->ref++;
+            op->ref = 1;
+            op->is_user_dd = GLOBUS_TRUE;
         }
         else
         {
@@ -432,13 +337,10 @@ globus_result_t
 globus_xio_data_descriptor_destroy(
     globus_xio_data_descriptor_t            data_desc)
 {
-    int                                     ctr;
     globus_result_t                         res = GLOBUS_SUCCESS;
-    globus_result_t                         tmp_res;
     globus_i_xio_op_t *                     op;
     globus_i_xio_handle_t *                 handle;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_data_descriptor_destroy);
 
     GlobusXIODebugEnter();
@@ -454,20 +356,16 @@ globus_xio_data_descriptor_destroy(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
     }
     globus_mutex_unlock(&handle->context->mutex);
 
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
     if(res != GLOBUS_SUCCESS)
@@ -492,8 +390,6 @@ globus_xio_data_descriptor_cntl(
     ...)
 {
     globus_result_t                         res;
-    int                                     ndx;
-    int                                     ctr;
     globus_i_xio_op_t *                     op;
     va_list                                 ap;
     GlobusXIOName(globus_xio_data_descriptor_cntl);
@@ -508,56 +404,30 @@ globus_xio_data_descriptor_cntl(
 
     op = (globus_i_xio_op_t *) data_desc;
 
-    if(driver != NULL)
+    if(op->type != GLOBUS_XIO_OPERATION_TYPE_DD)
     {
-        ndx = -1;
-        for(ctr = 0; ctr < op->stack_size && ndx == -1; ctr++)
-        {
-            if(driver == op->_op_context->entry[ctr].driver)
-            {
-                if(op->entry[ctr].dd == NULL)
-                {
-                    res = op->_op_context->entry[ctr].driver->attr_init_func(
-                            &op->entry[ctr].dd);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        goto err;
-                    }
-                }
-                ndx = ctr;
-            }
-        }
-        if(ndx == -1)
-        {
-            /* throw error */
-            res = GlobusXIOErrorInvalidDriver("not found");
-            goto err;
-        }
-#       ifdef HAVE_STDARG_H
-        {
-            va_start(ap, cmd);
-        }
-#       else
-        {
-            va_start(ap);
-        }
-#       endif
-
-        res = op->_op_context->entry[ndx].driver->attr_cntl_func(
-                op->entry[ndx].dd,
-                cmd,
-                ap);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-        va_end(ap);
-    }
-    else
-    {
-        /* TODO: add code for general dd attributes */
+        res = GlobusXIOErrorParameter("data_desc");
+        goto err;
     }
 
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    res = globus_i_xio_driver_dd_cntl(op, driver, op->type, cmd, ap);
+
+    va_end(ap);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
     GlobusXIODebugExit();
 
     return GLOBUS_SUCCESS;
@@ -654,7 +524,6 @@ globus_xio_stack_init(
 
     xio_stack = globus_malloc(sizeof(globus_i_xio_stack_t));
     memset(xio_stack, '\0', sizeof(globus_i_xio_stack_t));
-    globus_mutex_init(&xio_stack->mutex, NULL);
 
     *stack = xio_stack;
 
@@ -687,41 +556,44 @@ globus_xio_stack_push_driver(
 
     xio_stack = (globus_i_xio_stack_t *) stack;
 
-    globus_mutex_lock(&xio_stack->mutex);
+    /* if a transport driver position */
+    if(xio_stack->size == 0)
     {
-        if(xio_stack->size == 0)
+        /* if in the transport position and has a push stack */
+        if(driver->push_driver_func != NULL)
         {
-            if(driver->transport_open_func == NULL)
+            res = driver->push_driver_func(driver, xio_stack);
+            if(res != GLOBUS_SUCCESS)
             {
-                res = GlobusXIOErrorInvalidDriver(
-                    "open function not defined");
-            }
-            else
-            {
-                xio_stack->transport_driver = driver;
+                goto err;
             }
         }
-        else if(driver->transport_open_func != NULL)
+        else if(driver->transport_open_func == NULL)
         {
-                res = GlobusXIOErrorInvalidDriver(
-                    "transport can only be at bottom of stack");
+            res = GlobusXIOErrorInvalidDriver(
+                "open function not defined");
+            goto err;
         }
-       
-        if(res == GLOBUS_SUCCESS)
+        else
         {
+            xio_stack->transport_driver = driver;
             xio_stack->size++;
             globus_list_insert(&xio_stack->driver_stack, driver);
-        } 
+        }
     }
-    globus_mutex_unlock(&xio_stack->mutex);
-
-    /* this is weird, but for debug messages */
-    if(res != GLOBUS_SUCCESS)
+    else if(driver->transport_open_func != NULL)
     {
+        res = GlobusXIOErrorInvalidDriver(
+            "transport can only be at bottom of stack");
         goto err;
     }
-    GlobusXIODebugExit();
+    else
+    {
+        xio_stack->size++;
+        globus_list_insert(&xio_stack->driver_stack, driver);
+    }
 
+    GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   err:
@@ -745,7 +617,6 @@ globus_xio_stack_destroy(
         goto err;
     }
 
-    globus_mutex_destroy(&stack->mutex);
     globus_list_free(stack->driver_stack);
     globus_free(stack);
 

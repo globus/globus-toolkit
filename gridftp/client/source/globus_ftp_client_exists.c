@@ -96,6 +96,7 @@ globus_l_ftp_client_existence_info_init(
     globus_l_ftp_client_existence_info_t **	existence_info,
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t				rfc1738_url,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
 
@@ -172,6 +173,7 @@ globus_ftp_client_exists(
     result = globus_l_ftp_client_existence_info_init(&existence_info,
 	                                             url,
 						     attr,
+						     (*u_handle)->attr.rfc1738_url,
 						     complete_callback,
 						     callback_arg);
     if(result != GLOBUS_SUCCESS)
@@ -231,6 +233,7 @@ globus_l_ftp_client_existence_info_init(
     globus_l_ftp_client_existence_info_t **	existence_info,
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t				rfc1738_url,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
@@ -248,8 +251,16 @@ globus_l_ftp_client_existence_info_init(
 
 	goto error_exit;
     }
-
-    rc = globus_url_parse(url, &(*existence_info)->parsed_url);
+    
+    if(rfc1738_url)
+    {
+        rc = globus_url_parse_rfc1738(url, &(*existence_info)->parsed_url);
+    }
+    else
+    {   
+	rc = globus_url_parse(url, &(*existence_info)->parsed_url);
+    }
+	    
 
     if(rc != GLOBUS_SUCCESS)
     {

@@ -120,8 +120,6 @@ int main(int argc, char *argv[])
             GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
             monitor.callback_contact,
             &monitor.job_contact);
-    globus_mutex_unlock(&monitor.mutex);
-
     if (monitor.job_contact != NULL)
     {
         globus_libc_printf("%s\n", monitor.job_contact);
@@ -168,7 +166,6 @@ int main(int argc, char *argv[])
         goto disallow_exit;
     }
 
-    globus_mutex_lock(&monitor.mutex);
     while (monitor.job_status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
            monitor.job_status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {
@@ -197,7 +194,6 @@ int main(int argc, char *argv[])
     }
 
 disallow_exit:
-    globus_mutex_lock(&monitor.mutex);
     if (monitor.job_contact != NULL)
     {
         globus_gram_client_job_contact_free(monitor.job_contact);
@@ -233,6 +229,7 @@ globus_l_state_callback(
     if (! strcmp(monitor->job_contact, job_contact))
     {
         monitor->job_status = state;
+        globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
 }

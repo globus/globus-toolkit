@@ -219,7 +219,6 @@ static gaa_status
 gaa_l_plugin_find_symbol(lt_ptr *		 sym,
 			 gaa_plugin_symbol_desc *symdesc)
 {
-    int					err;
     lt_dlhandle				dlh;
     char				errstr[8192];
     char				libname[8192];
@@ -621,6 +620,29 @@ gaa_plugin_init_getpolicy_args(gaa_plugin_getpolicy_args *args)
     return(GAA_S_SUCCESS);
 }
 
+/** gaa_plugin_init_authz_id_args()
+ *
+ *  @ingroup gaa_plugin
+ *
+ *  Initializes getpolicy args to default values.
+ *
+ *  @param args
+ *         input/output getpolicy args.
+ * 
+ *  @retval GAA_S_SUCCESS
+ *          success
+ *  @retval GAA_S_INVALID_ARG
+ *          args is null
+ */
+gaa_status
+gaa_plugin_init_authz_id_args(gaa_plugin_authz_id_args *args)
+{
+    if (args == 0)
+	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+    memset(args, 0, sizeof(gaa_plugin_authz_id_args));
+    return(GAA_S_SUCCESS);
+}
+
 /** gaa_plugin_install_matchrights()
  *
  *  @ingroup gaa_plugin
@@ -710,6 +732,51 @@ gaa_plugin_install_getpolicy(gaa_ptr		        gaa,
 				  &gpargs->freeparam)) != GAA_S_SUCCESS)
 	return(status);
     return(gaa_set_getpolicy_callback(gaa, getpolicy, param, freeparam));
+}
+
+/** gaa_plugin_install_getpolicy()
+ *
+ *  @ingroup gaa_plugin
+ *
+ *  Find the appropriate dynamically-linked getpolicy routines
+ *  and parameters, and call gaa_set_getpolicy_callback() to install
+ *  the callback.
+ *
+ *  @param gaa
+ *         input/output gaa pointer
+ *  @param gpargs
+ *         input getpolicy args to install.
+ * 
+ *  @retval GAA_S_SUCCESS
+ *          success
+ *  @retval GAA_S_INVALID_ARG
+ *          One of gaa or gpargs is null
+ */
+gaa_status
+gaa_plugin_install_authz_id(gaa_ptr		        gaa,
+			     gaa_plugin_authz_id_args *gpargs)
+{
+    gaa_status					status;
+    gaa_x_get_authorization_identity_func	authz_id_func = 0;
+    void *					param = 0;
+    gaa_freefunc				freeparam = 0;
+
+    if (gaa == 0 || gpargs == 0)
+	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+
+    if ((status =
+	 gaa_l_plugin_find_symbol((lt_ptr *)&authz_id_func,
+				  &gpargs->get_authz_id)) != GAA_S_SUCCESS)
+	return(status);
+    if ((status =
+	 gaa_l_plugin_param_value(&param,
+				  &gpargs->param)) != GAA_S_SUCCESS)
+	return(status);
+    if ((status =
+	 gaa_l_plugin_find_symbol((lt_ptr *)&freeparam,
+				  &gpargs->freeparam)) != GAA_S_SUCCESS)
+	return(status);
+    return(gaa_x_set_get_authorization_identity_callback(gaa, authz_id_func, param, freeparam));
 }
 
 static gaa_status

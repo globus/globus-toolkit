@@ -4,8 +4,6 @@
 #include "globus_common.h"
 #include "globus_xio_debug.h"
 
-#define GLOBUS_XIO_DEBUG_DRIVER_MODULE &globus_i_xio_test_module
-
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
 {                                                                       \
     ow = (globus_l_xio_test_op_wrapper_t *)                             \
@@ -24,7 +22,7 @@ globus_l_xio_debug_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_debug_module =
+globus_module_descriptor_t  globus_i_xio_debug_module =
 {
     "globus_xio_debug",
     globus_l_xio_debug_activate,
@@ -74,7 +72,7 @@ globus_l_xio_debug_accept_cb(
     void *                              user_arg)
 {
     debug_driver_log("finished accept");
-    GlobusXIODriverFinishedAccept(op, NULL, result);
+    globus_xio_driver_finished_accept(op, NULL, result);
 }
 
 static globus_result_t
@@ -87,7 +85,7 @@ globus_l_xio_debug_accept(
 
     debug_driver_log("finished accept");
 
-    GlobusXIODriverPassAccept(res, accept_op,      \
+    res = globus_xio_driver_pass_accept(accept_op,
         globus_l_xio_debug_accept_cb, NULL);
 
     return res;
@@ -133,13 +131,13 @@ globus_l_xio_debug_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
 
     debug_driver_log("finished open");
 
-    context = GlobusXIOOperationGetContext(op);
+    driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
-    GlobusXIODriverFinishedOpen(context, NULL, op, result);
+    globus_xio_driver_finished_open(driver_handle, NULL, op, result);
 }   
 
 static
@@ -150,11 +148,11 @@ globus_l_xio_debug_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
   
     debug_driver_log("open");
 
-    GlobusXIODriverPassOpen(res, context, op, \
+    res = globus_xio_driver_pass_open(&driver_handle, op,
         globus_l_xio_debug_open_cb, NULL);
 
     return res;
@@ -169,28 +167,28 @@ globus_l_xio_debug_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
 
     debug_driver_log("finished close");
 
-    context = GlobusXIOOperationGetContext(op);
-    GlobusXIODriverFinishedClose(op, result);
-    globus_xio_driver_context_close(context);
+    driver_handle = GlobusXIOOperationGetDriverHandle(op);
+    globus_xio_driver_finished_close(op, result);
+    globus_xio_driver_handle_close(driver_handle);
 }   
 
 static
 globus_result_t
 globus_l_xio_debug_close(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
 
     debug_driver_log("close");
 
-    GlobusXIODriverPassClose(res, op,   \
+    res = globus_xio_driver_pass_close(op,
         globus_l_xio_debug_close_cb, NULL);
 
     return res;
@@ -208,13 +206,13 @@ globus_l_xio_debug_read_cb(
 {
     debug_driver_log("finished read");
 
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes);
 }
 
 static
 globus_result_t
 globus_l_xio_debug_read(
-    void *                              driver_handle,
+    void *                              driver_spcific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -226,7 +224,8 @@ globus_l_xio_debug_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, \
+    res = globus_xio_driver_pass_read(op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
         globus_l_xio_debug_read_cb, NULL);
 
     return res;
@@ -244,13 +243,13 @@ globus_l_xio_debug_write_cb(
 {
     debug_driver_log("finished write");
 
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 static
 globus_result_t
 globus_l_xio_debug_write(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -262,7 +261,8 @@ globus_l_xio_debug_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, \
+    res = globus_xio_driver_pass_write(op, 
+        (globus_xio_iovec_t *) iovec, iovec_count, wait_for,
         globus_l_xio_debug_write_cb, NULL);
 
     return res;
@@ -271,7 +271,7 @@ globus_l_xio_debug_write(
 static
 globus_result_t
 globus_l_xio_debug_cntl(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     int                                 cmd,
     va_list                             ap)
 {
@@ -300,7 +300,8 @@ globus_l_xio_debug_load(
         globus_l_xio_debug_close,
         globus_l_xio_debug_read,
         globus_l_xio_debug_write,
-        globus_l_xio_debug_cntl);
+        globus_l_xio_debug_cntl,
+        NULL);
 
     globus_xio_driver_set_server(
         driver,

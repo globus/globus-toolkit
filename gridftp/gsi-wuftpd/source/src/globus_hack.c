@@ -1,7 +1,7 @@
 #include "config.h"
 #if defined(USE_GLOBUS_DATA_CODE)
-#include  <globus_common.h>
-#include  <globus_io.h>
+#include  "globus_common.h"
+#include  "globus_io.h"
 #include "proto.h"
 #include "../support/ftp.h"
 #include <syslog.h>
@@ -784,6 +784,11 @@ g_passive_port_alloc(globus_bool_t spas)
     }
 
     host_port.port = 0;
+    host_port.host[0] = 0;
+    host_port.host[1] = 0;
+    host_port.host[2] = 0;
+    host_port.host[3] = 0;
+
     res = globus_ftp_control_local_pasv(
               &g_data_handle,
               &host_port);
@@ -834,8 +839,9 @@ g_passive(globus_bool_t spas)
 {
 	if( g_delayed_passive)
 	{
-		//must wait until later to alloc the port
-		//XXX must find out what code to really return here!
+	/*		must wait until later to alloc the port
+			XXX must find out what code to really return here!
+	*/
         reply(000, "Delayed passive mode on, will return port later");
 	}
 	else 
@@ -1669,11 +1675,12 @@ g_receive_data(
 	    &five_seconds,
 	    globus_l_wu_perf_update_callback,
 	    &g_monitor);
+        globus_l_wu_perf_update(&g_monitor);
+        g_monitor.callback_count = 0; 
+
 #ifndef BUILD_LITE
         /** XXX JoeL
          */
-        globus_l_wu_perf_update(&g_monitor);
-        g_monitor.callback_count = 0; 
         for(ctr = 0; ctr < data_connection_count; ctr++)
         {
 #endif
@@ -2159,7 +2166,7 @@ globus_i_wu_free_ranges(
 }
 
 static int
-globus_l_wu_count_digits(int num)
+globus_l_wu_count_digits(globus_off_t num)
 {
     int digits = 1;
 
@@ -2377,7 +2384,7 @@ setup_volumetable()
     }
 
     ctr = 0;
-    g_mountPts = malloc(sizeof(char *) * 32);
+    g_mountPts = malloc(sizeof(char *) * max_mpt_ptrs);
     fp = popen("mount | awk '{print $3}'", "r");
     while(fgets(buf, 80, fp)) 
     {
@@ -2385,7 +2392,7 @@ setup_volumetable()
         if(ctr >= max_mpt_ptrs)
         {
             max_mpt_ptrs *= 2;
-            g_mountPts = realloc(g_mountPts, max_mpt_ptrs);
+            g_mountPts = realloc(g_mountPts, sizeof(char *) * max_mpt_ptrs);
         }
         g_mountPts[ctr] = strdup(buf);
         ctr++;

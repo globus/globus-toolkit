@@ -77,6 +77,14 @@ struct gaa_plugin_getpolicy_args {
 
 typedef struct gaa_plugin_getpolicy_args gaa_plugin_getpolicy_args;
 
+struct gaa_plugin_authz_id_args {
+    gaa_plugin_symbol_desc get_authz_id;
+    gaa_plugin_parameter param;
+    gaa_plugin_symbol_desc freeparam;
+};
+
+typedef struct gaa_plugin_authz_id_args gaa_plugin_authz_id_args;
+
 struct gaa_plugin_matchrights_args {
     gaa_plugin_symbol_desc matchrights;
     gaa_plugin_parameter param;
@@ -125,11 +133,17 @@ extern gaa_status
 gaa_plugin_init_getpolicy_args(gaa_plugin_getpolicy_args *args);
 
 extern gaa_status
+gaa_plugin_init_authz_id_args(gaa_plugin_authz_id_args *args);
+
+extern gaa_status
 gaa_plugin_install_matchrights(gaa_ptr gaa,
 			       gaa_plugin_matchrights_args *mrargs);
 
 extern gaa_status
 gaa_plugin_install_getpolicy(gaa_ptr gaa, gaa_plugin_getpolicy_args *mrargs);
+
+extern gaa_status
+gaa_plugin_install_authz_id(gaa_ptr gaa, gaa_plugin_authz_id_args *mrargs);
 
 extern gaa_status
 gaa_plugin_init_authinfo_args(gaa_plugin_authinfo_args *aiargs);

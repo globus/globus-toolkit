@@ -29,7 +29,7 @@ sub size_test
     my ($contact) = @_;
     my $rc;
     my $cmdline;
-    my $errors;
+    my $errors='';
 
     $cmdline = "$test_exec '$contact' ";
     system("$cmdline >/dev/null 2>/dev/null");

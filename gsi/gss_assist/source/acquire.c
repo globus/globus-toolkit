@@ -10,7 +10,7 @@
 #endif
 
 #include "globus_i_gss_assist.h"
-#include <gssapi.h>
+#include "gssapi.h"
 #include <string.h>
 
 static gss_OID_desc oids[] = {

@@ -12,7 +12,11 @@
 #include "globus_common.h"
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
+#ifndef WIN32
 #include "ltdl.h"
+#else
+#include "win_ltdl.h"
+#endif
 #include "version.h"
 
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64

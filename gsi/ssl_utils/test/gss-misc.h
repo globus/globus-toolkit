@@ -27,7 +27,7 @@
 #ifndef _GSSMISC_H_
 #define _GSSMISC_H_
 
-#include <gssapi.h>
+#include "gssapi.h"
 #include <stdio.h>
 
 extern FILE *display_file;

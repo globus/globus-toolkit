@@ -1,8 +1,22 @@
 
 #include "gssapi_test_utils.h"
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
+#else
+#include <winsock2.h>
+struct  sockaddr_un {
+   short   sun_family;             /* AF_UNIX */
+   char    sun_path[108];          /* path name (gag) */
+   };
+#define pid_t int
+#define fork() NULL
+#endif
+
+/* Note: The above allow this file to build, but it won't run under windows 
+   unless the unix fork() is replaced by a CreateProcess or something
+*/
 
 struct context_arg
 {
@@ -29,6 +43,11 @@ main()
     struct context_arg *                arg = NULL;
     pid_t                               pid;
 
+    // ToDo: Make this run on windows
+    #ifdef WIN32
+    printf("This Test Doesn't Run On Windows\n");
+    exit(0);
+    #endif
 
     /* module activation */
 
@@ -139,6 +158,15 @@ server_func(
         exit(1);
     }
 
+    result = globus_gsi_gssapi_test_receive_hello(server_args->fd,
+                                                  context_handle);
+    
+    if(result == GLOBUS_FALSE)
+    {
+        fprintf(stderr, "SERVER: failed to receive hello\n");
+        exit(1);
+    }
+
     close(server_args->fd);
     
     free(server_args);
@@ -187,6 +215,14 @@ client_func(
     if(result == GLOBUS_FALSE)
     {
         fprintf(stderr, "CLIENT: Authentication failed\n");
+        exit(1);
+    }
+
+    result = globus_gsi_gssapi_test_send_hello(connect_fd, context_handle);
+    
+    if(result == GLOBUS_FALSE)
+    {
+        fprintf(stderr, "CLIENT: failed to send hello\n");
         exit(1);
     }
     

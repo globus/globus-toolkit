@@ -5,6 +5,7 @@
 #include "test_common.h"
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
+#include "globus_xio_test_transport.h"
 
 typedef struct test_info_s
 {
@@ -43,7 +44,8 @@ void
 test_res(
     int                                     location,
     globus_result_t                         res,
-    int                                     line);
+    int                                     line,
+    char *                                  filename);
 
 int
 parse_parameters(
@@ -51,6 +53,11 @@ parse_parameters(
     char **                                 argv,
     globus_xio_stack_t                      stack,
     globus_xio_attr_t                       attr);
+
+int
+unload_main(
+    int                                     argc,
+    char **                                 argv);
 
 int
 read_barrier_main(
@@ -104,6 +111,11 @@ block_barrier_main(
 
 int
 blocking_dd_main(
+    int                                     argc,
+    char **                                 argv);
+
+int
+stack_main(
     int                                     argc,
     char **                                 argv);
 

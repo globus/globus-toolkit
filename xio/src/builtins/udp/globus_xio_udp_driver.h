@@ -11,7 +11,8 @@
 
 typedef enum
 {
-    GLOBUS_XIO_UDP_ERROR_NO_ADDRS
+    GLOBUS_XIO_UDP_ERROR_NO_ADDRS,
+    GLOBUS_XIO_UDP_ERROR_SHORT_WRITE
 } globus_xio_udp_error_type_t;
 
 typedef enum
@@ -53,6 +54,10 @@ typedef enum
     GLOBUS_XIO_UDP_SET_REUSEADDR,
     /* globus_bool_t *                  resuseaddr_out */
     GLOBUS_XIO_UDP_GET_REUSEADDR,
+    /* globus_bool_t                    no_ipv6 */
+    GLOBUS_XIO_UDP_SET_NO_IPV6,
+    /* globus_bool_t *                  no_ipv6_out */
+    GLOBUS_XIO_UDP_GET_NO_IPV6,
     
     /**
      *  handle attrs/cntls

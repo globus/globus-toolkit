@@ -154,7 +154,7 @@ globus_io_register_read(
     switch(handle->type)
     {
       case GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED:
-      case GLOBUS_IO_HANDLE_TYPE_UDSS_CONNECTED:
+      case GLOBUS_IO_HANDLE_TYPE_UDP_CONNECTED:
       case GLOBUS_IO_HANDLE_TYPE_FILE:
 	break;
       default:
@@ -164,7 +164,7 @@ globus_io_register_read(
 	    "handle",
 	    1,
 	    myname,
-	    "GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED or GLOBUS_IO_HANDLE_TYPE_UDSS_CONNECTED or GLOBUS_IO_HANDLE_TYPE_FILE");
+	    "GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED or GLOBUS_IO_HANDLE_TYPE_UDP_CONNECTED or GLOBUS_IO_HANDLE_TYPE_FILE");
 	goto error_exit;
     }
     

@@ -7,7 +7,7 @@ gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_
 
 
 #define EXT_SIZE 16
-#include <gssapi.h>
+#include "gssapi.h"
 #include "../source/library/gssapi_ssleay.h"
 
 

@@ -6,6 +6,8 @@
 typedef enum
 {
     GLOBUS_FTP_CLIENT_IDLE,
+    GLOBUS_FTP_CLIENT_CHMOD,
+    GLOBUS_FTP_CLIENT_CKSM,
     GLOBUS_FTP_CLIENT_DELETE,
     GLOBUS_FTP_CLIENT_MKDIR,
     GLOBUS_FTP_CLIENT_RMDIR,
@@ -13,6 +15,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
     GLOBUS_FTP_CLIENT_MLSD,
+    GLOBUS_FTP_CLIENT_MLST,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER
@@ -27,6 +30,12 @@ typedef struct
     globus_ftp_client_operationattr_t		source_attr;
     char *					dest_url;
     globus_ftp_client_operationattr_t		dest_attr;
+
+    int                                         chmod_file_mode;
+    globus_off_t				checksum_offset;
+    globus_off_t				checksum_length;
+    const char *				checksum_alg;
+
     plugin_operation_t				op;
     globus_reltime_t				timeout;
 }
@@ -158,6 +167,68 @@ globus_l_ftp_client_test_restart_plugin_get(
 
 static
 void
+globus_l_ftp_client_test_restart_plugin_chmod(
+    globus_ftp_client_plugin_t *			plugin,
+    void *						plugin_specific,
+    globus_ftp_client_handle_t *			handle,
+    const char *					url,
+    int                                                 mode,
+    const globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t					restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *		d;
+    
+    if(!restart)
+    {
+	d = plugin_specific;
+	d->op = GLOBUS_FTP_CLIENT_CHMOD;
+	d->chmod_file_mode = mode;
+	d->source_url = globus_libc_strdup(url);
+	
+	globus_ftp_client_operationattr_copy(&d->source_attr,
+					     attr);
+    }
+    else
+    {
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
+globus_l_ftp_client_test_restart_plugin_cksm(
+    globus_ftp_client_plugin_t *			plugin,
+    void *						plugin_specific,
+    globus_ftp_client_handle_t *			handle,
+    const char *					url,
+    globus_off_t				        offset,
+    globus_off_t				        length,
+    const char *			        	algorithm,
+    const globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t					restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *		d;
+    
+    if(!restart)
+    {
+	d = plugin_specific;
+	d->op = GLOBUS_FTP_CLIENT_CKSM;
+	d->checksum_offset = offset;
+	d->checksum_length = length;
+	d->checksum_alg = algorithm;
+	d->source_url = globus_libc_strdup(url);
+	
+	globus_ftp_client_operationattr_copy(&d->source_attr,
+					     attr);
+    }
+    else
+    {
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
 globus_l_ftp_client_test_restart_plugin_delete(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
@@ -254,6 +325,33 @@ globus_l_ftp_client_test_restart_plugin_list(
     {
 	d = plugin_specific;
 	d->op = GLOBUS_FTP_CLIENT_NLST;
+	d->source_url = globus_libc_strdup(url);
+	
+	globus_ftp_client_operationattr_copy(&d->source_attr,
+					     attr);
+    }
+    else
+    {
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
+globus_l_ftp_client_test_restart_plugin_mlst(
+    globus_ftp_client_plugin_t *			plugin,
+    void *						plugin_specific,
+    globus_ftp_client_handle_t *			handle,
+    const char *					url,
+    const globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t					restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *		d;
+
+    if(!restart)
+    {
+	d = plugin_specific;
+	d->op = GLOBUS_FTP_CLIENT_MLST;
 	d->source_url = globus_libc_strdup(url);
 	
 	globus_ftp_client_operationattr_copy(&d->source_attr,
@@ -506,6 +604,15 @@ globus_l_ftp_client_test_restart_plugin_command(
 	}
 	d->next = FTP_RESTART_AT_MLSD_RESPONSE;
     }
+    else if(strncmp(command_name, "MLST", strlen("MLST")) == 0)
+    {
+	if(d->when == FTP_RESTART_AT_MLST)
+	{
+	    fprintf(stderr,"[restart plugin]: About to restart during MLST\n");
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+	}
+	d->next = FTP_RESTART_AT_MLST_RESPONSE;
+    }
     else if(strncmp(command_name, "MKD", strlen("MKD")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_MKD)
@@ -532,6 +639,24 @@ globus_l_ftp_client_test_restart_plugin_command(
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_DELE_RESPONSE;
+    }
+    else if(strncmp(command_name, "SITE CHMOD", strlen("SITE CHMOD")) == 0)
+    {
+	if(d->when == FTP_RESTART_AT_CHMOD)
+	{
+	    fprintf(stderr,"[restart plugin]: About to restart during CHMOD\n");
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+	}
+	d->next = FTP_RESTART_AT_CHMOD_RESPONSE;
+    }
+    else if(strncmp(command_name, "CKSM", strlen("CKSM")) == 0)
+    {
+	if(d->when == FTP_RESTART_AT_CKSM)
+	{
+	    fprintf(stderr,"[restart plugin]: About to restart during CKSM\n");
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+	}
+	d->next = FTP_RESTART_AT_CKSM_RESPONSE;
     }
     else if(strncmp(command_name, "RNFR", strlen("RNFR")) == 0)
     {
@@ -812,6 +937,9 @@ globus_ftp_client_test_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, verbose_list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, machine_list);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mlst);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, chmod);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, cksm);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mkdir);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, rmdir);
@@ -903,7 +1031,10 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
     globus_assert(d->op == GLOBUS_FTP_CLIENT_LIST   ||
 		  d->op == GLOBUS_FTP_CLIENT_NLST   ||
 		  d->op == GLOBUS_FTP_CLIENT_MLSD   ||
+		  d->op == GLOBUS_FTP_CLIENT_MLST   ||
 		  d->op == GLOBUS_FTP_CLIENT_MOVE   ||
+		  d->op == GLOBUS_FTP_CLIENT_CHMOD  ||
+		  d->op == GLOBUS_FTP_CLIENT_CKSM   ||
 		  d->op == GLOBUS_FTP_CLIENT_DELETE ||
 		  d->op == GLOBUS_FTP_CLIENT_MKDIR  ||
 		  d->op == GLOBUS_FTP_CLIENT_RMDIR  ||
@@ -932,6 +1063,34 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
 					      &d->source_attr,
 					      &delay);
     }
+    else if(d->op == GLOBUS_FTP_CLIENT_MLST)
+    {
+	globus_ftp_client_plugin_restart_mlst(handle,
+						d->source_url,
+						&d->source_attr,
+						&delay);
+	
+    }    
+    else if(d->op == GLOBUS_FTP_CLIENT_CHMOD)
+    {
+	globus_ftp_client_plugin_restart_chmod(handle,
+						d->source_url,
+						d->chmod_file_mode,
+						&d->source_attr,
+						&delay);
+	
+    }    
+    else if(d->op == GLOBUS_FTP_CLIENT_CKSM)
+    {
+	globus_ftp_client_plugin_restart_cksm(handle,
+						d->source_url,
+						d->checksum_offset,
+						d->checksum_length,
+						d->checksum_alg,
+						&d->source_attr,
+						&delay);
+	
+    }    
     else if(d->op == GLOBUS_FTP_CLIENT_DELETE)
     {
 	globus_ftp_client_plugin_restart_delete(handle,

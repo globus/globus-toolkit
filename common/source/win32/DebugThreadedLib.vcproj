@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugThreadedLib"
+	Name="CommonDebugThreadedLib"
 	ProjectGUID="{63F381CD-C469-42F2-8C8F-028C23CAEC34}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,11 +19,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\core\source\win32\threaded;&quot;$(SolutionDir)&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				AdditionalIncludeDirectories="\include\threaded;..\win32"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;BUILD_DEBUG"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -33,13 +34,13 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_common_win32dbgthr.lib"/>
+				OutputFile="$(OutDir)/libglobus_common_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copying $(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;
+				CommandLine="copy $(OutDir)\$(TargetFileName) \lib\*.*
 "/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
@@ -139,6 +140,12 @@
 			</File>
 			<File
 				RelativePath="..\library\globus_libc.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\library\globus_libc_setenv.c">

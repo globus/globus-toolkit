@@ -468,6 +468,16 @@ globus_ftp_client_handleattr_get_cache_all(
     globus_bool_t *				cache_all);
 
 globus_result_t
+globus_ftp_client_handleattr_set_rfc1738_url(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				rfc1738_url);
+
+globus_result_t
+globus_ftp_client_handleattr_get_rfc1738_url(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				rfc1738_url);
+
+globus_result_t
 globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *		attr,
     globus_netlogger_handle_t *	                nl_handle);
@@ -499,6 +509,28 @@ globus_ftp_client_handleattr_add_plugin(
  * get, put, third-party transfer, or other FTP file operation.
  */
 #ifndef DOXYGEN
+
+globus_result_t
+globus_ftp_client_chmod(
+    globus_ftp_client_handle_t *		u_handle,
+    const char *				url,
+    int         				mode,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
+globus_ftp_client_cksm(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    char *					cksm,
+    globus_off_t                                offset,
+    globus_off_t                                length,
+    const char *				algorithm,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
 globus_result_t
 globus_ftp_client_delete(
     globus_ftp_client_handle_t *		handle,
@@ -544,6 +576,16 @@ globus_ftp_client_machine_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
+globus_ftp_client_mlst(
+    globus_ftp_client_handle_t *		u_handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_byte_t **    			mlst_buffer,
+    globus_size_t *                             mlst_buffer_length,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
 
@@ -847,6 +889,15 @@ globus_ftp_client_operationattr_copy(
     globus_ftp_client_operationattr_t *		dst,
     const globus_ftp_client_operationattr_t *	src);
 
+globus_result_t
+globus_ftp_client_operationattr_set_rfc1738_url(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t				rfc1738_url);
+
+globus_result_t
+globus_ftp_client_operationattr_get_rfc1738_url(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *				rfc1738_url);
 #endif
 
 /**
@@ -911,14 +962,16 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
     GLOBUS_FTP_CLIENT_FEATURE_SBUF,
     GLOBUS_FTP_CLIENT_FEATURE_ABUF,
-
+    
     GLOBUS_FTP_CLIENT_FEATURE_REST_STREAM,
     GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM,
     GLOBUS_FTP_CLIENT_FEATURE_DCAU,
     GLOBUS_FTP_CLIENT_FEATURE_ESTO,
     GLOBUS_FTP_CLIENT_FEATURE_ERET,
     GLOBUS_FTP_CLIENT_FEATURE_SIZE,
+    GLOBUS_FTP_CLIENT_FEATURE_CKSM,
     GLOBUS_FTP_CLIENT_FEATURE_MLST,
+    GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,
     GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
     GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF

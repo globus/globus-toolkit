@@ -1,4 +1,4 @@
-#include <globus_ftp_control_test.h>
+#include "globus_ftp_control_test.h"
 
 
 void

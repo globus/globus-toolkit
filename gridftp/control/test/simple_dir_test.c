@@ -1,5 +1,5 @@
-#include <globus_ftp_control_test.h>
-#include <globus_libc.h>
+#include "globus_ftp_control_test.h"
+#include "globus_libc.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

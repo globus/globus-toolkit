@@ -30,6 +30,11 @@ Description:
 #include "oldgaa_gl_internal_err.h"
 #include "rfc1779.h"
 
+#ifdef WIN32
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
+#endif
+
 /**********************************************************************
                        Define module specific variables
 **********************************************************************/

@@ -23,7 +23,7 @@ globus_l_io_authorization_test_callback(
 	globus_io_handle_t *		handle,
 	globus_result_t			result,
 	char *				identity,
-	gss_ctx_id_t *			context_handle);
+	gss_ctx_id_t 			context_handle);
 
 static
 void
@@ -261,7 +261,7 @@ globus_l_io_authorization_test_callback(
 	globus_io_handle_t *		handle,
 	globus_result_t			result,
 	char *				identity,
-	gss_ctx_id_t *			context_handle)
+	gss_ctx_id_t  			context_handle)
 {
     if(arg) return GLOBUS_FALSE;
     else    return GLOBUS_TRUE;
@@ -279,6 +279,11 @@ globus_l_io_authorization_test_connect_callback(
 					monitor;
 
     monitor = (globus_l_io_authorization_test_monitor_t *) arg;
+    if(result != GLOBUS_SUCCESS)
+    { 
+        printf("%s\n",globus_error_print_chain(globus_error_get(result)));
+        exit(1);
+    }
     globus_mutex_lock(&monitor->mutex);
     monitor->connected = GLOBUS_TRUE;
     globus_cond_signal(&monitor->cond);

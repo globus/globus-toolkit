@@ -1,18 +1,4 @@
-Full Doc
---------
-
-Introduction
---Design Goals
-Architecture
---Plugins
---Stack
---Macros
---Signals
---Driver Descriptors
-Features
---Drivers
---posix api
---timeouts
---signals
---data descriptors
-  --future functionality
+Code
+----
+-- driver push
+-- dynamically loadable driver

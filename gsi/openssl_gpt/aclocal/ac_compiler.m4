@@ -39,7 +39,7 @@ AC_DEFUN(LAC_COMPILER,
     lac_CFLAGS="$CFLAGS"
     lac_DSO_DLFCN=""
     lac_HAVE_DLFCN_H=""
-    lac_THREADS=""    
+    lac_OPENSSL_THREADS=""    
 
     if test "$GLOBUS_DEBUG" != "yes"; then
         LAC_COMPILER_SET_OPTIMIZATIONS
@@ -49,7 +49,7 @@ AC_DEFUN(LAC_COMPILER,
     LAC_SUBSTITUTE_VAR(CFLAGS)
     LAC_DEFINE_VAR(DSO_DLFCN)
     LAC_DEFINE_VAR(HAVE_DLFCN_H)
-    LAC_DEFINE_VAR(THREADS)
+    LAC_DEFINE_VAR(OPENSSL_THREADS)
 ])
 
 
@@ -168,8 +168,8 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
     fi
 
     if test ! "$GLOBUS_THREADS" = "none"; then
-        lac_CFLAGS="$lac_CFLAGS -DTHREADS"
-        lac_THREADS="1"
+        lac_CFLAGS="$lac_CFLAGS -DOPENSSL_THREADS"
+        lac_OPENSSL_THREADS="1"
     fi
 
     case ${host} in

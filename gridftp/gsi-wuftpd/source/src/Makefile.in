@@ -74,13 +74,13 @@ SRCS   = ${UTIL_OBJS} ftpmlsd.c mlsx.c mlsx_facts.c ftpd.c ftpcmd.c glob.c logwt
 	extensions.c realpath.c acl.c private.c authenticate.c conversions.c \
 	rdservers.c paths.c hostacc.c sigfix.c auth.c routevector.c \
 	restrict.c domain.c wu_fnmatch.c timeout.c getpwnam.c globus_hack.c \
-	$(GSSAPI_SRC) $(AFS_SRC)
+	cksmcmd.c $(GSSAPI_SRC) $(AFS_SRC)
 
 OBJS   = ${UTIL_OBJS} mlsx.o mlsx_facts.o ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
 	extensions.o realpath.o acl.o private.o authenticate.o conversions.o \
 	rdservers.o paths.o hostacc.o sigfix.o auth.o routevector.o \
 	restrict.o domain.o wu_fnmatch.o timeout.o getpwnam.o globus_hack.o \
-	$(GSSAPI_OBJS) $(AFS_OBJS)
+	cksmcmd.o $(GSSAPI_OBJS) $(AFS_OBJS)
 
 .c.o:
 	$(COMPILE) $(CFLAGS) -I. -I.. -I$(srcdir) -I$(srcdir)/.. -I../support -c -o $@ $<

@@ -949,13 +949,98 @@ globus_io_udp_bind(
 
     globus_l_io_udp_set_socket_size(handle); 
 
-    handle->state = GLOBUS_IO_HANDLE_STATE_UDP_BIND;
+    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
 
     globus_i_io_debug_printf(3,
 			    (stderr, "%s(): exiting\n", myname));
     return rc;
 }
 /* globus_io_udp_bind() */
+
+/* 'connect' a udp socket so regular globus io read/write/send can be used
+ * Note:  all data received with recvfrom will be from this host
+ * while (i believe) sendto can still be used to send to other hosts.
+ * pass NULL to 'unconnect'
+ */
+globus_result_t
+globus_io_udp_connect(
+    globus_io_handle_t *                handle,
+    char *                              host,
+    unsigned short                      port)
+{
+    struct sockaddr_in                  addr;
+    struct hostent *                    hp;
+    int                                 hp_errnop;
+    char                                hp_tsdbuffer[500];
+    struct hostent                      he;
+    int                                 rc;
+    static char *                       myname="globus_io_udp_connect";
+
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    
+    memset(&addr, 0, sizeof(addr));
+    if(host)
+    {
+        hp = globus_libc_gethostbyname_r(
+                host,
+                &he,
+                hp_tsdbuffer,
+                500,
+                &hp_errnop);
+        if(hp == GLOBUS_NULL)
+        {
+            return globus_error_put(
+                globus_io_error_construct_system_failure(
+    	            GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle,
+                    errno));
+        }
+        
+        addr.sin_family = hp->h_addrtype;
+        memcpy(&addr.sin_addr, hp->h_addr, hp->h_length);
+        addr.sin_port = htons(port);
+    }
+    else
+    {
+        addr.sin_family = AF_UNSPEC;
+    }
+    
+    do
+    {
+        rc = connect(handle->fd, (struct sockaddr *) &addr, sizeof(addr));
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        return globus_error_put(
+            globus_io_error_construct_system_failure(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                errno));
+    }
+    
+    if(host)
+    {
+        handle->type = GLOBUS_IO_HANDLE_TYPE_UDP_CONNECTED;
+    }
+    else
+    {
+        handle->type = GLOBUS_IO_HANDLE_TYPE_UDP_UNCONNECTED;
+    }
+    
+    return GLOBUS_SUCCESS;
+}
 
 /**
  *  Send a udp message to a remote socket using an iovec as input.

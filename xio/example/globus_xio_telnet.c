@@ -1,4 +1,5 @@
 #include "globus_xio.h"
+#include "globus_xio_gssapi_ftp.h"
 
 #define LINE_LEN 1024
 
@@ -69,6 +70,7 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     globus_xio_target_t                     target;
+    globus_xio_attr_t                       attr;
     char *                                  cs;
     globus_result_t                         res;
     char                                    line[LINE_LEN];
@@ -85,6 +87,8 @@ main(
     test_res(res);
     globus_xio_stack_init(&stack, NULL);
     globus_xio_stack_push_driver(stack, tcp_driver);
+
+    globus_xio_attr_init(&attr);
 
     if(argc < 2)
     {
@@ -104,25 +108,56 @@ main(
             res = globus_xio_driver_load(argv[ctr + 1], &driver);
             globus_xio_stack_push_driver(stack, driver);
         }
+        else if(strcmp(argv[ctr], "-S") == 0 && ctr + 1 < argc - 1)
+        {
+            ctr++;
+            res = globus_xio_attr_cntl(
+                attr, driver, GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT, argv[ctr]);
+        }
     }
 
     cs = argv[argc - 1];
-
     res = globus_xio_target_init(&target, NULL, cs, stack);
     test_res(res);
-    res = globus_xio_open(&xio_handle, NULL, target);
+
+    res = globus_xio_attr_cntl(
+        attr,
+        driver,
+        GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT,
+        "/O=Grid/O=Globus/OU=mcs.anl.gov/CN=John Bresnahan");
     test_res(res);
-    fprintf(stdout, "Successfully opened.\n");
-/*
-    res = globus_xio_register_read(xio_handle, read_buffer, 
-            LINE_LEN, 1, NULL, 
-            globus_l_xio_read_cb, NULL);
+
+
+    res = globus_xio_open(&xio_handle, attr, target);
     test_res(res);
-*/
+
+    fprintf(stderr, "open\n");
     while(!done)
     {
         globus_poll();
-        if(fgets(line, LINE_LEN, stdin) == NULL)
+        ndx = 0;
+        reading = GLOBUS_TRUE;
+        while(reading)
+        {
+            res = globus_xio_read(
+                xio_handle, &read_buffer[ndx], LINE_LEN-ndx, 1, &nbytes, NULL);
+            test_res(res);
+            ndx += nbytes;
+            read_buffer[ndx] = '\0';
+            if(strstr(read_buffer, "\r\n") != NULL)
+            {
+                reading = GLOBUS_FALSE;
+            }
+        }
+        for(ctr = 0; ctr < ndx; ctr++)
+        {
+            if(isprint(read_buffer[ctr]) || read_buffer[ctr] == '\n')
+            {
+                fprintf(stdout, "%c", read_buffer[ctr]);
+            }
+        }
+        if(strcasecmp(line, "QUIT\r\n") == 0 || 
+            fgets(line, LINE_LEN, stdin) == NULL)
         {
             done = GLOBUS_TRUE;
         }
@@ -144,41 +179,12 @@ main(
                 line[ndx-1] = '\r'; /* overwrite '\n' */
                 line[ndx] = '\n';
                 line[ndx+1] = '\0';
-                fprintf(stdout, "Sending:%s:\n", line);
                 res = globus_xio_write(xio_handle, line, 
                         strlen(line), strlen(line), NULL, NULL);
                 test_res(res);
             }
-
-            if(strcmp(line, "QUIT\r\n") == 0)
-            {
-                done = GLOBUS_TRUE;
-            }
         }
 
-        ndx = 0;
-        reading = GLOBUS_TRUE;
-        while(reading)
-        {
-                fprintf(stdout, "globus_xio_read\n");
-            res = globus_xio_read(
-                xio_handle, &read_buffer[ndx], LINE_LEN-ndx, 1, &nbytes, NULL);
-                fprintf(stdout, "done globus_xio_read\n");
-            test_res(res);
-            ndx += nbytes;
-            read_buffer[ndx] = '\0';
-            if(strstr(read_buffer, "\r\n") != NULL)
-            {
-                reading = GLOBUS_FALSE;
-            }
-        }
-        for(ctr = 0; ctr < ndx; ctr++)
-        {
-            if(isprint(read_buffer[ctr]) || read_buffer[ctr] == '\n')
-            {
-                fprintf(stdout, "%c", read_buffer[ctr]);
-            }
-        }
         fflush(stdout);
     }
 

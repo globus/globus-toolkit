@@ -65,6 +65,10 @@ gss_display_name(
 
     if(!g_OID_equal(input_name->name_oid, GSS_C_NT_ANONYMOUS))
     {
+        /* ToDo: Memory returned by X509_NAME_oneline() must be freed using
+                 OPENSSL_free() not free() and caller won't know that. So
+                 an new string should be malloc'd and that one returned
+                 instead so the SSL one can be freed here.              */
         output_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
         output_name->length = strlen((char *) output_name->value);
     }

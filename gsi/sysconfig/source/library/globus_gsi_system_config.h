@@ -26,7 +26,7 @@ EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_gsi_system_config_constants.h"
-#include <openssl/x509.h>
+#include "openssl/x509.h"
 
 /**
  * @mainpage Globus GSI System Config API
@@ -152,6 +152,8 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_check_certfile_win32
 #    define GLOBUS_GSI_SYSCONFIG_FILE_EXISTS \
             globus_gsi_sysconfig_file_exists_win32
+#    define GLOBUS_GSI_SYSCONFIG_DIR_EXISTS \
+            globus_gsi_sysconfig_dir_exists_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR \
             globus_gsi_sysconfig_get_cert_dir_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME \
@@ -176,10 +178,14 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_remove_all_owned_files_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
             globus_gsi_sysconfig_get_gridmap_filename_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
+            globus_gsi_sysconfig_get_authz_conf_filename_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_GAA_CONF_FILENAME \
+            globus_gsi_sysconfig_get_gaa_conf_filename_win32
 #    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
             globus_gsi_sysconfig_is_superuser_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
-            globus_gsI_sysconfig_get_user_id_string_win32
+            globus_gsi_sysconfig_get_user_id_string_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_PROC_ID_STRING \
             globus_gsi_sysconfig_get_proc_id_string_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
@@ -356,6 +362,24 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
  */
 #    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
             globus_gsi_sysconfig_get_authz_conf_filename_unix
+
+/**
+ * Determine the location of the authorization library callout config file. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_authz_lib_conf_filename_unix()
+ */
+#    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_LIB_CONF_FILENAME \
+            globus_gsi_sysconfig_get_authz_lib_conf_filename_unix
+
+/**
+ * Determine the location of the GAA callout config file. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_gaa_conf_filename_unix()
+ */
+#    define GLOBUS_GSI_SYSCONFIG_GET_GAA_CONF_FILENAME \
+            globus_gsi_sysconfig_get_gaa_conf_filename_unix
 /**
  * Determine whether the current user is the super user
  * @ingroup globus_gsi_system_config_defines
@@ -404,6 +428,7 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_get_unique_proxy_filename
 
 #ifdef WIN32
+typedef int globus_gsi_statcheck_t;
 
 globus_result_t
 globus_gsi_sysconfig_set_key_permissions_win32(
@@ -415,18 +440,19 @@ globus_gsi_sysconfig_get_home_dir_win32(
 
 globus_result_t
 globus_gsi_sysconfig_file_exists_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
+
+globus_result_t
+globus_gsi_sysconfig_dir_exists_win32(
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_check_keyfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_check_certfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_get_cert_dir_win32(
@@ -455,6 +481,7 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
 
 globus_result_t
 globus_gsi_sysconfig_get_signing_policy_filename_win32(
+    X509_NAME *                         ca_name,
     char *                              cert_dir,
     char **                             signing_policy_filename);
 
@@ -469,7 +496,8 @@ globus_gsi_sysconfig_get_current_working_dir_win32(
 
 globus_result_t
 globus_gsi_sysconfig_make_absolute_path_for_filename_win32(
-    char *                              filename);
+    char *                              filename,
+	char **								absolute_path);
 
 globus_result_t
 globus_gsi_sysconfig_split_dir_and_filename_win32(
@@ -500,6 +528,11 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
 globus_result_t
 globus_gsi_sysconfig_get_gridmap_filename_win32(
     char **                             filename);
+
+globus_result_t
+globus_gsi_sysconfig_get_authz_conf_filename_win32(
+    char **                             filename);
+
 
 #else /* if WIN32 is not defined, then define the unix functions */
 
@@ -604,6 +637,10 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
 
 globus_result_t
 globus_gsi_sysconfig_get_authz_conf_filename_unix(
+    char **                             filename);
+
+globus_result_t
+globus_gsi_sysconfig_get_gaa_conf_filename_unix(
     char **                             filename);
 
 #endif /* WIN32 */

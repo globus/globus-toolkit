@@ -12,6 +12,9 @@ EXTRA_DIST= \
         version.h \
         dirt.sh
 
+distclean-local: 
+	-rm -f stamp-h.in
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
 

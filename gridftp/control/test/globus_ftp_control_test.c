@@ -1,5 +1,5 @@
-#include <globus_ftp_control_test.h>
-#include <globus_common.h>
+#include "globus_ftp_control_test.h"
+#include "globus_common.h"
 #include <string.h>
 
 globus_bool_t

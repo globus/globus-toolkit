@@ -30,7 +30,7 @@ EXTERN_C_BEGIN
 **********************************************************************/
  
 #ifndef NO_GLOBUS_CONFIG_H
-#include <globus_config.h>
+#include "globus_config.h"
 #endif
 #include <stdio.h>
 #include <stdlib.h>

@@ -61,6 +61,7 @@ EXTERN_C_BEGIN
 #include "globus_strptime.h"
 #include "globus_thread_common.h" 
 #include "globus_thread_rw_mutex.h"
+#include "globus_thread_rmutex.h"
 #include "globus_error_errno.h"
 #include "globus_error_generic.h"
 

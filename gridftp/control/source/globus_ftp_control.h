@@ -18,11 +18,11 @@
 #endif
 #endif
 
-#include <globus_common.h>
-#include <globus_error_string.h>
-#include <globus_io.h>
-#include <globus_gss_assist.h>
-#include <globus_handle_table.h>
+#include "globus_common.h"
+#include "globus_error_string.h"
+#include "globus_io.h"
+#include "globus_gss_assist.h"
+#include "globus_handle_table.h"
 
 EXTERN_C_BEGIN
 
@@ -614,6 +614,7 @@ typedef struct globus_ftp_cc_handle_s
     void *                                           close_cb_arg;
     globus_object_t *                                close_result;
     globus_ftp_control_response_t                    quit_response;
+    globus_bool_t                                    signal_deactivate;
 }
 globus_ftp_cc_handle_t;
 
@@ -673,7 +674,8 @@ typedef struct globus_i_ftp_dc_handle_s
 
     globus_netlogger_handle_t                   nl_ftp_handle;
     globus_bool_t                               nl_ftp_handle_set;
-
+    
+    globus_object_t *                           connect_error;
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
 

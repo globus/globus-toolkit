@@ -275,6 +275,7 @@ globus_gass_copy_handle_init(
 
         result = globus_ftp_client_handle_init(&handle->ftp_handle_2,
                                                ftp_attr);
+                                                                                      
         if (result != GLOBUS_SUCCESS)
             return result;
 
@@ -766,6 +767,7 @@ globus_gass_copy_attr_set_io(
 	return globus_error_put(err);
     }
 } /* globus_gass_copy_attr_set_io() */
+
 
 /**
  * Set the attributes for http/https transfers
@@ -1481,13 +1483,7 @@ static char *
   }
   else
   {
-    err = globus_error_construct_string(
-        GLOBUS_GASS_COPY_MODULE,
-	GLOBUS_NULL,
-	"[%s]: BAD_PARAMETER, handle is NULL",
-	myname);
-
-	return globus_error_put(err);
+	return "[globus_gass_copy_get_status_string]: BAD_PARAMETER, handle is NULL";
   }
 }
 
@@ -4518,7 +4514,7 @@ globus_gass_copy_register_url_to_url(
 	myname);
       return globus_error_put(err);
     }
-
+    
     result = globus_gass_copy_get_url_mode(
 	source_url,
 	&source_url_mode);
@@ -5939,3 +5935,5 @@ globus_gass_copy_url_to_url(
     "gsiftp://lemon.mcs.anl.gov/tmp/foo");
 
 **/
+
+

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.01" Name="globus_gridftp_server">
-    <Aging_Version Age="0" Major="1" Minor="11"/>
+    <Aging_Version Age="0" Major="1" Minor="14"/>
 
     <Description>
 	Globus binary package for gsi-wuftpd
@@ -13,7 +13,7 @@
 	<Source_Dependencies Type="compile">
 	    <Dependency Name="globus_core">
 		<Version>
-		    <Simple_Version Major="2"/>
+		    <Simple_Version Major="3"/>
 		</Version>
 	    </Dependency>
 	    <Dependency Name="globus_ftp_control">
@@ -39,8 +39,6 @@
 	    <pkg_libs></pkg_libs>
 	    <external_libs></external_libs>
 	</Build_Environment>
-
-	<Version_Label>1.11</Version_Label>
 
 	<Build_Instructions>
 	    <Build_Step>

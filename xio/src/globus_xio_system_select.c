@@ -46,7 +46,6 @@ enum globus_l_xio_error_levels
     GLOBUS_L_XIO_SYSTEM_DEBUG_INFO      = 4
 };
 
-/*** XXXX ***/
 #ifdef HAVE_SYSCONF
 #define GLOBUS_L_OPEN_MAX sysconf(_SC_OPEN_MAX)
 #else
@@ -231,7 +230,7 @@ typedef struct
     globus_l_operation_state_t                  state;
     globus_xio_operation_t                      op;
     int                                         fd;
-    globus_result_t                             result;
+    globus_object_t *                           error;
     void *                                      user_arg;
     /* used for reads/writes, 0 for others. here to simplify some things */
     globus_size_t                               nbytes;
@@ -302,6 +301,7 @@ static globus_bool_t                globus_l_xio_system_select_active;
 static globus_bool_t                globus_l_xio_system_wakeup_pending;
 static globus_bool_t                globus_l_xio_system_shutdown_called;
 static int                          globus_l_xio_system_highest_fd;
+static int                          globus_l_xio_system_max_fds;
 static int                          globus_l_xio_system_fd_allocsize;
 static fd_set *                     globus_l_xio_system_read_fds;
 static fd_set *                     globus_l_xio_system_write_fds;
@@ -381,12 +381,13 @@ globus_l_xio_system_activate(void)
      * necessarily large enough to hold the maximum number of open file
      * descriptors.  This ensures that it will be.
      */
+    globus_l_xio_system_max_fds = GLOBUS_L_OPEN_MAX;
     globus_l_xio_system_fd_allocsize = sizeof(fd_set);
-    if(globus_l_xio_system_fd_allocsize * 8 < GLOBUS_L_OPEN_MAX)
+    if(globus_l_xio_system_fd_allocsize * 8 < globus_l_xio_system_max_fds)
     {
         /* Conservatively round up to 64 bits */
         globus_l_xio_system_fd_allocsize =
-            ((GLOBUS_L_OPEN_MAX + 63) & ~63) / 8;
+            ((globus_l_xio_system_max_fds + 63) & ~63) / 8;
     }
 
     i = globus_l_xio_system_fd_allocsize;
@@ -405,13 +406,14 @@ globus_l_xio_system_activate(void)
 
     globus_l_xio_system_read_operations = (globus_l_operation_info_t **)
         globus_calloc(
-            GLOBUS_L_OPEN_MAX * 2, sizeof(globus_l_operation_info_t *));
+            globus_l_xio_system_max_fds * 2,
+            sizeof(globus_l_operation_info_t *));
     if(!globus_l_xio_system_read_operations)
     {
         goto error_operations;
     }
     globus_l_xio_system_write_operations =
-        globus_l_xio_system_read_operations + GLOBUS_L_OPEN_MAX;
+        globus_l_xio_system_read_operations + globus_l_xio_system_max_fds;
 
     /* I am going to leave this memory around after deactivation.  To safely
      * destroy them, I would need a lot more synchronization of kicked out
@@ -438,6 +440,8 @@ globus_l_xio_system_activate(void)
     {
         goto error_pipe;
     }
+    fcntl(globus_l_xio_system_wakeup_pipe[0], F_SETFD, FD_CLOEXEC);
+    fcntl(globus_l_xio_system_wakeup_pipe[1], F_SETFD, FD_CLOEXEC);
     
     globus_l_xio_system_highest_fd = globus_l_xio_system_wakeup_pipe[0];
     FD_SET(globus_l_xio_system_wakeup_pipe[0], globus_l_xio_system_read_fds);
@@ -485,13 +489,15 @@ void
 globus_l_xio_system_unregister_periodic_cb(
     void *                              user_args)
 {
+    globus_bool_t *                     signaled;
     GlobusXIOName(globus_l_xio_system_unregister_periodic_cb);
-
+    
     GlobusXIOSystemDebugEnter();
-
+    
+    signaled = (globus_bool_t *) user_args;
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
-        globus_l_xio_system_shutdown_called = GLOBUS_FALSE;
+        *signaled = GLOBUS_TRUE;
         globus_cond_signal(&globus_l_xio_system_cond);
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
@@ -509,15 +515,18 @@ globus_l_xio_system_deactivate(void)
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        globus_bool_t                   signaled;
+        
         globus_l_xio_system_shutdown_called = GLOBUS_TRUE;
+        signaled = GLOBUS_FALSE;
         globus_callback_unregister(
             globus_l_xio_system_poll_handle,
             globus_l_xio_system_unregister_periodic_cb,
-            GLOBUS_NULL,
+            &signaled,
             GLOBUS_NULL);
         globus_l_xio_system_select_wakeup();
 
-        while(globus_l_xio_system_shutdown_called == GLOBUS_TRUE)
+        while(!signaled)
         {
             globus_cond_wait(
                 &globus_l_xio_system_cond, &globus_l_xio_system_fdset_mutex);
@@ -560,7 +569,8 @@ globus_l_xio_system_cancel_cb(
 
     globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
     {
-        if(op_info->state != GLOBUS_L_OPERATION_COMPLETE)
+        if(op_info->state != GLOBUS_L_OPERATION_COMPLETE && 
+            op_info->state != GLOBUS_L_OPERATION_CANCELED)
         {
             globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
             {
@@ -606,7 +616,7 @@ globus_l_xio_system_cancel_cb(
                                 _xio_name, op_info->fd));
                                 
                         /* unregister and kickout now */
-                        op_info->result = GlobusXIOErrorCanceled();
+                        op_info->error = GlobusXIOErrorObjCanceled();
 
                         result = globus_callback_register_oneshot(
                             GLOBUS_NULL,
@@ -695,6 +705,12 @@ globus_l_xio_system_register_read(
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        if(globus_l_xio_system_shutdown_called)
+        {
+            result = GlobusXIOErrorNotActivated();
+            goto error_deactivated;
+        }
+        
         /* this really shouldnt be possible, but to be thorough ... */
         if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
         {
@@ -702,7 +718,7 @@ globus_l_xio_system_register_read(
             goto error_canceled;
         }
 
-        if(fd >= GLOBUS_L_OPEN_MAX)
+        if(fd >= globus_l_xio_system_max_fds)
         {
             result = GlobusXIOErrorSystemResource("too many fds");
             goto error_too_many_fds;
@@ -735,9 +751,10 @@ globus_l_xio_system_register_read(
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
-error_canceled:
 error_already_registered:
 error_too_many_fds:
+error_canceled:
+error_deactivated:
     read_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     GlobusXIODriverDisableCancel(read_info->op);
@@ -770,6 +787,12 @@ globus_l_xio_system_register_write(
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        if(globus_l_xio_system_shutdown_called)
+        {
+            result = GlobusXIOErrorNotActivated();
+            goto error_deactivated;
+        }
+        
         /* this really shouldnt be possible, but to be thorough ... */
         if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
         {
@@ -777,7 +800,7 @@ globus_l_xio_system_register_write(
             goto error_canceled;
         }
 
-        if(fd >= GLOBUS_L_OPEN_MAX)
+        if(fd >= globus_l_xio_system_max_fds)
         {
             result = GlobusXIOErrorSystemResource("too many fds");
             goto error_too_many_fds;
@@ -810,9 +833,10 @@ globus_l_xio_system_register_write(
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
-error_canceled:
 error_already_registered:
 error_too_many_fds:
+error_canceled:
+error_deactivated:
     write_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     GlobusXIODriverDisableCancel(write_info->op);
@@ -875,13 +899,13 @@ globus_l_xio_system_kickout(
       case GLOBUS_L_OPERATION_CONNECT:
       case GLOBUS_L_OPERATION_ACCEPT:
         op_info->sop.non_data.callback(
-            op_info->result,
+            op_info->error ? globus_error_put(op_info->error) : GLOBUS_SUCCESS,
             op_info->user_arg);
         break;
 
       default:
         op_info->sop.data.callback(
-            op_info->result,
+            op_info->error ? globus_error_put(op_info->error) : GLOBUS_SUCCESS,
             op_info->nbytes,
             op_info->user_arg);
 
@@ -993,6 +1017,10 @@ globus_l_xio_system_try_read(
         rc = read(fd, buf, buflen);
     } while(rc < 0 && errno == EINTR);
 
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
+
     if(rc < 0)
     {
         if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -1012,10 +1040,6 @@ globus_l_xio_system_try_read(
     }
 
     *nbytes = rc;
-
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes\n", _xio_name, rc));
 
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
@@ -1551,6 +1575,10 @@ globus_l_xio_system_handle_read(
                 else
                 {
                     *read_info->sop.non_data.out_fd = new_fd;
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] Accepted new connection, fd=%d\n",
+                             _xio_name, new_fd));
                 }
             }
         }
@@ -1652,7 +1680,8 @@ globus_l_xio_system_handle_read(
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        read_info->result = result;
+        read_info->error = result == GLOBUS_SUCCESS 
+            ? GLOBUS_NULL : globus_error_get(result);
         read_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1827,7 +1856,8 @@ globus_l_xio_system_handle_write(
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        write_info->result = result;
+        write_info->error = result == GLOBUS_SUCCESS 
+            ? GLOBUS_NULL : globus_error_get(result);
         write_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1854,6 +1884,63 @@ error_canceled:
     return handled_it;
 }
 
+/**
+ * one of these fds is bad, lock down the fdset and check them all
+ * --- assumed to be called with cancel lock held after a select
+ */
+static
+void
+globus_l_xio_system_bad_apple(void)
+{
+    globus_l_operation_info_t *         op_info;
+    int                                 fd;
+    struct stat                         stat_buf;
+    GlobusXIOName(globus_l_xio_system_bad_apple);
+
+    GlobusXIOSystemDebugEnter();
+    
+    globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
+    {
+        for(fd = 0; fd <= globus_l_xio_system_highest_fd; fd++)
+        {
+            if(FD_ISSET(fd, globus_l_xio_system_read_fds))
+            {
+                if(fstat(fd, &stat_buf) < 0 && errno == EBADF)
+                {
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] fd=%d, Canceling read bad apple\n", 
+                        _xio_name, fd));
+                    
+                    op_info = globus_l_xio_system_read_operations[fd];
+                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                    globus_list_insert(
+                        &globus_l_xio_system_canceled_reads, (void *) fd);
+                }
+            }
+            
+            if(FD_ISSET(fd, globus_l_xio_system_write_fds))
+            {
+                if(fstat(fd, &stat_buf) < 0 && errno == EBADF)
+                {
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] fd=%d, Canceling write bad apple\n",
+                        _xio_name, fd));
+                    
+                    op_info = globus_l_xio_system_write_operations[fd];
+                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                    globus_list_insert(
+                        &globus_l_xio_system_canceled_writes, (void *) fd);
+                }
+            }
+        }
+    }
+    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
+    
+    GlobusXIOSystemDebugExit();
+}
+
 static
 void
 globus_l_xio_system_poll(
@@ -1874,7 +1961,8 @@ globus_l_xio_system_poll(
         int                             num;
         int                             nready;
         int                             fd;
-
+        int                             save_errno;
+        
         time_left_is_zero = GLOBUS_FALSE;
         time_left_is_infinity = GLOBUS_FALSE;
 
@@ -1904,14 +1992,23 @@ globus_l_xio_system_poll(
             globus_l_xio_system_select_active = GLOBUS_TRUE;
         }
         globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
+        
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+            ("[%s] Before select\n", _xio_name));
+                    
         nready = select(
             num,
             globus_l_xio_system_ready_reads,
             globus_l_xio_system_ready_writes,
             GLOBUS_NULL,
             (time_left_is_infinity ? GLOBUS_NULL : &time_left));
-
+        save_errno = errno;
+        
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+            ("[%s] After select\n", _xio_name));
+            
         globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
         {
             globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1936,8 +2033,13 @@ globus_l_xio_system_poll(
             }
             else
             {
+                if(save_errno == EBADF)
+                {
+                    globus_l_xio_system_bad_apple();
+                }
+                
                 /**
-                 * can't really do anything about errors (most likely EINTR)
+                 * can't really do anything about other errors
                  * so, set ready fds to known state in case there are things
                  * to be canceled
                  */
@@ -2246,7 +2348,9 @@ error_op_info:
     return result;
 }
 
-/* XXX should modify these read calls to set the lo watermark opt */
+/* XXX should modify these read calls to set the lo watermark opt 
+ * (may affect timeout refresh)
+ */
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_operation_t              op,
@@ -2263,7 +2367,10 @@ globus_xio_system_register_read(
     GlobusXIOName(globus_xio_system_register_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2346,7 +2453,10 @@ globus_xio_system_register_read_ex(
     GlobusXIOName(globus_xio_system_register_read_ex);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     if(!flags && !from)
     {
         return globus_xio_system_register_read(
@@ -2445,7 +2555,9 @@ error_op_info:
     return result;
 }
 
-/* XXX should modify these write calls to set the lo watermark opt */
+/* XXX should modify these write calls to set the lo watermark opt
+ * (may affect timeout refresh)
+ */
 globus_result_t
 globus_xio_system_register_write(
     globus_xio_operation_t              op,
@@ -2462,7 +2574,10 @@ globus_xio_system_register_write(
     GlobusXIOName(globus_xio_system_register_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2546,7 +2661,10 @@ globus_xio_system_register_write_ex(
     GlobusXIOName(globus_xio_system_register_write_ex);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     if(!flags && !u_to)
     {
         return globus_xio_system_register_write(

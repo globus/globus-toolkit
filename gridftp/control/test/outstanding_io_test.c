@@ -1,4 +1,4 @@
-#include <globus_ftp_control_test.h>
+#include "globus_ftp_control_test.h"
 
 #define NAME              "globus_ftp_control_test_file_name"
 #define DIRECTION_GET                                       0

@@ -830,7 +830,10 @@ globus_i_gass_transfer_request_destroy(
 	    globus_object_free(req->attr);
 	}
 	globus_fifo_destroy(&req->pending_data);
-	globus_free(req->url);
+	if (req->url)
+	{
+	    globus_free(req->url);
+	}
 
 	/* free referral */
 	for(i = 0; i < req->referral_count; i++)

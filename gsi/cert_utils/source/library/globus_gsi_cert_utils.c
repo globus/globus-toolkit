@@ -2,9 +2,9 @@
 #include "globus_i_gsi_cert_utils.h"
 #include "proxycertinfo.h"
 #include "globus_openssl.h"
-#include <openssl/asn1.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
+#include "openssl/asn1.h"
+#include "openssl/x509.h"
+#include "openssl/x509v3.h"
 #include "version.h"
 #include "config.h"
 #include <ctype.h>
@@ -220,7 +220,7 @@ globus_gsi_cert_utils_get_cert_type(
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 index;
     int                                 critical;
-    BASIC_CONSTRAINTS *                 x509v3_bc;
+    BASIC_CONSTRAINTS *                 x509v3_bc = NULL;
     unsigned char *                     tmp_data;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_cert_type";
@@ -422,6 +422,11 @@ globus_gsi_cert_utils_get_cert_type(
 
  exit:
 
+    if(x509v3_bc)
+    {
+        BASIC_CONSTRAINTS_free(x509v3_bc);
+    }
+
     if(new_ne)
     {
         X509_NAME_ENTRY_free(new_ne);
@@ -606,7 +611,7 @@ globus_gsi_cert_utils_get_x509_name(
             ("The X509 name doesn't start with a /"));
         goto exit;
     }
-
+    /* ToDo: Fix memory leak from X509_NAME_oneline call below */
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_PRINT(2, "ORIGINAL SUBJECT STRING: ");
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_FNPRINTF(2, (length, subject_string));
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_FPRINTF(

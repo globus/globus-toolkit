@@ -15,12 +15,12 @@
 #include "globus_gsi_callback_constants.h"
 #include "globus_i_gsi_callback.h"
 #include "globus_gsi_system_config.h"
-#include <openssl/err.h>
-#include <openssl/asn1.h>
-#include <openssl/ssl.h>
-#include <openssl/crypto.h>
-#include <openssl/rand.h>
-#include <openssl/x509v3.h>
+#include "openssl/err.h"
+#include "openssl/asn1.h"
+#include "openssl/ssl.h"
+#include "openssl/crypto.h"
+#include "openssl/rand.h"
+#include "openssl/x509v3.h"
 #include "version.h"
 
 #ifndef BUILD_FOR_K5CERT_ONLY
@@ -229,7 +229,8 @@ globus_gsi_callback_get_SSL_callback_data_index(
 
 int 
 globus_gsi_callback_X509_verify_cert(
-    X509_STORE_CTX *                    context)
+    X509_STORE_CTX *                    context,
+    void *                              arg)
 {
     int                                 result;
     static char *                       _function_name_ =
@@ -413,14 +414,14 @@ globus_i_gsi_callback_cred_verify(
             break;
         }                       
 
-            if (result != GLOBUS_SUCCESS)
+        if (result != GLOBUS_SUCCESS)
         {
 	    char *                      subject_name =
 	      X509_NAME_oneline(X509_get_subject_name(x509_context->current_cert), 0, 0);
 
             if (x509_context->error == X509_V_ERR_CERT_NOT_YET_VALID)
             {
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_NOT_YET_VALID,
                     ("Cert with subject: %s is not yet valid"
@@ -429,7 +430,7 @@ globus_i_gsi_callback_cred_verify(
             else if (x509_context->error == 
                      X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
             {
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT,
                     ("Cannot find issuer certificate for "
@@ -437,20 +438,20 @@ globus_i_gsi_callback_cred_verify(
             }
             else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
             {
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_HAS_EXPIRED,
                     ("Credential with subject: %s has expired.", subject_name));
             }
             else
             {
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                     (X509_verify_cert_error_string(x509_context->error)));
             }
 	
-	    globus_libc_free(subject_name);
+	    OPENSSL_free(subject_name);
 
             goto exit;
         }
@@ -727,7 +728,7 @@ globus_i_gsi_callback_check_revoked(
 		GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
 		("Couldn't get the issuer certificate of the CRL with "
 		 "subject: %s", subject_string));
-            free(subject_string);
+            OPENSSL_free(subject_string);
             x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
             goto free_X509_object;
 	}
@@ -841,7 +842,7 @@ globus_i_gsi_callback_check_revoked(
                         "revoked %lX\n", 
 			ASN1_INTEGER_get(revoked->serialNumber)));
 
-                free(subject_string);
+                OPENSSL_free(subject_string);
             }
         }
     }
@@ -1077,9 +1078,9 @@ globus_i_gsi_callback_check_gaa_auth(
     
 #endif /* #ifndef NO_OLDGAA_API */
     
-    free(subject_name);
+    OPENSSL_free(subject_name);
     subject_name = NULL;
-    free(issuer_name);
+    OPENSSL_free(issuer_name);
     issuer_name = NULL;
     
     if (policy_result != 0)
@@ -1107,12 +1108,12 @@ globus_i_gsi_callback_check_gaa_auth(
 
     if(issuer_name)
     {
-        globus_libc_free(issuer_name);
+        OPENSSL_free(issuer_name);
     }
 
     if(subject_name)
     {
-        globus_libc_free(subject_name);
+        OPENSSL_free(subject_name);
     }
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;

@@ -34,9 +34,9 @@ push(@drivers, "-D debug");
 push(@drivers, "-D bounce");
 push(@drivers, "-D debug -D bounce");
 push(@drivers, "-D bounce -D debug");
-push(@drivers, "-D null -D debug");
+#push(@drivers, "-D null -D debug");
 push(@drivers, "-D debug -D bounce -D debug");
-push(@drivers, "-D bounce -D null -D bounce");
+#push(@drivers, "-D bounce -D null -D bounce");
 
 sub close_barrier
 {
