@@ -39,11 +39,11 @@ sed 's/%@/@@/; s/@%/@@/; s/%g$/@g/; /@g$/s/[\\&%]/\\&/g;
 
 s%@SHELL@%/bin/sh%g
 s%@CFLAGS@%-g  %g
-s%@CPPFLAGS@% -I/home/globdev/INSTALL-beta2/include -I/home/globdev/INSTALL-beta2/include/gcc32dbg%g
+s%@CPPFLAGS@% -I/home/globdev/INSTALL-2-0-final/include -I/home/globdev/INSTALL-2-0-final/include/gcc32dbg%g
 s%@CXXFLAGS@%-g  %g
 s%@FFLAGS@%%g
 s%@DEFS@% -DPACKAGE=\"globus_simple_ca\" -DVERSION=\"0.1\" %g
-s%@LDFLAGS@%-L/home/globdev/INSTALL-beta2/lib %g
+s%@LDFLAGS@%-L/home/globdev/INSTALL-2-0-final/lib %g
 s%@LIBS@% %g
 s%@exec_prefix@%$(GLOBUS_LOCATION)%g
 s%@prefix@%$(GLOBUS_LOCATION)%g
@@ -63,13 +63,13 @@ s%@mandir@%${prefix}/man%g
 s%@MAINTAINER_MODE_TRUE@%#%g
 s%@MAINTAINER_MODE_FALSE@%%g
 s%@MAINT@%#%g
-s%@GPT_LOCATION@%/home/globdev/INSTALL-simple_ca-over-beta2%g
+s%@GPT_LOCATION@%/home/globdev/INSTALL-2-0-final%g
 s%@GPT_CFLAGS@%%g
-s%@GPT_INCLUDES@%-I/home/globdev/INSTALL-simple_ca-over-beta2/include/gcc32dbg %g
+s%@GPT_INCLUDES@%-I/home/globdev/INSTALL-2-0-final/include/gcc32dbg %g
 s%@GPT_EXTERNAL_INCLUDES@%%g
 s%@GPT_EXTERNAL_LIBS@%%g
 s%@GPT_LIBS@% %g
-s%@GPT_LDFLAGS@% -L/home/globdev/INSTALL-simple_ca-over-beta2/lib %g
+s%@GPT_LDFLAGS@% -L/home/globdev/INSTALL-2-0-final/lib %g
 s%@GPT_CONFIG_CFLAGS@%%g
 s%@GPT_CONFIG_INCLUDES@%%g
 s%@GPT_CONFIG_LIBS@%%g
@@ -103,7 +103,7 @@ s%@EXEEXT@%%g
 s%@FILELIST_FILE@%/home/globdev/devel/globus-cvs/campaign-branches/simple_ca-branch/gsi/simple_ca/source/pkgdata/master.filelist%g
 s%@GPT_MAJOR_VERSION@%0%g
 s%@GPT_MINOR_VERSION@%1%g
-s%@DIRT_TIMESTAMP@%1016836955%g
+s%@DIRT_TIMESTAMP@%1018306319%g
 s%@DIRT_BRANCH_ID@%7%g
 s%@LIBTOOL@%$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)%g
 s%@LN_S@%%g
