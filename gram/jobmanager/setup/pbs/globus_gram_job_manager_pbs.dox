@@ -3,7 +3,7 @@
 
 This package contains the "pbs" interface to the GRAM Job Manager. It is
 a setup package; the script setup-globus-job-manager-pbs must be run
-to register a fork job manager with the Gatekeeper as a service.
+to register a pbs job manager with the Gatekeeper as a service.
 
 @section setup_usage Options to setup-globus-job-manager-pbs 
 
@@ -36,9 +36,29 @@ the Job Manager to validate that a queue named by the
 @ref globus_gram_rsl_attribute_queue "queue RSL attribute" is one supported
 by PBS.
 
-@section fork_changes Change Log
+@section pbs_rsl PBS Scheduler-Specific RSL Attributes
 
-@subsection globus_gram_job_manager_setup_fork globus_gram_job_manager_setup_fork 1.0
+The PBS job manager supports a few new scheduler specific options which
+may be included in job submission RSLs.
+
+@par email_address = email@address.com
+Set the email address to receive notifications. See the
+email_on_abort, email_on_execution, and email_on_termination
+attributes.
+@par email_on_abort = yes|no
+Send email to the job submitter (or the address specified in the
+email_address RSL attribute if present) if the job is aborted by the
+scheduler.
+@par email_on_execution = yes|no
+Send email to the job submitter (or the address specified in the
+email_address RSL attribute if present) when the job begins execution.
+@par email_on_termination = yes|no
+Send email to the job submitter (or the address specified in the
+email_address RSL attribute if present) when the job terminates.
+
+@section pbs_changes Change Log
+
+@subsection globus_gram_job_manager_setup_pbs globus_gram_job_manager_setup_fork 1.0
 
 Split from the core of the Job Manager as a setup package.
 */
