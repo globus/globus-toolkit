@@ -411,7 +411,7 @@ case ${host}--$1 in
       ;;
     *-dec-osf4* | *-dec-osf5* )
         if test "$lac_cv_build_64bit" = "no"; then
-            AC_MSG_ERROR(32 bits not supported on this platform)
+            AC_MSG_ERROR(32 bits not supported on this platform, use the 64 bit flavor instead)
             exit 1
         fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
