@@ -36,6 +36,16 @@ install-data-local:
 		$(INSTALL_DATA) $$manpage $(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$manpage; \
 	done
 
+# The default filelist-noinstDATA rule will list each of the man pages
+# in the filelist in the root directory. This added dependency will add those
+# files in the correct place as well.
+filelist-noinstDATA: filelist-man
+
+filelist-man:
+	@list='$(noinst_DATA)'; for p in $$list; do \
+	    echo "$(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$p" >> $(FILELIST_FILE); \
+	done
+
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
 
 include $(top_srcdir)/globus_automake_post
