@@ -168,7 +168,7 @@ sub runkeygen
 }
 
 fixpaths();
-setperms();
+#setperms();
 runkeygen();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi-openssh-setup");
