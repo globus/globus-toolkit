@@ -1,4 +1,4 @@
-#! @SH@
+#! /bin/sh
 # run_tests
 TEST_EXECS="@TEST_EXECS@"
 srcdir=@srcdir@

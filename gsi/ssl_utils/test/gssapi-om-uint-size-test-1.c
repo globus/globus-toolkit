@@ -6,7 +6,7 @@
  */
 
 #include "gssapi.h"
-#include "gssapi_config.h"
+#include "globus_gssapi_config.h"
 
 int
 main()

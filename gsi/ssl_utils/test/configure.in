@@ -1,20 +1,26 @@
 dnl
-dnl
 
-AC_INIT(gss-client.c)
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
 
-AC_CHECK_HEADERS(unistd.h stdlib.h)
-AC_CHECK_HEADER(string.h,AC_DEFINE(USE_STRING_H))
-AC_CONST
+GLOBUS_INIT
 
-LAC_INIT
+AM_PROG_LIBTOOL
 
-LAC_COMPILERS_TARGET(no)
+dnl config header goes here
 
-LAC_GSSAPI_SSLEAY
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-GSSAPI_TYPE="$globus_cv_gssapi_type"
-AC_SUBST(GSSAPI_TYPE)
+
+LAC_DOXYGEN([" ../ "])
+
+# set-perms must come before any other test that expects the
+# permissions on the client and server keys to be set correctly
+TEST_SCRIPTS="set-perms.sh gssapi-auth-test.sh"
+TEST_SCRIPTS="$TEST_SCRIPTS gssapi-om-uint-size-test.sh"
+TEST_EXECS="$TEST_SCRIPTS"
+AC_SUBST(TEST_EXECS)
 
 CLIENT_CERTDIR=${srcdir}/test-client-cert
 AC_SUBST(CLIENT_CERTDIR)
@@ -25,39 +31,26 @@ AC_SUBST(SERVER_CERTDIR)
 CA_CERTDIR=${srcdir}/test-certdir
 AC_SUBST(CA_CERTDIR)
 
-BUILD_TARGETS="gss-server gss-client"
-BUILD_TARGETS="$BUILD_TARGETS gssapi-om-uint-size-test-1"
-BUILD_TARGETS="$BUILD_TARGETS gssapi-om-uint-size-test-2"
 
-if test "$globus_cv_nexus_enable" = "yes"; then
-	BUILD_TARGETS="$BUILD_TARGETS gss-assist-client"
-fi
-AC_SUBST(BUILD_TARGETS)
+GLOBUS_FINALIZE
 
-# set-perms must come before any other test that expects the
-# permissions on the client and server keys to be set correctly
-TEST_SCRIPTS="set-perms.sh gssapi-auth-test.sh"
-TEST_SCRIPTS="$TEST_SCRIPTS gssapi-om-uint-size-test.sh"
-TEST_EXECS="$TEST_SCRIPTS"
-AC_SUBST(TEST_EXECS)
-
-GSSAPI_SSLEAY_BUILD_DIR=${topbuilddir}/Security/gssapi_ssleay
-
-AC_SUBST(GSSAPI_SSLEAY_BUILD_DIR)
-
-LAC_MAKEFILES(makefile_header, Makefile)
-
-AC_OUTPUT(Makefile run-tests $TEST_SCRIPTS $lac_makefiles
-	 $lac_makefile_headers,
-	 LAC_INSERT_MAKEFILE_HEADERS echo timestamp > stamp-h,
-	 [lac_makefiles="$lac_makefiles"])
-
-chmod +x run-tests
-
-for script in ${TEST_SCRIPTS} ; do
-	chmod +x ${script}
-done
-
-
-
-
+AC_OUTPUT(
+	Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+        gssapi-auth-test.sh
+	run-tests
+	set-perms.sh
+	Makefile
+	test-certdir/Makefile
+	doxygen/Makefile
+	doxygen/Doxyfile
+	doxygen/Doxyfile-internal
+	,
+	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
+	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+	GLOBUS_LOCATION=$GLOBUS_LOCATION
+	GPT_LOCATION=$GPT_LOCATION
+)

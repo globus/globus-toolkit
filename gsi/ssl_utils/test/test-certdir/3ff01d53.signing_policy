@@ -25,10 +25,10 @@
 #--------------|---------------|-----------------------------------------
 # EACL entry #1|
 
- access_id_CA      X509         '/C=US/O=Globus/CN=Test CA - Do not trust'
+ access_id_CA      X509         '/C=US/ST=Some-State/O=Globus/CN=Test CA'
 
  pos_rights        globus        CA:sign
 
- cond_subjects     globus     "/C=US/O=Globus/*"
+ cond_subjects     globus     "/C=US/ST=Some-State/O=Globus/*"
 
 # end of EACL
