@@ -256,17 +256,16 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 		
       <h2><A name=XIO></A>XIO</h2>
 
-      <p>Globus XIO is an extensible input/output library for the Globus
-      Toolkit®. For this and future releases of the Globus Toolkit, the
-      <code>globus_xio</code> library provides all input and output
-      functionality for the C code.</p>
+      <p>Globus XIO is the new extensible input/output library for the
+      Globus Toolkit®.  It provides all input and output functionality
+      for the C code.</p>
 
       <p>Globus XIO will eventually replace the <code>globus_io</code>
       library completely. In the meantime, a portability layer is
-      included with the release so legacy applications written to
-      <code>globus_io</code> are still supported; however it is
-      recommended that future applications code straight to the
-      <code>globus_xio</code> API. </p>
+      included with this release to enable legacy applications written to
+      <code>globus_io</code> to still work; however it is recommended that
+      future applications code straight to the <code>globus_xio</code>
+      API. </p>
 
 		<p>Further information can be found in the <a
 		href="http://www-unix.globus.org/developer/xio/">XIO
