@@ -103,6 +103,9 @@ int MAIN(int argc, char **argv)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
 			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
+	if (!load_config(bio_err, NULL))
+		goto end;
+
 	prog=argv[0];
 	argc--;
 	argv++;
@@ -181,7 +184,7 @@ bad:
 		BIO_printf(bio_err,"where options are\n");
 		BIO_printf(bio_err," -inform arg   input format - one of DER TXT PEM\n");
 		BIO_printf(bio_err," -in arg       input file\n");
-		BIO_printf(bio_err," -out arg      output file\n");
+		BIO_printf(bio_err," -out arg      output file (output format is always DER\n");
 		BIO_printf(bio_err," -noout arg    don't produce any output\n");
 		BIO_printf(bio_err," -offset arg   offset into file\n");
 		BIO_printf(bio_err," -length arg   length of section in file\n");
@@ -192,7 +195,6 @@ bad:
 		BIO_printf(bio_err," -strparse offset\n");
 		BIO_printf(bio_err,"               a series of these can be used to 'dig' into multiple\n");
 		BIO_printf(bio_err,"               ASN1 blob wrappings\n");
-		BIO_printf(bio_err," -out filename output DER encoding to file\n");
 		goto end;
 		}
 
@@ -206,7 +208,7 @@ bad:
 		goto end;
 		}
 	BIO_set_fp(out,stdout,BIO_NOCLOSE|BIO_FP_TEXT);
-#ifdef VMS
+#ifdef OPENSSL_SYS_VMS
 	{
 	BIO *tmpbio = BIO_new(BIO_f_linebuffer());
 	out = BIO_push(tmpbio, out);
@@ -302,7 +304,15 @@ bad:
 		num=tmplen;
 		}
 
-	if (length == 0) length=(unsigned int)num;
+	if (offset >= num)
+		{
+		BIO_printf(bio_err, "Error: offset too large\n");
+		goto end;
+		}
+
+	num -= offset;
+
+	if ((length == 0) || ((long)length > num)) length=(unsigned int)num;
 	if(derout) {
 		if(BIO_write(derout, str + offset, length) != (int)length) {
 			BIO_printf(bio_err, "Error writing output\n");
@@ -329,6 +339,7 @@ end:
 	if (at != NULL) ASN1_TYPE_free(at);
 	if (osk != NULL) sk_free(osk);
 	OBJ_cleanup();
-	EXIT(ret);
+	apps_shutdown();
+	OPENSSL_EXIT(ret);
 	}
 

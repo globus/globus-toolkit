@@ -224,7 +224,7 @@ void bn_mul_part_recursive(BN_ULONG *r, BN_ULONG *a, BN_ULONG *b, int tn,
 	     int n, BN_ULONG *t)
 	{
 	int i,j,n2=n*2;
-	unsigned int c1,c2,neg,zero;
+	int c1,c2,neg,zero;
 	BN_ULONG ln,lo,*p;
 
 # ifdef BN_COUNT
@@ -376,7 +376,7 @@ void bn_mul_part_recursive(BN_ULONG *r, BN_ULONG *a, BN_ULONG *b, int tn,
 
 		/* The overflow will stop before we over write
 		 * words we should not overwrite */
-		if (ln < c1)
+		if (ln < (BN_ULONG)c1)
 			{
 			do	{
 				p++;
@@ -608,7 +608,7 @@ void bn_mul_high(BN_ULONG *r, BN_ULONG *a, BN_ULONG *b, BN_ULONG *l, int n2,
 	}
 #endif /* BN_RECURSION */
 
-int BN_mul(BIGNUM *r, BIGNUM *a, BIGNUM *b, BN_CTX *ctx)
+int BN_mul(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 	{
 	int top,al,bl;
 	BIGNUM *rr;
@@ -634,7 +634,7 @@ int BN_mul(BIGNUM *r, BIGNUM *a, BIGNUM *b, BN_CTX *ctx)
 
 	if ((al == 0) || (bl == 0))
 		{
-		BN_zero(r);
+		if (!BN_zero(r)) goto err;
 		return(1);
 		}
 	top=al+bl;
@@ -675,16 +675,20 @@ int BN_mul(BIGNUM *r, BIGNUM *a, BIGNUM *b, BN_CTX *ctx)
 #ifdef BN_RECURSION
 	if ((al >= BN_MULL_SIZE_NORMAL) && (bl >= BN_MULL_SIZE_NORMAL))
 		{
-		if (i == 1 && !BN_get_flags(b,BN_FLG_STATIC_DATA))
+		if (i == 1 && !BN_get_flags(b,BN_FLG_STATIC_DATA) && bl<b->dmax)
 			{
-			bn_wexpand(b,al);
+#if 0	/* tribute to const-ification, bl<b->dmax above covers for this */
+			if (bn_wexpand(b,al) == NULL) goto err;
+#endif
 			b->d[bl]=0;
 			bl++;
 			i--;
 			}
-		else if (i == -1 && !BN_get_flags(a,BN_FLG_STATIC_DATA))
+		else if (i == -1 && !BN_get_flags(a,BN_FLG_STATIC_DATA) && al<a->dmax)
 			{
-			bn_wexpand(a,bl);
+#if 0	/* tribute to const-ification, al<a->dmax above covers for this */
+			if (bn_wexpand(a,bl) == NULL) goto err;
+#endif
 			a->d[al]=0;
 			al++;
 			i++;
@@ -699,16 +703,19 @@ int BN_mul(BIGNUM *r, BIGNUM *a, BIGNUM *b, BN_CTX *ctx)
 			t = BN_CTX_get(ctx);
 			if (al == j) /* exact multiple */
 				{
-				bn_wexpand(t,k*2);
-				bn_wexpand(rr,k*2);
+				if (bn_wexpand(t,k*2) == NULL) goto err;
+				if (bn_wexpand(rr,k*2) == NULL) goto err;
 				bn_mul_recursive(rr->d,a->d,b->d,al,t->d);
+				rr->top=top;
+				goto end;
 				}
+#if 0	/* tribute to const-ification, rsa/dsa performance is not affected */
 			else
 				{
-				bn_wexpand(a,k);
-				bn_wexpand(b,k);
-				bn_wexpand(t,k*4);
-				bn_wexpand(rr,k*4);
+				if (bn_wexpand(a,k) == NULL ) goto err;
+				if (bn_wexpand(b,k) == NULL ) goto err;
+				if (bn_wexpand(t,k*4) == NULL ) goto err;
+				if (bn_wexpand(rr,k*4) == NULL ) goto err;
 				for (i=a->top; i<k; i++)
 					a->d[i]=0;
 				for (i=b->top; i<k; i++)
@@ -717,6 +724,7 @@ int BN_mul(BIGNUM *r, BIGNUM *a, BIGNUM *b, BN_CTX *ctx)
 				}
 			rr->top=top;
 			goto end;
+#endif
 			}
 		}
 #endif /* BN_RECURSION */

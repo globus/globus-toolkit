@@ -1,6 +1,6 @@
 /* ssl/ssl_err.c */
 /* ====================================================================
- * Copyright (c) 1999 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1999-2002 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -63,10 +63,11 @@
 #include <openssl/ssl.h>
 
 /* BEGIN ERROR CODES */
-#ifndef NO_ERR
+#ifndef OPENSSL_NO_ERR
 static ERR_STRING_DATA SSL_str_functs[]=
 	{
 {ERR_PACK(0,SSL_F_CLIENT_CERTIFICATE,0),	"CLIENT_CERTIFICATE"},
+{ERR_PACK(0,SSL_F_CLIENT_FINISHED,0),	"CLIENT_FINISHED"},
 {ERR_PACK(0,SSL_F_CLIENT_HELLO,0),	"CLIENT_HELLO"},
 {ERR_PACK(0,SSL_F_CLIENT_MASTER_KEY,0),	"CLIENT_MASTER_KEY"},
 {ERR_PACK(0,SSL_F_D2I_SSL_SESSION,0),	"d2i_SSL_SESSION"},
@@ -80,7 +81,9 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_I2D_SSL_SESSION,0),	"i2d_SSL_SESSION"},
 {ERR_PACK(0,SSL_F_READ_N,0),	"READ_N"},
 {ERR_PACK(0,SSL_F_REQUEST_CERTIFICATE,0),	"REQUEST_CERTIFICATE"},
+{ERR_PACK(0,SSL_F_SERVER_FINISH,0),	"SERVER_FINISH"},
 {ERR_PACK(0,SSL_F_SERVER_HELLO,0),	"SERVER_HELLO"},
+{ERR_PACK(0,SSL_F_SERVER_VERIFY,0),	"SERVER_VERIFY"},
 {ERR_PACK(0,SSL_F_SSL23_ACCEPT,0),	"SSL23_ACCEPT"},
 {ERR_PACK(0,SSL_F_SSL23_CLIENT_HELLO,0),	"SSL23_CLIENT_HELLO"},
 {ERR_PACK(0,SSL_F_SSL23_CONNECT,0),	"SSL23_CONNECT"},
@@ -92,6 +95,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL2_ACCEPT,0),	"SSL2_ACCEPT"},
 {ERR_PACK(0,SSL_F_SSL2_CONNECT,0),	"SSL2_CONNECT"},
 {ERR_PACK(0,SSL_F_SSL2_ENC_INIT,0),	"SSL2_ENC_INIT"},
+{ERR_PACK(0,SSL_F_SSL2_GENERATE_KEY_MATERIAL,0),	"SSL2_GENERATE_KEY_MATERIAL"},
 {ERR_PACK(0,SSL_F_SSL2_PEEK,0),	"SSL2_PEEK"},
 {ERR_PACK(0,SSL_F_SSL2_READ,0),	"SSL2_READ"},
 {ERR_PACK(0,SSL_F_SSL2_READ_INTERNAL,0),	"SSL2_READ_INTERNAL"},
@@ -106,6 +110,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL3_CTRL,0),	"SSL3_CTRL"},
 {ERR_PACK(0,SSL_F_SSL3_CTX_CTRL,0),	"SSL3_CTX_CTRL"},
 {ERR_PACK(0,SSL_F_SSL3_ENC,0),	"SSL3_ENC"},
+{ERR_PACK(0,SSL_F_SSL3_GENERATE_KEY_BLOCK,0),	"SSL3_GENERATE_KEY_BLOCK"},
 {ERR_PACK(0,SSL_F_SSL3_GET_CERTIFICATE_REQUEST,0),	"SSL3_GET_CERTIFICATE_REQUEST"},
 {ERR_PACK(0,SSL_F_SSL3_GET_CERT_VERIFY,0),	"SSL3_GET_CERT_VERIFY"},
 {ERR_PACK(0,SSL_F_SSL3_GET_CLIENT_CERTIFICATE,0),	"SSL3_GET_CLIENT_CERTIFICATE"},
@@ -127,6 +132,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL3_SEND_CLIENT_KEY_EXCHANGE,0),	"SSL3_SEND_CLIENT_KEY_EXCHANGE"},
 {ERR_PACK(0,SSL_F_SSL3_SEND_CLIENT_VERIFY,0),	"SSL3_SEND_CLIENT_VERIFY"},
 {ERR_PACK(0,SSL_F_SSL3_SEND_SERVER_CERTIFICATE,0),	"SSL3_SEND_SERVER_CERTIFICATE"},
+{ERR_PACK(0,SSL_F_SSL3_SEND_SERVER_HELLO,0),	"SSL3_SEND_SERVER_HELLO"},
 {ERR_PACK(0,SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,0),	"SSL3_SEND_SERVER_KEY_EXCHANGE"},
 {ERR_PACK(0,SSL_F_SSL3_SETUP_BUFFERS,0),	"SSL3_SETUP_BUFFERS"},
 {ERR_PACK(0,SSL_F_SSL3_SETUP_KEY_BLOCK,0),	"SSL3_SETUP_KEY_BLOCK"},
@@ -270,15 +276,27 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_HTTPS_PROXY_REQUEST               ,"https proxy request"},
 {SSL_R_HTTP_REQUEST                      ,"http request"},
 {SSL_R_ILLEGAL_PADDING                   ,"illegal padding"},
-{SSL_R_INTERNAL_ERROR                    ,"internal error"},
 {SSL_R_INVALID_CHALLENGE_LENGTH          ,"invalid challenge length"},
 {SSL_R_INVALID_COMMAND                   ,"invalid command"},
 {SSL_R_INVALID_PURPOSE                   ,"invalid purpose"},
 {SSL_R_INVALID_TRUST                     ,"invalid trust"},
+{SSL_R_KEY_ARG_TOO_LONG                  ,"key arg too long"},
+{SSL_R_KRB5                              ,"krb5"},
+{SSL_R_KRB5_C_CC_PRINC                   ,"krb5 client cc principal (no tkt?)"},
+{SSL_R_KRB5_C_GET_CRED                   ,"krb5 client get cred"},
+{SSL_R_KRB5_C_INIT                       ,"krb5 client init"},
+{SSL_R_KRB5_C_MK_REQ                     ,"krb5 client mk_req (expired tkt?)"},
+{SSL_R_KRB5_S_BAD_TICKET                 ,"krb5 server bad ticket"},
+{SSL_R_KRB5_S_INIT                       ,"krb5 server init"},
+{SSL_R_KRB5_S_RD_REQ                     ,"krb5 server rd_req (keytab perms?)"},
+{SSL_R_KRB5_S_TKT_EXPIRED                ,"krb5 server tkt expired"},
+{SSL_R_KRB5_S_TKT_NYV                    ,"krb5 server tkt not yet valid"},
+{SSL_R_KRB5_S_TKT_SKEW                   ,"krb5 server tkt skew"},
 {SSL_R_LENGTH_MISMATCH                   ,"length mismatch"},
 {SSL_R_LENGTH_TOO_SHORT                  ,"length too short"},
 {SSL_R_LIBRARY_BUG                       ,"library bug"},
 {SSL_R_LIBRARY_HAS_NO_CIPHERS            ,"library has no ciphers"},
+{SSL_R_MASTER_KEY_TOO_LONG               ,"master key too long"},
 {SSL_R_MESSAGE_TOO_LONG                  ,"message too long"},
 {SSL_R_MISSING_DH_DSA_CERT               ,"missing dh dsa cert"},
 {SSL_R_MISSING_DH_KEY                    ,"missing dh key"},
@@ -343,6 +361,8 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_SHORT_READ                        ,"short read"},
 {SSL_R_SIGNATURE_FOR_NON_SIGNING_CERTIFICATE,"signature for non signing certificate"},
 {SSL_R_SSL23_DOING_SESSION_ID_REUSE      ,"ssl23 doing session id reuse"},
+{SSL_R_SSL2_CONNECTION_ID_TOO_LONG       ,"ssl2 connection id too long"},
+{SSL_R_SSL3_SESSION_ID_TOO_LONG          ,"ssl3 session id too long"},
 {SSL_R_SSL3_SESSION_ID_TOO_SHORT         ,"ssl3 session id too short"},
 {SSL_R_SSLV3_ALERT_BAD_CERTIFICATE       ,"sslv3 alert bad certificate"},
 {SSL_R_SSLV3_ALERT_BAD_RECORD_MAC        ,"sslv3 alert bad record mac"},
@@ -363,7 +383,10 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_SSL_CTX_HAS_NO_DEFAULT_SSL_VERSION,"ssl ctx has no default ssl version"},
 {SSL_R_SSL_HANDSHAKE_FAILURE             ,"ssl handshake failure"},
 {SSL_R_SSL_LIBRARY_HAS_NO_CIPHERS        ,"ssl library has no ciphers"},
+{SSL_R_SSL_SESSION_ID_CALLBACK_FAILED    ,"ssl session id callback failed"},
+{SSL_R_SSL_SESSION_ID_CONFLICT           ,"ssl session id conflict"},
 {SSL_R_SSL_SESSION_ID_CONTEXT_TOO_LONG   ,"ssl session id context too long"},
+{SSL_R_SSL_SESSION_ID_HAS_BAD_LENGTH     ,"ssl session id has bad length"},
 {SSL_R_SSL_SESSION_ID_IS_DIFFERENT       ,"ssl session id is different"},
 {SSL_R_TLSV1_ALERT_ACCESS_DENIED         ,"tlsv1 alert access denied"},
 {SSL_R_TLSV1_ALERT_DECODE_ERROR          ,"tlsv1 alert decode error"},
@@ -429,7 +452,7 @@ void ERR_load_SSL_strings(void)
 	if (init)
 		{
 		init=0;
-#ifndef NO_ERR
+#ifndef OPENSSL_NO_ERR
 		ERR_load_strings(ERR_LIB_SSL,SSL_str_functs);
 		ERR_load_strings(ERR_LIB_SSL,SSL_str_reasons);
 #endif
