@@ -133,37 +133,54 @@ check_storage_directory()
 {
     struct stat statbuf;
     int return_code = -1;
+    char *gl_storage_dir = NULL;
 
     if (storage_dir == NULL) { /* Choose a default storage directory */
 	char *GL;
 	GL = getenv("GLOBUS_LOCATION");
 	if (stat("/var/myproxy", &statbuf) == 0) {
-	    myproxy_log("using storage directory %s", "/var/myproxy");
 	    storage_dir = mystrdup("/var/myproxy");
 	    if (!storage_dir) goto error;
-	} else if (GL) {
-	    storage_dir =
+	}
+	/* if /var/myproxy doesn't exist, look for $GL/var/myproxy */
+	if (storage_dir == NULL && GL != NULL) {
+	    gl_storage_dir =
 		(char *)malloc(strlen(GL)+strlen("/var/myproxy")+1);
-	    if (!storage_dir) {
+	    if (!gl_storage_dir) {
 		verror_put_errno(errno);
 		verror_put_string("malloc() failed");
 		goto error;
 	    }
-	    sprintf(storage_dir, "%s/var", GL);
-	    if (stat(storage_dir, &statbuf) == -1) {
-		if (mkdir(storage_dir, 0755) < 0) {
-		    verror_put_errno(errno);
-		    verror_put_string("mkdir(%s) failed", storage_dir);
-		    goto error;
-		}
+	    sprintf(gl_storage_dir, "%s/var/myproxy", GL);
+	    if (stat(gl_storage_dir, &statbuf) == 0) {
+		storage_dir = gl_storage_dir;
+		gl_storage_dir = NULL;
 	    }
-	    sprintf(storage_dir, "%s/var/myproxy", GL);
-	    if (stat(storage_dir, &statbuf) == -1) {
-		if (mkdir(storage_dir, 0700) < 0) {
+	}
+	/* if neither exist, try creating one */
+	if (storage_dir == NULL) {
+	    if (mkdir("/var/myproxy", 0700) == 0) {
+		storage_dir = mystrdup("/var/myproxy");
+		if (stat("/var/myproxy", &statbuf) == -1) {
 		    verror_put_errno(errno);
-		    verror_put_string("mkdir(%s) failed", storage_dir);
+		    verror_put_string("could not stat directory /var/myproxy");
 		    goto error;
 		}
+	    } else if (gl_storage_dir) {
+		sprintf(gl_storage_dir, "%s/var", GL);
+		if (mkdir(gl_storage_dir, 0755) < 0 && errno != EEXIST) {
+		    verror_put_errno(errno);
+		    verror_put_string("mkdir(%s) failed", gl_storage_dir);
+		    goto error;
+		}
+		sprintf(gl_storage_dir, "%s/var/myproxy", GL);
+		if (mkdir(gl_storage_dir, 0700) < 0) {
+		    verror_put_errno(errno);
+		    verror_put_string("mkdir(%s) failed", gl_storage_dir);
+		    goto error;
+		}
+		storage_dir = gl_storage_dir;
+		gl_storage_dir = NULL;
 		if (stat(storage_dir, &statbuf) == -1) {
 		    verror_put_errno(errno);
 		    verror_put_string("could not stat directory %s",
@@ -171,10 +188,13 @@ check_storage_directory()
 		    goto error;
 		}
 	    }
-	} else {
-	    verror_put_string("no credential storage directory specified and GLOBUS_LOCATION undefined");
+	}
+	if (storage_dir == NULL) {
+	    verror_put_string("failed to find or create a storage directory");
+	    if (!GL) verror_put_string("GLOBUS_LOCATION not set");
 	    goto error;
 	}
+	myproxy_log("using storage directory %s", storage_dir);
     } else { /* storage directory already chosen; just check it */
 	if (stat(storage_dir, &statbuf) == -1) {
 	    verror_put_errno(errno);
@@ -208,6 +228,7 @@ check_storage_directory()
     return_code = 0;
     
   error:
+    if (gl_storage_dir) free(gl_storage_dir);
     return return_code;
 }
 
@@ -1109,7 +1130,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     memset(creds, 0, sizeof(struct myproxy_creds));
 }
 
-void myproxy_set_storage_dir(const char *dir)
+int myproxy_set_storage_dir(const char *dir)
 {
     if (storage_dir) {
 	free(storage_dir);
@@ -1119,5 +1140,12 @@ void myproxy_set_storage_dir(const char *dir)
     if (!storage_dir) {
 	verror_put_errno(errno);
 	verror_put_string("strdup() failed");
+	return -1;
     }
+    return 0;
+}
+
+int myproxy_check_storage_dir()
+{
+    return check_storage_directory();
 }
