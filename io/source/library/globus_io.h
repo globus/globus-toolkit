@@ -364,8 +364,13 @@ typedef enum
 {
     /** Don't do authentication */
     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE = 0,
-    /** Authenticate with the GSSAPI library  */
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI
+    /** Authenticate with the GSSAPI library using mutual
+     *  authenitcation.
+     */
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI = 1,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL = 1,
+    /** Authenticate without a client cert */
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS = 2
 } globus_io_secure_authentication_mode_t;
 
 /** 
