@@ -142,6 +142,7 @@ main(
     X509 *                              proxy_cert = NULL;
     EVP_PKEY *                          proxy_pubkey = NULL;
     globus_result_t                     result;
+    globus_bool_t                       print_all = GLOBUS_TRUE;
 
     if(globus_module_activate(GLOBUS_OPENSSL_MODULE) !=
        (int)GLOBUS_SUCCESS)
@@ -493,30 +494,37 @@ main(
 	if (strcmp(argp,"-subject") == 0)
 	{
 	    printf("%s\n", subject);
+            print_all = GLOBUS_FALSE;
 	}
 	else if (strcmp(argp, "-issuer") == 0)
 	{
 	    printf("%s\n", issuer);
+            print_all = GLOBUS_FALSE;
 	}
 	else if (strcmp(argp, "-identity") == 0)
 	{
 	    printf("%s\n", identity);
+            print_all = GLOBUS_FALSE;
 	}
 	else if (strcmp(argp, "-timeleft") == 0)
 	{
 	    printf("%ld\n", (long) ((lifetime >= 0) ? lifetime : -1));
+            print_all = GLOBUS_FALSE;
 	}
 	else if (strcmp(argp, "-type") == 0)
 	{
 	    printf("%s\n", cert_type_name);
+            print_all = GLOBUS_FALSE;
 	}
 	else if (strcmp(argp, "-strength") == 0)
 	{
 	    printf("%d\n", strength);
+            print_all = GLOBUS_FALSE;
 	}
 	else if (strcmp(argp, "-text") == 0)
 	{
             X509_print_fp(stdout, proxy_cert);
+            print_all = GLOBUS_FALSE;
         }
         else if (strcmp(argp, "-all") == 0)
         {
@@ -545,6 +553,7 @@ main(
             if (lifetime > 3600 * 24)
                 printf("  (%.1f days)", (float)(lifetime / 3600) / 24.0);
             printf("\n");
+            print_all = GLOBUS_FALSE;
         }
         else if ((strcmp(argp, "-valid") == 0) ||
                  (strcmp(argp, "-bits") == 0) ||
@@ -560,7 +569,7 @@ main(
         }
     }
 
-    if (argc == 1 || (argc == 2 && strcmp(argv[1], "-debug") == 0))
+    if (print_all == GLOBUS_TRUE && exists_flag == 0)
     {
         printf("subject  : %s\n" 
                "issuer   : %s\n"
