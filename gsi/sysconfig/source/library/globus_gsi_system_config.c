@@ -2981,7 +2981,7 @@ globus_gsi_sysconfig_file_exists_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid key file", filename));            
+                ("%s is not a valid file", filename));            
             goto exit;
             
           case EACCES:
@@ -4862,8 +4862,27 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
          * - characters after the '.' are numeric
          */
 
+        full_filename_path = 
+            globus_common_create_string(
+                "%s%s%s", ca_cert_dir, FILE_SEPERATOR, tmp_entry->d_name);
+        
+        if(full_filename_path == NULL)
+        {
+            globus_free(tmp_entry);
+            while((full_filename_path =
+                   (char *) globus_fifo_dequeue(ca_cert_list)) != NULL)
+            {
+                free(full_filename_path);
+            }
+            GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
+                ("Couldn't get full pathname for CA cert"));
+            goto exit;
+        }
+        
         if((result = globus_gsi_sysconfig_file_exists_unix(
-                tmp_entry->d_name)) == GLOBUS_SUCCESS)
+                full_filename_path)) == GLOBUS_SUCCESS)
         {
         
             if(file_length >= (X509_HASH_LENGTH + 2) &&
@@ -4873,31 +4892,22 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
                (strspn((tmp_entry->d_name + (X509_HASH_LENGTH + 1)), 
                        "0123456789") == (file_length - 9)))
             {
-                full_filename_path = 
-                    globus_common_create_string(
-                        "%s%s%s", ca_cert_dir, FILE_SEPERATOR, tmp_entry->d_name);
-                
-                if(full_filename_path == NULL)
-                {
-                    globus_free(tmp_entry);
-                    while((full_filename_path =
-                           (char *) globus_fifo_dequeue(ca_cert_list)) != NULL)
-                    {
-                        free(full_filename_path);
-                    }
-                    GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
-                        result,
-                        GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-                        ("Couldn't get full pathname for CA cert"));
-                    goto exit;
-                }
-                
                 globus_fifo_enqueue(ca_cert_list, (void *)full_filename_path);
             }
+            else
+            {
+                free(full_filename_path);
+            }
+        }
+        else
+        {
+            free(full_filename_path);
         }
 
-        globus_free(tmp_entry);    
+        globus_free(tmp_entry);
     }
+
+    result = GLOBUS_SUCCESS;
 
  exit:
 
