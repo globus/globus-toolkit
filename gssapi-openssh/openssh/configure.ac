@@ -689,6 +689,9 @@ AC_ARG_WITH(globus-static,
 	[  --with-globus-static    Link statically with Globus GSI libraries],
 	[
 		gsi_static="-static"
+		if test "x$gsi_path" == "xno" ; then
+			gsi_path="$withval"
+		fi
 	]
 )
 
