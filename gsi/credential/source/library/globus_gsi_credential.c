@@ -502,9 +502,10 @@ globus_result_t globus_gsi_cred_read(
                 goto exit;
             }
 
-            results[result_index] = globus_gsi_cred_read_key(handle, 
-                                                             key, 
-                                                             NULL);
+            results[result_index] = globus_gsi_cred_read_key(
+                handle, 
+                key, 
+                globus_i_gsi_cred_password_callback_no_prompt);
             if(results[result_index] != GLOBUS_SUCCESS)
             {
                 globus_object_t *       error_obj;
@@ -655,9 +656,10 @@ globus_result_t globus_gsi_cred_read(
                     goto exit;
                 }
                     
-                results[result_index] = globus_gsi_cred_read_key(handle, 
-                                                                 key, 
-                                                                 NULL);
+                results[result_index] = globus_gsi_cred_read_key(
+                    handle, 
+                    key, 
+                    globus_i_gsi_cred_password_callback_no_prompt);
                 if(results[result_index] != GLOBUS_SUCCESS)
                 {
                     globus_object_t *   error_obj;
