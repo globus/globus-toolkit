@@ -1009,7 +1009,13 @@ main(int argc,
             nexus_fd_handle_events(GLOBUS_NEXUS_FD_POLL_NONBLOCKING_ALL, 
                                    &message_handled);
             GRAM_LOCK;
-            if (--skip_poll <= 0)
+
+            /* handler may have occurred while we were unlocked,
+	       so we need to poll file descriptors, etc
+	       if state change occurred
+	     */
+            if ( (--skip_poll <= 0) ||
+		 (graml_jm_monitor.done) )
             {
                 /* check if cancel handler was called */
                 if ( graml_jm_monitor.done != NEXUS_TRUE )
