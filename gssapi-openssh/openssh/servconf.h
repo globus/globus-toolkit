@@ -1,4 +1,4 @@
-/*	$OpenBSD: servconf.h,v 1.54 2002/03/04 17:27:39 stevesk Exp $	*/
+/*	$OpenBSD: servconf.h,v 1.57 2002/03/20 19:12:25 stevesk Exp $	*/
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -137,7 +137,6 @@ typedef struct {
 	char   *authorized_keys_file;	/* File containing public keys */
 	char   *authorized_keys_file2;
 	int	pam_authentication_via_kbd_int;
-
 }       ServerOptions;
 
 void	 initialize_server_options(ServerOptions *);
