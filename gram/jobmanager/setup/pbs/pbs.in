@@ -421,7 +421,12 @@ sub cancel
 
     system("$qdel $job_id >/dev/null 2>/dev/null");
 
-    return {};
+    if($? == 0)
+    {
+	return { JOB_STATE => Globus::GRAM::JobState::FAILED }
+    }
+
+    return Globus::GRAM::Error::JOB_CANCEL_FAILED();
 }
 
 1;
