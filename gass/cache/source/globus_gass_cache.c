@@ -45,7 +45,6 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
-#include "globus_gram_protocol.h"
 
 #include <stdio.h>
 #include <stdlib.h>
