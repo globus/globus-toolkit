@@ -2892,7 +2892,15 @@ globus_l_gass_transfer_http_response_callback(
     {
 	proto->code = GLOBUS_L_DEFAULT_FAILURE_CODE;
 	proto->reason = globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON);
-	goto deny_exit;
+	if(proto->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT ||
+	   proto->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND)
+        {
+	    goto put_fail_exit;
+	}
+	else
+	{
+	    goto deny_exit;
+	}
     }
 
     /* Reallocate a larger buffer, if we need to */
