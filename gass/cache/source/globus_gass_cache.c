@@ -535,7 +535,7 @@ globus_l_gass_cache_trace(
 	           "a+");
 #else
         fp = stderr;
-        //fp = stdout;
+        /* fp = stdout; */
 #endif
     }
     globus_libc_unlock();
