@@ -210,7 +210,7 @@ globus_i_xio_close_handles(
                         {
                             GlobusXIODebugPrintf(
                                 GLOBUS_XIO_DEBUG_INFO, 
-                                ("adding handle @0x%x state=%d\n", 
+                                ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
                                     handle, handle->state));
 
                             globus_assert(handle->sd_monitor == NULL);
@@ -237,6 +237,9 @@ globus_i_xio_close_handles(
                                 op->user_arg = NULL;
                                 op->entry[0].prev_ndx = -1;
                                 globus_list_insert(&c_handles, handle);
+                                GlobusXIODebugPrintf(
+                                    GLOBUS_XIO_DEBUG_INFO, 
+                                    ("[globus_i_xio_close_handles] : registersing close on handle @0x%x\n", handle));
                             }
                         }
                     }
@@ -559,9 +562,9 @@ globus_l_xio_open_close_callback_kickout(
                     handle, &destroy_handle, &destroy_context);
                 globus_assert(!destroy_handle);
             }
-            /* if we arealready trying to close than we have uped the
+            /* if we are already trying to close than we have uped the
                 reference count and need to dec it */
-            else if(handle->close_op != NULL && !handle->shutting_down)
+            else if(handle->close_op != NULL) // && !handle->shutting_down)
             {
                 globus_i_xio_handle_dec(handle, &destroy_handle, 
                     &destroy_context);
@@ -3061,7 +3064,7 @@ globus_xio_close(
             globus_mutex_unlock(&handle->context->mutex);
             return GlobusXIOErrorUnloaded();
         }
-        else if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
+        else if(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING)
         {
             globus_mutex_unlock(&handle->context->mutex);
             res = GlobusXIOErrorInvalidState(handle->state);

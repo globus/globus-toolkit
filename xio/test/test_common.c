@@ -39,14 +39,15 @@ failed_exit(
 
     va_end(ap);
 
-    globus_assert(0);
+    abort();
 }
     
 void
 test_res(
     int                                     location,
     globus_result_t                         res,
-    int                                     line)
+    int                                     line,
+    char *                                  file)
 {
     if(res != GLOBUS_SUCCESS)
     {
@@ -60,13 +61,15 @@ test_res(
             exit(0);
         }
 
-        failed_exit("error at line %d.", line);
+        failed_exit("error :%s: at %s:%d.", 
+            globus_object_printable_to_string(globus_error_get(res)), 
+            file, line);
     }
     else if(location == globus_l_test_info.failure &&
             location != GLOBUS_XIO_TEST_FAIL_NONE)
     {
-        failed_exit("Should have failed at point %d on line %d.", 
-            location, line);
+        failed_exit("Should have failed at point %d on line %s:%d.", 
+            location, file, line);
     }
 }
 
@@ -99,9 +102,9 @@ parse_parameters(
 
     /* get the transport driver, and put it on the stack */
     res = globus_xio_driver_load("test", &base_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_stack_push_driver(stack, base_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_list_insert(&globus_l_driver_list, base_driver);
 
@@ -118,9 +121,9 @@ parse_parameters(
 
             case 'D':
                 res = globus_xio_driver_load(optarg, &driver);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
                 res = globus_xio_stack_push_driver(stack, driver);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     
                 globus_list_insert(&globus_l_driver_list, driver);
                 break;
@@ -195,35 +198,35 @@ parse_parameters(
             base_driver,
             GLOBUS_XIO_TEST_SET_INLINE,
             inline_finish);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_SET_FAILURES,
             failure);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_SET_USECS,
             delay);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_CHUNK_SIZE,
             chunk_size);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
             base_driver,
             GLOBUS_XIO_TEST_READ_EOF_BYTES,
             eof_bytes);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     if(seed != 0)
     {
@@ -232,7 +235,7 @@ parse_parameters(
                 base_driver,
                 GLOBUS_XIO_TEST_RANDOM,
                 seed);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
 
     return optind;
@@ -381,6 +384,10 @@ main(
         &globus_l_test_hash, 
         "blocking_dd",
         blocking_dd_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "unload",
+        unload_main);
 
 
     for(ctr = 1; ctr < argc && !done; ctr++)

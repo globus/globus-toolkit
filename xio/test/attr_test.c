@@ -30,10 +30,10 @@ attr_main(
      *  init a bunch of structures
      */
     res = globus_xio_driver_load("test", &test_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_driver_load("debug", &debug_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_init(NULL);
     if(res == GLOBUS_SUCCESS)
@@ -57,10 +57,10 @@ attr_main(
     }
     
     res = globus_xio_attr_init(&attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     if(res == GLOBUS_SUCCESS)
@@ -75,7 +75,7 @@ attr_main(
     }
 
     res = globus_xio_stack_push_driver(stack, test_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_push_driver(stack, test_driver);
     if(res == GLOBUS_SUCCESS)
@@ -84,19 +84,19 @@ attr_main(
     }
 
     res = globus_xio_stack_push_driver(stack, debug_driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_target_destroy(target);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     /*
      *  do some operations
      */
     res = globus_xio_attr_copy(&cp_attr, attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     /*
      *  destroy the structures
@@ -165,7 +165,7 @@ attr_main(
     }
 
     res = globus_xio_open(&handle, NULL, target);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     /* reads */
     res = globus_xio_read(NULL, NULL, -1, 0, NULL, NULL);
@@ -185,7 +185,7 @@ attr_main(
     }
     res = globus_xio_read(handle, buffer, 
             len, 0, NULL, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     /* writes */
     res = globus_xio_write(NULL, NULL, -1, 0, NULL, NULL);
@@ -205,7 +205,7 @@ attr_main(
     }
     res = globus_xio_write(handle, buffer,
             len, 0, NULL, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_close(NULL, NULL);
     if(res == GLOBUS_SUCCESS)
@@ -214,19 +214,19 @@ attr_main(
     }
 
     res = globus_xio_close(handle, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_free(buffer);
 
     res = globus_xio_attr_destroy(attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_stack_destroy(stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_driver_unload(debug_driver); 
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_driver_unload(test_driver); 
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);

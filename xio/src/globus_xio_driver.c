@@ -9,7 +9,6 @@ globus_l_xio_op_restarted(
     globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_i_xio_context_t *                context;
     globus_i_xio_handle_t *                 handle;
-
     GlobusXIOName(globus_l_xio_op_restarted);
 
     GlobusXIODebugInternalEnter();
@@ -47,6 +46,9 @@ globus_i_xio_repass_write(
     globus_result_t                         res;
     globus_xio_iovec_t *                    tmp_iovec;
     int                                     iovec_count;
+    GlobusXIOName(globus_i_xio_repass_write);
+
+    GlobusXIODebugInternalEnter();
 
     my_op = &op->entry[op->ndx - 1];
     next_context = &op->_op_context->entry[op->ndx - 1];
@@ -72,6 +74,8 @@ globus_i_xio_repass_write(
             iovec_count,
             op);
 
+    GlobusXIODebugInternalExit();
+
     return res;
 }
 
@@ -84,6 +88,9 @@ globus_i_xio_repass_read(
     globus_result_t                         res;
     globus_xio_iovec_t *                    tmp_iovec;
     int                                     iovec_count;
+    GlobusXIOName(globus_i_xio_repass_read);
+
+    GlobusXIODebugInternalEnter();
 
     my_op = &op->entry[op->ndx - 1];
     next_context = &op->_op_context->entry[op->ndx - 1];
@@ -109,6 +116,8 @@ globus_i_xio_repass_read(
             iovec_count,
             op);
 
+    GlobusXIODebugInternalExit();
+
     return res;
 }
 
@@ -120,6 +129,9 @@ globus_i_xio_pass_failed(
     globus_bool_t *                         destroy_handle,
     globus_bool_t *                         destroy_context)
 {
+    GlobusXIOName(globus_i_xio_pass_failed);
+
+    GlobusXIODebugInternalEnter();
 
     my_context->outstanding_operations--;
     /*there is an off chance that we could need to close here*/
@@ -137,12 +149,17 @@ globus_i_xio_pass_failed(
         globus_i_xio_op_destroy(op, destroy_handle, destroy_context); 
     }
 
+    GlobusXIODebugInternalExit();
 }
 
 void
 globus_i_xio_handle_destroy(
     globus_i_xio_handle_t *                 handle)
 {
+    GlobusXIOName(globus_i_xio_handle_destroy);
+
+    GlobusXIODebugInternalEnter();
+
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_list_remove(&globus_l_outstanding_handles_list,
@@ -152,6 +169,8 @@ globus_i_xio_handle_destroy(
 
     globus_assert(handle->ref == 0);
     globus_free(handle);
+
+    GlobusXIODebugInternalExit();
 }
 
 /* 
@@ -166,6 +185,9 @@ globus_i_xio_handle_dec(
     globus_result_t                         res;
     globus_i_xio_context_t *                context;
     globus_i_xio_space_info_t *             space_info;
+    GlobusXIOName(globus_i_xio_handle_dec);
+
+    GlobusXIODebugInternalEnter();
 
     context = handle->context;
 
@@ -173,8 +195,14 @@ globus_i_xio_handle_dec(
     *destroy_context = GLOBUS_FALSE;
 
     handle->ref--; 
+    GlobusXIODebugPrintf(
+        GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+        ("[globus_i_xio_handle_dec] :: handle ref at %d.\n", handle->ref));
     if(handle->ref == 0)
     {
+        GlobusXIODebugPrintf(
+            GLOBUS_XIO_DEBUG_INFO,
+            ("[globus_i_xio_handle_dec] :: handle ref at 0.\n"));
         globus_assert(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);
         *destroy_handle = GLOBUS_TRUE;
         context->ref--;
@@ -201,6 +229,10 @@ globus_i_xio_handle_dec(
         {
             globus_assert(handle->sd_monitor != NULL);
 
+            GlobusXIODebugPrintf(
+                GLOBUS_XIO_DEBUG_INFO,
+                ("[globus_i_xio_handle_dec] :: signalling handle unload.\n"));
+
             globus_mutex_lock(&handle->sd_monitor->mutex);
             {
                 handle->sd_monitor->count--;
@@ -211,6 +243,8 @@ globus_i_xio_handle_dec(
             handle->sd_monitor = NULL;
         }
     }
+
+    GlobusXIODebugInternalExit();
 }
 
 /* 
@@ -225,6 +259,9 @@ globus_i_xio_op_destroy(
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_context_t *                context;
     int                                     ctr;
+    GlobusXIOName(globus_i_xio_op_destroy);
+
+    GlobusXIODebugInternalEnter();
 
     context = op->_op_context;
     handle = op->_op_handle;
@@ -250,6 +287,7 @@ globus_i_xio_op_destroy(
         *destroy_handle = GLOBUS_FALSE;
         *destroy_context = GLOBUS_FALSE;
     }
+    GlobusXIODebugInternalExit();
 }
 
 void
@@ -260,6 +298,9 @@ globus_i_xio_will_block_cb(
 {
     globus_i_xio_op_t *                     op;
     int                                     ndx;
+    GlobusXIOName(globus_i_xio_will_block_cb);
+
+    GlobusXIODebugInternalEnter();
 
     op = (globus_i_xio_op_t *) user_args;
 
@@ -298,6 +339,7 @@ globus_i_xio_will_block_cb(
         }
         ndx = op->entry[ndx].next_ndx;
     }
+    GlobusXIODebugInternalExit();
 }
 
 void

@@ -43,7 +43,8 @@ void
 test_res(
     int                                     location,
     globus_result_t                         res,
-    int                                     line);
+    int                                     line,
+    char *                                  filename);
 
 int
 parse_parameters(

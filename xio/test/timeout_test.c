@@ -90,7 +90,7 @@ data_cb(
                 NULL,
                 close_cb,
                 user_arg);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
@@ -125,7 +125,7 @@ open_cb(
                         NULL,
                         close_cb,
                         user_arg);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
             }
             else
             {
@@ -157,7 +157,7 @@ open_cb(
                         data_cb,
                         user_arg);
             }
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
@@ -187,10 +187,10 @@ timeout_main(
     globus_assert(rc == 0);
 
     res = globus_xio_attr_init(&attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     opt_offset = parse_parameters(argc, argv, stack, attr);
     if(opt_offset == argc)
@@ -245,13 +245,13 @@ timeout_main(
         fprintf(stderr, "ERROR: No timeout registered.\n");
         return 1;
     }
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_register_open(
             &handle,
@@ -259,7 +259,7 @@ timeout_main(
             target,
             open_cb,
             argv[opt_offset]);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {
