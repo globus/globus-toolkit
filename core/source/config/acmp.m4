@@ -118,7 +118,7 @@ AC_DEFUN(LAC_MP_MPI,
         AC_MSG_ERROR([This system does not support MPI])
         exit 1
     else
-        mpi_ldflags="-lmpi"
+        lac_mpi="yes"
     fi
 
     if test $GLOBUS_THREADS != "none" ; then
