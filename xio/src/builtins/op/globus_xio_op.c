@@ -147,11 +147,8 @@ globus_l_xio_op_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_driver_handle_t          driver_handle;
     globus_l_xio_op_handle_t *          op_handle = NULL;
     globus_xio_operation_t              driver_op;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
     if(result == GLOBUS_SUCCESS)
     {
@@ -161,7 +158,7 @@ globus_l_xio_op_open_cb(
         op_handle->iovec.iov_base = &op_handle->bs_buf;
         op_handle->iovec.iov_len = 1;
         op_handle->close_op = NULL;
-        op_handle->driver_handle = driver_handle;
+        op_handle->driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
         globus_mutex_init(&op_handle->mutex, NULL);
 
@@ -175,7 +172,7 @@ globus_l_xio_op_open_cb(
         }
     }
 
-    globus_xio_driver_finished_open(driver_handle, op_handle, op, result);
+    globus_xio_driver_finished_open(NULL, op_handle, op, result);
 }   
 
 static
@@ -186,9 +183,8 @@ globus_l_xio_op_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_driver_handle_t          driver_handle;
   
-    res = globus_xio_driver_pass_open(&driver_handle, op,
+    res = globus_xio_driver_pass_open(NULL, op,
         globus_l_xio_op_open_cb, NULL);
 
     return res;
@@ -203,11 +199,7 @@ globus_l_xio_op_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
-    globus_xio_driver_handle_t          driver_handle;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
 }   
 
 static

@@ -79,9 +79,8 @@ globus_l_xio_null_pass_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_driver_handle_t          driver_handle;
   
-    res = globus_xio_driver_pass_open(&driver_handle, op, NULL, NULL);
+    res = globus_xio_driver_pass_open(NULL, op, NULL, NULL);
 
     return res;
 }

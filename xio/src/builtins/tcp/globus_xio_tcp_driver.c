@@ -1871,7 +1871,6 @@ globus_result_t
 globus_l_xio_tcp_open(
     void *                              driver_target,
     void *                              driver_attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -1920,7 +1919,7 @@ globus_l_xio_tcp_open(
             goto error_attrs;
         }
         
-        globus_xio_driver_finished_open(driver_handle, handle, op, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_open(GLOBUS_NULL, handle, op, GLOBUS_SUCCESS);
     }
     
     GlobusXIOTcpDebugExit();
@@ -1942,18 +1941,15 @@ globus_l_xio_tcp_system_close_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
-    globus_xio_driver_handle_t          driver_handle;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_tcp_system_close_cb);
     
     GlobusXIOTcpDebugEnter();
     op = (globus_xio_operation_t) user_arg;
     
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     handle = GlobusXIOOperationGetDriverSpecificHandle(op);
     
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_tcp_handle_destroy(handle);
     
     GlobusXIOTcpDebugExit();
@@ -1980,7 +1976,6 @@ globus_l_xio_tcp_close(
     if(handle->converted)
     {
         globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-        globus_xio_driver_handle_close(driver_handle);
         globus_l_xio_tcp_handle_destroy(handle);
     }
     else
@@ -2002,7 +1997,6 @@ globus_l_xio_tcp_close(
     return GLOBUS_SUCCESS;
     
 error_register:
-    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_tcp_handle_destroy(handle);
     
     GlobusXIOTcpDebugExitWithError();

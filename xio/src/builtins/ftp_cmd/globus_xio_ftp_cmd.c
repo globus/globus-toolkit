@@ -23,7 +23,6 @@ typedef struct globus_l_xio_ftp_cmd_handle_s
     globus_bool_t                           client;
     globus_bool_t                           create_buffer_mode;
     globus_mutex_t                          mutex;
-    globus_xio_driver_handle_t              driver_handle;
     globus_xio_iovec_t                      iovec;
     globus_xio_iovec_t *                    out_iovec;
     globus_bool_t                           create_buffer;
@@ -244,7 +243,7 @@ globus_l_xio_ftp_cmd_open_cb(
         globus_free(handle);
     }
 
-    globus_xio_driver_finished_open(handle->driver_handle, handle, op, result);
+    globus_xio_driver_finished_open(NULL, handle, op, result);
 }
 
 static globus_result_t
@@ -283,7 +282,7 @@ globus_l_xio_ftp_cmd_open(
     globus_fifo_init(&handle->read_q);
 
     res = globus_xio_driver_pass_open(
-        &handle->driver_handle,
+        NULL,
         op, 
         globus_l_xio_ftp_cmd_open_cb,
         handle);

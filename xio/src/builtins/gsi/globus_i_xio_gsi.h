@@ -158,8 +158,8 @@ typedef struct
     globus_bool_t                       done;
     globus_object_t *                   result_obj;
     globus_bool_t                       eof;
-    globus_xio_driver_handle_t          xio_driver_handle;
     int                                 connection_id;
+    globus_xio_driver_handle_t          xio_driver_handle;
 } globus_l_handle_t;
 
 /*

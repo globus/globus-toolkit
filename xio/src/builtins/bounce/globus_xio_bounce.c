@@ -40,7 +40,6 @@ typedef struct bounce_handle_s
     globus_bool_t                       closed_iface;
     globus_bool_t                       closed_cb;
     globus_bool_t                       open_cb;
-    globus_xio_driver_handle_t          dh;
 } bounce_handle_t;
 
 typedef struct bounce_info_s
@@ -112,13 +111,12 @@ test_bounce_finish_op(
             break;
     
         case TEST_OPEN:
-            globus_xio_driver_finished_open(info->handle->dh,
+            globus_xio_driver_finished_open(NULL,
                 info->handle, op, info->res);
             break;
 
         case TEST_CLOSE:
             globus_xio_driver_finished_close(op, info->res);
-            globus_xio_driver_handle_close(info->handle->dh);
             globus_free(info->handle);
             break;
 
@@ -342,7 +340,7 @@ globus_l_xio_bounce_open(
     info->handle->closed_cb = GLOBUS_FALSE;
     info->handle->open_cb = GLOBUS_FALSE;
 
-    res = globus_xio_driver_pass_open(&info->handle->dh, op, 
+    res = globus_xio_driver_pass_open(NULL, op, 
                 open_bounce_cb, (void*)info);
     if(res != GLOBUS_SUCCESS)
     {

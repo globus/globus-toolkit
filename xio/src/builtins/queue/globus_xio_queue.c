@@ -38,7 +38,6 @@ typedef struct globus_xio_driver_queue_handle_s
     globus_bool_t                       outstanding_write;
     globus_fifo_t                       read_q;
     globus_fifo_t                       write_q;
-    globus_xio_driver_handle_t          driver_handle;
     globus_mutex_t                      mutex;
 } globus_xio_driver_queue_handle_t;
 
@@ -82,7 +81,7 @@ globus_l_xio_queue_open_cb(
 
     handle = (globus_xio_driver_queue_handle_t *) user_arg;
 
-    globus_xio_driver_finished_open(handle->driver_handle, handle, op, result);
+    globus_xio_driver_finished_open(NULL, handle, op, result);
     if(result != GLOBUS_SUCCESS)
     {
         globus_l_xiod_q_handle_destroy(handle);
@@ -102,7 +101,7 @@ globus_l_xio_queue_open(
 
     handle = globus_l_xiod_q_handle_create();
 
-    res = globus_xio_driver_pass_open(&handle->driver_handle, op,
+    res = globus_xio_driver_pass_open(NULL, op,
         globus_l_xio_queue_open_cb, handle);
 
     return res;

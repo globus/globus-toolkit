@@ -861,54 +861,6 @@ globus_l_xio_driver_open_op_kickout(
  *                  context driver api funcitons
  *                  ----------------------------
  *************************************************************************/
-globus_result_t
-globus_xio_driver_handle_close(
-    globus_xio_driver_handle_t              driver_handle)
-{
-    globus_i_xio_context_entry_t *          context_entry;
-    globus_i_xio_context_t *                xio_context;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
-    globus_result_t                         res = GLOBUS_SUCCESS;
-    GlobusXIOName(globus_xio_driver_context_close);
-
-    GlobusXIODebugInternalEnter();
-    
-    /* JOE */
-#if 0
-    context_entry = driver_handle;
-    xio_context = context_entry->whos_my_daddy;
-
-    globus_mutex_lock(&xio_context->mutex);
-    {
-        if(context_entry->state != GLOBUS_XIO_CONTEXT_STATE_CLOSED)
-        {
-            res = GlobusXIOErrorInvalidState(context_entry->state);
-        }
-        else
-        {
-            xio_context->ref--;
-            if(xio_context->ref == 0)
-            {
-                GlobusXIODebugPrintf(
-                    GLOBUS_XIO_DEBUG_INFO,
-               ("[globus_xio_driver_context_close] :: context->ref == 0.\n"));
-                destroy_context = GLOBUS_TRUE;
-            }
-        }
-    }
-    globus_mutex_unlock(&xio_context->mutex);
-
-    /* clean up the entry */
-    if(destroy_context)
-    {
-        globus_i_xio_context_destroy(xio_context);
-    }
-#endif
-
-    GlobusXIODebugInternalExit();
-
-    return res;
-}
 
 void
 globus_i_xio_context_destroy(

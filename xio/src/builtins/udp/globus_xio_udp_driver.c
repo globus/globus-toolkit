@@ -1091,7 +1091,6 @@ globus_result_t
 globus_l_xio_udp_open(
     void *                              driver_target,
     void *                              driver_attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -1150,7 +1149,7 @@ globus_l_xio_udp_open(
         }
     }
     
-    globus_xio_driver_finished_open(driver_handle, handle, op, GLOBUS_SUCCESS);
+    globus_xio_driver_finished_open(GLOBUS_NULL, handle, op, GLOBUS_SUCCESS);
     
     return GLOBUS_SUCCESS;
 
@@ -1175,17 +1174,14 @@ globus_l_xio_udp_system_close_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
-    globus_xio_driver_handle_t          driver_handle;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_udp_system_close_cb);
     
     op = (globus_xio_operation_t) user_arg;
     
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     handle = GlobusXIOOperationGetDriverSpecificHandle(op);
     
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_udp_handle_destroy(handle);
 }
 
@@ -1209,7 +1205,6 @@ globus_l_xio_udp_close(
     if(handle->converted)
     {
         globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-        globus_xio_driver_handle_close(driver_handle);
         globus_l_xio_udp_handle_destroy(handle);
     }
     else
@@ -1230,7 +1225,6 @@ globus_l_xio_udp_close(
     return GLOBUS_SUCCESS;
     
 error_register:
-    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_udp_handle_destroy(handle);
     
     return result;

@@ -207,11 +207,7 @@ globus_l_xio_verify_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_driver_handle_t          driver_handle;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
-
-    globus_xio_driver_finished_open(driver_handle, strdup(_HANDLE), op, result);
+    globus_xio_driver_finished_open(NULL, strdup(_HANDLE), op, result);
 }   
 
 static
@@ -222,7 +218,6 @@ globus_l_xio_verify_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_driver_handle_t          driver_handle;
     char *                              tst_str;
 
     tst_str = (char *) driver_target;
@@ -231,7 +226,7 @@ globus_l_xio_verify_open(
         globus_assert(!"Server string doesn't match");
     }
 
-    res = globus_xio_driver_pass_open(&driver_handle, op,
+    res = globus_xio_driver_pass_open(NULL, op,
         globus_l_xio_verify_open_cb, NULL);
 
     return res;
@@ -246,11 +241,7 @@ globus_l_xio_verify_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
-    globus_xio_driver_handle_t          driver_handle;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
 }   
 
 static

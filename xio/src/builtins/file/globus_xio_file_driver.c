@@ -454,7 +454,6 @@ globus_result_t
 globus_l_xio_file_open(
     void *                              driver_target,
     void *                              driver_attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -510,7 +509,8 @@ globus_l_xio_file_open(
     {
         handle->handle = target->handle;
         handle->converted = GLOBUS_TRUE;
-        globus_xio_driver_finished_open(driver_handle, handle, op, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_open(
+            GLOBUS_NULL, handle, op, GLOBUS_SUCCESS);
     }
     
     GlobusXIOFileDebugExit();
@@ -534,7 +534,6 @@ globus_l_xio_file_system_close_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
-    globus_xio_driver_handle_t          driver_handle;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_system_close_cb);
     
@@ -542,11 +541,9 @@ globus_l_xio_file_system_close_cb(
     
     op = (globus_xio_operation_t) user_arg;
     
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     handle = GlobusXIOOperationGetDriverSpecificHandle(op);
     
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_file_handle_destroy(handle);
     
     GlobusXIOFileDebugExit();
@@ -574,7 +571,6 @@ globus_l_xio_file_close(
     if(handle->converted)
     {
         globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-        globus_xio_driver_handle_close(driver_handle);
         globus_l_xio_file_handle_destroy(handle);
     }
     else
@@ -596,7 +592,6 @@ globus_l_xio_file_close(
     return GLOBUS_SUCCESS;
     
 error_register:
-    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_file_handle_destroy(handle);
     
     GlobusXIOFileDebugExitWithError();

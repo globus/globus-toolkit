@@ -154,9 +154,7 @@ next_state(
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
-    globus_xio_driver_handle_t              driver_handle;
 
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     switch(info->state)
     {
         case SMTP_HELO:
@@ -180,7 +178,7 @@ next_state(
             break;
 
         case SMTP_MESSAGE:
-            globus_xio_driver_finished_open(driver_handle, info, op, GLOBUS_SUCCESS);
+            globus_xio_driver_finished_open(NULL, info, op, GLOBUS_SUCCESS);
             return;
             break;
     }
@@ -193,8 +191,7 @@ next_state(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_open(driver_handle, info, op, res);
-        globus_xio_driver_handle_close(driver_handle);
+        globus_xio_driver_finished_open(NULL, info, op, res);
     }
 }
 
@@ -206,18 +203,15 @@ globus_l_xio_smtp_read_header_cb(
     void *                                  user_arg)
 {
     l_smtp_info_t *                         info;
-    globus_xio_driver_handle_t              driver_handle;
     globus_result_t                         res;
 
     info = (l_smtp_info_t *) user_arg;
    /*
      *  if any of these fail, punt on the open
      */
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     if(result != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_open(driver_handle, info, op, result);
-        globus_xio_driver_handle_close(driver_handle);
+        globus_xio_driver_finished_open(NULL, info, op, result);
     }
     else
     {
@@ -234,8 +228,7 @@ globus_l_xio_smtp_read_header_cb(
                 globus_l_xio_smtp_read_header_cb, (void *)  info);
             if(res != GLOBUS_SUCCESS)
             {
-                globus_xio_driver_finished_open(driver_handle, info, op, res);
-                globus_xio_driver_handle_close(driver_handle);
+                globus_xio_driver_finished_open(NULL, info, op, res);
             }
         }
         /* if we have the entire message */
@@ -256,7 +249,7 @@ globus_l_xio_smtp_read_header_cb(
                     "SMTP Error: %s.",
                     info->message));
 
-                globus_xio_driver_finished_open(driver_handle, info, op, res);
+                globus_xio_driver_finished_open(NULL, info, op, res);
             }
             /* ,ove to next state */
             else
@@ -284,12 +277,7 @@ globus_l_xio_smtp_write_header_cb(
      */
     if(result != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_handle_t         driver_handle;
-
-        driver_handle = GlobusXIOOperationGetDriverHandle(op);
-
-        globus_xio_driver_finished_open(driver_handle, info, op, result);
-        globus_xio_driver_handle_close(driver_handle);
+        globus_xio_driver_finished_open(NULL, info, op, result);
     }
     /*
      *  read the response
@@ -311,15 +299,13 @@ globus_l_xio_smtp_open_cb(
     globus_result_t                         result,
     void *                                  user_arg)
 {
-    globus_xio_driver_handle_t              driver_handle;
     l_smtp_info_t *                         info;
 
     info = (l_smtp_info_t *) user_arg;
 
     if(result != GLOBUS_SUCCESS)
     {
-        driver_handle = GlobusXIOOperationGetDriverHandle(op);
-        globus_xio_driver_finished_open(driver_handle, info, op, result);
+        globus_xio_driver_finished_open(NULL, info, op, result);
     }
     else
     {
@@ -335,7 +321,6 @@ globus_l_xio_smtp_open(
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
-    globus_xio_driver_handle_t              driver_handle;
     l_smtp_info_t *                         info;
 
     if(driver_attr == NULL)
@@ -345,7 +330,7 @@ globus_l_xio_smtp_open(
 
     globus_l_xio_smtp_attr_copy((void **)&info, driver_attr);
 
-    globus_xio_driver_pass_open(&driver_handle, op, globus_l_xio_smtp_open_cb, info);
+    globus_xio_driver_pass_open(NULL, op, globus_l_xio_smtp_open_cb, info);
 
     return res;
 }
@@ -359,11 +344,7 @@ globus_l_xio_smtp_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
-    globus_xio_driver_handle_t          driver_handle;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
 }   
 
 void
