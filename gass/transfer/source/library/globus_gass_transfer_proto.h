@@ -123,8 +123,12 @@ typedef struct
     globus_gass_transfer_proto_create_listener_t new_listener;
 } globus_gass_transfer_proto_descriptor_t;
 
-globus_result_t
+int
 globus_gass_transfer_proto_register_protocol(
+    globus_gass_transfer_proto_descriptor_t *	proto_desc);
+
+int
+globus_gass_transfer_proto_unregister_protocol(
     globus_gass_transfer_proto_descriptor_t *	proto_desc);
 
 void

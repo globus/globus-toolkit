@@ -80,7 +80,7 @@ globus_l_gass_transfer_operation_complete(
     void *					callback_arg;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req == GLOBUS_NULL)
@@ -141,11 +141,13 @@ globus_l_gass_transfer_operation_complete(
 		/* free up the GASS's reference to this request */
 		globus_i_gass_transfer_request_destroy(request);
 		
+		globus_i_gass_transfer_unlock();
 		if(fail_callback != GLOBUS_NULL)
 		{
 		    fail_callback(callback_arg,
 				  request);
 		}
+		globus_i_gass_transfer_lock();
 	    }
 	}
 	else
@@ -187,11 +189,13 @@ globus_l_gass_transfer_operation_complete(
 	    /* free up the proto's and GASS's reference to this request */
 	    globus_i_gass_transfer_request_destroy(request);
 
+	    globus_i_gass_transfer_unlock();
 	    if(fail_callback != GLOBUS_NULL)
 	    {
 		fail_callback(callback_arg,
 			      request);
 	    }
+	    globus_i_gass_transfer_lock();
 	}
 
 	break;
@@ -224,8 +228,10 @@ globus_l_gass_transfer_operation_complete(
 	/* free up the proto's and GASS's reference to this request */
 	globus_i_gass_transfer_request_destroy(request);
 
+	globus_i_gass_transfer_unlock();
 	fail_callback(callback_arg,
 		      request);
+	globus_i_gass_transfer_lock();
 
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
@@ -280,7 +286,7 @@ globus_gass_transfer_proto_listener_ready(
     void *					callback_arg;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -340,7 +346,7 @@ globus_gass_transfer_proto_listener_ready(
 }
 /* globus_gass_transfer_proto_listener_ready() */
 
-globus_result_t
+int
 globus_gass_transfer_proto_register_protocol(
     globus_gass_transfer_proto_descriptor_t *	proto_desc)
 {
@@ -350,6 +356,26 @@ globus_gass_transfer_proto_register_protocol(
     return GLOBUS_SUCCESS;
 }
 
+
+int
+globus_gass_transfer_proto_unregister_protocol(
+    globus_gass_transfer_proto_descriptor_t *	proto_desc)
+{
+    globus_gass_transfer_proto_descriptor_t *	tmp;
+    
+    tmp = globus_hashtable_lookup(&globus_i_gass_transfer_protocols,
+				  proto_desc->url_scheme);
+    if(tmp)
+    {
+	tmp = globus_hashtable_remove(&globus_i_gass_transfer_protocols,
+				      proto_desc->url_scheme);
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	return GLOBUS_GASS_ERROR_INVALID_USE;
+    }
+}
 /*
  * Function: globus_gass_transfer_proto_request_ready()
  * 
@@ -372,7 +398,7 @@ globus_gass_transfer_proto_request_ready(
     void *					callback_arg;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req == GLOBUS_NULL)
@@ -482,7 +508,7 @@ globus_gass_transfer_proto_new_listener_request(
     globus_gass_transfer_request_struct_t *	req;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -491,7 +517,7 @@ globus_gass_transfer_proto_new_listener_request(
 	return;
     }
 
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
     if(req == GLOBUS_NULL)
     {
@@ -591,7 +617,7 @@ globus_gass_transfer_proto_request_denied(
     void *					callback_arg;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req == GLOBUS_NULL)
@@ -673,7 +699,7 @@ globus_gass_transfer_proto_request_referred(
     void *					callback_arg;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req == GLOBUS_NULL)

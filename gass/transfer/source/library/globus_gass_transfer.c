@@ -15,9 +15,13 @@ CVS Information:
 #include "globus_i_gass_transfer.h"
 
 globus_hashtable_t globus_i_gass_transfer_protocols;
-globus_handle_table_t globus_i_gass_transfer_requests;
-globus_handle_table_t globus_i_gass_transfer_listeners;
+globus_handle_table_t globus_i_gass_transfer_request_handles;
+globus_handle_table_t globus_i_gass_transfer_listener_handles;
+globus_list_t * globus_i_gass_transfer_requests = GLOBUS_NULL;
+globus_list_t * globus_i_gass_transfer_listeners = GLOBUS_NULL;
 globus_mutex_t globus_i_gass_transfer_mutex;
+globus_cond_t globus_i_gass_transfer_shutdown_cond;
+globus_bool_t globus_i_gass_transfer_deactivating = GLOBUS_FALSE;
 
 static
 int
@@ -36,7 +40,8 @@ globus_module_descriptor_t globus_i_gass_transfer_module =
 };
 
 
-static int
+static
+int
 globus_l_gass_transfer_activate(void)
 {
     globus_module_activate(GLOBUS_COMMON_MODULE);
@@ -47,8 +52,8 @@ globus_l_gass_transfer_activate(void)
 			  globus_hashtable_string_hash,
 			  globus_hashtable_string_keyeq);
 
-    globus_handle_table_init(&globus_i_gass_transfer_requests);
-    globus_handle_table_init(&globus_i_gass_transfer_listeners);
+    globus_handle_table_init(&globus_i_gass_transfer_request_handles);
+    globus_handle_table_init(&globus_i_gass_transfer_listener_handles);
 
     globus_module_activate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
 
@@ -59,22 +64,82 @@ globus_l_gass_transfer_activate(void)
 
     globus_mutex_init(&globus_i_gass_transfer_mutex,
                       GLOBUS_NULL);
+    globus_cond_init(&globus_i_gass_transfer_shutdown_cond,
+		     GLOBUS_NULL);
+
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gass_transfer_activate() */
 
-static int
+static
+int
 globus_l_gass_transfer_deactivate(void)
 {
-    globus_hashtable_destroy(&globus_i_gass_transfer_protocols);
-    globus_handle_table_destroy(&globus_i_gass_transfer_requests);
-    globus_handle_table_destroy(&globus_i_gass_transfer_listeners);
-    globus_mutex_destroy(&globus_i_gass_transfer_mutex);
+    globus_list_t *				rest;
+
+    globus_i_gass_transfer_lock();
+    globus_i_gass_transfer_deactivating = GLOBUS_TRUE;
+    
+    rest = globus_i_gass_transfer_requests;
+    
+    while(!globus_list_empty(rest))
+    {
+	globus_gass_transfer_request_t 		tmp;
+	globus_gass_transfer_request_struct_t *	req;
+	int					rc;
+
+	tmp = (globus_gass_transfer_request_t)
+	    globus_list_first(rest);
+
+	rest = globus_list_rest(rest);
+
+	req = globus_handle_table_lookup(
+	    &globus_i_gass_transfer_request_handles,
+	    tmp);
+	
+	rc = globus_i_gass_transfer_fail(
+	    tmp,
+	    req,
+	    globus_i_gass_transfer_deactivate_callback,
+	    GLOBUS_NULL);
+    }
+
+    while(!globus_list_empty(globus_i_gass_transfer_requests))
+    {
+	globus_cond_wait(&globus_i_gass_transfer_shutdown_cond,
+			 &globus_i_gass_transfer_mutex);	 
+    }
+    
+    globus_gass_transfer_proto_unregister_protocol(
+	&globus_i_gass_transfer_http_descriptor);
+
+    globus_gass_transfer_proto_unregister_protocol(
+	&globus_i_gass_transfer_https_descriptor);
 
     globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
+    
+    globus_handle_table_destroy(&globus_i_gass_transfer_listener_handles);
+    globus_handle_table_destroy(&globus_i_gass_transfer_request_handles);
+
+    
+    globus_hashtable_destroy(&globus_i_gass_transfer_protocols);
+
+    globus_i_gass_transfer_unlock();
+
+#if !defined(BUILD_LITE)
+    globus_mutex_destroy(&globus_i_gass_transfer_mutex);
+#endif
 
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gass_transfer_deactivate() */
+
+void
+globus_i_gass_transfer_deactivate_callback(
+    void *					user_arg,
+    globus_gass_transfer_request_t		request)
+{
+    globus_i_gass_transfer_request_destroy(request);
+}

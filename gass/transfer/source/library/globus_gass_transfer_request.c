@@ -23,7 +23,7 @@ globus_gass_transfer_request_get_type(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -44,7 +44,7 @@ globus_gass_transfer_request_set_type(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL||
        req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID)
@@ -66,7 +66,7 @@ globus_gass_transfer_request_get_user_pointer(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL||
        req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID)
@@ -88,7 +88,7 @@ globus_gass_transfer_request_set_user_pointer(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -109,7 +109,7 @@ globus_gass_transfer_request_get_status(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req != GLOBUS_NULL)
     {
@@ -159,7 +159,7 @@ globus_gass_transfer_request_get_referral(
     }
     /* Check for illegal handle */
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -197,7 +197,7 @@ globus_gass_transfer_request_get_url(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -217,7 +217,7 @@ globus_gass_transfer_request_set_url(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL ||
        req->url != GLOBUS_NULL)
@@ -238,7 +238,7 @@ globus_gass_transfer_request_set_length(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -256,7 +256,7 @@ globus_gass_transfer_request_get_length(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -274,7 +274,7 @@ globus_gass_transfer_request_get_denial_reason(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -293,7 +293,7 @@ globus_gass_transfer_request_get_denial_message(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -312,7 +312,7 @@ globus_gass_transfer_request_get_subject(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -333,7 +333,7 @@ globus_gass_transfer_request_set_subject(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -409,9 +409,12 @@ globus_i_gass_transfer_request_init(
 	req->attr = GLOBUS_NULL;
     }
 
-    *request = globus_handle_table_insert(&globus_i_gass_transfer_requests,
+    *request = globus_handle_table_insert(&globus_i_gass_transfer_request_handles,
 					  (void *) req,
 					  2);
+    globus_list_insert(&globus_i_gass_transfer_requests,
+		       (void *) (*request));
+    
     return;
 
   free_fifo:
@@ -433,7 +436,7 @@ globus_i_gass_transfer_request_destroy(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
@@ -441,14 +444,24 @@ globus_i_gass_transfer_request_destroy(
     }
 
     referenced =
-	globus_handle_table_decrement_reference(&globus_i_gass_transfer_requests,
+	globus_handle_table_decrement_reference(&globus_i_gass_transfer_request_handles,
 						request);
     if(!referenced)
     {
 	int					i;
+	globus_list_t *				tmp;
+
+	tmp = globus_list_search(globus_i_gass_transfer_requests,
+				 (void *) request);
+	
+	globus_list_remove(&globus_i_gass_transfer_requests,
+			   tmp);
+
+	globus_cond_signal(&globus_i_gass_transfer_shutdown_cond);
+	
 	if(req->attr)
 	{
-	    globus_object_free(req->attr);
+		globus_object_free(req->attr);
 	}
 	globus_fifo_destroy(&req->pending_data);
 	globus_free(req->url);
@@ -488,13 +501,16 @@ globus_gass_transfer_request_destroy(
     globus_gass_transfer_request_t		request)
 {
     globus_gass_transfer_request_struct_t *	req;
+    int						rc;
 
+    globus_i_gass_transfer_lock();
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	goto finish;
     }
     if(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_DONE &&
@@ -503,10 +519,15 @@ globus_gass_transfer_request_destroy(
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	goto finish;
     }
 
-    return globus_i_gass_transfer_request_destroy(request);
+    rc =  globus_i_gass_transfer_request_destroy(request);
+
+ finish:
+    globus_i_gass_transfer_unlock();
+    return rc;
 }
 /* globus_gass_transfer_request_destroy() */
 

@@ -31,9 +31,11 @@ CVS Information:
 EXTERN_C_BEGIN
 
 extern globus_hashtable_t globus_i_gass_transfer_protocols;
-extern globus_handle_table_t globus_i_gass_transfer_requests;
-extern globus_handle_table_t globus_i_gass_transfer_listeners;
-extern globus_mutex_t globus_i_gass_transfer_mutex;
+extern globus_handle_table_t globus_i_gass_transfer_request_handles;
+extern globus_handle_table_t globus_i_gass_transfer_listener_handles;
+extern globus_list_t * globus_i_gass_transfer_requests;
+extern globus_list_t * globus_i_gass_transfer_listeners;
+extern globus_bool_t globus_i_gass_transfer_deactivating;
 
 /* Default implemented protocols */
 extern globus_module_descriptor_t globus_i_gass_transfer_http_module;
@@ -165,14 +167,18 @@ void
 globus_i_gass_transfer_recv_dispatcher(
     globus_gass_transfer_request_t		request);
 
-#if defined(BUILD_LITE)
-#define globus_i_gass_transfer_lock()	
-#define globus_i_gass_transfer_unlock()	
-#else
-#define globus_i_gass_transfer_lock()	globus_mutex_lock(&globus_i_gass_transfer_mutex)
-#define globus_i_gass_transfer_unlock()	globus_mutex_unlock(&globus_i_gass_transfer_mutex)
-#endif
+extern globus_cond_t globus_i_gass_transfer_shutdown_cond;
+extern globus_mutex_t globus_i_gass_transfer_mutex;
 
+#define globus_i_gass_transfer_lock()   \
+	globus_mutex_lock(&globus_i_gass_transfer_mutex)
+#define globus_i_gass_transfer_unlock()	\
+	globus_mutex_unlock(&globus_i_gass_transfer_mutex)
+
+void
+globus_i_gass_transfer_deactivate_callback(
+    void *					user_arg,
+    globus_gass_transfer_request_t		request);
 
 EXTERN_C_END
 

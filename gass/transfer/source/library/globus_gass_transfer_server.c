@@ -76,9 +76,12 @@ globus_gass_transfer_create_listener(
     l->status = GLOBUS_GASS_TRANSFER_LISTENER_INVALID;
     l->user_pointer = GLOBUS_NULL;
 
-    *listener = globus_handle_table_insert(&globus_i_gass_transfer_listeners,
+    *listener = globus_handle_table_insert(&globus_i_gass_transfer_listener_handles,
 					   (void *) l,
 					   2);
+    globus_list_insert(&globus_i_gass_transfer_listeners,
+		       (void *) (*listener));
+    
     rc = protocol->new_listener(*listener,
 				attr,
 				scheme,
@@ -121,7 +124,7 @@ globus_gass_transfer_close_listener(
     int						rc;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -202,7 +205,7 @@ globus_gass_transfer_register_listen(
     int						rc;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -257,7 +260,7 @@ globus_gass_transfer_register_accept(
     globus_gass_transfer_request_struct_t *	req;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -284,7 +287,7 @@ globus_gass_transfer_register_accept(
 	    goto error_exit;
 	}
 
-	req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 					 (*request));
 
 	if(req== GLOBUS_NULL)
@@ -329,7 +332,7 @@ globus_gass_transfer_listener_get_user_pointer(
 {
     globus_gass_transfer_listener_struct_t *	l;
 
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -349,7 +352,7 @@ globus_gass_transfer_listener_set_user_pointer(
 {
     globus_gass_transfer_listener_struct_t *	l;
 
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -371,7 +374,7 @@ globus_gass_transfer_listener_get_base_url(
     char *					base_url;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
 
     if(l == GLOBUS_NULL)
@@ -401,7 +404,7 @@ globus_gass_transfer_refer(
     globus_size_t				i;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req== GLOBUS_NULL)
@@ -487,7 +490,7 @@ globus_gass_transfer_authorize(
     int						rc;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req== GLOBUS_NULL)
@@ -566,7 +569,7 @@ globus_gass_transfer_deny(
     int						rc;
 
     globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
     if(req== GLOBUS_NULL)
@@ -654,7 +657,7 @@ globus_l_gass_transfer_callback_close_callback(
     l = (globus_gass_transfer_listener_struct_t *) arg;
 
     globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
     globus_assert(l != GLOBUS_NULL);
 
@@ -682,7 +685,7 @@ globus_i_gass_transfer_listener_destroy(
     globus_gass_transfer_listener_struct_t *	l;
 
     l =
-	globus_handle_table_lookup(&globus_i_gass_transfer_listeners,
+	globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
 				   listener);
     if(l == GLOBUS_NULL)
     {
@@ -690,10 +693,17 @@ globus_i_gass_transfer_listener_destroy(
     }
 
     referenced =
-	globus_handle_table_decrement_reference(&globus_i_gass_transfer_listeners,
+	globus_handle_table_decrement_reference(&globus_i_gass_transfer_listener_handles,
 						listener);
     if(!referenced)
     {
+	globus_list_t *				tmp;
+
+	tmp = globus_list_search(globus_i_gass_transfer_requests,
+				 (void *) listener);
+
+	globus_list_remove(&globus_i_gass_transfer_listeners,
+			   tmp);
 	if(l->base_url)
 	{
 	    globus_free(l->base_url);

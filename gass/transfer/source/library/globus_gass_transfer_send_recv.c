@@ -72,7 +72,7 @@ globus_gass_transfer_send_bytes(
 	goto error_exit;
     }
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
 
     if(req == GLOBUS_NULL)
@@ -190,7 +190,7 @@ globus_gass_transfer_receive_bytes(
 	goto error_exit;
     }
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
 
     if(req == GLOBUS_NULL)
@@ -263,35 +263,15 @@ globus_gass_transfer_receive_bytes(
 }
 /* globus_gass_transfer_receive_bytes() */
 
-/*
- * Function: globus_gass_transfer_fail()
- * 
- * Description: User-triggered error. Signal failure to the
- *              protocol module, and call any oustanding callbacks
- * 
- * Parameters: 
- * 
- * Returns: 
- */
 int
-globus_gass_transfer_fail(
+globus_i_gass_transfer_fail(
     globus_gass_transfer_request_t		request,
+    globus_gass_transfer_request_struct_t *	req,
     globus_gass_transfer_callback_t		callback,
     void *					callback_arg)
 {
-    globus_gass_transfer_request_struct_t *	req;
     int						rc = GLOBUS_SUCCESS;
-
-    globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
-				     request);
-
-    if(req == GLOBUS_NULL)
-    {
-        rc = GLOBUS_GASS_ERROR_INVALID_USE;
-
-	goto finish;
-    }
+    
     switch(req->status)
     {
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING:
@@ -303,6 +283,7 @@ globus_gass_transfer_fail(
 			 request);
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
+	rc = GLOBUS_GASS_ERROR_DONE;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
 	req->fail_callback = callback;
@@ -332,25 +313,79 @@ globus_gass_transfer_fail(
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
+	rc = GLOBUS_GASS_ERROR_DONE;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING:
+	req->fail_callback = callback;
+	req->fail_callback_arg = callback_arg;
 	req->status = GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL1;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING2:
+	req->fail_callback = callback;
+	req->fail_callback_arg = callback_arg;
 	req->status = GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL2;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING3:
+	req->fail_callback = callback;
+	req->fail_callback_arg = callback_arg;
 	req->status = GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL3;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING:
+	req->fail_callback = callback;
+	req->fail_callback_arg = callback_arg;
 	req->status = GLOBUS_GASS_TRANSFER_REQUEST_USER_FAIL;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_INVALID:
 	break;
     }
+
+    return rc;
+}
+/* globus_i_gass_transfer_fail() */
+
+/*
+ * Function: globus_gass_transfer_fail()
+ * 
+ * Description: User-triggered error. Signal failure to the
+ *              protocol module, and call any oustanding callbacks
+ * 
+ * Parameters: 
+ * 
+ * Returns: 
+ */
+int
+globus_gass_transfer_fail(
+    globus_gass_transfer_request_t		request,
+    globus_gass_transfer_callback_t		callback,
+    void *					callback_arg)
+{
+    globus_gass_transfer_request_struct_t *	req;
+    int						rc = GLOBUS_SUCCESS;
+
+    globus_i_gass_transfer_lock();
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
+				     request);
+
+    if(req == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GASS_ERROR_INVALID_USE;
+
+	goto finish;
+    }
+    if(callback == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+
+	goto finish;
+    }
+
+    rc = globus_i_gass_transfer_fail(request,
+				     req,
+				     callback,
+				     callback_arg);
   finish:
     globus_i_gass_transfer_unlock();
-    return GLOBUS_SUCCESS;
+    return rc;
 }
 /* globus_gass_transfer_fail() */
 
@@ -454,7 +489,7 @@ globus_i_gass_transfer_send_dispatcher(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
 
     if(req == GLOBUS_NULL)
@@ -517,7 +552,7 @@ globus_i_gass_transfer_recv_dispatcher(
     globus_gass_transfer_request_struct_t *	req;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
 
     /* If we are not in the PENDING state, we should not look at the queue */
@@ -572,36 +607,48 @@ globus_l_gass_transfer_drain_callbacks(
     request = (globus_gass_transfer_request_t) arg;
 
     req =
-	globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_FALSE;
+	return GLOBUS_TRUE;
     }
 
-    callback = req->fail_callback;
-    callback_arg = req->fail_callback_arg;
+    if(globus_i_gass_transfer_deactivating)
+    {
+	callback = globus_i_gass_transfer_deactivate_callback;
+	callback_arg = GLOBUS_NULL;
+    }
+    else
+    {
+	callback = req->fail_callback;
+	callback_arg = req->fail_callback_arg;
+    }
 
     /* drain queue of pending data requests */
     while(!globus_fifo_empty(&req->pending_data))
     {
 	globus_gass_transfer_pending_t *	pending;
-
+	
 	pending = globus_fifo_dequeue(&req->pending_data);
-
-	globus_i_gass_transfer_unlock();
-	pending->callback(pending->callback_arg,
-			  request,
-			  pending->bytes,
-			  0,
-			  GLOBUS_TRUE);
-	globus_i_gass_transfer_lock();
+	
+	if(!globus_i_gass_transfer_deactivating)
+	{
+	    globus_i_gass_transfer_unlock();
+	    pending->callback(pending->callback_arg,
+			      request,
+			      pending->bytes,
+			      0,
+			      GLOBUS_TRUE);
+	    globus_i_gass_transfer_lock();
+	}
+	globus_free(pending);
     }
+
     /* free up references to request and proto */
     req->proto->destroy(req->proto,
 			request);
-    /* free up the proto's and GASS's reference to this request */
-    globus_i_gass_transfer_request_destroy(request);
+    /* free up GASS's reference to this request */
     globus_i_gass_transfer_request_destroy(request);
 
     if(callback)

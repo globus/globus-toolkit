@@ -317,7 +317,7 @@ globus_i_gass_transfer_client_request(
     globus_gass_transfer_proto_new_request_t 	request_func;
     globus_gass_transfer_request_struct_t *	req;
 
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_requests,
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     (*request));
 
     /* determine the protocol module to use for the request */
