@@ -88,17 +88,17 @@ s_myjob_init ()
   err = nexus_mutex_init (&s_mutex, NULL);
   assert (!err);
 
-  duct_contact = getenv (MYJOB_DUCT_CONTACT);
+  duct_contact = getenv ("GLOBUS_GRAM_MYJOB_CONTACT");
   /*
   if (duct_contact == GLOBUS_NULL)
   {
-      fprintf(stderr,"globus_gram_myjob_duct: Contact Environment Variable (%s) not defined\n",MYJOB_DUCT_CONTACT);
+      fprintf(stderr,"globus_gram_myjob_duct: Contact Environment Variable (%s) not defined\n","GLOBUS_GRAM_MYJOB_CONTACT");
   }
   else
   {
       if (strlen(duct_contact) == 0)
       {
-	  fprintf(stderr,"globus_gram_myjob_duct: Contact Environment Variable (%s)  defined empty\n",MYJOB_DUCT_CONTACT);
+	  fprintf(stderr,"globus_gram_myjob_duct: Contact Environment Variable (%s)  defined empty\n","GLOBUS_GRAM_MYJOB_CONTACT");
       }
   }
   */
