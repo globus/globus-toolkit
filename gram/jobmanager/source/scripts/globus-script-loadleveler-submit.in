@@ -204,7 +204,6 @@ createScript () {
    if [ -n "${comment}" ]; then
       echo "#@ comment          = ${comment}"
    fi
-   echo "#@ job_type         = ${ll_jobtype}" 
 
    if [ "${grami_host_count}" -ne 0 ]; then
       echo "#@ total_tasks      = ${grami_count}"
