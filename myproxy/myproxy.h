@@ -40,9 +40,9 @@
 #define MYPROXY_CRED_OWNER_STRING   "CRED_OWNER="
 
 /* myproxy server protocol information */
-#define MYPROXY_RESPONSE_TYPE_STRING     "RESPONSE_TYPE="
+#define MYPROXY_RESPONSE_TYPE_STRING     "RESPONSE="
 #define MYPROXY_RESPONSE_SIZE_STRING     "RESPONSE_SIZE="
-#define MYPROXY_RESPONSE_STRING   "RESPONSE="
+#define MYPROXY_RESPONSE_STRING   "RESPONSE_STR="
 #define MYPROXY_ERROR_STRING        "ERROR="
 
 /* number of last error */

@@ -751,7 +751,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_SIZE_STRING,
 				  tmp, "\n", NULL);
 	if (len < 0)
-	  return -1;
+	   goto skip;   // maybe its a different version
 
 	totlen += len;
 
@@ -768,7 +768,8 @@ myproxy_serialize_response(const myproxy_response_t *response,
 
         totlen += len;
     }
-	
+
+	skip:
     /* Only add error string if necessary */
       if (response->response_type == MYPROXY_ERROR_RESPONSE) 
       {
@@ -841,6 +842,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     int value;
     char buf[10];
     char *response_str;
+    char buffer[128];
     int response_size = 0;
 
     assert(data != NULL); 
@@ -873,10 +875,25 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  response_type_str, sizeof(response_type_str));
 
-    if (len == -1)
+    if (len == -1 || len == -2)
     {
-	verror_prepend_string("Error_parsing response type from server response");
-	return -1;
+
+    /*
+	// the protocol of the earlier versions did not send a response_type
+	// parameter in its response. for compatibility we parse the 
+	// RESPONSE= string which previously gave the type
+
+    	len = convert_message(data, datalen,
+			  MYPROXY_RESPONSE_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  response_type_str, sizeof(response_type_str));
+
+	if (len == -1 || len == -2)
+*/		return -1;
+
+//	response->response_string = NULL;
+//	goto skip;
+
     }
 
     if (parse_response_type(response_type_str, &response->response_type) == -1)
@@ -891,11 +908,12 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  buf, sizeof(response_size));
 
-    	if (len == -1)
+    	if (len == -1 || len == -2)
     	{
-		verror_prepend_string("Error_parsing response size from server response");
-		return -1;
-    	}
+		//verror_prepend_string("Error_parsing response size from server response");
+		response_str = NULL;
+		goto skip;  // maybe its an earlier version
+    	}	
 
         if (parse_string(buf, &response_size) == -1)
         {
@@ -917,7 +935,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     	response->response_string = strdup (response_str);
     }
-    
+   
+    skip:;
     if (response->response_type == MYPROXY_ERROR_RESPONSE)
     {
     /* It's ok if ERROR not present */
@@ -944,15 +963,15 @@ myproxy_deserialize_response(myproxy_response_t *response,
     len = convert_message(data, datalen,
 	                  MYPROXY_START_TIME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  response_str, sizeof(response_str));
+			  buffer, sizeof(buffer));
     if (len > 0) {
-       switch(string_to_int(response_str, &value)) {
+       switch(string_to_int(buffer, &value)) {
 	  case STRING_TO_INT_SUCCESS:
 	     response->cred_start_time = value;
 	     break;
 	  case STRING_TO_INT_NONNUMERIC:
 	     verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"",
-		               response_str);
+		               buffer);
 	     return -1;
 	  case STRING_TO_INT_ERROR:
 	     return -1;
@@ -962,15 +981,15 @@ myproxy_deserialize_response(myproxy_response_t *response,
     len = convert_message(data, datalen,
 	                  MYPROXY_END_TIME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  response_str, sizeof(response_str));
+			  buffer, sizeof(buffer));
     if (len > 0) {
-       switch(string_to_int(response_str, &value)) {
+       switch(string_to_int(buffer, &value)) {
 	  case STRING_TO_INT_SUCCESS:
 	     response->cred_end_time = value;
 	     break;
 	  case STRING_TO_INT_NONNUMERIC:
 	     verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"",
-		               response_str);
+		               buffer);
 	     return -1;
 	  case STRING_TO_INT_ERROR:
 	     return -1;
