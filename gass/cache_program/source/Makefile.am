@@ -55,7 +55,9 @@ globus_gass_cache_LDFLAGS = $(GPT_LDFLAGS)
 # from the dependent packages
 globus_gass_cache_LDADD = $(GPT_PGM_LINKS)
 
-EXTRA_DIST = globus-gass-cache-destroy
+EXTRA_DIST = globus-gass-cache-destroy \
+	version.h.in \
+	dirt.sh
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

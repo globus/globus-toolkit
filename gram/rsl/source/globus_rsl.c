@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "globus_rsl.h"
 #include <strings.h>
+#include "version.h"
 
 static int
 globus_i_rsl_value_unparse_to_fifo (globus_rsl_value_t * ast,
@@ -39,7 +40,9 @@ globus_module_descriptor_t              globus_i_rsl_module =
     "globus_rsl",
     globus_l_rsl_activate,
     globus_l_rsl_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 

@@ -27,6 +27,7 @@ CVS Information:
 #include <unistd.h>
 #include <pwd.h>
 #include <ctype.h>
+#include "version.h"
 
 /******************************************************************************
                                Type definitions
@@ -75,7 +76,9 @@ globus_module_descriptor_t globus_i_gass_server_ez_module =
     "globus_gass_server_ez",
     globus_l_gass_server_ez_activate,
     globus_l_gass_server_ez_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 

@@ -54,6 +54,7 @@ CVS Information:
 
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
+#include "version.h"
 
 /*
  * UNICOS has four quota errno values: EQUSR, EQGRP, EQACT, EOFQUOTA
@@ -85,7 +86,8 @@ globus_module_descriptor_t globus_i_gass_cache_module =
     globus_l_gass_cache_module_activate,
     GLOBUS_NULL,
     GLOBUS_NULL,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    &local_version
 };
 
 /******************************************************************************

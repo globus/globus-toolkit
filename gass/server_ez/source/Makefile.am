@@ -5,8 +5,8 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
-	pkgdata \
-	doxygen
+	pkgdata
+
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
@@ -58,7 +58,9 @@ Scripts= \
 	globus-gass-server-shutdown
 
 bin_SCRIPTS = $(Scripts)
-EXTRA_DIST = $(Scripts)
+EXTRA_DIST = globus-gass-server-shutdown.in \
+	version.h.in \
+	dirt.sh
 
 
 # bin_PROGRAMS is an automake macro which contains
@@ -92,9 +94,8 @@ globus_gass_server_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_gass_server_LDADD = $(GPT_PGM_LINKS) \
-	./libglobus_gass_server_ez_$(GLOBUS_FLAVOR_NAME).la
-
+globus_gass_server_LDADD = ./libglobus_gass_server_ez_$(GLOBUS_FLAVOR_NAME).la \
+			$(GPT_PGM_LINKS) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
