@@ -346,6 +346,7 @@ main(
                     "\t-home globus_location\n"
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
+                    "\t-history job-history-directory\n" 
                     "\t-publish-jobs\n"
                     "\t-save-logfile [ always | on_errors ]\n"
 		    "\t-scratch-dir-base scratch-directory\n"

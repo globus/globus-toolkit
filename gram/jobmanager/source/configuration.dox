@@ -31,6 +31,9 @@ is needed.
 @par -job-reporting-dir PATH
 Set the path to the directory to store job status files.
 
+@par -history PATH
+Set the path to the directory to store job history files.
+
 @par -publish-jobs
 Publish job status files in the -job-reporting-dir path. The GRAM reporter
 will publish files jobs status files in that directory in the MDS.
