@@ -43,7 +43,7 @@ print "objectclass: GlobusActiveSearch\n";
 print "type: exec\n";
 print "path: $globusdir/libexec\n";
 print "base: globus-gram-reporter\n";
-print "args: -conf $globusdir/etc/globus-job-manager.conf -type fork -rdn jobmanager -host-dn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
+print "args: -conf $globusdir/etc/globus-job-manager.conf -type fork -rdn jobmanager -dmdn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
 print "cachetime: 30\n";
 print "timelimit: 20\n";
 print "sizelimit: 20\n";
