@@ -89,7 +89,7 @@ globus_result_t globus_gsi_cert_utils_make_time(
     time_t *                            newtime);
 
 globus_result_t globus_gsi_cert_utils_get_base_name(
-    X509_NAME *                         subject
+    X509_NAME *                         subject,
     int                                 proxy_depth);
 
 globus_result_t globus_gsi_cert_utils_get_cert_type(
