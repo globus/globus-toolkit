@@ -101,6 +101,8 @@ do                                                                  \
             globus_memory_pop_node(&_h->op_memory);                 \
     _op->op_type = type;                                            \
     _op->xio_handle = _h;                                           \
+    _op->timeout_cb = NULL;                                         \
+    _op->op_list = NULL;                                            \
     _op->cached_res = GLOBUS_SUCCESS;                               \
     _op->stack_size = _h->stack_size;                               \
     _op->context = _h->context;                                     \
@@ -292,6 +294,25 @@ globus_i_xio_top_open_callback(
     }
     globus_mutex_unlock(&op->xio_handle->mutex);
 
+    globus_mutex_lock(&op->xio_handle->op_mutex);
+    {
+        if(op->timeout_set)
+        {
+            /* 
+             * unregister the cancel
+             */
+            op->timeout_set = GLOBUS_FALSE;
+            if(globus_i_xio_timer_unregister_timeout(op))
+            {
+                /* at this point we know timeout won't happen */
+                globus_list_remove(&op->xio_handle->op_list, 
+                    globus_list_search(op->xio_handle->op_list, op));
+                globus_l_xio_op_dec(op);
+            }
+        }
+    }
+    globus_mutex_unlock(&op->xio_handle->op_mutex);
+
     /* 
      *  when at the top don't worry about the cancel
      *  just act as though we missed it
@@ -316,10 +337,6 @@ globus_i_xio_top_open_callback(
     /* in all other cases we can just call callback */
     else
     {
-        /* 
-         * before calling the callback we need to stop  
-         * cancel
-         */
         globus_mutex_lock(&op->cancel_mutex);
         {
             globus_l_xio_op_dec(op);
@@ -375,32 +392,83 @@ globus_l_xio_open_driver_kickout(
 }
 
 globus_bool_t
-globus_i_xio_operation_cancel(
-    globus_i_xio_operation_t *                  op)
+globus_l_xio_timeout_callback(
+    void *                                      user_arg)
 {
+    globus_i_xio_operation_t *                  op;
     globus_bool_t                               rc = GLOBUS_FALSE;
+    globus_bool_t                               tmp_rc;
+
+    op = (globus_i_xio_operation_t *) user_arg;
 
     globus_mutex_lock(&op->xio_handle->op_mutex);
     {
-        /* 
-         * set cancel flag
-         * if a driver has a registered callback it will be called
-         * if it doesn't the next pass or finished will pick it up
-         */
-        op->canceled = GLOBUS_TRUE;
-        if(cancel_callback)
+        if(op->op_type == GLOBUS_L_XIO_OPERATION_TYPE_FINISHED)
         {
-            cancel_callback(op);
-            /* it is possible that the driver rejected the cancel request */
-            if(op->canceled)
-            {
-                /* if actually canceled remove from list and dec ref count */
-                
-            } 
-            rc = op->canceled;
+            globus_l_xio_op_dec(op);
         }
     }
-    globus_mutex_lock(&op->xio_handle->op_mutex);
+    globus_mutex_unlock(&op->xio_handle->op_mutex);
+
+    if(op->block_timeout)
+    {
+        return GLOBUS_FALSE;
+    }
+    /* destroy op */
+    if(destroy_op)
+    {
+    }
+
+    /* if we get here there beter be user interest */
+    assert(op->user_timeout_callback != NULL);
+
+    if(op->user_timeout_callback(
+            op->xio_handle, 
+            op->op_type, 
+            op->user_timeout_arg))
+    {
+        /*  
+         * lock the op for the duration of the cancel notification
+         * process.  The driver notificaiotn callback os called locked
+         * this insures that the driver will not receive a callback 
+         * once CancelDisallow is called 
+         */
+        globus_mutex_lock(&op->xio_handle->op_mutex);
+        {
+            /* 
+             * if the user oks the cancel then remove the timeout from 
+             * the poller
+             */
+            tmp_rc = globus_i_xio_timer_unregister_timeout(op);
+            /* since in callback this will always be true */
+            assert(tmp_rc);
+
+            /*
+             * set cancel flag
+             * if a driver has a registered callback it will be called
+             * if it doesn't the next pass or finished will pick it up
+             */
+            op->canceled = GLOBUS_TRUE;
+            if(op->cancel_callback != NULL)
+            {
+                op->cancel_callback(op);
+                /* it is possible that the driver rejected the cancel request */
+                if(!op->canceled)
+                {
+                    /* the driver may have aborted the cancel.  I am not
+                       sure if we will need thins.  notifing the driver is
+                       enough the cancel comes back when ready */
+                    op->canceled = GLOBUS_TRUE;
+                }
+                else
+                {
+                    /* remove from the op list */
+                }
+            }
+            rc = GLOBUS_FALSE;
+        }
+        globus_mutex_lock(&op->xio_handle->op_mutex);
+    }
 
     return rc;
 }
@@ -540,6 +608,7 @@ globus_xio_register_open(
         res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
         goto err;
     }
+
     l_handle->open_timeout = Globus_I_XIO_Attr_Open_Timeout(attr);
     GlobusTimeReltimeCopy(l_handle->open_timeout_period, attr->open_timeout_period);
     l_handle->read_timeout = Globus_I_XIO_Attr_Read_Timeout(attr);
@@ -557,13 +626,28 @@ globus_xio_register_open(
         goto err;
     }
     op->space = Globus_XIO_Attr_Get_Space(attr);
+    op->op_type = GLOBUS_L_XIO_OPERATION_TYPE_OPEN;
 
     /* register timeout */
-    if(l_handle->open_timeout != NULL)
+    if(l_handle->open_timeout_cb != NULL)
     {
+        /* op the operatin reference count for this */
+        op->ref++;
+        op->timeout_cb = l_handle->open_timeout_cb;
+        res = globus_i_xio_timer_register_timeout(
+                g_globus_l_xio_timeout_timer,
+                op,
+                &op->progress,
+                globus_l_xio_timeout_callback,
+                &l_handle->open_timeout_period);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
     }
 
-    Globus_XIO_Driver_Pass_Open(res, tmp_context, globus_i_xio_top_open_callback, cb, user_arg);
+    Globus_XIO_Driver_Pass_Open(res, tmp_context, \
+        globus_i_xio_top_open_callback, cb, user_arg);
 
     if(res != GLOBUS_SUCCESS)
     {
