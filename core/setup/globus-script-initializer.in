@@ -134,7 +134,6 @@ if [ -z "${GLOBUS_LDAP_PATH}" ]; then
     fi
 fi
 }
-	if 
 
 ################# END    Inserted by configure #############
 
