@@ -240,7 +240,7 @@ proxy_extension_create(
 
     if(g_OID_equal(extension_oid, gss_restrictions_extension))
     {
-        asn1_obj = OBJ_txt2obj("RESTRICEDRIGHTS",0);   
+        asn1_obj = OBJ_txt2obj("RESTRICTEDRIGHTS",0);   
     }
     else
     {

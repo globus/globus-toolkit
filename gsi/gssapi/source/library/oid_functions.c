@@ -100,7 +100,7 @@ static const gss_OID_desc gss_restrictions_extension_oid =
 	{11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x03"};
 
 const gss_OID_desc * const gss_restrictions_extension = 
-                &gss_restrictions_extension;
+                &gss_restrictions_extension_oid;
 
 
 
