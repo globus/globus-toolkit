@@ -452,7 +452,7 @@ globus_l_gram_client_setup_attr_t(
 	     &auth_data))
 	 || (res = globus_io_attr_set_secure_authentication_mode(
 	     attrp,
-	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 	     globus_i_gram_protocol_credential))
 	 ||  (gatekeeper_dn ? (res = globus_io_secure_authorization_data_set_identity(
 	     &auth_data,
