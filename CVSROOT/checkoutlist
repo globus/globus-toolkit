@@ -12,3 +12,5 @@
 #
 # comment lines begin with '#'
 cvslog Unable to check out CVS log notification script cvslog
+cvslog.conf Unable to check out cvslog configuration cvslog.conf
+
