@@ -65,12 +65,14 @@ typedef struct globus_l_gram_output_s
     int              poll_counter;
 } globus_l_gram_output_t;
 
+
 typedef struct globus_l_gram_client_contact_s
 {
-    char *           contact;
-    int              job_state_mask;
-    int              failed_count;
+    char *                       contact;
+    int                         job_state_mask;
+    int                         failed_count;
 } globus_l_gram_client_contact_t;
+
 
 typedef struct globus_l_gram_conf_values_s
 {
@@ -141,11 +143,6 @@ static void
 globus_l_gram_start_time_handler(nexus_endpoint_t * endpoint,
                                  nexus_buffer_t * buffer,
                                  globus_bool_t is_non_threaded_handler);
-
-static int 
-globus_l_gram_attach_requested(void * arg,
-                               char * url,
-                               nexus_startpoint_t * sp);
 
 static int 
 globus_l_gram_status_file_gen(char * request_string,
@@ -976,7 +973,7 @@ main(int argc,
         /* copy request to buffer so rest of code is not changed much */
 
         memcpy(buffer, jrbuf, jrbuf_size);
-        free(jrbuf);
+        globus_libc_free(jrbuf);
         jrbuf = NULL;
     }
 
@@ -1064,8 +1061,6 @@ main(int argc,
 					globus_l_jm_http_query_callback,
 					GLOBUS_NULL );
 
-#define GRAM_I_PROTOCOL "https" 
- 
     if (rc != GLOBUS_SUCCESS)
     {
 	GRAM_UNLOCK;
@@ -1073,8 +1068,7 @@ main(int argc,
     }
 
     sprintf(tmp_buffer,
-	    "%s://%s:%hu/%lu/%lu/",
-	    GRAM_I_PROTOCOL,
+	    "https://%s:%hu/%lu/%lu/",
 	    my_host,
 	    my_port,
 	    (unsigned long) getpid(),
@@ -1299,7 +1293,7 @@ main(int argc,
 		    }
 		    else
 		    {
-			globus_free(filename);
+			globus_libc_free(filename);
 			rc = GLOBUS_SUCCESS;
 		    }
 		}
@@ -1474,21 +1468,29 @@ main(int argc,
               "JM: request was successful, sending message to client\n");
 	
 	rc = globus_l_gram_pack_http_job_request_result (
-							 &reply,
-							 GLOBUS_SUCCESS,
-							 graml_job_contact);
+	                                &reply,
+					GLOBUS_SUCCESS,
+					graml_job_contact);
 
-	if (rc == GLOBUS_SUCCESS) {
-	  /* send this reply back down the socket to the client */
-	  globus_gss_assist_wrap_send(&minor_status,
-				      context_handle,
-				      reply,
-				      strlen(reply) + 1,
-				      &token_status,
-				      globus_gss_assist_token_send_fd,
-				      stdout,
-				      request->jobmanager_log_fp);
-	  /* TODO: close the connection. */
+	if (rc == GLOBUS_SUCCESS)
+	{
+	    /* send this reply back down the socket to the client */
+	    globus_gss_assist_wrap_send(&minor_status,
+					context_handle,
+					reply,
+					strlen(reply) + 1,
+					&token_status,
+					globus_gss_assist_token_send_fd,
+					stdout,
+					request->jobmanager_log_fp);
+
+	    /* 
+	     * close the connection (both stdin and stdout are connected
+	     * to the socket)
+	     */
+	    close(0);
+	    close(1);
+	    globus_libc_free(reply);
 	}
 
 	/* restore rc to previous value (is this needed??) */
@@ -1540,17 +1542,25 @@ main(int argc,
 							 request->failure_code,
 							 NULL);
 
-	if (rc == GLOBUS_SUCCESS) {
-	  /* send this reply back down the socket to the client */
-	  globus_gss_assist_wrap_send(&minor_status,
-				      context_handle,
-				      reply,
-				      strlen(reply) + 1,
-				      &token_status,
-				      globus_gss_assist_token_send_fd,
-				      stdout,
-				      request->jobmanager_log_fp);
-	  /* TODO: close the connection. */
+	if (rc == GLOBUS_SUCCESS)
+	{
+	    /* send this reply back down the socket to the client */
+	    globus_gss_assist_wrap_send(&minor_status,
+					context_handle,
+					reply,
+					strlen(reply) + 1,
+					&token_status,
+					globus_gss_assist_token_send_fd,
+					stdout,
+					request->jobmanager_log_fp);
+	    
+	    /* 
+	     * close the connection (both stdin and stdout are connected
+	     * to the socket)
+	     */
+	    close(0);
+	    close(1);
+	    globus_libc_free(reply);
 	}
 
 	/* restore rc to previous value (is this needed??) */
@@ -1576,7 +1586,7 @@ main(int argc,
 					  (globus_time_t) 0,
 					  (globus_time_t)
 					      GRAM_JOB_MANAGER_STAT_FREQUENCY *
-					          1000000,
+					      1000000,
 					  globus_l_gram_status_file_cleanup,
 					  (void *) job_status_dir,
 					  GLOBUS_NULL,
@@ -1589,16 +1599,16 @@ main(int argc,
 					  (void *) request,
 					  GLOBUS_NULL,
 					  GLOBUS_NULL);
-
 	GRAM_LOCK;
         while (!graml_jm_done)
         {
 	    GRAM_TIMED_WAIT(10); /*request->poll_frequency);*/
 	    
-	    /* handler may have occurred while we were unlocked,
-	       so we need to poll file descriptors, etc
-	       if state change occurred
-	    */
+	    /* 
+	     * handler may have occurred while we were unlocked,
+	     * so we need to poll file descriptors, etc
+	     * if state change occurred
+	     */
 	    if (!graml_jm_done)
 	    {
 		/* check if cancel handler was called */
@@ -1611,7 +1621,8 @@ main(int argc,
 			{
 			    grami_fprintf( request->jobmanager_log_fp,
 					   "JM: job status file not found, "
-					   "rewritting it with current status.\n");
+					   "rewritting it with current "
+					   "status.\n");
 			    
 			    globus_l_gram_status_file_gen(final_rsl_spec,
 							  job_status_file_path,
@@ -1628,7 +1639,8 @@ main(int argc,
 		{
 		    if (rc == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED)
 		    {
-			/* unable to get a status for the job.
+			/* 
+			 * unable to get a status for the job.
 			 * often the result of a broken poll script.
 			 */
 			globus_jobmanager_request_cancel(request);
@@ -1641,8 +1653,8 @@ main(int argc,
 			 GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
 		    {
 			grami_fprintf( request->jobmanager_log_fp,
-				       "JM: request check returned DONE or FAILED\n");
-
+				       "JM: request check returned DONE or "
+				       "FAILED\n");
 			graml_jm_done = 1;
 		    }
 		    else
@@ -1675,7 +1687,7 @@ main(int argc,
 
     } /* endif */
 
-    globus_nexus_disallow_attach(my_port);
+    globus_gram_http_callback_disallow(graml_job_contact);
 
     grami_fprintf( request->jobmanager_log_fp,
           "JM: we're done.  doing cleanup\n");
@@ -1866,24 +1878,6 @@ globus_l_gram_conf_values_init( globus_l_gram_conf_values_t * conf )
 
 
 /******************************************************************************
-Function:       globus_l_gram_attach_requested()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int 
-globus_l_gram_attach_requested(void * arg,
-                 char * url,
-                 globus_nexus_startpoint_t * sp)
-{
-    globus_nexus_startpoint_bind(sp, &graml_GlobalEndpoint);
-
-    return(0);
-
-} /* globus_l_gram_attach_requested() */
-
-
-/******************************************************************************
 Function:       globus_l_gram_client_callback()
 Description:
 Parameters:
@@ -1892,18 +1886,34 @@ Returns:
 static void 
 globus_l_gram_client_callback(int status, int failure_code)
 {
-    int                size;
-    int                count;
-    int                rc;
-    globus_nexus_startpoint_t sp;
-    globus_nexus_buffer_t     reply_buffer;
-    globus_list_t *           tmp_list;
+    int                                 rc;
+    int                                 count;
+    globus_byte_t *                     message;
+    globus_size_t                       msgsize;
+    globus_list_t *                     tmp_list;
     globus_l_gram_client_contact_t *    client_contact_node;
-    
+
     tmp_list = globus_l_gram_client_contacts;
+    message = GLOBUS_NULL;
 
     grami_fprintf( graml_log_fp,
         "JM: %s empty client callback list.\n", (tmp_list) ? ("NOT") : "" );
+
+    if (tmp_list)
+    {
+	rc = globus_l_gram_http_pack_status_message(
+	                 &message,
+			 graml_job_contact,
+			 status,
+			 failure_code );
+
+	if (rc != GLOBUS_SUCCESS)
+	{
+	    grami_fprintf( graml_log_fp,
+			   "JM: error %d while creating status message\n" );
+	    return;
+	}
+    }
 
     while(!globus_list_empty(tmp_list))
     {
@@ -1917,44 +1927,28 @@ globus_l_gram_client_callback(int status, int failure_code)
                 "JM: sending callback of status %d to %s.\n", status,
                 client_contact_node->contact);
 
-            /* This will block if called from a non-threaded handler
-             */
-            rc = globus_nexus_attach(client_contact_node->contact, &sp);
-    
-            if (rc == 0)
-            {
-                size  = globus_nexus_sizeof_int(1);
-                size += globus_nexus_sizeof_int(1);
-                size += globus_nexus_sizeof_char(strlen(graml_job_contact));
-                size += globus_nexus_sizeof_int(1);
-                size += globus_nexus_sizeof_int(1);
+            rc = globus_gram_http_post( client_contact_node->contact_str,
+					GLOBUS_NULL,        /* default attr */
+					message,
+					strlen(message)+1,
+					GLOBUS_NULL );      /* no monitor */
 
-                count= strlen(graml_job_contact);
-                globus_nexus_buffer_init(&reply_buffer, size, 0);
-                globus_nexus_put_int(&reply_buffer,
-                                     &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-                globus_nexus_put_int(&reply_buffer, &count, 1);
-                globus_nexus_put_char(&reply_buffer, graml_job_contact, count);
-                globus_nexus_put_int(&reply_buffer, &status, 1);
-                globus_nexus_put_int(&reply_buffer, &failure_code, 1);
-
-                globus_nexus_send_rsr(&reply_buffer,
-                               &sp,
-                               0,
-                               GLOBUS_TRUE,
-                               GLOBUS_FALSE);
-
-                globus_nexus_startpoint_destroy(&sp);
-
-            }
-            else
-            {
+	    if (rc != GLOBUS_SUCCESS)       /* connect failed, most likely */
+	    {
+		grami_fprintf( graml_log_fp,
+			       "JM: callback failed, rc = %d\n", rc );
                 client_contact_node->failed_count++;
-            }
+	    }
 
             tmp_list = globus_list_rest (tmp_list);
         }
     }
+
+    /* this is safe, as the post() has copied the message to another buffer
+       and framed it with HTTP headers etc. */
+    if (message)
+	globus_libc_free(message);
+
 } /* globus_l_gram_client_callback() */
 
 
@@ -4228,11 +4222,11 @@ Returns:
 #define my_malloc(type) (type *) globus_libc_malloc(sizeof(type))
 
 void
-globus_l_jm_http_query_callback( void * arg,
+globus_l_jm_http_query_callback( void *               arg,
 				 globus_io_handle_t * handle,
-				 globus_result_t result,
-				 globus_byte_t * buf,
-				 globus_size_t nbytes)
+				 globus_byte_t *      buf,
+				 globus_size_t        nbytes,
+				 int                  errorcode)
 {
     char            message[GLOBUS_GRAM_HTTP_BUFSIZE];
     globus_size_t   msgsize;
@@ -4242,24 +4236,18 @@ globus_l_jm_http_query_callback( void * arg,
     int *           tstatus = GLOBUS_NULL;
     char *          p;
 
-    globus_libc_printf("jm_read_callback : read done on %d\n", handle->fd);
-
-    if (result != GLOBUS_SUCCESS)
+    if (errorcode != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("jm_read_callback : error, closing %d\n",
-			   handle->fd);
+	/*
+	 *  NOTE: close or send HTTP error message?
+	 */
+	globus_libc_free(buf);
 	globus_io_register_close( handle,
 				  globus_gram_http_close_callback,
 				  GLOBUS_NULL );
     }
     else
     {
-	/* acquire mutex */
-	rc = globus_gram_http_unframe( buf,
-				       nbytes,
-				       (globus_byte_t *) message,
-				       &msgsize );
-
 	globus_libc_printf("jm_read_callback : rc = %d message = %s \n",
 			   rc,
 			   message);
