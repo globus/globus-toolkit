@@ -12,13 +12,14 @@ use POSIX;
 use Carp;
 use Sys::Hostname;
 use Data::Dumper;
-use Globus::URL;
+use File::Copy;
 
 use Cwd;
 
 # These are globus test support modules.
-use Globus::Testing::HostDB;
-use Globus::Testing::Startup;
+# use Globus::URL;
+# use Globus::Testing::HostDB;
+# use Globus::Testing::Startup;
 
 =head1 NAME
 
@@ -33,8 +34,6 @@ push_proxy($new_proxy);
 pop_proxy();
 
 compare_local_files($original, $copy);
-
-compare_remote_files($host, $original, $copy);
 
 =head1 DESCRIPTION
 
@@ -137,121 +136,24 @@ sub compare_local_files($$)
     }
 }
 
-=pod
-
-=item compare_remote_files($host, $original, $copy)
-
-Compare two the files named in the parameters to this function.
-Plugin-generated output is filtered out of the second named file
-before the comparison. If the files are identical, this function
-returns an empty string; otherwise a shell comment-string containing
-information about the differences is returned.
-
-=cut
-sub compare_remote_files($$$)
-{
-  ;
-}
-
-sub stage_url_to_file($$)
-{
-    my($url, $file, $parsed_url, $starter)=(shift,shift);
-
-    if(!exists($self->{host_db}))
-    {
-	check_host_db();
-    }
-    if($file !~ m|^/|)
-    {
-        my $pwd = cwd();
-	$file = "$pwd/$file"
-    }
-    $parsed_url = new Globus::URL($url);
-
-    $starter = Globus::Testing::Startup->new(
-			     hosts => $parsed_url->{host},
-			     hostdb => $self->{host_db},
-			     execution => ['local', 'ssh', 'rsh', 'gram'],
-			     jobmanagers => [],
-			    );
-    $starter->stageback($parsed_url->{path}, $file);
-}
-
-sub stage_file_to_url($$)
-{
-    my($file, $url, $parsed_url, $starter)=(shift,shift);
-
-    if(!exists($self->{host_db}))
-    {
-	check_host_db();
-    }
-    if($file !~ m|^/|)
-    {
-        my $pwd = cwd();
-	$file = "$pwd/$file"
-    }
-    $parsed_url = new Globus::URL($url);
-
-    $starter = Globus::Testing::Startup->new({
-			     hosts => $parsed_url->{host},
-			     hostdb => $self->{host_db},
-			     jobmanagers => [],
-			    });
-    $starter->stage($file, $parsed_url->{path});
-}
-
 sub stage_source_url()
 {
-    my $test_url = exists($ENV{SOURCE_URL}) 
-               ? $ENV{SOURCE_URL} 
-               : "gsiftp://localhost/etc/group";
+    my $test_url = "gsiftp://localhost/etc/group";
 
     my $local_copy = POSIX::tmpnam();
 
-    FtpTestLib::stage_url_to_file($test_url, $local_copy);
+    copy("/etc/group", $local_copy);
 
     ($test_url, $local_copy);
 }
 
-sub stage_dest_url()
+sub ftp_commands()
 {
-    my $dest_url = exists($ENV{DEST_URL}) 
-               ? $ENV{DEST_URL} 
-               : "gsiftp://localhost/tmp/test_url";
-    my $test_file = exists($ENV{SOURCE_FILE})
-               ? $ENV{SOURCE_FILE} 
-               : "/etc/group";
-
-    FtpTestLib::stage_file_to_url($test_file, $dest_url);
-
-    ($test_file, $dest_url);
+    return ('SITE', 'TYPE', 'MODE', 'SIZE', 'DCAU', 'PROT', 'BUFSIZE',
+            'OPTS', 'PASV', 'PORT', 'REST', 'RETR', 'STOR', 'ERET', 'ESTO',
+            'LIST', 'NLST', 'MDTM', 'MKD', 'RMD', 'RNFR', 'RNTO', 'NOOP' );
 }
 
-sub check_host_db
-{
-    my $globusdir = $ENV{HOME} . '/.globus';
-    my $hostdb = $globusdir . '/host.db';
-
-    mkdir($globusdir, 0755) if(! -d $globusdir);
-    if(! -r $hostdb )
-    {
-	my $handle = new IO::File(">$hostdb");
-	print $handle <<EOF;
-localhost
-{
-    execution: local
-    capabilities: script,perl
-    perl: $^X
-    directory: /
-}
-EOF
-	$handle->close();
-    }
-    $self->{host_db} = new Globus::Testing::HostDB;
-    $self->{host_db}->readdb($ENV{HOME} . '/.globus/host.db');
-}
-
-=pod
 
 =back
 

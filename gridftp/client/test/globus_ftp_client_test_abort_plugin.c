@@ -7,16 +7,16 @@ static int dummy_counter;
 
 typedef struct
 {
-    globus_ftp_abort_plugin_when_t		when;
-    globus_ftp_abort_plugin_when_t		next;
+    globus_ftp_client_test_abort_plugin_when_t		when;
+    globus_ftp_client_test_abort_plugin_when_t		next;
     int *					counter;
 }
-globus_l_ftp_abort_plugin_specific_t;
+globus_l_ftp_test_abort_plugin_specific_t;
 
 #define GLOBUS_L_FTP_CLIENT_TEST_ABORT_PLUGIN_NAME \
     "globus_ftp_client_test_abort_plugin"
 #define GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(d, func) \
-    result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_abort_plugin_##func); \
+    result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_test_abort_plugin_##func); \
     if(result != GLOBUS_SUCCESS) goto result_exit;
 #define GLOBUS_L_FTP_CLIENT_ABORT_PLUGIN_RETURN(plugin) \
     if(plugin == GLOBUS_NULL) \
@@ -30,14 +30,14 @@ globus_l_ftp_abort_plugin_specific_t;
     }
 
 
-static globus_bool_t globus_l_ftp_client_abort_plugin_activate(void);
-static globus_bool_t globus_l_ftp_client_abort_plugin_deactivate(void);
+static globus_bool_t globus_l_ftp_client_test_abort_plugin_activate(void);
+static globus_bool_t globus_l_ftp_client_test_abort_plugin_deactivate(void);
 
-globus_module_descriptor_t		globus_i_ftp_client_abort_plugin_module =
+globus_module_descriptor_t globus_i_ftp_client_test_abort_plugin_module =
 {
-    "globus_ftp_client_abort_plugin",
-    globus_l_ftp_client_abort_plugin_activate,
-    globus_l_ftp_client_abort_plugin_deactivate,
+    "globus_ftp_client_test_abort_plugin",
+    globus_l_ftp_client_test_abort_plugin_activate,
+    globus_l_ftp_client_test_abort_plugin_deactivate,
     GLOBUS_NULL
 };
 
@@ -46,7 +46,7 @@ globus_module_descriptor_t		globus_i_ftp_client_abort_plugin_module =
  */
 static
 globus_bool_t
-globus_l_ftp_client_abort_plugin_activate(void)
+globus_l_ftp_client_test_abort_plugin_activate(void)
 {
     return globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 }
@@ -56,21 +56,21 @@ globus_l_ftp_client_abort_plugin_activate(void)
  */
 static
 globus_bool_t
-globus_l_ftp_client_abort_plugin_deactivate(void)
+globus_l_ftp_client_test_abort_plugin_deactivate(void)
 {
     return globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
 }
 
 static
 void
-globus_l_ftp_client_abort_plugin_authenticate(
+globus_l_ftp_client_test_abort_plugin_authenticate(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
     const globus_url_t *				url,
     const globus_ftp_control_auth_info_t *		auth_info)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
 
@@ -86,13 +86,13 @@ globus_l_ftp_client_abort_plugin_authenticate(
 
 static
 void
-globus_l_ftp_client_abort_plugin_connect(
+globus_l_ftp_client_test_abort_plugin_connect(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
     const globus_url_t *				url)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
 
@@ -108,7 +108,7 @@ globus_l_ftp_client_abort_plugin_connect(
 
 static
 void
-globus_l_ftp_client_abort_plugin_list(
+globus_l_ftp_client_test_abort_plugin_list(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -120,7 +120,7 @@ globus_l_ftp_client_abort_plugin_list(
 
 static
 void
-globus_l_ftp_client_abort_plugin_verbose_list(
+globus_l_ftp_client_test_abort_plugin_verbose_list(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -132,7 +132,7 @@ globus_l_ftp_client_abort_plugin_verbose_list(
 
 static
 void
-globus_l_ftp_client_abort_plugin_delete(
+globus_l_ftp_client_test_abort_plugin_delete(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -144,7 +144,7 @@ globus_l_ftp_client_abort_plugin_delete(
 
 static
 void
-globus_l_ftp_client_abort_plugin_mkdir(
+globus_l_ftp_client_test_abort_plugin_mkdir(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -156,7 +156,7 @@ globus_l_ftp_client_abort_plugin_mkdir(
 
 static
 void
-globus_l_ftp_client_abort_plugin_rmdir(
+globus_l_ftp_client_test_abort_plugin_rmdir(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -168,7 +168,7 @@ globus_l_ftp_client_abort_plugin_rmdir(
 
 static
 void
-globus_l_ftp_client_abort_plugin_move(
+globus_l_ftp_client_test_abort_plugin_move(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -181,7 +181,7 @@ globus_l_ftp_client_abort_plugin_move(
 
 static
 void
-globus_l_ftp_client_abort_plugin_get(
+globus_l_ftp_client_test_abort_plugin_get(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -193,7 +193,7 @@ globus_l_ftp_client_abort_plugin_get(
 
 static
 void
-globus_l_ftp_client_abort_plugin_put(
+globus_l_ftp_client_test_abort_plugin_put(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -205,18 +205,18 @@ globus_l_ftp_client_abort_plugin_put(
 
 static
 void
-globus_l_ftp_client_abort_plugin_command(
+globus_l_ftp_client_test_abort_plugin_command(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
     const globus_url_t *				url,
     const char *					command_name)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
 
-    if(strcmp(command_name, "SITE HELP") == 0)
+    if(strncmp(command_name, "SITE HELP", strlen("SITE HELP")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_SITE_HELP)
 	{
@@ -226,7 +226,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_SITE_HELP_RESPONSE;
     }
-    else if(strcmp(command_name, "FEAT") == 0)
+    else if(strncmp(command_name, "FEAT", strlen("FEAT")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_FEAT)
 	{
@@ -236,7 +236,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_FEAT_RESPONSE;
     }
-    else if(strcmp(command_name, "TYPE") == 0)
+    else if(strncmp(command_name, "TYPE", strlen("TYPE")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_TYPE)
 	{
@@ -246,7 +246,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_TYPE_RESPONSE;
     }
-    else if(strcmp(command_name, "MODE") == 0)
+    else if(strncmp(command_name, "MODE", strlen("MODE")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_MODE)
 	{
@@ -256,7 +256,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_MODE_RESPONSE;
     }
-    else if(strcmp(command_name, "OPTS RETR") == 0)
+    else if(strncmp(command_name, "OPTS RETR", strlen("OPTS RETR")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_OPTS_RETR)
 	{
@@ -266,7 +266,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_OPTS_RETR_RESPONSE;
     }
-    else if(strcmp(command_name, "PASV") == 0)
+    else if(strncmp(command_name, "PASV", strlen("PASV")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_PASV)
 	{
@@ -276,7 +276,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_PASV_RESPONSE;
     }
-    else if(strcmp(command_name, "PORT") == 0)
+    else if(strncmp(command_name, "PORT", strlen("PORT")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_PORT)
 	{
@@ -286,7 +286,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_PORT_RESPONSE;
     }
-    else if(strcmp(command_name, "REST") == 0)
+    else if(strncmp(command_name, "REST", strlen("REST")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_REST)
 	{
@@ -296,7 +296,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_REST_RESPONSE;
     }
-    else if(strcmp(command_name, "RETR") == 0)
+    else if(strncmp(command_name, "RETR", strlen("RETR")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_RETR)
 	{
@@ -306,7 +306,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_RETR_RESPONSE;
     }
-    else if(strcmp(command_name, "STOR") == 0)
+    else if(strncmp(command_name, "STOR", strlen("STOR")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_STOR)
 	{
@@ -316,7 +316,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_STOR_RESPONSE;
     }
-    else if(strcmp(command_name, "LIST") == 0)
+    else if(strncmp(command_name, "LIST", strlen("LIST")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_LIST)
 	{
@@ -326,7 +326,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_LIST_RESPONSE;
     }
-    else if(strcmp(command_name, "NLST") == 0)
+    else if(strncmp(command_name, "NLST", strlen("NLST")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_NLST)
 	{
@@ -336,7 +336,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_NLST_RESPONSE;
     }
-    else if(strcmp(command_name, "MKD") == 0)
+    else if(strncmp(command_name, "MKD", strlen("MKD")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_MKD)
 	{
@@ -346,7 +346,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_MKD_RESPONSE;
     }
-    else if(strcmp(command_name, "RMD") == 0)
+    else if(strncmp(command_name, "RMD", strlen("RMD")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_RMD)
 	{
@@ -356,7 +356,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_RMD_RESPONSE;
     }
-    else if(strcmp(command_name, "DELE") == 0)
+    else if(strncmp(command_name, "DELE", strlen("DELE")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_DELE)
 	{
@@ -366,7 +366,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_DELE_RESPONSE;
     }
-    else if(strcmp(command_name, "RNFR") == 0)
+    else if(strncmp(command_name, "RNFR", strlen("RNFR")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_RNFR)
 	{
@@ -376,7 +376,7 @@ globus_l_ftp_client_abort_plugin_command(
 	}
 	d->next = FTP_ABORT_AT_RNFR_RESPONSE;
     }
-    else if(strcmp(command_name, "RNTO") == 0)
+    else if(strncmp(command_name, "RNTO", strlen("RNTO")) == 0)
     {
 	if(d->when == FTP_ABORT_AT_RNTO)
 	{
@@ -392,7 +392,7 @@ globus_l_ftp_client_abort_plugin_command(
 
 static
 void
-globus_l_ftp_client_abort_plugin_response(
+globus_l_ftp_client_test_abort_plugin_response(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -400,7 +400,7 @@ globus_l_ftp_client_abort_plugin_response(
     globus_object_t *					err,
     const globus_ftp_control_response_t *		response)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
     if(d->next == d->when)
@@ -415,14 +415,14 @@ globus_l_ftp_client_abort_plugin_response(
 
 static
 void
-globus_l_ftp_client_abort_plugin_read(
+globus_l_ftp_client_test_abort_plugin_read(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
     const globus_byte_t *				buffer,
     globus_size_t					buffer_length)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
     if(d->when == FTP_ABORT_AT_READ)
@@ -436,7 +436,7 @@ globus_l_ftp_client_abort_plugin_read(
 
 static
 void
-globus_l_ftp_client_abort_plugin_data(
+globus_l_ftp_client_test_abort_plugin_data(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -446,7 +446,7 @@ globus_l_ftp_client_abort_plugin_data(
     globus_off_t					offset,
     globus_bool_t					eof)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
     if(d->when == FTP_ABORT_AT_DATA)
@@ -460,7 +460,7 @@ globus_l_ftp_client_abort_plugin_data(
 
 static
 void
-globus_l_ftp_client_abort_plugin_write(
+globus_l_ftp_client_test_abort_plugin_write(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -469,7 +469,7 @@ globus_l_ftp_client_abort_plugin_write(
     globus_off_t					offset,
     globus_bool_t					eof)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     d = plugin_specific;
     if(d->when == FTP_ABORT_AT_WRITE)
@@ -483,33 +483,33 @@ globus_l_ftp_client_abort_plugin_write(
 
 static
 globus_ftp_client_plugin_t *
-globus_l_ftp_client_abort_plugin_copy(
+globus_l_ftp_client_test_abort_plugin_copy(
     globus_ftp_client_plugin_t *			self,
     void *						plugin_specific)
 {
     globus_ftp_client_plugin_t *			newguy;
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
     globus_result_t					result;
 
-    d = (globus_l_ftp_abort_plugin_specific_t *) plugin_specific;
+    d = (globus_l_ftp_test_abort_plugin_specific_t *) plugin_specific;
 
     newguy = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
     if(newguy == GLOBUS_NULL)
     {
 	goto error_exit;
     }
-    result = globus_ftp_client_abort_plugin_init(newguy);
+    result = globus_ftp_client_test_abort_plugin_init(newguy);
     if(result != GLOBUS_SUCCESS)
     {
 	goto free_exit;
     }
-    result = globus_ftp_client_abort_plugin_set_abort_point(newguy,
+    result = globus_ftp_client_test_abort_plugin_set_abort_point(newguy,
 	    d->when);
     if(result != GLOBUS_SUCCESS)
     {
 	goto destroy_exit;
     }
-    result = globus_ftp_client_abort_plugin_set_abort_counter(newguy,
+    result = globus_ftp_client_test_abort_plugin_set_abort_counter(newguy,
 	    d->counter);
     if(result != GLOBUS_SUCCESS)
     {
@@ -518,7 +518,7 @@ globus_l_ftp_client_abort_plugin_copy(
     return newguy;
 
 destroy_exit:
-    globus_ftp_client_abort_plugin_destroy(newguy);
+    globus_ftp_client_test_abort_plugin_destroy(newguy);
 free_exit:
     globus_libc_free(newguy);
 error_exit:
@@ -528,17 +528,17 @@ error_exit:
 
 static
 void
-globus_l_ftp_client_abort_plugin_destroy(
+globus_l_ftp_client_test_abort_plugin_destroy(
     globus_ftp_client_plugin_t *			self,
     void *						plugin_specific)
 {
-    globus_ftp_client_abort_plugin_destroy(self);
+    globus_ftp_client_test_abort_plugin_destroy(self);
     globus_libc_free(self);
 }
 
 static
 void 
-globus_l_ftp_client_abort_plugin_third_party_transfer(
+globus_l_ftp_client_test_abort_plugin_third_party_transfer(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -552,7 +552,7 @@ globus_l_ftp_client_abort_plugin_third_party_transfer(
 
 static
 void 
-globus_l_ftp_client_abort_plugin_abort(
+globus_l_ftp_client_test_abort_plugin_abort(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle)
@@ -562,7 +562,7 @@ globus_l_ftp_client_abort_plugin_abort(
 
 static
 void 
-globus_l_ftp_client_abort_plugin_fault(
+globus_l_ftp_client_test_abort_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -573,13 +573,13 @@ globus_l_ftp_client_abort_plugin_fault(
 }
 
 globus_result_t
-globus_ftp_client_abort_plugin_init(
+globus_ftp_client_test_abort_plugin_init(
     globus_ftp_client_plugin_t *			plugin)
 {
     globus_object_t *					err;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_abort_plugin_init";
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    static char * myname = "globus_ftp_client_test_abort_plugin_init";
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
 
     if(plugin == GLOBUS_NULL)
     {
@@ -591,7 +591,7 @@ globus_ftp_client_abort_plugin_init(
 		myname));
     }
 
-    d = globus_libc_malloc(sizeof(globus_l_ftp_abort_plugin_specific_t));
+    d = globus_libc_malloc(sizeof(globus_l_ftp_test_abort_plugin_specific_t));
     if(d == GLOBUS_NULL)
     {
 	return globus_error_put(globus_error_construct_string(
@@ -646,12 +646,12 @@ result_exit:
 }
 
 globus_result_t
-globus_ftp_client_abort_plugin_destroy(
+globus_ftp_client_test_abort_plugin_destroy(
     globus_ftp_client_plugin_t *			plugin)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_abort_plugin_destroy";
+    static char * myname = "globus_ftp_client_test_abort_plugin_destroy";
 
     GLOBUS_L_FTP_CLIENT_ABORT_PLUGIN_RETURN(plugin);
 
@@ -668,13 +668,13 @@ globus_ftp_client_abort_plugin_destroy(
 }
 
 globus_result_t
-globus_ftp_client_abort_plugin_set_abort_point(
+globus_ftp_client_test_abort_plugin_set_abort_point(
     globus_ftp_client_plugin_t *			plugin,
-    globus_ftp_abort_plugin_when_t			when)
+    globus_ftp_client_test_abort_plugin_when_t			when)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_abort_plugin_set_abort_point";
+    static char * myname = "globus_ftp_client_test_abort_plugin_set_abort_point";
 
     GLOBUS_L_FTP_CLIENT_ABORT_PLUGIN_RETURN(plugin);
 
@@ -694,13 +694,13 @@ globus_ftp_client_abort_plugin_set_abort_point(
 }
 
 globus_result_t
-globus_ftp_client_abort_plugin_set_abort_counter(
+globus_ftp_client_test_abort_plugin_set_abort_counter(
     globus_ftp_client_plugin_t *                        plugin,
     int *                                               counter)
 {
-    globus_l_ftp_abort_plugin_specific_t *		d;
+    globus_l_ftp_test_abort_plugin_specific_t *		d;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_abort_plugin_set_abort_point";
+    static char * myname = "globus_ftp_client_test_abort_plugin_set_abort_point";
 
     GLOBUS_L_FTP_CLIENT_ABORT_PLUGIN_RETURN(plugin);
 

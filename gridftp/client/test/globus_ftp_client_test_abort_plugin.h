@@ -4,8 +4,8 @@
  * Allow the abort to happen from plugin in a callback.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_ABORT_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_ABORT_PLUGIN_H
+#ifndef GLOBUS_INCLUDE_FTP_CLIENT_TEST_ABORT_PLUGIN_H
+#define GLOBUS_INCLUDE_FTP_CLIENT_TEST_ABORT_PLUGIN_H
 
 #include "globus_ftp_client.h"
 
@@ -23,10 +23,10 @@ EXTERN_C_BEGIN
 
 /** Module descriptor
  */
-#define GLOBUS_FTP_CLIENT_ABORT_PLUGIN_MODULE (&globus_i_ftp_client_abort_plugin_module)
+#define GLOBUS_FTP_CLIENT_TEST_ABORT_PLUGIN_MODULE (&globus_i_ftp_client_test_abort_plugin_module)
 
 extern
-globus_module_descriptor_t globus_i_ftp_client_abort_plugin_module;
+globus_module_descriptor_t globus_i_ftp_client_test_abort_plugin_module;
 typedef enum
 {
     FTP_ABORT_NEVER,
@@ -73,25 +73,25 @@ typedef enum
     FTP_ABORT_AT_WRITE,
     FTP_ABORT_LAST
 }
-globus_ftp_abort_plugin_when_t;
+globus_ftp_client_test_abort_plugin_when_t;
 
 globus_result_t
-globus_ftp_client_abort_plugin_init(
+globus_ftp_client_test_abort_plugin_init(
     globus_ftp_client_plugin_t *			plugin);
 
 globus_result_t
-globus_ftp_client_abort_plugin_destroy(
+globus_ftp_client_test_abort_plugin_destroy(
     globus_ftp_client_plugin_t *			plugin);
 
 globus_result_t
-globus_ftp_client_abort_plugin_set_abort_point(
+globus_ftp_client_test_abort_plugin_set_abort_point(
     globus_ftp_client_plugin_t *			plugin,
-    globus_ftp_abort_plugin_when_t			when);
+    globus_ftp_client_test_abort_plugin_when_t			when);
 
 globus_result_t
-globus_ftp_client_abort_plugin_set_abort_counter(
+globus_ftp_client_test_abort_plugin_set_abort_counter(
     globus_ftp_client_plugin_t *			plugin,
     int *						counter);
 EXTERN_C_END
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_ABORT_PLUGIN_H */
+#endif /* GLOBUS_INCLUDE_FTP_CLIENT_TEST_ABORT_PLUGIN_H */

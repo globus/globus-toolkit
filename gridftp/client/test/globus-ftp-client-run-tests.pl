@@ -12,16 +12,18 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
     globus-ftp-client-caching-get-test.pl
     globus-ftp-client-caching-transfer-test.pl
     globus-ftp-client-create-destroy-test.pl
+    globus-ftp-client-exist-test.pl 
     globus-ftp-client-extended-get-test.pl
     globus-ftp-client-extended-put-test.pl
     globus-ftp-client-extended-transfer-test.pl
-    globus-ftp-client-get-test.pl*
+    globus-ftp-client-get-test.pl
     globus-ftp-client-lingering-get-test.pl
     globus-ftp-client-multiple-block-get-test.pl
     globus-ftp-client-partial-get-test.pl
     globus-ftp-client-partial-put-test.pl
     globus-ftp-client-partial-transfer-test.pl
     globus-ftp-client-put-test.pl
+    globus-ftp-client-size-test.pl 
     globus-ftp-client-transfer-test.pl
     globus-ftp-client-user-auth-test.pl
 );

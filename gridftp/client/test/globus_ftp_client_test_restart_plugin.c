@@ -20,8 +20,8 @@ plugin_operation_t;
 
 typedef struct
 {
-    globus_ftp_restart_plugin_when_t		when;
-    globus_ftp_restart_plugin_when_t		next;
+    globus_ftp_client_test_restart_plugin_when_t		when;
+    globus_ftp_client_test_restart_plugin_when_t		next;
     char *					source_url;
     globus_ftp_client_operationattr_t		source_attr;
     char *					dest_url;
@@ -32,9 +32,9 @@ typedef struct
 globus_l_ftp_restart_plugin_specific_t;
 
 #define GLOBUS_L_FTP_CLIENT_TEST_RESTART_PLUGIN_NAME \
-    "globus_ftp_client_test_abort_plugin"
+    "globus_ftp_client_test_restart_plugin"
 #define GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(d, func) \
-    result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_restart_plugin_##func); \
+    result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_test_restart_plugin_##func); \
     if(result != GLOBUS_SUCCESS) goto result_exit;
 #define GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin) \
     if(plugin == GLOBUS_NULL) \
@@ -48,20 +48,20 @@ globus_l_ftp_restart_plugin_specific_t;
     }
 
 
-static globus_bool_t globus_l_ftp_client_restart_plugin_activate(void);
-static globus_bool_t globus_l_ftp_client_restart_plugin_deactivate(void);
+static globus_bool_t globus_l_ftp_client_test_restart_plugin_activate(void);
+static globus_bool_t globus_l_ftp_client_test_restart_plugin_deactivate(void);
 
 static
 void
-globus_l_ftp_client_restart_plugin_do_restart(
+globus_l_ftp_client_test_restart_plugin_do_restart(
     globus_ftp_client_handle_t *			handle,
     globus_l_ftp_restart_plugin_specific_t *		d);
 
-globus_module_descriptor_t globus_i_ftp_client_restart_plugin_module =
+globus_module_descriptor_t globus_i_ftp_client_test_restart_plugin_module =
 {
-    "globus_ftp_client_restart_plugin",
-    globus_l_ftp_client_restart_plugin_activate,
-    globus_l_ftp_client_restart_plugin_deactivate,
+    "globus_ftp_client_test_restart_plugin",
+    globus_l_ftp_client_test_restart_plugin_activate,
+    globus_l_ftp_client_test_restart_plugin_deactivate,
     GLOBUS_NULL
 };
 
@@ -70,7 +70,7 @@ globus_module_descriptor_t globus_i_ftp_client_restart_plugin_module =
  */
 static
 globus_bool_t
-globus_l_ftp_client_restart_plugin_activate(void)
+globus_l_ftp_client_test_restart_plugin_activate(void)
 {
     return globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 }
@@ -80,14 +80,14 @@ globus_l_ftp_client_restart_plugin_activate(void)
  */
 static
 globus_bool_t
-globus_l_ftp_client_restart_plugin_deactivate(void)
+globus_l_ftp_client_test_restart_plugin_deactivate(void)
 {
     return globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
 }
 
 static
 void
-globus_l_ftp_client_restart_plugin_authenticate(
+globus_l_ftp_client_test_restart_plugin_authenticate(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -101,7 +101,7 @@ globus_l_ftp_client_restart_plugin_authenticate(
     if(d->when == FTP_RESTART_AT_AUTH)
     {
 	printf("[restart plugin]: About to restart during authentication\n");
-	globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     d->next = FTP_RESTART_AT_AUTH_RESPONSE;
     return;
@@ -109,7 +109,7 @@ globus_l_ftp_client_restart_plugin_authenticate(
 
 static
 void
-globus_l_ftp_client_restart_plugin_connect(
+globus_l_ftp_client_test_restart_plugin_connect(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -122,7 +122,7 @@ globus_l_ftp_client_restart_plugin_connect(
     if(d->when == FTP_RESTART_AT_CONNECT)
     {
 	printf("[restart plugin]: About to restart during connect\n");
-	globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     d->next = FTP_RESTART_AT_CONNECT_RESPONSE;
     return;
@@ -130,7 +130,7 @@ globus_l_ftp_client_restart_plugin_connect(
 
 static
 void
-globus_l_ftp_client_restart_plugin_get(
+globus_l_ftp_client_test_restart_plugin_get(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -157,7 +157,7 @@ globus_l_ftp_client_restart_plugin_get(
 
 static
 void
-globus_l_ftp_client_restart_plugin_delete(
+globus_l_ftp_client_test_restart_plugin_delete(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -185,7 +185,7 @@ globus_l_ftp_client_restart_plugin_delete(
 
 static
 void
-globus_l_ftp_client_restart_plugin_mkdir(
+globus_l_ftp_client_test_restart_plugin_mkdir(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -212,7 +212,7 @@ globus_l_ftp_client_restart_plugin_mkdir(
 
 static
 void
-globus_l_ftp_client_restart_plugin_rmdir(
+globus_l_ftp_client_test_restart_plugin_rmdir(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -239,7 +239,7 @@ globus_l_ftp_client_restart_plugin_rmdir(
 
 static
 void
-globus_l_ftp_client_restart_plugin_list(
+globus_l_ftp_client_test_restart_plugin_list(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -266,7 +266,7 @@ globus_l_ftp_client_restart_plugin_list(
 
 static
 void
-globus_l_ftp_client_restart_plugin_verbose_list(
+globus_l_ftp_client_test_restart_plugin_verbose_list(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -293,7 +293,7 @@ globus_l_ftp_client_restart_plugin_verbose_list(
 
 static
 void
-globus_l_ftp_client_restart_plugin_move(
+globus_l_ftp_client_test_restart_plugin_move(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -323,7 +323,7 @@ globus_l_ftp_client_restart_plugin_move(
 
 static
 void
-globus_l_ftp_client_restart_plugin_put(
+globus_l_ftp_client_test_restart_plugin_put(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -350,7 +350,7 @@ globus_l_ftp_client_restart_plugin_put(
 
 static
 void
-globus_l_ftp_client_restart_plugin_command(
+globus_l_ftp_client_test_restart_plugin_command(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -361,156 +361,156 @@ globus_l_ftp_client_restart_plugin_command(
 
     d = plugin_specific;
 
-    if(strcmp(command_name, "SITE HELP") == 0)
+    if(strncmp(command_name, "SITE HELP", strlen("SITE HELP")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_SITE_HELP)
 	{
 	    printf("[restart plugin]: About to restart during SITE HELP\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_SITE_HELP_RESPONSE;
     }
-    else if(strcmp(command_name, "FEAT") == 0)
+    else if(strncmp(command_name, "FEAT", strlen("FEAT")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_FEAT)
 	{
 	    printf("[restart plugin]: About to restart during FEAT\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle,d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle,d);
 	}
 	d->next = FTP_RESTART_AT_FEAT_RESPONSE;
     }
-    else if(strcmp(command_name, "TYPE") == 0)
+    else if(strncmp(command_name, "TYPE", strlen("TYPE")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_TYPE)
 	{
 	    printf("[restart plugin]: About to restart during TYPE\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_TYPE_RESPONSE;
     }
-    else if(strcmp(command_name, "MODE") == 0)
+    else if(strncmp(command_name, "MODE", strlen("MODE")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_MODE)
 	{
 	    printf("[restart plugin]: About to restart during MODE\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_MODE_RESPONSE;
     }
-    else if(strcmp(command_name, "OPTS RETR") == 0)
+    else if(strncmp(command_name, "OPTS RETR", strlen("OPTS RETR")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_OPTS_RETR)
 	{
 	    printf("[restart plugin]: About to restart during OPTS RETR\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_OPTS_RETR_RESPONSE;
     }
-    else if(strcmp(command_name, "PASV") == 0)
+    else if(strncmp(command_name, "PASV", strlen("PASV")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_PASV)
 	{
 	    printf("[restart plugin]: About to restart during PASV\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_PASV_RESPONSE;
     }
-    else if(strcmp(command_name, "PORT") == 0)
+    else if(strncmp(command_name, "PORT", strlen("PORT")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_PORT)
 	{
 	    printf("[restart plugin]: About to restart during PORT\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_PORT_RESPONSE;
     }
-    else if(strcmp(command_name, "REST") == 0)
+    else if(strncmp(command_name, "REST", strlen("REST")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_REST)
 	{
 	    printf("[restart plugin]: About to restart during REST\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_REST_RESPONSE;
     }
-    else if(strcmp(command_name, "RETR") == 0)
+    else if(strncmp(command_name, "RETR", strlen("RETR")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_RETR)
 	{
 	    printf("[restart plugin]: About to restart during RETR\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RETR_RESPONSE;
     }
-    else if(strcmp(command_name, "STOR") == 0)
+    else if(strncmp(command_name, "STOR", strlen("STOR")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_STOR)
 	{
 	    printf("[restart plugin]: About to restart during STOR\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_STOR_RESPONSE;
     }
-    else if(strcmp(command_name, "LIST") == 0)
+    else if(strncmp(command_name, "LIST", strlen("LIST")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_LIST)
 	{
 	    printf("[restart plugin]: About to restart during LIST\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_LIST_RESPONSE;
     }
-    else if(strcmp(command_name, "NLST") == 0)
+    else if(strncmp(command_name, "NLST", strlen("NLST")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_NLST)
 	{
 	    printf("[restart plugin]: About to restart during NLST\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_NLST_RESPONSE;
     }
-    else if(strcmp(command_name, "MKD") == 0)
+    else if(strncmp(command_name, "MKD", strlen("MKD")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_MKD)
 	{
 	    printf("[restart plugin]: About to restart during MKD\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_MKD_RESPONSE;
     }
-    else if(strcmp(command_name, "RMD") == 0)
+    else if(strncmp(command_name, "RMD", strlen("RMD")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_RMD)
 	{
 	    printf("[restart plugin]: About to restart during RMD\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RMD_RESPONSE;
     }
-    else if(strcmp(command_name, "DELE") == 0)
+    else if(strncmp(command_name, "DELE", strlen("DELE")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_DELE)
 	{
 	    printf("[restart plugin]: About to restart during DELE\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_DELE_RESPONSE;
     }
-    else if(strcmp(command_name, "RNFR") == 0)
+    else if(strncmp(command_name, "RNFR", strlen("RNFR")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_RNFR)
 	{
 	    printf("[restart plugin]: About to restart during RNFR\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RNFR_RESPONSE;
     }
-    else if(strcmp(command_name, "RNTO") == 0)
+    else if(strncmp(command_name, "RNTO", strlen("RNTO")) == 0)
     {
 	if(d->when == FTP_RESTART_AT_RNTO)
 	{
 	    printf("[restart plugin]: About to restart during RNTO\n");
-	    globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RNTO_RESPONSE;
     }
@@ -519,7 +519,7 @@ globus_l_ftp_client_restart_plugin_command(
 
 static
 void
-globus_l_ftp_client_restart_plugin_response(
+globus_l_ftp_client_test_restart_plugin_response(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -534,14 +534,14 @@ globus_l_ftp_client_restart_plugin_response(
     {
 	printf("[restart plugin]: About to restart during response (when=%d)\n",
 	       (int) d->when);
-	globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
 }
 
 static
 void
-globus_l_ftp_client_restart_plugin_read(
+globus_l_ftp_client_test_restart_plugin_read(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -554,14 +554,14 @@ globus_l_ftp_client_restart_plugin_read(
     if(d->when == FTP_RESTART_AT_READ)
     {
 	printf("[restart plugin]: About to restart during read\n");
-	globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
 }
 
 static
 void
-globus_l_ftp_client_restart_plugin_data(
+globus_l_ftp_client_test_restart_plugin_data(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -577,14 +577,14 @@ globus_l_ftp_client_restart_plugin_data(
     if(d->when == FTP_RESTART_AT_DATA)
     {
 	printf("[restart plugin]: About to restart during data callback\n");
-	globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
 }
 
 static
 void
-globus_l_ftp_client_restart_plugin_write(
+globus_l_ftp_client_test_restart_plugin_write(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
@@ -599,14 +599,14 @@ globus_l_ftp_client_restart_plugin_write(
     if(d->when == FTP_RESTART_AT_WRITE)
     {
 	printf("[restart plugin]: About to restart during write\n");
-	globus_l_ftp_client_restart_plugin_do_restart(handle, d);
+	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
 }
 
 static
 globus_ftp_client_plugin_t *
-globus_l_ftp_client_restart_plugin_copy(
+globus_l_ftp_client_test_restart_plugin_copy(
     globus_ftp_client_plugin_t *			self,
     void *						plugin_specific)
 {
@@ -621,12 +621,12 @@ globus_l_ftp_client_restart_plugin_copy(
     {
 	goto error_exit;
     }
-    result = globus_ftp_client_restart_plugin_init(newguy);
+    result = globus_ftp_client_test_restart_plugin_init(newguy);
     if(result != GLOBUS_SUCCESS)
     {
 	goto free_exit;
     }
-    result = globus_ftp_client_restart_plugin_set_restart_point(
+    result = globus_ftp_client_test_restart_plugin_set_restart_point(
 	    newguy,
 	    d->when,
 	    &d->timeout);
@@ -637,7 +637,7 @@ globus_l_ftp_client_restart_plugin_copy(
     return newguy;
 
 destroy_exit:
-    globus_ftp_client_abort_plugin_destroy(newguy);
+    globus_ftp_client_test_restart_plugin_destroy(newguy);
 free_exit:
     globus_libc_free(newguy);
 error_exit:
@@ -647,17 +647,17 @@ error_exit:
 
 static
 void
-globus_l_ftp_client_restart_plugin_destroy(
+globus_l_ftp_client_test_restart_plugin_destroy(
     globus_ftp_client_plugin_t *			self,
     void *						plugin_specific)
 {
-    globus_ftp_client_restart_plugin_destroy(self);
+    globus_ftp_client_test_restart_plugin_destroy(self);
     globus_libc_free(self);
 }
 
 static
 void 
-globus_l_ftp_client_restart_plugin_third_party_transfer(
+globus_l_ftp_client_test_restart_plugin_third_party_transfer(
     globus_ftp_client_plugin_t *		plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -690,7 +690,7 @@ globus_l_ftp_client_restart_plugin_third_party_transfer(
 
 static
 void 
-globus_l_ftp_client_restart_plugin_fault(
+globus_l_ftp_client_test_restart_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -702,7 +702,7 @@ globus_l_ftp_client_restart_plugin_fault(
 
 static
 void 
-globus_l_ftp_client_restart_plugin_complete(
+globus_l_ftp_client_test_restart_plugin_complete(
     globus_ftp_client_plugin_t *		plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *		handle)
@@ -727,12 +727,12 @@ globus_l_ftp_client_restart_plugin_complete(
 
 
 globus_result_t
-globus_ftp_client_restart_plugin_init(
+globus_ftp_client_test_restart_plugin_init(
     globus_ftp_client_plugin_t *			plugin)
 {
     globus_object_t *					err;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_restart_plugin_init";
+    static char * myname = "globus_ftp_client_test_restart_plugin_init";
     globus_l_ftp_restart_plugin_specific_t *		d;
 
     if(plugin == GLOBUS_NULL)
@@ -800,12 +800,12 @@ result_exit:
 }
 
 globus_result_t
-globus_ftp_client_restart_plugin_destroy(
+globus_ftp_client_test_restart_plugin_destroy(
     globus_ftp_client_plugin_t *			plugin)
 {
     globus_l_ftp_restart_plugin_specific_t *		d;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_restart_plugin_destroy";
+    static char * myname = "globus_ftp_client_test_restart_plugin_destroy";
 
     GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin);
 
@@ -822,14 +822,14 @@ globus_ftp_client_restart_plugin_destroy(
 }
 
 globus_result_t
-globus_ftp_client_restart_plugin_set_restart_point(
+globus_ftp_client_test_restart_plugin_set_restart_point(
     globus_ftp_client_plugin_t *			plugin,
-    globus_ftp_restart_plugin_when_t			when,
+    globus_ftp_client_test_restart_plugin_when_t	when,
     globus_reltime_t *					timeout)
 {
     globus_l_ftp_restart_plugin_specific_t *		d;
     globus_result_t					result;
-    static char * myname = "globus_ftp_client_abort_plugin_set_restart_point";
+    static char * myname = "globus_ftp_client_test_restart_plugin_set_restart_point";
 
     GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin);
 
@@ -851,7 +851,7 @@ globus_ftp_client_restart_plugin_set_restart_point(
 
 static
 void
-globus_l_ftp_client_restart_plugin_do_restart(
+globus_l_ftp_client_test_restart_plugin_do_restart(
     globus_ftp_client_handle_t *			handle,
     globus_l_ftp_restart_plugin_specific_t *		d)
 {
@@ -937,13 +937,13 @@ globus_l_ftp_client_restart_plugin_do_restart(
     else if(d->op == GLOBUS_FTP_CLIENT_TRANSFER)
     {
 	/* Enable auto-discovery of restart point */
-	globus_ftp_client_plugin_restart_transfer(handle,
-						  d->source_url,
-						  &d->source_attr,
-						  d->dest_url,
-						  &d->dest_attr,
-						  GLOBUS_NULL,
-						  &delay);
+	globus_ftp_client_plugin_restart_third_party_transfer(handle,
+						              d->source_url,
+						              &d->source_attr,
+						              d->dest_url,
+						              &d->dest_attr,
+						              GLOBUS_NULL,
+						              &delay);
     }
 }
 

@@ -75,7 +75,7 @@ int main(int argc,
     char *					src;
     char *					dst;
     globus_ftp_client_handleattr_t		handle_attr;
-    int						i,j;
+    int						i;
     char * 					subject = GLOBUS_NULL;
 
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
@@ -93,12 +93,7 @@ int main(int argc,
 	{
 	    subject = argv[i+1];
 
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j] = argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
     }
     test_parse_args(argc, 

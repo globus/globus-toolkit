@@ -76,7 +76,7 @@ int main(int argc,
     globus_ftp_client_handleattr_t		handle_attr;
     globus_off_t				start_offset=5;
     globus_off_t				end_offset=15;
-    int						i,j;
+    int						i;
     globus_ftp_control_mode_t			mode;
 
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
@@ -93,22 +93,13 @@ int main(int argc,
 	    globus_libc_scan_off_t(argv[i+1], &start_offset, GLOBUS_NULL);
 	    globus_libc_scan_off_t(argv[i+2], &end_offset, GLOBUS_NULL);
 
-	    for(j = i; j+3 < argc; j++)
-	    {
-		argv[j] = argv[j+3];
-	    }
-	    argc -= 3;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 2);
 	}
 	else if(strcmp(argv[i], "-E") == 0 && i < argc)
 	{
 	    mode = GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
-	    for(j = i; j+1 < argc; j++)
-	    {
-		argv[j] = argv[j+1];
-	    }
-	    argc -= 1;
-	    i--;
+
+	    test_remove_arg(&argc, argv, &i, 0);
 	}
     }
     test_parse_args(argc, 

@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     int						num_handles = 0;
     int						num_iterations = 0;
     char *					dst;
-    int						i,j;
+    int						i;
     globus_bool_t				caching = GLOBUS_FALSE;
 
     /* Parse local arguments */
@@ -85,35 +85,19 @@ int main(int argc, char *argv[])
 	if(strcmp(argv[i], "-H") == 0 && i + 1 < argc)
 	{
 	    num_handles = atoi(argv[i+1]);
-
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j] = argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
 	if(strcmp(argv[i], "-I") == 0 && i + 1 < argc)
 	{
 	    num_iterations = atoi(argv[i+1]);
 
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j] = argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
 	if(strcmp(argv[i], "-C") == 0 && i < argc)
 	{
 	    caching = GLOBUS_TRUE;
 
-	    for(j = i; j+1 < argc; j++)
-	    {
-		argv[j] = argv[j+1];
-	    }
-	    argc -= 1;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 0);
 	}
     }
 

@@ -76,7 +76,7 @@ int main(int argc,
     globus_ftp_client_handleattr_t		handle_attr;
     globus_ftp_control_layout_t			layout;
     globus_ftp_control_parallelism_t		parallelism;
-    int						i,j;
+    int						i;
     globus_ftp_client_restart_marker_t		restart;
 
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
@@ -98,31 +98,20 @@ int main(int argc,
 		GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
 	    layout.round_robin.block_size = 15;
 
-	    for(j = i; j+1 < argc; j++)
-	    {
-		argv[j] = argv[j+1];
-	    }
-	    argc -= 1;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 0);
 	}
 	else if(strcmp(argv[i], "-P") == 0 && i + 1 < argc)
 	{
 	    parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 	    parallelism.fixed.size = atoi(argv[i+1]);
 
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j] = argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
 	else if(strcmp(argv[i], "-R") == 0 && i+1 < argc)
 	{
 	    char * p;
 	    globus_off_t offset, end;
 	    int bytes;
-
 
 	    p = argv[i+1];
 	    while((*p) && (sscanf(p,
@@ -139,12 +128,8 @@ int main(int argc,
 		p += bytes;
 		if(*p && *p == ',') p++;
 	    }
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j]= argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
     }
     test_parse_args(argc, 

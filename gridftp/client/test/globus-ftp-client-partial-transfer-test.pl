@@ -76,7 +76,7 @@ sub basic_func
     }
     substr($dest_data, $offset, 100, substr($source_data, $offset, 100));
 
-    my $cmd = "$test_exec -p -R $offset " .int(100+$offset).
+    my $cmd = "$test_exec -R $offset " .int(100+$offset).
            " -s gsiftp://localhost$tmpname2 -d gsiftp://localhost$tmpname";
     print `$cmd`;
 
@@ -106,7 +106,7 @@ sub basic_func
     }
     else
     {
-        ok("\n# $test_exec -R $offset ". int(100+$offset) . " -s gsiftp://localhost$tmpname2 -d gsiftp://localhost$tmpname -p\n$errors", 'success');
+        ok("\n# $test_exec -R $offset ". int(100+$offset) . " -s gsiftp://localhost$tmpname2 -d gsiftp://localhost$tmpname \n$errors", 'success');
     }
     unlink($tmpname, $tmpname2);
 }

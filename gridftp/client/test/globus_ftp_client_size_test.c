@@ -1,18 +1,14 @@
 /*
- * partial transfer.
- *
- * makes sure that the ftp client and control libraries will handle the
- * partial fila attribute for a 3rd party transfer.
+ * globus_ftp_client_size_test.c
  */
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_test_common.h"
-
-#include <stdlib.h>
 
 static globus_mutex_t lock;
 static globus_cond_t cond;
 static globus_bool_t done;
 static globus_bool_t error = GLOBUS_FALSE;
+#define SIZE 42
 
 static
 void
@@ -23,11 +19,13 @@ done_cb(
 {
     char * tmpstr;
 
-    if(err) tmpstr = " an";
-    else    tmpstr = "out";
-
-    if(err) { printf("done with%s error\n", tmpstr); 
-              error = GLOBUS_TRUE; }
+    if(err)
+    {
+	tmpstr = globus_object_printable_to_string(err);
+	fprintf(stderr, "%s\n", tmpstr); 
+        error = GLOBUS_TRUE;
+	globus_libc_free(tmpstr);
+    }
     globus_mutex_lock(&lock);
     done = GLOBUS_TRUE;
     globus_cond_signal(&cond);
@@ -39,31 +37,19 @@ int main(int argc,
 	 char *argv[])
 {
     globus_ftp_client_handle_t			handle;
-    globus_ftp_client_operationattr_t		attr;
+    globus_ftp_client_operationattr_t 		attr;
+    globus_ftp_client_handleattr_t		handle_attr;
+    globus_byte_t				buffer[SIZE];
+    globus_size_t				buffer_length = sizeof(buffer);
     globus_result_t				result;
+    globus_off_t				size;
     char *					src;
     char *					dst;
-    globus_ftp_client_handleattr_t		handle_attr;
-    globus_off_t				start_offset=5;
-    globus_off_t				end_offset=10;
-    int						i;
 
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
     globus_ftp_client_operationattr_init(&attr);
-
-    /* Parse local arguments */
-    for(i = 1; i < argc; i++)
-    {
-	if(strcmp(argv[i], "-R") == 0 && i + 2 < argc)
-	{
-	    sscanf(argv[i+1], "%"GLOBUS_OFF_T_FORMAT, &start_offset);
-	    sscanf(argv[i+2], "%"GLOBUS_OFF_T_FORMAT, &end_offset);
-
-	    test_remove_arg(&argc, argv, &i, 2);
-	}
-    }
-
+    
     test_parse_args(argc, 
 		    argv,
 		    &handle_attr,
@@ -71,32 +57,24 @@ int main(int argc,
 		    &src,
 		    &dst);
 
-    if(start_offset < 0) start_offset = 0;
-    if(end_offset < 0) end_offset = 0;
-
     globus_mutex_init(&lock, GLOBUS_NULL);
     globus_cond_init(&cond, GLOBUS_NULL);
 
-    globus_ftp_client_handle_init(&handle,  &handle_attr);
+    globus_ftp_client_handle_init(&handle, &handle_attr);
 
     done = GLOBUS_FALSE;
-    result =
-	globus_ftp_client_partial_third_party_transfer(&handle,
-						       src,
-						       &attr,
-						       dst,
-						       &attr,
-						       GLOBUS_NULL,
-						       start_offset,
-						       end_offset,
-						       done_cb,
-						       0);
+    result = globus_ftp_client_size(&handle,
+				   src,
+				   &attr,
+				   &size,
+				   done_cb,
+				   0);
     if(result != GLOBUS_SUCCESS)
     {
+	fprintf(stderr, globus_object_printable_to_string(globus_error_get(result)));
 	error = GLOBUS_TRUE;
 	done = GLOBUS_TRUE;
     }
-
     globus_mutex_lock(&lock);
     while(!done)
     {
@@ -111,6 +89,10 @@ int main(int argc,
     if(test_abort_count && error)
     {
 	return 0;
+    }
+    if(error == GLOBUS_SUCCESS)
+    {
+	printf("%"GLOBUS_OFF_T_FORMAT"\n", size);
     }
     return error;
 }

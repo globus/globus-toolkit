@@ -12,6 +12,7 @@ Scripts= \
 	FtpTestLib.pm \
 	globus-ftp-client-bad-buffer-test.pl \
 	globus-ftp-client-create-destroy-test.pl \
+	globus-ftp-client-exist-test.pl \
 	globus-ftp-client-extended-get-test.pl \
 	globus-ftp-client-extended-put-test.pl \
 	globus-ftp-client-extended-transfer-test.pl \
@@ -24,6 +25,7 @@ Scripts= \
 	globus-ftp-client-get-test.pl \
 	globus-ftp-client-caching-get-test.pl \
 	globus-ftp-client-put-test.pl \
+	globus-ftp-client-size-test.pl \
 	globus-ftp-client-transfer-test.pl \
 	globus-ftp-client-caching-transfer-test.pl \
 	globus-ftp-client-user-auth-test.pl
@@ -34,13 +36,11 @@ EXTRA_DIST = $(Scripts) $(globusperl_DATA)
 LibHeaders = \
 	globus_ftp_client_test_abort_plugin.h \
 	globus_ftp_client_test_pause_plugin.h \
-	globus_ftp_client_test_printf_plugin.h \
 	globus_ftp_client_test_restart_plugin.h \
 	globus_ftp_client_test_common.h
 LibSources = \
 	globus_ftp_client_test_abort_plugin.c \
 	globus_ftp_client_test_pause_plugin.c \
-	globus_ftp_client_test_printf_plugin.c \
 	globus_ftp_client_test_restart_plugin.c \
 	globus_ftp_client_test_common.c
 

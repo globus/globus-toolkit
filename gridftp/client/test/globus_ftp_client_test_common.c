@@ -9,7 +9,7 @@
 
 #include "globus_ftp_client_test_restart_plugin.h"
 #include "globus_ftp_client_test_abort_plugin.h"
-#include "globus_ftp_client_test_printf_plugin.h"
+#include "globus_ftp_client_debug_plugin.h"
 #include "globus_ftp_client_test_pause_plugin.h"
 
 int test_abort_count = 0;
@@ -27,21 +27,27 @@ test_parse_args(int argc,
     globus_reltime_t timeout;
     globus_ftp_client_plugin_t *plugin;
     globus_ftp_control_dcau_t dcau;
+    globus_abstime_t deadline_time;
+    globus_reltime_t interval_time;
+    int max_retries;
+    long interval;
+    long deadline;
+    char * p;
 
     *src = GLOBUS_NULL;
     *dst = GLOBUS_NULL;
 
     setvbuf(stdout, 0, _IONBF, 0);
     
-    while((c = getopt(argc, argv, "a:ps:d:r:zc:t:")) != -1)
+    while((c = getopt(argc, argv, "f:a:ps:d:r:zc:t:")) != -1)
     {
 	switch(c)
 	{
 	case 'a':
-	    globus_module_activate(GLOBUS_FTP_CLIENT_ABORT_PLUGIN_MODULE);
+	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_ABORT_PLUGIN_MODULE);
 	    
 	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
-	    globus_ftp_client_abort_plugin_init(plugin);
+	    globus_ftp_client_test_abort_plugin_init(plugin);
 	    
 
 	    if(atoi(optarg) >= FTP_ABORT_LAST ||
@@ -51,10 +57,10 @@ test_parse_args(int argc,
 		globus_module_deactivate_all();
 		exit(1);
 	    }
-	    globus_ftp_client_abort_plugin_set_abort_point(plugin,
-							   atoi(optarg));
+	    globus_ftp_client_test_abort_plugin_set_abort_point(plugin,
+							        atoi(optarg));
 
-	    globus_ftp_client_abort_plugin_set_abort_counter(
+	    globus_ftp_client_test_abort_plugin_set_abort_counter(
 		plugin,
 		&test_abort_count);
 
@@ -62,27 +68,25 @@ test_parse_args(int argc,
 
 	    break;
 	case 'p':
-	    globus_module_activate(GLOBUS_FTP_CLIENT_PRINTF_PLUGIN_MODULE);
-
 	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
-	    globus_ftp_client_printf_plugin_init(plugin);
+	    globus_ftp_client_debug_plugin_init(plugin, stderr, "[Debug Plugin]");
 
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
 	    
 	    break;
 	case 'z':
-	    globus_module_activate(GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_MODULE);
+	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_PAUSE_PLUGIN_MODULE);
 
 	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
-	    globus_ftp_client_pause_plugin_init(plugin);
+	    globus_ftp_client_test_pause_plugin_init(plugin);
 
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
 	    
 	    break;
 	case 'r':
-	    globus_module_activate(GLOBUS_FTP_CLIENT_RESTART_PLUGIN_MODULE);
+	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_RESTART_PLUGIN_MODULE);
 	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
-	    globus_ftp_client_restart_plugin_init(plugin);
+	    globus_ftp_client_test_restart_plugin_init(plugin);
 	    if(atoi(optarg) >= FTP_RESTART_LAST ||
 	       atoi(optarg) < 0)
 	    {
@@ -102,7 +106,7 @@ test_parse_args(int argc,
 		{
 		    GlobusTimeReltimeSet(timeout, 0, 0);
 		}
-		globus_ftp_client_restart_plugin_set_restart_point(
+		globus_ftp_client_test_restart_plugin_set_restart_point(
 		    plugin,
 		    atoi(optarg),
 		    &timeout);
@@ -157,6 +161,28 @@ test_parse_args(int argc,
 			GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
 	    }
 	    break;
+	case 'f':
+	    sscanf(optarg, "%d,%ld,%ld", &max_retries, &interval, &deadline);
+
+	    if(interval < 0.1)
+	    {
+		GlobusTimeReltimeSet(interval_time, 0, 0);
+	    }
+	    else
+	    {
+		GlobusTimeReltimeSet(interval_time, interval, 0);
+	    }
+	    deadline_time.tv_sec = deadline;
+	    deadline_time.tv_nsec = 0;
+
+	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
+	    globus_ftp_client_restart_plugin_init(plugin,
+		                                  max_retries,
+		                                  &interval_time,
+						  &deadline_time);
+	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
+	    break;
+	    
 	case '?':
 	    globus_module_deactivate_all();
 	    exit(0);
@@ -170,4 +196,17 @@ test_parse_args(int argc,
     {
 	(*dst) = "gsiftp://localhost/tmp/etc_group";
     }
+}
+
+void
+test_remove_arg(int *argc, char **argv, int *start, int num_of_options)
+{
+    int j;
+
+    for(j = *start; j + num_of_options + 1 < *argc; j++)
+    {
+	argv[j] = argv[j + num_of_options + 1];
+    }
+    *argc -= num_of_options + 1;
+    *start--;
 }

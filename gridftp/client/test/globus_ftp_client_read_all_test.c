@@ -74,7 +74,7 @@ int main(int argc,
     char *					dst;
     globus_ftp_client_handleattr_t		handle_attr;
     globus_ftp_control_mode_t			mode;
-    int						i,j;
+    int						i;
     globus_ftp_control_parallelism_t		parallelism;
 
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
@@ -95,12 +95,7 @@ int main(int argc,
 	    parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 	    parallelism.fixed.size = atoi(argv[i+1]);
 
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j] = argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
     }
     test_parse_args(argc, 

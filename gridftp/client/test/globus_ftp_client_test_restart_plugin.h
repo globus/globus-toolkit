@@ -4,8 +4,8 @@
  * Allow the restart to happen from plugin in a callback.
  */
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H
+#ifndef GLOBUS_INCLUDE_FTP_CLIENT_TEST_RESTART_PLUGIN_H
+#define GLOBUS_INCLUDE_FTP_CLIENT_TEST_RESTART_PLUGIN_H
 
 #include "globus_ftp_client.h"
 
@@ -23,10 +23,10 @@ EXTERN_C_BEGIN
 
 /** Module descriptor
  */
-#define GLOBUS_FTP_CLIENT_RESTART_PLUGIN_MODULE (&globus_i_ftp_client_restart_plugin_module)
+#define GLOBUS_FTP_CLIENT_TEST_RESTART_PLUGIN_MODULE (&globus_i_ftp_client_test_restart_plugin_module)
 
 extern
-globus_module_descriptor_t globus_i_ftp_client_restart_plugin_module;
+globus_module_descriptor_t globus_i_ftp_client_test_restart_plugin_module;
 typedef enum
 {
     FTP_RESTART_NEVER,
@@ -73,24 +73,24 @@ typedef enum
     FTP_RESTART_AT_WRITE,
     FTP_RESTART_LAST
 }
-globus_ftp_restart_plugin_when_t;
+globus_ftp_client_test_restart_plugin_when_t;
 
 globus_result_t
-globus_ftp_client_restart_plugin_init(
+globus_ftp_client_test_restart_plugin_init(
     globus_ftp_client_plugin_t *			plugin);
 
 globus_result_t
-globus_ftp_client_restart_plugin_destroy(
+globus_ftp_client_test_restart_plugin_destroy(
     globus_ftp_client_plugin_t *			plugin);
 
 globus_result_t
-globus_ftp_client_restart_plugin_set_restart_point(
+globus_ftp_client_test_restart_plugin_set_restart_point(
     globus_ftp_client_plugin_t *			plugin,
-    globus_ftp_restart_plugin_when_t			when,
+    globus_ftp_client_test_restart_plugin_when_t	when,
     globus_reltime_t *					timeout);
 EXTERN_C_END
 
-#endif /* GLOBUS_INCLUDE_FTP_CLIENT_RESTART_PLUGIN_H */
+#endif /* GLOBUS_INCLUDE_FTP_CLIENT_TEST_RESTART_PLUGIN_H */
 
 
 

@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     char *					src;
     char *					dst;
     globus_off_t				start_offset=5;
-    int						i,j;
+    int						i;
     globus_ftp_control_mode_t			mode;
 
     mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
@@ -92,24 +92,15 @@ int main(int argc, char **argv)
     {
 	if(strcmp(argv[i], "-R") == 0 && i + 1 < argc)
 	{
-	    start_offset = atoll(argv[i+1]);
+	    sscanf(argv[i+1], "%"GLOBUS_OFF_T_FORMAT, &start_offset);
 
-	    for(j = i; j+2 < argc; j++)
-	    {
-		argv[j] = argv[j+2];
-	    }
-	    argc -= 2;
-	    i--;
+	    test_remove_arg(&argc, argv, &i, 1);
 	}
 	else if(strcmp(argv[i], "-E") == 0 && i < argc)
 	{
 	    mode = GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
-	    for(j = i; j+1 < argc; j++)
-	    {
-		argv[j] = argv[j+1];
-	    }
-	    argc -= 1;
-	    i--;
+
+	    test_remove_arg(&argc, argv, &i, 0);
 	}
     }
     test_parse_args(argc,

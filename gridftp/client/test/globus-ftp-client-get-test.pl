@@ -348,6 +348,56 @@ push(@tests, "prot_test('clear', 0);");
 push(@tests, "prot_test('safe', 0);");
 push(@tests, "prot_test('private', 0);");
 
+=head2 I<restart_plugin_test> (Test 93-?)
+
+Do a get of $test_url, triggering server-side faults, and using
+the default restart plugin to cope with them.
+
+=back
+
+=cut
+sub restart_plugin_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+    my $other_args;
+
+    unlink('core');
+
+    $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE} = shift;
+    $other_args = shift;
+
+    $rc = system("$test_exec -s '$test_url' -f 0,0,0,0 $other_args >'$tmpname' 2>/dev/null") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+    $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok($errors, 'success');
+    }
+    delete $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE};
+    unlink($tmpname);
+}
+foreach (&FtpTestLib::ftp_commands())
+{
+    push(@tests, "restart_plugin_test('$_');");
+}
+
+push(@tests, "restart_plugin_test('PROT', '-c self -t safe')"); 
+push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')"); 
+push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')"); 
+
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
 
