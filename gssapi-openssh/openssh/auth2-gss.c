@@ -280,7 +280,6 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	    authenticated = 0;
 	}
 
-finish:
 	authctxt->postponed = 0;
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, NULL);
