@@ -2010,6 +2010,36 @@ globus_libc_gethomedir(char *result, int bufsize)
 #endif /* TARGET_ARCH_WIN32 */
 
 globus_byte_t *
+globus_libc_memmem(
+    globus_byte_t *                         haystack,
+    globus_size_t                           h_len,
+    globus_byte_t *                         needle,
+    globus_size_t                           n_len)
+{
+    globus_byte_t *                         tmp_ptr;
+    globus_size_t                           left;
+
+    tmp_ptr = memchr(haystack, needle[0], h_len);
+    while(tmp_ptr != NULL)
+    {
+        /* figure out how many bytes remain, if not enough return NULL */
+        left = h_len - (tmp_ptr - haystack);
+        if(left < n_len)
+        {
+            return NULL;
+        }
+        if(memcmp(tmp_ptr, needle, n_len) == 0)
+        {
+            return tmp_ptr;
+        }
+        tmp_ptr++;
+        tmp_ptr = memchr(tmp_ptr, needle[0], left - 1);
+    }
+
+    return NULL;
+}
+
+globus_byte_t *
 globus_libc_memrchr(
     globus_byte_t *                         s,
     globus_byte_t                           c,

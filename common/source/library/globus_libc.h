@@ -203,6 +203,13 @@ globus_libc_memrchr(
     globus_byte_t                           c,
     globus_size_t                           n);
 
+globus_byte_t *
+globus_libc_memmem(
+    globus_byte_t *                         haystack,
+    globus_size_t                           h_len,
+    globus_byte_t *                         needle,
+    globus_size_t                           n_len);
+
 /* Never a macro because globus_off_t must match largefile definition */
 extern int globus_libc_lseek(int fd, globus_off_t offset, int whence);
 
