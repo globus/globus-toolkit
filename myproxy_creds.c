@@ -704,6 +704,10 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     }
     
     /* Copy creds */
+    if (creds->owner_name != NULL)
+       free(creds->owner_name);
+    if (creds->location != NULL)
+       free(creds->location);
     creds->owner_name = mystrdup(retrieved_creds.owner_name);
     creds->location = mystrdup(creds_path);
     creds->lifetime = retrieved_creds.lifetime;
@@ -971,3 +975,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     }
 }
 
+void myproxy_set_storage_dir(char *dir)
+{ 
+    storage_dir=dir;
+}
