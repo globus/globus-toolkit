@@ -138,6 +138,8 @@ static globus_list_t *                      globus_l_outstanding_handles_list;
 static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
 
+GlobusDebugDefine(GLOBUS_XIO);
+
 static int
 globus_l_xio_activate()
 {
@@ -155,6 +157,12 @@ globus_l_xio_activate()
     globus_l_outstanding_handles_list = NULL;
     
     globus_i_xio_load_init();
+
+    GlobusDebugInit(GLOBUS_XIO,
+        GLOBUS_XIO_DEBUG_INFO
+        GLOBUS_XIO_DEBUG_INFO_VERBOSE
+        GLOBUS_XIO_DEBUG_WARNING
+        GLOBUS_XIO_DEBUG_ERROR);
     
     return GLOBUS_SUCCESS;
 }
@@ -176,6 +184,8 @@ globus_l_xio_deactivate()
     globus_cond_destroy(&globus_l_cond);
     globus_i_xio_timer_destroy(&globus_l_xio_timeout_timer);
     globus_i_xio_load_destroy();
+
+    GlobusDebugDestroy(GLOBUS_XIO);
     
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
@@ -394,10 +404,6 @@ globus_i_xio_read_write_callback(
     }   
     globus_mutex_unlock(&handle->mutex);
 
-    /*
-     *  if in a space or within the register call stack
-     *  we must register a one shot
-     */
     if(fire_operation)
     {
         globus_l_xio_read_write_callback_kickout((void *)op);
@@ -669,7 +675,7 @@ globus_l_xio_timeout_callback(
 
     if(fire_callback)
     {
-        if(op->_op_context->entry[0].space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+        if(handle->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             /* register a oneshot callback */
             globus_callback_space_register_oneshot(
@@ -677,7 +683,7 @@ globus_l_xio_timeout_callback(
                 NULL,
                 delayed_cb,
                 (void *)op,
-                op->_op_context->entry[0].space);
+                handle->space);
         }
         /* in all other cases we can just call callback */
         else
@@ -1122,6 +1128,8 @@ globus_xio_register_open(
             GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_xio_register_open);
 
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO, ("globus_xio_register_open"));
+
     if(user_handle == NULL)
     {
         res = GlobusXIOErrorParameter("handle");
@@ -1189,7 +1197,7 @@ globus_xio_register_open(
     }
     /* initialize the context */
     context->ref = 1; /* for the refrence the handle has */
-    context->entry[0].space = space;
+    handle->space = space;
     globus_callback_space_reference(space);
 
     /* set entries in structures */

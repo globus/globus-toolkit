@@ -149,6 +149,7 @@ typedef struct globus_i_xio_handle_s
     /* counts outstanding read and write operations */
     int                                         outstanding_operations;
 
+    globus_callback_space_t                     space;
     globus_xio_timeout_callback_t               open_timeout_cb;
     globus_reltime_t                            open_timeout_period;
     globus_xio_timeout_callback_t               read_timeout_cb;
@@ -173,10 +174,8 @@ typedef struct globus_i_xio_context_entry_s
     globus_i_xio_handle_state_t                 state;
     int                                         outstanding_operations;
     int                                         read_operations;
-    globus_mutex_t                              mutex;
 
     /* every level but the top MUST be GLOBAL_SPACE */
-    globus_callback_space_t                     space;
     globus_bool_t                               read_eof;
 
     struct globus_i_xio_op_s *                  open_op;
@@ -668,5 +667,6 @@ extern globus_i_xio_timer_t                    globus_l_xio_timeout_timer;
 
 #endif /* BUILD_DEBUG */
 
+#define GlobusXIODebugPrintf(level, message) GlobusDebugPrintf(GLOBUS_XIO, level, message)
 
 #endif /* GLOBUS_I_XIO_H */

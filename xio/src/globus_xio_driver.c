@@ -37,7 +37,7 @@ globus_l_xio_driver_purge_read_eof(
             NULL,
             globus_l_xio_driver_op_write_kickout,
            (void *)tmp_op,
-            my_context->space);
+            tmp_op->_op_handle->space);
     }
 }
 
@@ -119,7 +119,7 @@ globus_xio_driver_context_close(
     context_entry = context;
     xio_context = context_entry->whos_my_daddy;
 
-    globus_mutex_lock(&context_entry->mutex);
+    globus_mutex_lock(&xio_context->mutex);
     {
         if(context_entry->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
         {
@@ -127,22 +127,16 @@ globus_xio_driver_context_close(
         }
         else
         {
-            /* always called inside entry lock */
-            globus_mutex_lock(&xio_context->mutex);
+            xio_context->ref--;
+            if(xio_context->ref == 0)
             {
-                xio_context->ref--;
-                if(xio_context->ref == 0)
-                {
-                    destroy_context = GLOBUS_TRUE;
-                }
+                destroy_context = GLOBUS_TRUE;
             }
-            globus_mutex_unlock(&xio_context->mutex);
         }
     }
-    globus_mutex_unlock(&context_entry->mutex);
+    globus_mutex_unlock(&xio_context->mutex);
 
     /* clean up the entry */
-    globus_mutex_destroy(&context_entry->mutex);
     if(destroy_context)
     {
         globus_i_xio_context_destroy(xio_context);
@@ -188,10 +182,7 @@ globus_i_xio_context_create(
 
         for(ctr = 0; ctr < xio_context->stack_size; ctr++)
         {
-            globus_mutex_init(&xio_context->entry[ctr].mutex, NULL);
             xio_context->entry[ctr].whos_my_daddy = xio_context;
-            /* initialize all to GLOBAL, only top can change */
-            xio_context->entry[ctr].space = GLOBUS_CALLBACK_GLOBAL_SPACE;
         }
     }
 

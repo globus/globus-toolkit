@@ -43,7 +43,6 @@ globus_xio_driver_pass_open_DEBUG(
                                                                             
         do                                                                  
         {                                                                   
-            _my_op = &_op->entry[_op->ndx];                                 
             _driver = _context->entry[_op->ndx].driver;                     
             _op->ndx++;                                                     
         }                                                                   
@@ -51,6 +50,7 @@ globus_xio_driver_pass_open_DEBUG(
               _driver->transform_open_func == NULL);                        
                                                                             
                                                                             
+        _my_op = &_op->entry[_op->ndx - 1];                                 
         _my_op->cb = (_in_cb);                                              
         _my_op->user_arg = (_in_user_arg);                                  
         _my_op->in_register = GLOBUS_TRUE;                                  
@@ -127,11 +127,7 @@ globus_xio_driver_finished_open_DEBUG(
     else                                                                    
     {                                                                       
         _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPEN;                  
-        globus_mutex_lock(&_context->mutex);                                
-        {                                                                   
-            _context->ref++;                                                
-        }                                                                   
-        globus_mutex_unlock(&_context->mutex);                              
+        _context->ref++;                                                    
     }                                                                       
                                                                             
     /* if still in register call stack or at top level and a user           
@@ -141,14 +137,15 @@ globus_xio_driver_finished_open_DEBUG(
         _op->cached_res = _res;                                             
     }                                                                       
     if(_my_op->in_register ||                                               
-        _my_context->space != GLOBUS_CALLBACK_GLOBAL_SPACE)                 
+        (_op->ndx == 0 &&                                                   
+         _op->_op_handle->space != GLOBUS_CALLBACK_GLOBAL_SPACE))           
     {                                                                       
         globus_callback_space_register_oneshot(                             
             NULL,                                                           
             NULL,                                                           
             globus_l_xio_driver_op_kickout,                                 
             (void *)_op,                                                    
-            _my_context->space);                                            
+            _op->_op_handle->space);                                        
     }                                                                       
     else                                                                    
     {                                                                       
@@ -199,15 +196,15 @@ globus_xio_driver_pass_close_DEBUG(
                                                                             
         do                                                                  
         {                                                                   
-            _my_op = &_op->entry[_op->ndx];                                 
             _driver = _context->entry[_op->ndx].driver;                     
             _op->ndx++;                                                     
         }                                                                   
         while(_driver->close_func == NULL);                                 
+        _my_op = &_op->entry[_op->ndx - 1];                                 
                                                                             
                                                                             
         /* deal with context state */                                       
-        globus_mutex_lock(&_my_context->mutex);                             
+        globus_mutex_lock(&_context->mutex);                                
         {                                                                   
             switch(_my_context->state)                                      
             {                                                               
@@ -243,7 +240,7 @@ globus_xio_driver_pass_close_DEBUG(
                 _my_context->close_op = _op;                                
             }                                                               
         }                                                                   
-        globus_mutex_unlock(&_my_context->mutex);                           
+        globus_mutex_unlock(&_context->mutex);                              
                                                                             
         _my_op->cb = (_in_cb);                                              
         _my_op->user_arg = (_in_ua);                                        
@@ -293,14 +290,15 @@ globus_xio_driver_finished_close_DEBUG(
         _op->cached_res = _res;                                             
     }                                                                       
     if(_my_op->in_register ||                                               
-            _my_context->space != GLOBUS_CALLBACK_GLOBAL_SPACE)             
+        (_op->ndx == 0 &&                                                   
+         _op->_op_handle->space != GLOBUS_CALLBACK_GLOBAL_SPACE))           
     {                                                                       
         globus_callback_space_register_oneshot(                             
             NULL,                                                           
             NULL,                                                           
             globus_l_xio_driver_op_kickout,                                 
             (void *)_op,                                                    
-            _my_context->space);                                            
+            _op->_op_handle->space);                                        
     }                                                                       
     else                                                                    
     {                                                                       
@@ -345,16 +343,11 @@ globus_xio_driver_pass_write_DEBUG(
                                                                             
     globus_assert(_op->ndx < _op->stack_size);                              
                                                                             
-    globus_mutex_lock(&_my_context->mutex);                                 
-                                                                            
     /* error checking */                                                    
-    if(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPEN &&                
-        _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED &&       
-        _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED)        
-    {                                                                       
-        _res = GlobusXIOErrorInvalidState(_my_context->state);              
-    }                                                                       
-    else if(_op->canceled)                                                  
+    globus_assert(_my_context->state == GLOBUS_XIO_HANDLE_STATE_OPEN ||     
+        _my_context->state == GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED ||       
+        _my_context->state == GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED);       
+    if(_op->canceled)                                                       
     {                                                                       
         _res = GlobusXIOErrorCanceled();                                    
     }                                                                       
@@ -364,13 +357,13 @@ globus_xio_driver_pass_write_DEBUG(
         _caller_ndx = _op->ndx;                                             
         do                                                                  
         {                                                                   
-            _my_op = &_op->entry[_op->ndx];                                 
             _next_context = &_context->entry[_op->ndx];                     
             _driver = _next_context->driver;                                
             _op->ndx++;                                                     
         }                                                                   
         while(_driver->write_func == NULL);                                 
                                                                             
+        _my_op = &_op->entry[_op->ndx - 1];                                 
         _my_op->caller_ndx = _caller_ndx;                                   
         _my_op->_op_ent_data_cb = (_in_cb);                                 
         _my_op->user_arg = (_in_user_arg);                                  
@@ -381,35 +374,37 @@ globus_xio_driver_pass_write_DEBUG(
         /* set the callstack flag */                                        
         _my_op->in_register = GLOBUS_TRUE;                                  
                                                                             
-        _my_context->outstanding_operations++;                              
-                                                                            
-        /* UNLOCK */                                                        
-        globus_mutex_unlock(&_my_context->mutex);                           
+        globus_mutex_lock(&_context->mutex);                                
+        {                                                                   
+            _my_context->outstanding_operations++;                          
+        }                                                                   
+        globus_mutex_unlock(&_context->mutex);                              
         _res = _driver->write_func(                                         
                         _next_context->driver_handle,                       
                         _my_op->_op_ent_iovec,                              
                         _my_op->_op_ent_iovec_count,                        
                         _op);                                               
                                                                             
-        /* LOCK */                                                          
-        globus_mutex_lock(&_my_context->mutex);                             
         /* flip the callstack flag */                                       
         _my_op->in_register = GLOBUS_FALSE;                                 
         if(_res != GLOBUS_SUCCESS)                                          
         {                                                                   
-            _my_context->outstanding_operations--;                          
-            /* there is an off chance that we could need to close here */   
-           if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||     
-                _my_context->state ==                                       
-                    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&   
-                _my_context->outstanding_operations == 0)                   
+            globus_mutex_lock(&_context->mutex);                            
             {                                                               
-                globus_assert(_my_context->close_op != NULL);               
-                _close = GLOBUS_TRUE;                                       
+                _my_context->outstanding_operations--;                      
+                /*there is an off chance that we could need to close here*/ 
+                if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
+                    _my_context->state ==                                   
+                    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&   
+                    _my_context->outstanding_operations == 0)               
+                {                                                           
+                    globus_assert(_my_context->close_op != NULL);           
+                    _close = GLOBUS_TRUE;                                   
+                }                                                           
             }                                                               
+            globus_mutex_unlock(&_context->mutex);                          
         }                                                                   
     }                                                                       
-    globus_mutex_unlock(&_my_context->mutex);                               
                                                                             
     if(_close)                                                              
     {                                                                       
@@ -529,7 +524,7 @@ globus_xio_driver_write_deliver_DEBUG(
                 _my_op->user_arg);                                          
                                                                             
     /* LOCK */                                                              
-    globus_mutex_lock(&_my_context->mutex);                                 
+    globus_mutex_lock(&_context->mutex);                                    
     {                                                                       
         _my_context->outstanding_operations--;                              
                                                                             
@@ -543,7 +538,7 @@ globus_xio_driver_write_deliver_DEBUG(
             _close = GLOBUS_TRUE;                                           
         }                                                                   
     }                                                                       
-    globus_mutex_unlock(&_my_context->mutex);                               
+    globus_mutex_unlock(&_context->mutex);                                  
                                                                             
     if(_close)                                                              
     {                                                                       
@@ -587,16 +582,10 @@ globus_xio_driver_pass_read_DEBUG(
                                                                             
     globus_assert(_op->ndx < _op->stack_size);                              
                                                                             
-    /* LOCK */                                                              
-    globus_mutex_lock(&_my_context->mutex);                                 
-                                                                            
     /* error checking */                                                    
-    if(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPEN &&                
-        _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)         
-    {                                                                       
-        _res = GlobusXIOErrorInvalidState(_my_context->state);              
-    }                                                                       
-    else if(_op->canceled)                                                  
+    globus_assert(_my_context->state == GLOBUS_XIO_HANDLE_STATE_OPEN ||     
+        _my_context->state == GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED);        
+    if(_op->canceled)                                                       
     {                                                                       
         _res = GlobusXIOErrorCanceled();                                    
     }                                                                       
@@ -614,13 +603,13 @@ globus_xio_driver_pass_read_DEBUG(
         /* find next slot. start on next and find first interseted */       
         do                                                                  
         {                                                                   
-            _my_op = &_op->entry[_op->ndx];                                 
             _next_context = &_context->entry[_op->ndx];                     
             _driver = _next_context->driver;                                
             _op->ndx++;                                                     
         }                                                                   
         while(_driver->read_func == NULL);                                  
                                                                             
+        _my_op = &_op->entry[_op->ndx - 1];                                 
         _my_op->caller_ndx = _caller_ndx;                                   
         _my_op->_op_ent_data_cb = (_in_cb);                                 
         _my_op->user_arg = (_in_user_arg);                                  
@@ -630,12 +619,13 @@ globus_xio_driver_pass_read_DEBUG(
         _my_op->_op_ent_wait_for = (_in_wait_for);                          
         /* set the callstack flag */                                        
                                                                             
-        _my_context->outstanding_operations++;                              
-        _my_context->read_operations++;                                     
+        globus_mutex_lock(&_context->mutex);                                
+        {                                                                   
+            _my_context->outstanding_operations++;                          
+            _my_context->read_operations++;                                 
+        }                                                                   
+        globus_mutex_unlock(&_context->mutex);                              
         _my_op->in_register = GLOBUS_TRUE;                                  
-                                                                            
-        /* UNLOCK */                                                        
-        globus_mutex_unlock(&_my_context->mutex);                           
                                                                             
         _res = _driver->read_func(                                          
                         _next_context->driver_handle,                       
@@ -643,26 +633,26 @@ globus_xio_driver_pass_read_DEBUG(
                         _my_op->_op_ent_iovec_count,                        
                         _op);                                               
                                                                             
-        /* LOCK */                                                          
-        globus_mutex_lock(&_my_context->mutex);                             
-                                                                            
         /* flip the callstack flag */                                       
         _my_op->in_register = GLOBUS_FALSE;                                 
         if(_res != GLOBUS_SUCCESS)                                          
         {                                                                   
-            _my_context->outstanding_operations--;                          
-            _my_context->read_operations--;                                 
-            if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||    
-                _my_context->state ==                                       
-                    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&   
-                _my_context->outstanding_operations == 0)                   
+            globus_mutex_lock(&_context->mutex);                            
             {                                                               
-                globus_assert(_my_context->close_op != NULL);               
-                _close = GLOBUS_TRUE;                                       
+                _my_context->outstanding_operations--;                      
+                _my_context->read_operations--;                             
+                if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
+                    _my_context->state ==                                   
+                       GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) & 
+                    _my_context->outstanding_operations == 0)               
+                {                                                           
+                    globus_assert(_my_context->close_op != NULL);           
+                    _close = GLOBUS_TRUE;                                   
+                }                                                           
             }                                                               
+            globus_mutex_unlock(&_context->mutex);                          
         }                                                                   
     }                                                                       
-    globus_mutex_unlock(&_my_context->mutex);                               
                                                                             
     if(_close)                                                              
     {                                                                       
@@ -714,7 +704,7 @@ globus_xio_driver_finished_read_DEBUG(
                                                                             
     if(_res != GLOBUS_SUCCESS && globus_xio_error_is_eof(_res))             
     {                                                                       
-        globus_mutex_lock(&_my_context->mutex);                             
+        globus_mutex_lock(&_context->mutex);                                
         {                                                                   
             switch(_my_context->state)                                      
             {                                                               
@@ -744,7 +734,7 @@ globus_xio_driver_finished_read_DEBUG(
                 _fire_cb = GLOBUS_FALSE;                                    
             }                                                               
         }                                                                   
-        globus_mutex_unlock(&_my_context->mutex);                           
+        globus_mutex_unlock(&_context->mutex);                              
     }                                                                       
     /* if not all bytes were read */                                        
     else if(_my_op->_op_ent_nbytes < _my_op->_op_ent_wait_for &&            
@@ -832,7 +822,7 @@ globus_xio_driver_read_deliver_DEBUG(
                 _my_op->user_arg);                                          
                                                                             
                                                                             
-    globus_mutex_lock(&_my_context->mutex);                                 
+    globus_mutex_lock(&_context->mutex);                                    
     {                                                                       
         _purge = GLOBUS_FALSE;                                              
         if(_my_context->read_eof)                                           
@@ -892,7 +882,7 @@ globus_xio_driver_read_deliver_DEBUG(
             _close = GLOBUS_TRUE;                                           
         }                                                                   
     }                                                                       
-    globus_mutex_unlock(&_my_context->mutex);                               
+    globus_mutex_unlock(&_context->mutex);                                  
                                                                             
     if(_close)                                                              
     {                                                                       

@@ -6,6 +6,8 @@
 
 #define GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE &globus_i_xio_test_module
 
+#define MAX_DELAY 1000
+
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
 {                                                                       \
     ow = (globus_l_xio_test_op_wrapper_t *)                             \
@@ -43,6 +45,8 @@ typedef struct globus_l_xio_test_handle_s
     globus_size_t                       chunk_size;
     globus_size_t                       bytes_read;
     globus_reltime_t                    delay;
+
+    int                                 random;
 } globus_l_xio_test_handle_t;
 
 typedef struct globus_l_xio_test_op_wrapper_s
@@ -79,8 +83,11 @@ cancel_cb(
     globus_l_xio_test_op_wrapper_t *    ow;
     globus_bool_t                       active;
     globus_result_t                     res;
+    GlobusXIOName(cancel_cb);
 
     ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
+
+    ow->res = GlobusXIOErrorCanceled();
 
     res = globus_callback_unregister(
             ow->callback_handle,
@@ -106,7 +113,6 @@ test_inline_blocker(
 {
     globus_abstime_t                            timeout;
     globus_reltime_t                            zero;
-    int                                         rc;
     int                                         sec;
     int                                         usec;
 
@@ -115,19 +121,9 @@ test_inline_blocker(
     {
         GlobusTimeAbstimeGetCurrent(timeout);
         GlobusTimeAbstimeInc(timeout, *delay);
-        globus_mutex_lock(&globus_l_mutex);
         GlobusTimeReltimeGet(*delay, sec, usec);
-
         sleep(sec);
         globus_libc_usleep(usec);
-/*
-        do
-        {
-            rc = globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &timeout);
-        } while (rc != ETIMEDOUT);
-
-*/
-        globus_mutex_unlock(&globus_l_mutex);
     }
 }
 
@@ -153,6 +149,20 @@ globus_l_xio_test_attr_init(
     *out_attr = attr;
 
     return GLOBUS_SUCCESS;
+}
+
+static void
+test_get_delay_time(
+    globus_l_xio_test_handle_t *        dh,
+    globus_reltime_t *                  out_delay)
+{
+    int                                 usec = 0;
+    if(dh->random)
+    {
+        usec = rand() % MAX_DELAY;
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("-> %d", MAX_DELAY));
+        GlobusTimeReltimeSet(*out_delay, 0, usec);
+    }
 }
 
 /*
@@ -191,6 +201,12 @@ globus_l_xio_test_attr_cntl(
 
         case GLOBUS_XIO_TEST_CHUNK_SIZE:
             attr->chunk_size = va_arg(ap, int);
+            break;
+
+        case GLOBUS_XIO_TEST_RANDOM:
+            attr->random = GLOBUS_TRUE;
+            usecs = va_arg(ap, int);
+            srand(usecs);
             break;
 
     }
@@ -327,8 +343,11 @@ globus_l_xio_test_accept(
     void *                              driver_attr,
     globus_xio_operation_t              accept_op)
 {
+    globus_reltime_t                    end_time;
     globus_l_xio_test_handle_t *        server;
     globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_l_xio_test_accept);
+
 
     server = (globus_l_xio_test_handle_t *) driver_server;
 
@@ -359,7 +378,14 @@ globus_l_xio_test_accept(
         if(canceled)
         {
             delay = NULL;
+            ow->res = GlobusXIOErrorCanceled();
         }
+        else if(server->random)
+        {
+            test_get_delay_time(server, &end_time);
+            delay = &end_time;
+        }
+
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
             delay,
@@ -405,6 +431,8 @@ globus_l_xio_test_open(
     globus_l_xio_test_handle_t *        dh;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_reltime_t *                  delay;
+    globus_reltime_t                    end_time;
+    GlobusXIOName(globus_l_xio_test_open);
 
     attr = (globus_l_xio_test_handle_t *) driver_attr;
 
@@ -445,6 +473,11 @@ globus_l_xio_test_open(
         {
             delay = NULL;
         }
+        else if(dh->random)
+        {
+            test_get_delay_time(dh, &end_time);
+            delay = &end_time;
+        }
 
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
@@ -470,6 +503,7 @@ globus_l_xio_test_close(
 {
     globus_l_xio_test_handle_t *        dh;
     globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_l_xio_test_close);
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
@@ -494,6 +528,7 @@ globus_l_xio_test_close(
         globus_l_xio_test_op_wrapper_t *    ow;
         globus_reltime_t *                  delay;
         globus_bool_t                       canceled;
+        globus_reltime_t                    end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_CLOSE;
@@ -503,6 +538,11 @@ globus_l_xio_test_close(
         if(canceled)
         {
             delay = NULL;
+        }
+        else if(dh->random)
+        {
+            test_get_delay_time(dh, &end_time);
+            delay = &end_time;
         }
 
         globus_callback_space_register_oneshot(
@@ -577,6 +617,7 @@ globus_l_xio_test_read(
         globus_l_xio_test_op_wrapper_t *    ow;
         globus_reltime_t *                  delay;
         globus_bool_t                       canceled;
+        globus_reltime_t                    end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_READ;
@@ -586,6 +627,11 @@ globus_l_xio_test_read(
         if(canceled)
         {
             delay = NULL;
+        }
+        else if(dh->random)
+        {
+            test_get_delay_time(dh, &end_time);
+            delay = &end_time;
         }
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
@@ -614,6 +660,7 @@ globus_l_xio_test_write(
     globus_size_t                       nbytes;
     int                                 ctr;
     globus_size_t                       tb;
+    GlobusXIOName(globus_l_xio_test_write);
     
     dh = (globus_l_xio_test_handle_t *) driver_handle;
     
@@ -653,6 +700,7 @@ globus_l_xio_test_write(
         globus_l_xio_test_op_wrapper_t *    ow;
         globus_reltime_t *                  delay;
         globus_bool_t                       canceled;
+        globus_reltime_t                    end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
@@ -662,6 +710,11 @@ globus_l_xio_test_write(
         if(canceled)
         {
             delay = NULL;
+        }
+        else if(dh->random)
+        {
+            test_get_delay_time(dh, &end_time);
+            delay = &end_time;
         }
         globus_callback_space_register_oneshot(
             &ow->callback_handle,

@@ -767,4 +767,6 @@ extern globus_module_descriptor_t globus_i_xio_module;
 
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
 
+GlobusDebugDeclare(GLOBUS_XIO);
+
 #endif

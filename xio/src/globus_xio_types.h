@@ -74,4 +74,12 @@ typedef enum
     GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT,
 } globus_xio_attr_cmd_t;
 
+typedef enum
+{
+    GLOBUS_XIO_DEBUG_INFO = 1,
+    GLOBUS_XIO_DEBUG_INFO_VERBOSE = 2,
+    GLOBUS_XIO_DEBUG_WARNING = 4,
+    GLOBUS_XIO_DEBUG_ERROR = 8,
+} globus_xio_debug_levels_t;
+
 #endif

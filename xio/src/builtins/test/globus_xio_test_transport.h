@@ -34,6 +34,7 @@ enum
     GLOBUS_XIO_TEST_SET_USECS,
     GLOBUS_XIO_TEST_READ_EOF_BYTES,
     GLOBUS_XIO_TEST_CHUNK_SIZE,
+    GLOBUS_XIO_TEST_RANDOM,
 };
 
 globus_module_descriptor_t       globus_i_xio_test_module;
