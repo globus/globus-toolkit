@@ -87,6 +87,7 @@ globus_c_wsrf_core_tools                    wsrf/c/core/tools/source gpt
 globus_c_wsrf_core_bindings                 wsrf/c/core/source gpt
 globus_notification_consumer                wsrf/c/core/notification/source gpt
 globus_c_wsrf_notification_test             wsrf/c/core/notification/test gpt
+globus_notification_producer                wsrf/c/core/notification/producer/source gpt
 globus_c_wsrf_providers                     wsrf/c/core/providers/source gpt
 globus_c_ws_messaging                       wsrf/c/message/source gpt
 globus_c_ws_messaging_test                  wsrf/c/message/test gpt
