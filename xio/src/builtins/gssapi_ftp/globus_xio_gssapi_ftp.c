@@ -638,10 +638,17 @@ globus_l_xio_gssapi_ftp_decode_adat(
         /* if we have finished the security exchange */
         case GSS_S_COMPLETE:
             /* get the subject and copy into handle */
+/* don't do this
              maj_stat = gss_export_name(
                         &min_stat,
                         handle->target_name,
                         &subject_buf);
+*/
+            maj_stat = gss_display_name(
+                        &min_stat,
+                        handle->target_name,
+                        &subject_buf,
+                        &mech_type);
 
             handle->auth_gssapi_subject =
                 globus_libc_strndup(subject_buf.value, subject_buf.length);
