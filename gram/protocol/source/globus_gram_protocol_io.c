@@ -999,12 +999,30 @@ globus_l_gram_protocol_connect_callback(
     globus_io_handle_t *		handle,
     globus_result_t			result)
 {
+    globus_object_t *			err;
+    int					rc;
+    char *				errstring;
     globus_i_gram_protocol_connection_t *
     					connection;
     connection = callback_arg;
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
     if(result != GLOBUS_SUCCESS)
     {
+	err = globus_error_get(result);
+
+	if(globus_object_type_match(
+	       globus_object_get_type(err),
+	       GLOBUS_IO_ERROR_TYPE_SECURITY_FAILED))
+	{
+	    errstring = globus_object_printable_to_string(err);
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+	    globus_gram_protocol_error_7_hack_replace_message(errstring);
+	}
+	else
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+	}
+	globus_object_free(err);
         goto error_exit;
     }
 
@@ -1037,7 +1055,7 @@ globus_l_gram_protocol_connect_callback(
 			     connection->handle,
 			     GLOBUS_NULL,
 			     0,
-			     GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED);
+			     rc);
     }
     result = globus_io_register_close(
 	    handle,

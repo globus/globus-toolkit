@@ -29,7 +29,13 @@ globus_l_gram_protocol_activate(void)
 {
     OM_uint32				major_status;
     OM_uint32				minor_status;
+    globus_result_t			result;
 
+    result = globus_module_activate(GLOBUS_IO_MODULE);
+    if(result != GLOBUS_SUCCESS)
+    {
+	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+    }
     /*
      * Get the GSSAPI security credential for this process.
      * we save it in static storage, since it is only
@@ -51,6 +57,8 @@ globus_l_gram_protocol_activate(void)
                 major_status,
                 minor_status,
                 0);
+
+	globus_module_deactivate(GLOBUS_IO_MODULE);
 
         return GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION; /* need better return code */
     }
@@ -98,6 +106,7 @@ globus_l_gram_protocol_deactivate(void)
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     globus_mutex_destroy(&globus_i_gram_protocol_mutex);
 
+    globus_module_deactivate(GLOBUS_IO_MODULE);
     /*
      * GSSAPI - cleanup of the credential
      * don't really care about returned status
