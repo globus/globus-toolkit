@@ -62,6 +62,13 @@ my $temp;
 GetOptions( '-flavor=s' => \$flavor, '-link=s' => \$link) 
 or pod2usage(1);
 
+if (!defined $flavor){
+	pod2usage(1);
+}
+if (@ARGV[0] eq ""){
+	pod2usage(1);
+}
+
 #$flavor is the globus flavor configuration variable... it is needed
 #for the globus-build-env-<flavor>, and for the call of the correct gpt_build_config
 
@@ -107,8 +114,8 @@ print OUT "GLOBUS_PKG_LIBS=\"$pkglibslist\"\n";
 #print OUT "GLOBUS_PGM_LINKS=\"$pgm_linkslist\"\n";
 #print OUT "GLOBUS_LIB_LINKS=\"$lib_linkslist\"\n"; 
 #pgm_links and lib_links are broken at the moment, so we'll put in a hack:
-#print OUT "GLOBUS_PGM_LINKS=\"$pkglibslist\"\n";
-#print OUT "GLOBUS_LIB_LINKS=\"$pkglibslist\"\n";
+print OUT "GLOBUS_PGM_LINKS=\"$pkglibslist\"\n";
+print OUT "GLOBUS_LIB_LINKS=\"$pkglibslist\"\n";
 
 print OUT "GLOBUS_LIBTOOL=$globus/sbin/libtool-$flavor\n";
 
@@ -280,9 +287,13 @@ sub pod2usage
 {
 
   my $ex=shift;
-  print "ERROR: Please specify a build flavor: -flavor\n";
-  print "       or specify a link type:        -link\n";
-  print "	and one or more package names on which you depend\n";
+  print "ERROR: Please specify a build flavor: -flavor=<flavorname>\n";
+  print "	and one or more package names on which you depend, e.g.\n";
+  print "\n             globus-makefile-header -flavor=gcc32dbg globus_io\n\n";
+  print "	You can also specify whether you will be linking\n";
+  print "	shared or static, with -link=[shared|static], but this\n";
+  print "	will only affect which dependencies are checked when it\n";
+  print "	examines your GLOBUS_LOCATION--the output is the same\n";
   exit $ex;
 
 }
