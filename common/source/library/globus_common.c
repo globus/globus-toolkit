@@ -174,7 +174,7 @@ globus_l_common_i18n_get_string_by_module(
 }
 
 char *
-globus_common_i18n_get_string_simple(
+globus_common_i18n_get_string(
 		globus_module_descriptor_t * module,
 		char * key)
 {
