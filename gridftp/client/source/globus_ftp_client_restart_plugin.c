@@ -237,7 +237,7 @@ static
 int
 globus_l_ftp_client_restart_plugin_deactivate(void)
 {
-    return globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
+    return globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
 }
 
 
