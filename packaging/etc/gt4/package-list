@@ -46,6 +46,7 @@ globus_wsrf_mds_aggregator_test             ws-mds/aggregator/test
 globus_wsrf_mds_trigger                     ws-mds/trigger/source
 globus_wsrf_mds_trigger_test                ws-mds/trigger/test
 globus_wsrf_mds_archive                     ws-mds/archive/source
+globus_wsrf_mds_archive_test                ws-mds/archive/test
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
 globus_wsrf_mds_usefulrp                    ws-mds/usefulrp/source
 globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
@@ -89,4 +90,5 @@ globus_wsrf_cas_utils_java                  ws-cas/utils/java/source
 globus_wsrf_delegation_client_java          ws-delegation/client/java/source
 globus_wsrf_delegation_service_java         ws-delegation/service/java/source
 globus_wsrf_delegation_service_java_test    ws-delegation/service/java/test
-globus_wsrf_delegation_common_java          ws-delegation/common/schema
+globus_wsrf_delegation_common               ws-delegation/common/schema
+globus_wsrf_delegation_stubs_java           ws-delegation/common/java/source
