@@ -55,8 +55,8 @@ AC_SUBST(flavor, $flavor)
 AC_SUBST(thr, $thr)
 
 aixargs=""
-if test "x$AIX" = "xtrue" -a "x$flavor"="xvendorcc64dbg"; then
-   aixargs="OBJECT_MODE=64"
+if test "x$AIX" = "xyes" -a "x$flavor"="xvendorcc64dbg"; then
+   aixargs="export OBJECT_MODE=64"
 fi
 AC_SUBST(aixargs,$aixargs)
 
