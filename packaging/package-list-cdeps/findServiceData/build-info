@@ -1,3 +1,3 @@
-name=findServiceData
-subdir=ogsa_client/findServiceData
+name=glue
+subdir=information_services/glue/hostinfo
 build="custom"
