@@ -1192,6 +1192,7 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
 	    }
             if (i != 0)
             {
+                fprintf(stderr, "Exec failed: %s\n", sys_errlist[errno]);
                 sprintf(tmpbuf, "Exec failed: %s\n", sys_errlist[errno]);
                 write(wr, tmpbuf, strlen(tmpbuf));
                 _exit(1);/*return(1);*/
