@@ -41,8 +41,12 @@ sub data_files {
   push @$result, @$list;
   $self->{'filelist'}->reset();
 
-  return $result;
+  $self->{filelist}->extract_data();
+  $list = $self->{'filelist'}->get_list();
+  push @$result, @$list;
+  $self->{'filelist'}->reset();
 
+  return $result;
 }
 
 1;
