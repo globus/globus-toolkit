@@ -15,8 +15,6 @@ AM_CONFIG_HEADER(crypto/opensslconf.h:crypto/opensslconf.h.in)
 dnl static linking hack
 
 if test $GPT_LINKTYPE = "static"; then
-    GPT_LDFLAGS="-static -L${GLOBUS_LOCATION}/lib"
-    AC_SUBST(GPT_LDFLAGS)
     AC_ENABLE_SHARED([no])
 else
     AC_ENABLE_SHARED([yes])
@@ -64,7 +62,9 @@ CHECK_NEED_LNSL
 # maybe should be replaced with the libtool dl library
 CHECK_NEED_LDL
 
+
 GPT_SET_LIBS([[$EXTERNAL_LIBS]])	
+
 
 GLOBUS_FINALIZE
 
