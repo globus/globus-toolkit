@@ -594,7 +594,7 @@ globus_cond_init(globus_cond_t *cv,
     int rc=0;
     if((rc = globus_macro_cond_space_init(cv, attr))==4)
     {
-        while((rc = globus_macro_cond_init((cv)->cond, attr))==4);
+        while((rc = globus_macro_cond_init(&(cv)->cond, GLOBUS_NULL))==4);
     }
     globus_i_thread_test_rc(
 	rc,
@@ -613,7 +613,7 @@ globus_cond_destroy(globus_cond_t *cv)
     
     if ((rc = globus_macro_cond_space_destroy(cv))==4)
     {
-        while((rc = globus_macro_cond_destroy((cv)->cond))==4);
+        while((rc = globus_macro_cond_destroy(&(cv)->cond))==4);
     }
     globus_i_thread_test_rc(
 	rc,
@@ -695,7 +695,7 @@ int globus_condattr_destroy(globus_condattr_t *attr)
 #undef globus_condattr_setspace
 int globus_condattr_setspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t             space)
+    int                                 space)
 {
     int rc;
     rc = globus_macro_condattr_setspace(attr, space);
@@ -708,7 +708,7 @@ int globus_condattr_setspace(
 #undef globus_condattr_getspace
 int globus_condattr_getspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t *           space)
+    int *                               space)
 {
     int rc;
     rc = globus_macro_condattr_getspace(attr, space);

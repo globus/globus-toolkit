@@ -62,13 +62,13 @@ typedef pthread_mutex_t		globus_mutex_t;
 typedef struct
 {
     pthread_cond_t              cond;
-    globus_callback_space_t     space;
+    int                         space;
 } globus_cond_t;
 
 typedef struct
 {
     pthread_condattr_t          condattr;
-    globus_callback_space_t     space;
+    int                         space;
 } globus_condattr_t;
 
 typedef void *(*globus_thread_func_t)(void *);
@@ -506,12 +506,12 @@ extern int		globus_cond_broadcast(globus_cond_t *cond);
 extern int
 globus_condattr_setspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t             space);
+    int                                 space);
 
 extern int
 globus_condattr_getspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t *           space);
+    int *                               space);
 
 /******************************************************************************
 			       Module definition

@@ -46,13 +46,13 @@ typedef struct
 globus_threadattr_t;
 
 typedef int				globus_mutexattr_t;
-typedef globus_callback_space_t         globus_condattr_t;
+typedef int                             globus_condattr_t;
 typedef ulock_t				globus_mutex_t;
 typedef struct
 {
     globus_mutex_t			mutex;
     globus_fifo_t			queue;
-    globus_callback_space_t             space;
+    int                                 space;
 }
 globus_cond_t;
 
@@ -179,12 +179,12 @@ extern int	globus_cond_timedwait(globus_cond_t *cond,
 extern int
 globus_condattr_setspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t             space);
+    int                                 space);
 
 extern int
 globus_condattr_getspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t *           space);
+    int *                               space);
 
 extern int		globus_condattr_init (globus_condattr_t *attr);
 extern int		globus_condattr_destroy (globus_condattr_t *attr);

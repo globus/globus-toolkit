@@ -209,10 +209,10 @@ globus_l_thread_activate()
 #endif /* HAVE_NO_PTHREAD_SETKIND */
     
 #ifdef HAVE_NO_CONDATTR_DEFAULT
-    rc = pthread_condattr_create(&(globus_i_thread_all_global_vars.condattr));
+    rc = pthread_condattr_create(&(globus_i_thread_all_global_vars.condattr.condattr));
     globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_condattr_create() failed\n");
 #else  /* HAVE_NO_CONDATTR_DEFAULT */
-    globus_i_thread_all_global_vars.condattr = pthread_condattr_default;
+    globus_i_thread_all_global_vars.condattr.condattr = pthread_condattr_default;
 #endif /* HAVE_NO_CONDATTR_DEFAULT */
     
 #endif /* HAVE_PTHREAD_DRAFT_4 */
@@ -849,7 +849,7 @@ int globus_mutex_unlock(globus_mutex_t *mut)
 #undef globus_condattr_setspace
 int globus_condattr_setspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t             space)
+    int                                 space)
 {
     int rc;
     rc = globus_macro_condattr_setspace(attr, space);
@@ -862,7 +862,7 @@ int globus_condattr_setspace(
 #undef globus_condattr_getspace
 int globus_condattr_getspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t *           space)
+    int *                               space)
 {
     int rc;
     rc = globus_macro_condattr_getspace(attr, space);

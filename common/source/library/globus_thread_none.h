@@ -256,12 +256,12 @@ globus_condattr_destroy(
 extern int
 globus_condattr_setspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t             space);
+    int                                 space);
 
 extern int
 globus_condattr_getspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t *           space);
+    int *                               space);
 
 extern int
 globus_thread_create(

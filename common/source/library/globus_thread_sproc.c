@@ -803,7 +803,7 @@ globus_mutex_unlock(globus_mutex_t *mutex)
 #undef globus_condattr_setspace
 int globus_condattr_setspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t             space)
+    int                                 space)
 {
     return globus_callback_space_reference(space)
         ? 1
@@ -817,7 +817,7 @@ int globus_condattr_setspace(
 #undef globus_condattr_getspace
 int globus_condattr_getspace(
     globus_condattr_t *                 attr,
-    globus_callback_space_t *           space)
+    int *                               space)
 {
     *space = *attr;
     return (0);
