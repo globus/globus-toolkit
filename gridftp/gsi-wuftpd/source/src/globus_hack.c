@@ -31,8 +31,18 @@ typedef struct globus_i_wu_montor_s
     int                        fd;
 
     int                        offset;
-    time_t		       last_update;
+
+    /* Range response messages */
+    time_t		       last_range_update;
     globus_fifo_t	       ranges;
+
+    /* Performance update messages */
+    struct timeval	       last_perf_update;
+    globus_size_t	       all_transferred;
+    globus_size_t	       accum_bytes;
+    globus_callback_handle_t   callback_handle;
+    globus_ftp_control_handle_t *
+			       handle;
 } globus_i_wu_montor_t;
 
 /*
@@ -108,6 +118,11 @@ globus_l_wu_insert_range(globus_fifo_t * ranges,
 static char *
 globus_l_wu_create_range_string(globus_fifo_t * ranges);
 
+static
+globus_bool_t
+globus_l_wu_perf_update(
+    globus_abstime_t *			time_stop,
+    void *				user_args);
 /*************************************************************
  *   global vairables 
  ************************************************************/
@@ -127,7 +142,10 @@ wu_monitor_reset(
     mon->count = 0;
     mon->offset = -1;
     mon->fd = -1;
-    mon->last_update = 0;
+    gettimeofday(&mon->last_perf_update, GLOBUS_NULL);
+    mon->last_range_update = mon->last_perf_update.tv_sec;
+    mon->accum_bytes = 0;
+    mon->callback_handle = 0;
     globus_fifo_init(&mon->ranges);
 }
 
@@ -173,6 +191,7 @@ g_start()
     assert(rc == GLOBUS_SUCCESS);
 
     wu_monitor_init(&g_monitor);
+    g_monitor.handle = &g_data_handle;
 
     a = (char *)&his_addr;
     host_port.host[0] = (int)a[0];
@@ -799,6 +818,7 @@ g_receive_data(
     globus_result_t                          res;
     int                                      ctr;
     int                                      cb_count = 0;
+    globus_reltime_t			     five_seconds;
 #ifdef BUFFER_SIZE
     size_t                                   buffer_size = BUFFER_SIZE;
 #else
@@ -856,11 +876,24 @@ g_receive_data(
         g_monitor.done = GLOBUS_FALSE;
         g_monitor.fd = filefd;
         cb_count = 0;
+
+	GlobusTimeReltimeSet(five_seconds, 5, 0);
+
+	globus_callback_register_periodic(
+	    &g_monitor.callback_handle,
+	    &five_seconds,
+	    &five_seconds,
+	    globus_l_wu_perf_update,
+	    &g_monitor,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL);
+					  
         for(ctr = 0; ctr < OUTSTANDING_READ_COUNT; ctr++)
         {
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
             {
                 transflag = 0;
+		globus_callback_unregister(g_monitor.callback_handle);
                 perror_reply(451, "Local resource failure: malloc");
                 return (-1);
             }
@@ -899,6 +932,7 @@ g_receive_data(
             alarm(0);
             g_force_close(cb_count);
 
+	    globus_callback_unregister(g_monitor.callback_handle);
             return -1;
         }
 
@@ -935,18 +969,24 @@ g_receive_data(
 
     g_force_close(cb_count);
 
+    globus_callback_unregister(g_monitor.callback_handle);
+
     alarm(0);
     transflag = 0;
     perror_reply(426, "Data Connection");
     return (-1);
 
   file_err:
+    globus_callback_unregister(g_monitor.callback_handle);
+
     alarm(0);
     transflag = 0;
     perror_reply(452, "Error writing file");
     return (-1);
 
   clean_exit:
+    globus_callback_unregister(g_monitor.callback_handle);
+
     return (0);
 }
 
@@ -1023,40 +1063,28 @@ data_read_callback(
 #           endif
         }
 
-#if 0
 	if(g_send_restart_info)
 	{
-	    struct timeval			tv;
 	    time_t				t;
-	    struct tm *			tm;
-	    unsigned char *			a;
 	    char *				range_str;
 
-	    gettimeofday(&tv, NULL);
-	    t = tv.tv_sec;
+	    t = time(NULL);
 
 	    globus_l_wu_insert_range(&monitor->ranges, offset, length);
 
-	    if(t - monitor->last_update > 1)
+	    if(t - monitor->last_range_update > 10)
 	    {
-		tm = gmtime(&t);
-		    
-		a = (unsigned char *)&ctrl_addr.sin_addr;
-		    
 		range_str =
 		    globus_l_wu_create_range_string(&monitor->ranges);
 		    
-		reply(111,
-		      "Range Marker %04d%02d%02d%02d%02d%02d.%06d %d.%d.%d.%d: %s",
-		      tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-		      tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec,
-		      (int)a[0], (int)a[1], (int)a[2], (int)a[3],
-		      range_str);
+		reply(111, "Range Marker %s", range_str);
 		globus_libc_free(range_str);
-		monitor->last_update = t;
+		monitor->last_range_update = t;
 	    }
 	}
-#endif
+	monitor->accum_bytes += length;
+	monitor->all_transferred += length;
+
         if(eof)
         {
             monitor->count++;
@@ -1186,14 +1214,11 @@ globus_l_wu_create_range_string(globus_fifo_t * ranges)
 {
     int					length = 0, mylen;
     char *				buf = GLOBUS_NULL;
-    globus_fifo_t *			tmp;
     globus_l_wu_range_t *		range;
 
-    tmp = globus_fifo_copy(ranges);
-
-    while(! globus_fifo_empty(tmp))
+    while((! globus_fifo_empty(ranges)) && (length < 4*1024))
     {
-	range = globus_fifo_dequeue(tmp);
+	range = globus_fifo_dequeue(ranges);
 
 	mylen = globus_l_wu_count_digits(range->offset);
 	mylen++;
@@ -1204,6 +1229,7 @@ globus_l_wu_create_range_string(globus_fifo_t * ranges)
 	sprintf(buf + length,
 		"%d-%d,", 
 		range->offset, range->offset+range->length);
+	globus_libc_free(range);
 	length += mylen;
     }
     buf[strlen(buf)-1] = '\0';
@@ -1211,4 +1237,57 @@ globus_l_wu_create_range_string(globus_fifo_t * ranges)
     return buf;
 }
 
+static
+globus_bool_t
+globus_l_wu_perf_update(
+    globus_abstime_t *			time_stop,
+    void *				user_args)
+{
+    struct timeval tv;
+    unsigned int 			num_channels;
+    double 				elapsed;
+    double 				throughput;
+    globus_i_wu_montor_t *		monitor;
+    globus_ftp_control_handle_t *	handle;
+    time_t				time;
+    struct tm *				tm;
+
+    if(!g_send_restart_info)
+    {
+	return GLOBUS_TRUE;
+    }
+    monitor = (globus_i_wu_montor_t *) user_args;
+    handle = monitor->handle;
+
+    gettimeofday(&tv, NULL);
+    time = tv.tv_sec;
+    tm = gmtime(&time);
+    globus_ftp_control_data_query_channels(handle, &num_channels, 0);
+	
+    elapsed = (double)(tv.tv_sec - monitor->last_perf_update.tv_sec);
+	
+    elapsed += (double)((tv.tv_usec - monitor->last_perf_update.tv_usec))
+	               / (double) 1000000.0;
+    throughput = ((double)monitor->accum_bytes) / elapsed;
+	
+    lreply(112,
+	   "Perf Marker %04d%02d%02d%02d%02d%02d.%06d",
+	   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+	   tm->tm_hour, tm->tm_min, tm->tm_sec,
+	   tv.tv_usec);
+    lreply(0, " AllTransferred: %ld", (long) monitor->all_transferred);
+    lreply(0, " AllConnections: %u", num_channels);
+    lreply(0, " AllThroughput: %f", throughput);
+    
+    lreply(0, " StripeTransferred: 0 %ld", (long) monitor->all_transferred);
+    lreply(0, " StripeConnections: 0 %u", num_channels);
+    lreply(0, " StripeThroughput: 0 %f", throughput);
+    reply(112, "End");
+	
+    monitor->accum_bytes = 0;
+    monitor->last_perf_update = tv;
+
+    return GLOBUS_TRUE;
+}
+    
 #endif /* USE_GLOBUS_DATA_CODE */
