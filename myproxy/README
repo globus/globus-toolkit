@@ -9,6 +9,7 @@ README		Myproxy 0.2alpha1
  5. More Information on Globus/GSI
  6. Authors
  7. Contributors
+ 8. Other myproxy implementations
 
 1. Overview
 -----------
@@ -88,3 +89,11 @@ Von Welch <vwelch@ncsa.uiuc.edu>
 ---------------
 Jarek Gawor <gawor@mcs.anl.gov>
 Benjamin Temko <btemko@extreme.indiana.edu>
+
+8. Other myproxy implementations
+--------------------------------
+
+Java versions of the myproxy clients are available as part of Java CoG
+Kit distribution which is available at:
+
+http://www.globus.org/cog/
