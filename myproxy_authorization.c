@@ -199,24 +199,33 @@ int auth_cert_check_client (authorization_data_t *auth_data,
 
    if (ssl_creds_from_buffer(p, auth_data->client_data_len - 4 - signature_len,
 	                     &chain) == SSL_ERROR) {
-      verror_prepend_string("ssl_creds_from_buffer()");
+      verror_prepend_string("internal error: ssl_creds_from_buffer() failed");
       goto end;
    }
 
    if (ssl_verify((unsigned char *)auth_data->server_data, 
 	          strlen(auth_data->server_data), 
 	          chain, signature, signature_len) == SSL_ERROR) {
-      verror_prepend_string("ssl_verify()");
+      verror_prepend_string("certificate verification failed");
       goto end;
    }
 
-   if (ssl_verify_gsi_chain(chain) == SSL_ERROR)
-      goto end;
-
-   if (ssl_get_base_subject(chain, &authorization_subject) == SSL_ERROR)
+   if (ssl_verify_gsi_chain(chain) == SSL_ERROR) {
+       verror_prepend_string("certificate chain verification failed");
        goto end;
+   }
 
-   return_status = (strcmp(authorization_subject, creds->owner_name) == 0);
+   if (ssl_get_base_subject(chain, &authorization_subject) == SSL_ERROR) {
+       verror_prepend_string("internal error: ssl_get_base_subject() failed");
+       goto end;
+   }
+
+   if (strcmp(authorization_subject, creds->owner_name) != 0) {
+       verror_prepend_string("certificate subject does not match credential to be renewed");
+       goto end;
+   }
+
+   return_status = 1;
    
 end:
    if (chain)
