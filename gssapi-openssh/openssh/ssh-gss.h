@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,19 +32,16 @@
 
 #include <gssapi.h>
 
-#ifndef MECHGLUE
 #ifdef KRB5
 #ifndef HEIMDAL
 #include <gssapi_generic.h>
 
 /* MIT Kerberos doesn't seem to define GSS_NT_HOSTBASED_SERVICE */
-
 #ifndef GSS_C_NT_HOSTBASED_SERVICE
 #define GSS_C_NT_HOSTBASED_SERVICE gss_nt_service_name
 #endif /* GSS_C_NT_... */
 #endif /* !HEIMDAL */
 #endif /* KRB5 */
-#endif /* !MECHGLUE */
 
 /* draft-ietf-secsh-gsskeyex-03 */
 #define SSH2_MSG_KEXGSS_INIT				30
@@ -59,45 +56,53 @@
 
 #define KEX_GSS_SHA1					"gss-group1-sha1-"
 
-enum ssh_gss_id {
-#ifdef KRB5
-	GSS_KERBEROS,
-#endif
-#ifdef GSI
-	GSS_GSI,
-#endif /* GSI */
-	GSS_LAST_ENTRY
-};
+typedef struct {
+        char *filename;
+        char *envvar;
+        char *envval;
+        void *data;
+} ssh_gssapi_ccache;
 
-typedef struct ssh_gss_mech_struct {
+typedef struct {
+	gss_buffer_desc name;
+	gss_cred_id_t   creds;
+	struct ssh_gssapi_mech_struct *mech;
+	ssh_gssapi_ccache store;
+} ssh_gssapi_client;
+
+typedef struct ssh_gssapi_mech_struct {
         char *enc_name;
         char *name;
         gss_OID_desc oid;
+	int (*dochild) (ssh_gssapi_client *);
+	int (*userok) (ssh_gssapi_client *, char *);
+	int (*localname) (ssh_gssapi_client *, char **);
+	void (*storecreds) (ssh_gssapi_client *);
 } ssh_gssapi_mech;
 
+
+
 typedef struct {
-	OM_uint32	status; /* both */
+	OM_uint32	major; /* both */
+	OM_uint32	minor; /* both */
 	gss_ctx_id_t	context; /* both */
 	gss_name_t	name; /* both */
-	gss_OID		oid; /* both */
+	gss_OID		oid; /* client */
 	gss_cred_id_t	creds; /* server */
 	gss_name_t	client; /* server */
 	gss_cred_id_t	client_creds; /* server */
 } Gssctxt;
 
-extern ssh_gssapi_mech supported_mechs[];
-extern char gssprefix[];
-extern gss_buffer_desc gssapi_client_name;
-extern gss_cred_id_t   gssapi_client_creds;
-extern enum ssh_gss_id gssapi_client_type;
+extern ssh_gssapi_mech *supported_mechs[];
 
 char *ssh_gssapi_mechanisms(char *host);
-char *ssh_server_gssapi_mechanisms();
-gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name);
+char *ssh_gssapi_client_mechanisms(char *host);
+gss_OID ssh_gssapi_client_id_kex(Gssctxt *ctx, char *name);
+int  ssh_gssapi_check_oid(Gssctxt *ctx, void *data, size_t len);
 void ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len);
 void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid);
 void ssh_gssapi_supported_oids(gss_OID_set *oidset);
-enum ssh_gss_id ssh_gssapi_get_ctype(Gssctxt *ctxt);
+ssh_gssapi_mech *ssh_gssapi_get_ctype(Gssctxt *ctxt);
 
 OM_uint32 ssh_gssapi_import_name(Gssctxt *ctx, const char *host);
 OM_uint32 ssh_gssapi_acquire_cred(Gssctxt *ctx);
@@ -109,21 +114,20 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,
 				gss_buffer_desc *send_tok,
 				OM_uint32 *flags);
 OM_uint32 ssh_gssapi_getclient(Gssctxt *ctx,
-				enum ssh_gss_id *type,
+				ssh_gssapi_mech **mech,
 				gss_buffer_desc *name,
 				gss_cred_id_t *creds);
-void ssh_gssapi_error(gss_OID mech,
-		      OM_uint32 major_status, OM_uint32 minor_status);
-void ssh_gssapi_send_error(gss_OID mech,
-			   OM_uint32 major_status,OM_uint32 minor_status);
+void ssh_gssapi_error(Gssctxt *ctx);
+char *ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
 void ssh_gssapi_build_ctx(Gssctxt **ctx);
 void ssh_gssapi_delete_ctx(Gssctxt **ctx);
-OM_uint32 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid,char *host);
 OM_uint32 ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid);
 
+int ssh_gssapi_check_mechanism(gss_OID oid, char *host);
+
 /* In the server */
+gss_OID ssh_gssapi_server_id_kex(Gssctxt *ctx, char *name);
 int ssh_gssapi_userok(char *name);
-int ssh_gssapi_localname(char **lname);
 void ssh_gssapi_server(Kex *kex, Buffer *client_kexinit, 
 		       Buffer *server_kexinit);
 
@@ -133,19 +137,7 @@ OM_uint32 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer,
 void ssh_gssapi_do_child(char ***envp, u_int *envsizep);                 
 void ssh_gssapi_cleanup_creds(void *ignored);
 void ssh_gssapi_storecreds();
-void ssh_gssapi_clean_env();
-
-#ifdef GSI
-int gsi_gridmap(char *subject_name, char **mapped_name);
-#endif
-
-#ifdef MECHGLUE
-gss_cred_id_t __gss_get_mechanism_cred
-   (gss_cred_id_t,	/* union_cred */
-    gss_OID		/* mech_type */
-   );
-#endif
-
+char *ssh_gssapi_server_mechanisms();
 #endif /* GSSAPI */
 
 #endif /* _SSH_GSS_H */

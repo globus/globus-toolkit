@@ -3,12 +3,16 @@
 use Convert::ASN1 qw(:tag);
 use Digest::MD5 qw(md5);
 use MIME::Base64;
+use Data::Dumper;
  
 $oid=shift;
-$encoded=encode_object_id($oid);
+my $asn=Convert::ASN1->new;
+$asn->prepare("oid OBJECT IDENTIFIER");
+$encoded=$asn->encode(oid => $oid);
+Convert::ASN1::asn_dump($encoded);
+print Dumper($asn->decode($encoded));
 
 @entries=unpack("C*",$encoded);
-shift @entries; # Get rid of the NULL
 
 print "DER representation: ";
 foreach $entry (@entries) {

@@ -38,9 +38,6 @@
 #include "dh.h"
 #include "ssh2.h"
 #include "ssh-gss.h"
-#include "monitor_wrap.h"
-#include "canohost.h"
-
 
 void
 kexgss_client(Kex *kex)
@@ -55,16 +52,19 @@ kexgss_client(Kex *kex)
 	unsigned char *kbuf;
 	unsigned char *hash;
 	unsigned char *serverhostkey;
+	char *msg;
+	char *lang;
 	int type = 0;
 	int first = 1;
 	int slen = 0;
 	
 	/* Initialise our GSSAPI world */
 	ssh_gssapi_build_ctx(&ctxt);
-	if (ssh_gssapi_id_kex(ctxt,kex->name)==NULL) {
+	if (ssh_gssapi_client_id_kex(ctxt,kex->name)==NULL) {
 		fatal("Couldn't identify host exchange");
 	}
-	if (ssh_gssapi_import_name(ctxt,get_canonical_hostname(1))) {
+
+	if (ssh_gssapi_import_name(ctxt,kex->host)) {
 		fatal("Couldn't import hostname ");
 	}
 	
@@ -81,7 +81,7 @@ kexgss_client(Kex *kex)
     	}
     		
 	token_ptr = GSS_C_NO_BUFFER;
-			 
+			
 	do {
 		debug("Calling gss_init_sec_context");
 		
@@ -111,7 +111,7 @@ kexgss_client(Kex *kex)
 		}
 		
 		/* If we have data to send, then the last message that we
-		 * received cannot have been a 'complete'. */
+		* received cannot have been a 'complete'. */
 		if (send_tok.length !=0) {
 			if (first) {
 				packet_start(SSH2_MSG_KEXGSS_INIT);
@@ -129,7 +129,7 @@ kexgss_client(Kex *kex)
 
 			
 			/* If we've sent them data, they'd better be polite
-			 * and reply. */
+			* and reply. */
 		
 			type = packet_read();
 			switch (type) {
@@ -141,20 +141,18 @@ kexgss_client(Kex *kex)
 				debug("Received GSSAPI_CONTINUE");
 				if (maj_status == GSS_S_COMPLETE) 
 					fatal("GSSAPI Continue received from server when complete");
-				recv_tok.value=packet_get_string(&slen);
-				recv_tok.length=slen; /* int vs. size_t */
+				recv_tok.value=packet_get_string(&recv_tok.length);
 				break;
 			case SSH2_MSG_KEXGSS_COMPLETE:
 				debug("Received GSSAPI_COMPLETE");
 			        packet_get_bignum2(dh_server_pub);
-			    	msg_tok.value=packet_get_string(&slen);
-				msg_tok.length=slen; /* int vs. size_t */
+			    	msg_tok.value=
+			    	    packet_get_string(&msg_tok.length);
 
 				/* Is there a token included? */
 				if (packet_get_char()) {
 					recv_tok.value=
-					    packet_get_string(&slen);
-					recv_tok.length=slen; /* int/size_t */
+					    packet_get_string(&recv_tok.length);
 					/* If we're already complete - protocol error */
 					if (maj_status == GSS_S_COMPLETE)
 						packet_disconnect("Protocol error: received token when complete");
@@ -164,6 +162,13 @@ kexgss_client(Kex *kex)
 				   		packet_disconnect("Protocol error: did not receive final token");
 				}
 				break;
+			case SSH2_MSG_KEXGSS_ERROR:
+				debug("Received Error");
+				maj_status=packet_get_int();
+				min_status=packet_get_int();
+				msg=packet_get_string(NULL);
+				lang=packet_get_string(NULL);
+				fatal(msg);
 			default:
 				packet_disconnect("Protocol error: didn't expect packet type %d",
 		    		type);
@@ -174,11 +179,11 @@ kexgss_client(Kex *kex)
     	} while (maj_status & GSS_S_CONTINUE_NEEDED);
     	
     	/* We _must_ have received a COMPLETE message in reply from the 
-    	 * server, which will have set dh_server_pub and msg_tok */
-    	 
+    	* server, which will have set dh_server_pub and msg_tok */
+    	
     	if (type!=SSH2_MSG_KEXGSS_COMPLETE)
     	   fatal("Didn't receive a SSH2_MSG_KEXGSS_COMPLETE when I expected it");
-    	 	    	
+    		    	
 	/* Check f in range [1, p-1] */
         if (!dh_pub_is_valid(dh, dh_server_pub))
                         packet_disconnect("bad server public DH value");
@@ -193,8 +198,8 @@ kexgss_client(Kex *kex)
         memset(kbuf, 0, klen);
         xfree(kbuf);
         
-	slen=0;
-        hash = kex_gssapi_hash(
+        /* The GSS hash is identical to the DH one */
+        hash = kex_dh_hash(
  	    kex->client_version_string,
             kex->server_version_string,
             buffer_ptr(&kex->my), buffer_len(&kex->my),

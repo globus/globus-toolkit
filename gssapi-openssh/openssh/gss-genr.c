@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved. *
+ * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved. *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -38,114 +38,133 @@
 #include "log.h"
 #include "compat.h"
 #include "monitor_wrap.h"
-#include "canohost.h"
 
 #include <netdb.h>
 
 #include "ssh-gss.h"
 
-/* Assorted globals for tracking the clients identity once they've
- * authenticated */
- 
-gss_buffer_desc gssapi_client_name = {0,NULL}; /* Name of our client */
-gss_cred_id_t   gssapi_client_creds = GSS_C_NO_CREDENTIAL; /* Their credentials */
-enum ssh_gss_id gssapi_client_type = GSS_LAST_ENTRY;
-
-unsigned char ssh1_key_digest[16]; /* used for ssh1 gssapi */
-
-/* The mechanism name used in the list below is defined in the internet
- * draft as the Base 64 encoding of the MD5 hash of the ASN.1 DER encoding 
- * of the underlying GSSAPI mechanism's OID.
- *
- * Also from the draft, before considering adding SPNEGO, bear in mind that
- * "mechanisms ... MUST NOT use SPNEGO as the underlying GSSAPI mechanism"
- */
-
-/* These must be in the same order as ssh_gss_id, in ssh-gss.h */
-
-ssh_gssapi_mech supported_mechs[]= {
-#ifdef KRB5
- /* Official OID - 1.2.850.113554.1.2.2 */
- {"Se3H81ismmOC3OE+FwYCiQ==","Kerberos",
- 	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"}},
-#endif
-#ifdef GSI
- /* gssapi_ssleay 1.3.6.1.4.1.3536.1.1 */
- {"N3+k7/4wGxHyuP8Yxi4RhA==",
-  "GSI",
-  {9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"}
- },
-#endif /* GSI */
- {NULL,NULL,{0,0}}
-};
-
-char gssprefix[]=KEX_GSS_SHA1;
+typedef struct {
+	char *encoded;
+	gss_OID oid;
+} ssh_gss_kex_mapping;
+	
+static ssh_gss_kex_mapping *gss_enc2oid;
 
 /* Return a list of the gss-group1-sha1-x mechanisms supported by this
  * program.
  *
- * We only support the mechanisms that we've indicated in the list above,
- * but we check that they're supported by the GSSAPI mechanism on the 
- * machine. We also check, before including them in the list, that
- * we have the necesary information in order to carry out the key exchange
- * (that is, that the user has credentials, the server's creds are accessible,
- * etc)
+ * On the client side, we don't need to worry about whether we 'know'
+ * about the mechanism or not - we assume that any mechanism that we've been
+ * linked against is suitable for inclusion.
  *
- * The way that this is done is fairly nasty, as we do a lot of work that
- * is then thrown away. This should possibly be implemented with a cache
- * that stores the results (in an expanded Gssctxt structure), which are
- * then used by the first calls if that key exchange mechanism is chosen.
+ * XXX - We might want to make this configurable in the future, so as to
+ * XXX - allow the user control over which mechanisms to use.
  */
  
 char * 
-ssh_gssapi_mechanisms(char *host) {
+ssh_gssapi_client_mechanisms(char *host) {
 	gss_OID_set 	supported;
-	OM_uint32	maj_status, min_status;
+	OM_uint32	min_status;
 	Buffer		buf;
 	int 		i = 0;
-	int		present;
-	int		mech_count=0;
-	char *		mechs;
-	Gssctxt *	ctx = NULL;	
-
+	char 		*mechs;
+	char		*encoded;
+	int		enclen;
+	char		digest[EVP_MAX_MD_SIZE];
+	char		deroid[2];
+	const EVP_MD	*evp_md = EVP_md5();
+	EVP_MD_CTX	md;
+	int 		oidpos=0;
+	
 	if (datafellows & SSH_OLD_GSSAPI) return NULL;
 	
-	gss_indicate_mechs(&min_status, &supported);
+	gss_indicate_mechs(&min_status,&supported);
+	if (datafellows & SSH_BUG_GSSAPI_BER) {
+		gss_enc2oid=xmalloc(sizeof(ssh_gss_kex_mapping)
+					*(supported->count+1));
+	} else {
+		gss_enc2oid=xmalloc(sizeof(ssh_gss_kex_mapping)
+					*((supported->count*2)+1));
+	}
 	
-	buffer_init(&buf);	
+	buffer_init(&buf);
 
-	do {
-		if ((maj_status=gss_test_oid_set_member(&min_status,
-						   	&supported_mechs[i].oid,
-						   	supported,
-						   	&present))) {
-			present=0;
-		}
-		if (present) {
-		    	if (!GSS_ERROR(ssh_gssapi_client_ctx(&ctx,
-					               &supported_mechs[i].oid,
-		    	 		               host))) {
-				/* Append gss_group1_sha1_x to our list */
-				if (++mech_count > 1) {
-				    buffer_append(&buf, ",", 1);
+
+	for (i=0;i<supported->count;i++) {
+
+		gss_enc2oid[oidpos].encoded=NULL;
+		
+		if (supported->elements[i].length<128 &&
+		    ssh_gssapi_check_mechanism(&(supported->elements[i]),host)) {
+
+			/* Earlier versions of this code interpreted the
+			* spec incorrectly with regard to OID encoding. They
+			* also mis-encoded the krb5 OID. The following
+			* _temporary_ code interfaces with these broken
+			* servers */
+
+			if (datafellows & SSH_BUG_GSSAPI_BER) {
+				char *bodge=NULL;
+				gss_OID_desc krb5oid={9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"};
+				gss_OID_desc gsioid={9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"};
+				
+				if (supported->elements[i].length==krb5oid.length &&
+				    memcmp(supported->elements[i].elements,
+				    	   krb5oid.elements, krb5oid.length)==0) {
+					bodge="Se3H81ismmOC3OE+FwYCiQ==";
 				}
-				buffer_append(&buf, gssprefix,
-					      strlen(gssprefix));
-		        	buffer_append(&buf, 
-		        		      supported_mechs[i].enc_name,
-	        	      		      strlen(supported_mechs[i].enc_name));
-				debug("GSSAPI mechanism %s (%s%s) supported",
-				      supported_mechs[i].name, gssprefix,
-				      supported_mechs[i].enc_name);
-			} else {
-			    debug("no credentials for GSSAPI mechanism %s",
-				  supported_mechs[i].name);
+				
+				if (supported->elements[i].length==gsioid.length &&
+				    memcmp(supported->elements[i].elements,
+				    	   gsioid.elements, gsioid.length)==0) {
+					bodge="N3+k7/4wGxHyuP8Yxi4RhA==";
+				}
+
+				if (bodge) {				
+					if (oidpos!=0) {
+						buffer_put_char(&buf,',');
+					}
+				
+					buffer_append(&buf, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1);
+					buffer_append(&buf, bodge, strlen(bodge));
+
+					gss_enc2oid[oidpos].oid=&(supported->elements[i]);
+					gss_enc2oid[oidpos].encoded=bodge;
+			
+					oidpos++;
+				}
 			}
- 		} else {
-		    debug("GSSAPI mechanism %s not supported",
-			  supported_mechs[i].name);
+			
+			/* Add the required DER encoding octets and MD5 hash */
+			deroid[0]=0x06; /* Object Identifier */
+			deroid[1]=supported->elements[i].length;
+
+			EVP_DigestInit(&md, evp_md);
+			EVP_DigestUpdate(&md,deroid,2);
+			EVP_DigestUpdate(&md,
+					supported->elements[i].elements,
+					supported->elements[i].length);
+			EVP_DigestFinal(&md, digest, NULL);
+			
+			/* Base64 encode it */
+			encoded=xmalloc(EVP_MD_size(evp_md)*2);
+			enclen=__b64_ntop(digest, EVP_MD_size(evp_md),
+				          encoded,EVP_MD_size(evp_md)*2);
+			if (oidpos!=0) {
+				buffer_put_char(&buf,',');
+			}	
+			buffer_append(&buf, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1);
+			buffer_append(&buf, encoded, enclen);
+
+			debug("Mechanism encoded as %s",encoded);
+
+			gss_enc2oid[oidpos].oid=&(supported->elements[i]);
+			gss_enc2oid[oidpos].encoded=encoded;			
+			oidpos++;
 		}
-	} while (supported_mechs[++i].name != NULL);
+	}
+	gss_enc2oid[oidpos].oid=NULL;
+	gss_enc2oid[oidpos].encoded=NULL;
 	
 	buffer_put_char(&buf,'\0');
 	
@@ -153,11 +172,41 @@ ssh_gssapi_mechanisms(char *host) {
 	buffer_get(&buf,mechs,buffer_len(&buf));
 	buffer_free(&buf);
 	if (strlen(mechs)==0)
-	   return(NULL);
+		return(NULL);
 	else
-	   return(mechs);
+		return(mechs);
 }
 
+gss_OID
+ssh_gssapi_client_id_kex(Gssctxt *ctx, char *name) {
+	int i=0;
+	
+	if (strncmp(name, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1) !=0) {
+		return(NULL);
+	}
+	
+	name+=sizeof(KEX_GSS_SHA1)-1; /* Move to the start of the ID string */
+	
+	while (gss_enc2oid[i].encoded!=NULL &&
+	       	strcmp(name,gss_enc2oid[i].encoded)!=0) {
+	      	i++;
+	}
+	
+	if (gss_enc2oid[i].oid!=NULL) {
+		ssh_gssapi_set_oid(ctx,gss_enc2oid[i].oid);
+	}
+
+	return gss_enc2oid[i].oid;
+}
+
+/* Check that the OID in a data stream matches that in the context */
+int ssh_gssapi_check_oid(Gssctxt *ctx, void *data, size_t len) {
+  
+  return (ctx!=NULL && ctx->oid != GSS_C_NO_OID && 
+  	  ctx->oid->length == len &&
+  	  memcmp(ctx->oid->elements,data,len)==0);
+}
+  	
 /* Set the contexts OID from a data stream */
 void ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len) { 
   if (ctx->oid != GSS_C_NO_OID) {
@@ -175,80 +224,58 @@ void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid) {
   ssh_gssapi_set_oid_data(ctx,oid->elements,oid->length);
 }
 
-/* Find out which GSS type (out of the list we define in ssh-gss.h) a
- * particular connection is using 
- */
-enum ssh_gss_id ssh_gssapi_get_ctype(Gssctxt *ctxt) {
-	enum ssh_gss_id i=0;
-	
-	while(supported_mechs[i].name!=NULL) {
-	   if (supported_mechs[i].oid.length == ctxt->oid->length &&
-	       (memcmp(supported_mechs[i].oid.elements,
-		       ctxt->oid->elements,ctxt->oid->length) == 0))
-	       return i;
-	   i++;
-	}
-	return(GSS_LAST_ENTRY);
-}
-
-/* Set the GSS context's OID to the oid indicated by the given key exchange
- * name. */
-gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
-  enum ssh_gss_id i=0;
-  
-  if (strncmp(name, gssprefix, strlen(gssprefix)-1) !=0) {
-     return(NULL);
-  }
-  
-  name+=strlen(gssprefix); /* Move to the start of the MIME string */
-  
-  while (supported_mechs[i].name!=NULL &&
-  	 strcmp(name,supported_mechs[i].enc_name)!=0) {
-  	i++;
-  }
-
-  if (supported_mechs[i].name==NULL)
-     return (NULL);
-
-  if (ctx) ssh_gssapi_set_oid(ctx,&supported_mechs[i].oid);
-
-  debug("using GSSAPI mechanism %s (%s%s)", supported_mechs[i].name,
-	gssprefix, supported_mechs[i].enc_name);
-
-  return &supported_mechs[i].oid;
-}
-
-
 /* All this effort to report an error ... */
+
 void
-ssh_gssapi_error(gss_OID mech, OM_uint32 major_status,
-		 OM_uint32 minor_status) {
-	OM_uint32 lmaj, lmin;
-        gss_buffer_desc msg = {0,NULL};
+ssh_gssapi_error(Gssctxt *ctxt) {
+	
+	debug(ssh_gssapi_last_error(ctxt,NULL,NULL));
+}
+
+char *
+ssh_gssapi_last_error(Gssctxt *ctxt, 
+		      OM_uint32 *major_status, OM_uint32 *minor_status) {
+	OM_uint32 lmin;
+        gss_buffer_desc msg;
         OM_uint32 ctx;
+        Buffer b;
+        char *ret;
         
+        buffer_init(&b);
+
+	if (major_status!=NULL) *major_status=ctxt->major;
+	if (minor_status!=NULL) *minor_status=ctxt->minor;
+	
         ctx = 0;
 	/* The GSSAPI error */
         do {
-        	lmaj = gss_display_status(&lmin, major_status,
-					  GSS_C_GSS_CODE,
-					  mech, &ctx, &msg);
-        	if (lmaj == GSS_S_COMPLETE) {
-        	    	debug((char *)msg.value);
-        	    	(void) gss_release_buffer(&lmin, &msg);
-        	}
-        } while (ctx!=0);	   
+        	gss_display_status(&lmin, ctxt->major,
+        			   GSS_C_GSS_CODE, GSS_C_NULL_OID,
+        		           &ctx, &msg);
+
+        	buffer_append(&b,msg.value,msg.length);
+        	buffer_put_char(&b,'\n');
+        	
+       	    	gss_release_buffer(&lmin, &msg);
+        } while (ctx!=0);
 
         /* The mechanism specific error */
         do {
-        	lmaj = gss_display_status(&lmin, minor_status,
-					  GSS_C_MECH_CODE,
-					  mech, &ctx, &msg);
-        	if (lmaj == GSS_S_COMPLETE) {
-        	    	debug((char *)msg.value);
-        	    	(void) gss_release_buffer(&lmin, &msg);
-        	}
+        	gss_display_status(&lmin, ctxt->minor,
+        			   GSS_C_MECH_CODE, GSS_C_NULL_OID,
+        			   &ctx, &msg);
+        	
+        	buffer_append(&b,msg.value,msg.length);
+        	buffer_put_char(&b,'\n');
+        	
+        	gss_release_buffer(&lmin, &msg);
         } while (ctx!=0);
+        
+        buffer_put_char(&b,'\0');
+        ret=xmalloc(buffer_len(&b));
+        buffer_get(&b,ret,buffer_len(&b));
+        buffer_free(&b);
+        return(ret);
 }
 
 /* Initialise our GSSAPI context. We use this opaque structure to contain all
@@ -260,6 +287,8 @@ void
 ssh_gssapi_build_ctx(Gssctxt **ctx)
 {
 	*ctx=xmalloc(sizeof (Gssctxt));
+	(*ctx)->major=0;
+	(*ctx)->minor=0;
 	(*ctx)->context=GSS_C_NO_CONTEXT;
 	(*ctx)->name=GSS_C_NO_NAME;
 	(*ctx)->oid=GSS_C_NO_OID;
@@ -272,15 +301,12 @@ ssh_gssapi_build_ctx(Gssctxt **ctx)
 void
 ssh_gssapi_delete_ctx(Gssctxt **ctx)
 {
-#if !defined(MECHGLUE)
 	OM_uint32 ms;
-#endif
 	
 	/* Return if there's no context */
 	if ((*ctx)==NULL)
 		return;
 		
-#if !defined(MECHGLUE) /* mechglue has some memory management issues */
 	if ((*ctx)->context != GSS_C_NO_CONTEXT) 
 		gss_delete_sec_context(&ms,&(*ctx)->context,GSS_C_NO_BUFFER);
 	if ((*ctx)->name != GSS_C_NO_NAME)
@@ -296,7 +322,6 @@ ssh_gssapi_delete_ctx(Gssctxt **ctx)
 		gss_release_name(&ms,&(*ctx)->client);	
 	if ((*ctx)->client_creds != GSS_C_NO_CREDENTIAL)
 		gss_release_cred(&ms,&(*ctx)->client_creds);
-#endif
 	
 	xfree(*ctx);
 	*ctx=NULL; 
@@ -311,7 +336,6 @@ OM_uint32
 ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
        	      	    gss_buffer_desc* send_tok, OM_uint32 *flags) 
 {
-      	OM_uint32 maj_status, min_status;
 	int deleg_flag = 0;
 	
 	if (deleg_creds) {
@@ -319,7 +343,7 @@ ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
 		debug("Delegating credentials");
 	}
 	      	
-      	maj_status=gss_init_sec_context(&min_status,
+      	ctx->major=gss_init_sec_context(&ctx->minor,
       					GSS_C_NO_CREDENTIAL, /* def. cred */
       					&ctx->context,
       					ctx->name,
@@ -334,28 +358,35 @@ ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
       					send_tok,
       					flags,
       					NULL);
-	ctx->status=maj_status;
-      	if (GSS_ERROR(maj_status)) {
-      		ssh_gssapi_error(ctx->oid,maj_status,min_status);
+      	if (GSS_ERROR(ctx->major)) {
+      		ssh_gssapi_error(ctx);
       	}
-      	return(maj_status);
+      	return(ctx->major);
 }
 
 /* Create a service name for the given host */
 OM_uint32
 ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
-	gss_buffer_desc gssbuf = {0,NULL};
-	OM_uint32 maj_status, min_status;
+	gss_buffer_desc gssbuf;
+	struct hostent *hostinfo = NULL;
 	char *xhost;
 	
 	/* Make a copy of the host name, in case it was returned by a
-	 * previous call to gethostbyname(). */	
+	* previous call to gethostbyname(). */	
 	xhost = xstrdup(host);
 
-	/* Make sure we have the FQHN. Some GSSAPI implementations don't do
-	 * this for us themselves */
-	resolve_localhost(&xhost);
-
+	/* Make sure we have the FQDN. Some GSSAPI implementations don't do
+	* this for us themselves */
+	
+	hostinfo = gethostbyname(xhost);
+	
+	if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
+		debug("Unable to get FQDN for \"%s\"", xhost);
+	} else {
+		xfree(xhost);
+		xhost = xstrdup(hostinfo->h_name);
+	}
+		
         gssbuf.length = sizeof("host@")+strlen(xhost);
 
         gssbuf.value = xmalloc(gssbuf.length);
@@ -364,16 +395,16 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 		return(-1);
         }
         snprintf(gssbuf.value,gssbuf.length,"host@%s",xhost);
-        if ((maj_status=gss_import_name(&min_status,
+        if ((ctx->major=gss_import_name(&ctx->minor,
                                    	&gssbuf,
                                         GSS_C_NT_HOSTBASED_SERVICE,
                                         &ctx->name))) {
-		ssh_gssapi_error(ctx->oid, maj_status,min_status);
+		ssh_gssapi_error(ctx);
 	}
 	
 	xfree(xhost);
 	xfree(gssbuf.value);
-	return(maj_status);
+	return(ctx->major);
 }
 
 /* Acquire credentials for a server running on the current host.
@@ -383,95 +414,68 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 /* Returns a GSSAPI error code */
 OM_uint32
 ssh_gssapi_acquire_cred(Gssctxt *ctx) {
-	OM_uint32 maj_status, min_status;
+	OM_uint32 status;
 	char lname[MAXHOSTNAMELEN];
 	gss_OID_set oidset;
 	
-	gss_create_empty_oid_set(&min_status,&oidset);
-	gss_add_oid_set_member(&min_status,ctx->oid,&oidset);
+	gss_create_empty_oid_set(&status,&oidset);
+	gss_add_oid_set_member(&status,ctx->oid,&oidset);
 	
         if (gethostname(lname, MAXHOSTNAMELEN)) {
                 return(-1);
         }
 
-	if ((maj_status=ssh_gssapi_import_name(ctx,lname))) {
-		return(maj_status);
+	if (GSS_ERROR(ssh_gssapi_import_name(ctx,lname))) {
+		return(ctx->major);
 	}
-	if ((maj_status=gss_acquire_cred(&min_status,
-			 	    ctx->name,
+	
+	if ((ctx->major=gss_acquire_cred(&ctx->minor,
+				    ctx->name,
 				    0,
 				    oidset,
 				    GSS_C_ACCEPT,
 				    &ctx->creds,
 				    NULL,
 				    NULL))) {
-	    ssh_gssapi_error(ctx->oid,maj_status,min_status);
+		ssh_gssapi_error(ctx);
 	}
 				
-	gss_release_oid_set(&min_status, &oidset);
-	return(maj_status);
-}
-
-/* Extract the client details from a given context. This can only reliably
- * be called once for a context */
-
-OM_uint32 
-ssh_gssapi_getclient(Gssctxt *ctx, enum ssh_gss_id *type,
-		     gss_buffer_desc *name, gss_cred_id_t *creds) {
-
-	OM_uint32 maj_status,min_status;
-	
-	*type=ssh_gssapi_get_ctype(ctx);
-	if ((maj_status=gss_display_name(&min_status,ctx->client,name,NULL))) {
-		ssh_gssapi_error(ctx->oid,maj_status,min_status);
-	}
-	
-	/* This is icky. There appears to be no way to copy this structure,
-	 * rather than the pointer to it, so we simply copy the pointer and
-	 * mark the originator as empty so we don't destroy it. 
-	 */
-	*creds=ctx->client_creds;
-	ctx->client_creds=GSS_C_NO_CREDENTIAL;
-	return(maj_status);
+	gss_release_oid_set(&status, &oidset);
+	return(ctx->major);
 }
 
 OM_uint32
 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, gss_buffer_desc *hash) {
-	OM_uint32 maj_status,min_status;
 	
-	/* ssh1 needs to exchange the hash of the keys */
-	/* will us this hash to return it */
-	if (!compat20) {
-		if ((maj_status=gss_wrap(&min_status,ctx->context,
-					0,
-					GSS_C_QOP_DEFAULT,
-					buffer,
-					NULL,
-					hash)))
-			ssh_gssapi_error(ctx->oid,maj_status,min_status);
-	}
-	else
-
-	if ((maj_status=gss_get_mic(&min_status,ctx->context,
+	if ((ctx->major=gss_get_mic(&ctx->minor,ctx->context,
 				    GSS_C_QOP_DEFAULT, buffer, hash))) {
-		ssh_gssapi_error(ctx->oid,maj_status,min_status);
+		ssh_gssapi_error(ctx);
 	}
 	
-	return(maj_status);
+	return(ctx->major);
 }
 
-OM_uint32 
-ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid, char *host) {
-	gss_buffer_desc token = {0,NULL};
-	OM_uint32 major,minor;
-	
+OM_uint32
+ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid) {
 	if (*ctx) ssh_gssapi_delete_ctx(ctx);
 	ssh_gssapi_build_ctx(ctx);
 	ssh_gssapi_set_oid(*ctx,oid);
-	ssh_gssapi_import_name(*ctx,host);
-	major=ssh_gssapi_init_ctx(*ctx, 0, GSS_C_NO_BUFFER, &token, NULL);
+	return(ssh_gssapi_acquire_cred(*ctx));
+}
+
+int
+ssh_gssapi_check_mechanism(gss_OID oid, char *host) {
+	Gssctxt * ctx = NULL;
+	gss_buffer_desc token;
+	OM_uint32 major,minor;
+	
+	ssh_gssapi_build_ctx(&ctx);
+	ssh_gssapi_set_oid(ctx,oid);
+	ssh_gssapi_import_name(ctx,host);
+	major=ssh_gssapi_init_ctx(ctx,0, GSS_C_NO_BUFFER, &token, NULL);
 	gss_release_buffer(&minor,&token);
-	return(major);
+	ssh_gssapi_delete_ctx(&ctx);
+	return(!GSS_ERROR(major));
 }
 
 #endif /* GSSAPI */
