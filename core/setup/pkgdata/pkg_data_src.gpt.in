@@ -35,7 +35,7 @@
       produces.
       e.g. if the resulting .conf file now has an additional argument, then
       increment the minor version number. 
-      <Aging_Version Age="0" Major="2" Minor="0" />
+      <Aging_Version Age="1" Major="3" Minor="0" />
     </Setup>
     <Source_Dependencies Type="compile" > 
 	    <Dependency Name="globus_core"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency> 
