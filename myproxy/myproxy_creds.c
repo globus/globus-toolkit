@@ -167,18 +167,19 @@ void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
     mycon(hdbc,rc);
 }
 
-i
 #define MAX_VARCHAR_LEN 255
+#define CRED_NAME_LEN 200
+#define MAX_TEXT_LEN 65535
 
 /* Retrieve data		                          *
 *********************************************************/
-void my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
+int my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
   SQLINTEGER  id;
-  SQLCHAR     name[50];
-  
-  char owner[255], 
+  SQLCHAR owner[MAX_VARCHAR_LEN];
+  //SQLCHAR  passphrase[MAX_VARCHAR_LEN], retrievers[MAX_VARCHAR_LEN], renewers[MAX_VARCHAR_LEN];
+  SQLCHAR cred_name[CRED_NAME_LEN], cred_desc[MAX_TEXT_LEN];
 
    printf ("mpi-0");
   printf("\nmy_retrieve:\n");
@@ -186,31 +187,43 @@ void my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
    rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
                       MAX_VARCHAR_LEN,NULL);
    mystmt(hstmt,rc);
-    
-   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
+ /*   
+   rc = SQLBindCol(hstmt,2, SQL_C_CHAR, passphrase,  
                       MAX_VARCHAR_LEN,NULL);
    mystmt(hstmt,rc);
     
-   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
+   rc = SQLBindCol(hstmt,3, SQL_C_ULONG, lifetime,  
+                      sizeof (lifetime),NULL);
+   mystmt(hstmt,rc);
+    
+   rc = SQLBindCol(hstmt,4, SQL_C_CHAR, retrievers,  
                       MAX_VARCHAR_LEN,NULL);
+   mystmt(hstmt,rc);
+    
+   rc = SQLBindCol(hstmt,5, SQL_C_CHAR, renewers,  
+                      MAX_VARCHAR_LEN,NULL);
+   mystmt(hstmt,rc);
+   */ 
+   rc = SQLBindCol(hstmt,6, SQL_C_CHAR, cred_name,  
+                      CRED_NAME_LEN,NULL);
+   mystmt(hstmt,rc);
+    
+   rc = SQLBindCol(hstmt,7, SQL_C_CHAR, cred_desc,  
+                      MAX_TEXT_LEN,NULL);
    mystmt(hstmt,rc);
     
    printf ("mpi-9");
-   rc = SQLExecute (hstmt);
-   mystmt (hstmt, rc);
+   rc = SQLFetch (hstmt);
+
+   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
+	return 0;
+
    printf ("mpi-10");
 
-    /* Free statement param resorces */
-    rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
-    mystmt(hstmt,rc);
-
-    /* Free statement cursor resorces */
-    rc = SQLFreeStmt(hstmt, SQL_CLOSE);
-    mystmt(hstmt,rc);
-
-    /* commit the transaction */
-    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-    mycon(hdbc,rc);
+   mydbase.owner = strdup (owner);
+   mydbase.cred_name = strdup (cred_name);
+   mydbase.cred_desc = strdup (cred_desc);
+   return (1);
 }
 
 
@@ -871,6 +884,7 @@ read_data_file(struct myproxy_creds *creds,
     memset (&mydbase, 0, sizeof (mydbase));
     read_from_database();
 
+
     /* Success */
     return_code = 0;
     
@@ -883,7 +897,7 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
-void read_from_database()
+int read_from_database()
 {
   SQLHENV    henv;
   SQLHDBC    hdbc;
@@ -901,8 +915,16 @@ void read_from_database()
     /*
      * retrieve data
     */
-    my_retrieve(hdbc, hstmt);
-
+    while (my_retrieve(hdbc, hstmt))
+    {
+	printf ("%s\t%s\t%s\n-------------------\n",mydbase.owner, mydbase.cred_name, mydbase.cred_desc);
+	if (mydbase.owner != NULL)
+		free (mydbase.owner);
+	if (mydbase.cred_name != NULL)
+		free (mydbase.cred_name);
+	if (mydbase.cred_desc != NULL)
+		free (mydbase.cred_desc);
+    }
     /*
      * disconnect from the server, by freeing all resources
     */

@@ -39,8 +39,8 @@ LIB_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
 			myproxy_delegation.o myproxy_read_pass.o \
 			gsi_proxy.o myproxy_authorization.o myproxy_log.o 
 INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
+INFO_OBJS	= myproxy_info.o $(MYPROXY_LIB)
 DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
-INFO_OBJS       = myproxy_info.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
 SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
 			vparse.o myproxy_server_config.o \
@@ -85,16 +85,6 @@ myproxy-destroy: $(DESTROY_OBJS)
 		-o $@ $(DESTROY_OBJS) $(GLOBUS_PKG_LIBS) \
 		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
-myproxy-info: $(INFO_OBJS)
-	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(INFO_OBJS) $(GLOBUS_PKG_LIBS) \
-		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
-
-myproxy-info: $(INFO_OBJS)
-	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(INFO_OBJS) $(GLOBUS_PKG_LIBS) \
-		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
-
 myproxy-get-delegation: $(GET_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $(GET_OBJS) $(GLOBUS_PKG_LIBS) \
@@ -108,9 +98,9 @@ myproxy-server: $(SERVER_OBJS)
 libmyproxy.a: $(LIB_OBJS)
 	$(AR) rsc $@ $^
 
-myproxy.o: myproxy.c myproxy.h
+myproxy.o: myproxy.c 
 
-myproxy_creds.o: myproxy_creds.c myproxy_creds.h
+myproxy_creds.o: myproxy_creds.c
 
 gnu_getopt.o: gnu_getopt.c
 
