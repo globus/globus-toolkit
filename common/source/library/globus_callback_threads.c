@@ -316,10 +316,9 @@ globus_l_callback_activate()
     /* create pollers for the global space */
     for(i = 0; i < globus_l_callback_max_polling_threads; i++)
     {
-        rc = globus_i_thread_start(
+        globus_i_thread_start(
             globus_l_callback_thread_poll,
             &globus_l_callback_global_space);
-        globus_assert(rc == 0);
     }
     
     return GLOBUS_SUCCESS;
@@ -992,13 +991,10 @@ globus_callback_space_init(
             {
                 if(!globus_l_callback_shutting_down)
                 {
-                    int                         rc;
-                    
                     globus_l_callback_thread_count++;
-                    rc = globus_i_thread_start(
+                    globus_i_thread_start(
                         globus_l_callback_thread_poll,
                         i_space);
-                    globus_assert(rc == 0);
                 
                     globus_list_insert(
                         &globus_l_callback_threaded_spaces, i_space);
@@ -1334,15 +1330,12 @@ globus_l_callback_blocked_cb(
                 {
                     if(!globus_l_callback_shutting_down)
                     {
-                        int                 rc;
-                        
                         callback_info->my_space->thread_count++;
                         globus_l_callback_thread_count++;
                         
-                        rc = globus_i_thread_start(
+                        globus_i_thread_start(
                             globus_l_callback_thread_poll,
                             callback_info->my_space);
-                        globus_assert(rc == 0);
                     }
                 } 
                 globus_mutex_unlock(&globus_l_callback_thread_lock);
@@ -1839,13 +1832,10 @@ globus_l_callback_thread_poll(
                 {
                     if(!globus_l_callback_shutting_down)
                     {
-                        int             rc;
-
                         globus_l_callback_thread_count++;
-                        rc = globus_i_thread_start(
+                        globus_i_thread_start(
                             globus_l_callback_thread_callback,
                             callback_info);
-                        globus_assert(rc == 0);
                     }
                 } 
                 globus_mutex_unlock(&globus_l_callback_thread_lock);
