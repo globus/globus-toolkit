@@ -5,7 +5,7 @@ if [ x$1 = "x" ]; then
 	exit;
 fi
 
-GPT_LOCATION=`pwd`/gpt-2.2.5
+GPT_LOCATION=$1
 GLOBUS_LOCATION=$1
 GT3_LOCATION=$1
 
@@ -20,5 +20,7 @@ cd ..
 
 $GPT_LOCATION/sbin/gpt-build gt3-all-src-1-src_bundle.tar.gz gcc32dbg
 $GPT_LOCATION/sbin/gpt-build gt3_alpha2_src_bundle-r1_src.tar.gz gcc32dbg
+mkdir -p $1/contrib
+(cp OGSI.NET.zip $1/contrib; cd $1; unzip OGSI.NET.zip)
 
 $GPT_LOCATION/sbin/gpt-postinstall
