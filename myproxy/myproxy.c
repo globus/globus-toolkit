@@ -76,7 +76,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
     struct hostent *host_info;
     char error_string[1024];
-
+    char *expected_dn;
+    
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (attrs->socket_fd == -1) {
@@ -119,8 +120,29 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
        return -1;
    }
 
+   /*
+    * Are we connecting to a server that has a non-standard DN.
+    */
+   expected_dn = getenv("MYPROXY_SERVER_DN");
+   
+   if (expected_dn != NULL)
+   {
+       fprintf(stderr, "NOTE: Expecting non-standard server DN:\n\t\"%s\"\n",
+	       expected_dn);
+       
+       if (GSI_SOCKET_set_expected_peer_name(attrs->gsi_socket,
+					     expected_dn) == GSI_SOCKET_ERROR)
+       {
+	   GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                   sizeof(error_string));
+	   verror_put_string("Error setting expected peername: %s\n",
+			     error_string);
+	   return -1;
+       }
+   }
+   
 
-    return attrs->socket_fd;
+   return attrs->socket_fd;
 }
     
 int 
