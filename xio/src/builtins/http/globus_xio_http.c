@@ -67,7 +67,7 @@ typedef struct l_http_info_s
 static void
 l_http_destroy_info(l_http_info_t *info ) 
 {
-    globus_hashtable_destroy_all(info, globus_l_xio_http_handle_destroy_element);
+    globus_hashtable_destroy_all(&info->recv_headers, globus_l_xio_http_handle_destroy_element);
     globus_free(info->uri);
     globus_free(info->http_standard);
     globus_free(info->request_type);
@@ -236,7 +236,7 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
         //next get the path
         uri_start = strstr(current_location, " ") + 1;
         uri_end = strstr(uri_start, " ");
-        info->uri = strndup(uri_start, uri_end - uri_start);
+        info->uri = globus_libc_strndup(uri_start, uri_end - uri_start);
 
         //and the version of http we're speaking
         info->http_standard = globus_libc_strdup(uri_end+1);
@@ -263,8 +263,8 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
                 }
             else
                 {
-                    key = strndup(current_location, colon_loc - current_location);
-                    value = strndup(colon_loc, line_end - colon_loc);
+                    key = globus_libc_strndup(current_location, colon_loc - current_location);
+                    value = globus_libc_strndup(colon_loc, line_end - colon_loc);
                     globus_hashtable_insert(&info->recv_headers, key, value);
                     current_location = line_end + 2;
                 } 
@@ -346,10 +346,7 @@ globus_l_xio_http_open_cb(
 {
     globus_xio_context_t                    context;
     l_http_info_t                           *handle;
-    int                                     buffer_offset=0;
     int                                     nbytes=0;
-    globus_result_t                         res;
-    globus_xio_operation_t                  driver_op;
     context = GlobusXIOOperationGetContext(op);
 
     //Parse the recv_headers
@@ -405,7 +402,7 @@ globus_l_xio_http_close(
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
-
+    l_http_destroy_info(driver_handle);
     GlobusXIODriverPassClose(res, op, globus_l_xio_http_close_cb, NULL);
 
     return res;
@@ -440,7 +437,6 @@ globus_l_xio_http_write(
     l_http_info_t *                         info;
     char *                                  header_str;
     char *                                  buffer_to_send;
-    int                                     i;
     int                                     send_size;
 
     info = (l_http_info_t *) driver_handle;
@@ -458,9 +454,9 @@ globus_l_xio_http_write(
                                                  GLOBUS_XIO_HTTP_INSUFFICIENT_HEADER, 
                                                  0);
                 }
-            header_str = (char*)globus_malloc(strlen("HTTP/1.1 ")+
+            header_str = (char*)globus_malloc( strlen("HTTP/1.1 ")+
                                               strlen(info->exit_code)+
-                                              info->exit_text + 10);
+                                              strlen(info->exit_text) + 10 );
             sprintf(header_str, 
                     "%s %s %s\r\n", 
                     "HTTP/1.1 ", 
