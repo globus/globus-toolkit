@@ -26,8 +26,9 @@ static char usage[] = \
 "       -a | --authorization   <path>     Use credential for authorization\n"
 "                                         (instead of passphrase)\n"
 "       -d | --dn_as_username             Use subject of the authorization\n"
-"                                         credential as the default username\n"
-"                                         instead of the LOGNAME env. var.\n"
+"                                         credential (or default credential\n"
+"                                         if -a not used) as the default\n"
+"                                         username instead of $LOGNAME\n"
 "       -k | --credname        <name>     Specify credential name\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "\n";
@@ -120,24 +121,30 @@ main(int argc, char *argv[])
 	}
     }
 
-    if (dn_as_username) {
-	if (client_request->username) {
-	    free(client_request->username);
-	    client_request->username = NULL;
-	}
-	if (creds_to_authorization) {
-	    if (ssl_get_base_subject_file(creds_to_authorization,
-					  &client_request->username)) {
-		fprintf(stderr, "Cannot get subject name from %s\n",
-			creds_to_authorization);
-		return 1;
+    if (client_request->username == NULL) { /* set default username */
+	if (dn_as_username) {
+	    if (creds_to_authorization) {
+		if (ssl_get_base_subject_file(creds_to_authorization,
+					      &client_request->username)) {
+		    fprintf(stderr, "Cannot get subject name from %s\n",
+			    creds_to_authorization);
+		    return 1;
+		}
+	    } else {
+		if (ssl_get_base_subject_file(NULL,
+					      &client_request->username)) {
+		    fprintf(stderr,
+			    "Cannot get subject name from your certificate\n");
+		    return 1;
+		}
 	    }
 	} else {
-            if (ssl_get_base_subject_file(NULL, &client_request->username)) {
-                fprintf(stderr,
-                        "Cannot get subject name from your certificate\n");
-                return 1;
-            }
+	    char *username = NULL;
+	    if (!(username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		return 1;
+	    }
+	    client_request->username = strdup(username);
 	}
     }
 
@@ -223,13 +230,6 @@ init_arguments(int argc,
     /* Check to see if myproxy-server specified */
     if (attrs->pshost == NULL) {
 	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
-	exit(1);
-    }
-
-    /* Check to see if username specified */
-    if (request->username == NULL) {
-	fprintf(stderr, usage);
-	fprintf(stderr, "Please specify a username!\n");
 	exit(1);
     }
 

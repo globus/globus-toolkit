@@ -8,15 +8,10 @@ int myproxy_set_delegation_defaults(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request)
 { 
-    char *username, *pshost;
+    char *pshost;
 
     client_request->version = strdup(MYPROXY_VERSION);
     client_request->command_type = MYPROXY_GET_PROXY;
-
-    username = getenv("LOGNAME");
-    if (username != NULL) {
-      client_request->username = strdup(username);
-    }
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
