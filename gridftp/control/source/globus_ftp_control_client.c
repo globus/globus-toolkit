@@ -140,7 +140,7 @@ globus_ftp_control_handle_init(
     handle->cc_handle.close_result = GLOBUS_NULL;
     handle->cc_handle.quit_response.response_buffer = GLOBUS_NULL;
     handle->cc_handle.nl_handle_set = GLOBUS_FALSE;
-    
+    handle->cc_handle.signal_deactivate = GLOBUS_FALSE;
     globus_io_tcpattr_init(&handle->cc_handle.io_attr);
 
     globus_ftp_control_auth_info_init(&(handle->cc_handle.auth_info),
@@ -3481,6 +3481,11 @@ globus_ftp_control_force_close(
                 goto return_error;
             }
         }
+        
+        if(globus_l_ftp_cc_deactivated)
+        {
+            handle->cc_handle.signal_deactivate = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&(handle->cc_handle.mutex));
     
@@ -4346,6 +4351,7 @@ globus_i_ftp_control_client_deactivate(void)
             handle = (globus_ftp_control_handle_t *) globus_list_first(tmp);
             tmp = globus_list_rest(tmp);
             
+            
             result = globus_ftp_control_force_close(
                 handle, GLOBUS_NULL, GLOBUS_NULL);
             if(result != GLOBUS_SUCCESS)
@@ -4361,6 +4367,7 @@ globus_i_ftp_control_client_deactivate(void)
                       case GLOBUS_FTP_CONTROL_CLOSING:
                         /* close already in progress */
                         globus_l_ftp_cc_handle_signal_count++;
+                        handle->cc_handle.signal_deactivate = GLOBUS_TRUE;
                         break;
                         
                       case GLOBUS_FTP_CONTROL_CONNECTED:
@@ -4370,6 +4377,7 @@ globus_i_ftp_control_client_deactivate(void)
                         if(handle->cc_handle.cb_count)
                         {
                             globus_l_ftp_cc_handle_signal_count++;
+                            handle->cc_handle.signal_deactivate = GLOBUS_TRUE;
                         }
                         break;
                       default:
@@ -4667,6 +4675,7 @@ globus_i_ftp_control_call_close_cb(
     void *                                    close_cb_arg;
     globus_ftp_control_response_t             response;
     globus_object_t *                         result;
+    globus_bool_t                             signal_deactivate;
     
     globus_mutex_lock(&handle->cc_handle.mutex);
     {
@@ -4674,7 +4683,7 @@ globus_i_ftp_control_call_close_cb(
             &(handle->cc_handle.auth_info));
                 
 	handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
-	
+	signal_deactivate = handle->cc_handle.signal_deactivate;
 	close_cb = handle->cc_handle.close_cb;
 	close_cb_arg = handle->cc_handle.close_cb_arg;
         result =  handle->cc_handle.close_result;
@@ -4702,15 +4711,18 @@ globus_i_ftp_control_call_close_cb(
         globus_free(response.response_buffer);
     }
     
-    globus_mutex_lock(&globus_l_ftp_cc_handle_list_mutex);
+    if(signal_deactivate)
     {
-	if(globus_l_ftp_cc_handle_signal_count > 0)
-	{
-	    if(--globus_l_ftp_cc_handle_signal_count == 0)
-	    {
-	        globus_cond_signal(&globus_l_ftp_cc_handle_list_cond);
-	    }
-	}
+        globus_mutex_lock(&globus_l_ftp_cc_handle_list_mutex);
+        {
+            if(globus_l_ftp_cc_handle_signal_count > 0)
+            {
+                if(--globus_l_ftp_cc_handle_signal_count == 0)
+                {
+                    globus_cond_signal(&globus_l_ftp_cc_handle_list_cond);
+                }
+            }
+        }
+        globus_mutex_unlock(&globus_l_ftp_cc_handle_list_mutex);
     }
-    globus_mutex_unlock(&globus_l_ftp_cc_handle_list_mutex);
 }
