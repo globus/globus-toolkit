@@ -54,9 +54,6 @@ void sig_exit(int signo);
 void sig_chld(int signo);
 void sig_ign(int signo);
 
-int myproxy_creds_info(struct myproxy_creds *creds,
-		       myproxy_response_t *response);
-
 /* Function declarations */
 int init_arguments(int argc, 
                    char *argv[], 
