@@ -646,7 +646,7 @@ globus_l_cache_local_op(
     globus_gass_cache_entry_t *		entries;
     globus_gass_cache_t			cache_handle;
     unsigned long			timestamp;
-    char *				local_filename;
+    char *				local_filename = NULL;
     int					rc;
     int					i;
     int					size = 0;
@@ -733,7 +733,10 @@ globus_l_cache_local_op(
 		"Could not add cache entry because %s\n",
 		globus_gass_cache_error_string(rc));
 	}
-	free(local_filename);
+	if(local_filename != NULL)
+	{
+	    free(local_filename);
+	}
 	break;
 
     case GASSL_DELETE:
@@ -885,7 +888,10 @@ globus_l_cache_local_op(
 	    return_value = GLOBUS_FAILURE;
 	    break;
 	}
-	globus_free(local_filename);
+	if(local_filename != NULL)
+	{
+	    globus_free(local_filename);
+	}
 	break;
     case GASSL_UNKNOWN:
 	break;
