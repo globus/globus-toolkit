@@ -72,3 +72,28 @@ CREATE TABLE java_ws_core_packets(
     event_type SMALLINT,
     service_list TEXT
 );
+
+CREATE TABLE gram_packets( 
+    id SERIAL,
+    creation_time DATETIME,
+    scheduler_type VARCHAR(20),
+    job_credential_endpoint_used BOOLEAN,
+    file_stage_in_used BOOLEAN,
+    file_stage_out_used BOOLEAN,
+    file_clean_up_used BOOLEAN,
+    clean_up_hold_used BOOLEAN,
+    job_type SMALLINT,
+    gt2_error_code INT,
+    fault_class SMALLINT,
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE graph_image_files(
+    start_time DATETIME,
+    end_time DATETIME,
+    granularity INT,
+    graph_type INT,
+    graph_quant INT,
+    filter VARCHAR(16),
+    file_url TEXT
+);

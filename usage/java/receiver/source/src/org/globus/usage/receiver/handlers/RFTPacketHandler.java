@@ -38,6 +38,6 @@ public class RFTPacketHandler extends DefaultPacketHandler {
 
         RFTUsageMonitorPacket rft= (RFTUsageMonitorPacket)pack;
         
-        return rft.toSQL(con, table);
+        return rft.toSQL(this.con, this.table);
     }
 }
