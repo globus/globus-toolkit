@@ -33,6 +33,13 @@ typedef enum
     GLOBUS_GFS_IPC_TYPE_RESOURCE
 } globus_gfs_ipc_request_type_t;
 
+typedef enum
+{
+    GLOBUS_GFS_IPC_USER_TYPE_INT32,
+    GLOBUS_GFS_IPC_USER_TYPE_INT64,
+    GLOBUS_GFS_IPC_USER_TYPE_CHAR,
+    GLOBUS_GFS_IPC_USER_TYPE_STRING
+} globus_gfs_ipc_user_type_t;
 /*
  *  replying
  *
@@ -76,10 +83,9 @@ typedef struct globus_i_gfs_ipc_reply_s
     int                                 code;
     char *                              msg;
     globus_result_t                     result;
-    
+
     /* prolly a different struct for event stuff */
     globus_i_gfs_event_t                event;
-    
 
     union
     {
@@ -422,16 +428,14 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_set_user_t     set_user;
 } globus_gfs_ipc_iface_t;
 
-globus_result_t
-globus_gfs_ipc_open(
-    globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_iface_t *            iface,
-    const char *                        contact_string,
-    globus_gfs_ipc_open_close_callback_t open_cb,
-    void *                              open_arg,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              error_arg);
+/* 
+ *  getting an IPC handle
+ */
 
+/* 
+ *  create an IPC handle from a xio system handle, can be used
+ *  imediately, is not in handle table
+ */
 globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_handle_t *           ipc_handle,
@@ -440,13 +444,29 @@ globus_gfs_ipc_handle_create(
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg);
 
+/*
+ *  actually close the handle
+ */
 globus_result_t
 globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg);
 
+globus_result_t
+globus_gfs_ipc_handle_release(
+    globus_gfs_ipc_handle_t             ipc_handle);
+
+globus_result_t
+globus_gfs_ipc_handle_obtain(
+    const char *                        user_id,
+    globus_gfs_ipc_iface_t *            iface,
+    const char *                        contact_string,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+
 extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 
 #endif
-
