@@ -51,7 +51,7 @@ globus_module_descriptor_t		globus_i_gsi_gssapi_module =
  *
  */
 
-globus_thread_once_t                once_control;
+globus_thread_once_t                once_control = GLOBUS_THREAD_ONCE_INIT;
 
 static int                          active = 0;
 
