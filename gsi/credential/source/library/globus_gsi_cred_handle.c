@@ -1514,8 +1514,8 @@ globus_gsi_cred_verify_cert_chain(
 
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
-                GLOBUS_GSI_CRED_ERROR_VERIFYING_NEW_PROXY,
-                ("Failed to verify new proxy certificate"));
+                GLOBUS_GSI_CRED_ERROR_VERIFYING_CRED,
+                ("Failed to verify credential"));
 
             local_result = globus_gsi_callback_get_error(callback_data,
                                                          &callback_error);
@@ -1523,7 +1523,7 @@ globus_gsi_cred_verify_cert_chain(
             {
                 GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                     local_result,
-                    GLOBUS_GSI_CRED_ERROR_VERIFYING_NEW_PROXY);
+                    GLOBUS_GSI_CRED_ERROR_VERIFYING_CRED);
                 goto exit;
             }
             else

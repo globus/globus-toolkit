@@ -37,13 +37,12 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 /* 15 */  "Error with credential handle attributes",
 /* 16 */  "Error with credential's SSL context",
 /* 17 */  "Error with callback data",
-/* 18 */  "Error verifying new proxy certificate",
-/* 19 */  "Error creating two errors from one",
-/* 20 */  "Key is password protected",
-/* 21 */  "Valid credentials could not be found in any of the"
+/* 18 */  "Error creating two errors from one",
+/* 19 */  "Key is password protected",
+/* 20 */  "Valid credentials could not be found in any of the"
           " possible locations specified by the credential search order.",
-/* 22 */  "Error comparing subject names.",
-/* 23 */  "Error determining service name."
+/* 21 */  "Error comparing subject names.",
+/* 22 */  "Error determining service name."
 };
 
 /* ERROR FUNCTIONS */
