@@ -15,9 +15,9 @@ typedef enum globus_l_gfs_ipc_state_s
 {
     GLOBUS_GFS_IPC_STATE_OPENING,
     GLOBUS_GFS_IPC_STATE_OPEN,
-    GLOBUS_GFS_IPC_STATE_GETTING,
     GLOBUS_GFS_IPC_STATE_IN_CB,
     GLOBUS_GFS_IPC_STATE_IN_USE,
+    GLOBUS_GFS_IPC_STATE_GETTING,
     GLOBUS_GFS_IPC_STATE_ERROR,
     GLOBUS_GFS_IPC_STATE_CLOSING,
     GLOBUS_GFS_IPC_STATE_CLOSED
@@ -307,6 +307,7 @@ static void
 globus_l_gfs_ipc_open_kickout(
     void *                              user_arg)
 {
+    globus_gfs_ipc_error_callback_t     error_cb = NULL;
     globus_i_gfs_ipc_handle_t *         ipc;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
@@ -339,6 +340,10 @@ globus_l_gfs_ipc_open_kickout(
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
                 break;
 
+            case GLOBUS_GFS_IPC_STATE_ERROR:
+                error_cb = ipc->error_cb;
+                break;
+
             default:
                 globus_assert(0 && "memory corruption?");
                 break;
@@ -346,6 +351,11 @@ globus_l_gfs_ipc_open_kickout(
         globus_l_ipc_handle_count++;
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    if(error_cb != NULL)
+    {
+        error_cb(ipc, ipc->cached_res, ipc->error_arg);
+    }
 }
 
 static void
@@ -361,6 +371,7 @@ globus_l_gfs_ipc_error_kickout(
         {
             /* need to delay error callback until after the get callback
                 is delivered */
+            case GLOBUS_GFS_IPC_STATE_OPENING:
             case GLOBUS_GFS_IPC_STATE_IN_CB:
             case GLOBUS_GFS_IPC_STATE_GETTING:
                 ipc->cached_res = res;
@@ -383,7 +394,6 @@ globus_l_gfs_ipc_error_kickout(
                 ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
                 break;
     
-            case GLOBUS_GFS_IPC_STATE_OPENING:
             case GLOBUS_GFS_IPC_STATE_CLOSED:
             case GLOBUS_GFS_IPC_STATE_ERROR:
             default:
@@ -454,6 +464,7 @@ globus_l_gfs_ipc_open_cb(
             else
             {
                 globus_l_ipc_handle_count++;
+                ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
             }
         }
         else
