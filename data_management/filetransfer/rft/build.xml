@@ -43,6 +43,7 @@ Southern California. All Rights Reserved.
   <property name="src.dir" value="./src"/>
   <property name="build.dest" value="${build.dir}/classes"/>
   <property name="build.lib" value="./lib"/>
+  <property name="docs.dir" value="docs"/>
   <property name="build.javadocs" value="${build.dir}/javadocs"/>
   <property name="build.services" value="${ogsacore.javadir}/build-services.xml"/>
   <property name="stubs.dir" value="./src/org/globus/ogsa/base"/>
@@ -148,6 +149,9 @@ Southern California. All Rights Reserved.
       <fileset dir="${lib.dir}">
           <include name="**/*.jar"/>
       </fileset>
+      <fileset dir="${docs.dir}">
+        <include name="**/*.html"/>
+    </fileset>
     </copy>
     <ant antfile="${ogsacore.javadir}/build-packages.xml" target="makeClientServerGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
