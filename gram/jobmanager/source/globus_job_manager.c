@@ -1602,6 +1602,18 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     else
         req->directory = graml_env_home;
 
+    /*
+     * change to the right directory, so that std* files
+     * are interpreted relative to this directory
+     */
+    if (chdir(req->directory) != 0)
+    {
+        grami_fprintf( req->jobmanager_log_fp,
+            "JM: Couldn't change to directory %s\n", req->directory );
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_BAD_DIRECTORY;
+        return(GLOBUS_FAILURE);
+    }
+
     /********************************** 
      *  GET STDIN PARAM
      */
@@ -2741,7 +2753,7 @@ globus_i_filename_callback_func(int stdout_flag)
 } /* globus_i_filename_callback_func() */
 
 /******************************************************************************
-Function:       globus_l_gram_check_stdout_files()
+Function:       globus_l_gram_check_file_list()
 Description:
 Parameters:
 Returns:
