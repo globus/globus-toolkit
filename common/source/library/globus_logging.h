@@ -1,7 +1,8 @@
 #ifndef GLOBUS_LOGGING_H
 #define GLOBUS_LOGGING_H 1
 
-#include <globus_libc.h>
+#include "globus_common_include.h"
+#include "globus_time.h"
 
 #define GLOBUS_LOGGING_INLINE           0x08000000
 
