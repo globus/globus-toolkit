@@ -174,7 +174,7 @@ sub main
     $hash = buildEnvHash($header);
     displayHash($hash);
 
-    return;
+    exit(0);
 }
 
 ### buildMultiArg( @exclude )
@@ -224,6 +224,12 @@ sub getDevLines
     #
 
     my $libpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor);
+    my $testpkgs = $libpkgs->{pkgs};
+    if (!@$testpkgs)
+    {
+        printf("No packages were found that matched your query!\n");
+        exit(1);
+    }
     my $libenvs = $libpkgs->get_sorted_buildenvs();
     $liblines = Grid::GPT::BuildLine::create_buildlines($libenvs);
 
