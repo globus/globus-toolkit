@@ -1,11 +1,17 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS= \
+SUBDIRS = \
 	pkgdata
 
-test_PROGRAMS= \
+Scripts = test_pci.pl
+
+test_PROGRAMS = \
 	test_pci
+
+test_SCRIPTS = $(Scripts)
+
+EXTRA_DIST = $(Scripts)
 
 INCLUDES += $(GPT_INCLUDES)
 
