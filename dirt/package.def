@@ -121,3 +121,4 @@ globus_glue_test                glue_test                       dirt.sh
 autotools                       autotools                       dirt.sh
 globus_utp                      utp/source                      dirt.sh
 globus_callout                  callout/source                  dirt.sh
+globus_callout_test             callout/test                    dirt.sh
