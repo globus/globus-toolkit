@@ -1212,6 +1212,12 @@ globus_io_udp_bind(
     globus_io_attr_t *                  attr,
     globus_io_handle_t *                handle);
 
+globus_result_t
+globus_io_udp_connect(
+    globus_io_handle_t *                handle,
+    char *                              host,
+    unsigned short                      port);
+
 globus_result_t 
 globus_io_udp_sendto(
      globus_io_handle_t *                handle,
