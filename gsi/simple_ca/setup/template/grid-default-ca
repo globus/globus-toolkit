@@ -187,7 +187,7 @@ fi
 if [ -z "$ca_to_use" ]; then
     interactive
 else
-    CA_CERT="$ca_to_use"
+    CA_CERT="${trusted_certs_dir}/$ca_to_use.0"
     TMP_SUBJECT=`openssl x509 -in ${CA_CERT} -noout -subject`
     CA_SUBJECT=`echo ${TMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
 fi
