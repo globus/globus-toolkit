@@ -82,15 +82,6 @@ globus_rsl_assist_string_canonicalize(char * ptr);
 
 
 /*
- * Connect to the ldap server, and search for the contact string
- * associated with the resourceManagerName.
- */
-int
-globus_i_rsl_assist_get_user_job_list(
-    char *           globaluserid,
-    globus_list_t ** job_contact_list);
-
-/*
  * Function: globus_rsl_assist_attributes_canonicalize()
  *
  * Given an RSL tree (parsed RSL), walk the tree finding all attributes of

@@ -14,7 +14,6 @@ SUBDIRS= \
 # If this directory builds multiple programs or libraries than these sources
 # will need to be seperated into seperate macros.
 Sources= \
-	globus_i_rsl_assist.h \
 	globus_rsl_assist.c \
 	globus_rsl_assist.h
 
@@ -28,7 +27,6 @@ INCLUDES += $(GPT_INCLUDES)
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
-	globus_i_rsl_assist.h \
 	globus_rsl_assist.h
 
 # lib_LTLIBRARIES is an automake macro which contains
