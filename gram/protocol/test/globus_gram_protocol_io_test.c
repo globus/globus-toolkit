@@ -21,7 +21,8 @@ server_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 static
 void
@@ -30,7 +31,8 @@ client_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 int main()
 {
@@ -130,7 +132,8 @@ server_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
     monitor_t *				monitor;
     globus_byte_t *			reply;
@@ -195,7 +198,8 @@ client_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
     monitor_t *				monitor;
     int					rc;

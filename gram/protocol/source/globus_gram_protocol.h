@@ -43,7 +43,8 @@ typedef void (*globus_gram_protocol_callback_t)(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 #define GLOBUS_GRAM_PROTOCOL_MODULE	(&globus_i_gram_protocol_module)
 

@@ -71,7 +71,8 @@ globus_gram_job_manager_query_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			buf,
     globus_size_t			nbytes,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
     globus_gram_jobmanager_request_t *	request		= arg;
     char *				query		= GLOBUS_NULL;
@@ -80,11 +81,53 @@ globus_gram_job_manager_query_callback(
     int					status;
     int					job_failure_code;
     globus_bool_t			reply		= GLOBUS_TRUE;
+    globus_url_t			parsed_uri;
 
     globus_mutex_lock(&request->mutex);
 
     status = request->status;
     job_failure_code = request->failure_code;
+
+    if (uri == NULL)
+    {
+	globus_gram_job_manager_request_log(
+	    request,
+	    "globus_gram_job_manager_query_callback missing uri\n");
+
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+
+	goto unpack_failed;
+    }
+    if ( strcmp(uri, request->job_contact) != 0 )
+    {
+	memset(&parsed_uri, '\0', sizeof(globus_url_t));
+
+	globus_gram_job_manager_request_log(
+	    request,
+	    "globus_gram_job_manager_query_callback() "
+	    "not a literal URI match\n");
+
+	rc = globus_url_parse(uri, &parsed_uri);
+
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    rc = 0;
+	    parsed_uri.url_path = globus_libc_strdup(uri);
+	}
+
+	if ( strcmp(parsed_uri.url_path, request->job_contact_path) != 0 )
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_CONTACT_NOT_FOUND;
+	}
+
+	globus_url_destroy(&parsed_uri);
+
+	if (rc != GLOBUS_SUCCESS)
+	{
+	    goto unpack_failed;
+	}
+    }
+
 
     rc = globus_gram_protocol_unpack_status_request(buf, nbytes, &query);
 

@@ -88,6 +88,7 @@ typedef struct
     globus_gram_protocol_handle_t	handle;
     globus_i_gram_protocol_listener_t *	listener;
     int					rc;
+    char *				uri;
 }
 globus_i_gram_protocol_connection_t;
 

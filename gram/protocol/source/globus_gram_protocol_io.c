@@ -78,7 +78,8 @@ static
 int
 globus_l_gram_protocol_parse_request_header(
     const globus_byte_t *		buf,
-    globus_size_t *			payload_length);
+    globus_size_t *			payload_length,
+    char **				uri);
 
 static
 int
@@ -914,7 +915,8 @@ globus_l_gram_protocol_read_request_callback(
 
 	    rc = globus_l_gram_protocol_parse_request_header(
 	             connection->buf,
-		     &connection->payload_length);
+		     &connection->payload_length,
+		     &connection->uri);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 	        goto error_exit;
@@ -947,7 +949,8 @@ globus_l_gram_protocol_read_request_callback(
 				 connection->handle,
 				 connection->buf,
 				 connection->payload_length,
-				 GLOBUS_SUCCESS);
+				 GLOBUS_SUCCESS,
+				 connection->uri);
 	}
     }
     return;
@@ -1065,7 +1068,8 @@ globus_l_gram_protocol_connect_callback(
 			     connection->handle,
 			     GLOBUS_NULL,
 			     0,
-			     rc);
+			     rc,
+			     GLOBUS_NULL);
     }
     result = globus_io_register_close(
 	    handle,
@@ -1167,7 +1171,8 @@ globus_l_gram_protocol_write_request_callback(
 			     connection->handle,
 			     GLOBUS_NULL,
 			     0,
-			     rc);
+			     rc,
+			     GLOBUS_NULL);
     }
     result = globus_io_register_close(
 	    handle,
@@ -1366,7 +1371,8 @@ globus_l_gram_protocol_read_reply_callback(
 			     connection->handle,
 			     connection->replybuf,
 			     connection->payload_length,
-			     connection->rc);
+			     connection->rc,
+			     GLOBUS_NULL);
     }
     /* For reply handling, we just need to close up the connection
      * after we've dispatched the callback.
@@ -1455,6 +1461,10 @@ globus_l_gram_protocol_connection_close_callback(
 	{
 	    globus_libc_free(connection->io_handle);
 	}
+	if(connection->uri)
+	{
+	    globus_libc_free(connection->uri);
+	}
 	globus_libc_free(connection);
     }
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
@@ -1523,14 +1533,15 @@ static
 int
 globus_l_gram_protocol_parse_request_header(
     const globus_byte_t *		buf,
-    globus_size_t *			payload_length)
+    globus_size_t *			payload_length,
+    char **				uri)
 {
     int					rc;
     long				tmp;
-    char *				uri;
+    char *				tmp_uri;
     char *				host;
 
-    uri = (char *) globus_libc_malloc(strlen((char *) buf));
+    tmp_uri = (char *) globus_libc_malloc(strlen((char *) buf));
     host = (char *) globus_libc_malloc(strlen((char *) buf));
 
     globus_libc_lock();
@@ -1540,7 +1551,7 @@ globus_l_gram_protocol_parse_request_header(
 		GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
 		GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE
 		CRLF,
-		uri,
+		tmp_uri,
 		host,
 		&tmp);
 
@@ -1554,9 +1565,10 @@ globus_l_gram_protocol_parse_request_header(
     else
     {
 	*payload_length = tmp;
+	*uri = strdup(tmp_uri);
 	rc = GLOBUS_SUCCESS;
     }
-    globus_free(uri);
+    globus_free(tmp_uri);
     globus_free(host);
 
     return rc;

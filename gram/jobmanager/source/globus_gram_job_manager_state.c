@@ -1974,6 +1974,17 @@ globus_l_gram_job_manager_set_unique_id(
     /* If this assertion isn't true, then we've corrupted memory anyway */
     globus_assert(rc < GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
 
+    request->job_contact_path =
+	globus_libc_malloc(strlen(request->job_contact)+1);
+
+    rc = sprintf(request->job_contact_path,
+	         "/%lu/%lu/",
+	         my_pid,
+	         my_time);
+
+    /* If this assertion isn't true, then we've corrupted memory anyway */
+    globus_assert(rc < GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gram_job_manager_set_unique_id() */

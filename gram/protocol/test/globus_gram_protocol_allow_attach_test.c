@@ -9,7 +9,8 @@ callback_func(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			msg,
     globus_size_t			msgsize,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
 }
 

@@ -365,6 +365,7 @@ typedef struct
     globus_callback_handle_t		reporting_file_cleanup_timer;
     char *				url_base;
     char *				job_contact;
+    char *				job_contact_path;
     gss_ctx_id_t			response_context;
     globus_fifo_t			pending_queries;
     globus_bool_t			publish_jobs;
@@ -538,7 +539,8 @@ globus_gram_job_manager_query_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			buf,
     globus_size_t			nbytes,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 void
 globus_gram_job_manager_query_reply(

@@ -119,7 +119,8 @@ globus_l_gram_client_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			buf,
     globus_size_t			nbytes,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 static
 void
@@ -128,7 +129,8 @@ globus_l_gram_client_monitor_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 static
 void
@@ -137,7 +139,8 @@ globus_l_gram_client_register_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode);
+    int					errorcode,
+    char *				uri);
 
 static
 int
@@ -1837,7 +1840,8 @@ globus_l_gram_client_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			buf,
     globus_size_t			nbytes,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
     globus_l_gram_client_callback_info_t *
 					info;
@@ -1885,7 +1889,8 @@ globus_l_gram_client_monitor_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
     globus_l_gram_client_monitor_t *	monitor;
     int					rc;
@@ -1949,7 +1954,8 @@ globus_l_gram_client_register_callback(
     globus_gram_protocol_handle_t	handle,
     globus_byte_t *			message,
     globus_size_t			msgsize,
-    int					errorcode)
+    int					errorcode,
+    char *				uri)
 {
     globus_l_gram_client_monitor_t *	monitor;
     int					rc;

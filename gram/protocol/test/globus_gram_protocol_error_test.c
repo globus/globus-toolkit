@@ -1,4 +1,5 @@
 #include "globus_gram_protocol.h"
+#include <string.h>
 
 int main(int argc, char * argv[])
 {

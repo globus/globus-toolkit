@@ -171,7 +171,8 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 152 */     "the  job manager could not read the RSL attribute validation file",
 /* 153 */     "the provided RSL 'proxy_timeout' is invalid",
 /* 154 */     "the RSL 'proxy_timeout' value is not greater than zero",
-/* 155 */     "the job manager could not stage out a file"
+/* 155 */     "the job manager could not stage out a file",
+/* 156 */     "the job contact string does not match any which the job manager is handling"
 };
 
 static char *
