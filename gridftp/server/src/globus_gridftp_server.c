@@ -201,7 +201,7 @@ globus_l_gfs_signal_init()
 #   endif
 #   ifdef SIGPIPE
     {
-        signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
+        //signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
     }
 #   endif
 #   ifdef SIGEMT
