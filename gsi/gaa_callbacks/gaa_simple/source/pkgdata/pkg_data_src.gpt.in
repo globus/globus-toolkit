@@ -31,6 +31,18 @@
 </Version>
 </Dependency>
 </Source_Dependencies>
+        <Source_Dependencies Type="pgm_link" >
+            <Dependency Name="gaa_core" >
+               <Version >
+                  <Simple_Version Major="1" />
+               </Version>
+            </Dependency>
+            <Dependency Name="gaa_plugin" >
+               <Version >
+                  <Simple_Version Major="1" />
+               </Version>
+            </Dependency>
+         </Source_Dependencies>
 <Build_Environment >
 <cflags >@GPT_PKG_CFLAGS@</cflags>
 <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
