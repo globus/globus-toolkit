@@ -3525,6 +3525,20 @@ void pass(char *passwd)
 		   remoteident, passwd);
     }
     else {
+#if (defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION))
+	{
+	    char estr[2048];
+	    if (!ftp_check_local_condition("userok", estr, sizeof(estr)))
+	    {
+		if (logging)
+		    syslog(LOG_NOTICE, "FTP LOGIN REFUSED (local id check failed) from %s, %s: %s",
+			   remotehost, gssapi_identity(), estr);
+		
+		reply(530, "Access denied.");
+		goto bad;
+	    }
+	}
+#endif
 	reply(230, "User %s logged in.%s", pw->pw_name, guest ?
 	      "  Access restrictions apply." : "");
 	sprintf(proctitle, "%s: %s", remotehost, pw->pw_name);

@@ -2738,4 +2738,20 @@ ftp_authorization_client_policy_string()
     return(globus_auth_get_policy_string(globus_auth_handle));
 }
 
+ftp_check_local_condition(char *condition_name, char *estr, int esize)
+{
+    globus_auth_result_t result;
+    result = globus_auth_check_condition(globus_auth_handle, "userok", "local",
+					 0);
+    if (result == GLOBUS_SUCCESS)
+	return(1);
+    else
+    {
+	if (estr)
+	    globus_result_get_error_string(result, estr, esize);
+	return(0);
+    }
+}
+
 #endif /* GLOBUS_AUTHORIZATION */
+
