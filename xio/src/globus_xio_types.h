@@ -2,7 +2,6 @@
 #define GLOBUS_XIO_TYPES_H 1
 
 #include "globus_common.h"
-#include <sys/uio.h>
 
 
 /*************************************************************************

@@ -1,4 +1,5 @@
 #include "globus_xio_driver.h"
+#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
 
@@ -11,6 +12,8 @@
     ow->res = res;                                                      \
     ow->nbytes = nb;                                                    \
 }
+
+static globus_xio_driver_t              globus_l_xio_test_info;
 
 static int
 globus_l_xio_test_activate();
@@ -77,34 +80,6 @@ globus_l_xio_test_attr_init(
     *out_attr = attr;
 
     return GLOBUS_SUCCESS;
-}
-
-static
-int
-globus_l_xio_test_activate(void)
-{
-    int                                 rc;
-    globus_l_xio_test_handle_t *        attr;
-
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
-    attr = &globus_l_default_attr;
-
-    memset(attr, '\0', sizeof(globus_l_xio_test_handle_t));
-    attr->inline_finish = GLOBUS_FALSE;
-    attr->failure = 0;  /* default is no failures */
-    GlobusTimeReltimeSet(attr->delay, 0, 0);
-    attr->read_nbytes = -1; /* default is no EOF (close only) */
-    attr->chunk_size = -1; /* default: entire chunk requested */
-
-    return rc;
-}
-
-static
-int
-globus_l_xio_test_deactivate(void)
-{
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
 /*
@@ -555,46 +530,77 @@ globus_l_xio_test_cntl(
     return GLOBUS_SUCCESS;
 }
 
-static struct globus_i_xio_driver_s globus_l_xio_test_info =
-{
-    /*
-     *  main io interface functions
-     */
-    NULL,
-    globus_l_xio_test_open,                      /* open_func           */
-    globus_l_xio_test_close,                     /* close_func          */
-    globus_l_xio_test_read,                      /* read_func           */
-    globus_l_xio_test_write,                     /* write_func          */
-    globus_l_xio_test_cntl,                      /* handle_cntl_func    */
-
-    globus_l_xio_test_target_init,               /* target_init_func    */
-    NULL,
-    globus_l_xio_test_target_destroy,            /* target_destroy_finc */
-
-    /*
-     *  No server functions.
-     */
-    globus_l_xio_test_server_init,               /* server_init_func    */
-    globus_l_xio_test_accept,                    /* server_accept_func  */
-    globus_l_xio_test_server_destroy,            /* server_destroy_func */
-    globus_l_xio_test_server_cntl,               /* server_cntl_func    */
-
-    /*
-     *  driver attr functions.  All or none may be NULL
-     */
-    globus_l_xio_test_attr_init,                 /* attr_init_func      */
-    globus_l_xio_test_attr_copy,                 /* attr_copy_func      */
-    globus_l_xio_test_attr_cntl,                 /* attr_cntl_func      */
-    globus_l_xio_test_attr_destroy,              /* attr_destroy_func   */
-};
-
 globus_xio_driver_t
 globus_xio_driver_test_transport_get_driver()
 {
-    globus_xio_driver_t                         driver;
+    return globus_l_xio_test_info;
+}
 
-    driver = (globus_xio_driver_t) &globus_l_xio_test_info;
+static
+int
+globus_l_xio_test_activate(void)
+{
+    int                                 rc;
+    globus_l_xio_test_handle_t *        attr;
+    globus_result_t                     res;
 
-    return driver;
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+
+    attr = &globus_l_default_attr;
+
+    memset(attr, '\0', sizeof(globus_l_xio_test_handle_t));
+    attr->inline_finish = GLOBUS_FALSE;
+    attr->failure = 0;  /* default is no failures */
+    GlobusTimeReltimeSet(attr->delay, 0, 0);
+    attr->read_nbytes = -1; /* default is no EOF (close only) */
+    attr->chunk_size = -1; /* default: entire chunk requested */
+
+    res = globus_xio_driver_init(
+            &globus_l_xio_test_info,
+            NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return -1;
+    }
+
+    globus_xio_driver_set_transport(
+        globus_l_xio_test_info,
+        globus_l_xio_test_open,
+        globus_l_xio_test_close,
+        globus_l_xio_test_read,
+        globus_l_xio_test_write,
+        globus_l_xio_test_cntl);
+
+    globus_xio_driver_set_client(
+        globus_l_xio_test_info,
+        globus_l_xio_test_target_init,
+        NULL,
+        globus_l_xio_test_target_destroy);
+
+    globus_xio_driver_set_server(
+        globus_l_xio_test_info,
+        globus_l_xio_test_server_init,
+        globus_l_xio_test_accept,
+        globus_l_xio_test_server_destroy,
+        globus_l_xio_test_server_cntl,
+        globus_l_xio_test_target_destroy);
+
+    globus_xio_driver_set_attr(
+        globus_l_xio_test_info,
+        globus_l_xio_test_attr_init,
+        globus_l_xio_test_attr_copy,
+        globus_l_xio_test_attr_cntl,
+        globus_l_xio_test_attr_destroy);
+
+    return rc;
+}
+
+static
+int
+globus_l_xio_test_deactivate(void)
+{
+    globus_xio_driver_destroy(globus_l_xio_test_info);
+
+    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
