@@ -320,7 +320,7 @@ typedef struct sockaddr_storage         globus_sockaddr_t;
 typedef struct addrinfo                 globus_addrinfo_t;
 
 #define GlobusLibcProtocolFamilyIsIP(family)                                \
-    ((family == PF_INET ? 1 : (family == PF_INET6 ? 1 : 0)))
+    ((family == AF_INET ? 1 : (family == AF_INET6 ? 1 : 0)))
 
 #define GlobusLibcSockaddrGetPort(addr, port)                               \
     do                                                                      \
@@ -329,11 +329,11 @@ typedef struct addrinfo                 globus_addrinfo_t;
                                                                             \
         switch(_addr->sa_family)                                            \
         {                                                                   \
-          case PF_INET:                                                     \
+          case AF_INET:                                                     \
             (port) = ntohs(((struct sockaddr_in *) _addr)->sin_port);       \
             break;                                                          \
                                                                             \
-          case PF_INET6:                                                    \
+          case AF_INET6:                                                    \
             (port) = ntohs(((struct sockaddr_in6 *) _addr)->sin6_port);     \
             break;                                                          \
                                                                             \
@@ -352,11 +352,11 @@ typedef struct addrinfo                 globus_addrinfo_t;
                                                                             \
         switch(_addr->sa_family)                                            \
         {                                                                   \
-          case PF_INET:                                                     \
+          case AF_INET:                                                     \
             ((struct sockaddr_in *) _addr)->sin_port = htons((port));       \
             break;                                                          \
                                                                             \
-          case PF_INET6:                                                    \
+          case AF_INET6:                                                    \
             ((struct sockaddr_in6 *) _addr)->sin6_port = htons((port));     \
             break;                                                          \
                                                                             \
@@ -377,11 +377,11 @@ typedef struct addrinfo                 globus_addrinfo_t;
                                                                             \
         switch(_addr->sa_family)                                            \
         {                                                                   \
-          case PF_INET:                                                     \
+          case AF_INET:                                                     \
             (len) = sizeof(struct sockaddr_in);                             \
             break;                                                          \
                                                                             \
-          case PF_INET6:                                                    \
+          case AF_INET6:                                                    \
             (len) = sizeof(struct sockaddr_in6);                            \
             break;                                                          \
                                                                             \
@@ -442,6 +442,24 @@ globus_bool_t
 globus_libc_addr_is_loopback(
     const globus_sockaddr_t *           addr);
 
+globus_bool_t
+globus_libc_addr_is_wildcard(
+    const globus_sockaddr_t *           addr);
+    
+/* use this to get a numeric contact string (ip addr.. default is hostname) */
+#define GLOBUS_LIBC_ADDR_NUMERIC        1
+/* use this if this is a local addr; will use GLOBUS_HOSTNAME if avail */
+#define GLOBUS_LIBC_ADDR_LOCAL          2
+
+/* creates a contact string of the form <host>:<port>
+ * user needs to free contact string
+ */
+globus_result_t
+globus_libc_addr_to_contact_string(
+    const globus_sockaddr_t *           addr,
+    int                                 opts_mask,
+    char **                             contact_string);
+    
 EXTERN_C_END
 
 #endif

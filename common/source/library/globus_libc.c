@@ -855,7 +855,7 @@ globus_libc_scan_off_t(char * s, globus_off_t * off, int * consumed)
 /******************************************************************************
 Function: globus_libc_gethostname()
 
-Description:
+Description:  XXX this needs to be changed to use globus_libc_getnameinfo()
 
 Parameters:
 
@@ -3070,12 +3070,12 @@ globus_bool_t
 globus_libc_addr_is_loopback(
     const globus_sockaddr_t *           addr)
 {
-    const struct sockaddr *             _addr = &(addr);
+    struct sockaddr *                   _addr = (struct sockaddr *) addr;
     globus_bool_t                       result = GLOBUS_FALSE;
 
     switch(_addr->sa_family)
     {
-      case PF_INET:
+      case AF_INET:
         if(ntohl(((struct sockaddr_in *) _addr)->sin_addr.s_addr) ==
            INADDR_LOOPBACK)
         {
@@ -3084,9 +3084,105 @@ globus_libc_addr_is_loopback(
         break;
       default:
         globus_assert(0 &&
-                      "Unknown family in GlobusLibcSizeofSockaddr");
+                      "Unknown family in globus_libc_addr_is_loopback");
         break;
     }
 
+    return result;
+}
+
+globus_bool_t
+globus_libc_addr_is_wildcard(
+    const globus_sockaddr_t *           addr)
+{
+    struct sockaddr *                   _addr = (struct sockaddr *) addr;
+    globus_bool_t                       result = GLOBUS_FALSE;
+    
+    switch(_addr->sa_family)
+    {
+      case AF_INET:
+        if(ntohl(((struct sockaddr_in *) _addr)->sin_addr.s_addr) ==
+           INADDR_ANY)
+        {
+            result = GLOBUS_TRUE;
+        }
+        break;
+      default:
+        globus_assert(0 &&
+                      "Unknown family in globus_libc_addr_is_wildcard");
+        break;
+    }
+
+    return result;
+}
+
+globus_result_t
+globus_libc_addr_to_contact_string(
+    const globus_sockaddr_t *           addr,
+    int                                 opts_mask,
+    char **                             contact_string)
+{
+    globus_result_t                     result;
+    char                                host[GLOBUS_NI_MAXHOST];
+    char                                port[10];
+    int                                 port_no;
+    int                                 ni_flags;
+    char *                              cs;
+    
+    ni_flags = GLOBUS_NI_NUMERICSERV;
+    
+    if(opts_mask & GLOBUS_LIBC_ADDR_NUMERIC)
+    {
+        ni_flags |= GLOBUS_NI_NUMERICHOST;
+    }
+    
+    if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
+        globus_libc_addr_is_loopback(addr) || 
+        globus_libc_addr_is_wildcard(addr))
+    {
+        if(globus_libc_gethostname(host, sizeof(host)) != 0)
+        {
+            result = globus_error_put(
+                globus_error_construct_error(
+                   GLOBUS_COMMON_MODULE,
+                   GLOBUS_NULL,
+                   0,
+                   "[globus_libc_addr_to_string] globus_libc_gethostname fsiled"));
+            goto error_nameinfo;
+        }
+        
+        GlobusLibcSockaddrGetPort(*addr, port_no);
+        sprintf(port, "%d", port_no);
+    }
+    else
+    {
+        result = globus_libc_getnameinfo(
+            addr, host, sizeof(host), port, sizeof(port), ni_flags);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_nameinfo;
+        }
+    }
+    
+    cs = globus_malloc(strlen(host) + strlen(port) + 2);
+    if(!cs)
+    {
+        result = globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_COMMON_MODULE,
+                GLOBUS_NULL,
+                0,
+                "[globus_libc_addr_to_string] malloc fsiled"));
+        goto error_memory;
+    }
+    
+    /* XXX need to see if host is ipv6 format ip... if so, enclose in [] */
+    sprintf(cs, "%s:%s", host, port);
+    *contact_string = cs;
+    
+    return GLOBUS_SUCCESS;
+
+error_memory:
+error_nameinfo:
     return result;
 }

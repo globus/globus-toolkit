@@ -538,98 +538,33 @@ globus_l_io_bounce_authz_cb(
             break;            
           case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST:
             {
-                globus_sockaddr_t       peer_addr;
-                struct hostent          host;
-                struct hostent *        hp;
-                int                     herror;
+                char *                  cs;
+                char *                  s;
                 char                    name_buf[4101];
-                int                     rc;
-                int                     save_errno;
                 gss_buffer_desc         name_buffer;
                 /* copy the io crap */
-                
-                sprintf(name_buf, "host@");
                 
                 result = globus_xio_target_cntl(
                     ihandle->xio_target,
                     globus_l_io_tcp_driver,
-                    GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS,
-                    &peer_addr);
+                    GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
+                    &cs);
                 if(result != GLOBUS_SUCCESS)
                 {
                     goto done;
                 }
                 
-                if(globus_libc_addr_is_loopback(&peer_addr) == GLOBUS_TRUE)
+                /* nop off port number */
+                s = strrchr(cs, ':');
+                if(s)
                 {
-                    rc = globus_libc_gethostname(&name_buf[5], 4096);
-                    
-                    if(rc != 0)
-                    {
-                        save_errno = errno;
-                        result = globus_error_put(
-                            globus_io_error_construct_system_failure(
-                                GLOBUS_IO_MODULE,
-                                GLOBUS_NULL,
-                                GLOBUS_NULL,
-                                save_errno)
-                        );
-                        goto done;
-                    }
+                    *s = 0;
                 }
-                else
-                {
-                    hp = globus_libc_gethostbyaddr_r(
-                        (char *) &((struct sockaddr_in *) &peer_addr)->sin_addr,
-                        (int) sizeof(((struct sockaddr_in *) &peer_addr)->sin_addr),
-                        AF_INET,
-                        &host,
-                        &name_buf[5],
-                        4096, 
-                        &herror);
-                    if(hp == GLOBUS_NULL)
-                    {
-                        save_errno = errno;
-                        result = globus_error_put(
-                            globus_io_error_construct_system_failure(
-                                GLOBUS_IO_MODULE,
-                                GLOBUS_NULL,
-                                GLOBUS_NULL,
-                                save_errno)
-                        );
-                        goto done;
-                    }
-                    
-                    if(strchr(hp->h_name, '.') == GLOBUS_NULL)
-                    {
-                        int i;
-                        int found_alias = 0;
-                        
-                        for(i = 0; hp->h_aliases[i] != GLOBUS_NULL; i++)
-                        {
-                            if(strchr(hp->h_aliases[i], '.') != GLOBUS_NULL)
-                            {
-                                memmove(&name_buf[5],
-                                        hp->h_aliases[i],
-                                        strlen(hp->h_aliases[i])+1);
-                                found_alias = 1;
-                                break;
-                            }
-                        }
-                        
-                        if(!found_alias)
-                        {
-                            memmove(&name_buf[5],
-                                    hp->h_name, strlen(hp->h_name)+1);   
-                        }
-                    }
-                    else
-                    {
-                        memmove(&name_buf[5], hp->h_name,
-                                strlen(hp->h_name)+1);   
-                    }
-                }
-
+                
+                snprintf(name_buf, sizeof(name_buf), "host@%s", cs);
+                name_buf[sizeof(name_buf) - 1] = 0;
+                globus_free(cs);
+                
                 name_buffer.value = name_buf;
                 name_buffer.length = strlen(name_buf);
                 
@@ -1923,7 +1858,7 @@ globus_io_tcp_create_listener(
         result = globus_xio_server_cntl(
             ihandle->xio_server,
             globus_l_io_tcp_driver,
-            GLOBUS_XIO_TCP_GET_CONTACT,
+            GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
             &contact_string);
         if(result != GLOBUS_SUCCESS)
         {
@@ -2204,8 +2139,8 @@ globus_io_tcp_get_local_address(
     int *                               host,
     unsigned short *                    port)
 {
-    uint32_t                            addr;
     globus_result_t                     result;
+    char *                              cs;
     GlobusIOName(globus_io_tcp_get_local_address);
     
     GlobusLIOCheckNullParam(host);
@@ -2214,111 +2149,26 @@ globus_io_tcp_get_local_address(
     
     if((*handle)->xio_handle)
     {
-        globus_sockaddr_t               sock_addr;
-        
         result = globus_xio_handle_cntl(
             (*handle)->xio_handle,
             globus_l_io_tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_ADDRESS,
-            &sock_addr);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_cntl;
-        }
-        
-        if(((struct sockaddr *) &sock_addr)->sa_family != PF_INET)
-        {
-            /* interface doesnt support ipv6 addresses */
-            result = globus_error_put(
-                globus_io_error_construct_internal_error(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                (char *) _io_name));
-                
-            goto error_ipv6;
-        }
-        
-        addr = ((struct sockaddr_in *) &sock_addr)->sin_addr.s_addr;
-        *port = ntohs(((struct sockaddr_in *) &sock_addr)->sin_port);
+            GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
+            &cs);
     }
     else
     {
-        struct in_addr                  inaddr;
-        char *                          contact_string;
-        char *                          s;
-        
         result = globus_xio_server_cntl(
             (*handle)->xio_server,
             globus_l_io_tcp_driver,
-            GLOBUS_XIO_TCP_GET_NUMERIC_CONTACT,
-            &contact_string);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_server_cntl;
-        }
-        
-        if(*contact_string == '[')
-        {
-            /* interface doesnt support ipv6 addresses */
-            globus_free(contact_string);
-            result = globus_error_put(
-                globus_io_error_construct_internal_error(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                (char *) _io_name));
-                
-            goto error_ipv6;
-        }
-        
-        s = strrchr(contact_string, ':');
-        globus_assert(s);
-        *port = atoi(s + 1);
-        *s = 0;
-        inet_aton(contact_string, &inaddr);
-        addr = inaddr.s_addr;
-        
-        globus_free(contact_string);
+            GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
+            &cs);
     }
-    
-    host[0] = ((unsigned char *) &addr)[0];
-    host[1] = ((unsigned char *) &addr)[1];
-    host[2] = ((unsigned char *) &addr)[2];
-    host[3] = ((unsigned char *) &addr)[3];
-    
-    return GLOBUS_SUCCESS;
-
-error_ipv6:
-error_server_cntl:
-error_cntl:
-    return result;
-}
-
-globus_result_t
-globus_io_tcp_get_remote_address(
-    globus_io_handle_t *                handle,
-    int *                               host,
-    unsigned short *                    port)
-{
-    uint32_t                            addr;
-    globus_sockaddr_t                   sock_addr;
-    globus_result_t                     result;
-    GlobusIOName(globus_io_tcp_get_remote_address);
-    
-    GlobusLIOCheckNullParam(host);
-    GlobusLIOCheckNullParam(port);
-    GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
-    
-    result = globus_xio_handle_cntl(
-        (*handle)->xio_handle,
-        globus_l_io_tcp_driver,
-        GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS,
-        &sock_addr);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_cntl;
     }
     
-    if(((struct sockaddr *) &sock_addr)->sa_family != PF_INET)
+    if(*cs == '[')
     {
         /* interface doesnt support ipv6 addresses */
         result = globus_error_put(
@@ -2330,17 +2180,71 @@ globus_io_tcp_get_remote_address(
         goto error_ipv6;
     }
     
-    *port = ntohs(((struct sockaddr_in *) &sock_addr)->sin_port);
-    addr = ((struct sockaddr_in *) &sock_addr)->sin_addr.s_addr;
-        
-    host[0] = ((unsigned char *) &addr)[0];
-    host[1] = ((unsigned char *) &addr)[1];
-    host[2] = ((unsigned char *) &addr)[2];
-    host[3] = ((unsigned char *) &addr)[3];
+    sscanf(cs, "%d.%d.%d.%d:%hu", &host[0], &host[1], &host[2], &host[3], port);
     
     return GLOBUS_SUCCESS;
 
 error_ipv6:
+    globus_free(cs);
+    
+error_cntl:
+    return result;
+}
+
+globus_result_t
+globus_io_tcp_get_remote_address(
+    globus_io_handle_t *                handle,
+    int *                               host,
+    unsigned short *                    port)
+{
+    globus_result_t                     result;
+    char *                              cs;
+    GlobusIOName(globus_io_tcp_get_local_address);
+    
+    GlobusLIOCheckNullParam(host);
+    GlobusLIOCheckNullParam(port);
+    GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
+    
+    if((*handle)->xio_handle)
+    {
+        result = globus_xio_handle_cntl(
+            (*handle)->xio_handle,
+            globus_l_io_tcp_driver,
+            GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+            &cs);
+    }
+    else
+    {
+        result = globus_xio_server_cntl(
+            (*handle)->xio_server,
+            globus_l_io_tcp_driver,
+            GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+            &cs);
+    }
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_cntl;
+    }
+    
+    if(*cs == '[')
+    {
+        /* interface doesnt support ipv6 addresses */
+        result = globus_error_put(
+            globus_io_error_construct_internal_error(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            (char *) _io_name));
+            
+        goto error_ipv6;
+    }
+    
+    sscanf(cs, "%d.%d.%d.%d:%hu", &host[0], &host[1], &host[2], &host[3], port);
+    
+    return GLOBUS_SUCCESS;
+
+error_ipv6:
+    globus_free(cs);
+    
 error_cntl:
     return result;
 }
