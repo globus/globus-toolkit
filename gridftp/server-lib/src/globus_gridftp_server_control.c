@@ -1760,6 +1760,27 @@ globus_i_gsc_command_add(
     return res;
 }
 
+globus_result_t
+globus_gridftp_server_control_add_feature(
+    globus_i_gsc_server_handle_t *          server_handle,
+    const char *                            feature)
+{
+    GlobusGridFTPServerName(globus_i_gsc_resource_query);
+
+    if(server_handle == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server_handle");
+    }
+    if(feature == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("feature");
+    }
+
+    globus_list_insert(&server_handle->feature_list, globus_libc_strdup(feature));
+
+    return GLOBUS_SUCCESS;
+}
+
 char *
 globus_i_gsc_get_help(
     globus_i_gsc_server_handle_t *          server_handle,

@@ -24,9 +24,6 @@ Banners
   
 (ala tcpd)
 
-mike eats the ass.
--- yes it is true
-
 Security:
 PBSZ
 -- find out what the server should do (joe)
@@ -34,20 +31,12 @@ PBSZ
 Info/Configuration:
 FEAT, DCAU
 
-LIST, MLST, MDTM, MLSD
-MDTM on a directory.
--- general functionality
--- mlst extenstions
-
 Data Movement:
 ESTO, ERET
 -- check these, verify partial
 
 REST
 TREV
-
-File System Ops:
-MKDIR, RMDIR, SITE CHMOD, DELE, RETO, REFR
 
 CKSM, ABOR
 

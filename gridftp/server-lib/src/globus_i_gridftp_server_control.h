@@ -406,6 +406,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_fifo_t                           data_q;
 
     globus_result_t                         cached_res;
+    globus_list_t *                         feature_list;
 
     char *                                  mlsx_fact_str;
     /* 
@@ -536,6 +537,12 @@ globus_i_gsc_list_line(
 
 char *
 globus_i_gsc_nlst_line(
+    globus_gridftp_server_control_stat_t *  stat_info,
+    int                                     stat_count);
+
+char *
+globus_i_gsc_mlsx_line(
+    globus_i_gsc_server_handle_t *          server_handle,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count);
 

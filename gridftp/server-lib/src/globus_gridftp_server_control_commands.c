@@ -710,6 +710,35 @@ globus_l_gsc_cmd_syst(
     globus_i_gsc_command_panic(op);
 }
 
+static void
+globus_l_gsc_cmd_feat(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  msg;
+    char *                                  tmp_ptr;
+    globus_list_t *                         list;
+
+    msg = globus_libc_strdup("211-Extensions supported\r\n");
+    for(list = op->server_handle->feature_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        tmp_ptr = globus_common_create_string("%s %s\r\n", msg,
+            (char *)globus_list_first(list));
+        globus_free(msg);
+        msg = tmp_ptr;
+    }
+    tmp_ptr = globus_common_create_string("%s211 End.\r\n", msg);
+    globus_free(msg);
+
+    globus_i_gsc_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
+}
+
 /*
  *  help
  */
@@ -1930,6 +1959,16 @@ globus_i_gsc_add_commands(
 
     globus_i_gsc_command_add(
         server_handle,
+        "FEAT", 
+        globus_l_gsc_cmd_feat,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        1,
+        "214 Syntax: FEAT\r\n",
+        NULL);
+
+    globus_i_gsc_command_add(
+        server_handle,
         "HELP", 
         globus_l_gsc_cmd_help,
         GLOBUS_GSC_COMMAND_PRE_AUTH | 
@@ -2195,4 +2234,7 @@ globus_i_gsc_add_commands(
         2,
         "214 Syntax: USER <sp> username\r\n",
         NULL);
+
+    /* add features */
+    globus_gridftp_server_control_add_feature(server_handle, "MDTM");
 }
