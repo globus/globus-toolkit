@@ -1,19 +1,21 @@
-/******************************************************************************
-globus_gass_transfer.c
- 
-Description:
-    This module implements the GASS transfer module descriptor
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gass_transfer.c GASS transfer module descriptor
+ *
+ * This module implements the GASS transfer module descriptor
+ *
+ * CVS Information:
+ *
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+#endif
 
 #include "globus_i_gass_transfer.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 globus_hashtable_t globus_i_gass_transfer_protocols;
 globus_handle_table_t globus_i_gass_transfer_request_handles;
 globus_handle_table_t globus_i_gass_transfer_listener_handles;
@@ -208,3 +210,4 @@ globus_l_gass_transfer_listener_close_callback(
 {
     return;
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

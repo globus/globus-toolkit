@@ -8,6 +8,7 @@
 
 THIS_DIR        = FileAccess/gass/libraries/transfer
 LIB_BASENAME    = globus_gass_transfer
+DOXYGEN_BASENAME=@lac_doxygen_output_tagfile@
 
 SHARED_OBJS = \
 		globus_gass_transfer.$(OFILE) \

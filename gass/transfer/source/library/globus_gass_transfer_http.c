@@ -1,17 +1,17 @@
-/******************************************************************************
-globus_gass_transfer_http.c
-
-Description:
-    This module implements the http and https URL schemes for the GASS transfer
-    library
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gass_transfer_http.c http/https Protocol Module Implementation
+ *
+ * This module implements the http and https URL schemes for the GASS transfer
+ * library
+ *
+ * CVS Information:
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+#endif
 
 #include "globus_i_gass_transfer.h"
 #include "globus_l_gass_transfer_http.h"
@@ -22,6 +22,7 @@ CVS Information:
 #include <string.h>
 #include <strings.h>
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /*
 #define DEBUG_GASS_TRANSFER
 */
@@ -6166,4 +6167,5 @@ globus_l_gass_transfer_http_callback_denied(
 
     return GLOBUS_TRUE;
 }
-#endif
+#endif /* !GLOBUS_GASS_TRANSFER_HTTP_PARSER_TEST */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

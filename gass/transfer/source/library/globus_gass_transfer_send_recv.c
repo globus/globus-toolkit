@@ -1,23 +1,27 @@
-/******************************************************************************
-globus_gass_transfer_send_recv.c
- 
-Description:
-    This module implements the send and receive functionality of the
-    GASS transfer library
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ *
+ * @file globus_gass_transfer_send_recv.c Send/Receive Data
+ *
+ * This module implements the send and receive functionality of the
+ * GASS transfer library.
+ *  
+ * CVS Information: 
+ *
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+#endif
 
 #include "globus_i_gass_transfer.h"
 
-/******************************************************************************
-                           Module Specific Prototypes                        
- *****************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @name Module Specific Functions
+ */
+/* @{ */
 static
 int
 globus_l_gass_transfer_state_check(
@@ -34,14 +38,62 @@ globus_bool_t
 globus_l_gass_transfer_drain_callbacks(
     globus_abstime_t *                          time_stop,
     void *					arg);
-/*
- * Function: globus_gass_transfer_send_bytes()
- * 
- * Description: Send a byte array to the server or client of this request.
- * 
- * Parameters: 
- * 
- * Returns: 
+/* @} */
+#endif
+
+/**
+ * Send a byte array associated with a request handle.
+ * @ingroup globus_gass_transfer_data
+ *
+ * This function sends a block of data to a server or client as
+ * part of the processing for a request. Multiple data blocks may be
+ * registered with the GASS transfer library at once.
+ *
+ * When processing a server request, this function may only be used in
+ * conjunction with "get" requests. The user must call
+ * globus_gass_transfer_authorize() before calling this function.
+ *
+ * When processing a client request, this function may only be used in
+ * conjunction with "put" or "append" requests. This function may not
+ * be called before either the callback function has been invoked, or the
+ * blocking globus_gass_tranfser_put() or globus_gass_transfer_append()
+ * function has returned.
+ *
+ * @param request
+ *        The request handle with which this block of bytes is associated.
+ * @param bytes
+ *        A user-supplied buffer containing the data associated with the
+ *        request.
+ * @param send_length
+ *        The lenght of the @a bytes array.
+ * @param last_data
+ *        A flag to indicate whether this is the final block of data
+ *        for the request. If this is true, then the @a callback
+ *        function will be delayed until the server acknowledges that
+ *        the file has been completely received.
+ * @param callback
+ *        Function to call once the @a bytes array has been sent.
+ * @param user_arg
+ *        Argument to be passed to the @a callback function.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The @a bytes array was successfully registered with the GASS
+ *         transfer library. The @a callback function will be invoked once
+ *         it has been sent.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a bytes or @a callback parameter was NULL.
+ * @retval GLOBUS_GASS_ERROR_INVALID_USER
+ *         The @a request was invalid, or it is not one on which bytes
+ *         can be sent.
+ * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ *         The callback to a non-blocking file request has not been invoked
+ *         yet, a blocking file request has not returned, or the request has
+ *         not yet been authorized.
+ * @retval GLOBUS_GASS_ERROR_REQUEST_FAILED
+ *         The @a request has failed by either the client, server, or protocol
+ *         module implementation.
+ * @retval GLOBUS_GASS_ERROR_DONE
+ *         The @a request has already been completed.
  */
 int
 globus_gass_transfer_send_bytes(
@@ -161,6 +213,60 @@ globus_gass_transfer_send_bytes(
 }
 /* globus_gass_transfer_send_bytes() */
 
+/**
+ * Receive a byte array associated with a request handle.
+ * @ingroup globus_gass_transfer_data
+ *
+ * This function receives a block of data from a server or client as
+ * part of the processing for a request. Multiple data blocks may be
+ * registered with the GASS transfer library at once.
+ *
+ * When processing a server request, this function may only be used in
+ * conjunction with "put" or "append" requests. The user must call
+ * globus_gass_transfer_authorize() before calling this function.
+ *
+ * When processing a client request, this function may only be used in
+ * conjunction with "get" requests. This function may not
+ * be called before either the callback function has been invoked, or the
+ * blocking globus_gass_tranfser_put() or globus_gass_transfer_append()
+ * function has returned.
+ *
+ * @param request
+ *        The request handle with which this block of bytes is associated.
+ * @param bytes
+ *        A user-supplied buffer containing the data associated with the
+ *        request.
+ * @param max_length
+ *        The lenght of the @a bytes array.
+ * @param wait_for_length
+ *        The minimum amount of data to wait for before invoking the @a
+ *        callback function. A partial byte array of at least this amount
+ *        will be returned in the callback, unless end-of-file is reached
+ *        before this amount.
+ * @param callback
+ *        Function to call once the @a bytes array has been received.
+ * @param user_arg
+ *        Argument to be passed to the @a callback function.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The @a bytes array was successfully registered with the GASS
+ *         transfer library. The @a callback function will be invoked once
+ *         it has been received.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a bytes or @a callback parameter was NULL.
+ * @retval GLOBUS_GASS_ERROR_INVALID_USER
+ *         The @a request was invalid, or it is not one on which bytes
+ *         can be sent.
+ * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ *         The callback to a non-blocking file request has not been invoked
+ *         yet, a blocking file request has not returned, or the request has
+ *         not yet been authorized.
+ * @retval GLOBUS_GASS_ERROR_REQUEST_FAILED
+ *         The @a request has failed by either the client, server, or protocol
+ *         module implementation.
+ * @retval GLOBUS_GASS_ERROR_DONE
+ *         The @a request has already been completed.
+ */
 int
 globus_gass_transfer_receive_bytes(
     globus_gass_transfer_request_t		request,
@@ -263,6 +369,54 @@ globus_gass_transfer_receive_bytes(
 }
 /* globus_gass_transfer_receive_bytes() */
 
+/*
+ * Function: globus_gass_transfer_fail()
+ * 
+ * Description: User-triggered error. Signal failure to the
+ *              protocol module, and call any oustanding callbacks
+ * 
+ * Parameters: 
+ * 
+ * Returns: 
+ */
+int
+globus_gass_transfer_fail(
+    globus_gass_transfer_request_t		request,
+    globus_gass_transfer_callback_t		callback,
+    void *					callback_arg)
+{
+    globus_gass_transfer_request_struct_t *	req;
+    int						rc = GLOBUS_SUCCESS;
+
+    globus_i_gass_transfer_lock();
+    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
+				     request);
+
+    if(req == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GASS_ERROR_INVALID_USE;
+
+	goto finish;
+    }
+    if(callback == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+
+	goto finish;
+    }
+
+    rc = globus_i_gass_transfer_fail(request,
+				     req,
+				     callback,
+				     callback_arg);
+  finish:
+    globus_i_gass_transfer_unlock();
+    return rc;
+}
+/* globus_gass_transfer_fail() */
+
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 int
 globus_i_gass_transfer_fail(
     globus_gass_transfer_request_t		request,
@@ -346,53 +500,6 @@ globus_i_gass_transfer_fail(
     return rc;
 }
 /* globus_i_gass_transfer_fail() */
-
-/*
- * Function: globus_gass_transfer_fail()
- * 
- * Description: User-triggered error. Signal failure to the
- *              protocol module, and call any oustanding callbacks
- * 
- * Parameters: 
- * 
- * Returns: 
- */
-int
-globus_gass_transfer_fail(
-    globus_gass_transfer_request_t		request,
-    globus_gass_transfer_callback_t		callback,
-    void *					callback_arg)
-{
-    globus_gass_transfer_request_struct_t *	req;
-    int						rc = GLOBUS_SUCCESS;
-
-    globus_i_gass_transfer_lock();
-    req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
-				     request);
-
-    if(req == GLOBUS_NULL)
-    {
-        rc = GLOBUS_GASS_ERROR_INVALID_USE;
-
-	goto finish;
-    }
-    if(callback == GLOBUS_NULL)
-    {
-	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
-
-	goto finish;
-    }
-
-    rc = globus_i_gass_transfer_fail(request,
-				     req,
-				     callback,
-				     callback_arg);
-  finish:
-    globus_i_gass_transfer_unlock();
-    return rc;
-}
-/* globus_gass_transfer_fail() */
-
 
 /*
  * Function: globus_l_gass_transfer_state_check()
@@ -663,3 +770,5 @@ globus_l_gass_transfer_drain_callbacks(
 
     return GLOBUS_TRUE;
 }
+/* globus_l_gass_transfer_drain_callbacks() */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

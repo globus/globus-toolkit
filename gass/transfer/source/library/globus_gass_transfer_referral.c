@@ -1,29 +1,35 @@
-/******************************************************************************
-globus_gass_transfer_referral.c
- 
-Description:
-    This module implements the referral accessors for the GASS transfer library
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gass_transfer_referral.c Referral structure accessors.
+ *
+ * This module implements the referral accessors for the GASS transfer
+ * library
+ *
+ * CVS Information:
+ *
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+#endif
 
 #include "globus_gass_transfer.h"
 
-/* Referral Accessors */
-
-/*
- * Function: globus_gass_referral_get_count()
- * 
- * Description: Get the number of URLs in this referral structure.
- * 
- * Parameters: 
- * 
- * Returns: 
+/**
+ * Get the number of URLs in this referral.
+ * @ingroup globus_gass_transfer_referral
+ *
+ * This function examines the referral to determine if the number of
+ * URLs which are contained in it. Each of these URLs should either
+ * point to another referral, or to a URL containing the equivalent
+ * file as the original URL request which caused this referral.
+ *
+ * @param referral
+ *        The referral structure to query.
+ *
+ * @return This function returns the number of URL entries in the
+ * referral, or 0, if there are none.
  */
 globus_size_t
 globus_gass_transfer_referral_get_count(
@@ -40,14 +46,25 @@ globus_gass_transfer_referral_get_count(
 }
 /* globus_gass_transfer_referral_get_count() */
 
-/*
- * Function: globus_gass_referral_get_url()
- * 
- * Description: Get the indexth url from a referral
- * 
- * Parameters: 
- * 
- * Returns: 
+/**
+ * Get a URL string from a referral.
+ * @ingroup globus_gass_transfer_referral
+ *
+ * This function examines the referral to retrieve a URL string from
+ * it. A valid referal will contain one or more strings. They are
+ * indexed from 0 to the value returned by
+ * globus_gass_transfer_referral_get_count() - 1.
+ *
+ * The string returned by this function must not be freed by the caller.
+ * It will remain valid until the referral structure is destroyed.
+ *
+ * @param referral
+ *        The referral structure to query.
+ *
+ * @param index
+ *        The URL to extract from the referral.
+ * @return This function returns a string pointer containing the URL,
+ * or NULL if the index or referral were invalid.
  */
 char *
 globus_gass_transfer_referral_get_url(
@@ -70,14 +87,24 @@ globus_gass_transfer_referral_get_url(
 }
 /* globus_gass_transfer_referral_get_url() */
 
-/*
- * Function: globus_gass_referral_destroy()
- * 
- * Description: Free up any memory associated with an URL referral.
- * 
- * Parameters: 
- * 
- * Returns: 
+/**
+ * Free all memory used by a referral.
+ * @ingroup globus_gass_transfer_referral
+ *
+ * This function frees all memory used by this referral. After
+ * calling this function, the strings returned by calling
+ * globus_gass_transfer_referral_get_url() must not be accessed.
+ * Any further attempts to extract informatoin from this referral
+ * will fail.
+ *
+ * @param referral
+ *        The referral to destroy.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The referral was successfully destroyed.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The referral parameter was GLOBUS_NULL. It could not be
+ *         destroyed.
  */
 int
 globus_gass_transfer_referral_destroy(

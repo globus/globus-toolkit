@@ -1,16 +1,17 @@
-/******************************************************************************
-globus_i_gass_transfer.h
- 
-Description:
-    This header defines the internal interface of the GASS transfer library
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_i_gass_transfer.h
+ *
+ * This header defines the internal interface of the GASS transfer library
+ *
+ * CVS Information:
+ *
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+
 #ifndef GLOBUS_GASS_INCLUDE_GLOBUS_I_GASS_TRANSFER_H
 #define GLOBUS_GASS_INCLUDE_GLOBUS_I_GASS_TRANSFER_H
 
@@ -212,3 +213,4 @@ globus_i_gass_transfer_deactivate_callback(
 EXTERN_C_END
 
 #endif /* GLOBUS_GASS_INCLUDE_GLOBUS_I_GASS_TRANSFER_H */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

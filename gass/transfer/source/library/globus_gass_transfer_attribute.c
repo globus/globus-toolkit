@@ -1,26 +1,23 @@
-/******************************************************************************
-globus_gass_transfer_server.c
- 
-Description:
-    This module implements the globus gass request and transfer attribute
-    accessors
- 
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gass_transfer_server.c Request and Listener Attributes
+ *
+ * This module implements the globus gass request and transfer attribute
+ * accessors
+ *
+ * CVS Information:
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+#endif
 
 #include "globus_i_gass_transfer.h"
 #include <string.h>
 
-/*****************************************************************************
-			     Module-Specific Types
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* Request Attribute Object Instance Data Types */
-
 typedef struct
 {
     char *				proxy_url;
@@ -50,9 +47,7 @@ typedef struct
     unsigned short				port;
 } globus_gass_object_type_listenerattr_instance_t;
 
-/*****************************************************************************
-			  Module-Specific Prototypes
-******************************************************************************/
+/* Module-Specific Prototypes */
 static
 void
 globus_l_gass_requestattr_copy(
@@ -96,9 +91,9 @@ static
 void
 globus_l_gass_listenerattr_destroy(
     void *				data);
-/*****************************************************************************
-			   Object Type Declarations
-******************************************************************************/
+#endif
+
+/* Object Type Declarations */
 const globus_object_type_t
 GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR_DEFINITION =
 globus_object_type_static_initializer(
@@ -131,13 +126,21 @@ globus_object_type_static_initializer(
     globus_l_gass_listenerattr_destroy,
     GLOBUS_NULL /* class data */);
 
-/*****************************************************************************
-				 API Functions
-******************************************************************************/
+/* API Functions */
 
-/*
- * used to implement protocol-module specific attributes that inherit from
- * this one
+/**
+ * Initialize a base request attribute.
+ * @ingroup globus_gass_transfer_requestattr_implementation
+ *
+ * @param obj
+ * @param proxy_url
+ * @param block_size
+ * @param file_mode
+ * @param connection_reuse
+ *
+ * @return Returns the @a obj pointer if the object inherited from the
+ *         @a GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR type and the attribute
+ *         could be initialized; GLOBUS_NULL otherwise.
  */
 globus_object_t *
 globus_gass_transfer_requestattr_initialize(
@@ -181,6 +184,26 @@ globus_gass_transfer_requestattr_initialize(
 }
 /* globus_gass_transfer_requestattr_initialize() */
 
+/**
+ * Initialize a request attribute.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This function initializes the @a attr to contain a new protocol-specific
+ * request attribute.
+ *
+ * @param attr
+ *        The attribute set to be initialized.
+ * @param url_scheme
+ *        The scheme which which the attribute will be used for.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully initialized.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         Either @a attr or @a url_scheme was GLOBUS_NULL.
+ * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ *         No protocol module currently registered with GASS Transfer
+ *         Library handles URLs with the specified @a url_scheme.
+ */
 int
 globus_gass_transfer_requestattr_init(
     globus_gass_transfer_requestattr_t *	attr,
@@ -215,6 +238,20 @@ globus_gass_transfer_requestattr_init(
 }
 /* globus_gass_transfer_requestattr_init() */
 
+/**
+ * Destroy a request attribute.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This function destroys the attribute set specified in @a attr.
+ *
+ * @param attr
+ *        The attribute set to be destroyed.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully destroyed.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_destroy(
     globus_gass_transfer_requestattr_t *	attr)
@@ -234,6 +271,30 @@ globus_gass_transfer_requestattr_destroy(
     }
 }
 /* globus_gass_transfer_requestattr_destroy() */
+
+/**
+ * @name Proxy Server 
+ */
+/* @{ */
+/**
+ * Set/Get the proxy server attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to use a proxy server to handle a 
+ * URL request.
+ *
+ * @param attr
+ *        The attribute set to be modified
+ * @param proxy_url
+ *        The new value of the proxy_url attribute. This may be GLOBUS_NULL
+ *        if no proxy is to be used to access URLs with this attribute
+ *        set.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_proxy_url(
     globus_gass_transfer_requestattr_t *	attr,
@@ -300,7 +361,31 @@ globus_gass_transfer_requestattr_get_proxy_url(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_proxy_url() */
+/* @} */
 
+/**
+ * @name Block Size
+ */
+/* @{ */
+
+/**
+ * Set/Get the block size attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to suggest a preferred block size of
+ * a server to handle a URL request.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param block_size
+ *        The data block size that should be used to process requests
+ *        with this attribute set.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_block_size(
     globus_gass_transfer_requestattr_t *	attr,
@@ -357,7 +442,29 @@ globus_gass_transfer_requestattr_get_block_size(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_block_size() */
+/* @} */
 
+/**
+ * @name File Mode
+ */
+/* @{ */
+/**
+ * Set/Get the file mode attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to control whether the file will be
+ * transferred in ASCII or binary file mode.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param file_mode
+ *        The value of the file mode attribute.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_file_mode(
     globus_gass_transfer_requestattr_t *	attr,
@@ -413,7 +520,30 @@ globus_gass_transfer_requestattr_get_file_mode(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_file_mode() */
+/* @} */
 
+/**
+ * @name Connection Reuse
+ */
+/* @{ */
+/**
+ * Set/Get the connection reuse attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to control whether the connection
+ * associated with a GASS Transfer request should be reused after the
+ * file transfer has completed.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param connection_reuse
+ *        The value of the connection reuse attribute.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_connection_reuse(
     globus_gass_transfer_requestattr_t *	attr,
@@ -469,8 +599,25 @@ globus_gass_transfer_requestattr_get_connection_reuse(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_connection_reuse() */
+/* @} */
 
-/* Socket Attribute Accessors */
+/**
+ * Initialize a socket request attribute.
+ * @ingroup globus_gass_transfer_requestattr_implementation
+ *
+ * @param obj
+ * @param proxy_url
+ * @param block_size
+ * @param file_mode
+ * @param connection_reuse
+ * @param sndbuf
+ * @param rcvbuf
+ * @param nodelay
+ *
+ * @return Returns the @a obj pointer if the object inherited from the
+ *         @a GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR type and the
+ *         attribute could be initialized; GLOBUS_NULL otherwise.
+ */
 globus_object_t *
 globus_gass_transfer_socket_requestattr_initialize(
     globus_object_t *				obj,
@@ -512,6 +659,29 @@ globus_gass_transfer_socket_requestattr_initialize(
 	connection_reuse);
 }
 /* globus_gass_transfer_socket_requestattr_initialize() */
+
+/**
+ * @name Socket Send Buffer Size
+ * */
+/* @{ */
+/**
+ * Set/Get the send buffer size attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to control the socket send buffer
+ * associated with a GASS Transfer request should be reused after the
+ * file transfer has completed.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param sndbuf
+ *        The value of the socket buffer.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_socket_sndbuf(
     globus_gass_transfer_requestattr_t *	attr,
@@ -567,7 +737,30 @@ globus_gass_transfer_requestattr_get_socket_sndbuf(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_socket_sndbuf() */
+/* @} */
 
+/**
+ * @name Receive Socket Buffer
+ * */
+/* @{ */
+/**
+ * Set/Get the receive buffer size attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to control the socket receive buffer
+ * associated with a GASS Transfer request should be reused after the
+ * file transfer has completed.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param rcvbuf
+ *        The value of the socket buffer.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_socket_rcvbuf(
     globus_gass_transfer_requestattr_t *	attr,
@@ -623,7 +816,30 @@ globus_gass_transfer_requestattr_get_socket_rcvbuf(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_socket_rcvbuf() */
+/* @} */
 
+/**
+ * @name TCP Nodelay
+ */
+/* @{ */
+/**
+ * Set/Get the TCP nodelay attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to control the socket receive buffer
+ * associated with a GASS Transfer request should be reused after the
+ * file transfer has completed.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param nodelay
+ *        The value of the nodelay attribute.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_requestattr_set_socket_nodelay(
     globus_gass_transfer_requestattr_t *	attr,
@@ -679,8 +895,27 @@ globus_gass_transfer_requestattr_get_socket_nodelay(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_requestattr_get_socket_nodelay() */
+/* @} */
 
-/* Security attribute accessors */
+/**
+ * Initialize a secure request attribute.
+ * @ingroup globus_gass_transfer_requestattr_implementation
+ *
+ * @param obj
+ * @param proxy_url
+ * @param block_size
+ * @param file_mode
+ * @param connection_reuse
+ * @param sndbuf
+ * @param rcvbuf
+ * @param nodelay
+ * @param authorization
+ * @param subject
+ *
+ * @return Returns the @a obj pointer if the object inherited from the
+ *         @a GLOBUS_GASS_OBJECT_TYPE_SECURE_REQUESTATTR type and the
+ *         attribute could be initialized; GLOBUS_NULL otherwise.
+ */
 globus_object_t *
 globus_gass_transfer_secure_requestattr_initialize(
     globus_object_t *				obj,
@@ -727,6 +962,30 @@ globus_gass_transfer_secure_requestattr_initialize(
 }
 /* globus_gass_transfer_secure_requestattr_initialize() */
 
+/**
+ * @name Authorization
+ */
+/* @{ */
+/**
+ * Set/Get the authorization attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_requestattr
+ *
+ * This attribute allows the user to control what type of authorization
+ * should be done when GASS Transfer requests are processed.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param mode
+ *        The authorization mode to use.
+ * @param subject
+ *        The subject name of the authorized subject, if @a mode is
+ *        GLOBUS_GASS_TRANSFER_AUTHORIZE_SUBJECT
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_secure_requestattr_set_authorization(
     globus_gass_transfer_requestattr_t *	attr,
@@ -798,8 +1057,20 @@ globus_gass_transfer_secure_requestattr_get_authorization(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_secure_requestattr_get_authorization() */
+/* @} */
 
-/* Base Listener Attributes */
+/**
+ * Initialize a base listener attribute.
+ * @ingroup globus_gass_transfer_requestattr_implementation
+ *
+ * @param obj
+ * @param backlog
+ * @param port
+ *
+ * @return Returns the @a obj pointer if the object inherited from the
+ *         @a GLOBUS_GASS_OBJECT_TYPE_LISTENERTATTR type and the
+ *         attribute could be initialized; GLOBUS_NULL otherwise.
+ */
 globus_object_t *
 globus_gass_transfer_listenerattr_initialize(
     globus_object_t *				obj,
@@ -830,6 +1101,26 @@ globus_gass_transfer_listenerattr_initialize(
 }
 /* globus_gass_transfer_listenerattr_initialize() */
 
+/**
+ * Initialize a listener attribute.
+ * @ingroup globus_gass_transfer_listenerattr
+ *
+ * This function initializes the @a attr to contain a new protocol-specific
+ * listener attribute.
+ *
+ * @param attr
+ *        The attribute set to be initialized.
+ * @param url_scheme
+ *        The scheme which which the attribute will be used for.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully initialized.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         Either @a attr or @a url_scheme was GLOBUS_NULL.
+ * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ *         No protocol module currently registered with GASS Transfer
+ *         Library handles URLs with the specified @a url_scheme.
+ */
 int
 globus_gass_transfer_listenerattr_init(
     globus_gass_transfer_listenerattr_t *	attr,
@@ -863,6 +1154,27 @@ globus_gass_transfer_listenerattr_init(
 }
 /* globus_gass_transfer_listenerattr_init() */
 
+/** 
+ * @name Listener Backlog
+ */
+/* @{ */
+/**
+ * Set/Get the backlog attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_listenerattr
+ *
+ * This attribute allows the user to control then number of pending
+ * connections which may exist for this listener.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param backlog
+ *        The number of outstanding connections to allow.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_listenerattr_set_backlog(
     globus_gass_transfer_listenerattr_t *	attr,
@@ -918,7 +1230,29 @@ globus_gass_transfer_listenerattr_get_backlog(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_listenerattr_get_backlog() */
+/* @} */
 
+/**
+ * @name Listener Port
+ */
+/* @{ */
+/**
+ * Set/Get the port attribute for a GASS transfer attribute set.
+ * @ingroup globus_gass_transfer_listenerattr
+ *
+ * This attribute allows the user to set the port to be used by
+ * a GASS Transfer listener.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param port
+ *        The TCP or UDP port number to use.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The attribute was succesfully updated.
+ * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ *         The @a attr was GLOBUS_NULL.
+ */
 int
 globus_gass_transfer_listenerattr_set_port(
     globus_gass_transfer_listenerattr_t *	attr,
@@ -974,11 +1308,11 @@ globus_gass_transfer_listenerattr_get_port(
     return GLOBUS_SUCCESS;
 }
 /* globus_gass_transfer_listenerattr_get_port() */
+/* @} */
 
 
-/******************************************************************************
-			   Module-Specific Functions
-******************************************************************************/
+/* Module-Specific Functions */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 void
 globus_l_gass_requestattr_copy(
@@ -1166,3 +1500,4 @@ globus_l_gass_listenerattr_destroy(
     globus_free(data);
 }
 /* globus_l_gass_listenerattr_destroy() */
+#endif /* !GLOBUS_DONT_DOCUMENT_INTERNAL */
