@@ -1,4 +1,5 @@
 #include "globus_ftp_client.h"
+#include "globus_ftp_client_test_common.h"
 
 static globus_mutex_t                   lock;
 static globus_cond_t                    cond;
@@ -132,11 +133,14 @@ int main(
     				    
         if(result != GLOBUS_SUCCESS)
         {
-            char *                          tmpstr;
+            char *                      tmpstr;
+            globus_object_t *           err;
             
-            tmpstr = globus_object_printable_to_string(
-                globus_error_peek(result));
+            err = globus_error_get(result);
+            
+            tmpstr = globus_object_printable_to_string(err);
             fprintf(stderr, "Error: %s", tmpstr);
+            globus_object_free(err);
             globus_libc_free(tmpstr);
             error = GLOBUS_TRUE;
             done = GLOBUS_TRUE;
