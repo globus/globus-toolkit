@@ -11,15 +11,14 @@ SUBDIRS= \
 Scripts= \
 	TESTS.pl \
 	Utilities.pm \
-	globus_test_check_for_commands.pl \
-	globus_test_check_proxy.pl \
-	globus_test_gram_local.pl \
-	globus_test_gram_remote.pl \
-	globus_test_gridftp_local.pl \
-	globus_test_gridftp_remote.pl \
-	globus_test_mds_local.pl \
-	globus_test_mds_remote.pl \
-	globus_test_setup_environment.pl
+	globus-test-check-for-commands.pl \
+	globus-test-check-proxy.pl \
+	globus-test-gram-local.pl \
+	globus-test-gram-remote.pl \
+	globus-test-gridftp-local.pl \
+	globus-test-gridftp-remote.pl \
+	globus-test-mds-local.pl \
+	globus-test-mds-remote.pl
 
 Data = \
 	dc31a685.0 \

@@ -18,10 +18,8 @@ sub check_proxy {
     my $u = new Utilities();
     $u->announce("Checking for proxy");
 
-#    $u->command("pwd");
-#    $u->command(". env.sh");
     $u->command("grid-proxy-info");
-    my $output = $u->command("grid-proxy-info -timeleft",1,1);
+    my ($rc, $output) = $u->command("grid-proxy-info -timeleft",1);
 
     # report failure if less than 60 seconds of proxy time left
     ($output >= 60) ? $u->report("SUCCESS") : $u->report("FAILURE");

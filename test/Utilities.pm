@@ -111,9 +111,11 @@ sub report {
 #    Passing a '1' in as the second argument will return the output.
 #
 # --------------------------------------------------------------------
-sub command {
+sub command 
+{
     my $self = shift;
-    my ($command, $output, $noerror) = @_;
+    my ($command, $output) = @_;
+    my $rc;
 
     $self->debug("command -> $command");
     $self->debug("return output -> $output");
@@ -130,39 +132,43 @@ sub command {
 
     # run actual command
     # ------------------
-    if ($command =~ /^cd /) {
+    if ($command =~ /^cd /) 
+    {
         $command =~ s/^cd //;
         $command =~ s/ 2>&1$//;
         $command =~ s/ > \/dev\/null$//;
         chdir $command;
     }
-    else {
-        if ($output) {
+    else 
+    {
+        if ($output) 
+        {
             $output = `$command`;
-
+            
             # remove the ending \n for when we return
             chomp $output;
-            if ($output !~ /^$/) {
+
+            if ($output !~ /^$/) 
+            {
                 print $output."\n";
             }
         }
-        else {
+        else 
+        {
             system("$command");
         }
+        
+        $rc = ($? >> 8);
     }
 
-    if ( (!$noerror) and ($? != 0) ) {
-        $self->inform("Your command returned non-zero!");
-        $self->inform("Error: $!");
-        exit(1);
-    }
-
-    if ($output) { 
+    if ($output) 
+    { 
         $self->debug("output -> $output");
-        return $output; 
+        return ($rc, $output); 
     }
-    else { 
-        return; 
+    else 
+    { 
+        return $rc; 
     }
 }
 
@@ -212,7 +218,9 @@ sub command_blocking()
 # --------------------------------------------------------------------
 # Wait for a blocking command
 #
-# - This function is used to wait for blocking commands.
+# - This function is used to wait for blocking commands. It will 
+#   wait at most 5 minutes before killing the process it is trying 
+#   to wait on.
 #
 #   Example call:  ($rc, $output) = wait_command($pid,$fd);
 #
@@ -224,17 +232,37 @@ sub wait_command()
 {
     my $self = shift;
     my ($pid,$fd) = @_;
-    my $rc;
+    my $rc = 0;
+    my $counter = 0;
     my $output;
 
-    $rc = waitpid($pid,0);
-
-    while(<$fd>)
+    while($rc == 0)
     {
-        $output .= $_;
+        # kill after 5 minutes
+        if(counter == 5)
+        {
+            kill(9,$pid);
+        }
+        
+        $rc = waitpid($pid,WNOHANG);
+
+        if($rc == 0)
+        {
+            sleep(60);
+            counter++;
+        }
     }
-   
-    close($fd);
+
+    if($rc != -1)
+    {
+        $rc = $?;
+        while(<$fd>)
+        {
+            $output .= $_;
+        }
+        close($fd);
+    }
+
     
     return ($rc,$output);
 }

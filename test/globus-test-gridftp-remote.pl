@@ -4,31 +4,33 @@
 # globus_test_gridftp_remote
 # ------------------------------------------------------------------------
 
+use POSIX;
 use strict;
 use Utilities;
 
-if ($ENV{'TEST_REMOTE'}) {
+if ($ENV{'TEST_REMOTE'}) 
+{
     test_gridftp_remote();
 }
 
 # ------------------------------------------------------------------------
 # Test GridFTP remote
 # ------------------------------------------------------------------------
-sub test_gridftp_remote {
+sub test_gridftp_remote 
+{
     my $u = new Utilities();
     $u->announce("Testing GridFTP remotely");
 
     my $output;
     my $remote = $u->remote;
     my $hostname = $u->hostname;
+    my $tmpfile = POSIX::tmpnam();
+    my $rc;
 
-#    $u->command(". env.sh");
+    $rc = $u->command("globus-url-copy \\
+        gsiftp://$remote/etc/group \\
+        gsiftp://$hostname$tmpfile");
+    $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
-    $u->command("globus-url-copy \\
-        gsiftp://$remote/etc/termcap \\
-        gsiftp://$hostname/tmp/gridftp.test");
-    $output = $u->command("head /tmp/gridftp.test");
-    $output =~ "^#" ? $u->report("SUCCESS") : $u->report("FAILURE");
-
-    $u->command("rm -f /tmp/gridftp.test");
+    $u->command("rm -f $tmpfile");
 }
