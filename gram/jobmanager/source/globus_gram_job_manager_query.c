@@ -309,7 +309,7 @@ globus_l_gram_job_manager_cancel(
     globus_gram_job_manager_query_t *	query;
     globus_reltime_t			delay;
 
-    query = globus_libc_malloc(sizeof(globus_gram_job_manager_query_t));
+    query = globus_libc_calloc(1, sizeof(globus_gram_job_manager_query_t));
 
     query->type = GLOBUS_GRAM_JOB_MANAGER_CANCEL;
     query->handle = handle;
@@ -509,7 +509,7 @@ globus_l_gram_job_manager_signal(
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	    break;
 	}
-	query = globus_libc_malloc(sizeof(globus_gram_job_manager_query_t));
+	query = globus_libc_calloc(1, sizeof(globus_gram_job_manager_query_t));
 
 	query->type = GLOBUS_GRAM_JOB_MANAGER_SIGNAL;
 	query->handle = handle;
