@@ -25,6 +25,10 @@ directions for building standard GSI package:
 
 http://www.globus.org/security/v1.1/
 
+NOTE that you only need the encryption-enable GSI for building
+myproxy, you can use the myproxy binaries with any recent GSI
+or Globus distribution.
+
 2. Building the myproxy software
 --------------------------------
 
