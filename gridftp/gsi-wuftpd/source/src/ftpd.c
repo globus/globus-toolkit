@@ -4536,6 +4536,7 @@ retrieve(
     if(restart_point)
     {
         tmp_restart = restart_point;
+        if(offset != -1) tmp_restart += offset;
     }
     else if(offset != -1)
     {
