@@ -106,6 +106,14 @@ typedef enum
     GLOBUS_I_IO_TCP_HANDLE  = 2
 } globus_l_io_handle_type_t;
 
+
+typedef struct globus_l_io_delegation_cb_arg_s
+{
+    void *                              user_arg;
+    globus_io_handle_t *                handle;
+    globus_io_delegation_callback_t     callback;
+} globus_l_io_delegation_cb_arg_t;
+
 typedef struct globus_l_io_secure_authorization_data_s
 {
     gss_name_t                                  identity;
@@ -3393,6 +3401,52 @@ globus_io_tcp_get_delegated_credential(
         cred);
 }
 
+static
+void 
+globus_l_io_init_delegation_cb(
+    globus_result_t			result,
+    void *				user_arg)
+{
+    globus_l_io_delegation_cb_arg_t *   wrapper;
+    GlobusIOName(globus_l_io_init_delegation_cb);
+
+    wrapper = user_arg;
+
+    wrapper->callback(wrapper->user_arg,
+                      wrapper->handle,
+                      result,
+                      GSS_C_NO_CREDENTIAL,
+                      0);
+
+    free(wrapper);
+
+    return;
+}
+
+static
+void 
+globus_l_io_accept_delegation_cb(
+    globus_result_t			result,
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec,
+    void *				user_arg)
+{
+    globus_l_io_delegation_cb_arg_t *   wrapper;
+    GlobusIOName(globus_l_io_accept_delegation_cb);
+    wrapper = user_arg;
+
+    wrapper->callback(wrapper->user_arg,
+                      wrapper->handle,
+                      result,
+                      delegated_cred,
+                      time_rec);
+
+    free(wrapper);
+
+    return;
+}
+
+
 globus_result_t
 globus_io_register_init_delegation(
     globus_io_handle_t *                handle,
@@ -3403,8 +3457,41 @@ globus_io_register_init_delegation(
     globus_io_delegation_callback_t     callback,
     void *                              callback_arg)
 {
+    globus_result_t                     result;
+    globus_l_io_handle_t *              ihandle;
+    globus_l_io_delegation_cb_arg_t *   wrapper;
     GlobusIOName(globus_io_register_init_delegation);
-    return GLOBUS_SUCCESS;
+
+    ihandle = *handle;
+
+    result = GlobusLIOMalloc(wrapper, globus_l_io_delegation_cb_arg_t);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    wrapper->handle = handle;
+    wrapper->user_arg = callback_arg;
+    wrapper->callback = callback;
+    
+    result = globus_xio_handle_cntl(
+        ihandle->xio_handle,
+        globus_l_io_gsi_driver,
+        GLOBUS_XIO_GSI_REGISTER_INIT_DELEGATION,
+        cred_handle,
+        restriction_oids,
+        restriction_buffers,
+        time_req,
+        globus_l_io_init_delegation_cb,
+        wrapper);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        free(wrapper);
+    }
+    
+    return result;
 }
 
 globus_result_t
@@ -3415,8 +3502,22 @@ globus_io_init_delegation(
     const gss_buffer_set_t              restriction_buffers,
     OM_uint32                           time_req)
 {
+    globus_result_t                     result;
+    globus_l_io_handle_t *              ihandle;    
     GlobusIOName(globus_io_init_delegation);
-    return GLOBUS_SUCCESS;
+
+    ihandle = *handle;
+    
+    result = globus_xio_handle_cntl(
+        ihandle->xio_handle,
+        globus_l_io_gsi_driver,
+        GLOBUS_XIO_GSI_INIT_DELEGATION,
+        cred_handle,
+        restriction_oids,
+        restriction_buffers,
+        time_req);    
+    
+    return result;
 }
 
 globus_result_t
@@ -3428,8 +3529,41 @@ globus_io_register_accept_delegation(
     globus_io_delegation_callback_t     callback,
     void *                              callback_arg)
 {
+    globus_result_t                     result;
+    globus_l_io_handle_t *              ihandle;
+    globus_l_io_delegation_cb_arg_t *   wrapper;
     GlobusIOName(globus_io_register_accept_delegation);
-    return GLOBUS_SUCCESS;
+
+
+    ihandle = *handle;
+
+    result = GlobusLIOMalloc(wrapper, globus_l_io_delegation_cb_arg_t);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    wrapper->handle = handle;
+    wrapper->user_arg = callback_arg;
+    wrapper->callback = callback;
+
+    result = globus_xio_handle_cntl(
+        ihandle->xio_handle,
+        globus_l_io_gsi_driver,
+        GLOBUS_XIO_GSI_REGISTER_ACCEPT_DELEGATION,
+        restriction_oids,
+        restriction_buffers,
+        time_req,
+        globus_l_io_accept_delegation_cb,
+        wrapper);    
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        free(wrapper);
+    }
+
+    return result;
 }
 
 globus_result_t
@@ -3441,8 +3575,24 @@ globus_io_accept_delegation(
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec)
 {
+    globus_result_t                     result;
+    globus_l_io_handle_t *              ihandle;    
     GlobusIOName(globus_io_accept_delegation);
-    return GLOBUS_SUCCESS;
+
+    ihandle = *handle;
+    
+    result = globus_xio_handle_cntl(
+        ihandle->xio_handle,
+        globus_l_io_gsi_driver,
+        GLOBUS_XIO_GSI_ACCEPT_DELEGATION,
+        delegated_cred,
+        restriction_oids,
+        restriction_buffers,
+        time_req,
+        time_rec);
+    
+    return result;
+    
 }
 
 globus_result_t
