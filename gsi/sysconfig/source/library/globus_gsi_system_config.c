@@ -398,8 +398,6 @@ globus_i_gsi_sysconfig_create_key_string(
         GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING);
-        free(*key_string_value);
-        *key_string_value = NULL;
         goto exit;
     }
 
