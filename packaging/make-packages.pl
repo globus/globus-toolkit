@@ -1452,7 +1452,7 @@ for my $bundle ( @bundle_build_list )
 
    print INS "if [ \$? -ne 0 ]; then\n";
    print INS "    echo Error building $bundle\n";
-   print INS "    exit;\n";
+   print INS "    exit 1;\n";
    print INS "fi\n" if ( $bundle eq "globus-rls-server" );
    print INS "fi\n\n";
 }
