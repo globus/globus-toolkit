@@ -319,10 +319,10 @@ globus_scheduler_event_done(
 SEG Modules
 
 In addition to using the SEG API described above, Scheduler-specific SEG
-modules must provide their module descriptor as a global variable called
-"globus_scheduler_event_impl_module". This descriptor will be activated when
-the SEG begins execution and deactivated when the SEG detects its termination
-condition.
+modules must provide a pointer to their module descriptor as a global
+variable called "globus_scheduler_event_module_ptr". This descriptor will be
+activated when the SEG begins execution and deactivated when the SEG detects
+its termination condition.
 
 Scheduler-Specific Considerations
 
@@ -440,10 +440,12 @@ concept of the job id. for a job with count > 1, the "process" will be in
 the range of [0, count-1].
 
 000 - submitted
-001 - started
+001 - job executing
+002 - job not executable
+004 - job evicted (suspended?)
 005 - terminated
 006 - image size updated???
-009 - cancelled by user
+009 - aborted by user
 
 (Don't know what others there are)
 
