@@ -57,6 +57,8 @@ GSS_CALLCONV gss_init_delegation(
     output_token->length = 0;
     time_req = GSS_C_INDEFINITE;
     context = (gss_ctx_id_desc *) context_handle;
+    if (cred_handle == GSS_C_NO_CREDENTIAL)
+	cred_handle = context->cred_handle;
     cred = (gss_cred_id_desc *) cred_handle; 
         
     /* parameter checking goes here */
