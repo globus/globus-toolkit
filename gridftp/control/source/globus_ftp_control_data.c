@@ -439,11 +439,13 @@ globus_l_ftp_control_data_register_connect(
     globus_ftp_control_data_connect_callback_t  callback,
     void *                                      user_arg);
 
+static
 void
 globus_l_ftp_control_data_encode(
     globus_byte_t *                             buf,
     globus_off_t                                x);
 
+static
 void
 globus_l_ftp_control_data_decode(
     globus_byte_t *                             buf,
@@ -9080,6 +9082,7 @@ globus_l_ftp_eb_eof_eod_callback(
 /*********************************************************************
 *  other functions
 *********************************************************************/
+static
 void
 globus_l_ftp_control_data_encode(
     globus_byte_t *                   buf,
@@ -9092,55 +9095,81 @@ globus_l_ftp_control_data_encode(
 
     ind = 0;
 
-#   if SIZEOF_OFF_T < 8
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 56) & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 8)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 56) & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 7
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 48) & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 7)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 48) & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 6
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 40) & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 6)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 40) & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 5
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 32) & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 5)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 32) & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 4
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 24) & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 4)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 24) & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 3
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 16) & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 3)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 16) & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 2
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x >> 8)  & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 2)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x >> 8)  & 0xff;
+    }
 
-#   if SIZEOF_OFF_T < 1
-    buf[ind++] = 0;
-#   else
-    buf[ind++] = (x)       & 0xff;
-#   endif
+    if(sizeof(globus_off_t) < 1)
+    {
+	buf[ind++] = 0;
+    }
+    else
+    {
+	buf[ind++] = (x)       & 0xff;
+    }
 }
+/* globus_l_ftp_control_data_encode() */
 
+static
 void
 globus_l_ftp_control_data_decode(
     globus_byte_t *                   buf,
@@ -9152,79 +9181,104 @@ globus_l_ftp_control_data_decode(
 
     overflow = GLOBUS_FALSE;
 
-#   if SIZEOF_OFF_T >= 8
-    x += ((globus_off_t) buf[0]) << 56;
-#   else
-    if(buf[0] != 0)
+    if(sizeof(globus_off_t) >= 8)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[0]) << 56;
     }
-#   endif
+    else
+    {
+	if(buf[0] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 7
-    x += ((globus_off_t) buf[1]) << 48;
-#   else
-    if(buf[1] != 0)
+    if(sizeof(globus_off_t) >= 7)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[1]) << 48;
     }
-#   endif
+    else
+    {
+	if(buf[1] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 6
-    x += ((globus_off_t) buf[2]) << 40;
-#   else
-    if(buf[2] != 0)
+    if(sizeof(globus_off_t) >= 6)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[2]) << 40;
     }
-#   endif
+    else
+    {
+	if(buf[2] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 5
-    x += ((globus_off_t) buf[3]) << 32;
-#   else
-    if(buf[3] != 0)
+    if(sizeof(globus_off_t) >= 5)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[3]) << 32;
     }
-#   endif
+    else
+    {
+	if(buf[3] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 4
-    x += ((globus_off_t) buf[4]) << 24;
-#   else
-    if(buf[4] != 0)
+    if(sizeof(globus_off_t) >= 4)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[4]) << 24;
     }
-#   endif
+    else
+    {
+	if(buf[4] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 3
-    x += ((globus_off_t) buf[5]) << 16;
-#   else
-    if(buf[5] != 0)
+    if(sizeof(globus_off_t) >= 3)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[5]) << 16;
     }
-#   endif
+    else
+    {
+	if(buf[5] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 2
-    x += ((globus_off_t) buf[6]) << 8;
-#   else
-    if(buf[6] != 0)
+    if(sizeof(globus_off_t) >= 2)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[6]) << 8;
     }
-#   endif
+    else
+    {
+	if(buf[6] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
 
-#   if SIZEOF_OFF_T >= 1
-    x += ((globus_off_t) buf[7]);
-#   else
-    if(buf[7] != 0)
+    if(sizeof(globus_off_t) >= 1)
     {
-	overflow = GLOBUS_TRUE;
+	x += ((globus_off_t) buf[7]);
     }
-#   endif
+    else
+    {
+	if(buf[7] != 0)
+	{
+	    overflow = GLOBUS_TRUE;
+	}
+    }
     
     /* should do something with overflow? */
 
     *out_size = (globus_off_t)x;
 }
+/* globus_l_ftp_control_data_decode() */
