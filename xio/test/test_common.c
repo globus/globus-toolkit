@@ -78,8 +78,8 @@ parse_parameters(
     globus_size_t                           buffer_length = 2048;
     int                                     read_count = 0; 
     int                                     write_count = 0;
-    int                                     total_write_bytes = 2048 * 100;
-    int                                     total_read_bytes = 2048 * 100;
+    int                                     total_write_bytes = 2048 * 10;
+    int                                     total_read_bytes = 2048 * 10;
     
     globus_l_argc = argc;
     globus_l_argv = argv;

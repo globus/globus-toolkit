@@ -20,6 +20,10 @@ close_barrier_Sources= \
 	test_common.c \
     close_barrier_test.c
 
+read_barrier_Sources= \
+	test_common.c \
+    read_barrier_test.c
+
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
 #
@@ -38,6 +42,7 @@ INCLUDES += $(GPT_INCLUDES)
 # <directory_name>dir
 test_PROGRAMS= \
 	framework_test  \
+    read_barrier_test \
     close_barrier_test
 
 framework_test_SOURCES = $(framework_Sources)
@@ -47,6 +52,10 @@ framework_test_LDADD = $(GPT_PGM_LINKS)
 close_barrier_test_SOURCES = $(close_barrier_Sources)
 close_barrier_test_LDFLAGS = $(GPT_LDFLAGS)
 close_barrier_test_LDADD = $(GPT_PGM_LINKS)
+
+read_barrier_test_SOURCES = $(read_barrier_Sources)
+read_barrier_test_LDFLAGS = $(GPT_LDFLAGS)
+read_barrier_test_LDADD = $(GPT_PGM_LINKS)
 
 
 include $(top_srcdir)/globus_automake_post
