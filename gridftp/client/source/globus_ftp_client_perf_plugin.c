@@ -60,9 +60,6 @@ typedef struct perf_plugin_info_s
 
     globus_bool_t                                   success;
 
-    globus_bool_t                                   first_marker;
-    globus_off_t                                    restart_offset;
-
     /* used for get command or put (when put not in EB mode) only */
     globus_bool_t                                   use_data;
     double                                          last_time;
@@ -170,7 +167,6 @@ perf_plugin_response_cb(
     int                                         stripe_ndx;
     int                                         num_stripes;
     globus_off_t                                nbytes;
-    globus_off_t                                restart_offset;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
@@ -256,25 +252,6 @@ perf_plugin_response_cb(
             return;
         }
 
-        /* add restart offset to stripe 0 only */
-        if(stripe_ndx == 0)
-        {
-            restart_offset = ps->restart_offset;
-            /* dont 'break' zero byte 'start' marker */
-            if(ps->first_marker)
-            {
-                ps->first_marker = GLOBUS_FALSE;
-                if(nbytes == 0)
-                {
-                    restart_offset = 0;
-                }
-            }
-        }
-        else
-        {
-            restart_offset = 0;
-        }
-
         ps->marker_cb(
             ps->user_specific,
             handle,
@@ -282,7 +259,7 @@ perf_plugin_response_cb(
             time_stamp_tenght,
             stripe_ndx,
             num_stripes,
-            nbytes + restart_offset);
+            nbytes);
     }
 }
 
@@ -332,7 +309,7 @@ perf_plugin_data_cb(
                 timebuf.millitm / 100,
                 0,
                 1,
-                ps->nbytes + ps->restart_offset);
+                ps->nbytes);
         }
 
         globus_mutex_unlock(&ps->lock);
@@ -358,31 +335,10 @@ perf_plugin_get_cb(
     globus_bool_t                               restart)
 {
     perf_plugin_info_t *                        ps;
-    globus_ftp_client_restart_marker_t          marker;
-    globus_off_t                                total_bytes;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
     ps->success = GLOBUS_TRUE;
-    ps->first_marker = GLOBUS_TRUE;
-    ps->restart_offset = 0;
-
-    if(restart)
-    {
-        if(globus_ftp_client_plugin_restart_get_marker(handle, &marker)
-            == GLOBUS_SUCCESS)
-        {
-            if(globus_ftp_client_restart_marker_get_total(&marker, &total_bytes)
-                == GLOBUS_SUCCESS)
-            {
-                ps->restart_offset = total_bytes;
-            }
-
-            globus_ftp_client_restart_marker_destroy(&marker);
-        }
-
-        return;
-    }
 
     ps->use_data = GLOBUS_TRUE;
     ps->nbytes = 0;
@@ -394,7 +350,8 @@ perf_plugin_get_cb(
             ps->user_specific,
             handle,
             url,
-            GLOBUS_NULL);
+            GLOBUS_NULL,
+            restart);
     }
 }
 
@@ -420,31 +377,10 @@ perf_plugin_put_cb(
     perf_plugin_info_t *                        ps;
     globus_ftp_control_mode_t                   mode;
     globus_result_t                             result;
-    globus_ftp_client_restart_marker_t          marker;
-    globus_off_t                                total_bytes;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
     ps->success = GLOBUS_TRUE;
-    ps->first_marker = GLOBUS_TRUE;
-    ps->restart_offset = 0;
-
-    if(restart)
-    {
-        if(globus_ftp_client_plugin_restart_get_marker(handle, &marker)
-            == GLOBUS_SUCCESS)
-        {
-            if(globus_ftp_client_restart_marker_get_total(&marker, &total_bytes)
-                == GLOBUS_SUCCESS)
-            {
-                ps->restart_offset = total_bytes;
-            }
-
-            globus_ftp_client_restart_marker_destroy(&marker);
-        }
-
-        return;
-    }
 
     result = globus_ftp_client_operationattr_get_mode(attr, &mode);
     if(result == GLOBUS_SUCCESS &&
@@ -465,7 +401,8 @@ perf_plugin_put_cb(
             ps->user_specific,
             handle,
             GLOBUS_NULL,
-            url);
+            url,
+            restart);
     }
 }
 
@@ -491,31 +428,10 @@ perf_plugin_transfer_cb(
     globus_bool_t                               restart)
 {
     perf_plugin_info_t *                        ps;
-    globus_ftp_client_restart_marker_t          marker;
-    globus_off_t                                total_bytes;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
     ps->success = GLOBUS_TRUE;
-    ps->first_marker = GLOBUS_TRUE;
-    ps->restart_offset = 0;
-
-    if(restart)
-    {
-        if(globus_ftp_client_plugin_restart_get_marker(handle, &marker)
-            == GLOBUS_SUCCESS)
-        {
-            if(globus_ftp_client_restart_marker_get_total(&marker, &total_bytes)
-                == GLOBUS_SUCCESS)
-            {
-                ps->restart_offset = total_bytes;
-            }
-
-            globus_ftp_client_restart_marker_destroy(&marker);
-        }
-
-        return;
-    }
     ps->use_data = GLOBUS_FALSE;
 
     if(ps->begin_cb)
@@ -524,7 +440,8 @@ perf_plugin_transfer_cb(
             ps->user_specific,
             handle,
             source_url,
-            dest_url);
+            dest_url,
+            restart);
     }
 }
 

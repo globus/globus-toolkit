@@ -64,6 +64,8 @@ typedef struct throughput_plugin_info_s
 
     int                                         num_stripes;
 
+    globus_off_t                                restart_offset;
+
 } throughput_plugin_info_t;
 
 /**
@@ -81,12 +83,34 @@ throughput_plugin_begin_cb(
     void *                                      user_specific,
     globus_ftp_client_handle_t *                handle,
     const char *                                source_url,
-    const char *                                dest_url)
+    const char *                                dest_url,
+    globus_bool_t                               restart)
 {
     throughput_plugin_info_t *                  info;
     struct timeb                                timebuf;
+    globus_ftp_client_restart_marker_t          marker;
+    globus_off_t                                total_bytes;
 
     info = (throughput_plugin_info_t *) user_specific;
+
+    info->restart_offset = 0;
+
+    if(restart)
+    {
+        if(globus_ftp_client_plugin_restart_get_marker(handle, &marker)
+            == GLOBUS_SUCCESS)
+        {
+            if(globus_ftp_client_restart_marker_get_total(&marker, &total_bytes)
+                == GLOBUS_SUCCESS)
+            {
+                info->restart_offset = total_bytes;
+            }
+
+            globus_ftp_client_restart_marker_destroy(&marker);
+        }
+
+        return;
+    }
 
     if(info->begin_cb)
     {
@@ -127,6 +151,7 @@ throughput_plugin_marker_cb(
     float                                       avg_throughput;
     double                                      time_stamp;
     double                                      elapsed;
+    globus_off_t                                restart_offset;
 
     info = (throughput_plugin_info_t *) user_specific;
 
@@ -233,6 +258,14 @@ throughput_plugin_marker_cb(
     info->prev_bytes[stripe_ndx] = info->cur_bytes[stripe_ndx];
     info->cur_bytes[stripe_ndx] = nbytes;
 
+    /* add stripe 0 gets remainder */
+    restart_offset = info->restart_offset / num_stripes;
+
+    if(stripe_ndx == 0)
+    {
+        restart_offset += info->restart_offset % num_stripes;
+    }
+
     if(info->per_stripe_cb)
     {
         instantaneous_throughput =
@@ -247,7 +280,7 @@ throughput_plugin_marker_cb(
             info->user_specific,
             handle,
             stripe_ndx,
-            nbytes,
+            nbytes + restart_offset,
             instantaneous_throughput,
             avg_throughput);
     }
@@ -283,7 +316,7 @@ throughput_plugin_marker_cb(
         info->total_cb(
             info->user_specific,
             handle,
-            nbytes,
+            nbytes + info->restart_offset,
             instantaneous_throughput,
             avg_throughput);
     }

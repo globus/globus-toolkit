@@ -54,7 +54,10 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
  * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called when a get, put, or third party transfer is
- * started.
+ * started. Note that it is possible for this callback to be made multiple
+ * times before ever receiving the complete callback... this would be the case
+ * if a transfer was restarted.  The 'restart' will indicate whether or not we
+ * have been restarted.
  *
  * @param handle
  *        this the client handle that this transfer will be occurring on
@@ -70,6 +73,9 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
  * @param dest_url
  *        dest of the transfer (GLOBUS_NULL if 'get')
  *
+ * @param restart
+ *        boolean indicating whether this callback is result of a restart
+ *
  * @return
  *        - n/a
  */
@@ -78,7 +84,8 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
     void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
     const char *                                    source_url,
-    const char *                                    dest_url);
+    const char *                                    dest_url,
+    globus_bool_t                                   restart);
 
 /**
  * Performance marker received callback
