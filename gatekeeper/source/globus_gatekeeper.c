@@ -1563,7 +1563,11 @@ static void doit()
 	{
 		minor_status = 0xdee0;
 		major_status = gss_inquire_cred(&minor_status,
-			 delegated_cred_handle, (char *)&delcname, NULL, NULL, NULL);
+						delegated_cred_handle,
+						(gss_name_t *) &delcname,
+						NULL,
+						NULL,
+						NULL);
 		if (major_status == GSS_S_COMPLETE )
 		{
 			if  ( minor_status == 0xdee1 && delcname)
