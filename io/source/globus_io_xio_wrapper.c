@@ -1366,6 +1366,7 @@ globus_l_io_file_open(
     
     ihandle->type = GLOBUS_I_IO_FILE_HANDLE;
     ihandle->io_handle = handle;
+    ihandle->authz_data = GLOBUS_NULL;
     *handle = ihandle;
     
     /* XXX globus_xio_target_destroy(target); */
@@ -1570,6 +1571,7 @@ globus_io_file_posix_convert(
     
     ihandle->type = GLOBUS_I_IO_FILE_HANDLE;
     ihandle->io_handle = handle;
+    ihandle->authz_data = GLOBUS_NULL;
     *handle = ihandle;
     
     /* XXX globus_xio_target_destroy(target); */
