@@ -24,7 +24,6 @@ logging:
 -- verify output format
 -- specify log format by configuration
 -- syslog module for globus_logging
-** produce netlogger output based on perf marker info ( -Z option in wu )
 
 general:
 -- instrument any remaining configuration options and limits

@@ -81,6 +81,7 @@ globus_i_gfs_log_open(void)
     if((logfilename = globus_i_gfs_config_string("log_transfer")) != NULL)
     {
         globus_l_gfs_transfer_log_file = fopen(logfilename, "a"); 
+        setvbuf(globus_l_gfs_transfer_log_file, NULL, _IOLBF, 0);
         if((log_filemode = globus_i_gfs_config_int("log_filemode")) != 0)
         {
             chmod(logfilename, log_filemode);
@@ -139,7 +140,6 @@ globus_i_gfs_log_result(
     globus_free(message);
 }
 
-#if 0
 void
 globus_i_gfs_log_transfer(
     int                                 stripe_count,
@@ -156,17 +156,13 @@ globus_i_gfs_log_transfer(
     char *                              type,
     char *                              username)
 {
-    time_t                                  start_time_time;
-    time_t                                  end_time_time;
-    struct tm *                             tmp_tm_time;
-    struct tm                               start_tm_time;
-    struct tm                               end_tm_time;
-    char                                    out_buf[4096];
-    globus_result_t                         res;
-    int                                     ctr;
-    unsigned int                            tmp_i;
-    long                                     win_size;
-    int                                     opt_dir;
+    time_t                              start_time_time;
+    time_t                              end_time_time;
+    struct tm *                         tmp_tm_time;
+    struct tm                           start_tm_time;
+    struct tm                           end_tm_time;
+    char                                out_buf[4096];
+    long                                win_size;
 
     if(globus_l_gfs_transfer_log_file == NULL)
     {
@@ -191,8 +187,10 @@ globus_i_gfs_log_transfer(
 
     if(tcp_bs == 0)
     {
-        int                            sock;
-        int                            opt_len;
+        win_size = 0;
+/*      int                             sock;
+        int                             opt_len;
+        int                             opt_dir;
 
         if(strcmp(type, "RETR") == 0 || strcmp(type, "ERET") == 0)
         {
@@ -206,10 +204,11 @@ globus_i_gfs_log_transfer(
         }
         opt_len = sizeof(win_size);
         getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, &opt_len);
+*/
     }
     else
     {
-        win_size = buffer_size;
+        win_size = tcp_bs;
     }
 
     sprintf(out_buf, 
@@ -226,12 +225,12 @@ globus_i_gfs_log_transfer(
         "VOLUME=%s "
         "STREAMS=%d "
         "STRIPES=%d "
-        "DEST=1[%s] " 
+        "DEST=[%s] " 
         "TYPE=%s " 
-        "CODE=%d\n\0",
+        "CODE=%d\n",
         /* end time */
-        end_tm_time.tm_year,
-        end_tm_time.tm_mon,
+        end_tm_time.tm_year + 1900,
+        end_tm_time.tm_mon + 1,
         end_tm_time.tm_mday,
         end_tm_time.tm_hour,
         end_tm_time.tm_min,
@@ -240,8 +239,8 @@ globus_i_gfs_log_transfer(
         globus_i_gfs_config_string("fqdn"),
         "globus-gridftp-server",
         /* start time */
-        start_tm_time.tm_year,
-        start_tm_time.tm_mon,
+        start_tm_time.tm_year + 1900,
+        start_tm_time.tm_mon + 1,
         start_tm_time.tm_mday,
         start_tm_time.tm_hour,
         start_tm_time.tm_min,
@@ -259,13 +258,6 @@ globus_i_gfs_log_transfer(
         dest_ip,
         type, 
         code);
-
-    /*
-     *  lock and write the string
-     */
-    globus_tmp_libc_flock(g_perf_log_file_fd);
-    write(g_perf_log_file_fd, out_buf, strlen(out_buf));
-    globus_tmp_libc_funlock(g_perf_log_file_fd);
+        
+    fwrite(out_buf, 1, strlen(out_buf), globus_l_gfs_transfer_log_file);
 }
-
-#endif

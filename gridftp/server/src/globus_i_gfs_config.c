@@ -37,6 +37,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Partial path to which 'gridftp.<pid>.log' will be appended to make the log filename."},
  {"log_filemode", "log_filemode", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "File access permissions of log files."},
+ {"log_transfer", "log_transfer", NULL, "-Z", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Log netlogger style info for each transfer into this file."},
  {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
     "Log level. 1 only logs errors, 16 logs everything."},
 /* auth/security related */
