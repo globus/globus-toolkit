@@ -460,15 +460,22 @@ oldgaa_regex_matches_string(
     return -1;
   }
 
-
+#ifndef TARGET_ARCH_WIN32
   if(!strcasecmp(string,regex))
+#else
+  if(!stricmp(string,regex))
+#endif
   {
       result = 1;
   }
   else
   {
       if((star = strrchr(regex,'*')) &&
+#ifndef TARGET_ARCH_WIN32
          !strncasecmp(regex,string,(int) (star-regex)/sizeof(char)))
+#else
+         !strnicmp(regex,string,(int) (star-regex)/sizeof(char)))
+#endif
       {
           result = 1;
       }

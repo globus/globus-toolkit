@@ -277,12 +277,13 @@ getuid()
     return 0;
 }
 
+/*
 static int
 getpid()
 {
     return 0;
 }
-
+*/
 #endif /* WIN32 */
 
 
@@ -320,7 +321,6 @@ get_ca_signing_policy_path(
     char *                              buffer;
     unsigned int                        buffer_len;
     unsigned long                       hash;
-    int                                 status;
     
     if ((cert_dir == NULL) ||
         (ca_name == NULL)) 
@@ -1847,7 +1847,6 @@ proxy_check_proxy_name(
 {
     int                                 ret = 0;
     X509_NAME *                         subject;
-    X509_NAME *                         issuer;
     X509_NAME *                         name = NULL;
     X509_NAME_ENTRY *                   ne = NULL;
     ASN1_STRING *                       data;
@@ -3955,7 +3954,6 @@ proxy_init_cred(
 {
         
     int                                 status = -1;
-    int                                 len;
     int                                 i;
     int                                 j;
     char *                              cert_file = NULL;
@@ -3964,7 +3962,6 @@ proxy_init_cred(
     char *                              user_cert = NULL;
     char *                              user_key = NULL;
     char *                              fname = NULL;
-    X509_STORE_CTX                      csc;
 #ifndef WIN32
     DIR *                               dirp = NULL;
     struct dirent *                     direntp;
@@ -4630,7 +4627,6 @@ i2d_integer_bio(
     long                                v)
 {
     ASN1_INTEGER *                      asn1_int;
-    unsigned char *                     buffer;
     
     asn1_int = ASN1_INTEGER_new();
 
@@ -4852,7 +4848,6 @@ globus_ssl_utils_setup_ssl_ctx(
     int *                               num_null_enc_ciphers)
 {
     int                                 status = -1;
-    int                                 len;
     int                                 i;
     int                                 j;
     char *                              fname = NULL;

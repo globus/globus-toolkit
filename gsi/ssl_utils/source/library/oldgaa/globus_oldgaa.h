@@ -8,8 +8,14 @@ Description:
 #ifndef _OLDGAA_API_H
 #define _OLDGAA_API_H_
 
+#ifndef NO_GLOBUS_CONFIG_H
+#include <globus_config.h>
+#endif
+
+#ifndef TARGET_ARCH_WIN32
 #ifndef HAVE_SYS_TIME_H
 #define HAVE_SYS_TIME_H 1
+#endif
 #endif
 
 #ifndef EXTERN_C_BEGIN
@@ -28,10 +34,6 @@ EXTERN_C_BEGIN
 /**********************************************************************
                              Include header files
 **********************************************************************/
- 
-#ifndef NO_GLOBUS_CONFIG_H
-#include <globus_config.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

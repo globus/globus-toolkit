@@ -22,7 +22,17 @@ CVS Information:
 **********************************************************************/
 
 #if defined(WIN32)
-#   include "windows.h"
+/* We must always use winsock2.h rather than windows.h because of a
+ * Microsoft header bug. winsock2.h will include windows.h, but insure
+ * that the bug is worked around. Instead of including it directly,
+ * however, we are going to include globus_common.h because GSI has
+ * been expanded to depend on Globus Common (per Sam Meder).
+ *
+ * Michael Lebman
+ * 5-23-02
+ */
+//#   include "windows.h"
+#   include "globus_common.h"
 #endif
 
 #include "gssapi.h"

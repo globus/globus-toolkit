@@ -19,17 +19,18 @@ static char *rcsid = "$Header$";
 
 
 #ifndef DEFAULT_SECURE_TMP_DIR
-#ifndef WIN32
-#define DEFAULT_SECURE_TMP_DIR "/tmp"
-#else
-#define DEFAULT_SECURE_TMP_DIR "c:\\tmp"
-#endif /* WIN32 */
+#   ifndef WIN32
+#       define DEFAULT_SECURE_TMP_DIR "/tmp"
+#   else
+#       include <windows.h>
+#       define DEFAULT_SECURE_TMP_DIR "c:\\tmp"
+#   endif /* WIN32 */
 #endif /* DEFAULT_SECURE_TMP_DIR */
 
 #ifndef WIN32
-#define FILE_SEPERATOR "/"
+#   define FILE_SEPERATOR "/"
 #else
-#define FILE_SEPERATOR "\\"
+#   define FILE_SEPERATOR "\\"
 #endif
 
 #include "sslutils.h"
@@ -116,9 +117,6 @@ main(int argc, char* argv[])
     time_t                time_diff;
     ASN1_UTCTIME *        asn1_time = NULL;
     
-#ifndef WIN32
-    struct stat           stx;
-#endif
 
     if (strrchr(argv[0],'/'))
 	program = strrchr(argv[0],'/') + 1;
@@ -281,13 +279,39 @@ main(int argc, char* argv[])
 	return STATUS_NO_NAME;
     }
 
-    if (stat(proxy_file,&stx) != 0)
-    {
-	if (exists_flag)
-	    return 1;
-	fprintf(stderr, "ERROR: file %s not found\n",proxy_file);
-	return STATUS_NOT_FOUND;
+#   ifndef WIN32
+	{
+		struct stat           stx;
+
+		if (stat(proxy_file,&stx) != 0)
+		{
+			if (exists_flag)
+				return 1;
+			fprintf(stderr, "ERROR: file %s not found\n",proxy_file);
+
+			return STATUS_NOT_FOUND;
+		}
     }
+#   else
+	{
+		HANDLE							hndl;
+		WIN32_FIND_DATA					stx;
+
+		hndl = FindFirstFile(proxy_file, &stx);
+
+		if(hndl == -1)
+		{	
+			if (exists_flag)
+			{
+				return 1;
+			}
+			fprintf(stderr, "ERROR: file %s not found\n", proxy_file);
+
+			return STATUS_NOT_FOUND;
+		}
+		FindClose(hndl);
+	}
+#   endif
 		
     
 

@@ -38,7 +38,7 @@ const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS =
    &GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID;
 
 OM_uint32
-gss_set_sec_context_option(
+GSS_CALLCONV GSS_FUNC (gss_set_sec_context_option)(
     OM_uint32 *                         minor_status,
     gss_ctx_id_t *                      context_handle,
     const gss_OID                       option,
