@@ -1497,6 +1497,28 @@ GlobusExtensionDefineModule(globus_gridftp_server_remote) =
     &local_version
 };
 
+GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_REMOTE);
+
+#define GlobusGFSRemoteDebugPrintf(level, message)                          \
+    GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER_REMOTE, level, message)          
+                                                                             
+#define GlobusGFSRemoteDebugEnter()                                         \
+    GlobusGFSRemoteDebugPrintf(                                             \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Entering\n", _gfs_name))                                      
+                                                                             
+#define GlobusGFSRemoteDebugExit()                                          \
+    GlobusGFSRemoteDebugPrintf(                                             \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Exiting\n", _gfs_name))                                       
+                                                                             
+#define GlobusGFSRemoteDebugExitWithError()                                 \
+    GlobusGFSRemoteDebugPrintf(                                             \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Exiting with error\n", _gfs_name))
+
+GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_REMOTE);
+
 static
 int
 globus_l_gfs_remote_activate(void)
@@ -1516,6 +1538,9 @@ globus_l_gfs_remote_activate(void)
         "remote",
         GlobusExtensionMyModule(globus_gridftp_server_remote),
         &globus_l_gfs_remote_dsi_iface);
+
+    GlobusDebugInit(GLOBUS_GRIDFTP_SERVER_REMOTE,
+        ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
     
     return GLOBUS_SUCCESS;
 }

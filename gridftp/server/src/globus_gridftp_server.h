@@ -873,7 +873,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
         GLOBUS_GFS_DEBUG_TRACE,                                             \
         ("[%s] Exiting with error\n", _gfs_name))
 
-
 #define GlobusGFSErrorMemory(mem_name)                                      \
     globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               
 

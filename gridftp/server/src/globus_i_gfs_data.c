@@ -515,6 +515,7 @@ globus_l_gfs_data_new_dsi(
 
     if(in_module_name == NULL || *in_module_name == '\0')
     {
+        GlobusGFSDebugExit();
         return session_handle->dsi;
     }
     if(!(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER))

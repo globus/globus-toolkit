@@ -683,6 +683,7 @@ globus_l_gfs_request_command(
     globus_gfs_command_info_t *         command_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
+    globus_bool_t                       done = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_request_command);
     GlobusGFSDebugEnter();
 
@@ -741,7 +742,7 @@ globus_l_gfs_request_command(
         }
         globus_gsc_959_finished_command(op,
             "200 OK.\r\n");
-        return;
+        done = GLOBUS_TRUE;
     }
     else if(strcmp(cmd_array[0], "RNTO") == 0)
     {
@@ -806,14 +807,17 @@ globus_l_gfs_request_command(
         goto err;
     }
 
-    globus_i_gfs_data_request_command(
-        NULL,
-        instance->session_arg,
-        0,
-        command_info,
-        globus_l_gfs_data_command_cb,
-        request);
-
+    if(!done)
+    {
+        globus_i_gfs_data_request_command(
+            NULL,
+            instance->session_arg,
+            0,
+            command_info,
+            globus_l_gfs_data_command_cb,
+            request);
+    }
+    
     GlobusGFSDebugExit();
     return;
 
