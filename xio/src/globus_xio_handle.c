@@ -38,6 +38,7 @@ do                                                                          \
         _h->close_timeout_cb = _a->close_timeout_cb;                        \
         GlobusTimeReltimeCopy(_h->close_timeout_period,                     \
             _a->close_timeout_period);                                      \
+        _h->timeout_arg = _a->timeout_arg;                                  \
     }                                                                       \
 } while(0)
 
@@ -1339,7 +1340,8 @@ globus_l_xio_timeout_callback(
     /* if in cancel state, verfiy with user that they want to cancel */
     if(timeout)
     {
-        cancel = op->_op_handle_timeout_cb(handle, op->type);
+        cancel = op->_op_handle_timeout_cb(
+            handle, op->type, handle->timeout_arg);
     }
     /* all non time out casses can just return */
     else
