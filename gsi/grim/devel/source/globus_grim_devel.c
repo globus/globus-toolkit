@@ -488,20 +488,6 @@ globus_grim_assertion_set_port_types_array(
 /*
  *  Config file parsing functions
  */
-
-#define GlobusLGrimConfInfoInit(info)                                       \
-{                                                                           \
-    info->max_time = GLOBUS_GRIM_DEFAULT_MAX_TIME;                          \
-    info->default_time = GLOBUS_GRIM_DEFAULT_TIME;                          \
-    info->key_bits = GLOBUS_GRIM_DEFAULT_KEY_BITS;                          \
-    info->log_filename = NULL;                                              \
-    info->ca_cert_dir = strdup(GLOBUS_GRIM_DEFAULT_CA_CERT_DIR);            \
-    info->cert_filename = strdup(GLOBUS_GRIM_DEFAULT_CERT_FILENAME);        \
-    info->key_filename = strdup(GLOBUS_GRIM_DEFAULT_KEY_FILENAME);          \
-    info->gridmap_filename = strdup(GLOBUS_GRIM_DEFAULT_GRIDMAP);           \
-    info->port_type_filename = strdup(GLOBUS_GRIM_DEFAULT_PORT_TYPE_FILENAME);\
-}
-
 #define GlobusLGrimSetGetConfigEnter(config, _info)                         \
 {                                                                           \
     if(config == NULL)                                                      \
@@ -523,6 +509,9 @@ globus_grim_config_init(
     globus_grim_config_t *                  config)
 {
     struct globus_l_grim_conf_info_s *      info;
+    globus_result_t                         res;
+    char *                                  home_dir = NULL;
+    globus_gsi_statcheck_t                  status;
 
     info = (struct globus_l_grim_conf_info_s *)
                 globus_malloc(sizeof(struct globus_l_grim_conf_info_s));
@@ -535,7 +524,49 @@ globus_grim_config_init(
                        "[globus_grim_devel]:: malloc failed."));
     }
 
-    GlobusLGrimConfInfoInit(info);
+    /* if not root look in home dir */
+    if(geteuid() == 0)
+    {
+        info->port_type_filename = 
+            strdup(GLOBUS_GRIM_DEFAULT_PORT_TYPE_FILENAME);
+    }
+    else
+    {
+        res = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir, &status);
+        if(home_dir == NULL || status != GLOBUS_FILE_DIR || 
+            res != GLOBUS_SUCCESS)
+        {
+            info->port_type_filename = 
+                strdup(GLOBUS_GRIM_DEFAULT_PORT_TYPE_FILENAME);
+        }
+        else
+        {
+            char *                          tmp_s;
+
+            tmp_s = globus_gsi_cert_utils_create_string(
+                        "%s/.globus/%s",
+                        home_dir,
+                        "grim-port-types.xml");
+            if(tmp_s == NULL)
+            {
+                return globus_error_put(
+                            globus_error_construct_string(
+                            GLOBUS_GRIM_DEVEL_MODULE,
+                            GLOBUS_NULL,
+                            "[globus_grim_devel]:: failed to create string."));
+            }
+            info->port_type_filename = tmp_s;
+        }
+    }
+
+    info->max_time = GLOBUS_GRIM_DEFAULT_MAX_TIME;
+    info->default_time = GLOBUS_GRIM_DEFAULT_TIME;
+    info->key_bits = GLOBUS_GRIM_DEFAULT_KEY_BITS;
+    info->log_filename = NULL;
+    info->ca_cert_dir = strdup(GLOBUS_GRIM_DEFAULT_CA_CERT_DIR);
+    info->cert_filename = strdup(GLOBUS_GRIM_DEFAULT_CERT_FILENAME);
+    info->key_filename = strdup(GLOBUS_GRIM_DEFAULT_KEY_FILENAME);
+    info->gridmap_filename = strdup(GLOBUS_GRIM_DEFAULT_GRIDMAP);
 
     *config = info;
 
@@ -1101,7 +1132,7 @@ globus_grim_devel_port_type_file_parse_uid(
                 {
                     groups_max *= 2;
                     groups = (char **)
-                        globus_malloc(sizeof(char *) * groups_max);
+                        globus_realloc(groups, sizeof(char *) * groups_max);
                 }
             }
         }
@@ -1254,6 +1285,7 @@ globus_l_grim_port_type_cdata(
     {
         tmp_s = malloc(sizeof(char) * (len + 1));
         strncpy(tmp_s, s, len);
+        tmp_s[len] = '\0';
         globus_list_insert(&info->list, tmp_s);
         info->found = 0;
     }
