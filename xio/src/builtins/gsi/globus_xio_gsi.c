@@ -13,7 +13,7 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
     GSS_C_NO_CHANNEL_BINDINGS,
     GLOBUS_FALSE,
     131072, /* 128K default read buffer */
-    GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY
 };
 
 static int                              connection_count = 0;
