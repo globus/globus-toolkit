@@ -57,12 +57,12 @@ asm/yx86-elf.lo: asm/yx86unix.cpp
 
 # x86 solaris
 
-asm/dx86-sol.o: asm/dx86unix.cpp
+asm/dx86-sol.lo: asm/dx86unix.cpp
 	$(CPP) -DSOL asm/dx86unix.cpp | sed 's/^#.*//' > asm/dx86-sol.s
 	$(LTCOMPILE) -c asm/dx86-sol.s -o asm/dx86-sol.lo
 	rm -f asm/dx86-sol.s
 
-asm/yx86-sol.o: asm/yx86unix.cpp
+asm/yx86-sol.lo: asm/yx86unix.cpp
 	$(CPP) -DSOL asm/yx86unix.cpp | sed 's/^#.*//' > asm/yx86-sol.s
 	$(LTCOMPILE) -c asm/yx86-sol.s -o asm/yx86-sol.lo
 	rm -f asm/yx86-sol.s

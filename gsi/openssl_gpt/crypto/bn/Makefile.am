@@ -73,27 +73,30 @@ asm/co86-elf.lo: asm/co86unix.cpp
 
 # x86 solaris
 
-asm/bn86-sol.o: asm/bn86unix.cpp
+asm/bn86-sol.lo: asm/bn86unix.cpp
 	$(CPP) -DSOL asm/bn86unix.cpp | sed 's/^#.*//' > asm/bn86-sol.s
 	$(LTCOMPILE) -c asm/bn86-sol.s -o asm/bn86-sol.lo
 	rm -f asm/bn86-sol.s
 
-asm/co86-sol.o: asm/co86unix.cpp
+asm/co86-sol.lo: asm/co86unix.cpp
 	$(CPP) -DSOL asm/co86unix.cpp | sed 's/^#.*//' > asm/co86-sol.s
 	$(LTCOMPILE) -c asm/co86-sol.s -o asm/co86-sol.lo
 	rm -f asm/co86-sol.s
 
 # sparcv8 
 
-asm/sparcv8.o: asm/sparcv8.S
+asm/sparcv8.lo: asm/sparcv8.S
+	$(LTCOMPILE) -c asm/sparcv8.S -o asm/sparcv8.lo
 
 # >sparcv8
 
-asm/sparcv8plus.o: asm/sparcv8plus.S
+asm/sparcv8plus.lo: asm/sparcv8plus.S
+	$(LTCOMPILE) -c asm/sparcv8plus.S -o asm/sparcv8plus.lo
 
 # ia64
 
-asm/ia64.o: asm/ia64.S
+asm/ia64.lo: asm/ia64.S
+	$(LTCOMPILE) -c asm/ia64.S -o asm/ia64.lo
 
 # generate the input
 

@@ -46,7 +46,7 @@ asm/cx86-elf.lo: asm/cx86unix.cpp
 
 # x86 solaris
 
-asm/cx86-sol.o: asm/cx86unix.cpp
+asm/cx86-sol.lo: asm/cx86unix.cpp
 	$(CPP) -DSOL asm/cx86unix.cpp | sed 's/^#.*//' > asm/cx86-sol.s
 	$(LTCOMPILE) -c asm/cx86-sol.s -o asm/cx86-sol.lo
 	rm -f asm/cx86-sol.s

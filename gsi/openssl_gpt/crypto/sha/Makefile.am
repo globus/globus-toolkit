@@ -32,7 +32,7 @@ libsha___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libsha___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = @SHA1_OBJ@
 
-asm/sx86-sol.o: asm/sx86unix.cpp
+asm/sx86-sol.lo: asm/sx86unix.cpp
 	$(CPP) -DSOL asm/sx86unix.cpp | sed 's/^#.*//' > asm/sx86-sol.s
 	$(LTCOMPILE) -c asm/sx86-sol.s -o asm/sx86-sol.lo
 	rm -f asm/sx86-sol.s

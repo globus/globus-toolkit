@@ -30,7 +30,7 @@ libripemd___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libripemd___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = @RMD_OBJ@
 
-asm/rm86-sol.o: asm/rm86unix.cpp
+asm/rm86-sol.lo: asm/rm86unix.cpp
 	$(CPP) -DSOL asm/rm86unix.cpp | sed 's/^#.*//' > asm/rm86-sol.s
 	$(LTCOMPILE) -c asm/rm86-sol.s -o asm/rm86-sol.lo
 	rm -f asm/rm86-sol.s

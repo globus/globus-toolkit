@@ -29,7 +29,7 @@ libmd5___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libmd5___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = @MD5_OBJ@
 
-asm/mx86-sol.o: asm/mx86unix.cpp
+asm/mx86-sol.lo: asm/mx86unix.cpp
 	$(CPP) -DSOL asm/mx86unix.cpp | sed 's/^#.*//' > asm/mx86-sol.s
 	$(LTCOMPILE) -c asm/mx86-sol.s -o asm/mx86-sol.lo
 	rm -f asm/mx86-sol.s

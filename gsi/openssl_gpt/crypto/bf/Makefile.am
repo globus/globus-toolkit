@@ -35,7 +35,7 @@ libbf___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libbf___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES =  @BF_OBJ@
 
-asm/bx86-sol.o: asm/bx86unix.cpp
+asm/bx86-sol.lo: asm/bx86unix.cpp
 	$(CPP) -DSOL asm/bx86unix.cpp | sed 's/^#.*//' > asm/bx86-sol.s
 	$(LTCOMPILE) -c asm/bx86-sol.s -o asm/bx86-sol.lo
 	rm -f asm/bx86-sol.s

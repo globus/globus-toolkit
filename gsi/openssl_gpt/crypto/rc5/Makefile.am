@@ -36,7 +36,7 @@ librc5___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 librc5___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = @RC5_OBJ@
 
-asm/r586-sol.o: asm/r586unix.cpp
+asm/r586-sol.lo: asm/r586unix.cpp
 	$(CPP) -DSOL asm/r586unix.cpp | sed 's/^#.*//' > asm/r586-sol.s
 	$(LTCOMPILE) -c asm/r586-sol.s -o asm/r586-sol.lo
 	rm -f asm/r586-sol.s

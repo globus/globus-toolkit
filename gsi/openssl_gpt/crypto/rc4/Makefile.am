@@ -33,7 +33,7 @@ librc4___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 librc4___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES =  @RC4_OBJ@
 
-asm/rx86-sol.o: asm/rx86unix.cpp
+asm/rx86-sol.lo: asm/rx86unix.cpp
 	$(CPP) -DSOL asm/rx86unix.cpp | sed 's/^#.*//' > asm/rx86-sol.s
 	$(LTCOMPILE) -c asm/rx86-sol.s -o asm/rx86-sol.lo
 	rm -f asm/rx86-sol.s
