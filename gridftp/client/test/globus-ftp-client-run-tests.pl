@@ -128,8 +128,7 @@ sub setup_server()
     }
 
     $server_pid = open(SERVER, "$server_prog $server_args |");
-     
-    if($server_pid == -1)
+    if(!defined($server_pid))
     {
         print "Unable to start server\n";
         exit 1;
