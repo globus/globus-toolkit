@@ -1608,7 +1608,7 @@ globus_gram_job_manager_state_machine(
 	    request->unsent_status_change = GLOBUS_FALSE;
 	}
 
-	if(request->two_phase_commit != 0 && rc == GLOBUS_SUCCESS)
+	if(request->two_phase_commit != 0)
 	{
 	    GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
 
