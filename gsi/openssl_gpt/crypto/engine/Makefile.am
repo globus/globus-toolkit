@@ -16,11 +16,16 @@ opensslinclude_HEADERS = \
 
 noinst_HEADERS = \
 	hw_aep_err.h \
+	hw_aep_err.c \
 	hw_ncipher_err.h \
+	hw_ncipher_err.c \
 	hw_ubsec_err.h \
+	hw_ubsec_err.c \
 	eng_int.h \
 	hw_atalla_err.h \
-	hw_nuron_err.h
+	hw_atalla_err.c \
+	hw_nuron_err.h \
+	hw_nuron_err.c
 
 Test_Sources = \
 	enginetest.c
