@@ -193,6 +193,12 @@ int main(int argc, char **argv)
 
     globus_l_gass_server_credential=GSS_C_NO_CREDENTIAL;
 
+    if(globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error: Couldn't activate GSS ASSIST module.\n");
+        exit(1);
+    }
+
     maj_stat = globus_gss_assist_acquire_cred(
         &min_stat,
         GSS_C_ACCEPT,
@@ -204,6 +210,13 @@ int main(int argc, char **argv)
     }
 
     gss_release_cred(&maj_stat,&globus_l_gass_server_credential);
+
+    if(globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE) 
+       != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error: Couldn't deactivate GSS ASSIST module.\n");
+        exit(1);
+    }
 
     
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
