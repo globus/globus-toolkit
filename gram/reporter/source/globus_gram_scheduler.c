@@ -311,7 +311,7 @@ int globus_gram_scheduler_queue_list_get( char * script_cmd,
                 if (q_node)
                     /* reverse the job entries before adding another queue
                      */
-                    q_node->entry_list =
+                    q_node->entry_list = (globus_list_t *)
                          globus_list_copy_reverse(q_node->entry_list);
 
                 q_node = (globus_gram_scheduler_t *)
@@ -368,10 +368,10 @@ int globus_gram_scheduler_queue_list_get( char * script_cmd,
     } /* while */
 
     if (q_node)
-        q_node->entry_list = globus_list_copy_reverse(q_node->entry_list);
+        q_node->entry_list = (globus_list_t *) globus_list_copy_reverse(q_node->entry_list);
 
     if (q_list)
-        *q_list = globus_list_copy_reverse(*q_list);
+        *q_list = (globus_list_t *) globus_list_copy_reverse(*q_list);
 
     pclose(fp);
 
