@@ -143,7 +143,7 @@ if [ ${condor_universe} = "standard" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: verifying stdin">> $grami_logfile
    if [ ! -r ${grami_stdin} ] ; then
        #stdin file is not readable by this process
-      echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOTFOUND@"
+      echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOT_FOUND@"
       exit
    fi
 fi

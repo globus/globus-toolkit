@@ -110,7 +110,7 @@ $DEBUG_ECHO ""
 #        $DEBUG_ECHO stdin file [$grami_stdin] found and is readable >> $grami_logfile
 #    else
 #        $DEBUG_ECHO stdin file [$grami_stdin] DOES NOT exist or is not readable; exiting with exit code 1 >> $grami_logfile
-#        echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOTFOUND@
+#        echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOT_FOUND@
 #        exit 1
 #    fi
 #fi

@@ -1633,13 +1633,14 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
     if ( (strcmp(req->jobmanager_type, "fork") != 0) &&
          (strcmp(req->jobmanager_type, "poe") != 0) &&
          (strcmp(req->jobmanager_type, "condor") != 0) &&
-         (strcmp(req->jobmanager_type, "easymcs") != 0) &&
+         (strcmp(req->jobmanager_type, "pexec") != 0) &&
          (strcmp(req->jobmanager_type, "t3e-nqe") != 0) &&
          (strcmp(req->jobmanager_type, "prun") != 0) &&
          (strcmp(req->jobmanager_type, "loadleveler") != 0) &&
          (strcmp(req->jobmanager_type, "lsf") != 0) &&
          (strcmp(req->jobmanager_type, "maui") != 0) &&
          (strcmp(req->jobmanager_type, "pbs") != 0) &&
+         (strcmp(req->jobmanager_type, "glunix") != 0) &&
          (strcmp(req->jobmanager_type, "easymcs") != 0))
     {
         grami_fprintf( req->jobmanager_log_fp,
