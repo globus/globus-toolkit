@@ -2449,6 +2449,7 @@ globus_l_io_read_auth_token(
         goto do_return;
     }
     
+    globus_i_io_mutex_lock();
     result = globus_i_io_register_operation(
         handle,
         globus_l_io_read_auth_token,
@@ -2456,7 +2457,8 @@ globus_l_io_read_auth_token(
         GLOBUS_NULL,
         GLOBUS_TRUE,
         GLOBUS_I_IO_READ_OPERATION);
-
+    globus_i_io_mutex_unlock();
+    
     if(result != GLOBUS_SUCCESS)
     {
         err = globus_error_get(result);
