@@ -117,6 +117,8 @@ typedef enum
 #    define GLOBUS_I_GSI_GET_HOME_DIR globus_i_gsi_get_home_dir_win32
 #    define GLOBUS_I_GSI_GET_USER_ID_STRING \
             globus_i_gsI_get_user_id_string_win32
+#    define GLOBUS_I_GSI_GET_PROC_ID_STRING \
+            globus_i_gsi_get_proc_id_string_win32
 #    define GLOBUS_I_GSI_CHECK_KEYFILE globus_i_gsi_check_keyfile_win32
 #    define GLOBUS_I_GSI_CHECK_CERTFILE globus_i_gsi_check_certfile_win32
 #    define GLOBUS_I_GSI_FILE_EXISTS globus_i_gsi_file_exists_win32
@@ -133,6 +135,8 @@ typedef enum
 #    define GLOBUS_I_GSI_GET_HOME_DIR globus_i_gsi_get_home_dir_unix
 #    define GLOBUS_I_GSI_GET_USER_ID_STRING \
             globus_i_gsi_get_user_id_string_unix
+#    define GLOBUS_I_GSI_GET_PROC_ID_STRING \
+            globus_i_gsi_get_proc_id_string_unix
 #    define GLOBUS_I_GSI_CHECK_KEYFILE globus_i_gsi_check_keyfile_unix
 #    define GLOBUS_I_GSI_CHECK_CERTFILE globus_i_gsi_check_certfile_unix
 #    define GLOBUS_I_GSI_FILE_EXISTS globus_i_gsi_file_exists_unix
@@ -146,6 +150,10 @@ typedef enum
 #    define GLOBUS_GSI_CRED_GET_PROXY_FILENAME \
             globus_gsi_cred_get_proxy_filename_unix
 #endif
+
+#define     GLOBUS_GSI_CRED_GET_UNIQUE_PROXY_FILENAME \
+            globus_gsi_cred_get_unique_proxy_filename
+
 
 globus_result_t
 globus_gsi_cred_create_cert_dir_string(
@@ -262,6 +270,10 @@ globus_gsi_cred_get_proxy_filename_unix(
     globus_gsi_proxy_file_type_t        proxy_file_type);
 
 #endif /* WIN32 */
+
+globus_result_t
+globus_gsi_cred_get_unique_proxy_filename(
+    char **                             unique_filename);
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 

@@ -9,50 +9,101 @@
  * $Date$
  */
 
-#include "globus_gsi_credential.h"
-
 #ifndef GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H
 #define GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
+#include "globus_gsi_credential.h"
+#include "proxycertinfo.h"
+
+/* DEBUG MACROS */
+
+#ifdef BUILD_DEBUG
+
+extern int                              globus_i_gsi_cred_debug_level;
+extern FILE *                           globus_i_gsi_cred_debug_fstream;
+
+#define GLOBUS_I_GSI_CRED_DEBUG(_LEVEL_) \
+    (globus_i_gsi_cred_debug_level >= (_LEVEL_))
+
+#define GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) \
+    { \
+        if (GLOBUS_I_GSI_CRED_DEBUG(_LEVEL_)) \
+        { \
+           globus_libc_fprintf _MESSAGE_; \
+        } \
+    }
+
+#define GLOBUS_I_GSI_CRED_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) \
+    { \
+        if (GLOBUS_I_GSI_CRED_DEBUG(_LEVEL_)) \
+        { \
+           globus_libc_fprintf _MESSAGE_; \
+        } \
+    }
+
+#define GLOBUS_I_GSI_CRED_DEBUG_PRINT(_LEVEL_, _MESSAGE_) \
+    { \
+        if (GLOBUS_I_GSI_CRED_DEBUG(_LEVEL_)) \
+        { \
+           globus_libc_fprintf(globus_i_gsi_cred_debug_fstream, _MESSAGE_); \
+        } \
+    }
+
+#define GLOBUS_I_GSI_CRED_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) \
+    { \
+        if (GLOBUS_I_GSI_CRED_DEBUG(_LEVEL_)) \
+        { \
+           _OBJ_NAME_##_print_fp(globus_i_gsi_cred_debug_fstream, _OBJ_); \
+        } \
+    }
+
 #else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+
+#define GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) {}
+#define GLOBUS_I_GSI_CRED_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) {}
+#define GLOBUS_I_GSI_CRED_DEBUG_PRINT(_LEVEL_, _MESSAGE_) {}
+#define GLOBUS_I_GSI_CRED_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) {}
+
 #endif
-#endif
+         
+#define GLOBUS_I_GSI_CRED_DEBUG_ENTER \
+            GLOBUS_I_GSI_CRED_DEBUG_FPRINTF( \
+                1, (globus_i_gsi_cred_debug_fstream, \
+                    "%s entering\n", _function_name_))
 
-EXTERN_C_BEGIN
+#define GLOBUS_I_GSI_CRED_DEBUG_EXIT \
+            GLOBUS_I_GSI_CRED_DEBUG_FPRINTF( \
+                2, (globus_i_gsi_cred_debug_fstream, \
+                    "%s exiting\n", _function_name_))
 
-#define CRED_F_HANDLE_ATTRS_INIT "globus_gsi_cred_handle_attrs_init"
+/* ERROR MACROS */
 
-
-#define GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(_ERRORTYPE_) \
-    globus_i_gsi_credential_openssl_error_result( \
+#define GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(_ERRORTYPE_, _ERRSTR_) \
+    globus_i_gsi_cred_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        NULL)
+        globus_i_gsi_cred_create_string _ERRSTR_)
 
-#define GLOBUS_GSI_CRED_ERROR_RESULT(_ERRORTYPE_) \
-    globus_i_gsi_credential_error_result( \
+#define GLOBUS_GSI_CRED_ERROR_RESULT(_ERRORTYPE_, _ERRSTR_) \
+    globus_i_gsi_cred_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        NULL)
+        globus_i_gsi_cred_create_string _ERRSTR_)
 
 #define GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
-    globus_i_gsi_credential_error_chain_result( \
+    globus_i_gsi_cred_error_chain_result( \
         _TOP_RESULT_, \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
         NULL)
+
+extern char *                    globus_l_gsi_cred_error_strings[];
 
 /**
  * Handle attributes.
@@ -94,8 +145,22 @@ typedef struct globus_l_gsi_cred_handle_s
     STACK_OF(X509) *                    cert_chain;
     /** The immutable attributes of the credential handle */
     globus_gsi_cred_handle_attrs_t      attrs;
-
+    /** The ssl context used for this credential */
+    SSL_CTX *                           ssl_context;
+    /** The amout of time the credential is valid for */
+    time_t                              goodtill;
 } globus_i_gsi_cred_handle_t;
+
+
+globus_result_t
+globus_i_gsi_cred_goodtill(
+    globus_gsi_cred_handle_t            cred_handle,
+    time_t *                            goodtill);
+
+globus_result_t
+globus_i_gsi_cred_make_time(
+    ASN1_UTCTIME *                      ctm,
+    time_t *                            newtime);
 
 int
 globus_i_gsi_X509_check_issued(
@@ -107,61 +172,39 @@ int
 globus_i_gsi_X509_verify_cert_callback(
     X509_STORE_CTX *                    ctx);
 
-globus_result_t
-globus_i_gsi_credential_openssl_error_result(
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    ...);
-
-globus_object_t *
-globus_i_gsi_credential_openssl_error_construct(
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    va_list                             ap);
+globus_result_t globus_i_gsi_cred_get_proxycertinfo(
+    X509 *                              cert,
+    PROXYCERTINFO **                    proxycertinfo);
 
 globus_result_t
-globus_i_gsi_credential_error_result(
+globus_i_gsi_cred_openssl_error_result(
     int                                 error_type,
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
-    const char *                        format,
-    ...);
-
-globus_object_t *
-globus_i_gsi_credential_error_construct(
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    va_list                             ap);
+    const char *                        long_desc);
 
 globus_result_t
-globus_i_gsi_credential_error_chain_result(
+globus_i_gsi_cred_error_result(
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        long_desc);
+
+globus_result_t
+globus_i_gsi_cred_error_chain_result(
     globus_result_t                     chain_result,
     int                                 error_type,
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        long_desc);
+
+char *
+globus_i_gsi_cred_create_string(
     const char *                        format,
     ...);
-
-globus_object_t *
-globus_i_gsi_credential_error_chain_construct(
-    globus_result_t                     chain_result,
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    va_list                             ap);
 
 EXTERN_C_END
 

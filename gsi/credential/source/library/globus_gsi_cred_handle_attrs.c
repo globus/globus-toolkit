@@ -44,18 +44,28 @@ globus_gsi_cred_handle_attrs_init(
     static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_init";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if(handle_attrs == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s", 
+             _function_name_));
+        goto exit;
     }
 
     if((*handle_attrs = (globus_gsi_cred_handle_attrs_t)
         globus_malloc(sizeof(globus_i_gsi_cred_handle_attrs_t))) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
+        result = globus_error_put(
+            globus_error_wrap_errno_error(
+                GLOBUS_GSI_CREDENTIAL_MODULE,
+                errno,
+                GLOBUS_GSI_CRED_ERROR_ERRNO,
+                "%s:%d: Could not allocate memory for handle attributes",
+                __FILE__, __LINE__));
+        goto exit;
     }
 
     /* initialize all the handle attributes to NULL */
@@ -63,9 +73,8 @@ globus_gsi_cred_handle_attrs_init(
            (int) NULL, 
            sizeof(globus_i_gsi_cred_handle_attrs_t));
     
-    result = GLOBUS_GSI_CRED_GET_CERT_DIR(
-        &(*handle_attrs)->ca_cert_dir);
-    if(result != GLOBUS_SUCCESS)
+    if((result = GLOBUS_GSI_CRED_GET_CERT_DIR(
+        &(*handle_attrs)->ca_cert_dir)) != GLOBUS_SUCCESS)
     {
         error_string = __FILE__":""__LINE__"
             ": error in cred_handle_attrs_init";
@@ -82,19 +91,21 @@ globus_gsi_cred_handle_attrs_init(
     (*handle_attrs)->search_order[3] = GLOBUS_SERVICE;
     (*handle_attrs)->search_order[4] = GLOBUS_SO_END;
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+    goto exit;
 
  error_exit:
 
     globus_gsi_cred_handle_attrs_destroy(*handle_attrs);
+    
+    result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+        result,
+        GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
 
-    return globus_error_put(globus_error_construct_error(
-        GLOBUS_GSI_CREDENTIAL_MODULE,
-        globus_error_get(result),
-        GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-        globus_l_gsi_cred_error_strings[
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS],
-        error_string));
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* globus_gsi_cred_handle_attrs_init */
 /* @} */
@@ -119,6 +130,11 @@ globus_gsi_cred_handle_attrs_init(
 globus_result_t globus_gsi_cred_handle_attrs_destroy(
     globus_gsi_cred_handle_attrs_t     handle_attrs)
 {
+    static char *                       _function_name_ =
+        "globus_gsi_cred_handle_attrs_destroy";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
     if(handle_attrs != NULL)
     {
         if(handle_attrs->ca_cert_dir != NULL)
@@ -132,6 +148,8 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
 
         globus_free(handle_attrs);
     }
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     
     return GLOBUS_SUCCESS;
 }
@@ -159,26 +177,32 @@ globus_gsi_cred_handle_attrs_copy(
 {
     int                                 size;
     int                                 index;
+    globus_result_t                     result;
 
     static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_copy";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
     if(a == NULL || b == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL parameter passed to function: %s", _function_name_));
+        goto exit;
     }
 
     if(((*b)->ca_cert_dir = strdup(a->ca_cert_dir)) == NULL)
     {
-        return globus_error_wrap_errno_error(
+        result = globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             __FILE__":__LINE__:%s:%s",
             _function_name_,
             globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        goto exit;
     }
 
     size = -1;
@@ -188,14 +212,15 @@ globus_gsi_cred_handle_attrs_copy(
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
-        return globus_error_wrap_errno_error(
+        result = globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             __FILE__":__LINE__:%s:%s",
             _function_name_,
             globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        goto exit;
     }        
 
     for(index = 0; index <= size; ++index)
@@ -203,7 +228,12 @@ globus_gsi_cred_handle_attrs_copy(
         (*b)->search_order[index] = a->search_order[index];
     }
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* globus_gsi_cred_handle_attrs_copy */
 /* @} */
@@ -228,27 +258,40 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char *                              ca_cert_dir)
 {
+    globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_set_ca_cert_dir";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
     if(handle_attrs == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s", 
+             _function_name_));
+        goto exit;
     }
     
     if((handle_attrs->ca_cert_dir = strdup(ca_cert_dir)) == NULL)
     {
-        return globus_error_wrap_errno_error(
+        result = globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             __FILE__":__LINE__:%s:%s",
             _function_name_,
             globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        goto exit;
     }
-    return GLOBUS_SUCCESS;
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* @} */
 
@@ -274,33 +317,49 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char **                             ca_cert_dir)
 {
+    globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_get_ca_cert_dir";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
     if(handle_attrs == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s", 
+             _function_name_));
+        goto exit;
     }
     
     if(ca_cert_dir == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_BAD_PARAMETER);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s",
+             _function_name_));
+        goto exit;
     }
 
     if((*ca_cert_dir = strdup(handle_attrs->ca_cert_dir)) == NULL)
     {
-        return globus_error_wrap_errno_error(
+        result = globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             __FILE__":__LINE__:%s:%s",
             _function_name_,
             globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        goto exit;
     }
-    return GLOBUS_SUCCESS;
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* @} */
 
@@ -328,16 +387,21 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
 {
     int                                 size;
     int                                 index;
+    globus_result_t                     result;
 
     static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_set_search_order";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
     if(handle_attrs == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s",
+             _function_name_));
+        goto exit;
     }
-
 
     size = -1;
     while(search_order[++size] != GLOBUS_SO_END);
@@ -346,14 +410,15 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
-        return globus_error_wrap_errno_error(
+        result = globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             __FILE__":__LINE__:%s:%s",
             _function_name_,
             globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        goto exit;
     }        
 
     for(index = 0; index <= size; ++index)
@@ -361,7 +426,11 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
         handle_attrs->search_order[index] = search_order[index];
     }
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* @} */
 
@@ -385,19 +454,27 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
 {
     int                                 size;
     int                                 index;
+    globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_get_search_order";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
     if(handle_attrs == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s",
+             _function_name_));
+        goto exit;
     }
 
     if(handle_attrs->search_order == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
+            ("The search order of the handle attributes is NULL"));
+        goto exit;
     }
 
     size = -1;
@@ -407,14 +484,15 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
-        return globus_error_wrap_errno_error(
+        result = globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             __FILE__":__LINE__:%s:%s",
             _function_name_,
             globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        goto exit;
     }        
 
     for(index = 0; index <= size; ++index)
@@ -422,6 +500,11 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
         (*search_order)[index] = handle_attrs->search_order[index];
     }
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* @} */

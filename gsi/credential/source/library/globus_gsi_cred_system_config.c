@@ -38,7 +38,7 @@
 #define X509_USER_PROXY                 "X509_USER_PROXY"
 #define X509_USER_CERT                  "X509_USER_CERT"
 #define X509_USER_KEY                   "X509_USER_KEY"
-#define X509_USER_DELEG_FILE            "x509up_p"
+#define X509_UNIQUE_PROXY_FILE          "x509up_p"
 #define X509_USER_PROXY_FILE            "x509up_u"
 
 /* This is added after the CA name hash to make the policy filename */
@@ -79,7 +79,7 @@
     globus_error_put(globus_error_wrap_errno_error( \
         GLOBUS_GSI_CREDENTIAL_MODULE, \
         errno, \
-        GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG, \
+        GLOBUS_GSI_CRED_ERROR_ERRNO, \
         "%s:%d: Could not allocate enough memory: %d bytes", \
         __FILE__, __LINE__, len))
 
@@ -91,33 +91,50 @@ globus_i_gsi_cred_create_cert_dir_path(
     ...)
 {
     va_list                             ap;
-    FILE *                              null_file_stream;
-    int                                 len;
     globus_gsi_statcheck_t              status;
+    int                                 len = 128;
+    int                                 length;
+    globus_result_t                     result;
 
     static char *                       _function_name_ =
         "globus_i_gsi_cred_create_cert_dir_path";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *cert_dir = NULL;
 
     va_start(ap, format);
 
-    null_file_stream = fopen("/dev/null", "w");
-    len = vfprintf(null_file_stream, format ? format : "<null value>", ap) + 1;
-    fclose(null_file_stream);
-    if(len < 1)
+    if((*cert_dir_value = globus_malloc(len)) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto error_exit;
     }
 
-    *cert_dir_value = globus_malloc(len);
-    if(!(*cert_dir_value))
+    while(1)
     {
-        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        length = vsnprintf(*cert_dir_value, len,
+                           format, ap);
+        if(length > -1 && length < len)
+        {
+            break;
+        }
+        
+        if(length > -1)
+        {
+            len = length + 1;
+        }
+        else
+        {
+            len *= 2;
+        }
+        
+        if((*cert_dir_value = realloc(*cert_dir_value, len)) == NULL)
+        {
+            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto error_exit;
+        }
     }
-
-    vsnprintf(*cert_dir_value, len, format ? format : "<null value>", ap);
     
     if(format && 
        GLOBUS_I_GSI_FILE_EXISTS(*cert_dir_value, & status) == GLOBUS_SUCCESS)
@@ -127,7 +144,13 @@ globus_i_gsi_cred_create_cert_dir_path(
 
     va_end(ap);
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;    
+
+    return result;
 }
     
 
@@ -139,31 +162,51 @@ globus_i_gsi_cred_create_cert_string(
     ...)
 {
     va_list                             ap;
-    FILE *                              null_file_stream;
-    int                                 len;
     globus_gsi_statcheck_t              status;
-
+    int                                 len = 128;
+    int                                 length;
+    globus_result_t                     result;
+    
     static char *                       _function_name_ =
         "globus_i_gsi_cred_create_cert_string";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *cert_string = NULL;
 
     va_start(ap, format);
 
-    null_file_stream = fopen("/dev/null", "w");
-    len = vfprintf(null_file_stream, format ? format : "<null value>", ap) + 1;
-    fclose(null_file_stream);
-
-    if(len < 1)
+    if((*cert_string_value = globus_malloc(len)) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        globus_free(*cert_string_value);
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto error_exit;
     }
 
-    *cert_string_value = globus_malloc(len);
-    if(!(*cert_string_value))
+    while(1)
     {
-        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        length = vsnprintf(*cert_string_value, len,
+                           format, ap);
+        if(length > -1 && length < len)
+        {
+            break;
+        }
+        
+        if(length > -1)
+        {
+            len = length + 1;
+        }
+        else
+        {
+            len *= 2;
+        }
+        
+        if((*cert_string_value = realloc(*cert_string_value, len)) == NULL)
+        {
+            globus_free(*cert_string_value);
+            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto error_exit;
+        }
     }
 
     vsnprintf(*cert_string_value, len, format ? format : "<null value>", ap);
@@ -178,7 +221,13 @@ globus_i_gsi_cred_create_cert_string(
 
     va_end(ap);
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }
 
 globus_result_t
@@ -189,31 +238,51 @@ globus_i_gsi_cred_create_key_string(
     ...)
 {
     va_list                             ap;
-    FILE *                              null_file_stream;
-    int                                 len;
     globus_gsi_statcheck_t              status;
+    int                                 len = 128;
+    int                                 length;
+    globus_result_t                     result;
 
     static char *                       _function_name_ =
         "globus_i_gsi_cred_create_key_string";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *key_string = NULL;
 
     va_start(ap, format);
 
-    null_file_stream = fopen("/dev/null", "w");
-    len = vfprintf(null_file_stream, format ? format : "<null value>", ap) + 1;
-    fclose(null_file_stream);
-
-    if(len < 1)
+    if((*key_string_value = globus_malloc(len)) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        globus_free(*key_string_value);
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto error_exit;
     }
 
-    *key_string_value = globus_malloc(len);
-    if(!(*key_string_value))
+    while(1)
     {
-        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        length = vsnprintf(*key_string_value, len,
+                           format, ap);
+        if(length > -1 && length < len)
+        {
+            break;
+        }
+        
+        if(length > -1)
+        {
+            len = length + 1;
+        }
+        else
+        {
+            len *= 2;
+        }
+        
+        if((*key_string_value = realloc(*key_string_value, len)) == NULL)
+        {
+            globus_free(*key_string_value);
+            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto error_exit;
+        }
     }
 
     vsnprintf(*key_string_value, len, format ? format : "<null value>", ap);
@@ -228,7 +297,13 @@ globus_i_gsi_cred_create_key_string(
 
     va_end(ap);
 
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
@@ -255,16 +330,29 @@ globus_result_t
 globus_i_gsi_get_home_dir_win32(
     char **                             home_dir)
 {
+    globus_result_t                     result;
+
     const char *                        _function_name_ =
         "globus_i_gsi_get_home_dir_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *home_dir = "c:\\windows";
 
     if((*home_dir) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
+            ("Could not get a home directory for this machine"));
+        goto error_exit;
     }
+
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
     return GLOBUS_SUCCESS;
 }
 /* @} */
@@ -289,10 +377,13 @@ globus_i_gsi_file_exists_win32(
     const char *                        filename,
     globus_gsi_statcheck_t *            status)
 {
+    globus_result_t                     result;
     struct stat                         stx;
 
     static char *                       _function_name_ =
         "globus_i_gsi_file_exists_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if (stat(filename,&stx) == -1)
     {
@@ -301,21 +392,24 @@ globus_i_gsi_file_exists_win32(
         case ENOENT:
         case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         default:
-            return globus_error_put(
+            result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
-                    GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
+                    GLOBUS_GSI_CRED_ERROR_ERRNO,
                     __FILE__":__LINE__:%s: Error getting status of keyfile\n",
                     _function_name_));
+            goto exit;
         }
     }
 
@@ -328,11 +422,17 @@ globus_i_gsi_file_exists_win32(
     if (stx.st_size == 0)
     {
         *status = GLOBUS_ZERO_LENGTH;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
 
     *status = GLOBUS_VALID;
-    return GLOBUS_SUCCESS;
+    
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }    
 /* @} */
 
@@ -372,6 +472,8 @@ globus_i_gsi_check_keyfile_win32(
     static char *                       _function_name_ =
         "globus_i_gsi_check_keyfile_win32";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
     if (stat(filename,&stx) == -1)
     {
         switch (errno)
@@ -379,21 +481,24 @@ globus_i_gsi_check_keyfile_win32(
         case ENOENT:
         case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         default:
-            return globus_error_put(
+            result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
                     GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
                     __FILE__":__LINE__:%s: Error getting status of keyfile\n",
                     _function_name_));
+            goto exit;
         }
     }
 
@@ -406,11 +511,16 @@ globus_i_gsi_check_keyfile_win32(
     if (stx.st_size == 0)
     {
         *status = GLOBUS_ZERO_LENGTH;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
     }
 
     *status = GLOBUS_VALID;
-    return GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }
 /* @} */
 
@@ -444,11 +554,14 @@ globus_i_gsi_check_certfile_win32(
     const char *                        filename,
     globus_gsi_statcheck_t *            status)
 {
+    globus_result_t                     result;
     struct stat                         stx;
 
     static char *                       _function_name_ =
         "globus_i_gsi_check_certfile_win32";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+ 
     if (stat(filename,&stx) == -1)
     {
         switch (errno)
@@ -456,21 +569,24 @@ globus_i_gsi_check_certfile_win32(
         case ENOENT:
         case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         default:
-            return globus_error_put(
+            result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
                     GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
                     __FILE__":__LINE__:%s: Error getting status of keyfile\n",
                     _function_name_));
+            goto exit;
         }
     }
 
@@ -483,11 +599,16 @@ globus_i_gsi_check_certfile_win32(
     if (stx.st_size == 0)
     {
         *status = GLOBUS_ZERO_LENGTH;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
     }
 
     *status = GLOBUS_VALID;
-    return GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }
 /* @} */
 
@@ -497,8 +618,8 @@ globus_i_gsi_check_certfile_win32(
  */
 /* @{ */
 /**
- * Get a unique string representing the current user.  On Unix, this is just
- * the uid converted to a string.  On Windows, SLANG: NOT DETERMINED
+ * Get a unique string representing the current user.  
+ * On Windows, SLANG: NOT DETERMINED
  */
 globus_result_t
 globus_i_gsi_get_user_id_string_win32(
@@ -506,7 +627,44 @@ globus_i_gsi_get_user_id_string_win32(
 {
     int                                 uid;
 
+    static char *                       _function_name_ =
+        "globus_i_gsi_get_user_id_string_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
     /* SLANG: need to set the string to the username or whatever */
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    
+    return GLOBUS_SUCCESS;
+}
+/* @} */
+
+
+/**
+ * WIN32 - Get Process ID
+ * @ingroup globus_i_gsi_cred_system_config_win32
+ */
+/* @{ */
+/**
+ * Get a unique string representing the current process.  
+ * On Windows, SLANG: NOT DETERMINED
+ */
+globus_result_t
+globus_i_gsi_get_proc_id_string_win32(
+    char **                             proc_id_string)
+{
+    int                                 uid;
+
+    static char *                       _function_name_ =
+        "globus_i_gsi_get_proc_id_string_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    /* SLANG: need to set the string to the process name or whatever */
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    
     return GLOBUS_SUCCESS;
 }
 /* @} */
@@ -566,6 +724,11 @@ globus_gsi_cred_get_cert_dir_win32(
     globus_result_t                     result;
     char *                              home;
     char *                              globus_location;
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_cert_dir_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *cert_dir = NULL;
 
@@ -650,10 +813,9 @@ globus_gsi_cred_get_cert_dir_win32(
         }
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "Using cert_dir = %s\n",
-            (*cert_dir ? *cert_dir : "null"));
-#endif /* DEBUG */
+    GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(
+        1, (stderr, "Using cert_dir = %s\n", 
+            (*cert_dir ? *cert_dir : "null")));
 
     if(!(*cert_dir))
     {
@@ -708,6 +870,8 @@ globus_gsi_cred_get_cert_dir_win32(
         globus_free(default_cert_dir);
     }
 
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
     return result;
 }
 /* @} */
@@ -757,6 +921,11 @@ globus_gsi_cred_get_user_cert_filename_win32(
     HKEY                                hkDir = NULL;
     char                                val_user_cert[512];
     char                                val_user_key[512];
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_user_cert_filename_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *user_cert = NULL;
     *user_key = NULL;
@@ -853,27 +1022,24 @@ globus_gsi_cred_get_user_cert_filename_win32(
 
     if(!(*user_cert) || !(*user_key))
     {
-        result = globus_i_gsi_credential_error_result(
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__,
-            "The user cert could not be found in: \n"
-            "1) env. var. X509_USER_CERT=%s\n"
-            "2) registry key x509_user_cert: %s\n"
-            "3) %s\n4) %s\n\n"
-            "The user key could not be found in:\n,"
-            "1) env. var. X509_USER_KEY=%s\n"
-            "2) registry key x509_user_key: %s\n"
-            "3) %s\n4) %s\n",
-            env_user_cert,
-            reg_user_cert,
-            default_user_cert,
-            default_pkcs12_user_cred,
-            env_user_key,
-            reg_user_key,
-            default_user_key,
-            default_pkcs12_user_cred);
+            ("The user cert could not be found in: \n"
+             "1) env. var. X509_USER_CERT=%s\n"
+             "2) registry key x509_user_cert: %s\n"
+             "3) %s\n4) %s\n\n"
+             "The user key could not be found in:\n,"
+             "1) env. var. X509_USER_KEY=%s\n"
+             "2) registry key x509_user_key: %s\n"
+             "3) %s\n4) %s\n",
+             env_user_cert,
+             reg_user_cert,
+             default_user_cert,
+             default_pkcs12_user_cred,
+             env_user_key,
+             reg_user_key,
+             default_user_key,
+             default_pkcs12_user_cred));
 
         goto error_exit;
     }
@@ -918,6 +1084,8 @@ globus_gsi_cred_get_user_cert_filename_win32(
     {
         globus_free(default_user_key);
     }
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     
     return result;
 }
@@ -974,6 +1142,11 @@ globus_gsi_cred_get_host_cert_filename_win32(
     HKEY                                hkDir = NULL;
     char                                val_host_cert[512];
     char                                val_host_key[512];
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_host_cert_filename_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *host_cert = NULL;
     *host_key = NULL;
@@ -1116,29 +1289,26 @@ globus_gsi_cred_get_host_cert_filename_win32(
 
     if(!(*host_cert) || !(*host_key))
     {
-        result = globus_i_gsi_credential_error_result(
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__,
-            "The user cert could not be found in: \n"
-            "1) env. var. X509_USER_CERT=%s\n"
-            "2) registry key x509_user_cert: %s\n"
-            "3) %s\n4) %s5) %s\n\n"
-            "The user key could not be found in:\n,"
-            "1) env. var. X509_USER_KEY=%s\n"
-            "2) registry key x509_user_key: %s\n"
-            "3) %s\n4) %s5) %s\n",
-            env_host_cert,
-            reg_host_cert,
-            default_host_cert,
-            installed_host_cert,
-            local_host_cert,
-            env_host_key,
-            reg_host_key,
-            default_host_key,
-            installed_host_key,
-            local_host_key);
+            ("The user cert could not be found in: \n"
+             "1) env. var. X509_USER_CERT=%s\n"
+             "2) registry key x509_user_cert: %s\n"
+             "3) %s\n4) %s5) %s\n\n"
+             "The user key could not be found in:\n,"
+             "1) env. var. X509_USER_KEY=%s\n"
+             "2) registry key x509_user_key: %s\n"
+             "3) %s\n4) %s5) %s\n",
+             env_host_cert,
+             reg_host_cert,
+             default_host_cert,
+             installed_host_cert,
+             local_host_cert,
+             env_host_key,
+             reg_host_key,
+             default_host_key,
+             installed_host_key,
+             local_host_key));
 
         goto error_exit;
     }
@@ -1202,6 +1372,8 @@ globus_gsi_cred_get_host_cert_filename_win32(
         globus_free(default_host_key);
     }
 
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
     return result;
 }
 /* @} */
@@ -1264,6 +1436,11 @@ globus_gsi_cred_get_service_cert_filename_win32(
     HKEY                                hkDir = NULL;
     char                                val_service_cert[512];
     char                                val_service_key[512];
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_service_cert_filename_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *service_cert = NULL;
     *service_key = NULL;
@@ -1419,29 +1596,26 @@ globus_gsi_cred_get_service_cert_filename_win32(
 
     if(!(*service_cert) || !(*service_key))
     {
-        result = globus_i_gsi_credential_error_result(
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__,
-            "The user cert could not be found in: \n"
-            "1) env. var. X509_USER_CERT=%s\n"
-            "2) registry key x509_user_cert: %s\n"
-            "3) %s\n4) %s5) %s\n\n"
-            "The user key could not be found in:\n,"
-            "1) env. var. X509_USER_KEY=%s\n"
-            "2) registry key x509_user_key: %s\n"
-            "3) %s\n4) %s5) %s\n",
-            env_service_cert,
-            reg_service_cert,
-            default_service_cert,
-            installed_service_cert,
-            local_service_cert,
-            env_service_key,
-            reg_service_key,
-            default_service_key,
-            installed_service_key,
-            local_service_key);
+            ("The user cert could not be found in: \n"
+             "1) env. var. X509_USER_CERT=%s\n"
+             "2) registry key x509_user_cert: %s\n"
+             "3) %s\n4) %s5) %s\n\n"
+             "The user key could not be found in:\n,"
+             "1) env. var. X509_USER_KEY=%s\n"
+             "2) registry key x509_user_key: %s\n"
+             "3) %s\n4) %s5) %s\n",
+             env_service_cert,
+             reg_service_cert,
+             default_service_cert,
+             installed_service_cert,
+             local_service_cert,
+             env_service_key,
+             reg_service_key,
+             default_service_key,
+             installed_service_key,
+             local_service_key));
 
         goto error_exit;
     }
@@ -1505,6 +1679,8 @@ globus_gsi_cred_get_service_cert_filename_win32(
         globus_free(default_service_key);
     }
 
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
     return result;
 }
 /* @} */
@@ -1565,6 +1741,11 @@ globus_gsi_cred_get_proxy_filename_win32(
     int                                 len;
     globus_result_t                     result;
     char *                              user_id_string;
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_proxy_filename_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *user_proxy = NULL;
 
@@ -1635,19 +1816,16 @@ globus_gsi_cred_get_proxy_filename_win32(
 
     if(!(*user_proxy))
     {            
-        result = globus_i_gsi_credential_error_result( 
+        result = GLOBUS_GSI_CRED_ERROR_RESULT( 
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__, 
-            "A file location for%s the proxy cert could be found in: \n"
-            "1) env. var. X509_USER_PROXY=%s\n"
-            "2) registry key x509_user_proxy: %s\n"
-            "3) %s\n",
-            (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
-            env_user_proxy,
-            reg_user_proxy,
-            default_user_proxy);
+            ("A file location for%s the proxy cert could be found in: \n"
+             "1) env. var. X509_USER_PROXY=%s\n"
+             "2) registry key x509_user_proxy: %s\n"
+             "3) %s\n",
+             (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
+             env_user_proxy,
+             reg_user_proxy,
+             default_user_proxy));
         
         goto error_exit;
     }
@@ -1674,6 +1852,8 @@ globus_gsi_cred_get_proxy_filename_win32(
         globus_free(default_user_proxy);
     }
     
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
     return result;
 }
 /* @} */
@@ -1701,17 +1881,29 @@ globus_result_t
 globus_i_gsi_get_home_dir_unix(
     char **                             home_dir)
 {
+    globus_result_t                     result;
     static char *                        _function_name_ =
         "globus_i_gsi_get_home_dir_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *home_dir = (char *) getenv("HOME");
 
     if((*home_dir) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
+            ("Could not get a home directory for this machine"));
+        goto exit;
     }
-    return GLOBUS_SUCCESS;
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }
 /* @} */
 
@@ -1737,9 +1929,12 @@ globus_i_gsi_file_exists_unix(
     globus_gsi_statcheck_t *            status)
 {
     struct stat                         stx;
+    globus_result_t                     result;
 
     static char *                       _function_name_ =
         "globus_i_gsi_file_exists_win32";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if (stat(filename,&stx) == -1)
     {
@@ -1748,21 +1943,24 @@ globus_i_gsi_file_exists_unix(
         case ENOENT:
         case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
-            return GLOBUS_SUCCESS;
-
+            result = GLOBUS_SUCCESS;
+            goto exit;
+            
         case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         default:
-            return globus_error_put(
+            result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
                     GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
                     __FILE__":__LINE__:%s: Error getting status of keyfile\n",
                     _function_name_));
+            goto exit;
         }
     }
 
@@ -1775,11 +1973,18 @@ globus_i_gsi_file_exists_unix(
     if (stx.st_size == 0)
     {
         *status = GLOBUS_ZERO_LENGTH;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
 
     *status = GLOBUS_VALID;
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }    
 /* @} */
 
@@ -1814,9 +2019,11 @@ globus_i_gsi_check_keyfile_unix(
     globus_gsi_statcheck_t *            status)
 {
     struct stat                         stx;
-
+    globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_i_gsi_check_keyfile_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     if (stat(filename,&stx) == -1)
     {
@@ -1825,21 +2032,24 @@ globus_i_gsi_check_keyfile_unix(
         case ENOENT:
         case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         default:
-            return globus_error_put(
+            result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
                     GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
                     __FILE__":__LINE__:%s: Error getting status of keyfile\n",
                     _function_name_));
+            goto exit;
         }
     }
 
@@ -1852,7 +2062,8 @@ globus_i_gsi_check_keyfile_unix(
     if (stx.st_uid != getuid())
     {
         *status = GLOBUS_NOT_OWNED;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
 
     /* check that the key file is not wx by user, or rwx by group or others */
@@ -1860,22 +2071,29 @@ globus_i_gsi_check_keyfile_unix(
                        S_IRGRP | S_IWGRP | S_IXGRP |
                        S_IROTH | S_IWOTH | S_IXOTH))
     {
-#ifdef DEBUG
-        fprintf(stderr,"checkstat:%s:mode:%o\n",filename,stx.st_mode);
-#endif
+        GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(
+            2, (stderr, "checkstat:%s:mode:%o\n",filename,stx.st_mode)); 
+
         *status = GLOBUS_BAD_PERMISSIONS;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
-    
 
     if (stx.st_size == 0)
     {
         *status = GLOBUS_ZERO_LENGTH;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
 
     *status = GLOBUS_VALID;
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return result;
 }
 /* @} */
 
@@ -1910,10 +2128,12 @@ globus_i_gsi_check_certfile_unix(
     globus_gsi_statcheck_t *            status)
 {
     struct stat                         stx;
-
+    globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_i_gsi_check_certfile_unix";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
     if (stat(filename,&stx) == -1)
     {
         switch (errno)
@@ -1921,21 +2141,24 @@ globus_i_gsi_check_certfile_unix(
         case ENOENT:
         case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
-            return GLOBUS_SUCCESS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
 
         default:
-            return globus_error_put(
+            result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
                     GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
                     __FILE__":__LINE__:%s: Error getting status of keyfile\n",
                     _function_name_));
+            goto exit;
         }
     }
 
@@ -1948,7 +2171,8 @@ globus_i_gsi_check_certfile_unix(
     if (stx.st_uid != getuid())
     {
         *status = GLOBUS_NOT_OWNED;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
 
     /* check that the cert file is not x by user, or wx by group or others */
@@ -1956,21 +2180,28 @@ globus_i_gsi_check_certfile_unix(
                        S_IWGRP | S_IXGRP |
                        S_IWOTH | S_IXOTH))
     {
-#ifdef DEBUG
-        fprintf(stderr,"checkstat:%s:mode:%o\n",filename,stx.st_mode);
-#endif
+        GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(
+            2, (stderr, "checkstat:%s:mode:%o\n",filename,stx.st_mode));
+
         *status = GLOBUS_BAD_PERMISSIONS;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
     
     if (stx.st_size == 0)
     {
         *status = GLOBUS_ZERO_LENGTH;
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+        goto exit;
     }
 
     *status = GLOBUS_VALID;
-    return GLOBUS_SUCCESS;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* @} */
 
@@ -1994,21 +2225,126 @@ globus_i_gsi_get_user_id_string_unix(
     char **                             user_id_string)
 {
     int                                 uid;
-    int                                 len;
-    FILE *                              null_file_stream;
+    int                                 len = 10;
+    int                                 length;
+    globus_result_t                     result;
+
+    static char *                       _function_name_ =
+        "globus_i_gsi_get_user_id_string_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     uid = getuid();
 
-    null_file_stream = fopen("/dev/null", "w");
-    len = fprintf(null_file_stream, "%d", uid);
-    fclose(null_file_stream);
-    *user_id_string = (char *) globus_malloc(len);
-    if((*user_id_string) == NULL)
+    if((*user_id_string = globus_malloc(len)) == NULL)
     {
-        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto exit;
     }
-    sprintf(*user_id_string, "%d", uid);
-    return GLOBUS_SUCCESS;
+
+    while(1)
+    {
+        length = snprintf(*user_id_string, len,
+                           "%d", uid);
+        if(length > -1 && length < len)
+        {
+            break;
+        }
+        
+        if(length > -1)
+        {
+            len = length + 1;
+        }
+        else
+        {
+            len *= 2;
+        }
+        
+        if((*user_id_string = realloc(*user_id_string, len)) == NULL)
+        {
+            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
+
+/**
+ * UNIX - Get Process ID
+ * @ingroup globus_i_gsi_cred_system_config_unix
+ */
+/* @{ */
+/**
+ * Get a unique string representing the current process.  This is just
+ * the pid converted to a string.  
+ *
+ * @param proc_id_string
+ *        A unique string representing the process
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred
+ */
+globus_result_t
+globus_i_gsi_get_proc_id_string_unix(
+    char **                             proc_id_string)
+{
+    int                                 pid;
+    int                                 len = 10;
+    int                                 length;
+    globus_result_t                     result;
+
+    static char *                       _function_name_ =
+        "globus_i_gsi_get_proc_id_string_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    pid = getpid();
+
+    if((*proc_id_string = globus_malloc(len)) == NULL)
+    {
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto exit;
+    }
+
+    while(1)
+    {
+        length = snprintf(*proc_id_string, len,
+                           "%d", pid);
+        if(length > -1 && length < len)
+        {
+            break;
+        }
+        
+        if(length > -1)
+        {
+            len = length + 1;
+        }
+        else
+        {
+            len *= 2;
+        }
+        
+        if((*proc_id_string = realloc(*proc_id_string, len)) == NULL)
+        {
+            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
 }
 /* @} */
 
@@ -2058,6 +2394,11 @@ globus_gsi_cred_get_cert_dir_unix(
     char *                              home;
     char *                              globus_location;
 
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_cert_dir_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
     *cert_dir = NULL;
 
     if((result = globus_i_gsi_cred_create_cert_dir_path(
@@ -2123,24 +2464,22 @@ globus_gsi_cred_get_cert_dir_unix(
         }
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "Using cert_dir = %s\n",
-            (*cert_dir ? *cert_dir : "null"));
-#endif /* DEBUG */
+    GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(
+        2, (stderr, "Using cert_dir = %s\n", 
+            (*cert_dir ? *cert_dir : "null")));
 
     if(!(*cert_dir))
     {
-        result = globus_error_put(globus_error_construct_string(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            NULL,
-            "The trusted certificates directory could not be"
-            "found in any of the following locations: \n"
-            "1) env. var. X509_CERT_DIR=%s\n"
-            "2) %s\n3) %s\n4) %s\n",
-            env_cert_dir,
-            local_cert_dir,
-            installed_cert_dir,
-            default_cert_dir));
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
+            ("The trusted certificates directory could not be"
+             "found in any of the following locations: \n"
+             "1) env. var. X509_CERT_DIR=%s\n"
+             "2) %s\n3) %s\n4) %s\n",
+             env_cert_dir,
+             local_cert_dir,
+             installed_cert_dir,
+             default_cert_dir));
 
         goto error_exit;
     }
@@ -2174,6 +2513,8 @@ globus_gsi_cred_get_cert_dir_unix(
     {
         globus_free(default_cert_dir);
     }
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
 
     return result;
 }
@@ -2220,6 +2561,8 @@ globus_gsi_cred_get_user_cert_filename_unix(
 
     static char *                       _function_name_ =
         "globus_gsi_cred_get_user_cert_filename_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *user_cert = NULL;
     *user_key = NULL;
@@ -2287,32 +2630,28 @@ globus_gsi_cred_get_user_cert_filename_unix(
 
     if(!(*user_cert) || !(*user_key))
     {
-        result = globus_i_gsi_credential_error_result(
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__,
-            "The user cert could not be found in: \n"
-            "1) env. var. X509_USER_CERT=%s\n"
-            "2) %s\n3) %s\n\n"
-            "The user key could not be found in:\n,"
-            "1) env. var. X509_USER_KEY=%s\n"
-            "2) %s\n3) %s\n",
-            env_user_cert,
-            default_user_cert,
-            default_pkcs12_user_cred,
-            env_user_key,
-            default_user_key,
-            default_pkcs12_user_cred);
+            ("The user cert could not be found in: \n"
+             "1) env. var. X509_USER_CERT=%s\n"
+             "2) %s\n3) %s\n\n"
+             "The user key could not be found in:\n,"
+             "1) env. var. X509_USER_KEY=%s\n"
+             "2) %s\n3) %s\n",
+             env_user_cert,
+             default_user_cert,
+             default_pkcs12_user_cred,
+             env_user_key,
+             default_user_key,
+             default_pkcs12_user_cred));
 
         goto error_exit;
     }
 
-#ifdef DEBUG
-    fprintf(stderr,"Using x509_user_cert=%s\n      x509_user_key =%s\n",
+    GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(
+        2, (stderr,"Using x509_user_cert=%s\n      x509_user_key =%s\n",
             (*user_cert) ? (*user_cert) : NULL, 
-            (*user_key) ? (*user_key) : NULL);
-#endif
+            (*user_key) ? (*user_key) : NULL));
 
     result = GLOBUS_SUCCESS;
     goto done;
@@ -2348,7 +2687,8 @@ globus_gsi_cred_get_user_cert_filename_unix(
     {
         globus_free(default_user_key);
     }
-    
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
 /* @} */
@@ -2399,6 +2739,8 @@ globus_gsi_cred_get_host_cert_filename_unix(
 
     static char *                       _function_name_ =
         "globus_gsi_cred_get_host_cert_filename_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *host_cert = NULL;
     *host_key = NULL;
@@ -2514,25 +2856,22 @@ globus_gsi_cred_get_host_cert_filename_unix(
 
     if(!(*host_cert) || !(*host_key))
     {
-        result = globus_i_gsi_credential_error_result(
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__,
-            "The user cert could not be found in: \n"
-            "1) env. var. X509_USER_CERT=%s\n"
-            "2) %s\n3) %s4) %s\n\n"
-            "The user key could not be found in:\n,"
-            "1) env. var. X509_USER_KEY=%s\n"
-            "2) %s\n3) %s4) %s\n",
-            env_host_cert,
-            default_host_cert,
-            installed_host_cert,
-            local_host_cert,
-            env_host_key,
-            default_host_key,
-            installed_host_key,
-            local_host_key);
+            ("The user cert could not be found in: \n"
+             "1) env. var. X509_USER_CERT=%s\n"
+             "2) %s\n3) %s4) %s\n\n"
+             "The user key could not be found in:\n,"
+             "1) env. var. X509_USER_KEY=%s\n"
+             "2) %s\n3) %s4) %s\n",
+             env_host_cert,
+             default_host_cert,
+             installed_host_cert,
+             local_host_cert,
+             env_host_key,
+             default_host_key,
+             installed_host_key,
+             local_host_key));
 
         goto error_exit;
     }
@@ -2588,6 +2927,7 @@ globus_gsi_cred_get_host_cert_filename_unix(
         globus_free(default_host_key);
     }
 
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
 /* @} */
@@ -2644,6 +2984,8 @@ globus_gsi_cred_get_service_cert_filename_unix(
 
     static char *                       _function_name_ =
         "globus_gsi_cred_get_service_cert_filename_unix";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     *service_cert = NULL;
     *service_key = NULL;
@@ -2764,32 +3106,28 @@ globus_gsi_cred_get_service_cert_filename_unix(
         }
     }
 
-#ifdef DEBUG
-    fprintf(stderr,"Using x509_user_cert=%s\n      x509_user_key =%s\n",
-            service_cert, service_key);
-#endif
+    GLOBUS_I_GSI_CRED_DEBUG_FPRINTF(
+        2, (stderr, "Using x509_user_cert=%s\n      x509_user_key =%s\n",
+            *service_cert, *service_key));
 
     if(!(*service_cert) || !(*service_key))
     {
-        result = globus_i_gsi_credential_error_result(
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__,
-            "The user cert could not be found in: \n"
-            "1) env. var. X509_USER_CERT=%s\n"
-            "2) %s\n3) %s4) %s\n\n"
-            "The user key could not be found in:\n,"
-            "1) env. var. X509_USER_KEY=%s\n"
-            "2) %s\n3) %s4) %s\n",
-            env_service_cert,
-            default_service_cert,
-            installed_service_cert,
-            local_service_cert,
-            env_service_key,
-            default_service_key,
-            installed_service_key,
-            local_service_key);
+            ("The user cert could not be found in: \n"
+             "1) env. var. X509_USER_CERT=%s\n"
+             "2) %s\n3) %s4) %s\n\n"
+             "The user key could not be found in:\n,"
+             "1) env. var. X509_USER_KEY=%s\n"
+             "2) %s\n3) %s4) %s\n",
+             env_service_cert,
+             default_service_cert,
+             installed_service_cert,
+             local_service_cert,
+             env_service_key,
+             default_service_key,
+             installed_service_key,
+             local_service_key));
 
         goto error_exit;
     }
@@ -2845,13 +3183,14 @@ globus_gsi_cred_get_service_cert_filename_unix(
         globus_free(default_service_key);
     }
 
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
 /* @} */
 
 /**
  * UNIX - Get Proxy Filename
- * @ingroup globus_gsi_cred_operations
+ * @ingroup globus_gsi_cred_system_config_unix
  */
 /* @{ */
 /**
@@ -2894,6 +3233,8 @@ globus_gsi_cred_get_proxy_filename_unix(
     static char *                       _function_name_ =
         "globus_gsi_cred_get_proxy_filename_unix";
 
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
     *user_proxy = NULL;
 
     if((env_value = getenv(X509_USER_PROXY)) != NULL &&
@@ -2912,7 +3253,7 @@ globus_gsi_cred_get_proxy_filename_unix(
         *user_proxy = env_user_proxy;
     }
 
-    if (!user_proxy)
+    if (!*user_proxy)
     {
         if((result = GLOBUS_I_GSI_GET_USER_ID_STRING(&user_id_string))
            != GLOBUS_SUCCESS)
@@ -2941,17 +3282,14 @@ globus_gsi_cred_get_proxy_filename_unix(
 
     if(!(*user_proxy))
     {            
-        result = globus_i_gsi_credential_error_result( 
+        result = GLOBUS_GSI_CRED_ERROR_RESULT( 
             GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
-            __FILE__,
-            _function_name_,
-            __LINE__, 
-            "A file location for%s the proxy cert could be found in: \n"
-            "1) env. var. X509_USER_PROXY=%s\n"
-            "2) %s\n",
-            (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
-            env_user_proxy,
-            default_user_proxy);
+            ("A file location for%s the proxy cert could not be found in: \n"
+             "1) env. var. X509_USER_PROXY=%s\n"
+             "2) %s\n",
+             (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
+             env_user_proxy,
+             default_user_proxy));
         
         goto error_exit;
     }
@@ -2974,8 +3312,112 @@ globus_gsi_cred_get_proxy_filename_unix(
         globus_free(default_user_proxy);
     }
     
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
 /* @} */
 
 #endif /* done defining *_unix functions */
+
+
+/**
+ * Get Unique Proxy Filename
+ * @ingroup globus_gsi_cred_system_config
+ */
+/* @{ */
+/**
+ * Get a unique proxy cert filename.  This is mostly used
+ * for delegated proxy credentials.  Each filename returned
+ * is going to be unique for each time the function is called.
+ * 
+ * @param unique_filename
+ *        the unique filename for a delegated proxy cert
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
+globus_result_t
+globus_gsi_cred_get_unique_proxy_filename(
+    char **                             unique_filename)
+{
+    char *                              default_unique_filename = NULL;
+    globus_result_t                     result;
+    char *                              proc_id_string;
+    char *                              unique_tmp_name[L_tmpnam];
+    static int                          i = 0;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_unique_proxy_filename";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
+    *unique_filename = NULL;
+
+    if((result = GLOBUS_I_GSI_GET_PROC_ID_STRING(&proc_id_string))
+       != GLOBUS_SUCCESS)
+    {
+        result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        goto error_exit;
+    }
+
+    if(tmpnam(*unique_tmp_name) == NULL)
+    {
+        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
+            ("Could not get a unique filename for the temporary proxy cert"));
+        goto error_exit;
+    }
+    
+    if((result = globus_i_gsi_cred_create_key_string(
+        unique_filename,
+        & default_unique_filename,
+        "%s%s%s%s.%s.%d",
+        DEFAULT_SECURE_TMP_DIR,
+        FILE_SEPERATOR,
+        X509_UNIQUE_PROXY_FILE,
+        proc_id_string,
+        unique_tmp_name,
+        ++i)) != GLOBUS_SUCCESS)
+    {
+        result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG);
+        goto error_exit;
+    }
+
+    *unique_filename = default_unique_filename;
+
+    if(!(*unique_filename))
+    {            
+        result = GLOBUS_GSI_CRED_ERROR_RESULT( 
+            GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG,
+            ("A file location for writing the unique proxy cert"
+             " could not be found in: %s\n",
+             default_unique_filename));
+        
+        goto error_exit;
+    }
+
+    result = GLOBUS_SUCCESS;
+    goto done;
+
+ error_exit:
+    
+    if(*unique_filename)
+    {
+        globus_free(*unique_filename);
+        *unique_filename = NULL;
+    }
+
+ done:
+
+    if(default_unique_filename && 
+       (default_unique_filename != (*unique_filename)))
+    {
+        globus_free(default_unique_filename);
+    }
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
