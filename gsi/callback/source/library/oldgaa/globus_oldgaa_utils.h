@@ -46,6 +46,7 @@ EXTERN_C_BEGIN
 
 #define COMMENT  			'#'
 #define STRING_DELIMITER                '\''
+#define ESCAPE_CHARACTER                '\\'
 #define END_OF_LINE	         	'\n'
 
 #define ERROR_WHILE_GETTING_DEFAULT_POLICY_LOCATION  100
