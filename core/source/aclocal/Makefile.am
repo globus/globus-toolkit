@@ -5,6 +5,7 @@ aclocal_DATA = globus_package.m4 \
 	automake_targets \
 	automake_top_rules \
 	automake_rules \
+	automake_doxygen_rules \
 	automake_config
 
 EXTRA_DIST = $(aclocal_DATA) \
