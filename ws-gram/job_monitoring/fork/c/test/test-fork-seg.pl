@@ -8,8 +8,10 @@ use Test;
 my $start = time();
 my $testtmp = &make_tmpdir();
 my @log_data;
-my $log_path = &get_log_path();
 my $skip_all = 0;
+my $gram_fork_conf = $ENV{GLOBUS_LOCATION} . '/etc/globus-fork.conf';
+my $gram_fork_conf_save = "${gram_fork_conf}.save";
+my $log_path = &get_log_path();
 
 if (! defined($log_path))
 {
@@ -122,18 +124,23 @@ sub write_test_data_to_log {
 }
 
 sub get_log_path {
-    my $gram_fork_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-fork.conf";
-    open(CONF, "<$gram_fork_conf") || return undef;
-    my $log;
+    rename($gram_fork_conf, $gram_fork_conf_save);
+
+    open(CONF, "<$gram_fork_conf_save") || return undef;
+    open(TMP_CONF, ">$gram_fork_conf") || return undef;
+    my $log = "$testtmp/globus-fork.log";
 
     while (<CONF>) {
         chomp;
         my ($var, $val) = split(/\s*=\s*/, $_);
         if ($var =~ m/^log_path$/) {
-            $log = $val;
+            print TMP_CONF "log_path=$log\n";
+        } else {
+            print TMP_CONF "$_\n";
         }
     }
     close(CONF);
+    close(TMP_CONF);
 
     return $log;
 }
@@ -182,5 +189,9 @@ END
     {
         File::Path::rmtree($testtmp);
     }
-}
 
+    if (-f $gram_fork_conf_save)
+    {
+        rename($gram_fork_conf_save, $gram_fork_conf);
+    }
+}
