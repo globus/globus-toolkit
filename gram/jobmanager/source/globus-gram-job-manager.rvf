@@ -147,6 +147,7 @@ Description: "Causes the jobmanager to save it's job state information to a
 	      persistent file on disk. If the job manager exits or is
 	      suspended, the client can later start up a new job manager   
 	      which can continue monitoring the job."
+Values: yes no
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: two_phase
@@ -168,10 +169,10 @@ Description: "Use a two-phase commit for job submission and completion. The
 	      restart later). The timeoutvalue can be extended via a signal.
 	      When one of the following errors occurs, the job manager does
 	      not delete the job state file when it exits:
-	      + GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT
-	      + GLOBUS_GRAM_PROTOCOL_ERROR_TTL_EXPIRED
-	      + GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED
-	      + GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED
+	      GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT,
+	      GLOBUS_GRAM_PROTOCOL_ERROR_TTL_EXPIRED,
+	      GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED,
+	      GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED.
 	      In these cases, it can not be restarted, so the job manager  
 	      will not wait for the commit signal after sending the FAILED
 	      callback"
@@ -252,7 +253,7 @@ Description: "Specifies a list of files which will be removed after the job
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: gass_cache
-Description: "Specifies location to override the GASS cache location."
+Description: Specifies location to override the GASS cache location.
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: resource_manager_contact
