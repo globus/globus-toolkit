@@ -1,1 +1,0 @@
--L/home/mystuff/lib -lXm -L$(GLOBUS_INSTALL_PATH)/lib -lfum_sweet -L/opt/dum/lib -ldee -L$(GLOBUS_INSTALL_PATH)/lib -lfoo_sweet -L/usr/local/lib -lX -L$(GLOBUS_INSTALL_PATH)/lib -lfee_sweet  -lm -L/opt/dum/lib -ldum  
