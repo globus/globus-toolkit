@@ -28,3 +28,13 @@ BUNDLE gt4-gram
         globus_scheduler_event_generator            
         globus_wsrf_gram_job_monitoring_common_java_source
         globus_fork_starter
+        
+BUNDLE gt4-gram-pbs
+        globus_gram_job_manager_setup_pbs
+        globus_scheduler_event_generator_pbs
+        globus_scheduler_event_generator_pbs_setup
+
+BUNDLE gt4-gram-condor
+        globus_gram_job_manager_setup_condor
+        globus_scheduler_event_generator_condor
+        globus_scheduler_event_generator_condor_setup        
