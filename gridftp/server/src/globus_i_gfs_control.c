@@ -658,22 +658,14 @@ globus_l_gfs_op_to_attr(
         op, &attr->nstreams);
     globus_assert(result == GLOBUS_SUCCESS);
 
-    if(!globus_i_gfs_config_bool("no_gssapi"))
-    {    
-        result = globus_gridftp_server_control_get_data_auth(
-            op, 
-            &attr->dcau.subject.subject, 
-            (char *) &attr->dcau.mode,
-            (char *) &attr->prot, 
-            &attr->delegated_cred);
-        globus_assert(result == GLOBUS_SUCCESS);
+    result = globus_gridftp_server_control_get_data_auth(
+        op, 
+        &attr->dcau.subject.subject, 
+        (char *) &attr->dcau.mode,
+        (char *) &attr->prot, 
+        &attr->delegated_cred);
+    globus_assert(result == GLOBUS_SUCCESS);
                 
-        attr->use_dcau = GLOBUS_TRUE;
-    }
-    else
-    {
-        attr->use_dcau = GLOBUS_FALSE;
-    }                
 }
 
 static

@@ -503,26 +503,23 @@ globus_l_gfs_data_handle_init(
         }
     }
 
-    if(attr->use_dcau)
+    result = globus_ftp_control_local_dcau(
+        &handle->data_channel, &attr->dcau, attr->delegated_cred);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = globus_ftp_control_local_dcau(
-            &handle->data_channel, &attr->dcau, attr->delegated_cred);
+        result = GlobusGFSErrorWrapFailed(
+            "globus_ftp_control_local_dcau", result);
+        goto error_control;
+    }
+    if(attr->dcau.mode != GLOBUS_FTP_CONTROL_DCAU_NONE)
+    {
+        result = globus_ftp_control_local_prot(
+            &handle->data_channel, attr->prot);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
-                "globus_ftp_control_local_dcau", result);
+                "globus_ftp_control_local_prot", result);
             goto error_control;
-        }
-        if(attr->dcau.mode != GLOBUS_FTP_CONTROL_DCAU_NONE)
-        {
-            result = globus_ftp_control_local_prot(
-                &handle->data_channel, attr->prot);
-            if(result != GLOBUS_SUCCESS)
-            {
-                result = GlobusGFSErrorWrapFailed(
-                    "globus_ftp_control_local_prot", result);
-                goto error_control;
-            }
         }
     }
     

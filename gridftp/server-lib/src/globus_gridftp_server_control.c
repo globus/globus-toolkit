@@ -2881,7 +2881,18 @@ globus_i_gsc_authenticate(
         else
         {
             type = GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE;
+            op->server_handle->subject = GLOBUS_NULL;
+            op->server_handle->del_cred = GLOBUS_NULL;
+            op->server_handle->prot = 'C';
+            op->server_handle->dcau = 'N';
         }
+    }
+    else
+    {
+        op->server_handle->subject = GLOBUS_NULL;
+        op->server_handle->del_cred = GLOBUS_NULL;
+        op->server_handle->prot = 'C';
+        op->server_handle->dcau = 'N';
     }
     /* call out to user */
     if(op->server_handle->funcs.auth_cb != NULL)

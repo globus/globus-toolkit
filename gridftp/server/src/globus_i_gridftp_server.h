@@ -37,7 +37,6 @@ typedef struct
     globus_ftp_control_protection_t     prot;
     globus_ftp_control_dcau_t           dcau;
     gss_cred_id_t                       delegated_cred;
-    globus_bool_t                       use_dcau;
 } globus_i_gfs_data_attr_t;
 
 typedef struct
