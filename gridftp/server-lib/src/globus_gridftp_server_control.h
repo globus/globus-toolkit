@@ -503,8 +503,13 @@ globus_gridftp_server_control_get_cwd(
 
 globus_result_t
 globus_gridftp_server_control_get_dcau(
-    globus_gridftp_server_control_t         server,
+    globus_gridftp_server_control_op_t      op,
     char *                                  dcau);
+
+globus_result_t
+globus_gridftp_server_control_get_prot(
+    globus_gridftp_server_control_op_t      op,
+    char *                                  prot);
 
 globus_result_t
 globus_gridftp_server_control_get_list_type(

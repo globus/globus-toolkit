@@ -136,19 +136,36 @@ globus_gridftp_server_control_get_cwd(
 
 globus_result_t
 globus_gridftp_server_control_get_dcau(
-    globus_gridftp_server_control_t         server,
+    globus_gridftp_server_control_op_t      op,
     char *                                  dcau)
 {
-    if(server == NULL)
+    if(op == NULL)
     {
     }
 
-    globus_mutex_lock(&server->mutex);
+    globus_mutex_lock(&op->server_handle->mutex);
     {
-        *dcau = server->dcau;
+        *dcau = op->server_handle->dcau;
     }
-    globus_mutex_unlock(&server->mutex);
+    globus_mutex_unlock(&op->server_handle->mutex);
 
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_gridftp_server_control_get_prot(
+    globus_gridftp_server_control_op_t      op,
+    char *                                  prot)
+{
+    if(op == NULL)
+    {
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        *prot = op->server_handle->dcau;
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
