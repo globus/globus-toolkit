@@ -46,7 +46,7 @@ if ($verbose) {
 
 STDOUT->autoflush(1);
 TESTLOG->autoflush(1);
-TIMINGSLOG->autoflush(1);
+#TIMINGSLOG->autoflush(1);
 
 for (my $index=$startLoad; $index<=$endLoad; $index*=2) {
     my $testOutputFile = "throughput-test-" . $index . ".log";
@@ -73,21 +73,21 @@ for (my $index=$startLoad; $index<=$endLoad; $index*=2) {
     close EXEC;
     close TESTLOG;
 
-    my $timingsOutputFile = "throughput-timings-" . $index . ".html";
-    my $timingsExec = "./parse-timings.pl " . $testOutputFile;
+    #my $timingsOutputFile = "throughput-timings-" . $index . ".html";
+    #my $timingsExec = "./parse-timings.pl " . $testOutputFile;
 
-    open TIMINGSLOG, ">$timingsOutputFile" or die "Error: unable to open file "
-        . $timingsOutputFile . "for writing";
-    open EXEC, "$timingsExec |" or die "Error: unable to execute command \'"
-        . $timingsExec . "\'";
-        while (<EXEC>) {
-            if ($verbose) {
-                print;
-            }
-            print TIMINGSLOG;
-        }
-    close EXEC;
-    close TIMINGSLOG;
+    #open TIMINGSLOG, ">$timingsOutputFile" or die "Error: unable to open file "
+        #. $timingsOutputFile . "for writing";
+    #open EXEC, "$timingsExec |" or die "Error: unable to execute command \'"
+        #. $timingsExec . "\'";
+        #while (<EXEC>) {
+            #if ($verbose) {
+                #print;
+            #}
+            #print TIMINGSLOG;
+        #}
+    #close EXEC;
+    #close TIMINGSLOG;
 }
 END{};
 1;

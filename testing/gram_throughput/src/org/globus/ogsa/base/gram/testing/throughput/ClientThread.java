@@ -89,7 +89,6 @@ public class ClientThread
         }
 
         int load = this.harness.getLoad();
-logger.debug("load in client: " + load);
         this.jobs = new Vector(load);
 
         //start timing acutal duration
@@ -151,6 +150,11 @@ logger.debug("load in client: " + load);
         this.jobs.add(job);
         job.addListener(this);
         job.request(this.harness.getFactoryUrl());
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting job just added to client #"
+                        + this.clientIndex);
+        }
         job.start();
 
         this.createdCount++;

@@ -84,10 +84,13 @@ public class ThroughputTester {
         }
 
         //calculate actual duration and jobs per minute across all clients
+        logger.info("Total Jobs Submitted: " + this.jobGrandTotal);
         long actualDuration = System.currentTimeMillis() - startTime;
+        logger.info("Actual Duration (seconds): " + actualDuration);
         double durationInMinutes = ((double)actualDuration) / 60000;
+        logger.info("Actual Duration (minutes): " + durationInMinutes);
         double jobsPerMinute = Math.round(
-            this.completedCount / durationInMinutes);
+            this.jobGrandTotal / durationInMinutes);
         logger.info("Jobs Per Minute: " + jobsPerMinute);
 
         System.exit(0);
