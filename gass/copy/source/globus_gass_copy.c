@@ -2130,7 +2130,7 @@ globus_l_gass_copy_gass_setup_callback(
 		globus_mutex_lock(&state->monitor.mutex);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG	   
 		globus_libc_fprintf(stderr, "gass_setup_callback(): transfer_register_get() returned: %d\n", rc);
-		if(rc==GLOBUS_GASS_ERROR_BAD_URL)
+		if(rc==GLOBUS_GASS_TRANSFER_ERROR_BAD_URL)
 		    globus_libc_fprintf(stderr, "rc == GLOBUS_GASS_ERROR_BAD_URL\n");
 #endif
 		err = globus_error_construct_string(
@@ -4339,8 +4339,11 @@ globus_gass_copy_register_url_to_url(
 	if (result != GLOBUS_SUCCESS)
 	{
 	    /* free the state */
-	   globus_l_gass_copy_state_free(handle->state);
-	   handle->state = GLOBUS_NULL;
+	    if(handle->state)
+	    {
+		globus_l_gass_copy_state_free(handle->state);
+		handle->state = GLOBUS_NULL;
+	    }
 	    goto error_result_exit;
 	}
     }
