@@ -868,7 +868,11 @@ struct globus_io_handle_s
     globus_i_io_tcpattr_instance_t		tcp_attr;
     globus_i_io_udpattr_instance_t		udp_attr;
     globus_i_io_fileattr_instance_t		file_attr;
-
+    
+    /* blocking call indicators for picking correct space to register to */
+    globus_bool_t                               blocking_read;
+    globus_bool_t                               blocking_write;
+    
     /* buffer for reading GSSAPI wrapped data */
     globus_fifo_t 				wrapped_buffers;
     globus_fifo_t 				unwrapped_buffers;

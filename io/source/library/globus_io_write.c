@@ -1187,9 +1187,7 @@ globus_io_write(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    /* we're going to poll on global space, save users space */
-    globus_i_io_get_callback_space(handle, &saved_space);
-    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+    handle->blocking_write = GLOBUS_TRUE;
     
     result = globus_io_register_write(handle,
 				     buf + try_wrote,
@@ -1213,7 +1211,7 @@ globus_io_write(
 
     globus_mutex_unlock(&monitor.mutex);
     
-    globus_i_io_set_callback_space(handle, saved_space);
+    handle->blocking_write = GLOBUS_FALSE;
 
     if(nbytes_written)
     {
@@ -1321,10 +1319,8 @@ globus_io_send(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     
-    /* we're going to poll on global space, save users space */
-    globus_i_io_get_callback_space(handle, &saved_space);
-    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
-
+    handle->blocking_write = GLOBUS_TRUE;
+    
     result = globus_io_register_send(handle,
 				     buf + try_wrote,
 				     nbytes - try_wrote,
@@ -1348,8 +1344,8 @@ globus_io_send(
 
     globus_mutex_unlock(&monitor.mutex);
     
-    globus_i_io_set_callback_space(handle, saved_space);
-    
+    handle->blocking_write = GLOBUS_FALSE;
+        
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes + try_wrote;
@@ -1437,10 +1433,8 @@ globus_io_writev(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    /* we're going to poll on global space, save users space */
-    globus_i_io_get_callback_space(handle, &saved_space);
-    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
-
+    handle->blocking_write = GLOBUS_TRUE;
+    
     result = globus_io_register_writev(handle,
 				       iov,
 				       iovcnt,
@@ -1463,9 +1457,8 @@ globus_io_writev(
 
     globus_mutex_unlock(&monitor.mutex);
 
-    globus_i_io_set_callback_space(handle, saved_space);
-
-
+    handle->blocking_write = GLOBUS_FALSE;
+    
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes;

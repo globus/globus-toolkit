@@ -1961,7 +1961,9 @@ globus_l_io_handle_events(
                 &time_now,
                 globus_l_io_kickout_read_cb,
                 select_info,
-                handle->socket_attr.space);
+                handle->blocking_read 
+                    ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                    : handle->socket_attr.space);
 	    globus_assert(result == GLOBUS_SUCCESS);
 	    
 	    /* We've handled an event, so we don't need to
@@ -2173,7 +2175,9 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_read_cb,
                             select_info,
-                            handle->socket_attr.space);
+                            handle->blocking_read 
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
                     }
 
@@ -2205,7 +2209,9 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_write_cb,
                             select_info,
-                            handle->socket_attr.space);
+                            handle->blocking_write 
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
 		    

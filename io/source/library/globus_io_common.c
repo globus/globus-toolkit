@@ -500,7 +500,6 @@ globus_io_listen(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
-    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -508,10 +507,11 @@ globus_io_listen(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    /* we're going to poll on global space, save users space */
-    globus_i_io_get_callback_space(handle, &saved_space);
-    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
-    
+    if(handle)
+    {
+        handle->blocking_read = GLOBUS_TRUE;
+    }
+        
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
 				       (void *) &monitor);
@@ -531,7 +531,10 @@ globus_io_listen(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    globus_i_io_set_callback_space(handle, saved_space);
+    if(handle)
+    {
+        handle->blocking_read = GLOBUS_FALSE;
+    }
 
     globus_mutex_destroy(&monitor.mutex);
 
@@ -856,6 +859,9 @@ globus_i_io_initialize_handle(
     
     globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
     handle->socket_attr.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    handle->blocking_write = GLOBUS_FALSE;
     
     return GLOBUS_SUCCESS;
 }
