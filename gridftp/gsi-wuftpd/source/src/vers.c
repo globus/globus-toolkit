@@ -58,7 +58,7 @@ gsi_wuftp_get_version(void)
 #endif
       " GSSAPI type"
 #ifdef GSSAPI_GLOBUS
-      " Globus/GSI SSLeay"
+      " Globus/GSI"
 #endif
 #ifdef GSSAPI_KRB5
       " Kerberos 5"

@@ -113,7 +113,8 @@ vers.c: version.h
 clean:
 	rm -f ${OBJS} ftpd ftpcmd.c ftpshut ftpshut.o 
 	rm -f ftprestart ftprestart.o ftpcount ftpcount.o
-	rm -f core index index.o ckconfig ckconfig.o
+	rm -f core index index.o ckconfig ckconfig.o *.lo
+	rm -rf .libs
 
 distclean: clean
-	rm -f config.h Makefile edit pathnames.h
+	rm -f config.h Makefile edit pathnames.h version.h
