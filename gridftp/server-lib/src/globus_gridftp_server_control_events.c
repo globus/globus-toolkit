@@ -227,12 +227,19 @@ globus_l_gsc_unreg_perf_marker(
     op = (globus_i_gsc_op_t *) user_arg;
     event = &op->event;
 
-    event->restart_running = GLOBUS_FALSE;
-    globus_callback_unregister(
-        op->event.restart_handle,
-        globus_l_gsc_unreg_restart_marker,
-        op,
-        NULL);
+    if(event->restart_running)
+    {
+        event->restart_running = GLOBUS_FALSE;
+        globus_callback_unregister(
+            op->event.restart_handle,
+            globus_l_gsc_unreg_restart_marker,
+            op,
+            NULL);
+    }
+    else
+    {
+        globus_l_gsc_event_done_cb(op);
+    }
 }
 
 static void

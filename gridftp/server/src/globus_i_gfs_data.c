@@ -1603,6 +1603,7 @@ globus_i_gfs_data_request_handle_destroy(
             &session_handle->handle_table, (int) data_arg);
         if(data_handle == NULL)
         {
+            globus_assert(0);
         }
         rc = globus_handle_table_decrement_reference(
             &session_handle->handle_table, (int) data_arg);

@@ -1010,6 +1010,9 @@ globus_l_gsc_cmd_quit(
     void *                                  user_arg)
 {
     globus_i_gsc_server_handle_t *          server_handle;
+    GlobusGridFTPServerName(globus_l_gsc_cmd_quit);
+
+    GlobusGridFTPServerDebugInternalEnter();
 
     server_handle = op->server_handle;
 
@@ -1019,6 +1022,8 @@ globus_l_gsc_cmd_quit(
     globus_gsc_959_finished_command(op, _FSMSL("221 Goodbye.\r\n"));
 
     globus_i_gsc_terminate(server_handle);
+
+    GlobusGridFTPServerDebugInternalExit();
 }
 
 /*************************************************************************

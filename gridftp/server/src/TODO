@@ -40,6 +40,13 @@ ipc security options - doc well, make sure it works the way we expect
 need some spec compliant support for partitioned layout
     current stripeblocksize impl is basically spec compliant RR
 
+
+------------------------Private message from Roland------------------------
+assert( i wanna know when this happens)
+data:3585
+control:766
+control_events.c:249
+--------------------------------end message--------------------------------
 -----------------------------------------------------------------------
 known bugs:
 -- ipc local mode doesn't work (besides no way to initiate it)
