@@ -3068,6 +3068,11 @@ globus_io_register_init_delegation(
     
     globus_i_io_mutex_unlock();
     
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_free(init_info);
+    }
+    
     return rc;
 } /* globus_io_register_init_delegation */
 
@@ -3315,6 +3320,11 @@ globus_io_register_accept_delegation(
     }
     
     globus_i_io_mutex_unlock();
+    
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_free(accept_info);
+    }
     
     return rc;
 }

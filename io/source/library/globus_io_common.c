@@ -760,6 +760,7 @@ globus_i_io_connect_callback(
     }
     else
     {
+        globus_libc_close(handle->fd);
 	handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     }
     
