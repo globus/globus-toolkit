@@ -126,6 +126,8 @@ typedef struct
 
  char * project;      /* The project to which the job should be billed */
 
+ char * reservation_handle; /* used for network Quality of Service (QOS) */
+
  char * condor_arch;  /* Used only when type=condor.  Must match one of the
                        * archetecture values as defined by condor
                        */

@@ -107,7 +107,8 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /*  96 */     "the gatekeeper contact cannot be parsed",
 /*  97 */     "the job manager could not find the 'poe' command",
 /*  98 */     "the job manager could not find the 'mpirun' command",
-/*  99 */     "the provided RSL 'start_time' parameter is invalid"
+/*  99 */     "the provided RSL 'start_time' parameter is invalid",
+/* 100 */     "the provided RSL 'reservation_handle' parameter is invalid"
 };
 
 const char *

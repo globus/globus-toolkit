@@ -2611,6 +2611,23 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         req->queue = NULL;
  
     /**********************************
+     *  GET RESERVATION HANDLE PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_CLIENT_RESERVATION_HANDLE_PARAM,
+		             &tmp_param) != 0)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_RESERVATION_HANDLE;
+        return(GLOBUS_FAILURE);
+    }
+
+    if (tmp_param[0])
+        req->reservation_handle = tmp_param[0];
+    else
+        req->reservation_handle = NULL;
+ 
+    /**********************************
      *  GET PROJECT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,

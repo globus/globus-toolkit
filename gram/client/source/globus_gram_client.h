@@ -75,6 +75,7 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_CLIENT_MIN_MEMORY_PARAM               "minmemory"
 #define GLOBUS_GRAM_CLIENT_MAX_MEMORY_PARAM               "maxmemory"
 #define GLOBUS_GRAM_CLIENT_START_TIME_PARAM               "starttime"
+#define GLOBUS_GRAM_CLIENT_RESERVATION_HANDLE_PARAM       "reservationhandle"
 
 /*
  *  Job Default Constants

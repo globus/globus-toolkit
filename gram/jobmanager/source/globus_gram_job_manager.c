@@ -223,6 +223,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->count = 0;
     r->host_count = 0;
     r->queue = NULL;
+    r->reservation_handle = NULL;
     r->project = NULL;
     r->max_time = 0;
     r->min_memory = 0;
@@ -736,6 +737,8 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_queue='%s'\n", new_param);
     globus_l_gram_param_prepare(request->project, new_param);
     fprintf(script_arg_fp,"grami_project='%s'\n", new_param);
+    globus_l_gram_param_prepare(request->reservation_handle, new_param);
+    fprintf(script_arg_fp,"grami_reservation_handle='%s'\n", new_param);
 
     if (strcasecmp(request->jobmanager_type, "condor") == 0)
     {
