@@ -18,14 +18,6 @@ typedef enum
     GLOBUS_L_GFS_DATA_COMPLETE
 } globus_l_gfs_data_state_t;
 
-typedef enum
-{
-    GLOBUS_L_GFS_DATA_HANDLE_OPENING = 1,
-    GLOBUS_L_GFS_DATA_HANDLE_OPEN,
-    GLOBUS_L_GFS_DATA_HANDLE_CLOSING,
-    GLOBUS_L_GFS_DATA_HANDLE_CLOSED
-} globus_l_gfs_data_handle_state_t;
-
 typedef struct
 {
     globus_gfs_operation_t   op;
@@ -47,8 +39,6 @@ typedef struct
 
 typedef struct
 {
-    globus_mutex_t                      lock;
-    globus_l_gfs_data_handle_state_t    state;
     globus_gfs_data_info_t              info;
     globus_ftp_control_handle_t         data_channel;
 } globus_l_gfs_data_handle_t;  
@@ -526,10 +516,7 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
-    
-    handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-    globus_mutex_init(&handle->lock, GLOBUS_NULL);
-    
+
     *u_handle = handle;
     return GLOBUS_SUCCESS;
 
@@ -602,12 +589,26 @@ globus_l_gfs_data_abort_fc_cb(
     
 static
 void
-globus_l_gfs_data_destroy_cb(
+globus_l_gfs_data_fc_finished_cb(
     void *                              callback_arg,
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
     globus_l_gfs_data_end_transfer_kickout(callback_arg);
+}
+
+static
+void
+globus_l_gfs_data_destroy_cb(
+    void *                              callback_arg,
+    globus_ftp_control_handle_t *       ftp_handle,
+    globus_object_t *                   error)
+{
+    globus_l_gfs_data_handle_t *        handle;
+
+    handle = (globus_l_gfs_data_handle_t *) callback_arg;
+
+    globus_free(handle);
 }
 
 void
@@ -637,30 +638,13 @@ globus_i_gfs_data_destroy_handle(
         {
             goto error;
         }
-        /* should be locked checking state here, but dunno how */
-        if(handle->state == GLOBUS_L_GFS_DATA_HANDLE_OPEN)
+        result = globus_ftp_control_data_force_close(
+            &handle->data_channel, globus_l_gfs_data_destroy_cb, handle);
+        if(result != GLOBUS_SUCCESS)
         {
-            globus_mutex_lock(&handle->lock);           
-            {
-                handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
-            }
-            globus_mutex_unlock(&handle->lock);
-
-            result = globus_ftp_control_data_force_close(
-                &handle->data_channel, globus_l_gfs_data_destroy_cb, handle);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_mutex_destroy(&handle->lock);
-                globus_ftp_control_handle_destroy(&handle->data_channel);
-                globus_free(handle);
-            }
-        }
-        else if(handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED)
-        {
-            globus_mutex_destroy(&handle->lock);
-            globus_ftp_control_handle_destroy(&handle->data_channel);
+            /* is this all i need to do ?? */
             globus_free(handle);
-        }            
+        }
     }
 
 error:
@@ -750,7 +734,6 @@ globus_i_gfs_data_request_passive(
     }
     else
     {
-    
         result = globus_l_gfs_data_handle_init(&handle, data_info);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1195,7 +1178,7 @@ globus_l_gfs_data_list_stat_cb(
     return;
     
 error:
-
+    globus_gridftp_server_finished_transfer(op, result); 
     return;
 }
 
@@ -1469,7 +1452,7 @@ globus_l_gfs_data_end_transfer_kickout(
             reply);
     }
 
-    /* remove the refrence for this call back.  It is posible the before
+    /* remove the refrence for this callback.  It is posible the before
         aquireing this lock the completing state occured and we are
         ready to finish */
     globus_mutex_lock(&op->mutex);
@@ -1851,9 +1834,6 @@ globus_i_gfs_data_request_transfer_event(
 
     if(op == NULL)
     {
-        /* possibly getting TRANSFER_COMPLETE when transfer_finished happens
-            without a transfer_begin (should prevent requesting
-            events with null transfer_id within control.c)*/
         globus_assert(0 && "i wanna know when this happens");
     }
     globus_mutex_lock(&op->mutex);
@@ -1959,9 +1939,12 @@ globus_i_gfs_data_request_transfer_event(
         the reference count. */
     if(pass)
     {
-        globus_l_gfs_dsi->trev_func(
-            op->transfer_id, event_type, session_handle->session_arg);
-
+        /* if a TRANSFER_COMPLETE event we must respect the barrier */
+        if(event_type != GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+        {
+            globus_l_gfs_dsi->trev_func(
+                op->transfer_id, event_type, session_handle->session_arg);
+        }
         globus_mutex_lock(&op->mutex);
         {
             op->ref--;
@@ -1974,7 +1957,15 @@ globus_i_gfs_data_request_transfer_event(
         globus_mutex_unlock(&op->mutex);
         if(destroy_op)
         {
-            /* the complete message has been passed, we can clean the op */
+            if(globus_l_gfs_dsi->trev_func &&
+                op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+            {
+                globus_l_gfs_dsi->trev_func(
+                    op->transfer_id,
+                    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
+                    op->session_handle->session_arg);
+            }
+            /* destroy the op */
             globus_l_gfs_data_operation_destroy(op);
         }
     }
@@ -2250,7 +2241,7 @@ globus_gridftp_server_finished_stat(
 
     bounce_info = (globus_l_gfs_data_stat_bounce_t *)
         globus_malloc(sizeof(globus_l_gfs_data_stat_bounce_t));
-    if(!bounce_info)
+    if(bounce_info == NULL)
     {
         result = GlobusGFSErrorMemory("bounce_info");
         goto error_alloc;
@@ -2545,7 +2536,8 @@ err_lock:
     if(op->own_data_handle)
     {
         result = globus_ftp_control_data_force_close(
-            &op->data_handle->data_channel, globus_l_gfs_data_destroy_cb, op);
+            &op->data_handle->data_channel,
+            globus_l_gfs_data_fc_finished_cb, op);
         if(result != GLOBUS_SUCCESS)
         {
             globus_callback_register_oneshot(
