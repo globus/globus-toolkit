@@ -1331,6 +1331,7 @@ globus_i_gfs_config_init(
     int                                 argc,
     char **                             argv)
 {
+    char *                              tmp_str;
     char *                              exec_name;
     char *                              local_config_file;
     char *                              global_config_file;
@@ -1346,10 +1347,28 @@ globus_i_gfs_config_init(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
+    exec_name = argv[0];
     /* set default exe name */
-    exec_name = globus_common_create_string(
-        "%s/sbin/globus-gridftp-server",
-        globus_module_getenv("GLOBUS_LOCATION"));
+    tmp_str = globus_module_getenv("GLOBUS_LOCATION");
+    if(tmp_str)
+    {
+        exec_name = globus_common_create_string(
+         "%s/sbin/globus-gridftp-server",
+         globus_module_getenv("GLOBUS_LOCATION"));
+    }
+    else if(exec_name[0] == '.')
+    {
+        tmp_str = malloc(PATH_MAX);
+        getcwd(tmp_str, PATH_MAX);
+        exec_name = globus_common_create_string(
+         "%s/%s", tmp_str, exec_name);
+        globus_free(tmp_str);
+    }
+    else
+    {
+        exec_name = strdup(argv[0]);
+    }
+
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
 

@@ -610,6 +610,7 @@ globus_l_gfs_request_stat(
     globus_gridftp_server_control_resource_mask_t mask,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_stat_info_t *            stat_info;
     globus_l_gfs_request_info_t *       request;
@@ -646,7 +647,18 @@ globus_l_gfs_request_stat(
     return;
     
 error_init:
-    /* finish here */
+    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    globus_gridftp_server_control_finished_resource(
+        op,
+        NULL,
+        0,
+        0,
+        0,
+        NULL,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        tmp_str);
+    globus_free(tmp_str);
+
     GlobusGFSDebugExitWithError();
 }
 
@@ -1208,6 +1220,7 @@ globus_l_gfs_request_send(
     globus_range_list_t                 range_list,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_transfer_info_t *        send_info;
     int                                 args;
@@ -1271,7 +1284,12 @@ globus_l_gfs_request_send(
     return;
     
 error_init:
-    /* finish here */
+    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    globus_gridftp_server_control_finished_transfer(
+        op,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        tmp_str);
+    globus_free(tmp_str);
     GlobusGFSDebugExitWithError();
 }
 
@@ -1286,6 +1304,7 @@ globus_l_gfs_request_recv(
     globus_range_list_t                 range_list,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
     int                                 args;
     globus_gfs_transfer_info_t *        recv_info;
@@ -1374,7 +1393,13 @@ globus_l_gfs_request_recv(
     return;
     
 error_init:
-    /* finish here */
+    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    globus_gridftp_server_control_finished_transfer(
+        op,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        tmp_str);
+    globus_free(tmp_str);
+
     GlobusGFSDebugExitWithError();
 }
 
@@ -1387,6 +1412,7 @@ globus_l_gfs_request_list(
     const char *                        list_type,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_transfer_info_t *        list_info;
     globus_l_gfs_request_info_t *       request;
@@ -1425,7 +1451,12 @@ globus_l_gfs_request_list(
     return;
     
 error_init:
-    /* finish here */
+    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    globus_gridftp_server_control_finished_transfer(
+        op,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        tmp_str);
+    globus_free(tmp_str);
     GlobusGFSDebugExitWithError();
 }
 
@@ -1590,6 +1621,7 @@ globus_l_gfs_request_passive_data(
     const char *                        pathname,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_data_info_t *            data_info;
     globus_l_gfs_request_info_t *       request;
@@ -1634,7 +1666,16 @@ globus_l_gfs_request_passive_data(
     return;
     
 error_init:
-    /* finish here */
+    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    globus_gridftp_server_control_finished_passive_connect(
+        op,
+        NULL,
+        0,
+        NULL,
+        0,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        tmp_str);
+    globus_free(tmp_str);
     GlobusGFSDebugExitWithError();
 }
 
@@ -1707,6 +1748,7 @@ globus_l_gfs_request_active_data(
     int                                 cs_count,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_data_info_t *            data_info;
     globus_l_gfs_request_info_t *       request;
@@ -1748,7 +1790,13 @@ globus_l_gfs_request_active_data(
     return;
     
 error_init:
-    /* finish here */
+    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    globus_gridftp_server_control_finished_active_connect(
+        op,
+        NULL,
+        0,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+        tmp_str);
     GlobusGFSDebugExitWithError();
 }
 

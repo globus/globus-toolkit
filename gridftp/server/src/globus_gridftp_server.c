@@ -27,6 +27,9 @@ static globus_xio_attr_t                globus_l_gfs_xio_attr;
 static globus_bool_t                    globus_l_gfs_exit = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALSE;
 
+static char **                          globus_l_gfs_child_argv = NULL;
+static int                              globus_l_gfs_child_argc = 0;
+
 static
 globus_result_t
 globus_l_gfs_open_new_server(
@@ -51,13 +54,6 @@ globus_l_gfs_server_accept_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
     void *                              user_arg);
-
-static
-void
-globus_l_gfs_terminate()
-{
-    globus_l_gfs_terminated = GLOBUS_TRUE;
-}
 
 static
 void
@@ -303,13 +299,9 @@ globus_result_t
 globus_l_gfs_spawn_child(
     globus_xio_handle_t                 handle)
 {
-    char **                             new_argv;
-    char **                             prog_argv;
     globus_result_t                     result;
     pid_t                               child_pid;
     globus_xio_system_handle_t          socket_handle;
-    int                                 i;
-    int                                 j;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
 
@@ -347,50 +339,27 @@ globus_l_gfs_spawn_child(
         close(socket_handle);
 
         /* exec the process */
-        prog_argv = (char **) globus_i_gfs_config_get("argv");
-        for(i = 0; prog_argv[i] != NULL; i++)
+        if(*globus_l_gfs_child_argv[0] == '/')
         {
+            rc = execv(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
         }
-        new_argv = (char **) globus_calloc(1, sizeof(char *) * (i + 2));
-        if(new_argv == NULL)
+        else
         {
-            goto child_close_error;
+            rc = execvp(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
         }
-        if((new_argv[0] = globus_i_gfs_config_string("exec")) == NULL)
-        {
-            new_argv[0] = globus_i_gfs_config_string("exec_name");
-        }
-        for(i = 1, j = 1; prog_argv[i] != NULL; i++)
-        {
-            if(strcmp(prog_argv[i], "-S") != 0 &&
-                strcmp(prog_argv[i], "-s") != 0)
-            {
-                if(strcmp(prog_argv[i], "-p") == 0)
-                {
-                    i++;
-                }
-                else
-                {   
-                    new_argv[j++] = prog_argv[i];
-                }
-            }
-        }
-        new_argv[j++] = "-i";
-        new_argv[j] = NULL;
-
-        rc = execv(new_argv[0], new_argv);
         if(rc == -1)
         {
             char *                      error_msg;
 
-            error_msg = globus_common_create_string("%s\n%s\n%s",
+            error_msg = globus_common_create_string("%s\n%s\n%s\n%s",
                 _GSSL("Could not exec child process."),
                 _GSSL("Please verify that a gridftp server is located at: "),
-                new_argv[0]);
+                globus_l_gfs_child_argv[0],
+                _GSSL("Or try the -exec flag."));
             result = GlobusGFSErrorSystemError("execv", errno);
             globus_i_gfs_log_result(error_msg, result);
 
-            goto child_error;
+            goto child_close_error;
         }
     } 
     else if(child_pid == -1)
@@ -1065,29 +1034,102 @@ error:
 
 static
 void
+globus_l_gfs_server_build_child_args()
+{
+    int                                 i;
+    int                                 j;
+    char **                             prog_argv;
+    GlobusGFSName(globus_l_gfs_server_build_child_args);
+
+    /* exec the process */
+    prog_argv = (char **) globus_i_gfs_config_get("argv");
+    for(i = 0; prog_argv[i] != NULL; i++)
+    {
+    }
+    globus_l_gfs_child_argv = (char **)
+        globus_calloc(1, sizeof(char *) * (i + 2));
+    if(globus_l_gfs_child_argv == NULL)
+    {
+        globus_result_t             result;
+        char *                      error_msg;
+
+        error_msg = globus_common_create_string("%s",
+            _GSSL("Small malloc failed.  Unrecoverable error."));
+        result = GlobusGFSErrorSystemError("malloc", errno);
+        globus_i_gfs_log_result(error_msg, result);
+
+        exit(1);
+    }
+
+    if((globus_l_gfs_child_argv[0]=globus_i_gfs_config_string("exec")) == NULL)
+    {
+        globus_l_gfs_child_argv[0] = globus_i_gfs_config_string("exec_name");
+    }
+    for(i = 1, j = 1; prog_argv[i] != NULL; i++)
+    {
+        if(strcmp(prog_argv[i], "-S") != 0 &&
+            strcmp(prog_argv[i], "-s") != 0)
+        {
+            globus_l_gfs_child_argv[j++] = prog_argv[i];
+        }
+    }
+    globus_l_gfs_child_argv[j++] = "-i";
+    globus_l_gfs_child_argv[j] = NULL;
+    globus_l_gfs_child_argc = j;
+}
+
+static
+void
 globus_l_gfs_server_detached()
 {
+    int                                 rc;
     pid_t                               pid;
     GlobusGFSName(globus_l_gfs_server_detached);
 
-    /* this is where i detach the server into the background
-     * not sure how this will work for win32.  if it involves starting a
-     * new process, need to set server handle to not close on exec
-     */
+    globus_l_gfs_server_build_child_args();
+    globus_l_gfs_child_argv[globus_l_gfs_child_argc-1] = "-s";
+
     pid = fork();
     if(pid < 0)
     {
     }
+    /* if parent just end */
     else if(pid != 0)
     {
         exit(0);
     }
+    /* if child */
     else
     {
         setsid();
         freopen("/dev/null", "w+", stdin);
         freopen("/dev/null", "w+", stdout);
         freopen("/dev/null", "w+", stderr);
+
+       /* exec the process */
+        if(*globus_l_gfs_child_argv[0] == '/')
+        {
+            rc = execv(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
+        }
+        else
+        {
+            rc = execvp(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
+        }
+        if(rc == -1)
+        {
+            globus_result_t             result;
+            char *                      error_msg;
+
+            error_msg = globus_common_create_string("%s\n%s\n%s\n%s",
+                _GSSL("Could not exec process."),
+                _GSSL("Please verify that a gridftp server is located at: "),
+                globus_l_gfs_child_argv[0],
+                _GSSL("Or try the -exec flag."));
+            result = GlobusGFSErrorSystemError("execv", errno);
+            globus_i_gfs_log_result(error_msg, result);
+
+            exit(1);
+        }
     }
 
 }
@@ -1097,18 +1139,17 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    int                                 i;
     int                                 rc = 0;
     char *                              config;
     globus_result_t                     result;
     GlobusGFSName(main);
 
-    for(i = 0; i < argc; i++)
+    globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_i_gfs_config_init(argc, argv);
+
+    if(globus_i_gfs_config_bool("detach"))
     {
-        if(strcmp("-S", argv[i]) == 0)
-        {
-            globus_l_gfs_server_detached();
-        }
+        globus_l_gfs_server_detached();
     }
 
     /* activte globus stuff */    
@@ -1229,6 +1270,7 @@ main(
         }
         else
         {
+            globus_l_gfs_server_build_child_args();
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_INFO,
                 "Server started in daemon mode.\n");

@@ -24,24 +24,17 @@ other:
 -- int->void*->int casting over ipc... better way?
 
 cleanup:
--- format -help screen
 -- verify test suite
 -- find leaks in error cases
 -- DOC
 
 -----------------------------------------------------------------------
 known issues:
--- errors in some control.c requests will hang -- need to finish() there
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle. (verify fixed?)
 -- there may be an issue with group permissions -- not sure if it results
     in any problems.
--- detach check is before config file is read, so detach in config file
-    doesn't work.  also possible other issues with config checks at 
-    fork/exec time when using only config file.
--- server exec name discovery fails when there is not a valid $GL. -exec
-    flag works around this, but not ideal.
 
 ** NOTE **
 -- passing size_t's over ipc as ints... will be a problem on 64 bit systems 
