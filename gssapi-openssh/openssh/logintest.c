@@ -45,11 +45,7 @@
 
 RCSID("$Id$");
 
-#ifdef HAVE___PROGNAME
 extern char *__progname;
-#else
-char *__progname;
-#endif
 
 #define PAUSE_BEFORE_LOGOUT 3
 

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1999-2004 Damien Miller <djm@mindrot.org>
  *
@@ -18,6 +19,10 @@
 #include "xmalloc.h"
 
 RCSID("$Id$");
+
+#ifndef HAVE___PROGNAME
+char *__progname;
+#endif
 
 /*
  * NB. duplicate __progname in case it is an alias for argv[0]

@@ -63,15 +63,7 @@ RCSID("$Id$");
 # define SSH_PRNG_COMMAND_FILE   SSHDIR "/ssh_prng_cmds"
 #endif
 
-#ifdef HAVE___PROGNAME
 extern char *__progname;
-#else
-char *__progname;
-#endif
-
-#ifndef offsetof
-# define offsetof(type, member) ((size_t) &((type *)0)->member)
-#endif
 
 #define WHITESPACE " \t\n"
 

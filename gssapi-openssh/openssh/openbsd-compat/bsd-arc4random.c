@@ -56,13 +56,21 @@ unsigned int arc4random(void)
 void arc4random_stir(void)
 {
 	unsigned char rand_buf[SEED_SIZE];
+	int i;
 
 	memset(&rc4, 0, sizeof(rc4));
 	if (RAND_bytes(rand_buf, sizeof(rand_buf)) <= 0)
 		fatal("Couldn't obtain random bytes (error %ld)",
 		    ERR_get_error());
 	RC4_set_key(&rc4, sizeof(rand_buf), rand_buf);
-	RC4(&rc4, sizeof(rand_buf), rand_buf, rand_buf);
+
+	/*
+	 * Discard early keystream, as per recommendations in:
+	 * http://www.wisdom.weizmann.ac.il/~itsik/RC4/Papers/Rc4_ksa.ps
+	 */
+	for(i = 0; i <= 256; i += sizeof(rand_buf))
+		RC4(&rc4, sizeof(rand_buf), rand_buf, rand_buf);
+
 	memset(rand_buf, 0, sizeof(rand_buf));
 
 	rc4_ready = REKEY_BYTES;
