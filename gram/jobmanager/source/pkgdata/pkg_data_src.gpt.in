@@ -48,6 +48,7 @@
     <Source_Dependencies Type="pgm_runtime" >
 	<Dependency Name="globus_gass_copy" Package="pgm" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
 	<Dependency Name="globus_gram_job_manager" Package="data" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+	<Dependency Name="globus_gram_protocol" Package="data" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
 	<Dependency Name="globus_gass_cache_program" Package="pgm" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
