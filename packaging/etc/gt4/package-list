@@ -49,4 +49,4 @@ globus_soap_message                         wsrf/c/message/source gpt
 globus_handler_ws_addressing                wsrf/c/handlers/addressing/source gpt
 globus_xio_buffer                           wsrf/c/transport/buffer/source gpt
 globus_c_wsrf_sample_counter_test           wsrf/c/samples/counter/test gpt
-CounterService_client_bindings              wsrf/c/samples/counter/source/ tar
+globus_c_wsrf_sample_counter_client_bindings wsrf/c/samples/counter/source/ tar
