@@ -24,6 +24,8 @@ dnl Check for large file support before doing any other probes, it may
 dnl change prototypes for some functions.
 AC_SYS_LARGEFILE
 
+AC_TYPE_SIGNAL
+
 CHECK_HEADERS
 
 CHECK_FUNCS
