@@ -207,7 +207,7 @@ copy_file(const char *source,
     int src_fd = -1;
     int dst_fd = -1;
     int src_flags = O_RDONLY;
-    int dst_flags = O_WRONLY | O_CREAT | O_TRUNC;
+    int dst_flags = O_CREAT | O_EXCL | O_WRONLY;
     char buffer[2048];
     int bytes_read;
     int return_code = -1;
@@ -224,6 +224,7 @@ copy_file(const char *source,
         goto error;
     }
 
+    unlink(dest);
     dst_fd = open(dest, dst_flags, mode);
     
     if (dst_fd == -1)

@@ -399,7 +399,7 @@ get_storage_locations(const char *username,
  * write_data_file()
  *
  * Write the data in the myproxy_creds structure to the
- * file name given, creating the file if needed with the given mode.
+ * file name given, creating the file with the given mode.
  *
  * Returns 0 on success, -1 on error.
  */
@@ -411,8 +411,12 @@ write_data_file(const struct myproxy_creds *creds,
 
     int data_fd = -1;
     FILE *data_stream = NULL;
-    int data_file_open_flags = O_WRONLY | O_CREAT | O_TRUNC;
+    int data_file_open_flags = O_CREAT | O_EXCL | O_WRONLY;
     int return_code = -1;
+
+    /* Unlink the file if it exists so we are sure to create it
+       with the correct mode. */
+    unlink(data_file_path);
 
     /*
      * Open with open() first to minimize any race condition with
