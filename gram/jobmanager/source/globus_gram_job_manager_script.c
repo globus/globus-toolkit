@@ -490,6 +490,11 @@ globus_gram_job_manager_script_poll(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_poll()\n" );
 
@@ -577,6 +582,11 @@ globus_gram_job_manager_script_cancel(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_script_cancel()\n" );
 
@@ -645,6 +655,11 @@ globus_gram_job_manager_script_signal(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_signal()\n" );
 
@@ -703,6 +718,11 @@ globus_gram_job_manager_script_make_scratchdir(
     char *				script_arg_file;
 
     script_arg_file = tempnam(NULL, "gram_make_scratchdir");
+
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
 
     if (!request)
         return(GLOBUS_FAILURE);
@@ -765,6 +785,11 @@ globus_gram_job_manager_script_rm_scratchdir(
 
     if (!request)
         return(GLOBUS_FAILURE);
+
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
 
     if (!request->scratchdir)
 	return(GLOBUS_FAILURE);
@@ -831,6 +856,11 @@ globus_gram_job_manager_script_stage_in(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_script_stage_in()\n" );
 
@@ -890,6 +920,11 @@ globus_gram_job_manager_script_stage_out(
 
     if (!request)
         return(GLOBUS_FAILURE);
+
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
 
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_script_stage_out()\n" );
@@ -951,6 +986,11 @@ globus_gram_job_manager_script_file_cleanup(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_script_file_cleanup()\n" );
 
@@ -1011,6 +1051,11 @@ globus_gram_job_manager_script_cache_cleanup(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
 	globus_gram_job_manager_request_log(request,
@@ -1065,6 +1110,11 @@ globus_gram_job_manager_script_remote_io_file_create(
 
     if (!request)
         return(GLOBUS_FAILURE);
+
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
 
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
@@ -1124,6 +1174,11 @@ globus_gram_job_manager_script_proxy_relocate(
     if (!request)
         return(GLOBUS_FAILURE);
 
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
+
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
 	globus_gram_job_manager_request_log(request,
@@ -1182,6 +1237,11 @@ globus_gram_job_manager_script_proxy_update(
 
     if (!request)
         return(GLOBUS_FAILURE);
+
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
 
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
