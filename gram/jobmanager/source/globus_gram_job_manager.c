@@ -1732,8 +1732,8 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
         return(GLOBUS_FAILURE);
     }
 
-    if ((strncmp(request->jobmanager_type, "fork", 4) != 0) &&
-        (strncmp(request->jobmanager_type, "poe", 3) != 0))
+    if ((strncmp(req->jobmanager_type, "fork", 4) != 0) &&
+        (strncmp(req->jobmanager_type, "poe", 3) != 0))
     {
        /*
         * test that the scheduler script files exist and
