@@ -4,11 +4,12 @@ use strict;
 
 my $Tag					= "CVS/Tag";
 my $message 				= 
-    "ERROR: Sorry, this branch has been closed against commits.\nERROR: If you need to commit to this branch please send a \nERROR: unified diff attached to a email containing the log \nERROR: message to meder\@mcs.anl.gov\n";
+    "ERROR: Sorry, this branch has been closed against commits.\nERROR: Please contact Stu at smartin\@mcs.anl.gov for more information\n";
 
 
 my %locked = (
-    'globus_2_2_branch' => 1);
+    'globus-beta-branch' => 1,
+    'globus-beta-branch-sub-versions' => 1);
 
 # no tag file means its from trunk
 exit(0) if(!-f $Tag); 
@@ -22,7 +23,7 @@ exit(0) if(!defined($tag));
 
 if($tag =~ s/^T(.*)\n$/$1/)
 {
-    if(defined($locked{$tag}) && ($ENV{'USER'} ne 'meder'))
+    if(defined($locked{$tag}))
     {
         print STDERR $message;
         exit(1);
