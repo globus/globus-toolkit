@@ -2122,6 +2122,22 @@ globus_l_io_handle_events(
 	    {
 		break;
 	    }
+	    
+	    /* see if we were woken up by pipe 
+	     * this needs to happen immediately and cant be 'registered' like
+	     * the rest of the callbacks
+	     */
+	    if(globus_l_io_wakeup_pending)
+	    {
+	        FD_CLR(
+	            globus_l_io_wakeup_pipe_handle.fd,
+	            globus_l_io_active_read_fds);
+
+	        globus_l_io_wakeup_pipe_callback(
+	            GLOBUS_NULL,
+	            &globus_l_io_wakeup_pipe_handle,
+	            GLOBUS_SUCCESS);
+	    }
 	}
 
 	if (n_ready < 0)
@@ -2297,17 +2313,7 @@ globus_l_io_wakeup_pipe_callback(
 	}
     }
 
-    globus_i_io_mutex_lock();
     globus_l_io_wakeup_pending = GLOBUS_FALSE;
-    if(globus_l_io_shutdown_called == GLOBUS_FALSE)
-    {	
-	globus_i_io_register_read_func(handle,
-				       globus_l_io_wakeup_pipe_callback,
-				       GLOBUS_NULL,
-				       GLOBUS_NULL,
-				       GLOBUS_TRUE);
-    }
-    globus_i_io_mutex_unlock();
 }
 /* globus_l_io_wakeup_pipe_callback() */
 
@@ -2331,13 +2337,6 @@ globus_l_io_poll(
         GlobusTimeAbstimeDiff(time_left, *time_now, *time_stop);
     }
     
-    /* 
-     * need to think about what it means for the select wakeup to be fired
-     * its no longer synchronous with the event poller, this means that the
-     * num of active fds can go to 0.  If this happens, we will continue to
-     * loop around here until the select wakup is re-registered.  So, I added
-     * the globus_l_io_fd_num_set > 0 check
-     */
     globus_i_io_mutex_lock();
     
     do
