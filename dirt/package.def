@@ -47,3 +47,4 @@ globus_simple_ca_setup          gsi/simple_ca/setup             dirt.sh
 globus_proxy_ssl                gsi/proxy/proxy_ssl/source      dirt.sh
 globus_proxy_core               gsi/proxy/proxy_core/source     dirt.sh
 globus_gram_reporter            gram/reporter/source            dirt.sh
+globus_openssl_module           gsi/openssl_module/source       dirt.sh
