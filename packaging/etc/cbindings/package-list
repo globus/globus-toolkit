@@ -31,3 +31,5 @@ globus_ogsa_base_gram_managed_job       ogsa-c/impl/base/gram/managed_job/source
 globus_gram_xml_rsl_test                ogsa-c/impl/base/gram/gt2_wrappers/rsl_xml/test
 globus_gram_xml_rsl                     ogsa-c/impl/base/gram/gt2_wrappers/rsl_xml/source
 globus_ogsa_base_gram_mj_bindings       ogsa-c/base/gram/managed_job
+axiscpp                                 chosting/tools/axiscpp
+expat                                   chosting/tools/expat
