@@ -1,8 +1,9 @@
 #include "globus_xio_pass.h"
+#include "globus_xio.h"
 
 void
 globus_l_xio_driver_op_read_kickout(
-    void *                                      user_arg);
+    void *                                      user_arg)
 {
     globus_i_xio_op_t *                         op;
     op = (globus_i_xio_op_t *) user_arg;
@@ -15,7 +16,7 @@ globus_l_xio_driver_purge_read_eof(
 {
     globus_i_xio_op_t *                             tmp_op;
 
-    while(!globus_list_empty(my_context->read_eof_list))
+    while(!globus_list_empty(my_context->eof_op_list))
     {
         /* we can only get here if a eof has been received */ 
         globus_assert(my_context->state ==
@@ -62,7 +63,7 @@ globus_i_xio_driver_start_close(
     int                                         caller_ndx;
 
     op->progress = GLOBUS_TRUE;
-    op->timeout_blocked = GLOBUS_FALSE;
+    op->block_timeout = GLOBUS_FALSE;
     my_op = &op->entry[op->ndx];
     my_op->in_register = GLOBUS_TRUE;
     caller_ndx = op->ndx;
@@ -121,7 +122,6 @@ globus_xio_driver_context_close(
     globus_i_xio_context_entry_t *              context_entry;
     globus_i_xio_context_t *                    xio_context;
     globus_bool_t                               destroy_context = GLOBUS_FALSE;
-    int                                         ctr;
     globus_result_t                             res = GLOBUS_SUCCESS;
 
     context_entry = context;
@@ -131,7 +131,8 @@ globus_xio_driver_context_close(
     {
         if(context_entry->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
         {
-            res = GlobusXIOErrorBadState("globus_xio_driver_context_close");
+            res = GlobusXIOErrorHandleBadState(                     \
+                        "globus_xio_driver_context_close");
         }
         else
         {
@@ -172,10 +173,11 @@ globus_i_xio_context_destroy(
 
 globus_i_xio_context_t *
 globus_i_xio_context_create(
-    globus_i_xio_target_t *                             xio_target)
+    globus_i_xio_target_t *                         xio_target)
 {
-    globus_i_xio_context_t *                            xio_context;
-    int                                                 size;
+    globus_i_xio_context_t *                        xio_context;
+    int                                             size;
+    int                                             ctr;
 
     size = sizeof(globus_i_xio_context_t) +
         (sizeof(globus_i_xio_context_entry_t) * (xio_target->stack_size - 1));
@@ -187,7 +189,7 @@ globus_i_xio_context_create(
 
         globus_mutex_init(&xio_context->mutex, NULL);
         xio_context->stack_size = xio_target->stack_size;
-        globus_memory_init(xio_context->op_memory,
+        globus_memory_init(&xio_context->op_memory,
             sizeof(globus_i_xio_op_t) +
                 (sizeof(globus_i_xio_op_entry_t) *
                     (xio_target->stack_size - 1)),

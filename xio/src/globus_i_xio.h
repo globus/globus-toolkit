@@ -1,6 +1,12 @@
 #if !defined(GLOBUS_I_XIO_H)
 #define GLOBUS_I_XIO_H
 
+#include "globus_xio_driver.h"
+#include "globus_xio.h"
+#include "globus_common.h"
+#include "globus_error.h"
+#include "globus_error_generic.h"
+
 /***************************************************************************
  *                    Error construction macros
  **************************************************************************/
@@ -67,8 +73,42 @@
             "[%s] The handle is not in the open state.",                    \
             (func)))
 
-#define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE         16
+#define GlobusXIOErrorHandleBadState(func)                                  \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_HANDLE_BAD_STATE,                              \
+            "[%s] The handle is not is a proper statefor the request",      \
+            (func)))
 
+#define GlobusXIOErrorCanceled()                                            \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            "The requsted operation was canceled."))                        \
+
+#define GlobusXIOErrorOperationNotFound(func)                               \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            "The requsted operation was canceled.",                         \
+            (func)))                                                        \
+
+#define GlobusXIOErrorReadEOF()                                             \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            "Eof on this handle."))
+
+#define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE             16
+#define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   4
 /***************************************************************************
  *                 state and type enumerations
  *                 ---------------------------
@@ -85,16 +125,6 @@ typedef enum globus_i_xio_handle_state_e
     GLOBUS_XIO_HANDLE_STATE_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_CLOSED,
 } globus_i_xio_handle_state_t;
-
-typedef enum globus_i_xio_op_type_e
-{
-    GLOBUS_XIO_OPERATION_TYPE_FINISHED,
-    GLOBUS_XIO_OPERATION_TYPE_OPEN,
-    GLOBUS_XIO_OPERATION_TYPE_CLOSE,
-    GLOBUS_XIO_OPERATION_TYPE_READ,
-    GLOBUS_XIO_OPERATION_TYPE_WRITE,
-    GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
-} globus_i_xio_op_type_t;
 
 typedef enum globus_i_xio_op_state_e
 {
@@ -126,6 +156,22 @@ typedef struct globus_i_xio_attr_ent_s
 
 typedef struct globus_i_xio_attr_s
 {
+    globus_xio_timeout_callback_t               open_timeout_cb;
+    globus_reltime_t                            open_timeout_period;
+    globus_xio_timeout_callback_t               read_timeout_cb;
+    globus_reltime_t                            read_timeout_period;
+    globus_xio_timeout_callback_t               write_timeout_cb;
+    globus_reltime_t                            write_timeout_period;
+    globus_xio_timeout_callback_t               close_timeout_cb;
+    globus_reltime_t                            close_timeout_period;
+
+    globus_bool_t                               cancel_open;
+    globus_bool_t                               cancel_close;
+    globus_bool_t                               cancel_read;
+    globus_bool_t                               cancel_write;
+
+    globus_callback_space_t                     space;
+
     int                                         max;
     int                                         ndx;
     globus_i_xio_attr_ent_t *                   entry;
@@ -166,33 +212,36 @@ typedef struct globus_xio_server_s
 
 } globus_i_xio_server_t;
 
+struct globus_i_xio_context_s;
+struct globus_i_xio_op_s;
 
 typedef struct globus_i_xio_handle_s
 {
     globus_mutex_t                              mutex;
+    globus_mutex_t                              cancel_mutex;
     int                                         ref;
     int                                         stack_size;
-    globus_i_xio_context_t *                    context;
+    struct globus_i_xio_context_s *             context;
 
     globus_i_xio_handle_state_t                 state;
 
     /* since only 1 open or close can be outstanding at a time we don't
        need a list */
-    globus_i_xio_op_t *                         open_op;
-    globus_i_xio_op_t *                         close_op;
     globus_list_t *                             write_op_list;
     globus_list_t *                             read_op_list;
+    struct globus_i_xio_op_s *                  open_op;
+    struct globus_i_xio_op_s *                  close_op;
 
     /* counts outstanding read and write operations */
     int                                         outstanding_operations;
 
-    globus_xio_timeout_callback_t               open_timeout;
+    globus_xio_timeout_callback_t               open_timeout_cb;
     globus_reltime_t                            open_timeout_period;
-    globus_xio_timeout_callback_t               read_timeout;
+    globus_xio_timeout_callback_t               read_timeout_cb;
     globus_reltime_t                            read_timeout_period;
-    globus_xio_timeout_callback_t               write_timeout;
+    globus_xio_timeout_callback_t               write_timeout_cb;
     globus_reltime_t                            write_timeout_period;
-    globus_xio_timeout_callback_t               close_timeout;
+    globus_xio_timeout_callback_t               close_timeout_cb;
     globus_reltime_t                            close_timeout_period;
 } globus_i_xio_handle_t;
 
@@ -203,7 +252,7 @@ typedef struct globus_i_xio_handle_s
  */
 typedef struct globus_i_xio_context_entry_s
 {
-    globus_xio_driver_t *                       driver;
+    globus_xio_driver_t                         driver;
     void *                                      driver_handle;
 
     /* each level must implement the entire state machine */
@@ -213,11 +262,13 @@ typedef struct globus_i_xio_context_entry_s
     globus_mutex_t                              mutex;
 
     /* every level but the top MUST be GLOBAL_SPACE */
-    globus_xio_callback_space_t                 space;
+    globus_callback_space_t                     space;
 
+    struct globus_i_xio_op_s *                  open_op;
+    struct globus_i_xio_op_s *                  close_op;
     globus_list_t *                             eof_op_list;
     globus_list_t *                             read_op_list;
-    globus_i_xio_context_t *                    whos_my_daddy;
+    struct globus_i_xio_context_s *             whos_my_daddy;
 } globus_i_xio_context_entry_t;
 
 /* 
@@ -230,6 +281,7 @@ typedef struct globus_i_xio_context_s
     int                                         stack_size;
     globus_i_xio_context_entry_t                entry[1];
     globus_memory_t                             op_memory;
+    globus_mutex_t                              mutex;
 } globus_i_xio_context_t;
 
 /* MACROS for accessing the op_entry structure unin elements */
@@ -237,7 +289,7 @@ typedef struct globus_i_xio_context_s
 #define _op_ent_wait_for            type_u.handle_s.wait_for_bytes
 #define _op_ent_nbytes              type_u.handle_s.nbytes
 #define _op_ent_iovec               type_u.handle_s.iovec
-#define _op_ent_iovec_count         type_u.handle_s.iove_count
+#define _op_ent_iovec_count         type_u.handle_s.iovec_count
 #define _op_ent_fake_iovec          type_u.handle_s.fake_iovec
 
 #define _op_ent_target              type_u.target_s.target
@@ -260,9 +312,9 @@ typedef struct globus_i_xio_op_entry_s
             globus_xio_driver_data_callback_t   data_cb;
             globus_size_t                       wait_for_bytes;
             globus_size_t                       nbytes;
-            globus_iovec_t *                    iovec;
+            globus_xio_iovec_t *                iovec;
             int                                 iovec_count;
-            globus_iovec_t *                    fake_iovec;
+            globus_xio_iovec_t *                fake_iovec;
             globus_bool_t                       read_eof;
         } handle_s;
         /* target op entries */
@@ -290,6 +342,8 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_iovec_count                         type_u.handle_s.iovec_count
 #define _op_mem_iovec                           type_u.handle_s.mem_iovec
 #define _op_context                             type_u.handle_s.context
+#define _op_nbytes                              type_u.handle_s.nbytes
+#define _op_wait_for                            type_u.handle_s.wait_for
 
 #define _op_server                              type_u.target_s.server
 #define _op_target                              type_u.target_s.target
@@ -300,7 +354,7 @@ typedef struct globus_i_xio_op_entry_s
 typedef struct globus_i_xio_op_s
 {
     /* operation type */
-    globus_i_xio_op_type_t                      type;
+    globus_xio_operation_type_t                 type;
     globus_i_xio_op_state_t                     state;
 
     /*
@@ -325,14 +379,17 @@ typedef struct globus_i_xio_op_s
         {
             globus_i_xio_handle_t *             handle;
 
-            globus_iovec_t *                    iovec;
+            globus_xio_iovec_t *                iovec;
             int                                 iovec_count;
-            globus_iovec_t                      mem_iovec;
+            globus_xio_iovec_t                  mem_iovec;
+
+            globus_size_t                       nbytes;
 
             /* convience pointer, really owned by handle */
             globus_i_xio_context_t *            context;
             /* data descriptor */
-            globus_i_xio_data_descriptor_t *    data_desc;
+            globus_i_xio_dd_t *                 data_desc;
+            globus_size_t                       wait_for;
         } handle_s;
         /* target stuff */
         struct
@@ -353,6 +410,7 @@ typedef struct globus_i_xio_op_s
     globus_xio_driver_cancel_callback_t         cancel_cb;
     void *                                      cancel_arg;
     globus_bool_t                               canceled;
+    globus_bool_t                               block_timeout;
 
     /* result code saved in op for kickouts */
     globus_result_t                             cached_res;
@@ -369,7 +427,7 @@ typedef struct globus_i_xio_target_entry_s
 {
     globus_xio_driver_t                         driver;
     void *                                      target;
-} globus_i_xio_op_entry_t;
+} globus_i_xio_target_entry_t;
 
 typedef struct globus_i_xio_target_s
 {
@@ -422,6 +480,14 @@ globus_i_xio_timer_register_timeout(
 globus_bool_t
 globus_i_xio_timer_unregister_timeout(
     void *                                      datum);
+
+globus_i_xio_context_t *
+globus_i_xio_context_create(
+    globus_i_xio_target_t *                     xio_target);
+
+void
+globus_i_xio_context_destroy(
+    globus_i_xio_context_t *                    xio_context);
 
 
 #endif

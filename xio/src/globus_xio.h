@@ -1,6 +1,9 @@
 #if !defined(GLOBUS_XIO_H)
 #define GLOBUS_XIO_H
 
+#include "globus_common.h"
+#include <sys/uio.h>
+#include "globus_i_xio.h"
 /**
  * @mainpage Globus XIO
  *
@@ -198,6 +201,54 @@
  *  queried for specific information regarding that signal.
  */
 
+/*************************************************************************
+ *    define types
+ ************************************************************************/
+struct globus_i_xio_handle_s;
+struct globus_i_xio_context_s;
+struct globus_i_xio_target_s;
+struct globus_i_xio_op_s;
+struct globus_i_xio_driver_s;
+struct globus_i_xio_attr_s;
+struct globus_i_xio_stack_s;
+struct globus_i_xio_server_s;
+struct globus_i_xio_dd_s;
+
+typedef struct globus_i_xio_handle_s *          globus_xio_handle_t;
+typedef struct globus_i_xio_context_s *         globus_xio_context_t;
+typedef struct globus_i_xio_target_s *          globus_xio_target_t;
+typedef struct globus_i_xio_op_s *              globus_xio_operation_t;
+typedef struct globus_i_xio_driver_s *          globus_xio_driver_t;
+typedef struct globus_i_xio_attr_s *            globus_xio_attr_t;
+typedef struct globus_i_xio_stack_s *           globus_xio_stack_t;
+typedef struct globus_i_xio_server_s *          globus_xio_server_t;
+typedef struct globus_i_xio_dd_s *              globus_xio_data_descriptor_t;
+
+typedef struct iovec                            globus_xio_iovec_t;
+
+/**
+ *  @ingroup GLOBUS_XIO_API
+ *  Operation types
+ *  ---------------
+ *
+ *  An enumeration of operation types.  Used in the timeout callback
+ *  to indicate what operation typed timedout.
+ */
+typedef enum globus_i_xio_op_type_e
+{
+    GLOBUS_XIO_OPERATION_TYPE_FINISHED,
+    GLOBUS_XIO_OPERATION_TYPE_OPEN,
+    GLOBUS_XIO_OPERATION_TYPE_CLOSE,
+    GLOBUS_XIO_OPERATION_TYPE_READ,
+    GLOBUS_XIO_OPERATION_TYPE_WRITE,
+    GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
+} globus_xio_operation_type_t;
+
+
+typedef enum globus_i_xio_signal_type_e
+{
+    GLOBUS_XIO_SIGNAL_TYPE_NONE,
+} globus_xio_signal_type_t;
 /**
  *  @ingroup GLOBUS_XIO_API
  *  Lookup a driver structure.
@@ -343,7 +394,7 @@ globus_xio_server_cntl(
 typedef void
 (*globus_xio_accept_callback_t)(
     globus_xio_target_t                         target,
-    globus_xio_driver_server_t                  server_handle,
+    globus_xio_operation_t                      op,
     globus_result_t                             result,
     void *                                      user_arg);
 
@@ -433,24 +484,7 @@ enum globus_xio_handle_attr_cmd_t
 typedef globus_bool_t
 (*globus_xio_timeout_callback_t)(
     globus_xio_handle_t                         handle,
-    globus_xio_operation_type_t                 type,
-    void *                                      arg);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Operation types
- *  ---------------
- *
- *  An enumeration of operation types.  Used in the timeout callback
- *  to indicate what operation typed timedout.
- */
-enum globus_xio_operation_type_t
-{
-    GLOBUS_XIO_OPERATION_OPEN,
-    GLOBUS_XIO_OPERATION_CLOSE,
-    GLOBUS_XIO_OPERATION_READ,
-    GLOBUS_XIO_OPERATION_WRITE
-};
+    globus_xio_operation_type_t                 type);
 
 /******************************************************************
  *                      data descriptor
@@ -518,7 +552,18 @@ typedef void (*globus_xio_callback_t)(
 typedef void (*globus_xio_data_callback_t)(
     globus_xio_handle_t                         handle, 
     globus_result_t                             result,
+    globus_byte_t *                             buffer,
+    globus_size_t                               len,
     globus_size_t                               nbytes, 
+    globus_xio_data_descriptor_t                data_desc,
+    void *                                      user_arg);
+
+typedef void (*globus_xio_iovec_callback_t)(
+    globus_xio_handle_t                         handle,
+    globus_result_t                             result,
+    globus_xio_iovec_t *                        iovec,
+    int                                         count,
+    globus_size_t                               nbytes,
     globus_xio_data_descriptor_t                data_desc,
     void *                                      user_arg);
 
@@ -583,7 +628,7 @@ globus_xio_register_readv(
     int                                         iovec_count,
     globus_size_t                               waitforbytes,
     globus_xio_data_descriptor_t                data_desc,
-    globus_xio_data_callback_t                  cb,
+    globus_xio_iovec_callback_t                 cb,
     void *                                      user_arg);
 
 /**
@@ -611,7 +656,7 @@ globus_xio_register_writev(
     int                                         iovec_count,
     globus_size_t                               waitforbytes,
     globus_xio_data_descriptor_t                data_desc,
-    globus_xio_data_callback_t                  cb,
+    globus_xio_iovec_callback_t                 cb,
     void *                                      user_arg);
 
 /**
@@ -639,8 +684,8 @@ globus_xio_register_writev(
  */
 globus_result_t
 globus_xio_register_close(
-    globus_xio_handle_t                         handle, 
-    int                                         how,
+    globus_xio_handle_t                         handle,
+    globus_xio_attr_t                           attr,
     globus_xio_callback_t                       cb,
     void *                                      user_arg);
 
@@ -756,10 +801,12 @@ typedef enum
     GLOBUS_XIO_ERROR_MEMORY_ALLOC,
     GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,
     GLOBUS_XIO_ERROR_INVALID_STACK,
+    GLOBUS_XIO_OPERATION_CANCELED,
+    GLOBUS_XIO_ERROR_HANDLE_BAD_STATE,
 } globus_xio_error_t;
 
 extern globus_module_descriptor_t globus_i_xio_file_module;
 
-#define GLOBUS_XIO_MODULE &globus_i_xio_file_module;
+#define GLOBUS_XIO_MODULE &globus_i_xio_module
 
 #endif

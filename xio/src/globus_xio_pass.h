@@ -2,11 +2,12 @@
 #define GLOBUS_XIO_PASS_MACRO_H 1
 
 #include "globus_common.h"
+#include "globus_i_xio.h"
 
 /************************************************************************
  *                      attribute macros
  ***********************************************************************/
-#define GlobusIXIOAttrGetDS(ds, attr, driver)                               \
+#define GlobusIXIOAttrGetDS(_out_ds, _in_attr, _in_driver)                  \
 do                                                                          \
 {                                                                           \
     int                                         _ctr;                       \
@@ -15,21 +16,21 @@ do                                                                          \
     globus_i_xio_attr_ent_t *                   _entry;                     \
     void *                                      _ds = NULL;                 \
                                                                             \
-    _attr = (attr);                                                         \
-    _driver = (driver);                                                     \
+    _attr = (_in_attr);                                                     \
+    _driver = (_in_driver);                                                 \
                                                                             \
     _entry = _attr->entry;                                                  \
     for(_ctr = 0; _ctr < _attr->ndx && _ds == NULL; _ctr++)                 \
     {                                                                       \
-        if(_entry[_ctr].driver == driver)                                   \
+        if(_entry[_ctr].driver == _driver)                                  \
         {                                                                   \
-            _ds = entry[ctr].driver_data;                                   \
+            _ds = _entry[_ctr].driver_data;                                 \
         }                                                                   \
     }                                                                       \
-    ds = _ds;                                                               \
+    _out_ds = _ds;                                                          \
 } while(0)
     
-#define GlobusIXIODDGetDS(ds, dd, driver)                                   \
+#define GlobusIXIODDGetDS(_out_ds, _in_dd, _in_driver)                      \
 do                                                                          \
 {                                                                           \
     int                                         _ctr;                       \
@@ -38,18 +39,18 @@ do                                                                          \
     globus_i_xio_attr_ent_t *                   _entry;                     \
     void *                                      _ds = NULL;                 \
                                                                             \
-    _dd = (dd);                                                             \
-    _driver = (driver);                                                     \
+    _dd = (_in_dd);                                                         \
+    _driver = (_in_driver);                                                 \
                                                                             \
     _entry = _dd->entry;                                                    \
     for(_ctr = 0; _ctr < _dd->stack_size && _ds == NULL; _ctr++)            \
     {                                                                       \
-        if(_entry[_ctr].driver == driver)                                   \
+        if(_entry[_ctr].driver == _driver)                                  \
         {                                                                   \
-            _ds = entry[ctr].driver_data;                                   \
+            _ds = entry[_ctr].driver_data;                                  \
         }                                                                   \
     }                                                                       \
-    ds = _ds;                                                               \
+    _out_ds = _ds;                                                          \
 } while(0)
 
 /************************************************************************
@@ -74,7 +75,8 @@ do                                                                          \
     globus_assert(_op->ndx < _op->stack_size);                              \
     if(_op->canceled)                                                       \
     {                                                                       \
-        out_res = OperationHasBeenCacneled();                               \
+        out_res = GlobusXIOErrorOperationCanceled(                          \
+                    "GlobusXIODriverPassServerAccept"):                     \
     }                                                                       \
     else                                                                    \
     {                                                                       \
@@ -90,7 +92,7 @@ do                                                                          \
             _op->ndx++;                                                     \
             _next_entry = &_op->entry[_op->ndx];                            \
         }                                                                   \
-        while(_next_entry->driver->server_accept_func == NULL)              \
+        while(_next_entry->driver->server_accept_func == NULL);             \
         _next_entry->caller_ndx = _caller_ndx;                              \
                                                                             \
         /* at time that stack is built this will be varified */             \
@@ -139,7 +141,8 @@ do                                                                          \
  *  Open
  */
 /* open does not need to lock */
-#define GlobusXIODriverPassOpen(out_res, out_context, op, cb, user_arg)     \
+#define GlobusXIODriverPassOpen(_out_res, _out_context,                     \
+            _in_op, _in_cb, _in_user_arg)                                   \
 do                                                                          \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -152,24 +155,25 @@ do                                                                          \
     int                                             _caller_ndx;            \
                                                                             \
     globus_assert(_op->ndx < _op->stack_size);                              \
-    _op = (op);                                                             \
+    _op = (_in_op);                                                         \
     _handle = _op->_op_handle;                                              \
-    _context = _handle->contex;                                             \
+    _context = _handle->context;                                           \
     _my_context = &_context->entry[_op->ndx];                               \
     _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPENING;                   \
     _caller_ndx = _op->ndx;                                                 \
                                                                             \
     if(_op->canceled)                                                       \
     {                                                                       \
-        out_res = OperationHasBeenCacneled();                               \
+        _out_res = GlobusXIOErrorOperationCanceled(                         \
+                        "GlobusXIODriverPassOpen");                         \
     }                                                                       \
     else                                                                    \
     {                                                                       \
         _op->progress = GLOBUS_TRUE;                                        \
-        _op->timeout_blocked = GLOBUS_FALSE;                                \
+        _op->block_timeout = GLOBUS_FALSE;                                  \
         _my_op = &_op->entry[_op->ndx];                                     \
-        _my_op->cb = (cb);                                                  \
-        _my_op->user_arg = (user_arg);                                      \
+        _my_op->cb = (_in_cb);                                              \
+        _my_op->user_arg = (_in_user_arg);                                  \
         _my_op->in_register = GLOBUS_TRUE;                                  \
         do                                                                  \
         {                                                                   \
@@ -177,14 +181,14 @@ do                                                                          \
             _next_op = &_op->entry[_op->ndx];                               \
             _next_context = &_context->entry[_op->ndx];                     \
         }                                                                   \
-        while(_next_op->driver->transport_open == NULL &&                   \
-              _next_op->driver->transform_open == NULL);                    \
+        while(_next_context->driver->transport_open_func == NULL &&         \
+              _next_context->driver->transform_open_func == NULL);          \
         _next_op->caller_ndx = _caller_ndx;                                 \
         /* at time that stack is built this will be varified */             \
-        globus_assert(_op->ndx <= _server->stack_size);                     \
+        globus_assert(_op->ndx <= _context->stack_size);                    \
         if(_op->ndx == _op->stack_size)                                     \
         {                                                                   \
-            out_res = _next_context->driver->transport_open(                \
+            _out_res = _next_context->driver->transport_open_func(          \
                         _next_op->target,                                   \
                         _next_op->attr,                                     \
                         _context,                                           \
@@ -192,13 +196,13 @@ do                                                                          \
         }                                                                   \
         else                                                                \
         {                                                                   \
-            out_res = _next_context->driver->transform_open(                \
+            _out_res = _next_context->driver->transform_open_func(         \
                         _next_op->target,                                   \
                         _next_op->attr,                                     \
                         _op);                                               \
         }                                                                   \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        out_context = _context;                                             \
+        _out_context = _context;                                            \
     }                                                                       \
 } while(0)
 
@@ -281,20 +285,22 @@ do                                                                          \
 /*
  *  Close
  */
-#define GlobusXIODriverPassClose(out_res, op, cb, user_arg)                 \
+#define GlobusXIODriverPassClose(_out_res, _in_op, _in_cb, _in_ua)          \
 do                                                                          \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_handle_t *                         _handle;                \
-    globus_i_xio_context_t *                        _my_context;            \
-    globus_bool_t *                                 _pass;                  \
+    globus_i_xio_context_t *                        _context;               \
+    globus_i_xio_context_entry_t *                  _my_context;            \
+    globus_bool_t                                   _pass;                  \
     globus_i_xio_op_entry_t *                       _my_op;                 \
                                                                             \
     globus_assert(_op->ndx < _op->stack_size);                              \
-    _op = (op);                                                             \
+    _op = (_in_op);                                                         \
     _handle = _op->_op_handle;                                              \
-    _context = _handle->contex;                                             \
+    _context = _handle->context;                                            \
     _my_op = &_op->entry[_op->ndx];                                         \
+    _my_context = &_context->entry[_op->ndx];                               \
                                                                             \
     /* deal with context state */                                           \
     globus_mutex_lock(&_my_context->mutex);                                 \
@@ -308,7 +314,7 @@ do                                                                          \
             case GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED:                      \
                 _my_context->state =                                        \
                     GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED_AND_CLOSING;       \
-                break                                                       \
+                break;                                                      \
                                                                             \
             case GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED:                     \
                 _my_context->state =                                        \
@@ -335,19 +341,20 @@ do                                                                          \
     }                                                                       \
     globus_mutex_unlock(&_my_context->mutex);                               \
                                                                             \
-    _my_op->cb = (cb);                                                      \
-    _my_op->user_arg = (user_arg);                                          \
+    _my_op->cb = (_in_cb);                                                 \
+    _my_op->user_arg = (_in_ua);                                            \
     /* op can be checked outside of lock */                                 \
     if(_op->canceled)                                                       \
     {                                                                       \
-        out_res = OperationHasBeenCacneled();                               \
+        _out_res = GlobusXIOErrorOperationCanceled(                         \
+                        "GlobusXIODriverPassClose");                        \
     }                                                                       \
     else if(_pass)                                                          \
     {                                                                       \
-        out_res = globus_i_xio_driver_start_close(_op, GLOBUS_TRUE);        \
+        _out_res = globus_i_xio_driver_start_close(_op, GLOBUS_TRUE);       \
     }                                                                       \
                                                                             \
-    if(out_res != GLOBUS_SUCCESS)                                           \
+    if(_out_res != GLOBUS_SUCCESS)                                          \
     {                                                                       \
         _my_context->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;                \
     }                                                                       \
@@ -401,11 +408,12 @@ do                                                                          \
 /*
  *  write
  */
-#define GlobusXIODriverPassWrite(out_res, op, iovec, iovec_count,           \
-    cb, wait_for, user_arg)                                                 \
+#define GlobusXIODriverPassWrite(_out_res, _in_op,                          \
+            _in_iovec, _in_iovec_count,                                     \
+            _in_wait_for, _in_cb, _in_user_arg)                             \
 do                                                                          \
 {                                                                           \
-    globus_i_xio_operation_t *                      _op;                    \
+    globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_op_entry_t *                       _next_op;               \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     globus_i_xio_context_entry_t *                  _my_context;            \
@@ -414,8 +422,8 @@ do                                                                          \
     globus_bool_t                                   _close = GLOBUS_FALSE;  \
     int                                             _caller_ndx;            \
                                                                             \
-    _op = (op);                                                             \
-    _context = _op->context;                                                \
+    _op = (_in_op);                                                         \
+    _context = _op->_op_context;                                            \
     _my_context = &_context->entry[_op->ndx];                               \
     _my_op = &_op->entry[_op->ndx];                                         \
                                                                             \
@@ -426,28 +434,28 @@ do                                                                          \
     /* error checking */                                                    \
     if(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPEN &&                \
         _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED &&       \
-        _my_context->state != GLOBUS_XIO_HANDLE_STATE_DELIVERED)            \
+        _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED)        \
     {                                                                       \
-        out_res = GlobusXIOErrorNotOpen("GlobusXIODriverPassWrite");        \
+        _out_res = GlobusXIOErrorHandleBadState("GlobusXIODriverPassWrite"); \
     }                                                                       \
     else if(_op->canceled)                                                  \
     {                                                                       \
-        out_res = GlobusXIOErrorOperationCanceled(                          \
+        _out_res = GlobusXIOErrorOperationCanceled(                          \
                         "GlobusXIODriverPassWrite");                        \
     }                                                                       \
     else                                                                    \
     {                                                                       \
         _op->progress = GLOBUS_TRUE;                                        \
-        _op->timeout_blocked = GLOBUS_FALSE;                                \
+        _op->block_timeout = GLOBUS_FALSE;                                  \
         /* set up the entry */                                              \
         _my_op = &_op->entry[_op->ndx];                                     \
-        _my_op->data_cb = (cb);                                             \
-        _my_op->user_arg = (user_arg);                                      \
+        _my_op->_op_ent_data_cb = (_in_cb);                                 \
+        _my_op->user_arg = (_in_user_arg);                                  \
         _my_op->in_register = GLOBUS_TRUE;                                  \
-        _my_op->iovec = (iovec);                                            \
-        _my_op->iovec_count = (iovec_count);                                \
-        _my_op->nwritten = 0;                                               \
-        _my_op->wait_for = (wait_for);                                      \
+        _my_op->_op_ent_iovec = (_in_iovec);                                \
+        _my_op->_op_ent_iovec_count = (_in_iovec_count);                    \
+        _my_op->_op_ent_nbytes = 0;                                         \
+        _my_op->_op_ent_wait_for = (_in_wait_for);                          \
         /* set the callstack flag */                                        \
         _my_op->in_register = GLOBUS_TRUE;                                  \
         _caller_ndx = _op->ndx;                                             \
@@ -458,26 +466,26 @@ do                                                                          \
             _next_op = &_op->entry[_op->ndx];                               \
             _next_context = &_context->entry[_op->ndx];                     \
         }                                                                   \
-        while(_next_context->driver->write_func == NULL)                    \
+        while(_next_context->driver->write_func == NULL);                   \
                                                                             \
         _my_context->outstanding_operations++;                              \
         _next_op->caller_ndx = _caller_ndx;                                 \
                                                                             \
         /* UNLOCK */                                                        \
-        globus_mutex_unlock(&_context->mutex);                              \
+        globus_mutex_unlock(&_my_context->mutex);                              \
                                                                             \
-        out_res = _next_context->driver->write_func(                        \
+        _out_res = _next_context->driver->write_func(                       \
                         _next_context->driver_handle,                       \
-                        _my_op->iovec,                                      \
-                        _my_op->iovec_count,                                \
+                        _my_op->_op_ent_iovec,                              \
+                        _my_op->_op_ent_iovec_count,                        \
                         _op);                                               \
                                                                             \
         /* LOCK */                                                          \
-        globus_mutex_lock(&_context->mutex);                                \
+        globus_mutex_lock(&_my_context->mutex);                                \
                                                                             \
         /* flip the callstack flag */                                       \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        if(out_res != GLOBUS_SUCCESS)                                       \
+        if(_out_res != GLOBUS_SUCCESS)                                       \
         {                                                                   \
             _my_context->outstanding_operations--;                          \
             /* there is an off chance that we could need to close here */   \
@@ -490,9 +498,8 @@ do                                                                          \
                 _close = GLOBUS_TRUE;                                       \
             }                                                               \
         }                                                                   \
-        out_context = _context;                                             \
     }                                                                       \
-    globus_mutex_unlock(&_context->mutex);                                  \
+    globus_mutex_unlock(&_my_context->mutex);                               \
                                                                             \
     if(_close)                                                              \
     {                                                                       \
@@ -508,7 +515,7 @@ do                                                                          \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     globus_result_t                                 _res;                   \
     globus_bool_t                                   _fire_cb = GLOBUS_TRUE; \
-    globus_iovec_t *                                _tmp_iovec;             \
+    globus_xio_iovec_t *                            _tmp_iovec;             \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_entry_t *                  _next_context;          \
     globus_i_xio_context_t *                        _context;               \
@@ -536,8 +543,8 @@ do                                                                          \
         /* allocate tmp iovec to the bigest it could ever be */             \
         if(_my_op->_op_ent_fake_iovec == NULL)                              \
         {                                                                   \
-            _my_op->_op_ent_fake_iovec = (globus_iovec_t *)                 \
-                globus_malloc(sizeof(globus_iovec_t) *                      \
+            _my_op->_op_ent_fake_iovec = (globus_xio_iovec_t *)             \
+                globus_malloc(sizeof(globus_xio_iovec_t) *                  \
                     _my_op->_op_ent_iovec_count);                           \
         }                                                                   \
         _tmp_iovec = _my_op->_op_ent_fake_iovec;                            \
@@ -624,56 +631,57 @@ do                                                                          \
 /*
  *  read
  */
-#define GlobusXIODriverPassRead(out_res, op, iovec, iovec_count,           \
-    cb, wait_for, user_arg)                                                 \
+#define GlobusXIODriverPassRead(_out_res, _in_op, _in_iovec,                \
+            _in_iovec_count, _in_wait_for, _in_cb, _in_user_arg)            \
 do                                                                          \
 {                                                                           \
-    globus_i_xio_operation_t *                      _op;                    \
+    globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_op_entry_t *                       _next_op;               \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     globus_i_xio_context_entry_t *                  _next_context;          \
+    globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_t *                        _context;               \
     int                                             _caller_ndx;            \
                                                                             \
-    _op = (op);                                                             \
-    _context = _op->context;                                                \
-    _my_context = _context->entry[_op->ndx];                                \
+    _op = (_in_op);                                                         \
+    _context = _op->_op_context;                                            \
+    _my_context = &_context->entry[_op->ndx];                               \
                                                                             \
     globus_assert(_op->ndx < _op->stack_size);                              \
                                                                             \
     /* LOCK */                                                              \
-    globus_mutex_lock(&_context->mutex);                                    \
+    globus_mutex_lock(&_my_context->mutex);                                 \
                                                                             \
     /* error checking */                                                    \
     if(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPEN &&                \
         _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)         \
     {                                                                       \
-        out_res = GlobusXIOErrorNotOpen("GlobusXIODriverPassRead");         \
+        _out_res = GlobusXIOErrorHandleBadState("GlobusXIODriverPassRead"); \
     }                                                                       \
     else if(_op->canceled)                                                  \
     {                                                                       \
-        out_res = GlobusXIOErrorOperationCanceled(                          \
+        _out_res = GlobusXIOErrorOperationCanceled(                         \
                         "GlobusXIODriverPassRead");                         \
     }                                                                       \
     else if(_my_context->state == GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)     \
     {                                                                       \
-        _my_context->cached_res = GlobusXIOErrorReadEOF();                  \
+        _op->cached_res = GlobusXIOErrorReadEOF();                          \
         globus_list_insert(&_my_context->eof_op_list, _op);                 \
         _my_context->outstanding_operations++;                              \
     }                                                                       \
     else                                                                    \
     {                                                                       \
         _op->progress = GLOBUS_TRUE;                                        \
-        _op->timeout_blocked = GLOBUS_FALSE;                                \
+        _op->block_timeout = GLOBUS_FALSE;                                  \
         /* set up the entry */                                              \
         _my_op = &_op->entry[_op->ndx];                                     \
-        _my_op->data_cb = (cb);                                             \
-        _my_op->user_arg = (user_arg);                                      \
+        _my_op->_op_ent_data_cb = (_in_cb);                                 \
+        _my_op->user_arg = (_in_user_arg);                                  \
         _my_op->in_register = GLOBUS_TRUE;                                  \
-        _my_op->iovec = (iovec);                                            \
-        _my_op->iovec_count = (iovec_count);                                \
-        _my_op->nread = 0;                                                  \
-        _my_op->wait_for = (wait_for);                                      \
+        _my_op->_op_ent_iovec = (_in_iovec);                                \
+        _my_op->_op_ent_iovec_count = (_in_iovec_count);                    \
+        _my_op->_op_ent_nbytes = 0;                                         \
+        _my_op->_op_ent_wait_for = (_in_wait_for);                          \
         /* set the callstack flag */                                        \
         _my_op->in_register = GLOBUS_TRUE;                                  \
         _caller_ndx = _op->ndx;                                             \
@@ -682,37 +690,36 @@ do                                                                          \
         {                                                                   \
             _op->ndx++;                                                     \
             _next_op = &_op->entry[_op->ndx];                               \
+            _next_context = &_context->entry[_op->ndx];                     \
         }                                                                   \
-        while(_next_op->driver->write_func == NULL)                         \
+        while(_next_context->driver->write_func == NULL);                   \
                                                                             \
-        _next_context = _context->entry[_op->ndx];                          \
-        _next_op->caller_ndx = caller_ndx;                                  \
+        _next_op->caller_ndx = _caller_ndx;                                 \
         _my_context->outstanding_operations++;                              \
         _my_context->read_operations++;                                     \
                                                                             \
         /* UNLOCK */                                                        \
-        globus_mutex_unlock(&_context->mutex);                              \
+        globus_mutex_unlock(&_my_context->mutex);                           \
                                                                             \
-        out_res = _next_context->driver->read_func(                         \
+        _out_res = _next_context->driver->read_func(                        \
                         _next_context->driver_handle,                       \
-                        _my_entry->iovec,                                   \
-                        _my_entry->iovec_count,                             \
+                        _my_op->_op_ent_iovec,                              \
+                        _my_op->_op_ent_iovec_count,                        \
                         _op);                                               \
                                                                             \
         /* LOCK */                                                          \
-        globus_mutex_lock(&_context->mutex);                                \
+        globus_mutex_lock(&_my_context->mutex);                             \
                                                                             \
         /* flip the callstack flag */                                       \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        if(out_res != GLOBUS_SUCCESS)                                       \
+        if(_out_res != GLOBUS_SUCCESS)                                      \
         {                                                                   \
-            _my_context->outstanding_operations--;                        \
-            _my_context->read_operations--;                               \
+            _my_context->outstanding_operations--;                          \
+            _my_context->read_operations--;                                 \
         }                                                                   \
-        out_context = _op->context;                                         \
     }                                                                       \
                                                                             \
-    globus_mutex_unlock(&_context->mutex);                                  \
+    globus_mutex_unlock(&_my_context->mutex);                               \
 } while(0)
 
 
@@ -723,7 +730,7 @@ do                                                                          \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     globus_result_t                                 _res;                   \
     globus_bool_t                                   _fire_cb = GLOBUS_TRUE; \
-    globus_iovec_t *                                _tmp_iovec;             \
+    globus_xio_iovec_t *                            _tmp_iovec;             \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_entry_t *                  _next_context;          \
     int                                             _caller_ndx;            \
@@ -790,8 +797,8 @@ do                                                                          \
         /* allocate tmp iovec to the bigest it could ever be */             \
         if(_my_op->_op_ent_fake_iovec == NULL)                              \
         {                                                                   \
-            _my_op->_op_ent_fake_iovec = (globus_iovec_t *)                 \
-                globus_malloc(sizeof(globus_iovec_t) *                      \
+            _my_op->_op_ent_fake_iovec = (globus_xio_iovec_t *)             \
+                globus_malloc(sizeof(globus_xio_iovec_t) *                  \
                     _my_op->_op_ent_iovec_count);                           \
         }                                                                   \
         _tmp_iovec = _my_op->_op_ent_fake_iovec;                            \
@@ -995,7 +1002,7 @@ globus_l_xio_driver_op_read_kickout(
 
 void
 globus_l_xio_driver_purge_read_eof(
-    globus_i_xio_context_entry_t *                  my_context);
+    globus_i_xio_context_entry_t *              my_context);
 
 void
 globus_l_xio_driver_op_write_kickout(
