@@ -173,7 +173,7 @@ sub test_gram_local
     {
         $u->report("SUCCESS");
 
-        ($rc, $output) = $u->command("diff /etc/group $tmpfile");
+        ($rc, $output) = $u->command("diff /etc/group $tmpfile",1);
         $output eq "" && $rc == 0 ? 
             $u->report("SUCCESS") : $u->report("FAILURE");
         
