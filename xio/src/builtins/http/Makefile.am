@@ -12,8 +12,7 @@ Sources= \
     globus_xio_http_rfc2616.c \
     globus_xio_http_server.c \
     globus_xio_http_target.c \
-    globus_xio_http_transform.c \
-    http_version_notes.c
+    globus_xio_http_transform.c
 
 flavorinclude_HEADERS = \
     globus_xio_http.h
