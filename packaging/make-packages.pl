@@ -1300,9 +1300,7 @@ sub package_source_tar()
 	  	  log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
 		  paranoia "Filelist copy failed for $package.";
               } else {
-		  print "\tPartially cool.  Still got filelist from package-list.\n";
-		  log_system("cp $top_dir/package-list/$package/filelist 	$destdir/", "$pkglog/$package");
-		  paranoia "Filelist copy from package-list failed for $package.";
+		  print "\tNo filelist found for $package.\n";
 	      }
             }
 	} else {
