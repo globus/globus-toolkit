@@ -1,0 +1,6 @@
+1) Open common.sln in vcc 7
+2) Build the solution
+3) copy the files from .../win2k/Build/globus_common.lib to %GLOBUS_LOCATION%\lib
+4) copy headers from .../source/library/*.h %GLOBUS_LOCATION%\include
+
+
