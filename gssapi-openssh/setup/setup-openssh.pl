@@ -131,6 +131,29 @@ sub isPresent
     }
 }
 
+### makeConfDir( )
+#
+# make the gsi-openssh configuration directory if it doesn't already exist.
+#
+
+sub makeConfDir
+{
+    if ( isPresent($sysconfdir) )
+    {
+        if ( -d $sysconfdir )
+        {
+            return;
+        }
+
+        die("${sysconfdir} already exists and is not a directory!\n");
+    }
+
+    print "Could not find ${sysconfdir} directory... creating.\n";
+    action("mkdir -p $sysconfdir");
+
+    return;
+}
+
 sub determineKeys
 {
     my($keyhash, $keylist);
@@ -410,13 +433,14 @@ $response = query_boolean("Do you wish to continue with the setup package?","y")
 if ($response eq "n")
 {
     print "\n";
-    print "Okay.. exiting gsi_openssh setup.\n";
+    print "Exiting gsi_openssh setup.\n";
 
     exit 0;
 }
 
 print "\n";
 
+makeConfDir();
 $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
 copyKeyFiles($keyhash->{copy});
@@ -511,4 +535,21 @@ sub query_boolean
     }
 
     return $bar;
+}
+
+### absolutePath( $file )
+#
+# converts a given pathname into a canonical path using the abs_path function.
+#
+
+sub absolutePath
+{
+    my($file) = @_;
+    my $home = $ENV{'HOME'};
+    $file =~ s!~!$home!;
+    my $startd = cwd();
+    $file =~ s!^\./!$startd/!;
+    $file = "$startd/$file" if $file !~ m!^\s*/!;
+    $file = abs_path($file);
+    return $file;
 }
