@@ -1,5 +1,7 @@
 2000-10-11  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* version.h (MYPROXY_VERSION_DATE): v0.2alpha3 11 Oct 2000
+
 	* myproxy-programs.html: Updated myproxy-destroy docs.
 	* myproxy_destroy.c (main): Don't run grid-proxy-init, just use
 	existing user proxy.
