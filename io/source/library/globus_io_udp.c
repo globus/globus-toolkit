@@ -47,24 +47,29 @@ typedef struct globus_i_io_udp_monitor_s
     globus_bool_t                       done;
     globus_size_t                       nbytes;
 
-    char **                             host;
-    unsigned short *                    port;
-    globus_size_t *                     nbytes_received;
+    char *                              host;
+    unsigned short                      port;
+    char **                             out_host;
+    unsigned short *                    out_port;
+    globus_size_t *                     out_nbytes;
 } globus_i_io_udp_monitor_t;
 
 
-typedef struct globus_l_io_udp_recvfrom_s
+typedef struct globus_l_io_udp_info_s
 {
     globus_io_handle_t *                handle;
     globus_byte_t *                     buf;
     globus_size_t                       nbytes;
-    globus_io_udp_recvfrom_callback_t   user_callback;
-    globus_io_udp_recvfromv_callback_t  user_callbackv;
+    globus_io_udp_recvfrom_callback_t   recv_callback;
+    globus_io_udp_recvfromv_callback_t  recv_callbackv;
+    globus_io_udp_sendto_callback_t     send_cb;
+    globus_io_udp_sendvto_callback_t    sendv_cb;
     struct iovec *                      iovec;
     int                                 iovec_count;
     int                                 flags;
     void *                              user_callback_arg;
-} globus_l_io_udp_recvfrom_t;
+    struct sockaddr_in                  addr;
+} globus_l_io_udp_info_t;
 
 static
 globus_result_t
@@ -113,12 +118,93 @@ globus_l_io_udp_recvfrom_monitor_callback(
  *                      ------------------
  ************************************************************************/
 static void
+globus_l_io_udp_sendto_callback(
+     void *                             arg,
+     globus_io_handle_t *               handle,
+     globus_result_t                    result)
+{
+    globus_l_io_udp_info_t *            send_info;
+    globus_size_t                       nbytes;
+    struct msghdr                       msg;
+
+    send_info = (globus_l_io_udp_info_t *) arg;
+    globus_assert(send_info != GLOBUS_NULL);
+
+    send_info = (globus_l_io_udp_info_t *) arg;
+
+    if(result == GLOBUS_SUCCESS)
+    {
+        if(send_info->buf != NULL)
+        {
+            nbytes = sendto(
+                handle->fd,
+                send_info->buf,
+                send_info->nbytes,
+                send_info->flags,
+	            (struct sockaddr*)&send_info->addr,
+	            sizeof(send_info->addr));
+        }
+        else if(send_info->iovec != NULL)
+		{
+            memset(&msg, '\0', sizeof(msg));
+            msg.msg_name = (void *) &send_info->addr;
+            msg.msg_namelen = sizeof(send_info->addr);
+            msg.msg_iov = send_info->iovec;
+            msg.msg_iovlen = send_info->iovec_count;
+            msg.msg_control = NULL;
+            msg.msg_controllen = 0;
+            msg.msg_flags = 0; /* out param */
+                                                                                
+            nbytes = sendmsg(
+                handle->fd,
+                &msg,
+                send_info->flags);
+        }	
+        else
+		{
+            globus_assert(0);
+        }	
+
+        if(nbytes < 0)
+        {
+            result =  globus_error_put(
+			     globus_io_error_construct_system_failure(
+					    GLOBUS_IO_MODULE,
+					    GLOBUS_NULL,
+					    handle,
+			            errno));
+        }
+    }
+
+    if(send_info->send_cb != NULL)
+    {
+        send_info->send_cb(
+            send_info->user_callback_arg,
+    		handle,
+			result,
+			send_info->buf,
+            nbytes);
+    }
+    else if(send_info->sendv_cb != NULL)
+    {
+        send_info->sendv_cb(
+            send_info->user_callback_arg,
+    		handle,
+			result,
+            send_info->iovec,
+            send_info->iovec_count);
+    }
+
+    globus_free(send_info);
+}
+
+static void
 globus_l_io_udp_recvfrom_callback(
      void *                           arg,
      globus_io_handle_t *             handle,
      globus_result_t                  result)
 {
-    globus_l_io_udp_recvfrom_t *    recvfrom_arg;
+    globus_l_io_udp_info_t *        recvfrom_arg;
     int                             bytes_received;
     struct sockaddr_in              from_addr;
     GLOBUS_SOCK_SIZE_T              from_len;
@@ -126,7 +212,7 @@ globus_l_io_udp_recvfrom_callback(
     unsigned short                  from_port;
     struct msghdr                   msg;
 
-    recvfrom_arg = (globus_l_io_udp_recvfrom_t *) arg;
+    recvfrom_arg = (globus_l_io_udp_info_t *) arg;
     globus_assert(recvfrom_arg != GLOBUS_NULL);
 
     if(result == GLOBUS_SUCCESS)
@@ -181,10 +267,10 @@ globus_l_io_udp_recvfrom_callback(
     }
 
     /* get source host anf port */
-    recvfrom_arg = (globus_l_io_udp_recvfrom_t *) arg;
-    if(recvfrom_arg->user_callback)
+    recvfrom_arg = (globus_l_io_udp_info_t *) arg;
+    if(recvfrom_arg->recv_callback)
     {
-        recvfrom_arg->user_callback(recvfrom_arg->user_callback_arg,
+        recvfrom_arg->recv_callback(recvfrom_arg->user_callback_arg,
     		           handle,
 			           result,
 			           recvfrom_arg->buf,
@@ -192,9 +278,9 @@ globus_l_io_udp_recvfrom_callback(
 			           from_host,
 			           from_port);
     }
-    else if(recvfrom_arg->user_callbackv)
+    else if(recvfrom_arg->recv_callbackv)
     {
-        recvfrom_arg->user_callbackv(
+        recvfrom_arg->recv_callbackv(
             recvfrom_arg->user_callback_arg,
             handle,
             result,
@@ -290,9 +376,9 @@ globus_l_io_udp_recvfrom_monitor_callback(
 
     monitor = (globus_i_io_udp_monitor_t *) arg;
 
-    *(monitor->port) = port;
-    *(monitor->host) = (char *)host;
-    *(monitor->nbytes_received) = nbytes_recvd;
+    *(monitor->out_port) = port;
+    *(monitor->out_host) = (char *)host;
+    *(monitor->out_nbytes) = nbytes_recvd;
 
     globus_i_io_monitor_callback(arg,
 				 handle,
@@ -314,14 +400,51 @@ globus_l_io_udp_recvfromv_monitor_callback(
 
     monitor = (globus_i_io_udp_monitor_t *) arg;
 
-    *(monitor->port) = port;
-    *(monitor->host) = (char *)host;
-    *(monitor->nbytes_received) = nbytes_recvd;
+    *(monitor->out_port) = port;
+    *(monitor->out_host) = (char *)host;
+    *(monitor->out_nbytes) = nbytes_recvd;
 
     globus_i_io_monitor_callback(arg,
 				 handle,
 				 result);
 }
+
+void
+globus_l_io_udp_sendto_monitor_callback(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes)
+{
+    globus_i_io_udp_monitor_t *         monitor;
+
+    monitor = (globus_i_io_udp_monitor_t *) arg;
+
+    *(monitor->out_nbytes) = nbytes;
+
+    globus_i_io_monitor_callback(arg,
+				 handle,
+				 result);
+}
+
+void
+globus_l_io_udp_sendvto_monitor_callback(
+    void *                                  arg,
+    globus_io_handle_t *                    handle,
+    globus_result_t                         result,
+    struct iovec *                          iov,
+    int                                     iovc)
+{
+    globus_i_io_udp_monitor_t *             monitor;
+
+    monitor = (globus_i_io_udp_monitor_t *) arg;
+
+    globus_i_io_monitor_callback(arg,
+				 handle,
+				 result);
+}
+
 /*
  * Function:	globus_l_io_udp_create_socket()
  *
@@ -835,6 +958,160 @@ globus_io_udp_bind(
 /* globus_io_udp_bind() */
 
 /**
+ *  Send a udp message to a remote socket using an iovec as input.
+ *
+ *  This function is used to send udp messages from the localhost to the
+ *  remote host designated by the 'host' parameter.
+ * 
+ *  @param handle
+ *         The handle used to send the message.
+ *
+ *  @param iov
+ *         The message to be sent
+ *
+ *  @param iovc
+ *         The number of entries in the iovec
+ *
+ *  @param flags
+ *         MSG_OOB, MSG_DONTROUTE, MSG_DONTWAIT, MSG_NOSIGNAL, MSG_CONFIRM
+ *
+ *  @param host
+ *         The host to which the message will be sent.  Will be more 
+ *         efficient if in the IP format.
+ *
+ *  @param port
+ *         The remote port to which the message will be sent.
+ *
+ *  @param bytes_sent
+ *         An out parameter.  Will contain the number of bytes sent when
+ *         the function returns successfully.
+ *  @ingroup udp
+ */
+globus_result_t
+globus_io_udp_sendvto(
+    globus_io_handle_t *                handle,
+    struct iovec *                      iov,
+    int                                 iovc,
+    int                                 flags,
+    globus_size_t                       nbytes,
+    char *                              host,
+    unsigned short                      port,
+    globus_size_t *                     bytes_sent)
+{
+    globus_result_t                     result;
+    globus_i_io_udp_monitor_t *         monitor;
+    static char *                       myname="globus_io_udp_sendvto";
+
+    /* verify arguments */
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    if(iov == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "iov",
+                1,
+                myname));
+    }
+    if(iovc > 0)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "iovc",
+                1,
+                myname));
+    }
+    if(host == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "host",
+                1,
+                myname));
+    }
+    if(nbytes <= 0)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "nbytes",
+                1,
+                myname));
+    }
+
+    monitor = (globus_i_io_udp_monitor_t *) 
+                   globus_malloc(sizeof(globus_i_io_udp_monitor_t));
+
+    globus_mutex_init(&monitor->mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor->cond, GLOBUS_NULL);
+    monitor->done = GLOBUS_FALSE;
+    monitor->err = GLOBUS_NULL;
+    monitor->use_err = GLOBUS_FALSE;
+    monitor->port = port;
+    monitor->host = host;
+    monitor->out_nbytes = bytes_sent;
+    
+    handle->blocking_read = GLOBUS_TRUE;
+    
+    result = globus_io_udp_register_sendvto(
+                handle,
+                iov,
+                iovc,
+                flags,
+                host,
+                port,
+                globus_l_io_udp_sendvto_monitor_callback,
+                (void *)monitor);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        monitor->done = GLOBUS_TRUE;
+        monitor->err = globus_error_get(result);
+        monitor->use_err = GLOBUS_TRUE;
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    {
+        while(!monitor->done)
+        {
+            globus_cond_wait(&monitor->cond, &monitor->mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor->mutex);
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    
+    globus_mutex_destroy(&monitor->mutex);
+    globus_cond_destroy(&monitor->cond);
+    if(monitor->use_err)
+    {
+        result = globus_error_put(monitor->err);
+    }
+
+    globus_free(monitor); 
+
+    return result;
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_io_udp_sendto() */
+
+/**
  *  Send a udp message to a remote socket.
  *
  *  This function is used to send udp messages from the localhost to the
@@ -869,14 +1146,10 @@ globus_io_udp_sendto(
     globus_size_t                       nbytes,
     char *                              host,
     unsigned short                      port,
-    globus_size_t *                     bytes_sent)
+    globus_size_t *                     nbytes_sent)
 {
-    struct hostent                      he;
-    struct sockaddr_in                  addr;
-    struct hostent *                    hp;
-    int                                 hp_errnop;
-    char                                hp_tsdbuffer[500];
-    globus_object_t *			        err;
+    globus_i_io_udp_monitor_t *         monitor;
+    globus_result_t                     result;
     static char *                       myname="globus_io_udp_sendto";
 
     /* verify arguments */
@@ -921,49 +1194,255 @@ globus_io_udp_sendto(
                 myname));
     }
 
-    hp = globus_libc_gethostbyname_r(host,
-		                     &he,
-	                             hp_tsdbuffer,
-                                     500,
-                                     &hp_errnop);
+    monitor = (globus_i_io_udp_monitor_t *) 
+                   globus_malloc(sizeof(globus_i_io_udp_monitor_t));
 
+    globus_mutex_init(&monitor->mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor->cond, GLOBUS_NULL);
+    monitor->done = GLOBUS_FALSE;
+    monitor->err = GLOBUS_NULL;
+    monitor->use_err = GLOBUS_FALSE;
+    monitor->port = port;
+    monitor->host = host;
+    monitor->out_nbytes = nbytes_sent;
+    
+    handle->blocking_read = GLOBUS_TRUE;
+    
+    result = globus_io_udp_register_sendto(
+                handle,
+                buf,
+                flags,
+                nbytes,
+                host,
+                port,
+                globus_l_io_udp_sendto_monitor_callback,
+                (void *)monitor);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        monitor->done = GLOBUS_TRUE;
+        monitor->err = globus_error_get(result);
+        monitor->use_err = GLOBUS_TRUE;
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    {
+        while(!monitor->done)
+        {
+            globus_cond_wait(&monitor->cond, &monitor->mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor->mutex);
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    
+    globus_mutex_destroy(&monitor->mutex);
+    globus_cond_destroy(&monitor->cond);
+    if(monitor->use_err)
+    {
+        result = globus_error_put(monitor->err);
+    }
+
+    globus_free(monitor); 
+
+    return result;
+}
+
+globus_result_t
+globus_io_udp_register_sendto(
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buf,
+    int                                 flags,
+    globus_size_t                       nbytes,
+    char *                              host,
+    unsigned short                      port,
+    globus_io_udp_sendto_callback_t     send_cb,
+    void *                              user_arg)
+{
+    globus_l_io_udp_info_t *            sendto_arg;
+    globus_result_t                     result;
+    struct hostent                      he;
+    int                                 hp_errnop;
+    char                                hp_tsdbuffer[500];
+    globus_object_t *			        err;
+    struct hostent *                    hp;
+    static char *                       myname="globus_io_udp_register_sendto";
+
+    /* verify arguments */
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    if(buf == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "buf",
+                1,
+                myname));
+    }
+    if(nbytes <= 0)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "nbytes",
+                1,
+                myname));
+    }
+
+    hp = globus_libc_gethostbyname_r(
+            host,
+            &he,
+            hp_tsdbuffer,
+            500,
+            &hp_errnop);
     if(hp == GLOBUS_NULL)
     {
-	err = globus_io_error_construct_system_failure(
+        err = globus_io_error_construct_system_failure(
 	            GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle,
-		    errno);
-       
+                GLOBUS_NULL,
+                handle,
+                errno);
        return globus_error_put(err);
     }
 
-    memset(&addr, '\0', sizeof(addr));
-    addr.sin_family = hp->h_addrtype;
-    memcpy(&addr.sin_addr, hp->h_addr, hp->h_length);
-    addr.sin_port = htons(port);
+    sendto_arg = (globus_l_io_udp_info_t *)
+              globus_malloc(sizeof(globus_l_io_udp_info_t));
+    sendto_arg->buf = buf;
+    sendto_arg->nbytes = nbytes;
+    sendto_arg->iovec = NULL;
+    sendto_arg->iovec_count = 0;
+    sendto_arg->handle = handle;
+    sendto_arg->flags = flags;
+    sendto_arg->sendv_cb = NULL;
+    sendto_arg->send_cb = send_cb;
+    sendto_arg->user_callback_arg = user_arg;
 
-    *bytes_sent = sendto(
-		    handle->fd,
-	            (char *)buf,
-	            nbytes,
-	            flags,
-	            (struct sockaddr*)&addr,
-	            sizeof(addr));
-    if(*bytes_sent == -1)
-    {
-	err = globus_io_error_construct_system_failure(
-	            GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle,
-		    errno);
-       
-       return globus_error_put(err);
-    }
+    memset(&sendto_arg->addr, '\0', sizeof(sendto_arg->addr));
+    sendto_arg->addr.sin_family = hp->h_addrtype;
+    memcpy(&sendto_arg->addr.sin_addr, hp->h_addr, hp->h_length);
+    sendto_arg->addr.sin_port = htons(port);
 
-    return GLOBUS_SUCCESS;
+    result = globus_io_register_select(
+                  handle,
+                  GLOBUS_NULL,
+                  GLOBUS_NULL,
+                  globus_l_io_udp_sendto_callback,
+                  (void *)sendto_arg,
+                  GLOBUS_NULL,
+                  GLOBUS_NULL);
+
+    return result;
 }
 /* globus_io_udp_register_sendto() */
+
+globus_result_t
+globus_io_udp_register_sendvto(
+    globus_io_handle_t *                handle,
+    struct iovec *                      iov,
+    int                                 iovc,
+    int                                 flags,
+    char *                              host,
+    unsigned short                      port,
+    globus_io_udp_sendvto_callback_t    sendv_cb,
+    void *                              user_arg)
+{
+    globus_l_io_udp_info_t *            sendto_arg;
+    globus_result_t                     result;
+    struct hostent                      he;
+    int                                 hp_errnop;
+    char                                hp_tsdbuffer[500];
+    globus_object_t *			        err;
+    struct hostent *                    hp;
+    static char *                       myname="globus_io_udp_register_sendto";
+
+    /* verify arguments */
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    if(iov == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "iov",
+                1,
+                myname));
+    }
+    if(iovc <= 0)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "iovc",
+                1,
+                myname));
+    }
+
+    hp = globus_libc_gethostbyname_r(
+            host,
+            &he,
+            hp_tsdbuffer,
+            500,
+            &hp_errnop);
+    if(hp == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_system_failure(
+	            GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                errno);
+       return globus_error_put(err);
+    }
+
+    sendto_arg = (globus_l_io_udp_info_t *)
+              globus_malloc(sizeof(globus_l_io_udp_info_t));
+    sendto_arg->buf = NULL;
+    sendto_arg->nbytes = 0;
+    sendto_arg->iovec = iov;
+    sendto_arg->iovec_count = iovc;
+    sendto_arg->handle = handle;
+    sendto_arg->flags = flags;
+    sendto_arg->sendv_cb = sendv_cb;
+    sendto_arg->send_cb = NULL;
+    sendto_arg->user_callback_arg = user_arg;
+
+    memset(&sendto_arg->addr, '\0', sizeof(sendto_arg->addr));
+    sendto_arg->addr.sin_family = hp->h_addrtype;
+    memcpy(&sendto_arg->addr.sin_addr, hp->h_addr, hp->h_length);
+    sendto_arg->addr.sin_port = htons(port);
+
+    result = globus_io_register_select(
+                  handle,
+                  GLOBUS_NULL,
+                  GLOBUS_NULL,
+                  globus_l_io_udp_sendto_callback,
+                  (void *)sendto_arg,
+                  GLOBUS_NULL,
+                  GLOBUS_NULL);
+
+    return result;
+}
+/* globus_io_udp_register_sendvto() */
 
 /**
  *  Receive a udp message from a remote socket
@@ -1000,7 +1479,7 @@ globus_io_udp_register_recvfromv(
     globus_io_udp_recvfromv_callback_t  recvfromv_callback,
     void *                              callback_arg)
 {
-    globus_l_io_udp_recvfrom_t *        recvfrom_arg;
+    globus_l_io_udp_info_t *            recvfrom_arg;
     globus_result_t                     result;
     static char *                       myname="globus_io_udp_register_recvfromv";
 
@@ -1038,15 +1517,15 @@ globus_io_udp_register_recvfromv(
 
     /* memory will be freed when callback is finished */
 
-    recvfrom_arg = (globus_l_io_udp_recvfrom_t *)
-		      globus_malloc(sizeof(globus_l_io_udp_recvfrom_t));
+    recvfrom_arg = (globus_l_io_udp_info_t *)
+		      globus_malloc(sizeof(globus_l_io_udp_info_t));
     recvfrom_arg->buf = NULL;
     recvfrom_arg->iovec = iovec;
     recvfrom_arg->iovec_count = iovec_count;
     recvfrom_arg->handle = handle;
     recvfrom_arg->flags = flags;
-    recvfrom_arg->user_callback = NULL;
-    recvfrom_arg->user_callbackv = recvfromv_callback;
+    recvfrom_arg->recv_callback = NULL;
+    recvfrom_arg->recv_callbackv = recvfromv_callback;
     recvfrom_arg->user_callback_arg = callback_arg;
    
     result = globus_io_register_select(
@@ -1115,9 +1594,9 @@ globus_io_udp_recvfromv(
     monitor->done = GLOBUS_FALSE;
     monitor->err = GLOBUS_NULL;
     monitor->use_err = GLOBUS_FALSE;
-    monitor->port = port;
-    monitor->host = host;
-    monitor->nbytes_received = nbytes_received;
+    monitor->out_port = port;
+    monitor->out_host = host;
+    monitor->out_nbytes = nbytes_received;
     
     handle->blocking_read = GLOBUS_TRUE;
     
@@ -1194,7 +1673,7 @@ globus_io_udp_register_recvfrom(
     globus_io_udp_recvfrom_callback_t   recvfrom_callback,
     void *                              callback_arg)
 {
-    globus_l_io_udp_recvfrom_t *        recvfrom_arg;
+    globus_l_io_udp_info_t *            recvfrom_arg;
     globus_result_t                     result;
     static char *                       myname="globus_io_udp_register_recvfrom";
 
@@ -1231,16 +1710,16 @@ globus_io_udp_register_recvfrom(
     }
 
     /* memory will be freed when callback is finished */
-    recvfrom_arg = (globus_l_io_udp_recvfrom_t *)
-		      globus_malloc(sizeof(globus_l_io_udp_recvfrom_t));
+    recvfrom_arg = (globus_l_io_udp_info_t *)
+		      globus_malloc(sizeof(globus_l_io_udp_info_t));
     recvfrom_arg->buf = buf;
     recvfrom_arg->iovec = NULL;
     recvfrom_arg->iovec_count = -1;
     recvfrom_arg->nbytes = nbytes;
     recvfrom_arg->handle = handle;
     recvfrom_arg->flags = flags;
-    recvfrom_arg->user_callback = recvfrom_callback;
-    recvfrom_arg->user_callbackv = NULL;
+    recvfrom_arg->recv_callback = recvfrom_callback;
+    recvfrom_arg->recv_callbackv = NULL;
     recvfrom_arg->user_callback_arg = callback_arg;
    
     result = globus_io_register_select(
@@ -1320,9 +1799,9 @@ globus_io_udp_recvfrom(
     monitor->done = GLOBUS_FALSE;
     monitor->err = GLOBUS_NULL;
     monitor->use_err = GLOBUS_FALSE;
-    monitor->port = port;
-    monitor->host = host;
-    monitor->nbytes_received = nbytes_received;
+    monitor->out_port = port;
+    monitor->out_host = host;
+    monitor->out_nbytes = nbytes_received;
     
     handle->blocking_read = GLOBUS_TRUE;
     
@@ -1331,9 +1810,8 @@ globus_io_udp_recvfrom(
 				    buf,
                                     nbytes,
 				    flags,
-                                    globus_l_io_udp_recvfrom_monitor_callback, 
+                    globus_l_io_udp_recvfrom_monitor_callback,
 				    (void *)monitor);
-   
 
     if(result != GLOBUS_SUCCESS)
     {
