@@ -226,34 +226,66 @@ read_token(const int sock,
 	   char **p_buffer,
 	   size_t *p_buffer_size)
 {
+    enum header_fields 
+    {
+	flag                            = 0,
+	major_version                   = 1,
+	minor_version                   = 2,
+	length_high_byte                = 3,
+	length_low_byte                 = 4
+    };
+
+    char *bufferp;
+    unsigned char header[5];
+    int data_len;
     int buffer_len;
     
+
     assert(p_buffer != NULL);
     assert(p_buffer_size != NULL);
     
-    buffer_len = read_length(sock);
-    
-    if (buffer_len == -1)
+    if (read_all(sock, header, sizeof(header)) < 0) 
     {
 	return -1;
     }
+
+    /*
+     * Check and make sure token looks right
+     */
+    if (((header[flag] < 20) || (header[flag] > 26)) ||
+	(header[major_version] != 3) ||
+	((header[minor_version] != 0) && (header[minor_version] != 1)))
+    {
+	errno = EBADMSG;
+	return -1;
+    }
     
+    data_len = (header[length_high_byte] << 8) + header[length_low_byte];
+
+    buffer_len = data_len + sizeof(header);
+
     *p_buffer = malloc(buffer_len);
-    
+
     if (*p_buffer == NULL)
     {
 	return -1;
     }
+
+    bufferp = *p_buffer;
     
-    if (read_all(sock, *p_buffer, buffer_len) < 0)
+    memcpy(bufferp, header, sizeof(header));
+
+    bufferp += sizeof(header);
+    
+    if (read_all(sock, bufferp, data_len) < 0)
     {
 	free(*p_buffer);
 	*p_buffer = NULL;
 	return -1;
     }
     
-    *p_buffer_size = (size_t) buffer_len;
-    
+    *p_buffer_size = buffer_len;
+
     return buffer_len;
 }
 
@@ -297,12 +329,14 @@ write_token(const int sock,
     int return_value;
 
     assert(buffer != NULL);
-    
+
+#if 0    
     if (write_length(sock, buffer_size) < 0)
     {
 	return -1;
     }
-    
+#endif /* 0 */
+
     return_value = write_all(sock, buffer, buffer_size);
 
     return (return_value == -1 ? -1 : 0);
@@ -545,6 +579,24 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	    goto truncated;
 	}
 		
+	total_chars += chars;
+	buffer = &buffer[chars];
+	bufferlen -= chars;
+
+	/* Parse errors from gss-assist routines */
+	chars = 0;
+	
+	switch(self->major_status) 
+	{
+	  case GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ:
+	    chars = snprintf(buffer, bufferlen, "Error reading token");
+	    break;
+	    
+	  case GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_WRITE:
+	    chars = snprintf(buffer, bufferlen, "Error writing token");
+	    break;
+	}
+
 	total_chars += chars;
 	buffer = &buffer[chars];
 	bufferlen -= chars;
