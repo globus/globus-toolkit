@@ -281,10 +281,10 @@ globus_result_t globus_gsi_cred_read(
                     results[result_index],
                     GLOBUS_GSI_CRED_ERROR_WITH_CRED,
                     ("The proxy credential: %s\n      with subject: %s\n"
-                     "      has expired %d minutes ago.\n",
+                     "      expired %d minutes ago.\n",
                      proxy,
                      subject,
-                     (-lifetime)));
+                     (-lifetime)/60));
                 
                 free(subject);
                 goto exit;
