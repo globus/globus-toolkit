@@ -96,6 +96,7 @@ gram_myjob_done()
 
     MP_COMMUNICATOR_FREE(graml_myjob_communicator);
     MP_NODE_SHUTDOWN();
+    graml_myjob_initialized = GRAM_FALSE;
 
     return(GRAM_MYJOB_SUCCESS);
 }
