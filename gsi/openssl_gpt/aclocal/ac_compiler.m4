@@ -97,8 +97,11 @@ AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
                     lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -mcpu=i486 -Wall"
                 ;;
                 *ia64*)
-                    # gcc
-                    lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -Wall"
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -Wall"
+                    else
+                        lac_CFLAGS="lac_CFLAGS -O2 -Wall"
+                    fi
                 ;;
                 *alpha*)
                     if test "$GCC" = "yes"; then
