@@ -26,7 +26,6 @@ static char usage[] =
     "       -s | --pshost         <hostname>  Hostname of the myproxy-server\n"
     "                                         Can also set MYPROXY_SERVER env. var.\n"
     "       -p | --psport         <port #>    Port of the myproxy-server\n"
-    "       -d | --directory      <directory> Specifies the credential storage directory\n"
     "       -c | --certfile       <filename>  Certificate file name\n"
     "       -y | --keyfile        <filename>  Key file name\n"
     "       -l | --username       <username>  Username for the delegated proxy\n"
@@ -44,7 +43,7 @@ static char usage[] =
     "                                         credential\n"
     "       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
     "                                         credential\n"
-    "       -D | --dn_as_username             Use the proxy certificate subject\n"
+    "       -d | --dn_as_username             Use the proxy certificate subject\n"
     "                                         (DN) as the default username,\n"
     "                                         instead of the LOGNAME env. var.\n"
     "       -k | --credname       <name>      Specifies credential name\n"
@@ -86,7 +85,6 @@ static char *certfile               = NULL;	/* certificate file name */
 static char *keyfile                = NULL;	/* key file name */
 static char *creddir                = NULL;	/* key file name */
 static int   dn_as_username         = 0;
-static int   use_empty_passwd       = 0;
 static int   read_passwd_from_stdin = 0;
 static int   verbose                = 0;
 
@@ -125,13 +123,11 @@ main(int   argc,
      char *argv[])
 {
     char                   *pshost;
-    char                    proxyfile[64];
     char                    request_buffer[1024];
     char                   *credkeybuf         = NULL;
     char                   *tmpfile            = NULL;
     int                     requestlen;
     int                     cred_lifetime;
-    int                     cleanup_user_proxy = 0;
     int                     cleanup_temp_file  = 0;
 
     myproxy_socket_attrs_t *socket_attrs;
@@ -196,35 +192,9 @@ main(int   argc,
         goto cleanup;
     }
 
-/*
-** DO I NEED TO DO THIS?????
-*/
-    /* the lifetime of the proxy */
-    cred_lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
-
-    /* client_request stores the lifetime of proxies delegated by the server */
-    client_request->proxy_lifetime = SECONDS_PER_HOUR *
-	MYPROXY_DEFAULT_DELEG_HOURS;
-
-
-    /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY,
-	    (unsigned) getuid());
-
-    /* Run grid-proxy-init to create a proxy */
-    if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
-        fprintf(stderr, "grid-proxy-init failed\n"); 
-        goto cleanup;
-    }
-
-    /* Be sure to delete the user proxy on abnormal exit */
-    cleanup_user_proxy = 1;
-/*
-**
-*/
     if (client_request->username == NULL) { /* set default username */
         if (dn_as_username) {
-            if (ssl_get_base_subject_file(proxyfile,
+            if (ssl_get_base_subject_file(certfile,
                                           &client_request->username)) {
                 fprintf(stderr,
                         "Cannot get subject name from your certificate\n");
@@ -241,28 +211,8 @@ main(int   argc,
     }
 
 
-/*
-** MORE DO I NEED TO DO STUFF??????
-*/
-    /* Allow user to provide a passphrase */
-    if (use_empty_passwd) {
-        int rval;
-        if (read_passwd_from_stdin) {
-            rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase), NULL);
-        } else {
-            rval = myproxy_read_verified_passphrase(client_request->passphrase, sizeof(client_request->passphrase), NULL);
-        }
-        if (rval == -1) {
-            fprintf(stderr, "%s\n", verror_get_string());
-            goto cleanup;
-        }
-    }
-/*
-**
-*/
-
     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
         fprintf(stderr, "%s\n",
                 verror_get_string());
         goto cleanup;
@@ -314,12 +264,6 @@ main(int   argc,
 ** DO I NEED TO DO THIS?
 */
     /* Delete proxy file */
-    if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Failed to remove temporary proxy credential.\n");
-        goto cleanup;
-    }
-    cleanup_user_proxy = 0;
-    /* Delete proxy file */
     if (grid_proxy_destroy(tmpfile) != 0) {
         fprintf(stderr, "Failed to remove temporary credential file.\n");
         goto cleanup;
@@ -334,9 +278,6 @@ main(int   argc,
     return 0;
 
  cleanup:
-    if (cleanup_user_proxy) {
-        grid_proxy_destroy(proxyfile);
-    }
     if (cleanup_temp_file) {
         grid_proxy_destroy(tmpfile);
     }
