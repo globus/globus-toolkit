@@ -58,7 +58,9 @@ BUNDLE gt4-gram
         globus_scheduler_event_generator_fork_setup
         globus_gram_job_manager_setup_fork
         globus_wsrf_gram_job_monitoring_common_java
-        globus_wsrf_rendezvous_java
+        globus_wsrf_rendezvous_common_schema
+        globus_wsrf_rendezvous_common_java
+        globus_wsrf_rendezvous_service_java
         globus_wsrf_gram_common_schema
         globus_wsrf_gram_common_java
         globus_wsrf_gram_utils_java
