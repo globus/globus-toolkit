@@ -92,6 +92,11 @@ space_main(
     int                                     argc,
     char **                                 argv);
 
+int
+server2_main(
+    int                                     argc,
+    char **                                 argv);
+
 void
 test_common_end();
 

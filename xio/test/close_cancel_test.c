@@ -116,7 +116,6 @@ close_cancel_main(
     globus_xio_handle_t                     handle;
     globus_xio_target_t                     target;
     globus_result_t                         res;
-    globus_abstime_t                        end_time;
     globus_xio_attr_t                       attr;
 
     globus_l_closed = GLOBUS_FALSE;

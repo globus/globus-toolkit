@@ -267,7 +267,7 @@ framework_main(
 
     if(globus_l_test_info.server)
     {
-        res = globus_xio_server_init(&server, attr, stack);
+        res = globus_xio_server_create(&server, attr, stack);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
         res = globus_xio_server_register_accept(
@@ -315,7 +315,7 @@ framework_main(
 
     if(globus_l_test_info.server)
     {
-        res = globus_xio_server_destroy(server);
+        res = globus_xio_server_close(server);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
 

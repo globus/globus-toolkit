@@ -130,7 +130,6 @@ space_main(
     globus_result_t                         res;
     globus_xio_attr_t                       attr;
     int                                     opt_offset;
-    globus_reltime_t                        delay;
     globus_condattr_t                       condattr;
 
     globus_l_closed = GLOBUS_FALSE;

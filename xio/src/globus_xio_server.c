@@ -150,9 +150,9 @@ globus_l_xio_server_accept_kickout(
                 globus_l_xio_close_server(xio_server);
                 break;
 
-            case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
-            case GLOBUS_XIO_SERVER_STATE_CLOSING:
             case GLOBUS_XIO_SERVER_STATE_CLOSED:
+            case GLOBUS_XIO_SERVER_STATE_CLOSING:
+            case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
                 break;
 
             default:
@@ -413,11 +413,13 @@ globus_l_xio_server_close_kickout(
 
     xio_server = (globus_i_xio_server_t *) user_arg;
 
+    xio_server->cb(xio_server, xio_server->user_arg);
+
     globus_mutex_lock(&xio_server->mutex);
     {
+        xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSED;
         /* dec refrence count then free.  this makes sure we don't
            free while in a user callback */
-        xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSED;
         GlobusIXIOServerDec(destroy_server, xio_server);
     }
     globus_mutex_unlock(&xio_server->mutex);
@@ -486,6 +488,149 @@ globus_l_xio_server_close_cb(
     globus_mutex_unlock(&info->mutex);
 }
 
+void
+globus_l_server_accept_cb(
+    globus_xio_server_t                     server,
+    globus_xio_target_t                     target,
+    globus_result_t                         result,
+    void *                                  user_arg)
+{
+    globus_i_xio_blocking_t *               info;
+
+    info = (globus_i_xio_blocking_t *) user_arg;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        info->res = result;
+        info->target = target;
+        info->done = GLOBUS_TRUE;
+        globus_cond_signal(&info->cond);
+    }
+    globus_mutex_unlock(&info->mutex);
+}
+
+
+globus_result_t
+globus_l_xio_server_register_accept(
+    globus_i_xio_op_t *                     xio_op,
+    globus_xio_attr_t                       accept_attr)
+{
+    globus_i_xio_server_t *                 xio_server;
+    int                                     ctr;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_bool_t                           free_server = GLOBUS_FALSE;
+    GlobusXIOName(globus_xio_server_register_accept);
+
+    GlobusXIODebugInternalEnter();
+
+    xio_server = xio_op->_op_server;
+    globus_mutex_lock(&xio_server->mutex);
+    {
+        if(xio_server->state != GLOBUS_XIO_SERVER_STATE_OPEN &&
+           xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETING)
+        {
+            res = GlobusXIOErrorInvalidState(xio_server->state);
+            goto state_err;
+        }
+
+        xio_server->state = GLOBUS_XIO_SERVER_STATE_ACCEPTING;
+
+        xio_op->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
+        xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+        xio_op->ref = 1;
+        xio_op->cancel_cb = NULL;
+        xio_op->canceled = GLOBUS_FALSE;
+        xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
+        xio_op->ndx = 0;
+        xio_op->stack_size = xio_server->stack_size;
+
+        xio_server->op = xio_op;
+        /* get all the driver specific attrs and put htem in the 
+            correct place */
+        for(ctr = 0; ctr < xio_op->stack_size; ctr++)
+        {
+            GlobusIXIOAttrGetDS(xio_op->entry[ctr].attr,     \
+                accept_attr, xio_server->entry[ctr].driver);
+        }
+
+        /*i deal with timeout if there is one */
+        if(xio_op->_op_server_timeout_cb != NULL)
+        {
+            xio_op->ref++;
+            globus_i_xio_timer_register_timeout(
+                &globus_l_xio_timeout_timer,
+                xio_op,
+                &xio_op->progress,
+                globus_l_xio_accept_timeout_callback,
+                &xio_server->accept_timeout_period);
+        }
+
+        /* add a reference to the server for the op */
+        xio_server->ref++;
+    }
+    globus_mutex_unlock(&xio_server->mutex);
+
+    /* add reference count for the pass.  does not need to be done locked
+       since no one has op until it is passed  */
+    xio_op->ref++;
+    GlobusXIODriverPassAccept(res, xio_op, \
+            globus_i_xio_server_accept_callback, NULL);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    globus_mutex_lock(&xio_server->mutex);
+    {
+        xio_op->ref--;
+        if(xio_op->ref == 0)
+        {
+            GlobusIXIOServerDec(free_server, xio_server);
+            globus_assert(!free_server);
+            globus_free(xio_op);
+        }
+    }
+    globus_mutex_unlock(&xio_server->mutex);
+
+    GlobusXIODebugInternalExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    globus_mutex_lock(&xio_server->mutex);
+    {
+        xio_op->ref--; /* dec for the register */
+        globus_assert(xio_op->ref > 0);
+
+        /* set target to invalid type */
+        xio_op->state = GLOBUS_XIO_OP_STATE_FINISHED;
+
+        /* if a timeout was registered we must unregister it */
+        if(xio_op->_op_server_timeout_cb != NULL)
+        {
+            if(globus_i_xio_timer_unregister_timeout(
+                    &globus_l_xio_timeout_timer, xio_op))
+            {
+                xio_op->ref--;
+                globus_assert(xio_op->ref > 0);
+            }
+        }
+        xio_op->ref--;
+        if(xio_op == 0)
+        {
+            GlobusIXIOServerDec(free_server, xio_server);
+            globus_assert(!free_server);
+            globus_free(xio_op);
+        }
+    }
+  state_err:
+    globus_mutex_unlock(&xio_server->mutex);
+
+
+    GlobusXIODebugInternalExitWithError();
+    return res;
+}
 
 
 /**************************************************************************
@@ -686,12 +831,10 @@ globus_xio_server_register_accept(
     globus_xio_accept_callback_t            cb,
     void *                                  user_arg)
 {
-    int                                     ctr;
     int                                     tmp_size;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
-    globus_bool_t                           free_server = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_server_register_accept);
 
     GlobusXIODebugEnter();
@@ -702,124 +845,35 @@ globus_xio_server_register_accept(
     
     xio_server = (globus_i_xio_server_t *) server;
 
-    globus_mutex_lock(&xio_server->mutex);
+    tmp_size = sizeof(globus_i_xio_op_t) + 
+                (sizeof(globus_i_xio_op_entry_t) * 
+                    (xio_server->stack_size - 1));
+    xio_op = (globus_i_xio_op_t *) globus_malloc(tmp_size);
+
+    if(xio_op == NULL)
     {
-        if(xio_server->state != GLOBUS_XIO_SERVER_STATE_OPEN &&
-           xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETING)
-        {
-            globus_mutex_unlock(&xio_server->mutex);
-            res = GlobusXIOErrorInvalidState(xio_server->state);
-            goto err;
-        }
-
-        xio_server->state = GLOBUS_XIO_SERVER_STATE_ACCEPTING;
-
-        tmp_size = sizeof(globus_i_xio_op_t) + 
-                    (sizeof(globus_i_xio_op_entry_t) * 
-                        (xio_server->stack_size - 1));
-        xio_op = (globus_i_xio_op_t *) globus_malloc(tmp_size);
-
-        if(xio_op == NULL)
-        {
-            globus_mutex_unlock(&xio_server->mutex);
-            res = GlobusXIOErrorMemory("operation");
-            goto err;
-        }
-
-        memset(xio_op, '\0', tmp_size);
-        xio_op->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
-        xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-        xio_op->_op_server = xio_server;
-        xio_op->ref = 1;
-        xio_op->cancel_cb = NULL;
-        xio_op->canceled = GLOBUS_FALSE;
-        xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
-        xio_op->ndx = 0;
-        xio_op->stack_size = xio_server->stack_size;
-        xio_op->_op_accept_cb = cb;
-        xio_op->user_arg = user_arg;
-
-        xio_server->op = xio_op;
-        /* get all the driver specific attrs and put htem in the 
-            correct place */
-        for(ctr = 0; ctr < xio_op->stack_size; ctr++)
-        {
-            GlobusIXIOAttrGetDS(xio_op->entry[ctr].attr,     \
-                accept_attr, xio_server->entry[ctr].driver);
-        }
-
-        /*i deal with timeout if there is one */
-        if(xio_op->_op_server_timeout_cb != NULL)
-        {
-            xio_op->ref++;
-            globus_i_xio_timer_register_timeout(
-                &globus_l_xio_timeout_timer,
-                xio_op,
-                &xio_op->progress,
-                globus_l_xio_accept_timeout_callback,
-                &xio_server->accept_timeout_period);
-        }
-
-        /* add a reference to the server for the op */
-        xio_server->ref++;
+        globus_mutex_unlock(&xio_server->mutex);
+        res = GlobusXIOErrorMemory("operation");
+        goto err;
     }
-    globus_mutex_unlock(&xio_server->mutex);
+    memset(xio_op, '\0', tmp_size);
 
-    /* add reference count for the pass.  does not need to be done locked
-       since no one has op until it is passed  */
-    xio_op->ref++;
-    GlobusXIODriverPassAccept(res, xio_op, \
-            globus_i_xio_server_accept_callback, NULL);
+    xio_op->_op_accept_cb = cb;
+    xio_op->user_arg = user_arg;
+    xio_op->_op_server = xio_server;
+    xio_op->stack_size = xio_server->stack_size;
+
+    res = globus_l_xio_server_register_accept(xio_op, accept_attr);
 
     if(res != GLOBUS_SUCCESS)
     {
         goto err;
     }
 
-    globus_mutex_lock(&xio_server->mutex);
-    {
-        xio_op->ref--;
-        if(xio_op->ref == 0)
-        {
-            GlobusIXIOServerDec(free_server, xio_server);
-            globus_assert(!free_server);
-            globus_free(xio_op);
-        }
-    }
-    globus_mutex_unlock(&xio_server->mutex);
-
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   err:
-
-    globus_mutex_lock(&xio_server->mutex);
-    {
-        xio_op->ref--; /* dec for the register */
-        globus_assert(xio_op->ref > 0);
-
-        /* set target to invalid type */
-        xio_op->state = GLOBUS_XIO_OP_STATE_FINISHED;
-
-        /* if a timeout was registered we must unregister it */
-        if(xio_op->_op_server_timeout_cb != NULL)
-        {
-            if(globus_i_xio_timer_unregister_timeout(
-                    &globus_l_xio_timeout_timer, xio_op))
-            {
-                xio_op->ref--;
-                globus_assert(xio_op->ref > 0);
-            }
-        }
-        xio_op->ref--;
-        if(xio_op == 0)
-        {
-            GlobusIXIOServerDec(free_server, xio_server);
-            globus_assert(!free_server);
-            globus_free(xio_op);
-        }
-    }
-    globus_mutex_unlock(&xio_server->mutex);
 
     GlobusXIODebugExitWithError();
     return res;
@@ -879,6 +933,93 @@ globus_xio_server_cancel_accept(
     return res;
 }
 
+globus_result_t
+globus_xio_server_accept(
+    globus_xio_target_t *                   out_target,
+    globus_xio_server_t                     server,
+    globus_xio_attr_t                       accept_attr)
+{
+    int                                     tmp_size;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_i_xio_server_t *                 xio_server;
+    globus_i_xio_op_t *                     xio_op;
+    globus_i_xio_blocking_t *               info;
+    GlobusXIOName(globus_xio_server_accept);
+    
+    GlobusXIODebugEnter();
+    if(server == NULL)
+    {
+        return GlobusXIOErrorParameter("server");
+    }
+    
+    xio_server = (globus_i_xio_server_t *) server;
+
+    tmp_size = sizeof(globus_i_xio_op_t) +
+                (sizeof(globus_i_xio_op_entry_t) *
+                    (xio_server->stack_size - 1));
+    xio_op = (globus_i_xio_op_t *) globus_malloc(tmp_size);
+    
+    if(xio_op == NULL)
+    {
+        globus_mutex_unlock(&xio_server->mutex);
+        res = GlobusXIOErrorMemory("operation");
+        goto err;
+    }
+    memset(xio_op, '\0', tmp_size);
+    
+    info = globus_i_xio_blocking_alloc();
+    if(info == NULL)
+    {
+        res = GlobusXIOErrorMemory("internal strucature");
+        goto info_alloc_err;
+    }
+
+    xio_op->_op_accept_cb = globus_l_server_accept_cb;
+    xio_op->user_arg = info;
+    xio_op->_op_server = xio_server;
+    xio_op->stack_size = xio_server->stack_size;
+    xio_op->blocking = GLOBUS_TRUE;
+   
+    globus_mutex_lock(&info->mutex);
+    {
+        res = globus_l_xio_server_register_accept(xio_op, accept_attr);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto register_error;
+        }
+
+        while(!info->done)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+    }
+    globus_mutex_unlock(&info->mutex);
+
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto register_error;
+    }
+
+    *out_target = info->target;
+    globus_i_xio_blocking_destroy(info);
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  register_error:
+    globus_mutex_unlock(&info->mutex);
+    globus_i_xio_blocking_destroy(info);
+    
+  info_alloc_err:
+    globus_free(xio_op);
+
+  err:
+    *out_target = NULL;
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
 /*
  *  destroy the server
  */
@@ -911,6 +1052,8 @@ globus_xio_server_register_close(
         }
         else
         {
+            xio_server->cb = cb;
+            xio_server->user_arg = user_arg;
             switch(xio_server->state)
             {
                 case GLOBUS_XIO_SERVER_STATE_ACCEPTING:

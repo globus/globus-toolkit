@@ -12,6 +12,7 @@ Sources=                                \
     close_barrier_test.c                \
     close_cancel_test.c                 \
     cancel_test.c                       \
+    server2_test.c                      \
     attr_test.c                         \
     read_barrier_test.c
 

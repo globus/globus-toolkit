@@ -256,6 +256,9 @@ typedef struct globus_i_xio_server_s
     globus_reltime_t                        accept_timeout_period;
     struct globus_i_xio_op_s *              op;
 
+    globus_xio_server_callback_t            cb;
+    void *                                  user_arg;
+
     int                                     ref;
     globus_mutex_t                          mutex;
     globus_callback_space_t                 space;
@@ -542,6 +545,7 @@ typedef struct globus_i_xio_blocking_s
     globus_bool_t                           done;
     globus_size_t                           nbytes;
     globus_i_xio_op_t *                     op;
+    globus_i_xio_target_t *                 target;
     globus_xio_data_descriptor_t            data_desc;
     globus_result_t                         res;
 } globus_i_xio_blocking_t;
