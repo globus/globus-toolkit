@@ -304,12 +304,13 @@ AC_MSG_CHECKING(for pthreads)
 		    lac_cv_threads_LIBS="-lpthreads_compat"
 		fi
               ;;
-              alpha-dec-osf[45]* | alphaev67-dec-osf5*)
+              *-dec-osf4* | *-dec-osf5* )
 		LAC_THREADS_ADD_DEFINE(_REENTRANT)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)  
+                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
+                lac_cv_threads_CFLAGS="-pthread" 
               ;;
 	      *-hp-hpux10* | *-hp-hpux11* )
 		LAC_THREADS_ADD_DEFINE(_REENTRANT)
