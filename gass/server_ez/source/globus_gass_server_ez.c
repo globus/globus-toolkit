@@ -449,6 +449,11 @@ globus_l_gass_server_ez_register_accept_callback(
     
     subjectname=globus_gass_transfer_request_get_subject(request);
 
+    /* lookup our options */
+    s=(globus_l_gass_server_ez_t *)globus_hashtable_lookup(
+                                &globus_l_gass_server_ez_listeners,
+                                listener);
+
     /* Check for valid URL */
     url=globus_gass_transfer_request_get_url(request);
     rc = globus_url_parse(url, &parsed_url);
@@ -463,12 +468,6 @@ globus_l_gass_server_ez_register_accept_callback(
         globus_url_destroy(&parsed_url);
         goto reregister;
     }
-
-    /* lookup our options */
-    s=(globus_l_gass_server_ez_t *)globus_hashtable_lookup(
-                                &globus_l_gass_server_ez_listeners,
-                                listener);
-
 
     switch(globus_gass_transfer_request_get_type(request))
         {
