@@ -31,10 +31,12 @@ globus_ogsa_base_gram_managed_job       ogsa-c/impl/base/gram/managed_job/source
 globus_gram_xml_rsl_test                ogsa-c/impl/base/gram/gt2_wrappers/rsl_xml/test
 globus_gram_xml_rsl                     ogsa-c/impl/base/gram/gt2_wrappers/rsl_xml/source
 globus_ogsa_base_gram_mj_bindings       ogsa-c/base/gram/managed_job
+
 globus_axiscpp                          chosting/tools/axiscpp
 globus_expat                            chosting/tools/expat
 globus_axiscpp_wsdl2ws                  chosting/tools/axiscpp/wsdl
-globus_axiscpp_transport_stdio          chosting/tools/axiscpp/test/stdio_transport
-globus_axis_server_engine               chosting/tools/axiscpp/test/server_engine
-globus_axis_server_test                 chosting/tools/axiscpp/test/server
+globus_axiscpp_transport_stdio          chosting/transport/stdio/source
+globus_axis_stdio_server_test           chosting/transport/stdio/test
+globus_axiscpp_transport_http           chosting/transport/http/source
+globus_axis_server_engine               chosting/server/engine/source
 globus_service_GetQuoteCPP              chosting/tools/axiscpp/test/GetQuoteCPP
