@@ -1,18 +1,5 @@
-PBSZ
--- find out what the server should do (joe)
-
-merge _init() with _start() and _destroy() with _stop()
--- deal with adding commands
-
-make restart a file map
--- mostly just a rename
--- have partial work with this
-
-logging
--- will come from a seperate module.
-
-feat
--- examine feat, current way is sort of lame need a nicer way.
+partial
+-- add offset to tranfer func callout
 
 test
 --crazy messages sent to server

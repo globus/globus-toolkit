@@ -142,12 +142,20 @@ globus_l_resource_cb(
 }
 
 static void
+event_cb(
+    globus_gridftp_server_control_op_t      op,
+    int                                     event_type,
+    void *                                  user_arg)
+{
+}
+
+static void
 list_cb(
     globus_gridftp_server_control_op_t      op,
     void *                                  data_handle,
     const char *                            path)
 {
-    globus_gridftp_server_control_begin_transfer(op, 0);
+    globus_gridftp_server_control_begin_transfer(op, 0, NULL, NULL);
     globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
@@ -208,7 +216,8 @@ transfer(
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms,
-    globus_gridftp_server_control_restart_t restart)
+    globus_off_t                            offset,
+    globus_range_list_t                     range_list)
 {
     int                                     ctr;
     globus_size_t                           off = 0;
@@ -217,7 +226,10 @@ transfer(
 
     globus_gridftp_server_abort_enable(op, abort_cb, NULL);
 
-    globus_gridftp_server_control_begin_transfer(op, 255);
+    globus_gridftp_server_control_begin_transfer(
+        op, GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
+                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
+        event_cb, NULL);
 
     globus_mutex_lock(&gs_l_mutex);
     {
@@ -225,7 +237,6 @@ transfer(
         {
             GlobusTimeAbstimeSet(abstime, 0, 50000);
             globus_macro_cond_timedwait(&gs_l_cond, &gs_l_mutex, &abstime);
-            globus_gridftp_server_control_update_bytes(op, 0, off, len);
             off += len;
         }
     }

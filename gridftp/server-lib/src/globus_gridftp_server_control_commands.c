@@ -1419,7 +1419,7 @@ globus_l_gsc_cmd_rest(
     int                                     argc,
     void *                                  user_arg)
 {
-    globus_i_gsc_restart_t *                restart_marker;
+    globus_range_list_t                     range_list;
     globus_off_t                            offset;
     globus_off_t                            length;
     int                                     sc;
@@ -1427,7 +1427,8 @@ globus_l_gsc_cmd_rest(
 
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE);
-    restart_marker = globus_i_gsc_restart_create();
+
+    globus_range_list_init(&range_list);
     /* mode s */
     if(strchr(cmd_a[1], '-') == NULL)
     {
@@ -1435,10 +1436,10 @@ globus_l_gsc_cmd_rest(
         if(sc != 1)
         {
             globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
-            globus_i_gsc_restart_destroy(restart_marker);
+            globus_range_list_destroy(range_list);
         }
 
-        globus_i_gsc_restart_add(restart_marker, 0, length);
+        globus_range_list_insert(range_list, 0, length);
     }
     /* mode e */
     else
@@ -1453,19 +1454,19 @@ globus_l_gsc_cmd_rest(
             {
                 globus_gsc_959_finished_command(
                     op, "501 bad paremeter.\r\n");
-                globus_i_gsc_restart_destroy(restart_marker);
+                globus_range_list_destroy(range_list);
                 return;
             }
 
-            globus_i_gsc_restart_add(restart_marker, 0, length);
+            globus_range_list_insert(range_list, offset, length);
             tmp_ptr = strchr(tmp_ptr, ',');
         }
     }
-    if(op->server_handle->restart_marker != NULL)
+    if(op->server_handle->range_list != NULL)
     {
-        globus_i_gsc_restart_destroy(op->server_handle->restart_marker);
+        globus_range_list_destroy(op->server_handle->range_list);
     }
-    op->server_handle->restart_marker = restart_marker;
+    op->server_handle->range_list = range_list;
     globus_gsc_959_finished_command(op, 
         "350 Restart Marker OK. Send STORE or RETR to initiate transfer.\r\n");
 }

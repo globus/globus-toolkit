@@ -6,7 +6,6 @@
 #include "globus_gss_assist.h"
 #include "globus_xio_system.h"
 
-typedef struct globus_i_gsc_restart_s * globus_gridftp_server_control_restart_t;
 typedef struct globus_i_gsc_server_handle_s * globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *     globus_gridftp_server_control_attr_t;
 typedef struct globus_i_gsc_op_s *          globus_gridftp_server_control_op_t;
@@ -332,7 +331,8 @@ typedef void
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms,
-    globus_gridftp_server_control_restart_t restart);
+    globus_off_t                            start_offset,
+    globus_range_list_t                     range_list);
 
 typedef void
 (*globus_gridftp_server_control_list_cb_t)(
@@ -378,7 +378,12 @@ globus_gridftp_server_abort_disable(
     globus_gridftp_server_control_op_t  op);
 
 /**
- *  logging callback
+ *  logging 
+ *
+ *  A user can set a logging function that will be called
+ *  with the full command sent over the control connection.
+ *  Logging commands are divided up into a subset of types
+ *  enumerated here.
  */
 enum
 {
@@ -392,7 +397,6 @@ enum
     GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_OTHER = 0x0100,
     GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ALL = 0xFFFF
 };
-
 
 typedef void
 (*globus_gridftp_server_control_log_cb_t)(
@@ -448,6 +452,12 @@ typedef void
 typedef void
 (*globus_gridftp_server_control_data_destroy_cb_t)(
     void *                                  user_data_handle);
+
+typedef void
+(*globus_gridftp_server_control_event_cb_t)(
+    globus_gridftp_server_control_op_t      op,
+    int                                     event_type,
+    void *                                  user_arg);
 
 /**
  *  finished resource query request
@@ -708,12 +718,15 @@ globus_gridftp_server_control_disconnected(
  *  parameters should be checked for validity.  If acceptable the user MUST
  *  call this function prior to transfering data along the data pathways.
  *  If it is not acceptable the user must call 
- *  globus_gridftp_server_control_finished_transfer() with the appropriate error.
+ *  globus_gridftp_server_control_finished_transfer() with the appropriate 
+ *  error.
  */
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t      op,
-    int                                     event_mask);
+    globus_gridftp_server_control_op_t  op,
+    int                                 event_mask,
+    globus_gridftp_server_control_event_cb_t event_cb,
+    void *                              user_arg);
 
 /**
  *  a data transfer requested has been completed.
@@ -726,15 +739,6 @@ globus_result_t
 globus_gridftp_server_control_finished_transfer(
     globus_gridftp_server_control_op_t      op,
     globus_result_t                         res);
-
-/*
- *  events
- */
-globus_result_t
-globus_gridft_server_control_send_event(
-    globus_gridftp_server_control_op_t      op,
-    globus_gridftp_server_control_event_type_t type,
-    const char *                            msg);
 
 globus_result_t
 globus_gridftp_server_control_add_feature(
@@ -773,18 +777,16 @@ globus_gsc_959_finished_command(
     globus_gsc_959_op_t                     op,
     char *                                  reply_msg);
 
-int
-globus_gridftp_server_control_restart_get(
-    globus_gridftp_server_control_restart_t restart,
-    globus_off_t *                          offset,
-    globus_off_t *                          length);
-
 globus_result_t
-globus_gridftp_server_control_update_bytes(
+globus_gridftp_server_control_event_send_perf(
     globus_gridftp_server_control_op_t      op,
     int                                     stripe_ndx,
-    globus_off_t                            offset,
-    globus_off_t                            length);
+    globus_off_t                            nbytes);
+
+globus_result_t
+globus_gridftp_server_control_event_send_restart(
+    globus_gridftp_server_control_op_t      op,
+    globus_range_list_t                     restart);
 
 extern globus_module_descriptor_t      globus_i_gsc_module;
 
