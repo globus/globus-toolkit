@@ -42,7 +42,7 @@ int main(int argc, char * argv[])
        mem_init(mem_ptr[cnt], cnt);
    }
 
-   dump((globus_byte_t *) mem_ptr[0], mem.total_size);
+   dump((globus_byte_t *) mem_ptr[0], MEM_INIT_SIZE * sizeof(mem_test_t));
    
    globus_memory_push_node(&mem, (globus_byte_t *)mem_ptr[0]);
    

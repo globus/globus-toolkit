@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <assert.h>
 
+#define GlobusTimeReltimePrintf(time_left) \
+{ \
+    printf("sec->%ld usec->%ld\n", (time_left).tv_sec, (time_left).tv_usec); \
+}
 globus_bool_t                         test_failed;
 int                                   basic_test_count;
 
