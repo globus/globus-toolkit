@@ -1677,26 +1677,12 @@ myproxy_creds_info(struct myproxy_creds *creds, char **records)
        verror_put_errno(EINVAL);
        return -1;
     }
-<<<<<<< myproxy_creds.c
-    
-=======
-/*
->>>>>>> 1.19.2.17
     if (get_storage_locations(creds->username,
 	                      creds_path, sizeof(creds_path),
 			      data_path, sizeof(data_path)) == -1) {
        goto error;
     }
 
-    //if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
-      // goto error;
-
-<<<<<<< myproxy_creds.c
-=======
-    if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
-       goto error;
-*/
->>>>>>> 1.19.2.17
     *records = read_from_database_for_info();
     return_code = 0;
 
