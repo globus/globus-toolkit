@@ -7,10 +7,8 @@
              xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/serviceData"
              xmlns="http://schemas.xmlsoap.org/wsdl/"
              xmlns:rft-types="http://multirft.base.ogsa.globus.org/multirft_types"
-             xmlns:gsi="http://ogsa.globus.org/security/authentication"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <import location="../../ogsi/ogsi.gwsdl" namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
-<import location="../../security/authentication/gss_secure_conversation_port_type.gwsdl" namespace="http://ogsa.globus.org/security/authentication"/>
 <import location="multirft_types.wsdl"
         namespace="http://multirft.base.ogsa.globus.org/multirft_types"/>
 <types>
@@ -60,7 +58,7 @@
  <part name="parameters" element="tns:cancelResponse"/>
 </message>
 
-<grid:portType name="RFTPortType" extends="ogsi:GridService ogsi:NotificationSource gsi:SecureContextEstablishmentPortType">
+<grid:portType name="RFTPortType" extends="ogsi:GridService ogsi:NotificationSource">
  <operation name="start">
   <input message="tns:startInputMessage"/>
   <output message="tns:startOutputMessage"/>

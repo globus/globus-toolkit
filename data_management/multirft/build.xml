@@ -204,8 +204,12 @@ Southern California. All Rights Reserved.
 
   <!-- Clean bindings and stubs -->
   <target name="cleanStubs">
-   <delete file="${schema.dir}/${multirft.schema.dir}/"/>
-   
+    <delete includeEmptyDirs="true" quiet="true">
+     <fileset dir="${schema.dir}">
+        <exclude name="base/multirft/multirft_port_type.gwsdl"/>
+        <exclude name="base/multirft/multirft_types.wsdl"/>
+     </fileset>
+   </delete>
    <delete dir="${stubs.dir}"/>
   </target>
 
