@@ -13,7 +13,8 @@ perldoc_DATA = JobManager.html JobDescription.html
 noinst_DATA = JobManager.3 JobDescription.3
 
 # Files which we want to put in the source package
-EXTRA_DIST = $(globusperl_DATA) $(perldoc_DATA) $(noinst_DATA)
+EXTRA_DIST = $(globusperl_DATA) $(perldoc_DATA) $(noinst_DATA)\
+	     create_rsl_documentation.pl
 
 SUFFIXES = .pm .html .3
 

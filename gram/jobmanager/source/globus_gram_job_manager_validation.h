@@ -1,5 +1,7 @@
 #ifndef GLOBUS_GRAM_JOB_MANAGER_VALIDATION_H
 #define GLOBUS_GRAM_JOB_MANAGER_VALIDATION_H
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @defgroup globus_gram_job_manager_rsl_validation RSL Validation
  * RSL Validation
@@ -64,4 +66,7 @@ typedef struct
     int					valid_when;
 }
 globus_gram_job_manager_validation_record_t;
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 #endif /* GLOBUS_GRAM_JOB_MANAGER_VALIDATION_H */

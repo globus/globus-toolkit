@@ -49,7 +49,14 @@ globus_gram_job_manager_print_validation_LDADD = \
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper $(validation_DATA) \
 	version.h.in \
+	globus_job_manager_rsl_validation.dox    main.dox \
+	globus_gram_job_manager_rsl.dox \
 	dirt.sh
+
+globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
+	perl scripts/create_rsl_documentation.pl \
+	    < globus-gram-job-manager.rvf \
+	    > globus_gram_job_manager_rsl.dox
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
