@@ -158,17 +158,15 @@ main(int argc, char *argv[])
 	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
 	exit(1);
     }
-
+    
     /* 
      * Test to see if we're run out of inetd 
      * If so, then stdin will be connected to a socket,
      * so getpeername() will succeed.
      */
-#ifdef USE_INETD
-    if (getsockname(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) 
+    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) 
     {
        server_context->run_as_daemon = 1;
-#endif
        if (!debug) 
        {
 	  if (become_daemon(server_context) < 0) 
@@ -177,7 +175,6 @@ main(int argc, char *argv[])
 	     exit(1);
 	  }
        }
-#ifdef USE_INETD
     } 
     else 
     { 
@@ -185,7 +182,6 @@ main(int argc, char *argv[])
        close(1);
        (void) open("/dev/null",O_WRONLY);
     }
-#endif    
     /* Initialize Logging */
     if (debug) {
 	myproxy_debug_set_level(1);
@@ -208,9 +204,7 @@ main(int argc, char *argv[])
     /* If process is killed or Ctrl-C */
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
-#ifdef USE_INETD
-    myproxy_log("Daemon = %d\n", server_context->run_as_daemon);
-    /* Running out of inetd is straightforward */
+    
     if (!server_context->run_as_daemon) 
     {
        myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
@@ -222,7 +216,6 @@ main(int argc, char *argv[])
     }
     else
     {    
-#endif
        /* Run as a daemon */
        listenfd = myproxy_init_server(socket_attrs);
        /* Set up concurrent server */
@@ -268,9 +261,7 @@ main(int argc, char *argv[])
 	  _exit(0);
        }
        exit(0);
-#ifdef USE_INETD
     }
-#endif
 }   
 
 int
