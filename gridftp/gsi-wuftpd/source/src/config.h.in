@@ -196,4 +196,18 @@
 #endif
 
 #undef USE_PAM
+
+/*
+ * Define to enable FTP Security Extensions RFC 2228 (Needed for GSSAPI)
+ */
+#undef FTP_SECURITY_EXTENSIONS
+
+/*
+ * Define this to enable GSSAPI support, then define one of the following
+ * types below (GSSAPI_GLOBUS, GSSAPI_KRB5)
+ */
+#undef GSSAPI
+#undef GSSAPI_KRB5
+#undef GSSAPI_GLOBUS
+
 #include "../config.h"

@@ -201,6 +201,20 @@ AC_ARG_WITH(backlog,	 [  --with-backlog=x        number of incoming processes to
 
 LIBS=""
 
+dnl Macro from aclocal.m4
+GSSAPI_CONFIG   
+AC_SUBST(GSSAPI_LIBS)
+AC_SUBST(GSSAPI_LDFLAGS)
+AC_SUBST(GSSAPI_CFLAGS)
+
+if test "$with_gssapi" != "no"; then
+	AC_DEFINE(FTP_SECURITY_EXTENSIONS)
+	GSSAPI_SRC="gssapi.c radix.c secure_ext.c"
+else
+	GSSAPI_SRC=""
+fi
+AC_SUBST(GSSAPI_SRC)
+
 dnl ===========================================================================
 dnl Checks for some system calls/headers...
 dnl ============================================================================

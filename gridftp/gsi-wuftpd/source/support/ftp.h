@@ -100,3 +100,16 @@ char *modenames[] =
 #define	BLK_RESTART	0x10	/* Block is Restart Marker */
 
 #define	BLK_BYTECOUNT	2	/* Bytes in this block */
+
+
+/*
+ * Protection levels
+ */
+#define	PROT_C		1	/* clear */
+#define	PROT_S		2	/* safe */
+#define	PROT_P		3	/* private */
+#define	PROT_E		4	/* confidential */
+
+#ifdef FTP_NAMES
+char *levelnames[] =  {"0", "Clear", "Safe", "Private", "Confidential" };
+#endif

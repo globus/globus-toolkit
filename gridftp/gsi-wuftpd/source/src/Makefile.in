@@ -32,23 +32,26 @@ CC=@CC@
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -Wall -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wmissing-prototypes 
 
-CFLAGS=$(WARNINGS) @CFLAGS@
-LDFLAGS=@LDFLAGS@
+CFLAGS=$(WARNINGS) @CFLAGS@ @GSSAPI_CFLAGS@
+LDFLAGS=@LDFLAGS@ @GSSAPI_LDFLAGS@
 YACC=@YACC@
-LIBS=@LIBS@
+LIBS=@LIBS@ @GSSAPI_LDFLAGS@ @GSSAPI_LIBS@
 
 UTIL_SRC  = COPYRIGHT.c vers.c
 UTIL_OBJS = COPYRIGHT.o vers.o
 
+GSSAPI_SRC  = @GSSAPI_SRC@
+GSSAPI_OBJS = $(GSSAPI_SRC:.c=.o)
+
 SRCS   = ${UTIL_OBJS} ftpd.c ftpcmd.c glob.c logwtmp.c popen.c access.c \
 	extensions.c realpath.c acl.c private.c authenticate.c conversions.c \
 	rdservers.c paths.c hostacc.c sigfix.c auth.c routevector.c \
-	restrict.c domain.c wu_fnmatch.c timeout.c
+	restrict.c domain.c wu_fnmatch.c timeout.c $(GSSAPI_SRC)
 
 OBJS   = ${UTIL_OBJS} ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
 	extensions.o realpath.o acl.o private.o authenticate.o conversions.o \
 	rdservers.o paths.o hostacc.o sigfix.o auth.o routevector.o \
-	restrict.o domain.o wu_fnmatch.o timeout.o
+	restrict.o domain.o wu_fnmatch.o timeout.o $(GSSAPI_OBJS)
 
 .c.o:
 	$(CC) $(CFLAGS) -I.. -I../support -c -o $@ $<
