@@ -5162,6 +5162,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
     char *                              home_dir = NULL;
     char *                              authz_env = NULL;
     char *                              authz_filename = NULL;
+    char *                              globus_location = NULL;
     globus_gsi_statcheck_t              status;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -5178,25 +5179,78 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
             GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
             goto exit;
         }
-    }
-    
-    if(!authz_filename)
-    {
-        if(getuid() == 0)
+
+        result = globus_gsi_sysconfig_check_certfile_unix(
+            authz_filename,
+            &status);
+
+        if(result != GLOBUS_SUCCESS)
         {
-            /* being run as root */
+            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+            goto exit;
+        }
+    }
+    else
+    { 
+        authz_filename = globus_common_create_string(
+            "%s",
+            DEFAULT_AUTHZ_FILE);
+        if(!authz_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+
+        result = globus_gsi_sysconfig_check_certfile_unix(
+            authz_filename,
+            &status);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+            goto exit;
+        }
+
+        if(status == GLOBUS_FILE_DOES_NOT_EXIST)
+        {
+            free(authz_filename);
+            authz_filename = NULL;
+            globus_location = getenv("GLOBUS_LOCATION");
             
-            authz_filename = globus_common_create_string(
-                "%s",
-                DEFAULT_AUTHZ_FILE);
-            if(!authz_filename)
+            if(globus_location)
             {
-                GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-                goto exit;
+                authz_filename = globus_common_create_string(
+                    "%s%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+                    INSTALLED_AUTHZ_FILE);
+                if(!authz_filename)
+                {
+                    GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                    goto exit;
+                }
+                result = globus_gsi_sysconfig_check_certfile_unix(
+                    authz_filename,
+                    &status);
+                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+                    goto exit;
+                }
             }
         }
-        else
+
+        if(authz_filename == NULL || status == GLOBUS_FILE_DOES_NOT_EXIST)
         {
+            free(authz_filename);
+            authz_filename = NULL;
             result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir, &status);
             if(result != GLOBUS_SUCCESS)
             {
@@ -5218,29 +5272,19 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
                     GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
                     goto exit;
                 }
+                result = globus_gsi_sysconfig_check_certfile_unix(
+                    authz_filename,
+                    &status);
+                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+                    goto exit;
+                }
             }
         }
-    }
-
-    if(!authz_filename)
-    {
-        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME,
-            ("A valid authz file could not be found."));
-        goto exit;
-    }
-
-    result = globus_gsi_sysconfig_check_certfile_unix(
-        authz_filename,
-        &status);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
-        goto exit;
     }
 
     /* work around file check result idiocy */
