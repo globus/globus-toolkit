@@ -773,25 +773,12 @@ globus_error_wrap_openssl_error(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-<<<<<<< globus_error_openssl.c
     causal_error = globus_error_construct_openssl_error(base_source, NULL);
-=======
-    error_code = ERR_get_error_line(&filename, &linenumber);
->>>>>>> 1.1
 
     if(!causal_error)
     {
-<<<<<<< globus_error_openssl.c
         error = GLOBUS_NULL;
         goto done;
-=======
-        return globus_error_construct_error(
-            base_source,
-            NULL,
-            error_type,
-            openssl_error,
-            "Expected an OpenSSL error.  OpenSSL Error NOT FOUND");
->>>>>>> 1.1
     }
 
     va_start(ap, format);
@@ -805,27 +792,14 @@ globus_error_wrap_openssl_error(
 
     va_end(ap);
 
-<<<<<<< globus_error_openssl.c
     if(error == GLOBUS_NULL)
     {
         globus_object_free(causal_error);
-=======
-        error_code = ERR_get_error_line(&filename, &linenumber);
->>>>>>> 1.1
     }
 
  done:
 
-<<<<<<< globus_error_openssl.c
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;
-=======
-    return globus_error_construct_error(
-        base_source,
-        temp_openssl_error, 
-        error_type,
-        openssl_error,
-        error_description);
->>>>>>> 1.1
 }
 /* @} */
