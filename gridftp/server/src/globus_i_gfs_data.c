@@ -1467,7 +1467,8 @@ globus_i_gfs_data_request_transfer_event(
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     op = (globus_l_gfs_data_operation_t *) transfer_id;
     
-    if(globus_l_gfs_dsi->trev_func != NULL)
+    if(globus_l_gfs_dsi->trev_func != NULL && 
+        op->event_mask & event_type)
     {
         globus_l_gfs_dsi->trev_func(
             op->transfer_id, event_type, session_handle->session_arg);
