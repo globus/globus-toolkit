@@ -2169,7 +2169,6 @@ AC_ARG_ENABLE(static-only,
 [ case "$enableval" in
   yes)
        AC_MSG_RESULT(yes)
-       CFLAGS="$CFLAGS -static"
        LDFLAGS="$LDFLAGS -static"
        ;;
   *)   AC_MSG_RESULT(no)
