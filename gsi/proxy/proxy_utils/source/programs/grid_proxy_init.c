@@ -508,7 +508,7 @@ main(
                 proxy_out_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-
+        
         proxy_out_filename = proxy_absolute_path;
 
         /* then split */
@@ -518,16 +518,17 @@ main(
             &temp_filename);
         if(result != GLOBUS_SUCCESS)
         {
-            if(proxy_absolute_path)
-            {
-                free(proxy_absolute_path);
-                proxy_absolute_path = NULL;
-            }
             globus_libc_fprintf(
                 stderr,
                 "\n\nERROR: Can't split the full path into "
                 "directory and filename. The full path is: %s", 
                 proxy_absolute_path);
+
+            if(proxy_absolute_path)
+            {
+                free(proxy_absolute_path);
+            }
+            
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
 
