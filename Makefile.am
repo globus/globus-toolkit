@@ -43,8 +43,6 @@ LibSources= \
 	vparse.c \
 	vparse.h
 
-INCLUDES += $(GPT_INCLUDES)
-
 Scripts= \
 	myproxy-test \
 	myproxy-admin-adduser
