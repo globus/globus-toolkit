@@ -233,8 +233,9 @@ struct globus_gass_copy_handle_s
    */
   globus_bool_t                       no_third_party_transfers;
 
-  globus_ftp_client_handle_t	      ftp_source_handle;
-  globus_ftp_client_handle_t	      ftp_dest_handle;
+  globus_ftp_client_handle_t	      ftp_handle;
+  /* this handle only used when no_third_party_transfers is true (for 3pt) */
+  globus_ftp_client_handle_t	      ftp_handle_2;
 };
 
 /**
