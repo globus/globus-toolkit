@@ -22,6 +22,7 @@ globus_xio_driver_pass_open_DEBUG(
     int                                     _caller_ndx;
     globus_result_t                         _res;
     globus_bool_t                           _destroy_handle = GLOBUS_FALSE;
+    globus_bool_t                           _close = GLOBUS_FALSE;
     globus_xio_driver_t                     _driver;
     GlobusXIOName(GlobusXIODriverPassOpen);
 
@@ -40,6 +41,7 @@ globus_xio_driver_pass_open_DEBUG(
     {
         _my_context = &_context->entry[_op->ndx];
         _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPENING;
+        _my_context->outstanding_operations++;
         _caller_ndx = _op->ndx;
 
         do
@@ -87,6 +89,19 @@ globus_xio_driver_pass_open_DEBUG(
             {
                 GlobusXIOOperationDestroy(_op);
                 GlobusIXIOHandleDec(_destroy_handle, _handle);
+            }
+            if(_res != GLOBUS_SUCCESS)
+            {
+                _my_context->outstanding_operations--;
+                /*there is an off chance that we could need to close here*/
+                if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
+                    _my_context->state ==
+                    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&
+                    _my_context->outstanding_operations == 0)
+                {
+                    globus_assert(_my_context->close_op != NULL);
+                    _close = GLOBUS_TRUE;
+                }
             }
         }
         globus_mutex_unlock(&_context->mutex);
@@ -168,17 +183,82 @@ globus_xio_driver_finished_open_DEBUG(
         globus_callback_space_register_oneshot(
             NULL,
             NULL,
-            globus_l_xio_driver_op_kickout,
+            globus_l_xio_driver_open_op_kickout,
             (void *)_op,
             _space);
     }
     else
     {
-        _op->ndx = _my_op->caller_ndx;
-        _my_op->cb(_op, _op->cached_res,
-            _my_op->user_arg);
+        GlobusIXIODriverOpenDeliver(_op);
     }
 }
+
+void
+globus_xio_driver_open_deliver_DEBUG(
+    globus_xio_operation_t                          op)
+{
+    globus_i_xio_op_t *                             _op;
+    globus_i_xio_op_t *                             _close_op;
+    globus_i_xio_op_entry_t *                       _my_op;
+    globus_i_xio_context_entry_t *                  _my_context;
+    globus_i_xio_context_t *                        _context;
+    globus_bool_t                                   _close = GLOBUS_FALSE;
+    globus_callback_space_t                 _space =
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;
+    GlobusXIOName(GlobusIXIODriverOpenDeliver);
+
+    _op = (op);
+    _context = _op->_op_context;
+    _my_op = &_op->entry[_op->ndx - 1];
+    _my_context = &_context->entry[_my_op->caller_ndx];
+
+    _op->ndx = _my_op->caller_ndx;
+    _my_op->cb(_op, _op->cached_res, _my_op->user_arg);
+
+    /* LOCK */
+    globus_mutex_lock(&_context->mutex);
+    {
+        _my_context->outstanding_operations--;
+
+        /* if we have a close delayed */
+        if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
+            _my_context->state ==
+                GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&
+            _my_context->outstanding_operations == 0)
+        {
+            globus_assert(_my_context->close_op != NULL);
+            _close = GLOBUS_TRUE;
+            _close_op = _my_context->close_op;
+        }
+    }
+    globus_mutex_unlock(&_context->mutex);
+
+    if(_close)
+    {
+        /* if closed before fully opened and open was successful we need
+           to start the regular close process */
+        if(op->cached_res == GLOBUS_SUCCESS)
+        {
+            globus_i_xio_driver_start_close(_close_op, GLOBUS_FALSE);
+        }
+        /* if open failed then just kickout the close */
+        else
+        {
+            _op->cached_res = GLOBUS_SUCCESS;
+            if(_op->ndx == 0 && !_op->blocking)
+            {
+                _space = _op->_op_handle->space;
+            }
+            globus_callback_space_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_xio_driver_op_kickout,
+                (void *)_op,
+                _space);
+        }
+    }
+}
+
 
 /************************************************************************
  *                          close
@@ -210,7 +290,7 @@ globus_xio_driver_pass_close_DEBUG(
     _op->progress = GLOBUS_TRUE;
     _op->block_timeout = GLOBUS_FALSE;
 
-    if(_op->canceled)
+    if(_op->canceled && _op->type != GLOBUS_XIO_OPERATION_TYPE_OPEN)
     {
         _res = GlobusXIOErrorCanceled();
     }
@@ -325,7 +405,7 @@ globus_xio_driver_finished_close_DEBUG(
             NULL,
             globus_l_xio_driver_op_kickout,
             (void *)_op,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+            _space);
     }
     else
     {
@@ -540,7 +620,7 @@ globus_xio_driver_finished_write_DEBUG(
                 NULL,
                 globus_l_xio_driver_op_write_kickout,
                 (void *)_op,
-                GLOBUS_CALLBACK_GLOBAL_SPACE);
+                _space);
         }
         else
         {
@@ -851,7 +931,7 @@ globus_xio_driver_finished_read_DEBUG(
                 NULL,
                 globus_l_xio_driver_op_read_kickout,
                 (void *)_op,
-                GLOBUS_CALLBACK_GLOBAL_SPACE);
+                _space);
         }
         else
         {
@@ -1050,7 +1130,7 @@ globus_xio_driver_finished_accept_DEBUG(
             NULL,
             globus_l_xio_driver_op_kickout,
             (void *)_op,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+            _space);
     }
     else
     {

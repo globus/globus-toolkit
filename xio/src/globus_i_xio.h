@@ -551,6 +551,9 @@ void
 globus_l_xio_driver_op_kickout(
     void *                                  user_arg);
 
+void
+globus_l_xio_driver_open_op_kickout(
+    void *                                  user_arg);
 
 /*
  *  time stuff
@@ -641,6 +644,11 @@ extern globus_cond_t                        globus_l_cond;
         globus_result_t                     _in_res);
 
     void
+    globus_xio_driver_open_deliver_DEBUG(
+        globus_xio_operation_t              op);
+
+
+    void
     globus_xio_driver_finished_close_DEBUG(
         globus_xio_operation_t              op,
         globus_result_t                     res);
@@ -710,6 +718,9 @@ extern globus_cond_t                        globus_l_cond;
             _in_context, _in_dh, _in_op, _in_res)                           \
         globus_xio_driver_finished_open_DEBUG(                              \
             _in_context, _in_dh, _in_op, _in_res)
+
+#   define GlobusIXIODriverOpenDeliver(op)                                  \
+        globus_xio_driver_open_deliver_DEBUG(op)
 
 #   define GlobusXIODriverPassClose(                                        \
             _out_res, _in_op, _in_cb, _in_ua)                               \

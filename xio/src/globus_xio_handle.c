@@ -523,6 +523,8 @@ globus_l_xio_timeout_callback(
     globus_bool_t                           cancel;
     globus_bool_t                           timeout = GLOBUS_FALSE;
     globus_callback_func_t                  delayed_cb;
+    globus_callback_space_t                 space =
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;                   
     GlobusXIOName(globus_l_xio_timeout_callback);
 
     GlobusXIODebugInternalEnter();
@@ -661,7 +663,11 @@ globus_l_xio_timeout_callback(
 
     if(fire_callback)
     {
-        if(handle->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+        if(!op->blocking)
+        {
+            space = handle->space;
+        }
+        if(space != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             /* register a oneshot callback */
             globus_callback_space_register_oneshot(
@@ -669,7 +675,7 @@ globus_l_xio_timeout_callback(
                 NULL,
                 delayed_cb,
                 (void *)op,
-                handle->space);
+                space);
         }
         /* in all other cases we can just call callback */
         else
@@ -940,6 +946,7 @@ globus_l_xio_register_open(
             globus_l_xio_timeout_callback,
             &handle->open_timeout_period);
     }
+    handle->open_op = op;
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
@@ -1018,6 +1025,7 @@ globus_l_xio_register_close(
     globus_list_t *                         list;
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_op_t *                     tmp_op;
+    globus_bool_t                           pass_close = GLOBUS_TRUE;
     globus_result_t                         res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_register_close);
 
@@ -1033,20 +1041,30 @@ globus_l_xio_register_close(
         /* all canceling is done with cancel op locked */
         globus_mutex_lock(&handle->cancel_mutex);
         {
-            for(list = handle->read_op_list;
-                !globus_list_empty(list);
-                list = globus_list_rest(list))
+            /* if open is outstanding there cannot be a read or write */
+            if(handle->open_op != NULL)
             {
-                tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                globus_l_xio_operation_cancel(tmp_op);
+                /* we delay the pass close until the open callback */
+                globus_l_xio_operation_cancel(handle->open_op);
+                pass_close = GLOBUS_FALSE;
             }
-
-            for(list = handle->write_op_list;
-                !globus_list_empty(list);
-                list = globus_list_rest(list))
+            else
             {
-                tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                globus_l_xio_operation_cancel(tmp_op);
+                for(list = handle->read_op_list;
+                    !globus_list_empty(list);
+                    list = globus_list_rest(list))
+                {
+                    tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
+                    globus_l_xio_operation_cancel(tmp_op);
+                }
+    
+                for(list = handle->write_op_list;
+                    !globus_list_empty(list);
+                    list = globus_list_rest(list))
+                {
+                    tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
+                    globus_l_xio_operation_cancel(tmp_op);
+                }
             }
         }
         globus_mutex_unlock(&handle->cancel_mutex);
@@ -1146,7 +1164,7 @@ globus_l_xio_handle_cancel_operations(
 
     globus_mutex_lock(&xio_handle->cancel_mutex);
     {
-        if(mask | GLOBUS_XIO_CANCEL_OPEN)
+        if(mask & GLOBUS_XIO_CANCEL_OPEN)
         {
             if(xio_handle->open_op == NULL)
             {
@@ -1157,7 +1175,7 @@ globus_l_xio_handle_cancel_operations(
                 res = globus_l_xio_operation_cancel(xio_handle->open_op);
             }
         }
-        if(mask | GLOBUS_XIO_CANCEL_CLOSE)
+        if(mask & GLOBUS_XIO_CANCEL_CLOSE)
         {
             if(xio_handle->close_op == NULL)
             {
@@ -1168,7 +1186,7 @@ globus_l_xio_handle_cancel_operations(
                 res = globus_l_xio_operation_cancel(xio_handle->close_op);
             }
         }
-        if(mask | GLOBUS_XIO_CANCEL_READ)
+        if(mask & GLOBUS_XIO_CANCEL_READ)
         {
             if(globus_list_empty(xio_handle->read_op_list))
             {
@@ -1187,7 +1205,7 @@ globus_l_xio_handle_cancel_operations(
                 }
             }
         }
-        if(mask | GLOBUS_XIO_CANCEL_WRITE)
+        if(mask & GLOBUS_XIO_CANCEL_WRITE)
         {
             if(globus_list_empty(xio_handle->write_op_list))
             {

@@ -18,10 +18,10 @@ result_is_cancel(
             globus_error_peek(res),
             GLOBUS_XIO_MODULE,
             GLOBUS_XIO_ERROR_CANCELED)) &&
-        (!globus_error_match(
+        !globus_error_match(
             globus_error_peek(res),
             GLOBUS_XIO_MODULE,
-            GLOBUS_XIO_ERROR_TIMEDOUT)))
+            GLOBUS_XIO_ERROR_TIMEDOUT))
     {
         return GLOBUS_FALSE;
     }
@@ -86,20 +86,9 @@ data_cb(
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         if(strcmp(timeout_type, "C") == 0)
         {
-            globus_xio_attr_t               attr_cancel;
-
-            res = globus_xio_attr_init(&attr_cancel);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
-            res = globus_xio_attr_cntl(attr_cancel, NULL,
-                    GLOBUS_XIO_ATTR_SET_CANCEL_CLOSE, GLOBUS_TRUE);
-
             res = globus_xio_handle_cancel_operations(
                     handle,
-                    attr_cancel);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
-            res = globus_xio_attr_destroy(attr_cancel);
+                    GLOBUS_XIO_CANCEL_CLOSE);
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         }
     }
@@ -116,6 +105,7 @@ open_cb(
     globus_byte_t *                             buffer;
     globus_size_t                               buffer_length;
     char *                                      timeout_type;
+    int                                         mask = 0;
 
     buffer = globus_l_test_info.buffer;
     buffer_length = globus_l_test_info.buffer_length;
@@ -139,11 +129,6 @@ open_cb(
     }
     else
     {
-        globus_xio_attr_t                   attr_cancel;
-
-        res = globus_xio_attr_init(&attr_cancel);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
         if(globus_l_test_info.write_count > 0)
         {
             res = globus_xio_register_write(
@@ -154,9 +139,7 @@ open_cb(
                     NULL,
                     data_cb,
                     user_arg);
-            res = globus_xio_attr_cntl(attr_cancel, NULL,
-                    GLOBUS_XIO_ATTR_SET_CANCEL_WRITE, GLOBUS_TRUE);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            mask = GLOBUS_XIO_CANCEL_WRITE;
         }
         else
         {
@@ -168,20 +151,16 @@ open_cb(
                     NULL,
                     data_cb,
                     user_arg);
-            res = globus_xio_attr_cntl(attr_cancel, NULL,
-                    GLOBUS_XIO_ATTR_SET_CANCEL_READ, GLOBUS_TRUE);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            mask = GLOBUS_XIO_CANCEL_READ;
         }
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         if(strcmp(timeout_type, "D") == 0)
         {
             res = globus_xio_handle_cancel_operations(
                     handle,
-                    attr_cancel);
+                    mask);
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         }
-        res = globus_xio_attr_destroy(attr_cancel);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
 }
 
@@ -243,21 +222,9 @@ cancel_main(
 
     if(strcmp(argv[opt_offset], "O") == 0)
     {
-        globus_xio_attr_t                   attr_cancel;
-
-        res = globus_xio_attr_init(&attr_cancel);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
-        res = globus_xio_attr_cntl(attr_cancel, NULL, 
-                GLOBUS_XIO_ATTR_SET_CANCEL_OPEN, GLOBUS_TRUE);
-
         res = globus_xio_handle_cancel_operations(
                 handle,
-                attr_cancel);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
-        res = globus_xio_attr_destroy(attr_cancel);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                GLOBUS_XIO_CANCEL_OPEN);
     }
 
     globus_mutex_lock(&globus_l_mutex);

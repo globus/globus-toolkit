@@ -148,6 +148,19 @@ globus_l_xio_driver_op_kickout(
     GlobusXIODebugInternalExit();
 }
 
+void
+globus_l_xio_driver_open_op_kickout(
+    void *                                  user_arg)
+{
+    globus_i_xio_op_t *                     op;
+    GlobusXIOName(globus_l_xio_driver_open_op_kickout);
+    
+    GlobusXIODebugInternalEnter();
+    op = (globus_i_xio_op_t *) user_arg;
+    GlobusIXIODriverOpenDeliver(op);
+    GlobusXIODebugInternalExit();
+}
+
 /**************************************************************************
  *                  context driver api funcitons
  *                  ----------------------------

@@ -235,6 +235,8 @@ globus_l_xio_accept_timeout_callback(
     globus_bool_t                           accept;
     globus_bool_t                           timeout = GLOBUS_FALSE;
     globus_bool_t                           destroy_server = GLOBUS_FALSE;
+    globus_callback_space_t                 space =
+        GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_l_xio_accept_timeout_callback);
 
     GlobusXIODebugInternalEnter();
@@ -350,7 +352,11 @@ globus_l_xio_accept_timeout_callback(
     /* if the accpet was pending we must call it */
     if(accept)
     {
-        if(xio_server->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+        if(!xio_op->blocking)
+        {
+            space = xio_server->space;
+        }
+        if(space != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             /* register a oneshot callback */
             globus_callback_space_register_oneshot(
@@ -358,7 +364,7 @@ globus_l_xio_accept_timeout_callback(
                 NULL,
                 globus_l_xio_server_accept_kickout,
                 (void *)xio_op,
-                xio_server->space);
+                space);
         }
         /* in all other cases we can just call callback */
         else
