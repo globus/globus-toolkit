@@ -778,6 +778,48 @@ error_param:
     return NULL;
 }
 
+void *
+globus_extension_reference(
+    globus_extension_handle_t           handle)
+{
+    globus_l_extension_handle_t *       entry;
+    void *                              datum = NULL;
+    GlobusFuncName(globus_extension_reference);
+    
+    GlobusExtensionDebugEnter();
+    
+    if(!handle)
+    {
+        goto error_param;
+    }
+    
+    entry = handle;
+    
+    globus_rmutex_lock(&globus_l_extension_mutex);
+    {
+        datum = entry->datum;
+        entry->ref++;
+        if(entry->owner)
+        {
+            entry->owner->ref++;
+            
+            globus_assert(
+                (entry->owner != (globus_l_extension_module_t *)
+                    globus_thread_getspecific(
+                        globus_l_extension_owner_key)) &&
+           "You can not reference something owned by the calling module");
+        }
+    }
+    globus_rmutex_unlock(&globus_l_extension_mutex);
+    
+    GlobusExtensionDebugExit();
+    return datum;
+
+error_param:
+    GlobusExtensionDebugExitWithError();
+    return NULL;
+}
+
 void
 globus_extension_release(
     globus_extension_handle_t           handle)

@@ -141,6 +141,10 @@ globus_extension_lookup(
     globus_extension_registry_t *       registry,
     void *                              symbol);
 
+void *
+globus_extension_reference(
+    globus_extension_handle_t           handle);
+
 void
 globus_extension_release(
     globus_extension_handle_t           handle);
