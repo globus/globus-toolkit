@@ -117,6 +117,8 @@ gss_policy_verify(
     sig_identity->x509n = X509_NAME_dup(X509_get_subject_name(sig_cert));
 
     proxy_get_base_name(sig_identity->x509n);
+
+    *signing_identity = sig_identity;
     
  done:
     if(bio)

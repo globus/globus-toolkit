@@ -5229,6 +5229,8 @@ globus_ssl_utils_verify_cert(
     
     lookup = X509_STORE_add_lookup(cert_store,
                                    X509_LOOKUP_hash_dir());
+
+    X509_LOOKUP_add_dir(lookup,ca_cert_dir,X509_FILETYPE_PEM);
     
     X509_STORE_CTX_init(store_context,
                         cert_store,

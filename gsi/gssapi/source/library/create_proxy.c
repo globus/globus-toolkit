@@ -40,7 +40,7 @@ gss_create_cas_proxy(
     
     outfile = malloc(length);
 
-    snprintf(outfile,length,"CAS_PROXY_BASE_FN%s",proxy_tag);
+    snprintf(outfile,length,CAS_PROXY_BASE_FN "%s",proxy_tag);
         
     result = proxy_create_local(cred_handle->pcd,
                                 outfile,
@@ -83,7 +83,7 @@ proxy_create_cas_extension(
     X509_EXTENSION *                    ex = NULL;
     ASN1_OBJECT *                       asn1_obj = NULL;
     ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
-    int                                 crit = 1;
+    int                                 crit = 0;
 
     asn1_obj = OBJ_txt2obj("CASRIGHTS",0);   
     
