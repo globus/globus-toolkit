@@ -7,7 +7,7 @@ doxygen_installdox = @lac_doxygen_installdox@
 all-local: @DOXYFILE@
 	@if test ! -z "@DOXYGEN@"; then \
 		@DOXYGEN@  @DOXYFILE@;  \
-		if test -n "$doxygen_installdox"; then \
+		if test -n "$(doxygen_installdox)"; then \
 		    if test -x ./doc/html/installdox; then \
 		        $(PERL) ./doc/html/installdox $(doxygen_installdox) ./doc/html/*;\
 		    fi ; \
