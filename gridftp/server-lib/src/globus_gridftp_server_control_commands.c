@@ -2688,7 +2688,7 @@ globus_l_gsc_cmd_stor_retr(
     globus_bool_t                           transfer = GLOBUS_TRUE;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stor);
 
-    if(argc != 2)
+    if(argc != 1 && argc != 2)
     {
         globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
         return;
