@@ -893,7 +893,8 @@ globus_libc_gethostname(char *name, int len)
     
     globus_mutex_lock(&gethostname_mutex);
 
-    // ToDo: This change should perhaps be applied to unix side as well?
+    /* ToDo: This change should perhaps be applied to unix side as well?
+     */
     #ifdef WIN32
         /*
      * If the environment variable is set, always return that.
