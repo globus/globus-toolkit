@@ -1012,6 +1012,12 @@ do_setup_env(Session *s, const char *shell)
 	if (getenv("TZ"))
 		child_set_env(&env, &envsize, "TZ", getenv("TZ"));
 
+#ifdef GSI
+	if (getenv("GLOBUS_LOCATION"))
+		child_set_env(&env, &envsize, "GLOBUS_LOCATION",
+			      getenv("GLOBUS_LOCATION"));
+#endif
+
 	/* Set custom environment options from RSA authentication. */
 	if (!options.use_login) {
 		while (custom_environment) {
