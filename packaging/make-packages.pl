@@ -280,7 +280,9 @@ sub import_package_dependencies
 	for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
 	{
 	    # if we don't have $dep in our hash, add it and iterate
-	    if ( ($package_build_hash{$dep} ne 1) and ( $dep ne "trusted_ca_setup") )
+	    if ( ($package_build_hash{$dep} ne 1) and 
+		 ( $dep ne "trusted_ca_setup") and
+		 ( $dep ne "globus_gram_job_manager_service_setup") )
 	    {
 		$package_build_hash{$dep} = 1;
 		$new_hash{$dep} = 1;
@@ -1129,8 +1131,8 @@ sub package_source_gpt()
 	    paranoia "configure failed.  See $pkglog/$package.";
 	    log_system("make dist", "$pkglog/$package");
 	    paranoia "make dist failed.  See $pkglog/$package.";
-	    log_system("cp *.tar.gz $package_output", "$pkglog/$package");
-	    paranoia "cp failed.  See $pkglog/$package.";
+	    log_system("cp ${package}-*.tar.gz $package_output", "$pkglog/$package");
+	    paranoia "cp of ${package}-*.tar.gz failed: $!  See $pkglog/$package.";
 	    $ENV{'GPT_IGNORE_DEPS'}="";
 	}
     }
