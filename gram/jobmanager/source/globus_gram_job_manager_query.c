@@ -159,10 +159,6 @@ globus_gram_job_manager_query_callback(
         "JM : in globus_l_gram_job_manager_query_callback, query=%s\n",
         query);
     
-    rest = strchr(query,' ');
-    if (rest)
-	*rest++ = '\0';
-
     /* add authz callout here */
 
     rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
@@ -281,6 +277,10 @@ globus_gram_job_manager_query_callback(
         }
     }
     
+    rest = strchr(query,' ');
+    if (rest)
+	*rest++ = '\0';
+
     if (strcmp(query,"cancel")==0)
     {
 	rc = globus_l_gram_job_manager_cancel(request, handle, &reply);
