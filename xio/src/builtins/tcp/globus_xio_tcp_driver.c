@@ -1515,19 +1515,19 @@ globus_l_xio_tcp_connect_next(
         addrinfo;
         addrinfo = addrinfo->ai_next)
     {
-#ifdef BUILD_DEBUG
-        /* just making sure my assumptions about addr size are correct */
-        {
-            int                             len;
-    
-            GlobusLibcSockaddrLen(*addrinfo->ai_addr, len);
-            globus_assert(
-                addrinfo->ai_addrlen == len && "Size assumption incorrect!");
-        }
-#endif
-
         if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
         {
+#ifdef BUILD_DEBUG
+            /* just making sure my assumptions about addr size are correct */
+            {
+                int                             len;
+        
+                GlobusLibcSockaddrLen(*addrinfo->ai_addr, len);
+                globus_assert(
+                    addrinfo->ai_addrlen == len && "Size assumption incorrect!");
+            }
+#endif
+
             fd = socket(
                 addrinfo->ai_family,
                 addrinfo->ai_socktype,

@@ -1283,10 +1283,12 @@ globus_l_gsc_pmod_959_cmd_pasv_cb(
     if(res != GLOBUS_SUCCESS)
     {
         globus_gsc_pmod_959_finished_op(wrapper->op, "500 Command failed.\r\n");
+        goto err;
     }
     else if(addr_count > wrapper->max && wrapper->max != -1)
     {
         globus_gsc_pmod_959_finished_op(wrapper->op, "500 Command failed.\r\n");
+        goto err;
     }
     else
     {

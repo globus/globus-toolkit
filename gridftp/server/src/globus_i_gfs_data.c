@@ -268,7 +268,7 @@ globus_l_gfs_data_handle_init(
         attr = &globus_i_gfs_data_attr_defaults;
     }
 
-    memcpy(&handle->attr, attr, sizeof(attr));
+    memcpy(&handle->attr, attr, sizeof(globus_i_gfs_data_attr_t));
     
     result = globus_ftp_control_handle_init(&handle->data_channel);
     if(result != GLOBUS_SUCCESS)

@@ -1460,11 +1460,14 @@ globus_l_gridftp_server_control_connect(
      */
     i_server = i_op->server;
     globus_assert(i_server->data_object == NULL);
-    i_server->data_object = globus_malloc(sizeof(globus_i_gsc_data_t));
-    i_server->data_object->user_handle = user_data_handle;
-    i_server->data_object->data_dir = data_dir;
-    i_server->data_object->conn_dir = conn_dir;
-
+    if(res == GLOBUS_SUCCESS)
+    {
+        i_server->data_object = globus_malloc(sizeof(globus_i_gsc_data_t));
+        i_server->data_object->user_handle = user_data_handle;
+        i_server->data_object->data_dir = data_dir;
+        i_server->data_object->conn_dir = conn_dir;
+    }
+    
     if(i_op->type == GLOBUS_L_GSC_OP_TYPE_CREATE_PASV)
     {
         i_op->passive_cb(
