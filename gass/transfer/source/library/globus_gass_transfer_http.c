@@ -3193,7 +3193,7 @@ globus_l_gass_transfer_http_response_callback(
 }
 /* globus_l_gass_transfer_http_response_callback() */
 
-    
+
 static
 void
 globus_l_gass_transfer_http_request_callback(
