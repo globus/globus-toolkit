@@ -74,6 +74,7 @@ public class SingleJobThread
     NotificationSinkManager notificationSinkManager = null;
     String notificationSinkId = null;
     int jobIndex = -1;
+    boolean completed = false;
 
     PerformanceLog perfLog = new PerformanceLog(
         SingleJobThread.class.getName());
@@ -182,6 +183,10 @@ public class SingleJobThread
             }
         }
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("job created");
+        }
+
         //do actual start call on job
         start0();
     }
@@ -229,7 +234,9 @@ public class SingleJobThread
     public void stop() {
         //non-blocking job start (see run() and start0())
         synchronized (this) {
-            logger.debug("stopping job thread");
+            if (logger.isDebugEnabled()) {
+                logger.debug("stopping job thread");
+            }
             this.notify();
         }
     }
@@ -299,7 +306,20 @@ public class SingleJobThread
                 return;
             }
         }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("job completed");
+        }
+
+        cleanup();
+
         this.perfLog.stop("complete");
+
+        this.harness.notifyStopped();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("job stopped");
+        }
     }
 
     public void deliverNotification(ExtensibilityType message) {
@@ -308,19 +328,22 @@ public class SingleJobThread
             jobStatus = (JobStatusType) AnyHelper.getAsSingleObject(
                 AnyHelper.getAsServiceDataValues(message),
                 JobStatusType.class);
-            if (logger.isDebugEnabled()) {
-                logger.debug("received state notification: " + jobStatus);
-            }
         } catch (Exception e) {
             logger.error("unabled to get message as service data", e);
             return;
         }
         JobStateType jobState = jobStatus.getJobState();
+        if (logger.isDebugEnabled()) {
+            logger.debug("received state notification: " + jobState);
+        }
 
         if (   jobState.equals(JobStateType.Done)
             || jobState.equals(JobStateType.Failed)) {
             //stop timming Active
-            this.harness.notifyCompleted(this.jobIndex);
+            if (!completed) {
+                this.harness.notifyCompleted(this.jobIndex);
+                completed = true;
+            }
         } else
         if (jobState.equals(JobStateType.Active)) {
             //start timming Active
@@ -334,9 +357,9 @@ public class SingleJobThread
         }
     }
 
-    protected void finalize() {
+    protected void cleanup() {
         if (logger.isDebugEnabled()) {
-            logger.debug("finalize() called, cleaning up job thread");
+            logger.debug("cleanup() called, cleaning up job thread");
         }
         //unsubscribe for notifications
         try {
@@ -376,5 +399,4 @@ public class SingleJobThread
             logger.error("unable to destroy MJS instance", re);
         }
     }
-
 }

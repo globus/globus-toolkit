@@ -5,8 +5,14 @@ use IO::Handle;
 
 my $startCount = scalar($ARGV[0]);
 my $endCount = scalar($ARGV[1]);
+my $verbose = 0;
+if (($ARGV[2] eq "-v") or ($ARGV[2] eq "--verbose")) {
+    $verbose = 1;
+}
 
 STDOUT->autoflush(1);
+TESTLOG->autoflush(1);
+TIMINGSLOG->autoflush(1);
 
 for (my $index=$startCount; $index<=$endCount; $index*=2) {
     my $testOutputFile = "throughput-test-" . $index . ".log";
@@ -17,6 +23,9 @@ for (my $index=$startCount; $index<=$endCount; $index*=2) {
     open EXEC, "$testExec |" or die "Error: unable to execute command \'"
         . $testExec . "\'";
         while (<EXEC>) {
+            if ($verbose) {
+                print;
+            }
             print TESTLOG;
         }
     close EXEC;
@@ -30,6 +39,9 @@ for (my $index=$startCount; $index<=$endCount; $index*=2) {
     open EXEC, "$timingsExec |" or die "Error: unable to execute command \'"
         . $timingsExec . "\'";
         while (<EXEC>) {
+            if ($verbose) {
+                print;
+            }
             print TIMINGSLOG;
         }
     close EXEC;

@@ -14,22 +14,22 @@ public class ThroughputTester {
     int count = 1;
     SingleJobThread[] jobList = null;
     int[] jobPhaseState = null;
-    int createdCount = -1;
-    int startedCount = -1;
-    int completedCount = -1;
+    int createdCount = 0;
+    int startedCount = 0;
+    int completedCount = 0;
+    int stoppedCount = 0;
 
     PerformanceLog perfLog = new PerformanceLog(
         ThroughputTester.class.getName());
 
     public ThroughputTester() { }
 
-    public void createAll() {
+    public synchronized void createAll() {
         if (logger.isDebugEnabled()) {
             logger.debug("creating " + this.count + " job(s)");
         }
         this.jobList = new SingleJobThread[this.count];
         this.jobPhaseState = new int[this.count];
-        this.createdCount = 0;
 
         if (logger.isDebugEnabled()) {
             logger.debug("perf log start [createService]");
@@ -51,16 +51,16 @@ public class ThroughputTester {
                     oldCreatedCount = this.createdCount;
                 }
             }
-            synchronized (this) {
-                //avoid deadlock by checking once more when we have the lock
-                if (this.createdCount < this.count) {
-                    try {
-                        wait();
-                    } catch (Exception e) {
-                        logger.error("unabled to wait", e);
-                    }
-                }
+
+            try {
+                wait();
+            } catch (Exception e) {
+                logger.error("unabled to wait", e);
             }
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("all jobs created");
         }
 
         this.perfLog.stop("createService");
@@ -76,11 +76,10 @@ public class ThroughputTester {
         notifyAll();
     }
 
-    public void startAll() {
+    public synchronized void startAll() {
         if (logger.isDebugEnabled()) {
             logger.debug("starting " + this.count + " job(s)");
         }
-        this.startedCount = 0;
 
         if (logger.isDebugEnabled()) {
             logger.debug("perf log start [start]");
@@ -103,16 +102,16 @@ public class ThroughputTester {
                     oldStartedCount = this.startedCount;
                 }
             }
-            synchronized (this) {
-                //avoid deadlock by checking once more when we have the lock
-                if (this.startedCount < this.count) {
-                    try {
-                        wait();
-                    } catch (Exception e) {
-                        logger.error("unabled to wait", e);
-                    }
-                }
+
+            try {
+                wait();
+            } catch (Exception e) {
+                logger.error("unabled to wait", e);
             }
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("all jobs started");
         }
 
         this.perfLog.stop("start");
@@ -131,36 +130,63 @@ public class ThroughputTester {
                     oldCompletedCount = this.completedCount;
                 }
             }
-            synchronized (this) {
-                //avoid deadlock by checking once more when we have the lock
-                if (this.completedCount < this.count) {
-                    try {
-                        wait();
-                    } catch (Exception e) {
-                        logger.error("unabled to wait", e);
-                    }
-                }
+
+            try {
+                wait();
+            } catch (Exception e) {
+                logger.error("unabled to wait", e);
             }
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("all jobs completed");
         }
 
         this.perfLog.stop("complete");
 
-        for (int i=0; i<this.jobList.length; i++) {
-            this.jobList[i].finalize();
+        //try { Thread.currentThread().sleep(2000); } catch (Exception e ) { }
+
+        int oldStoppedCount = -1;
+        while (this.stoppedCount < this.count) {
+            if (logger.isDebugEnabled()) {
+                if (oldStoppedCount != this.stoppedCount) {
+                    logger.debug("waiting for "
+                                + (this.count - this.stoppedCount)
+                                + " job(s) to be stopped");
+                    oldStoppedCount = this.stoppedCount;
+                }
+            }
+
+            //send signal to all job threads to exit
+            for (int i=0; i<this.jobList.length; i++) {
+                this.jobList[i].stop();
+            }
+
+            try {
+                wait();
+            } catch (Exception e) {
+                logger.error("unabled to wait", e);
+            }
         }
 
-        try { Thread.currentThread().sleep(2000); } catch (Exception e ) { }
+        if (logger.isDebugEnabled()) {
+            logger.debug("all jobs stopped");
+        }
     }
 
     synchronized void notifyStarted() {
         this.startedCount++;
-        notifyAll();
+        notify();
     }
 
     synchronized void notifyCompleted(int jobIndex) {
-        this.jobList[jobIndex].stop();
         this.completedCount++;
-        notifyAll();
+        notify();
+    }
+
+    synchronized void notifyStopped() {
+        this.stoppedCount++;
+        notify();
     }
 
     public void setFactoryUrl(String factoryUrl) {
