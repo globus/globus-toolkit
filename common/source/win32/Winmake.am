@@ -33,7 +33,6 @@ ExportExclusions = \
     globus_threadattr_getstacksize \
     globus_threadattr_init \
     globus_threadattr_setstacksize \
-    globus_thread_blocking_callback_push \
     globus_libc_seekdir \
     globus_libc_telldir
 
@@ -46,3 +45,5 @@ WinExports = \
     globus_i_reltime_infinity \
     globus_error_mutliple_add_chain \
     globus_error_construct_multiple
+
+
