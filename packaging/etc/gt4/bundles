@@ -120,6 +120,9 @@ BUNDLE gt4-gram-lsf
         globus_gram_job_manager_setup_lsf
         globus_scheduler_provider_setup_lsf
 
+BUNDLE gt4-gram-test
+       globus_wsrf_gram_scheduler_test
+
 BUNDLE gt4-cas
         globus_wsrf_cas_client_java
         globus_wsrf_cas_service_java
