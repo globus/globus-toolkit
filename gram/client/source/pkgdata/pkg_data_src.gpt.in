@@ -17,6 +17,7 @@
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_rsl" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
