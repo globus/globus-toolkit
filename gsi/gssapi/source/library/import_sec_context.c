@@ -193,7 +193,9 @@ GSS_CALLCONV gss_import_sec_context
 
 	s = context->gs_ssl;
 
-	RAND_seed((unsigned char *)&Time,sizeof(Time));
+	RAND_add((unsigned char *)&Time,sizeof(Time),
+                 .5 /* .5 byte or 4 bits of entrophy */);
+
 	ERR_clear_error();
 
 	if (!SSL_in_init(s) || SSL_in_before(s)) SSL_clear(s);
