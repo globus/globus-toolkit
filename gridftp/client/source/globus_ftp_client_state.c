@@ -1031,6 +1031,20 @@ redo:
 	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_LOCAL_RETR_OPTS:
+        
+        if(target->attr->parallelism.mode == target->parallelism.mode &&
+            (target->parallelism.mode != GLOBUS_FTP_CONTROL_PARALLELISM_FIXED 
+                || target->attr->parallelism.fixed.size ==
+	            target->parallelism.fixed.size) &&
+	    target->attr->layout.mode == target->layout.mode &&
+	        (target->layout.mode !=
+	            GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN
+	            || target->attr->layout.round_robin.block_size ==
+	                target->layout.round_robin.block_size))
+        {
+            goto skip_opts_retr;
+        }
+        
 	result = globus_ftp_control_local_parallelism(
 	    target->control_handle,
 	    &target->attr->parallelism);
@@ -1321,22 +1335,31 @@ redo:
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    pbsz = 0;
-	    
-	    /* skip 200 <SP> */
-	    sscanf(response->response_buffer + 4, "PBSZ=%lu", &pbsz);
-
-	    if(pbsz != 0)
-	    {
-	        target->pbsz = pbsz;
-	        
-		result = globus_ftp_control_local_pbsz(target->control_handle,
-						       pbsz);
-		if(result != GLOBUS_SUCCESS)
-		{
-		    goto result_fault;
-		}
-	    }
+	    char *                      s;
+            
+            pbsz = 0;
+            s = strstr(response->response_buffer, "PBSZ=");
+            if(s)
+            {
+                sscanf(s, "PBSZ=%lu", &pbsz);
+            }
+            
+            if(pbsz == 0)
+            {
+                result = globus_ftp_control_get_pbsz(
+                    target->control_handle, &pbsz);
+            }
+            else
+            {
+                result = globus_ftp_control_local_pbsz(
+                    target->control_handle, pbsz);
+            }
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto result_fault;
+            }
+            target->pbsz = pbsz;
 	}
 	else
 	{
@@ -3468,6 +3491,12 @@ globus_l_ftp_client_parallelism_string(
 	}
 	break;
     case GLOBUS_FTP_CONTROL_PARALLELISM_NONE:
+        if((target->parallelism.mode !=
+	        GLOBUS_FTP_CONTROL_PARALLELISM_NONE) &&
+	   (target->parallelism.fixed.size != 1))
+	{
+	    ptr = globus_libc_strdup("Parallelism=1,1,1;");
+	}
 	break;
     }
     return ptr;

@@ -348,6 +348,13 @@ typedef struct globus_i_ftp_client_features_s
 
 */
 
+globus_i_ftp_client_features_t *
+globus_i_ftp_client_features_init();
+
+globus_result_t 
+globus_i_ftp_client_features_destroy(
+    globus_i_ftp_client_features_t *             features);
+    
 globus_ftp_client_tristate_t 
 globus_i_ftp_client_feature_get(
     globus_i_ftp_client_features_t *             features,

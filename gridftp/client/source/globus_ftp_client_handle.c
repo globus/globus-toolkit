@@ -753,6 +753,11 @@ globus_l_ftp_client_target_new(
 	goto free_target;
     }
     result = globus_ftp_control_handle_init(target->control_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto free_control_handle;
+    }
+    
     if(handle->attr.nl_handle)
     {
         globus_ftp_control_set_netlogger(
@@ -761,13 +766,8 @@ globus_l_ftp_client_target_new(
             handle->attr.nl_ftp,
             handle->attr.nl_io);
     }
-
-    if(result)
-    {
-	goto free_control_handle;
-    }
+    
     target->url_string = globus_libc_strdup(url);
-
     if(!target->url_string)
     {
 	goto destroy_control_handle;
@@ -782,18 +782,11 @@ globus_l_ftp_client_target_new(
     
     /* allocate space for features */
     target->features = globus_i_ftp_client_features_init();
-    if (result != GLOBUS_SUCCESS) 
+    if(!target->features) 
     {
-        goto destroy_features;
+        goto free_url;
     }
-    /* Be noncommittal for now for SITE HELP and FEAT options. */
-    for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
-    {
-      globus_i_ftp_client_feature_set(target->features,
-				      i,
-				      GLOBUS_FTP_CLIENT_MAYBE);
-      
-    }
+    
     /*
      * Setup default setttings on the control handle values. We'll
      * adjust these to match the desired attributes after we've made
@@ -822,7 +815,7 @@ globus_l_ftp_client_target_new(
 						      &attr);
 	if(result)
 	{
-	    goto free_url;
+	    goto destroy_features;
 	}
     }
     else
@@ -830,7 +823,7 @@ globus_l_ftp_client_target_new(
 	result = globus_ftp_client_operationattr_init(&target->attr);
 	if(result)
 	{
-	    goto free_url;
+	    goto destroy_features;
 	}
     }
 
@@ -920,10 +913,10 @@ globus_l_ftp_client_target_new(
 
 destroy_attr:
     globus_ftp_client_operationattr_destroy(&target->attr);
-free_url:
-    globus_url_destroy(&target->url);
 destroy_features:
     globus_i_ftp_client_features_destroy(target->features);
+free_url:
+    globus_url_destroy(&target->url);
 free_url_string:
     globus_libc_free(target->url_string);
 destroy_control_handle:
