@@ -962,11 +962,11 @@ do                                                                          \
     _op = (globus_i_xio_op_t *)(op);                                        \
     if(_op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)                       \
     {                                                                       \
-        _mutex = _op->_op_server->mutex;                                    \
+        _mutex = &_op->_op_server->mutex;                                   \
     }                                                                       \
     else                                                                    \
     {                                                                       \
-        _mutex = _op->_op_handle->mutex;                                    \
+        _mutex = &_op->_op_handle->mutex;                                   \
     }                                                                       \
     globus_mutex_lock(_mutex);                                              \
     {                                                                       \
@@ -974,13 +974,13 @@ do                                                                          \
         if(!_op->canceled)                                                  \
         {                                                                   \
             _op->cancel_cb = (cb);                                          \
-            _op->cancel_user_arg = (user_arg);                              \
+            _op->cancel_arg = (user_arg);                                   \
         }                                                                   \
     }                                                                       \
     globus_mutex_unlock(_mutex);                                            \
 } while(0)
 
-#define GlobusXIODriverDisableCancel(server)                                \
+#define GlobusXIODriverDisableCancel(op)                                    \
 do                                                                          \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -989,16 +989,16 @@ do                                                                          \
     _op = (globus_i_xio_op_t *)(op);                                        \
     if(_op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)                       \
     {                                                                       \
-        _mutex = _op->_op_server->mutex;                                    \
+        _mutex = &_op->_op_server->mutex;                                   \
     }                                                                       \
     else                                                                    \
     {                                                                       \
-        _mutex = _op->_op_handle->mutex;                                    \
+        _mutex = &_op->_op_handle->mutex;                                   \
     }                                                                       \
     globus_mutex_lock(_mutex);                                              \
     {                                                                       \
         _op->cancel_cb = NULL;                                              \
-        _op->cancel_user_arg = NULL;                                        \
+        _op->cancel_arg = NULL;                                             \
     }                                                                       \
     globus_mutex_unlock(_mutex);                                            \
 } while(0)
