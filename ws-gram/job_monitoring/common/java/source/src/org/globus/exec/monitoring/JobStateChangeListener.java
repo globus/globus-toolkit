@@ -1,5 +1,8 @@
 package org.globus.exec.monitoring;
 
+import org.globus.exec.generated.StateEnumeration;
+import org.globus.wsrf.ResourceKey;
+
 /**
  * Job State Change notification listener.
  *
@@ -7,7 +10,7 @@ package org.globus.exec.monitoring;
  * state change notifications which are related to a particular Managed Job
  * Resource.
  */
-public interface JobStateListener {
+public interface JobStateChangeListener {
     /**
      * Method called by the JobStateMonitor when a job changes state.
      *
@@ -21,6 +24,9 @@ public interface JobStateListener {
      *     Integer code inidicating the job exit condition (if the state value
      *     is the done or failed job state.
      */
-    public void jobStateChange(Object resourceKey, java.util.Date timestamp,
-            int state, int exitCode);
+    public void jobStateChanged(
+            ResourceKey                     resourceKey,
+            java.util.Date                  timestamp,
+            StateEnumeration                state,
+            int                             exitCode);
 }

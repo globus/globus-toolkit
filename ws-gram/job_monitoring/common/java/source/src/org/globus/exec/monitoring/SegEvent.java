@@ -1,17 +1,19 @@
 package org.globus.exec.monitoring;
 
+import org.globus.exec.generated.StateEnumeration;
+
 class SegEvent
 {
     private java.util.Date timestamp;
     private String localId;
-    private int state;
+    private StateEnumeration state;
     private int exitCode;
     static private Comparator comparator = new Comparator();
 
     public SegEvent(
             java.util.Date              timestamp,
             String                      localId,
-            int                         state,
+            StateEnumeration            state,
             int                         exitCode)
     {
         this.timestamp = timestamp;
@@ -21,7 +23,7 @@ class SegEvent
     }
     public java.util.Date getTimeStamp() { return timestamp; }
     public String getLocalId() { return localId; }
-    public int getState() { return state; }
+    public StateEnumeration getState() { return state; }
     public int getExitCode() { return exitCode; }
 
     static public java.util.Comparator getComparator() {
@@ -35,7 +37,7 @@ class SegEvent
         {
             SegEvent e1, e2;
             int rc;
-            int s1, s2;
+            StateEnumeration s1, s2;
             int ec1, ec2;
 
             e1 = (SegEvent) o1;
@@ -56,13 +58,32 @@ class SegEvent
             s1 = e1.getState();
             s2 = e2.getState();
 
-            if (s1 < s2)
-            {
-                return -1;
-            }
-            else if (s1 > s2)
-            {
-                return 1;
+            if (! s1.equals(s2)) {
+                if (s1.equals(StateEnumeration.Done)) {
+                    return -1;
+                } else if (s2.equals(StateEnumeration.Done)) {
+                    return 1;
+                } else if (s1.equals(StateEnumeration.Failed)) {
+                    return -1;
+                } else if (s2.equals(StateEnumeration.Failed)) {
+                    return 1;
+                } else if (s1.equals(StateEnumeration.StageOut)) {
+                    return -1;
+                } else if (s2.equals(StateEnumeration.StageOut)) {
+                    return 1;
+                } else if (s1.equals(StateEnumeration.Active)) {
+                    return -1;
+                } else if (s2.equals(StateEnumeration.Active)) {
+                    return 1;
+                } else if (s1.equals(StateEnumeration.Pending)) {
+                    return -1;
+                } else if (s2.equals(StateEnumeration.Pending)) {
+                    return -1;
+                } else if (s1.equals(StateEnumeration.StageIn)) {
+                    return -1;
+                } else if (s2.equals(StateEnumeration.StageIn)) {
+                    return 1;
+                }
             }
 
             ec1 = e1.getExitCode();
@@ -91,20 +112,8 @@ class SegEvent
         sb.append(timestamp.toString());
         sb.append("] ");
 
-        switch (state) {
-            case 1:
-                sb.append("PENDING");
-                break;
-            case 2:
-                sb.append("ACTIVE");
-                break;
-            case 4:
-                sb.append("FAILED");
-                break;
-            case 8:
-                sb.append("DONE");
-                break;
-        }
+        sb.append(state.toString());
+
         return sb.toString();
     }
 }

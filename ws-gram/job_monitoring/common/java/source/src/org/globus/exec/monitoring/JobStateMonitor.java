@@ -1,5 +1,8 @@
 package org.globus.exec.monitoring;
 
+import org.globus.wsrf.ResourceKey;
+import org.globus.exec.generated.StateEnumeration;
+
 /**
  * The JobStateMonitor (JSM) is a scheduler-indpendent object which provides
  * notifications of job state changes to the Managed Job Service (MJS).
@@ -42,10 +45,10 @@ public class JobStateMonitor {
     /** Reference to the SEG-monitoring thread. */
     private Seg seg;
     /**
-     * JobStateListener which will be notified of job state
+     * JobStateChangeListener which will be notified of job state
      * changes for registered job IDs.
      */
-    private JobStateListener listener;
+    private JobStateChangeListener listener;
     /**
      * JobStateRecoveryListener which will be notified when the JSM decides
      * that its recovery information should be updated.
@@ -92,8 +95,8 @@ public class JobStateMonitor {
      *
      * This timestamp is used as the safe-recovery timestamp when the
      * soft-state event cache is empty, but some events have been dispatched
-     * to their JobStateListener or discarded from the soft-state cache by
-     * the cacheFlushTask.
+     * to their JobStateChangeListener or discarded from the soft-state cache
+     * by the cacheFlushTask.
      */
     private java.util.Date lastEventTimestamp;
 
@@ -113,7 +116,7 @@ public class JobStateMonitor {
      * @param schedulerPath
      *     Path to the scheduler-specific SEG module.
      * @param listener
-     *     Reference to the JobStateListener which will be notified
+     *     Reference to the JobStateChangeListener which will be notified
      *     when notifications relating to Job ID which has a mapping
      *     registered to it.
      * @param recoveryListener
@@ -125,7 +128,7 @@ public class JobStateMonitor {
             java.io.File segPath,
             String userName,
             java.io.File schedulerPath,
-            JobStateListener listener,
+            JobStateChangeListener listener,
             JobStateRecoveryListener recoveryListener)
     {
         logger.debug("Constructing JobStateMonitor");
@@ -144,7 +147,7 @@ public class JobStateMonitor {
      * Register a mapping from local scheduler job ID to a resource key.
      *
      * Once this method has been called for a particular local job
-     * identifier, the JobStateListener associated with the
+     * identifier, the JobStateChangeListener associated with the
      * JobStatemonitor may receive notifications until the unregisterJobIDMap
      * method has been called.
      *
@@ -153,9 +156,9 @@ public class JobStateMonitor {
      *     scheduler when the job is created.
      * @param resourceKey
      *     Resource key associated with the job. This object will be
-     *     passed to the JobStateListener's jobStateChange method.
+     *     passed to the JobStateChangeListener's jobStateChange method.
      */
-    public void registerJobID(String localId, Object resourceKey)
+    public void registerJobID(String localId, ResourceKey resourceKey)
             throws AlreadyRegisteredException
     {
         logger.debug("Entering registerJobID");
@@ -265,17 +268,17 @@ public class JobStateMonitor {
      * Call the jobStateChange callback for a SEG event.
      *
      * @param resourceKey
-     *     Object key associated with the job ID in the event.
+     *     Resource key associated with the job ID in the event.
      * @param e
      *     Event containing the job state change information.
      */
-    private void dispatchEvent(Object resourceKey, SegEvent e)
+    private void dispatchEvent(ResourceKey resourceKey, SegEvent e)
     {
         logger.debug("Entering dispatchEvent()");
 
         synchronized (mapping) {
             logger.debug("dispatching " + e.toString());
-            listener.jobStateChange(resourceKey, e.getTimeStamp(),
+            listener.jobStateChanged(resourceKey, e.getTimeStamp(),
                     e.getState(), e.getExitCode());
             synchronized (cachedEvents) {
                 if (cachedEvents.isEmpty()) {
@@ -392,7 +395,7 @@ public class JobStateMonitor {
     /**
      * Unregister a local scheduler job ID for event propagation.
      * Once this method has been called for a particular local job
-     * identifier, the JobStateListener associated with the
+     * identifier, the JobStateChangeListener associated with the
      * JobStatemonitor will no longer receive notifications about this job.
      *
      * @param localId
@@ -498,17 +501,43 @@ public class JobStateMonitor {
                                 // Invalid message
                             }
 
+                            StateEnumeration se;
+
+                            switch (Integer.parseInt(tokens[3])) {
+                                case 1:
+                                    se = StateEnumeration.Pending;
+                                    break;
+                                case 2:
+                                    se = StateEnumeration.Active;
+                                    break;
+                                case 4:
+                                    se = StateEnumeration.Failed;
+                                    break;
+                                case 8:
+                                    se = StateEnumeration.Done;
+                                    break;
+                                case 16:
+                                    se = StateEnumeration.Suspended;
+                                    break;
+                                case 32:
+                                    se = StateEnumeration.Unsubmitted;
+                                    break;
+                                default:
+                                    se = null;
+                            }
+
                             SegEvent e = new SegEvent(
                                 new java.util.Date(
                                     Long.parseLong(tokens[1])*1000),
                                 tokens[2],
-                                Integer.parseInt(tokens[3]),
+                                se,
                                 Integer.parseInt(tokens[4]));
 
                             timeStamp = e.getTimeStamp();
 
                             synchronized (mapping) {
-                                Object resourceKey = mapping.get(tokens[2]);
+                                ResourceKey resourceKey = 
+                                        (ResourceKey) mapping.get(tokens[2]);
 
                                 if (resourceKey != null) {
                                     dispatchEvent(resourceKey, e);
