@@ -1049,38 +1049,15 @@ globus_i_gsi_gss_retrieve_peer(
             major_status = GSS_S_FAILURE;
             goto exit;
         }
-
-        /* figure out which end the peer cert is at 
-         * in the cert chain and remove it from the chain
-         */
-        for(peer_index = 0; 
-            peer_index < sk_X509_num(peer_cert_chain);
-            ++peer_index)
-        {
-            X509 *                      chain_cert
-                = sk_X509_value(peer_cert_chain, peer_index);
-            if(!X509_NAME_cmp(X509_get_subject_name(peer_cert),
-                              X509_get_subject_name(chain_cert)))
-            {
-                sk_X509_delete(peer_cert_chain, peer_index);
-                /* needs to be freed here since 
-                 * sk_X509_delete doesn't do it 
-                 */
-                X509_free(chain_cert);
-                break;
-            }
-        }
-
+        
+        X509_free(sk_X509_shift(peer_cert_chain));
+        
         local_result = globus_gsi_cred_set_cert_chain(
             context_handle->peer_cred_handle->cred_handle, 
             peer_cert_chain);
-
-        if(peer_cert_chain)
-        {
-            sk_X509_pop_free(peer_cert_chain, X509_free);
-            peer_cert_chain = NULL;
-        }
-
+        
+        sk_X509_pop_free(peer_cert_chain, X509_free);
+        
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1167,11 +1144,6 @@ globus_i_gsi_gss_retrieve_peer(
     }
 
  exit:
-
-    if(peer_cert_chain)
-    {
-        sk_X509_pop_free(peer_cert_chain, X509_free);
-    }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
