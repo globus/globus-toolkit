@@ -1,0 +1,60 @@
+#!/bin/sh
+#
+# Init file for GSI-OpenSSH server daemon
+#
+# chkconfig: 2345 55 25
+# description: GSI-OpenSSH server daemon
+#
+
+GLOBUS_LOCATION="@GLOBUS_LOCATION@"
+export GLOBUS_LOCATION
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${libexecdir}/globus-sh-tools.sh
+
+PID_FILE=${localstatedir}/sshd.pid
+
+#
+# SSHD arguments can be added here within the following
+# set of double quotes.
+#
+
+SSHD_ARGS=""
+
+case "$1" in
+    start)
+        if [ ! -f $PID_FILE ]; then
+            if [ ! -d $localstatedir ]; then
+                mkdir -p $localstatedir
+            fi
+            echo "Starting up GSI-OpenSSH sshd server"
+            ${sbindir}/sshd $SSHD_ARGS > /dev/null 2>&1 &
+            if [ $? -ne 0 ] ; then
+                echo "Failed to start up GSI-OpenSSH sshd server"
+            fi
+        else
+            echo "GSI-OpenSSH sshd is already running..."
+        fi
+        ;;
+
+    stop)
+        if [ -f $PID_FILE ] ; then
+            pid=`cat $PID_FILE`
+            kill -TERM $pid
+            sleep 2
+            kill -TERM $pid 2> /dev/null
+            rm -f $PID_FILE
+        fi
+        ;;
+
+    restart)
+        $0 stop
+        $0 start
+        ;;
+
+    *)
+        echo "Usage: $0 (start|stop|restart)"
+        exit 1
+esac
+
+exit 0
