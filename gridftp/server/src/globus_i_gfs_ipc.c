@@ -1296,6 +1296,27 @@ globus_l_gfs_ipc_unpack_user(
 }
 
 static int
+globus_l_gfs_ipc_unpack_user_buffer(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_byte_t **                    out_buf,
+    globus_size_t *                     out_len)
+{
+    globus_size_t                       buffer_length;
+
+    GFSDecodeUInt32(buffer, len, buffer_length);
+    *out_buf = buffer;
+    *out_len = buffer_length;
+                                                                                
+    return 0;
+
+  decode_err:
+
+    return -1;
+}
+
+static int
 globus_l_gfs_ipc_unpack_cred(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
@@ -1335,6 +1356,8 @@ globus_l_gfs_ipc_read_body_cb(
     globus_gfs_data_info_t *            data_info;
     globus_gfs_stat_info_t *            stat_info;
     globus_gfs_ipc_reply_t *            reply;
+    globus_byte_t *                     user_buffer;
+    globus_size_t                       user_buffer_length;
     globus_gfs_ipc_event_reply_t *      event_reply;
     int                                 rc;
     int                                 data_connection_id;
@@ -1425,6 +1448,18 @@ globus_l_gfs_ipc_read_body_cb(
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->set_user(
                 ipc, request->id, user_dn, NULL, NULL);
+            break;
+
+        case GLOBUS_GFS_OP_USER_BUFFER:
+            rc = globus_l_gfs_ipc_unpack_user_buffer(
+                ipc, buffer, len, &user_buffer, &user_buffer_length);
+            if(rc != 0)
+            {
+                res = GlobusGFSErrorIPC();
+                goto err;
+            }
+            ipc->iface->set_user_buffer(ipc, user_buffer, user_buffer_length);
+            globus_free(request);
             break;
 
         case GLOBUS_GFS_OP_STAT:
@@ -1694,6 +1729,7 @@ globus_l_gfs_ipc_read_header_cb(
             case GLOBUS_GFS_OP_ACTIVE:
             case GLOBUS_GFS_OP_DESTROY:
             case GLOBUS_GFS_OP_STAT:
+            case GLOBUS_GFS_OP_USER_BUFFER:
                 request = (globus_gfs_ipc_request_t *)
                     globus_calloc(sizeof(globus_gfs_ipc_request_t), 1);
                 if(request == NULL)
@@ -2191,6 +2227,33 @@ globus_l_gfs_ipc_write_cb(
     globus_free(buffer);
 }
 
+static void
+globus_l_gfs_ipc_nocb_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_gfs_ipc_error_callback_t     error_cb = NULL;
+
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    /* on error remoe from the hashtable.  we could just wait for the
+       close for this but we may as well have this callback do something */
+    if(result != GLOBUS_SUCCESS)
+    {
+        if(ipc->error_cb)
+        {
+            error_cb(ipc, result, ipc->error_arg);
+        }
+    }
+    globus_free(buffer);
+}
+
 globus_result_t
 globus_gfs_ipc_set_user(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -2276,6 +2339,67 @@ globus_gfs_ipc_set_user(
     if(request != NULL)
     {
         globus_free(request);
+    }
+
+    return res;
+}
+
+globus_result_t
+globus_gfs_ipc_set_user_buffer(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_byte_t *                     user_buffer,
+    globus_size_t                       buffer_len)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_result_t                     res;
+    globus_byte_t *                     buffer = NULL;
+    globus_byte_t *                     ptr;
+    globus_size_t                       msg_size;
+    GlobusGFSName(globus_gfs_ipc_set_user_buffer);
+
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
+    globus_mutex_lock(&ipc->mutex);
+    {
+        if(!ipc->local)
+        {
+            buffer = globus_malloc(ipc->buffer_size);
+            ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_USER_BUFFER);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, buffer_len);
+            /* body */
+            memcpy(ptr, user_buffer, buffer_len);
+
+            msg_size = ptr - buffer + buffer_len;
+            res = globus_xio_register_write(
+                ipc->xio_handle,
+                buffer,
+                msg_size,
+                msg_size,
+                NULL,
+                globus_l_gfs_ipc_nocb_write_cb,
+                ipc);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+    }
+    globus_mutex_unlock(&ipc->mutex);
+
+    if(ipc->local)
+    {
+        ipc_handle->iface->set_user_buffer(ipc, buffer, buffer_len);
+    }
+
+    return GLOBUS_SUCCESS;
+
+  err:
+    globus_mutex_unlock(&ipc->mutex);
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
     }
 
     return res;
@@ -2371,7 +2495,6 @@ globus_gfs_ipc_set_cred(
     }
 
     return res;
-    return GLOBUS_SUCCESS;
 }
 
 /* pack user defined type */

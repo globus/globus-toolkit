@@ -39,7 +39,8 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_ACTIVE,
     GLOBUS_GFS_OP_DESTROY,
     GLOBUS_GFS_OP_TRANSFER,
-    GLOBUS_GFS_OP_STAT
+    GLOBUS_GFS_OP_STAT,
+    GLOBUS_GFS_OP_USER_BUFFER
 } globus_gfs_operation_type_t;
 
 /*

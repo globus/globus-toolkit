@@ -159,6 +159,17 @@ globus_gfs_ipc_set_cred(
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 
+typedef void
+(*globus_gfs_ipc_iface_set_user_buffer_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_len);
+
+globus_result_t
+globus_gfs_ipc_set_user_buffer(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_len);
 /*
  *  receive
  *
@@ -350,6 +361,7 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_transfer_event_t transfer_event_func;
     globus_gfs_ipc_iface_set_cred_t     set_cred;
     globus_gfs_ipc_iface_set_user_t     set_user;
+    globus_gfs_ipc_iface_set_user_buffer_t  set_user_buffer;
 } globus_gfs_ipc_iface_t;
 
 /* 
