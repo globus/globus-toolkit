@@ -2339,7 +2339,7 @@ AC_ARG_WITH(afs-krb5,
 				AC_MSG_WARN([AFS_KRB5 requires Kerberos 5 support, build may fail])
 			fi
 
-			LIBS="-lkrbafs $LIBS"
+			LIBS="-lkrbafs -lkrb4 $LIBS"
 			if test ! -z "$AFS_LIBS" ; then
 				LIBS="$LIBS $AFS_LIBS"
 			fi
