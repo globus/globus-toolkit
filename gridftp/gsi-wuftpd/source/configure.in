@@ -504,13 +504,6 @@ if test $result = "no"; then
       return 0;
     return 1;
   }],[ result="qd" ],[ result="no" ], [ result="no"])
-  if test $result = "no"; then
-    AC_TRY_RUN([#include <stdio.h>
-    int main(int argc, char **argv) {
-      if(printf("%Ld",(long long) 1)==1)
-        return 0;
-      return 1;
-    }],[ result="Ld" ],[ result="no" ], [ result="no" ])
     if test $result = "no"; then
       AC_TRY_RUN([#include <stdio.h>
       int main(int argc, char **argv) {
@@ -527,7 +520,6 @@ if test $result = "no"; then
         }],[ result="ld" ],[ result="d" ], [ result="d" ])
       fi
     fi
-  fi
   AC_DEFINE_UNQUOTED(GR_GID_FORMAT,"$result")
   AC_MSG_RESULT(%$result)
 fi
@@ -550,30 +542,22 @@ if test $result = "no"; then
       return 0;
     return 1;
   }],[ result="qd" ],[ result="no" ], [ result="no"])
-  if test $result = "no"; then
-    AC_TRY_RUN([#include <stdio.h>
-    int main(int argc, char **argv) {
-      if(printf("Ld",(long long) 1)==1)
-        return 0;
-      return 1;
-    }],[ result="Ld" ],[ result="no" ], [ result="no" ])
     if test $result = "no"; then
       AC_TRY_RUN([#include <stdio.h>
       int main(int argc, char **argv) {
-        if(printf("lld",(long long) 1)==1)
+        if(printf("%lld",(long long) 1)==1)
           return 0;
         return 1;
       }],[ result="lld" ],[ result="no" ], [ result="no" ])
       if test $result = "no"; then
         AC_TRY_RUN([#include <stdio.h>
         int main(int argc, char **argv) {
-          if(printf("ld",(long long) 1)==1)
+          if(printf("%ld",(long long) 1)==1)
             return 0;
           return 1;
-        }],[ result="ld" ],[ result="d" ], [ result="d" ])
+        }],[ result="%ld" ],[ result="d" ], [ result="d" ])
       fi
     fi
-  fi
   AC_DEFINE_UNQUOTED(PW_UID_FORMAT,"$result")
   AC_MSG_RESULT(%$result)
 fi
@@ -585,6 +569,7 @@ AC_TRY_RUN([#ifdef HAVE_STDLIB_H
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <sys/types.h>
 #include <sys/stat.h>
 int main(int argc, char **argv) {
   if(sizeof(off_t)<=4)
@@ -595,25 +580,18 @@ AC_DEFINE_UNQUOTED(L_FORMAT, "$result")
 AC_MSG_RESULT(off_t is just a long - using %u)],[ result="no" ], [ result="no" ])
 if test $result = "no"; then
   AC_TRY_RUN([#include <stdio.h>
+#include <sys/types.h>
   int main(int argc, char **argv) {
     char tstr[8];
     if(sprintf(tstr, "%qd",(long long) 1)==1)
       return 0;
     return 1;
   }],[ result="qd" ],[ result="no" ], [ result="no"])
-  if test $result = "no"; then
-    AC_TRY_RUN([#include <stdio.h>
-    int main(int argc, char **argv) {
-      char tstr[8];
-      if(sprintf(tstr, "Ld",(long long) 1)==1)
-        return 0;
-      return 1;
-    }],[ result="Ld" ],[ result="no" ], [ result="no" ])
     if test $result = "no"; then
       AC_TRY_RUN([#include <stdio.h>
       int main(int argc, char **argv) {
         char tstr[8];
-        if(sprintf(tstr, "lld",(long long) 1)==1)
+        if(sprintf(tstr, "%lld",(long long) 1)==1)
           return 0;
         return 1;
       }],[ result="lld" ],[ result="no" ], [ result="no" ])
@@ -621,13 +599,12 @@ if test $result = "no"; then
         AC_TRY_RUN([#include <stdio.h>
         int main(int argc, char **argv) {
           char tstr[8];
-          if(sprintf(tstr, "ld",(long long) 1)==1)
+          if(sprintf(tstr, "%ld",(long long) 1)==1)
             return 0;
           return 1;
         }],[ result="ld" ],[ result="d" ], [ result="d" ])
       fi
     fi
-  fi
   AC_DEFINE_UNQUOTED(L_FORMAT,"$result")
   AC_MSG_RESULT(using %$result)
 fi
@@ -662,13 +639,6 @@ if test $result = "no"; then
       return 0;
     return 1;
   }],[ result="qd" ],[ result="no" ], [ result="no"])
-  if test $result = "no"; then
-    AC_TRY_RUN([#include <stdio.h>
-    int main(int argc, char **argv) {
-      if(printf("Ld",(long long) 1)==1)
-        return 0;
-      return 1;
-    }],[ result="Ld" ],[ result="no" ], [ result="no" ])
     if test $result = "no"; then
       AC_TRY_RUN([#include <stdio.h>
       int main(int argc, char **argv) {
@@ -685,7 +655,6 @@ if test $result = "no"; then
         }],[ result="ld" ],[ result="d" ], [ result="d" ])
       fi
     fi
-  fi
   AC_DEFINE_UNQUOTED(T_FORMAT,"$result")
   AC_MSG_RESULT(%$result)
 fi
