@@ -102,7 +102,7 @@ Southern California. All Rights Reserved.
     <copy toDir="${schema.dir}">
         <fileset dir="${schema.origin}" casesensitive="yes"/>
     </copy>
-    <copy file="${ogsa.root}/${nsmap.file}" toDir="./"/>
+    <copy file="${schema.origin}/${nsmap.file}" toDir="./"/>
  
 
     <echo message="Generating schema for file_streaming_factory"/>
