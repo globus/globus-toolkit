@@ -113,14 +113,15 @@ public class MultiRFTClient
     	
     public void RFTFunc() {
         System.out.println("Multifile RFT command line client");
-
+        /*these options can be overridden from command line
+          use bin/rft -authz self to override host authz 
+          if the service is running as user*/
         GetOpts opts = new GetOpts(
-                               "Usage: MultiRFTClient [options] <factory handle> [id] <path to transfer>", 
-                               1, Constants.SIGNATURE,
-                               GSIConstants.GSI_MODE_FULL_DELEG,
-                               SelfAuthorization.getInstance(),
-                               Constants.SIGNATURE,
-                               new IgnoreProxyPolicyHandler());
+                "Usage: MultiRFTClient [-options] <factory handle> [id] <path to transfer>",
+                1, Constants.SIGNATURE,null,
+                HostAuthorization.getInstance(),Constants.SIGNATURE,
+                new IgnoreProxyPolicyHandler());
+
         String error = opts.parse(args);
 
         if (error != null) {
@@ -216,8 +217,7 @@ public class MultiRFTClient
 
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
             Factory factory = factoryService.getFactoryPort(new URL(handle));
-            ((Stub)factory)._setProperty(Constants.AUTHORIZATION,
-            HostAuthorization.getInstance());
+            opts.setOptions((Stub)factory);
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
 
             LocatorType locator = gridFactory.createService(extension);
@@ -228,8 +228,15 @@ public class MultiRFTClient
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
             rftPort = loc.getMultiFileRFTPort(locator);
-        
-            opts.setOptions((Stub)rftPort);
+            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV,
+                                          Constants.SIGNATURE);
+            //by default does self authz
+            ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
+                                         SelfAuthorization.getInstance());
+            //perform delegation here 
+            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE,
+                                         GSIConstants.GSI_MODE_FULL_DELEG);
+
 	        sink = nm.addListener("OverallStatus", null, reference.getHandle(), this);
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
