@@ -7,4 +7,8 @@ TODO list for myproxy:
 * Allow policy enforcement on user pass phrases (e.g. minimum length,
   dicitionary checking)
 
-* (BUG) Zero-length passphrase causes segfault.
+* Server whould write pid to file.
+
+* Syslog messages on HPUX_10.20 don't identify myproxy-server as the logger.
+
+
