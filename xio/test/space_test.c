@@ -55,8 +55,8 @@ data_cb(
         else
         {
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-            globus_l_close_called = GLOBUS_TRUE;
         }
+        globus_l_close_called = GLOBUS_TRUE;
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
