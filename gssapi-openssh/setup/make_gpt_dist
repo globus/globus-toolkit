@@ -15,8 +15,8 @@
 # to the name gpt-bundle gives in its 'packaging_list'.
 #
 
-$srcdirname = "gsi_openssh_setup-1.7-src";
-$srcpkgname = "gsi_openssh_setup-1.7-src";
+$srcdirname = "gsi_openssh_setup-1.8-src";
+$srcpkgname = "gsi_openssh_setup-1.8-src";
 
 #
 # uncomment when we've got a better place to get the current version from
@@ -94,7 +94,6 @@ chdir("./$srcdirname");
 printf("pruning source directory of extraneous files...\n");
 
 system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs directories: $?";
-system("rm -f ./make_gpt_dist")==0 or die "Unable to remove gpt script: $?";
 system("rm -f ./todo")==0 or die "Unable to remove todo file: $?";
 
 #
