@@ -3307,6 +3307,7 @@ globus_gridftp_server_control_restart_get(
         {
             restart->offset_a[0] = 0;
             restart->length_a[0] = -1;
+            ndx++;
         }
         else
         {
@@ -3341,7 +3342,7 @@ globus_gridftp_server_control_restart_get(
             globus_free(ent);
 
         }
-        restart->size = size;
+        restart->size = ndx;
     }
 
     if(restart->ndx >= restart->size)
