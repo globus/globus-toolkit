@@ -8,6 +8,32 @@
 #include "gssapi.h"
 #include <string.h>
 
+GlobusDebugDefine(GLOBUS_XIO_GSSAPI_FTP);
+
+#define GlobusXIOGssapiftpDebugPrintf(level, message)                      \
+    GlobusDebugPrintf(GLOBUS_XIO_GSSAPI_FTP, level, message)
+
+#define GlobusXIOGssapiftpDebugEnter()                                     \
+    GlobusXIOGssapiftpDebugPrintf(                                         \
+        GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE,                               \
+        ("[%s] Entering\n", _xio_name))
+
+#define GlobusXIOGssapiftpDebugExit()                                      \
+    GlobusXIOGssapiftpDebugPrintf(                                         \
+        GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE,                               \
+        ("[%s] Exiting\n", _xio_name))
+
+#define GlobusXIOGssapiftpDebugExitWithError()                             \
+    GlobusXIOGssapiftpDebugPrintf(                                         \
+        GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE,                               \
+        ("[%s] Exiting with error\n", _xio_name))
+
+enum globus_l_xio_error_levels
+{
+    GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE       = 1,
+    GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_INFO        = 2
+};
+
 #define REPLY_530_BAD_MESSAGE "530 Please login with USER and PASS.\r\n"
 #define REPLY_504_BAD_AUTH_TYPE "504 Unknown authentication type.\r\n"
 #define REPLY_334_GOOD_AUTH_TYPE "334 Using authentication type; ADAT must follow\r\n"
@@ -227,10 +253,14 @@ globus_l_xio_gssapi_ftp_complete_command(
 {
     globus_byte_t *                     tmp_ptr;
     globus_size_t                       end_off;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_complete_command);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     /* all a 0 length to be passed */
     if(length == 0)
     {
+        GlobusXIOGssapiftpDebugExit();
         return GLOBUS_FALSE;
     }
 
@@ -238,6 +268,7 @@ globus_l_xio_gssapi_ftp_complete_command(
     /* IF There is no '\r' */
     if(tmp_ptr == NULL)
     {
+        GlobusXIOGssapiftpDebugExit();
         return GLOBUS_FALSE;
     }
     end_off = tmp_ptr - buffer;
@@ -245,6 +276,7 @@ globus_l_xio_gssapi_ftp_complete_command(
     /* if the '\r' is the last character, or the next isn't '\n' */
     if(end_off == length - 1 || tmp_ptr[1] != '\n')
     {
+        GlobusXIOGssapiftpDebugExit();
         return GLOBUS_FALSE;
     }
 
@@ -252,6 +284,7 @@ globus_l_xio_gssapi_ftp_complete_command(
     if(!client)
     {
         *end_offset = end_off;
+        GlobusXIOGssapiftpDebugExit();
         return GLOBUS_TRUE;
     }
 
@@ -270,9 +303,11 @@ globus_l_xio_gssapi_ftp_complete_command(
     if(tmp_ptr[3] == ' ' && isdigit(tmp_ptr[0]))
     {
         *end_offset = end_off;
+        GlobusXIOGssapiftpDebugExit();
         return GLOBUS_TRUE;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_FALSE;
 }
 
@@ -285,6 +320,9 @@ globus_l_xio_gssapi_ftp_handle_create()
 {
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_handle_create);
+
+    GlobusXIOGssapiftpDebugEnter();
+
     /*
      *  create a new handle and initialize it
      */
@@ -292,7 +330,7 @@ globus_l_xio_gssapi_ftp_handle_create()
                 globus_libc_malloc(sizeof(globus_l_xio_gssapi_ftp_handle_t));
     if(handle == NULL)
     {
-        return NULL;
+	goto err; 	
     }
     handle->gssapi_context = GSS_C_NO_CONTEXT;
     handle->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
@@ -313,7 +351,7 @@ globus_l_xio_gssapi_ftp_handle_create()
     if(handle->read_buffer == NULL)
     {
         globus_free(handle);
-        return NULL;
+	goto err;
     }
     handle->read_buffer_length = GSSAPI_FTP_DEFAULT_BUFSIZE;
     handle->read_buffer_ndx = 0;
@@ -328,7 +366,7 @@ globus_l_xio_gssapi_ftp_handle_create()
     {
         globus_free(handle->read_buffer);
         globus_free(handle);
-        return NULL;
+	goto err;
     }
     handle->write_buffer_ndx = 0;
     handle->write_buffer_length = GSSAPI_FTP_DEFAULT_BUFSIZE;
@@ -338,10 +376,16 @@ globus_l_xio_gssapi_ftp_handle_create()
         globus_free(handle->read_buffer);
         globus_free(handle->write_iov);
         globus_free(handle);
-        return NULL;
+	goto err;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return handle;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return NULL;
 }
 
 /*
@@ -353,6 +397,8 @@ globus_l_xio_gssapi_ftp_handle_destroy(
 {
     OM_uint32                           min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_handle_destroy);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     if(handle->subject)
     {
@@ -383,6 +429,7 @@ globus_l_xio_gssapi_ftp_handle_destroy(
     globus_fifo_destroy(&handle->read_command_q);
 
     globus_free(handle);
+    GlobusXIOGssapiftpDebugExit();
 }
 
 /*
@@ -403,11 +450,13 @@ globus_l_xio_gssapi_ftp_radix_decode(
     char *                              p;
     GlobusXIOName(globus_l_xio_gssapi_ftp_radix_decode);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     for (i=0,j=0; inbuf[i] && inbuf[i] != globus_l_xio_gssapi_ftp_pad; i++)
     {
         if ((p = strchr(globus_l_xio_gssapi_ftp_radix_n, inbuf[i])) == NULL)
         {
-            return GlobusXIOGssapiFTPEncodingError();
+	    goto err;
         }
         D = p - globus_l_xio_gssapi_ftp_radix_n;
         switch (i&3)
@@ -434,27 +483,27 @@ globus_l_xio_gssapi_ftp_radix_decode(
     switch (i&3)
     {
         case 1:
-            return GlobusXIOGssapiFTPEncodingError();
+	    goto err;
  
        case 2:
             if (D&15)
             {
-                return GlobusXIOGssapiFTPEncodingError();
+	        goto err;
             }
             if (strcmp((char *)&inbuf[i], "=="))
             {
-                return GlobusXIOGssapiFTPEncodingError();
+	        goto err;
             }
             break;
 
         case 3:
             if (D&3)
             {
-                return GlobusXIOGssapiFTPEncodingError();
+	        goto err;
             }
             if (strcmp((char *)&inbuf[i], "="))
             {
-                return GlobusXIOGssapiFTPEncodingError();
+	        goto err;
             }
             break;
 
@@ -463,7 +512,14 @@ globus_l_xio_gssapi_ftp_radix_decode(
     }
     *out_len = j;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return GlobusXIOGssapiFTPEncodingError();
+
 }
 
 /*
@@ -482,6 +538,8 @@ globus_l_xio_gssapi_ftp_radix_encode(
     int                                 j;
     unsigned char                       c;
     GlobusXIOName(globus_l_xio_gssapi_ftp_radix_encode);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     for (i=0,j=0; i < in_len; i++)
     {
@@ -520,6 +578,7 @@ globus_l_xio_gssapi_ftp_radix_encode(
     outbuf[j] = '\0';
     *out_len = j;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -537,6 +596,9 @@ globus_l_xio_gssapi_ftp_token(
     globus_byte_t *                     start_ptr;
     globus_byte_t *                     tmp_ptr;
     globus_byte_t *                     end_ptr;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_token);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     end_ptr = &in_str[length];
     tmp_ptr = (char *)in_str;
@@ -546,6 +608,7 @@ globus_l_xio_gssapi_ftp_token(
     }
     if(tmp_ptr == end_ptr)
     {
+        GlobusXIOGssapiftpDebugExit();
         return NULL;
     }
     start_ptr = tmp_ptr;
@@ -557,6 +620,7 @@ globus_l_xio_gssapi_ftp_token(
     }
     *out_length = tmp_ptr - start_ptr;
 
+    GlobusXIOGssapiftpDebugExit();
     return start_ptr;
 }
 
@@ -584,6 +648,8 @@ globus_l_xio_gssapi_ftp_parse_command(
     globus_bool_t                       multi = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_gssapi_ftp_parse_command);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     *out_cmd_a = NULL;
     /* validate the entire command */
     for(len = 0; len < length; len++)
@@ -599,7 +665,7 @@ globus_l_xio_gssapi_ftp_parse_command(
     if(cmd_a == NULL)
     {
         res = GlobusXIOGssapiFTPAllocError();
-        return res;
+	goto err;
     }
 
     len = length;
@@ -667,7 +733,12 @@ globus_l_xio_gssapi_ftp_parse_command(
 
     *out_cmd_a = cmd_a;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+err:
+    GlobusXIOGssapiftpDebugExitWithError();
+    return res;
 }
 
 /*
@@ -684,12 +755,14 @@ globus_l_xio_gssapi_ftp_serialize_command_array(
     globus_size_t                       ndx = 0;
     GlobusXIOName(globus_l_xio_gssapi_ftp_serialize_command_array);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
     {
         len = strlen(cmd_a[ctr]);
         if(len + ndx + 1 > buffer_length)
         {
-            return GlobusXIOGssapiFTPAllocError();
+	    goto err;
         }
         memcpy(&out_buffer[ndx], cmd_a[ctr], len); 
         ndx += len;
@@ -700,7 +773,13 @@ globus_l_xio_gssapi_ftp_serialize_command_array(
     out_buffer[ndx] = '\n';
     out_buffer[ndx + 1] = '\0';
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return GlobusXIOGssapiFTPAllocError();
 }
 
 /*
@@ -714,6 +793,8 @@ globus_l_xio_gssapi_ftp_command_array_size(
     globus_size_t                       len = 0;
     GlobusXIOName(globus_l_xio_gssapi_ftp_command_array_size);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
     {
         len += strlen(cmd_a[ctr]);
@@ -721,6 +802,7 @@ globus_l_xio_gssapi_ftp_command_array_size(
     }
     len += 2; /* for CRLF */
 
+    GlobusXIOGssapiftpDebugExit();
     return len;
 }
 
@@ -735,6 +817,8 @@ globus_l_xio_gssapi_ftp_command_array_copy(
     int                                 ctr;
     globus_size_t                       size;
     GlobusXIOName(globus_l_xio_gssapi_ftp_command_array_copy);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     size = globus_l_xio_gssapi_ftp_command_array_size(cmd_a);
 
@@ -751,6 +835,7 @@ globus_l_xio_gssapi_ftp_command_array_copy(
     }
     out_cmd_a[ctr] = NULL;
 
+    GlobusXIOGssapiftpDebugExit();
     return out_cmd_a;
 }
 
@@ -775,6 +860,8 @@ globus_l_xio_gssapi_ftp_unwrap(
     globus_byte_t *                     buf;
     globus_size_t                       len;
     GlobusXIOName(globus_l_xio_gssapi_ftp_unwrap);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     /* allocate out buffer same size as in, assuming unwrap will be samller */
     buf =  globus_malloc(in_length);
@@ -824,10 +911,12 @@ globus_l_xio_gssapi_ftp_unwrap(
 
     gss_release_buffer(&min_stat, &unwrapped_token);
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -854,6 +943,8 @@ globus_l_xio_gssapi_ftp_wrap(
     OM_uint32                           min_stat;
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_gssapi_ftp_wrap);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     gss_in_buf.value = in_buf;
     gss_in_buf.length = length;
@@ -916,10 +1007,12 @@ globus_l_xio_gssapi_ftp_wrap(
 
     gss_release_buffer(&min_stat, &gss_out_buf);
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -938,6 +1031,9 @@ globus_l_xio_gssapi_get_data(
     int                                 ctr;
     char **                             cmd_a;
     globus_result_t                     res;
+    GlobusXIOName(globus_l_xio_gssapi_get_data);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     /* if data is already available hand it off */
     if(!globus_fifo_empty(&handle->read_command_q))
@@ -993,10 +1089,12 @@ globus_l_xio_gssapi_get_data(
         handle->read_posted = GLOBUS_TRUE;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -1018,6 +1116,8 @@ globus_l_xio_gssapi_ftp_read_cb(
     char **                             cmd_a;
     globus_size_t                       remain;
     GlobusXIOName(globus_l_xio_gssapi_ftp_read_cb);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
@@ -1087,6 +1187,7 @@ globus_l_xio_gssapi_ftp_read_cb(
         goto err;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return;
 
   err:
@@ -1100,6 +1201,7 @@ globus_l_xio_gssapi_ftp_read_cb(
     {
         globus_xio_driver_finished_open(handle, op, res);
     }
+    GlobusXIOGssapiftpDebugExitWithError();
     return;
 }
 
@@ -1126,6 +1228,8 @@ globus_l_xio_gssapi_ftp_server_incoming(
     globus_bool_t                       reply = GLOBUS_TRUE;
     globus_l_xio_gssapi_buffer_t *      w_buf = NULL;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_incoming);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     if(globus_libc_strcmp(cmd_a[0], "QUIT") == 0)
     {
@@ -1237,10 +1341,12 @@ globus_l_xio_gssapi_ftp_server_incoming(
             goto err;
         }
     }
+
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
-
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -1259,6 +1365,8 @@ globus_l_xio_gssapi_ftp_server_open_reply_cb(
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_bool_t                       done = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_open_reply_cb);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
@@ -1317,11 +1425,12 @@ globus_l_xio_gssapi_ftp_server_open_reply_cb(
         globus_xio_driver_finished_write(op, res, nbytes);
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return;
 
   err:
     globus_xio_driver_finished_write(op, res, nbytes);
-
+    GlobusXIOGssapiftpDebugExitWithError();
     return;
 }
 /*
@@ -1339,6 +1448,8 @@ globus_l_xio_gssapi_ftp_client_open_reply_cb(
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_open_reply_cb);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
     globus_free(handle->write_iov[0].iov_base);
@@ -1355,11 +1466,12 @@ globus_l_xio_gssapi_ftp_client_open_reply_cb(
         goto err;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return;
 
   err:
     globus_xio_driver_finished_open(handle, op, res);
-
+    GlobusXIOGssapiftpDebugExitWithError();
     return;
 }
 
@@ -1386,6 +1498,8 @@ globus_l_xio_gssapi_ftp_decode_adat(
     gss_buffer_desc                     subject_buf = GSS_C_EMPTY_BUFFER;
     gss_OID                             mech_type;
     GlobusXIOName(globus_l_xio_gssapi_ftp_decode_adat);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     length = globus_libc_strlen(wrapped_command);
     if(length <= 0)
@@ -1522,10 +1636,12 @@ globus_l_xio_gssapi_ftp_decode_adat(
 
     *out_reply = reply;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -1543,17 +1659,22 @@ globus_l_xio_gssapi_ftp_accept_cb(
 {
     GlobusXIOName(globus_l_xio_gssapi_ftp_accept_cb);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     if(result != GLOBUS_SUCCESS)
     {
         goto err;
     }
 
     globus_xio_driver_finished_accept(op, (void *) 0x01, GLOBUS_SUCCESS);
+
+    GlobusXIOGssapiftpDebugExit();
     return;
 
   err:
 
     globus_xio_driver_finished_accept(op, NULL, result);
+    GlobusXIOGssapiftpDebugExitWithError();
     return;
 }
 
@@ -1572,6 +1693,8 @@ globus_l_xio_gssapi_ftp_client_open_cb(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_open_cb);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
     globus_assert(handle->client);
@@ -1587,6 +1710,8 @@ globus_l_xio_gssapi_ftp_client_open_cb(
     {
         globus_xio_driver_finished_open(handle, op, result);
     }
+
+    GlobusXIOGssapiftpDebugExit();
 }
 
 static void
@@ -1598,9 +1723,13 @@ globus_l_xio_gssapi_ftp_server_open_cb(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_open_cb);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
     globus_xio_driver_finished_open(handle, op, result);
+
+    GlobusXIOGssapiftpDebugExit();
 }
 
 /************************************************************************
@@ -1629,6 +1758,8 @@ globus_l_xio_gssapi_ftp_client_adat(
     char                                hostname[128+5];
     gss_OID                             name_type;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_adat);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     switch(handle->state)
     {
@@ -1762,10 +1893,12 @@ globus_l_xio_gssapi_ftp_client_adat(
     gss_release_buffer(&min_stat, &send_tok);
     gss_release_buffer(&min_stat, token_ptr);
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -1784,6 +1917,8 @@ globus_l_xio_gssapi_ftp_client_incoming(
     int                                 ctr;
     globus_l_xio_gssapi_buffer_t *      w_buf;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_incoming);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     switch(handle->state)
     {
@@ -1986,10 +2121,12 @@ globus_l_xio_gssapi_ftp_client_incoming(
         }
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -2001,9 +2138,12 @@ globus_l_xio_gssapi_ftp_accept(
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_gssapi_ftp_accept);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     res = globus_xio_driver_pass_accept(accept_op, 
         globus_l_xio_gssapi_ftp_accept_cb, NULL);
 
+    GlobusXIOGssapiftpDebugExit();
     return res;
 }
 
@@ -2018,11 +2158,13 @@ globus_l_xio_gssapi_ftp_attr_init(
     globus_l_xio_gssapi_attr_t *        attr;
     GlobusXIOName(globus_l_xio_gssapi_ftp_attr_init);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     attr = (globus_l_xio_gssapi_attr_t *) 
         globus_malloc(sizeof(globus_l_xio_gssapi_attr_t));
     if(attr == NULL)
     {
-        return GlobusXIOGssapiFTPAllocError();
+	goto err;
     }
     attr->subject = NULL;
     attr->start_state = GSSAPI_FTP_STATE_NONE;
@@ -2030,7 +2172,13 @@ globus_l_xio_gssapi_ftp_attr_init(
 
     *out_attr = attr;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return GlobusXIOGssapiFTPAllocError();
 }
 
 static globus_result_t
@@ -2042,6 +2190,8 @@ globus_l_xio_gssapi_ftp_attr_cntl(
     globus_l_xio_gssapi_attr_t *        attr;
     char *                              subject;
     GlobusXIOName(globus_l_xio_gssapi_ftp_attr_cntl);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     attr = (globus_l_xio_gssapi_attr_t *) driver_attr;
 
@@ -2075,6 +2225,7 @@ globus_l_xio_gssapi_ftp_attr_cntl(
             break;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -2088,11 +2239,13 @@ globus_l_xio_gssapi_ftp_attr_copy(
     globus_l_xio_gssapi_attr_t *        dst_attr;
     GlobusXIOName(globus_l_xio_gssapi_ftp_attr_copy);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     src_attr = (globus_l_xio_gssapi_attr_t *) src;
     res = globus_l_xio_gssapi_ftp_attr_init((void **) &dst_attr);
     if(res != GLOBUS_SUCCESS)
     {
-        return res;
+	goto err;
     }
     memcpy(dst_attr, src_attr, sizeof(globus_l_xio_gssapi_attr_t));
     if(src_attr->subject != NULL)
@@ -2101,7 +2254,13 @@ globus_l_xio_gssapi_ftp_attr_copy(
     }
     *dst = dst_attr;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return res;
 }
 
 static globus_result_t
@@ -2111,6 +2270,8 @@ globus_l_xio_gssapi_ftp_attr_destroy(
     globus_l_xio_gssapi_attr_t *        attr;
     GlobusXIOName(globus_l_xio_gssapi_ftp_attr_destroy);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     attr = (globus_l_xio_gssapi_attr_t *) driver_attr;
     if(attr->subject != NULL)
     {
@@ -2118,6 +2279,7 @@ globus_l_xio_gssapi_ftp_attr_destroy(
     }
     globus_free(attr);
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -2139,6 +2301,8 @@ globus_l_xio_gssapi_ftp_open(
     OM_uint32                           maj_stat;
     OM_uint32                           min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_open);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     attr = (globus_l_xio_gssapi_attr_t *) driver_attr;
     
@@ -2203,10 +2367,12 @@ globus_l_xio_gssapi_ftp_open(
         goto err;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
 
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -2220,11 +2386,14 @@ globus_l_xio_gssapi_ftp_close(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_close);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
     globus_l_xio_gssapi_ftp_handle_destroy(handle);
     res = globus_xio_driver_pass_close(op, NULL, NULL);
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -2245,6 +2414,9 @@ globus_l_xio_gssapi_ftp_write_cb(
     int                                 ctr;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_write_cb);
+
+    GlobusXIOGssapiftpDebugEnter();
+
     /* change state back and free stuff */
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
@@ -2260,6 +2432,8 @@ globus_l_xio_gssapi_ftp_write_cb(
     {
         globus_free(handle->write_iov[ctr].iov_base);
     }
+
+    GlobusXIOGssapiftpDebugExit();
 }
 
 /* client and server are both the same except for the header */
@@ -2280,6 +2454,8 @@ globus_l_xio_gssapi_ftp_write(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_xio_driver_data_callback_t   cb;
     GlobusXIOName(globus_l_xio_gssapi_ftp_write);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
@@ -2389,10 +2565,11 @@ globus_l_xio_gssapi_ftp_write(
         handle->write_buffer_ndx = 0;
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
   err:
-
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 /************************************************************************
@@ -2415,6 +2592,9 @@ globus_l_xio_gssapi_finshed_read(
     globus_size_t                       ndx;
     int                                 ctr;
     globus_l_xio_gssapi_buffer_t *      w_buf;
+    GlobusXIOName(globus_l_xio_gssapi_finshed_read);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     /* if there is a request */
     if(!globus_fifo_empty(&handle->read_req_q))
@@ -2471,6 +2651,7 @@ globus_l_xio_gssapi_finshed_read(
         globus_free(req);
     }
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -2484,8 +2665,11 @@ globus_l_xio_gssapi_ftp_read(
 {
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_read);
     globus_l_xio_gssapi_read_req_t *    req;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_read);
+
+    GlobusXIOGssapiftpDebugEnter();
+
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
@@ -2498,6 +2682,16 @@ globus_l_xio_gssapi_ftp_read(
 
     res = globus_l_xio_gssapi_get_data(handle, op);
 
+    if (res != GLOBUS_SUCCESS)
+    {
+	goto err;
+    }	
+    GlobusXIOGssapiftpDebugExit();
+    return GLOBUS_SUCCESS;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
@@ -2510,10 +2704,12 @@ globus_l_xio_gssapi_ftp_load(
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_gssapi_ftp_load);
 
+    GlobusXIOGssapiftpDebugEnter();
+
     res = globus_xio_driver_init(&driver, "gssapi_ftp", NULL);
     if(res != GLOBUS_SUCCESS)
     {
-        return res;
+	goto err;
     }
 
     globus_xio_driver_set_transform(
@@ -2543,7 +2739,13 @@ globus_l_xio_gssapi_ftp_load(
 
     *out_driver = driver;
 
+    GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
+
+err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return res;
 }
 
 
@@ -2553,7 +2755,12 @@ globus_l_xio_gssapi_ftp_unload(
     globus_xio_driver_t                 driver)
 {
     GlobusXIOName(globus_l_xio_gssapi_ftp_unload);
+
+    GlobusXIOGssapiftpDebugEnter();
+
     globus_xio_driver_destroy(driver);
+
+    GlobusXIOGssapiftpDebugExit();
 }
 
 
@@ -2562,11 +2769,15 @@ globus_l_xio_gssapi_ftp_activate(void)
 {
     int                                 rc;
     GlobusXIOName(globus_l_xio_gssapi_ftp_activate);
+    GlobusDebugInit(GLOBUS_XIO_GSSAPI_FTP, TRACE);
+
+    GlobusXIOGssapiftpDebugEnter();
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 
+    GlobusXIOGssapiftpDebugExit();
     return rc;
 }
 
@@ -2574,8 +2785,13 @@ static int
 globus_l_xio_gssapi_ftp_deactivate(void)
 {
     GlobusXIOName(globus_l_xio_gssapi_ftp_deactivate);
+
+    GlobusXIOGssapiftpDebugEnter();
+
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+
+    GlobusXIOGssapiftpDebugExit();
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
