@@ -28,6 +28,8 @@ CVS Information:
 #include "nexus.h"
 #include "globus_duct_runtime.h"
 
+#if GLOBUS_GRAM_MYJOB_DUCT
+
 /******************************************************************************
 		       Define module specific variables
 ******************************************************************************/
@@ -490,3 +492,5 @@ globus_gram_myjob_kill ()
 
   return 1;
 }
+
+#endif /* GLOBUS_GRAM_MYJOB_DUCT */

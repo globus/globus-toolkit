@@ -22,6 +22,7 @@ CVS Information:
 #include "globus_gram_myjob_mp.h"
 #include "globus_common.h"
 
+#if GLOBUS_GRAM_MYJOB_MP
 
 /******************************************************************************
 		       Define module specific variables
@@ -263,3 +264,5 @@ globus_gram_myjob_kill()
 
     return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
 }
+
+#endif /* GLOBUS_GRAM_MYJOB_MP */
