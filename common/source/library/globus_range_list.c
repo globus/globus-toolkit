@@ -154,16 +154,30 @@ globus_range_list_insert(
         return GLOBUS_SUCCESS;
     }
 
-    end_offset = offset + length;
+    if(length < 0)
+    {
+        end_offset = -1;
+    }
+    else
+    {
+        end_offset = offset + length;
+    }
 
     prev = NULL;
     ent = range_list->head;
     while(ent != NULL && !done)
     {
-        ent_end = ent->offset + ent->length;
+        if(ent->length < 0)
+        {
+            ent_end = -1;
+        }
+        else
+        {
+            ent_end = ent->offset + ent->length;
+        }
         next = ent->next;
         /* if it is discontigous and in front of this one */
-        if(end_offset < ent->offset)
+        if(end_offset < ent->offset && end_offset != -1)
         {
             new_ent = (globus_l_range_ent_t *) globus_malloc(
                 sizeof(globus_l_range_ent_t));
@@ -186,13 +200,18 @@ globus_range_list_insert(
             done = GLOBUS_TRUE;
         }
         /* if it is merging */
-        else if(end_offset >= ent->offset && offset <= ent_end)
+        else if((end_offset >= ent->offset || end_offset == -1) 
+            && (offset <= ent_end || ent_end == -1))
         {
             if(offset < ent->offset)
             {
                 ent->offset = offset;
             }
-            if(end_offset > ent_end)
+            if(end_offset == -1 || ent_end == -1)
+            {
+                ent->length = -1;
+            }
+            else if(end_offset > ent_end)
             {
                 ent->length = end_offset - ent->offset;
             }
