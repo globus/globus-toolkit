@@ -573,6 +573,11 @@ globus_l_xio_gridftp_open_cb(
     handle = requestor->handle; 
     requestor_op = requestor->op;
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+    /* 
+     * error code 550 (file not found) is considered success. if the handle is
+     * opened for writing, the file may not be available now and will be 
+     * created only the transfer is initiated
+     */
     if (error != GLOBUS_SUCCESS &&
         globus_error_ftp_error_get_code(error) != 550)
     {
@@ -684,6 +689,8 @@ error_cancel_enable:
      * xio calls the cancel_cb with cancel lock held and disable_cancel waits 
      * for that. so cancel_cb can not be active after i call disable_cancel
      * and thus i can safely push the requestor memory and call handle_destroy
+     * As the open is not finished yet, no other code that uses 
+     * requestor_memory can be active. So i dont lock before pushing the node
      */ 
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
 error_auth:
@@ -1737,18 +1744,22 @@ globus_l_xio_gridftp_close(
 {
     globus_l_xio_gridftp_handle_t *     handle;
     globus_result_t                     result;
-    globus_bool_t                       destroy = GLOBUS_FALSE;
+    globus_bool_t                       finish = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_gridftp_close);
 
     GlobusXIOGridftpDebugEnter();
     handle = (globus_l_xio_gridftp_handle_t *) driver_specific_handle;
+    /* 
+     * canceling close is not supported. all that is done here abort any 
+     * outstanding io and there is no way to cancel an abort called on 
+     * ftp_clinet_lib
+     */
     globus_mutex_lock(&handle->mutex);
     switch (handle->state)
     {
         case GLOBUS_XIO_GRIDFTP_OPEN:
             handle->state = GLOBUS_XIO_GRIDFTP_NONE;
-            globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-            destroy = GLOBUS_TRUE;
+            finish = GLOBUS_TRUE;
             break;
         case GLOBUS_XIO_GRIDFTP_IO_DONE:
             globus_i_xio_gridftp_abort_io(handle);
@@ -1777,10 +1788,11 @@ globus_l_xio_gridftp_close(
             globus_assert(0 && "Unexpected state in close");
     }
     globus_mutex_unlock(&handle->mutex);
-    if (destroy == GLOBUS_TRUE)
+    if (finish == GLOBUS_TRUE)
     {   
         result = globus_l_xio_gridftp_handle_destroy(handle);
         globus_assert(result == GLOBUS_SUCCESS);
+        globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
     }
     GlobusXIOGridftpDebugExit();
     return GLOBUS_SUCCESS;      
