@@ -12,6 +12,7 @@ test_PROGRAMS= \
 	globus-xio-telnet \
 	globus-xio-udp-echo \
 	globus-xio-udt-file \
+	globus-xio-mode-e-file \
 	globus-xio-async-copy
 
 INCLUDES += $(GPT_INCLUDES)
@@ -31,6 +32,8 @@ globus_xio_udp_echo_SOURCES = globus_xio_udp_echo.c
 globus_xio_udp_echo_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_udt_file_SOURCES = globus_xio_udt_file.c
 globus_xio_udt_file_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_mode_e_file_SOURCES = globus_xio_mode_e_file.c
+globus_xio_mode_e_file_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_async_copy_SOURCES = globus_xio_async_copy.c
 globus_xio_async_copy_LDFLAGS = $(GPT_LDFLAGS)
 
