@@ -15,3 +15,7 @@ also, if something like target init or server accept fails somewhere along the w
 4) Add driver operation cancel, for ANY op
    -- it takes context, if op is not greater than context, then fail
 6) add globus_assert(result != success || prev_res == success)
+
+-- take ref on driver handle to prevent close barrier
+-- something to do with target destroy
+
