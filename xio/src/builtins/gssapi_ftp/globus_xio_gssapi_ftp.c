@@ -4,6 +4,7 @@
 #include "globus_common.h"
 #include "globus_error_string.h"
 #include "globus_xio_gssapi_ftp.h"
+#include <globus_error_openssl.h>
 #include <globus_gss_assist.h>
 #include <gssapi.h>
 #include <string.h>
@@ -447,13 +448,14 @@ globus_l_xio_gssapi_ftp_radix_encode(
     return GLOBUS_SUCCESS;
 }
 
-char *
+globus_byte_t *
 globus_l_xio_gssapi_ftp_token(
     globus_byte_t *                         in_str,
     globus_size_t                           length,
-    globus_ssize_t *                        start_off,
-    globus_ssize_t *                        end_off)
+    globus_size_t *                         out_start_off,
+    globus_size_t *                         out_length)
 {
+    globus_byte_t *                         start_ptr;
     globus_byte_t *                         tmp_ptr;
     globus_byte_t *                         end_ptr;
 
@@ -463,24 +465,20 @@ globus_l_xio_gssapi_ftp_token(
     {
         tmp_ptr++;
     }
-    if(*tmp_ptr == end_ptr)
+    if(tmp_ptr == end_ptr)
     {
-        *end_off = -1;
         return NULL;
     }
-    *start_off = (tmp_ptr - in_str);
+    start_ptr = tmp_ptr;
+    *out_start_off = (tmp_ptr - in_str);
 
     while(tmp_ptr != end_ptr && !isspace(*tmp_ptr))
     {
         tmp_ptr++;
     }
-    *end_off = (tmp_ptr - in_str);
-    if(tmp_ptr != end_ptr)
-    {
-        (*end_off)--;
-    }
+    *out_length = tmp_ptr - start_ptr;
 
-    return (char *)&in_str[*start_off];
+    return start_ptr;
 }
 
 /*
@@ -497,10 +495,10 @@ globus_l_xio_gssapi_ftp_parse_command(
     char **                                 cmd_a = NULL;
     int                                     cmd_len = 16;
     int                                     ctr;
-    globus_ssize_t                          start_ndx;
-    globus_ssize_t                          end_ndx;
+    globus_size_t                           start_ndx;
     globus_result_t                         res;
     globus_size_t                           len;
+    globus_size_t                           sub_len;
     globus_bool_t                           multi = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_gssapi_ftp_parse_command);
 
@@ -523,7 +521,8 @@ globus_l_xio_gssapi_ftp_parse_command(
 
     len = length;
     ctr = 0;
-    tmp_ptr = globus_l_xio_gssapi_ftp_token(command, len, &start_ndx, &end_ndx);
+    tmp_ptr = globus_l_xio_gssapi_ftp_token(
+        command, len, &start_ndx, &sub_len);
     while(tmp_ptr != NULL)
     {
         /* special handling for multiplart commands */
@@ -535,27 +534,36 @@ globus_l_xio_gssapi_ftp_parse_command(
                 cmd_a[ctr] = globus_libc_strndup(tmp_ptr, 3);
                 multi = GLOBUS_TRUE;
                 tmp_ptr += 4;
-                start_ndx += 4;
+                start_ndx = 0;
+                sub_len -= 4;
+                len -= 4;
                 ctr++;
             }
             /* if a continuation line move past the start */
-            else if(multi && 
+            else if(multi && sub_len >= 3 &&
                     strncmp(cmd_a[0], tmp_ptr, 3) == 0)
             {
                 if(tmp_ptr[3] == ' ')
                 {
-                    end_ndx = len;
+                    len -= 4;
+                    tmp_ptr = globus_l_xio_gssapi_ftp_token(
+                        &tmp_ptr[4], len, &start_ndx, &sub_len);
                 }
-                tmp_ptr += 4;
-                start_ndx += 4;
+                else if(tmp_ptr[3] == '-')
+                {
+                    tmp_ptr += 4;
+                    start_ndx = 0;
+                    sub_len -= 4;
+                    len -= 4;
+                }
             }
         }
-        len -= end_ndx;
         cmd_a[ctr] = globus_libc_strndup(
-            tmp_ptr, end_ndx - start_ndx);
-        tmp_ptr = &tmp_ptr[end_ndx - start_ndx];
+            tmp_ptr, sub_len);
+        len -= (start_ndx + sub_len);
+        tmp_ptr += sub_len;
         tmp_ptr = globus_l_xio_gssapi_ftp_token(
-            tmp_ptr, len, &start_ndx, &end_ndx);
+            tmp_ptr, len, &start_ndx, &sub_len);
         ctr++;
         if(ctr == cmd_len)
         {
@@ -639,6 +647,7 @@ globus_l_xio_gssapi_ftp_unwrap(
     OM_uint32                               maj_stat;
     OM_uint32                               min_stat;
     globus_l_xio_gssapi_buffer_t *          w_buf;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_unwrap);
 
     /* allocate out buffer same size as in, assuming unwrap will be samller */
     w_buf = (globus_l_xio_gssapi_buffer_t *)
@@ -654,6 +663,7 @@ globus_l_xio_gssapi_ftp_unwrap(
             in_buf, w_buf->buffer, &w_buf->length);
     if(res != GLOBUS_SUCCESS)
     {
+        res = GlobusXIOGssapiFTPAuthenticationFailure("mem");
         globus_free(w_buf);
         goto err;
     }
@@ -666,10 +676,19 @@ globus_l_xio_gssapi_ftp_unwrap(
                     handle->gssapi_context,
                     &wrapped_token,
                     &unwrapped_token,
-                    &conf_state,
-                    &qop_state);
+                    NULL,
+                    NULL);
     if(maj_stat != GSS_S_COMPLETE)
     {
+        char *                              error_str;
+
+        globus_gss_assist_display_status_str(&error_str,
+                             GLOBUS_NULL,
+                             maj_stat,
+                             min_stat,
+                             0);
+
+        res = GlobusXIOGssapiFTPAuthenticationFailure(error_str);
         globus_free(w_buf);
         goto err;
     }
@@ -960,7 +979,7 @@ globus_l_xio_gssapi_ftp_read_cb(
     /* determine if this was part of a read operation or part of a open */
     if(state == GSSAPI_FTP_STATE_OPEN)
     {
-        GlobusXIODriverFinishedRead(op, result, 0);
+        GlobusXIODriverFinishedRead(op, res, 0);
     }
     else
     {
@@ -1559,6 +1578,7 @@ globus_l_xio_gssapi_ftp_client_incoming(
     globus_result_t                         res = GLOBUS_SUCCESS;
     char *                                  send_buffer;
     char *                                  tmp_buf;
+    int                                     ctr;
     globus_l_xio_gssapi_buffer_t *          w_buf;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_incoming);
 
@@ -1651,7 +1671,17 @@ globus_l_xio_gssapi_ftp_client_incoming(
                 }
                 if(send_buffer == NULL)
                 {
-                    res = GlobusXIOGssapiFTPAuthenticationFailure("auth");
+                    globus_byte_t *         e_buf;
+                    globus_size_t           e_len;
+
+                    e_len = globus_l_xio_gssapi_ftp_command_array_size(cmd_a);
+                    e_buf = globus_malloc(e_len + 1);
+                    globus_l_xio_gssapi_ftp_serialize_command_array(
+                        cmd_a,
+                        e_buf,
+                        e_len);
+                    e_buf[e_len] = '\0';
+                    res = GlobusXIOGssapiFTPAuthenticationFailure(e_buf);
                     goto err;
                 }
             }
@@ -1669,14 +1699,17 @@ globus_l_xio_gssapi_ftp_client_incoming(
             /* TODO: test for 631 or 632 */
             if(*cmd_a[0] == '6')
             {
-                res = globus_l_xio_gssapi_ftp_unwrap(
-                        handle,
-                        cmd_a[1],
-                        strlen(cmd_a[1]),
-                        &w_buf);
-                if(res != GLOBUS_SUCCESS)
+                for(ctr = 1; cmd_a[ctr] != NULL; ctr++)
                 {
-                    goto err;
+                    res = globus_l_xio_gssapi_ftp_unwrap(
+                            handle,
+                            cmd_a[1],
+                            strlen(cmd_a[1]),
+                            &w_buf);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto err;
+                    }
                 }
                 globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
                 res = globus_l_xio_gssapi_finshed_read(handle, op);
@@ -2239,6 +2272,7 @@ globus_l_xio_gssapi_ftp_activate(void)
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 
     return rc;
 }
