@@ -64,9 +64,15 @@ CVS Information:
 
 #ifdef EDQUOT
 #define IS_QUOTA_ERROR(err) ((err) == EDQUOT)
+static globus_bool_t globus_l_gass_cache_link_works = GLOBUS_TRUE;
+
+static int
+globus_l_gass_cache_module_activate(void);
+
 #else
 #define IS_QUOTA_ERROR(err) ((err) == EQUSR || \
                              (err) == EQGRP || \
+    globus_l_gass_cache_module_activate,
                              (err) == EQACT || \
                              (err) == EOFQUOTA)
 #endif
@@ -214,6 +220,60 @@ int
 globus_l_gass_cache_unlock_close(
     globus_gass_cache_t *               cache_handle,
     globus_bool_t                       abort);
+
+static int
+globus_l_gass_cache_module_activate(void)
+{
+#ifdef TARGET_ARCH_CYGWIN
+
+/* 
+ * Have to do this check at runtime, as the same executable can run
+ * on both Win9x and WinNT, and it seems like stat() -> st_nlink is
+ * broken on only one of them.
+ */
+
+    char         file1[PATH_MAX];
+    char         file2[PATH_MAX];
+    int          fd;
+    int          rc;
+    struct stat  stx;
+    
+    tmpnam(file1);
+    tmpnam(file2);
+
+    remove(file1);
+    remove(file2);
+    
+    fd = open(file1, 
+	      O_RDWR|O_CREAT,
+	      GLOBUS_L_GASS_CACHE_STATE_MODE);
+
+    if (fd < 0)
+	goto real_exit;
+
+    close(fd);
+    
+    rc = stat(file1, &stx);
+    if ((rc!=0) || (stx.st_nlink != 1))
+	globus_l_gass_cache_link_works = GLOBUS_FALSE;
+    else if (link(file1,file2))
+	globus_l_gass_cache_link_works = GLOBUS_FALSE;
+    else
+    {
+	rc = stat(file1, &stx);
+	if ((rc!=0) || (stx.st_nlink != 2))
+	    globus_l_gass_cache_link_works = GLOBUS_FALSE;
+    }
+
+    remove(file2);
+    remove(file1);
+ real_exit:
+#endif
+    return GLOBUS_SUCCESS;
+}
+
+
+
 void
 globus_l_gass_cache_name_lock_file(char * lock_file,
 				   char * file_to_be_locked);
@@ -233,8 +293,7 @@ globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
  *      f - file to write in.
  *
  * Returns:
- *      none           
- */
+ * none */
 static
 void 
 globus_l_gass_cache_log(
@@ -1605,9 +1664,9 @@ globus_l_gass_cache_lock_file(
 	
 	if  ( file_stat.st_nlink != 2)
 	{
-#ifdef __CYGWIN__
-            break;
-#endif
+	    if (!globus_l_gass_cache_link_works)
+		break;
+
 	    /* we manage to create the file, but it is not a hard link
 	       to the uniq_file, for some wird reasons. let try again */
 	    while (unlink(lock_file) != 0 )
@@ -1978,11 +2037,8 @@ globus_l_gass_cache_unlock_close(
 	    break;
 	}
     }
-#ifndef __CYGWIN__
-    if (rc == 0  &&  lock_stat.st_nlink==2)
-#else
-    if (rc == 0  &&  lock_stat.st_nlink==1)
-#endif
+
+    if ((rc==0) && (!globus_l_gass_cache_link_works || lock_stat.st_nlink==2))
     {
 	/* I still have the lock */
 
@@ -3979,11 +4035,4 @@ globus_gass_cache_error_string(
     return(globus_gass_cache_error_strings[-error_code]);
 }
 /* globus_gass_cache_error_string() */
-
-
-
-
-
-
-
 
