@@ -459,7 +459,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
         destroy_proxy(client_creds, server_response);
         break;
     default:
-        server_response->error_str = strdup("Unknown command.\n");
+        server_response->error_string = strdup("Unknown command.\n");
         break;
     }
     
@@ -612,8 +612,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     response.version = strdup(MYPROXY_VERSION);
     response.response_type = MYPROXY_ERROR_RESPONSE;
     response.authorization_data = NULL;
-    response.error_str = (char *) malloc (strlen(error));
-    my_strncpy(response.error_str, error, sizeof(response.error_str));
+    response.error_string = strdup(error);
     
     responselen = myproxy_serialize_response(&response,
 					     response_buffer,
@@ -653,7 +652,8 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
     if (response->response_type == MYPROXY_OK_RESPONSE) {
       myproxy_debug("Sending OK response to client %s", client_name);
     } else if (response->response_type == MYPROXY_ERROR_RESPONSE) {
-      myproxy_debug("Sending ERROR response \"%s\" to client %s", response->error_str, client_name);
+      myproxy_debug("Sending ERROR response \"%s\" to client %s",
+		    response->error_string, client_name);
     }
 
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
@@ -686,7 +686,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 				request->passphrase) < 0) {
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
-	response->error_str = strdup("Unable to delegate credentials.\n");
+	response->error_string = strdup("Unable to delegate credentials.\n");
     } else {
         myproxy_log("Delegating credentials for %s lifetime=%d",
 		    creds->owner_name, min_lifetime);
@@ -705,7 +705,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 				  creds->passphrase) < 0) {
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        response->error_str = strdup("Failed to accept credentials.\n"); 
+        response->error_string = strdup("Failed to accept credentials.\n"); 
 	return;
     }
 
@@ -716,7 +716,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     if (myproxy_creds_store(creds) < 0) {
 	myproxy_log_verror();
         response->response_type = MYPROXY_ERROR_RESPONSE; 
-        response->error_str = strdup("Unable to store credentials.\n"); 
+        response->error_string = strdup("Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
@@ -732,7 +732,7 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     if (myproxy_creds_retrieve_all(creds) < 0) {
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
-       response->error_str = strdup(verror_get_string());
+       response->error_string = strdup(verror_get_string());
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
        response->info_creds = creds;
@@ -748,7 +748,7 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     if (myproxy_creds_delete(creds) < 0) { 
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-	response->error_str = strdup(verror_get_string());
+	response->error_string = strdup(verror_get_string());
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
