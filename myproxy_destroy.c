@@ -6,6 +6,8 @@
 
 #include "myproxy.h"
 #include "myproxy_server.h"
+#include "myproxy_log.h"
+#include "ssl_utils.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
@@ -75,7 +77,7 @@ void init_arguments(int argc, char *argv[],
 int
 main(int argc, char *argv[]) 
 {    
-    char *username, *pshost; 
+    char *pshost; 
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
 
