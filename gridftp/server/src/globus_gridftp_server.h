@@ -317,7 +317,7 @@ typedef struct globus_gfs_data_info_s
     /** data channel type */
     char                                type;
     /** tcp buffersize to use */
-    int                                 tcp_bufsize;
+    globus_size_t                       tcp_bufsize;
     /** blocksize to use */
     globus_size_t                       blocksize;
     /** blocksize to use for stripe layout */

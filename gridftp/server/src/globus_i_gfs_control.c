@@ -1138,7 +1138,7 @@ globus_l_gfs_get_data_info(
     globus_gridftp_server_control_network_protocol_t net_prt)
 {
     globus_result_t                     result;
-    int                                 buf_size;
+    globus_size_t                       buf_size;
 
     if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
     {

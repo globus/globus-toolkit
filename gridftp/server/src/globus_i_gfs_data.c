@@ -437,8 +437,8 @@ globus_l_gfs_data_auth_init_cb(
     globus_result_t                     result)
 {
     gss_buffer_desc                     buffer;
-    int                                 maj_stat;
-    int                                 min_stat;    
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;    
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_session_info_t *         session_info;
     GlobusGFSName(globus_l_gfs_data_auth_init_cb);
@@ -4595,8 +4595,8 @@ globus_i_gfs_data_request_set_cred(
     globus_l_gfs_data_session_t *       session_handle;  
     globus_result_t                     result;  
     gss_buffer_desc                     buffer;
-    int                                 maj_stat;
-    int                                 min_stat;    
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;    
     GlobusGFSName(globus_i_gfs_data_request_set_cred);
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;

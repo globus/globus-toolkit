@@ -388,7 +388,6 @@ globus_l_gfs_ipc_request_destroy(
                 {
                     globus_free(stat_reply->stat_array);
                 }
-                // globus_free(stat_reply);
                 break;
             case GLOBUS_GFS_OP_COMMAND:
                 command_reply = (globus_gfs_ipc_command_reply_t *)
@@ -401,7 +400,6 @@ globus_l_gfs_ipc_request_destroy(
                 {
                     globus_free(command_reply->checksum);
                 }
-                // globus_free(command_reply);
                 break;
 
             case GLOBUS_GFS_OP_PASSIVE:
@@ -1111,8 +1109,8 @@ void
 globus_l_gfs_ipc_send_start_session(
     globus_i_gfs_ipc_handle_t *         ipc)
 {
-    int                                 maj_rc;
-    int                                 min_rc;
+    OM_uint32                           maj_rc;
+    OM_uint32                           min_rc;
     gss_buffer_desc                     gsi_buffer;
     globus_result_t                     res;
     globus_byte_t *                     buffer = NULL;
@@ -4817,8 +4815,8 @@ globus_l_gfs_ipc_pack_data(
     int                                 id;
     globus_result_t                     res;
     int                                 ctr;
-    int                                 maj_rc;
-    int                                 min_rc;
+    OM_uint32                           maj_rc;
+    OM_uint32                           min_rc;
     gss_buffer_desc                     gsi_buffer;
     globus_size_t                       ndx;
     GlobusGFSName(globus_l_gfs_ipc_pack_data);
