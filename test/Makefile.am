@@ -22,7 +22,7 @@ test_SCRIPTS = $(Scripts)
 
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
-EXTRA_DIST = $(Scripts) $(Data)
+EXTRA_DIST = $(Scripts) Utilities.pm
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
