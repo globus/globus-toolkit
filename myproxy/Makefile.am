@@ -110,11 +110,11 @@ gsi_socket_test_LDADD = $(GPT_PGM_LINKS)  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 sysconf_DATA = myproxy-server.config
 
-pkgdata_DATA = README INSTALL LICENSE VERSION \
+pkgdata_DATA = README INSTALL LICENSE VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
                etc.init.d.myproxy etc.xinetd.myproxy
 
-EXTRA_DIST = $(Scripts) LICENSE VERSION myproxy-server.config \
+EXTRA_DIST = $(Scripts) LICENSE VERSION PROTOCOL myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
                etc.init.d.myproxy etc.xinetd.myproxy
 
