@@ -1214,7 +1214,7 @@ int globus_gsi_callback_check_issued(
                 break;
             }
             
-            if(cert_type != GLOBUS_NOT_PROXY ||
+            if(cert_type != GLOBUS_NOT_PROXY &&
                cert_type != GLOBUS_ERROR_PROXY)
             {
                 /* its a proxy! */
