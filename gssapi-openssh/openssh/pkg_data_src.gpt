@@ -35,7 +35,7 @@
 
     <Build_Instructions>
 
-      <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --sysconfdir=/etc/ssh --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh --without-default-path OPENSSH_GPTMACRO</Build_Step>
+      <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh --without-default-path OPENSSH_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO gpt-all</Build_Step>
       <Build_Step>MAKE_GPTMACRO gpt-install</Build_Step>
 
