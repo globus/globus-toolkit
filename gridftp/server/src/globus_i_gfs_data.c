@@ -855,8 +855,6 @@ globus_l_gfs_data_passive_kickout(
     
     bounce_info = (globus_l_gfs_data_passive_bounce_t *) user_arg;
 
-    bounce_info->handle->is_mine = GLOBUS_TRUE;
-
     memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
     reply.info.data.contact_strings = (const char **) 
         globus_calloc(1, sizeof(char *));
@@ -874,6 +872,7 @@ globus_l_gfs_data_passive_kickout(
         handle */
     if(bounce_info->result == GLOBUS_SUCCESS)
     {
+        bounce_info->handle->is_mine = GLOBUS_TRUE;
         bounce_info->handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
     }
     else
@@ -914,7 +913,7 @@ globus_i_gfs_data_request_passive(
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
 {
-    globus_l_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle = NULL;
     globus_result_t                     result;
     globus_ftp_control_host_port_t      address;
     globus_sockaddr_t                   addr;
@@ -1045,7 +1044,8 @@ globus_i_gfs_data_request_passive(
 error_control:
     globus_ftp_control_handle_destroy(&handle->data_channel);
     globus_free(handle);
-
+    handle = NULL;
+    
 error_handle:
 error_op:
 
