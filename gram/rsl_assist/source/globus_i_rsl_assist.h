@@ -106,8 +106,8 @@ globus_i_rsl_assist_extract_attribute(globus_rsl_t * rsl,
  *   content to return a value. To determine the path to the file, use first
  *   the environment variable GLOBUS_INSTALL_PATH if set; if not set, uses
  *   GLOBUS_SYSCONFDIR, as defined at compile time;
- * - If a valuse is still not defined after checking env variables
- *   and grid-info.conf, uses the default -hard coded at compile time values.
+ * - If a value is still not defined after checking env variables
+ *   and grid-info.conf, uses the default -hard coded at compile time- values.
  *
  * Parameters:
  *     server  -  name of the MDS ldap server to contact
