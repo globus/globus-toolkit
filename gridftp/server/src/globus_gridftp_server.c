@@ -433,6 +433,31 @@ globus_l_gfs_close_cb(
 
 static
 void
+globus_l_gfs_ipc_error_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_i_gfs_log_result("IPC ERROR", result);
+}
+
+static
+void
+globus_l_gfs_ipc_open_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    globus_gfs_ipc_reply_t *            reply,
+    void *                              user_arg)
+{
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_i_gfs_log_result("IPC ERROR", result);
+    }
+}
+
+
+static
+void
 globus_l_gfs_new_server_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
@@ -503,12 +528,12 @@ globus_l_gfs_new_server_cb(
 
         if(globus_i_gfs_config_bool("data_node"))
         {
-            result = globus_i_gfs_data_node_start(
-                handle, 
-                system_handle, 
-                remote_contact, 
-                local_contact, 
-                globus_l_gfs_server_closed, 
+            result = globus_gfs_ipc_handle_create(
+                &globus_gfs_ipc_default_iface,
+                system_handle,
+                globus_l_gfs_ipc_open_cb,
+                NULL,
+                globus_l_gfs_ipc_error_cb,
                 NULL);
         }
         else

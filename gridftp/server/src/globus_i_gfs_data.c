@@ -3729,66 +3729,6 @@ globus_i_gfs_data_request_transfer_event(
     return;
 }
 
-static
-void
-globus_l_gfs_data_ipc_error_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_i_gfs_log_result(
-        "IPC ERROR", result);
-    
-    return;
-}
-
-static
-void
-globus_l_gfs_data_ipc_open_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
-    void *                              user_arg)
-{
-    globus_i_gfs_monitor_t *            monitor;
-
-    monitor = (globus_i_gfs_monitor_t *) user_arg;
-
-    globus_i_gfs_monitor_signal(monitor);
-}
-
-
-globus_result_t
-globus_i_gfs_data_node_start(
-    globus_xio_handle_t                 handle,
-    globus_xio_system_handle_t          system_handle,
-    const char *                        remote_contact,
-    const char *                        local_contact,
-    globus_i_gfs_server_close_cb_t      close_func,
-    void *                              close_arg)
-{
-    globus_result_t                     res;
-    globus_i_gfs_monitor_t              monitor;
-
-    globus_i_gfs_monitor_init(&monitor);
-    
-    res = globus_gfs_ipc_handle_create(
-        &globus_gfs_ipc_default_iface,
-        system_handle,
-        globus_l_gfs_data_ipc_open_cb,
-        &monitor,
-        globus_l_gfs_data_ipc_error_cb,
-        NULL);
-    
-/* XXX    //globus_i_gfs_monitor_wait(&monitor); */
-    
-    globus_l_gfs_data_is_remote_node = GLOBUS_TRUE;
-    
-    globus_i_gfs_monitor_destroy(&monitor);
-
-    return res;
-}
-
 void
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
