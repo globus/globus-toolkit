@@ -1749,6 +1749,12 @@ globus_l_gram_job_manager_output_destination_close(
 	}
 	else
 	{
+            if (rc == GLOBUS_GASS_TRANSFER_ERROR_REQUEST_FAILED)
+            {
+                request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED;
+                request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            }
+
 	    globus_callback_register_oneshot(
 		NULL,
 		&delay,
