@@ -2004,8 +2004,9 @@ globus_i_gfs_control_start(
     result = globus_gridftp_server_control_attr_set_security(
         attr,
         GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI |
-        ((globus_i_gfs_config_bool("allow_anonymous")) ?
-        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));
+         ((globus_i_gfs_config_bool("allow_anonymous") ||
+            globus_i_gfs_config_string("pw_file")!=NULL) ?
+         GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;

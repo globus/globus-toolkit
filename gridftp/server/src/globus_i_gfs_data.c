@@ -425,55 +425,6 @@ globus_i_gfs_monitor_init(
     GlobusGFSDebugExit();
 }
 
-void
-globus_i_gfs_monitor_wait(
-    globus_i_gfs_monitor_t *            monitor)
-{
-    GlobusGFSName(globus_i_gfs_monitor_wait);
-    GlobusGFSDebugEnter();
-
-    globus_mutex_lock(&monitor->mutex);
-    {
-        while(!monitor->done)
-        {
-            globus_cond_wait(&monitor->cond, &monitor->mutex);
-        }
-    }
-    globus_mutex_unlock(&monitor->mutex);
-
-    GlobusGFSDebugExit();
-}
-
-void
-globus_i_gfs_monitor_destroy(
-    globus_i_gfs_monitor_t *            monitor)
-{
-    GlobusGFSName(globus_i_gfs_monitor_destroy);
-    GlobusGFSDebugEnter();
-
-    globus_mutex_destroy(&monitor->mutex);
-    globus_cond_destroy(&monitor->cond);
-
-    GlobusGFSDebugExit();
-}
-
-void
-globus_i_gfs_monitor_signal(
-    globus_i_gfs_monitor_t *            monitor)
-{
-    GlobusGFSName(globus_i_gfs_monitor_signal);
-    GlobusGFSDebugEnter();
-
-    globus_mutex_lock(&monitor->mutex);
-    {
-        monitor->done = GLOBUS_TRUE;
-        globus_cond_signal(&monitor->cond);
-    }
-    globus_mutex_unlock(&monitor->mutex);
-
-    GlobusGFSDebugExit();
-}
-
 static
 globus_gfs_storage_iface_t *
 globus_i_gfs_data_new_dsi(
@@ -1275,13 +1226,13 @@ globus_i_gfs_data_request_command(
                 /* if we couldn't load it, error */
                 if(new_dsi == NULL)
                 {
-                    globus_gridftp_server_finished_command(op, result, NULL);
+                    result = GlobusGFSErrorGeneric("no such DSI");
                 }
                 /* if it is the wrong type release and error */
                 else if(
                     !(new_dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER))
                 {
-                    globus_gridftp_server_finished_command(op, result, NULL);
+                    result = GlobusGFSErrorGeneric("DSI isn't a sender.");
                 }
                 /* if all is well */
                 else
@@ -1294,8 +1245,11 @@ globus_i_gfs_data_request_command(
                     /* set to new dsi */
                     session_handle->dsi_handle = new_dsi_handle;
                     op->session_handle->dsi = new_dsi;
+                    result = GLOBUS_SUCCESS;
                 }
                 call = GLOBUS_FALSE;
+
+                globus_gridftp_server_finished_command(op, result, NULL);
             }
             break;
 
@@ -1787,6 +1741,10 @@ globus_l_gfs_data_destroy_cb(
         if(session_handle->home_dir)
         {
             globus_free(session_handle->home_dir);
+        }
+        if(session_handle->real_username)
+        {
+            globus_free(session_handle->real_username);
         }
         globus_handle_table_destroy(&session_handle->handle_table);
         globus_i_gfs_acl_destroy(&session_handle->acl_handle);
@@ -4219,43 +4177,20 @@ globus_i_gfs_data_session_stop(
     GlobusGFSDebugExit();
 }
 
-
-
-/************************************************************************
- *
- * Public functions
- *
- ***********************************************************************/
-
+static
 void
-globus_gridftp_server_finished_command(
-    globus_gfs_operation_t              op,
-    globus_result_t                     result,
-    char *                              command_data)
+globus_l_gfs_finished_command_kickout(
+    void *                              user_arg)
 {
-    globus_gfs_finished_info_t              reply;
-    GlobusGFSName(globus_gridftp_server_finished_command);
-    GlobusGFSDebugEnter();
+    globus_gfs_finished_info_t          reply;
+    globus_l_gfs_data_operation_t *     op;
 
-    /* XXX gotta do a oneshot */
-    switch(op->command)
-    {
-      case GLOBUS_GFS_CMD_CKSM:
-        op->cksm_response = globus_libc_strdup(command_data);
-        break;
-      case GLOBUS_GFS_CMD_MKD:
-      case GLOBUS_GFS_CMD_RMD:
-      case GLOBUS_GFS_CMD_DELE:
-      case GLOBUS_GFS_CMD_RNTO:
-      case GLOBUS_GFS_CMD_SITE_CHMOD:
-      default:
-        break;
-    }
+    op = (globus_l_gfs_data_operation_t *) user_arg;
 
     memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
     reply.type = GLOBUS_GFS_OP_COMMAND;
     reply.id = op->id;
-    reply.result = result;
+    reply.result = op->cached_res;
     reply.info.command.command = op->command;
     reply.info.command.checksum = op->cksm_response;
     reply.info.command.created_dir = op->pathname;
@@ -4274,6 +4209,51 @@ globus_gridftp_server_finished_command(
     }
 
     globus_l_gfs_data_operation_destroy(op);
+}
+
+
+/************************************************************************
+ *
+ * Public functions
+ *
+ ***********************************************************************/
+
+void
+globus_gridftp_server_finished_command(
+    globus_gfs_operation_t              op,
+    globus_result_t                     result,
+    char *                              command_data)
+{
+    GlobusGFSName(globus_gridftp_server_finished_command);
+    GlobusGFSDebugEnter();
+
+    /* XXX gotta do a oneshot */
+    switch(op->command)
+    {
+      case GLOBUS_GFS_CMD_CKSM:
+        op->cksm_response = globus_libc_strdup(command_data);
+        break;
+      case GLOBUS_GFS_CMD_MKD:
+      case GLOBUS_GFS_CMD_RMD:
+      case GLOBUS_GFS_CMD_DELE:
+      case GLOBUS_GFS_CMD_RNTO:
+      case GLOBUS_GFS_CMD_SITE_CHMOD:
+      default:
+        break;
+    }
+    op->cached_res = result;
+
+    result = globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_gfs_finished_command_kickout,
+        op);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_callback_register_oneshot", result);
+        globus_panic(NULL, result, "oneshot failed, no recovery");
+    }
 
     GlobusGFSDebugExit();
 }
