@@ -33,7 +33,8 @@ sub setup_environment {
         $u->inform("Setting GLOBUS_LOCATION = $globus");
         $ENV{GLOBUS_LOCATION} = "$globus";
         $u->command("echo \$GLOBUS_LOCATION");
-        $u->command("echo \"export GLOBUS_LOCATION=$globus\" >> env.sh", 1);
+        $u->command("echo \"GLOBUS_LOCATION=$globus\" >> env.sh", 1);
+        $u->command("echo \"export GLOBUS_LOCATION\" >> env.sh", 1);
         $u->command("echo \"setenv GLOBUS_LOCATION \'$globus\'\" >> env.csh", 1);
         $u->report("SUCCESS");
     }
