@@ -62,7 +62,7 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_runtime">
-            <Dependency Name="globus_gsi_openssl_error_test" Package="data">
+            <Dependency Name="globus_openssl_error_test" Package="data">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
