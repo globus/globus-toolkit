@@ -18,6 +18,10 @@ static char *rcsid = "$Id$";
 #include <ctype.h>
 #include <string.h>
 
+#ifdef WIN32
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
+#endif
 
 /**
  * @name Compare Name

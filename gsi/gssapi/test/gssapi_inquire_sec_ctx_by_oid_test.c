@@ -1,8 +1,18 @@
 
 #include "gssapi_test_utils.h"
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
+#else
+#include <winsock2.h>
+struct  sockaddr_un {
+   short   sun_family;             /* AF_UNIX */
+   char    sun_path[108];          /* path name (gag) */
+   };
+#define pid_t int
+#define fork() NULL
+#endif
 
 struct context_arg
 {
@@ -29,6 +39,11 @@ main()
     struct context_arg *                arg = NULL;
     pid_t                               pid;
 
+    // ToDo: Make this run on windows
+    #ifdef WIN32
+    printf("This Test Doesn't Run On Windows Yet\n");
+    exit(0);
+    #endif
 
     /* module activation */
 

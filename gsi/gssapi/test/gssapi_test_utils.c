@@ -2,6 +2,9 @@
 #include "gssapi_test_utils.h"
 #include "openssl/x509.h"
 #include "openssl/x509v3.h"
+#ifdef WIN32
+#define ssize_t long
+#endif
 
 
 
