@@ -1,6 +1,11 @@
 #!/usr/bin/env perl
 
-$srcdirname = "gpt-gsi-openssh";
+#
+# the default source directory name should be 'gsi-openssh'.  Change at will to
+# suit your needs.
+#
+
+$srcdirname = "gsi-openssh";
 
 #
 # uncomment when we're more mature
