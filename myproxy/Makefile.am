@@ -5,7 +5,8 @@ include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
 	pkgdata \
-	doxygen
+	doxygen \
+	web
 
 LibSources= \
 	gnu_getopt.c \
@@ -50,7 +51,7 @@ Scripts= \
 
 sbin_SCRIPTS = $(Scripts)
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	myproxy.h \
 	myproxy_creds.h
 
@@ -103,9 +104,11 @@ gsi_socket_test_LDADD = $(GPT_PGM_LINKS)  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 sysconf_DATA = myproxy-server.config
 
-pkgdata_DATA = README INSTALL LICENSE VERSION
+pkgdata_DATA = README INSTALL LICENSE VERSION \
+               etc.services.modifications etc.inetd.conf.modifications
 
-EXTRA_DIST = $(Scripts) LICENSE VERSION myproxy-server.config
+EXTRA_DIST = $(Scripts) LICENSE VERSION myproxy-server.config \
+               etc.services.modifications etc.inetd.conf.modifications
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
