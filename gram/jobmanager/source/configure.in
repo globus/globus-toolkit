@@ -27,4 +27,5 @@ AC_OUTPUT(
 	doxygen/Doxyfile-internal
         Makefile
         version.h
+	globus-personal-gatekeeper-version.sh
 )

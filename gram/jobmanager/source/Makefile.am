@@ -10,6 +10,8 @@ validationdir = $(datadir)/$(PACKAGE)
 noinst_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
 libexec_PROGRAMS = globus-job-manager \
                    globus-gram-rsl-reporter
+libexec_SCRIPTS = globus-personal-gatekeeper-version.sh
+
 bin_SCRIPTS = globus-personal-gatekeeper
 validation_DATA = globus-gram-job-manager.rvf
 
@@ -53,10 +55,13 @@ globus_gram_rsl_reporter_LDADD = \
 EXTRA_DIST = globus-personal-gatekeeper \
 	     $(validation_DATA) \
 	     $(sysconf_DATA) version.h.in \
-	     globus_job_manager_rsl_validation.dox \
+	     globus-personal-gatekeeper-version.sh.in \
+	     configuration.dox \
 	     globus_gram_job_manager_rsl.dox \
 	     globus_gram_job_manager_script_interface.dox \
 	     globus_gram_job_manager_script_tutorial.dox \
+	     globus_job_manager_rsl_validation.dox \
+	     job_execution_environment.dox \
 	     main.dox \
 	     dirt.sh
 

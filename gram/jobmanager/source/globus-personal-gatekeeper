@@ -18,6 +18,8 @@ LD_LIBRARY_PATH="$GLOBUS_LOCATION/lib$DELIM$LD_LIBRARY_PATH"
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
+. ${GLOBUS_LOCATION}/libexec/globus-personal-gatekeeper-version.sh
+
 short_usage="globus-personal-gatekeeper [-help] [-start] [-list] [-killall] ..."
 
 long_usage ()
