@@ -1458,7 +1458,6 @@ globus_l_ftp_control_auth_read_cb(
     OM_uint32                                 maj_stat;
     OM_uint32                                 min_stat;
     OM_uint32                                 ret_flags=0;
-    struct gss_channel_bindings_struct *      chan_bindings;
     gss_buffer_desc                           recv_tok=GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                           send_tok=GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                           subject_buf=GSS_C_EMPTY_BUFFER;
@@ -1540,9 +1539,6 @@ globus_l_ftp_control_auth_read_cb(
                     goto error_cmd_destroy;
                 }
                 
-                chan_bindings=GSS_C_NO_CHANNEL_BINDINGS;
-                mech_type = GSS_C_NO_OID;
-
                 maj_stat=globus_gss_assist_acquire_cred(
                     &min_stat,
                     GSS_C_ACCEPT,
@@ -1644,7 +1640,7 @@ globus_l_ftp_control_auth_read_cb(
                     /* input_token */
                     &recv_tok, 
                     /* channel bindings */
-                    chan_bindings, 
+                    GSS_C_NO_CHANNEL_BINDINGS,
                     /* src_name */
                     &cc_handle->auth_info.target_name,
                     /* mech_type */
