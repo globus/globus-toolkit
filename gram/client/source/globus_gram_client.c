@@ -341,7 +341,7 @@ globus_l_gram_client_setup_attr_t(
 	     delegation_mode))
 	 || (res = globus_io_attr_set_secure_channel_mode(
 	     attrp,
-	     GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+	     GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP)) )
     {
 	globus_object_t *  err = globus_error_get(res);
 	
