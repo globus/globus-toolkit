@@ -14,14 +14,33 @@
 #include <string.h>
 #endif
 
-#define my_malloc(type) (type *) globus_libc_malloc(sizeof(type))
+#define my_malloc(type,count) (type *) globus_libc_malloc(count*sizeof(type))
 
 #define notice globus_libc_printf
-#if 0
+#if 1
 #define verbose(q) q
 #else
 #define verbose(q) { }
 #endif
+
+
+#define GLOBUS_GRAM_HTTP_FREE_BUF        1
+#define GLOBUS_GRAM_HTTP_FREE_HANDLE     2
+#define GLOBUS_GRAM_HTTP_SIGNAL_MONITOR  4
+
+#define monitor_signal_done(monitor,errcode) \
+           { \
+	       globus_mutex_lock(&monitor->mutex); \
+               if (monitor->destruct_options & \
+                   GLOBUS_GRAM_HTTP_SIGNAL_MONITOR) \
+	       { \
+		 monitor->done = GLOBUS_TRUE; \
+	         monitor->errorcode = errcode; \
+                 monitor->destruct_options -= GLOBUS_GRAM_HTTP_SIGNAL_MONITOR;\
+	         globus_cond_signal(&monitor->cond); \
+	       } \
+	       globus_mutex_unlock(&monitor->mutex); \
+	   }
 
 /********************      internal list over active listeners ************/
 typedef struct
@@ -31,6 +50,37 @@ typedef struct
 } globus_i_gram_http_listener_t;
 
 static globus_list_t *  globus_i_gram_http_listeners = GLOBUS_NULL;
+
+
+
+/***** forward declarations of internal functions ***/
+
+void
+globus_gram_http_close_listener_callback( void *                arg,
+					  globus_io_handle_t *  handle,
+					  globus_result_t       result);
+
+
+void
+globus_gram_http_close_callback( void *                arg,
+				 globus_io_handle_t *  handle,
+				 globus_result_t       result);
+
+void
+globus_gram_http_post_callback( void * arg,
+				globus_io_handle_t * handle,
+				globus_result_t result,
+				globus_byte_t * buf,
+				globus_size_t nbytes);
+
+void
+globus_gram_http_get_callback( void * arg,
+			       globus_io_handle_t * handle,
+			       globus_result_t result,
+			       globus_byte_t * buf,
+			       globus_size_t nbytes);
+
+
 
 /************************** activation / deactivation ********************/
 
@@ -64,7 +114,7 @@ globus_gram_http_deactivate()
 	 * those: we only have to free the listener struct.
 	 */
 	globus_io_register_close(listener->handle,
-				 globus_gram_http_close_callback,
+				 globus_gram_http_close_listener_callback,
 				 GLOBUS_NULL);
 
 	globus_libc_free(listener);
@@ -79,43 +129,80 @@ globus_gram_http_deactivate()
 /*********************     callback functions *****************************/
 
 void
-globus_gram_http_close_callback( void *                arg,
-				 globus_io_handle_t *  handle,
-				 globus_result_t       result)
+globus_gram_http_close_listener_callback( void *                arg,
+					  globus_io_handle_t *  handle,
+					  globus_result_t       result)
 {
-    globus_io_attr_t   attr;
-    void *             usr_ptrs;
-    
-    verbose(notice("close_callback : handle %d is done\n", handle->fd));
+    globus_io_attr_t              attr;
+    void *                        usr_ptrs;
+
+    verbose(notice("close_callback : listener %d is done\n", handle->fd));
 
     /* acquire mutex */
     globus_io_tcp_get_attr(handle, &attr);
     globus_io_tcpattr_destroy(&attr);
-    if (globus_io_get_handle_type(handle) ==
-	GLOBUS_IO_HANDLE_TYPE_TCP_LISTENER )
-    {
-	globus_io_handle_get_user_pointer( handle,
-					   &usr_ptrs );
-	globus_libc_free(usr_ptrs);
-    }
+    globus_io_handle_get_user_pointer( handle,
+				       &usr_ptrs );
+    globus_libc_free(usr_ptrs);
     /* release mutex */
+
     globus_libc_free(handle);
 }
 
 
 void
-globus_gram_http_close_after_read_or_write( void * arg,
-					    globus_io_handle_t * handle,
-					    globus_result_t result,
-					    globus_byte_t * buf,
-					    globus_size_t nbytes)
+globus_gram_http_client_callback( void * arg,
+				  globus_io_handle_t * handle,
+				  globus_result_t result,
+				  globus_byte_t * buf,
+				  globus_size_t nbytes)
 {
-    verbose(notice("close_after_read_or_write : handle=%d\n", handle->fd));
+    globus_gram_client_callback_func_t *   userfunc;
+    char                                   message[GLOBUS_GRAM_HTTP_BUFSIZE];
+    char                                   url[1000];
+    globus_size_t                          msgsize;
+    int                                    job_status;
+    int                                    failure_code;
+    int                                    version;
+    int                                    rc;
 
-    globus_io_register_close(handle,
-			     globus_gram_http_close_callback,
-			     arg);
-}
+    verbose(notice("client_callback : listener %d is done\n", handle->fd));
+
+    /* acquire mutex */
+
+    globus_io_handle_get_user_pointer( handle,
+				       (void **) userfunc );
+
+    rc = globus_gram_http_unframe( buf,
+				   nbytes,
+				   (globus_byte_t *) message,
+				   &msgsize);
+
+    if (rc != GLOBUS_SUCCESS || msgsize <= 0)
+    {
+	job_status   = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+	failure_code = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    }
+    else if (3 != sscanf(message,
+			 "%d %s %d %d",
+			 &version,
+			 url,
+			 &job_status,
+			 &failure_code))
+    {
+	job_status   = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+	failure_code = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    }
+    else if (version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+	job_status   = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+	failure_code = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }
+
+    (*userfunc)(arg, url, job_status, failure_code);
+
+    /* release mutex */
+}	      
 
 
 void
@@ -152,8 +239,7 @@ globus_gram_http_accept_callback( void *                arg,
 	globus_io_handle_set_user_pointer(handle,
 					  user_ptr );
 
-	message = (globus_byte_t *)
-	             globus_libc_malloc(GLOBUS_GRAM_HTTP_BUFSIZE);
+	message = my_malloc(globus_byte_t,GLOBUS_GRAM_HTTP_BUFSIZE);
 	
 	result = globus_io_register_read( handle,
 					  message,
@@ -174,10 +260,13 @@ globus_gram_http_listen_callback( void *                ignored,
 {
     globus_io_handle_t *  handle;
 
+    verbose(notice("listen_callback : got connection on listener %d\n",
+		   handle->fd));
+
     if (result == GLOBUS_SUCCESS)
     {
 	/* acquire mutex */
-	handle = my_malloc(globus_io_handle_t);
+	handle = my_malloc(globus_io_handle_t,1);
 
 	result = globus_io_tcp_register_accept(
 	             listener_handle,
@@ -198,7 +287,7 @@ globus_gram_http_listen_callback( void *                ignored,
 /************************* help function *********************************/
 
 int
-globus_gram_http_setup_attr( globus_io_attr_t *  attr)
+globus_l_gram_http_setup_attr( globus_io_attr_t *  attr)
 {
     globus_result_t                        res;
     globus_io_secure_authorization_data_t  auth_data;
@@ -251,14 +340,14 @@ globus_gram_http_allow_attach( unsigned short *           port,
 
     /* acquire mutex */
 
-    rc = globus_gram_http_setup_attr( &attr );
+    rc = globus_l_gram_http_setup_attr( &attr );
     if (rc != GLOBUS_SUCCESS)
     {
 	/* release mutex */
 	return rc;
     }
 
-    handle = my_malloc(globus_io_handle_t);
+    handle = my_malloc(globus_io_handle_t,1);
 
     globus_libc_gethostname(hostnamebuf, 256);
     *host = globus_libc_strdup(hostnamebuf);
@@ -278,7 +367,7 @@ globus_gram_http_allow_attach( unsigned short *           port,
 	return rc;
     }
 
-    buf = (void **) globus_libc_malloc(3 * sizeof(void *));
+    buf = my_malloc(void *, 3);
 
     buf[0] = user_ptr;
     buf[1] = (void *) user_callback;
@@ -300,7 +389,7 @@ globus_gram_http_allow_attach( unsigned short *           port,
     }
     else
     {
-	new_listener = my_malloc(globus_i_gram_http_listener_t);
+	new_listener = my_malloc(globus_i_gram_http_listener_t,1);
 	new_listener->port   = *port;
 	new_listener->handle = handle;
 	globus_list_insert(&globus_i_gram_http_listeners, new_listener);
@@ -313,72 +402,11 @@ globus_gram_http_allow_attach( unsigned short *           port,
 }
 
 
-/********************* attaches to a URL, returns globus_io handle ******/
-
-int
-globus_gram_http_attach( char *               job_contact,
-			 globus_io_handle_t * handle)
-{
-    int                  rc;
-    globus_result_t      res;
-    globus_io_attr_t     attr;
-    globus_url_t         url;
-
-    /* acquire mutex */
-
-    /* dissect the job_contact URL */
-    rc = globus_url_parse(job_contact, &url);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	globus_url_destroy(&url);
-	/* release mutex */
-	return GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
-    }
-
-    rc = globus_gram_http_setup_attr( &attr );
-    if (rc != GLOBUS_SUCCESS)
-    {
-	globus_url_destroy(&url);
-	/* release mutex */
-	return rc;
-    }
-
-    res = globus_io_tcp_connect( url.host,
-				 url.port,
-				 &attr,
-				 handle );
-    
-    if (res != GLOBUS_SUCCESS)
-    {   
-        globus_object_t *       err  = globus_error_get(res);
-
-        if (globus_object_type_match(
-	        GLOBUS_IO_ERROR_TYPE_SECURITY_FAILED,
-		globus_object_type_get_parent_type(
-		    globus_object_get_type(err))))
-        {   
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION;
-        }
-        else
-        {
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
-        }
-	globus_object_free(err);
-    }
-
-    globus_io_tcpattr_destroy(&attr);
-    globus_url_destroy(&url);
-
-    /* release mutex */
-    return rc;
-}
-
-
 
 /******************** locates listener at URL and closes it ************/
 
 int
-globus_gram_http_disallow_attach(char *   httpsurl)
+globus_gram_http_callback_disallow(char *   httpsurl)
 {
     int                              rc;
     globus_list_t  *                 list;
@@ -424,7 +452,7 @@ globus_gram_http_disallow_attach(char *   httpsurl)
     }
 
     globus_io_register_close( handle,
-			      globus_gram_http_close_callback,
+			      globus_gram_http_close_listener_callback,
 			      GLOBUS_NULL );
     
     /* release mutex */
@@ -432,20 +460,254 @@ globus_gram_http_disallow_attach(char *   httpsurl)
 }
 
 
+
+/**************************** "HTTP" callbacks ************************/
+
+
+void
+globus_gram_http_close_callback( void *                arg,
+				 globus_io_handle_t *  handle,
+				 globus_result_t       result)
+{
+    globus_io_attr_t              attr;
+    globus_gram_http_monitor_t *  monitor; 
+    
+    verbose(notice("close_callback : handle %d is done\n", handle->fd));
+
+    /* acquire mutex */
+    globus_io_tcp_get_attr(handle, &attr);
+    globus_io_tcpattr_destroy(&attr);
+
+    globus_io_handle_get_user_pointer( handle,
+				       (void **) &monitor );
+    
+    if (result != GLOBUS_SUCCESS)
+    {
+	monitor_signal_done(monitor, GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+    }
+    else
+    {
+	monitor_signal_done(monitor, GLOBUS_SUCCESS);
+    }
+
+    globus_mutex_lock(&monitor->mutex);    
+    if (monitor->destruct_options & GLOBUS_GRAM_HTTP_FREE_HANDLE)
+    {
+	globus_libc_free(handle);
+    }
+    globus_mutex_unlock(&monitor->mutex);
+}
+
+
+
+void
+globus_gram_http_close_after_read_or_write( void * arg,
+					    globus_io_handle_t * handle,
+					    globus_result_t result,
+					    globus_byte_t * buf,
+					    globus_size_t nbytes)
+{
+    globus_gram_http_monitor_t *  monitor; 
+
+    verbose(notice("close_after_read_or_write : buf=%x,  handle=%d\n",
+		   buf, handle->fd));
+
+    /* acquire mutex */
+
+    globus_io_handle_get_user_pointer( handle,
+				       (void **) &monitor );
+
+    if (result != GLOBUS_SUCCESS)
+    {
+	monitor_signal_done(monitor,GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    if (monitor->destruct_options & GLOBUS_GRAM_HTTP_FREE_BUF)
+	globus_libc_free(buf);
+    globus_mutex_unlock(&monitor->mutex);
+
+    /* release mutex */
+
+    globus_io_register_close(handle,
+			     globus_gram_http_close_callback,
+			     arg);
+}
+
+
+void
+globus_gram_http_post_callback( void * messagebuf,
+				globus_io_handle_t * handle,
+				globus_result_t result,
+				globus_byte_t * buf,
+				globus_size_t nbytes)
+{
+    globus_gram_http_monitor_t *   monitor;
+    globus_result_t                res;
+
+    verbose(notice("http_post_callback : done writing %x on %d\n",
+		   sendbuf,
+		   handle->fd));
+
+    /* acquire mutex */
+
+    globus_io_handle_get_user_pointer( handle,
+				       (void **) &monitor );
+
+    if (result != GLOBUS_SUCCESS)
+    {
+	monitor_signal_done(monitor, GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+    }
+
+    res = globus_io_register_read( handle,
+				   buf,
+				   GLOBUS_GRAM_HTTP_BUFSIZE,
+				   GLOBUS_GRAM_HTTP_BUFSIZE,
+				   globus_gram_http_get_callback,
+				   messagebuf);
+
+    if (res != GLOBUS_SUCCESS)
+    {
+	monitor_signal_done(monitor, GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+    }
+
+    /* release mutex */
+
+}
+
+
+void
+globus_gram_http_get_callback( void * arg,
+			       globus_io_handle_t * handle,
+			       globus_result_t result,
+			       globus_byte_t * buf,
+			       globus_size_t nbytes)
+{
+    globus_gram_http_monitor_t *   monitor;
+    void **                        p;
+    int                            rc;
+
+    verbose(notice("http_get_callback : done read %x on %d\n",
+		   sendbuf,
+		   handle->fd));
+
+    /* acquire mutex */
+
+    globus_io_handle_get_user_pointer( handle,
+				       (void **) &monitor );
+
+    if (result != GLOBUS_SUCCESS)
+    {
+	monitor_signal_done(monitor, GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+    }
+    else
+    {
+	p = (void **) arg;
+
+	rc = globus_gram_http_unframe( buf,
+				       nbytes,
+				       (globus_byte_t *) p[0],
+				       (globus_size_t *) p[1] );
+
+	if (!rc)
+	    monitor_signal_done(monitor, rc);
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    if (monitor->destruct_options & GLOBUS_GRAM_HTTP_FREE_BUF)
+	globus_libc_free(buf);
+    globus_mutex_unlock(&monitor->mutex);
+
+    /* release mutex */
+
+    verbose(notice("http_post_and_get : handle %d done, closing\n",
+		   handle->fd));
+	
+    globus_io_register_close(handle,
+			     globus_gram_http_close_callback,
+			     GLOBUS_NULL);
+}
+
+
+/********************* attaches to a URL, returns globus_io handle ******/
+
+int
+globus_gram_http_attach( char *               job_contact,
+			 globus_io_handle_t * handle)
+{
+    int                  rc;
+    globus_result_t      res;
+    globus_io_attr_t     attr;
+    globus_url_t         url;
+
+    /* acquire mutex */
+
+    /* dissect the job_contact URL */
+    rc = globus_url_parse(job_contact, &url);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_url_destroy(&url);
+	/* release mutex */
+	return GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
+    }
+
+    rc = globus_l_gram_http_setup_attr( &attr );
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_url_destroy(&url);
+	/* release mutex */
+	return rc;
+    }
+
+    res = globus_io_tcp_connect( url.host,
+				 url.port,
+				 &attr,
+				 handle );
+    
+    if (res != GLOBUS_SUCCESS)
+    {   
+        globus_object_t *       err  = globus_error_get(res);
+
+        if (globus_object_type_match(
+	        GLOBUS_IO_ERROR_TYPE_SECURITY_FAILED,
+		globus_object_type_get_parent_type(
+		    globus_object_get_type(err))))
+        {   
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION;
+        }
+        else
+        {
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
+        }
+	globus_object_free(err);
+    }
+
+    globus_io_tcpattr_destroy(&attr);
+    globus_url_destroy(&url);
+
+    /* release mutex */
+    return rc;
+}
+
+
+
 /************************** HTTP "framing" routines *******************/
 
 int
 globus_gram_http_frame(globus_byte_t *    msg,
 		       globus_size_t      msgsize,
-		       globus_byte_t *    result)
+		       globus_byte_t *    framedmsg,
+		       globus_size_t *    framedsize)
 {
-    globus_libc_sprintf((char *)result, 
+    globus_libc_sprintf((char *) framedmsg,
 			"#HTTP <version and some other info>\n" 
 			"#content-type: text/ascii\n" 
-			"#content-length: %d\n", 
-			msgsize); 
+			"#content-length: %d\n\n", 
+			msgsize);
 
-    strncpy((char *)(result) + strlen((char *)result), 
+    *framedsize = strlen((char *)framedmsg) + msgsize;
+
+    strncpy((char *)(framedmsg) + strlen((char *)framedmsg), 
 	    (char *) msg, 
 	    msgsize);
 
@@ -459,7 +721,7 @@ globus_gram_http_frame_error(globus_byte_t *    msg)
     globus_libc_sprintf((char *)msg, 
 			"#HTTP ERROR <version and some other info>\n" 
 			"#content-type: text/ascii\n" 
-			"#content-length: 0\n" );
+			"#content-length: 0\n\n" );
     
     return GLOBUS_SUCCESS;
 }
@@ -469,7 +731,7 @@ int
 globus_gram_http_unframe(globus_byte_t *    httpmsg,
 			 globus_size_t      httpsize,
 			 globus_byte_t *    message,
-			 globus_size_t *    msgsize)
+			 globus_size_t *    msgsize )
 {
     globus_bool_t     found;
     char *            p;
@@ -484,8 +746,8 @@ globus_gram_http_unframe(globus_byte_t *    httpmsg,
     end           = p + httpsize;
     s             = 0;
     err           = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    *msgsize      = 0;
     p[httpsize-1] = '\0';  /* ensure strchr() won't run out of bounds... */
+    *msgsize      = 0;
 
     while (!found && (p < end))
     { 
@@ -508,8 +770,8 @@ globus_gram_http_unframe(globus_byte_t *    httpmsg,
     {
 	err = GLOBUS_SUCCESS;
 	s = GLOBUS_MIN( s, GLOBUS_GRAM_HTTP_BUFSIZE-1);
-	*msgsize = (globus_size_t) s;
-	strncpy((char *)message, p, s);
+	*msgsize = s;
+	strncpy((char *)message, ++p /* another '\n' */ , s);
 	message[s] = '\0';
     }
 
@@ -520,31 +782,46 @@ globus_gram_http_unframe(globus_byte_t *    httpmsg,
 
 /************************ "HTTP" post/get functions ************************/
 
-
 int
-globus_gram_http_post( char *           url,
-		       globus_byte_t *  message,
-		       globus_size_t    msgsize )
+globus_l_gram_http_post( char *                         url,
+			 globus_byte_t *                message,
+			 globus_size_t                  msgsize,
+			 globus_gram_http_monitor_t *   monitor,
+			 globus_io_write_callback_t     callback,
+			 void *                         callback_arg)
 {
     int                             rc;
     globus_result_t                 res;
     globus_io_handle_t *            handle;
-    globus_byte_t                   sendbuf[GLOBUS_GRAM_HTTP_BUFSIZE];
-    globus_size_t                   bytes_processed;
+    globus_byte_t *                 sendbuf;
+    globus_size_t                   sendbufsize;
     int                             version;
 
     /* acquire mutex */
 
-    handle = my_malloc(globus_io_handle_t);
+    handle  = my_malloc(globus_io_handle_t,1);
+    sendbuf = my_malloc(globus_byte_t, GLOBUS_GRAM_HTTP_BUFSIZE);
 
-    if ( (rc = globus_gram_http_attach(url, handle))
-	 || (rc = globus_gram_http_frame( message,
-					  msgsize,
-					  sendbuf )) )
+    if ( (rc = globus_gram_http_frame( message,
+				       msgsize,
+				       sendbuf,
+				       &sendbufsize))
+	 || (rc = globus_gram_http_attach(url, handle)) )
     {
+	globus_libc_free(sendbuf);
 	/* release mutex */
 	return rc;
     }
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->destruct_options = 0;
+    monitor->destruct_options |= GLOBUS_GRAM_HTTP_FREE_BUF;
+    monitor->destruct_options |= GLOBUS_GRAM_HTTP_FREE_HANDLE;
+    monitor->destruct_options |= GLOBUS_GRAM_HTTP_SIGNAL_MONITOR;
+    globus_mutex_unlock(&monitor->mutex);
+
+    globus_io_handle_set_user_pointer( handle,
+				       (void *) monitor );
 
     verbose(notice("http_post : writing on %d\n%s----\n",
 		   handle->fd,
@@ -552,150 +829,54 @@ globus_gram_http_post( char *           url,
 
     res = globus_io_register_write( handle,
 				    sendbuf,
-				    GLOBUS_GRAM_HTTP_BUFSIZE,
+				    sendbufsize,
+				    callback,
+				    callback_arg );
+
+    /* release mutex */
+    return GLOBUS_SUCCESS;
+}
+
+
+int
+globus_gram_http_post( char *                         url,
+		       globus_byte_t *                message,
+		       globus_size_t                  msgsize,
+		       globus_gram_http_monitor_t *   monitor)
+{
+    return globus_l_gram_http_post( url,
+				    message,
+				    msgsize,
+				    monitor,
 				    globus_gram_http_close_after_read_or_write,
 				    GLOBUS_NULL );
 }
 
 
+
 int
-globus_gram_http_post_and_get( char *           url,
-			       globus_byte_t *  message,
-			       globus_size_t *  msgsize)
+globus_gram_http_post_and_get( char *                         url,
+			       globus_byte_t *                message,
+			       globus_size_t *                msgsize,
+			       globus_gram_http_monitor_t *   monitor)
 {
-    int                             rc;
-    globus_result_t                 res;
-    globus_io_handle_t *            handle;
-    globus_byte_t                   sendbuf[GLOBUS_GRAM_HTTP_BUFSIZE];
-    globus_size_t                   bytes_processed;
-    int                             version;
+    void **    p;
 
     /* acquire mutex */
 
-    handle = my_malloc(globus_io_handle_t);
+    p = my_malloc(void*, 2);
 
-    if ( (rc = globus_gram_http_attach(url, handle))
-	 || (rc = globus_gram_http_frame( message,
-					  *msgsize,
-					  sendbuf )) )
-    {
-	/* release mutex */
-	return rc;
-    }
-
-    verbose(notice("http_post_and_get : writing on %d\n%s----\n",
-		   handle->fd,
-		   (char *) sendbuf));
-
-    res = globus_io_write( handle,
-			   sendbuf,
-			   GLOBUS_GRAM_HTTP_BUFSIZE,
-			   &bytes_processed );
-
-    if ((res != GLOBUS_SUCCESS) ||
-	(bytes_processed != GLOBUS_GRAM_HTTP_BUFSIZE)) 
-    {
-	verbose(notice("http_post_and_get : error on %d, closing\n",
-		       handle->fd));
-
-	globus_io_register_close( handle,
-				  globus_gram_http_close_callback,
-				  GLOBUS_NULL );
-	/* release mutex */
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
-
-    verbose(notice("http_post_and_get : reading %x on %d\n",
-		   sendbuf,
-		   handle->fd));
-
-    res = globus_io_read( handle,
-			  sendbuf,
-			  GLOBUS_GRAM_HTTP_BUFSIZE,
-			  GLOBUS_GRAM_HTTP_BUFSIZE,
-			  &bytes_processed );
-
-    if ((res != GLOBUS_SUCCESS) ||
-	(bytes_processed != GLOBUS_GRAM_HTTP_BUFSIZE))
-    {
-	/* release mutex */
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
-
-    verbose(notice("http_post_and_get : handle %d done, closing\n",
-		   handle->fd));
-
-    globus_io_register_close(handle,
-			     globus_gram_http_close_callback,
-			     GLOBUS_NULL);
-
-    rc = globus_gram_http_unframe( sendbuf,
-				   bytes_processed,
-				   message,
-				   msgsize);
-    /* release mutex */
-    verbose(notice("http_post_and_get : returning  %d\n", rc));
-    return rc;
-}
-
-
-/*
- * This is a wrapper around the post_and_get function.  It adds GRAM
- * version checking.
- */
-
-int
-globus_gram_http_query_response(char *           https_url,
-				globus_byte_t *  query,
-				globus_byte_t *  response)
-{
-    int                             rc;
-    globus_byte_t                   message[GLOBUS_GRAM_HTTP_BUFSIZE];
-    globus_size_t                   msgsize;
-    int                             version;
-    char *                          p;
-
-    /* OLLE: query and response are assumed to be strings.
-
-       The protocol:
-       establish secure connection to job_contact, post a string
-       {GLOBUS_GRAM_PROTOCOL_VERSION,query}
-       then block on reply from the job manager containing
-       {GLOBUS_GRAM_PROTOCOL_VERSION,status}
-       */
-
-    /* acquire mutex */
-
-    globus_libc_sprintf( (char *) message,
-			 "%d\n%s\n",
-			 GLOBUS_GRAM_PROTOCOL_VERSION,
-			 (char *) query );
-
-    msgsize = (globus_size_t) strlen((char *) message);
-
-    rc = globus_gram_http_post_and_get(https_url,
-				       message,
-				       &msgsize );
-    if (rc != GLOBUS_SUCCESS )
-    {
-	verbose(notice("query_response : got rc = %d\n", rc));
-	/* release mutex */
-	return rc;
-    }
-
-    if ( (1!=sscanf((char *) message, "%d\n", &version))
-	 || (version != GLOBUS_GRAM_PROTOCOL_VERSION) )
-    {
-	/* release mutex */
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
-
-    p = strchr((char *)(message),'\n');
-    ++p;
-
-    strcpy((char *)response, p);
+    p[0] = (void *) message;
+    p[1] = (void *) msgsize;
 
     /* release mutex */
-    return GLOBUS_SUCCESS;
+
+    return globus_l_gram_http_post( url,
+				    message,
+				    *msgsize,
+				    monitor,
+				    globus_gram_http_post_callback,
+				    (void *) p );
 }
+
 

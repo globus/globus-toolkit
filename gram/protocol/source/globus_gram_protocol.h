@@ -26,6 +26,19 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_HTTP_QUERY_JOB_START_TIME  5
 
 
+typedef struct
+{
+    globus_mutex_t           mutex;
+    globus_cond_t            cond;
+    volatile globus_bool_t   done;
+    volatile int             errorcode;
+    volatile void *          buf;
+
+    /* used internally: */
+    volatile int           destruct_options;
+} globus_gram_http_monitor_t;
+
+
 /*
  * part of GRAM_CLIENT activation
  */
@@ -58,11 +71,12 @@ globus_gram_http_allow_attach( unsigned short *           port,
 			       globus_io_read_callback_t  user_callback,
 			       void *                     user_callback_arg);
 
+
 /*
  * kills the listener at the specified URL.
  */
 int
-globus_gram_http_disallow_attach( char *  url );
+globus_gram_http_callback_disallow( char *  url );
 
 
 /*
@@ -81,38 +95,37 @@ globus_gram_http_close_after_read_or_write( void * arg,
 					    globus_size_t nbytes);
 
 /*
- * user-supplied function that takes care of the client query and
- * generates a response.
+ * callback to bridge between globus_io_read_callback_t and
+ * globus_gram_client_callback_func_t
  */
-extern void
-globus_gram_http_query_callback( void * arg,
-				 globus_io_handle_t * handle,
-				 globus_result_t result,
-				 globus_byte_t * buf,
-				 globus_size_t nbytes);
 
-/*
- * sends a message "query", waits for an reply "response". This is
- * a version-checking wrapper around globus_gram_http_post_and_get()
- */
-int
-globus_gram_http_query_response(char *           https_url,
-				globus_byte_t *  query,
-				globus_byte_t *  response);
+void
+globus_gram_http_client_callback( void * arg,
+				  globus_io_handle_t * handle,
+				  globus_result_t result,
+				  globus_byte_t * buf,
+				  globus_size_t nbytes);
 
-/* posts a message of maxsize GLOBUS_GRAM_HTTP_BUFSIZE, reuses buffer
-   for response */
+
 int
-globus_gram_http_post_and_get( char *            url,
-			       globus_byte_t *   message,
-			       globus_size_t *   msgsize);
+globus_gram_http_post( char *                         url,
+		       globus_byte_t *                message,
+		       globus_size_t                  msgsize,
+		       globus_gram_http_monitor_t *   monitor);
+
+int
+globus_gram_http_post_and_get( char *                         url,
+			       globus_byte_t *                message,
+			       globus_size_t *                msgsize,
+			       globus_gram_http_monitor_t *   monitor);
 
 
 /* frame message with HTTP headers */
 int
 globus_gram_http_frame(globus_byte_t *    msg,
 		       globus_size_t      msgsize,
-		       globus_byte_t *    result);
+		       globus_byte_t *    httpmsg,
+		       globus_size_t *    httpsize);
 
 /* create HTTP error message */
 int
