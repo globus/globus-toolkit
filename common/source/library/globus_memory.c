@@ -109,7 +109,7 @@ globus_memory_create_list(
     return GLOBUS_TRUE;
 }
 
-globus_byte_t *
+void *
 globus_memory_pop_node(
     globus_memory_t * mem_info)
 {
@@ -146,9 +146,12 @@ globus_memory_pop_node(
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
-    globus_byte_t *              buf)
+    void *                      buffer)
 {
     globus_l_memory_header_t *   header;
+    globus_byte_t *              buf;
+    
+    buf = (globus_byte_t *) buffer;
     
     globus_mutex_lock(&mem_info->lock);
     { 
