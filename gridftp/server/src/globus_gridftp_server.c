@@ -788,7 +788,7 @@ globus_l_gfs_reject_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    char * sorry_msg = "421 sorry chalrie\r\n";
+    char * sorry_msg = "421 Service not available, closing control connection\r\n";
 
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
