@@ -128,7 +128,7 @@ globus_gram_protocol_setup_attr(globus_io_attr_t *  attr)
 	                &auth_data))
 	 || (res = globus_io_attr_set_secure_authentication_mode(
 	                attr,
-			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 			globus_i_gram_protocol_credential))
 	 || (res = globus_io_attr_set_secure_authorization_mode(
 	                attr,
