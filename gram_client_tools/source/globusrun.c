@@ -59,6 +59,7 @@ typedef struct globus_i_globusrun_gram_monitor_s
 
     globus_bool_t  verbose;
     unsigned long  job_state;
+    int            failure_code;
 } globus_i_globusrun_gram_monitor_t;
 
 /*****************************************************************************
@@ -1165,6 +1166,7 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED\n");
 	}
         monitor->done = GLOBUS_TRUE;
+	monitor->failure_code = errorcode;
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
 	if(monitor->verbose)
@@ -1231,6 +1233,7 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 
     monitor.done = GLOBUS_FALSE;
+    monitor.failure_code = 0;
     monitor.verbose=verbose;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -1363,7 +1366,10 @@ globus_l_globusrun_gramrun(char * request_string,
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 
-    err=!(monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE);
+    if(monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+    {
+	err = monitor.failure_code;
+    }
 
 hard_exit:
 
