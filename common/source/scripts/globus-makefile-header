@@ -104,7 +104,7 @@ if ($environment eq "gpt1")
         $argstring .= "-static ";
     }
 
-    $pkgstr = join(/ /, @pkgs);
+    $pkgstr = join(' ', @pkgs);
     if (length($pkgstr) > 0)
     {
         $argstring .= "$pkgstr ";
