@@ -686,52 +686,47 @@ globus_l_ftp_client_data_callback(
 
     if(eof)
     {
-	if (
-	    (client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
-	    ) 
-	    && target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA)
-	{
-	    if(client_handle->num_active_blocks == 0)
-	    {
-		/*
-		 * This is the last data block, and the response to the RETR,
-		 * ERET, STOR, or ESTO operation has not been received, 
-		 * change state to prevent any subsequent data blocks being
-		 * queued.
-		 */
-		target->state =
-		    GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	    }
-	    /* otherwise, we just deal with this as normal */
-	}
-	else if(
-	    (client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
-	    ) && (target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK ||
-		  target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE))
-	{
-	    /* 
-	     * If this is the last data block, and the response to the RETR,
-	     * ERET, STOR, or ESTO operation has been received, then we
-	     * must clean up after dispatching this callback.
-	     */
-	    if(client_handle->num_active_blocks == 0)
-	    {
-		dispatch_final = GLOBUS_TRUE;
-		target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
-	    }
-	    else
-	    {
-		target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE;
-	    }
-	}
+        if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {
+            if(target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA)
+            {
+                if(client_handle->num_active_blocks == 0)
+                {
+                    /*
+                     * This is the last data block, and the response to the RETR,
+                     * ERET, STOR, or ESTO operation has not been received, 
+                     * change state to prevent any subsequent data blocks being
+                     * queued.
+                     */
+                    target->state =
+                        GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+                }
+                /* otherwise, we just deal with this as normal */
+            }
+            else if(target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK ||
+                target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
+                target->state == GLOBUS_FTP_CLIENT_TARGET_FAULT)
+            {
+                /* 
+                 * If this is the last data block, and the response to the RETR,
+                 * ERET, STOR, or ESTO operation has been received, then we
+                 * must clean up after dispatching this callback.
+                 */
+                if(client_handle->num_active_blocks == 0)
+                {
+                    dispatch_final = GLOBUS_TRUE;
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
+                }
+                else if(target->state != GLOBUS_FTP_CLIENT_TARGET_FAULT)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE;
+                }
+            }
+        }
     }
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
@@ -887,52 +882,52 @@ globus_l_ftp_client_read_all_callback(
      * Figure out if we need to call the completion function
      * once this block's callback has been done
      */
+     
     if(eof)
     {
-	client_handle->num_active_blocks--;
+        client_handle->num_active_blocks--;
 
-	if (
-	    (client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
-	    ) 
-	    && target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA)
-	{
-	    if(client_handle->num_active_blocks == 0)
-	    {
-		/*
-		 * This is the last data block, and the response to the RETR,
-		 * ERET, STOR, or ESTO operation has not been received, 
-		 * change state to prevent any subsequent data blocks being
-		 * queued.
-		 */
-		target->state =
-		    GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	    }
-	    /* otherwise, we just deal with this as normal */
-	}
-	else if(
-	    (client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
-	    ) && (target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK ||
-		  target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE))
-	{
-	    /* 
-	     * If this is the last data block, and the response to the RETR,
-	     * ERET, STOR, or ESTO operation has been received, then we
-	     * must clean up after dispatching this callback.
-	     */
-	    if(client_handle->num_active_blocks == 0)
-	    {
-		dispatch_final = GLOBUS_TRUE;
-		target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
-	    }
-	    else
-	    {
-		target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE;
-	    }
-	}
+        if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {
+            if(target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA)
+            {
+                if(client_handle->num_active_blocks == 0)
+                {
+                    /*
+                     * This is the last data block, and the response to the RETR,
+                     * ERET, STOR, or ESTO operation has not been received, 
+                     * change state to prevent any subsequent data blocks being
+                     * queued.
+                     */
+                    target->state =
+                        GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+                }
+                /* otherwise, we just deal with this as normal */
+            }
+            else if(target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK ||
+                target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
+                target->state == GLOBUS_FTP_CLIENT_TARGET_FAULT)
+            {
+                /* 
+                 * If this is the last data block, and the response to the RETR,
+                 * ERET, STOR, or ESTO operation has been received, then we
+                 * must clean up after dispatching this callback.
+                 */
+                if(client_handle->num_active_blocks == 0)
+                {
+                    dispatch_final = GLOBUS_TRUE;
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
+                }
+                else if(target->state != GLOBUS_FTP_CLIENT_TARGET_FAULT)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE;
+                }
+            }
+        }
     }
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
