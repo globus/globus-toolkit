@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-#
+
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
@@ -68,7 +68,8 @@ bin_PROGRAMS= \
 	myproxy-get-delegation \
 	myproxy-change-pass-phrase
 
-sbin_PROGRAMS= myproxy-server \
+sbin_PROGRAMS= \
+	myproxy-server \
 	myproxy-admin-load-credential \
 	myproxy-admin-query
 
