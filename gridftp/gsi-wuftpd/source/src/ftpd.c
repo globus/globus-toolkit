@@ -2861,11 +2861,11 @@ void pass(char *passwd)
 	else {
 #endif /* BSD_AUTH */
 	    *guestpw = '\0';
-	    if (pw == NULL)
+	    if (pw == NULL || strlen(pw->pw_passwd) == 0)
 		salt = "xx";
 	    else
+                salt = pw->pw_passwd;
 #ifndef OPIE
-		salt = pw->pw_passwd;
 #ifdef SECUREOSF
 	    if ((pr = getprpwnam(pw->pw_name)) != NULL) {
 		if (pr->uflg.fg_newcrypt)
@@ -2900,7 +2900,7 @@ void pass(char *passwd)
 #else /* OPIE */
 	    if (!opieverify(&opiestate, passwd))
 		rval = 0;
-	    xpasswd = crypt(passwd, pw->pw_passwd);
+	    xpasswd = crypt(passwd, salt);
 #endif /* OPIE */
 #ifdef GSSAPI
 	    if (gssapi_user_is_good) {
