@@ -171,7 +171,13 @@ opensslinclude_HEADERS = \
 	e_os.h
 
 
-EXTRA_DIST = globus_openssl_post globus_openssl_pre CHANGES CHANGES.gpt bootstrap \
+EXTRA_DIST = \
+	globus_openssl_post \
+	globus_openssl_pre \
+	CHANGES \
+	CHANGES.gpt \
+	LICENSE\
+bootstrap \
         globus_automake_pre \
         globus_automake_post \
         globus_automake_pre_top \
