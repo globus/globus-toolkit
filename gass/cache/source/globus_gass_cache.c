@@ -1179,8 +1179,10 @@ globus_l_gass_cache_lock_file(
     int    return_code=GLOBUS_SUCCESS;
 
 #   ifdef LOCK_TOUT
-    int    lock_tout=0;
-    struct timeval tv;
+    {
+	int    lock_tout=0;
+	struct timeval tv;
+    }
 #   endif
 
     /* build the name of the file used to lock "file_to_be_locked" */
@@ -1228,98 +1230,105 @@ globus_l_gass_cache_lock_file(
 	    }
 
 #           ifdef LOCK_TOUT
-	    lock_tout++;
-	    if (lock_tout> LOCK_TOUT)
 	    {
-		/* check the age of the file to lock */
-		while ( stat(lock_file ,&file_stat) != 0)
+		lock_tout++;
+		if (lock_tout> LOCK_TOUT)
 		{
-		    if (errno != EINTR)
+		    /* check the age of the file to lock */
+		    while ( stat(lock_file ,&file_stat) != 0)
 		    {
-			CACHE_TRACE2("could not get stat of file %s",
-				     lock_file);
-			return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+			if (errno != EINTR)
+			{
+			    CACHE_TRACE2("could not get stat of file %s",
+					 lock_file);
+			    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+			}
 		    }
+		    while ( stat(temp_file,&tmp_file_stat) != 0)
+		    {
+			if (errno != EINTR)
+			{
+			    CACHE_TRACE2("could not get stat of file %s",
+					 temp_file);
+			    /*
+			      If this has occurred, then either :
+			      1/ The lock file has either been broken by
+			      another process/thread
+			      2/ the lock has been has been released, 
+			      3/ the locking process crashed just when the
+			      temp file was not here (before creation or after 
+			      rename/deletion) but when the lock was 
+			      already/still there.	
+			      In case 1 and 2 I should try again to acquire
+			      the lock. In case 3 the lock will never be 
+			      released if I do not do some thing. I will create
+			      an empty "temp" file (no trunc) so next time I 
+			      timeout.
+			      I could see that this file is old (or not)
+			      */
+			    temp_file_fd = open(temp_file,
+						O_WRONLY |O_CREAT,
+						GLOBUS_L_GASS_CACHE_STATE_MODE );
+			    if (temp_file_fd == -1 )
+			    {
+				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+			    }
+			    
+			    /* let wait again */
+			    lock_tout = 0;
+			    
+			    goto end_of_while;
+			}
+		    }
+		    /* get system time */
+		    gettimeofday(&tv, 0);
+		    
+		    if ( ( file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec) &&
+			 ( tmp_file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec) )
+			
+		    {
+			/* the file has not been accessed for long,
+			   lets break the lock */
+			/*
+			  CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
+			  file_to_be_locked);
+			  */
+			while (unlink(temp_file) != 0 )
+			{
+			    if (errno != EINTR && errno != ENOENT )
+			    {
+				CACHE_TRACE2("Could not remove lock file %s",temp_file);
+				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
+			    }
+			    if (errno == ENOENT )
+				break;
+			}
+			while (unlink(lock_file) != 0 )
+			{
+			    if (errno != EINTR && errno != ENOENT )
+			    {
+				CACHE_TRACE2("Could not remove lock file %s",lock_file);
+				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
+			    }
+			    if (errno == ENOENT )
+			    {
+				break;
+			    }
+			}
+			return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT;
+		    }
+		    
+		    lock_tout=0;
 		}
-		while ( stat(temp_file,&tmp_file_stat) != 0)
+		else
 		{
-		    if (errno != EINTR)
-		    {
-			CACHE_TRACE2("could not get stat of file %s",
-				     temp_file);
-			/* If this has occurred, then either :
-                           1/ the lock file has either been broken by another 
-                             process/thread
-			   2/ the lock has been has been released, 
-                           3/ the locking process crashed just when the temp 
-                              file was not here (before creation or after 
-                              rename/deletion) but when the lock was 
-                              already/still there.	
-                           In case 1 and 2 I should try again to
-			   acquire the lock. In case 3 the lock will never be 
-                           released if I do not do some thing. I will create
-                           an empty "temp" file (no trunc) so next time I 
-                           timeout. I could see that this file is old (or not)
-			*/
-                        temp_file_fd = open(temp_file,
-			                     O_WRONLY |O_CREAT,
-		                             GLOBUS_L_GASS_CACHE_STATE_MODE );
-                        if (temp_file_fd == -1 )
-			{
-			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-			}
-
-			/* let wait again */
-			lock_tout = 0;
-
-			goto end_of_while;
-		    }
+		    globus_libc_usleep(LOOP_TIME);
 		}
-		/* get system time */
-		gettimeofday(&tv, 0);
-
-		if ( ( file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec) &&
-		     ( tmp_file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec) )
-		     
-		{
-		    /* the file has not been accessed for long,
-		       lets break the lock */
-		    /*
-		    CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
-				 file_to_be_locked);
-		    */
-		    while (unlink(lock_file) != 0 )
-		    {
-			if (errno != EINTR && errno != ENOENT )
-			{
-			    CACHE_TRACE2("Could not remove lock file %s",lock_file);
-			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-			}
-			if (errno == ENOENT )
-			    break;
-		    }
-		    while (unlink(temp_file) != 0 )
-		    {
-			if (errno != EINTR && errno != ENOENT )
-			{
-			    CACHE_TRACE2("Could not remove lock file %s",temp_file);
-			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-			}
-			if (errno == ENOENT )
-			    break;
-		    }
-		    return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT;
-		}
-		
-		lock_tout=0;
-	    }
-	    else
-	    {
-		globus_libc_usleep(LOOP_TIME);
 	    }
 #           else
-		
-	    globus_libc_usleep(LOOP_TIME);
+	    {	
+		globus_libc_usleep(LOOP_TIME);
+	    }
 #           endif
 	    /* try again to lock the file */
 
@@ -1348,7 +1357,9 @@ globus_l_gass_cache_lock_file(
 		    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 		}
 		if (errno == ENOENT )
+		{
 		    break;
+		}
 	    }
 	}
 	else
@@ -1412,7 +1423,9 @@ globus_l_gass_cache_unlock_file(
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	}
 	if (errno == ENOENT )
+	{
 	    break;
+	}
     }
     while ( unlink(uniq_lock_file) != 0 )
     {
@@ -1423,7 +1436,9 @@ globus_l_gass_cache_unlock_file(
 	    break;
 	}
 	if (errno == ENOENT )
+	{
 	    break;
+	}
     }
     
     return(GLOBUS_SUCCESS); 
@@ -1919,18 +1934,22 @@ globus_gass_cache_open(char                *cache_directory_path,
     else			/* cache_directory_path is valid */
     {
 	/* For the first version, we do not accept a  cache_directory_path */
-#       if 0	
-	/* for the version which will accept a cache directory not null  */
-	if (f_name_lenght >= PATH_MAX)
+#       if 0
 	{
-	    CACHE_TRACE("ENAMETOOLONG");
-	    return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+	    /* for the version which will accept a cache directory not null  */
+	    if (f_name_lenght >= PATH_MAX)
+	    {
+		CACHE_TRACE("ENAMETOOLONG");
+		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+	    }
+	    strcpy(cache_handle->cache_directory_path,
+		   cache_directory_path);
 	}
-	strcpy(cache_handle->cache_directory_path,
-	       cache_directory_path);
 #       else
-	CACHE_TRACE("Parameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
-	return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
+	{
+	    CACHE_TRACE("Parameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
+	    return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
+	}
 #       endif
 
     }
@@ -1978,12 +1997,14 @@ globus_gass_cache_open(char                *cache_directory_path,
     
     /* open the log file and log the some informations */
 #   if defined GLOBUS_L_GASS_CACHE_LOG
-    strcpy(log_f_name,cache_handle->cache_directory_path);
-    strcat(log_f_name,GLOBUS_L_GASS_CACHE_LOG_F_NAME);
-    cache_handle->log_FILE = fopen( log_f_name,"a");
-    if (cache_handle->log_FILE == GLOBUS_NULL)
     {
-	CACHE_TRACE("Could NOT open or create the log file");
+	strcpy(log_f_name,cache_handle->cache_directory_path);
+	strcat(log_f_name,GLOBUS_L_GASS_CACHE_LOG_F_NAME);
+	cache_handle->log_FILE = fopen( log_f_name,"a");
+	if (cache_handle->log_FILE == GLOBUS_NULL)
+	{
+	    CACHE_TRACE("Could NOT open or create the log file");
+	}
     }
 #   endif
 
@@ -2007,7 +2028,9 @@ globus_gass_cache_open(char                *cache_directory_path,
 	
 	GLOBUS_L_GASS_CACHE_LG("Could NOT open or create the state file");
 #       if defined GLOBUS_L_GASS_CACHE_LOG
-	fclose(cache_handle->log_FILE);
+	{
+	    fclose(cache_handle->log_FILE);
+	}
 #       endif
 	return ( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
     }
@@ -2611,9 +2634,9 @@ globus_gass_cache_add_done(
 	    return(GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE);
 	}
 	if (tag == GLOBUS_NULL)
-       {
-	   tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
-       }
+	{
+	    tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
+	}
 	if ( strcmp(entry_found_pt->lock_tag,tag))
 	{
 	    /* wrong tag */
@@ -2645,7 +2668,7 @@ globus_gass_cache_add_done(
 	    globus_l_gass_cache_unlock_close(cache_handle,
 					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return(rc);
-       }
+	}
 	
 	/* then unlock the process waiting on the data file to be ready      */
         if ( unlink(notready_file_path) )
