@@ -39,11 +39,11 @@ main()
     struct context_arg *                arg = NULL;
     pid_t                               pid;
 
-    // ToDo: Make this run on windows
-    #ifdef WIN32
+    /* ToDo: Make this run on windows */
+#   ifdef WIN32
     printf("This Test Doesn't Run On Windows Yet\n");
     exit(0);
-    #endif
+#   endif
 
     /* module activation */
 

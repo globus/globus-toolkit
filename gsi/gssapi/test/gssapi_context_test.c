@@ -43,7 +43,7 @@ main()
     struct context_arg *                arg = NULL;
     pid_t                               pid;
 
-    // ToDo: Make this run on windows
+    /* ToDo: Make this run on windows */
 #   ifdef WIN32
     printf("This Test Doesn't Run On Windows\n");
     exit(0);

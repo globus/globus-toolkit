@@ -58,11 +58,11 @@ main()
     int                                 ret;
     int                                 error;
 
-    #ifdef WIN32
+#   ifdef WIN32
     printf("This test does not run on Windows yet.\n");
     printf("Please try again later.\n");
     exit(0);
-    #endif    
+#   endif    
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
@@ -86,29 +86,29 @@ main()
     tmpnam(address->sun_path);
     
     listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-    #ifdef WIN32
+#   ifdef WIN32
     if(listen_fd == -1)
     {
     error = WSAGetLastError();
     }
-    #endif
+#   endif
 
 
     ret = bind(listen_fd, (struct sockaddr *) address, sizeof(struct sockaddr_un));
-    #ifdef WIN32
+#   ifdef WIN32
     if(ret != 0)
     {
-    error = WSAGetLastError();
+        error = WSAGetLastError();
     }
-    #endif
+#   endif
 
     ret = listen(listen_fd,NUM_CLIENTS);
-    #ifdef WIN32
+#   ifdef WIN32
     if(ret != 0)
     {
-    error = WSAGetLastError();
+        error = WSAGetLastError();
     }
-    #endif
+#   endif
 
     /* acquire credentials */
 
