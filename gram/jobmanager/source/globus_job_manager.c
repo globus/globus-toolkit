@@ -37,10 +37,7 @@ CVS Information:
 #include "globus_gass_file.h"
 #include "globus_gass_cache.h"
 #include "globus_gass_client.h"
-#define  USE_DUCT
-#ifdef USE_DUCT
 #include "globus_duct_control.h"
-#endif /* USE_DUCT */
 
 /******************************************************************************
                                Type definitions
@@ -80,6 +77,12 @@ genfilename(char * prefix, char * path, char * sufix);
 
 static void
 graml_stage_file(char *url, int mode);
+
+static int
+globus_l_job_manager_duct_environment(int count,
+				      char *myjob,
+				      char **newvar,
+				      char **newval);
 
 /******************************************************************************
                        Define variables for external use
@@ -207,7 +210,6 @@ main(int argc,
 	exit(1);
     }
 
-#ifdef USE_DUCT
     rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -216,8 +218,6 @@ main(int argc,
 		rc);
 	exit(1);
     }
-
-#endif /* USE_DUCT */
 
     nexus_enable_fault_tolerance(NULL, NULL);
 
@@ -654,7 +654,6 @@ main(int argc,
 
     grami_fprintf( grami_log_fp, "JM: exiting gram_job_request\n");
 
-#ifdef USE_DUCT
     rc = globus_module_deactivate(GLOBUS_DUCT_CONTROL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -663,7 +662,6 @@ main(int argc,
 		rc);
 	exit(1);
     }
-#endif /* USE_DUCT */
     
     rc = globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -906,13 +904,6 @@ grami_jm_request_params(globus_rsl_t * description_tree,
                        &(params->pgm_args));
 
     /********************************** 
-     *  GET ENVIRONMENT PARAM
-     */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
-                       &(params->pgm_env));
-
-    /********************************** 
      *  GET DIR PARAM
      */
     globus_rsl_param_get(description_tree,
@@ -1029,7 +1020,42 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     else
         params->gram_myjob = GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB;
 
+    /********************************** 
+     *  GET ENVIRONMENT PARAM
+     */
+    globus_rsl_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
+                       &(params->pgm_env));
 
+    {
+	char *newvar;
+	char *newval;
+	int i;
+	int rc;
+
+	/* add duct environment string to environment */
+	rc = globus_l_job_manager_duct_environment(params->count,
+						   params->gram_myjob,
+						   &newvar,
+						   &newval);
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    for(i = 0; params->pgm_env[i] != GLOBUS_NULL; i++)
+	    {
+		;
+	    }
+	    
+	    params->pgm_env = (char **)
+		globus_libc_realloc(params->pgm_env,
+				    (i+3) * sizeof(char *));
+	    params->pgm_env[i] = newvar;
+	    ++i;
+	    params->pgm_env[i] = newval;
+	    ++i;
+	    params->pgm_env[i] = GLOBUS_NULL;
+	}
+    }
+    
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
      */
@@ -1305,4 +1331,55 @@ graml_stage_file(char *url, int mode)
     globus_url_destroy(&gurl);
     grami_fprintf( grami_log_fp, 
                    "JM: new name = %s\n", url);
+}
+
+/******************************************************************************
+Function:       globus_l_job_manager_duct_environment()
+Description:    
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_job_manager_duct_environment(int count,
+				      char *myjob,
+				      char **newvar,
+				      char **newval)
+{
+    globus_duct_control_t *duct;
+    int rc;
+    
+    duct = globus_malloc(sizeof(globus_duct_control_t));
+	
+    if(strcmp(myjob, "collective") != 0)
+    {
+	count=1;
+    }
+    
+    rc = globus_duct_control_init(duct,
+				  count,
+				  GLOBUS_NULL,
+				  GLOBUS_NULL);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	grami_fprintf( grami_log_fp,
+		       "JM: duct_control_init_failed: %d\n",
+		       rc);
+	return GLOBUS_GRAM_CLIENT_ERROR_DUCT_INIT_FAILED;
+    }
+
+    rc = globus_duct_control_contact_url(duct,
+					 newval);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+	grami_fprintf( grami_log_fp,
+		       "JM: duct_control_contact_url failed: %d\n",
+		       rc);
+	
+	return(GLOBUS_GRAM_CLIENT_ERROR_DUCT_LSP_FAILED);
+    }
+
+    (*newvar) = strdup("GLOBUS_GRAM_MYJOB_CONTACT");
+
+    return GLOBUS_SUCCESS;
 }
