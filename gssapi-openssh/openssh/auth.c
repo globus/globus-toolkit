@@ -256,7 +256,7 @@ auth_log(Authctxt *authctxt, int authenticated, char *method, char *info)
 	    authmsg,
 	    method,
 	    authctxt->valid ? "" : "illegal user ",
-	    (authctxt->user[0]) ? authctxt->user : "<implicit>",
+	    (authctxt->user && authctxt->user[0]) ? authctxt->user : "<implicit>",
 	    get_remote_ipaddr(),
 	    get_remote_port(),
 	    info);

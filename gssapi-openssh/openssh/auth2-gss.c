@@ -56,8 +56,9 @@ userauth_external(Authctxt *authctxt)
 {
         packet_check_eom();
 
-	if (authctxt->valid && strcmp(authctxt->user, "") != 0) {
-	    return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
+	if (authctxt->valid && authctxt->user &&
+	    strcmp(authctxt->user, "") != 0) {
+		return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
 	}
 	return 0;
 }
@@ -231,7 +232,7 @@ input_gssapi_errtok(int type, u_int32_t plen, void *ctxt)
 static void
 gssapi_set_implicit_username(Authctxt *authctxt)
 {
-    if ((strcmp(authctxt->user, "") == 0) && (authctxt->pw == NULL)) {
+    if ((authctxt->user == NULL) || (strcmp(authctxt->user, "") == 0)) {
 	char *lname = NULL;
 	PRIVSEP(ssh_gssapi_localname(&lname));
 	if (lname && lname[0] != '\0') {
