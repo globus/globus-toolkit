@@ -983,12 +983,18 @@ globus_i_xio_operation_cancel(
                     _xio_name, op));
         goto exit;
     }
-    /* 
-     * if the user oks the cancel then remove the timeout from 
-     * the poller
-     */
-    tmp_rc = globus_i_xio_timer_unregister_timeout(
+
+    /* the timeout should only be unregistered if this call is coming
+        from the user */
+    if(source_ndx == -1)
+    {
+        /* 
+         * if the user oks the cancel then remove the timeout from 
+         * the poller
+         */
+        tmp_rc = globus_i_xio_timer_unregister_timeout(
                 &globus_l_xio_timeout_timer, op);
+    }
     /* since in callback this will always be true */
 
     /*
