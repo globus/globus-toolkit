@@ -23,7 +23,10 @@ static char *rcsid = "$Header$";
 /**********************************************************************
                              Include header files
 **********************************************************************/
-#include "config.h"
+//#include "config.h"
+
+#define PACKAGE "XXXX"
+#define VERSION 1.0
 
 #ifndef DEFAULT_SECURE_TMP_DIR
 #ifndef WIN32
@@ -184,7 +187,6 @@ main(
     /* dont restrict the proxy */
     int                                 verify      = 0;
     int                                 i;
-    int                                 j;
     char *                              certfile    = NULL;
     char *                              keyfile     = NULL;
     char *                              outfile     = NULL;
@@ -199,7 +201,6 @@ main(
     proxy_verify_ctx_desc               pvxd;
     globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
     BIO *                               bio_err;
-    X509 *                              xcert;
     time_t                              time_after;
     time_t                              time_now;
     time_t                              time_diff;
