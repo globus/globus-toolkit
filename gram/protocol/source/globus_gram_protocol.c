@@ -583,7 +583,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	{
 	    globus_libc_fprintf(
 		stderr,
-		"WARNING, read first character %c : delegation packet?\n"
+		"WARNING, read first character %c : delegation packet?\n",
 		(char)*buf );
 	    goto register_read_again;
 	}
@@ -873,7 +873,7 @@ globus_gram_http_setup_attr(globus_io_attr_t *  attr)
 			&auth_data))
 	 || (res = globus_io_attr_set_secure_channel_mode(
 	                attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+			GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP)) )
     {
 	globus_object_t *  err = globus_error_get(res);
 	globus_object_free(err);
