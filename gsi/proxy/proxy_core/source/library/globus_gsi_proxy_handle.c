@@ -1564,3 +1564,94 @@ globus_gsi_proxy_handle_set_common_name(
 }
 /* globus_gsi_proxy_handle_set_common_name */
 /*@}*/
+
+
+globus_result_t
+globus_gsi_proxy_handle_set_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t                       is_limited)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ = 
+        "globus_gsi_proxy_handle_set_is_limited";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    if(is_limited == GLOBUS_TRUE)
+    {
+        if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
+        }
+        else
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
+        }
+    }
+    else
+    {
+        if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY);
+        }
+        else
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
+        }        
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+
+
+/**
+ * @name Proxy Is Limited
+ */
+/* @{ */
+/**
+ * Check to see if the proxy is a limited proxy 
+ *
+ * @param handle
+ *        the proxy handle to check
+ *
+ * @param is_limited
+ *        boolean value to set depending on the type of proxy 
+ *
+ * @return
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t *                     is_limited)
+{    
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_is_limited";
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    *is_limited = GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(handle->type);
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
+}
+/* @} */
