@@ -151,3 +151,7 @@ globus_scheduler_event_generator_condor ws-gram/job_monitoring/condor/c/source d
 globus_scheduler_event_generator_fork ws-gram/job_monitoring/fork/c/source dirt.sh
 globus_scheduler_event_generator_pbs ws-gram/job_monitoring/pbs/c/source dirt.sh
 globus_fork_starter ws-gram/job_management/fork/c/source dirt.sh
+globus_scheduler_event_generator_test ws-gram/job_monitoring/common/c/test dirt.sh
+globus_scheduler_event_generator_condor_test ws-gram/job_monitoring/condor/c/test dirt.sh
+globus_scheduler_event_generator_fork_test ws-gram/job_monitoring/fork/c/test dirt.sh
+globus_scheduler_event_generator_pbs_test ws-gram/job_monitoring/pbs/c/test dirt.sh
