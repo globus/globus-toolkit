@@ -4034,11 +4034,22 @@ globus_io_tcp_set_credential(
     
     GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
     
-    return globus_xio_handle_cntl(
-        (*handle)->xio_handle, 
-        globus_l_io_gsi_driver, 
-        GLOBUS_XIO_GSI_SET_CREDENTIAL, 
-        credential);
+    if ((*handle)->xio_handle)
+    {
+        return globus_xio_handle_cntl(
+            (*handle)->xio_handle, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_CREDENTIAL, 
+            credential);
+    }
+    else
+    {
+        return globus_xio_attr_cntl(
+            (*handle)->attr->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_CREDENTIAL, 
+            credential);
+    }
 }
 
 /* new api just for gram_protocol_io */
