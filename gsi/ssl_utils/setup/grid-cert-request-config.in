@@ -10,8 +10,6 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
-
 secconfdir=${GRID_SECURITY_DIR-/etc/grid-security}
 
 # create a globus-ssl.conf file with the proper o's and ou's
