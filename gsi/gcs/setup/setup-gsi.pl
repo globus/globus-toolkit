@@ -217,7 +217,7 @@ if($statres[4] != $EUID)
    ($EUID,$EGID) = ($statres[4],$statres[5]);
 }
     
-my $metadata = new Grid::GPT::Setup(package_name => "globus_simple_ca_${ca_install_hash}_setup");
+my $metadata = new Grid::GPT::Setup(package_name => "globus_gcs_${ca_install_hash}_setup");
 
 $metadata->finish();
 

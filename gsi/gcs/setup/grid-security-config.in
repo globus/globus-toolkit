@@ -65,7 +65,7 @@ env_replace () {
    _env="$1"
    eval _value="\$_${_env}"
 
-   ${GLOBUS_SH_SED-sed} -e "s/^SETUP_${_env}=.*/SETUP_${_env}=\"$_value\"/"
+   ${GLOBUS_SH_SED-sed} -e "s%^SETUP_${_env}=.*%SETUP_${_env}=\"$_value\"%"
 }
 
 
