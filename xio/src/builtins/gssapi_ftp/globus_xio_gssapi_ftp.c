@@ -2405,6 +2405,7 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     va_list                             ap)
 {
     gss_cred_id_t *                     out_cred;
+    gss_cred_id_t *                     out_del_cred;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_l_xio_gssapi_ftp_handle_t *  ds_handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_handle_cntl);
@@ -2417,7 +2418,9 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     {
         case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED:
             out_cred = va_arg(ap, gss_cred_id_t *);
-            *out_cred = ds_handle->delegated_cred_handle;
+            out_del_cred = va_arg(ap, gss_cred_id_t *);
+            *out_cred = ds_handle->cred_handle;
+            *out_del_cred = ds_handle->delegated_cred_handle;
             break;
 
         default:
