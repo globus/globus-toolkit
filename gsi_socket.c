@@ -1147,6 +1147,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 {
     int				return_value = GSI_SOCKET_ERROR;
     SSL_CREDENTIALS		*creds = NULL;
+    SSL_PROXY_RESTRICTIONS	*proxy_restrictions = NULL;
     unsigned char		*input_buffer = NULL;
     int				input_buffer_length;
     unsigned char		*output_buffer = NULL;
@@ -1202,10 +1203,26 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     }
 
     /*
+     * Set up the restrictions on the proxy
+     */
+    proxy_restrictions = ssl_proxy_restrictions_new();
+    
+    if (proxy_restrictions == NULL)
+    {
+	goto error;
+    }
+    
+    if (ssl_proxy_restrictions_set_lifetime(proxy_restrictions,
+					    (long) lifetime) == SSL_ERROR)
+    {
+	goto error;
+    }
+    
+    /*
      * Sign the request
      */
     if (ssl_proxy_delegation_sign(creds,
-				  NULL /* No restrictions */,
+				  proxy_restrictions,
 				  input_buffer,
 				  input_buffer_length,
 				  &output_buffer,
