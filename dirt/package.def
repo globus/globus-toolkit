@@ -35,6 +35,7 @@ globus_ftp_control_test		gridftp/control/test		dirt.sh
 globus_gass_cache		gass/cache/source		dirt.sh
 globus_gass_cache_program	gass/cache_program/source	dirt.sh
 globus_gass_copy		gass/copy/source		dirt.sh
+globus_gass_copy_test		gass/copy/test  		dirt.sh
 globus_gass_file		gass/file/source		dirt.sh
 globus_gass_file_test		gass/file/test			dirt.sh
 globus_gass_server_ez		gass/server_ez/source		dirt.sh
@@ -42,6 +43,7 @@ globus_gass_transfer		gass/transfer/source		dirt.sh
 globus_gram_client		gram/client/source		dirt.sh
 globus_gram_client_test		gram/client/test		dirt.sh
 globus_gram_client_tools	gram_client_tools/source	dirt.sh
+globus_gram_client_tools_test	gram_client_tools/test	        dirt.sh
 globus_gram_job_manager		gram/jobmanager/source		dirt.sh
 globus_gram_job_manager_test	gram/jobmanager/test		dirt.sh
 globus_gram_job_manager_setup	gram/jobmanager/setup/program	dirt.sh
