@@ -197,12 +197,12 @@ globus_i_callout_error_chain_result(
  *
  * This structure contains the hash of define callouts
  */
-typedef struct globus_i_callout_s
+typedef struct globus_i_callout_handle_s
 {
     globus_hashtable_t                  symbol_htable;
     globus_hashtable_t                  library_htable;
 }
-globus_i_callout_t;
+globus_i_callout_handle_t;
 
 typedef struct globus_i_callout_data_s
 {

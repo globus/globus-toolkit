@@ -155,7 +155,7 @@ globus_callout_handle_init(
 
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    *handle = malloc(sizeof(globus_callout_handle_t));
+    *handle = malloc(sizeof(globus_i_callout_handle_t));
 
     if(*handle == NULL)
     {
@@ -210,13 +210,15 @@ globus_callout_handle_destroy(
     /* free hashes */
 
     globus_hashtable_destroy_all(
-        &handle->symbol_htable,
+        &(handle->library_htable),
         globus_l_callout_library_table_element_free);
 
     globus_hashtable_destroy_all(
-        &handle->symbol_htable,
+        &(handle->symbol_htable),
         globus_l_callout_symbol_table_element_free);
 
+    free(handle);
+    
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
     return result;
