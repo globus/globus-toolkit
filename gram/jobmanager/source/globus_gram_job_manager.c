@@ -338,6 +338,29 @@ globus_jobmanager_request_cancel(globus_gram_jobmanager_request_t * request)
 } /* globus_jobmanager_request_cancel() */
 
 /******************************************************************************
+Function:       globus_jobmanager_request_signal()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+globus_jobmanager_request_signal(globus_gram_jobmanager_request_t * request)
+{
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    if ((strncmp(request->jobmanager_type, "fork", 4) == 0) ||
+        (strncmp(request->jobmanager_type, "poe", 3) == 0))
+    {
+         return(globus_l_gram_signal_fork(request));
+    }
+    else
+    {
+         return(globus_l_gram_signal_shell(request));
+    }
+} /* globus_jobmanager_request_signal() */
+
+/******************************************************************************
 Function:       globus_jobmanager_request_check()
 Description:
 Parameters:
@@ -873,7 +896,7 @@ globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request)
     int rc;
 
     grami_fprintf( request->jobmanager_log_fp,
-          "JMI: in grami_gram_job_cancel()\n" );
+          "JMI: in globus_l_gram_cancel_shell()\n" );
 
     sprintf(script_cmd, "%s/globus-script-%s-rm %s\n",
                          request->jobmanager_libexecdir,
@@ -903,6 +926,129 @@ globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request)
     return(GLOBUS_SUCCESS);
 
 } /* globus_l_gram_cancel_shell() */
+
+
+/******************************************************************************
+Function:       globus_l_gram_signal_fork()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+globus_l_gram_signal_fork(globus_gram_jobmanager_request_t * request)
+{
+    int x;
+
+    grami_fprintf( request->jobmanager_log_fp, 
+        "JMI: in globus_l_gram_signal_fork()\n");
+
+    /* not sure what we should do with anything except for cancel,
+     * so for now just return.
+     */
+    if (request->signal != GLOBUS_GRAM_CLIENT_JOB_SIGNAL_CANCEL)
+    {
+        return(GLOBUS_SUCCESS);
+    }
+
+    graml_child_pid_ptr = graml_child_pid_head;
+
+    for (x=0; x<graml_processes_started; x++)
+    {
+        grami_fprintf( request->jobmanager_log_fp, 
+            "JMI: killing child %d with SIGTERM\n", *graml_child_pid_ptr);
+        kill(*graml_child_pid_ptr, SIGTERM);
+        graml_child_pid_ptr++;
+    }
+
+    /* TODO: This should become a loop with waitpid() */
+    sleep(10);
+    
+    graml_child_pid_ptr = graml_child_pid_head;
+    for (x=0; x<graml_processes_started; x++)
+    {
+        grami_fprintf( request->jobmanager_log_fp, 
+             "JMI: killing child %d with SIGKILL\n", *graml_child_pid_ptr);
+        kill(*graml_child_pid_ptr, SIGKILL);
+        graml_child_pid_ptr++;
+    }
+
+    request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+
+    return(GLOBUS_SUCCESS);
+
+} /* globus_l_gram_signal_fork() */
+
+/******************************************************************************
+Function:       globus_l_gram_signal_shell()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int
+globus_l_gram_signal_shell(globus_gram_jobmanager_request_t * request)
+{
+    FILE * signal_arg_fp;
+    char script_cmd[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+    int rc;
+    char * tmp_signalfilename = NULL;
+
+    grami_fprintf( request->jobmanager_log_fp,
+          "JMI: in globus_l_gram_signal_shell()\n" );
+
+    tmp_signalfilename = tempnam(NULL, "grami_signal");
+
+    if ((signal_arg_fp = fopen(tmp_signalfilename, "w")) == NULL)
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JMI: Failed to open gram signal script argument file. %s\n",
+              tmp_signalfilename );
+        request->failure_code =
+              GLOBUS_GRAM_CLIENT_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    /*
+     * add the signal and signal_arg to the script arg file
+     */
+
+    /* overloading the use of the script_cmd variable just temporarily */
+    globus_l_gram_param_prepare(request->signal_arg, script_cmd);
+    fprintf(signal_arg_fp,"grami_signal_arg='%s'\n", script_cmd);
+    fprintf(signal_arg_fp,"grami_signal='%d'\n", request->signal);
+
+    fclose(signal_arg_fp);
+
+    sprintf(script_cmd, "%s/globus-script-%s-signal %s\n",
+                         request->jobmanager_libexecdir,
+                         request->jobmanager_type,
+                         tmp_signalfilename);
+
+    rc = globus_l_gram_script_run(script_cmd, request);
+
+    if (request->signal == GLOBUS_GRAM_CLIENT_JOB_SIGNAL_CANCEL)
+    {
+        if (remove(graml_script_arg_file) != 0)
+        {
+            grami_fprintf( request->jobmanager_log_fp,
+                         "JM: Cannot remove argument file --> %s\n",
+                         graml_script_arg_file);
+        }
+
+        request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+    }
+
+    if (rc == GLOBUS_FAILURE)
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JMI: received error from script: %d\n", rc );
+        grami_fprintf( request->jobmanager_log_fp,
+              "JMI: returning job state failed.\n" );
+        return(GLOBUS_FAILURE);
+    }
+
+    return(GLOBUS_SUCCESS);
+
+} /* globus_l_gram_signal_shell() */
 
 /******************************************************************************
 Function:       globus_l_gram_check_fork()

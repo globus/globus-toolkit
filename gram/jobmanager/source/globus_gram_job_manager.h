@@ -165,6 +165,16 @@ typedef struct
 
  globus_bool_t dry_run;    /* GLOBUS_TRUE if this is a dryrun */
 
+ 
+ globus_gram_client_job_signal_t signal;  /* enum of type of signal to job
+                                           * (cancel, suspend, priority, ...)
+                                           */
+
+ char * signal_arg;           /* could be anything.
+                               * if a priority change maybe something like
+                               * high, medium, low...
+                               */
+
  /* Other opaque fields may be added here */
 
  globus_gram_job_manager_callback_func_t filename_callback_func;
