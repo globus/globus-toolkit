@@ -457,7 +457,7 @@ globus_l_xio_gssapi_ftp_token(
     globus_byte_t *                         tmp_ptr;
     globus_byte_t *                         end_ptr;
 
-    end_ptr = in_str[length];
+    end_ptr = &in_str[length];
     tmp_ptr = (char *)in_str;
     while(tmp_ptr != end_ptr && isspace(*tmp_ptr))
     {
@@ -477,7 +477,7 @@ globus_l_xio_gssapi_ftp_token(
     *end_off = (tmp_ptr - in_str);
     if(tmp_ptr != end_ptr)
     {
-        *end_off--;
+        (*end_off)--;
     }
 
     return (char *)&in_str[*start_off];
