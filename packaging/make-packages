@@ -167,7 +167,6 @@ install_gpt3() {
 install_gt2_binary() {
 	echo Installing custom GT2 bundle
 	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt2_deps_gt3_beta-2.4_bin.tar.gz
-	$GPT_LOCATION/sbin/gpt-build -force fait_accompli/globus_core-2.8.tar.gz gcc32dbg
 	$GPT_LOCATION/sbin/gpt-postinstall
 	echo
 }
