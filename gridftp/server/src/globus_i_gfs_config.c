@@ -27,8 +27,8 @@ static const globus_l_gfs_config_option_t option_list[] =
 { 
  {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, {200, NULL}},
  {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
- {"fork", "fork", NULL, "-fork", "-f", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
- {"detach", "detach", NULL, "-detach", "-bg", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"allow_anonymous", "allow_anonymous", NULL, "-allow-anon", "-aa", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
@@ -44,7 +44,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
- {"globus_location", "globus_location", "GLOBUS_LOCATION", NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"globus_location", "globus_location", "GLOBUS_LOCATION", "-G", NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, {1, NULL}},
  {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}}
@@ -402,7 +402,6 @@ error:
     return 1;
 }
 
-
 static
 globus_result_t
 globus_l_gfs_config_misc()
@@ -414,6 +413,34 @@ globus_l_gfs_config_misc()
     char *                              value;
     char *                              data;
     
+    if(globus_i_gfs_config_bool("detach") && 
+        !globus_i_gfs_config_bool("daemon"))
+    {
+        option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                &option_table, "daemon");   
+        if(!option)
+        {
+            option = (globus_l_gfs_config_option_t *)
+                globus_malloc(sizeof(globus_l_gfs_config_option_t));
+            for(i = 0; 
+                i < option_count && 
+                    strcmp("daemon", option_list[i].option_name); 
+                i++);
+            if(i == option_count)
+            {
+            }    
+            memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+        }
+        
+        option->int_value = GLOBUS_TRUE;   
+        rc = globus_hashtable_insert(&option_table,
+            "daemon",
+            (void *) option);
+        
+        if(rc)
+        {
+        }          
+    } 
     if((bool_value = globus_i_gfs_config_bool("terse_banner")) == GLOBUS_TRUE)
     {
         option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(

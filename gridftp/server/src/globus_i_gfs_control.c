@@ -123,9 +123,13 @@ globus_l_gfs_abort_cb(
     globus_gridftp_server_control_op_t      op,
     void *                                  user_arg)
 {
+    globus_i_gfs_server_instance_t *    instance;
+    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+            
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR,
-        "**** NEED TO ABORT ****\n");
+        "Aborting \n");
     return;   
 }
 
@@ -201,7 +205,8 @@ globus_l_gfs_auth_request(
         }
         globus_free(local_name);
 
-        if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("fork"))
+        if(globus_i_gfs_config_bool("inetd") || 
+            globus_i_gfs_config_bool("daemon"))
         {
             rc = setgid(pwent->pw_gid);
             if(rc != 0)
@@ -230,7 +235,8 @@ globus_l_gfs_auth_request(
                 GLOBUS_NULL);
             return;    
         }
-        else if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("fork"))
+        else if(globus_i_gfs_config_bool("inetd") || 
+            globus_i_gfs_config_bool("daemon"))
         {            
             anon_usr = globus_i_gfs_config_string("anonymous_user");
             anon_grp = globus_i_gfs_config_string("anonymous_group");
