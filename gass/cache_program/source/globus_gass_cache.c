@@ -1,4 +1,4 @@
-/******************************************************************************
+/*****************************************************************************r
 gass_cache.c 
 
 Description:
@@ -272,7 +272,7 @@ static char *
 globus_l_cache_get_rm_contact(char *resource)
 {
     LDAP *ldap_server;
-    int default_port          = GLOBUS_MDS_PORT;
+    int default_port          = atoi(GLOBUS_MDS_PORT);
     int port		      = 0;
     char *default_base_dn     = GLOBUS_MDS_ROOT_DN;
     char *base_dn	      = GLOBUS_NULL;
@@ -298,7 +298,7 @@ globus_l_cache_get_rm_contact(char *resource)
 	{
 	    /* break off comments */
 	    strtok(buf, "#");
-	    if(strlen(buf) > 0)
+	    if(strlen(buf) > 0U)
 	    {
 		if(strncmp(buf,
 			   "GLOBUS_MDS_HOST=",
@@ -598,18 +598,37 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
     char *job_contact;
     int rc;
     
-    globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-    globus_gram_client_callback_allow(globus_l_cache_callback_func,
-			              GLOBUS_NULL,
-			              &callback_contact);
+    rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	printf("Error initializing GRAM: %s\n",
+	       globus_gram_client_error_string(rc));
+	exit(1);
+    }
+    rc = globus_gram_client_callback_allow(globus_l_cache_callback_func,
+			                   GLOBUS_NULL,
+			                   &callback_contact);
+    if ( rc != GLOBUS_SUCCESS )
+    {
+	printf("Error allowing GRAM callback: %s\n",
+	       globus_gram_client_error_string(rc));
+	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
+	exit(1);
+    }
     
-    globus_gass_server_ez_init(&port,
-			       &server_url,
-			       GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE|
-			       GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE|
-			       GLOBUS_GASS_SERVER_EZ_LINE_BUFFER,
-			       (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
+    rc = globus_gass_server_ez_init(&port,
+			            &server_url,
+			            GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE|
+			            GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE|
+			            GLOBUS_GASS_SERVER_EZ_LINE_BUFFER,
+			            (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
 
+    if ( rc != GLOBUS_SUCCESS )
+    {
+	printf("Error %d initializing GASS server library\n", rc);
+	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
+	exit(1);
+    }
 
     globus_libc_lock();
     sprintf(spec,
@@ -831,7 +850,7 @@ static void
 globus_l_cache_print_url(globus_gass_cache_entry_t *entry,
 	  char *tag)
 {
-    int j;
+    unsigned long j;
     globus_bool_t print_all_tags=GLOBUS_FALSE;
 
     if(tag == GLOBUS_NULL)
