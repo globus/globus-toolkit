@@ -16,6 +16,9 @@ case "$1" in
             if [ $? -ne 0 ] ; then
                 echo "Failed to start up GSI-OpenSSH sshd server"
             else
+                if [ ! -d $localstatedir ]; then
+                    mkdir -p $localstatedir
+                fi
                 echo $! > $PID_FILE
             fi
         else
