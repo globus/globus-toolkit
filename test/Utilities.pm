@@ -249,7 +249,7 @@ sub wait_command()
 
     if(!defined($timeout))
     {
-        $timeout = 5;
+        $timeout = 300;
     }
 
     if($timeout == 0)
