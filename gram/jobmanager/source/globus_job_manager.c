@@ -42,9 +42,7 @@ CVS Information:
 #include "globus_gass_file.h"
 #include "globus_gass_cache.h"
 #include "globus_gass_copy.h"
-#if 0
 #include "globus_duct_control.h"
-#endif
 #include "globus_rsl_assist.h"
 #include "globus_io.h"
 
@@ -159,13 +157,11 @@ globus_l_gram_rsl_env_add(globus_rsl_t * ast_node,
                           char * var,
                           char * value);
 
-#if 0
 static int
 globus_l_gram_duct_environment(int count,
 			       char *myjob,
 			       char **newvar,
 			       char **newval);
-#endif
 
 static void 
 globus_l_gram_client_callback(int status, int failure_code);
@@ -501,7 +497,6 @@ int main(int argc,
 	exit(1);
     }
 
-#if 0
     rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -509,7 +504,6 @@ int main(int argc,
 		GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
 	exit(1);
     }
-#endif
 
     rc = globus_module_activate(GLOBUS_GRAM_JOBMANAGER_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -2548,7 +2542,6 @@ int main(int argc,
 	exit(1);
     }
     
-#if 0
     rc = globus_module_deactivate(GLOBUS_DUCT_CONTROL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -2556,7 +2549,6 @@ int main(int argc,
 		GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
 	exit(1);
     }
-#endif
     
     rc = globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -3666,7 +3658,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
 
 
-#if 0
     {
 	char *newvar;
 	char *newval;
@@ -3702,7 +3693,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             }
 	}
     }
-#endif
     
     /* GEM: Stage executable and stdin to local filesystem, if they are URLs.
      * Do this before paradyn rewriting.
@@ -3963,7 +3953,6 @@ globus_l_gram_stage_file(char *url, char **staged_file_path, int mode)
 
 } /* globus_l_gram_stage_file */
 
-#if 0
 /******************************************************************************
 Function:       globus_l_gram_duct_environment()
 Description:    
@@ -4014,7 +4003,6 @@ globus_l_gram_duct_environment(int count,
 
     return GLOBUS_SUCCESS;
 } /* globus_l_gram_duct_environment */
-#endif
 
 /******************************************************************************
 Function:       globus_l_gram_getenv_var()
