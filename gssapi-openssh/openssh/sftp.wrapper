@@ -3,6 +3,11 @@
 # Wrapper script to ensure that the correct files are used.
 #
 
+if [ "x$GLOBUS_LOCATION" = "x" ]; then
+  echo "Set GLOBUS_LOCATION before running this script"
+  exit 1
+fi
+
 # $GLOBUS_LOCATION/bin/sftp.real -S $GLOBUS_LOCATION/bin/ssh -F /etc/ssh/ssh_config $*
 
-$GLOBUS_LOCATION/bin/sftp.real -S $GLOBUS_LOCATION/bin/ssh $*
+exec $GLOBUS_LOCATION/bin/sftp.real -S $GLOBUS_LOCATION/bin/ssh $*

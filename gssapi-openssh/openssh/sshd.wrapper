@@ -7,6 +7,11 @@
 # line and comment out the second line.
 #
 
+if [ "x$GLOBUS_LOCATION" = "x" ]; then
+  echo "Set GLOBUS_LOCATION before running this script"
+  exit 1
+fi
+
 # $GLOBUS_LOCATION/sbin/sshd.real -f /etc/ssh/sshd_config $*
 
-$GLOBUS_LOCATION/sbin/sshd.real $*
+exec $GLOBUS_LOCATION/sbin/sshd.real $*
