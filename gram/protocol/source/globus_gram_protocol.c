@@ -598,16 +598,24 @@ globus_l_gram_http_read_callback( void *                 read_t,
     globus_size_t		 payload_length;
     int				 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 
+    globus_object_t *		 err;
+
     verbose(notice("read_callback : handle=%d nbytes=%d total=%d rc=%d\n",
 		   handle->fd, nbytes, status->n_read, result));
 
     /* Error doing read */
     if (res != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+        err = globus_error_get(res);
+        if((! globus_io_eof(err)) ||
+           (! status->got_header))
+        {
+           globus_object_free(err);
+           goto error_exit;
+        }
     }
     /* Reading the header information */
-    else if (! status->got_header)
+    if (! status->got_header)
     {
 	if (status->n_read==0 && (((char)*buf == '0') || ((char)*buf == 'D')))
 	{
