@@ -44,8 +44,6 @@ CVS Information:
 
 #include "globus_i_gram_http.h"
 
-#define CRLF		"\015\012"
-
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
@@ -624,7 +622,7 @@ globus_gram_client_job_cancel(char * job_contact)
     int                           rc;
     int                           job_state;
     int                           failure_code;
-    char *                        request = "cancel" CRLF;
+    char *                        request = "cancel";
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
@@ -654,7 +652,7 @@ globus_gram_client_job_status(char * job_contact,
 			      int  * failure_code)
 {
     int       rc;
-    char *    request = "status" CRLF;
+    char *    request = "status";
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
@@ -686,13 +684,13 @@ globus_gram_client_job_callback_register(char * job_contact,
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    /* 'register' = 8, allow 10-digit integer, 2 spaces, CRLF, null  */
+    /* 'register' = 8, allow 10-digit integer, 2 spaces and null  */
     request = (char *) globus_libc_malloc( 
 	                  strlen(callback_contact)
-			  + 8 + 10 + 2 + 2 + 1 );
+			  + 8 + 10 + 2 + 1 );
 
     globus_libc_sprintf(request,
-			"register %d %s" CRLF,
+			"register %d %s",
 			job_state_mask,
 			callback_contact);
 
@@ -724,13 +722,13 @@ globus_gram_client_job_callback_unregister(char *         job_contact,
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    /* 'unregister' = 10, CRLF, null  */
+    /* 'unregister' = 10, a space and null  */
     request = (char *) globus_libc_malloc( 
 	                  strlen(callback_contact)
-			  + 10 + 3 + 1 );
+			  + 10 + 1 + 1 );
 
     globus_libc_sprintf(request,
-			"unregister %s" CRLF,
+			"unregister %s",
 			callback_contact);
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,

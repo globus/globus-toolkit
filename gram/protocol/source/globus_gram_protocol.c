@@ -1337,7 +1337,7 @@ globus_l_gram_http_quote_string(
     {
 	if (*in == '"' || *in == '\\')   /* need escaping */
 	    *out++ = '\\';
-	*out++ = *in;
+	*out++ = *in++;
     }
     *out++ = '"';		/* End the quoted string. */
     *out   = '\0';
@@ -1614,8 +1614,8 @@ globus_gram_http_pack_status_request(
 			       GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
 			       GLOBUS_GRAM_PROTOCOL_VERSION );
 
-    len += globus_gram_http_quote_string( status_request,
-					  (*query) + len );
+    len += globus_l_gram_http_quote_string( status_request,
+					    (*query) + len );
 
     globus_libc_sprintf( (char *)(*query)+len, CRLF);	
     
@@ -1649,7 +1649,7 @@ globus_gram_http_unpack_status_request(
     rc = GLOBUS_SUCCESS;
 
     if (sscanf( (char *) query,
-		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
 		&protocol_version) != 1 )
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
@@ -1665,7 +1665,6 @@ globus_gram_http_unpack_status_request(
 	          (globus_byte_t*) p,
 		  msgsize,
 		  *status_request );
-    
 
 error_exit:
     if (rc != GLOBUS_SUCCESS)
