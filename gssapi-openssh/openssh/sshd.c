@@ -77,12 +77,10 @@ RCSID("$OpenBSD: sshd.c,v 1.228 2002/02/27 21:23:13 stevesk Exp $");
 #include "ssh-gss.h"
 #endif
 
-/*modified by binhe*/
 #ifdef GSSAPI
 #include <openssl/md5.h>
 #include "bufaux.h"
 #endif /* GSSAPI */
-/*end of modification*/
 
 #ifdef LIBWRAP
 #include <tcpd.h>
@@ -823,11 +821,9 @@ main(int ac, char **av)
 	if (test_flag)
 		exit(0);
 
-/*modified by binhe*/
 #ifdef GSSAPI
   gssapi_clean_env();
 #endif /* GSSAPI */
-/*end of modification*/
 
 #ifdef HAVE_SCO_PROTECTED_PW
 	(void) set_auth_parameters(ac, av);
@@ -1349,12 +1345,10 @@ do_ssh1_kex(void)
 	if (options.challenge_response_authentication == 1)
 		auth_mask |= 1 << SSH_AUTH_TIS;
 
-/*modified by binhe*/
 #ifdef GSSAPI
   	if (options.gss_authentication)
     		auth_mask |= 1 << SSH_AUTH_GSSAPI;
 #endif
-/*end of modification*/
 
 	if (options.password_authentication)
 		auth_mask |= 1 << SSH_AUTH_PASSWORD;
@@ -1482,7 +1476,6 @@ do_ssh1_kex(void)
 			session_id[i] = session_key[i] ^ session_key[i + 16];
 	}
 
-/*modified by binhe*/
 #ifdef GSSAPI
   /*
    * Before we destroy the host and server keys, hash them so we can
@@ -1524,7 +1517,6 @@ do_ssh1_kex(void)
     buffer_free(&buf);
   }
 #endif /* GSSAPI */
-/*end of modification*/
 
 	/* Destroy the private and public keys.  They will no longer be needed. */
 	destroy_sensitive_data();

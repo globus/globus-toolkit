@@ -53,9 +53,7 @@ void     packet_get_bignum(BIGNUM * value);
 void     packet_get_bignum2(BIGNUM * value);
 void	*packet_get_raw(int *length_ptr);
 void	*packet_get_string(u_int *length_ptr);
-/*modified by binhe*/
-void packet_get_all(void);
-/*end of modification*/
+void 	packet_get_all(void);
 void     packet_disconnect(const char *fmt,...) __attribute__((format(printf, 1, 2)));
 void     packet_send_debug(const char *fmt,...) __attribute__((format(printf, 1, 2)));
 
