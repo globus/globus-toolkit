@@ -133,4 +133,8 @@ globus_rendezvous                           ws-gram/client/c/rendezvous/source g
 globus_rendezvous_test                      ws-gram/client/c/rendezvous/test gpt
 
 globus_database_common                      database/java/common/source
+
 globus_wsrf_usage_packets                   usage/java/packets/source
+globus_wsrf_usage_packets_samples           usage/java/packets/samples
+globus_wsrf_usage_receiver                  usage/java/receiver/source
+globus_wsrf_usage_receiver_samples          usage/java/receiver/samples
