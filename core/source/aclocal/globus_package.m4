@@ -6,13 +6,16 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     echo "ERROR Please specify GLOBUS_LOCATION" >&2
     exit 1
 fi
-
 if test "x$GPT_LOCATION" = "x"; then
     GPT_LOCATION=$GLOBUS_LOCATION
     export GPT_LOCATION
 fi
 
-GPT_INIT
+#extract whether the package is built with flavors from the src metadata
+$GPT_LOCATION/sbin/gpt_extract_data --build $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
+
+. ./tmpfile.gpt
+rm ./tmpfile.gpt
 
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
@@ -78,6 +81,8 @@ AC_ARG_ENABLE(internal-doc,
 	AC_SUBST(DOXYFILE)
 ])
 
+
+GPT_INIT
 
 
 
