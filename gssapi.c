@@ -1,7 +1,7 @@
 /* GSSAPI SASL plugin
  * Leif Johansson
  * Rob Siemborski (SASL v2 Conversion)
- * $Id: gssapi.c,v 1.4 2004/07/22 19:23:21 jbasney Exp $
+ * $Id: gssapi.c,v 1.5 2004/07/22 21:09:24 jbasney Exp $
  */
 /* 
  * Copyright (c) 1998-2003 Carnegie Mellon University.  All rights reserved.
@@ -80,13 +80,9 @@
 
 #include <errno.h>
 
-#ifndef KRB5_LIB_NAME
-#define KRB5_LIB_NAME "libgssapi_krb5.so"
-#endif /* KRB5_LIB_NAME */
-
 /*****************************  Common Section  *****************************/
 
-static const char plugin_id[] = "$Id: gssapi.c,v 1.4 2004/07/22 19:23:21 jbasney Exp $";
+static const char plugin_id[] = "$Id: gssapi.c,v 1.5 2004/07/22 21:09:24 jbasney Exp $";
 
 static const char * GSSAPI_BLANK_STRING = "";
 
@@ -168,6 +164,105 @@ enum {
 #define sasl_gss_log(x,y,z) sasl_gss_seterror_(x,y,z,1)
 #define sasl_gss_seterror(x,y,z) sasl_gss_seterror_(x,y,z,0)
 
+/* Force use of Kerberos v5 GSSAPI library functions even when linked
+   with GSI GSSAPI libraries. */
+
+#ifndef KRB5_LIB_NAME
+#define KRB5_LIB_NAME "libgssapi_krb5.so"
+#endif /* KRB5_LIB_NAME */
+
+static void *h_krb5lib;
+static OM_uint32 (*p_krb5_gss_accept_sec_context)
+    (OM_uint32 FAR *, gss_ctx_id_t FAR *, gss_cred_id_t, gss_buffer_t,
+     gss_channel_bindings_t, gss_name_t FAR *, gss_OID FAR *, gss_buffer_t,
+     OM_uint32 FAR *, OM_uint32 FAR *, gss_cred_id_t FAR *);
+static OM_uint32 (*p_krb5_gss_acquire_cred)
+    (OM_uint32 FAR *, gss_name_t, OM_uint32, gss_OID_set, gss_cred_usage_t,
+     gss_cred_id_t FAR *, gss_OID_set FAR *, OM_uint32 FAR *);
+static OM_uint32 (*p_krb5_gss_compare_name)
+    (OM_uint32 FAR *, gss_name_t, gss_name_t, int FAR *);
+static OM_uint32 (*p_krb5_gss_delete_sec_context)
+    (OM_uint32 FAR *, gss_ctx_id_t FAR *, gss_buffer_t);
+static OM_uint32 (*p_krb5_gss_display_name)
+    (OM_uint32 FAR *, gss_name_t, gss_buffer_t, gss_OID FAR *);
+static OM_uint32 (*p_krb5_gss_display_status)
+    (OM_uint32 FAR *, OM_uint32, int, gss_OID, OM_uint32 FAR *, gss_buffer_t);
+static OM_uint32 (*p_krb5_gss_import_name)
+    (OM_uint32 FAR *, gss_buffer_t, gss_OID, gss_name_t FAR *);
+static OM_uint32 (*p_krb5_gss_init_sec_context)
+    (OM_uint32 *, const gss_cred_id_t, gss_ctx_id_t *, const gss_name_t,
+     const gss_OID, OM_uint32, OM_uint32, const gss_channel_bindings_t,
+     const gss_buffer_t, gss_OID *, gss_buffer_t, OM_uint32 *, OM_uint32 *);
+static OM_uint32 (*p_krb5_gss_inquire_context)
+    (OM_uint32 FAR *, gss_ctx_id_t, gss_name_t FAR *, gss_name_t FAR *,
+     OM_uint32 FAR *, gss_OID FAR *, OM_uint32 FAR *, int FAR *, int FAR *);
+static OM_uint32 (*p_krb5_gss_release_buffer)(OM_uint32 FAR *, gss_buffer_t);
+static OM_uint32 (*p_krb5_gss_release_cred)
+    (OM_uint32 FAR *, gss_cred_id_t FAR *);
+static OM_uint32 (*p_krb5_gss_release_name)(OM_uint32 FAR *, gss_name_t FAR *);
+static OM_uint32 (*p_krb5_gss_unwrap)
+    (OM_uint32 FAR *, gss_ctx_id_t, gss_buffer_t, gss_buffer_t, int FAR *,
+     gss_qop_t FAR *);
+static OM_uint32 (*p_krb5_gss_wrap)
+    (OM_uint32 FAR *, gss_ctx_id_t, int, gss_qop_t, gss_buffer_t, int FAR *,
+     gss_buffer_t);
+
+
+
+static int
+sasl_gss_lib_init(const sasl_utils_t *utils)
+{
+    char *errmsg=NULL, *dlerr=NULL;
+
+    if (h_krb5lib) return SASL_OK;
+
+    if ((h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY)) == NULL) {
+	errmsg = "Failed to open GSSAPI library";
+	goto error;
+    }
+
+#define SASL_GSS_DLSYM(x)						\
+    p_krb5_ ## x = dlsym(h_krb5lib, #x);				\
+    if (p_krb5_ ## x == NULL) {						\
+	errmsg = "Failed to dlsym(" #x ")";				\
+	goto error;							\
+    }
+
+    SASL_GSS_DLSYM(gss_accept_sec_context);
+    SASL_GSS_DLSYM(gss_acquire_cred);
+    SASL_GSS_DLSYM(gss_compare_name);
+    SASL_GSS_DLSYM(gss_delete_sec_context);
+    SASL_GSS_DLSYM(gss_display_name);
+    SASL_GSS_DLSYM(gss_display_status);
+    SASL_GSS_DLSYM(gss_import_name);
+    SASL_GSS_DLSYM(gss_init_sec_context);
+    SASL_GSS_DLSYM(gss_inquire_context);
+    SASL_GSS_DLSYM(gss_release_buffer);
+    SASL_GSS_DLSYM(gss_release_cred);
+    SASL_GSS_DLSYM(gss_release_name);
+    SASL_GSS_DLSYM(gss_unwrap);
+    SASL_GSS_DLSYM(gss_wrap);
+
+    return SASL_OK;
+
+ error:
+    dlerr = dlerror();
+    if (dlerr) {
+	char *saslerr;
+	saslerr = malloc(strlen(errmsg)+strlen(dlerr)+3);
+	sprintf(saslerr, "%s: %s", errmsg, dlerr);
+	SETERROR(utils, saslerror);
+	free(saslerr);
+    } else {
+	SETERROR(utils, errmsg);
+    }
+    if (h_krb5lib) {
+	dlclose(h_krb5lib);
+	h_krb5lib = NULL;
+    }
+    return SASL_FAIL;
+}
+
 static void
 sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
 	int logonly)
@@ -180,49 +275,13 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
     size_t len, curlen = 0;
     const char prefix[] = "GSSAPI Error: ";
     
-    char *error;
-    void *h_krb5lib;
-    OM_uint32 (*p_krb5_gss_display_status)(
-                    OM_uint32 FAR *,
-                    OM_uint32,
-                    int,
-                    gss_OID,
-                    OM_uint32 FAR *,
-                    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_release_buffer)(
-                    OM_uint32 FAR *,
-                    gss_buffer_t);
-
-
-    h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY);
-    if (h_krb5lib == NULL) {
-	fprintf(stderr, "%s\n", dlerror());
-	return;
-    }
-
-    p_krb5_gss_display_status = dlsym(h_krb5lib, "gss_display_status");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return;
-    }
-	
-    p_krb5_gss_release_buffer = dlsym(h_krb5lib, "gss_release_buffer");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return;
-    }
-	
     if(!utils) return;
+
+    if (sasl_gss_lib_init(utils) != SASL_OK) return;
     
     len = sizeof(prefix);
     ret = _plug_buf_alloc(utils, &out, &curlen, 256);
-    if(ret != SASL_OK) {
-	    dlclose(h_krb5lib);
-	    return;
-    }
+    if(ret != SASL_OK) return;
     
     strcpy(out, prefix);
     
@@ -241,7 +300,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
 				"(could not get major error message)");
 	    }
 	    utils->free(out);
-	    dlclose(h_krb5lib);
 	    return;
 	}
 	
@@ -250,7 +308,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
 	
 	if(ret != SASL_OK) {
 	    utils->free(out);
-	    dlclose(h_krb5lib);
 	    return;
 	}
 	
@@ -268,7 +325,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
     ret = _plug_buf_alloc(utils, &out, &curlen, len);
     if(ret != SASL_OK) {
 	utils->free(out);
-	dlclose(h_krb5lib);
 	return;
     }
     
@@ -289,7 +345,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
 				"(could not get minor error message)");
 	    }
 	    utils->free(out);
-	    dlclose(h_krb5lib);
 	    return;
 	}
 	
@@ -298,7 +353,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
 	
 	if(ret != SASL_OK) {
 	    utils->free(out);
-	    dlclose(h_krb5lib);
 	    return;
 	}
 	
@@ -314,7 +368,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
     ret = _plug_buf_alloc(utils, &out, &curlen, len);
     if(ret != SASL_OK) {
 	utils->free(out);
-	dlclose(h_krb5lib);
 	return;
     }
     
@@ -326,7 +379,6 @@ sasl_gss_seterror_(const sasl_utils_t *utils, OM_uint32 maj, OM_uint32 min,
 	utils->seterror(utils->conn, 0, out);
     }
     utils->free(out);
-    dlclose(h_krb5lib);
 }
 
 static int 
@@ -340,55 +392,13 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
     int ret;
     struct buffer_info *inblob, bufinfo;
     
-    char *error;
-    void *h_krb5lib;
-
-    OM_uint32 (*p_krb5_gss_wrap)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    int,
-		    gss_qop_t,
-		    gss_buffer_t,
-		    int FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_release_buffer)(
-		    OM_uint32 FAR *,
-		    gss_buffer_t);
-
-
-    h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY);
-    if (h_krb5lib == NULL) {
-        fprintf(stderr, "%s\n", dlerror());
-        return SASL_FAIL;
-    }
-
-
-    p_krb5_gss_wrap =  dlsym(h_krb5lib, "gss_wrap");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_release_buffer = dlsym(h_krb5lib, "gss_release_buffer");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-	
-    if(!output) {
-	dlclose(h_krb5lib);
-	return SASL_BADPARAM;
-    }
+    if(!output) return SASL_BADPARAM;
+    
+    if (sasl_gss_lib_init(utils) != SASL_OK) return;
     
     if(numiov > 1) {
 	ret = _plug_iovec_to_buf(text->utils, invec, numiov, &text->enc_in_buf);
-	if(ret != SASL_OK) {
-		dlclose(h_krb5lib);
-		return ret;
-	}
+	if(ret != SASL_OK) return ret;
 	inblob = text->enc_in_buf;
     } else {
 	bufinfo.data = invec[0].iov_base;
@@ -396,10 +406,7 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
 	inblob = &bufinfo;
     }
     
-    if (text->state != SASL_GSSAPI_STATE_AUTHENTICATED) {
-	    dlclose(h_krb5lib);
-	    return SASL_NOTDONE;
-    }
+    if (text->state != SASL_GSSAPI_STATE_AUTHENTICATED) return SASL_NOTDONE;
     
     input_token = &real_input_token;
     
@@ -423,7 +430,6 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
 	    sasl_gss_seterror(text->utils, maj_stat, min_stat);
 	    if (output_token->value)
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
     
@@ -435,7 +441,6 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
 	
 	if (ret != SASL_OK) {
 	    (*p_krb5_gss_release_buffer)(&min_stat, output_token);
-	    dlclose(h_krb5lib);
 	    return ret;
 	}
 	
@@ -453,7 +458,6 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
     if (output_token->value)
 	(*p_krb5_gss_release_buffer)(&min_stat, output_token);
      
-    dlclose(h_krb5lib);
     return SASL_OK;
 }
 
@@ -481,44 +485,10 @@ static int gssapi_decode_packet(void *context,
     gss_buffer_desc real_input_token, real_output_token;
     int result;
     
-    char *error;
-    void *h_krb5lib;
-
-    OM_uint32 (*p_krb5_gss_unwrap)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    gss_buffer_t,
-		    gss_buffer_t,
-		    int FAR *,
-		    gss_qop_t FAR *);
-
-    OM_uint32 (*p_krb5_gss_release_buffer)(
-		    OM_uint32 FAR *,
-		    gss_buffer_t);
-
-    h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY);
-    if (h_krb5lib == NULL) {
-        fprintf(stderr, "%s\n", dlerror());
-        return SASL_FAIL;
-    }
-
-    p_krb5_gss_unwrap =  dlsym(h_krb5lib, "gss_unwrap");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_release_buffer = dlsym(h_krb5lib, "gss_release_buffer");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
+    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    
     if (text->state != SASL_GSSAPI_STATE_AUTHENTICATED) {
 	SETERROR(text->utils, "GSSAPI Failure");
-	dlclose(h_krb5lib);
 	return SASL_NOTDONE;
     }
     
@@ -542,7 +512,6 @@ static int gssapi_decode_packet(void *context,
 	    sasl_gss_seterror(text->utils,maj_stat,min_stat);
 	    if (output_token->value)
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
     
@@ -556,7 +525,6 @@ static int gssapi_decode_packet(void *context,
 				     *outputlen);
 	    if(result != SASL_OK) {
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
-		dlclose(h_krb5lib);
 		return result;
 	    }
 	    *output = text->decode_once_buf;
@@ -565,7 +533,6 @@ static int gssapi_decode_packet(void *context,
 	(*p_krb5_gss_release_buffer)(&min_stat, output_token);
     }
     
-    dlclose(h_krb5lib);
     return SASL_OK;
 }
 
@@ -602,53 +569,12 @@ static void sasl_gss_free_context_contents(context_t *text)
 {
     OM_uint32 maj_stat, min_stat;
     
-    char *error;
-    void *h_krb5lib;
-
-    OM_uint32 (*p_krb5_gss_delete_sec_context)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_release_name)(
-		    OM_uint32 FAR *,
-		    gss_name_t FAR *);
-		    
-    OM_uint32 (*p_krb5_gss_release_cred)(
-		    OM_uint32 FAR *,
-		    gss_cred_id_t FAR *);
-
     if (!text) return;
     
-    h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY);
-    if (h_krb5lib == NULL) {
-	fprintf(stderr, "%s\n", dlerror());
-	return;
-    }
-
-    p_krb5_gss_delete_sec_context = dlsym(h_krb5lib, "gss_delete_sec_context");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return;
-    }
-
-    p_krb5_gss_release_name = dlsym(h_krb5lib, "gss_release_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return;
-    }
-
-    p_krb5_gss_release_cred = dlsym(h_krb5lib, "gss_release_cred");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr,"%s\n", error);
-	dlclose(h_krb5lib);
-	return;
-    }
-
+    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    
     if (text->gss_ctx != GSS_C_NO_CONTEXT) {
-	maj_stat = (*p_krb5_gss_delete_sec_context) (&min_stat,&text->gss_ctx,GSS_C_NO_BUFFER);
+	maj_stat = (*p_krb5_gss_delete_sec_context)(&min_stat,&text->gss_ctx,GSS_C_NO_BUFFER);
 	text->gss_ctx = GSS_C_NO_CONTEXT;
     }
     
@@ -704,8 +630,6 @@ static void sasl_gss_free_context_contents(context_t *text)
 	text->utils->free(text->authid);
 	text->authid = NULL;
     }
-
-    dlclose(h_krb5lib);
 }
 
 static void gssapi_common_mech_dispose(void *conn_context,
@@ -761,79 +685,6 @@ gssapi_server_mech_step(void *conn_context,
     gss_buffer_desc name_token;
     int ret, out_flags = 0 ;
     
-    char *error;
-    void *h_krb5lib;
-
-    OM_uint32 (*p_krb5_gss_import_name)(
-		    OM_uint32 FAR *,
-		    gss_buffer_t,
-		    gss_OID,
-		    gss_name_t FAR *);
-
-    OM_uint32 (*p_krb5_gss_release_cred)(
-		    OM_uint32 FAR *,
-		    gss_cred_id_t FAR *);
-
-    OM_uint32 (*p_krb5_gss_acquire_cred)(
-		    OM_uint32 FAR *,
-		    gss_name_t,
-		    OM_uint32,
-		    gss_OID_set,
-		    gss_cred_usage_t,
-		    gss_cred_id_t FAR *,
-		    gss_OID_set FAR *,
-		    OM_uint32 FAR *);
-
-    OM_uint32 (*p_krb5_gss_accept_sec_context)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t FAR *,
-		    gss_cred_id_t,
-		    gss_buffer_t,
-		    gss_channel_bindings_t,
-		    gss_name_t FAR *,
-		    gss_OID FAR *,
-		    gss_buffer_t,
-		    OM_uint32 FAR *,
-		    OM_uint32 FAR *,
-		    gss_cred_id_t FAR *);
-
-    OM_uint32 (*p_krb5_gss_release_buffer)(
-		    OM_uint32 FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_display_name)(
-		    OM_uint32 FAR *,
-		    gss_name_t,
-		    gss_buffer_t,
-		    gss_OID FAR *);
-
-    OM_uint32 (*p_krb5_gss_release_name)(
-		    OM_uint32 FAR *,
-		    gss_name_t FAR *);
-		    
-    OM_uint32 (*p_krb5_gss_compare_name)(
-		    OM_uint32 FAR *,
-		    gss_name_t,
-		    gss_name_t,
-		    int FAR *);
-
-    OM_uint32 (*p_krb5_gss_wrap)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    int,
-		    gss_qop_t,
-		    gss_buffer_t,
-		    int FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_unwrap)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    gss_buffer_t,
-		    gss_buffer_t,
-		    int FAR *,
-		    gss_qop_t FAR *);
-
     input_token = &real_input_token;
     output_token = &real_output_token;
     output_token->value = NULL; output_token->length = 0;
@@ -847,82 +698,8 @@ gssapi_server_mech_step(void *conn_context,
     *serverout = NULL;
     *serveroutlen = 0;	
 	    
-    h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY);
-    if (h_krb5lib == NULL) {
-	fprintf(stderr, "%s\n", dlerror());
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_import_name = dlsym(h_krb5lib, "gss_import_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-	
-    p_krb5_gss_release_cred = dlsym(h_krb5lib, "gss_release_cred");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_acquire_cred = dlsym(h_krb5lib, "gss_acquire_cred");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_accept_sec_context = dlsym(h_krb5lib, "gss_accept_sec_context");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_release_buffer = dlsym(h_krb5lib, "gss_release_buffer");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_display_name = dlsym(h_krb5lib, "gss_display_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_release_name = dlsym(h_krb5lib, "gss_release_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_compare_name = dlsym(h_krb5lib, "gss_compare_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_wrap =  dlsym(h_krb5lib, "gss_wrap");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_unwrap =  dlsym(h_krb5lib, "gss_unwrap");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
+    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    
     switch (text->state) {
 
     case SASL_GSSAPI_STATE_AUTHNEG:
@@ -932,7 +709,6 @@ gssapi_server_mech_step(void *conn_context,
 	    if (name_token.value == NULL) {
 		MEMERROR(text->utils);
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_NOMEM;
 	    }
 	    sprintf(name_token.value,"%s@%s", params->service, params->serverFQDN);
@@ -948,7 +724,6 @@ gssapi_server_mech_step(void *conn_context,
 	    if (GSS_ERROR(maj_stat)) {
 		sasl_gss_seterror(text->utils, maj_stat, min_stat);
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_FAIL;
 	    }
 	    
@@ -969,7 +744,6 @@ gssapi_server_mech_step(void *conn_context,
 	    if (GSS_ERROR(maj_stat)) {
 		sasl_gss_seterror(text->utils, maj_stat, min_stat);
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_FAIL;
 	    }
 	}
@@ -1000,7 +774,6 @@ gssapi_server_mech_step(void *conn_context,
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
 	    }
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_BADAUTH;
 	}
 	    
@@ -1021,7 +794,6 @@ gssapi_server_mech_step(void *conn_context,
 				      &(text->out_buf_len), *serveroutlen);
 		if(ret != SASL_OK) {
 		    (*p_krb5_gss_release_buffer)(&min_stat, output_token);
-		    dlclose(h_krb5lib);
 		    return ret;
 		}
 		memcpy(text->out_buf, output_token->value, *serveroutlen);
@@ -1040,7 +812,6 @@ gssapi_server_mech_step(void *conn_context,
 	    text->state = SASL_GSSAPI_STATE_SSFCAP;
 	}
 	
-	dlclose(h_krb5lib);
 	return SASL_CONTINUE;
 
     case SASL_GSSAPI_STATE_SSFCAP: {
@@ -1070,7 +841,6 @@ gssapi_server_mech_step(void *conn_context,
 		(*p_krb5_gss_release_name)(&min_stat, &without);
 	    SETERROR(text->utils, "GSSAPI Failure");
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_BADAUTH;
 	}
 	
@@ -1084,7 +854,6 @@ gssapi_server_mech_step(void *conn_context,
 	    name_without_realm.value = malloc(strlen(name_token.value)+1);
 	    if (name_without_realm.value == NULL) {
 		MEMERROR(text->utils);
-		dlclose(h_krb5lib);
 		return SASL_NOMEM;
 	    }
 	    
@@ -1114,7 +883,6 @@ gssapi_server_mech_step(void *conn_context,
 		    (*p_krb5_gss_release_name)(&min_stat, &without);
 		SETERROR(text->utils, "GSSAPI Failure");
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_BADAUTH;
 	    }
 	    
@@ -1144,7 +912,6 @@ gssapi_server_mech_step(void *conn_context,
 	    
 	    if (text->authid == NULL) {
 		MEMERROR(params->utils);
-		dlclose(h_krb5lib);
 		return SASL_NOMEM;
 	    }
 	} else {
@@ -1152,7 +919,6 @@ gssapi_server_mech_step(void *conn_context,
 	    
 	    if (text->authid == NULL) {
 		MEMERROR(params->utils);
-		dlclose(h_krb5lib);
 		return SASL_NOMEM;
 	    }
 	}
@@ -1190,7 +956,6 @@ gssapi_server_mech_step(void *conn_context,
 	if(text->requiressf != 0 && !params->props.maxbufsize) {
 	    params->utils->seterror(params->utils->conn, 0,
 				    "GSSAPI needs a security layer but one is forbidden");
-	    dlclose(h_krb5lib);
 	    return SASL_TOOWEAK;
 	}
 	
@@ -1234,7 +999,6 @@ gssapi_server_mech_step(void *conn_context,
 				      &(text->out_buf_len), *serveroutlen);
 		if(ret != SASL_OK) {
 		    (*p_krb5_gss_release_buffer)(&min_stat, output_token);
-		    dlclose(h_krb5lib);
 		    return ret;
 		}
 		memcpy(text->out_buf, output_token->value, *serveroutlen);
@@ -1247,7 +1011,6 @@ gssapi_server_mech_step(void *conn_context,
 	/* Wait for ssf request and authid */
 	text->state = SASL_GSSAPI_STATE_SSFREQ; 
 	
-	dlclose(h_krb5lib);
 	return SASL_CONTINUE;
     }
 
@@ -1267,7 +1030,6 @@ gssapi_server_mech_step(void *conn_context,
 	if (GSS_ERROR(maj_stat)) {
 	    sasl_gss_seterror(text->utils, maj_stat, min_stat);
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
 	
@@ -1296,7 +1058,6 @@ gssapi_server_mech_step(void *conn_context,
 	    if (output_token->value)
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
 	
@@ -1310,7 +1071,6 @@ gssapi_server_mech_step(void *conn_context,
 	    
 	    if (ret != SASL_OK) {
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return ret;
 	    }
 	    
@@ -1320,7 +1080,6 @@ gssapi_server_mech_step(void *conn_context,
 				     SASL_CU_AUTHID, oparams);
 	    if (ret != SASL_OK) {
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return ret;
 	    }
 	} else if(output_token->length == 4) {
@@ -1342,7 +1101,6 @@ gssapi_server_mech_step(void *conn_context,
 		     "token too short");
 	    (*p_krb5_gss_release_buffer)(&min_stat, output_token);
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}	
 	
@@ -1388,18 +1146,15 @@ gssapi_server_mech_step(void *conn_context,
 	
 	oparams->doneflag = 1;
 	
-	dlclose(h_krb5lib);
 	return SASL_OK;
     }
     
     default:
 	params->utils->log(NULL, SASL_LOG_ERR,
 			   "Invalid GSSAPI server step %d\n", text->state);
-	dlclose(h_krb5lib);
 	return SASL_FAIL;
     }
     
-    dlclose(h_krb5lib);
     return SASL_FAIL; /* should never get here */
 }
 
@@ -1518,73 +1273,6 @@ static int gssapi_client_mech_step(void *conn_context,
 				   unsigned *clientoutlen,
 				   sasl_out_params_t *oparams)
 {
-    char *error;
-    void *h_krb5lib;
-
-    OM_uint32 (*p_krb5_gss_init_sec_context)(
-		OM_uint32 *                         ,
-		const gss_cred_id_t                 ,
-		gss_ctx_id_t *                      ,
-		const gss_name_t                    ,
-		const gss_OID                       ,
-		OM_uint32                           ,
-		OM_uint32                           ,
-		const gss_channel_bindings_t        ,
-		const gss_buffer_t                  ,
-		gss_OID *                           ,
-		gss_buffer_t                        ,
-		OM_uint32 *                         ,
-		OM_uint32 *                         );
-
-    OM_uint32 (*p_krb5_gss_import_name)(
-		    OM_uint32 FAR *,
-		    gss_buffer_t,
-		    gss_OID,
-		    gss_name_t FAR *);
-
-    OM_uint32 (*p_krb5_gss_delete_sec_context)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_release_buffer)(
-		    OM_uint32 FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_inquire_context)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    gss_name_t FAR *,
-		    gss_name_t FAR *,
-		    OM_uint32 FAR *,
-		    gss_OID FAR *,
-		    OM_uint32 FAR *,
-		    int FAR *,
-		    int FAR *);
-
-    OM_uint32 (*p_krb5_gss_unwrap)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    gss_buffer_t,
-		    gss_buffer_t,
-		    int FAR *,
-		    gss_qop_t FAR *);
-
-    OM_uint32 (*p_krb5_gss_wrap)(
-		    OM_uint32 FAR *,
-		    gss_ctx_id_t,
-		    int,
-		    gss_qop_t,
-		    gss_buffer_t,
-		    int FAR *,
-		    gss_buffer_t);
-
-    OM_uint32 (*p_krb5_gss_display_name)(
-		    OM_uint32 FAR *,
-		    gss_name_t,
-		    gss_buffer_t,
-		    gss_OID FAR *);
-
     context_t *text = (context_t *)conn_context;
     gss_buffer_t input_token, output_token;
     gss_buffer_desc real_input_token, real_output_token;
@@ -1602,69 +1290,8 @@ static int gssapi_client_mech_step(void *conn_context,
     *clientout = NULL;
     *clientoutlen = 0;
     
-    // modified by Zhenmin Li
-    h_krb5lib = dlopen(KRB5_LIB_NAME, RTLD_LAZY);
-    if (h_krb5lib == NULL) {
-	fprintf(stderr, "%s\n", dlerror());
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_import_name = dlsym(h_krb5lib, "gss_import_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-	
-    p_krb5_gss_init_sec_context = dlsym(h_krb5lib, "gss_init_sec_context");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-	
-    p_krb5_gss_delete_sec_context = dlsym(h_krb5lib, "gss_delete_sec_context");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_release_buffer = dlsym(h_krb5lib, "gss_release_buffer");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_inquire_context =  dlsym(h_krb5lib, "gss_inquire_context");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_unwrap =  dlsym(h_krb5lib, "gss_unwrap");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_wrap =  dlsym(h_krb5lib, "gss_wrap");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
-    p_krb5_gss_display_name = dlsym(h_krb5lib, "gss_display_name");
-    if ((error = dlerror()) != NULL) {
-	fprintf(stderr, "%s\n", error);
-	dlclose(h_krb5lib);
-	return SASL_FAIL;
-    }
-
+    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    
     switch (text->state) {
 
     case SASL_GSSAPI_STATE_AUTHNEG:
@@ -1677,7 +1304,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    
 	    if ((user_result != SASL_OK) && (user_result != SASL_INTERACT)) {
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return user_result;
 	    }
 		    
@@ -1698,12 +1324,8 @@ static int gssapi_client_mech_step(void *conn_context,
 				       NULL, NULL,
 				       NULL, NULL, NULL,
 				       NULL, NULL, NULL);
-		if (result != SASL_OK) {
-			dlclose(h_krb5lib);
-			return result;
-		}
+ 		if (result != SASL_OK) return result;
 		
-		dlclose(h_krb5lib);
 		return SASL_INTERACT;
 	    }
 	}
@@ -1713,13 +1335,11 @@ static int gssapi_client_mech_step(void *conn_context,
 	    name_token.value = (char *)params->utils->malloc((name_token.length + 1) * sizeof(char));
 	    if (name_token.value == NULL) {
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_NOMEM;
 	    }
 	    if (params->serverFQDN == NULL
 		|| strlen(params->serverFQDN) == 0) {
 		SETERROR(text->utils, "GSSAPI Failure: no serverFQDN");
-		dlclose(h_krb5lib);
 		return SASL_FAIL;
 	    }
 	    
@@ -1736,7 +1356,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    if (GSS_ERROR(maj_stat)) {
 		sasl_gss_seterror(text->utils, maj_stat, min_stat);
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_FAIL;
 	    }
 	}
@@ -1793,7 +1412,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    if (output_token->value)
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
 
@@ -1810,7 +1428,6 @@ static int gssapi_client_mech_step(void *conn_context,
 				      &(text->out_buf_len), *clientoutlen);
 		if(ret != SASL_OK) {
 		    (*p_krb5_gss_release_buffer)(&min_stat, output_token);
-		    dlclose(h_krb5lib);
 		    return ret;
 		}
 		memcpy(text->out_buf, output_token->value, *clientoutlen);
@@ -1835,7 +1452,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    if (GSS_ERROR(maj_stat)) {
 		sasl_gss_seterror(text->utils, maj_stat, min_stat);
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_FAIL;
 	    }
 	    
@@ -1850,7 +1466,6 @@ static int gssapi_client_mech_step(void *conn_context,
 		    (*p_krb5_gss_release_buffer)(&min_stat, &name_token);
 		SETERROR(text->utils, "GSSAPI Failure");
 		sasl_gss_free_context_contents(text);
-		dlclose(h_krb5lib);
 		return SASL_FAIL;
 	    }
 	    
@@ -1870,10 +1485,7 @@ static int gssapi_client_mech_step(void *conn_context,
 	    }
 	    (*p_krb5_gss_release_buffer)(&min_stat, &name_token);
 	    
-	    if (ret != SASL_OK) {
-		    dlclose(h_krb5lib);
-		    return ret;
-	    }
+ 	    if (ret != SASL_OK) return ret;
 	    
 	    /* Switch to ssf negotiation */
 	    text->state = SASL_GSSAPI_STATE_SSFCAP;
@@ -1902,16 +1514,13 @@ static int gssapi_client_mech_step(void *conn_context,
 	    sasl_gss_free_context_contents(text);
 	    if (output_token->value)
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
 	
 	/* taken from kerberos.c */
 	if (secprops->min_ssf > (K5_MAX_SSF + external)) {
-	    dlclose(h_krb5lib);
 	    return SASL_TOOWEAK;
 	} else if (secprops->min_ssf > secprops->max_ssf) {
-	    dlclose(h_krb5lib);
 	    return SASL_BADPARAM;
 	}
 	
@@ -1954,7 +1563,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	} else {
 	    /* there's no appropriate layering for us! */
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_TOOWEAK;
 	}
 	
@@ -1996,7 +1604,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    (char *)params->utils->malloc((input_token->length + 1)*sizeof(char));
 	if (input_token->value == NULL) {
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_NOMEM;
 	}
 	
@@ -2036,7 +1643,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    if (output_token->value)
 		(*p_krb5_gss_release_buffer)(&min_stat, output_token);
 	    sasl_gss_free_context_contents(text);
-	    dlclose(h_krb5lib);
 	    return SASL_FAIL;
 	}
 	
@@ -2066,18 +1672,15 @@ static int gssapi_client_mech_step(void *conn_context,
 			  (params->props.maxbufsize > 0xFFFFFF) ? 0xFFFFFF :
 			  params->props.maxbufsize);
 	
-	dlclose(h_krb5lib);
 	return SASL_OK;
     }
 	
     default:
 	params->utils->log(NULL, SASL_LOG_ERR,
 			   "Invalid GSSAPI client step %d\n", text->state);
-	dlclose(h_krb5lib);
 	return SASL_FAIL;
     }
     
-    dlclose(h_krb5lib);
     return SASL_FAIL; /* should never get here */
 }
 
