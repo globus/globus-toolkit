@@ -31,7 +31,3 @@ BUNDLE	ogsi-cbindings
         globus_gram_xml_rsl_test
         globus_gram_xml_rsl
         globus_ogsa_base_gram_mj_bindings
-
-BUNDLE  globus_chosting
-	expat
-	axiscpp

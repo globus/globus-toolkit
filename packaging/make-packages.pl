@@ -69,7 +69,7 @@ my ($install, $installer, $anonymous, $force,
     $binary, $inplace, $gt2dir, $gt3dir) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
-    0, 0, 0, "1.0", 0, 
+    0, 0, 1, "1.0", 0, 
     0, 0, "", "");
 
 my @user_bundles;
@@ -270,16 +270,13 @@ sub check_java_env()
 	{
 	    $ENV{'JAVA_HOME'} = "/usr/java/jdk1.3.1_07";
 	} else {
-	    print "Could not find JAVA_HOME for your system.\n";
-	    print "Please set JAVA_HOME before running this script\n";
-	    exit 1;
+	    print "INFO: Could not find JAVA_HOME for your system.\n";
 	}
     }
     system("ant -h > /dev/null");
     if ( $? != 0 )
     {
-	print "ant -h returned an error.  Make sure ant is on your path.\n";
-	exit 1;
+	print "INFO: ant -h returned an error.  Make sure ant is on your path.\n";
     }
 }
 
@@ -743,7 +740,7 @@ sub cvs_checkout_generic ()
 	print "Making fresh CVS checkout of \n";
 	print "$cvsroot, module $module, tag $tag\n";
 	print "Logging to $cvs_logs/" . $tree . ".log\n";
-	print "DIR is $dir\n";
+
 	system("mkdir -p $dir");
 	paranoia("Can't make $dir.\n");
 	chdir $dir || die "Can't cd to $dir: $!\n";
@@ -918,6 +915,12 @@ sub package_source_gpt()
 	    paranoia("$package bootstrap failed.");
 	    $ENV{PATH} = $OPATH;
 	} else {
+	    if ( -e 'Makefile' )
+	    {
+		log_system("make distclean", "$pkglog/$package");
+		paranoia("make distclean failed for $package");
+	    }
+
 	    log_system("./bootstrap", "$pkglog/$package");
 	    paranoia("$package bootstrap failed.");
 	}
@@ -987,6 +990,18 @@ sub package_source_pnb()
     chdir $subdir;
 
     my $version = gpt_get_version("pkg_data_src.gpt");
+
+    # Some patches will fail to apply a second time
+    # So clean up the old patched tar directory if
+    # it exists from a previous build.
+    if ( -d "$tarbase" )
+    {
+	log_system("rm -fr $tarbase", "$pkglog/$package");
+	paranoia("$tarbase exists, but could not be deleted.\n");
+    }
+
+    log_system("gzip -dc $tarfile | tar xf -",
+	       "$pkglog/$package");
     log_system("gzip -dc $tarfile | tar xf -",
 	       "$pkglog/$package");
     paranoia "Untarring $package failed.  See $pkglog/$package.";
@@ -1073,7 +1088,7 @@ sub package_source_tar()
 	my $tarfile = "$package-$version";
 	
 	chdir $source_output;
-	log_system("tar czf $package_output/$tarfile.tar.gz $package_name",
+	log_system("tar cvzf $package_output/$tarfile.tar.gz $package_name",
 		   "$pkglog/$package");
 	paranoia "tar failed for $package.";
     }
@@ -1338,7 +1353,7 @@ Options:
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
     --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,cbindings"
-    --paranoia             Exit at first error.
+    --noparanoia           Don't exit at first error.
     --help                 Print usage message
     --man                  Print verbose usage page
 
@@ -1406,7 +1421,7 @@ etc/*/package-list
 =item B<--paranoia>
 
 Exit at first error.  This can save you a lot of time
-and debugging effort.
+and debugging effort.  Disable with --noparanoia.
 
 =back
 
