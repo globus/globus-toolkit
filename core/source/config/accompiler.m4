@@ -419,11 +419,11 @@ case ${host}--$1 in
 	AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
 	if test "$1" = "pthreads" ; then
             LAC_PROG_CC_GNU($lac_cv_CC,
-			[ ],
+			[lac_LIBS="$lac_LIBS -lpthread"],
 			[lac_CFLAGS="-pthread $lac_CFLAGS"
                          lac_CPPFLAGS="-pthread $lac_CPPFLAGS"])
 	    LAC_PROG_CC_GNU($lac_cv_CXX,
-			[ ],
+			[lac_LIBS="$lac_LIBS -lpthread"],
 			[lac_CXXFLAGS="-pthread $lac_CXXFLAGS"])
 	fi
         lac_CFLAGS="-D_OSF_SOURCE $lac_CFLAGS"
