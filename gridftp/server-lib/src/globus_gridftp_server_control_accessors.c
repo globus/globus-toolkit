@@ -79,6 +79,27 @@ globus_gridftp_server_control_get_layout(
 }
 
 globus_result_t
+globus_gridftp_server_control_get_allocated(
+    globus_gridftp_server_control_op_t      op,
+    globus_off_t *                          out_allo)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_parallelism);
+
+    if(op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        *out_allo = op->server_handle->allocated_bytes;
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_gridftp_server_control_get_parallelism(
     globus_gridftp_server_control_op_t      op,
     int *                                   out_parallelism)

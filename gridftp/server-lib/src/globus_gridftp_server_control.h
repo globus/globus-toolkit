@@ -580,6 +580,10 @@ globus_gridftp_server_control_stop(
 /*
  *  setters and getters
  */
+globus_result_t
+globus_gridftp_server_control_get_allocated(
+    globus_gridftp_server_control_op_t      op,
+    globus_off_t *                          out_allo);
 
 globus_result_t
 globus_gridftp_server_control_get_layout(

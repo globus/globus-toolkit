@@ -1329,6 +1329,11 @@ globus_l_gsc_cmd_opts(
     }
     else if(strcmp("RETR", cmd_a[1]) == 0)
     {
+        for(tmp_ptr = cmd_a[2]; *tmp_ptr != '\0'; tmp_ptr++)
+        {
+            *tmp_ptr = tolower(*tmp_ptr);
+        }
+    
         tmp_ptr = cmd_a[2];
 
         done = GLOBUS_FALSE;
@@ -1337,15 +1342,16 @@ globus_l_gsc_cmd_opts(
             while(*tmp_ptr == ' ') tmp_ptr++;
 
             msg = _FSMSL("200 OPTS Command Successful.\r\n");
-            if(strncmp(tmp_ptr, "StripeLayout=", sizeof("StripeLayout=")-1) == 0)
+            if(strncmp(tmp_ptr,
+                "stripelayout=", sizeof("stripelayout=")-1) == 0)
             {
-                tmp_ptr += sizeof("StripeLayout=")-1;
+                tmp_ptr += sizeof("stripelayout=")-1;
                 if(strncmp(
-                    tmp_ptr, "Partitioned;", sizeof("Partitioned;")-1) == 0)
+                    tmp_ptr, "partitioned;", sizeof("partitioned;")-1) == 0)
                 {
                     opts->layout = GLOBUS_GSC_LAYOUT_TYPE_PARTITIONED;
                 }
-                else if(strncmp(tmp_ptr, "Blocked;", sizeof("Blocked;")-1) == 0)
+                else if(strncmp(tmp_ptr, "blocked;", sizeof("blocked;")-1) == 0)
                 {
                     opts->layout = GLOBUS_GSC_LAYOUT_TYPE_BLOCKED;
                 }
@@ -1356,9 +1362,9 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "Parallelism=", sizeof("Parallelism=")-1) == 0)
+                strncmp(tmp_ptr, "parallelism=", sizeof("parallelism=")-1) == 0)
             {
-                tmp_ptr += sizeof("Parallelism=")-1;
+                tmp_ptr += sizeof("parallelism=")-1;
                 if(sscanf(tmp_ptr, "%d,%*d,%*d;", &tmp_i) == 1)
                 {
                     opts->parallelism = tmp_i;
@@ -1370,7 +1376,7 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "PacketSize=", sizeof("PacketSize=")-1) == 0)
+                strncmp(tmp_ptr, "packetsize=", sizeof("packetsize=")-1) == 0)
             {
                 if(sscanf(tmp_ptr, "%d;", &tmp_i) == 1)
                 {
@@ -1383,7 +1389,7 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "WindowSize=", sizeof("WindowSize")-1) == 0)
+                strncmp(tmp_ptr, "windowsize=", sizeof("windowsize")-1) == 0)
             {
                 if(sscanf(tmp_ptr, "%d;", &tmp_i) == 1)
                 {
@@ -1396,9 +1402,9 @@ globus_l_gsc_cmd_opts(
                 }
             }
             else if(
-                strncmp(tmp_ptr, "BlockSize=", sizeof("BlockSize")-1) == 0)
+                strncmp(tmp_ptr, "blocksize=", sizeof("blocksize")-1) == 0)
             {
-                if(sscanf(tmp_ptr, "BlockSize=%d;", &tmp_i) == 1)
+                if(sscanf(tmp_ptr, "blocksize=%d;", &tmp_i) == 1)
                 {
                     opts->block_size = tmp_i;
                 }
@@ -1426,8 +1432,12 @@ globus_l_gsc_cmd_opts(
         strcmp("SPAS", cmd_a[1]) == 0 ||
         strcmp("EPSV", cmd_a[1]) == 0)
     {
+        for(tmp_ptr = cmd_a[2]; *tmp_ptr != '\0'; tmp_ptr++)
+        {
+            *tmp_ptr = tolower(*tmp_ptr);
+        }
         msg = _FSMSL("200 OPTS Command Successful.\r\n");
-        if(sscanf(cmd_a[2], "AllowDelayed=%d", &tmp_i) == 1)
+        if(sscanf(cmd_a[2], "allowdelayed=%d", &tmp_i) == 1)
         {
             opts->delayed_passive = tmp_i;
         }
@@ -1439,6 +1449,10 @@ globus_l_gsc_cmd_opts(
     else if(strcmp("MLST", cmd_a[1]) == 0 || 
         strcmp("MLSD", cmd_a[1]) == 0)
     {
+        for(tmp_ptr = cmd_a[2]; *tmp_ptr != '\0'; tmp_ptr++)
+        {
+            *tmp_ptr = tolower(*tmp_ptr);
+        }
         tmp_ptr = opts->mlsx_fact_str;
         if(strstr(cmd_a[2], "type"))
         {
@@ -2669,6 +2683,7 @@ globus_l_gsc_cmd_stor_retr(
     int                                     argc,
     void *                                  user_arg)
 {
+    char *                                  arg2;
     int                                     sc;
     globus_result_t                         res;
     char *                                  path = NULL;
@@ -2680,6 +2695,11 @@ globus_l_gsc_cmd_stor_retr(
     globus_bool_t                           transfer = GLOBUS_TRUE;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stor);
 
+    if(argc != 2)
+    {
+        globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
+        return;
+    }
     wrapper = (globus_l_gsc_cmd_wrapper_t *) globus_malloc(
         sizeof(globus_l_gsc_cmd_wrapper_t));
     if(wrapper == NULL)
@@ -2721,12 +2741,6 @@ globus_l_gsc_cmd_stor_retr(
     if(strcmp(cmd_a[0], "STOR") == 0 ||
             strcmp(cmd_a[0], "RETR") == 0)
     {
-        if(argc != 2)
-        {
-            globus_free(wrapper);
-            globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
-            return;
-        }
         path = globus_libc_strdup(cmd_a[1]);
         mod_name = NULL;
         mod_parm = NULL;
@@ -2735,12 +2749,6 @@ globus_l_gsc_cmd_stor_retr(
     {
         int                             mask = 
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY;
-        if(argc != 2)
-        {
-            globus_free(wrapper);
-            globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
-            return;
-        }
 
         res = globus_i_gsc_resource_query(
                 op,
@@ -2760,15 +2768,12 @@ globus_l_gsc_cmd_stor_retr(
     else if(strcmp(cmd_a[0], "ESTO") == 0 ||
         strcmp(cmd_a[0], "ERET") == 0)
     {
-        if(argc != 3)
+        if(strncasecmp(cmd_a[1], "P ", 2) == 0 && strcmp(cmd_a[0], "ERET") == 0)
         {
-            globus_free(wrapper);
-            globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
-            return;
-        }
-        if(strcmp(cmd_a[1], "P") == 0 && strcmp(cmd_a[0], "ERET") == 0)
-        {
-            sc = sscanf(cmd_a[2], 
+            arg2 = cmd_a[1] + 2;
+            while(isspace(*arg2) && *arg2 != '\0') arg2++;
+
+            sc = sscanf(arg2, 
                 "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT, 
                 &tmp_o, &tmp_o);
             if(sc != 2)
@@ -2778,7 +2783,7 @@ globus_l_gsc_cmd_stor_retr(
                     op, _FSMSL("500 command failed.\r\n"));
                 return;
             }
-            mod_parm = globus_libc_strdup(cmd_a[2]);
+            mod_parm = globus_libc_strdup(arg2);
             tmp_ptr = mod_parm;
             while(isdigit(*tmp_ptr)) tmp_ptr++;
             while(isspace(*tmp_ptr)) tmp_ptr++;
@@ -2795,18 +2800,21 @@ globus_l_gsc_cmd_stor_retr(
             *(tmp_ptr-1) = '\0';
 
             path = globus_libc_strdup(tmp_ptr);
-            mod_name = globus_libc_strdup(cmd_a[1]);
+            mod_name = globus_libc_strdup("P");
         }
-        else if(strcmp(cmd_a[1], "A") == 0 && strcmp(cmd_a[0], "ESTO") == 0)
+        else if(strncasecmp(cmd_a[1], "A ", 2) == 0 &&
+            strcmp(cmd_a[0], "ESTO") == 0)
         {
-            sc = sscanf(cmd_a[2], "%"GLOBUS_OFF_T_FORMAT, &tmp_o);
+            arg2 = cmd_a[1] + 2;
+            while(isspace(*arg2) && *arg2 != '\0') arg2++;
+            sc = sscanf(arg2, "%"GLOBUS_OFF_T_FORMAT, &tmp_o);
             if(sc != 1)
             {
                 globus_free(wrapper);
                 globus_gsc_959_finished_command(op, _FSMSL("501 bad parameter.\r\n"));
                 return;
             }
-            mod_parm = globus_libc_strdup(cmd_a[2]);
+            mod_parm = globus_libc_strdup(arg2);
             tmp_ptr = mod_parm;
             while(isdigit(*tmp_ptr)) tmp_ptr++;
             /* up until here the scanf gauentess safety */
@@ -2821,7 +2829,7 @@ globus_l_gsc_cmd_stor_retr(
             *(tmp_ptr-1) = '\0';
 
             path = globus_libc_strdup(tmp_ptr);
-            mod_name = globus_libc_strdup(cmd_a[1]);
+            mod_name = globus_libc_strdup("A");
         }
         else
         {
@@ -2857,8 +2865,18 @@ globus_l_gsc_cmd_stor_retr(
                 return;
             }            
             *tmp_ptr = '\0';
+            if(tmp_ptr[1] == '\0' || tmp_ptr[2] == '\0')
+            {
+                globus_free(mod_name);
+                globus_free(mod_parm);
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(
+                    op, _FSMSL("500 command failed: space.\r\n"));
+                return;
+            }
+            tmp_ptr += 2;
 
-            path = globus_libc_strdup(cmd_a[2]);
+            path = globus_libc_strdup(tmp_ptr);
         }
     }
     /* all list stuff is here */
@@ -2990,8 +3008,8 @@ globus_i_gsc_add_commands(
         "ERET", 
         globus_l_gsc_cmd_stor_retr,
         GLOBUS_GSC_COMMAND_POST_AUTH,
-        3,
-        3,
+        2,
+        2,
         "ERET <sp> mod_name=\"mod_parms\" <sp> pathname",
         NULL);
 
@@ -3000,8 +3018,8 @@ globus_i_gsc_add_commands(
         "ESTO", 
         globus_l_gsc_cmd_stor_retr,
         GLOBUS_GSC_COMMAND_POST_AUTH,
-        3,
-        3,
+        2,
+        2,
         "ESTO <sp> mod_name=\"mod_parms\" <sp> pathname",
         NULL);
 
