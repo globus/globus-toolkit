@@ -808,6 +808,8 @@ grami_jm_request_params(gram_specification_t * description_tree,
 	}
     }
 
+    graml_stage_file(params->pgm, 0700);
+
     if (strlen(params->jobtype) == 0)
     {
        strcpy(params->jobtype, GRAM_DEFAULT_JOBTYPE);
