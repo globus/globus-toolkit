@@ -8,7 +8,7 @@
 #include <version.h>
 
 #define GSC_MAX_COMMAND_NAME_LEN        4
-#define GLOBUS_L_GSC_DEFAULT_220   "220 GridFTP Server.\r\n"
+#define GLOBUS_L_GSC_DEFAULT_220   "GridFTP Server.\n"
 
 #define GlobusLRegisterDone(_h)                                         \
 do                                                                      \
@@ -811,6 +811,7 @@ globus_l_gsc_220_write_cb(
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
+    globus_free(buffer);
     globus_mutex_lock(&server_handle->mutex);
     {
         if(result != GLOBUS_SUCCESS)
@@ -886,11 +887,15 @@ globus_l_gsc_open_cb(
         }
         else
         {
+            char *                      msg;
+
+            msg = globus_i_gsc_string_to_959(
+                220, server_handle->pre_auth_banner);
             res = globus_xio_register_write(
                     server_handle->xio_handle,
-                    server_handle->pre_auth_banner,
-                    strlen(server_handle->pre_auth_banner),
-                    strlen(server_handle->pre_auth_banner),
+                    msg,
+                    strlen(msg),
+                    strlen(msg),
                     NULL,
                     globus_l_gsc_220_write_cb,
                     server_handle);
@@ -2501,18 +2506,19 @@ globus_i_gsc_string_to_959(
             }
 
             tmp_ptr = msg;
-            msg = globus_common_create_string("%s %s\r\n", tmp_ptr, start_ptr);
+            msg = globus_common_create_string("%s%d-%s\r\n", 
+                tmp_ptr, code, start_ptr);
             globus_free(tmp_ptr);
 
             start_ptr = end_ptr;
             ctr++;
         }
-        tmp_ptr = msg;
-        msg = globus_common_create_string("%d%s", code, tmp_ptr);
-        globus_free(tmp_ptr);
-        if(ctr > 1)
+        if(ctr == 1)
         {
-            msg[3] = '-';
+            msg[3] = ' ';
+        }
+        else
+        {
             tmp_ptr = msg;
             msg = globus_common_create_string("%s%d End.\r\n", tmp_ptr, code);
             globus_free(tmp_ptr);

@@ -904,6 +904,7 @@ globus_l_gsc_auth_cb(
     void *                                  user_arg)
 {
     char *                                  msg;
+    char *                                  tmp_ptr;
 
     if(result == GLOBUS_SUCCESS)
     {
@@ -915,10 +916,12 @@ globus_l_gsc_auth_cb(
         }
         else
         {
-            msg = globus_common_create_string(
-                op->server_handle->post_auth_banner,
+            tmp_ptr = globus_common_create_string(
+                "User %s logged in.\n%s",
                 op->server_handle->username,
                 op->server_handle->post_auth_banner);
+            msg = globus_i_gsc_string_to_959(230, tmp_ptr);
+            globus_free(tmp_ptr);
         }
     }
     else
