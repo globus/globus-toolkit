@@ -1,0 +1,61 @@
+This file contains the PGP keys of various developers that work on
+GSI-OpenSSH.
+
+Please don't use these keys for email unless you have asked the owner
+because some keys are only used for code signing.
+
+Please realize that this file itself or the public key servers may be
+compromised.  You are encouraged to validate the authenticity of these keys in
+an out-of-band manner.  For information about our validation and signing
+policies, please read http://httpd.apache.org/dev/verification.html.
+
+GSI-OpenSSH users: pgp < KEYS
+GSI-OpenSSH developers: 
+        (pgpk -ll <your name> && pgpk -xa <your name>) >> this file.
+      or
+        (gpg --fingerprint --list-sigs <your name>
+             && gpg --armor --export <your name>) >> this file.
+
+GSI-OpenSSH developers: please ensure that your key is also available via the
+PGP keyservers (such as pgpkeys.mit.edu).
+
+pub  1024D/A58DA2D4 2003-12-29 Chase Phillips <shepard@ameth.org>
+     Key fingerprint = 7497 3DA3 7671 064B 5CEA  9024 BB0B 8647 A58D A2D4
+sig 3       A58DA2D4 2003-12-30   Chase Phillips <shepard@ameth.org>
+uid                            Chase Phillips <cmp@uiuc.edu>
+sig 3       A58DA2D4 2003-12-29   Chase Phillips <shepard@ameth.org>
+sub  2048g/E3DF96EB 2003-12-29 [expires: 2004-03-28]
+sig         A58DA2D4 2003-12-29   Chase Phillips <shepard@ameth.org>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.2.1 (GNU/Linux)
+
+mQGiBD/wphoRBAD+j8A/86P8DchwaigOmkelqp2k/5IV3sV50Mgf0O15jATy2P2f
+4EejPxO1gECjNd/XkFT43P/2awCiJ4/IOqoOI+0xSknUvExRomkAA5zVb2wg2MMl
+cU2l28+FbEXswClvhZC/aCc8Kn2nEdZ+/+/9Nhin4cRzdX+KwGZZZw1g9wCgksPD
+Q8sdT/aZH4gu3wdPv/klYz8D/1xAlqfo1Jp+4bS1BPpKrU1DbafpXKMX7O9VoGoK
+0CVGwRYD/sjJ112in8DORjWrF2GOogZDldu1uMpfAG10FWjPn0U5MWX7UQdb2tdM
+hy+sIysZeMUQDHoP4k/1VrbiqA5VAGIQRzXjtK6jrwGTGRjkDamA3cd9UrgMBWkI
+OjG6A/9Cx96z9lTwNo7TJVgzeIvx9KdD/66y58sf3KwfM4/ShbKXJ2O/a9MPHSnC
+xKK+ZELe9up4fJeTgOXLtELZLWDuinTtPauK8KDraFZ5xtJEJNee2I6EqQY/u0hf
+JSOscgb7r+aYIR0e7OCNR80bAypvq8WA2XtK4jScUk535rac2bQdQ2hhc2UgUGhp
+bGxpcHMgPGNtcEB1aXVjLmVkdT6IXwQTEQIAHwUCP/CmGgUJAHanAAQLBwMCAxUC
+AwMWAgECHgECF4AACgkQuwuGR6WNotSBRgCfWx8/0jIAjLssvB2xQkdt8wtnVQgA
+n3RD/ibX+kkOubf1mPjlJ9NfoHQwtCJDaGFzZSBQaGlsbGlwcyA8c2hlcGFyZEBh
+bWV0aC5vcmc+iGIEExECACIFAj/x3ygCGwMFCQB2pwAECwcDAgMVAgMDFgIBAh4B
+AheAAAoJELsLhkeljaLU+pIAmwbnFn/RNBvFOWdWPlnUWq9G+cgzAJ923ij53LtG
+KaCY4VMXG95wUE9nrLkCDQQ/8KYoEAgA3vfQ/arf1y6z+DqErY5B2cQA7Yu+zMQV
+Ue4UQaA2Kl2OCp8YABx9kkeuo7NrhW64fhmUyr0rAB0C0U+n3W0uMfbIi5Zn2KPs
+iaDp2n8VnAKs7j7gRO3GAOqEP2TBJhNE5WNzeMrycrSS6ZCa46tOiDUeY2YxCajy
+dAWJsF6xgFWLN0xaKRclkaYNmpXg6NLbzxz33MDB/uY8s7lWBU6Zud4rgtbdU4Wd
+h7GdxCK38ly8U/l7P4OwZ53sMYNwc2eW+6ln7psuNHXxWFhC2RMSM02yeLSzKAsL
+A636DRkQDGR/CC/CObtE7ttfii2y5y9lUqo6pZkUz+QOmQ/gczB8gwADBQf/Zp3z
+/73GYmqv3rFXOYF90KZqPNXiISThSw9pfVt6y0MYmRvVEpSDhZt18tH6/vyVoAxE
+Kknz5sBesz03QnWAkZYXBiFX9O1KE2VLsGEtn2GbMoIGiXIcMD89hW9w4qqLinjx
+zs3Ehd6ApwXp9QuxbWnDaHWqJwuycosuWYW915X9GPVRnFDyctNjMI0/ybVZEAmP
+KCqfICs+28MMUGi1B6DsTI8q8WE1ei9B2UNAB/hQM4ACaxyOGZcW16FLYHhn7l3u
+Kdl6Qy8jV0TGZw4DheAL3Kfwb7cUQY1f1Fm5bA2k6PQqnHtEZp+Jnkk0YfY+gmNj
+UNrwq9Hrlr7YdiVPaYhMBBgRAgAMBQI/8KYoBQkAdqcAAAoJELsLhkeljaLUlSQA
+n3iIIc6YmITQ10cCreqJh41CCMQkAJ9rNkh6V6UB5naJ8Fg+hk8XW9Imqg==
+=ju6E
+-----END PGP PUBLIC KEY BLOCK-----
