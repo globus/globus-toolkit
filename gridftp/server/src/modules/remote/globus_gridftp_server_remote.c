@@ -175,7 +175,7 @@ globus_l_gfs_remote_node_request(
             my_handle->cached_node_list = 
                 globus_list_rest(my_handle->cached_node_list);
     
-            bounce_info->callback(
+            callback(
                 node_info,
                 GLOBUS_SUCCESS,
                 user_arg);
