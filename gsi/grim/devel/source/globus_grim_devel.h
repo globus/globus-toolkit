@@ -159,14 +159,14 @@ globus_grim_get_default_configuration_filename(
  *  Initialize an assertion type.
  *
  *  This function initializes an assertion data type.  All
- *  attributes except subject and username receive default values, because
- *  subject and username are required to have a valid assertion.
+ *  attributes except issuer and username receive default values, because
+ *  issuer and username are required to have a valid assertion.
  *
  *  @param assertion
  *         An out parameter.  Upon return this will contain the initialized
  *         assertion.
  * 
- *  @param subject
+ *  @param issuer
  *         The value to fill the ServiceGridId portion of the assertion.
  *
  *  @param username
@@ -176,7 +176,7 @@ globus_grim_get_default_configuration_filename(
 globus_result_t
 globus_grim_assertion_init(
     globus_grim_assertion_t *               assertion,
-    char *                                  subject,
+    char *                                  issuer,
     char *                                  username);
 
 /**
@@ -238,23 +238,23 @@ globus_grim_assertion_destroy(
 /**
  *  @ingroup globus_grim_assertion
  *
- *  Get the subject.
+ *  Get the issuer.
  *
- *  This function returns the subject associated with the assertion to
+ *  This function returns the issuer associated with the assertion to
  *  the user.
  *
  *  @param assertion
- *         The assertion object containing the subject of interest.
+ *         The assertion object containing the issuer of interest.
  *
- *  @param subject
+ *  @param issuer
  *         An out parameter.  Upon completion of this function it will 
- *         point to the subject.  The user should not free or alter this
+ *         point to the issuer.  The user should not free or alter this
  *         memory.
  */
 globus_result_t
-globus_grim_assertion_get_subject(
+globus_grim_assertion_get_issuer(
     globus_grim_assertion_t                 assertion,
-    char **                                 subject);
+    char **                                 issuer);
 
 /**
  *  @ingroup globus_grim_assertion

@@ -39,7 +39,7 @@ struct globus_l_grim_conf_info_s
 struct globus_l_grim_assertion_s
 {
     char *                                  version;
-    char *                                  subject;
+    char *                                  issuer;
     char *                                  username;
     char **                                 dna;
     char **                                 port_types;
@@ -176,7 +176,7 @@ globus_grim_get_default_configuration_filename(
 globus_result_t
 globus_grim_assertion_init(
     globus_grim_assertion_t *               assertion,
-    char *                                  subject,
+    char *                                  issuer,
     char *                                  username)
 {
     struct globus_l_grim_assertion_s *      ass;
@@ -191,7 +191,7 @@ globus_grim_assertion_init(
                        GLOBUS_NULL,
                        "[globus_grim_devel]:: malloc failed."));
     }
-    ass->subject = strdup(subject);
+    ass->issuer = strdup(issuer);
     ass->username = strdup(username);
     ass->dna = NULL;
     ass->port_types = NULL;
@@ -282,7 +282,7 @@ globus_grim_assertion_destroy(
 
     GlobusLGrimSetGetAssertionEnter(assertion, info);
 
-    free(info->subject);
+    free(info->issuer);
     free(info->username);
     if(info->dna != NULL)
     {
@@ -301,23 +301,23 @@ globus_grim_assertion_destroy(
  *
  */
 globus_result_t
-globus_grim_assertion_get_subject(
+globus_grim_assertion_get_issuer(
     globus_grim_assertion_t                 assertion,
-    char **                                 subject)
+    char **                                 issuer)
 {
     struct globus_l_grim_assertion_s *      info;
 
     GlobusLGrimSetGetAssertionEnter(assertion, info);
-    if(subject == NULL)
+    if(issuer == NULL)
     {
         return globus_error_put(
                    globus_error_construct_string(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
-                       "[globus_grim_devel]:: subject is null."));
+                       "[globus_grim_devel]:: issuer is null."));
     }
 
-    *subject = info->subject;
+    *issuer = info->issuer;
 
     return GLOBUS_SUCCESS;
 }
@@ -1424,12 +1424,12 @@ globus_l_grim_build_assertion(
     int                                     buffer_size = 1024;
     int                                     buffer_ndx = 0;
     char                                    hostname[MAXHOSTNAMELEN];
-    char *                                  subject;
+    char *                                  issuer;
     char *                                  username;
     char **                                 dna;
     char **                                 port_types;
 
-    subject = info->subject;
+    issuer = info->issuer;
     username = info->username;
     dna = info->dna;
     port_types = info->port_types;
@@ -1446,7 +1446,7 @@ globus_l_grim_build_assertion(
     GrowString(buffer, buffer_size,
         "    <ServiceGridId Format=\"#X509SubjectName\">",
         buffer_ndx);
-    GrowString(buffer, buffer_size, subject, buffer_ndx);
+    GrowString(buffer, buffer_size, issuer, buffer_ndx);
     GrowString(buffer, buffer_size, "</ServiceGridId>\n", buffer_ndx);
     GrowString(buffer, buffer_size,
         "    <ServiceLocalId Format=\"#UnixAccountName\" \n",
@@ -1561,7 +1561,7 @@ globus_l_grim_assertion_cdata(
         case GLOBUS_L_GRIM_PARSE_GRID_ID:
             tmp_s = malloc(sizeof(char) * (len + 1));
             strncpy(tmp_s, s, len);
-            info->subject = tmp_s;
+            info->issuer = tmp_s;
 
             break;
 
