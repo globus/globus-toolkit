@@ -360,10 +360,10 @@ int i2d_PROXYPOLICY(
                    i2d_ASN1_OBJECT);
     M_ASN1_I2D_len_EXP_opt(a->policy,
                            i2d_ASN1_OCTET_STRING,
-                           1, v1);
+                           0, v1);
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(a->policy_language, i2d_ASN1_OBJECT);
-    M_ASN1_I2D_put_EXP_opt(a->policy, i2d_ASN1_OCTET_STRING, 1, v1);
+    M_ASN1_I2D_put_EXP_opt(a->policy, i2d_ASN1_OCTET_STRING, 0, v1);
 
     M_ASN1_I2D_finish();
 }
@@ -398,7 +398,20 @@ PROXYPOLICY * d2i_PROXYPOLICY(
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
     M_ASN1_D2I_get(ret->policy_language, d2i_ASN1_OBJECT);
-    M_ASN1_D2I_get_EXP_opt(ret->policy, d2i_ASN1_OCTET_STRING,1);
+
+    /* need to try getting the policy using
+     *     a) a call expecting no tags
+     *     b) a call expecting tags
+     * one of which should succeed
+     */
+    
+    M_ASN1_D2I_get_opt(ret->policy,
+                       d2i_ASN1_OCTET_STRING,
+                       V_ASN1_OCTET_STRING);
+    M_ASN1_D2I_get_IMP_opt(ret->policy,
+                           d2i_ASN1_OCTET_STRING,
+                           0,
+                           V_ASN1_OCTET_STRING);
     M_ASN1_D2I_Finish(a, 
                       PROXYPOLICY_free, 
                       ASN1_F_D2I_PROXYPOLICY);
