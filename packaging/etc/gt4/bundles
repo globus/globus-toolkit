@@ -32,7 +32,7 @@ BUNDLE gt4-mds
 
 BUNDLE gt4-rft
     globus_wsrf_rft_client_java
-	globus_wsrf_rft_service
+	globus_wsrf_rft_service_java
 	globus_wsrf_rft_common_java
 	globus_wsrf_rft_common_schema
 
