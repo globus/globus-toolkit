@@ -229,15 +229,16 @@ globus_l_gfs_ipc_finished_cb(
     
     node_info = globus_list_remove(
         &bounce_info->node_list, bounce_info->node_list);
-    result = globus_l_gfs_remote_node_release(
-        bounce_info->my_handle,
-        node_info);
     
     if(node_info->info && node_info->info_needs_free)
     {
         globus_free(node_info->info);
     }
     globus_free(bounce_info);
+
+    result = globus_l_gfs_remote_node_release(
+        bounce_info->my_handle,
+        node_info);
 
     return;
 }
@@ -563,7 +564,7 @@ globus_l_gfs_ipc_event_cb(
     }       
     if(finish)
     {        
-        reply->event_arg = bounce_info->node_list;
+        reply->event_arg = bounce_info;
         globus_gridftp_server_operation_event(
             bounce_info->op,
             GLOBUS_SUCCESS,
@@ -1230,10 +1231,7 @@ globus_l_gfs_remote_session_start_kickout(
     GlobusGFSName(globus_l_gfs_remote_session_start_kickout);
 
     bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
-    
-    globus_l_gfs_remote_node_release(
-        bounce_info->my_handle, node_info);
-                                                                 
+                                                                     
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
     finished_info.result = result;          
@@ -1243,6 +1241,9 @@ globus_l_gfs_remote_session_start_kickout(
         bounce_info->op,                                                   
         result,                                               
         &finished_info);
+
+    globus_l_gfs_remote_node_release(
+        bounce_info->my_handle, node_info);
     
     globus_free(bounce_info);        
     return;
