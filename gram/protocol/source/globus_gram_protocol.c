@@ -285,7 +285,7 @@ globus_gram_http_listen_callback( void *                ignored,
 /************************* help function *********************************/
 
 int
-globus_l_gram_http_setup_attr( globus_io_attr_t *  attr)
+globus_gram_http_setup_attr(globus_io_attr_t *  attr)
 {
     globus_result_t                        res;
     globus_io_secure_authorization_data_t  auth_data;
@@ -640,15 +640,15 @@ globus_l_gram_http_get_callback( void * arg,
 /********************* attaches to a URL, returns globus_io handle ******/
 
 int
-globus_gram_http_attach( char *               job_contact,
-			 globus_io_handle_t * handle)
+globus_gram_http_attach( char *                job_contact,
+			 globus_io_handle_t *  handle,
+			 globus_io_attr_t *    user_attr )
 {
     int                  rc;
     globus_result_t      res;
-    globus_io_attr_t     attr;
+    globus_io_attr_t     default_attr;
+    globus_io_attr_t *   attr;
     globus_url_t         url;
-
-    /* acquire mutex */
 
     /* dissect the job_contact URL */
     rc = globus_url_parse(job_contact, &url);
@@ -659,17 +659,24 @@ globus_gram_http_attach( char *               job_contact,
 	return GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
     }
 
-    rc = globus_l_gram_http_setup_attr( &attr );
-    if (rc != GLOBUS_SUCCESS)
+    if (user_attr)
     {
-	globus_url_destroy(&url);
-	/* release mutex */
-	return rc;
+	attr = user_attr;
+    }
+    else
+    {
+	rc = globus_gram_http_setup_attr( &default_attr );
+	if (rc != GLOBUS_SUCCESS)
+	{
+	    globus_url_destroy(&url);
+	    return rc;
+	}
+	attr = &default_attr;
     }
 
     res = globus_io_tcp_connect( url.host,
 				 url.port,
-				 &attr,
+				 attr,
 				 handle );
     
     if (res != GLOBUS_SUCCESS)
@@ -690,7 +697,9 @@ globus_gram_http_attach( char *               job_contact,
 	globus_object_free(err);
     }
 
-    globus_io_tcpattr_destroy(&attr);
+    if (!user_attr)
+	globus_io_tcpattr_destroy(attr);
+    
     globus_url_destroy(&url);
 
     /* release mutex */
@@ -816,7 +825,7 @@ globus_l_gram_http_post( char *                         url,
 				       msgsize,
 				       sendbuf,
 				       &sendbufsize))
-	 || (rc = globus_gram_http_attach(url, handle)) )
+	 || (rc = globus_gram_http_attach(url, handle, GLOBUS_NULL)) )
     {
 	globus_libc_free(sendbuf);
 	/* release mutex */

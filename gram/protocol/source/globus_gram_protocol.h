@@ -50,11 +50,21 @@ globus_gram_http_deactivate();
 
 
 /*
- * attaches to URL, returns io handle 
+ * creates a default set of TCP attributes (authentication with self, SSL
+ * wrappers around messages)
+ */
+int
+globus_gram_http_setup_attr( globus_io_attr_t *    attr );
+
+
+/*
+ * attaches to URL, returns io handle. If attr==NULL, the default set
+ * will be used (see globus_gram_http_setup_attr)
  */
 int
 globus_gram_http_attach( char *                https_url,
-			 globus_io_handle_t *  handle);
+			 globus_io_handle_t *  handle,
+			 globus_io_attr_t *    attr );
 
 
 /* 
