@@ -45,7 +45,10 @@ CVS Information:
  * Use the SSLeay error facility with the ERR_LIB_USER
  */
 
-#define GSSerr(f,r) ERR_PUT_error(ERR_user_lib_gsserr_num(),(f),(r),ERR_file_name,__LINE__)
+/* Offset from ERR_LIB_USER where GSSERR library will be stored */
+#define ERR_USER_LIB_GSSERR_NUMBER                  ((ERR_LIB_USER) + 2) 
+
+#define GSSerr(f,r) ERR_PUT_error(ERR_USER_LIB_GSSERR_NUMBER,(f),(r),ERR_file_name,__LINE__)
 
 /* 
  * defines for function codes our minor error codes
@@ -302,9 +305,6 @@ const gss_OID_desc * const gss_restrictions_extension;;
 /**********************************************************************
                                Function prototypes
 **********************************************************************/
-
-int 
-ERR_user_lib_gsserr_num();
 
 int
 ERR_load_gsserr_strings(int);
