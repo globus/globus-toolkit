@@ -1244,18 +1244,12 @@ sub inplace_build()
     chdir $subdir;
     log_system("./bootstrap", "$pkglog/$package");
     paranoia("Inplace bootstrap of $package in $subdir failed!");
-    my $config_args = "";
-    if( $doxygen )
-    {
-        $config_args = $config_args . " --enable-doxygen";
-    }
+    my $build_args = "";
+    $build_args .= " CONFIGOPTS_GPTMACRO=--enable-doxygen " if $doxygen;
+    $build_args .= " -verbose " if $verbose;
 
-    log_system("./configure --with-flavor=$flavor $config_args", "$pkglog/$package");
-    paranoia("Inplace configure of $package in $subdir failed!");
-    log_system("make", "$pkglog/$package");
-    paranoia("Inplace make of $package in $subdir failed!");
-    log_system("make install", "$pkglog/$package");
-    paranoia("Inplace make install of $package in $subdir failed!");
+    log_system("$ENV{GPT_LOCATION}/sbin/gpt-build $build_args $flavor", "$pkglog/$package");
+    paranoia("Inplace build of $package in $subdir failed!");
 
 }
 
