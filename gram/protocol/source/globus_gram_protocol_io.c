@@ -2008,7 +2008,7 @@ globus_l_gram_protocol_post(
     globus_io_attr_t 			local_attr;
     globus_list_t *			node;
     char *                              local_url = NULL;
-    char *                              subject;
+    char *                              subject = NULL;
     
     rc = globus_url_parse(url, &parsed_url);
 
@@ -2016,6 +2016,7 @@ globus_l_gram_protocol_post(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
     }
+
 
     if(parsed_url.url_path &&
        (subject = strrchr(parsed_url.url_path,':')))
@@ -2090,9 +2091,9 @@ globus_l_gram_protocol_post(
     globus_i_gram_protocol_num_connects++;
     globus_list_insert(&globus_i_gram_protocol_connections,
 		       connection);
-    
-    if(!attr)
-    {
+
+    if(!attr && subject)
+    {   
 	globus_l_gram_protocol_setup_connect_attr(&local_attr, subject);
 
         res = globus_io_tcp_register_connect(
@@ -2110,12 +2111,12 @@ globus_l_gram_protocol_post(
         res = globus_io_tcp_register_connect(
             parsed_url.host,
             parsed_url.port,
-            attr,
+            attr ? attr : &globus_i_gram_protocol_default_attr,
             globus_l_gram_protocol_connect_callback,
             connection,
             connection->io_handle);
     }
-    
+
     if(res != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
