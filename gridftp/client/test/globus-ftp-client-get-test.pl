@@ -79,7 +79,7 @@ sub basic_func
         FtpTestLib::pop_proxy();
     }
 }
-push(@tests, "basic_func" . "(0);");
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://";
 push(@tests, "basic_func" . "(1);");
 
 
@@ -254,7 +254,7 @@ else
 push(@tests, "dcau_test('none', 0);");
 push(@tests, "dcau_test('self', 0);");
 push(@tests, "dcau_test(\"'$subject'\", 0);");
-push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);");
+push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);") unless $proto ne "gsiftp://";
 
 =head2 I<prot_test> (Test 90-92)
 

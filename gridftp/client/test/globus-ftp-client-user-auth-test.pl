@@ -98,7 +98,7 @@ sub incorrect_auth
     }
     unlink($tmpname);
 }
-push(@tests, "incorrect_auth");
+push(@tests, "incorrect_auth") unless $proto ne "gsiftp://";
 
 if(@ARGV)
 {

@@ -84,7 +84,7 @@ sub basic_func
     
     clean_remote_file($dest_host, $dest_file);
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 
@@ -263,7 +263,7 @@ else
 push(@tests, "dcau_test('none', 0);");
 push(@tests, "dcau_test('self', 0);");
 push(@tests, "dcau_test(\"'$subject'\", 0);");
-push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);");
+push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);") unless $proto ne "gsiftp://";
 
 =head2 I<prot_test> (Test 90-92)
 

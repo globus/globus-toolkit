@@ -68,7 +68,7 @@ sub basic_func
         FtpTestLib::pop_proxy();
     }
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 # Test #3: Bad URL: Do a simple get (twice, caching the URL)

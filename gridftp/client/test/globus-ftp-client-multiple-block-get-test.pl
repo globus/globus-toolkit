@@ -70,7 +70,7 @@ sub basic_func
         delete $ENV{'X509_USER_PROXY'};
     }
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 # Test #3: Bad URL: Do a get of a non-existent file from localhost.
