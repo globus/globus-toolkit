@@ -112,6 +112,11 @@ globus_l_gram_job_manager_output_poll(
     void *				user_arg);
 
 static
+void
+globus_l_gram_job_manager_output_poll_locked(
+    globus_gram_jobmanager_request_t *	request);
+
+static
 globus_bool_t
 globus_l_gram_job_manager_url_is_dev_null(
     const char *			url);
@@ -122,7 +127,7 @@ globus_l_gram_job_manager_output_destination_flush(
     globus_gram_jobmanager_request_t *	request,
     globus_l_gram_job_manager_output_destination_t *
     					destination,
-    const char *			type);
+    unsigned char *			buffer);
 
 static
 int
@@ -611,6 +616,10 @@ globus_gram_job_manager_output_close(
 		globus_gram_job_manager_state_machine_callback,
 		request);
     }
+    else
+    {
+	globus_l_gram_job_manager_output_poll_locked(request);
+    }
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_output_close() */
@@ -800,16 +809,27 @@ globus_l_gram_job_manager_output_poll(
     const globus_abstime_t *		time_stop,
     void *				user_arg)
 {
-    struct stat				file_status;
     globus_gram_jobmanager_request_t *	request;
-    globus_list_t *			tmp_list;
-    globus_l_gram_job_manager_output_destination_t *
-					destination;
-
     request = user_arg;
 
     globus_mutex_lock(&request->mutex);
     request->in_handler = GLOBUS_TRUE;
+    globus_l_gram_job_manager_output_poll_locked(request);
+
+    request->in_handler = GLOBUS_FALSE;
+    globus_mutex_unlock(&request->mutex);
+}
+/* globus_gram_job_manager_output_poll() */
+
+static
+void
+globus_l_gram_job_manager_output_poll_locked(
+    globus_gram_jobmanager_request_t *	request)
+{
+    struct stat				file_status;
+    globus_list_t *			tmp_list;
+    globus_l_gram_job_manager_output_destination_t *
+					destination;
 
     if(request->output->stdout_fd != -1)
     {
@@ -828,18 +848,8 @@ globus_l_gram_job_manager_output_poll(
 	    globus_l_gram_job_manager_output_destination_flush(
 		    request,
 		    destination,
-		    "stdout");
+		    NULL);
 
-	    if(destination->callback_count == 0 &&
-	       destination->state ==
-	           GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID &&
-	       request->output->close_flag &&
-	       destination->position == request->output->stdout_size)
-	    {
-		globus_l_gram_job_manager_output_destination_close(
-			request,
-			destination);
-	    }
 	}
     }
     if(request->output->stderr_fd != -1)
@@ -859,24 +869,11 @@ globus_l_gram_job_manager_output_poll(
 	    globus_l_gram_job_manager_output_destination_flush(
 		    request,
 		    destination,
-		    "stderr");
-
-	    if(destination->callback_count == 0 &&
-	       destination->state ==
-	           GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID &&
-	       request->output->close_flag &&
-	       destination->position == request->output->stderr_size)
-	    {
-		globus_l_gram_job_manager_output_destination_close(
-			request,
-			destination);
-	    }
+		    NULL);
 	}
     }
-    request->in_handler = GLOBUS_FALSE;
-    globus_mutex_unlock(&request->mutex);
 }
-/* globus_gram_job_manager_output_poll() */
+/* globus_l_gram_job_manager_output_poll_locked() */
 
 /**
  * Write output information to state file.
@@ -1250,21 +1247,21 @@ globus_l_gram_job_manager_output_destination_flush(
     globus_gram_jobmanager_request_t *	request,
     globus_l_gram_job_manager_output_destination_t *
     					destination,
-    const char *			type)
+    unsigned char *			buffer)
 {
-    char *				buffer;
     ssize_t				read_amt;
+    globus_size_t			buffer_size;
     globus_off_t			size;
     int					fd;
     globus_result_t			result;
     int					rc;
 
-    if(strcmp(type, "stdout") == 0)
+    if(destination->which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT)
     {
 	size = request->output->stdout_size;
 	fd = request->output->stdout_fd;
     }
-    else if(strcmp(type, "stderr") == 0)
+    else if(destination->which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR)
     {
 	size = request->output->stderr_size;
 	fd = request->output->stderr_fd;
@@ -1283,14 +1280,18 @@ globus_l_gram_job_manager_output_destination_flush(
 	      destination->possible_write_count != 0 &&
 	      destination->position < size)
 	{
-	    buffer = globus_libc_malloc(
-			GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE);
+	    if(buffer == NULL)
+	    {
+		buffer_size = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE;
+		buffer = globus_libc_malloc(buffer_size);
+	    }
+
 	    do
 	    {
 		read_amt = globus_libc_read(
 				fd,
 				buffer,
-				GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE);
+				buffer_size);
 	    }
 	    while(read_amt < 0 && (errno == EAGAIN || errno == EINTR));
 
@@ -1391,7 +1392,24 @@ globus_l_gram_job_manager_output_destination_flush(
 		    break;
 	    }
 	    destination->position += read_amt;
+	    buffer = NULL;
+	    buffer_size = 0;
 	}
+    }
+
+    if(buffer != NULL)
+    {
+	globus_libc_free(buffer);
+    }
+
+    if(destination->callback_count == 0 &&
+       destination->state == GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID &&
+       request->output->close_flag &&
+       destination->position == size)
+    {
+	globus_l_gram_job_manager_output_destination_close(
+		request,
+		destination);
     }
     return GLOBUS_SUCCESS;
 }
@@ -1583,8 +1601,8 @@ globus_l_gram_job_manager_output_destination_close(
 
     globus_gram_job_manager_request_log(
 	    request,
-	    "JM: "
-	    "entering globus_l_gram_job_manager_output_destination_close()\n");
+	    "closing destination %s\n",
+	    destination->url);
 
     switch(destination->type)
     {
@@ -1782,6 +1800,7 @@ globus_l_gram_job_manager_output_file_write_callback(
     globus_l_gram_job_manager_output_destination_t *
     					destination;
     globus_gram_jobmanager_request_t *	request;
+    globus_bool_t			eof = GLOBUS_FALSE;
 
     request = user_arg;
     globus_mutex_lock(&request->mutex);
@@ -1797,12 +1816,11 @@ globus_l_gram_job_manager_output_file_write_callback(
 	if(globus_io_eof(err))
 	{
 	    result = GLOBUS_SUCCESS;
+	    eof = GLOBUS_TRUE;
 	}
 	globus_object_free(err);
 	err = NULL;
     }
-
-    globus_libc_free(buf);
 
     destination->possible_write_count++;
     destination->callback_count--;
@@ -1810,6 +1828,18 @@ globus_l_gram_job_manager_output_file_write_callback(
     if(result)
     {
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+	globus_libc_free(buf);
+    }
+    else if(eof)
+    {
+	globus_libc_free(buf);
+    }
+    else
+    {
+	globus_l_gram_job_manager_output_destination_flush(
+		request,
+		destination,
+		buf);
     }
 
     globus_mutex_unlock(&request->mutex);
@@ -1835,7 +1865,17 @@ globus_l_gram_job_manager_output_gass_write_callback(
     destination = globus_gass_transfer_request_get_user_pointer(gass_request);
     destination->callback_count--;
     destination->possible_write_count++;
-    globus_libc_free(bytes);
+    if(last_data)
+    {
+	globus_libc_free(bytes);
+    }
+    else
+    {
+	globus_l_gram_job_manager_output_destination_flush(
+		request,
+		destination,
+		bytes);
+    }
     globus_mutex_unlock(&request->mutex);
 }
 /* globus_l_gram_job_manager_output_gass_write_callback() */
@@ -1863,7 +1903,18 @@ globus_l_gram_job_manager_output_ftp_write_callback(
 	    handle,
 	    (void *) &destination);
     destination->callback_count--;
-    globus_libc_free(buffer);
+
+    if(eof)
+    {
+	globus_libc_free(buffer);
+    }
+    else
+    {
+	globus_l_gram_job_manager_output_destination_flush(
+		request,
+		destination,
+		buffer);
+    }
 
     globus_mutex_unlock(&request->mutex);
 }
