@@ -34,6 +34,7 @@ sub check_size
     unlink('core', $tmpname);
 
     $checked_size = `$test_exec -s $src_url 2>/dev/null`;
+    chomp($checked_size);
     $rc = $? / 256;
     if($rc != 0 && $size >= 0)
     {
@@ -43,7 +44,7 @@ sub check_size
     {
         $errors .= "\n# Core file generated.";
     }
-    if($checked_size != $size && $size != -1)
+    if($size != -1 && $checked_size != $size)
     {
 	$errors .= "\n# Size mismatch.";
     }
