@@ -117,6 +117,9 @@ Southern California. All Rights Reserved.
       <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer_bindings=org.globus.ogsa.base.reliabletransfer"/>
       <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer=org.globus.ogsa.base.reliabletransfer"/>
       <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer_types=org.globus.ogsa.base.reliabletransfer"/>
+      <!-- This should take care of timeouts -->
+      <arg value="-O"/>
+      <arg value="-1"/>
       <arg value="reliable_transfer_service.wsdl"/>
     </java>
   </target>
