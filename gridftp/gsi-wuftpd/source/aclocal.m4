@@ -28,11 +28,15 @@ AC_MSG_CHECKING(for type of gssapi support)
 AC_ARG_ENABLE(gssapi,
 [  --enable-gssapi=<type>      Specify type of GSSAPI
                               Options are: krb5, globus, gsi],
-[gssapi_type=$enableval], [gssapi_type="none"])
+[gssapi_type=$enableval 
+ echo "setting gssapi_type to $enableval"], [gssapi_type="none"])
 
 AC_ARG_WITH(gssapi,
 [  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.],
-[gssapi_type=$withval], [gssapi_type="none"])
+[gssapi_type=$withval],
+[if test -z "$gssapi_type"; then
+     gssapi_type="none"
+fi])
 
 case $gssapi_type in
   no|none)	# No support
@@ -48,7 +52,7 @@ case $gssapi_type in
 		;;
   *)	# Unrecognized type
 		gssapi_type="none"
-		AC_MSG_ERROR(Unrecognized GSSAPI type)
+		AC_MSG_ERROR(Unrecognized GSSAPI type $gssapi_type)
 		;;
 esac
 
