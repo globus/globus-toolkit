@@ -19,6 +19,7 @@ CVS Information:
 #include <stdio.h>
 #include <gssapi.h>
 #include <string.h>
+#include <stdlib.h>
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -63,13 +64,13 @@ globus_gss_assist_strcatr
 			+ (pre ? strlen(pre) : 0)
 			+ (msg ? msglen : 0)
 			+ (post ? strlen(post) : 0);
-			
+
 	if (str)
 		new = (char *)realloc(str,len);
-	else 
+	else
 	{
 		new = (char *)malloc(len);
-		if (new) 
+		if (new)
 			*new = '\0';
 	}
 	if (new)
@@ -93,13 +94,13 @@ Description:
 	was a problem with the get_token or send_token routines.
 
 Parameters:
-	fp - a file pointer 
-	comment - String to print out before other error messages. 
+	fp - a file pointer
+	comment - String to print out before other error messages.
 	major_status
 	minor_status
 
 Returns:
-	0 
+	0
 
 ******************************************************************************/
 
@@ -113,7 +114,7 @@ globus_gss_assist_display_status
 {
 	OM_uint32	ret;
 	char *		msg = NULL;
-	
+
 	ret = globus_gss_assist_display_status_str(&msg,
 								comment,
 								major_status,
@@ -129,18 +130,18 @@ globus_gss_assist_display_status
 Function:   globus_gss_assist_display_status_str()
 Description:
 	Display the messages for the major and minor status
-	and return a string with the messages. 
+	and return a string with the messages.
 	Takes care of the overloaded major_status if there
 	was a problem with the get_token or send_token routines.
 
 Parameters:
 	str - pointer to char * for returned string. Must be freed
-	comment - String to print out before other error messages. 
+	comment - String to print out before other error messages.
 	major_status
 	minor_status
 
 Returns:
-	0 
+	0
 
 ******************************************************************************/
 
@@ -217,7 +218,7 @@ globus_gss_assist_display_status_str
 		if (GSS_CALLING_ERROR(major_status) ==
 				GSS_S_CALL_INACCESSIBLE_READ) {
 			reason1 = "read failure:";
-	    } else if (GSS_CALLING_ERROR(major_status) == 
+	    } else if (GSS_CALLING_ERROR(major_status) ==
 				GSS_S_CALL_INACCESSIBLE_WRITE) {
 			reason1 = "write failure:";
 		} else {
@@ -261,7 +262,7 @@ globus_gss_assist_display_status_str
 			"    GSS status: major:%8.8x minor: %8.8x token: %8.8x\n",
 			major_status, minor_status, token_status);
 	msg = globus_gss_assist_strcatr(msg,buf,NULL,0,NULL);
-    
+
 	*str = msg;
 	return 0;
 }
