@@ -35,13 +35,11 @@ void
 globus_l_gfs_bad_signal_handler(
     int                                 signum)
 {
-    /*
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, 
         "an unexpected signal occured: %d\n", 
         signum);
-    */
-    exit(1);
+    exit(signum);
 }
 
 static
@@ -85,7 +83,7 @@ globus_gfs_signal_init()
 #   endif
 #   ifdef SIGPIPE
     {
-        signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
+        //signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
     }
 #   endif
 #   ifdef SIGEMT

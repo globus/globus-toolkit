@@ -518,36 +518,42 @@ globus_l_gfs_data_command_cb(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     op = instance->op;    
 
-    switch(reply->info.command.command)
+    if(reply->result == GLOBUS_SUCCESS)
     {
-      case GLOBUS_GFS_CMD_RMD:
-      case GLOBUS_GFS_CMD_DELE:
-      case GLOBUS_GFS_CMD_RNTO:
-      case GLOBUS_GFS_CMD_SITE_CHMOD:
-        globus_gsc_959_finished_command(op, "250 OK.\r\n"); 
-        break;
-      case GLOBUS_GFS_CMD_MKD:
-        msg = globus_common_create_string(
-            "257 Directory \"%s\" created successfully.\r\n", 
-            reply->info.command.created_dir);
-        globus_gsc_959_finished_command(op, msg);
-        globus_free(msg);
-        break;      
-      case GLOBUS_GFS_CMD_RNFR:
-        globus_gsc_959_finished_command(op, "350 Waiting for RNTO.\r\n"); 
-        break;
-      case GLOBUS_GFS_CMD_CKSM:
-        msg = globus_common_create_string(
-            "213 %s\r\n", reply->info.command.checksum);
-        globus_gsc_959_finished_command(op, msg); 
-        globus_free(msg);
-        break;
-      
-      default:
-        globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
-        break;
+        switch(reply->info.command.command)
+        {
+          case GLOBUS_GFS_CMD_RMD:
+          case GLOBUS_GFS_CMD_DELE:
+          case GLOBUS_GFS_CMD_RNTO:
+          case GLOBUS_GFS_CMD_SITE_CHMOD:
+            globus_gsc_959_finished_command(op, "250 OK.\r\n"); 
+            break;
+          case GLOBUS_GFS_CMD_MKD:
+            msg = globus_common_create_string(
+                "257 Directory \"%s\" created successfully.\r\n", 
+                reply->info.command.created_dir);
+            globus_gsc_959_finished_command(op, msg);
+            globus_free(msg);
+            break;      
+          case GLOBUS_GFS_CMD_RNFR:
+            globus_gsc_959_finished_command(op, "350 Waiting for RNTO.\r\n"); 
+            break;
+          case GLOBUS_GFS_CMD_CKSM:
+            msg = globus_common_create_string(
+                "213 %s\r\n", reply->info.command.checksum);
+            globus_gsc_959_finished_command(op, msg); 
+            globus_free(msg);
+            break;
+          
+          default:
+            globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
+            break;
+        }
     }
-       
+    else
+    {
+        globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
+    }       
 }
 
 static

@@ -774,9 +774,12 @@ globus_l_gfs_ipc_close_cb(
     {
         request = (globus_gfs_ipc_request_t *)
             globus_list_remove(&list, list);
-
-        request->cb(
-            request->ipc, result, &reply, request->user_arg);
+        
+        if(request->cb)
+        {
+            request->cb(
+                request->ipc, result, &reply, request->user_arg);
+        }
     }
 
     /* ignore result t, not much to care about at this point */
@@ -816,6 +819,7 @@ globus_l_gfs_ipc_unpack_reply(
     char                                ch;
     char *                              str;
     globus_gfs_ipc_reply_t *            reply;
+    GlobusGFSName(globus_l_gfs_ipc_unpack_reply);
 
     reply = (globus_gfs_ipc_reply_t *)
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
@@ -827,7 +831,12 @@ globus_l_gfs_ipc_unpack_reply(
     /* pack the body--this part is like a reply header */
     GFSDecodeChar(buffer, len, reply->type);
     GFSDecodeUInt32(buffer, len, reply->code);
+    GFSDecodeUInt32(buffer, len, reply->result);
     GFSDecodeString(buffer, len, reply->msg);
+    if(reply->result != GLOBUS_SUCCESS)
+    {
+        reply->result = GlobusGFSErrorGeneric("unknown error");
+    }
 
     /* encode the specific types */
     switch(reply->type)
@@ -1074,6 +1083,7 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeUInt32(buffer, len, trans_info->stripe_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_ndx);
+    GFSDecodeUInt32(buffer, len, trans_info->nstreams);
 
     /* unpack range list */
     GFSDecodeUInt32(buffer, len, range_size);
@@ -1777,12 +1787,14 @@ globus_l_gfs_ipc_finished_reply_kickout(
     request = (globus_gfs_ipc_request_t *) user_arg;
 
     /* call the user callback */
-    request->cb(
-        request->ipc, 
-        GLOBUS_SUCCESS,
-        request->reply,
-        request->user_arg);
-
+    if(request->cb)
+    {
+        request->cb(
+            request->ipc, 
+            GLOBUS_SUCCESS,
+            request->reply,
+            request->user_arg);
+    }
     globus_l_gfs_ipc_request_destroy(request);
 }
 static void
@@ -1794,11 +1806,14 @@ globus_l_gfs_ipc_event_reply_kickout(
     request = (globus_gfs_ipc_request_t *) user_arg;
 
     /* call the user callback */
-    request->event_cb(
-        request->ipc,
-        GLOBUS_SUCCESS,
-        request->event_reply,
-        request->user_arg);
+    if(request->event_cb)
+    {
+        request->event_cb(
+            request->ipc,
+            GLOBUS_SUCCESS,
+            request->event_reply,
+            request->user_arg);
+    }
 }
 
 /*
@@ -1882,6 +1897,7 @@ globus_gfs_ipc_reply_finished(
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, reply->type);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->code);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->result);
             GFSEncodeString(
                 buffer, ipc->buffer_size, ptr, reply->msg);
 
@@ -2484,6 +2500,7 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->stripe_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->nstreams);
 
     /* pack range list */
     range_size = globus_range_list_size(trans_info->range_list);
@@ -3069,6 +3086,7 @@ globus_l_gfs_ipc_pack_data(
     int                                 maj_rc;
     int                                 min_rc;
     gss_buffer_desc                     gsi_buffer;
+    globus_size_t                       ndx;
     GlobusGFSName(globus_l_gfs_ipc_pack_data);
 
     if(data_info->del_cred == NULL)
@@ -3119,8 +3137,10 @@ globus_l_gfs_ipc_pack_data(
     {
         if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
         {
+            ndx = ptr - buffer;
             ipc->buffer_size += gsi_buffer.length;
             buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+            ptr = buffer + ndx;
         }
         memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
     }

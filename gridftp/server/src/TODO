@@ -1,9 +1,5 @@
 Immediate:
 ----------
-0) max off t
-3) add striping stuff to feat list
-4) guc
-    stripes
 5) test suite
     single local 
         non-daemon
@@ -23,12 +19,7 @@ file not trunc on striped puts, since they all look like partials, also
     truncating on pasv stor... who truncates, and have to deal with
     data coming before the 150 response
 
-make get_range work for striping (write range_list_remove)
-***range_lists don't know that -1 is max length?***
-
 fix up error in data.c and dsi, or make use result_t over ipc temporarily
-
-make data_destroy go
 
 make abort go
 
@@ -37,16 +28,12 @@ clean up memory and locking in data.c
 clean up rest of stuff from pre-dsi change (old attrs that just copy to new
     info structs, etc)
 
-add striping stuff to feat list
-
 think if broadcast would be quick enough, and do correct connection 
     count stuff if not (for eofs)
 
 add symlink_target to stat buffer, server-lib stuff to display it in mlsx
 
 add security to ipc
-
-implement security stuff in dsi (mainly sending and using delegated cred)
 
 update doc to reflect striping info and current issues/limitations
 

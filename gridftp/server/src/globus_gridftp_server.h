@@ -233,7 +233,9 @@ typedef struct globus_gfs_transfer_info_s
     /** total number of nodes that will be involved */
     int                                 node_count;    
     /** node index */
-    int                                 node_ndx;    
+    int                                 node_ndx;
+    /** number of parallel streams */
+    int                                 nstreams;   
 } globus_gfs_transfer_info_t;
 
 /*

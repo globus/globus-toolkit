@@ -298,7 +298,9 @@ globus_l_gsc_send_restart(
     size = globus_range_list_size(new_range_list);
     if(size < 1)
     {
-        msg = globus_common_create_string("111 Range Marker 0-0\r\n");
+        /* sending 0-0 is useless, and it causes a problem with our client
+            when markers are sent before the retr begins
+        msg = globus_common_create_string("111 Range Marker 0-0\r\n"); */
     }
     else
     {    
@@ -316,9 +318,10 @@ globus_l_gsc_send_restart(
         tmp_msg = globus_common_create_string("%s%s", msg, "\r\n");
         globus_free(msg);
         msg = tmp_msg;
+        
+        globus_i_gsc_intermediate_reply(op, msg);
+        globus_free(msg);
     }    
-    globus_i_gsc_intermediate_reply(op, msg);
-    globus_free(msg);
 }
 
 /********************************************************************
