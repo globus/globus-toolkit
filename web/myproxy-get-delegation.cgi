@@ -32,9 +32,9 @@ if ($lifetime =~ /\D/) {
 # use expect to run the command
 my $cmd_filehandle = Expect->spawn("$program $args");
 
-# this looks for the string "myproxy-server:" for 20 seconds
+# this looks for the string "Pass Phrase:" for 20 seconds
 # and failing that, does the "error" subroutine.
-unless ($cmd_filehandle->expect(20, "myproxy-server:")) 
+unless ($cmd_filehandle->expect(20, "Pass Phrase:")) 
 {
   printerror();
 }
@@ -51,7 +51,7 @@ $cmd_filehandle->soft_close();
 # get rid of output[0], since it contains the password
 
 $outputmsg = join(" ", $output[1]);
-if ($outputmsg =~ /^Error/) {
+if ($cmd_filehandle->exitstatus() != 0) {
     $outputmsg =~ s/(.*):\s//;
     &printerror($outputmsg);
 } else {
