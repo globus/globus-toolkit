@@ -14,6 +14,7 @@ static char*                            option_list[][7] =
     {"max_connections",     "200",  "max_connections",      "",                                  "-max-connections",    "-mc", "0"},
     {"fork",                "0",    "fork",                 "",                                  "-fork",               "-f", "1"},
     {"no_gssapi",           "0",    "no_gssapi",            "",                                  "-no-gssapi",          "-ng", "1"},
+    {"uid",                 "0",    "",            "",                                  "-uid",          "-u", "0"},
     {"data_node",           "0",    "data_node",            "",                                  "-data-node",          "-d", "1"}
 };
 

@@ -38,7 +38,7 @@ globus_i_gfs_op_attr_destroy(
 
 void
 globus_i_gfs_op_attr_copy(
-    globus_i_gfs_op_attr_t *            out_attr)
+    globus_i_gfs_op_attr_t *            out_attr,
     globus_i_gfs_op_attr_t *            in_attr)
 {
     out_attr->partial_offset = in_attr->partial_offset;
@@ -95,8 +95,23 @@ globus_l_gfs_auth_request(
     gss_cred_id_t                       cred,
     gss_cred_id_t                       del_cred)
 {
+
+    char                                username[1024];
+    globus_result_t                     result; 
+    struct passwd *                     pwent;
+    uid_t                               uid;
+                         
+    uid = globus_i_gfs_config_int("uid");
+    
+    if(uid == 0)
+    {
+        uid = getuid();
+    }
+    
+    result = GLOBUS_SUCCESS;
+    
     globus_gridftp_server_control_finished_auth(
-        op, GLOBUS_SUCCESS, getuid());
+        op, result, uid);
 }
 
 static
