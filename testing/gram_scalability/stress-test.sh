@@ -36,6 +36,10 @@ do
 
 begin_time=`date +%s`
 $GLOBUS_LOCATION/bin/managed-job-globusrun $batch -factory $factory -file ./sleep.xml 2>&1 >> $logfile
+if [ $? -ne 0 ]; then
+    echo "Error on job $index...aborting"
+    break
+fi
 end_time=`date +%s`
 echo "Time taken for managed-job-globusrun: `expr $end_time - $begin_time` Seconds" >> $logfile
 

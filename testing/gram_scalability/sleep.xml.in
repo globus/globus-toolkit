@@ -17,20 +17,40 @@
     </gram:executable>
     <gram:arguments>
         <rsl:stringArray>
-            <rsl:string><rsl:stringElement value="7200"/></rsl:string>
+            <rsl:string><rsl:stringElement value="72000"/></rsl:string>
         </rsl:stringArray>
     </gram:arguments>
     <gram:stdout>
         <rsl:pathArray> <rsl:path>
-            <rsl:substitutionRef name="HOME"/>
-            <rsl:stringElement value="/testing/gram_scalability/logs/stress-test.stdout"/>
+            <rsl:substitutionRef name="GLOBUS_CACHED_STDOUT"/>
         </rsl:path> </rsl:pathArray>
     </gram:stdout>
     <gram:stderr>
         <rsl:pathArray> <rsl:path>
-            <rsl:substitutionRef name="HOME"/>
-            <rsl:stringElement value="/testing/gram_scalability/logs/stress-test.stderr"/>
+            <rsl:substitutionRef name="GLOBUS_CACHED_STDERR"/>
         </rsl:path> </rsl:pathArray>
     </gram:stderr>
+    <gram:fileStageOut> <rsl:fileOutputArray>
+        <rsl:fileOutput>
+            <rsl:path>
+                <rsl:substitutionRef name="GLOBUS_CACHED_STDOUT"/>
+            </rsl:path>
+            <rsl:url>
+                <rsl:urlElement value="file://"/>
+                <rsl:substitutionRef name="HOME"/>
+                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stdout"/>
+            </rsl:url>
+        </rsl:fileOutput>
+        <rsl:fileOutput>
+            <rsl:path>
+                <rsl:substitutionRef name="GLOBUS_CACHED_STDERR"/>
+            </rsl:path>
+            <rsl:url>
+                <rsl:urlElement value="file://"/>
+                <rsl:substitutionRef name="HOME"/>
+                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stderr"/>
+            </rsl:url>
+        </rsl:fileOutput>
+    </rsl:fileOutputArray> </gram:fileStageOut>
 </gram:job>
 </rsl:rsl>

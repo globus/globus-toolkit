@@ -6,7 +6,7 @@ sleep_proc_count=0
 #while [ $sleep_proc_count -lt 400 ]; do
 while [ 1 ]; do
 
-ps_sleep_count=`ps -u lane | grep sleep | wc -l - | awk '{ print $1; }'`
+ps_sleep_count=`ps -u lane | grep sleep.sh | wc -l - | awk '{ print $1; }'`
 sleep_proc_count=`expr $ps_sleep_count`
 echo $sleep_proc_count sleep procs detected
 
