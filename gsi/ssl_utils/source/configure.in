@@ -14,9 +14,10 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 AM_CONFIG_HEADER(config.h)
 
-# On solaris openssl needs the socket library
+# On solaris openssl needs the socket and nsl library
 
 CHECK_NEED_LSOCKET
+CHECK_NEED_LNSL
 
 GPT_SET_LIBS(["$EXTERNAL_LIBS"])	
 
