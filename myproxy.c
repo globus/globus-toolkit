@@ -1378,7 +1378,17 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
 int
 myproxy_recv_ex(myproxy_socket_attrs_t *attrs, char **data)
 {
-    return GSI_SOCKET_read_buffer(attrs->gsi_socket, data);
+    int readlen;
+    char error_string[1024];
+
+    readlen = GSI_SOCKET_read_buffer(attrs->gsi_socket, data);
+    if (readlen == GSI_SOCKET_ERROR) {
+	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+				    sizeof(error_string));
+	verror_put_string("Error reading: %s\n", error_string);
+	return -1;
+    }
+    return readlen;
 }
 
 int
