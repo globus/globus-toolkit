@@ -71,6 +71,8 @@ Sources= \
 	globus_url.h \
 	globus_error_string.c \
 	globus_error_string.h
+        globus_common_include.h
+
 
 flavorinclude_HEADERS = \
 	globus_release.h \
@@ -103,6 +105,8 @@ flavorinclude_HEADERS = \
 	globus_thread_rw_mutex.h \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h
+        globus_common_include.h
+
 
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
