@@ -434,10 +434,14 @@ main(
         pcd->certdir = strdup(certdir);
         
     if (!strncmp(certfile,"SC:",3))
+    {
         EVP_set_pw_prompt("Enter card pin:");
+    }
     else
+    {
         EVP_set_pw_prompt(quiet? "Enter GRID pass phrase:" :
                           "Enter GRID pass phrase for this identity:");
+    }
 
     if(strrchr(certfile,'/'))
     {
@@ -453,6 +457,14 @@ main(
         if (proxy_load_user_cert(pcd, certfile, pw_cb, NULL))
             goto err;
 
+        if (!quiet)
+        {
+            char *s = NULL;
+            s = X509_NAME_oneline(X509_get_subject_name(pcd->ucert),NULL,0);
+            printf("Your identity: %s\n", s);
+            free(s);
+        }
+        
         if (!strncmp(keyfile,"SC:",3))
             EVP_set_pw_prompt("Enter card pin:");
         
@@ -469,16 +481,16 @@ main(
         {
             goto err;
         }
+
+        if (!quiet)
+        {
+            char *s = NULL;
+            s = X509_NAME_oneline(X509_get_subject_name(pcd->ucert),NULL,0);
+            printf("Your identity: %s\n", s);
+            free(s);
+        }
     }
 
-    if (!quiet)
-    {
-        char *s = NULL;
-        s = X509_NAME_oneline(X509_get_subject_name(pcd->ucert),NULL,0);
-        printf("Your identity: %s\n", s);
-        free(s);
-    }
-    
     if (strncmp("SC:",certfile,3)
         && !strstr(filename, ".p12")
         && !strcmp(certfile, keyfile)) 

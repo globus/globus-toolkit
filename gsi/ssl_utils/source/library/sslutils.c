@@ -2002,6 +2002,7 @@ proxy_verify_callback(
     X509_STORE_CTX *                    ctx)
 {
     X509_OBJECT                         obj;
+    X509 *                              cert = NULL;
     X509_CRL *                          crl;
     X509_CRL_INFO *                     crl_info;
     X509_REVOKED *                      revoked;
@@ -2102,17 +2103,14 @@ proxy_verify_callback(
 #ifdef DEBUG
             fprintf(stderr,"X509_V_ERR_PATH_LENGTH_EXCEEDED\n");
 #endif
-
-            /* 
-             * OpenSSL-0.9.5 has a bug, in that the ex_pathlen
-             * may not be set if no basic constrants are present
-             * but it may check for it anyway.
+            /*
+             * Since OpenSSL does not know about proxies,
+             * it will count them against the path length
+             * So we will ignore the errors and do our
+             * own checks later on, when we check the last
+             * certificate in the chain we will check the chain.
              */
-
-            if (!(ctx->current_cert->ex_flags & EXFLAG_BCONS))
-            {
-                ok = 1;
-            }
+            ok = 1;
             break;
 #endif
         default:
@@ -2553,7 +2551,7 @@ proxy_verify_callback(
         pvd->cert_chain = sk_X509_new_null();
     }
     
-    sk_X509_push(pvd->cert_chain, X509_dup(ctx->current_cert));
+    sk_X509_insert(pvd->cert_chain, X509_dup(ctx->current_cert),0);
 
     pvd->cert_depth++;
 
@@ -2602,6 +2600,37 @@ proxy_verify_callback(
             }
         }
     }
+
+    /*
+     * We ignored any path length restrictions above because
+     * OpenSSL was counting proxies against the limit. 
+     * If we are on the last cert in the chain, we 
+     * know how many are proxies, so we can do the 
+     * path length check now. 
+     * See x509_vfy.c check_chain_purpose
+     * all we do is substract off the proxy_dpeth 
+     */
+
+    if(ctx->current_cert == ctx->cert)
+    {
+        for (i=0; i < sk_X509_num(ctx->chain); i++)
+        {
+            cert = sk_X509_value(ctx->chain,i);
+#ifdef DEBUG
+            fprintf(stderr,"pathlen=:i=%d x=%p pl=%d\n",
+                    i, cert, cert->ex_pathlen);
+#endif
+            if (((i - pvd->proxy_depth) > 1) && (cert->ex_pathlen != -1)
+                && ((i - pvd->proxy_depth) > (cert->ex_pathlen + 1))
+                && (cert->ex_flags & EXFLAG_BCONS)) 
+            {
+                ctx->current_cert = cert; /* point at failing cert */
+                ctx->error = X509_V_ERR_PATH_LENGTH_EXCEEDED;
+                goto fail_verify;
+            }
+        }
+    }
+
 
 #ifdef DEBUG 
     fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
@@ -3000,7 +3029,7 @@ proxy_get_filenames(
          * If ~/.globus/certificates exists, then use that
          */
         home = getenv("HOME");
-#ifndef WIN32
+#ifdef WIN32
         /* Under windows use c:\windows as default home */
         if (!home)
         {
@@ -3943,11 +3972,9 @@ proxy_init_cred(
         goto err;
     }
 
-#if SSLEAY_VERSION_NUMBER >=  0x0090600fL
     SSL_CTX_set_cert_verify_callback(pcd->gs_ctx, 
                                      proxy_app_verify_callback,
                                      NULL);
-#endif
 
     /* set a small limit on ssl session-id reuse */
 
@@ -3965,7 +3992,29 @@ proxy_init_cred(
         status = PRXYERR_R_PROCESS_CERTS;       
         goto err;
     }
-        
+
+    /* Set the verify callback to test our proxy 
+     * policies. 
+     * The SSL_set_verify does not appear to work as 
+     * expected. The SSL_CTX_set_verify does more,
+     * it also sets the X509_STORE_set_verify_cb_func
+     * which is what we want. This occurs in both 
+     * SSLeay 0.8.1 and 0.9.0 
+     */
+
+    SSL_CTX_set_verify(pcd->gs_ctx,SSL_VERIFY_PEER,
+                       proxy_verify_callback);
+
+    /*
+     * for now we will accept any purpose, as Globus does
+     * nor have any restrictions such as this is an SSL client
+     * or SSL server. Globus certificates are not required
+     * to have these fields set today.
+     * DEE - Need  to look at this in future if we use 
+     * certificate extensions...  
+     */
+    SSL_CTX_set_purpose(pcd->gs_ctx,X509_PURPOSE_ANY);
+
     /*
      * Need to load the cert_file and/or the CA certificates
      * to get the client_CA_list. This is really only needed
@@ -4791,6 +4840,28 @@ globus_ssl_utils_setup_ssl_ctx(
     SSL_CTX_set_cert_verify_callback(*context, 
                                      proxy_app_verify_callback,
                                      NULL);
+
+    /* Set the verify callback to test our proxy 
+     * policies. 
+     * The SSL_set_verify does not appear to work as 
+     * expected. The SSL_CTX_set_verify does more,
+     * it also sets the X509_STORE_set_verify_cb_func
+     * which is what we want. This occurs in both 
+     * SSLeay 0.8.1 and 0.9.0 
+     */
+
+    SSL_CTX_set_verify(*context,SSL_VERIFY_PEER,
+                       proxy_verify_callback);
+
+    /*
+     * for now we will accept any purpose, as Globus does
+     * nor have any restrictions such as this is an SSL client
+     * or SSL server. Globus certificates are not required
+     * to have these fields set today.
+     * DEE - Need  to look at this in future if we use 
+     * certificate extensions...  
+     */
+    SSL_CTX_set_purpose(*context,X509_PURPOSE_ANY);
 
     /* set a small limit on ssl session-id reuse */
 

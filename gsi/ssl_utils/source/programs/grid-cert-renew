@@ -34,7 +34,6 @@ ${short_usage}
       -help, -usage        : displays this message
       -debug               : extra output (if problem occurs)
       -nopassphrase        : signals that this is a host certificate
-      -globusdir  <path>   : location of Globus 1.0 or 1.1 install dir
       -sslexec    <path>   : location of SSL executable (${ssl_exec_name})
       -oldcert    <path>   : location of old certificate
       -oldkey     <path>   : location of old (private) key
@@ -88,7 +87,7 @@ trap bailout 1 2 3 6 15
 #########################################################################
 # start
 
-sslexec=${GLOBUS_LOCATION}/bin/${ssl_exec_name}
+sslexec=${bindir}/${ssl_exec_name}
 proxy_init=${bindir}/grid-proxy-init
 proxy_destroy=${bindir}/grid-proxy-destroy
 tmpproxy=/tmp/globus-cert-renewal-temp-proxy.$$
@@ -97,10 +96,7 @@ newkey=
 oldkey=
 oldcert=
 challenge=
-globusdir=
-if [ -n "${GLOBUS_INSTALL_PATH}" ]; then
-    globusdir=${GLOBUS_INSTALL_PATH}
-fi
+globusdir=${GLOBUS_LOCATION}
 debug=no
 sslexec_rsa_opts=-des3
 
@@ -111,7 +107,7 @@ fi
 
 while [ -n "$1" ]; do
     case "$1" in
-	-globusdir | -sslexec | -newkey | -newcertreq | \
+	-sslexec | -newkey | -newcertreq | \
 	-oldkey | -oldcert)
 	    if [ -z "$2" ]; then
 		echo "Error: Additional argument needed to $1" 1>&2
@@ -168,64 +164,25 @@ EOF
 fi
 
 
-if [ -n "${globusdir}" ]; then
-    if [ ! -x ${globusdir}/sbin/config.guess ]; then
-	echo "Error: 'globusdir' does not point to top of Globus install tree" 1>&2
-	echo "-usage will show usage" 1>&2
-	exit 1
-    fi
-    arch=`${globusdir}/sbin/config.guess`
-    toolsdir="${globusdir}/tools/${arch}"
-    if [ ${debug} = yes ]; then
-	echo "DEBUG: suspect ${toolsdir} to contain proxy executables"
-    fi
-    PATH="${toolsdir}/bin:${globusdir}/bin:${PATH}"
-fi
 
 if [ ! -x ${proxy_init} ]; then
-    MyWhich grid-proxy-init
-    if [ -z "${whichres}" ]; then
-	MyWhich globus-proxy-init
-	if [ -z "${whichres}" ]; then
-	    echo "Could not locate the executable for proxy initialization. Rerun" 1>&2
-	    echo "this command using the -globusdir option. -help will display usage" 1>&2
-	    exit 1
-	fi
-    fi
-    proxy_init=${whichres}
+    echo "Could not locate the executable for proxy initialization." 1>&2
+    exit 1
 fi
 
 if [ ! -x ${proxy_destroy} ]; then
-    MyWhich grid-proxy-destroy
-    if [ -z "${whichres}" ]; then
-	MyWhich globus-proxy-destroy
-	if [ -z "${whichres}" ]; then
-	    echo "Could not locate the executable for proxy destruction. Rerun" 1>&2
-	    echo "this command using the -globusdir option. -help will display usage" 1>&2
-	    exit 1
-	fi
-    fi
-    proxy_destroy=${whichres}
+    echo "Could not locate the executable for proxy destruction." 1>&2
+    exit 1
 fi
 
 if [ ${debug} = yes ]; then
     echo "DEBUG: trying to locate the SSL command (${ssl_exec_name})"
 fi
-whichres=${sslexec}
+
 if [ ! -x ${sslexec} ]; then
-    whichres=
-    MyWhich ${ssl_exec_name}
-    if [ -z "${whichres}" -a -r ${toolsdir}/libexec/globus-sh-tools ] ; then
-        if [ ${debug} = yes ]; then
-	    echo "DEBUG: not in PATH, checking Globus install tree..."
-        fi
-        . ${toolsdir}/libexec/globus-sh-tools
-        sslexec=${SSL_DIR}/bin/${ssl_exec_name}
-    else
-        echo "Error: Could not execute the command '${ssl_exec_name}'. Rerun this command" 1>&2
-        echo "using the -sslexec option. -help will display usage" 1>&2
-        exit 1
-    fi
+    echo "Error: Could not execute the command '${ssl_exec_name}'. Rerun this command" 1>&2
+    echo "using the -sslexec option. -help will display usage" 1>&2
+    exit 1
 fi
 
 ${sslexec} version 1>/dev/null 2>/dev/null

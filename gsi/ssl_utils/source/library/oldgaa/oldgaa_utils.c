@@ -445,12 +445,12 @@ Returns:
 **********************************************************************/
 
 int
-oldgaa_regex_matches_string(const char * const  string,
-                            const char * const  regex)
+oldgaa_regex_matches_string(
+    const char * const                  string,
+    const char * const                  regex)
 {
   /* Our result (1 == match) */
-  int					result = 0;
-
+  int					                result = 0;
   char *                                star;
   
   /* Check arguments */
@@ -461,14 +461,14 @@ oldgaa_regex_matches_string(const char * const  string,
   }
 
 
-  if(!strcmp(string,regex))
+  if(!strcasecmp(string,regex))
   {
       result = 1;
   }
   else
   {
       if((star = strrchr(regex,'*')) &&
-         !strncmp(regex,string,(int) (star-regex)/sizeof(char)))
+         !strncasecmp(regex,string,(int) (star-regex)/sizeof(char)))
       {
           result = 1;
       }

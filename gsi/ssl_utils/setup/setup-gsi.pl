@@ -10,8 +10,7 @@ use English;
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 
-if (!defined($globusdir)) 
-{
+if (!defined($globusdir)) {
   die "GLOBUS_LOCATION needs to be set before running this script";
 }
 
@@ -38,9 +37,9 @@ if(defined($opt_help))
 }
 
 my $setupdir = "$globusdir/setup/globus/";
+my $trusted_certs_dir = undef;
 
 my $target_dir = "";
-
 
 if(defined($opt_nonroot))
 {
@@ -53,23 +52,16 @@ if(defined($opt_nonroot))
 	$target_dir = "$opt_nonroot";
     }
 
+    $trusted_certs_dir = $globusdir . "/share/certificates/";    
 }
 else
 {
-   $target_dir = "/etc/grid-security";
+   $target_dir = "/etc/grid-security/";
+   $trusted_certs_dir = $target_dir . "/certificates/";
 }
     
 $ENV{GRID_SECURITY_DIR} = "$target_dir";
-
-my $trusted_certs_dir;
-if($target_dir eq "/etc/grid-security/") 
-{
-    $trusted_certs_dir = $target_dir . "/certificates";
-} 
-else 
-{
-    $trusted_certs_dir = $globusdir . "/share/certificates";
-}
+$ENV{TRUSTED_CA_DIR}    = "$trusted_certs_dir";
 
 my $myname = "setup-gsi";
 
@@ -93,6 +85,7 @@ else
   print "Making $target_dir...\n";
 
   $result = system("mkdir $target_dir");
+  $result += system("mkdir $trusted_certs_dir");
 
   if ($result != 0) 
   {
@@ -205,15 +198,15 @@ print "$myname: Complete\n";
 
 my @statres = stat "$globusdir/etc/globus_packages/globus_ssl_utils_setup/pkg_data_noflavor_rtl.gpt";
 
-if($statres[5] != $EUID)
+if($statres[4] != $EUID)
 {
-   ($EUID,$EGID) = ($statres[5],$statres[6]);
+   $EGID = $statres[5];
+   $EUID = $statres[4];
 }
 
 my $metadata = new Grid::GPT::Setup(package_name => "globus_ssl_utils_setup");
 
 $metadata->finish();
-
 
 sub pod2usage 
 {
