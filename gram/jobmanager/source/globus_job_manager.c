@@ -103,6 +103,19 @@ static int                         my_count;
 
 static FILE *                      gram_log_fp;
 
+static nexus_mutex_t gram_api_mutex;
+static int gram_api_mutex_is_initialized = 0;
+ 
+#define GRAM_API_LOCK { \
+    int err; \
+    assert (gram_api_mutex_is_initialized==1); \
+    err = nexus_mutex_lock (&gram_api_mutex); assert (!err); \
+}
+	
+#define GRAM_API_UNLOCK { \
+    int err; \
+    err = nexus_mutex_unlock (&gram_api_mutex); assert (!err); \
+}
 
 /******************************************************************************
 Function:       main()
@@ -153,6 +166,17 @@ main(int argc,
     }
     nexus_enable_fault_tolerance(NULL, NULL);
 
+    if ( gram_api_mutex_is_initialized == 0 )
+    {
+        /* initialize mutex which makes the client thread-safe */
+        int err;
+		 
+        err = nexus_mutex_init (&gram_api_mutex, NULL); assert (!err);
+        gram_api_mutex_is_initialized = 1;
+    }
+
+    GRAM_API_LOCK;
+
     *test_dat_file = '\0';
 
     /*
@@ -184,6 +208,7 @@ main(int argc,
         }
         else
         {
+	    GRAM_API_UNLOCK;
             fprintf(stderr, "Usage: %s [-h deploy home dir ] [-e lib exe dir] [-d debug print] [-t test dat file]\n", argv[0]);
             exit(1);
         }
@@ -204,6 +229,7 @@ main(int argc,
 
             if ((gram_log_fp = fopen(gram_logfile, "a")) == NULL)
             {
+	        GRAM_API_UNLOCK;
                 fprintf(stderr, "Cannot open gram logfile.\n");
                 exit(1);
             }
@@ -248,6 +274,7 @@ main(int argc,
     {
         if ((args_fp = fopen(test_dat_file, "r")) == NULL)
         {
+	    GRAM_API_UNLOCK;
             notice2("Cannot open test file %s.", test_dat_file);
             exit(1);
         }
@@ -323,7 +350,8 @@ main(int argc,
                             NULL);
     if (rc != 0)
     {
-       return(GRAM_ERROR_JM_FAILED_ALLOW_ATTACH);
+        GRAM_API_UNLOCK;
+        return(GRAM_ERROR_JM_FAILED_ALLOW_ATTACH);
     } 
     else
     {
@@ -367,6 +395,7 @@ main(int argc,
 
     nexus_startpoint_destroy(&reply_sp);
 
+    GRAM_API_UNLOCK;
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
 */
@@ -386,7 +415,9 @@ main(int argc,
                                    &message_handled);
 	    if (--skip_poll <= 0)
 	    {
+                GRAM_API_LOCK;
 		grami_jm_poll();
+                GRAM_API_UNLOCK;
 		skip_poll = GRAM_JOB_MANAGER_POLL_FREQUENCY;
 	    }
         } /* endwhile */
@@ -741,7 +772,9 @@ graml_cancel_handler(nexus_endpoint_t * endpoint,
     /* clean-up */
     nexus_buffer_destroy(buffer);
 
+    GRAM_API_LOCK;
     grami_jm_job_cancel();
+    GRAM_API_UNLOCK;
 
 } /* graml_cancel_handler() */
 
@@ -775,6 +808,8 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
     notice2("confidence passed = %f", confidence);
     notice2("callback contact = %s", callback_contact);
 
+    GRAM_API_LOCK;
+
     grami_jm_job_start_time(callback_contact,
                             confidence,
                             &estimate,
@@ -794,6 +829,8 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
                    NEXUS_FALSE);
 
     nexus_startpoint_destroy(&reply_sp);
+
+    GRAM_API_UNLOCK;
 
 } /* graml_start_time_handler() */
 
