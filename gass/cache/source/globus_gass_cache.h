@@ -121,7 +121,7 @@ typedef struct globus_gass_cache_tag_s
  *  Structure: globus_gass_cache_entry_t
  *
  * Define an entry of the cache, as return by the function
- *   "globus_gass_cache_list()"
+ * "globus_gass_cache_list()"
  */
 typedef struct globus_gass_cache_entry_s
 {
