@@ -1579,10 +1579,22 @@ graml_cancel_handler(nexus_endpoint_t * endpoint,
 {
     int                      rc;
     int                      size;
+    int                      gram_version;
     nexus_startpoint_t       reply_sp;
     nexus_buffer_t           reply_buffer;
 
     grami_fprintf( grami_log_fp, "JM: in graml_cancel_handler\n");
+
+    nexus_get_int(buffer, &gram_version, 1);
+    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        grami_fprintf( grami_log_fp, 
+               "JM: ERROR received a version mismatch in cancel handler "
+               "ignoring request.\n");
+        grami_fprintf( grami_log_fp, 
+               "JM: job manager version is %d  client version is %d\n",
+               GLOBUS_GRAM_PROTOCOL_VERSION, gram_version);
+    }
 
     nexus_get_startpoint(buffer, &reply_sp, 1);
 
@@ -1887,7 +1899,7 @@ globus_l_jm_getenv_var(char * env_var_name,
     else
     {
         grami_fprintf( grami_log_fp, 
-                       "ERROR: unable to get %s from the environment.\n",
+                       "JM: unable to get %s from the environment.\n",
                        env_var_name);
         if (default_name)
         {
