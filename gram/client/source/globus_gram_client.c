@@ -348,6 +348,7 @@ globus_l_gram_client_parse_gatekeeper_contact(
     char *				ptr;
     unsigned short			iport;
     globus_url_t			some_struct;
+    int                                 rc = GLOBUS_SUCCESS;
 
     /*
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
@@ -420,7 +421,9 @@ globus_l_gram_client_parse_gatekeeper_contact(
 	    globus_libc_fprintf(globus_l_print_fp,
 		                "strdup failed for contact_string\n");
 	}
-        return(GLOBUS_GRAM_PROTOCOL_ERROR_BAD_GATEKEEPER_CONTACT);
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto error_exit;
     }
     
     if (! *host)
@@ -442,6 +445,12 @@ globus_l_gram_client_parse_gatekeeper_contact(
 					       ? strlen(service_prefix)
 					       : 0));
 
+    if ((*gatekeeper_url) == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto free_duplicate_exit;
+    }
     globus_libc_sprintf((*gatekeeper_url),
 	                "https://%s:%hu%s/%s",
 			host,
@@ -451,15 +460,21 @@ globus_l_gram_client_parse_gatekeeper_contact(
 
     if (globus_url_parse(*gatekeeper_url, &some_struct) != GLOBUS_SUCCESS)
     {
-       globus_libc_free(*gatekeeper_url);
-       globus_libc_free(duplicate);
-       return(GLOBUS_GRAM_PROTOCOL_ERROR_BAD_GATEKEEPER_CONTACT);
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_GATEKEEPER_CONTACT;
+
+        goto free_gatekeeper_url_exit;
     }
     globus_url_destroy(&some_struct);
 
     if ((dn) && (*dn))
     {
    	*gatekeeper_dn = globus_libc_strdup(dn);
+
+        if((*gatekeeper_dn) == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+            goto free_gatekeeper_url_exit;
+        }
     }
     else
     {
@@ -467,7 +482,15 @@ globus_l_gram_client_parse_gatekeeper_contact(
     }
     globus_libc_free(duplicate);
 
-    return GLOBUS_SUCCESS;
+    return rc;
+
+free_gatekeeper_url_exit:
+    globus_libc_free(*gatekeeper_url);
+free_duplicate_exit:
+    globus_libc_free(duplicate);
+error_exit:
+
+    return rc;
 }
 
 
@@ -1172,6 +1195,12 @@ globus_gram_client_job_signal(
 	/* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
 	request = (char *) globus_libc_malloc( strlen(signal_arg)
 					       + 6 + 10 + 2 + 1 );
+        if (request == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto error_exit;
+        }
 
 	globus_libc_sprintf(request,
 			    "signal %d %s",
@@ -1182,6 +1211,12 @@ globus_gram_client_job_signal(
     {
 	/* 'signal' = 6, allow 10-digit integer, 1 space and null  */
 	request = (char *) globus_libc_malloc( 6 + 10 + 1 + 1 );
+        if (request == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto error_exit;
+        }
 
 	globus_libc_sprintf(request,
 			    "signal %d",
@@ -1219,7 +1254,10 @@ error_exit:
 	    monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
-    globus_libc_free(request);
+    if (request != NULL)
+    {
+        globus_libc_free(request);
+    }
 
     return rc;
 }
@@ -1287,6 +1325,12 @@ globus_gram_client_register_job_signal(
 	/* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
 	request = (char *) globus_libc_malloc( strlen(signal_arg)
 					       + 6 + 10 + 2 + 1 );
+        if (request == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto error_exit;
+        }
 
 	globus_libc_sprintf(request,
 			    "signal %d %s",
@@ -1297,6 +1341,12 @@ globus_gram_client_register_job_signal(
     {
 	/* 'signal' = 6, allow 10-digit integer, 1 space and null  */
 	request = (char *) globus_libc_malloc( 6 + 10 + 1 + 1 );
+        if (request == NULL)
+        {
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto error_exit;
+        }
 
 	globus_libc_sprintf(request,
 			    "signal %d",
@@ -1309,6 +1359,7 @@ globus_gram_client_register_job_signal(
 					     GLOBUS_GRAM_CLIENT_SIGNAL,
 					     monitor);
     globus_libc_free(request);
+error_exit:
     if(rc != GLOBUS_SUCCESS)
     {
 	globus_l_gram_client_monitor_destroy(monitor);
@@ -1505,6 +1556,13 @@ globus_gram_client_job_callback_register(
 	                  strlen(callback_contact)
 			  + 8 + 10 + 2 + 1 );
 
+    if (request == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto error_exit;
+    }
+
     globus_libc_sprintf(request,
 			"register %d %s",
 			job_state_mask,
@@ -1543,7 +1601,10 @@ error_exit:
 	    monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
-    globus_libc_free(request);
+    if (request != NULL)
+    {
+        globus_libc_free(request);
+    }
 
     return rc;
 }
@@ -1596,6 +1657,13 @@ globus_gram_client_job_callback_unregister(
 	                  strlen(callback_contact)
 			  + 10 + 1 + 1 );
 
+    if (request == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto error_exit;
+    }
+
     globus_libc_sprintf(request,
 			"unregister %s",
 			callback_contact);
@@ -1633,7 +1701,11 @@ error_exit:
 	    monitor.job_failure_code;
     }
     globus_l_gram_client_monitor_destroy(&monitor);
-    globus_libc_free(request);
+
+    if (request != NULL)
+    {
+        globus_libc_free(request);
+    }
 
     return rc;
 }
@@ -1820,6 +1892,12 @@ globus_gram_client_register_job_callback_registration(
 	                  strlen(callback_contact)
 			  + 8 + 10 + 2 + 1 );
 
+    if (request == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto error_exit;
+    }
+
     globus_libc_sprintf(request,
 			"register %d %s",
 			job_state_mask,
@@ -1832,13 +1910,17 @@ globus_gram_client_register_job_callback_registration(
 	    GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
 	    monitor);
 
+error_exit:
     if(rc != GLOBUS_SUCCESS)
     {
 	globus_l_gram_client_monitor_destroy(monitor);
 	globus_libc_free(monitor);
     }
 
-    globus_libc_free(request);
+    if(request != NULL)
+    {
+        globus_libc_free(request);
+    }
 
     return rc;
 }
@@ -1901,6 +1983,12 @@ globus_gram_client_register_job_callback_unregistration(
     request = (char *) globus_libc_malloc( 
 	                  strlen(callback_contact)
 			  + 10 + 1 + 1 );
+    if (request == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto error_exit;
+    }
 
     globus_libc_sprintf(request,
 			"unregister %s",
@@ -1913,12 +2001,16 @@ globus_gram_client_register_job_callback_unregistration(
 	    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
 	    monitor);
 
+error_exit:
     if(rc != GLOBUS_SUCCESS)
     {
 	globus_l_gram_client_monitor_destroy(monitor);
 	globus_libc_free(monitor);
     }
-    globus_libc_free(request);
+    if(request != NULL)
+    {
+        globus_libc_free(request);
+    }
 
     return rc;
 }
@@ -1962,8 +2054,21 @@ globus_gram_client_callback_allow(
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
+    if (callback_contact == NULL)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+    }
+
+    *callback_contact = NULL;
+
     callback_info = globus_libc_malloc(
 	                sizeof(globus_l_gram_client_callback_info_t));
+
+    if (callback_info == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        goto error_exit;
+    }
 
     callback_info->callback = callback_func;
     callback_info->callback_arg = user_callback_arg;
@@ -1973,16 +2078,46 @@ globus_gram_client_callback_allow(
 	    globus_l_gram_client_callback,
 	    callback_info);
 
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto free_callback_info_exit;
+    }
+
     globus_mutex_lock(&globus_l_mutex);
-    globus_hashtable_insert(&globus_l_gram_client_contacts,
+    rc = globus_hashtable_insert(&globus_l_gram_client_contacts,
 	                    callback_info->callback_contact,
 	                    callback_info);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto disallow_exit;
+    }
     globus_mutex_unlock(&globus_l_mutex);
 
-    if (rc==GLOBUS_SUCCESS && callback_contact)
+    *callback_contact = globus_libc_strdup(callback_info->callback_contact);
+
+    if (*callback_contact == NULL)
     {
-	*callback_contact = globus_libc_strdup(callback_info->callback_contact);
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+        goto remove_from_hashtable_exit;
     }
+    return rc;
+
+remove_from_hashtable_exit:
+    globus_mutex_lock(&globus_l_mutex);
+    globus_hashtable_remove(&globus_l_gram_client_contacts,
+            (void *) callback_info->callback_contact);
+    globus_mutex_unlock(&globus_l_mutex);
+
+disallow_exit:
+    globus_gram_protocol_callback_disallow(callback_info->callback_contact);
+    globus_libc_free(callback_info->callback_contact);
+free_callback_info_exit:
+    globus_libc_free(callback_info);
+
+error_exit:
     return rc;
 } /* globus_gram_client_callback_allow() */
 
