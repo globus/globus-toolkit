@@ -10272,7 +10272,7 @@ for i in $XMLSEC_CRYPTO_LIST ; do
     XMLSEC_CRYPTO_PC_FILES_LIST="$XMLSEC_CRYPTO_PC_FILES_LIST $XMLSEC_PACKAGE-$i.pc"
 done
 
-ac_config_files="$ac_config_files include/xmlsec/version.h Makefile include/Makefile include/xmlsec/Makefile src/Makefile apps/Makefile docs/Makefile docs/api/Makefile man/Makefile pkgdata/Makefile pkgdata/pkg_data_src.gpt xmlsec1Conf.sh:xmlsecConf.sh.in xmlsec1-config:xmlsec-config.in xmlsec1-openssl.pc:xmlsec-openssl.pc.in xmlsec1-gnutls.pc:xmlsec-gnutls.pc.in xmlsec1-nss.pc:xmlsec-nss.pc.in xmlsec1.spec:xmlsec.spec.in"
+ac_config_files="$ac_config_files include/xmlsec/version.h Makefile include/Makefile include/xmlsec/Makefile src/Makefile docs/Makefile docs/api/Makefile man/Makefile pkgdata/Makefile pkgdata/pkg_data_src.gpt xmlsec1Conf.sh:xmlsecConf.sh.in xmlsec1-config:xmlsec-config.in xmlsec1-openssl.pc:xmlsec-openssl.pc.in xmlsec1-gnutls.pc:xmlsec-gnutls.pc.in xmlsec1-nss.pc:xmlsec-nss.pc.in xmlsec1.spec:xmlsec.spec.in"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -10751,7 +10751,6 @@ do
   "include/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
   "include/xmlsec/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/xmlsec/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "apps/Makefile" ) CONFIG_FILES="$CONFIG_FILES apps/Makefile" ;;
   "docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
   "docs/api/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/api/Makefile" ;;
   "man/Makefile" ) CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
@@ -10765,7 +10764,7 @@ do
   "xmlsec1.spec" ) CONFIG_FILES="$CONFIG_FILES xmlsec1.spec:xmlsec.spec.in" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-  *) { { echo "$as_me:10768: error: invalid argument: $ac_config_target" >&5
+  *) { { echo "$as_me:10767: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -11165,7 +11164,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:11168: creating $ac_file" >&5
+    { echo "$as_me:11167: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -11183,7 +11182,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:11186: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:11185: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -11196,7 +11195,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:11199: error: cannot find input file: $f" >&5
+           { { echo "$as_me:11198: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -11257,7 +11256,7 @@ for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
   * )   ac_file_in=$ac_file.in ;;
   esac
 
-  test x"$ac_file" != x- && { echo "$as_me:11260: creating $ac_file" >&5
+  test x"$ac_file" != x- && { echo "$as_me:11259: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
 
   # First look for the input files in the build tree, otherwise in the
@@ -11268,7 +11267,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:11271: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:11270: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -11281,7 +11280,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:11284: error: cannot find input file: $f" >&5
+           { { echo "$as_me:11283: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -11398,7 +11397,7 @@ cat >>$CONFIG_STATUS <<\EOF
   rm -f $tmp/in
   if test x"$ac_file" != x-; then
     if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
-      { echo "$as_me:11401: $ac_file is unchanged" >&5
+      { echo "$as_me:11400: $ac_file is unchanged" >&5
 echo "$as_me: $ac_file is unchanged" >&6;}
     else
       ac_dir=`$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
@@ -11644,154 +11643,154 @@ fi
 DEFS=-DHAVE_CONFIG_H
 
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:11647: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:11646: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${WITHOUT_FLAVORS_TRUE}" && test -z "${WITHOUT_FLAVORS_FALSE}"; then
-  { { echo "$as_me:11654: error: conditional \"WITHOUT_FLAVORS\" was never defined.
+  { { echo "$as_me:11653: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:11661: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:11660: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
-  { { echo "$as_me:11668: error: conditional \"AMDEP\" was never defined.
+  { { echo "$as_me:11667: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${INSTALL_LTDL_TRUE}" && test -z "${INSTALL_LTDL_FALSE}"; then
-  { { echo "$as_me:11675: error: conditional \"INSTALL_LTDL\" was never defined.
+  { { echo "$as_me:11674: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${CONVENIENCE_LTDL_TRUE}" && test -z "${CONVENIENCE_LTDL_FALSE}"; then
-  { { echo "$as_me:11682: error: conditional \"CONVENIENCE_LTDL\" was never defined.
+  { { echo "$as_me:11681: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_OPENSSL_TRUE}" && test -z "${XMLSEC_NO_OPENSSL_FALSE}"; then
-  { { echo "$as_me:11689: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
+  { { echo "$as_me:11688: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_GNUTLS_TRUE}" && test -z "${XMLSEC_NO_GNUTLS_FALSE}"; then
-  { { echo "$as_me:11696: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
+  { { echo "$as_me:11695: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_NSS_TRUE}" && test -z "${XMLSEC_NO_NSS_FALSE}"; then
-  { { echo "$as_me:11703: error: conditional \"XMLSEC_NO_NSS\" was never defined.
+  { { echo "$as_me:11702: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_SHA1_TRUE}" && test -z "${XMLSEC_NO_SHA1_FALSE}"; then
-  { { echo "$as_me:11710: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
+  { { echo "$as_me:11709: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RIPEMD160_TRUE}" && test -z "${XMLSEC_NO_RIPEMD160_FALSE}"; then
-  { { echo "$as_me:11717: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
+  { { echo "$as_me:11716: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_HMAC_TRUE}" && test -z "${XMLSEC_NO_HMAC_FALSE}"; then
-  { { echo "$as_me:11724: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
+  { { echo "$as_me:11723: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DSA_TRUE}" && test -z "${XMLSEC_NO_DSA_FALSE}"; then
-  { { echo "$as_me:11731: error: conditional \"XMLSEC_NO_DSA\" was never defined.
+  { { echo "$as_me:11730: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RSA_TRUE}" && test -z "${XMLSEC_NO_RSA_FALSE}"; then
-  { { echo "$as_me:11738: error: conditional \"XMLSEC_NO_RSA\" was never defined.
+  { { echo "$as_me:11737: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_X509_TRUE}" && test -z "${XMLSEC_NO_X509_FALSE}"; then
-  { { echo "$as_me:11745: error: conditional \"XMLSEC_NO_X509\" was never defined.
+  { { echo "$as_me:11744: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DES_TRUE}" && test -z "${XMLSEC_NO_DES_FALSE}"; then
-  { { echo "$as_me:11752: error: conditional \"XMLSEC_NO_DES\" was never defined.
+  { { echo "$as_me:11751: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_AES_TRUE}" && test -z "${XMLSEC_NO_AES_FALSE}"; then
-  { { echo "$as_me:11759: error: conditional \"XMLSEC_NO_AES\" was never defined.
+  { { echo "$as_me:11758: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLDSIG_TRUE}" && test -z "${XMLSEC_NO_XMLDSIG_FALSE}"; then
-  { { echo "$as_me:11766: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
+  { { echo "$as_me:11765: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLENC_TRUE}" && test -z "${XMLSEC_NO_XMLENC_FALSE}"; then
-  { { echo "$as_me:11773: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
+  { { echo "$as_me:11772: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XKMS_TRUE}" && test -z "${XMLSEC_NO_XKMS_FALSE}"; then
-  { { echo "$as_me:11780: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
+  { { echo "$as_me:11779: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:11787: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:11786: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:11794: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:11793: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
@@ -11801,7 +11800,7 @@ fi
 : ${CONFIG_STATUS=./config.status}
 ac_clean_files_save=$ac_clean_files
 ac_clean_files="$ac_clean_files $CONFIG_STATUS"
-{ echo "$as_me:11804: creating $CONFIG_STATUS" >&5
+{ echo "$as_me:11803: creating $CONFIG_STATUS" >&5
 echo "$as_me: creating $CONFIG_STATUS" >&6;}
 cat >$CONFIG_STATUS <<_ACEOF
 #! $SHELL
@@ -11977,7 +11976,7 @@ cat >>$CONFIG_STATUS <<\EOF
     echo "$ac_cs_version"; exit 0 ;;
   --he | --h)
     # Conflict between --help and --header
-    { { echo "$as_me:11980: error: ambiguous option: $1
+    { { echo "$as_me:11979: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -11996,7 +11995,7 @@ Try \`$0 --help' for more information." >&2;}
     ac_need_defaults=false;;
 
   # This is an error.
-  -*) { { echo "$as_me:11999: error: unrecognized option: $1
+  -*) { { echo "$as_me:11998: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -12045,7 +12044,6 @@ do
   "include/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
   "include/xmlsec/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/xmlsec/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "apps/Makefile" ) CONFIG_FILES="$CONFIG_FILES apps/Makefile" ;;
   "docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
   "docs/api/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/api/Makefile" ;;
   "man/Makefile" ) CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
@@ -12061,7 +12059,7 @@ do
   "src/openssl/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/openssl/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-  *) { { echo "$as_me:12064: error: invalid argument: $ac_config_target" >&5
+  *) { { echo "$as_me:12062: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -12461,7 +12459,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:12464: creating $ac_file" >&5
+    { echo "$as_me:12462: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -12479,7 +12477,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:12482: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:12480: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -12492,7 +12490,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:12495: error: cannot find input file: $f" >&5
+           { { echo "$as_me:12493: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -12553,7 +12551,7 @@ for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
   * )   ac_file_in=$ac_file.in ;;
   esac
 
-  test x"$ac_file" != x- && { echo "$as_me:12556: creating $ac_file" >&5
+  test x"$ac_file" != x- && { echo "$as_me:12554: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
 
   # First look for the input files in the build tree, otherwise in the
@@ -12564,7 +12562,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:12567: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:12565: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -12577,7 +12575,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:12580: error: cannot find input file: $f" >&5
+           { { echo "$as_me:12578: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -12694,7 +12692,7 @@ cat >>$CONFIG_STATUS <<\EOF
   rm -f $tmp/in
   if test x"$ac_file" != x-; then
     if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
-      { echo "$as_me:12697: $ac_file is unchanged" >&5
+      { echo "$as_me:12695: $ac_file is unchanged" >&5
 echo "$as_me: $ac_file is unchanged" >&6;}
     else
       ac_dir=`$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
@@ -12939,154 +12937,154 @@ fi
 DEFS=-DHAVE_CONFIG_H
 
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:12942: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:12940: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${WITHOUT_FLAVORS_TRUE}" && test -z "${WITHOUT_FLAVORS_FALSE}"; then
-  { { echo "$as_me:12949: error: conditional \"WITHOUT_FLAVORS\" was never defined.
+  { { echo "$as_me:12947: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:12956: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:12954: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
-  { { echo "$as_me:12963: error: conditional \"AMDEP\" was never defined.
+  { { echo "$as_me:12961: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${INSTALL_LTDL_TRUE}" && test -z "${INSTALL_LTDL_FALSE}"; then
-  { { echo "$as_me:12970: error: conditional \"INSTALL_LTDL\" was never defined.
+  { { echo "$as_me:12968: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${CONVENIENCE_LTDL_TRUE}" && test -z "${CONVENIENCE_LTDL_FALSE}"; then
-  { { echo "$as_me:12977: error: conditional \"CONVENIENCE_LTDL\" was never defined.
+  { { echo "$as_me:12975: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_OPENSSL_TRUE}" && test -z "${XMLSEC_NO_OPENSSL_FALSE}"; then
-  { { echo "$as_me:12984: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
+  { { echo "$as_me:12982: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_GNUTLS_TRUE}" && test -z "${XMLSEC_NO_GNUTLS_FALSE}"; then
-  { { echo "$as_me:12991: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
+  { { echo "$as_me:12989: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_NSS_TRUE}" && test -z "${XMLSEC_NO_NSS_FALSE}"; then
-  { { echo "$as_me:12998: error: conditional \"XMLSEC_NO_NSS\" was never defined.
+  { { echo "$as_me:12996: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_SHA1_TRUE}" && test -z "${XMLSEC_NO_SHA1_FALSE}"; then
-  { { echo "$as_me:13005: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
+  { { echo "$as_me:13003: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RIPEMD160_TRUE}" && test -z "${XMLSEC_NO_RIPEMD160_FALSE}"; then
-  { { echo "$as_me:13012: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
+  { { echo "$as_me:13010: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_HMAC_TRUE}" && test -z "${XMLSEC_NO_HMAC_FALSE}"; then
-  { { echo "$as_me:13019: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
+  { { echo "$as_me:13017: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DSA_TRUE}" && test -z "${XMLSEC_NO_DSA_FALSE}"; then
-  { { echo "$as_me:13026: error: conditional \"XMLSEC_NO_DSA\" was never defined.
+  { { echo "$as_me:13024: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RSA_TRUE}" && test -z "${XMLSEC_NO_RSA_FALSE}"; then
-  { { echo "$as_me:13033: error: conditional \"XMLSEC_NO_RSA\" was never defined.
+  { { echo "$as_me:13031: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_X509_TRUE}" && test -z "${XMLSEC_NO_X509_FALSE}"; then
-  { { echo "$as_me:13040: error: conditional \"XMLSEC_NO_X509\" was never defined.
+  { { echo "$as_me:13038: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DES_TRUE}" && test -z "${XMLSEC_NO_DES_FALSE}"; then
-  { { echo "$as_me:13047: error: conditional \"XMLSEC_NO_DES\" was never defined.
+  { { echo "$as_me:13045: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_AES_TRUE}" && test -z "${XMLSEC_NO_AES_FALSE}"; then
-  { { echo "$as_me:13054: error: conditional \"XMLSEC_NO_AES\" was never defined.
+  { { echo "$as_me:13052: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLDSIG_TRUE}" && test -z "${XMLSEC_NO_XMLDSIG_FALSE}"; then
-  { { echo "$as_me:13061: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
+  { { echo "$as_me:13059: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLENC_TRUE}" && test -z "${XMLSEC_NO_XMLENC_FALSE}"; then
-  { { echo "$as_me:13068: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
+  { { echo "$as_me:13066: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XKMS_TRUE}" && test -z "${XMLSEC_NO_XKMS_FALSE}"; then
-  { { echo "$as_me:13075: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
+  { { echo "$as_me:13073: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:13082: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:13080: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:13089: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:13087: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
@@ -13096,7 +13094,7 @@ fi
 : ${CONFIG_STATUS=./config.status}
 ac_clean_files_save=$ac_clean_files
 ac_clean_files="$ac_clean_files $CONFIG_STATUS"
-{ echo "$as_me:13099: creating $CONFIG_STATUS" >&5
+{ echo "$as_me:13097: creating $CONFIG_STATUS" >&5
 echo "$as_me: creating $CONFIG_STATUS" >&6;}
 cat >$CONFIG_STATUS <<_ACEOF
 #! $SHELL
@@ -13272,7 +13270,7 @@ cat >>$CONFIG_STATUS <<\EOF
     echo "$ac_cs_version"; exit 0 ;;
   --he | --h)
     # Conflict between --help and --header
-    { { echo "$as_me:13275: error: ambiguous option: $1
+    { { echo "$as_me:13273: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -13291,7 +13289,7 @@ Try \`$0 --help' for more information." >&2;}
     ac_need_defaults=false;;
 
   # This is an error.
-  -*) { { echo "$as_me:13294: error: unrecognized option: $1
+  -*) { { echo "$as_me:13292: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -13340,7 +13338,6 @@ do
   "include/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
   "include/xmlsec/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/xmlsec/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "apps/Makefile" ) CONFIG_FILES="$CONFIG_FILES apps/Makefile" ;;
   "docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
   "docs/api/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/api/Makefile" ;;
   "man/Makefile" ) CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
@@ -13358,7 +13355,7 @@ do
   "src/gnutls/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/gnutls/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-  *) { { echo "$as_me:13361: error: invalid argument: $ac_config_target" >&5
+  *) { { echo "$as_me:13358: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -13758,7 +13755,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:13761: creating $ac_file" >&5
+    { echo "$as_me:13758: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -13776,7 +13773,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:13779: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:13776: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -13789,7 +13786,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:13792: error: cannot find input file: $f" >&5
+           { { echo "$as_me:13789: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -13850,7 +13847,7 @@ for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
   * )   ac_file_in=$ac_file.in ;;
   esac
 
-  test x"$ac_file" != x- && { echo "$as_me:13853: creating $ac_file" >&5
+  test x"$ac_file" != x- && { echo "$as_me:13850: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
 
   # First look for the input files in the build tree, otherwise in the
@@ -13861,7 +13858,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:13864: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:13861: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -13874,7 +13871,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:13877: error: cannot find input file: $f" >&5
+           { { echo "$as_me:13874: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -13991,7 +13988,7 @@ cat >>$CONFIG_STATUS <<\EOF
   rm -f $tmp/in
   if test x"$ac_file" != x-; then
     if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
-      { echo "$as_me:13994: $ac_file is unchanged" >&5
+      { echo "$as_me:13991: $ac_file is unchanged" >&5
 echo "$as_me: $ac_file is unchanged" >&6;}
     else
       ac_dir=`$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
@@ -14238,154 +14235,154 @@ fi
 DEFS=-DHAVE_CONFIG_H
 
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:14241: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:14238: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${WITHOUT_FLAVORS_TRUE}" && test -z "${WITHOUT_FLAVORS_FALSE}"; then
-  { { echo "$as_me:14248: error: conditional \"WITHOUT_FLAVORS\" was never defined.
+  { { echo "$as_me:14245: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:14255: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:14252: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
-  { { echo "$as_me:14262: error: conditional \"AMDEP\" was never defined.
+  { { echo "$as_me:14259: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${INSTALL_LTDL_TRUE}" && test -z "${INSTALL_LTDL_FALSE}"; then
-  { { echo "$as_me:14269: error: conditional \"INSTALL_LTDL\" was never defined.
+  { { echo "$as_me:14266: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${CONVENIENCE_LTDL_TRUE}" && test -z "${CONVENIENCE_LTDL_FALSE}"; then
-  { { echo "$as_me:14276: error: conditional \"CONVENIENCE_LTDL\" was never defined.
+  { { echo "$as_me:14273: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_OPENSSL_TRUE}" && test -z "${XMLSEC_NO_OPENSSL_FALSE}"; then
-  { { echo "$as_me:14283: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
+  { { echo "$as_me:14280: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_GNUTLS_TRUE}" && test -z "${XMLSEC_NO_GNUTLS_FALSE}"; then
-  { { echo "$as_me:14290: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
+  { { echo "$as_me:14287: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_NSS_TRUE}" && test -z "${XMLSEC_NO_NSS_FALSE}"; then
-  { { echo "$as_me:14297: error: conditional \"XMLSEC_NO_NSS\" was never defined.
+  { { echo "$as_me:14294: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_SHA1_TRUE}" && test -z "${XMLSEC_NO_SHA1_FALSE}"; then
-  { { echo "$as_me:14304: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
+  { { echo "$as_me:14301: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RIPEMD160_TRUE}" && test -z "${XMLSEC_NO_RIPEMD160_FALSE}"; then
-  { { echo "$as_me:14311: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
+  { { echo "$as_me:14308: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_HMAC_TRUE}" && test -z "${XMLSEC_NO_HMAC_FALSE}"; then
-  { { echo "$as_me:14318: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
+  { { echo "$as_me:14315: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DSA_TRUE}" && test -z "${XMLSEC_NO_DSA_FALSE}"; then
-  { { echo "$as_me:14325: error: conditional \"XMLSEC_NO_DSA\" was never defined.
+  { { echo "$as_me:14322: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RSA_TRUE}" && test -z "${XMLSEC_NO_RSA_FALSE}"; then
-  { { echo "$as_me:14332: error: conditional \"XMLSEC_NO_RSA\" was never defined.
+  { { echo "$as_me:14329: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_X509_TRUE}" && test -z "${XMLSEC_NO_X509_FALSE}"; then
-  { { echo "$as_me:14339: error: conditional \"XMLSEC_NO_X509\" was never defined.
+  { { echo "$as_me:14336: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DES_TRUE}" && test -z "${XMLSEC_NO_DES_FALSE}"; then
-  { { echo "$as_me:14346: error: conditional \"XMLSEC_NO_DES\" was never defined.
+  { { echo "$as_me:14343: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_AES_TRUE}" && test -z "${XMLSEC_NO_AES_FALSE}"; then
-  { { echo "$as_me:14353: error: conditional \"XMLSEC_NO_AES\" was never defined.
+  { { echo "$as_me:14350: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLDSIG_TRUE}" && test -z "${XMLSEC_NO_XMLDSIG_FALSE}"; then
-  { { echo "$as_me:14360: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
+  { { echo "$as_me:14357: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLENC_TRUE}" && test -z "${XMLSEC_NO_XMLENC_FALSE}"; then
-  { { echo "$as_me:14367: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
+  { { echo "$as_me:14364: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XKMS_TRUE}" && test -z "${XMLSEC_NO_XKMS_FALSE}"; then
-  { { echo "$as_me:14374: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
+  { { echo "$as_me:14371: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:14381: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:14378: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:14388: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:14385: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
@@ -14395,7 +14392,7 @@ fi
 : ${CONFIG_STATUS=./config.status}
 ac_clean_files_save=$ac_clean_files
 ac_clean_files="$ac_clean_files $CONFIG_STATUS"
-{ echo "$as_me:14398: creating $CONFIG_STATUS" >&5
+{ echo "$as_me:14395: creating $CONFIG_STATUS" >&5
 echo "$as_me: creating $CONFIG_STATUS" >&6;}
 cat >$CONFIG_STATUS <<_ACEOF
 #! $SHELL
@@ -14571,7 +14568,7 @@ cat >>$CONFIG_STATUS <<\EOF
     echo "$ac_cs_version"; exit 0 ;;
   --he | --h)
     # Conflict between --help and --header
-    { { echo "$as_me:14574: error: ambiguous option: $1
+    { { echo "$as_me:14571: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -14590,7 +14587,7 @@ Try \`$0 --help' for more information." >&2;}
     ac_need_defaults=false;;
 
   # This is an error.
-  -*) { { echo "$as_me:14593: error: unrecognized option: $1
+  -*) { { echo "$as_me:14590: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -14639,7 +14636,6 @@ do
   "include/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
   "include/xmlsec/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/xmlsec/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "apps/Makefile" ) CONFIG_FILES="$CONFIG_FILES apps/Makefile" ;;
   "docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
   "docs/api/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/api/Makefile" ;;
   "man/Makefile" ) CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
@@ -14659,7 +14655,7 @@ do
   "src/nss/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/nss/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-  *) { { echo "$as_me:14662: error: invalid argument: $ac_config_target" >&5
+  *) { { echo "$as_me:14658: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -15059,7 +15055,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:15062: creating $ac_file" >&5
+    { echo "$as_me:15058: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -15077,7 +15073,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:15080: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:15076: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -15090,7 +15086,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:15093: error: cannot find input file: $f" >&5
+           { { echo "$as_me:15089: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -15151,7 +15147,7 @@ for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
   * )   ac_file_in=$ac_file.in ;;
   esac
 
-  test x"$ac_file" != x- && { echo "$as_me:15154: creating $ac_file" >&5
+  test x"$ac_file" != x- && { echo "$as_me:15150: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
 
   # First look for the input files in the build tree, otherwise in the
@@ -15162,7 +15158,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:15165: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:15161: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -15175,7 +15171,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:15178: error: cannot find input file: $f" >&5
+           { { echo "$as_me:15174: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -15292,7 +15288,7 @@ cat >>$CONFIG_STATUS <<\EOF
   rm -f $tmp/in
   if test x"$ac_file" != x-; then
     if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
-      { echo "$as_me:15295: $ac_file is unchanged" >&5
+      { echo "$as_me:15291: $ac_file is unchanged" >&5
 echo "$as_me: $ac_file is unchanged" >&6;}
     else
       ac_dir=`$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
@@ -15541,154 +15537,154 @@ fi
 DEFS=-DHAVE_CONFIG_H
 
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:15544: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:15540: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${WITHOUT_FLAVORS_TRUE}" && test -z "${WITHOUT_FLAVORS_FALSE}"; then
-  { { echo "$as_me:15551: error: conditional \"WITHOUT_FLAVORS\" was never defined.
+  { { echo "$as_me:15547: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"WITHOUT_FLAVORS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
-  { { echo "$as_me:15558: error: conditional \"MAINTAINER_MODE\" was never defined.
+  { { echo "$as_me:15554: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
-  { { echo "$as_me:15565: error: conditional \"AMDEP\" was never defined.
+  { { echo "$as_me:15561: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${INSTALL_LTDL_TRUE}" && test -z "${INSTALL_LTDL_FALSE}"; then
-  { { echo "$as_me:15572: error: conditional \"INSTALL_LTDL\" was never defined.
+  { { echo "$as_me:15568: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"INSTALL_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${CONVENIENCE_LTDL_TRUE}" && test -z "${CONVENIENCE_LTDL_FALSE}"; then
-  { { echo "$as_me:15579: error: conditional \"CONVENIENCE_LTDL\" was never defined.
+  { { echo "$as_me:15575: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"CONVENIENCE_LTDL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_OPENSSL_TRUE}" && test -z "${XMLSEC_NO_OPENSSL_FALSE}"; then
-  { { echo "$as_me:15586: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
+  { { echo "$as_me:15582: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_GNUTLS_TRUE}" && test -z "${XMLSEC_NO_GNUTLS_FALSE}"; then
-  { { echo "$as_me:15593: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
+  { { echo "$as_me:15589: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_GNUTLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_NSS_TRUE}" && test -z "${XMLSEC_NO_NSS_FALSE}"; then
-  { { echo "$as_me:15600: error: conditional \"XMLSEC_NO_NSS\" was never defined.
+  { { echo "$as_me:15596: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_NSS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_SHA1_TRUE}" && test -z "${XMLSEC_NO_SHA1_FALSE}"; then
-  { { echo "$as_me:15607: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
+  { { echo "$as_me:15603: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_SHA1\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RIPEMD160_TRUE}" && test -z "${XMLSEC_NO_RIPEMD160_FALSE}"; then
-  { { echo "$as_me:15614: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
+  { { echo "$as_me:15610: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RIPEMD160\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_HMAC_TRUE}" && test -z "${XMLSEC_NO_HMAC_FALSE}"; then
-  { { echo "$as_me:15621: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
+  { { echo "$as_me:15617: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_HMAC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DSA_TRUE}" && test -z "${XMLSEC_NO_DSA_FALSE}"; then
-  { { echo "$as_me:15628: error: conditional \"XMLSEC_NO_DSA\" was never defined.
+  { { echo "$as_me:15624: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_RSA_TRUE}" && test -z "${XMLSEC_NO_RSA_FALSE}"; then
-  { { echo "$as_me:15635: error: conditional \"XMLSEC_NO_RSA\" was never defined.
+  { { echo "$as_me:15631: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_RSA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_X509_TRUE}" && test -z "${XMLSEC_NO_X509_FALSE}"; then
-  { { echo "$as_me:15642: error: conditional \"XMLSEC_NO_X509\" was never defined.
+  { { echo "$as_me:15638: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_X509\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_DES_TRUE}" && test -z "${XMLSEC_NO_DES_FALSE}"; then
-  { { echo "$as_me:15649: error: conditional \"XMLSEC_NO_DES\" was never defined.
+  { { echo "$as_me:15645: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_DES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_AES_TRUE}" && test -z "${XMLSEC_NO_AES_FALSE}"; then
-  { { echo "$as_me:15656: error: conditional \"XMLSEC_NO_AES\" was never defined.
+  { { echo "$as_me:15652: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_AES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLDSIG_TRUE}" && test -z "${XMLSEC_NO_XMLDSIG_FALSE}"; then
-  { { echo "$as_me:15663: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
+  { { echo "$as_me:15659: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLDSIG\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XMLENC_TRUE}" && test -z "${XMLSEC_NO_XMLENC_FALSE}"; then
-  { { echo "$as_me:15670: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
+  { { echo "$as_me:15666: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XMLENC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_XKMS_TRUE}" && test -z "${XMLSEC_NO_XKMS_FALSE}"; then
-  { { echo "$as_me:15677: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
+  { { echo "$as_me:15673: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_XKMS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:15684: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:15680: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_TRUE}" && test -z "${XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING_FALSE}"; then
-  { { echo "$as_me:15691: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
+  { { echo "$as_me:15687: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
@@ -15698,7 +15694,7 @@ fi
 : ${CONFIG_STATUS=./config.status}
 ac_clean_files_save=$ac_clean_files
 ac_clean_files="$ac_clean_files $CONFIG_STATUS"
-{ echo "$as_me:15701: creating $CONFIG_STATUS" >&5
+{ echo "$as_me:15697: creating $CONFIG_STATUS" >&5
 echo "$as_me: creating $CONFIG_STATUS" >&6;}
 cat >$CONFIG_STATUS <<_ACEOF
 #! $SHELL
@@ -15874,7 +15870,7 @@ cat >>$CONFIG_STATUS <<\EOF
     echo "$ac_cs_version"; exit 0 ;;
   --he | --h)
     # Conflict between --help and --header
-    { { echo "$as_me:15877: error: ambiguous option: $1
+    { { echo "$as_me:15873: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -15893,7 +15889,7 @@ Try \`$0 --help' for more information." >&2;}
     ac_need_defaults=false;;
 
   # This is an error.
-  -*) { { echo "$as_me:15896: error: unrecognized option: $1
+  -*) { { echo "$as_me:15892: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -15942,7 +15938,6 @@ do
   "include/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
   "include/xmlsec/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/xmlsec/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "apps/Makefile" ) CONFIG_FILES="$CONFIG_FILES apps/Makefile" ;;
   "docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
   "docs/api/Makefile" ) CONFIG_FILES="$CONFIG_FILES docs/api/Makefile" ;;
   "man/Makefile" ) CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
@@ -15963,7 +15958,7 @@ do
   "xmlsec1.pc" ) CONFIG_FILES="$CONFIG_FILES xmlsec1.pc:xmlsec.pc.in" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-  *) { { echo "$as_me:15966: error: invalid argument: $ac_config_target" >&5
+  *) { { echo "$as_me:15961: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -16363,7 +16358,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:16366: creating $ac_file" >&5
+    { echo "$as_me:16361: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -16381,7 +16376,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:16384: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:16379: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -16394,7 +16389,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:16397: error: cannot find input file: $f" >&5
+           { { echo "$as_me:16392: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -16455,7 +16450,7 @@ for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
   * )   ac_file_in=$ac_file.in ;;
   esac
 
-  test x"$ac_file" != x- && { echo "$as_me:16458: creating $ac_file" >&5
+  test x"$ac_file" != x- && { echo "$as_me:16453: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
 
   # First look for the input files in the build tree, otherwise in the
@@ -16466,7 +16461,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:16469: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:16464: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -16479,7 +16474,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:16482: error: cannot find input file: $f" >&5
+           { { echo "$as_me:16477: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -16596,7 +16591,7 @@ cat >>$CONFIG_STATUS <<\EOF
   rm -f $tmp/in
   if test x"$ac_file" != x-; then
     if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
-      { echo "$as_me:16599: $ac_file is unchanged" >&5
+      { echo "$as_me:16594: $ac_file is unchanged" >&5
 echo "$as_me: $ac_file is unchanged" >&6;}
     else
       ac_dir=`$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
