@@ -61,7 +61,7 @@ int main(int argc, char * argv[])
 int
 mem_init(mem_test_t * m, int cnt)
 {
-    memset(m, 0, sizeof(mem_test_t));
+    memset(m, 0, sizeof(mem_test_t) + 1);
     m->a = 'a';
     m->b = 'b';
     m->c = 'c';
