@@ -16,6 +16,7 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
+#include "grami_ggg.h"
 
 #if HAVE_UTIME_H
 #include <utime.h>
@@ -983,7 +984,7 @@ main(int argc,
 
     ptr = buffer;
 
-    if ( globus_gram_http_version (buffer) 
+    if ( globus_gram_http_version(buffer) 
 	 != GLOBUS_GRAM_PROTOCOL_VERSION ) {
       grami_fprintf( request->jobmanager_log_fp,
 		     "JM: ERROR: globus gram protocol version mismatch!\n");
@@ -4202,7 +4203,7 @@ globus_l_jm_http_query_callback( void *               arg,
 				 globus_size_t        nbytes,
 				 int                  errorcode)
 {
-    globus_gram_jobmanager_request_t *   request,
+    globus_gram_jobmanager_request_t *   request;
     globus_byte_t *                      message;
     globus_size_t                        msgsize;
     globus_byte_t *                      httpbuf;
