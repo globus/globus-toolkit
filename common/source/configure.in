@@ -16,9 +16,9 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 
 dnl Determine thread library flags
-dnl if test "x$NO_FLAVOR" = "x"; then
-dnl LAC_THREADS
-dnl fi
+if test "x$NO_FLAVOR" = "x"; then
+LAC_THREADS
+fi
 
 dnl Check for large file support before doing any other probes, it may
 dnl change prototypes for some functions.
