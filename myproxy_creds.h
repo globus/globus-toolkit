@@ -116,7 +116,15 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds);
  * Change default storage directory.
  * Returns -1 on error, 0 on success.
  */
-void myproxy_set_storage_dir(const char *dir);
+int myproxy_set_storage_dir(const char *dir);
+
+/* 
+ * myproxy_check_storage_dir()
+ * 
+ * Make sure the storage directory is OK.
+ * Returns 0 if OK, -1 if not.
+ */
+int myproxy_check_storage_dir();
 
 #endif
 
