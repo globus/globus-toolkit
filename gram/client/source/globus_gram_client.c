@@ -249,14 +249,13 @@ gram_job_request(char * gatekeeper_url,
 
     if (job_request_monitor.job_status == 0)
     {
-        *job_contact = (char *) 
+        * job_contact = (char *) 
            malloc(strlen(job_request_monitor.job_contact_str) + 1);
-/*
-        sprintf(*job_contact, "%s", job_request_monitor.job_contact_str);
-*/
-        strcpy(*job_contact, job_request_monitor.job_contact_str);
-        free(contact_msg_buffer);
+
+        strcpy(* job_contact, job_request_monitor.job_contact_str);
     }
+
+    free(contact_msg_buffer);
 
     return(job_request_monitor.job_status);
 
@@ -411,7 +410,6 @@ gram_callback_allow(gram_callback_func_t callback_func,
     char * 		  host;
     callback_s *	  callback;
     nexus_endpointattr_t  epattr;
-    char * 		  tmp_contact;
 
     printf("in gram_callback_allow()\n");
 
@@ -433,10 +431,10 @@ gram_callback_allow(gram_callback_func_t callback_func,
     }
 
     /* add 13 for x-nexus stuff plus 1 for the null */
-    tmp_contact = (char *) malloc(sizeof(port) + MAXHOSTNAMELEN + 13);
+    * callback_contact = (char *) 
+       malloc(sizeof(port) + MAXHOSTNAMELEN + 13);
 
-    sprintf(tmp_contact, "x-nexus://%s:%hu/", host, port);
-    *callback_contact = tmp_contact;
+    sprintf(* callback_contact, "x-nexus://%s:%hu/", host, port);
 
     return(0);
 
@@ -632,4 +630,6 @@ gram_job_contact_free(char * job_contact)
     printf("in gram_job_contact_free()\n");
 
     free(job_contact);
+
+    return (0);
 } /* gram_job_contact_free() */
