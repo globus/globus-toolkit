@@ -555,7 +555,7 @@ globus_l_gsc_959_read_callback(
                  *  If NULL we don't suport this command.  Just add it
                  *  to the q anyway
                  */
-                if(strcmp(command_name, "ABOR") != 0)
+                if(strcasecmp(command_name, "ABOR") != 0)
                 {
                     read_ent = globus_l_gsc_959_read_ent_create(
                         cmd_list, buffer, handle);

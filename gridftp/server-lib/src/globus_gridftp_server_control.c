@@ -173,9 +173,9 @@ globus_gridftp_server_control_init(
     i_server->state = GLOBUS_L_GS_STATE_STOPPED;
     i_server->banner = globus_libc_strdup("GridFTP server "__DATE__);
     i_server->cwd = globus_libc_strdup("/");
-
     uname(&uname_buf);
     i_server->syst = globus_libc_strdup(uname_buf.sysname);
+
     *server = i_server;
 
     return GLOBUS_SUCCESS;
@@ -185,6 +185,9 @@ globus_gridftp_server_control_init(
     return res;
 }
 
+/*
+ *  destroy
+ */
 globus_result_t
 globus_gridftp_server_control_destroy(
     globus_gridftp_server_control_t                 server)
@@ -212,6 +215,7 @@ globus_gridftp_server_control_destroy(
     globus_mutex_destroy(&i_server->mutex);
     globus_free(i_server->banner);
     globus_free(i_server->syst);
+    globus_free(i_server->cwd);
     globus_free(i_server);
 
     return GLOBUS_SUCCESS;
@@ -221,6 +225,9 @@ globus_gridftp_server_control_destroy(
     return res;
 }
 
+/*
+ *  start
+ */
 globus_result_t
 globus_gridftp_server_control_start(
     globus_gridftp_server_control_t                 server,
@@ -1136,7 +1143,6 @@ globus_l_gsc_op_destroy(
 /*
  *  data transfer
  */
-
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
     globus_gridftp_server_control_operation_t       op)
@@ -1157,12 +1163,49 @@ globus_gridftp_server_control_begin_transfer(
 
     i_server = i_op->server;
 
+    i_op->transfer_started = GLOBUS_TRUE;
+
     /* this implies that pmod func can't block and that user can't call
         finished until this returns */
     i_op->event_cb(
         i_server,
         GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER,
         "Begin Data Transfer.",
+        i_op->user_arg);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_gridft_server_control_send_event(
+    globus_gridftp_server_control_operation_t       op,
+    globus_gridftp_server_control_event_type_t      type,
+    const char *                                    msg)
+{
+    globus_i_gsc_op_t *                             i_op;
+    globus_i_gsc_server_t *                         i_server;
+    GlobusGridFTPServerName(globus_gridft_server_control_send_event);
+
+    i_op = (globus_i_gsc_op_t *) op;
+    if(i_op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+    if(i_op->type != GLOBUS_L_GSC_OP_TYPE_DATA)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    i_server = i_op->server;
+
+    i_op->transfer_started = GLOBUS_TRUE;
+
+    /* this implies that pmod func can't block and that user can't call
+        finished until this returns */
+    i_op->event_cb(
+        i_server,
+        type,
+        msg,
         i_op->user_arg);
 
     return GLOBUS_SUCCESS;
@@ -1183,6 +1226,10 @@ globus_gridftp_server_control_finished_data(
         return GlobusGridFTPServerErrorParameter("op");
     }
     if(i_op->type != GLOBUS_L_GSC_OP_TYPE_DATA)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+    if(!i_op->transfer_started && res == GLOBUS_SUCCESS)
     {
         return GlobusGridFTPServerErrorParameter("op");
     }

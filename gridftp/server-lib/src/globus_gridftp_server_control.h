@@ -14,6 +14,81 @@ typedef struct globus_i_gsc_op_s *
 
 typedef time_t                                      globus_time_t;
 
+/***********************************************************************
+ *                          error types
+ *                          -----------
+ **********************************************************************/
+typedef enum globus_gsc_error_type_e
+{
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PANIC,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_DATA_CONNECTION,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,
+} globus_gridftp_server_control_error_type_t;
+
+#ifdef __GNUC__
+#define GlobusGridFTPServerName(func) static const char * _gridftp_server_name __attribute__((__unused__)) = #func
+#else
+#define GlobusGridFTPServerName(func) static const char * _gridftp_server_name = #func
+#endif
+
+
+#define GlobusGridFTPServerControlErrorSyntax()                             \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,                     \
+            "[%s:%d] Syntax error",                                         \
+            _gridftp_server_name, __LINE__))
+
+#define GlobusGridFTPServerControlErrorPanic()                              \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PANIC,                      \
+            "[%s:%d] Panic error",                                          \
+            _gridftp_server_name, __LINE__))
+
+#define GlobusGridFTPServerControlErrorSytem()                              \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,            \
+            "[%s:%d] Sytem resource error",                                 \
+            _gridftp_server_name, __LINE__))
+
+#define GlobusGridFTPServerControlErrorAuthentication()                     \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,             \
+            "[%s:%d] Sytem resource error",                                 \
+            _gridftp_server_name, __LINE__))
+
+#define GlobusGridFTPServerControlErrorDataConnection()                     \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_DATA_CONNECTION,            \
+            "[%s:%d] data connection error",                                \
+            _gridftp_server_name, __LINE__))
+
+#define GlobusGridFTPServerControlErrorPath()                               \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,                       \
+            "[%s:%d] path error",                                           \
+            _gridftp_server_name, __LINE__))
+
 /**
  *  stat structure
  *  --------------
@@ -503,9 +578,19 @@ globus_gridftp_server_control_begin_transfer(
  *  completion.
  */
 globus_result_t
-globus_gridftp_server_control_finished_data(
+globus_gridftp_server_control_finished_transfer(
     globus_gridftp_server_control_operation_t       op,
     globus_result_t                                 res);
+
+/*
+ *  events
+ */
+globus_result_t
+globus_gridft_server_control_send_event(
+    globus_gridftp_server_control_operation_t       op,
+    globus_gridftp_server_control_event_type_t      type,
+    const char *                                    msg);
+
 
 extern globus_module_descriptor_t      globus_i_gridftp_server_control_module;
 

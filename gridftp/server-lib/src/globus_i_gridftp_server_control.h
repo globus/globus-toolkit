@@ -1,12 +1,6 @@
 #if !defined(GLOBUS_I_GRIDFTP_SERVER_CONTROL_H)
 #define GLOBUS_I_GRIDFTP_SERVER_CONTROL_H 1
 
-#ifdef __GNUC__
-#define GlobusGridFTPServerName(func) static const char * _gridftp_server_name __attribute__((__unused__)) = #func
-#else
-#define GlobusGridFTPServerName(func) static const char * _gridftp_server_name = #func
-#endif
-
 #include "globus_gridftp_server_control.h"
 #include "globus_gridftp_server_control_pmod.h"
 
@@ -270,6 +264,7 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_transfer_func_t   user_data_cb;
     globus_gridftp_server_control_data_callback_t   data_cb;
     globus_gridftp_server_control_event_callback_t  event_cb;
+    globus_bool_t                                   transfer_started;
 
     void *                                          user_arg;
 } globus_i_gsc_op_t;
