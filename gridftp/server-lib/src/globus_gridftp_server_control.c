@@ -1699,6 +1699,8 @@ globus_l_gsc_intermediate_reply(
     GlobusGridFTPServerName(globus_l_gsc_intermediate_reply);
 
     /*TODO: check state */
+    globus_i_gsc_log(
+        server_handle, message, GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY);
 
     len = strlen(message);
     res = globus_xio_register_write(
