@@ -36,7 +36,7 @@ test_PROGRAMS= \
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
-framework_test_SOURCES = framework_test.c
+framework_test_SOURCES = $(Sources)
 # _LDFLAGS is an automake macro which contains
 # directives to the linker add before the list of objects and libraries.
 # 
