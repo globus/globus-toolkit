@@ -515,7 +515,7 @@ main(
                           "Enter GRID pass phrase for this identity:");
     }
 
-    if(!ca_cert_dir)
+    if(!ca_cert_dir && verify)
     {
         result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir);
         if(result != GLOBUS_SUCCESS)
@@ -532,7 +532,7 @@ main(
     {
         globus_libc_fprintf(stderr, 
                             "\nTrusted CA Cert Dir: %s\n", 
-                            ca_cert_dir);
+                            ca_cert_dir ? ca_cert_dir : "(null)");
     }
 
     if(!proxy_out_filename)
@@ -659,19 +659,7 @@ main(
                             "handle attributes\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
-
-    result = globus_gsi_cred_handle_attrs_set_ca_cert_dir(
-        cred_handle_attrs, 
-        ca_cert_dir);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_libc_fprintf(
-            stderr,
-            "\n\nERROR: Couldn't set the trusted CA certificate "
-            "directory in the credential handle attributes\n");
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-    }
-
+    
     result = globus_gsi_cred_handle_init(&cred_handle, cred_handle_attrs);
     if(result != GLOBUS_SUCCESS)
     {

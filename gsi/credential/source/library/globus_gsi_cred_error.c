@@ -42,7 +42,8 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 /* 20 */  "Valid credentials could not be found in any of the"
           " possible locations specified by the credential search order.",
 /* 21 */  "Error comparing subject names.",
-/* 22 */  "Error determining service name."
+/* 22 */  "Error determining service name.",
+/* 23 */  "Bad parameter"
 };
 
 /* ERROR FUNCTIONS */

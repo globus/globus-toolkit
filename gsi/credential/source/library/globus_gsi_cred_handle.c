@@ -56,7 +56,7 @@ globus_result_t globus_gsi_cred_handle_init(
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            GLOBUS_GSI_CRED_ERROR_BAD_PARAMETER,
             ("NULL handle passed to function: %s", _function_name_));
         goto error_exit;
     }

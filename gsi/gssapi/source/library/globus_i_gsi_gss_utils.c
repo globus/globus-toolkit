@@ -146,7 +146,6 @@ globus_i_gsi_gss_create_and_fill_context(
     globus_result_t                     local_result;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_ctx_id_desc*                    context = NULL;
-    globus_gsi_cred_handle_attrs_t      handle_attrs = NULL;
     int                                 cb_index;
     OM_uint32                           local_minor_status;
     char *                              certdir = NULL;
@@ -300,33 +299,15 @@ globus_i_gsi_gss_create_and_fill_context(
     }
 
     /* set the cert_dir in the callback data */
-    local_result = globus_gsi_cred_get_handle_attrs(
-        context->cred_handle->cred_handle, &handle_attrs);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto free_ctx_cred_handle;
-    }
-
     local_result = 
-        globus_gsi_cred_handle_attrs_get_ca_cert_dir(
-            handle_attrs, &certdir);
+        GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
-        goto free_handle_attrs;
-    }
-
-    if(handle_attrs)
-    {
-        globus_gsi_cred_handle_attrs_destroy(handle_attrs);
-        handle_attrs = NULL;
+        goto free_callback_data;
     }
 
     if (certdir)
@@ -542,15 +523,6 @@ globus_i_gsi_gss_create_and_fill_context(
     {
         globus_libc_free(certdir);
     }
-
- free_handle_attrs:
-
-    if(handle_attrs)
-    {
-        globus_gsi_cred_handle_attrs_destroy(handle_attrs);
-    }
-        
- free_ctx_cred_handle:
 
     if(context->cred_handle)
     {
@@ -979,7 +951,6 @@ globus_i_gsi_gss_retrieve_peer(
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     X509 *                              peer_cert = NULL;
     STACK_OF(X509) *                    peer_cert_chain = NULL;
-    int                                 proxy_depth;
     static char *                       _function_name_ =
         "globus_i_gsi_gss_retrieve_peer";
     
@@ -2058,7 +2029,6 @@ globus_i_gsi_gssapi_init_ssl_context(
     globus_result_t                     local_result;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_cred_id_desc *                  cred_handle;
-    globus_gsi_cred_handle_attrs_t      handle_attrs = NULL;
     char *                              ca_cert_dir = NULL;
 
     static char *                       _function_name_ =
@@ -2100,42 +2070,16 @@ globus_i_gsi_gssapi_init_ssl_context(
 
     SSL_CTX_sess_set_cache_size(cred_handle->ssl_context, 5);
 
-    local_result = globus_gsi_cred_get_handle_attrs(
-        cred_handle->cred_handle,
-        &handle_attrs);
+    local_result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir);
+    
     if(local_result != GLOBUS_SUCCESS)
     {
+        ca_cert_dir = NULL;
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         goto exit;
-    }
-
-    local_result = globus_gsi_cred_handle_attrs_get_ca_cert_dir(
-        handle_attrs,
-        &ca_cert_dir);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        goto exit;
-    }
-
-    if(!ca_cert_dir)
-    {
-        local_result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            ca_cert_dir = NULL;
-            major_status = GSS_S_FAILURE;
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-            goto exit;
-        }
     }
 
     if(!SSL_CTX_load_verify_locations(cred_handle->ssl_context,
@@ -2325,11 +2269,6 @@ globus_i_gsi_gssapi_init_ssl_context(
     }
 
  exit:
-
-    if(handle_attrs)
-    {
-        globus_gsi_cred_handle_attrs_destroy(handle_attrs);
-    }
 
     if(client_cert)
     {
