@@ -1216,20 +1216,24 @@ rcmd: RNFR check_login SP pathname CRLF
 	=	{
 	    if (log_commands)
 		syslog(LOG_INFO, "REST %d", (int) restart_point);
-#           if USE_GLOBUS_DATA_CODE
-            if($2 && mode == MODE_E)
+	    if ($2)
 	    {
-		fromname = 0;
-		restart_point = $4;
-		globus_i_wu_free_ranges(&g_restarts);
-		reply(550, "Invalid MODE E restart Marker");
-	    }
+#           if USE_GLOBUS_DATA_CODE
+		if(mode == MODE_E)
+		{
+		    fromname = 0;
+		    restart_point = $4;
+		    globus_i_wu_free_ranges(&g_restarts);
+		    reply(550, "Invalid MODE E restart Marker");
+		}
+	    else
+		{
 #           endif
-	    if ($2) {
-		fromname = 0;
-		restart_point = $4;
-		reply(350, "Restarting at %ld. %s", (long) restart_point,
-		      "Send STORE or RETRIEVE to initiate transfer.");
+		    fromname = 0;
+		    restart_point = $4;
+		    reply(350, "Restarting at %ld. %s", (long) restart_point,
+			  "Send STORE or RETRIEVE to initiate transfer.");
+		}
 	    }
 	}
     | REST check_login SP byte_range_list CRLF
