@@ -144,7 +144,7 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
             globus_libc_free(handle_attrs->ca_cert_dir);
         }
         if(handle_attrs->search_order != NULL)
-       {
+        {
             globus_libc_free(handle_attrs->search_order);
         }
 
@@ -198,6 +198,7 @@ globus_gsi_cred_handle_attrs_copy(
     result = globus_gsi_cred_handle_attrs_init(b);
     if(result != GLOBUS_SUCCESS)
     {
+        *b = NULL;
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
@@ -238,6 +239,12 @@ globus_gsi_cred_handle_attrs_copy(
 
  exit:
 
+    if(result != GLOBUS_SUCCESS &&
+       *b != NULL)
+    {
+        globus_gsi_cred_handle_attrs_destroy(*b);
+    }
+    
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }

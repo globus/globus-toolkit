@@ -1303,9 +1303,11 @@ globus_i_gsi_gss_cred_read_bio(
 
     *minor_status = GLOBUS_SUCCESS;
 
-    local_result = globus_gsi_cred_handle_init(& local_cred_handle, NULL);
+    local_result = globus_gsi_cred_handle_init(&local_cred_handle, NULL);
+
     if(local_result != GLOBUS_SUCCESS)
     {
+        local_cred_handle = NULL;
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
@@ -1314,6 +1316,7 @@ globus_i_gsi_gss_cred_read_bio(
     }
 
     local_result = globus_gsi_cred_read_proxy_bio(local_cred_handle, bp);
+
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1338,6 +1341,12 @@ globus_i_gsi_gss_cred_read_bio(
     }
 
  exit:
+
+    if(local_cred_handle != NULL)
+    {
+        globus_gsi_cred_handle_destroy(local_cred_handle);
+    }
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
@@ -1350,7 +1359,7 @@ globus_i_gsi_gss_cred_read(
     const X509_NAME *                   desired_subject) 
 {
     globus_result_t                     local_result = GLOBUS_SUCCESS;
-    globus_gsi_cred_handle_t            local_cred_handle = NULL;
+    globus_gsi_cred_handle_t            local_cred_handle;
     OM_uint32                           local_minor_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ =
@@ -1361,6 +1370,7 @@ globus_i_gsi_gss_cred_read(
     local_result = globus_gsi_cred_handle_init(&local_cred_handle, NULL);
     if(local_result != GLOBUS_SUCCESS)
     {
+        local_cred_handle = NULL;
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
@@ -1394,7 +1404,7 @@ globus_i_gsi_gss_cred_read(
 
  exit:
 
-    if(local_cred_handle)
+    if(local_cred_handle != NULL)
     {
         globus_gsi_cred_handle_destroy(local_cred_handle);
     }
@@ -1444,6 +1454,7 @@ globus_i_gsi_gss_cred_set(
     local_result = globus_gsi_cred_handle_init(&local_cred_handle, NULL);
     if(local_result != GLOBUS_SUCCESS)
     {
+        local_cred_handle = NULL;
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
@@ -1458,7 +1469,7 @@ globus_i_gsi_gss_cred_set(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
-        goto error_exit;
+        goto exit;
     }
     
     local_result = globus_gsi_cred_set_key(local_cred_handle, upkey);
@@ -1468,7 +1479,7 @@ globus_i_gsi_gss_cred_set(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
-        goto error_exit;
+        goto exit;
     }
 
     local_result = globus_gsi_cred_set_cert_chain(local_cred_handle, 
@@ -1479,7 +1490,7 @@ globus_i_gsi_gss_cred_set(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
-        goto error_exit;
+        goto exit;
     }
 
     major_status = globus_i_gsi_gss_create_cred(&local_minor_status,
@@ -1492,16 +1503,16 @@ globus_i_gsi_gss_cred_set(
             minor_status, local_minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL);
         major_status = GSS_S_FAILURE;
-        goto error_exit;
+        goto exit;
     }
 
-    goto exit;
-
- error_exit:
-    
-    globus_gsi_cred_handle_destroy(local_cred_handle);
-
  exit:
+
+    if(local_cred_handle != NULL)
+    {
+        globus_gsi_cred_handle_destroy(local_cred_handle);
+    }
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

@@ -91,6 +91,7 @@ globus_result_t globus_gsi_cred_handle_init(
 
     if(result != GLOBUS_SUCCESS)
     {
+        free(*handle);
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED);
@@ -98,13 +99,6 @@ globus_result_t globus_gsi_cred_handle_init(
     }
 
     (*handle)->goodtill = 0;
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
-        goto error_exit;
-    }
 
     result = GLOBUS_SUCCESS;
 
