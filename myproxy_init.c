@@ -136,7 +136,11 @@ main(int argc, char *argv[])
     /* the lifetime of the proxy */
     cred_lifetime                   = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
  
-    socket_attrs->psport = MYPROXY_SERVER_PORT;
+    if (getenv("MYPROXY_SERVER_PORT")) {
+	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
+    } else {
+	socket_attrs->psport = MYPROXY_SERVER_PORT;
+    }
 
     /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request,

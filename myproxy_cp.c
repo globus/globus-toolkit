@@ -94,7 +94,12 @@ main(int argc, char *argv[])
     }
 
     client_request->proxy_lifetime = 0;
-    socket_attrs->psport = MYPROXY_SERVER_PORT;
+
+    if (getenv("MYPROXY_SERVER_PORT")) {
+	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
+    } else {
+	socket_attrs->psport = MYPROXY_SERVER_PORT;
+    }
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);

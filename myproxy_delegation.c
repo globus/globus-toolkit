@@ -25,7 +25,11 @@ int myproxy_set_delegation_defaults(
 
     client_request->proxy_lifetime = 60*60*MYPROXY_DEFAULT_DELEG_HOURS;
 
-    socket_attrs->psport = MYPROXY_SERVER_PORT;
+    if (getenv("MYPROXY_SERVER_PORT")) {
+	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
+    } else {
+	socket_attrs->psport = MYPROXY_SERVER_PORT;
+    }
 
     return 0;
 }
