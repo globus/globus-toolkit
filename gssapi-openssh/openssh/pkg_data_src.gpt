@@ -19,7 +19,7 @@
 
     <With_Flavors build="yes" />
 
-    <Version_Label>GSI-OpenSSH 2.2 / OpenSSH 3.6.1p1</Version_Label>
+    <Version_Label>GSI-OpenSSH 2.3 / OpenSSH 3.6.1p1</Version_Label>
 
     <Source_Dependencies Type="compile">
       <Dependency Name="globus_openssl">

@@ -156,7 +156,7 @@ runKeyGen($keyhash->{gen});
 copyKeyFiles($keyhash->{copy});
 copyConfigFiles();
 
-my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
+my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh");
 
 $metadata->finish();
 
@@ -1151,6 +1151,10 @@ sub query_boolean
     {
         # this is debatable.  all whitespace means 'default'
 
+        $bar = $default;
+    }
+    elsif ($bar eq '')
+    {
         $bar = $default;
     }
     elsif ($bar ne $default)
