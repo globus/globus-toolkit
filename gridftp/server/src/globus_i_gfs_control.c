@@ -862,6 +862,8 @@ globus_l_gfs_request_send(
     send_info->partial_offset = op_attr->partial_offset;
     send_info->partial_length = op_attr->partial_length;
     send_info->range_list = range_list;
+    send_info->stripe_count = 1;
+    send_info->node_count = 1;
     send_info->data_handle_id = (int) data_handle;
     instance->op = op;
     
@@ -952,6 +954,8 @@ globus_l_gfs_request_recv(
     recv_info->partial_offset = op_attr->partial_offset;
     recv_info->partial_length = op_attr->partial_length;
     recv_info->range_list = range_list;
+    recv_info->stripe_count = 1;
+    recv_info->node_count = 1;
     recv_info->data_handle_id = (int) data_handle;
     instance->op = op;
 
@@ -1017,6 +1021,8 @@ globus_l_gfs_request_list(
     list_info->pathname = fullpath;
     list_info->list_type = globus_libc_strdup(list_type);
     list_info->data_handle_id = (int) data_handle;
+    list_info->stripe_count = 1;
+    list_info->node_count = 1;
     instance->op = op;
     
     result = globus_i_gfs_data_request_list(
