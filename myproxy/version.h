@@ -1,0 +1,2 @@
+#define MYPROXY_VERSION "0.1"
+#define MYPROXY_VERSION_DATE "03 Apr 2000" 
