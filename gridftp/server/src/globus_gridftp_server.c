@@ -79,6 +79,7 @@ globus_l_gfs_new_server_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
+        globus_i_gfs_log_result(NULL, result);
         goto error_start;
     }
     
@@ -90,7 +91,7 @@ error_start:
     
 error_peername:
 error_cb:
-    globus_l_gfs_server_closed();
+    globus_i_gfs_server_closed();
     if(!globus_l_gfs_xio_server)
     {
         /* I am the only one expected to run, die */
@@ -127,7 +128,7 @@ globus_l_gfs_open_new_server(
     return GLOBUS_SUCCESS;
 
 error_open:
-    globus_l_gfs_server_closed();
+    globus_i_gfs_server_closed();
     return result;
 }
 
@@ -328,7 +329,7 @@ main(
     
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
-    /* globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE); */
+    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
 /* XXX */
 globus_l_gfs_file_activate();
     

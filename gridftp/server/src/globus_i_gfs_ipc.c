@@ -79,6 +79,60 @@ error_alloc:
 
 static
 void
+globus_l_gfs_data_command_cb(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+}
+
+globus_result_t
+globus_i_gfs_ipc_command_request(
+    globus_i_gfs_server_instance_t *    instance,
+    char **                             cmd_array,
+    int                                 argc,
+    globus_i_gfs_ipc_command_cb_t       callback,
+    void *                              user_arg)
+{
+    globus_l_gfs_ipc_bounce_t *         bounce_info;
+    globus_result_t                     result;
+    GlobusGFSName(globus_i_gfs_ipc_command_request);
+    
+    bounce_info = (globus_l_gfs_ipc_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_ipc_bounce_t));
+    if(!bounce_info)
+    {
+        result = GlobusGFSErrorMemory("bounce_info");
+        goto error_alloc;
+    }
+    
+    bounce_info->callback1 = callback;
+    bounce_info->user_arg = user_arg;
+    
+    result = globus_i_gfs_data_command_request(
+        instance,
+        cmd_array,
+        argc,
+        globus_l_gfs_data_command_cb,
+        bounce_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_i_gfs_data_command_request", result);
+        goto error_data;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_data:
+    globus_free(bounce_info);
+    
+error_alloc:
+    return result;
+}
+
+static
+void
 globus_l_gfs_data_transfer_cb(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,

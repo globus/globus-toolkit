@@ -259,6 +259,48 @@ error_alloc:
         __LINE__);
 }
 
+globus_result_t
+globus_i_gfs_data_command_request(
+    globus_i_gfs_server_instance_t *    instance,
+    char **                             cmd_array,
+    int                                 argc,
+    globus_i_gfs_data_resource_cb_t     callback,
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+    globus_result_t                     result;
+    GlobusGFSName(globus_i_gfs_data_command_request);
+    
+    result = globus_l_gfs_data_operation_init(&op, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_l_gfs_data_operation_init", result);
+        goto error_op;
+    }
+    
+    op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    op->resource_callback = callback;
+    op->user_arg = user_arg;
+        
+    globus_mutex_lock(&op->lock);
+    {
+        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
+        {
+            op->state = GLOBUS_L_GFS_DATA_PENDING;
+        }
+    }
+    globus_mutex_unlock(&op->lock);
+    
+    return GLOBUS_SUCCESS;
+
+error_hook:
+    globus_l_gfs_data_operation_destroy(op);
+    
+error_op:
+    return result;
+}
+
 static
 globus_result_t
 globus_l_gfs_data_handle_init(

@@ -111,6 +111,12 @@ globus_gridftp_server_get_partial_offset(
     globus_off_t *                      length);
 
 void
+globus_gridftp_server_get_restart_offset(
+    globus_gridftp_server_operation_t   op,
+    globus_off_t *                      offset,
+    globus_off_t *                      length);
+
+void
 globus_i_gfs_server_closed();
    
 typedef enum

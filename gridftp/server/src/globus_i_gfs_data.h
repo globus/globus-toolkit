@@ -4,6 +4,12 @@
 extern globus_i_gfs_data_attr_t         globus_i_gfs_data_attr_defaults;
 
 typedef void
+(*globus_i_gfs_data_command_cb_t)(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+typedef void
 (*globus_i_gfs_data_resource_cb_t)(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,

@@ -99,9 +99,9 @@ static
 void
 globus_l_gfs_auth_request(
     globus_gridftp_server_control_op_t  op,
+    const char *                        subject,
     const char *                        user_name,
-    const char *                        pw,
-    const char *                        subject)
+    const char *                        pw)
 {
 
     globus_result_t                     result; 
@@ -175,6 +175,53 @@ globus_l_gfs_resource_request(
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_i_gfs_ipc_resource_request", result);
+        goto error_ipc;
+    }
+    
+    return;
+
+error_ipc:     
+    globus_gridftp_server_control_finished_resource(
+        op, result, GLOBUS_NULL, 0);
+}
+
+static
+void
+globus_l_gfs_ipc_command_cb(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_gridftp_server_control_op_t  op;
+    
+    op = (globus_gridftp_server_control_op_t) user_arg;
+    
+    globus_gsc_959_finished_command(op, "200 OK\r\n");    
+}
+
+static
+void
+globus_l_gfs_command_request(
+    globus_gsc_959_op_t                 op,
+    const char *                        full_command,
+    char **                             cmd_array,
+    int                                 argc,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_i_gfs_server_instance_t *    instance;
+    GlobusGFSName(globus_l_gfs_command_request);
+    
+    result = globus_i_gfs_ipc_command_request(
+        instance,
+        cmd_array,
+        argc,
+        globus_l_gfs_ipc_command_cb,
+        op);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_i_gfs_ipc_command_request", result);
         goto error_ipc;
     }
     
@@ -599,14 +646,14 @@ globus_i_gfs_control_start(
     {
         goto error_attr;
     }
-/*MMM    
-    result = globus_gridftp_server_control_attr_set_done(
-        attr, globus_l_gfs_done_cb);
+/* XXX check config */
+    result = globus_gridftp_server_control_attr_set_security(
+        attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
-*/    
+
     result = globus_gridftp_server_control_attr_set_resource(
         attr, globus_l_gfs_resource_request);
     if(result != GLOBUS_SUCCESS)
@@ -672,8 +719,26 @@ globus_i_gfs_control_start(
         goto error_init;
     }
 
+/*    result = globus_gsc_959_command_add(
+        instance->u.control.server,
+        "MKD",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: MKD <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_command_add;
+    }
+*/
     result = globus_gridftp_server_control_start(
-        instance->u.control.server, attr, handle, globus_l_gfs_done_cb, instance);
+        instance->u.control.server, 
+        attr, 
+        system_handle, 
+        globus_l_gfs_done_cb, 
+        instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_start;
@@ -684,8 +749,8 @@ globus_i_gfs_control_start(
     return GLOBUS_SUCCESS;
 
 error_start:
+error_command_add:
     globus_gridftp_server_control_destroy(instance->u.control.server);
-    
 error_init:
 error_attr_setup:
     globus_gridftp_server_control_attr_destroy(attr);
@@ -738,4 +803,3 @@ globus_gsc_959_finished_command(
     char *                                  reply_msg);
     
 */    
-

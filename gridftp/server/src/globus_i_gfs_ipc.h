@@ -2,6 +2,12 @@
 #define GLOBUS_I_GFS_IPC_H
 
 typedef void
+(*globus_i_gfs_ipc_command_cb_t)(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+typedef void
 (*globus_i_gfs_ipc_resource_cb_t)(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
