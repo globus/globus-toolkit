@@ -529,7 +529,7 @@ globus_module_get_version(
  *
  * @param verbose
  *        If GLOBUS_TRUE, then all available version info is printed 
- *        (ex: globus_module: 1.1.1013708618-5)
+ *        (ex: globus_module: 1.1 (1013708618-5))
  *        else, only the major.minor is printed (ex: globus_module: 1.1)
  *
  * @return
@@ -560,7 +560,7 @@ globus_module_print_version(
  *
  * @param verbose
  *        If GLOBUS_TRUE, then all available version info is printed 
- *        (ex: globus_module: 1.1.1013708618-5)
+ *        (ex: globus_module: 1.1 (1013708618-5))
  *        else, only the major.minor is printed (ex: globus_module: 1.1)
  *
  * @return
@@ -632,7 +632,7 @@ globus_module_print_activated_versions(
  *
  * @param verbose
  *        If GLOBUS_TRUE, then all available version info is printed 
- *        (ex: globus_module: 1.1.1013708618-5)
+ *        (ex: globus_module: 1.1 (1013708618-5))
  *        else, only the major.minor is printed (ex: globus_module: 1.1)
  *
  * @return
@@ -657,7 +657,7 @@ globus_version_print(
         {
             globus_libc_fprintf(
                 stream, 
-                "%d.%d.%lu-%d\n", 
+                "%d.%d (%lu-%d)\n", 
                 version->major,
                 version->minor,
                 version->timestamp,
