@@ -106,7 +106,7 @@ done
 #eval $CAT_TARGETS  | ${GLOBUS_SH_EGREP-egrep} '(fork|poe)' | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
 eval $CAT_TARGETS  | ${GLOBUS_SH_SED-sed} '/fork/ p;/poe/ p; d' | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
 
-clean_one "${TARGET}
+clean_one "${TARGET}"
 
 done
 
