@@ -118,9 +118,25 @@ foreach(@todo_rsls)
 
 if(@ARGV)
 {
-    plan tests => scalar(@ARGV);
+    my @doit;
 
-    foreach (@ARGV)
+    foreach(@ARGV)
+    {
+	if(/^(\d+)-(\d+)$/)
+	{
+	    foreach($1 .. $2)
+	    {
+	       push(@doit, $_);
+	    }
+	}
+	elsif(/^(\d+)$/)
+	{
+	    push(@doit, $1);
+	}
+    }
+    plan tests => scalar(@doit);
+
+    foreach (@doit)
     {
 	eval "&$tests[$_-1]";
     }

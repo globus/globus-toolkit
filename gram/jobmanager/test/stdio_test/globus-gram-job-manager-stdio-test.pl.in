@@ -97,13 +97,29 @@ foreach(@test_cases)
 	push(@todo, scalar(@tests));
     }
 }
-
 if(@ARGV)
 {
-    plan tests => scalar(@ARGV);
+    my @doit;
+
     foreach(@ARGV)
     {
-	eval "&$tests[$_-1]";
+        if(/^(\d+)-(\d+)$/)
+        {
+            foreach($1 .. $2)
+            {
+               push(@doit, $_);
+            }
+        }
+        elsif(/^(\d+)$/)
+        {
+            push(@doit, $1);
+        }
+    }
+    plan tests => scalar(@doit);
+
+    foreach (@doit)
+    {
+        eval "&$tests[$_-1]";
     }
 }
 else
