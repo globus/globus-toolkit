@@ -1,3 +1,4 @@
+#if defined(USE_GLOBUS_DATA_CODE)
 #include  <globus_common.h>
 #include <setjmp.h>
 #include "config.h"
@@ -5,7 +6,6 @@
 #include "../support/ftp.h"
 #include <syslog.h>
 
-#if defined(USE_GLOBUS_DATA_CODE)
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;

@@ -1227,8 +1227,8 @@ rcmd: RNFR check_login SP pathname CRLF
 		    reply(550, "Invalid MODE E restart Marker");
 		}
 	    else
-		{
 #           endif
+		{
 		    fromname = 0;
 		    restart_point = $4;
 		    reply(350, "Restarting at %ld. %s", (long) restart_point,
@@ -1237,7 +1237,8 @@ rcmd: RNFR check_login SP pathname CRLF
 	    }
 	}
     | REST check_login SP byte_range_list CRLF
-        =       {
+        =       
+	{
 #       if USE_GLOBUS_DATA_CODE
 	    if(log_commands)
 	        syslog(LOG_INFO, "REST [byte ranges]");
