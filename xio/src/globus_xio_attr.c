@@ -1,8 +1,24 @@
 #include "globus_common.h"
-#include "globus_xio.h"
+#include "globus_i_xio.h"
 
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE         16
 
+#define GlobusIXIOAttrDriverFuncCallStart(__attr, __res, __driver, __driver_attr)  \
+{                                                                   \
+    int                                         __ctr;              \
+    struct globus_l_xio_attr_ds_s *             __array;            \
+                                                                    \
+    res = GLOBUS_SUCCESS;                                           \
+    __array = __attr->ds_array;                                     \
+    for(__ctr = 0; __ctr < __attr->ndx && res == GLOBUS_SUCCESS;    \
+        __ctr++)                                                    \
+    {                                                               \
+        __driver = __array[ctr].driver;                             \
+        __driver_attr = __array[ctr].driver_attr;                   \
+
+#define GlobusIXIOAttrDriverFuncCallEnd()                           \
+    }                                                               \
+}
 /*******************************************************************
  *                     internal functions
  ******************************************************************/
@@ -26,32 +42,32 @@ globus_l_xio_attr_find_driver(
     return NULL;
 }
 
-/*******************************************************************
- *                         api functions
- ******************************************************************/
-/*
- *
- */
 globus_result_t
-globus_xio_attr_init(
-    globus_xio_attr_t *                         attr)
+globus_i_xio_attr_driver_call(
+    struct globus_l_xio_attr_s *                l_attr,
+    globus_xio_driver_t                         driver,
+    func)
 {
-    struct globus_l_xio_attr_s *                l_attr;
+    int                                         ctr;
+    struct globus_l_xio_attr_ds_s *             array;
+
+    array = l_attr->ds_array;
+    for(ctr = 0; ctr < l_attr->ndx; ctr++)
+    {
+        if(array[ctr].driver == driver)
+        {
+            return func();
+        }
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_i_xio_attr_init(
+    struct globus_l_xio_attr_s *                l_attr)
+{
     int                                         tmp_size;
-
-    if(attr == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_init");
-    }
-    
-    l_attr = (struct globus_l_xio_attr_s *)
-                globus_malloc(sizeof(struct globus_l_xio_attr_s));
-
-    /* check for memory alloc failure */
-    if(l_attr == NULL)
-    {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_init");
-    }
 
     /* intialize the attr structure */
     memset(l_attr, 0, sizeof(struct globus_l_xio_attr_s));
@@ -73,38 +89,13 @@ globus_xio_attr_init(
     return GLOBUS_SUCCESS;
 }
 
-/*
- *
- */
 globus_result_t
-globus_xio_attr_cntl(
-    globus_xio_attr_t                           attr,
+globus_i_xio_attr_cntl(
+    struct globus_l_xio_attr_s *                l_attr,
     globus_xio_driver_t                         driver,
     int                                         cmd,
-    ...)
+    va_list                                     ap)
 {
-    struct globus_l_xio_attr_s *                l_attr;
-    va_list                                     ap;
-    globus_result_t                             res;
-    void *                                      ds;
-
-    if(attr == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_cntl");
-    }
-
-    l_attr = (struct globus_l_xio_attr_s *) attr;
-
-#   ifdef HAVE_STDARG_H
-    {
-        va_start(ap, cmd);
-    }
-#   else
-    {
-        va_start(ap);
-    }
-#   endif
-
     if(driver != NULL)
     {
         ds = globus_l_xio_attr_find_driver(&l_attr->driver_hash, driver);
@@ -144,27 +135,16 @@ globus_xio_attr_cntl(
     {
         /* set non driver specific attributes.  none defined yet */
     }
-    va_end(ap);
 
     return GLOBUS_SUCCESS;
 }
 
-/*
- *
- */
 globus_result_t
-globus_xio_attr_destroy(
-    globus_xio_attr_t                           attr)
+globus_i_xio_attr_destroy(
+    struct globus_l_xio_attr_s *                l_attr)
 {
     struct globus_l_xio_attr_ds_s *             array;
-    struct globus_l_xio_attr_s *                l_attr;
 
-    if(attr == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_destroy");
-    }
-    
-    l_attr = (struct globus_l_xio_attr_s *) attr;
     array = l_attr->ds_array;
     for(ctr = 0; ctr < l_attr->ndx; ctr++)
     {
@@ -185,36 +165,15 @@ globus_xio_attr_destroy(
 }
 
 globus_result_t
-globus_xio_attr_copy(
-    globus_xio_attr_t *                         dst,
-    globus_xio_attr_t                           src)
+globus_i_xio_attr_copy(
+    struct globus_l_xio_attr_s *                l_attr_dst,
+    struct globus_l_xio_attr_s *                l_attr_src)
 {
-    struct globus_l_xio_attr_s *                l_attr_src;
-    struct globus_l_xio_attr_s *                l_attr_dst;
     int                                         tmp_size;
     int                                         ctr;
+    int                                         ctr2;
     globus_result_t                             res;
 
-    if(dst == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
-    }
-
-    if(src == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
-    }
-
-    l_attr_dst = (struct globus_l_xio_attr_s *)
-                globus_malloc(sizeof(struct globus_l_xio_attr_s));
-
-    /* check for memory alloc failure */
-    if(l_attr_dst == NULL)
-    {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
-    }
-
-    l_attr_src = (struct globus_l_xio_attr_s *) src;
     /* intialize the attr structure */
     memset(l_attr_dst, 0, sizeof(struct globus_l_xio_attr_s));
 
@@ -252,4 +211,135 @@ globus_xio_attr_copy(
     }
 
     return GLOBUS_SUCCESS;
+}
+/*******************************************************************
+ *                         api functions
+ *                         -------------
+ *
+ *  In these we just check parameters, allocate memory and call the
+ *  internal functions.
+ ******************************************************************/
+/*
+ *
+ */
+globus_result_t
+globus_xio_attr_init(
+    globus_xio_attr_t *                         attr)
+{
+    struct globus_l_xio_attr_s *                l_attr;
+
+    if(attr == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_init");
+    }
+    
+    l_attr = (struct globus_l_xio_attr_s *)
+                globus_malloc(sizeof(struct globus_l_xio_attr_s));
+
+    /* check for memory alloc failure */
+    if(l_attr == NULL)
+    {
+        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_init");
+    }
+
+    res = globus_i_xio_attr_init(l_attr);
+
+    *attr = l_attr;
+
+    return res;
+}
+
+/*
+ *
+ */
+globus_result_t
+globus_xio_attr_cntl(
+    globus_xio_attr_t                           attr,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...)
+{
+    struct globus_l_xio_attr_s *                l_attr;
+    va_list                                     ap;
+    globus_result_t                             res;
+    void *                                      ds;
+
+    if(attr == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_cntl");
+    }
+
+    l_attr = (struct globus_l_xio_attr_s *) attr;
+
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    res = globus_i_xio_attr_cntl(
+            l_attr,
+            driver,
+            cmd,
+            ap);
+
+    va_end(ap);
+
+    return res;
+}
+
+/*
+ *
+ */
+globus_result_t
+globus_xio_attr_destroy(
+    globus_xio_attr_t                           attr)
+{
+    struct globus_l_xio_attr_s *                l_attr;
+
+    if(attr == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_destroy");
+    }
+    
+    l_attr = (struct globus_l_xio_attr_s *) attr;
+
+    return globus_i_xio_attr_destroy(l_attr);
+}
+
+globus_result_t
+globus_xio_attr_copy(
+    globus_xio_attr_t *                         dst,
+    globus_xio_attr_t                           src)
+{
+    struct globus_l_xio_attr_s *                l_attr_src;
+    struct globus_l_xio_attr_s *                l_attr_dst;
+    globus_result_t                             res;
+
+    if(dst == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
+    }
+
+    if(src == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
+    }
+
+    l_attr_dst = (struct globus_l_xio_attr_s *)
+                globus_malloc(sizeof(struct globus_l_xio_attr_s));
+
+    /* check for memory alloc failure */
+    if(l_attr_dst == NULL)
+    {
+        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
+    }
+
+    l_attr_src = (struct globus_l_xio_attr_s *) src;
+
+    return globus_i_xio_attr_copy(l_attr_dst, l_attr_src);
 }

@@ -1,5 +1,5 @@
 #include "globus_common.h"
-#include "globus_xio.h"
+#include "globus_i_xio.h"
 
 /*******************************************************************
  *                         api functions
