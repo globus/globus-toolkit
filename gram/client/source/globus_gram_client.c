@@ -862,6 +862,17 @@ globus_l_gram_client_to_jobmanager(
 		 monitor);
 
     globus_mutex_unlock(&monitor->mutex);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+        if(rc == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+	    monitor->errorcode =
+		GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+	}
+    }
+
     if(query)
     {
 	globus_libc_free(query);
