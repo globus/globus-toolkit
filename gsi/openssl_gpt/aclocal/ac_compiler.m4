@@ -151,6 +151,10 @@ AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
                 lac_CFLAGS="$lac_CFLAGS -std1 -tune host -fast -readonly_strings"
             fi
         ;;
+        *-darwin*)
+	    # assume gcc
+       	    lac_CFLAGS="$lac_CFLAGS -O3"
+        ;;
     esac
 ])
 
@@ -212,6 +216,9 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
         ;;
         *-ibm-aix*)
             lac_CFLAGS="$lac_CFLAGS -DAIX -DB_ENDIAN"
+        ;;
+        *-darwin*)
+            lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DB_ENDIAN -fno-common"
         ;;
     esac
 ])
