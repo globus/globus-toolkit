@@ -60,11 +60,17 @@ status_file_gen(char * job_status);
 static void 
 tree_free(gram_specification_t * sp);
 
+static char *
+genfilename(char * prefix, char * path, char * sufix);
+
+static void
+notice(char * s);
+
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
 char * grami_jm_libexecdir = GLOBUS_LIBEXECDIR;
-char * grami_jm_status_dir = GLOBUS_STATUS_DIR;
+int  gram_print_debug = 0;
 
 /******************************************************************************
                        Define module specific variables
@@ -75,6 +81,14 @@ static nexus_handler_t handlers[] =
     {NEXUS_HANDLER_TYPE_NON_THREADED, graml_start_time_handler},
 };
 
+static char     tmpbuf[1024];
+#define notice2(a,b) {sprintf(tmpbuf, a,b); notice(tmpbuf);}
+#define notice3(a,b,c) {sprintf(tmpbuf, a,b,c); notice(tmpbuf);}
+#define notice4(a,b,c,d) {sprintf(tmpbuf, a,b,c,d); notice(tmpbuf);}
+
+static char * grami_jm_home_dir = NULL;
+static char * grami_jm_arg_libexecdir = NULL;
+static char * grami_jm_status_dir = NULL;
 static gram_job_manager_monitor_t  job_manager_monitor;
 static nexus_endpointattr_t        EpAttr;
 static nexus_endpoint_t            GlobalEndpoint;
@@ -83,7 +97,7 @@ static char                        job_contact[GRAM_MAX_MSG_SIZE];
 static char                        my_globusid[GRAM_MAX_MSG_SIZE];
 static int                         my_count;
 
-static FILE *                      log_fp;
+static FILE *                      gram_log_fp;
 
 /*
  * NexusExit() (required of all Nexus programs)
@@ -139,7 +153,7 @@ main(int argc,
     int                    message_handled;
     char                   description[GRAM_MAX_MSG_SIZE];
     char                   test_dat_file[GRAM_MAX_MSG_SIZE];
-    char                   logfile[GRAM_MAX_MSG_SIZE];
+    char                   gram_logfile[GRAM_MAX_MSG_SIZE];
     char *                 tmp_ptr;
     char *                 my_host;
     char *                 globusid_ptr;
@@ -153,28 +167,6 @@ main(int argc,
     nexus_startpoint_t     reply_sp;
     gram_specification_t * description_tree;
 
-    /*
-     * Open the logfile just for testing!
-     */
-    sprintf(logfile, "gram_job_mgr_%lu.log",
-            (unsigned long) getpid());
-
-    if ((log_fp = fopen(logfile, "a")) == NULL)
-    {
-        sprintf(logfile, "/tmp/gram_job_mgr_%lu.log",
-               (unsigned long) getpid());
-
-        if ((log_fp = fopen(logfile, "a")) == NULL)
-        {
-            fprintf(stderr, "Cannot open logfile.\n");
-            exit(1);
-        }
-    }
-
-    setbuf(log_fp, NULL);
-
-    fprintf(log_fp,"-------------------------------------------------\n");
-    fprintf(log_fp,"entering gram_job_manager\n");
 
     rc = nexus_init(&argc,
 		    &argv,
@@ -201,20 +193,70 @@ main(int argc,
             strcpy(test_dat_file, argv[i+1]);
             i++;
         }
+        else if (strcmp(argv[i], "-d") == 0)
+        {
+            gram_print_debug = 1;
+        }
+        else if ((strcmp(argv[i], "-h") == 0)
+                 && (i + 1 < argc))
+        {
+            grami_jm_home_dir = argv[i+1];
+            i++;
+        }
         else if ((strcmp(argv[i], "-e") == 0)
                  && (i + 1 < argc))
         {
-            grami_jm_libexecdir = argv[i+1];
+            grami_jm_arg_libexecdir = argv[i+1];
             i++;
         }
         else
         {
-            fprintf(stderr, "Usage: %s [-t test_dat_file] [-e lib exe dir]\n", argv[0]);
+            fprintf(stderr, "Usage: %s [-h deploy home dir ] [-e lib exe dir] [-d debug print] [-t test dat file]\n", argv[0]);
             exit(1);
         }
     }
 
-    fprintf(log_fp, "grami_jm_libexecdir = %s\n", grami_jm_libexecdir);
+    if (gram_print_debug)
+    {
+        /*
+         * Open the gram logfile just for testing!
+         */
+        sprintf(gram_logfile, "gram_job_mgr_%lu.log",
+                (unsigned long) getpid());
+
+        if ((gram_log_fp = fopen(gram_logfile, "a")) == NULL)
+        {
+            sprintf(gram_logfile, "/tmp/gram_job_mgr_%lu.log",
+                   (unsigned long) getpid());
+
+            if ((gram_log_fp = fopen(gram_logfile, "a")) == NULL)
+            {
+                fprintf(stderr, "Cannot open gram logfile.\n");
+                exit(1);
+            }
+        }
+
+        setbuf(gram_log_fp, NULL);
+    }
+
+    notice("-------------------------------------------------");
+    notice("entering gram_job_manager");
+
+    if (grami_jm_home_dir)
+    {
+        grami_jm_status_dir = genfilename(grami_jm_home_dir, "tmp", NULL);
+
+        if (grami_jm_arg_libexecdir)
+        {
+            grami_jm_libexecdir = genfilename(grami_jm_home_dir, grami_jm_arg_libexecdir, NULL);
+        }
+        else
+        {
+            grami_jm_libexecdir = genfilename(grami_jm_home_dir, "libexec", NULL);
+        }
+    }
+
+    notice2("grami_jm_libexecdir = %s", grami_jm_libexecdir);
 
     if ((globusid_ptr = (char*) getenv("GLOBUSID")) == NULL)
     {
@@ -233,7 +275,7 @@ main(int argc,
     {
         if ((args_fp = fopen(test_dat_file, "r")) == NULL)
         {
-            printf("Cannot open test file.\n");
+            notice2("Cannot open test file %s.", test_dat_file);
             exit(1);
         }
     }
@@ -247,7 +289,7 @@ main(int argc,
      */
     if (fread(buffer, 1, 1, args_fp) <= 0)
     {
-        fprintf(stderr, "fread() failed.\n");
+        notice("fread() failed.");
     }
     format = (int)buffer[0];
 
@@ -257,8 +299,7 @@ main(int argc,
      */
     if (fread(buffer, 1, nexus_dc_sizeof_remote_int(1, format), args_fp) <= 0)
     {
-        fprintf(log_fp, "fread() failed.\n");
-        fprintf(stderr, "fread() failed.\n");
+        notice("fread() failed.");
     }
     ptr = buffer;
     nexus_dc_get_int(&ptr, &count, 1, format);
@@ -269,7 +310,7 @@ main(int argc,
     if (fread(buffer, 1, count - nexus_dc_sizeof_remote_int(1, format) + 1,
         args_fp) <= 0)
     {
-        fprintf(stderr, "fread() failed.\n");
+        notice("fread() failed.");
     }
 
     ptr = buffer;
@@ -282,9 +323,9 @@ main(int argc,
     *(callback_contact+count)= '\0';
     nexus_user_get_startpoint(&ptr, &reply_sp, 1, format);
 
-    fprintf(log_fp,"description = %s\n", description);
-    fprintf(log_fp,"job state mask = %i\n",job_state_mask);
-    fprintf(log_fp,"callback contact = %s\n", callback_contact);
+    notice2("description = %s", description);
+    notice2("job state mask = %i",job_state_mask);
+    notice2("callback contact = %s", callback_contact);
 
     /* Initialize termination monitor */
     nexus_mutex_init(&job_manager_monitor.mutex, (nexus_mutexattr_t *) NULL);
@@ -343,7 +384,7 @@ main(int argc,
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
 */
-    fprintf(log_fp,"job status = %d\n", job_status);
+    notice2("job status = %d", job_status);
 
     if (job_status == 0)
     {
@@ -370,7 +411,7 @@ main(int argc,
     nexus_mutex_destroy(&job_manager_monitor.mutex);
     nexus_cond_destroy(&job_manager_monitor.cond);
 
-    fprintf(log_fp,"exiting gram_job_request \n");
+    notice("exiting gram_job_request");
 
     nexus_shutdown();
 
@@ -389,7 +430,7 @@ attach_requested(void * arg,
                  char * url,
                  nexus_startpoint_t * sp)
 {
-    fprintf(log_fp, "in attach_requested callback\n");
+    notice("in attach_requested callback");
 
     nexus_startpoint_bind(sp, &GlobalEndpoint);
 
@@ -412,28 +453,31 @@ grami_jm_callback(int state, int errorcode)
     nexus_startpoint_t sp;
     nexus_buffer_t     reply_buffer;
     
-    fprintf(log_fp, "in grami_jm_callback\n");
+    notice("in grami_jm_callback");
 
-    if (state == GRAM_JOB_STATE_ACTIVE)
+    if (grami_jm_home_dir)
     {
-       status_file_gen("INIT");
-       status_file_gen("ACTIVE");
-    }
-    else if (state == GRAM_JOB_STATE_PENDING)
-    {
-       status_file_gen("PENDING");
-    }
-    else if (state == GRAM_JOB_STATE_DONE)
-    {
-       status_file_gen("DONE");
-    }
-    else if (state == GRAM_JOB_STATE_FAILED)
-    {
-       status_file_gen("FAILED");
-    }
-    else
-    {
-       status_file_gen("UNKNOWN");
+        if (state == GRAM_JOB_STATE_ACTIVE)
+        {
+           status_file_gen("INIT");
+           status_file_gen("ACTIVE");
+        }
+        else if (state == GRAM_JOB_STATE_PENDING)
+        {
+           status_file_gen("PENDING");
+        }
+        else if (state == GRAM_JOB_STATE_DONE)
+        {
+           status_file_gen("DONE");
+        }
+        else if (state == GRAM_JOB_STATE_FAILED)
+        {
+           status_file_gen("FAILED");
+        }
+        else
+        {
+           status_file_gen("UNKNOWN");
+        }
     }
  
     rc = nexus_attach(callback_contact, &sp);
@@ -476,7 +520,7 @@ status_file_gen(char * my_job_status)
     FILE *             status_fp;
     struct stat        statbuf;
 
-    fprintf(log_fp, "in status_file_gen\n");
+    notice("in status_file_gen");
 
     sprintf(status_file, "%s/%s_%lu",
             grami_jm_status_dir,
@@ -487,9 +531,9 @@ status_file_gen(char * my_job_status)
     {
         if (remove(status_file) != 0)
         {
-            fprintf(log_fp, "\n--------------------------\n");
-            fprintf(log_fp, "Error: Cannot remove status file --> %s\n", status_file);
-            fprintf(log_fp, "--------------------------\n\n");
+            notice("\n--------------------------");
+            notice2("Error: Cannot remove status file --> %s", status_file);
+            notice("--------------------------\n");
             return(1);
         }
     }
@@ -503,11 +547,11 @@ status_file_gen(char * my_job_status)
 
         if ((status_fp = fopen(status_file, "a")) == NULL)
         {
-            fprintf(log_fp, "\n--------------------------\n");
-            fprintf(log_fp, "Cannot open status file --> %s\n", status_file);
-            fprintf(log_fp, "job contact = %s\n", job_contact);
-            fprintf(log_fp, "MDS will NOT be updated!!!\n");
-            fprintf(log_fp, "--------------------------\n\n");
+            notice("\n--------------------------");
+            notice2("Cannot open status file --> %s", status_file);
+            notice2("job contact = %s", job_contact);
+            notice("MDS will NOT be updated!!!");
+            notice("--------------------------\n");
             return(1);
         }
         else
@@ -667,7 +711,7 @@ graml_cancel_handler(nexus_endpoint_t * endpoint,
                      nexus_buffer_t * buffer,
                      nexus_bool_t is_non_threaded_handler)
 {
-    fprintf(log_fp, "in graml_cancel_handler\n");
+    notice("in graml_cancel_handler");
 
     /* clean-up */
     nexus_buffer_destroy(buffer);
@@ -695,7 +739,7 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
     gram_time_t              estimate;
     gram_time_t              interval_size;
 
-    fprintf(log_fp, "in graml_start_time_handler\n");
+    notice("in graml_start_time_handler");
 
     nexus_get_float(buffer, &confidence, 1);
     nexus_get_startpoint(buffer, &reply_sp, 1);
@@ -703,8 +747,8 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
     /* clean-up */
     nexus_buffer_destroy(buffer);
 
-    fprintf(log_fp, "confidence passed = %f\n", confidence);
-    fprintf(log_fp, "callback contact = %s\n", callback_contact);
+    notice2("confidence passed = %f", confidence);
+    notice2("callback contact = %s", callback_contact);
 
     grami_jm_job_start_time(callback_contact,
                             confidence,
@@ -761,3 +805,59 @@ tree_free(gram_specification_t * sp)
     } /* endif */
 
 } /* end tree_free() */
+
+/******************************************************************************
+Function:       genfilename()
+Description:    generate an absolute file name given a starting prefix,
+                                a relative or absolute path, and a sufix
+                                Only use prefix if path is relative.
+Parameters:
+Returns:                a pointer to a string which could be freeded.
+******************************************************************************/
+ 
+static char *
+genfilename(char * prefixp, char * pathp, char * sufixp)
+{
+        char * newfilename;
+        int    prefixl, pathl, sufixl;
+        char * prefix,  * path, * sufix;
+ 
+        prefix = (prefixp) ? prefixp : "";
+        path   = (pathp) ? pathp : "";
+        sufix  = (sufixp) ? sufixp : "";
+ 
+        prefixl = strlen(prefix);
+        pathl   =  strlen(path);
+        sufixl  =  strlen(sufix);
+
+        newfilename = (char *) calloc(1, (prefixl + pathl + sufixl + 3));
+        if (newfilename)
+        {
+          if (*path != '/')
+          {
+            strcat(newfilename, prefix);
+            if ((prefixl != 0) && (prefix[prefixl-1] != '/'))
+              strcat(newfilename, "/");
+          }
+          strcat(newfilename, path);
+          if ((pathl != 0) && (path[pathl-1] != '/') && sufix[0] != '/')
+            strcat(newfilename, "/");
+          strcat(newfilename, sufix);
+        }
+        return newfilename;
+}
+
+/******************************************************************************
+Function:       notice()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void
+notice(char * s)
+{
+    if (gram_print_debug)
+    {
+        fprintf(gram_log_fp, "Notice: %s\n", s);
+    }
+}
