@@ -4729,7 +4729,7 @@ globus_ftp_control_local_layout(
         }
 
         user_arg = GLOBUS_NULL;
-        sprintf(strmsg, "StripedLayout=Blocked;BlockSize=%ul;",
+        sprintf(strmsg, "StripedLayout=Blocked;BlockSize=%d;",
             layout->round_robin.block_size);
     }
     else if(layout->mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
@@ -7848,7 +7848,7 @@ globus_l_ftp_stream_write_callback(
         {
             /* faking memory allocation */
             char  tag_str[128];
-            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%ul",
+            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d",
                     dc_handle->type, nl_nbytes);
             globus_netlogger_write(
                 &dc_handle->nl_ftp_handle,
@@ -8049,7 +8049,7 @@ globus_l_ftp_stream_read_callback(
             if(dc_handle->nl_ftp_handle_set)
             {
                 char tag_str[128];
-                sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%ul",
+                sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d",
                         dc_handle->type, nl_nbytes);
                 globus_netlogger_write(
                     &dc_handle->nl_ftp_handle,
@@ -8867,7 +8867,7 @@ globus_l_ftp_eb_read_callback(
             if(dc_handle->nl_ftp_handle_set)
             {
                 char tag_str[128];
-                sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%ul",
+                sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d",
                          dc_handle->type, nl_bytes);
                 globus_netlogger_write(
                     &dc_handle->nl_ftp_handle,
@@ -9335,7 +9335,7 @@ globus_l_ftp_eb_write_callback(
         {
             /* faking memory allocation */
             char tag_str[128];
-            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%ul",
+            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d",
                     dc_handle->type, nl_bytes);
             globus_netlogger_write(
                 &dc_handle->nl_ftp_handle,
