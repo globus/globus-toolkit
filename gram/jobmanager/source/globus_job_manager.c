@@ -1375,15 +1375,13 @@ globus_l_gram_client_callback(int status, int failure_code)
         client_contact_node = (globus_l_gram_client_contact_t *)
              globus_list_first(tmp_list);
 
-  grami_fprintf( graml_log_fp,
-    "JM: client callback function contact = %s.\n", client_contact_node->contact);
-
         if (status & client_contact_node->job_state_mask &&
             client_contact_node->failed_count < 4)
         {
-  grami_fprintf( graml_log_fp,
-    "JM: sending callback of status %d to %s.\n", status,
-    client_contact_node->contact);
+            grami_fprintf( graml_log_fp,
+                "JM: sending callback of status %d to %s.\n", status,
+                client_contact_node->contact);
+
             /* This will block if called from a non-threaded handler
              */
             rc = globus_nexus_attach(client_contact_node->contact, &sp);
@@ -1600,6 +1598,13 @@ globus_l_gram_status_file_gen(int status)
 
 } /* globus_l_gram_status_file_gen() */
 
+
+/******************************************************************************
+Function:       globus_l_gram_rsl_env_add()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
 static int
 globus_l_gram_rsl_env_add(globus_rsl_t * ast_node,
                           char * var,
@@ -2367,6 +2372,7 @@ globus_l_gram_unregister_handler(globus_nexus_endpoint_t * endpoint,
     int                                size;
     int                                gram_version;
     int                                len;
+    int                                job_status;
     int                                unregister_status;
     globus_nexus_startpoint_t          reply_sp;
     globus_nexus_buffer_t              reply_buffer;
@@ -2437,9 +2443,12 @@ globus_l_gram_unregister_handler(globus_nexus_endpoint_t * endpoint,
         }
     }
 
-    size = globus_nexus_sizeof_int(2);
+    job_status = request->status;
+
+    size = globus_nexus_sizeof_int(3);
     globus_nexus_buffer_init(&reply_buffer, size, 0);
     globus_nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
+    globus_nexus_put_int(&reply_buffer, &job_status, 1);
     globus_nexus_put_int(&reply_buffer, &unregister_status, 1);
 
     GRAM_UNLOCK;
