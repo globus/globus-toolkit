@@ -308,6 +308,7 @@ sub alterFileGlobusLocation
         $data = readFile($in);
         $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
         writeFile($out, $data);
+        action("chmod 755 $out");
     }
 }
 
