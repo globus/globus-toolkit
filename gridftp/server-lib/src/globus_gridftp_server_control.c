@@ -2225,7 +2225,7 @@ globus_gsc_959_finished_command(
     {
         reply_ent = (globus_l_gsc_reply_ent_t *)
             globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
-        reply_ent->msg = reply_msg;
+        reply_ent->msg = globus_libc_strdup(reply_msg);
         reply_ent->op = op;
         reply_ent->final = GLOBUS_TRUE;
 
