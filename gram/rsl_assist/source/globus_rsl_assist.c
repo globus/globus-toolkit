@@ -2,7 +2,8 @@
  * globus_rsl_assist.c
  *
  * Description:
- *   The rsl_assist library provide a set of function to help parsing an RSL.
+ *   The rsl_assist library provide a set of function to help working with
+ *   an RSL.
  *   It also contains some function to access the MDS; those function will be
  *   moved to a new library "mds_assist" in future release of GLOBUS.
  *   
@@ -14,6 +15,7 @@
  *   $Author$
  *****************************************************************************/
 #include "globus_common.h"
+#include "globus_rsl.h"
 
 #include <string.h>
 
@@ -29,12 +31,12 @@
 forward declarations 
 ******************************************************************************/
 static char *
-globus_l_rsl_assist_get_contact_string(LDAP *ldap_server, LDAPMessage* entry);
+globus_l_rsl_assist_parse_ldap_reply(
+    LDAP *ldap_server,
+    LDAPMessage* entry);
 static char *
-globus_l_rsl_assist_parse_ldap_reply(LDAP *ldap_server,
-			LDAPMessage* entry);
-static char *
-globus_l_rsl_assist_query_ldap(char *resource);
+globus_l_rsl_assist_query_ldap(
+    char *resource);
 
 
 /*
@@ -63,121 +65,163 @@ globus_l_rsl_assist_query_ldap(char *resource);
 int
 globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 {
-    
+    /* only handles boolean requests of the form
+     *     &(attr1=value1)(attr2=value2) ...
+     * or
+     *     |(attr1=value1)(attr2=value2) ...
+     * or
+     *     +(attr1=value1)(attr2=value2) ...
+     * or a recursive nesting of the above, joined
+     *     by one of the above operators:
+     *     +
+     *         (&(attr1=value1)(attr2=value2))
+     *         (+(|(attr1=value1))
+     *             (&(attr1=value1)(attr2=value2))
+     *         )
+     *         (|(attr1=value1)(attr2=value2))
+     * 
+     */
+
+    /* if we are not a boolean operation, don't handle it */
+    if(globus_rsl_is_boolean(rsl))
+    {
+	globus_list_t *		lists;
+
+	/* get the operands of the boolean operator, in the example
+	 * of &(foo=x)(bar=y)
+	 * this would be the list containing the relations
+	 *   foo=x
+	 *   bar=y
+	 */
+	lists = globus_rsl_boolean_get_operand_list(rsl);
+
+	/* look at each operand of the boolean, and figure out if
+	 * it is a nested boolean, or a relation (x=y)
+	 */
+	while(!globus_list_empty(lists))
+	{
+	    globus_rsl_t *	head;
+
+	    head = globus_list_first(lists);
+
+	    /* if boolean, recursively process the request */
+	    if(globus_rsl_is_boolean(head))
+	    {
+		if(globus_rsl_assist_replace_manager_name(head) != 0)
+		{
+		    /* JST Should'nt I free some stuff here ? */
+		    return -1;
+		}
+	    }
+	    /* if a relation, check to see if it's one we can deal with */
+	    else if(globus_rsl_is_relation_eq(head))
+	    {
+		/* RSL attributes are case insensitive */
+		if(strcasecmp(globus_rsl_relation_get_attribute(head),
+			      "resourceManagerName") == 0)
+		{
+		    globus_rsl_value_t * value;
+		    
+		    /* The value of a relation may be a
+		           single literal:  "foo"
+		           substitution: $(SOMETHING)
+			   list: ("foo" $(SOMETHING))
+		       We only deal with single literals here. lists
+		       don't make sense as the value for a
+		       resourceManagerName.
+
+		       They are always stored as a sequence, but
+		       the globus_rsl_relation_get_single_value
+		       function will pull out the value of a single
+		       literal
+		     */
+		    value = globus_rsl_relation_get_single_value(head);
+		    
+		    if(value == NULL)
+		    {
+			/* ill-formed RSL, abort */
+			return -1;
+		    }
+		    else if(!globus_rsl_value_is_literal(value))
+		    {
+		        /* don't process substitutions */
+			return -1;
+		    }
+		    else
+		    {
+			char * resource_name;
+			char * resource_contact;
+			globus_rsl_value_t * resource_contact_value;
+			globus_rsl_t * resource_contact_relation;
+			globus_list_t * sequence = GLOBUS_NULL;
+
+			/* get the string of the value */
+			resource_name =
+			    globus_rsl_value_literal_get_string(value);
+			
+			/* query the ldap server to get a replacement */
+			resource_contact =
+			    globus_l_rsl_assist_query_ldap(resource_name);
+
+			/* make that into a sequence of a single literal
+			 * remember that values are always sequences
+			 */
+			resource_contact_value = 
+			    globus_rsl_value_make_literal(resource_contact);
+			globus_list_insert(&sequence,
+					   resource_contact_value);
+
+			/* make a relation out of the desired attribute,
+			 * and the new value:
+			 * resourceManagerContact=<result>
+		         */
+			resource_contact_relation = 
+			    globus_rsl_make_relation(
+				GLOBUS_RSL_EQ,
+				"resourceManagerContact",
+				globus_rsl_value_make_sequence(
+				    sequence));
+			
+			/* remove this node from the list of operands
+			 * to the boolean
+		         */
+			globus_list_remove(
+			    globus_rsl_boolean_get_operand_list_ref(rsl),
+			    lists);
+			globus_rsl_free(head);
+
+			/* insert our new relation into the list */
+			globus_list_insert(
+			    globus_rsl_boolean_get_operand_list_ref(rsl),
+					   (void *)resource_contact_relation);
+		    }
+		}
+	    }
+	    lists = globus_list_rest(lists);
+	}	
+    }
+    return 0;    
 } /* globus_rsl_assist_replace_manager_name() */
 
 /*
  * Function: globus_rsl_assist_get_rm_contact()
  *
- * Parameters: 
- * 
- * Returns: 
- */
-char *
-globus_rsl_assist_get_rm_contact(char *resource)
-{
-    LDAP *ldap_server;
-    int port=atoi(GLOBUS_MDS_PORT);
-    char *base_dn=GLOBUS_MDS_ROOT_DN;
-    char *search_string;
-    char *server = GLOBUS_MDS_HOST;
-    LDAPMessage *reply;
-    LDAPMessage *entry;
-    char *attrs[3];
-    char *search_format=
-	"(&(objectclass=GlobusResourceManager)"
-	  "(|(cn=%s)))";
-    attrs[0] = "contact";
-    attrs[1] = GLOBUS_NULL;
-    
-    if(strchr(resource, (int) ':') != GLOBUS_NULL)
-    {
-	return strdup(resource);
-    }
-	
-    if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
-    {
-	ldap_perror(ldap_server, "ldap_open");
-	exit(1);
-    }
-
-    if(ldap_simple_bind_s(ldap_server, "", "") != LDAP_SUCCESS)
-    {
-	ldap_perror(ldap_server, "ldap_simple_bind_s");
-	ldap_unbind(ldap_server);
-	exit(1);
-    }
-
-    search_string=globus_malloc((2*strlen(resource))+
-				strlen(search_format)+
-				1);
-
-    sprintf(search_string, search_format, resource, resource);
-    
-    if(ldap_search_s(ldap_server,
-		     base_dn,
-		     LDAP_SCOPE_SUBTREE,
-		     search_string,
-		     attrs,
-		     0,
-		     &reply) != LDAP_SUCCESS)
-    {
-	ldap_perror(ldap_server, "ldap_search");
-	ldap_unbind(ldap_server);
-	exit(1);
-    }
-
-    for(entry = ldap_first_entry(ldap_server, reply);
-	entry != GLOBUS_NULL;
-	entry = ldap_next_entry(ldap_server, entry))
-    {
-	char *contact;
-	contact = globus_l_rsl_assist_get_contact_string(ldap_server, entry);
-	if(contact != GLOBUS_NULL)
-	{
-	    ldap_unbind(ldap_server);
-	    return contact;
-	}
-    }
-    ldap_unbind(ldap_server);
-    return GLOBUS_NULL;
-} /* globus_rsl_assist_get_rm_contact() */
-
-/*
- * Function: globus_l_rsl_assist_get_contact_string()
+ * Connect to the ldap server, and search for the contact string
+ * associated with the resourceManagerName.
+ *
+ * For the moment, just a wrapper around globus_l_rsl_assist_query_ldap(),
+ * until globus_l_rsl_assist_query_ldap(), get more general...
  *
  * Parameters: 
  * 
  * Returns: 
  */
-static
-char *
-globus_l_rsl_assist_get_contact_string(
-    LDAP *ldap_server,
-    LDAPMessage* entry)
+char*
+globus_rsl_assist_get_rm_contact(
+    char* resource)
 {
-    char *a, *dn;
-    BerElement *ber;
-    char** values;
-    int numValues;
-    int i;
-    char *contact=GLOBUS_NULL;
-
-    for (a = ldap_first_attribute(ldap_server,entry,&ber); a != NULL;
-	 a = ldap_next_attribute(ldap_server,entry,ber) )
-    {
-	values = ldap_get_values(ldap_server,entry,a);
-	numValues = ldap_count_values(values);
-	
-	if(strcmp(a, "contact") == 0)
-	{
-	    contact = strdup(values[0]);
-	    ldap_value_free(values);
-	    break;
-	}
-    }
-    return contact;
-} /* globus_l_rsl_assist_get_contact_string() */
+    return globus_l_rsl_assist_query_ldap(resource);
+} /* globus_rsl_assist_get_rm_contact() */
 
 /*
  * Function: globus_l_rsl_assist_query_ldap()
@@ -260,7 +304,7 @@ globus_l_rsl_assist_query_ldap(
 	entry = ldap_next_entry(ldap_server, entry))
     {
 	char *contact;
-	contact = parse_ldap_reply(ldap_server, entry);
+	contact = globus_l_rsl_assist_parse_ldap_reply(ldap_server, entry);
 	if(contact != GLOBUS_NULL)
 	{
 	    ldap_unbind(ldap_server);
