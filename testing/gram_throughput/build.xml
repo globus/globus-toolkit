@@ -277,7 +277,7 @@
    </java>
   </target>
 
-  <target name="runTestApp" depends="setenv">
+  <target name="runTestApp" depends="setenv,copySchemaDir">
     <echo message="running Throughput Tester"/>
 
     <java classname="org.globus.ogsa.base.gram.testing.throughput.ThroughputTester"
