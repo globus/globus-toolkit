@@ -16,6 +16,7 @@ CVS Information:
 #include "globus_common.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
+#include "version.h"
 
 #if HAVE_STRING_H
 #include <string.h>
@@ -63,7 +64,8 @@ globus_module_descriptor_t              globus_i_thread_common_module =
     globus_l_thread_common_activate,
     globus_l_thread_common_deactivate,
     GLOBUS_NULL,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    &local_version
 };       
 
 static globus_l_thread_stack_manager_t *

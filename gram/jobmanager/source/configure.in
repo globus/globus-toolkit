@@ -18,4 +18,5 @@ AC_OUTPUT(
 	pkgdata/pkg_data_src.gpt
 	scripts/Makefile
         Makefile
+        version.h
 )

@@ -28,6 +28,7 @@ CVS Information:
 #include "globus_gass_cache.h"
 #include "globus_gass_transfer.h"
 #include "globus_gass_copy.h"
+#include "version.h"
 
 /******************************************************************************
                                Type definitions
@@ -95,7 +96,9 @@ globus_module_descriptor_t globus_i_gass_file_module =
     "globus_gass_file",
     globus_l_gass_file_activate,
     globus_l_gass_file_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /******************************************************************************

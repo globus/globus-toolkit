@@ -61,7 +61,8 @@ AC_OUTPUT(
 	config/Makefile
 	doxygen/Makefile
 	doxygen/Doxyfile 
-	doxygen/Doxyfile-internal	
+	doxygen/Doxyfile-internal
+	version.h
 )
 
 

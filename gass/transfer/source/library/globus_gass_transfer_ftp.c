@@ -20,6 +20,7 @@ CVS Information:
 #include <ctype.h>
 #include <string.h>
 #include <strings.h>
+#include "version.h"
 
 #if defined(DEBUG_GASS_TRANSFER)
 #define debug_printf(a) printf a
@@ -97,7 +98,9 @@ globus_module_descriptor_t globus_i_gass_transfer_ftp_module =
     "globus_i_gass_transfer_ftp",
     globus_l_gass_transfer_ftp_activate,
     globus_l_gass_transfer_ftp_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /* Protocol Descriptor, which is registered with the GASS system */

@@ -20,6 +20,7 @@ CVS Information:
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "version.h"  /* provides local_version */
 
 
 static char *  oneline_usage
@@ -28,7 +29,7 @@ static char *  oneline_usage
 static char *  long_usage = \
 "\n" \
 "Syntax: globus-gass-server [options]\n"\
-"        globus-gass-server -version\n"\
+"        globus-gass-server -version[s]\n"\
 "        globus-gass-server -help\n"\
 "\n" \
 "    Options\n"\
@@ -36,6 +37,8 @@ static char *  long_usage = \
 "        Displays usage\n"
 "    -version\n"
 "        Displays version\n"
+"    -versions\n"
+"        Display versions of all modules that this program uses\n"
 "    -s | -silent\n"
 "        Enable silent mode (Don't output server URL)\n"
 "    -l | -linebuffer\n"
@@ -214,8 +217,8 @@ int main(int argc, char **argv)
 			       &argv,
 			       arg_num,
 			       args_options,
-			       PACKAGE,
-			       VERSION,
+			       "globus-gass-server",
+			       &local_version,
 			       oneline_usage,
 			       long_usage,
 			       &options_found,

@@ -18,6 +18,7 @@ CVS Information:
 #include "globus_common.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
+#include "version.h"
 
 #ifndef GLOBUS_THREAD_DEFAULT_CONCURRENCY_LEVEL
 #define GLOBUS_THREAD_DEFAULT_CONCURRENCY_LEVEL 2
@@ -112,11 +113,12 @@ static int globus_l_thread_deactivate(void);
 
 globus_module_descriptor_t globus_i_thread_module =
 {
-    "globus_thread",
+    "globus_thread_solaris",
     globus_l_thread_activate,
     globus_l_thread_deactivate,
     GLOBUS_NULL,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    &local_version
 };
 /*
  * globus_i_thread_pre_activate()

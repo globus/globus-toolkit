@@ -14,7 +14,7 @@
 
 EXTERN_C_BEGIN
 
-#include "globus_list.h"
+#include "globus_common.h"
 
 /*  globus_args.h : a Globus-style argument option parser
 
@@ -40,9 +40,9 @@ EXTERN_C_BEGIN
     (6) When scanning for the next argument flag, an error is detected if the
         detected argument begins with "--*", where '*' is any character.
 
-    (7) The argument flags "-help", "-usage", and "-version" are reserved, and
-        if they are detected the library will create an appropriate message 
-	and signal an error.
+    (7) The argument flags "-help", "-usage", "-version", and "-versions" are 
+        reserved, and if they are detected the library will create an 
+        appropriate message and signal an error.
 
     (8) If an error is detected, then the library will create an error message.
 
@@ -121,8 +121,8 @@ typedef struct globus_args_option_instance_s
     must be freed by the user, containing the error message.
 
     A 'reserved option' is one of the 0-arity options "-help",
-    "-usage" or "-version". When detected, a message is created (and
-    written to stderr if error_msg is null), containing the
+    "-usage", "-version", or "-versions". When detected, a message is created
+    (and written to stderr if error_msg is null), containing the
     appropriate information. A reserved option will terminate the
     argument scanning and return.
 
@@ -143,7 +143,7 @@ globus_args_scan( int  *                                argc,
 		  int                                   option_count,
 		  globus_args_option_descriptor_t  *    options,
 		  const char *                          name,
-		  const char *                          version,
+		  const globus_version_t *              version,
 		  const char *                          oneline_usage,
 		  const char *                          long_usage,
 		  globus_list_t **                      options_found,

@@ -189,9 +189,9 @@ globus_l_args_add_instance( globus_fifo_t *                     fifo,
 /* -------------------------------------------------------------------------
    globus_l_args_check_options()
 
-   (7) The argument flags "-help", "-usage", and "-version" are reserved, and
-       if they are detected the library will create an appropriate message 
-       and signal an error.
+   (7) The argument flags "-help", "-usage", "-version", and "-versions" are
+       reserved, and if they are detected the library will create an 
+       appropriate message and signal an error.
 
 */
 
@@ -201,7 +201,7 @@ globus_l_args_check_options(
     globus_args_option_descriptor_t *   options     ,
     char **                             error_msg   )
 {
-#  define ERROR7   "Error : flags -help, -usage and -version are reserved.\n"
+#  define ERROR7   "Error : flags -help, -usage, -version,and -versions are reserved.\n"
 #  define ERRORID0 "Error : id_number 0 is reserved for unflagged arguments.\n"
 
     char **     alias;
@@ -222,7 +222,8 @@ globus_l_args_check_options(
 	    {
 		if (!strcmp(*alias, "-help")   ||
 		    !strcmp(*alias, "-usage")  ||
-		    !strcmp(*alias, "-version") )
+		    !strcmp(*alias, "-version")||
+		    !strcmp(*alias, "-versions"))
 		{
 		    globus_l_args_create_msg( error_msg, ERROR7 );
 		    rc = GLOBUS_FAILURE;
@@ -252,7 +253,7 @@ globus_args_scan(
     int                                   option_count,
     globus_args_option_descriptor_t  *    options,
     const char *                          name,
-    const char *                          version,
+    const globus_version_t *              version,
     const char *                          oneline_usage,
     const char *                          long_usage,
     globus_list_t **                      options_found,
@@ -336,7 +337,7 @@ globus_args_scan(
             continue;
         }
 
-        /* three specials : -help, -usage, -version */
+        /* four specials : -help, -usage, -version, -versions */
         if (!strcmp("-help",my_arg) || !strcmp("-usage",my_arg))
         {
             globus_l_args_create_msg( error_msg ,
@@ -347,11 +348,26 @@ globus_args_scan(
         }
         if (!strcmp("-version",my_arg))
         {
-	    globus_libc_sprintf( buf,
-				 "%s %s",
-				 name, version);
-	    
-            globus_l_args_create_msg( error_msg , buf );
+            globus_version_print(
+                name,
+                version,
+                stderr,
+                GLOBUS_FALSE);
+                
+	    rc = GLOBUS_FAILURE;
+            done = GLOBUS_TRUE;
+            continue;
+        }
+        if (!strcmp("-versions",my_arg))
+        {
+	    globus_version_print(
+                name,
+                version,
+                stderr,
+                GLOBUS_TRUE);
+            
+            globus_module_print_activated_versions(stderr, GLOBUS_TRUE);
+                
 	    rc = GLOBUS_FAILURE;
             done = GLOBUS_TRUE;
             continue;

@@ -64,7 +64,13 @@ libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
-EXTRA_DIST = globus_ftp_client_restart_plugin.example
+EXTRA_DIST = globus_ftp_client_restart_plugin.example \
+	globus_ftp_client_debug_plugin.example \
+	globus_ftp_client_restart_marker_plugin.example \
+	globus_ftp_client_throughput_nl_plugin.h \
+	globus_ftp_client_throughput_nl_plugin.c \
+	version.h.in \
+	dirt.sh
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

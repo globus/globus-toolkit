@@ -113,6 +113,23 @@ FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
 AC_SUBST(FILELIST_FILE)
 
+dnl export version information
+dnl branch id 99999 means that timestamp refers to build time
+if test -f $srcdir/dirt.sh ; then
+    . $srcdir/dirt.sh
+else
+    DIRT_TIMESTAMP=`perl -e 'print time'`
+    DIRT_BRANCH_ID=99999
+fi
+
+dnl GPT_MAJOR_VERSION and GPT_MINOR_VERSION provided by GPT_INIT
+AC_SUBST(GPT_MAJOR_VERSION)
+AC_SUBST(GPT_MINOR_VERSION)
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
+
+
+
 dnl END OF GLOBUS_INIT
 ])
 

@@ -132,6 +132,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "version.h"
 
 #define GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE 64000
 
@@ -144,7 +145,9 @@ globus_module_descriptor_t globus_i_gram_protocol_module =
     "globus_gram_protocol",
     globus_l_gram_protocol_activate,
     globus_l_gram_protocol_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 static

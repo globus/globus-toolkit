@@ -28,6 +28,7 @@ CVS Information:
  *  use globus_io for netlogger stuff
  */
 #include "globus_io.h"
+#include "version.h"  /* provides local_version */
 
 /******************************************************************************
                                Type definitions
@@ -92,7 +93,7 @@ globus_l_gass_copy_performance_cb(
 #define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
 const char * oneline_usage
-    = "globus-url-copy [-help | -usage] [-v] [-vb] [-dbg] [-b | -a]\n"
+    = "globus-url-copy [-help | -usage] [-version[s]] [-vb] [-dbg] [-b | -a]\n"
       "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
       "                        [-tcp-bs <size>] [-bs <size>] [-p <parallelism>]\n"
       "                        [-notpt] [-nodcau]\n"
@@ -103,8 +104,10 @@ const char * long_usage =
 "OPTIONS\n"
 "\t -help | -usage\n"
 "\t      Print help\n"
-"\t -v | -version\n"
+"\t -version\n"
 "\t      Print the version of this program\n"
+"\t -versions\n"
+"\t      Print the versions of all modules that this program uses\n"
 "\t -a | -ascii\n"
 "\t      convert the file to/from netASCII format to/from local file format\n"
 "\t -vb | -verbose \n"
@@ -299,13 +302,21 @@ main(int argc, char **argv)
     globus_bool_t                      ftp_handle_attr_used = GLOBUS_FALSE;
     globus_bool_t                      use_debug = GLOBUS_FALSE;
 
-    err = globus_module_activate(GLOBUS_COMMON_MODULE);
+    err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
     if ( err != GLOBUS_SUCCESS )
     {
-        globus_libc_fprintf(stderr, "Error initializing globus\n");
+        globus_libc_fprintf(stderr, "Error %d, activating gass copy module\n",
+            err);
         return 1;
     }
-
+    err = globus_module_activate(GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_MODULE);
+    if ( err != GLOBUS_SUCCESS )
+    {
+        globus_libc_fprintf(stderr, "Error %d, activating ftp debug plugin module\n",
+            err);
+        return 1;
+    }
+    
     if (strrchr(argv[0],'/'))
         program = strrchr(argv[0],'/') + 1;
     else
@@ -317,8 +328,8 @@ main(int argc, char **argv)
                                &argv,
                                arg_num,
                                args_options,
-			       PACKAGE,
-			       VERSION,
+			       "globus-url-copy",
+			       &local_version,
                                oneline_usage,
                                long_usage,
                                &options_found,
@@ -403,14 +414,6 @@ main(int argc, char **argv)
     /* All below transfer methods must be activated in case an attr structure
      * needs to be created.
      */
-    err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
-    if ( err != GLOBUS_SUCCESS )
-    {
-        globus_libc_fprintf(stderr, "Error %d, activating gass copy module\n",
-            err);
-        return 1;
-    }
-
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
@@ -427,8 +430,6 @@ main(int argc, char **argv)
 
     if(use_debug)
     {
-        globus_module_activate(GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_MODULE);
-        
         if(!ftp_handle_attr_used)
         {
             ftp_handle_attr_used = GLOBUS_TRUE;

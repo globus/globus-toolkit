@@ -24,6 +24,7 @@ CVS Information:
 #ifdef GLOBUS_GRAM_MYJOB_USES_MP
 
 #include "globus_common.h"
+#include "version.h"
 
 
 /******************************************************************************
@@ -50,7 +51,9 @@ globus_module_descriptor_t		globus_i_gram_myjob_module =
     "globus_gram_myjob_mp",
     globus_l_gram_myjob_activate,
     globus_l_gram_myjob_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 
