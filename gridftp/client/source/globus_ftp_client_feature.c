@@ -178,7 +178,7 @@ globus_ftp_client_feat(
     }
     if(complete_callback == GLOBUS_NULL)
     {
-        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
+        error = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
         goto error_param;
     }
@@ -205,7 +205,7 @@ globus_ftp_client_feat(
     if(handle->source_url == GLOBUS_NULL)
     {
         error = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
-        goto free_internal_arg;
+        goto unlock_exit;
     }
     
     /* Setup handle for the FEAT*/
@@ -224,6 +224,8 @@ globus_ftp_client_feat(
     
     if(handle->source->features)
     {
+        int                             i;
+        
         /* already have all the features, do a oneshot */
         for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
         {
