@@ -2167,29 +2167,35 @@ globus_i_gfs_data_request_transfer_event(
     globus_result_t                     result;
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     
-    bounce_info = (globus_l_gfs_data_trev_bounce_t *)
-        globus_malloc(sizeof(globus_l_gfs_data_trev_bounce_t));
-    if(!bounce_info)
+    if(dsi->trev_func != NULL)
     {
-        result = GlobusGFSErrorMemory("bounce_info");
-        goto error_alloc;
+        dsi->trev_func(transfer_id, event_type, dsi_user_arg);
     }
-    
-    bounce_info->event_type = event_type;
-    bounce_info->op = (globus_l_gfs_data_operation_t *) transfer_id;
-    
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_gfs_data_transfer_event_kickout,
-        bounce_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_callback_register_oneshot", result);
-        goto error_oneshot;
-    }
-    
+    else
+    {    
+        bounce_info = (globus_l_gfs_data_trev_bounce_t *)
+            globus_malloc(sizeof(globus_l_gfs_data_trev_bounce_t));
+        if(!bounce_info)
+        {
+            result = GlobusGFSErrorMemory("bounce_info");
+            goto error_alloc;
+        }
+        
+        bounce_info->event_type = event_type;
+        bounce_info->op = (globus_l_gfs_data_operation_t *) transfer_id;
+        
+        result = globus_callback_register_oneshot(
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            globus_l_gfs_data_transfer_event_kickout,
+            bounce_info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_callback_register_oneshot", result);
+            goto error_oneshot;
+        }
+    }    
     return;
     
 error_oneshot:
