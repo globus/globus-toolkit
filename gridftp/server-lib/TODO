@@ -1,3 +1,77 @@
+MUST HAVE
+--------------------------------------------------------------
+SERVER:
+-instrument logging in server
+-implement abort_cb on server side
+-config opt for tcp port range and globus_hostname... just set the env for them
+-config for pre-login banner: terse, default, and user-specified
+-config for timeouts (i need more info on this)
+-config for post-login banner: default and user-specified
+-config for anonymous access - which user to setuid to
+-config for disable connections
+-verify inetd is prepped right
+-mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
+-verify data destroy working on server end (and no leaks!)
+-call control_disconnected() when needed
+-server mem management... i know there are some leaks with attrs and now with instance for event stuff
+
+LIB:
+-instrument logging in server-lib
+-verify feat list
+-verify epsv/eprt...  currently not spec i think
+-decide if gonna keep offset in transfer func... if so, i need length also
+-decide if locking in event cb is right api decision
+
+BOTH:
+-add proper return vals/messages for error situations
+-verify reply codes
+-recheck exit/quit/abort states (after server abort/exit stuff is good)
+
+--------------------------------------------------------------
+
+OTHER: (non-code)
+merge with trunk (i assume 3.3. will be cut from trunk)
+update gridftp-server-stable-branch tag
+verify shit still works after that!
+
+
+
+
+if time, desire, etc etc:
+--------------------------------------------------------------
+SERVER:
+-drop in cheap ipc-bounce-oneshot layer
+-make forking/daemon mode better (maybe leave this out for now)
+-define logging classes in config
+-produce netlogger output (based on event timer i guess?... -Z option in wu)
+-global config opts can be non-overridable, or forced to a range
+-think about config val checking/verification
+-sync(2) before each transfer stat update (by option only, unless it doesn't affect perf)
+-make sure server will work with tcpd
+
+LIB:
+-additional command ALLO (done?)
+-additional command TREV (done?)
+-additional functionality for STAT (959 says transfer stats and other shit)
+-additional command to get server version
+
+--------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(old shit that was already here)
 partial
 -- add offset to tranfer func callout
 
