@@ -1496,7 +1496,7 @@ globus_l_gfs_request_data_destroy(
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
-    globus_i_gfs_data_destroy_handle(
+    globus_i_gfs_data_request_handle_destroy(
         NULL, instance->session_id, (int) user_data_handle);
 }
 

@@ -930,7 +930,7 @@ globus_l_gfs_data_destroy_cb(
 /* 
  */
 void
-globus_i_gfs_data_destroy_handle(
+globus_i_gfs_data_request_handle_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
     int                                 data_connection_id)
@@ -987,13 +987,20 @@ globus_i_gfs_data_destroy_handle(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
-                result = globus_ftp_control_handle_destroy(
-                    &data_handle->data_channel);
-                if(result == GLOBUS_SUCCESS)
+                if(!data_handle->is_mine)
                 {
-                    /* XXX this is strange, shouldn't be happening, make it 
-                        an assert  */
-                    globus_free(data_handle);
+                    pass = GLOBUS_TRUE;
+                }
+                else
+                {
+                    result = globus_ftp_control_handle_destroy(
+                        &data_handle->data_channel);
+                    if(result == GLOBUS_SUCCESS)
+                    {
+                        /* XXX this is strange, shouldn't be happening, make it 
+                            an assert  */
+                        globus_free(data_handle);
+                    }
                 }
                 break;
 
@@ -1798,6 +1805,11 @@ globus_i_gfs_data_request_list(
     data_op->eof_count = (int *) 
         globus_malloc(data_op->stripe_count * sizeof(int));
     
+    /* events and disconnects cannot happen while i am in this
+        function */
+    globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
+    data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
+
     if(session_handle->dsi->list_func != NULL)
     {
         if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
@@ -1837,12 +1849,7 @@ globus_i_gfs_data_request_list(
 
         stat_op->info = stat_info;
         stat_op->info_struct = stat_info;
-    
-        /* events and disconnects cannot happen while i am in this
-            function */
-        globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
-        data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
- 
+     
         if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
         { 
             globus_callback_register_oneshot(
@@ -2528,6 +2535,31 @@ globus_l_gfs_data_force_close(
                 break;
         }
     }
+    else
+    {
+        switch(op->data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                globus_callback_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_l_gfs_data_end_transfer_kickout,
+                    op);
+                break;
+
+            /* already started closing the handle */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            default:
+                globus_assert(0 && "only should be called when inuse");
+                break;
+        }
+    }        
 }
 
 /* must be called locked */

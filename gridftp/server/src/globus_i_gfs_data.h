@@ -86,7 +86,7 @@ globus_i_gfs_data_request_active(
     void *                              user_arg);
 
 void
-globus_i_gfs_data_destroy_handle(
+globus_i_gfs_data_request_handle_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
     int                                 data_connection_id);

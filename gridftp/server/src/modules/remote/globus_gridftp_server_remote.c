@@ -411,7 +411,8 @@ globus_l_gfs_ipc_event_cb(
         default:
             break;
     }        
-    if(!bounce_info->event_pending)
+    if(!bounce_info->event_pending || 
+        reply->type == GLOBUS_GFS_EVENT_DISCONNECTED)
     {        
         reply->transfer_id = (int) bounce_info->stripe_list;
         reply->event_mask = 
