@@ -125,7 +125,7 @@ static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
 #  define JOB_MANAGER_EXE "globus_gram_job_manager"
 #endif
 #ifndef GRAM_K5_EXE
-#	define GRAM_K5_EXE "globus_gram_k5"
+#	define GRAM_K5_EXE "globus-k5"
 #endif
 #ifndef GLOBUS_LIBEXECDIR
 #  define GLOBUS_LIBEXECDIR "libexec"
