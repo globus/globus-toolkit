@@ -112,76 +112,76 @@ int main(int argc, char *argv[])
 	goto cleanup;
     }
 
-    if (ssl_certificate_load_from_file(creds, certfile) == SSL_SUCCESS) {
-	/* Read private key */
-	if (ssl_private_key_load_from_file(creds, keyfile, NULL,
-					   "Enter GRID pass phrase")
-	    == SSL_ERROR) {
-	    fprintf (stderr, "Error reading private key: %s\n",
-		     verror_get_string());
-	    goto cleanup;
-	}
-
-	/* Read new credential passphrase */
-	if (!use_empty_passwd && !my_creds->passphrase) {
-	    my_creds->passphrase =
-		(char *)malloc((MAX_PASS_LEN+1)*sizeof(char));
-	    if (myproxy_read_verified_passphrase(my_creds->passphrase,
-						 MAX_PASS_LEN, NULL) == -1) {
-		fprintf(stderr, "%s\n", verror_get_string());
-		goto cleanup;
-	    }
-	}
-
-	sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getuid());
-	/* Remove proxyfile if it already exists. */
-	ssl_proxy_file_destroy(proxyfile);
-	verror_clear();
-		
-	if (ssl_proxy_store_to_file(creds, proxyfile,
-				    my_creds->passphrase) != SSL_SUCCESS) {
-	    fprintf(stderr, "%s\n", verror_get_string());
-	    goto cleanup;
-	}
-
-	if (my_creds->username == NULL) { /* set default username */
-	    if (dn_as_username) {
-		if (ssl_get_base_subject_file(proxyfile,
-					      &my_creds->username)) {
-		    fprintf(stderr,
-			    "Cannot get subject name from your certificate\n");
-		    goto cleanup;
-		}
-	    } else {
-		char *username = NULL;
-		if (!(username = getenv("LOGNAME"))) {
-		    fprintf(stderr, "Please specify a username.\n");
-		    goto cleanup;
-		}
-		my_creds->username = strdup(username);
-	    }
-	}
-
-	if (ssl_get_base_subject_file(proxyfile,
-				      &my_creds->owner_name)) {
-	    fprintf(stderr,
-		    "Cannot get subject name from certificate.\n");
-	    goto cleanup;
-	}
-	my_creds->location = strdup(proxyfile);
-
-	if (myproxy_creds_store(my_creds) < 0) {
-	    myproxy_log_verror();
-	    fprintf (stderr, "Unable to store credentials. %s\n",
-		     verror_get_string()); 
-	} else {
-	    fprintf (stdout, "Credential stored successfully\n");
-	}
-    } else {
+    if (ssl_certificate_load_from_file(creds, certfile) != SSL_SUCCESS) {
 	myproxy_log_verror();
 	fprintf (stderr, "Unable to load certificate. %s\n",
 		 verror_get_string()); 
 	goto cleanup;
+    }
+	
+    /* Read private key */
+    if (ssl_private_key_load_from_file(creds, keyfile, NULL,
+				       "Enter GRID pass phrase")
+	== SSL_ERROR) {
+	fprintf (stderr, "Error reading private key: %s\n",
+		 verror_get_string());
+	goto cleanup;
+    }
+
+    /* Read new credential passphrase */
+    if (!use_empty_passwd && !my_creds->passphrase) {
+	my_creds->passphrase =
+	    (char *)malloc((MAX_PASS_LEN+1)*sizeof(char));
+	if (myproxy_read_verified_passphrase(my_creds->passphrase,
+					     MAX_PASS_LEN, NULL) == -1) {
+	    fprintf(stderr, "%s\n", verror_get_string());
+	    goto cleanup;
+	}
+    }
+
+    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getuid());
+    /* Remove proxyfile if it already exists. */
+    ssl_proxy_file_destroy(proxyfile);
+    verror_clear();
+		
+    if (ssl_proxy_store_to_file(creds, proxyfile,
+				my_creds->passphrase) != SSL_SUCCESS) {
+	fprintf(stderr, "%s\n", verror_get_string());
+	goto cleanup;
+    }
+
+    if (my_creds->username == NULL) { /* set default username */
+	if (dn_as_username) {
+	    if (ssl_get_base_subject_file(proxyfile,
+					  &my_creds->username)) {
+		fprintf(stderr,
+			"Cannot get subject name from your certificate\n");
+		goto cleanup;
+	    }
+	} else {
+	    char *username = NULL;
+	    if (!(username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		goto cleanup;
+	    }
+	    my_creds->username = strdup(username);
+	}
+    }
+
+    if (ssl_get_base_subject_file(proxyfile,
+				  &my_creds->owner_name)) {
+	fprintf(stderr,
+		"Cannot get subject name from certificate.\n");
+	goto cleanup;
+    }
+    my_creds->location = strdup(proxyfile);
+
+    if (myproxy_creds_store(my_creds) < 0) {
+	myproxy_log_verror();
+	fprintf (stderr, "Unable to store credentials. %s\n",
+		 verror_get_string()); 
+    } else {
+	fprintf (stdout, "Credential stored successfully\n");
     }
 
     rval = 0;
