@@ -24,41 +24,6 @@
     free(a);                                                \
 }
 
-/**
- *  Default values:
- *
- *  GRIDMAP:
- *      Can only be changed by conf file.
- *
- *  CA_CERT_DIR
- *      Can only be changed by conf file.
- *
- *  KEY_FILENAME
- *      Can only be changed by conf file.
- *
- *  CERT_FILENAME
- *      Can only be changed by conf file.
- *
- *  MAX_TIME
- *      Can be changed with conf file.
- *
- *  TIME
- *      Can be changed with -hours or -valid command line switch.
- *
- *  KEY_BITS
- *      Can be changed with -bits command line switch.
- */
-#define DEFAULT_GRIDMAP             "/etc/grid-security/grid-mapfile"
-#define DEFAULT_CA_CERT_DIR         "/etc/grid-security/certificates/"
-#define DEFAULT_KEY_FILENAME        "/etc/grid-security/hostkey.pem"
-#define DEFAULT_CERT_FILENAME       "/etc/grid-security/hostcert.pem"
-#define DEFAULT_PORT_TYPE_FILENAME  "/etc/grid-security/port_type.xml"
-#define DEFAULT_CONF_FILENAME       "/etc/grid-security/grim-conf.xml"
-#define DEFAULT_MAX_TIME            24*60
-#define DEFAULT_TIME                12*60
-#define DEFAULT_KEY_BITS            512
-/* default proxy location: /tmp/x509_u<user id> */
-
 #define GRIM_STRING_MAX             512
 
 #define GRIM_ASSERTION_FORMAT_VERSION "1"
