@@ -790,13 +790,13 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
 void change_passwd(myproxy_creds_t *creds, char *new_passphrase,
 		   myproxy_response_t *response) {
     
-    myproxy_debug("Changing passphrase for username \"%s\"", creds->username);
+    myproxy_debug("Changing pass phrase for username \"%s\"", creds->username);
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     
     if (myproxy_creds_change_passphrase(creds, new_passphrase) < 0) { 
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        response->error_string = strdup("Unable to change passphrase.\n"); 
+        response->error_string = strdup("Unable to change pass phrase.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
@@ -1030,7 +1030,7 @@ check_passphrase_policy(const char *passphrase,
     if (exit_status != 0) { /* passphrase not allowed */
 	FILE *fp = NULL;
 	char buf[100];
-	verror_put_string("passphrase violates local policy");
+	verror_put_string("pass phrase violates local policy");
 	fp = fdopen(p1[0], "r");
 	if (fp) {
 	    while (fgets(buf, 100, fp) != NULL) {
