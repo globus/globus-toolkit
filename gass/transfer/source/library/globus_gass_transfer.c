@@ -60,12 +60,18 @@ globus_l_gass_transfer_activate(void)
     globus_handle_table_init(&globus_i_gass_transfer_listener_handles);
 
     globus_module_activate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
-
+    globus_module_activate(GLOBUS_I_GASS_TRANSFER_FTP_MODULE);
+    
     globus_gass_transfer_proto_register_protocol(
 	&globus_i_gass_transfer_http_descriptor);
     globus_gass_transfer_proto_register_protocol(
 	&globus_i_gass_transfer_https_descriptor);
 
+    globus_gass_transfer_proto_register_protocol(
+	&globus_i_gass_transfer_ftp_descriptor);
+    globus_gass_transfer_proto_register_protocol(
+	&globus_i_gass_transfer_gsiftp_descriptor);
+    
     globus_mutex_init(&globus_i_gass_transfer_mutex,
                       GLOBUS_NULL);
     globus_cond_init(&globus_i_gass_transfer_shutdown_cond,
@@ -148,15 +154,22 @@ globus_l_gass_transfer_deactivate(void)
 	globus_cond_wait(&globus_i_gass_transfer_shutdown_cond,
 			 &globus_i_gass_transfer_mutex);	 
     }
+
+    globus_gass_transfer_proto_unregister_protocol(
+	&globus_i_gass_transfer_ftp_descriptor);
+    globus_gass_transfer_proto_unregister_protocol(
+	&globus_i_gass_transfer_gsiftp_descriptor);
     
     globus_gass_transfer_proto_unregister_protocol(
 	&globus_i_gass_transfer_http_descriptor);
-
     globus_gass_transfer_proto_unregister_protocol(
 	&globus_i_gass_transfer_https_descriptor);
 
-    globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
     
+    globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_FTP_MODULE);
+ 
+    globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
+ 
     globus_handle_table_destroy(&globus_i_gass_transfer_listener_handles);
     globus_handle_table_destroy(&globus_i_gass_transfer_request_handles);
 

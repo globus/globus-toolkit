@@ -40,11 +40,17 @@ extern globus_bool_t globus_i_gass_transfer_deactivating;
 /* Default implemented protocols */
 extern globus_module_descriptor_t globus_i_gass_transfer_http_module;
 #define GLOBUS_I_GASS_TRANSFER_HTTP_MODULE (&globus_i_gass_transfer_http_module)
+extern globus_module_descriptor_t globus_i_gass_transfer_ftp_module;
+#define GLOBUS_I_GASS_TRANSFER_FTP_MODULE (&globus_i_gass_transfer_ftp_module)
 
 extern globus_gass_transfer_proto_descriptor_t
     globus_i_gass_transfer_http_descriptor;
 extern globus_gass_transfer_proto_descriptor_t
     globus_i_gass_transfer_https_descriptor;
+extern globus_gass_transfer_proto_descriptor_t
+    globus_i_gass_transfer_ftp_descriptor;
+extern globus_gass_transfer_proto_descriptor_t
+    globus_i_gass_transfer_gsiftp_descriptor;
 /*
  * The request status structure. This should only be accessed
  * through the functions globus_gass_transfer_request_get_*()

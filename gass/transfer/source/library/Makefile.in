@@ -14,6 +14,7 @@ SHARED_OBJS = \
 		globus_gass_transfer_attribute.$(OFILE) \
 		globus_gass_transfer_client.$(OFILE) \
 		globus_gass_transfer_http.$(OFILE) \
+		globus_gass_transfer_ftp.$(OFILE) \
 		globus_gass_transfer_keyvalue.$(OFILE) \
 		globus_gass_transfer_proto.$(OFILE) \
 		globus_gass_transfer_referral.$(OFILE) \
@@ -67,6 +68,9 @@ globus_gass_transfer_file.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_file.c 
 
 globus_gass_transfer_http.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_http.c $(HDRS) $(SRC_DIR_THIS)/globus_l_gass_transfer_http.h
 	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_http.c 
+
+globus_gass_transfer_ftp.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_ftp.c $(HDRS) $(SRC_DIR_THIS)/globus_l_gass_transfer_ftp.h
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_ftp.c 
 
 globus_gass_transfer_keyvalue.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_keyvalue.c $(HDRS)
 	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_keyvalue.c 
