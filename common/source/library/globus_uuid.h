@@ -1,13 +1,19 @@
 #ifndef GLOBUS_UUID_INCLUDE
 #define GLOBUS_UUID_INCLUDE
 
+#include "globus_common_include.h"
+#include "globus_libc.h"
+
 #define GLOBUS_UUID_TEXTLEN 36
 
-#define GLOBUS_UUID_VERSION(uuid) ((uuid)->binary.bytes[6] >> 4)
+#define GLOBUS_UUID_VERSION(uuid) ((uuid).binary.bytes[6] >> 4)
 #define GLOBUS_UUID_VERSION_TIME 1
 #define GLOBUS_UUID_VERSION_DCE 2
 #define GLOBUS_UUID_VERSION_NAME 3
 #define GLOBUS_UUID_VERSION_RANDOM 4
+
+#define GLOBUS_UUID_MATCH(u1, u2)                                           \
+    (memcmp((u1).binary.bytes, (u2).binary.bytes, 16) == 0)
 
 /* all multibyte fields in network byte order */
 typedef struct
