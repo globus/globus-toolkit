@@ -22,10 +22,10 @@ CVS Information:
 #include <string.h> /* for strdup() */
 #include <memory.h>
 #include <nexus.h>
-#include "gram.h"
-#include "grami_rsl.h"
-#include "grami_jm.h"
 #include "gram_client.h"
+#include "grami_client.h"
+#include "gram_rsl.h"
+#include "grami_jm.h"
 
 /******************************************************************************
                                Type definitions
@@ -323,7 +323,7 @@ main(int argc,
  
     nexus_send_rsr(&reply_buffer,
                    &reply_sp,
-                   REPLY_HANDLER_ID,
+                   GRAMI_CLIENT_REPLY_HANDLER_ID,
                    NEXUS_TRUE,
                    NEXUS_FALSE);
 /*
