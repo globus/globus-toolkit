@@ -416,6 +416,7 @@ read_data_file(struct myproxy_creds *creds,
 	char buffer[512];
 	char *variable;
 	char *value;
+	int len;
 	
 	if (fgets(buffer, sizeof(buffer), data_stream) == NULL)
 	{
@@ -435,7 +436,17 @@ read_data_file(struct myproxy_creds *creds,
 	    /* Not reached */
 	}
 
+	/* Remove carriage return from credentials */
+	len = strlen(buffer);
+	
+	if (buffer[len - 1] == '\n')
+	{
+	    buffer[len - 1] = '\0';
+	}
+
 	line_number++;
+	
+	variable = buffer;
 	
 	value = strchr(buffer, '=');
 	
