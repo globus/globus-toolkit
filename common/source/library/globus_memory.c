@@ -25,9 +25,15 @@ CVS Information:
 
 #ifndef GLOBUS_MEMORY_DEBUG_LEAKS
 
-globus_mutex_t                     globus_i_memory_mutex;
+static globus_mutex_t                      globus_i_memory_mutex;
 
-#define I_ALIGN_SIZE               sizeof(long)
+#define I_ALIGN_SIZE                sizeof(long)
+#define DEFAULT_FREE_PTRS_SIZE      16
+
+typedef struct globus_l_memory_header_s
+{
+    globus_byte_t *            next;
+} globus_l_memory_header_t;
 
 globus_bool_t
 globus_i_memory_pre_activate(void)
@@ -37,6 +43,11 @@ globus_i_memory_pre_activate(void)
         GLOBUS_NULL);
     return globus_i_list_pre_activate();
 }
+
+static
+globus_bool_t
+globus_memory_create_list(
+    globus_memory_t *           mem_info);
 
 globus_bool_t
 globus_memory_init(
@@ -71,6 +82,7 @@ globus_memory_init(
 /*
  * this is calledlocked
  */
+static
 globus_bool_t
 globus_memory_create_list(
     globus_memory_t * mem_info)
@@ -213,6 +225,7 @@ globus_memory_init(
     return GLOBUS_TRUE;
 }
 
+static
 globus_bool_t
 globus_memory_create_list(
     globus_memory_t * mem_info)
