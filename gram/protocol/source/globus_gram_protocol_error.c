@@ -130,8 +130,8 @@ globus_gram_client_error_string(int error_code)
 
 
 
-Void
-Globus_Gram_client_error_7_hack_replace_message(const char * message)
+void
+globus_gram_client_error_7_hack_replace_message(const char * message)
 {
     if (globus_l_gram_client_error_7_hack_message)
 	globus_libc_free(globus_l_gram_client_error_7_hack_message);
