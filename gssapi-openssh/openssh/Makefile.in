@@ -266,42 +266,6 @@ install-files: scard-install
 		echo "$(DESTDIR)$(sysconfdir)/moduli already exists, install will not overwrite"; \
 	fi
 
-gpt-install-files:
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(sbindir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(datadir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)1
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)8
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
-	$(INSTALL) -m $(SSH_MODE) -s ssh $(DESTDIR)$(bindir)/ssh
-	$(INSTALL) -m 0755 -s scp $(DESTDIR)$(bindir)/scp.real
-	$(INSTALL) -m 0755 scp.wrapper $(DESTDIR)$(bindir)/scp
-	$(INSTALL) -m 0755 -s ssh-add $(DESTDIR)$(bindir)/ssh-add
-	$(INSTALL) -m 0755 -s ssh-agent $(DESTDIR)$(bindir)/ssh-agent
-	$(INSTALL) -m 0755 -s ssh-keygen $(DESTDIR)$(bindir)/ssh-keygen
-	$(INSTALL) -m 0755 -s ssh-keyscan $(DESTDIR)$(bindir)/ssh-keyscan
-	$(INSTALL) -m 0755 -s sshd $(DESTDIR)$(sbindir)/sshd
-	if test ! -z "$(INSTALL_SSH_RAND_HELPER)" ; then \
-		$(INSTALL) -m 0755 -s ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper ; \
-	fi
-	$(INSTALL) -m 644 ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
-	$(INSTALL) -m 644 scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
-	$(INSTALL) -m 644 ssh-add.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
-	$(INSTALL) -m 644 ssh-agent.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
-	$(INSTALL) -m 644 ssh-keygen.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
-	$(INSTALL) -m 644 ssh-keyscan.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
-	$(INSTALL) -m 644 sshd.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
-	@NO_SFTP@$(INSTALL) -m 644 sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
-	@NO_SFTP@$(INSTALL) -m 644 sftp-server.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
-	@NO_SFTP@$(INSTALL) -m 0755 -s sftp $(DESTDIR)$(bindir)/sftp.real
-	@NO_SFTP@$(INSTALL) -m 0755 sftp.wrapper $(DESTDIR)$(bindir)/sftp
-	@NO_SFTP@$(INSTALL) -m 0755 -s sftp-server $(DESTDIR)$(SFTP_SERVER)
-	-rm -f $(DESTDIR)$(bindir)/slogin
-	ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	ln -s ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-
 host-key: ssh-keygen$(EXEEXT)
 	if [ -z "$(DESTDIR)" ] ; then \
 		if [ -f "$(DESTDIR)$(sysconfdir)/ssh_host_key" ] ; then \
