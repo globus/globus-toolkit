@@ -1,6 +1,8 @@
 #! /usr/bin/perl
 
-my $hostname = $ENV{"HOSTNAME"};
+use POSIX;
+
+my $hostname = (POSIX::uname())[1];
 my $now = time;
 
 print sprintf("%010d%010d.$hostname\n",$now,$$);
