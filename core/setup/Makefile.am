@@ -13,6 +13,7 @@ setup_DATA = \
 SUBDIRS = pkgdata
 
 EXTRA_DIST = findshelltools \
+	findshelltools.in \
 	setup-globus-core \
 	setup-globus-core.pl \
 	globus-script-initializer \
