@@ -58,8 +58,51 @@ GSS_CALLCONV gss_init_delegation(
     context = (gss_ctx_id_desc *) context_handle;
     cred = (gss_cred_id_desc *) cred_handle; 
         
-    /* input parameter checking needs to go here */
+    /* parameter checking goes here */
 
+    if(context_handle == GSS_C_NO_CONTEXT)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    if(cred_handle == GSS_C_NO_CREDENTIAL)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    if(desired_mech != GSS_C_NO_OID &&
+       desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    if(restriction_oids != GSS_C_NO_OID_SET &&
+       (restriction_buffers == GSS_C_NO_BUFFER_SET ||
+        restriction_oids->count != restriction_buffers->count))
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    if(output_token == GSS_C_NO_BUFFER)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+    
     /* pass the input to the read BIO in the context */
     
     if(input_token != GSS_C_NO_BUFFER)
@@ -132,7 +175,8 @@ GSS_CALLCONV gss_init_delegation(
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
-                    return major_status;
+                    /* free ex here ? */
+                    goto err;
                 }
             }
         }
@@ -144,7 +188,7 @@ GSS_CALLCONV gss_init_delegation(
                        reqp,
                        &ncert,
                        0,
-                       /*time_req, */
+                       /*time_req, why can we use GSS_C_INDEFINITE here?*/
                        0, /* don't want limited proxy */
                        0,
                        "proxy",
@@ -171,12 +215,6 @@ GSS_CALLCONV gss_init_delegation(
         {
             cert = sk_X509_value(cred->pcd->cert_chain,i);
             
-            /*
-             * add additional certs, but not our cert, or the 
-             * proxy cert, or any self signed certs or write all
-             * certs? 
-             */
-
 #ifdef DEBUG
             {
                 char * s;
@@ -207,6 +245,8 @@ GSS_CALLCONV gss_init_delegation(
     {
         major_status |=GSS_S_CONTINUE_NEEDED;
     }
+
+err:
 
     return major_status;
 }
