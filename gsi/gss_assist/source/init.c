@@ -17,7 +17,6 @@ CVS Information:
 ******************************************************************************/
 #include "globus_gss_assist.h"
 #include <gssapi.h>
-#include <malloc.h>
 
 extern gss_OID gss_nt_service_name;
 /******************************************************************************
@@ -77,7 +76,6 @@ globus_gss_assist_init_sec_context(
     int                                 (*gss_assist_send_token)(void *, void *, size_t),
     void *                              gss_assist_send_context)
 {
-
     int                                 context_established = 0;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           minor_status1 = 0;
@@ -147,7 +145,6 @@ globus_gss_assist_init_sec_context(
     }
     else
     {
-
         major_status = gss_inquire_cred(&minor_status1,
                                         cred_handle,
                                         &target_name,
@@ -466,3 +463,12 @@ globus_gss_assist_init_sec_context_async(
     *minor_status = minor_status1;
     return major_status;
 }
+
+
+
+
+
+
+
+
+
