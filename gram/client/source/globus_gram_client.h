@@ -35,8 +35,9 @@ EXTERN_C_BEGIN
 
 /** 
  * @mainpage Resource Management Client API
- * 
- * The resource management API provides functions for requesting
+ * @anchor globus_gram_client_main
+ *
+ * The resource manager API provides function for requesting
  * that a job be started or terminated, as well as for requesting
  * information about the status of a job.
  */
