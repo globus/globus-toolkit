@@ -9,6 +9,9 @@ EXTERN_C_BEGIN
 
 extern globus_module_descriptor_t       globus_i_xio_system_module;
 
+#define GLOBUS_XIO_SYSTEM_INVALID_HANDLE  -1
+typedef int globus_xio_system_handle_t;   /* for posix, same as fd */
+
 typedef enum
 {
     /** Open file with create  */
@@ -38,8 +41,6 @@ typedef enum
 
 } globus_xio_system_error_type_t;
 
-typedef int globus_xio_system_handle_t;   /* for posix, same as fd */
-
 typedef void
 (*globus_xio_system_callback_t)(
     globus_xio_system_handle_t          handle,
@@ -54,13 +55,6 @@ typedef void
     void *                              user_arg);
 
 globus_result_t
-globus_xio_system_open(
-    const char *                        pathname,
-    int                                 flags,
-    int                                 mode,
-    globus_xio_system_handle_t *        out_handle);
-
-globus_result_t
 globus_xio_system_register_open(
     const char *                        pathname,
     int                                 flags,
@@ -70,12 +64,6 @@ globus_xio_system_register_open(
     void *                              user_arg);
 
 globus_result_t
-globus_xio_system_connect(
-    globus_xio_system_handle_t          handle,
-    const globus_sockaddr_t *           addr);
-
-/* new_handle in callback will be the same as handle */
-globus_result_t
 globus_xio_system_register_connect(
     globus_xio_system_handle_t          handle,
     const globus_sockaddr_t *           addr,
@@ -83,35 +71,11 @@ globus_xio_system_register_connect(
     void *                              user_arg);
 
 globus_result_t
-globus_xio_system_accept(
-    globus_xio_system_handle_t          listener_handle,
-    globus_xio_system_handle_t *        out_handle);
-
-globus_result_t
 globus_xio_system_register_accept(
     globus_xio_system_handle_t          listener_handle,
     globus_xio_system_handle_t *        out_handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
-
-/* nread == -1 on eof (nbytes in callback) */
-globus_result_t
-globus_xio_system_read(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    globus_size_t                       waitforbytes,
-    globus_size_t *                     nread);
-
-globus_result_t
-globus_xio_system_read_ex(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    globus_size_t                       waitforbytes,
-    int                                 flags,
-    const globus_sockaddr_t *           from,
-    globus_size_t *                     nread);
 
 globus_result_t
 globus_xio_system_register_read(
@@ -134,22 +98,6 @@ globus_xio_system_register_read_ex(
     void *                              user_arg);
 
 globus_result_t
-globus_xio_system_write(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    globus_size_t *                     nwritten);
-
-globus_result_t
-globus_xio_system_write_ex(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    int                                 flags,
-    const globus_sockaddr_t *           to,
-    globus_size_t *                     nwritten);
-
-globus_result_t
 globus_xio_system_register_write(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
@@ -166,10 +114,6 @@ globus_xio_system_register_write_ex(
     const globus_sockaddr_t *           to,
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg);
-
-globus_result_t
-globus_xio_system_close(
-    globus_xio_system_handle_t          handle);
 
 globus_result_t
 globus_xio_system_register_close(

@@ -515,7 +515,7 @@ typedef void (*globus_xio_data_callback_t)(
     void *                                      user_arg);
 
 /**
- *  Query/set information related to a handle.
+ *  Query/set information or request a synchronous operation on a handle.
  *  @ingroup GLOBUS_XIO_API
  *
  *  This function allows the user to query information from on set information

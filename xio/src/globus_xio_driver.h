@@ -157,6 +157,8 @@
  *  to create a driver.
  */
 
+#include <stdarg.h>
+
 /**
  *  @ingroup driver_interface_grp  -- this is likely change
  *  give a caller a reference to the driver structure
@@ -621,7 +623,7 @@ typedef globus_result_t
 (*globus_xio_driver_handle_cntl_t)(
     void *                                      driver_handle,
     int                                         cmd,
-    ...);
+    va_list                                     ap);
 
 /**********************************************************************
  *                          Close
@@ -800,7 +802,7 @@ typedef void
 typedef globus_result_t
 (*globus_xio_driver_read_t)(
     void *                                      driver_handle,
-    globus_xio_iovec_t                          iovec,
+    const globus_xio_iovec_t *                  iovec,
     int                                         iovec_count,
     globus_xio_driver_operation_t               op);
 
@@ -827,7 +829,7 @@ typedef globus_result_t
  *  @param waitforbtyes
  *         The minimum number of bytes to read before returning... if a driver
  *         has no specifc requirement, he should use the user's request...
- *         available via GlobusXIODriverOperationMinimumRead(op)
+ *         available via GlobusXIOOperationMinimumRead(op)
  *  @param cb
  *         The function to be called when the operation request is 
  *         completed.
@@ -896,7 +898,7 @@ globus_xio_driver_finished_read(
 typedef globus_result_t
 (*globus_xio_driver_write_t)(
     void *                                      driver_handle,
-    globus_xio_iovec_t                          iovec,
+    const globus_xio_iovec_t *                  iovec,
     int                                         iovec_count,
     globus_xio_driver_operation_t               op);
 
