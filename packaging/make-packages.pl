@@ -1374,16 +1374,109 @@ sub create_installer()
     print INS << "EOF";
 #!/bin/sh
 
-if [ x\$1 = "x" ]; then
-        echo \$0: Usage: \$0 install-directory
-        exit;
+short_usage="\$0 [-help] [-verbose] [-flavor <flavor>] <install-dir>";
+long_usage()
+{
+   cat 1>&2 <<END
+
+\${short_usage}
+
+    Installs GT3 to the directory <install-dir>.
+
+    By default, a non-threaded, debug-enabled flavor is
+    installed. This can be modified by the -flavor option,
+    where <flavor> is specified as <compiler><bits>[dbg]
+    where the choices are
+    <compiler>: one of gcc,mpicc,vendorcc
+    <bits>    : one of 32,64
+    'dbg'       compiles with debug information
+
+    Example: \$0 -flavor gcc64dbg /opt/gt3
+END
+}
+
+case "`uname`" in
+   HP-UX)
+        FLAVOR=vendorcc32dbg
+        ;;
+   OSF1)
+        FLAVOR=vendorcc64dbg
+        ;;
+   *)
+        case "`uname -m`" in
+            alpha|ia64)
+                FLAVOR=gcc64dbg
+                ;;
+            *)
+                FLAVOR=gcc32dbg
+                ;;
+        esac
+        ;;
+esac
+
+THREAD=pthr
+
+if [ \$# -eq 0 ]; then
+    echo "Usage: \${short_usage}"
+    exit 1;
 fi
 
-mkdir -p \$1
-if [ \$? -ne 0 ]; then
-        echo Unable to make directory \$1.  Exiting.
-        exit
+while [ -n "\$1" ]; do
+    case "\$1" in
+        -help)
+            long_usage;
+            exit 0
+            ;;
+        -verbose)
+            verbose="-verbose"
+            ;;
+        -flavor)
+            if [ -z "\$2" ]; then
+                echo "Error: -flavor requires a flavor";
+                exit 1;
+            fi
+            FLAVOR="\$2";
+            shift
+            ;;
+        *)
+            if [ \$# -gt 1 ]; then
+                echo "Unrecognized option \$1"
+                exit 1;
+            fi
+            destdir=\$1
+            ;;
+    esac
+    shift
+done
+
+if [ -z "\${destdir}" ]; then
+    echo "" >&2
+    echo "ERROR: install-dir is missing" >&2
+    echo "\${short_usage}"
+    exit 1
 fi
+
+mkdir -p \$destdir
+
+if [ \$? -ne 0 ]; then
+        echo "Unable to make directory \$destdir.  Exiting."
+        echo \${short_usage}
+        exit 1
+fi
+
+MYDIR=`pwd`
+cd \$destdir
+
+INSDIR=`pwd`
+GPT_LOCATION="\$INSDIR"
+GLOBUS_LOCATION="\$INSDIR"
+GT3_LOCATION="\$INSDIR"
+GPT_BUILD="\$GPT_LOCATION/sbin/gpt-build \$verbose "
+GPT_INSTALL="\$GPT_LOCATION/sbin/gpt-install \$verbose "
+
+cd \$MYDIR
+
+export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
 EOF
 
 print INS "echo Build environment:\n";
@@ -1412,41 +1505,6 @@ print INS "type gcc\n"
 print INS "echo\n\n";
 
 print INS << "EOF";
-MYDIR=`pwd`
-
-cd \$1
-
-INSDIR=`pwd`
-GPT_LOCATION="\$INSDIR"
-GLOBUS_LOCATION="\$INSDIR"
-GT3_LOCATION="\$INSDIR"
-GPT_BUILD="\$GPT_LOCATION"/sbin/gpt-build
-GPT_INSTALL="\$GPT_LOCATION"/sbin/gpt-install
-
-cd \$MYDIR
-
-export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
-
-case "`uname`" in
-   HP-UX)
-        FLAVOR=vendorcc32dbg
-        ;;
-   OSF1)
-        FLAVOR=vendorcc64dbg
-        ;;
-   *)
-        case "`uname -m`" in
-            alpha|ia64)
-                FLAVOR=gcc64dbg
-                ;;
-            *)
-                FLAVOR=gcc32dbg
-                ;;
-        esac
-        ;;
-esac
-
-THREAD=pthr
 
 if [ ! -f gpt-3.0.1/sbin/gpt-build ]; then
     echo Building GPT ...
@@ -1456,7 +1514,7 @@ if [ ! -f gpt-3.0.1/sbin/gpt-build ]; then
     LANG="" ./build_gpt
     if [ \$? -ne 0 ]; then
         echo Error building GPT
-        exit;
+        exit 1;
     fi
 
     cd ..
