@@ -250,6 +250,14 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         return -1;
     }
 
+    if (GSI_SOCKET_set_encryption(attrs->gsi_socket, 1) == GSI_SOCKET_ERROR)
+    {
+	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                   sizeof(error_string));
+	myproxy_log("Error enabling encryption: %s\n", error_string);
+	return -1;
+    }
+
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
