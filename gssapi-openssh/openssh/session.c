@@ -58,6 +58,10 @@ RCSID("$OpenBSD: session.c,v 1.150 2002/09/16 19:55:33 stevesk Exp $");
 #include "session.h"
 #include "monitor_wrap.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #ifdef HAVE_CYGWIN
 #include <windows.h>
 #include <sys/cygwin.h>
@@ -453,6 +457,12 @@ do_exec_no_pty(Session *s, const char *command)
 
 	session_proctitle(s);
 
+#if defined(GSSAPI)
+	temporarily_use_uid(s->pw);
+	ssh_gssapi_storecreds();
+	restore_uid();
+#endif
+
 #if defined(USE_PAM)
 	do_pam_session(s->pw->pw_name, NULL);
 	do_pam_setcred(1);
@@ -579,6 +589,12 @@ do_exec_pty(Session *s, const char *command)
 		fatal("do_exec_pty: no session");
 	ptyfd = s->ptyfd;
 	ttyfd = s->ttyfd;
+
+#if defined(GSSAPI)
+	temporarily_use_uid(s->pw);
+	ssh_gssapi_storecreds();
+	restore_uid();
+#endif
 
 #if defined(USE_PAM)
 	do_pam_session(s->pw->pw_name, s->tty);
@@ -838,7 +854,7 @@ check_quietlogin(Session *s, const char *command)
  * Sets the value of the given variable in the environment.  If the variable
  * already exists, its value is overriden.
  */
-static void
+void
 child_set_env(char ***envp, u_int *envsizep, const char *name,
 	const char *value)
 {
@@ -963,6 +979,13 @@ do_setup_env(Session *s, const char *shell)
 	 * important for a running system. They must not be dropped.
 	 */
 	copy_environment(environ, &env, &envsize);
+#endif
+
+#ifdef GSSAPI
+	/* Allow any GSSAPI methods that we've used to alter 
+	 * the childs environment as they see fit
+	 */
+	ssh_gssapi_do_child(&env,&envsize);
 #endif
 
 	if (!options.use_login) {
@@ -1289,6 +1312,18 @@ do_child(Session *s, const char *command)
 	struct passwd *pw = s->pw;
 	u_int i;
 
+#ifdef AFS_KRB5
+/* Default place to look for aklog. */
+#ifdef AKLOG_PATH
+#define KPROGDIR AKLOG_PATH
+#else
+#define KPROGDIR "/usr/bin/aklog"
+#endif /* AKLOG_PATH */
+
+	struct stat st;
+	char *aklog_path;
+#endif /* AFS_KRB5 */
+
 	/* remove hostkey from the child's memory */
 	destroy_sensitive_data();
 
@@ -1370,6 +1405,30 @@ do_child(Session *s, const char *command)
 	 * /etc/ssh/sshrc and xauth are run in the proper environment.
 	 */
 	environ = env;
+
+#ifdef AFS_KRB5
+
+	/* User has authenticated, and if a ticket was going to be
+	 * passed we would have it.  KRB5CCNAME should already be set.
+	 * Now try to get an AFS token using aklog.
+	 */
+	if (k_hasafs()) {  /* Do we have AFS? */
+
+		aklog_path = xstrdup(KPROGDIR);
+
+		/*
+		 * Make sure it exists before we try to run it
+		 */
+		if (stat(aklog_path, &st) == 0) {
+			debug("Running %s to get afs token.",aklog_path);
+			system(aklog_path);
+		} else {
+			debug("%s does not exist.",aklog_path);
+		}
+
+		xfree(aklog_path);
+	}
+#endif /* AFS_KRB5 */
 
 #ifdef AFS
 	/* Try to get AFS tokens for the local cell. */
@@ -2092,4 +2151,7 @@ static void
 do_authenticated2(Authctxt *authctxt)
 {
 	server_loop2(authctxt);
+#if defined(GSSAPI)
+	ssh_gssapi_cleanup_creds(NULL);
+#endif
 }
