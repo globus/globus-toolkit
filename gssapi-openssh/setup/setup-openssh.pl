@@ -81,19 +81,22 @@ sub copyKeyFiles
     my($copylist) = @_;
     my($regex, $basename);
 
-    print "Copying ssh host keys...\n";
-
-    for my $f (@$copylist)
+    if (@$copylist)
     {
-        $f =~ s:/+:/:g;
+        print "Copying ssh host keys...\n";
 
-        if (length($f) > 0)
+        for my $f (@$copylist)
         {
-            $keyfile = "$f";
-            $pubkeyfile = "$f.pub";
+            $f =~ s:/+:/:g;
 
-            action("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
-            action("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
+            if (length($f) > 0)
+            {
+                $keyfile = "$f";
+                $pubkeyfile = "$f.pub";
+
+                action("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
+                action("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
+            }
         }
     }
 }
@@ -112,40 +115,79 @@ sub isReadable
     }
 }
 
+sub isPresent
+{
+    my($file) = @_;
+
+    if ( -e $file )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 sub determineKeys
 {
     my($keyhash, $keylist);
     my($count);
+
+    #
+    # initialize our variables
+    #
 
     $count = 0;
 
     $keyhash = {};
     $keyhash->{gen} = [];   # a list of keytypes to generate
     $keyhash->{copy} = [];  # a list of files to copy from the 
+
     $genlist = $keyhash->{gen};
     $copylist = $keyhash->{copy};
+
+    #
+    # loop over our keytypes and determine what we need to do for each of them
+    #
 
     for my $keytype (keys %$keyfiles)
     {
         $basekeyfile = $keyfiles->{$keytype};
-        $keyfile = "$localsshdir/$basekeyfile";
-        $pubkeyfile = "$keyfile.pub";
 
-        if ( !isReadable($keyfile) || !isReadable($pubkeyfile) )
-        {
-            push(@$genlist, $keytype);
-            $count++;
-        }
-    }
+        #
+        # if the key's are already present, we don't need to bother with this rigamarole
+        #
 
-    for my $keytype (keys %$keyfiles)
-    {
-        if ( !grep(/^$keytype$/, @$genlist) )
+        $gkeyfile = "$sysconfdir/$basekeyfile";
+        $gpubkeyfile = "$sysconfdir/$basekeyfile.pub";
+
+        if ( isPresent($gkeyfile) && isPresent($gpubkeyfile) )
         {
-            $keyfile = $keyfiles->{$keytype};
-            push(@$copylist, $keyfile);
-            $count++;
+            next;
         }
+
+        #
+        # if we can find a copy of the keys in /etc/ssh, we'll copy them to the user's
+        # globus location
+        #
+
+        $mainkeyfile = "$localsshdir/$basekeyfile";
+        $mainpubkeyfile = "$localsshdir/$basekeyfile.pub";
+
+        if ( isReadable($mainkeyfile) && isReadable($mainpubkeyfile) )
+        {
+            push(@$copylist, $basekeyfile);
+            $count++;
+            next;
+        }
+
+        #
+        # otherwise, we need to generate the key
+        #
+
+        push(@$genlist, $keytype);
+        $count++;
     }
 
     if ($count > 0)
@@ -164,14 +206,17 @@ sub runKeyGen
 {
     my($gen_keys) = @_;
 
-    print "Generating ssh host keys...\n";
-
-    for my $k (@$gen_keys)
+    if (@$gen_keys)
     {
-        $keyfile = $keyfiles->{$k};
+        print "Generating ssh host keys...\n";
 
-        # if $sysconfdir/$keyfile doesn't exist..
-        action("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
+        for my $k (@$gen_keys)
+        {
+            $keyfile = $keyfiles->{$k};
+
+            # if $sysconfdir/$keyfile doesn't exist..
+            action("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
+        }
     }
 
     return 0;
