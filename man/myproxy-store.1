@@ -165,6 +165,15 @@ before this option to match against the full distinguished name (DN)
 (for example: "/C=US/O=National Computational Science Alliance/CN=Jim
 Basney") instead.
 .TP
+.BI -E " dn, " --retrieve_key " dn"
+Allow the specified entity to retrieve end-entity credentials.  By 
+default, the argument will be matched against the common name (CN) 
+of the client (for example: "Jim Basney").  Specify
+.B -x 
+before this option to match against the full distinguished name (DN)
+(for example: "/C=US/O=National Computational Science Alliance/CN=Jim
+Basney") instead.
+.TP
 .BI -R " dn, " --renewable_by " dn"
 Allow the specified entity to renew credentials.
 By default, the
