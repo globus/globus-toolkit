@@ -11,16 +11,18 @@ sub run_test
     my $cmd=(shift);
     my $test_str=(shift);
     my ($errors,$rc) = ("",0);
-    my $pid=$$;
-    my $output_dir="test_output/$pid";
+    my $output_dir=$ENV{'xio-test-output-dir'};
 
     # delete the output dir if it exists
-    `rm -rf $output_dir`
-    `mkdir -p $output_dir`
+    $rc = system("mkdir -p $output_dir");
+    $rc = system("rm -f $output_dir/$test_str.insure");
+    $rc = system("rm -f $output_dir/$test_str.dbg");
+    $rc = system("rm -f $output_dir/$test_str.err");
+    $rc = system("rm -f $output_dir/$test_str.out");
 
     $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
     $ENV{"GLOBUS_XIO_DEBUG"} = "127,#$output_dir/$test_str.dbg,1";
-    $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "4";
+    $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "2";
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
     $rc = system($command);
@@ -63,4 +65,4 @@ sub run_test
         $errors .= "\n# Test failed\n# $cmd\n# " . $errors;
         ok($errors, 'success');
     }
-}
+}1;
