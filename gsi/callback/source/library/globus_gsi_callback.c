@@ -107,6 +107,13 @@ globus_l_gsi_callback_activate(void)
         goto exit;
     }
 
+    result = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
     globus_mutex_init(&globus_l_gsi_callback_oldgaa_mutex, NULL);
     
     OpenSSL_add_all_algorithms();
@@ -134,7 +141,7 @@ globus_l_gsi_callback_deactivate(void)
     EVP_cleanup();
 
     globus_mutex_destroy(&globus_l_gsi_callback_oldgaa_mutex);
-    
+    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
