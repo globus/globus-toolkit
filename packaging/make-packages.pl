@@ -46,7 +46,7 @@ my %cvs_archives = (
      'gt3' => [ "/home/globdev/CVS/globus-packages", "gs", $cvs_prefix . "ogsa-cvs", "HEAD" ],
      'gt4' => [ "/home/globdev/CVS/globus-packages", "ws", $cvs_prefix . "wsrf-cvs", "HEAD" ],
      'cbindings' => [ "/home/globdev/CVS/globus-packages", "chosting", $cvs_prefix . "cbindings", "HEAD" ],
-     'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", $cvs_prefix . "autotools", "HEAD" ]
+     'autotools' => [ "/home/globdev/CVS/globus-packages", "autotools", $cvs_prefix . "autotools", "HEAD" ]
       );
 
 # package_name => [ tree, subdir, custom_build, (patch-n-build file, if exists) ]
@@ -794,19 +794,20 @@ sub install_gt2_autotools()
     my $res;
     chdir cvs_subdir('autotools');
 
-    if ( -e 'autotools/bin/automake' )
+    if ( -e 'bin/automake' )
     {
 	print "Using existing GT2 autotools installation.\n";
     } else {
 	print "Building GT2 autotools.\n";
 	print "Logging to ${log_dir}/gt2-autotools.log\n";
 
-	if ( -e "side_tools/build-autotools" )
+	if ( -e "autotools/install-autotools" )
 	{	    
-	    $res = log_system("./side_tools/build-autotools",
+	    chdir('autotools');
+	    $res = log_system("./install-autotools " . cvs_subdir('autotools'),
 		    "${log_dir}/gt2-autotools.log");
 	} else {
-	    die "ERROR: side_tools/build-autotools doesn't exist.  Check cvs logs.";
+	    die "ERROR: autotools/install-autotools doesn't exist.  Check cvs logs.";
 	}
 
 	if ( $? ne 0 )
@@ -814,8 +815,8 @@ sub install_gt2_autotools()
 	    print "\tAutotools dies the first time through sometimes due to\n";
 	    print "\temacs .texi issues.  I am trying again.\n";
 
-	    log_system("./side_tools/build-autotools", 
-		       "${log_dir}/gt2-autotools.log");
+	    log_system("./install-autotools " . cvs_subdir('autotools'),
+		    "${log_dir}/gt2-autotools.log");
 	    if ( $? ne 0 )
 	    {
 		die "ERROR: Error building autotools.  Check log.\n";
@@ -825,7 +826,7 @@ sub install_gt2_autotools()
 	}
     }
 
-    $ENV{'PATH'} = cwd() . "/autotools/bin:$ENV{'PATH'}";
+    $ENV{'PATH'} = cvs_subdir('autotools') . "/bin:$ENV{'PATH'}";
 
     print "\n";
 }
