@@ -78,8 +78,7 @@ print_features(
     
     for (i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
     {
-        result = globus_ftp_client_is_feature_supported(
-            &features, &answer, i);
+        result = globus_ftp_client_is_feature_supported(features, &answer, i);
 	assert_result("is_feature_supported");
 	
 	printf("%d\t(%s)\t", i, feature_names[i]);
