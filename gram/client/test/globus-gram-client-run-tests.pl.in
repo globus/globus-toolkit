@@ -26,6 +26,7 @@ if(0 != system("grid-proxy-info -exists -hours 2") / 255)
     exit 1;
 }
 chdir "$globus_location/test/@PACKAGE@";
+$ENV{PATH} .= ":$globus_location/test/@PACKAGE@";
 
 system("globus-personal-gatekeeper -killall >/dev/null 2>/dev/null");
 system("globus-personal-gatekeeper -start -log never>/dev/null 2>/dev/null");
