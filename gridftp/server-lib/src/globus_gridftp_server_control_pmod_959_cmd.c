@@ -307,8 +307,8 @@ globus_l_gsc_pmod_959_cmd_cwd_cb(
     }
 
     globus_gsc_pmod_959_finished_op(wrapper->op, msg);
-    globus_free(wrapper);
     globus_free(wrapper->strarg);
+    globus_free(wrapper);
     globus_free(msg);
 
     return;
@@ -480,8 +480,8 @@ globus_l_gsc_pmod_959_cmd_stat_cb(
     {
         globus_free(stat_info);
     }
-    globus_free(wrapper);
     globus_free(wrapper->strarg);
+    globus_free(wrapper);
     globus_free(msg);
 
     return;
@@ -493,8 +493,9 @@ globus_l_gsc_pmod_959_cmd_stat_cb(
     {
         globus_free(stat_info);
     }
-    globus_free(wrapper);
+    
     globus_free(wrapper->strarg);
+    globus_free(wrapper);
     if(msg != NULL)
     {
         globus_free(msg);
@@ -642,11 +643,13 @@ globus_l_gsc_pmod_959_cmd_size_cb(
         goto err;
     }
     globus_gsc_pmod_959_finished_op(wrapper->op, msg);
-
-    globus_free(wrapper);
+    
     globus_free(wrapper->strarg);
+    globus_free(wrapper);
     globus_free(msg);
-
+    
+    return;
+    
   err:
     globus_gsc_959_panic(
         wrapper->op, GlobusGridFTPServerErrorMemory("message"));
