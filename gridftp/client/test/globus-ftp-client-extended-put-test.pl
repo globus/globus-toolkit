@@ -174,8 +174,11 @@ sub restart_test
 for(my $i = 1; $i <= 41; $i++)
 {
     push(@tests, "restart_test($i);");
+    if($i == 38)
+    {
+	push(@todo, 54 + $i);
+    }
 }
-push(@todo, 79);
 
 
 =head2 I<perf_test> (Test 95)
