@@ -42,14 +42,6 @@
 
 extern ServerOptions options;
 
-static int
-userauth_external(Authctxt *authctxt)
-{
-        packet_check_eom();
-
-        return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
-}
-
 static void ssh_gssapi_userauth_error(Gssctxt *ctxt);
 static void input_gssapi_token(int type, u_int32_t plen, void *ctxt);
 static void input_gssapi_mic(int type, u_int32_t plen, void *ctxt);
@@ -58,6 +50,17 @@ static void input_gssapi_errtok(int, u_int32_t, void *);
 
 static int gssapi_with_mic = 1;	/* flag to toggle "gssapi-with-mic" vs.
 				   "gssapi" */
+
+static int
+userauth_external(Authctxt *authctxt)
+{
+        packet_check_eom();
+
+	if (authctxt->valid && strcmp(authctxt->user, "") != 0) {
+	    return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
+	}
+	return 0;
+}
 
 /*
  * We only support those mechanisms that we know about (ie ones that we know
@@ -75,7 +78,7 @@ userauth_gssapi(Authctxt *authctxt)
 	u_int len;
 	char *doid = NULL;
 
-	if (!authctxt->valid || authctxt->user == NULL)
+	if (authctxt->user == NULL)
 		return (0);
 
 	mechs = packet_get_int();
@@ -236,6 +239,9 @@ gssapi_set_implicit_username(Authctxt *authctxt)
 	    authctxt->user = lname;
 	    debug("set username to %s from gssapi context", lname);
 	    authctxt->pw = PRIVSEP(getpwnamallow(authctxt->user));
+	    if (authctxt->pw) {
+		authctxt->valid = 1;
+	    }
 	} else {
 	    debug("failed to set username from gssapi context");
 	}
@@ -243,7 +249,7 @@ gssapi_set_implicit_username(Authctxt *authctxt)
     if (authctxt->pw) {
 #ifdef USE_PAM
 	if (options.use_pam)
-		PRIVSEP(start_pam(authctxt->pw->pw_name));
+		PRIVSEP(start_pam(authctxt));
 #endif
     }
 }
@@ -275,7 +281,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 
 	packet_check_eom();
 
-	if (strcmp(authctxt->user, "") != 0) {
+	if (authctxt->valid && strcmp(authctxt->user, "") != 0) {
 	    authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 	} else {
 	    authenticated = 0;
@@ -331,7 +337,7 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 	gssbuf.length = buffer_len(&b);
 
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
-	    if (strcmp(authctxt->user, "") != 0) {
+	    if (authctxt->valid && strcmp(authctxt->user, "") != 0) {
 		authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 	    } else {
 		authenticated = 0;
