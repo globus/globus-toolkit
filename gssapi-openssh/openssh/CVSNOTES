@@ -50,6 +50,18 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2003/04/10
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_3_5P1_GSI_20030317
+        - new base: OPENSSH_3_6_1P1_GSSAPI_20030408
+      Conflicts: 2
+        - Makefile.in
+            caused by base changes to file
+        - ssh-agent.c
+            pathname changes on this branch
+
     2003/03/17
     ----------
       Action: Merge
