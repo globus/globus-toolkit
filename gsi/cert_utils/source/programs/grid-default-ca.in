@@ -34,7 +34,8 @@ find_ca_dir() {
 
     for i in `my_seq 0 $trusted_dircount`; do
         if test -f "${trusted_certs_dirs[$i]}/$cahash.0"; then
-            return ${trusted_certs_dirs[$i]}
+            echo ${trusted_certs_dirs[$i]}
+            return 0
         fi
     done
 }
