@@ -811,117 +811,126 @@ error:
 }
 
 int
-myproxy_creds_fetch_entry(char *username, char *credname, struct myproxy_creds *creds)
-{
-   char creds_path[MAXPATHLEN];
-   char data_path[MAXPATHLEN];
-
-   if (username == NULL || creds == NULL) {
-      verror_put_errno(EINVAL);
-      return -1;
-   }
-
-   if (get_storage_locations(username,
-	                     creds_path, sizeof(creds_path),
-			     data_path, sizeof(data_path), credname) == -1)
-      return -1;
-
-   if (read_data_file (creds, data_path) == -1)
- 	return -1;
-
-   creds->username = mystrdup(username);
-   creds->location = mystrdup(creds_path);
-   return 0;
-}
-
-
-int
 myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
-    char creds_path[MAXPATHLEN];
-    char data_path[MAXPATHLEN];
-    struct myproxy_creds retrieved_creds = {0}; /* initialize with 0s */
-    int return_code = -1;
+    char creds_path[MAXPATHLEN] = "";
+    char data_path[MAXPATHLEN] = "";
     
-    if ((creds == NULL) ||
-        (creds->username == NULL) ||
-        (creds->passphrase == NULL))
-    {
+    if ((creds == NULL) || (creds->username == NULL)) {
         verror_put_errno(EINVAL);
         return -1;
     }
 
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path), creds->credname) == -1)
-    {
-        goto error;
+                              data_path, sizeof(data_path),
+			      creds->credname) == -1) {
+	return -1;
     }
 
-    if (read_data_file(&retrieved_creds, data_path) == -1)
-    {
+    if (read_data_file(creds, data_path) == -1) {
 	verror_put_string("can't read credentials");
-        goto error;
+	return -1;
     }
 
-    /* Copy creds */
-    if (creds->owner_name != NULL)
-       free(creds->owner_name);
-    if (creds->location != NULL)
-       free(creds->location);
-    creds->owner_name = mystrdup(retrieved_creds.owner_name);
+    ssl_get_times(creds_path, &creds->start_time, &creds->end_time);
 
-    creds->location = mystrdup(creds_path);
-
-    creds->lifetime = retrieved_creds.lifetime;
-   
-    if ((creds->owner_name == NULL)) 
-    {
-        goto error;
-    }
-   
-    if (retrieved_creds.retrievers == NULL ||
-	retrieved_creds.retrievers[0] == '\0') {
-	creds->retrievers = NULL;
-    } else {
-	creds->retrievers = mystrdup(retrieved_creds.retrievers);
-    }
-
-    if (retrieved_creds.renewers == NULL ||
-	retrieved_creds.renewers[0] == '\0') {
-	creds->renewers = NULL;
-    } else {
-	creds->renewers = mystrdup(retrieved_creds.renewers);
-    }
- 
     /* Success */
-    return_code = 0;
-    
-  error:
-    if (return_code < 0)
-    {
-        /*
-         * Don't want to free username or passphrase as caller supplied
-         * these.
-         */
-        if (creds->owner_name != NULL)
-        {
-            free(creds->owner_name);
-            creds->owner_name = NULL;
-        }
-        if (creds->location != NULL)
-        {
-            free(creds->location);
-            creds->location = NULL;
-        }
-        creds->lifetime = 0;
-    }
-
-    myproxy_creds_free_contents(&retrieved_creds);
-    
-    return return_code;
+    return 0;
 }
 
+
+int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
+{
+    char *username = NULL, *owner_name = NULL;
+    size_t username_len;
+    struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
+    DIR *dir;
+    struct dirent *de;
+    int return_code = -1;
+
+    /*
+     * cur_cred always points to the last valid credential in the list.
+     * If cur_cred is NULL, we haven't found any credentials yet.
+     * The first cred in the list is the one passed in.  Other creds
+     *    in the list are ones we allocated and added.
+     */
+
+    if ((creds == NULL) || (creds->username == NULL)) {
+        verror_put_errno(EINVAL);
+        goto error;
+    }
+
+    /* stash username and owner_name so we can test each credential */
+    username = strdup(creds->username);
+    username_len = strlen(username);
+    owner_name = strdup(creds->owner_name);
+
+    new_cred = creds; /* new_cred is what we're filling in */
+
+    /* first, try to get the default credential */
+    if (new_cred->credname) {
+	free(new_cred->credname); new_cred->credname = NULL;
+    }
+    if (myproxy_creds_retrieve(new_cred) == 0) {
+	if (strcmp(owner_name, new_cred->owner_name) == 0) {
+	    cur_cred = creds;
+	    new_cred = malloc(sizeof(struct myproxy_creds));
+	    memset(new_cred, 0, sizeof(struct myproxy_creds));
+	} else {
+	    /* owned by someone else; re-initialize cred structure */
+	    myproxy_creds_free_contents(new_cred);
+	}
+    }
+
+    if ((dir = opendir(storage_dir)) == NULL) {
+	verror_put_string("failed to open credential storage directory");
+	goto error;
+    }
+    while ((de = readdir(dir)) != NULL) {
+	if (!strncmp(de->d_name, username, username_len) &&
+	    de->d_name[username_len] == '-' &&
+	    !strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
+	    char *credname, *dot;
+	    credname = strdup(de->d_name+username_len+1);
+	    dot = strchr(credname, '.');
+	    *dot = '\0';
+	    if (new_cred->username) free(new_cred->username);
+	    if (new_cred->credname) free(new_cred->credname);
+	    new_cred->username = strdup(username);
+	    new_cred->credname = strdup(credname);
+	    if (myproxy_creds_retrieve(new_cred) == 0) {
+		if (strcmp(owner_name, new_cred->owner_name) == 0) {
+		    if (cur_cred) cur_cred->next = new_cred;
+		    cur_cred = new_cred;
+		    new_cred = malloc(sizeof(struct myproxy_creds));
+		    memset(new_cred, 0, sizeof(struct myproxy_creds));
+		} else {
+		    /* owned by someone else; re-initialize cred structure */
+		    myproxy_creds_free_contents(new_cred);
+		}
+	    }
+	}
+    }
+    closedir(dir);
+
+    if (!cur_cred) {
+	verror_put_string("no credentials found for user %s, owner \"%s\"",
+			  username, owner_name);
+	goto error;
+    }
+
+    return_code = 0;
+
+ error:
+    if (username) free(username);
+    if (owner_name) free(owner_name);
+    if (cur_cred && new_cred) {
+	myproxy_creds_free_contents(new_cred);
+	free(new_cred);
+    }
+    return return_code;
+}
 
 int
 myproxy_creds_exist(const char *username, const char *credname)
@@ -1086,134 +1095,10 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     return return_code;
 }
 
-char *username;
-int file_select (const struct direct *entry)
-{
-	char *str = strstr (entry->d_name, ".data");
-
-	/* first part ensures the filename begins with username and the second part ensures the filename ends with ".data" */
-	return (!strncmp (entry->d_name, username, strlen(username)) & ((entry->d_name[strlen(username)] == '-')||(entry->d_name[strlen(username)] == '.')) & (str == (entry->d_name)+strlen(entry->d_name)-strlen(".data"))); 
-}
-
-int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *response)
-{
-    int count, tot_len, i;
-    struct direct **files;
-    char *ret_str;
-    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
-    int index;
-    myproxy_info_t *info_ptr;
-
-    username = strdup (creds->username);
-    count = scandir (storage_dir, &files, file_select, alphasort);
-
-    if (count <= 0)
-    	ret_str = strdup("");
-    else
-    {
-	ret_str = NULL;
-   }
-
-    tot_len = 0;
-    index = 0;
-    info_ptr = NULL;
-    for (i = 0; i < count; i ++)
-    {
-	char fullpath[MAXPATHLEN];
-	char *p;
-	time_t tmp_time, end_time;
-
-	fullpath[0] = '\0';
-    	if (concatenate_strings(fullpath, sizeof (fullpath), storage_dir,
-			    "/", files[i]->d_name, NULL) == -1)
-	{
-		goto error;
-	}
-
-	memset(&tmp_creds, 0, sizeof(struct myproxy_creds));
-
-    	if (read_data_file(&tmp_creds, fullpath) == -1)
-   	{
-        	goto error;
-    	}
-   
-	if (myproxy_creds_is_owner(username, tmp_creds.credname, creds->owner_name) == -1)
-		continue;
-	
-	p = strstr (files[i]->d_name, ".data");
-	*p = '\0';   /* knock out .data */
-
-	fullpath[0] = '\0';
-	if (concatenate_strings (fullpath, sizeof(fullpath), storage_dir, "/", files[i]->d_name, ".creds", NULL) == -1)
-		goto error;
-
-    	if (ssl_get_times(fullpath, &tmp_time, &end_time) != 0)
-       		goto error;
-	
-	index ++;
-	info_ptr = realloc (info_ptr, index * sizeof(myproxy_info_t));
-	
-	if (tmp_creds.credname)
-		info_ptr[index-1].credname = strdup (tmp_creds.credname);
-	else 
-		info_ptr[index-1].credname = NULL;
-	
-	if (tmp_creds.creddesc)
-		info_ptr[index-1].creddesc = strdup (tmp_creds.creddesc);
-	else
-		info_ptr[index-1].creddesc = NULL;
-	
-	info_ptr[index-1].cred_owner[0] = '\0';
-	strcpy (info_ptr[index-1].cred_owner, tmp_creds.owner_name);
-	info_ptr[index-1].cred_start_time = tmp_time;
-	info_ptr[index-1].cred_end_time = end_time;
-	/* Add retriever and renewer strings */
-	if (tmp_creds.retrievers)
-		info_ptr[index-1].retriever_str = tmp_creds.retrievers;
-	else
-		info_ptr[index-1].retriever_str = NULL;
-
-	if (tmp_creds.renewers)
-		info_ptr[index-1].renewer_str = strdup (tmp_creds.renewers);
-	else
-		info_ptr[index-1].renewer_str = NULL;
-
-    } /* end for */
-
-    response->info_creds = info_ptr;
-    response->num_creds = index;
-    return 0;
-
-    error:
-	return -1;
-}
-
-int
-myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
-{
-    char creds_path[MAXPATHLEN];
-    char data_path[MAXPATHLEN];
-    int return_code = -1;
-
-    if ((creds == NULL) || (creds->username == NULL)) {
-       verror_put_errno(EINVAL);
-	goto error;
-    }
-    if (get_storage_locations(creds->username,
-	                      creds_path, sizeof(creds_path),
-			      data_path, sizeof(data_path), creds->credname) == -1) {
-       goto error;
-    }
-
-    return_code = read_from_directory(creds, response);
-
-error:
-    return return_code;
-}
-
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
     if (creds == NULL) return;
+    if (creds->next) myproxy_creds_free_contents(creds->next);
     if (creds->username != NULL)	free(creds->username);
     if (creds->passphrase != NULL)	free(creds->passphrase);
     if (creds->owner_name != NULL)	free(creds->owner_name);
