@@ -156,24 +156,15 @@ globus_l_gfs_remote_node_request(
     globus_l_gfs_remote_node_info_t *   node_info;
     int                                 nodes;
     GlobusGFSName(globus_l_gfs_remote_create_nodes);
-        
-    bounce_info = (globus_l_gfs_remote_request_t *) 
-        globus_calloc(1, sizeof(globus_l_gfs_remote_request_t));
-    
-    bounce_info->callback = callback;
-    bounce_info->user_arg = user_arg;
-    bounce_info->my_handle = my_handle;
-    
+            
     current_node_count = globus_list_size(my_handle->cached_node_list);
     nodes = *num_nodes;
     if(nodes == 0)
     {
         globus_gfs_ipc_handle_get_max_available_count(
             my_handle->session_info.username, pathname, &nodes);
-        bounce_info->nodes_created = nodes;
     }
     *num_nodes = nodes;
-    bounce_info->nodes_created = nodes;
 
     if(current_node_count >= nodes)
     {
@@ -187,11 +178,19 @@ globus_l_gfs_remote_node_request(
             bounce_info->callback(
                 node_info,
                 GLOBUS_SUCCESS,
-                bounce_info->user_arg);
+                user_arg);
         }
     }
     else
-    {            
+    {  
+        bounce_info = (globus_l_gfs_remote_request_t *) 
+            globus_calloc(1, sizeof(globus_l_gfs_remote_request_t));
+
+        bounce_info->nodes_created = nodes;
+        bounce_info->callback = callback;
+        bounce_info->user_arg = user_arg;
+        bounce_info->my_handle = my_handle;
+          
         result = globus_gfs_ipc_handle_obtain_by_path(
             &bounce_info->nodes_created,
             pathname,
@@ -1252,7 +1251,8 @@ globus_l_gfs_remote_session_start_kickout(
         bounce_info->op,                                                   
         result,                                               
         &finished_info);
-        
+    
+    globus_free(bounce_info);        
     return;
 }   
 
