@@ -1,6 +1,6 @@
 include $(top_srcdir)/aclocal/automake_targets
 
-licensedir = $(GLOBUS_LOCATION)
+licensedir = $(GLOBUS_LOCATION)/.
 ## license = [ DATA ]
 
 license_DATA = GLOBUS_LICENSE
