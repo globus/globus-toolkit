@@ -177,14 +177,14 @@ main(
 
     /*
      *  verify that setuid bit is set
-     */
     if(getuid() == geteuid())
     {
-        /* log to stderr since we do not know the intended log file yet */
+        / * log to stderr since we do not know the intended log file yet * /
         fprintf(stderr, "Not running as a setuid program.  The user may must "
                         "simply use their own proxy.\n");
         return 1;
     }
+     */
 
     /***** BEGIN PRIVLEDGES *****/
     /*
@@ -663,13 +663,13 @@ grim_privedged_code(
     char *                                      user_key_filename)
 {
     globus_result_t                             res;
-    globus_gsi_cred_handle_attrs_t              cred_handle_attrs;
+    globus_gsi_cred_handle_attrs_t              cred_handle_attrs = NULL;
 
     res = globus_gsi_cred_handle_attrs_init(&cred_handle_attrs);
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log(      
-                            "\n\nERROR: Couldn't initialize credential "
+                            "ERROR: Couldn't initialize credential "
                             "handle attributes\n");
         return 1;
     }
