@@ -46,7 +46,7 @@ sub test_gridftp_local
 
     ($rc, $output) = $u->command("globus-url-copy -s \"$subject\" \\
         gsiftp://localhost:9998/etc/group \\
-        gsiftp://localhost:9999$tmpfile 2>&1");
+        gsiftp://localhost:9999$tmpfile 2>&1",5);
 
     if($rc != 0)
     {
@@ -69,7 +69,7 @@ sub test_gridftp_local
         $output .= "$server_output\n";
     }
 
-    $output .= ($u->command("diff /etc/group $tmpfile",1))[1];
+    $output .= ($u->command("diff /etc/group $tmpfile"))[1];
     $output eq "" ? $u->report("SUCCESS") : $u->report("FAILURE");
 
     $u->command("rm -f $tmpfile");

@@ -20,6 +20,8 @@ sub test_gram_local
     $u->announce("Testing GRAM locally");
 
     my $gatekeeper_url;
+    my $gk_pid;
+    my $gk_fd;
     my $job_id;
     my $output;
     my $rc;
@@ -28,100 +30,104 @@ sub test_gram_local
 
     # cleanup
 
-    $u->command("globus-personal-gatekeeper -killall");
+    $u->command("globus-personal-gatekeeper -killall",10);
 #    $u->command("rm -rf \${HOME}/.globus/.gass_cache");
 
     # start new personal gatekeeper
 
-    $u->command("globus-personal-gatekeeper -start");
-    ($rc, $gatekeeper_url) = $u->command("globus-personal-gatekeeper -list",1);
+    ($gk_pid, $gk_fd) = 
+        $u->command_blocking("globus-personal-gatekeeper -start");
 
-    ($rc, $output) = $u->command("globusrun -a -r \"$gatekeeper_url\"",1);
+    sleep(5);
+    
+    ($rc, $gatekeeper_url) = $u->command("globus-personal-gatekeeper -list",5);
+
+    ($rc, $output) = $u->command("globusrun -a -r \"$gatekeeper_url\"",5);
     $output =~ /GRAM Authentication test successful/ && $rc == 0 ?  
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-run, no arguments
 
     ($rc, $output) = 
-        $u->command("globus-job-run \"$gatekeeper_url\" /bin/date",1);
+        $u->command("globus-job-run \"$gatekeeper_url\" /bin/date",5);
     $output =~ /$year/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-run, with arguments
     
     ($rc, $output) = 
-        $u->command("globus-job-run \"$gatekeeper_url\" /bin/echo I ran",1);
+        $u->command("globus-job-run \"$gatekeeper_url\" /bin/echo I ran",5);
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-run with staging and arguments
     ($rc, $output) = 
-        $u->command("globus-job-run \"$gatekeeper_url\" -s /bin/echo I ran",1);
+        $u->command("globus-job-run \"$gatekeeper_url\" -s /bin/echo I ran",5);
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-submit.  Store jobid in $job_id
     ($rc, $job_id) = 
-        $u->command("globus-job-submit \"$gatekeeper_url\" /bin/echo I ran",1);
+        $u->command("globus-job-submit \"$gatekeeper_url\" /bin/echo I ran",5);
 
     # globus-job-get-output of stdout from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-get-output -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-clean on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-clean -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
 
     # globus-job-submit.  Store jobid in $job_id
     ($rc, $job_id) = 
         $u->command("globus-job-submit \"$gatekeeper_url\" " .
-                    "/bin/sh -c \'/bin/echo I ran 1>&2\'",1);
+                    "/bin/sh -c \'/bin/echo I ran 1>&2\'",5);
 
     # globus-job-get-output of stderr from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-get-output -err -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-status from gatekeeper_url of jobid $job_id.
-    ($rc, $output) = $u->command("globus-job-status $job_id", 1);
+    ($rc, $output) = $u->command("globus-job-status $job_id",5);
     $output =~ /DONE/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
 
     # globus-job-clean on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-clean -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
  
     # globus-job-submit.  Store jobid in $job_id
     ($rc, $job_id) = 
         $u->command("globus-job-submit \"$gatekeeper_url\" " .
-                    "/bin/sh -c \'echo I ran;sleep 120\'",1);
+                    "/bin/sh -c \'echo I ran;sleep 120\'",5);
 
     # globus-job-status from gatekeeper_url of jobid $job_id.
-    ($rc, $output) = $u->command("globus-job-status $job_id", 1);
+    ($rc, $output) = $u->command("globus-job-status $job_id",5);
     $output =~ /ACTIVE/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
     
     # globus-job-cancel on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-cancel -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-get-output of stdout from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-get-output -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-clean on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-clean -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id", 1);
+                                 "\"$gatekeeper_url\" $job_id",5);
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
  
     my ($server_pid, $server_fd) = 
@@ -142,15 +148,17 @@ sub test_gram_local
     }
 
     ($rc, $output) = 
-        $u->command("globus-url-copy file:/etc/group $server_url$tmpfile",1);
+        $u->command("globus-url-copy file:/etc/group $server_url$tmpfile",5);
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
-    ($rc, $output) = $u->command("diff /etc/group $tmpfile",1);
+    ($rc, $output) = $u->command("diff /etc/group $tmpfile");
     $output eq "" && $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
+
+    $u->command("rm -rf $tmpfile");
 
     # server-shutdown is stupid, it always returns non zero
 
-    $u->command("globus-gass-server-shutdown $server_url");
+    $u->command("globus-gass-server-shutdown $server_url",5);
 
     # the below will kill the server after 5 minutes
 
@@ -167,6 +175,9 @@ sub test_gram_local
 
     # Cleanup
 
-    $u->command("globus-personal-gatekeeper -killall");
+    $u->command("globus-personal-gatekeeper -killall",10);
+    waitpid($gk_pid,0);
+    close($gk_fd);
+
  #   $u->command("rm -rf \${HOME}/.globus/.gass_cache");
 }

@@ -29,7 +29,7 @@ sub test_gridftp_remote
 
     $rc = $u->command("globus-url-copy \\
         gsiftp://$remote/etc/group \\
-        gsiftp://$hostname$tmpfile");
+        gsiftp://$hostname$tmpfile",5);
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
     $u->command("rm -f $tmpfile");

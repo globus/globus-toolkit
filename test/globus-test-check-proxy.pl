@@ -19,7 +19,7 @@ sub check_proxy {
     $u->announce("Checking for proxy");
 
     $u->command("grid-proxy-info");
-    my ($rc, $output) = $u->command("grid-proxy-info -timeleft",1);
+    my ($rc, $output) = $u->command("grid-proxy-info -timeleft");
 
     # report failure if less than 60 seconds of proxy time left
     ($output >= 60) ? $u->report("SUCCESS") : $u->report("FAILURE");

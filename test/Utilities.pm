@@ -101,75 +101,69 @@ sub report {
 #   two ways:
 #
 #   Example call #1:  command("/bin/date");
-#   Example call #2:  command("/bin/date", 1);
+#   Example call #2:  command("/bin/date", $timeout);
 #
 #   Example output:
 #
 #       [ /home/gose/test ] /bin/date
 #       Fri Jul 19 11:49:04 CDT 2002
 #
-#    Passing a '1' in as the second argument will return the output.
+#    The second parameter specifies a timeout value (minutes) for 
+#    the command.
 #
 # --------------------------------------------------------------------
 sub command 
 {
     my $self = shift;
-    my ($command, $output) = @_;
+    my $command = shift;
+    my $timeout = shift || 0;
+    my $output;
     my $rc;
+    my $fd;
+    my $pid;
 
     $self->debug("command -> $command");
-    $self->debug("return output -> $output");
-    $self->debug("don't fail on error -> $noerror");
+    $self->debug("timeout -> $timeout");
    
     $command .= " 2>&1";
 
-    # print command line 
+    # run command
     # ------------------
-    system("echo -en \"\\033[0;36m\"") if $self->{'color'};
-    print "[ ".cwd()." ] ";
-    system("echo -en \"\\033[0;39m\"") if $self->{'color'};
-    print "$command\n";
-
-    # run actual command
-    # ------------------
+    
     if ($command =~ /^cd /) 
     {
+        # print command line 
+        # ------------------
+        system("echo -en \"\\033[0;36m\"") if $self->{'color'};
+        print "[ ".cwd()." ] ";
+        system("echo -en \"\\033[0;39m\"") if $self->{'color'};
+        print "$command\n";
+
         $command =~ s/^cd //;
-        $command =~ s/ 2>&1$//;
+        $command =~ s/ 2>&1$//g;
         $command =~ s/ > \/dev\/null$//;
         chdir $command;
     }
     else 
     {
-        if ($output) 
-        {
-            $output = `$command`;
-            
-            # remove the ending \n for when we return
-            chomp $output;
+        ($pid, $fd) = $self->command_blocking($command);
 
-            if ($output !~ /^$/) 
-            {
-                print $output."\n";
-            }
-        }
-        else 
+        if($pid == -1)
         {
-            system("$command");
+            $output = "Unable to run or find $command";
+            print $output."\n";
+            return ($rc, $output); 
         }
-        
-        $rc = ($? >> 8);
-    }
 
-    if ($output) 
-    { 
+        ($rc, $output) = $self->wait_command($pid, $fd, $timeout);
+    
+        # remove the ending \n for when we return
+        chomp $output;
+
         $self->debug("output -> $output");
-        return ($rc, $output); 
     }
-    else 
-    { 
-        return $rc; 
-    }
+
+    return ($rc, $output); 
 }
 
 
@@ -207,10 +201,14 @@ sub command_blocking()
 
     $cmd_pid = open($output,"$command 2>&1 |");
 
-     if($cmd_pid != -1)
-     {
-         select((select($output), $| = 1)[0]);
-     }
+    if(defined($cmd_pid))
+    {
+        select((select($output), $| = 1)[0]);
+    }
+    else
+    {
+        $cmd_pid = -1;
+    }
     
     return ($cmd_pid,$output);
 }
@@ -231,25 +229,45 @@ sub command_blocking()
 sub wait_command()
 {
     my $self = shift;
-    my ($pid,$fd) = @_;
+    my ($pid, $fd, $timeout) = @_;
     my $rc = 0;
     my $counter = 0;
     my $output;
 
-    while($rc == 0)
+    if(!defined($timeout))
     {
-        # kill after 5 minutes
-        if($counter == 5)
-        {
-            kill(9,$pid);
-        }
-        
-        $rc = waitpid($pid,WNOHANG);
+        $timeout = 5;
+    }
 
-        if($rc == 0)
+    if($timeout == 0)
+    {
+        while(<$fd>)
         {
-            sleep(60);
-            $counter++;
+            print $_ ;
+            $output .= $_ ;
+        }
+        close($fd);
+        $rc = waitpid($pid,0);
+    }
+    else
+    {
+        while($rc == 0)
+        {
+            # kill after $timeout minutes
+            if($counter == $timeout)
+            {
+                kill(9,$pid);
+                sleep(1);
+                $output = "Command timed out (timeout $timeout minutes).\n";
+            }
+        
+            $rc = waitpid($pid,WNOHANG);
+            
+            if($rc == 0)
+            {
+                sleep(60);
+                $counter++;
+            }
         }
     }
 
@@ -258,6 +276,7 @@ sub wait_command()
         $rc = $?;
         while(<$fd>)
         {
+            print $_;
             $output .= $_;
         }
         close($fd);

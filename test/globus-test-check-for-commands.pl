@@ -50,7 +50,7 @@ sub check_for_commands
     
     foreach my $command (@commands) 
     {
-        ($rc, $output) = $u->command("which $command",1);
+        ($rc, $output) = $u->command("which $command");
         if (-x "$output") 
         {
             $u->report("SUCCESS");
