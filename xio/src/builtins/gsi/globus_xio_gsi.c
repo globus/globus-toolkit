@@ -312,7 +312,7 @@ globus_l_xio_gsi_attr_cntl(
         out_prot_level = va_arg(ap, globus_xio_gsi_protection_level_t *);
         *out_prot_level = attr->prot_level;
         break;
-        
+      
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
@@ -585,6 +585,11 @@ globus_l_xio_gsi_target_cntl(
             }
         }
         break;
+      
+      case GLOBUS_XIO_GSI_FORCE_SERVER_MODE:
+        target->init = GLOBUS_FALSE;
+        break;
+        
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
