@@ -600,7 +600,13 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     sin.sin_port = htons(attrs->psport);
 
     if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-	    failure("Error in bind()");
+	if (errno == EADDRINUSE) {
+	    myproxy_log("Port %d already in use, probably by another "
+			"myproxy-server instance.\nUse the -p option to run "
+			"multiple myproxy-server instances on different "
+			"ports.", attrs->psport);
+	}
+	failure("Error in bind()");
     }
     if (listen(listen_sock, 5) < 0) {
 	    failure("Error in listen()");
