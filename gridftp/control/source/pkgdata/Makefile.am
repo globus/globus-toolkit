@@ -40,4 +40,4 @@ sort_filelist: all_filelists
 
 include $(top_srcdir)/globus_automake_rules
 
-EXTRA_DIST=MyFilelists.pm
+EXTRA_DIST= \

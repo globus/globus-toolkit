@@ -172,4 +172,3 @@ globus_io_udp_test_LDADD = $(GPT_PGM_LINKS)
 include $(top_srcdir)/globus_automake_rules
 include $(top_srcdir)/globus_automake_top_rules
 
-EXTRA_DIST=bootstrap
