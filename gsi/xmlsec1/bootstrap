@@ -26,10 +26,10 @@ done
 
 automake_version=`automake --version | grep "automake (GNU automake) 1.6.3"`
 #
-if test "x$automake_version" = "x"; then
-    echo "You are not using automake 1.6.3.  Automake 1.6.3 and libtool 1.4.3 are required to re-bootstrap this package." >&2
-    exit 0
-fi
+#if test "x$automake_version" = "x"; then
+#    echo "You are not using automake 1.6.3.  Automake 1.6.3 and libtool 1.4.3 are required to re-bootstrap this package." >&2
+#    exit 0
+#fi
 
 if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
     echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh"

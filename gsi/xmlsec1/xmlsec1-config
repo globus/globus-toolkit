@@ -79,7 +79,7 @@ do
 	;;
 
     --version)
-	echo 1.2
+	echo 1.4
 	exit 0
 	;;
     
@@ -147,8 +147,8 @@ default)
     
 openssl)
     if test "0" = "0"; then
-        the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1  -DXMLSEC_CRYPTO=\\\"openssl\\\""
-	the_crypto_libs="-lcrypto"
+        the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1 -DXMLSEC_CRYPTO=\\\"openssl\\\""
+	the_crypto_libs=""
         the_xmlsec_crypto_lib="-lxmlsec1-openssl"
     else
         echo "Error: the \"$crypto\" cryptographic library is not supported"
