@@ -238,6 +238,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_TRANSFER,
     GLOBUS_FTP_CLIENT_MDTM,
     GLOBUS_FTP_CLIENT_SIZE,
+    GLOBUS_FTP_CLIENT_CKSM,
     GLOBUS_FTP_CLIENT_FEAT
 }
 globus_i_ftp_client_operation_t;
@@ -259,6 +260,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_MODE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_SIZE,
     GLOBUS_FTP_CLIENT_TARGET_SIZE,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM,
+    GLOBUS_FTP_CLIENT_TARGET_CKSM,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU,
     GLOBUS_FTP_CLIENT_TARGET_DCAU,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PBSZ,
@@ -538,6 +541,9 @@ typedef struct globus_i_ftp_client_handle_t
     /** Thread safety */
     globus_mutex_t                              mutex;
 
+    /** Checksum pointer**/
+    char * 					checksum;
+
     /** User pointer
      * @see globus_ftp_client_handle_set_user_pointer(),
      *      globus_ftp_client_handle_get_user_pointer()
@@ -698,6 +704,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_modification_time_t
 						modification_time_func;
     globus_ftp_client_plugin_size_t		size_func;
+    globus_ftp_client_plugin_cksm_t		cksm_func;
     globus_ftp_client_plugin_abort_t		abort_func;
     globus_ftp_client_plugin_connect_t		connect_func;
     globus_ftp_client_plugin_authenticate_t	authenticate_func;
@@ -913,6 +920,12 @@ globus_i_ftp_client_plugin_notify_modification_time(
 
 void
 globus_i_ftp_client_plugin_notify_size(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_cksm(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr);

@@ -28,6 +28,7 @@
     || ((op) == GLOBUS_FTP_CLIENT_MOVE && (plugin)->move_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MDTM && (plugin)->modification_time_func) \
     || ((op) == GLOBUS_FTP_CLIENT_SIZE && (plugin)->size_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_CKSM && (plugin)->cksm_func) \
     || ((op) == GLOBUS_FTP_CLIENT_FEAT && (plugin)->feat_func))
 #endif
 
@@ -2417,6 +2418,59 @@ globus_i_ftp_client_plugin_notify_size(
 }
 
 void
+globus_i_ftp_client_plugin_notify_cksm(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr)
+{
+    globus_i_ftp_client_plugin_t *		plugin;
+    globus_list_t *				tmp;
+    globus_bool_t				unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+	tmp = globus_list_rest(tmp);
+
+	if(plugin->cksm_func)
+	{
+	    if(!unlocked)
+	    {
+		globus_i_ftp_client_handle_unlock(handle);
+		unlocked = GLOBUS_TRUE;
+	    }
+	    (plugin->cksm_func)(plugin->plugin,
+				plugin->plugin_specific,
+				handle->handle,
+				url,
+				&attr,
+				GLOBUS_FALSE);
+	}
+    }
+    if(unlocked)
+    {
+	globus_i_ftp_client_handle_lock(handle);
+    }
+
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+	handle->notify_restart = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+	handle->notify_abort = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
 globus_i_ftp_client_plugin_notify_connect(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url)
@@ -3083,6 +3137,15 @@ globus_i_ftp_client_plugin_notify_restart(
 	    else if(handle->op == GLOBUS_FTP_CLIENT_SIZE)
 	    {
 		(plugin->size_func)(plugin->plugin,
+				      plugin->plugin_specific,
+				      handle->handle,
+				      handle->restart_info->source_url,
+				      &handle->restart_info->source_attr,
+				      GLOBUS_TRUE);
+	    }
+	    else if(handle->op == GLOBUS_FTP_CLIENT_CKSM)
+	    {
+		(plugin->cksm_func)(plugin->plugin,
 				      plugin->plugin_specific,
 				      handle->handle,
 				      handle->restart_info->source_url,

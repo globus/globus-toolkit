@@ -22,7 +22,7 @@ static int globus_l_ftp_client_deactivate(void);
  * Currently this isn't terribly well defined. The idea is that 0 is no
  * debugging output, and 9 is a whole lot.
  */
-int globus_i_ftp_client_debug_level = 0;
+int globus_i_ftp_client_debug_level = 500;
 
 /**
  * Default authorization information for GSIFTP.

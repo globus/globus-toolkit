@@ -686,6 +686,18 @@ globus_ftp_client_size(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_client_cksm(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    char *					cksm,
+    globus_off_t                                offset,
+    globus_off_t                                length,
+    char *                                      algorithm,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_client_exists(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
@@ -928,6 +940,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_ESTO,
     GLOBUS_FTP_CLIENT_FEATURE_ERET,
     GLOBUS_FTP_CLIENT_FEATURE_SIZE,
+    GLOBUS_FTP_CLIENT_FEATURE_CKSM,
     GLOBUS_FTP_CLIENT_FEATURE_MLST,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,
     GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,

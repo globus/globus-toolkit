@@ -668,8 +668,56 @@ redo:
 	}
 
     skip_mode:
-	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_SIZE;
+	if(client_handle->op == GLOBUS_FTP_CLIENT_CKSM)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM;
+	}
+	else
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_SIZE;
+	}
 	goto redo;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM:
+
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+	
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
+
+	globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            target->url_string,
+            target->mask,  
+            "CKSM %s %s" CRLF,
+	    "md5",
+            pathname);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {
+            break;
+        }
+
+        globus_assert(client_handle->state ==
+                      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+                      client_handle->state ==
+                      GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        result = globus_ftp_control_send_command(
+            target->control_handle,
+            "CKSM %s %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            target,
+	    "md5",
+            pathname);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto result_fault;
+        }
+        break;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_SIZE:
 	/*
@@ -2927,6 +2975,13 @@ redo:
 					   client_handle->size_pointer,
 					   GLOBUS_NULL);
 		}
+		else if(client_handle->op == GLOBUS_FTP_CLIENT_CKSM &&
+			response->code == 213)
+		{
+		    globus_l_ftp_client_parse_cksm(client_handle,
+				    		   response);
+				    		   
+		}
 		else if(client_handle->op == GLOBUS_FTP_CLIENT_FEAT)
 		{
 		    for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
@@ -3983,6 +4038,33 @@ globus_l_ftp_client_parse_restart_marker(
     }
 }
 /* globus_l_ftp_client_parse_restart_marker() */
+
+static
+void
+globus_l_ftp_client_parse_cksm(
+    globus_i_ftp_client_handle_t *              client_handle,
+    globus_ftp_control_response_t *             response)
+{
+    char *                                      p;
+    int                                         rc;
+    int                                         i;
+    static char * myname = "globus_l_ftp_client_parse_mdtm";
+
+    if(response->code != 213)
+    {
+        return;
+    }
+    p = (char *) response->response_buffer;
+
+
+    /* skip 213 <SP> */
+    p += 4;
+
+    rc=sscanf(p, "%s", client_handle->checksum);
+
+
+}
+
 
 static
 void

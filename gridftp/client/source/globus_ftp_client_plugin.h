@@ -691,6 +691,13 @@ typedef void (*globus_ftp_client_plugin_size_t)(
     const globus_ftp_client_operationattr_t *	attr,
     globus_bool_t				restart);
 
+typedef void (*globus_ftp_client_plugin_cksm_t)(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t				restart);
 /**
  * Plugin abort notification callback.
  * @ingroup globus_ftp_client_plugins
