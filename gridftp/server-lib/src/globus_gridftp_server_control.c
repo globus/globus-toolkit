@@ -1531,6 +1531,11 @@ globus_gridftp_server_control_start(
         /* make the xio handle */
         if(i_attr->security == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
         {
+            res = globus_xio_handle_cntl(
+                server_handle->xio_handle,
+                globus_l_gsc_gssapi_ftp_driver,
+                GLOBUS_XIO_GSSAPI_ATTR_TYPE_FORCE_SERVER,
+                GLOBUS_TRUE);
             res = globus_xio_stack_push_driver(
                 xio_stack, globus_l_gsc_gssapi_ftp_driver);
         }
@@ -1551,8 +1556,36 @@ globus_gridftp_server_control_start(
             globus_mutex_unlock(&server_handle->mutex);
             goto err;
         }
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_ftp_cmd_driver,
+                GLOBUS_XIO_DRIVER_FTP_CMD_FORCE_SERVER, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_unlock(&server_handle->mutex);
+            goto err;
+        }
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_ftp_cmd_driver,
+                GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_unlock(&server_handle->mutex);
+            goto err;
+        }
+
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_gssapi_ftp_driver,
+                GLOBUS_XIO_GSSAPI_ATTR_TYPE_FORCE_SERVER, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_unlock(&server_handle->mutex);
+            goto err;
+        }
+
         res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
             GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_unlock(&server_handle->mutex);
+            goto err;
+        }
         if(res != GLOBUS_SUCCESS)
         {
             globus_mutex_unlock(&server_handle->mutex);
