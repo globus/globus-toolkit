@@ -201,14 +201,14 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 g77)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
 
