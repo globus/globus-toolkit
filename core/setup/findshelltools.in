@@ -1,6 +1,5 @@
 AC_REVISION($Revision$)
-AC_INIT(Makefile.am)
-AC_CONFIG_AUX_DIR(config)
+AC_INIT(globus-sh-tools.sh.in)
 
 # checking for the GLOBUS_LOCATION
 
@@ -12,17 +11,16 @@ fi
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 
-if "x$PERL" = "x"; then
+if test "x$PERL" = "x"; then
         AC_PATH_PROG(PERL,perl)
-else
-        AC_SUBST(PERL)
 fi
 
-if "x$SH" = "x"; then
-        AC_PATH_PROG(SH,bash, sh)
-else
-        AC_SUBST(SH)
+if test "x$SH" = "x"; then
+        AC_PATH_PROG(SH,sh)
 fi
+
+AC_SUBST(PERL)
+AC_SUBST(SH)
 
 AC_PATH_PROG(GLOBUS_SH_AWK,awk)
 AC_PATH_PROG(GLOBUS_SH_AUTOCONF, autoconf)

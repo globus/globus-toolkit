@@ -16,10 +16,10 @@ require Grid::GPT::Setup;
 my $metadata = new Grid::GPT::Setup(package_name => "globus_core_setup");
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
-my $setupdir = "$globsdir/setup/globus/";
-my $result = system("$setupdir/findshelltools");
+my $setupdir = "$globusdir/setup/globus/";
+my $result = `$setupdir/findshelltools`;
 
-open(TOOLS, "$setupdir/globus_sh_tools");
+open(TOOLS, "$setupdir/globus-sh-tools.sh");
 
 my ($perl_location, $sh_location);
 
@@ -28,8 +28,12 @@ while (<TOOLS>) {
   m!SH=(\S+)! && do { $sh_location = $1 };
 }
 
-$result = system("ln -s $perl_location $globusdir/bin");
-$result = system("ln -s $sh_location $globusdir/bin");
+close TOOLS;
+
+mkinstalldirs("$globusdir/bin");
+
+$result = system("ln -s $perl_location $globusdir/bin/perl");
+$result = system("ln -s $sh_location $globusdir/bin/sh");
 
 for my $f ('globus-script-initializer', 'globus-sh-tools.sh')
 {
@@ -40,4 +44,17 @@ for my $f ('globus-script-initializer', 'globus-sh-tools.sh')
 
 
 $metadata->finish();
+
+sub mkinstalldirs
+  {
+    my $dir = shift;
+    my @dirlist = split m!/!, $dir;
+    my $subdir= "";
+    for my $d (@dirlist) {
+      $subdir .= "/$d";
+      if (! -d $subdir) {
+	my $result = `mkdir $subdir`;
+      }
+    }
+  }
 
