@@ -2007,6 +2007,7 @@ globus_gridftp_server_control_start(
         server_handle->funcs.list_cb = i_attr->funcs.list_cb;
         server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
         server_handle->funcs.log_func = i_attr->funcs.log_func;
+        server_handle->funcs.log_arg = i_attr->funcs.log_arg;
         server_handle->funcs.log_mask = i_attr->funcs.log_mask;
         server_handle->funcs.done_cb = done_cb;
 

@@ -35,6 +35,21 @@ globus_i_gfs_log_message(
     }
     va_end(ap);
 }
+void
+globus_i_gfs_log_entry(
+    globus_i_gfs_server_instance_t *    instance,
+    const char *                        message,
+    globus_i_gfs_log_type_t             type)
+{
+   
+    globus_i_gfs_log_message(
+        type, 
+        "%s: %s", 
+        instance->remote_contact, 
+        message);
+    
+    return;
+}
 
 void
 globus_i_gfs_log_result(
