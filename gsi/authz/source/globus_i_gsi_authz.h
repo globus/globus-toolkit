@@ -83,19 +83,9 @@ extern FILE *                           globus_i_gsi_authz_debug_fstream;
         __FILE__, __LINE__, _LENGTH_))
 
 
-#define GLOBUS_GSI_AUTHZ_ERROR_NULL_PARAMETER(_CALLBACK_) \
-    globus_error_put(globus_error_wrap_errno_error( \
+#define GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE(_WHAT_) \
+    globus_error_put(globus_error_construct_string( \
         GLOBUS_GSI_AUTHZ_MODULE, \
-        errno, \
-        GLOBUS_GSI_AUTHZ_ERROR_ERRNO, \
-        "%s:%d: callback function is missing: %s", \
-        __FILE__, __LINE__, _CALLBACK_))
-
-#define GLOBUS_GSI_AUTHZ_ERROR_NOT_SUPPORTED(_NOSUPPORT_) \
-    globus_error_put(globus_error_wrap_errno_error( \
-        GLOBUS_GSI_AUTHZ_MODULE, \
-        errno, \
-        GLOBUS_GSI_AUTHZ_ERROR_ERRNO, \
-        "%s:%d: Cancelling a request is not supported.", \
-        __FILE__, __LINE__))
-
+	GLOBUS_NULL, \
+        "%s:%d: %s is null", \
+        __FILE__, __LINE__, _WHAT_))

@@ -304,7 +304,7 @@ globus_gsi_authorize(
     
     if(callback == GLOBUS_NULL)
     {
-	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_PARAMETER("callback");
+	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE("callback parameter");
 	goto exit;
     }
     
