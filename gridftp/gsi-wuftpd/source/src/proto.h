@@ -92,7 +92,6 @@ g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
-    off_t                                           blksize,
     off_t                                           logical_offset,
     off_t                                           length,
     off_t					    size);
@@ -101,7 +100,6 @@ g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
-    off_t                                           blksize,
     off_t                                           logical_offset,
     off_t                                           length,
     off_t					    size);

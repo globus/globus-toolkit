@@ -5,11 +5,13 @@
 #include "../support/ftp.h"
 #include <syslog.h>
 
+
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
 extern int mode;
 extern globus_size_t                            g_striped_file_size;
+extern gss_cred_id_t                            g_deleg_cred;
 
 extern SIGNAL_TYPE         
 lostconn(int sig);
@@ -19,6 +21,8 @@ extern globus_ftp_control_dcau_t                g_dcau;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
+
+static int                                      g_blksize = 65536;
 
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
 
@@ -425,7 +429,8 @@ G_ENTER();
     g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
     res = globus_ftp_control_local_dcau(
 	    &g_data_handle,
-	    &g_dcau);
+	    &g_dcau,
+            g_deleg_cred);
     assert(res == GLOBUS_SUCCESS);
 
     a = (char *)&his_addr;
@@ -666,7 +671,6 @@ g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
-    off_t                                           blksize,
     off_t					    logical_offset,
     off_t                                           length,
     off_t					    size)
@@ -675,7 +679,6 @@ g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
-    off_t                                           blksize,
     off_t					    logical_offset,
     off_t                                           length,
     off_t					    size)
@@ -702,7 +705,8 @@ g_send_data(
     int                                             ctr;
     off_t                                           skipped_offset;
     char                                            error_buf[1024];
-    off_t                                          offs_out = -1;
+    off_t                                           offs_out = -1;
+    off_t                                           blksize;
 
 #ifdef THROUGHPUT
     int                                             bps;
@@ -710,6 +714,8 @@ g_send_data(
     time_t                                          t1;
     time_t                                          t2;
 #endif
+
+    blksize = g_blksize;
 
     G_ENTER();
 
@@ -2049,6 +2055,8 @@ g_set_tcp_buffer(int size)
 
     if(size != 0)
     {
+        g_blksize = size;
+
 	tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
 	tcpbuffer.fixed.size = size;
 

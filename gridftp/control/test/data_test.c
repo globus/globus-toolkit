@@ -6,7 +6,7 @@
 #include <string.h>
 #include "test_common.h"
 
-#define MAX_PLEVEL                              4
+#define MAX_PLEVEL                              10
 #define TEST_ITEREATION                         4
 #define WRITE_CHUNK_COUNT                       32
 
@@ -42,7 +42,8 @@ reuse_handles_test(
 void
 test_result(
     globus_result_t                             result,
-    char *                                      msg);
+    char *                                      msg,
+    int                                         line_num);
 
 globus_result_t
 transfer_test(
@@ -138,6 +139,24 @@ binary_stream_mode(
     globus_ftp_control_handle_t *              handle,
     int                                        plevel);
 
+void
+force_close_cb( 
+    void *                                     user_arg,
+    globus_ftp_control_handle_t *              handle,
+    globus_object_t *                          error)
+{
+    ftp_test_monitor_t *                       monitor;
+
+    monitor = (ftp_test_monitor_t *) user_arg;
+
+    globus_mutex_lock(&monitor->mutex);
+    {
+        monitor->done = GLOBUS_TRUE;
+        globus_cond_signal(&monitor->cond);
+    }
+    globus_mutex_unlock(&monitor->mutex);
+}
+
 int 
 main(
     int                                         argc,
@@ -182,7 +201,7 @@ main(
     if(rc) res = globus_error_put(GLOBUS_ERROR_NO_INFO);
     else   res = GLOBUS_SUCCESS;
 
-    test_result(res, "globus_module_activate failed");
+    test_result(res, "globus_module_activate failed", __LINE__);
 
     g_test_count++;
     verbose_printf(1, "------------------------------------\n");
@@ -291,7 +310,7 @@ main(
     rc = globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
     if(rc) res = globus_error_put(GLOBUS_ERROR_NO_INFO);
     else   res = GLOBUS_SUCCESS;
-    test_result(res, "deactivate");
+    test_result(res, "deactivate", __LINE__);
 
     verbose_printf(1, "%d tests passed.\n", g_test_count);
     printf("Success.\n");
@@ -375,10 +394,10 @@ big_buffer_test(
     test_info->monitor = &done_monitor;
     strcpy(test_info->fname, g_tmp_file);
 
-    res = globus_ftp_control_handle_init(&pasv_handle);
-    test_result(res, "pasv handle init");
-    res = globus_ftp_control_handle_init(&port_handle);
-    test_result(res, "port handle init");
+    res = globus_i_ftp_control_data_cc_init(&pasv_handle);
+    test_result(res, "pasv handle init", __LINE__);
+    res = globus_i_ftp_control_data_cc_init(&port_handle);
+    test_result(res, "port handle init", __LINE__);
 
     for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
     {
@@ -389,9 +408,9 @@ big_buffer_test(
 
         globus_ftp_control_host_port_init(&host_port, "localhost", 0);
         res = globus_ftp_control_local_pasv(&pasv_handle, &host_port);
-        test_result(res, "local pasv");
+        test_result(res, "local pasv", __LINE__);
         res = globus_ftp_control_local_port(&port_handle, &host_port);
-        test_result(res, "local port");
+        test_result(res, "local port", __LINE__);
 
         mode_cb(&pasv_handle, plevel);
         mode_cb(&port_handle, plevel);
@@ -403,12 +422,12 @@ big_buffer_test(
                   &pasv_handle,
                   connect_read_big_buffer_callback,
                   (void *)test_info);
-        test_result(res, "connect_read");
+        test_result(res, "connect_read", __LINE__);
         res = globus_ftp_control_data_connect_write(
                   &port_handle,
                   connect_write_big_buffer_callback,
                   (void *)test_info);
-        test_result(res, "connect_write");
+        test_result(res, "connect_write", __LINE__);
 
         verbose_printf(3, "waiting for transfer.\n");
         globus_mutex_lock(&done_monitor.mutex);
@@ -422,8 +441,45 @@ big_buffer_test(
         globus_mutex_unlock(&done_monitor.mutex);
     }
 
-    res = globus_ftp_control_handle_destroy(&pasv_handle);
-    res = globus_ftp_control_handle_destroy(&port_handle);
+    done_monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &pasv_handle,
+              force_close_cb,
+              (void *)&done_monitor);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&done_monitor.mutex);
+        {
+            while(!done_monitor.done)
+            {
+                globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&done_monitor.mutex);
+    }
+    res = globus_i_ftp_control_data_cc_destroy(&pasv_handle);
+    test_result(res, "destroy", __LINE__);
+
+    done_monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &port_handle,
+              force_close_cb,
+              (void *)&done_monitor);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&done_monitor.mutex);
+        {
+            while(!done_monitor.done)
+            {
+                globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&done_monitor.mutex);
+    }
+    res = globus_i_ftp_control_data_cc_destroy(&port_handle);
+    test_result(res, "destroy", __LINE__);
+
+    globus_free(test_info);
 
     return GLOBUS_SUCCESS;
 }
@@ -452,17 +508,17 @@ reuse_handles_test(
     test_info->monitor = &done_monitor;
     strcpy(test_info->fname, g_tmp_file);
 
-    res = globus_ftp_control_handle_init(&pasv_handle);
-    test_result(res, "pasv handle init");
-    res = globus_ftp_control_handle_init(&port_handle);
-    test_result(res, "port handle init");
+    res = globus_i_ftp_control_data_cc_init(&pasv_handle);
+    test_result(res, "pasv handle init", __LINE__);
+    res = globus_i_ftp_control_data_cc_init(&port_handle);
+    test_result(res, "port handle init", __LINE__);
 
     if(!g_send_eof)
     {
         res = globus_ftp_control_local_send_eof(
                   &port_handle,
                   GLOBUS_FALSE);
-        test_result(res, "local_send_eof()");
+        test_result(res, "local_send_eof()", __LINE__);
     }
 
     connect_cb = connect_write_callback;
@@ -474,9 +530,9 @@ reuse_handles_test(
         memset(&host_port, '\0', sizeof(host_port));
         globus_ftp_control_host_port_init(&host_port, "localhost", 0);
         res = globus_ftp_control_local_pasv(&pasv_handle, &host_port);
-        test_result(res, "local pasv");
+        test_result(res, "local pasv", __LINE__);
         res = globus_ftp_control_local_port(&port_handle, &host_port);
-        test_result(res, "local port");
+        test_result(res, "local port", __LINE__);
 
         mode_cb(&pasv_handle, plevel);
         mode_cb(&port_handle, plevel);
@@ -488,12 +544,12 @@ reuse_handles_test(
                   &pasv_handle,
                   connect_read_callback,
                   (void *)test_info);
-        test_result(res, "connect_read");
+        test_result(res, "connect_read", __LINE__);
         res = globus_ftp_control_data_connect_write(
                   &port_handle,
                   connect_cb,
                   (void *)test_info);
-        test_result(res, "connect_write");
+        test_result(res, "connect_write", __LINE__);
 
         verbose_printf(3, "waiting for transfer.\n");
         res = globus_ftp_control_data_get_total_data_channels(
@@ -526,9 +582,46 @@ reuse_handles_test(
         }
     }
 
+    done_monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &pasv_handle,
+              force_close_cb,
+              (void *)&done_monitor);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&done_monitor.mutex);
+        {
+            while(!done_monitor.done)
+            {
+                globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&done_monitor.mutex);
+    }
+
     globus_free(test_info);
-    res = globus_ftp_control_handle_destroy(&pasv_handle);
-    res = globus_ftp_control_handle_destroy(&port_handle);
+    res = globus_i_ftp_control_data_cc_destroy(&pasv_handle);
+    test_result(res, "destroy handle", __LINE__);
+
+    done_monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &port_handle,
+              force_close_cb,
+              (void *)&done_monitor);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&done_monitor.mutex);
+        {
+            while(!done_monitor.done)
+            {
+                globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&done_monitor.mutex);
+    }
+
+    res = globus_i_ftp_control_data_cc_destroy(&port_handle);
+    test_result(res, "destroy", __LINE__);
 
     return GLOBUS_SUCCESS;
 }
@@ -548,17 +641,17 @@ binary_eb_mode(
               handle, 
               GLOBUS_FTP_CONTROL_TYPE_IMAGE, 
               0);
-    test_result(res, "local_type");
+    test_result(res, "local_type", __LINE__);
 
     res = globus_ftp_control_local_mode(
               handle, 
               GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-    test_result(res, "local_mode");
+    test_result(res, "local_mode", __LINE__);
 
     res = globus_ftp_control_local_parallelism(
               handle, 
               &parallelism);
-    test_result(res, "local_mode");
+    test_result(res, "local_mode", __LINE__);
 }
 
 void 
@@ -572,12 +665,12 @@ binary_stream_mode(
               handle, 
               GLOBUS_FTP_CONTROL_TYPE_IMAGE, 
               0);
-    test_result(res, "local_type");
+    test_result(res, "local_type", __LINE__);
 
     res = globus_ftp_control_local_mode(
               handle, 
               GLOBUS_FTP_CONTROL_MODE_STREAM);
-    test_result(res, "local_mode");
+    test_result(res, "local_mode", __LINE__);
 }
 
 globus_result_t
@@ -601,17 +694,17 @@ cache_test(
     test_info->monitor = &done_monitor;
     strcpy(test_info->fname, g_tmp_file);
 
-    res = globus_ftp_control_handle_init(&pasv_handle);
-    test_result(res, "pasv handle init");
-    res = globus_ftp_control_handle_init(&port_handle);
-    test_result(res, "port handle init");
+    res = globus_i_ftp_control_data_cc_init(&pasv_handle);
+    test_result(res, "pasv handle init", __LINE__);
+    res = globus_i_ftp_control_data_cc_init(&port_handle);
+    test_result(res, "port handle init", __LINE__);
 
     host_port.port = 0;
     globus_ftp_control_host_port_init(&host_port, "localhost", 0);
     res = globus_ftp_control_local_pasv(&pasv_handle, &host_port);
-    test_result(res, "local pasv");
+    test_result(res, "local pasv", __LINE__);
     res = globus_ftp_control_local_port(&port_handle, &host_port);
-    test_result(res, "local port");
+    test_result(res, "local port", __LINE__);
 
     mode_cb(&pasv_handle, plevel);
     mode_cb(&port_handle, plevel);
@@ -621,7 +714,7 @@ cache_test(
         res = globus_ftp_control_local_send_eof(
                   &port_handle,
                   GLOBUS_FALSE);
-        test_result(res, "local_send_eof()");
+        test_result(res, "local_send_eof()", __LINE__);
     }
 
     for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
@@ -636,12 +729,12 @@ cache_test(
                   &pasv_handle,
                   connect_read_callback,
                   (void *)test_info);
-        test_result(res, "connect_read");
+        test_result(res, "connect_read", __LINE__);
         res = globus_ftp_control_data_connect_write(
                   &port_handle,
                   connect_write_callback,
                   (void *)test_info);
-        test_result(res, "connect_write");
+        test_result(res, "connect_write", __LINE__);
 
         verbose_printf(3, "waiting for transfer.\n");
         globus_mutex_lock(&done_monitor.mutex);
@@ -655,8 +748,46 @@ cache_test(
         globus_mutex_unlock(&done_monitor.mutex);
     }
 
-    res = globus_ftp_control_handle_destroy(&pasv_handle);
-    res = globus_ftp_control_handle_destroy(&port_handle);
+    done_monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &pasv_handle,
+              force_close_cb,
+              (void *)&done_monitor);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&done_monitor.mutex);
+        {
+            while(!done_monitor.done)
+            {
+                globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&done_monitor.mutex);
+    }
+
+    globus_free(test_info);
+    res = globus_i_ftp_control_data_cc_destroy(&pasv_handle);
+    test_result(res, "destroy handle", __LINE__);
+
+    done_monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &port_handle,
+              force_close_cb,
+              (void *)&done_monitor);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&done_monitor.mutex);
+        {
+            while(!done_monitor.done)
+            {
+                globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&done_monitor.mutex);
+    }
+
+    res = globus_i_ftp_control_data_cc_destroy(&port_handle);
+    test_result(res, "destroy", __LINE__);
 
     return GLOBUS_SUCCESS;
 }
@@ -712,20 +843,20 @@ transfer_test(
         port_handle = &port_handle_array[ctr];
         pasv_handle = &pasv_handle_array[ctr];
 
-        res = globus_ftp_control_handle_init(pasv_handle);
-        test_result(res, "pasv handle init");
+        res = globus_i_ftp_control_data_cc_init(pasv_handle);
+        test_result(res, "pasv handle init", __LINE__);
      
-        res = globus_ftp_control_handle_init(port_handle);
-        test_result(res, "port handle init");
+        res = globus_i_ftp_control_data_cc_init(port_handle);
+        test_result(res, "port handle init", __LINE__);
 
         /*
          * local_port/pasv()
          */
         globus_ftp_control_host_port_init(&host_port, "localhost", 0);
         res = globus_ftp_control_local_pasv(pasv_handle, &host_port);
-        test_result(res, "local pasv");
+        test_result(res, "local pasv", __LINE__);
         res = globus_ftp_control_local_port(port_handle, &host_port);
-        test_result(res, "local port");
+        test_result(res, "local port", __LINE__);
 
         mode_cb(pasv_handle, plevel);
         mode_cb(port_handle, plevel);
@@ -735,7 +866,7 @@ transfer_test(
             res = globus_ftp_control_local_send_eof(
                       port_handle,
                       GLOBUS_FALSE);
-            test_result(res, "local_send_eof()");
+            test_result(res, "local_send_eof()", __LINE__);
         }
         /*
          *  calling connect read/write() will get the ball rolling
@@ -744,12 +875,12 @@ transfer_test(
                   pasv_handle,
                   connect_read_callback,
                   (void *)test_info);
-        test_result(res, "connect_read");
+        test_result(res, "connect_read", __LINE__);
         res = globus_ftp_control_data_connect_write(
                   port_handle,
                   connect_write_callback,
                   (void *)test_info);
-        test_result(res, "connect_write");
+        test_result(res, "connect_write", __LINE__);
     }
 
     /*
@@ -765,10 +896,48 @@ transfer_test(
     }
     globus_mutex_unlock(&done_monitor.mutex);
 
+    /*
+     *  clean up
+     */
     for(ctr = 0; ctr < TEST_ITEREATION; ctr++)
     {
-        res = globus_ftp_control_handle_destroy(&pasv_handle_array[ctr]);
-        res = globus_ftp_control_handle_destroy(&port_handle_array[ctr]);
+        done_monitor.done = GLOBUS_FALSE;
+        res = globus_ftp_control_data_force_close(
+                  &pasv_handle_array[ctr],
+                  force_close_cb,
+                  (void *)&done_monitor);
+        if(res == GLOBUS_SUCCESS)
+        {
+            globus_mutex_lock(&done_monitor.mutex);
+            { 
+                while(!done_monitor.done)
+                {
+                    globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+                }
+            }
+            globus_mutex_unlock(&done_monitor.mutex);
+        }
+        res = globus_i_ftp_control_data_cc_destroy(&pasv_handle_array[ctr]);
+        test_result(res, "destroy", __LINE__);
+
+        done_monitor.done = GLOBUS_FALSE;
+        res = globus_ftp_control_data_force_close(
+                  &port_handle_array[ctr],
+                  force_close_cb,
+                  (void *)&done_monitor);
+        if(res == GLOBUS_SUCCESS)
+        {
+            globus_mutex_lock(&done_monitor.mutex);
+            {
+                while(!done_monitor.done)
+                {
+                    globus_cond_wait(&done_monitor.cond, &done_monitor.mutex);
+                }
+            }
+            globus_mutex_unlock(&done_monitor.mutex);
+        }
+        res = globus_i_ftp_control_data_cc_destroy(&port_handle_array[ctr]);
+        test_result(res, "destroy", __LINE__);
     }
     verbose_printf(3, "ending\n");
 
@@ -800,7 +969,7 @@ connect_read_big_buffer_callback(
     if(error != GLOBUS_NULL)
     {
         test_result(globus_error_put(error), 
-                    "connect_read_big_buffer_callback error");
+                    "connect_read_big_buffer_callback error", __LINE__);
     }
 
     globus_mutex_lock(&test_info->monitor->mutex);
@@ -830,7 +999,7 @@ connect_read_big_buffer_callback(
                   file_size,
                   data_read_big_buffer_callback,
                   (void *)test_info);
-        test_result(res, "data_read_all");
+        test_result(res, "data_read_all", __LINE__);
     }
     globus_mutex_unlock(&test_info->monitor->mutex);
 }
@@ -859,7 +1028,8 @@ connect_read_callback(
     verbose_printf(3, "connect_read_callback() : start\n"); 
     if(error != GLOBUS_NULL)
     {
-        test_result(globus_error_put(error), "connect_read_callback error");
+        test_result(globus_error_put(error), "connect_read_callback error"
+              , __LINE__);
     }
 
     globus_mutex_lock(&test_info->monitor->mutex);
@@ -883,7 +1053,7 @@ connect_read_callback(
                   blk_size,
                   data_read_callback,
                   (void *)test_info);
-        test_result(res, "data_read");
+        test_result(res, "data_read", __LINE__);
     }
     globus_mutex_unlock(&test_info->monitor->mutex);
 
@@ -907,7 +1077,7 @@ data_read_big_buffer_callback(
 
     if(error != GLOBUS_NULL)
     {
-        test_result(globus_error_put(error), "big_buffer_callback");
+        test_result(globus_error_put(error), "big_buffer_callback", __LINE__);
     }
 
     test_info = (data_test_info_t *)callback_arg;
@@ -1033,7 +1203,7 @@ connect_write_big_buffer_callback(
                       eof,
                       data_write_callback, 
                       (void *)test_info);
-            test_result(res, "data_write");
+            test_result(res, "data_write", __LINE__);
             offset += nbyte;
         }
     }
@@ -1108,13 +1278,15 @@ data_read_callback(
                       blk_size,
                       data_read_callback,
                       (void *)test_info);
-            test_result(res, "data_read");
+            test_result(res, "data_read", __LINE__);
         }
     }
     globus_mutex_unlock(&test_info->monitor->mutex);
 
-    globus_free(buffer);
-
+    if(!eof && length > 0)
+    {
+        globus_free(buffer);
+    }
 }
 
 void
@@ -1193,7 +1365,7 @@ connect_write_callback(
                       eof,
                       data_write_callback, 
                       (void *)test_info);
-            test_result(res, "data_write");
+            test_result(res, "data_write", __LINE__);
             offset += nbyte;
         }
     }
@@ -1269,7 +1441,7 @@ connect_write_zero_eof_callback(
                   GLOBUS_FALSE,
                   data_write_callback,
                   (void *)test_info);
-        test_result(res, "data_write");
+        test_result(res, "data_write", __LINE__);
         offset += nbyte;
        
         res = globus_ftp_control_data_write(
@@ -1280,7 +1452,7 @@ connect_write_zero_eof_callback(
                   GLOBUS_TRUE,
                   data_write_callback,
                   (void *)test_info);
-        test_result(res, "data_write");
+        test_result(res, "data_write", __LINE__);
     }
     globus_mutex_unlock(&test_info->monitor->mutex);
 }
@@ -1315,7 +1487,7 @@ data_write_callback(
         if(!g_send_eof)
         {
             res = test_send_eof(handle);
-            test_result(res, "send_eof()");
+            test_result(res, "send_eof()", __LINE__);
         }
 
         globus_mutex_lock(&test_info->monitor->mutex);
@@ -1325,7 +1497,7 @@ data_write_callback(
         }
         globus_mutex_unlock(&test_info->monitor->mutex);
     } 
-    if(length > 0)
+    if(length > 0 &&!eof)
     {
         globus_free(buffer);
     }
@@ -1343,11 +1515,12 @@ failure_end(
 void
 test_result(
     globus_result_t                             res,
-    char *                                      msg)
+    char *                                      msg,
+    int                                         line_num)
 {
     if(res != GLOBUS_SUCCESS)
     {
-        verbose_printf(1, "error:%s\n",
+        verbose_printf(1, "Line# %d [error]:%s\n", line_num,
             globus_object_printable_to_string(globus_error_get(res)));
         failure_end(msg);
     }

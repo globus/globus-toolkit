@@ -1474,8 +1474,9 @@ globus_ftp_control_get_type(
 
 globus_result_t
 globus_ftp_control_local_dcau(
-    globus_ftp_control_handle_t *		handle,
-    const globus_ftp_control_dcau_t *	        dcau);
+    globus_ftp_control_handle_t *               handle,
+    const globus_ftp_control_dcau_t *           dcau,
+    gss_cred_id_t                               delegated_credential_handle);
 
 globus_result_t
 globus_ftp_control_get_dcau(

@@ -82,6 +82,8 @@ globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
 #endif
 
+extern gss_cred_id_t                            g_deleg_cred;
+
 extern int dolreplies;
 #ifndef INTERNAL_LS
 extern char ls_long[50];
@@ -1057,7 +1059,8 @@ cmd: USER SP username CRLF
 			g_dcau.subject.subject = globus_libc_strdup($4+2);
 		    }
 		    res = globus_ftp_control_local_dcau(&g_data_handle,
-		                                        &g_dcau);
+		                                        &g_dcau,
+                                                        g_deleg_cred);
 		    if(res != GLOBUS_SUCCESS)
 		    {
 		        reply(432, "Data channel authentication failed");

@@ -1204,7 +1204,8 @@ redo:
 	    }
 
 	    result = globus_ftp_control_local_dcau(target->control_handle,
-						   &target->dcau);
+						   &target->dcau,
+                          target->control_handle->cc_handle.auth_info.delegated_credential_handle);
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		goto result_fault;
@@ -2096,8 +2097,8 @@ redo:
 	
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-        result = globus_url_parse(client_handle->dest_url,
-                                  &dest_url);
+        result = (globus_result_t) globus_url_parse(client_handle->dest_url,
+                                       &dest_url);
 
         if(result != GLOBUS_SUCCESS)
 	{

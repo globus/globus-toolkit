@@ -58,6 +58,8 @@ static gss_ctx_id_t gcontext = GSS_C_NO_CONTEXT;
 /* Identity of authenticated client */
 static gss_buffer_desc client_name = { 0, NULL };
 
+gss_cred_id_t g_deleg_cred = GSS_C_NO_CREDENTIAL;
+
 #ifndef NUL
 #define	NUL	'\0'
 #endif /* NUL */
@@ -640,7 +642,6 @@ gssapi_handle_auth_data(char *data, int length)
     OM_uint32 accept_min;
     OM_uint32 stat_maj;
     OM_uint32 stat_min;
-    gss_cred_id_t g_deleg_cred = GSS_C_NO_CREDENTIAL;
 
 
     gss_OID mechid;
@@ -660,7 +661,7 @@ gssapi_handle_auth_data(char *data, int length)
     extern const gss_OID gss_nt_service_name;	/* From GSSAPI library */
 #endif /* GSSAPI_KRB5 */
 
-    
+    g_deleg_cred = GSS_C_NO_CREDENTIAL;
 
 #ifdef GSSAPI_GLOBUS
     pchan = GSS_C_NO_CHANNEL_BINDINGS;
@@ -761,12 +762,11 @@ gssapi_handle_auth_data(char *data, int length)
 
 #if USE_GLOBUS_DATA_CODE
 	/* Don't write code like this. */
-	if (accept_maj == GSS_S_COMPLETE) {
+	if (accept_maj == GSS_S_COMPLETE) 
+        {
 	    extern globus_ftp_control_dcau_t                g_dcau;
 
-	    g_data_handle.cc_handle.auth_info.delegated_credential_handle =
-		g_deleg_cred;
-	    globus_ftp_control_local_dcau(&g_data_handle, &g_dcau);
+	    globus_ftp_control_local_dcau(&g_data_handle, &g_dcau, g_deleg_cred);
 	}
 #endif
 	if ((accept_maj == GSS_S_COMPLETE) ||

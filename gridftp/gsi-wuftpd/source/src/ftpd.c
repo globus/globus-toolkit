@@ -92,11 +92,11 @@
 
 #ifdef USE_GLOBUS_DATA_CODE
 #   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __logical_offset, __length, __size)  \
-            g_send_data(__name, __instr, __h, __off,(off_t) __blksize, (off_t) __logical_offset, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
+            g_send_data(__name, __instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
 #   else
-#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __logical_offset, __length, __size)  \
-            g_send_data(__instr, __h, __off, (off_t)__blksize, (off_t) __logical_offset, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
+            g_send_data(__instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
 #   endif
 #endif
 
@@ -4549,22 +4549,14 @@ retrieve(
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-#       ifdef BUFFER_SIZE
-            TransferComplete = G_SEND_DATA(name, fin, 
-                                   &g_data_handle, tmp_restart,
-                                   BUFFER_SIZE, offset==-1?0:offset, length, st.st_size);
-#       else
-#           ifdef HAVE_ST_BLKSIZE
-                TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
-                                       tmp_restart, st.st_blksize * 2,
-				       offset==-1?0:offset, length,
-				       st.st_size);
-#           else
-                TransferComplete = G_SEND_DATA(name, fin, 
-                                       &g_data_handle, tmp_restart, BUFSIZ, 
-                                       offset==-1?0:offset, length, st.st_size);
-#           endif
-#       endif
+            TransferComplete = G_SEND_DATA(
+                                   name, 
+                                   fin, 
+                                   &g_data_handle, 
+                                   tmp_restart,
+                                   offset==-1?0:offset, 
+                                   length, 
+                                   st.st_size);
     }
 #   else
     {

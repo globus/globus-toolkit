@@ -100,7 +100,7 @@ globus_l_ftp_client_test_restart_plugin_authenticate(
 
     if(d->when == FTP_RESTART_AT_AUTH)
     {
-	printf("[restart plugin]: About to restart during authentication\n");
+	fprintf(stderr, "[restart plugin]: About to restart during authentication\n");
 	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     d->next = FTP_RESTART_AT_AUTH_RESPONSE;
@@ -121,7 +121,7 @@ globus_l_ftp_client_test_restart_plugin_connect(
 
     if(d->when == FTP_RESTART_AT_CONNECT)
     {
-	printf("[restart plugin]: About to restart during connect\n");
+	fprintf(stderr, "[restart plugin]: About to restart during connect\n");
 	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     d->next = FTP_RESTART_AT_CONNECT_RESPONSE;
@@ -151,7 +151,7 @@ globus_l_ftp_client_test_restart_plugin_get(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -178,7 +178,7 @@ globus_l_ftp_client_test_restart_plugin_delete(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -206,7 +206,7 @@ globus_l_ftp_client_test_restart_plugin_mkdir(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr, "[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -233,7 +233,7 @@ globus_l_ftp_client_test_restart_plugin_rmdir(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -260,7 +260,7 @@ globus_l_ftp_client_test_restart_plugin_list(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -287,7 +287,7 @@ globus_l_ftp_client_test_restart_plugin_verbose_list(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -316,7 +316,7 @@ globus_l_ftp_client_test_restart_plugin_move(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -344,7 +344,7 @@ globus_l_ftp_client_test_restart_plugin_put(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -365,7 +365,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_SITE_HELP)
 	{
-	    printf("[restart plugin]: About to restart during SITE HELP\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during SITE HELP\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_SITE_HELP_RESPONSE;
@@ -374,7 +374,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_FEAT)
 	{
-	    printf("[restart plugin]: About to restart during FEAT\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during FEAT\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle,d);
 	}
 	d->next = FTP_RESTART_AT_FEAT_RESPONSE;
@@ -383,7 +383,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_TYPE)
 	{
-	    printf("[restart plugin]: About to restart during TYPE\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during TYPE\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_TYPE_RESPONSE;
@@ -392,7 +392,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_MODE)
 	{
-	    printf("[restart plugin]: About to restart during MODE\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during MODE\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_MODE_RESPONSE;
@@ -401,7 +401,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_OPTS_RETR)
 	{
-	    printf("[restart plugin]: About to restart during OPTS RETR\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during OPTS RETR\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_OPTS_RETR_RESPONSE;
@@ -410,7 +410,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_PASV)
 	{
-	    printf("[restart plugin]: About to restart during PASV\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during PASV\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_PASV_RESPONSE;
@@ -419,7 +419,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_PORT)
 	{
-	    printf("[restart plugin]: About to restart during PORT\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during PORT\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_PORT_RESPONSE;
@@ -428,7 +428,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_REST)
 	{
-	    printf("[restart plugin]: About to restart during REST\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during REST\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_REST_RESPONSE;
@@ -437,7 +437,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_RETR)
 	{
-	    printf("[restart plugin]: About to restart during RETR\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during RETR\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RETR_RESPONSE;
@@ -446,7 +446,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_STOR)
 	{
-	    printf("[restart plugin]: About to restart during STOR\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during STOR\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_STOR_RESPONSE;
@@ -455,7 +455,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_LIST)
 	{
-	    printf("[restart plugin]: About to restart during LIST\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during LIST\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_LIST_RESPONSE;
@@ -464,7 +464,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_NLST)
 	{
-	    printf("[restart plugin]: About to restart during NLST\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during NLST\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_NLST_RESPONSE;
@@ -473,7 +473,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_MKD)
 	{
-	    printf("[restart plugin]: About to restart during MKD\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during MKD\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_MKD_RESPONSE;
@@ -482,7 +482,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_RMD)
 	{
-	    printf("[restart plugin]: About to restart during RMD\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during RMD\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RMD_RESPONSE;
@@ -491,7 +491,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_DELE)
 	{
-	    printf("[restart plugin]: About to restart during DELE\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during DELE\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_DELE_RESPONSE;
@@ -500,7 +500,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_RNFR)
 	{
-	    printf("[restart plugin]: About to restart during RNFR\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during RNFR\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RNFR_RESPONSE;
@@ -509,7 +509,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     {
 	if(d->when == FTP_RESTART_AT_RNTO)
 	{
-	    printf("[restart plugin]: About to restart during RNTO\n");
+	    fprintf(stderr,"[restart plugin]: About to restart during RNTO\n");
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_RNTO_RESPONSE;
@@ -532,7 +532,7 @@ globus_l_ftp_client_test_restart_plugin_response(
     d = plugin_specific;
     if(d->next == d->when)
     {
-	printf("[restart plugin]: About to restart during response (when=%d)\n",
+	fprintf(stderr,"[restart plugin]: About to restart during response (when=%d)\n",
 	       (int) d->when);
 	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
@@ -553,7 +553,7 @@ globus_l_ftp_client_test_restart_plugin_read(
     d = plugin_specific;
     if(d->when == FTP_RESTART_AT_READ)
     {
-	printf("[restart plugin]: About to restart during read\n");
+	fprintf(stderr,"[restart plugin]: About to restart during read\n");
 	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
@@ -576,7 +576,7 @@ globus_l_ftp_client_test_restart_plugin_data(
     d = plugin_specific;
     if(d->when == FTP_RESTART_AT_DATA)
     {
-	printf("[restart plugin]: About to restart during data callback\n");
+	fprintf(stderr,"[restart plugin]: About to restart during data callback\n");
 	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
@@ -598,7 +598,7 @@ globus_l_ftp_client_test_restart_plugin_write(
     d = plugin_specific;
     if(d->when == FTP_RESTART_AT_WRITE)
     {
-	printf("[restart plugin]: About to restart during write\n");
+	fprintf(stderr,"[restart plugin]: About to restart during write\n");
 	globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
     }
     return;
@@ -683,7 +683,7 @@ globus_l_ftp_client_test_restart_plugin_third_party_transfer(
     }
     else
     {
-	printf("[restart plugin]: We've been restarted\n");
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
     }
 }
 
@@ -697,7 +697,7 @@ globus_l_ftp_client_test_restart_plugin_fault(
     const globus_url_t *			url,
     globus_object_t *				error)
 {
-    printf("[restart plugin]: Fault detected\n");
+    fprintf(stderr,"[restart plugin]: Fault detected\n");
 }
 
 static
@@ -709,7 +709,7 @@ globus_l_ftp_client_test_restart_plugin_complete(
 {
     globus_l_ftp_restart_plugin_specific_t *	d;
 
-    printf("[restart plugin]: operation completed\n");
+    fprintf(stderr,"[restart plugin]: operation completed\n");
 
     d = plugin_specific;
 
