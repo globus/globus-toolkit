@@ -23,6 +23,7 @@ globus_l_debug_get_level(
         char *                          next_name;
         char *                          my_levels[32];
         int                             i;
+        globus_bool_t                   negate = GLOBUS_FALSE;
         
         my_names = strdup(level_names);
         if(!my_names)
@@ -55,6 +56,12 @@ globus_l_debug_get_level(
             }
         }
         
+        if(*levels == '^')
+        {
+            levels++;
+            negate = GLOBUS_TRUE;
+        }
+        
         /* map all names in levels to my_levels */
         do
         {
@@ -85,6 +92,11 @@ globus_l_debug_get_level(
                     env_name);
             }
         } while((levels = next_name));
+        
+        if(negate)
+        {
+            level = ~level;
+        }
         
         free(my_names);
     }

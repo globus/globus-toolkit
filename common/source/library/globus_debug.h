@@ -49,11 +49,18 @@ globus_debug_init(
         }                                                                   \
         va_end(ap);                                                         \
     }                                                                       \
+    void globus_i_##module_name##_debug_fwrite(                             \
+        const void *ptr, size_t size, size_t  nmemb)                        \
+    {                                                                       \
+        fwrite(ptr, size, nmemb, globus_i_##module_name##_debug_file);      \
+    }                                                                       \
     unsigned globus_i_##module_name##_debug_level
 
 /* call this in a header file (if needed externally) */
 #define GlobusDebugDeclare(module_name)                                     \
     extern void globus_i_##module_name##_debug_printf(const char *, ...);   \
+    extern void globus_i_##module_name##_debug_fwrite(                      \
+        const void *ptr, size_t size, size_t nmemb);                        \
     extern unsigned globus_i_##module_name##_debug_level
 
 /* call this in module activate func
@@ -70,7 +77,8 @@ globus_debug_init(
  * <show tids> is 0 or 1 to show thread ids on all messages.  0 by default
  * 
  * Also, user's can use the ALL level in their env setting to turn on 
- * all levels
+ * all levels or precede the list of levels with '^' to enable all levels
+ * except those.
  */
 #define GlobusDebugInit(module_name, levels)                                \
     globus_debug_init(                                                      \
@@ -98,6 +106,9 @@ globus_debug_init(
 #define GlobusDebugMyPrintf(module_name, message)                           \
     globus_i_##module_name##_debug_printf message
 
+#define GlobusDebugMyFwrite(module_name, buffer, size, count)               \
+    globus_i_##module_name##_debug_fwrite((buffer), (size), (count))
+
 /* use this in an if() to debug enable blocks of code 
  * for example
  * 
@@ -124,6 +135,15 @@ globus_debug_init(
         }                                                                   \
     } while(0)
 
+#define GlobusDebugFwrite(module_name, level, buffer, size, count)          \
+    do                                                                      \
+    {                                                                       \
+        if(GlobusDebugTrue(module_name, level))                             \
+        {                                                                   \
+            GlobusDebugMyFwrite(module_name, buffer, size, count);          \
+        }                                                                   \
+    } while(0)
+
 #else
 
 #define GlobusDebugThreadId()
@@ -132,7 +152,9 @@ globus_debug_init(
 #define GlobusDebugInit(module_name, levels)
 #define GlobusDebugDestroy(module_name)
 #define GlobusDebugPrintf(module_name, level, message)
+#define GlobusDebugFwrite(module_name, level, buffer, size, count)
 #define GlobusDebugMyPrintf(module_name, message)
+#define GlobusDebugMyFwrite(module_name, buffer, size, count)
 #define GlobusDebugTrue(module_name, level) 0
 
 #endif
