@@ -47,7 +47,6 @@ typedef struct globus_l_gass_file_s
     unsigned long total_length;
     FILE *fp;
     globus_url_scheme_t scheme_type;
-    char *tag;
 } globus_l_gass_file_t;
 
 /******************************************************************************
@@ -254,10 +253,8 @@ globus_gass_open(char *url, int oflag, ...)
     file->fd = -1;
     file->fp = GLOBUS_NULL;
     file->scheme_type=globus_url.scheme_type;
-    file->tag=globus_url.tag;
     
-    if(globus_url.scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE ||
-       globus_url.scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE_TAG)
+    if(globus_url.scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
     {
 	rc = globus_l_gass_add_and_trunc(file,
 				 oflag,
@@ -270,7 +267,6 @@ globus_gass_open(char *url, int oflag, ...)
 	globus_gass_file_exit();
 	return file->fd;
     }
-    
 
     globus_url_destroy(&globus_url);
 
@@ -479,8 +475,7 @@ globus_gass_close(int fd)
     }
     else
     {
-	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE ||
-	    file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE_TAG)
+	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
 	{
 	    nexus_fd_close(file->fd);
 	
@@ -704,30 +699,6 @@ globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
 			    file->url,
 			    globus_l_gass_file_tag,
 			    file->timestamp);
-	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE_TAG)
-	{
-	    rc = globus_gass_cache_add(&globus_l_gass_file_cache_handle,
-				       file->url,
-				       file->tag,
-				       GLOBUS_TRUE,
-				       &file->timestamp,
-				       &file->filename);
-	    if(rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
-	    {
-		return rc;
-	    }
-	    
-	    rc = globus_gass_cache_add_done(&globus_l_gass_file_cache_handle,
-				       file->url,
-				       file->tag,
-				       file->timestamp);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		return rc;
-	    }
-	    
-	}
-	
 	if(file->fd >= 0)
 	{
 	    globus_l_gass_file_table[file->fd] = file;
@@ -740,6 +711,3 @@ globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
 	}
     }
 } /* globus_l_gass_add_and_trunc() */
-
-
-
