@@ -111,7 +111,7 @@ globus_l_gsc_cmd_allo(
     if(sc == 1)
     {
         op->server_handle->allocated_bytes = size;
-        globus_gsc_959_finished_command(op, _FSMSL("200 NOOP command successful.\r\n"));
+        globus_gsc_959_finished_command(op, _FSMSL("200 ALLO command successful.\r\n"));
     }
     else
     {
