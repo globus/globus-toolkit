@@ -80,9 +80,6 @@ main(int argc, char *argv[])
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_DESTROY_PROXY;
 
-    username = getenv("LOGNAME");
-    client_request->username = strdup(username);
-    
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
         socket_attrs->pshost = strdup(pshost);
@@ -123,6 +120,14 @@ main(int argc, char *argv[])
 		verror_get_string());
         exit(1);
     }
+
+    /* If the user didn't provide us with required username, we will try to use
+       subject name from user's default certificate. */
+     if (client_request->username == NULL &&
+	 ssl_get_base_subject_file(NULL, &client_request->username)) {
+	 fprintf(stderr, "Cannot get subject name from your certificate\n");
+	 exit(1);
+     }
 
     /* Serialize client request object */
     requestlen = myproxy_serialize_request(client_request, 
@@ -225,13 +230,6 @@ init_arguments(int argc,
     if (attrs->pshost == NULL) {
 	fprintf(stderr, usage);
 	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
-	exit(1);
-    }
-
-    /* Check to see if username specified */
-    if (request->username == NULL) {
-	fprintf(stderr, usage);
-	fprintf(stderr, "Please specify a username!\n");
 	exit(1);
     }
 
