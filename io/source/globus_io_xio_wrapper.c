@@ -1741,7 +1741,7 @@ globus_io_tcp_get_attr(
 
     if((*handle)->attr)
     {
-        return globus_l_io_iattr_copy(attr, (*handle)->attr);
+        return globus_l_io_iattr_copy(attr, &(*handle)->attr);
     }
     else
     {
