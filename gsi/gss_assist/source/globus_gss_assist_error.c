@@ -37,7 +37,8 @@ globus_l_gsi_gss_assist_error_strings[GLOBUS_GSI_GSS_ASSIST_ERROR_LAST] =
 /* 14 */  "Error invoking callout",
 /* 15 */  "A GSSAPI returned an error",
 /* 16 */  "Gridmap lookup failure",
-/* 17 */   "Caller provided insufficient buffer space for local identity"
+/* 17 */  "Caller provided insufficient buffer space for local identity",
+/* 18 */  "Failed to obtain canonical host name"
 };
 
 globus_result_t
