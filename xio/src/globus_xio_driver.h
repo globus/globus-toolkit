@@ -1313,6 +1313,14 @@ globus_xio_driver_init(
  *  @ingroup driver_pgm
  */
 globus_result_t
+globus_xio_driver_get_user_data(
+    globus_xio_driver_t                     in_driver,
+    void **                                 out_user_data);
+
+/**
+ *  @ingroup driver_pgm
+ */
+globus_result_t
 globus_xio_driver_destroy(
     globus_xio_driver_t                     driver);
 

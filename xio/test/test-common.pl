@@ -9,9 +9,19 @@ my $output_dir="test_output";
 
 sub run_test
 {
+    my $f;
+    my @lst;
     my $cmd=(shift);
     my $test_str=(shift);
     my ($errors,$rc) = ("",0);
+
+    @lst=`ls core* 2> /dev/null`;
+    foreach(@lst)
+    {
+        $f = $_;
+        chomp($f);
+        unlink($f);
+    }
 
     unlink("core");
     unlink("$output_dir/$test_str.out");
@@ -20,8 +30,7 @@ sub run_test
     unlink("$output_dir/$test_str.fail");
 
     $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
-    $ENV{"GLOBUS_XIO_DEBUG"} = "127,$output_dir/$test_str.dbg,1";
-    $ENV{"GLOBUS_XIO_BOUNCE_DEBUG"} = "127,$output_dir/$test_str.dbg,1";
+    $ENV{"GLOBUS_XIO_DEBUG"} = "127,#$output_dir/$test_str.dbg,1";
     $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "1";
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
@@ -30,19 +39,22 @@ sub run_test
     {
         $errors .= "\n # Tests :$command: exited with  $rc.";
     }
-    if(-r 'core')
+    @lst=`ls core* 2> /dev/null`;
+    if($#lst >= 0)
     {
+        my $l_core= $lst[0];
         my $core_str = "$output_dir/$test_str.core";
-        system("mv core $core_str");
+        chomp($l_core);
+
+        $errors .= "\n# mv $l_core $core_str\n";
+        system("mv $l_core $core_str");
         $errors .= "\n# Core file generated." . $errors;
-        unlink("core");
+        unlink($l_core);
     }
 
     if($errors eq "")
     {
         ok('success', 'success');
-#        unlink("$output_dir/$test_str.out");
-#        unlink("$output_dir/$test_str.err");
     }
     else
     {

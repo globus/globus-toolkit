@@ -437,7 +437,6 @@ globus_xio_data_descriptor_destroy(
     globus_i_xio_op_t *                     op;
     globus_i_xio_handle_t *                 handle;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_data_descriptor_destroy);
 
     GlobusXIODebugEnter();
@@ -456,17 +455,13 @@ globus_xio_data_descriptor_destroy(
         op->ref--;
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
     }
     globus_mutex_unlock(&handle->context->mutex);
 
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
     if(res != GLOBUS_SUCCESS)

@@ -6,6 +6,7 @@ SUBDIRS= \
 
 Sources=                                \
 	test_common.c                       \
+	driver_stack.c                      \
     blocking_dd_test.c                  \
     unload_test.c                       \
 	framework_test.c                    \

@@ -80,15 +80,20 @@ globus_i_xio_server_will_block_cb(
     void *                                  user_args)
 {
     globus_i_xio_op_t *                     xio_op;
+    GlobusXIOName(globus_i_xio_server_will_block_cb);
+
+    GlobusXIODebugInternalEnter();
 
     xio_op = (globus_i_xio_op_t *) user_args;
 
     xio_op->restarted = GLOBUS_TRUE;
-    xio_op->ref++;
+    GlobusXIOOpInc(xio_op);
 
     globus_thread_blocking_callback_pop(&wb_ndx);
 
     globus_i_xio_server_post_accept(xio_op);
+
+    GlobusXIODebugInternalExit();
 }
 
 /*
@@ -112,14 +117,14 @@ globus_l_xio_server_accept_kickout(
     xio_server = xio_op->_op_server;
 
     /* create the structure if successful, otherwise the target is null */
-    if(xio_op->cached_res == GLOBUS_SUCCESS)
+    if(xio_op->cached_obj == NULL)
     {
         xio_target = globus_malloc(sizeof(globus_i_xio_target_t) +
                         (sizeof(globus_i_xio_target_entry_t) * 
                             (xio_op->stack_size - 1)));
         if(xio_target == NULL)
         {
-            xio_op->cached_res = GlobusXIOErrorMemory("target");
+            xio_op->cached_obj = GlobusXIOErrorObjMemory("target");
         }
         xio_target->type = GLOBUS_XIO_TARGET_TYPE_SERVER;
         /* initialize the target structure */
@@ -157,13 +162,13 @@ globus_l_xio_server_accept_kickout(
     xio_op->_op_accept_cb(
         xio_server,
         xio_target,
-        xio_op->cached_res,
+        GlobusXIOObjToResult(xio_op->cached_obj),
         xio_op->user_arg);
     if(xio_op->restarted)
     {
         globus_mutex_lock(&xio_server->mutex);
         {
-            xio_op->ref--;
+            GlobusXIOOpDec(xio_op);
 
             if(xio_op->ref == 0)
             {
@@ -236,7 +241,7 @@ globus_i_xio_server_post_accept(
         }
         /* decrement reference for the callback if timeout has happened or
             isn't registered this will go to zero */
-        xio_op->ref--;
+        GlobusXIOOpDec(xio_op);
         if(xio_op->ref == 0)
         {
             globus_free(xio_op);
@@ -277,7 +282,7 @@ globus_i_xio_server_accept_callback(
         /* if in this state it means that the user either has or is about to
            get a cancel callback.  we must delay the delivery of this
            callback until that returns */
-        xio_op->cached_res = result;
+        xio_op->cached_obj = GlobusXIOResultToObj(result);
         if(xio_op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)
         {
             accept = GLOBUS_FALSE;
@@ -290,7 +295,7 @@ globus_i_xio_server_accept_callback(
                 if(globus_i_xio_timer_unregister_timeout(
                         &globus_l_xio_timeout_timer, xio_op))
                 {
-                    xio_op->ref--;
+                    GlobusXIOOpDec(xio_op);
                     globus_assert(xio_op->ref > 0);
                 }
             }
@@ -355,7 +360,7 @@ globus_l_xio_accept_timeout_callback(
             case GLOBUS_XIO_OP_STATE_FINISH_WAITING:
 
                 /* decerement the reference for the timeout callback */
-                xio_op->ref--;
+                GlobusXIOOpDec(xio_op);
                 if(xio_op->ref == 0)
                 {
                     /* remove the reference for the target on the server */
@@ -414,7 +419,7 @@ globus_l_xio_accept_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            xio_op->cached_res = GlobusXIOErrorTimedout();
+            xio_op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
             xio_op->canceled = GLOBUS_TRUE;
             if(xio_op->cancel_cb)
@@ -441,7 +446,7 @@ globus_l_xio_accept_timeout_callback(
         {
             /* decremenet the target reference count and insist that it is
                not zero yet */
-            xio_op->ref--;
+            GlobusXIOOpDec(xio_op);
             globus_assert(xio_op->ref > 0);
         }
     }
@@ -574,7 +579,7 @@ globus_l_server_accept_cb(
 
     globus_mutex_lock(&info->mutex);
     {
-        info->res = result;
+        info->error_obj = GlobusXIOResultToObj(result);
         info->target = target;
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->cond);
@@ -630,7 +635,7 @@ globus_l_xio_server_register_accept(
         /*i deal with timeout if there is one */
         if(xio_op->_op_server_timeout_cb != NULL)
         {
-            xio_op->ref++;
+            GlobusXIOOpInc(xio_op);
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
                 xio_op,
@@ -646,7 +651,7 @@ globus_l_xio_server_register_accept(
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
-    xio_op->ref++;
+    GlobusXIOOpInc(xio_op);
     GlobusXIODriverPassAccept(res, xio_op, \
             globus_i_xio_server_accept_callback, NULL);
 
@@ -657,7 +662,7 @@ globus_l_xio_server_register_accept(
 
     globus_mutex_lock(&xio_server->mutex);
     {
-        xio_op->ref--;
+        GlobusXIOOpDec(xio_op);
         if(xio_op->ref == 0)
         {
             GlobusIXIOServerDec(free_server, xio_server);
@@ -674,7 +679,7 @@ globus_l_xio_server_register_accept(
 
     globus_mutex_lock(&xio_server->mutex);
     {
-        xio_op->ref--; /* dec for the register */
+        GlobusXIOOpDec(xio_op); /* dec for the register */
         globus_assert(xio_op->ref > 0);
 
         /* set target to invalid type */
@@ -686,11 +691,11 @@ globus_l_xio_server_register_accept(
             if(globus_i_xio_timer_unregister_timeout(
                     &globus_l_xio_timeout_timer, xio_op))
             {
-                xio_op->ref--;
+                GlobusXIOOpDec(xio_op);
                 globus_assert(xio_op->ref > 0);
             }
         }
-        xio_op->ref--;
+        GlobusXIOOpDec(xio_op);
         if(xio_op == 0)
         {
             GlobusIXIOServerDec(free_server, xio_server);
@@ -1077,9 +1082,9 @@ globus_xio_server_accept(
     }
     globus_mutex_unlock(&info->mutex);
 
-    if(info->res != GLOBUS_SUCCESS)
+    if(info->error_obj != NULL)
     {
-        res = info->res;
+        res = GlobusXIOObjToResult(info->error_obj);
         goto register_error;
     }
 

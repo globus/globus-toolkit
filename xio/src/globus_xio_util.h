@@ -23,23 +23,29 @@
         "[%s:%d] Operation was canceled",                                   \
         _xio_name, __LINE__)                                          
                                                                             
-#define GlobusXIOErrorTimedout()                                            \
-    globus_error_put(                                                       \
+#define GlobusXIOErrorObjTimedout()                                         \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_ERROR_TIMEDOUT,                                      \
             "[%s:%d] Operation timed out",                                  \
-            _xio_name, __LINE__))                                           
+            _xio_name, __LINE__)                                           
                                                                             
-#define GlobusXIOErrorEOF()                                                 \
+#define GlobusXIOErrorTimedout()                                            \
     globus_error_put(                                                       \
+        GlobusXIOErrorObjTimedout())
+
+#define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_ERROR_EOF,                                           \
             "[%s:%d] An end of file occurred",                              \
-            _xio_name, __LINE__))                                           
+            _xio_name, __LINE__)                                           
+                                                                            
+#define GlobusXIOErrorEOF()                                                 \
+    globus_error_put(                                                       \
+        GlobusXIOErrorObjEOF())                                             \
                                                                             
 #define GlobusXIOErrorInvalidCommand(cmd_number)                            \
     globus_error_put(                                                       \
@@ -68,14 +74,17 @@
             "[%s:%d] Bad parameter, %s",                                    \
             _xio_name, __LINE__, (param_name)))                             
                                                                             
-#define GlobusXIOErrorMemory(mem_name)                                      \
-    globus_error_put(                                                       \
+#define GlobusXIOErrorObjMemory(mem_name)                                   \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_ERROR_MEMORY,                                        \
             "[%s:%d] Memory allocation failed on %s",                       \
-            _xio_name, __LINE__, (mem_name)))                               
+            _xio_name, __LINE__, (mem_name))                               
+                                                                            
+#define GlobusXIOErrorMemory(mem_name_obj)                                  \
+    globus_error_put(                                                       \
+        GlobusXIOErrorObjMemory(mem_name_obj))
                                                                             
 #define GlobusXIOErrorSystemError(system_func, _errno)                      \
     globus_error_put(                                                       \

@@ -389,6 +389,10 @@ main(
         &globus_l_test_hash, 
         "unload",
         unload_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "stack",
+        stack_main);
 
 
     for(ctr = 1; ctr < argc && !done; ctr++)

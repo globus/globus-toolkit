@@ -13,14 +13,11 @@ if(@ARGV == 1)
 }
 
 my $test_exec="./framework_test";
-my $test_name="unload";
+my $test_name="stack";
 my @tests;
 my @todo;
 
-push(@tests,  "$test_name 1");
-push(@tests,  "$test_name 2");
-push(@tests,  "$test_name 3");
-push(@tests,  "$test_name 4");
+push(@tests,  "$test_name");
 
 if($type == 1)
 {

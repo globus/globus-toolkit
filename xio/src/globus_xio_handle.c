@@ -181,7 +181,6 @@ globus_l_xio_hande_pre_close(
 {
     int                                     ctr;
     globus_bool_t                           destroy_handle;
-    globus_bool_t                           destroy_context;
     globus_i_xio_op_t *                     op;
     globus_result_t                         res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_hande_pre_close);
@@ -249,7 +248,7 @@ globus_l_xio_hande_pre_close(
 
   err:
     op->_op_handle = NULL; /* null this out for next call */
-    globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+    globus_i_xio_op_destroy(op, &destroy_handle);
 
     return res;
 }
@@ -281,55 +280,57 @@ globus_i_xio_close_handles(
         {
             handle = (globus_xio_handle_t) globus_list_first(list);
 
+            globus_assert(handle->context != NULL);
             globus_mutex_lock(&handle->context->mutex);
             {
-                if(handle->sd_monitor != NULL)
+                /* if it is still in the list i must have no monitor */
+                globus_assert(handle->sd_monitor == NULL);
+                found = GLOBUS_FALSE;
+                for(ctr = 0; 
+                    ctr < handle->context->stack_size && !found; 
+                    ctr++)
                 {
-                    found = GLOBUS_FALSE;
-                    for(ctr = 0; 
-                        ctr < handle->context->stack_size && !found; 
-                        ctr++)
+                    /* cancel on al handles */
+                    if(driver == NULL || 
+                        handle->context->entry[ctr].driver == driver)
                     {
-                        /* cancel on al handles */
-                        if((driver == NULL || 
-                            handle->context->entry[ctr].driver == driver) &&
-                            handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
+                        GlobusXIODebugPrintf(
+                            GLOBUS_XIO_DEBUG_INFO, 
+                            ("[globus_i_xio_close_handles] : "
+                            "will wait on handle @0x%x state=%d\n", 
+                            handle, handle->state));
+
+                        found = GLOBUS_TRUE;
+
+                        /* remove from the main list */
+                        globus_list_remove(
+                            &globus_l_outstanding_handles_list,
+                            globus_list_search(
+                                globus_l_outstanding_handles_list, handle));
+
+                        handle->sd_monitor = &monitor;
+                        monitor.count++;
+                        if(handle->state 
+                            != GLOBUS_XIO_HANDLE_STATE_CLOSING &&
+                           handle->state 
+                            != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING &&
+                           handle->state 
+                            != GLOBUS_XIO_HANDLE_STATE_CLOSED)
                         {
-                            GlobusXIODebugPrintf(
-                                GLOBUS_XIO_DEBUG_INFO, 
-                                ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
-                                handle, handle->state));
+                            res = globus_l_xio_hande_pre_close(
+                                handle, NULL, NULL, NULL);
+                            globus_assert(res == GLOBUS_SUCCESS);
 
-                            found = GLOBUS_TRUE;
-
-                            /* remove from the main list */
-                            globus_list_remove(
-                                &globus_l_outstanding_handles_list,
-                                globus_list_search(
-                                    globus_l_outstanding_handles_list, handle));
-
-                            handle->sd_monitor = &monitor;
-                            monitor.count++;
-                            if(handle->state 
-                                != GLOBUS_XIO_HANDLE_STATE_CLOSING &&
-                               handle->state 
+                            if(handle->state
                                 != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
                             {
-                                res = globus_l_xio_hande_pre_close(
-                                    handle, NULL, NULL, NULL);
-                                globus_assert(res == GLOBUS_SUCCESS);
-
-                                if(handle->state
-                                != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
-                                {
-                                    globus_list_insert(&c_handles, handle);
-                                        GlobusXIODebugPrintf(
-                                            GLOBUS_XIO_DEBUG_INFO, 
-                                        ("[globus_i_xio_close_handles] : "
-                                        "registersing close on handle @0x%x\n", 
-                                            handle));
-                                }
-                           }
+                                globus_list_insert(&c_handles, handle);
+                                GlobusXIODebugPrintf(
+                                    GLOBUS_XIO_DEBUG_INFO, 
+                                    ("[globus_i_xio_close_handles] : "
+                                    "registersing close on handle @0x%x\n", 
+                                    handle));
+                            }
                         }
                     }
                 }
@@ -563,7 +564,7 @@ globus_i_xio_open_close_callback(
                     &globus_l_xio_timeout_timer, op))
                 {
                     /* at this point we know timeout won't happen */
-                    op->ref--;
+                    GlobusXIOOpDec(op);
                     /* since we have no yet deced for the callbacl this
                        cannot be zero */
                     globus_assert(op->ref > 0);
@@ -573,7 +574,7 @@ globus_i_xio_open_close_callback(
 
         /* remove the operation from the list */
         GlobusXIOOpStateChange(op, GLOBUS_XIO_OP_STATE_FINISH_WAITING);
-        op->cached_res = result;
+        op->cached_obj = GlobusXIOResultToObj(result);
         /* 
          *  when at the top don't worry about the cancel
          *  just act as though we missed it
@@ -609,7 +610,6 @@ globus_l_xio_open_close_callback_kickout(
     globus_i_xio_handle_t *                 handle;
     globus_bool_t                           start_close = GLOBUS_FALSE;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_open_close_callback_kickout);
 
     GlobusXIODebugInternalEnter();
@@ -620,7 +620,7 @@ globus_l_xio_open_close_callback_kickout(
     /* call the users callback */
     if(op->_op_cb != NULL)
     {
-        op->_op_cb(handle, op->cached_res, op->user_arg);
+        op->_op_cb(handle, GlobusXIOObjToResult(op->cached_obj), op->user_arg);
     }
 
     globus_mutex_lock(&handle->context->mutex);
@@ -661,8 +661,7 @@ globus_l_xio_open_close_callback_kickout(
                 GlobusXIOHandleStateChange(handle,
                     GLOBUS_XIO_HANDLE_STATE_CLOSED);
                 /* moving to closed state so remove handles own ref */
-                globus_i_xio_handle_dec(
-                    handle, &destroy_handle, &destroy_context);
+                globus_i_xio_handle_dec(handle, &destroy_handle);
                 /* destroy handle cannot possibly be true yet
                     the handle stll has the operation reference */
                 globus_assert(!destroy_handle);
@@ -674,8 +673,7 @@ globus_l_xio_open_close_callback_kickout(
 
                 /* remove the reference we had to insure this callback
                     would be called */
-                globus_i_xio_handle_dec(
-                    handle, &destroy_handle, &destroy_context);
+                globus_i_xio_handle_dec(handle, &destroy_handle);
                 globus_assert(!destroy_handle);
 
                 GlobusXIOHandleStateChange(handle,
@@ -694,8 +692,7 @@ globus_l_xio_open_close_callback_kickout(
                     GlobusXIOHandleStateChange(handle,
                         GLOBUS_XIO_HANDLE_STATE_CLOSED);
                     /* remove handles own reference */
-                    globus_i_xio_handle_dec(
-                        handle, &destroy_handle, &destroy_context);
+                    globus_i_xio_handle_dec(handle, &destroy_handle);
                     /* destroy handle cannot possibly be true yet
                         the handle stll has the operation reference */
                     globus_assert(!destroy_handle);
@@ -714,10 +711,10 @@ globus_l_xio_open_close_callback_kickout(
         }
 
         /* decrement reference for the operation */
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
     }
     globus_mutex_unlock(&handle->context->mutex);
@@ -729,15 +726,11 @@ globus_l_xio_open_close_callback_kickout(
         {
             /* kickout close callback with error */
         }
-        globus_assert(!destroy_handle && !destroy_context);
+        globus_assert(!destroy_handle);
     }
 
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
 
@@ -786,7 +779,7 @@ globus_i_xio_read_write_callback(
                     &globus_l_xio_timeout_timer, op))
                 {
                     /* at this point we know timeout won't happen */
-                    op->ref--;
+                    GlobusXIOOpDec(op);
                 }
             }
         }
@@ -803,7 +796,7 @@ globus_i_xio_read_write_callback(
                 globus_list_search(handle->read_op_list, op));
         }
 
-        op->cached_res = result;
+        op->cached_obj = GlobusXIOResultToObj(result);
         op->_op_nbytes = nbytes;
     }   
     globus_mutex_unlock(&handle->context->mutex);
@@ -827,7 +820,6 @@ globus_l_xio_read_write_callback_kickout(
     globus_i_xio_op_t *                     op;
     globus_i_xio_handle_t *                 handle;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_read_write_callback_kickout);
 
     GlobusXIODebugInternalEnter();
@@ -840,7 +832,7 @@ globus_l_xio_read_write_callback_kickout(
     {
         op->_op_data_cb(
             handle, 
-            op->cached_res, 
+            GlobusXIOObjToResult(op->cached_obj), 
             op->_op_mem_iovec.iov_base,
             op->_op_mem_iovec.iov_len,
             op->_op_nbytes,
@@ -851,7 +843,7 @@ globus_l_xio_read_write_callback_kickout(
     {
         op->_op_iovec_cb(
             handle, 
-            op->cached_res, 
+            GlobusXIOObjToResult(op->cached_obj), 
             op->_op_iovec,
             op->_op_iovec_count,
             op->_op_nbytes,
@@ -866,20 +858,16 @@ globus_l_xio_read_write_callback_kickout(
          */
         globus_assert(handle->state != GLOBUS_XIO_HANDLE_STATE_OPENING);
         /* decrement reference for the operation */
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
     }
     globus_mutex_unlock(&handle->context->mutex);
 
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
 
@@ -950,7 +938,6 @@ globus_l_xio_timeout_callback(
     globus_bool_t                           rc;
     globus_bool_t                           fire_callback;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_bool_t                           cancel;
     globus_bool_t                           timeout = GLOBUS_FALSE;
     globus_callback_func_t                  delayed_cb;
@@ -976,11 +963,10 @@ globus_l_xio_timeout_callback(
             case GLOBUS_XIO_OP_STATE_FINISH_WAITING:
 
                 /* decerement the reference for the timeout callback */
-                op->ref--;
+                GlobusXIOOpDec(op);
                 if(op->ref == 0)
                 {
-                    globus_i_xio_op_destroy(op, &destroy_handle, 
-                        &destroy_context);
+                    globus_i_xio_op_destroy(op, &destroy_handle);
                 }
 
                 /* remove it from the timeout list */
@@ -1025,10 +1011,6 @@ globus_l_xio_timeout_callback(
         /* wait until outside of lock to free the handle */
         if(destroy_handle)
         {
-            if(destroy_context)
-            {
-                globus_i_xio_context_destroy(handle->context);
-            }
             globus_i_xio_handle_destroy(handle);
         }
         goto exit;
@@ -1039,7 +1021,7 @@ globus_l_xio_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            op->cached_res = GlobusXIOErrorTimedout();
+            op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
             op->canceled = GLOBUS_TRUE;
             if(op->cancel_cb)
@@ -1068,7 +1050,7 @@ globus_l_xio_timeout_callback(
             /* decremenet the target reference count and insist that it is
                not zero yet */
             op->_op_handle_timeout_cb = NULL;
-            op->ref--;
+            GlobusXIOOpDec(op);
             globus_assert(op->ref > 0);
         }
 
@@ -1133,7 +1115,6 @@ globus_l_xio_register_writev(
 {
     globus_result_t                         res;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_i_xio_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_register_writev);
 
@@ -1153,7 +1134,7 @@ globus_l_xio_register_writev(
         if(op->_op_handle->write_timeout_cb != NULL)
         {
             /* op the operatin reference count for this */
-            op->ref++;
+            GlobusXIOOpInc(op);
             op->_op_handle_timeout_cb = handle->write_timeout_cb;
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
@@ -1171,8 +1152,8 @@ globus_l_xio_register_writev(
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
-    op->ref++;
-    GlobusXIODriverPassWrite(res, op, op->_op_iovec, op->_op_iovec_count,     \
+    GlobusXIOOpInc(op);
+    GlobusXIODriverPassWrite(res, op, op->_op_iovec, op->_op_iovec_count,
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
@@ -1181,21 +1162,16 @@ globus_l_xio_register_writev(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
 
@@ -1206,7 +1182,7 @@ globus_l_xio_register_writev(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--; /* dec for the register */
+        GlobusXIOOpDec(op);  /* dec for the register */
         globus_assert(op->ref > 0);
         /* in case timeout unregister fails */
         op->type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
@@ -1217,16 +1193,15 @@ globus_l_xio_register_writev(
             if(globus_i_xio_timer_unregister_timeout(
                 &globus_l_xio_timeout_timer, op))
             {
-                op->ref--;
+                GlobusXIOOpDec(op);
                 globus_assert(op->ref > 0);
             }
         }
         /* clean up the operation */
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
             /* handle should always have a reference left at this point */
             globus_assert(!destroy_handle);
         }
@@ -1248,7 +1223,6 @@ globus_l_xio_register_readv(
 {
     globus_result_t                         res;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_i_xio_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_register_readv);
 
@@ -1278,7 +1252,7 @@ globus_l_xio_register_readv(
         if(handle->read_timeout_cb != NULL)
         {
             /* op the operatin reference count for this */
-            op->ref++;
+            GlobusXIOOpInc(op);
             op->_op_handle_timeout_cb = handle->read_timeout_cb;
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
@@ -1295,8 +1269,8 @@ globus_l_xio_register_readv(
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
-    op->ref++;
-    GlobusXIODriverPassRead(res, op, op->_op_iovec, op->_op_iovec_count,     \
+    GlobusXIOOpInc(op);
+    GlobusXIODriverPassRead(res, op, op->_op_iovec, op->_op_iovec_count,
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
@@ -1305,11 +1279,10 @@ globus_l_xio_register_readv(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--; /* remove the pass reference */
+        GlobusXIOOpDec(op); /* remove the pass reference */
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
 
     }
@@ -1317,10 +1290,6 @@ globus_l_xio_register_readv(
     globus_mutex_unlock(&handle->context->mutex);
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
 
@@ -1331,7 +1300,7 @@ globus_l_xio_register_readv(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--;  /* unregister the pass */
+        GlobusXIOOpDec(op);  /* unregister the pass */
         globus_assert(op->ref > 0);
         /* in case timeout unregister fails */
         op->type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
@@ -1342,16 +1311,15 @@ globus_l_xio_register_readv(
             if(globus_i_xio_timer_unregister_timeout(
                 &globus_l_xio_timeout_timer, op))
             {
-                op->ref--;
+                GlobusXIOOpDec(op);
                 globus_assert(op->ref > 0);
             }
         }
         /* clean up the operation */
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
             /* handle should always have a reference left at this point */
             globus_assert(!destroy_handle);
         }
@@ -1368,7 +1336,6 @@ globus_l_xio_register_open(
     globus_i_xio_op_t *                     op)
 {
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_i_xio_handle_t *                 handle;
     globus_result_t                         res;
     globus_i_xio_context_t *                context;
@@ -1384,7 +1351,7 @@ globus_l_xio_register_open(
     if(handle->open_timeout_cb != NULL)
     {
         /* op the operatin reference count for this */
-        op->ref++;
+        GlobusXIOOpInc(op);
         op->_op_handle_timeout_cb = handle->open_timeout_cb;
         globus_i_xio_timer_register_timeout(
             &globus_l_xio_timeout_timer,
@@ -1397,7 +1364,7 @@ globus_l_xio_register_open(
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
-    op->ref++;
+    GlobusXIOOpInc(op);
     GlobusXIODriverPassOpen(
         res, NULL, op, globus_i_xio_open_close_callback, NULL);
     
@@ -1408,21 +1375,16 @@ globus_l_xio_register_open(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
     
@@ -1436,36 +1398,31 @@ globus_l_xio_register_open(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--; /* dec for the register */
+        GlobusXIOOpDec(op); /* dec for the register */
         globus_assert(op->ref > 0);
 
         context = op->_op_context;
         if(globus_i_xio_timer_unregister_timeout(
             &globus_l_xio_timeout_timer, op))
         {
-            op->ref--;
+            GlobusXIOOpDec(op);
             globus_assert(op->ref > 0);
         }
 
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
             /* handle should always have a reference left at this point */
             globus_assert(!destroy_handle);
         }
         GlobusXIOHandleStateChange(handle,
             GLOBUS_XIO_HANDLE_STATE_CLOSED);
-        globus_i_xio_handle_dec(handle, &destroy_handle, &destroy_context);
+        globus_i_xio_handle_dec(handle, &destroy_handle);
     }
     globus_mutex_unlock(&handle->context->mutex);
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
 
@@ -1478,7 +1435,6 @@ globus_l_xio_register_close(
     globus_i_xio_op_t *                     op)
 {
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_list_t *                         list;
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_op_t *                     tmp_op;
@@ -1544,7 +1500,7 @@ globus_l_xio_register_close(
         if(handle->close_timeout_cb != NULL)
         {
             /* op the operatin reference count for this */
-            op->ref++;
+            GlobusXIOOpInc(op);
             op->_op_handle_timeout_cb = handle->close_timeout_cb;
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
@@ -1559,7 +1515,7 @@ globus_l_xio_register_close(
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
-    op->ref++;
+    GlobusXIOOpInc(op);
     GlobusXIODriverPassClose(res, op, globus_i_xio_open_close_callback, NULL);
     if(res != GLOBUS_SUCCESS)
     {
@@ -1568,21 +1524,16 @@ globus_l_xio_register_close(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
 
@@ -1593,32 +1544,27 @@ globus_l_xio_register_close(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--; /* dec for the register */
+        GlobusXIOOpDec(op); /* dec for the register */
         globus_assert(op->ref > 0);
 
         if(globus_i_xio_timer_unregister_timeout(
             &globus_l_xio_timeout_timer, op))
         {
-            op->ref--;
+            GlobusXIOOpDec(op);
         }
-        op->ref--; 
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            globus_i_xio_op_destroy(op, &destroy_handle, 
-                    &destroy_context);
+            globus_i_xio_op_destroy(op, &destroy_handle);
             /* handle should always have a reference left at this point */
             globus_assert(!destroy_handle);
         }
-        globus_i_xio_handle_dec(handle, &destroy_handle, &destroy_context);
+        globus_i_xio_handle_dec(handle, &destroy_handle);
     }
     globus_mutex_unlock(&handle->context->mutex);
 
     if(destroy_handle)
     {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(handle->context);
-        }
         globus_i_xio_handle_destroy(handle);
     }
     GlobusXIODebugInternalExitWithError();
@@ -1853,7 +1799,7 @@ globus_xio_register_open(
     if(op != NULL)
     {
         globus_bool_t b;
-        globus_i_xio_op_destroy(op, &b, &b);
+        globus_i_xio_op_destroy(op, &b);
     }
     if(handle != NULL)
     {
@@ -1928,7 +1874,7 @@ globus_xio_register_read(
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->_op_handle = handle;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->_op_context = handle->context;
     op->_op_data_cb = cb;
     op->_op_iovec_cb = NULL;
@@ -2010,7 +1956,7 @@ globus_xio_register_readv(
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->_op_handle = handle;
     op->_op_context = handle->context;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->_op_data_cb = NULL;
     op->_op_iovec_cb = cb;
     op->_op_iovec = iovec;
@@ -2091,7 +2037,7 @@ globus_xio_register_write(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -2177,7 +2123,7 @@ globus_xio_register_writev(
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->entry[0].prev_ndx = -1;
 
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->_op_handle = handle;
     op->_op_context = handle->context;
     op->_op_data_cb = NULL;
@@ -2426,7 +2372,7 @@ globus_l_xio_blocking_cb(
 
     globus_mutex_lock(&info->mutex);
     {
-        info->res = result;
+        info->error_obj = GlobusXIOResultToObj(result);
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->cond);
     }
@@ -2449,7 +2395,7 @@ globus_l_xio_blocking_data_cb(
 
     globus_mutex_lock(&info->mutex);
     {
-        info->res = result;
+        info->error_obj = GlobusXIOResultToObj(result);
         info->data_desc = data_desc;
         info->nbytes = nbytes;
         info->done = GLOBUS_TRUE;
@@ -2474,7 +2420,7 @@ globus_l_xio_blocking_iov_cb(
 
     globus_mutex_lock(&info->mutex);
     {
-        info->res = result;
+        info->error_obj = GlobusXIOResultToObj(result);
         info->data_desc = data_desc;
         info->nbytes = nbytes;
         info->done = GLOBUS_TRUE;
@@ -2614,11 +2560,10 @@ globus_xio_open(
     }
     globus_mutex_unlock(&info->mutex);
 
-    res = info->res;
+    res = GlobusXIOObjToResult(info->error_obj);
     globus_i_xio_blocking_destroy(info);
     if(res != GLOBUS_SUCCESS)
     {
-        res = info->res;
         goto register_err;
     }
 
@@ -2634,9 +2579,8 @@ globus_xio_open(
   info_alloc_error:
     {
         globus_bool_t           destroy_handle;
-        globus_bool_t           destroy_context;
 
-        globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+        globus_i_xio_op_destroy(op, &destroy_handle);
     }
   op_alloc_err:
     handle->context = NULL;
@@ -2716,7 +2660,7 @@ globus_xio_read(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -2753,7 +2697,7 @@ globus_xio_read(
         *nbytes = info->nbytes;
     }
 
-    res = info->res;
+    res = GlobusXIOObjToResult(info->error_obj);
     globus_i_xio_blocking_destroy(info);
     if(res != GLOBUS_SUCCESS)
     {
@@ -2840,7 +2784,7 @@ globus_xio_readv(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -2875,7 +2819,7 @@ globus_xio_readv(
         *nbytes = info->nbytes;
     }
 
-    res = info->res;
+    res = GlobusXIOObjToResult(info->error_obj);
     globus_i_xio_blocking_destroy(info);
     if(res != GLOBUS_SUCCESS)
     {
@@ -2964,7 +2908,7 @@ globus_xio_write(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -3001,7 +2945,7 @@ globus_xio_write(
         *nbytes = info->nbytes;
     }
 
-    res = info->res;
+    res = GlobusXIOObjToResult(info->error_obj);
     globus_i_xio_blocking_destroy(info);
     if(res != GLOBUS_SUCCESS)
     {
@@ -3087,7 +3031,7 @@ globus_xio_writev(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref++;
+    GlobusXIOOpInc(op);
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -3122,7 +3066,7 @@ globus_xio_writev(
         *nbytes = info->nbytes;
     }
 
-    res = info->res;
+    res = GlobusXIOObjToResult(info->error_obj);
     globus_i_xio_blocking_destroy(info);
     if(res != GLOBUS_SUCCESS)
     {
@@ -3216,7 +3160,7 @@ globus_xio_close(
     }
     globus_mutex_unlock(&info->mutex);
 
-    res = info->res;
+    res = GlobusXIOObjToResult(info->error_obj);
     globus_i_xio_blocking_destroy(info);
     if(res != GLOBUS_SUCCESS)
     {

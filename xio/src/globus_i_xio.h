@@ -16,8 +16,34 @@
  **************************************************************************/
 GlobusDebugDeclare(GLOBUS_XIO);
 
+#define GlobusXIOOpInc(_in_op)                                              \
+do                                                                          \
+{                                                                           \
+    (_in_op)->ref++;                                                        \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Op ref increased to %d:\n", _xio_name, __LINE__,          \
+        (_in_op)->ref));                                                    \
+} while(0)
+
+#define GlobusXIOOpDec(_in_op)                                              \
+do                                                                          \
+{                                                                           \
+    (_in_op)->ref--;                                                        \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Op ref decreased to %d:\n", _xio_name, __LINE__,          \
+        (_in_op)->ref));                                                    \
+} while(0)
+
 #define GlobusXIODebugPrintf(level, message)                                \
     GlobusDebugPrintf(GLOBUS_XIO, level, message)
+
+#define GlobusXIOObjToResult(_in_obj)                                       \
+    (_in_obj == NULL ? GLOBUS_SUCCESS : globus_error_put(_in_obj))
+
+#define GlobusXIOResultToObj(_in_res)                                       \
+    (_in_res == GLOBUS_SUCCESS ? NULL : globus_error_get(_in_res))
 
 #define GlobusXIOHandleStateChange(_h, _new)                                \
 do                                                                          \
@@ -500,7 +526,7 @@ typedef struct globus_i_xio_op_s
     globus_bool_t                           restarted;
     globus_bool_t                           blocking;
     /* result code saved in op for kickouts */
-    globus_result_t                         cached_res;
+    globus_object_t *                       cached_obj;
 
     /* size of the arrays */
     int                                     stack_size;
@@ -575,7 +601,7 @@ typedef struct globus_i_xio_blocking_s
     globus_i_xio_op_t *                     op;
     globus_i_xio_target_t *                 target;
     globus_xio_data_descriptor_t            data_desc;
-    globus_result_t                         res;
+    globus_object_t *                       error_obj;
 } globus_i_xio_blocking_t;
 
 typedef struct globus_i_xio_restart_s
@@ -681,8 +707,7 @@ globus_i_xio_pass_failed(
     globus_i_xio_op_t *                     op,
     globus_i_xio_context_entry_t *          my_context,
     globus_bool_t *                         close,
-    globus_bool_t *                         destroy_handle,
-    globus_bool_t *                         destroy_context);
+    globus_bool_t *                         destroy_handle);
 
 void
 globus_i_xio_handle_destroy(
@@ -691,14 +716,12 @@ globus_i_xio_handle_destroy(
 void
 globus_i_xio_handle_dec(
     globus_i_xio_handle_t *                 handle,
-    globus_bool_t *                         destroy_handle,
-    globus_bool_t *                         destroy_context);
+    globus_bool_t *                         destroy_handle);
 
 void
 globus_i_xio_op_destroy(
     globus_i_xio_op_t *                     op,
-    globus_bool_t *                         destroy_handle,
-    globus_bool_t *                         destroy_context);
+    globus_bool_t *                         destroy_handle);
 
 globus_result_t
 globus_i_xio_repass_write(
