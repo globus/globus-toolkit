@@ -252,6 +252,7 @@ static FILE *         graml_log_fp = NULL;
 static char *         graml_job_contact = NULL;
 static char *         graml_env_globus_id = NULL;
 static globus_rsl_t * graml_rsl_tree = NULL;
+static int            graml_cleanup_print_flag = 1;
 
 /* gass cache handle */
 static globus_gass_cache_t         globus_l_cache_handle;
@@ -3268,8 +3269,12 @@ globus_l_gram_status_file_cleanup(
     
     if(job_status_dir == GLOBUS_NULL)
     {
-        grami_fprintf( graml_log_fp, 
-            "JM: status directory not specified, cleanup cannot proceed.\n");
+        if (graml_cleanup_print_flag)
+        {
+           graml_cleanup_print_flag = 0;
+           grami_fprintf( graml_log_fp, 
+               "JM: status directory not specified, cleanup cannot proceed.\n");
+        } 
         return GLOBUS_FALSE;
     }
  
