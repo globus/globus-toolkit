@@ -5,7 +5,23 @@ Sources= \
 	scutils.c \
 	scutils.h \
 	sslutils.c \
-	sslutils.h
+	sslutils.h \
+	gaa/gaa_alloc.c \
+	gaa/gaa_api.c \
+	gaa/gaa_gl_internal_err.c \
+	gaa/gaa_gl_internal_err.h \
+	gaa/gaa_policy_evaluator.c \
+	gaa/gaa_policy_evaluator.h \
+	gaa/gaa_release.c \
+	gaa/gaa_utils.c \
+	gaa/gaa_utils.h \
+	gaa/globus_common.h \
+	gaa/globus_gaa.h \
+	gaa/globus_gaa_utils.c \
+	gaa/globus_gaa_utils.h \
+	gaa/gnu_regex.c \
+	gaa/gnu_regex.h \
+	gaa/rfc1779.c
 
 include_HEADERS= \
 	scutils.h \
