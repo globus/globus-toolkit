@@ -111,7 +111,10 @@ error_malloc_buckets:
     
 error_malloc_table:
 error_parm:
-    *table = GLOBUS_NULL;
+    if(table)
+    {
+        *table = GLOBUS_NULL;
+    }
     globus_assert(0 && "globus_hashtable_init failed");
     return GLOBUS_FAILURE;
 }
@@ -359,6 +362,36 @@ globus_hashtable_remove(
 error_notfound:
 error_param:
     return GLOBUS_NULL;
+}
+
+int
+globus_hashtable_to_list(
+    globus_hashtable_t *                table,
+    globus_list_t **                    list)
+{
+    globus_l_hashtable_t *              itable;
+    globus_l_hashtable_bucket_entry_t * entry;
+    
+    if(!table || !*table || !list)
+    {
+        globus_assert(0 && "globus_hashtable_to_list bad parms");
+        goto error_param;
+    }
+    
+    itable = *table;
+    entry = itable->first;
+    *list = GLOBUS_NULL;
+    
+    while(entry)
+    {
+        globus_list_insert(list, entry->datum);
+        entry = entry->next;
+    }
+
+    return GLOBUS_SUCCESS;
+    
+error_param:
+    return GLOBUS_FAILURE;   
 }
 
 globus_bool_t

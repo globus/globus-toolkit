@@ -90,6 +90,14 @@ globus_hashtable_remove(
     void *                              key);
 
 /**
+ * Create a list of all datums in hashtable
+ */
+int
+globus_hashtable_to_list(
+    globus_hashtable_t *                table,
+    globus_list_t **                    list);
+
+/**
  * GLOBUS_TRUE if hashtable is empty, GLOBUS_FALSE otherwise
  */
 globus_bool_t
