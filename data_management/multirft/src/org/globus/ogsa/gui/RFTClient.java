@@ -197,7 +197,7 @@ public class RFTClient extends ServicePropertiesImpl
                                          new IgnoreProxyPolicyHandler());
 
             NotificationSinkManager notificationSinkManager
-                = NotificationSinkManager.getInstance("Secure");
+                = NotificationSinkManager.getManager();
             HashMap notificationSinkProperties = new HashMap();
             notificationSinkProperties.put(
                 Constants.GSI_SEC_CONV,
@@ -207,13 +207,14 @@ public class RFTClient extends ServicePropertiesImpl
                 NoAuthorization.getInstance());
             notificationSinkProperties.put(
                 GSIConstants.GSI_MODE, 
-                GSIConstants.GSI_MODE_LIMITED_DELEG);
+                GSIConstants.GSI_MODE_FULL_DELEG);
             notificationSinkProperties.put(
                 Constants.GRIM_POLICY_HANDLER,
                 new IgnoreProxyPolicyHandler());
             notificationSinkManager.init(notificationSinkProperties);
-            notificationSinkManager.setService(loc);
-            notificationSinkManager.startListening();
+            //notificationSinkManager.setService(loc);
+            notificationSinkManager.startListening(
+                NotificationSinkManager.MAIN_THREAD);
             RFTClient client = new RFTClient();
             try {
                 String notificationSinkId = notificationSinkManager.addListener(
