@@ -1,4 +1,4 @@
-#include "globus_xio_pass_macro.h"
+#include "globus_xio_pass.h"
 #include "globus_i_xio.h"
 
 #define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   2

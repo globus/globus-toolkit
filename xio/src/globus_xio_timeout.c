@@ -1,12 +1,4 @@
-typedef struct globus_i_xio_op_timer_s
-{
-    globus_reltime_t                                minimal_delay;
-    globus_mutex_t                                  mutex;
-    globus_mutex_t                                  cond;
-    globus_list_t *                                 op_list;
-    globus_bool_t                                   running;
-    globus_callback_handle_t                        periodic_handle;
-} globus_i_xio_timer_t;
+#include "globus_i_xio.h"
 
 typedef struct globus_i_xio_timer_entry_s
 {
@@ -20,11 +12,15 @@ typedef struct globus_i_xio_timer_entry_s
 
 typedef globus_bool_t
 (*globus_i_xio_timer_cb_t)(
-    void *                                          datum);
+    void *                                      datum);
+
+void
+globus_i_xio_timer_poller_callback(
+    void *                                      user_arg);
 
 void
 globus_i_xio_timer_init(
-    globus_i_xio_timer_t *                          timer)
+    globus_i_xio_timer_t *                      timer)
 {
     globus_mutex_init(&timer->mutex, NULL);
     globus_cond_init(&timer->cond, NULL);
@@ -168,16 +164,15 @@ globus_i_xio_timer_poller_callback(
     globus_list_t *                                 list;
     globus_abstime_t                                now;
     globus_reltime_t                                tmp_rel;
-    globus_bool_t                                   done = GLOBUS_FALSE;
     globus_i_xio_timer_entry_t *                    entry;
-    globus_list_t *                                 remove_list;
+    globus_list_t *                                 call_list = NULL;
 
     timer = (globus_i_xio_timer_t *)user_arg;
 
     globus_mutex_lock(&timer->mutex);
     {
         for(list = timer->op_list; 
-            !done && !globus_list_empty(list);
+            globus_list_empty(list);
             list = globus_list_rest(list))
         {
             entry = (globus_i_xio_timer_entry_t *) globus_list_first(list);
@@ -198,13 +193,7 @@ globus_i_xio_timer_poller_callback(
                 /* timeout */
                 else
                 {
-                    /* 
-                     * call the users function 
-                     * if they return true then cancel the operation 
-                     * by adding it to the list of callbacks to remove
-                     * since we are travesing this list we can't remove it
-                     * here
-                     */
+                    globus_list_insert(&call_list, entry);
                     if(entry->timer_cb(entry->datum))
                     {
                         done = GLOBUS_TRUE;
@@ -214,13 +203,28 @@ globus_i_xio_timer_poller_callback(
             }
         }
 
-        /* remove from the list all that were canceled */
-        for(!globus_list_empty(remove_list))
-        {
-            list = (globus_list_t *) globus_list_remove(
-                                        &remove_list, remove_list);
-            globus_list_remove(&timer->op_list, list);
-        }
     }
     globus_mutex_unlock(&timer->mutex);
+
+    /* remove from the list all that were canceled */
+    for(!globus_list_empty(remove_list))
+    {
+        entry = (globus_i_xio_timer_entry_t *)globus_list_remove(
+                    &call_list, call_list);
+        globus_list_remove(&timer->op_list, list);
+
+        /* 
+         * call the users function 
+         * if they return false then add the operation back into 
+         * the pool list.
+         */
+        if(!entry->timer_cb(entry->datum))
+        {
+            globus_mutex_lock(&timer->mutex);
+            {
+                globus_list_insert(&timer->op_list, entry);
+            }
+            globus_mutex_unlock(&timer->mutex);
+        }
+    }
 }

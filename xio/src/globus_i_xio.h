@@ -378,4 +378,41 @@ typedef struct globus_i_xio_target_s
 } globus_i_xio_target_t; 
 
 
+/*************************************************************************
+ *                     internal function signatures
+ ************************************************************************/
+
+/*
+ *  time stuff
+ */
+typedef globus_bool_t
+(*globus_i_xio_timer_cb_t)(
+    void *                                      datum);
+
+
+void
+globus_i_xio_timer_init(
+    globus_i_xio_timer_t *                      timer);
+
+void
+globus_l_xio_timer_unregister_cb(
+    void *                                      user_args);
+
+void
+globus_i_xio_timer_destroy(
+    globus_i_xio_timer_t *                      timer);
+
+void
+globus_i_xio_timer_register_timeout(
+    globus_i_xio_timer_t *                      timer,
+    void *                                      datum,
+    globus_bool_t *                             progress_ptr,
+    globus_i_xio_timer_cb_t                     timeout_cb,
+    globus_reltime_t *                          timeout);
+
+globus_bool_t
+globus_i_xio_timer_unregister_timeout(
+    void *                                      datum);
+
+
 #endif
