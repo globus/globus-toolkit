@@ -121,12 +121,12 @@ sub copy_setup_files
 {
     my $response;
 
-    print "\nStage 1: Copying configuration files into '${sysconfdir}'.\n";
+    print "\nStage 1: Copying configuration files into '${sysconfdir}'..\n";
 
     $response = "y";
     if ( -e "${sysconfdir}/ssh_config" )
     {
-        $response = query_boolean("${sysconfdir}/ssh_config already exists.  Overwrite? ", "n");
+        $response = query_boolean("${sysconfdir}/ssh_config already exists.  Overwrite?", "n");
         if ($response eq "y")
         {
             action("cp ${sysconfdir}/ssh_config ${sysconfdir}/${confbackupdir}/ssh_config");
@@ -145,7 +145,7 @@ sub copy_setup_files
     $response = "y";
     if ( -e "${sysconfdir}/sshd_config" )
     {
-        $response = query_boolean("${sysconfdir}/sshd_config already exists.  Overwrite? ", "n");
+        $response = query_boolean("${sysconfdir}/sshd_config already exists.  Overwrite?", "n");
         if ($response eq "y")
         {
             action("cp ${sysconfdir}/sshd_config ${sysconfdir}/${confbackupdir}/sshd_config");
@@ -164,7 +164,7 @@ sub copy_setup_files
     $response = "y";
     if ( -e "${sysconfdir}/moduli" )
     {
-        $response = query_boolean("${sysconfdir}/moduli already exists.  Overwrite? ", "n");
+        $response = query_boolean("${sysconfdir}/moduli already exists.  Overwrite?", "n");
         if ($response eq "y")
         {
             action("cp ${sysconfdir}/moduli ${sysconfdir}/${confbackupdir}/moduli");
@@ -179,7 +179,7 @@ sub copy_setup_files
 
 sub runkeygen
 {
-    print "\nStage 2: Generating host keys.\n";
+    print "\nStage 2: Generating ssh host keys..\n";
 
     if ( ! -d "${sysconfdir}" )
     {
@@ -188,7 +188,6 @@ sub runkeygen
         # 16877 should be 755, or drwxr-xr-x
     }
 
-    print "Generating ssh keys (if necessary)...\n";
     if ( -e "${sysconfdir}/ssh_host_key" )
     {
         print "${sysconfdir}/ssh_host_key already exists, skipping.\n";
@@ -302,11 +301,28 @@ sub fixpaths
         $uid = (stat($f))[4];
         $gid = (stat($f))[5];
 
-        action("mv $f $g");
+        #
+        # Move $f into a .tmp file for the translation step
+        #
 
-        if ($file{$f} == 1)
+        $result = system("mv $f $g 2>&1");
+        if ($result or $?)
         {
-            action("cp $f ${sysconfdir}/${transbackupdir}/$h");
+            die "ERROR: Unable to execute command: $!\n";
+        }
+
+        #
+        # Create a backup of this file if it's flagged
+        #
+
+        if ($files{$f} == 1)
+        {
+            $result = system("cp $f ${sysconfdir}/${transbackupdir}/$h 2>&1");
+
+            if ($result or $?)
+            {
+                die "ERROR: Unable to execute command: $!\n";
+            }
         }
 
         open(IN, "<$g") || die ("$0: input file $g missing!\n");
@@ -324,7 +340,16 @@ sub fixpaths
         close(OUT);
         close(IN);
 
-        action("rm $g");
+        #
+        # Remove the old .tmp file
+        #
+
+        $result = system("rm $g 2>&1");
+
+        if ($result or $?)
+        {
+            die "ERROR: Unable to execute command: $!\n";
+        }
 
         #
         # An attempt to revert the new file back to the original file's
@@ -335,10 +360,12 @@ sub fixpaths
         chown($uid, $gid, $f);
     } # for $f
 
+    print "complete.\n";
+
     return 0;
 }
 
-print "$myname: Configuring package 'gsi_openssh'..\n";
+print "\n$myname: Configuring package 'gsi_openssh'..\n";
 print "NOTE: Run this as root for the intended effect.\n";
 
 test_dirs();
@@ -393,8 +420,6 @@ sub query_boolean
 
     $foo = <STDIN>;
     ($bar) = split //, $foo;
-
-    printf "bar = '$bar'\n";
 
     if ($bar ne $nondefault)
     {
