@@ -97,6 +97,20 @@ globus_i_gfs_data_request_transfer_event(
     void *                              session_arg,
     int                                 transfer_id,
     int                                 event_type);
+
+void
+globus_i_gfs_data_request_set_cred(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_arg,
+    gss_cred_id_t                       del_cred);
+
+void
+globus_i_gfs_data_request_buffer_send(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_arg,
+    globus_byte_t *                     buffer,
+    int                                 buffer_type,
+    globus_size_t                       buffer_len);
     
 globus_result_t
 globus_i_gfs_data_node_start(

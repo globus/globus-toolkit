@@ -90,11 +90,6 @@ static globus_bool_t                    globus_l_gfs_ipc_requester;
 #define GFS_IPC_DEFAULT_BUFFER_SIZE 8 * 1024
 #define GFS_IPC_VERSION             '\1'
 
-/*** XXX  this will eventually determine if the data node is part of a
- * a different process and perform ipc to that process.  for now, the data
- * node is assumed to be part of the same process and these calls are merely
- * wrappers
- */
 globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface = 
 {
     globus_i_gfs_data_session_start,
@@ -108,8 +103,8 @@ globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface =
     globus_i_gfs_data_request_stat,
     globus_i_gfs_data_request_list,
     globus_i_gfs_data_request_transfer_event,
-    NULL,
-    NULL
+    globus_i_gfs_data_request_set_cred,
+    globus_i_gfs_data_request_buffer_send
 };
 
 /* callback and id relation */
@@ -1646,7 +1641,6 @@ globus_gfs_ipc_handle_obtain_by_path(
                 i = 0;
             }
         }
-
         globus_list_free(reserved_list);
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
@@ -2041,7 +2035,7 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeUInt32(buffer, len, trans_info->data_handle_id);
     GFSDecodeUInt32(buffer, len, trans_info->eof_count);
     GFSDecodeUInt32(buffer, len, trans_info->stripe_count);
-    GFSDecodeUInt32(buffer, len, trans_info->cs_count);
+    GFSDecodeUInt32(buffer, len, trans_info->node_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_ndx);
     GFSDecodeUInt32(buffer, len, trans_info->nstreams);
     GFSDecodeChar(buffer, len, ch);
@@ -2083,7 +2077,7 @@ globus_l_gfs_ipc_unpack_data(
     {
         return NULL;
     }
-
+    
     GFSDecodeChar(buffer, len, ch);
     data_info->ipv6 = (globus_bool_t) ch;
     GFSDecodeUInt32(buffer, len, data_info->nstreams);
@@ -2187,19 +2181,22 @@ globus_l_gfs_ipc_unpack_user_buffer(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
     globus_size_t                       len,
+    int *                               out_type,
     globus_byte_t **                    out_buf,
     globus_size_t *                     out_len)
 {
     globus_size_t                       buffer_length;
-
+    int                                 buffer_type;
+    
+    GFSDecodeUInt32(buffer, len, buffer_type);
     GFSDecodeUInt32(buffer, len, buffer_length);
     *out_buf = buffer;
     *out_len = buffer_length;
-                                                                                
+    *out_type = buffer_type;
+                                                                                    
     return 0;
-
+    
   decode_err:
-
     return -1;
 }
 
@@ -2264,6 +2261,7 @@ globus_l_gfs_ipc_read_body_cb(
     globus_gfs_ipc_reply_t *            reply;
     globus_byte_t *                     user_buffer;
     globus_size_t                       user_buffer_length;
+    int                                 user_buffer_type;
     globus_gfs_ipc_event_reply_t *      event_reply;
     int                                 rc;
     int                                 data_connection_id;
@@ -2313,17 +2311,18 @@ globus_l_gfs_ipc_read_body_cb(
             goto err;
             break;
 
-        case GLOBUS_GFS_OP_USER_BUFFER:
+        case GLOBUS_GFS_OP_BUFFER_SEND:
             rc = globus_l_gfs_ipc_unpack_user_buffer(
-                ipc, buffer, len, &user_buffer, &user_buffer_length);
+                ipc, buffer, len, 
+                &user_buffer_type, &user_buffer, &user_buffer_length);
             if(rc != 0)
             {
                 result = GlobusGFSErrorIPC();
                 goto err;
             }
-            ipc->iface->set_user_buffer(
-                ipc, ipc->user_arg, user_buffer, user_buffer_length);
-            globus_l_gfs_ipc_request_destroy(request);
+            ipc->iface->buffer_send(
+                ipc, ipc->user_arg,
+                user_buffer, user_buffer_type, user_buffer_length);
             break;
 
         case GLOBUS_GFS_OP_STAT:
@@ -2600,7 +2599,7 @@ globus_l_gfs_ipc_read_header_cb(
             case GLOBUS_GFS_OP_ACTIVE:
             case GLOBUS_GFS_OP_DESTROY:
             case GLOBUS_GFS_OP_STAT:
-            case GLOBUS_GFS_OP_USER_BUFFER:
+            case GLOBUS_GFS_OP_BUFFER_SEND:
                 request = (globus_gfs_ipc_request_t *)
                     globus_calloc(sizeof(globus_gfs_ipc_request_t), 1);
                 if(request == NULL)
@@ -3329,9 +3328,10 @@ globus_l_gfs_ipc_nocb_write_cb(
 }
 
 globus_result_t
-globus_gfs_ipc_set_user_buffer(
+globus_gfs_ipc_request_buffer_send(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_byte_t *                     user_buffer,
+    int                                 buffer_type,
     globus_size_t                       buffer_len)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -3339,7 +3339,7 @@ globus_gfs_ipc_set_user_buffer(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
-    GlobusGFSName(globus_gfs_ipc_set_user_buffer);
+    GlobusGFSName(globus_gfs_ipc_request_buffer_send);
 
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
@@ -3356,12 +3356,13 @@ globus_gfs_ipc_set_user_buffer(
             buffer = globus_malloc(ipc->buffer_size);
             ptr = buffer;
             GFSEncodeChar(
-                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_USER_BUFFER);
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_BUFFER_SEND);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, buffer_len);
             /* body */
-            memcpy(ptr, user_buffer, buffer_len);
-
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, buffer_type);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, buffer_len);
+            memcpy(ptr, user_buffer, buffer_len);            
+            
             msg_size = ptr - buffer + buffer_len;
             res = globus_xio_register_write(
                 ipc->xio_handle,
@@ -3381,10 +3382,10 @@ globus_gfs_ipc_set_user_buffer(
 
     if(ipc->local)
     {
-        ipc_handle->iface->set_user_buffer(
-            ipc, ipc->user_arg, buffer, buffer_len);
+        ipc_handle->iface->buffer_send(
+            ipc, ipc->user_arg, buffer, buffer_type, buffer_len);
     }
-
+    
     return GLOBUS_SUCCESS;
 
   err:
@@ -3434,7 +3435,7 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->data_handle_id);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->eof_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->stripe_count);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->cs_count);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->nstreams);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, trans_info->truncate);

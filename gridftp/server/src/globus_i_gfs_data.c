@@ -353,8 +353,21 @@ globus_l_gfs_data_auth_init_cb(
     }
     else
     {
-        globus_gfs_ipc_reply_session(
-            op->ipc_handle, GLOBUS_SUCCESS, op->session_handle);
+        if(op->callback == NULL)
+        {
+            globus_gfs_ipc_reply_session(
+                op->ipc_handle, GLOBUS_SUCCESS, op->session_handle);
+        }
+        else
+        {
+            globus_gfs_finished_info_t      finished_info;
+            finished_info.result = GLOBUS_SUCCESS;
+            finished_info.session_arg = op->session_handle;
+            
+            op->callback(
+                &finished_info,
+                op->user_arg);
+        }
     }    
 
     return;
@@ -369,7 +382,13 @@ error:
     }
     else
     {
-        /* XXX TODO XXX call the callback */
+        globus_gfs_finished_info_t      finished_info;
+        finished_info.result = result;
+        finished_info.session_arg = NULL;
+        
+        op->callback(
+            &finished_info,
+            op->user_arg);
     }
 }
 
@@ -548,7 +567,13 @@ pwent_error:
     }
     else
     {
-        /* XXX TODO: call the callback */
+        globus_gfs_finished_info_t      finished_info;
+        finished_info.result = res;
+        finished_info.session_arg = NULL;
+        
+        op->callback(
+            &finished_info,
+            op->user_arg);
     }
 }
 
@@ -1814,7 +1839,7 @@ globus_i_gfs_data_request_recv(
     op->event_callback = event_cb;
     op->user_arg = user_arg;
     op->node_ndx = recv_info->node_ndx;
-    op->node_count = recv_info->cs_count;    
+    op->node_count = recv_info->node_count;    
     op->stripe_count = recv_info->stripe_count;
     /* events and disconnects cannot happen while i am in this
         function */
@@ -1898,7 +1923,7 @@ globus_i_gfs_data_request_send(
     op->node_ndx = send_info->node_ndx;
     op->write_stripe = 0;
     op->stripe_chunk = send_info->node_ndx;
-    op->node_count = send_info->cs_count;
+    op->node_count = send_info->node_count;
     op->stripe_count = send_info->stripe_count;
     op->nstreams = send_info->nstreams;
     op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
@@ -2062,7 +2087,7 @@ globus_i_gfs_data_request_list(
     data_op->node_ndx = list_info->node_ndx;
     data_op->write_stripe = 0;
     data_op->stripe_chunk = list_info->node_ndx;
-    data_op->node_count = list_info->cs_count;
+    data_op->node_count = list_info->node_count;
     data_op->stripe_count = list_info->stripe_count;
     data_op->nstreams = list_info->nstreams;
     data_op->eof_count = (int *) 
@@ -4169,3 +4194,95 @@ error_alloc:
     return result;
 }
 
+
+void
+globus_i_gfs_data_request_set_cred(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_arg,
+    gss_cred_id_t                       del_cred)
+{
+    globus_l_gfs_data_session_t *       session_handle;  
+    globus_result_t                     result;  
+    gss_buffer_desc                     buffer;
+    int                                 maj_stat;
+    int                                 min_stat;    
+    GlobusGFSName(globus_i_gfs_data_request_set_cred);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_arg;
+
+    if(session_handle->dsi->set_cred_func != NULL)
+    {
+        session_handle->dsi->set_cred_func(
+            del_cred, session_handle->session_arg);
+    }
+    /* XXX how to free old cred? */
+    if(del_cred != NULL)
+    {    
+        maj_stat = gss_export_cred(
+            &min_stat, del_cred, NULL, 0, &buffer);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_export_cred", min_stat);
+            goto error;
+        }
+        maj_stat = gss_import_cred(
+            &min_stat, 
+            &session_handle->del_cred, 
+            GSS_C_NO_OID, 
+            0, 
+            &buffer, 
+            0, 
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
+            goto error_import;
+        }
+        maj_stat = gss_release_buffer(&min_stat, &buffer);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
+            goto error_import;
+        }
+    }
+    return;
+
+error_import:
+    gss_release_buffer(&min_stat, &buffer);
+error:
+    return;
+}    
+
+
+/* this end receives the buffer */
+void
+globus_i_gfs_data_request_buffer_send(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_arg,
+    globus_byte_t *                     buffer,
+    int                                 buffer_type,
+    globus_size_t                       buffer_len)
+{
+    globus_l_gfs_data_session_t *       session_handle;    
+    GlobusGFSName(globus_i_gfs_data_request_buffer_send);
+
+    session_handle = (globus_l_gfs_data_session_t *) session_arg;
+
+    if(buffer_type & GLOBUS_GFS_BUFFER_SERVER_DEFINED)
+    {
+        switch(buffer_type)
+        {
+            case GLOBUS_GFS_BUFFER_EOF_INFO:
+                break;
+            default:
+                break;
+        }
+    }
+
+    if(session_handle->dsi->buffer_send_func != NULL)
+    {
+        session_handle->dsi->buffer_send_func(
+            buffer_type, buffer, buffer_len, session_handle->session_arg);
+    }
+    return;
+}

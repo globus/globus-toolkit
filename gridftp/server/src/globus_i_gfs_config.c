@@ -708,5 +708,5 @@ globus_i_gfs_config_is_anonymous(
     {
         return GLOBUS_TRUE;
     }
-    return GLOBUS_FALSE;
+    return GLOBUS_TRUE;
 }

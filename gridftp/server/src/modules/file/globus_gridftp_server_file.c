@@ -1552,6 +1552,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface =
     NULL, /* data destroy */
     globus_l_gfs_file_command, 
     globus_l_gfs_file_stat,
+    NULL,
     NULL
 };
 

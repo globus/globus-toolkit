@@ -333,16 +333,18 @@ globus_gfs_ipc_set_cred(
     gss_cred_id_t                       del_cred);
 
 typedef void
-(*globus_gfs_ipc_iface_set_user_buffer_t)(
+(*globus_gfs_ipc_iface_buffer_send_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_handle,
     globus_byte_t *                     buffer,
+    int                                 buffer_type,
     globus_size_t                       buffer_len);
 
 globus_result_t
-globus_gfs_ipc_set_user_buffer(
+globus_gfs_ipc_request_buffer_send(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_byte_t *                     buffer,
+    int                                 buffer_type,
     globus_size_t                       buffer_len);
 
 /*
@@ -543,7 +545,7 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_list_t             list_func;
     globus_gfs_ipc_iface_transfer_event_t   transfer_event_func;
     globus_gfs_ipc_iface_set_cred_t         set_cred;
-    globus_gfs_ipc_iface_set_user_buffer_t  set_user_buffer;
+    globus_gfs_ipc_iface_buffer_send_t      buffer_send;
 } globus_gfs_ipc_iface_t;
 
 /* 
@@ -587,26 +589,16 @@ globus_gfs_ipc_handle_get_max_available_count(
     int *                               count);
 
 globus_result_t
-globus_gfs_ipc_handle_get(
-    int *                               handle_count,
-    const char *                        user_id,
+globus_gfs_ipc_handle_obtain_by_path(
+    int *                               p_handle_count,
     const char *                        pathname,
+    globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
-
-globus_result_t
-globus_gfs_ipc_handle_get_by_contact(
-    const char *                        user_id,
-    const char *                        contact_string,
-    globus_gfs_ipc_iface_t *            iface,
-    globus_gfs_ipc_open_close_callback_t cb,
-    void *                              user_arg,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              error_user_arg);
-
+    
 globus_result_t
 globus_gfs_ipc_init(
     globus_bool_t                       requester,

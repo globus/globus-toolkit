@@ -44,7 +44,7 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_DESTROY,
     GLOBUS_GFS_OP_TRANSFER,
     GLOBUS_GFS_OP_STAT,
-    GLOBUS_GFS_OP_USER_BUFFER,
+    GLOBUS_GFS_OP_BUFFER_SEND,
     GLOBUS_GFS_OP_HANDSHAKE,
     GLOBUS_GFS_OP_SESSION_START_REPLY
 } globus_gfs_operation_type_t;
@@ -84,6 +84,17 @@ typedef enum globus_gfs_event_type_e
     
     GLOBUS_GFS_EVENT_ALL = 0xFFFF
 } globus_gfs_event_type_t;
+
+/*
+ *  globus_gfs_error_type_t
+ *
+ */
+typedef enum globus_gfs_buffer_type_e
+{
+    GLOBUS_GFS_BUFFER_EOF_INFO = 0x0001,
+    GLOBUS_GFS_BUFFER_SERVER_DEFINED = 0xFFFF
+    /* user defined types will start at 0x00010000 */
+} globus_gfs_buffer_type_t;
 
 /*
  *  globus_gfs_stat_t
@@ -246,7 +257,7 @@ typedef struct globus_gfs_transfer_info_s
     /** total number of local stripes that will be involved */
     int                                 stripe_count;    
     /** total number of nodes that will be involved */
-    int                                 cs_count;    
+    int                                 node_count;    
     /** node index */
     int                                 node_ndx;
     /** number of parallel streams */
@@ -466,8 +477,20 @@ typedef void
  */
 typedef void
 (*globus_gfs_storage_set_cred_t)(
-    globus_gfs_operation_t              op,
     gss_cred_id_t                       cred_thing,
+    void *                              user_arg);
+
+/*
+ *  send user buffer
+ *
+ * This defines the function that will be called to send a user defined buffer.
+ * XXX more here later XXX
+ */
+typedef void
+(*globus_gfs_storage_buffer_send_t)(
+    int                                 buffer_type,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_len,
     void *                              user_arg);
 
 
@@ -504,6 +527,7 @@ typedef struct globus_gfs_storage_iface_s
     globus_gfs_storage_stat_t           stat_func;
 
     globus_gfs_storage_set_cred_t       set_cred_func;
+    globus_gfs_storage_buffer_send_t    buffer_send_func;
 } globus_gfs_storage_iface_t;
 
 

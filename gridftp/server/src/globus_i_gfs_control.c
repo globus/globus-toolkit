@@ -888,7 +888,7 @@ globus_l_gfs_request_send(
     globus_l_gfs_get_full_path(instance, path, &send_info->pathname);
     send_info->range_list = range_list;
     send_info->stripe_count = 1;
-    send_info->cs_count = 1;
+    send_info->node_count = 1;
     send_info->data_handle_id = (int) data_handle;
 
     globus_i_gfs_data_request_send(
@@ -974,7 +974,7 @@ globus_l_gfs_request_recv(
     globus_l_gfs_get_full_path(instance, path, &recv_info->pathname);
     recv_info->range_list = range_list;
     recv_info->stripe_count = 1;
-    recv_info->cs_count = 1;
+    recv_info->node_count = 1;
     recv_info->data_handle_id = (int) data_handle;
 
     globus_i_gfs_data_request_recv(
@@ -1024,7 +1024,7 @@ globus_l_gfs_request_list(
     list_info->list_type = globus_libc_strdup(list_type);
     list_info->data_handle_id = (int) data_handle;
     list_info->stripe_count = 1;
-    list_info->cs_count = 1;
+    list_info->node_count = 1;
 
     globus_i_gfs_data_request_list(
         NULL,

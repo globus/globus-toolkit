@@ -1,3 +1,10 @@
+allow authentication to multiple usernames
+if user :globus_mapping: pick default gridmapping (globus_gss_assist_gridmap)
+if user bob do globus_gss_assist_userok on that user/dn combo
+
+
+fix MLST response code to 250, if easy enough pathname 
+    in mlst should be the same that was requested
 disable perf markers in mode S
 
 errors
