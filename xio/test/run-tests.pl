@@ -19,6 +19,7 @@ unlink("test_results.txt");
             failure-test.pl
             read-barrier-test.pl
             timeout-test.pl
+            cancel-test.pl
             random-test.pl
             server-test.pl
             verify-test.pl

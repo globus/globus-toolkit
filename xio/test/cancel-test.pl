@@ -30,7 +30,6 @@ push(@drivers, "-D debug -D bounce -D debug");
 my @cancel_position;
 push(@cancel_position, "O");
 push(@cancel_position, "D");
-push(@cancel_position, "C");
 
 sub basic_tests
 {
@@ -43,7 +42,6 @@ sub basic_tests
             {
                 my $t=$_;
                 push(@tests, "$test_name -d 300000 -w 1 -r 0 $d $t");
-                push(@tests, "$test_name -d 300000 -w 0 -r 1 $d $t");
             }
         }
 }

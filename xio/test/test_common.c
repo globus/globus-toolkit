@@ -356,8 +356,11 @@ main(
     globus_hashtable_insert(
         &globus_l_test_hash, 
         "cancel",
-        timeout_main);
-
+        cancel_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "attr",
+        attr_main);
 
     for(ctr = 1; ctr < argc && !done; ctr++)
     {

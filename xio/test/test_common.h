@@ -72,6 +72,16 @@ timeout_main(
     int                                     argc,
     char **                                 argv);
 
+int
+cancel_main(
+    int                                     argc,
+    char **                                 argv);
+
+int
+attr_main(
+    int                                     argc,
+    char **                                 argv);
+
 void
 test_common_end();
 
