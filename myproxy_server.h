@@ -19,6 +19,8 @@ extern int errno;
 
 typedef struct 
 {
+  char *my_name;                 /* My name for logging and such */
+  int run_as_daemon;             /* Run as a daemon? */
   char  *config_file;            /* configuration file */     
   char **authorized_client_dns;  /* List of clients that can be serviced */      
   char **authorized_service_dns; /* List of services will will delegate to */

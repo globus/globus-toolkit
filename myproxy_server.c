@@ -25,6 +25,7 @@
 #include <netdb.h> 
 #include <errno.h>
 #include <assert.h>
+#include <string.h>
 
 static char usage[] = \
 "\n"\
@@ -41,6 +42,7 @@ static char usage[] = \
 
 struct option long_options[] =
 {
+    {"debug",            no_argument, NULL, 'd'},
     {"help",             no_argument, NULL, 'u'},
     {"port",       required_argument, NULL, 'p'},
     {"config",     required_argument, NULL, 'c'},       
@@ -85,11 +87,11 @@ static void failure(const char *failure_message);
 
 static void my_failure(const char *failure_message);
 
-static void message(const char *log_message); 
-
 static char *timestamp(void);
 
-static int debug = 1;
+static void become_daemon(myproxy_server_context_t *server_context);
+
+static int debug = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -101,15 +103,16 @@ main(int argc, char *argv[])
     myproxy_server_context_t       *server_context;
   
     socket_attrs    = malloc(sizeof(*socket_attrs));
-    server_context  = malloc(sizeof(*server_context));
+    memset(socket_attrs, 0, sizeof(*socket_attrs));
 
+    server_context  = malloc(sizeof(*server_context));
+    memset(server_context, 0, sizeof(*server_context));
+
+    /* Set context defaults */
+    server_context->run_as_daemon = 1;
+    
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
-        exit(1);
-    }
-
-    if (getuid() != 0) {
-        fprintf(stderr, "The myproxy-server daemon must be run as root\n");
         exit(1);
     }
 
@@ -119,15 +122,27 @@ main(int argc, char *argv[])
 	fprintf(stderr, "%s\n", verror_get_string());
 	exit(1);
     }
-    
-    /* Set up server socket attributes */
-    listenfd = myproxy_init_server(socket_attrs, MYPROXYSERVER_PORT);
 
-    myproxy_log_use_syslog(LOG_DAEMON, MYPROXY_SERVER_LOG_FILE);
+    if (server_context->run_as_daemon)
+    {
+	become_daemon(server_context);
+    }
+
+    /* Initialize Logging */
     if (debug) {
+	myproxy_debug_set_level(1);
         myproxy_log_use_stream(stderr);
     }
-    message4("%s pid=%d starting at %s", argv[0], getpid(), timestamp());
+    else
+    {
+	myproxy_log_use_syslog(LOG_DAEMON, server_context->my_name);
+    }
+
+    myproxy_log("%s pid=%d starting at %s", server_context->my_name,
+		getpid(), timestamp());
+   
+    /* Set up server socket attributes */
+    listenfd = myproxy_init_server(socket_attrs, MYPROXYSERVER_PORT);
 
     /* Set up signal handling to deal with zombie processes left over  */
     my_signal(SIGCHLD, sig_chld);
@@ -138,59 +153,6 @@ main(int argc, char *argv[])
 
     /* Set up server socket attributes */
     listenfd = myproxy_init_server(socket_attrs, MYPROXYSERVER_PORT);
-
-/*------------------- Set up daemon -------------------------*/
-
-    /* Steps taken from UNIX Programming FAQ */
-    
-    /* 1. Fork off a child so the new process is not a process group leader */
-    childpid = fork();    
-    if (childpid < 0) {              /* check for error */
-        failure("Error in fork()\n");       
-    } else if (childpid > 0) {       /* goodbye parent */
-        exit(0);
-    }
-
-    /* 2. Set session id to become a process group and session group leader */
-    if (setsid() < 0) { 
-        failure("Error in setsid()\n");       
-    } 
-
-    /* 3. Fork again so the parent, (the session group leader), can exit.
-          This means that we, as a non-session group leader, can never 
-          regain a controlling terminal. 
-    */
-    signal(SIGHUP, SIG_IGN);
-    childpid = fork();    
-    if (childpid < 0) {              /* check for error */
-        failure("Error in fork()\n");       
-    } else if (childpid > 0) {       /* goodbye parent */
-        exit(0);
-    }
-    
-    /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
-    chdir("/");
-
-    /* 5. `umask(0)' so that we have complete control over the permissions of 
-          anything we write
-    */
-    umask(0);
-
-    /* 6. Close standard file descriptors */
-    if (!debug) {
-        close(2);     /* close stderr  */
-    }
-    (void)close(0);   /* close stdin */
-    (void)close(1);   /* close stdout */
-
-    /* 7.Establish new open descriptors for stdin, stdout and stderr */    
-    (void)open("/dev/null", O_RDONLY);
-    (void) dup2(2, 1); /* point stdout to stderr */
-    fd = open("/dev/tty", O_RDWR);
-    if (fd >= 0) {
-      ioctl(fd, TIOCNOTTY, 0);
-      (void)close(fd);
-    } 
 
     /* Set up concurrent server */
     while (1) {
@@ -370,6 +332,21 @@ init_arguments(int argc, char *argv[],
     int arg;
     int arg_error = 0;
 
+    char *last_directory_seperator;
+    char directory_seperator = '/';
+    
+    /* Get my name, removing any preceding path */
+    last_directory_seperator = strrchr(argv[0], directory_seperator);
+    
+    if (last_directory_seperator == NULL)
+    {
+	context->my_name = strdup(argv[0]);
+    }
+    else
+    {
+	context->my_name = strdup(last_directory_seperator + 1);
+    }
+    
     while((arg = gnu_getopt_long(argc, argv, short_options, 
 			     long_options, NULL)) != EOF) 
     {
@@ -392,6 +369,7 @@ init_arguments(int argc, char *argv[],
             break;
         case 'd':
             debug = 1;
+	    context->run_as_daemon = 0;
             break;
         default: /* ignore unknown */ 
             arg_error = -1;
@@ -526,12 +504,12 @@ sig_chld(int signo) {
     int   stat;
 
     while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
-        message2("child %d terminated\n", pid);
+        myproxy_debug("child %d terminated\n", pid);
     return;
 } 
 
 void sig_exit(int signo) {
-    message("Server killed\n");
+    myproxy_log("Server killed\n");
     exit(0);
 }
 
@@ -542,28 +520,14 @@ failure(const char *failure_message) {
     verror_put_errno(errno);
     verror_put_string("Failure: %s\n", failure_message);       
     myproxy_log_verror();
-    if (debug) 
-        myproxy_debug("Failure: %s\n", failure_message);
     exit(1);
 } 
 
 static void
 my_failure(const char *failure_message) {
     myproxy_log("Failure: %s\n", failure_message);       
-    if (debug)
-        myproxy_debug("Failure: %s\n", failure_message);
     exit(1);
 } 
-
-static void
-message(const char *log_message) {
-    myproxy_log("Message: %s\n", log_message);       
-    if (debug) {
-        myproxy_debug("Message: %s\n", log_message);
-    }
-    return;
-} 
-
 
 static char *
 timestamp(void)
@@ -574,4 +538,60 @@ timestamp(void)
     time(&clock);
     tmp = (struct tm *)localtime(&clock);
     return (char *)asctime(tmp);
+}
+
+static void
+become_daemon(myproxy_server_context_t *context)
+{
+    pid_t childpid;
+    int fd;
+    
+    /* Steps taken from UNIX Programming FAQ */
+    
+    /* 1. Fork off a child so the new process is not a process group leader */
+    childpid = fork();    
+    if (childpid < 0) {              /* check for error */
+        failure("Error in fork()\n");       
+    } else if (childpid > 0) {       /* goodbye parent */
+        exit(0);
+    }
+
+    /* 2. Set session id to become a process group and session group leader */
+    if (setsid() < 0) { 
+        failure("Error in setsid()\n");       
+    } 
+
+    /* 3. Fork again so the parent, (the session group leader), can exit.
+          This means that we, as a non-session group leader, can never 
+          regain a controlling terminal. 
+    */
+    signal(SIGHUP, SIG_IGN);
+    childpid = fork();    
+    if (childpid < 0) {              /* check for error */
+        failure("Error in fork()\n");       
+    } else if (childpid > 0) {       /* goodbye parent */
+        exit(0);
+    }
+    
+    /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
+    chdir("/");
+
+    /* 5. `umask(0)' so that we have complete control over the permissions of 
+          anything we write
+    */
+    umask(0);
+
+    /* 6. Close standard file descriptors */
+    (void)close(2);     /* close stderr  */
+    (void)close(0);   /* close stdin */
+    (void)close(1);   /* close stdout */
+
+    /* 7.Establish new open descriptors for stdin, stdout and stderr */    
+    (void)open("/dev/null", O_RDONLY);
+    (void) dup2(2, 1); /* point stdout to stderr */
+    fd = open("/dev/tty", O_RDWR);
+    if (fd >= 0) {
+      ioctl(fd, TIOCNOTTY, 0);
+      (void)close(fd);
+    } 
 }
