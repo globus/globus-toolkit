@@ -590,19 +590,19 @@ create_certs () {
     #------------------------
     # Create the Key and Request Files
 
+    if test "${SERVICE}" = "user" ; then
+        used_config="${SSL_USER_CONFIG}"
+    else
+        used_config="${SSL_HOST_CONFIG}"
+    fi
+
     if test ! -z "${INTERACTIVE}" ; then
         ${SSL_EXEC} req -new -keyout ${KEY_FILE} -out ${REQ_OUTPUT} \
-              -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
-              -config ${SSL_USER_CONFIG} ${NO_DES}
+            -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
+            -config ${used_config} ${NO_DES}
         RET=$?
         ${GLOBUS_SH_RM-rm} -f ${RAND_TEMP}
     else
-        if test "${SERVICE}" = "user" ; then
-            used_config="${SSL_USER_CONFIG}"
-        else
-            used_config="${SSL_HOST_CONFIG}"
-        fi
-
         create_input_file "${COMMON_NAME}" "${used_config}" > ${REQ_INPUT}
 
         ${SSL_EXEC} req -new -keyout ${KEY_FILE} \
