@@ -612,7 +612,7 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-./bootstrap
+#./bootstrap
 ./configure
 make dist
 
