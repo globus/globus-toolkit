@@ -220,7 +220,7 @@ globus_i_xio_timer_poller_callback(
             entry = (globus_i_xio_timer_entry_t *) globus_list_first(list);
 
             /* time has expired */
-            if(globus_abstime_cmp(&now, &entry->abs_timeout))
+            if(globus_abstime_cmp(&now, &entry->abs_timeout) > 0)
             {
                 /* if progress was made up the expiration point and flip
                  * the progress flag 
@@ -228,9 +228,6 @@ globus_i_xio_timer_poller_callback(
                 if(*entry->progress_ptr)
                 {
                     *entry->progress_ptr = GLOBUS_FALSE;
-                    GlobusTimeReltimeDiff(tmp_rel, entry->rel_timeout, \
-                                          timer->minimal_delay);
-                    GlobusTimeAbstimeInc(entry->abs_timeout, tmp_rel);
                 }
                 /* timeout */
                 else
@@ -239,6 +236,9 @@ globus_i_xio_timer_poller_callback(
                     globus_list_remove(&timer->op_list,
                         globus_list_search(timer->op_list, entry));
                 }
+                GlobusTimeReltimeDiff(tmp_rel, entry->rel_timeout,
+                                      timer->minimal_delay);
+                GlobusTimeAbstimeInc(entry->abs_timeout, tmp_rel);
             }
         }
     }
