@@ -87,8 +87,10 @@
 # include "saslgssapi.h"
 #endif /* WIN32 */
 
+#ifndef KRB5_LIB_NAME
 #define KRB5_LIB_NAME "libgssapi_krb5.so"
-    
+#endif /* KRB5_LIB_NAME */
+
 /*****************************  Common Section  *****************************/
 
 static const char plugin_id[] = "$Id$";
