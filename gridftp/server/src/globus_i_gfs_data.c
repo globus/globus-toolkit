@@ -1899,6 +1899,10 @@ globus_l_gfs_data_begin_cb(
         switch(op->state)
         {
             case GLOBUS_L_GFS_DATA_CONNECTING:
+                op->ref--;
+                op->stripe_connections_pending--;
+                globus_assert(op->ref > 0);
+
                 if(error != NULL)
                 {
                     /* something wrong, start the abort process */
@@ -1906,9 +1910,6 @@ globus_l_gfs_data_begin_cb(
                         globus_error_put(globus_object_copy(error));
                     goto err_lock;
                 }
-                op->ref--;
-                op->stripe_connections_pending--;
-                globus_assert(op->ref > 0);
                 if(!op->stripe_connections_pending)
                 {
                     /* everything is well, send the begin event */
