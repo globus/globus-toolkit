@@ -1,6 +1,11 @@
 
 #
 # source this file to properly set up your environment for globus applications
+# this requires that GLOBUS_LOCATION be set.
+# GLOBUS_PATH will be set by this script to save the current location,
+# should you decide to change GLOBUS_LOCATION to a different location and
+# re source this script, the old GLOBUS_PATH information will be removed from
+# your environment before applying the new GLOBUS_LOCATION
 #
 
 if [ -z "${GLOBUS_LOCATION}" ]; then
@@ -10,23 +15,25 @@ fi
 
 if [ -n "${GLOBUS_PATH}" ]; then
     PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
-    MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     SASL_PATH=`echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    if [ -n "${MANPATH}" ]; then
+        MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    fi
 fi
 
 PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
-MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 SASL_PATH=`echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+if [ -n "${MANPATH}" ]; then
+    MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+fi
 
 GLOBUS_PATH=${GLOBUS_LOCATION}
 PATH="${GLOBUS_LOCATION}/bin:${GLOBUS_LOCATION}/sbin:${PATH}";
 
-DELIM=
 if [ -n "${MANPATH}" ]; then
-    DELIM=:
-    MANPATH="${GLOBUS_LOCATION}/man${DELIM}${MANPATH}"
+    MANPATH="${GLOBUS_LOCATION}/man:${MANPATH}"
 fi
 
 DELIM=
