@@ -1,0 +1,1127 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_callback.c
+ * Globus GSI Callback
+ * @author Sam Meder, Sam Lang
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
+
+#include "globus_gsi_callback_constants.h"
+#include "globus_i_gsi_callback.h"
+#include "globus_gsi_system_config.h"
+#include <openssl/err.h>
+#include <openssl/asn1.h>
+#include <openssl/ssl.h>
+#include <openssl/crypto.h>
+#include <openssl/rand.h>
+#include <openssl/x509v3.h>
+
+#ifndef BUILD_FOR_K5CERT_ONLY
+#ifndef NO_OLDGAA_API
+#include "globus_oldgaa.h"
+#include "globus_oldgaa_utils.h"
+#else
+#include "ca_policy_file_parse.h"
+#endif
+#endif
+
+extern int globus_gsi_proxycertinfo_extension_NID;
+
+int globus_i_gsi_callback_SSL_callback_data_index;
+int globus_i_gsi_callback_X509_STORE_callback_data_index;
+
+int
+globus_gsi_callback_get_X509_STORE_callback_data_index()
+{
+    static char *                       _function_name_ =
+        "globus_gsi_callback_get_X509_STORE_callback_data_index";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return globus_i_gsi_callback_X509_STORE_callback_data_index;
+}
+
+int
+globus_gsi_callback_get_SSL_callback_data_index()
+{
+    static char *                       _function_name_ =
+        "globus_gsi_callback_get_SSL_callback_data_index";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return globus_i_gsi_callback_SSL_callback_data_index;
+}
+
+static int 
+globus_gsi_callback_X509_verify_cert(
+    X509_STORE_CTX *                    context)
+{
+    int                                 result;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_X509_verify_cert";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /*
+     * OpenSSL-0.9.6 has a  check_issued routine which
+     * we want to override so we  can replace some of the checks.
+     */
+    context->check_issued = globus_gsi_callback_check_issued;
+    result = X509_verify_cert(context);
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+int globus_gsi_callback_create_proxy_callback(
+    int                                 preverify_ok,
+    X509_STORE_CTX *                    x509_context)
+{
+    int                                 verify_result;
+    globus_result_t                     result;
+    globus_gsi_callback_data_t          callback_data;
+    static char *                       _function_name_ = 
+        "globus_i_gsi_callback_create_proxy_callback";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    callback_data = (globus_gsi_callback_data_t)
+       X509_STORE_CTX_get_ex_data(
+           x509_context, 
+           globus_i_gsi_callback_X509_STORE_callback_data_index);
+
+    if(!callback_data)
+    {
+        verify_result = 0;
+        goto exit;
+    }
+
+    result = globus_i_gsi_callback_cred_verify(preverify_ok,
+                                               callback_data,
+                                               x509_context);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+        callback_data->error = result;
+        verify_result = 0;
+        goto set_callback_data_error;
+    }
+
+    result = GLOBUS_SUCCESS;
+    verify_result = 1;
+
+ set_callback_data_error:
+
+    callback_data->error = result;
+
+ exit:
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return verify_result;
+}
+
+int globus_gsi_callback_handshake_callback(
+    int                                 preverify_ok,
+    X509_STORE_CTX *                    x509_context)
+{
+    int                                 verify_result;
+    globus_result_t                     result;
+    globus_gsi_callback_data_t          callback_data;
+    SSL *                               ssl = NULL;
+    int                                 ssl_index;
+    static char *                       _function_name_ = 
+        "globus_i_gsi_callback_handshake_callback";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+     
+    ssl_index = SSL_get_ex_data_X509_STORE_CTX_idx();
+    if(ssl_index < 0)
+    {
+        verify_result = 0;
+        goto exit;
+    }
+
+    /* the first index should contain the SSL structure */
+    ssl = (SSL *)
+        X509_STORE_CTX_get_ex_data(x509_context, ssl_index);
+    if(!ssl)
+    {
+        verify_result = 0;
+        goto exit;
+    }
+
+    callback_data = (globus_gsi_callback_data_t)
+        SSL_get_ex_data(ssl, globus_i_gsi_callback_SSL_callback_data_index);
+    if(!callback_data)
+    {
+        verify_result = 0;
+        goto exit;
+    }
+
+    result = globus_i_gsi_callback_cred_verify(preverify_ok,
+                                               callback_data,
+                                               x509_context);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+        verify_result = 0;
+        goto set_callback_data_error;
+    }
+
+    result = GLOBUS_SUCCESS;
+    verify_result = 1;
+
+ set_callback_data_error:
+
+    callback_data->error = result;
+
+ exit: 
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return verify_result;
+}
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+globus_result_t
+globus_i_gsi_callback_cred_verify(
+    int                                 preverify_ok,
+    globus_gsi_callback_data_t          callback_data,
+    X509_STORE_CTX *                    x509_context)
+{
+    time_t                              goodtill;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ = 
+        "globus_i_gsi_callback_proxy_verify";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+    
+    /* Now check for some error conditions which
+     * can be disregarded. 
+     */
+    if (!preverify_ok)
+    {
+        switch (x509_context->error)
+        {
+        case X509_V_ERR_PATH_LENGTH_EXCEEDED:
+
+            GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(
+                2, "X509_V_ERR_PATH_LENGTH_EXCEEDED\n");
+            /*
+             * Since OpenSSL does not know about proxies,
+             * it will count them against the path length
+             * So we will ignore the errors and do our
+             * own checks later on, when we check the last
+             * certificate in the chain we will check the chain.
+             */
+            result = GLOBUS_SUCCESS;
+            break;
+
+        default:
+            result = (globus_result_t)GLOBUS_FAILURE;
+            break;
+        }                       
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            if (x509_context->error == X509_V_ERR_CERT_NOT_YET_VALID)
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_CERT_NOT_YET_VALID,
+                    ("Cert not yet valid - check clock skew between hosts"));
+            }
+            else if (x509_context->error == 
+                     X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT,
+                    ("Cannot find CA certificate for local credential"));
+            }
+            else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_CERT_HAS_EXPIRED,
+                    ("Remote credential has expired"));
+            }
+
+            goto exit;
+        }
+        
+        goto exit;
+    }
+
+    result = globus_i_gsi_callback_check_proxy(x509_context,
+                                               callback_data);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+        goto exit;
+    }
+
+    if(callback_data->proxy_type == GLOBUS_NOT_PROXY)
+    {
+        /* only want to check that the cert isn't revoked if its not
+         * a proxy, since proxies don't ever get revoked
+         */
+#ifdef X509_V_ERR_CERT_REVOKED
+        result = globus_i_gsi_callback_check_revoked(x509_context,
+                                                          callback_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+            goto exit;
+        }
+#endif
+    
+        /* only want to check singing_policy file if its not a proxy */
+        result = globus_i_gsi_callback_check_signing_policy(
+            x509_context,
+            callback_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+            goto exit;
+        }        
+    }
+
+    /*
+     * We want to determine the minimum amount of time
+     * any certificate in the chain is good till
+     * Will be used for lifetime calculations
+     */
+    result = globus_gsi_cert_utils_make_time(
+        X509_get_notAfter(x509_context->current_cert),
+        &goodtill);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+    }
+
+    if (callback_data->goodtill == 0 || goodtill < callback_data->goodtill)
+    {
+        callback_data->goodtill = goodtill;
+    }
+
+#warning SLANG: not sure if this is still needed since it looks like the cert chain gets saved in the X509_STORE_CTX::chain
+    /* add the current cert to the callback data's cert chain */
+    sk_X509_insert(callback_data->cert_chain, 
+                   X509_dup(x509_context->current_cert), 0);
+
+    callback_data->cert_depth++;
+
+    result =
+        globus_i_gsi_callback_check_critical_extensions(x509_context,
+                                                        callback_data);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+        goto exit;
+    }
+
+    result = globus_i_gsi_callback_check_path_length(x509_context,
+                                                     callback_data);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+        goto exit;
+    }
+    
+ exit:
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_callback_check_proxy(
+    X509_STORE_CTX *                    x509_context,
+    globus_gsi_callback_data_t          callback_data)
+{
+    globus_gsi_cert_utils_proxy_type_t  proxy_type;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_proxy";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* All of the OpenSSL tests have passed and we now get to 
+     * look at the certificate to verify the proxy rules, 
+     * and ca-signing-policy rules. We will also do a CRL check
+     */
+    result = globus_gsi_cert_utils_check_proxy_name(x509_context->current_cert,
+                                                    &proxy_type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+        goto exit;
+    }
+
+    if(proxy_type == GLOBUS_ERROR_PROXY)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_INVALID_PROXY,
+            ("Invalid proxy: subject of proxy cert contains "
+             "proxy name, but subject does not "
+             "match issuer's subject name"));
+        x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
+        goto exit;
+    }
+    else if(proxy_type != GLOBUS_NOT_PROXY)
+    {  
+        /* gotta be a proxy */
+        callback_data->proxy_type = proxy_type;
+
+        if (proxy_type == GLOBUS_LIMITED_PROXY)
+        {
+            /*
+             * If its a limited proxy, it means its use has been limited 
+             * during delegation. It can not sign other certs i.e.  
+             * it must be the top cert in the chain. 
+             * Depending on who we are, 
+             * We may want to accept this for authentication. 
+             * 
+             *   Globus gatekeeper -- don't accept
+             *   sslk5d accept, but should check if from local site.
+             *   globus user-to-user Yes, thats the purpose 
+             *    of this cert. 
+             *
+             * Caller can reject based on the proxy type (limited proxy)
+             * or not.
+             */
+
+            if (x509_context->error_depth && 
+                !callback_data->multiple_limited_proxy_ok)
+            {
+                /* tried to sign a cert with a limited proxy
+                 * i.e. there is still another cert on the chain
+                 * indicating we are trying to sign it! */
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
+                    ("Can't sign a cert with a limited proxy "
+                     "as the signer"));
+                x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
+                goto exit;
+            }
+        }
+
+        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Passed proxy test\n");
+
+        callback_data->proxy_depth++;
+    }
+
+    result = GLOBUS_SUCCESS;
+  
+ exit:
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+/* this function can go away with OpenSSL 0.9.7 and
+ * its support for CRL checking - SLANG
+ */
+globus_result_t
+globus_i_gsi_callback_check_revoked(
+    X509_STORE_CTX *                    x509_context,
+    globus_gsi_callback_data_t          callback_data)
+{
+    X509_REVOKED *                      revoked = NULL;
+    X509_CRL *                          crl = NULL;
+    X509_CRL_INFO *                     crl_info = NULL;        
+    X509_OBJECT *                       x509_object = NULL;
+    int                                 i, n;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_revoked";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+                        
+    /* 
+     * SSLeay 0.9.0 handles CRLs but does not check them. 
+     * We will check the crl for this cert, if there
+     * is a CRL in the store. 
+     * If we find the crl is not valid, we will fail, 
+     * as once the sysadmin indicates that CRLs are to 
+     * be checked, he best keep it upto date. 
+     * 
+     * When future versions of SSLeay support this better,
+     * we can remove these tests. 
+     * we come through this code for each certificate,
+     * starting with the CA's We will check for a CRL
+     * each time, but only check the signature if the
+     * subject name matches, and check for revoked
+     * if the issuer name matches.
+     * this allows the CA to revoke its own cert as well. 
+     */
+    if (X509_STORE_get_by_subject(
+            x509_context,
+            X509_LU_CRL, 
+            X509_get_subject_name(x509_context->current_cert),
+            x509_object))
+    {
+        time_t                          last_time;
+        time_t                          next_time;
+
+        crl =  x509_object->data.crl;
+        crl_info = crl->crl;
+        
+        globus_gsi_cert_utils_make_time(crl_info->lastUpdate, &last_time);
+        globus_gsi_cert_utils_make_time(crl_info->nextUpdate, &next_time);
+
+        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "CRL last Update: ");
+        GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+            2, (globus_i_gsi_callback_debug_fstream,
+                "%s", asctime(gmtime(&last_time))));
+        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\nCRL next Update: ");
+        GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+            2, (globus_i_gsi_callback_debug_fstream,
+                "%s", asctime(gmtime(&next_time))));
+        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\n");
+    }
+    
+    /* verify the signature on this CRL */
+    
+    if (X509_CRL_verify(crl,
+                        X509_get_pubkey(x509_context->current_cert)) <= 0)
+    {
+        GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+            ("Couldn't verify that the available CRL is valid"));
+        x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+        goto free_X509_object;
+    }
+
+    /* Check date see if expired */
+    
+    i = X509_cmp_current_time(crl_info->nextUpdate);
+    if (i == 0)
+    {
+        GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+            ("In the available CRL, the nextUpdate field is not valid"));
+        x509_context->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
+        goto free_X509_object;
+    }
+           
+    if (i < 0)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+            ("The available CRL has expired"));
+        x509_context->error = X509_V_ERR_CRL_HAS_EXPIRED;
+        goto free_X509_object;
+    }
+
+    /* now check if the issuer has a CRL, and we are revoked */
+    
+    if (X509_STORE_get_by_subject(
+            x509_context, 
+            X509_LU_CRL, 
+            X509_get_issuer_name(x509_context->current_cert),
+            x509_object))
+    {
+        crl = x509_object->data.crl;
+        crl_info = crl->crl;
+
+        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Checking CRL\n");
+    }
+
+    /* check if this cert is revoked */
+
+    n = sk_X509_REVOKED_num(crl_info->revoked);
+    for (i = 0; i < n; i++)
+    {
+        revoked = (X509_REVOKED *) sk_X509_REVOKED_value(crl_info->revoked, i);
+        
+        if(!ASN1_INTEGER_cmp(
+                revoked->serialNumber,
+                X509_get_serialNumber(x509_context->current_cert)))
+        {
+            char *                      subject_string;
+            long                        serial;
+            
+            serial = ASN1_INTEGER_get(revoked->serialNumber);
+
+            subject_string = X509_NAME_oneline(X509_get_subject_name(
+                x509_context->current_cert), NULL, 0);
+            
+            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_REVOKED_CERT,
+                ("Serial number = %ld (0x%lX) Subject=%s",
+                 serial, serial, subject_string));
+
+            x509_context->error = X509_V_ERR_CERT_REVOKED;
+
+            GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+                2, (globus_i_gsi_callback_debug_fstream,
+                    "revoked %lX\n", ASN1_INTEGER_get(revoked->serialNumber)));
+
+            free(subject_string);
+            goto free_X509_object;
+        }
+    }
+
+    result = GLOBUS_SUCCESS;
+    goto exit;
+
+ free_X509_object:
+
+    if(x509_object)
+    {
+        free(x509_object);
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_callback_check_signing_policy(
+    X509_STORE_CTX *                    x509_context,
+    globus_gsi_callback_data_t          callback_data)
+{
+    char *                              ca_policy_file_path;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_signing_policy";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+    
+    /* Do not need to check self signed certs against ca_policy_file */
+
+    if (X509_NAME_cmp(X509_get_subject_name(x509_context->current_cert),
+                      X509_get_issuer_name(x509_context->current_cert)))
+    {
+        result =
+            GLOBUS_GSI_SYSCONFIG_GET_SIGNING_POLICY_FILENAME(
+                X509_get_issuer_name(x509_context->current_cert),
+                callback_data->cert_dir,
+                &ca_policy_file_path);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY);
+            goto exit;
+        }
+
+        if(ca_policy_file_path == NULL)
+        {
+            /* signing policy file doesn't exist or can't be read */
+            
+            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY,
+                ("The signing policy file doesn't exist or can't be read"));
+            x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
+            goto exit;
+        }
+
+        GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+            2, (globus_i_gsi_callback_debug_fstream,
+                "ca_policy_file_path is %s\n", ca_policy_file_path));
+
+        result = globus_i_gsi_callback_check_gaa_auth(
+            x509_context, callback_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY);
+            goto exit;
+        }
+    }
+
+ exit:
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_callback_check_gaa_auth(
+    X509_STORE_CTX *                    x509_context,
+    globus_gsi_callback_data_t          callback_data)
+{
+    char *                              error_string = NULL;
+    char *                              issuer_name = NULL;
+    char *                              subject_name = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    char *                              ca_policy_file_path = NULL;
+
+#ifndef NO_OLDGAA_API
+
+    oldgaa_rights_ptr                   rights = NULL;
+    oldgaa_policy_ptr                   policy_handle = NULL;
+    oldgaa_answer_ptr                   detailed_answer = NULL;
+    oldgaa_sec_context_ptr              oldgaa_sc = NULL;
+    oldgaa_options_ptr                  options = NULL;
+    oldgaa_error_code                   policy_result;
+    oldgaa_data_ptr                     policy_db = OLDGAA_NO_DATA;
+    uint32                              minor_status;
+
+#else /* Von's code */
+
+    int                                 policy_result;
+
+#endif /* NO_OLDGAA_API */
+
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_old_gaa_auth";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+    
+    subject_name = X509_NAME_oneline(
+        X509_get_subject_name(x509_context->current_cert),
+        NULL,
+        0);
+    issuer_name = X509_NAME_oneline(
+        X509_get_issuer_name(x509_context->current_cert),
+        NULL,
+        0);
+    
+#ifndef NO_OLDGAA_API
+ 
+    if(oldgaa_globus_initialize(&oldgaa_sc,
+                                &rights,
+                                &options,
+                                &policy_db,
+                                issuer_name,
+                                subject_name,
+                                ca_policy_file_path)
+       != OLDGAA_SUCCESS) 
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
+            ("Couldn't initialize OLD GAA: "
+             "Minor status=%d", policy_db->error_code));
+        x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
+        goto exit;
+    }
+    
+    if(oldgaa_get_object_policy_info(
+        &minor_status,  
+        OLDGAA_NO_DATA,
+        policy_db,
+        oldgaa_globus_policy_retrieve,
+        &policy_handle) != OLDGAA_SUCCESS)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
+            ("Could not get policy info: "
+             "Minor status=%d", minor_status));
+        x509_context->error =  X509_V_ERR_APPLICATION_VERIFICATION;
+        goto exit;
+    }
+    
+    policy_result = oldgaa_check_authorization(
+        &minor_status,
+        oldgaa_sc,
+        policy_handle,
+        rights,
+        options,
+        &detailed_answer);
+    
+    if (!detailed_answer)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
+            ("Error checking authorization"));
+        x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
+        
+        oldgaa_globus_cleanup(&oldgaa_sc,
+                              &rights,
+                              options,
+                              &detailed_answer,  
+                              policy_db,
+                              NULL);
+        goto exit;
+    }
+            
+    GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+        2, (globus_i_gsi_callback_debug_fstream,
+            "oldgaa result: %d(0 yes, 1 no, -1 maybe)\n", policy_result));
+
+    if(detailed_answer) 
+    { 
+        GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\nprint detailed answer:\n\n");
+
+#warning this is supposed to be inside a debug macro - may be a problem later when getting to work on windows 
+#ifndef WIN32
+        if(detailed_answer->rights)
+        {
+            oldgaa_globus_print_rights(detailed_answer->rights);
+        }
+#endif
+    }
+    
+    if (policy_handle)
+    {
+        oldgaa_release_principals(&minor_status, &policy_handle);
+    }
+    
+    oldgaa_globus_cleanup(&oldgaa_sc,
+                          &rights,
+                          options,
+                          &detailed_answer,  
+                          policy_db,
+                          NULL);
+    
+#else /* Von's code */
+    
+//#warning this doesn't appear to be defined anywhere within the gsi code
+    policy_result = ca_policy_file_check_signature(issuer_name,
+                                                   subject_name,
+                                                   &error_string,
+                                                   callback_data->certdir);
+    
+#endif /* #ifndef NO_OLDGAA_API */
+    
+    free(subject_name);
+    free(issuer_name);
+    
+    if (policy_result != 0)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
+            ("CA policy violation: %s", 
+             error_string ? error_string : "<no reason given>"));
+        x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
+        goto exit;
+    }
+
+ exit:
+
+    if(error_string)
+    {
+        globus_libc_free(error_string);
+    }
+
+    if(issuer_name)
+    {
+        globus_libc_free(issuer_name);
+    }
+
+    if(subject_name)
+    {
+        globus_libc_free(subject_name);
+    }
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_callback_check_critical_extensions(
+    X509_STORE_CTX *                    x509_context,
+    globus_gsi_callback_data_t          callback_data)
+{
+    ASN1_OBJECT *                       extension_object = NULL;
+    X509_EXTENSION *                    extension = NULL;
+    int                                 nid;
+    int                                 critical_position = -1;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_extensions";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    while((critical_position = 
+          X509_get_ext_by_critical(x509_context->current_cert, 
+                                   1, critical_position)) >= 0)
+    {
+        extension = X509_get_ext(x509_context->current_cert, critical_position);
+        if(!extension)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                ("Couldn't get critical extension of "
+                 "certificate being verified"));
+            x509_context->error = X509_V_ERR_CERT_REJECTED;
+            goto exit;
+        }
+
+        extension_object = X509_EXTENSION_get_object(extension);
+        if(!extension_object)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                ("Couldn't get object form of X509 extension for "
+                 "the certificate being verified"));
+            x509_context->error = X509_V_ERR_CERT_REJECTED;
+            goto exit;
+        }
+
+        nid = OBJ_obj2nid(extension_object);
+            
+        if(globus_gsi_proxycertinfo_extension_NID == 0)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+            x509_context->error = X509_V_ERR_CERT_REJECTED;
+            goto exit;
+        }
+
+        if(nid != NID_basic_constraints &&
+           nid != NID_key_usage &&
+           nid != NID_ext_key_usage &&
+           nid != NID_netscape_cert_type &&
+           nid != NID_subject_key_identifier &&
+           nid != NID_authority_key_identifier &&
+           nid != globus_gsi_proxycertinfo_extension_NID)
+        {
+            if(callback_data->extension_cb)
+            {
+                if(!callback_data->extension_cb(callback_data, extension))
+                {
+                    GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                        ("Certificate has unknown critical extension "
+                         "with numeric ID: %d, "
+                         "rejected during verification", nid));
+                    x509_context->error = X509_V_ERR_CERT_REJECTED;
+                    goto exit;
+                }
+            }
+            else
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Certificate has unknown critical extension, "
+                     "with numeric ID: %d, "
+                     "rejected during verification", nid));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;
+            }
+        }
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_callback_check_path_length(
+    X509_STORE_CTX *                    x509_context,
+    globus_gsi_callback_data_t          callback_data)
+{
+    X509 *                              cert = NULL;
+    globus_result_t                     result  = GLOBUS_SUCCESS;
+    int                                 i;
+    
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_path_length";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /*
+     * We ignored any path length restriction errors because
+     * OpenSSL was counting proxies against the limit.
+     * If we are on the last cert in the chain, we 
+     * know how many are proxies, so we can do the 
+     * path length check now. 
+     * See x509_vfy.c check_chain_purpose
+     * all we do is substract off the proxy_dpeth 
+     */
+
+    if(x509_context->current_cert == x509_context->cert)
+    {
+        for (i = 0; i < sk_X509_num(x509_context->chain); i++)
+        {
+            cert = sk_X509_value(x509_context->chain, i);
+
+            GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
+                3, (globus_i_gsi_callback_debug_fstream,
+                    "pathlen=:i=%d x=%p pl=%ld\n",
+                    i, cert, cert->ex_pathlen));
+
+#warning i think we want to check the depth against the value in the extension
+            if (((i - callback_data->proxy_depth) > 1) && 
+                (cert->ex_pathlen != -1) &&
+                ((i - callback_data->proxy_depth) > (cert->ex_pathlen + 1)) &&
+                (cert->ex_flags & EXFLAG_BCONS))
+            {
+                x509_context->current_cert = cert; /* point at failing cert */
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Path length of proxy cert has exceeded the limit"));
+            }
+        }
+    }
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+int globus_gsi_callback_check_issued(
+    X509_STORE_CTX *                    context,
+    X509 *                              cert,
+    X509 *                              issuer)
+{
+    globus_result_t                     result;
+    int                                 return_value;
+    int                                 return_code = 1;
+    globus_gsi_cert_utils_proxy_type_t  cert_type;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_check_issued";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+    
+    return_value = X509_check_issued(issuer, cert);
+    if(return_value != X509_V_OK)
+    {
+        return_code = 0;
+        switch(return_value)
+        {
+ 
+        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+             /* If this is a proxy certificate then the issuer
+              * does not need to have the key_usage set.
+              * So check if its a proxy, and ignore
+              * the error if so. 
+              */
+            result = globus_gsi_cert_utils_check_proxy_name(cert, &cert_type);
+            if(result != GLOBUS_SUCCESS)
+            {
+                return_code = 0;
+                break;
+            }
+            
+            if(cert_type != GLOBUS_NOT_PROXY ||
+               cert_type != GLOBUS_ERROR_PROXY)
+            {
+                /* its a proxy! */
+                return_code = 1;
+            }
+            break;
+            
+        default:
+            break;
+        }
+    }
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return return_code;
+}
+
+char *
+globus_i_gsi_callback_create_string(
+    const char *                        format,
+    ...)
+{
+    va_list                             ap;
+    char *                              new_string;
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_create_string";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    globus_libc_lock();
+    
+    va_start(ap, format);
+
+    new_string = globus_i_gsi_callback_v_create_string(format, ap);
+
+    va_end(ap);
+
+    globus_libc_unlock();
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return new_string;
+}
+
+char *
+globus_i_gsi_callback_v_create_string(
+    const char *                        format,
+    va_list                             ap)
+{
+    int                                 length;
+    int                                 len = 128;
+    char *                              new_string = NULL;
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_v_create_string";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+    if((new_string = globus_malloc(len)) == NULL)
+    {
+        return NULL;
+    }
+
+    while(1)
+    {
+        length = vsnprintf(new_string, len, format, ap);
+        if(length > -1 && length < len)
+        {
+            break;
+        }
+
+        if(length > -1)
+        {
+            len = length + 1;
+        }
+        else
+        {
+            len *= 2;
+        }
+
+        if((new_string = realloc(new_string, len)) == NULL)
+        {
+            return NULL;
+        }
+    }
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return new_string;
+}
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
