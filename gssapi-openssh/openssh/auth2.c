@@ -223,8 +223,10 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
                         }
 
                 } else {
-                debug("I gridmapped and got null, reverting to %s", authctxt->user);
-                user = authctxt->user;
+		    debug("I gridmapped and got null, reverting to %s",
+			  authctxt->user);
+		    xfree(user);
+		    user = xstrdup(authctxt->user);
                 }
         }
         else if(changeuser) {
