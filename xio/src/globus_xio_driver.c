@@ -425,6 +425,12 @@ globus_l_xio_driver_op_write_kickout(
     handle = op->_op_handle;
     context = op->_op_context;
 
+    /* see comment in globus_l_xio_driver_open_op_kickout */
+    if(op->canceled == (op->start_ndx + 1))
+    {
+        op->canceled = 0;
+    }
+
     /*
      *  before releasing the op back to the user we can safely set this 
      *  outside of a mutex.  Once the users callbcak is called the value
@@ -499,6 +505,11 @@ globus_l_xio_driver_op_read_kickout(
     handle = op->_op_handle;
     context = op->_op_context;
 
+    /* see comment in globus_l_xio_driver_open_op_kickout */
+    if(op->canceled == (op->start_ndx + 1))
+    {
+        op->canceled = 0;
+    }
     /*
      *  before releasing the op back to the user we can safely set this 
      *  outside of a mutex.  Once the users callbcak is called the value
@@ -664,6 +675,12 @@ globus_l_xio_driver_op_close_kickout(
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->prev_ndx;
 
+    /* see comment in globus_l_xio_driver_open_op_kickout */
+    if(op->canceled == (op->start_ndx + 1))
+    {
+        op->canceled = 0;
+    }
+
     if(my_op->cb != NULL)
     {
         my_op->cb(
@@ -698,6 +715,12 @@ globus_l_xio_driver_op_accept_kickout(
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->prev_ndx;
                                                                                 
+    /* see comment in globus_l_xio_driver_open_op_kickout */
+    if(op->canceled == (op->start_ndx + 1))
+    {
+        op->canceled = 0;
+    }
+
     if(my_op->cb != NULL)
     {
         my_op->cb(
@@ -741,6 +764,16 @@ globus_l_xio_driver_open_op_kickout(
 
     deliver_type = my_op->type;
     my_op->deliver_type =&deliver_type;
+
+    /* if index == the level at which is was canceld then we reset the 
+       canceled flag for the operation.  This should be safe outside of
+       the lock because once cancel is set it is not unset and we only
+       provide a best effort cancel server, meaning that is you call cancel
+       it is possible that you get your operation back successfully. */
+    if(op->canceled == (op->start_ndx + 1))
+    {
+        op->canceled = 0;
+    }
 
     if(ndx == 0)
     {
@@ -986,6 +1019,7 @@ globus_xio_driver_operation_create(
         goto err;
     }
     op->ndx = index + 1;
+    op->start_ndx = index;
 
     op->type = GLOBUS_XIO_OPERATION_TYPE_DRIVER;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;

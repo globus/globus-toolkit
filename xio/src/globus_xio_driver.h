@@ -413,6 +413,20 @@ globus_xio_driver_handle_cntl(
     int                                     cmd,
     ...);
 
+globus_result_t
+globus_xio_driver_server_cntl(
+    globus_xio_driver_server_t              driver_server,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...);
+
+globus_result_t
+globus_xio_driver_target_cntl(
+    globus_xio_driver_target_t              driver_target,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...);
+
 /**
  *  @ingroup driver_pgm
  */
@@ -508,11 +522,36 @@ typedef globus_result_t
  *  @param driver_attr
  *         A server attr if the user specified any driver specific 
  *         attributes.  This may be NULL.
+ *
+ *  @param driver_server
+ *         A handle to the internal server object.  Can be used to perform
+ *         operations on the server until globus_xio_driver_server_destroy_t
+ *         is called upon it.  If the driver has no plans to use
+ *         globus_xio_driver_server_cntl() or other functions that require
+ *         this value for input then it can be ignored.
  */
 typedef globus_result_t
 (*globus_xio_driver_server_init_t)(
     void **                                 out_ds_server,
     void *                                  driver_attr);
+
+/**
+ *  @ingroup driver_pgm
+ *  destroy a server.
+ *
+ *  When this function is called the driver should free up all resources
+ *  associated with a server.
+ *
+ *  @param server
+ *         The server that the driver should clean up.
+ *
+ *  @param driver_server
+ *         The reference to the iunternal server that is being declaired
+ *         invaild with this function call.
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_destroy_t)(
+    void *                                  driver_server);
 
 /**
  *  @ingroup driver_pgm
@@ -626,20 +665,6 @@ typedef globus_result_t
 
 /**
  *  @ingroup driver_pgm
- *  destroy a server.
- *
- *  When this function is called the driver should free up all resources
- *  associated with a server.
- *
- *  @param server
- *         The server that the driver should clean up.
- */
-typedef globus_result_t
-(*globus_xio_driver_server_destroy_t)(
-    void *                                  driver_server);
-
-/**
- *  @ingroup driver_pgm
  *  Initalize a target.
  *
  *  This function is only called when the user is setting up a client
@@ -663,6 +688,11 @@ typedef globus_result_t
  *         the stack of drivers that the user wished to use.  I can be used
  *         to create driver_handles and will be valid until server_destroy is 
  *         called. 
+ *
+ *  @param driver_target
+ *         The internal reference to the xio target.  If the driver will not
+ *         be calling globus_xio_driver_target_cntl or other function that
+ *         requires this paremeter, then it can be ignored.
  */
 typedef globus_result_t
 (*globus_xio_driver_target_init_t)(
@@ -688,6 +718,10 @@ typedef globus_result_t
  *
  *  @param driver_target
  *         The target to be destroyed.
+ *
+ *  @param driver_target
+ *         The internal target reference that is invalid when this function
+ *         returns.
  */
 typedef globus_result_t
 (*globus_xio_driver_target_destroy_t)(

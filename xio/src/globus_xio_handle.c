@@ -991,7 +991,7 @@ globus_i_xio_operation_cancel(
      * if a driver has a registered callback it will be called
      * if it doesn't the next pass or finished will pick it up
      */
-    op->canceled = GLOBUS_TRUE;
+    op->canceled = op->start_ndx + 1;
     if(op->cancel_cb != NULL)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
@@ -1100,7 +1100,7 @@ globus_l_xio_timeout_callback(
         {
             op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
-            op->canceled = GLOBUS_TRUE;
+            op->canceled = op->start_ndx + 1;
             if(op->cancel_cb)
             {
                 op->cancel_cb(op, op->cancel_arg);

@@ -10,12 +10,15 @@
 typedef struct globus_i_xio_handle_s *          globus_xio_handle_t;
 typedef struct globus_i_xio_context_entry_s *   globus_xio_driver_handle_t;
 typedef struct globus_i_xio_target_s *          globus_xio_target_t;
+typedef struct globus_i_xio_target_s *          globus_xio_driver_target_t;
 typedef struct globus_i_xio_op_s *              globus_xio_operation_t;
 typedef struct globus_i_xio_driver_s *          globus_xio_driver_t;
 typedef struct globus_i_xio_attr_s *            globus_xio_attr_t;
 typedef struct globus_i_xio_stack_s *           globus_xio_stack_t;
 typedef struct globus_i_xio_server_s *          globus_xio_server_t;
+typedef struct globus_i_xio_server_s *          globus_xio_driver_server_t;
 typedef struct globus_i_xio_op_s *              globus_xio_data_descriptor_t;
+
 
 typedef struct iovec                            globus_xio_iovec_t;
 

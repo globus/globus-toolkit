@@ -529,7 +529,7 @@ typedef struct globus_i_xio_op_s
     /* members for cancelation */
     globus_xio_driver_cancel_callback_t     cancel_cb;
     void *                                  cancel_arg;
-    globus_bool_t                           canceled;
+    int                                     canceled;
     globus_bool_t                           block_timeout;
 
     globus_bool_t                           restarted;
@@ -537,6 +537,7 @@ typedef struct globus_i_xio_op_s
     /* result code saved in op for kickouts */
     globus_object_t *                       cached_obj;
 
+    int                                     start_ndx;
     /* size of the arrays */
     int                                     stack_size;
     /* current index in the driver stack */
