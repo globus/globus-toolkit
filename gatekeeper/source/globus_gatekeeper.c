@@ -356,10 +356,12 @@ main(int xargc,
     int    fd;
     int    pid;
     int    ttyfd;
+	int    rc;
     netlen_t   namelen;
     int    listener_fd;
     struct sockaddr_in name;
     char fname[256];
+	struct stat         statbuf;
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
@@ -368,6 +370,17 @@ main(int xargc,
 #if defined(TARGET_ARCH_CRAYT3E)
     unicos_init();
 #endif
+
+	/* 
+	 * Don't allow logins of /etc/nologins is defined. 
+	 * Silently ignore them, as the sysadmin
+	 * must have other problems.
+	 */
+
+	if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
+	{
+		exit (1);
+	}
 
     gatekeeper_uid = getuid();
     if (gatekeeper_uid == 0)
@@ -399,16 +412,6 @@ main(int xargc,
          * gatekeeperhome (-home path) when not run from inetd. 
          * otherwise it is NULL
          */
-#ifdef HAVE_GETWD
-        {
-            char tmppath[PATH_MAX];
-
-            if(getwd(tmppath))
-            {
-                gatekeeperhome =  strdup(tmppath);
-            }
-        }
-#else
         {
             char *tmppath = NULL;
             int size = 1;
@@ -419,7 +422,6 @@ main(int xargc,
             }
             gatekeeperhome = tmppath;
         }
-#endif /* HAVE_GETWD */
 
         run_from_inetd = 0;
     }
@@ -1040,11 +1042,6 @@ static void doit()
     }
 #endif
 
-#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
-    prid_t user_prid;
-#endif
-
-
     peerlen = sizeof(peer);
     if (getpeername(0, (struct sockaddr *) &peer, &peerlen) == 0)
     {
@@ -1092,6 +1089,22 @@ static void doit()
 #endif /* TARGET_ARCH_CRAYT3E */
 
     /* Do gss authentication here */
+
+	/* 
+	 * if globus nologin is set, error message and exit
+	 */
+	
+	if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
+				&statbuf) == 0)
+	{
+		failure("Not accepting connections at this time");
+	}
+
+	if (stat(genfilename(gatekeeperhome,"var",globusnologin),
+				&statbuf) == 0)
+	{
+		failure("Not accepting connections at this time");
+	}
 
 #ifdef GSS_AUTHENTICATION
 

@@ -344,6 +344,10 @@ globus_gatekeeper_util_trans_to_user(struct passwd * pw,
 
 	uid_t myuid;
 
+#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
+    prid_t user_prid;
+#endif
+
 	/* must be root to use this */
 
 	if ((myuid = getuid()) != 0)
