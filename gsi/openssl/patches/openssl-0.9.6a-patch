@@ -1,6 +1,6 @@
-diff -r -u openssl-0.9.6a/Configure openssl/Configure
---- openssl-0.9.6a/Configure	Thu Apr  5 13:07:55 2001
-+++ openssl/Configure	Wed May 16 13:39:29 2001
+diff -r -u openssl-0.9.6a/Configure openssl-0.9.6a-patched/Configure
+--- openssl-0.9.6a/Configure	Thu Apr  5 15:07:55 2001
++++ openssl-0.9.6a-patched/Configure	Thu Aug  2 17:20:28 2001
 @@ -184,7 +184,7 @@
  # './Configure irix-[g]cc' manually.
  # -mips4 flag is added by ./config when appropriate.
@@ -10,34 +10,94 @@ diff -r -u openssl-0.9.6a/Configure openssl/Configure
  # N64 ABI builds.
  "irix64-mips4-gcc","gcc:-mabi=64 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::RC4_CHAR RC4_CHUNK DES_RISC2 DES_UNROLL SIXTY_FOUR_BIT_LONG:${mips3_irix_asm}",
  "irix64-mips4-cc", "cc:-64 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::RC4_CHAR RC4_CHUNK DES_RISC2 DES_UNROLL SIXTY_FOUR_BIT_LONG:${mips3_irix_asm}",
-Only in openssl-0.9.6a: Makefile
-diff -r -u openssl-0.9.6a/Makefile.org openssl/Makefile.org
---- openssl-0.9.6a/Makefile.org	Thu Apr  5 13:08:02 2001
-+++ openssl/Makefile.org	Wed May 16 13:39:29 2001
-@@ -281,6 +281,20 @@
+Only in openssl-0.9.6a/: Makefile
+diff -r -u openssl-0.9.6a/Makefile.org openssl-0.9.6a-patched/Makefile.org
+--- openssl-0.9.6a/Makefile.org	Thu Apr  5 15:08:02 2001
++++ openssl-0.9.6a-patched/Makefile.org	Thu Aug  2 17:21:23 2001
+@@ -231,20 +231,20 @@
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; rm -f lib$$i$$j ); \
++				( set -x; rm -f lib$${i}$$j ); \
+ 			done; \
+ 		fi; \
+-		( set -x; rm -f lib$$i$(SHLIB_EXT) ); \
++		( set -x; rm -f lib$${i}$(SHLIB_EXT) ); \
+ 	done
+ 
+ link-shared:
+ 	@for i in $(SHLIBDIRS); do \
+-		prev=lib$$i$(SHLIB_EXT); \
++		prev=lib$${i}$(SHLIB_EXT); \
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; ln -f -s $$prev lib$$i$$j ); \
+-				prev=lib$$i$$j; \
++				( set -x; ln -f -s $$prev lib$${i}$$j ); \
++				prev=lib$${i}$$j; \
+ 			done; \
+ 		fi; \
+ 	done
+@@ -255,9 +255,9 @@
+ do_linux-shared: do_gnu-shared
+ do_gnu-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,-S,-soname=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,--whole-archive lib$$i.a \
++	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-S,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,--whole-archive lib$${i}.a \
+ 		-Wl,--no-whole-archive $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+@@ -265,9 +265,9 @@
+ # This assumes that GNU utilities are *not* used
+ do_tru64-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -no_archive -o lib$$i.so \
++	( set -x; ${CC}  -shared -no_archive -o lib$${i}.so \
+ 		-set_version "${SHLIB_VERSION_HISTORY}${SHLIB_VERSION_NUMBER}" \
+-		-all lib$$i.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
++		-all lib$${i}.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
  	libs="$$libs -l$$i"; \
  	done
  
+@@ -275,11 +275,25 @@
+ do_solaris-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+ 	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
+-	  set -x; ${CC}  -G -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-h lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-z allextract lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	  set -x; ${CC}  -G -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-h lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-z allextract lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
++
 +do_irix-shared:
 +	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
-+	rm -f lib$$i.so \
-+		lib$$i.so.${SHLIB_MAJOR} \
-+		lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR}; \
-+	( set -x; ${CC}  -shared -all -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+	lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	rm -f lib$${i}.so \
++		lib$${i}.so.${SHLIB_MAJOR} \
++		lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR}; \
++	( set -x; ${CC}  -shared -all -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++	lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
 +	libs="$$libs -L. -l$$i"; \
-+	ln -s lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+	lib$$i.so.${SHLIB_MAJOR}; \
-+	ln -s lib$$i.so.${SHLIB_MAJOR} lib$$i.so; \
++	ln -s lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++	lib$${i}.so.${SHLIB_MAJOR}; \
++	ln -s lib$${i}.so.${SHLIB_MAJOR} lib$${i}.so; \
 +	done
 +
-+
+ 
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
- 	@echo "Reconfigure the source tree (via './config' or 'perl Configure'), please."
-diff -r -u openssl-0.9.6a/Makefile.ssl openssl/Makefile.ssl
---- openssl-0.9.6a/Makefile.ssl	Thu Apr  5 13:21:16 2001
-+++ openssl/Makefile.ssl	Wed May 16 13:39:29 2001
+Only in openssl-0.9.6a-patched/: Makefile.org~
+diff -r -u openssl-0.9.6a/Makefile.ssl openssl-0.9.6a-patched/Makefile.ssl
+--- openssl-0.9.6a/Makefile.ssl	Thu Apr  5 15:21:16 2001
++++ openssl-0.9.6a-patched/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -11,20 +11,20 @@
  SHLIB_VERSION_HISTORY=
  SHLIB_MAJOR=0
@@ -111,9 +171,9 @@ diff -r -u openssl-0.9.6a/Makefile.ssl openssl/Makefile.ssl
  
  GENERAL=        Makefile
  BASENAME=       openssl
-diff -r -u openssl-0.9.6a/apps/CA.pl openssl/apps/CA.pl
---- openssl-0.9.6a/apps/CA.pl	Thu Apr  5 13:21:28 2001
-+++ openssl/apps/CA.pl	Wed May 16 13:39:33 2001
+diff -r -u openssl-0.9.6a/apps/CA.pl openssl-0.9.6a-patched/apps/CA.pl
+--- openssl-0.9.6a/apps/CA.pl	Thu Apr  5 15:21:28 2001
++++ openssl-0.9.6a-patched/apps/CA.pl	Thu Aug  2 17:20:29 2001
 @@ -1,4 +1,4 @@
 -#!/usr/local/bin/perl
 +#!/local/bin/perl5
@@ -121,9 +181,9 @@ diff -r -u openssl-0.9.6a/apps/CA.pl openssl/apps/CA.pl
  # CA - wrapper around ca to make it easier to use ... basically ca requires
  #      some setup stuff to be done before you can use it and this makes
 Only in openssl-0.9.6a/apps: Makefile
-diff -r -u openssl-0.9.6a/apps/Makefile.ssl openssl/apps/Makefile.ssl
---- openssl-0.9.6a/apps/Makefile.ssl	Thu Apr  5 13:08:33 2001
-+++ openssl/apps/Makefile.ssl	Wed May 16 13:39:33 2001
+diff -r -u openssl-0.9.6a/apps/Makefile.ssl openssl-0.9.6a-patched/apps/Makefile.ssl
+--- openssl-0.9.6a/apps/Makefile.ssl	Thu Apr  5 15:08:33 2001
++++ openssl-0.9.6a-patched/apps/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -143,804 +143,3 @@
  	$(RM) $(PROGRAM).o
  
@@ -929,22 +989,62 @@ diff -r -u openssl-0.9.6a/apps/Makefile.ssl openssl/apps/Makefile.ssl
 -x509.o: ../include/openssl/stack.h ../include/openssl/symhacks.h
 -x509.o: ../include/openssl/x509.h ../include/openssl/x509_vfy.h
 -x509.o: ../include/openssl/x509v3.h apps.h
-diff -r -u openssl-0.9.6a/apps/der_chop openssl/apps/der_chop
---- openssl-0.9.6a/apps/der_chop	Thu Apr  5 13:21:28 2001
-+++ openssl/apps/der_chop	Wed May 16 13:39:33 2001
+diff -r -u openssl-0.9.6a/apps/der_chop openssl-0.9.6a-patched/apps/der_chop
+--- openssl-0.9.6a/apps/der_chop	Thu Apr  5 15:21:28 2001
++++ openssl-0.9.6a-patched/apps/der_chop	Thu Aug  2 17:20:29 2001
 @@ -1,4 +1,4 @@
 -#!/usr/local/bin/perl
 +#!/local/bin/perl5
  #
  # der_chop ... this is one total hack that Eric is really not proud of
  #              so don't look at it and don't ask for support
-Only in openssl-0.9.6a/apps: md4.c
-Only in openssl-0.9.6a/apps: md5.c
-Only in openssl-0.9.6a/apps: rmd160.c
+diff -r -u openssl-0.9.6a/config openssl-0.9.6a-patched/config
+--- openssl-0.9.6a/config	Thu Apr  5 15:08:17 2001
++++ openssl-0.9.6a-patched/config	Thu Aug  2 17:33:33 2001
+@@ -318,9 +318,11 @@
+ case "$i" in 
+ -d*) PREFIX="debug-";;
+ -t*) TEST="true";;
++-64*) BIT64="true";;
+ -h*) TEST="true"; cat <<EOF
+ Usage: config [options]
+  -d	Add a debug- prefix to machine choice.
++ -64	Use the 64 bit version of the machine choice.
+  -t	Test mode, do not run the Configure perl script.
+  -h	This help.
+ 
+@@ -419,7 +421,11 @@
+         else
+                 options="$options -mips3"
+         fi
+-	OUT="irix-mips3-$CC"
++        if [ "x$BIT64" = "xtrue" ]; then
++            OUT="irix64-mips4-$CC"
++        else
++            OUT="irix-mips3-$CC"
++        fi
+ 	;;
+   alpha-*-linux2)
+         ISA=`awk '/cpu model/{print$4}' /proc/cpuinfo`
+@@ -463,10 +469,9 @@
+   sun4u*-*-solaris2)
+ 	ISA64=`(isalist) 2>/dev/null | grep sparcv9`
+ 	if [ "$ISA64" != "" -a "$CC" = "cc" -a $CCVER -ge 50 ]; then
+-		echo "WARNING! If you wish to build 64-bit library, then you have to"
+-		echo "         invoke './Configure solaris64-sparcv9-cc' *manually*."
+-		echo "         Type return if you want to continue, Ctrl-C to abort."
+-		read waste < /dev/tty
++            if [ "x$BIT64" = "xtrue" ]; then
++                OUT="solaris64-sparcv9-cc"
++            fi
+ 	fi
+ 	OUT="solaris-sparcv9-$CC" ;;
+   sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
+Only in openssl-0.9.6a-patched/: config~
 Only in openssl-0.9.6a/crypto: Makefile
-diff -r -u openssl-0.9.6a/crypto/Makefile.ssl openssl/crypto/Makefile.ssl
---- openssl-0.9.6a/crypto/Makefile.ssl	Thu Apr  5 13:09:27 2001
-+++ openssl/crypto/Makefile.ssl	Wed May 16 13:39:35 2001
+diff -r -u openssl-0.9.6a/crypto/Makefile.ssl openssl-0.9.6a-patched/crypto/Makefile.ssl
+--- openssl-0.9.6a/crypto/Makefile.ssl	Thu Apr  5 15:09:27 2001
++++ openssl-0.9.6a-patched/crypto/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -155,49 +155,3 @@
  	done;
  
@@ -996,9 +1096,9 @@ diff -r -u openssl-0.9.6a/crypto/Makefile.ssl openssl/crypto/Makefile.ssl
 -uid.o: ../include/openssl/safestack.h ../include/openssl/stack.h
 -uid.o: ../include/openssl/symhacks.h
 Only in openssl-0.9.6a/crypto/asn1: Makefile
-diff -r -u openssl-0.9.6a/crypto/asn1/Makefile.ssl openssl/crypto/asn1/Makefile.ssl
---- openssl-0.9.6a/crypto/asn1/Makefile.ssl	Thu Apr  5 13:09:49 2001
-+++ openssl/crypto/asn1/Makefile.ssl	Wed May 16 13:39:40 2001
+diff -r -u openssl-0.9.6a/crypto/asn1/Makefile.ssl openssl-0.9.6a-patched/crypto/asn1/Makefile.ssl
+--- openssl-0.9.6a/crypto/asn1/Makefile.ssl	Thu Apr  5 15:09:49 2001
++++ openssl-0.9.6a-patched/crypto/asn1/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -115,1232 +115,3 @@
  
  
@@ -2233,9 +2333,9 @@ diff -r -u openssl-0.9.6a/crypto/asn1/Makefile.ssl openssl/crypto/asn1/Makefile.
 -x_x509a.o: ../../include/openssl/symhacks.h ../../include/openssl/x509.h
 -x_x509a.o: ../../include/openssl/x509_vfy.h ../cryptlib.h
 Only in openssl-0.9.6a/crypto/bf: Makefile
-diff -r -u openssl-0.9.6a/crypto/bf/Makefile.ssl openssl/crypto/bf/Makefile.ssl
---- openssl-0.9.6a/crypto/bf/Makefile.ssl	Thu Apr  5 13:10:19 2001
-+++ openssl/crypto/bf/Makefile.ssl	Wed May 16 13:39:35 2001
+diff -r -u openssl-0.9.6a/crypto/bf/Makefile.ssl openssl-0.9.6a-patched/crypto/bf/Makefile.ssl
+--- openssl-0.9.6a/crypto/bf/Makefile.ssl	Thu Apr  5 15:10:19 2001
++++ openssl-0.9.6a-patched/crypto/bf/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -106,14 +106,3 @@
  	rm -f asm/bx86unix.cpp *.o asm/*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2252,9 +2352,9 @@ diff -r -u openssl-0.9.6a/crypto/bf/Makefile.ssl openssl/crypto/bf/Makefile.ssl
 -bf_skey.o: ../../include/openssl/blowfish.h ../../include/openssl/opensslconf.h
 -bf_skey.o: bf_locl.h bf_pi.h
 Only in openssl-0.9.6a/crypto/bio: Makefile
-diff -r -u openssl-0.9.6a/crypto/bio/Makefile.ssl openssl/crypto/bio/Makefile.ssl
---- openssl-0.9.6a/crypto/bio/Makefile.ssl	Thu Apr  5 13:10:22 2001
-+++ openssl/crypto/bio/Makefile.ssl	Wed May 16 13:39:37 2001
+diff -r -u openssl-0.9.6a/crypto/bio/Makefile.ssl openssl-0.9.6a-patched/crypto/bio/Makefile.ssl
+--- openssl-0.9.6a/crypto/bio/Makefile.ssl	Thu Apr  5 15:10:22 2001
++++ openssl-0.9.6a-patched/crypto/bio/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -88,157 +88,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2414,9 +2514,9 @@ diff -r -u openssl-0.9.6a/crypto/bio/Makefile.ssl openssl/crypto/bio/Makefile.ss
 -bss_sock.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -bss_sock.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/bn: Makefile
-diff -r -u openssl-0.9.6a/crypto/bn/Makefile.ssl openssl/crypto/bn/Makefile.ssl
---- openssl-0.9.6a/crypto/bn/Makefile.ssl	Thu Apr  5 13:10:32 2001
-+++ openssl/crypto/bn/Makefile.ssl	Wed May 16 13:39:36 2001
+diff -r -u openssl-0.9.6a/crypto/bn/Makefile.ssl openssl-0.9.6a-patched/crypto/bn/Makefile.ssl
+--- openssl-0.9.6a/crypto/bn/Makefile.ssl	Thu Apr  5 15:10:32 2001
++++ openssl-0.9.6a-patched/crypto/bn/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -167,147 +167,3 @@
  	rm -f asm/co86unix.cpp asm/bn86unix.cpp *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff bn_asm.s
  
@@ -2565,11 +2665,10 @@ diff -r -u openssl-0.9.6a/crypto/bn/Makefile.ssl openssl/crypto/bn/Makefile.ssl
 -bn_word.o: ../../include/openssl/opensslconf.h ../../include/openssl/opensslv.h
 -bn_word.o: ../../include/openssl/safestack.h ../../include/openssl/stack.h
 -bn_word.o: ../../include/openssl/symhacks.h ../cryptlib.h bn_lcl.h
-Only in openssl-0.9.6a/crypto/bn/asm: pa-risc2.s.old
 Only in openssl-0.9.6a/crypto/buffer: Makefile
-diff -r -u openssl-0.9.6a/crypto/buffer/Makefile.ssl openssl/crypto/buffer/Makefile.ssl
---- openssl-0.9.6a/crypto/buffer/Makefile.ssl	Thu Apr  5 13:10:59 2001
-+++ openssl/crypto/buffer/Makefile.ssl	Wed May 16 13:39:43 2001
+diff -r -u openssl-0.9.6a/crypto/buffer/Makefile.ssl openssl-0.9.6a-patched/crypto/buffer/Makefile.ssl
+--- openssl-0.9.6a/crypto/buffer/Makefile.ssl	Thu Apr  5 15:10:59 2001
++++ openssl-0.9.6a-patched/crypto/buffer/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,16 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2588,9 +2687,9 @@ diff -r -u openssl-0.9.6a/crypto/buffer/Makefile.ssl openssl/crypto/buffer/Makef
 -buffer.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -buffer.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/cast: Makefile
-diff -r -u openssl-0.9.6a/crypto/cast/Makefile.ssl openssl/crypto/cast/Makefile.ssl
---- openssl-0.9.6a/crypto/cast/Makefile.ssl	Thu Apr  5 13:11:00 2001
-+++ openssl/crypto/cast/Makefile.ssl	Wed May 16 13:39:41 2001
+diff -r -u openssl-0.9.6a/crypto/cast/Makefile.ssl openssl-0.9.6a-patched/crypto/cast/Makefile.ssl
+--- openssl-0.9.6a/crypto/cast/Makefile.ssl	Thu Apr  5 15:11:00 2001
++++ openssl-0.9.6a-patched/crypto/cast/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -107,19 +107,3 @@
  	rm -f asm/cx86unix.cpp *.o asm/*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2612,9 +2711,9 @@ diff -r -u openssl-0.9.6a/crypto/cast/Makefile.ssl openssl/crypto/cast/Makefile.
 -c_skey.o: ../../include/openssl/e_os2.h ../../include/openssl/opensslconf.h
 -c_skey.o: cast_lcl.h cast_s.h
 Only in openssl-0.9.6a/crypto/comp: Makefile
-diff -r -u openssl-0.9.6a/crypto/comp/Makefile.ssl openssl/crypto/comp/Makefile.ssl
---- openssl-0.9.6a/crypto/comp/Makefile.ssl	Thu Apr  5 13:11:02 2001
-+++ openssl/crypto/comp/Makefile.ssl	Wed May 16 13:39:41 2001
+diff -r -u openssl-0.9.6a/crypto/comp/Makefile.ssl openssl-0.9.6a-patched/crypto/comp/Makefile.ssl
+--- openssl-0.9.6a/crypto/comp/Makefile.ssl	Thu Apr  5 15:11:02 2001
++++ openssl-0.9.6a-patched/crypto/comp/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -81,22 +81,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2639,9 +2738,9 @@ diff -r -u openssl-0.9.6a/crypto/comp/Makefile.ssl openssl/crypto/comp/Makefile.
 -comp_lib.o: ../../include/openssl/opensslv.h ../../include/openssl/safestack.h
 -comp_lib.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 Only in openssl-0.9.6a/crypto/conf: Makefile
-diff -r -u openssl-0.9.6a/crypto/conf/Makefile.ssl openssl/crypto/conf/Makefile.ssl
---- openssl-0.9.6a/crypto/conf/Makefile.ssl	Thu Apr  5 13:11:03 2001
-+++ openssl/crypto/conf/Makefile.ssl	Wed May 16 13:39:41 2001
+diff -r -u openssl-0.9.6a/crypto/conf/Makefile.ssl openssl-0.9.6a-patched/crypto/conf/Makefile.ssl
+--- openssl-0.9.6a/crypto/conf/Makefile.ssl	Thu Apr  5 15:11:03 2001
++++ openssl-0.9.6a-patched/crypto/conf/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -79,31 +79,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2675,9 +2774,9 @@ diff -r -u openssl-0.9.6a/crypto/conf/Makefile.ssl openssl/crypto/conf/Makefile.
 -conf_lib.o: ../../include/openssl/opensslv.h ../../include/openssl/safestack.h
 -conf_lib.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 Only in openssl-0.9.6a/crypto/des: Makefile
-diff -r -u openssl-0.9.6a/crypto/des/Makefile.ssl openssl/crypto/des/Makefile.ssl
---- openssl-0.9.6a/crypto/des/Makefile.ssl	Thu Apr  5 13:11:07 2001
-+++ openssl/crypto/des/Makefile.ssl	Wed May 16 13:39:37 2001
+diff -r -u openssl-0.9.6a/crypto/des/Makefile.ssl openssl-0.9.6a-patched/crypto/des/Makefile.ssl
+--- openssl-0.9.6a/crypto/des/Makefile.ssl	Thu Apr  5 15:11:07 2001
++++ openssl-0.9.6a-patched/crypto/des/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -140,73 +140,3 @@
  	rm -f asm/dx86unix.cpp asm/yx86unix.cpp *.o asm/*.o *.obj des lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2752,11 +2851,10 @@ diff -r -u openssl-0.9.6a/crypto/des/Makefile.ssl openssl/crypto/des/Makefile.ss
 -str2key.o: ../../include/openssl/opensslconf.h des_locl.h
 -xcbc_enc.o: ../../include/openssl/des.h ../../include/openssl/e_os2.h
 -xcbc_enc.o: ../../include/openssl/opensslconf.h des_locl.h
-Only in openssl-0.9.6a/crypto/des/asm: perlasm
 Only in openssl-0.9.6a/crypto/dh: Makefile
-diff -r -u openssl-0.9.6a/crypto/dh/Makefile.ssl openssl/crypto/dh/Makefile.ssl
---- openssl-0.9.6a/crypto/dh/Makefile.ssl	Thu Apr  5 13:11:18 2001
-+++ openssl/crypto/dh/Makefile.ssl	Wed May 16 13:39:37 2001
+diff -r -u openssl-0.9.6a/crypto/dh/Makefile.ssl openssl-0.9.6a-patched/crypto/dh/Makefile.ssl
+--- openssl-0.9.6a/crypto/dh/Makefile.ssl	Thu Apr  5 15:11:18 2001
++++ openssl-0.9.6a-patched/crypto/dh/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,42 +78,3 @@
  	rm -f *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2801,9 +2899,9 @@ diff -r -u openssl-0.9.6a/crypto/dh/Makefile.ssl openssl/crypto/dh/Makefile.ssl
 -dh_lib.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -dh_lib.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/dsa: Makefile
-diff -r -u openssl-0.9.6a/crypto/dsa/Makefile.ssl openssl/crypto/dsa/Makefile.ssl
---- openssl-0.9.6a/crypto/dsa/Makefile.ssl	Thu Apr  5 13:11:22 2001
-+++ openssl/crypto/dsa/Makefile.ssl	Wed May 16 13:39:38 2001
+diff -r -u openssl-0.9.6a/crypto/dsa/Makefile.ssl openssl-0.9.6a-patched/crypto/dsa/Makefile.ssl
+--- openssl-0.9.6a/crypto/dsa/Makefile.ssl	Thu Apr  5 15:11:22 2001
++++ openssl-0.9.6a-patched/crypto/dsa/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -80,75 +80,3 @@
  	rm -f *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2881,9 +2979,9 @@ diff -r -u openssl-0.9.6a/crypto/dsa/Makefile.ssl openssl/crypto/dsa/Makefile.ss
 -dsa_vrf.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -dsa_vrf.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/dso: Makefile
-diff -r -u openssl-0.9.6a/crypto/dso/Makefile.ssl openssl/crypto/dso/Makefile.ssl
---- openssl-0.9.6a/crypto/dso/Makefile.ssl	Thu Apr  5 13:11:27 2001
-+++ openssl/crypto/dso/Makefile.ssl	Wed May 16 13:39:38 2001
+diff -r -u openssl-0.9.6a/crypto/dso/Makefile.ssl openssl-0.9.6a-patched/crypto/dso/Makefile.ssl
+--- openssl-0.9.6a/crypto/dso/Makefile.ssl	Thu Apr  5 15:11:27 2001
++++ openssl-0.9.6a-patched/crypto/dso/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -80,62 +80,3 @@
  	rm -f *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2947,11 +3045,11 @@ diff -r -u openssl-0.9.6a/crypto/dso/Makefile.ssl openssl/crypto/dso/Makefile.ss
 -dso_win32.o: ../../include/openssl/opensslv.h ../../include/openssl/safestack.h
 -dso_win32.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -dso_win32.o: ../cryptlib.h
-Only in openssl-0.9.6a/crypto: engine
+Only in openssl-0.9.6a/crypto/engine: Makefile
 Only in openssl-0.9.6a/crypto/err: Makefile
-diff -r -u openssl-0.9.6a/crypto/err/Makefile.ssl openssl/crypto/err/Makefile.ssl
---- openssl-0.9.6a/crypto/err/Makefile.ssl	Thu Apr  5 13:11:33 2001
-+++ openssl/crypto/err/Makefile.ssl	Wed May 16 13:39:38 2001
+diff -r -u openssl-0.9.6a/crypto/err/Makefile.ssl openssl-0.9.6a-patched/crypto/err/Makefile.ssl
+--- openssl-0.9.6a/crypto/err/Makefile.ssl	Thu Apr  5 15:11:33 2001
++++ openssl-0.9.6a-patched/crypto/err/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,39 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -2993,9 +3091,9 @@ diff -r -u openssl-0.9.6a/crypto/err/Makefile.ssl openssl/crypto/err/Makefile.ss
 -err_prn.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -err_prn.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/evp: Makefile
-diff -r -u openssl-0.9.6a/crypto/evp/Makefile.ssl openssl/crypto/evp/Makefile.ssl
---- openssl-0.9.6a/crypto/evp/Makefile.ssl	Thu Apr  5 13:11:47 2001
-+++ openssl/crypto/evp/Makefile.ssl	Wed May 16 13:39:38 2001
+diff -r -u openssl-0.9.6a/crypto/evp/Makefile.ssl openssl-0.9.6a-patched/crypto/evp/Makefile.ssl
+--- openssl-0.9.6a/crypto/evp/Makefile.ssl	Thu Apr  5 15:11:47 2001
++++ openssl-0.9.6a-patched/crypto/evp/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -97,821 +97,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3819,9 +3917,9 @@ diff -r -u openssl-0.9.6a/crypto/evp/Makefile.ssl openssl/crypto/evp/Makefile.ss
 -p_verify.o: ../../include/openssl/symhacks.h ../../include/openssl/x509.h
 -p_verify.o: ../../include/openssl/x509_vfy.h ../cryptlib.h
 Only in openssl-0.9.6a/crypto/hmac: Makefile
-diff -r -u openssl-0.9.6a/crypto/hmac/Makefile.ssl openssl/crypto/hmac/Makefile.ssl
---- openssl-0.9.6a/crypto/hmac/Makefile.ssl	Thu Apr  5 13:12:04 2001
-+++ openssl/crypto/hmac/Makefile.ssl	Wed May 16 13:39:41 2001
+diff -r -u openssl-0.9.6a/crypto/hmac/Makefile.ssl openssl-0.9.6a-patched/crypto/hmac/Makefile.ssl
+--- openssl-0.9.6a/crypto/hmac/Makefile.ssl	Thu Apr  5 15:12:04 2001
++++ openssl-0.9.6a-patched/crypto/hmac/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,19 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3843,9 +3941,9 @@ diff -r -u openssl-0.9.6a/crypto/hmac/Makefile.ssl openssl/crypto/hmac/Makefile.
 -hmac.o: ../../include/openssl/safestack.h ../../include/openssl/sha.h
 -hmac.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 Only in openssl-0.9.6a/crypto/idea: Makefile
-diff -r -u openssl-0.9.6a/crypto/idea/Makefile.ssl openssl/crypto/idea/Makefile.ssl
---- openssl-0.9.6a/crypto/idea/Makefile.ssl	Thu Apr  5 13:12:04 2001
-+++ openssl/crypto/idea/Makefile.ssl	Wed May 16 13:39:41 2001
+diff -r -u openssl-0.9.6a/crypto/idea/Makefile.ssl openssl-0.9.6a-patched/crypto/idea/Makefile.ssl
+--- openssl-0.9.6a/crypto/idea/Makefile.ssl	Thu Apr  5 15:12:04 2001
++++ openssl-0.9.6a-patched/crypto/idea/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,14 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3862,9 +3960,9 @@ diff -r -u openssl-0.9.6a/crypto/idea/Makefile.ssl openssl/crypto/idea/Makefile.
 -i_skey.o: ../../include/openssl/idea.h ../../include/openssl/opensslconf.h
 -i_skey.o: idea_lcl.h
 Only in openssl-0.9.6a/crypto/lhash: Makefile
-diff -r -u openssl-0.9.6a/crypto/lhash/Makefile.ssl openssl/crypto/lhash/Makefile.ssl
---- openssl-0.9.6a/crypto/lhash/Makefile.ssl	Thu Apr  5 13:12:06 2001
-+++ openssl/crypto/lhash/Makefile.ssl	Wed May 16 13:39:44 2001
+diff -r -u openssl-0.9.6a/crypto/lhash/Makefile.ssl openssl-0.9.6a-patched/crypto/lhash/Makefile.ssl
+--- openssl-0.9.6a/crypto/lhash/Makefile.ssl	Thu Apr  5 15:12:06 2001
++++ openssl-0.9.6a-patched/crypto/lhash/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,15 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3882,9 +3980,9 @@ diff -r -u openssl-0.9.6a/crypto/lhash/Makefile.ssl openssl/crypto/lhash/Makefil
 -lhash.o: ../../include/openssl/safestack.h ../../include/openssl/stack.h
 -lhash.o: ../../include/openssl/symhacks.h
 Only in openssl-0.9.6a/crypto/md2: Makefile
-diff -r -u openssl-0.9.6a/crypto/md2/Makefile.ssl openssl/crypto/md2/Makefile.ssl
---- openssl-0.9.6a/crypto/md2/Makefile.ssl	Thu Apr  5 13:12:08 2001
-+++ openssl/crypto/md2/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/md2/Makefile.ssl openssl-0.9.6a-patched/crypto/md2/Makefile.ssl
+--- openssl-0.9.6a/crypto/md2/Makefile.ssl	Thu Apr  5 15:12:08 2001
++++ openssl-0.9.6a-patched/crypto/md2/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,13 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3900,9 +3998,9 @@ diff -r -u openssl-0.9.6a/crypto/md2/Makefile.ssl openssl/crypto/md2/Makefile.ss
 -md2_one.o: ../../include/openssl/safestack.h ../../include/openssl/stack.h
 -md2_one.o: ../../include/openssl/symhacks.h ../cryptlib.h
 Only in openssl-0.9.6a/crypto/md4: Makefile
-diff -r -u openssl-0.9.6a/crypto/md4/Makefile.ssl openssl/crypto/md4/Makefile.ssl
---- openssl-0.9.6a/crypto/md4/Makefile.ssl	Thu Apr  5 13:12:08 2001
-+++ openssl/crypto/md4/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/md4/Makefile.ssl openssl-0.9.6a-patched/crypto/md4/Makefile.ssl
+--- openssl-0.9.6a/crypto/md4/Makefile.ssl	Thu Apr  5 15:12:08 2001
++++ openssl-0.9.6a-patched/crypto/md4/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -79,7 +79,3 @@
  	rm -f asm/mx86unix.cpp *.o asm/*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3912,9 +4010,9 @@ diff -r -u openssl-0.9.6a/crypto/md4/Makefile.ssl openssl/crypto/md4/Makefile.ss
 -md4_dgst.o: ../../include/openssl/opensslv.h ../md32_common.h md4_locl.h
 -md4_one.o: ../../include/openssl/md4.h
 Only in openssl-0.9.6a/crypto/md5: Makefile
-diff -r -u openssl-0.9.6a/crypto/md5/Makefile.ssl openssl/crypto/md5/Makefile.ssl
---- openssl-0.9.6a/crypto/md5/Makefile.ssl	Thu Apr  5 13:12:11 2001
-+++ openssl/crypto/md5/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/md5/Makefile.ssl openssl-0.9.6a-patched/crypto/md5/Makefile.ssl
+--- openssl-0.9.6a/crypto/md5/Makefile.ssl	Thu Apr  5 15:12:11 2001
++++ openssl-0.9.6a-patched/crypto/md5/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -128,7 +128,3 @@
  	rm -f asm/mx86unix.cpp *.o asm/*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3924,9 +4022,9 @@ diff -r -u openssl-0.9.6a/crypto/md5/Makefile.ssl openssl/crypto/md5/Makefile.ss
 -md5_dgst.o: ../../include/openssl/opensslv.h ../md32_common.h md5_locl.h
 -md5_one.o: ../../include/openssl/md5.h
 Only in openssl-0.9.6a/crypto/mdc2: Makefile
-diff -r -u openssl-0.9.6a/crypto/mdc2/Makefile.ssl openssl/crypto/mdc2/Makefile.ssl
---- openssl-0.9.6a/crypto/mdc2/Makefile.ssl	Thu Apr  5 13:12:13 2001
-+++ openssl/crypto/mdc2/Makefile.ssl	Wed May 16 13:39:42 2001
+diff -r -u openssl-0.9.6a/crypto/mdc2/Makefile.ssl openssl-0.9.6a-patched/crypto/mdc2/Makefile.ssl
+--- openssl-0.9.6a/crypto/mdc2/Makefile.ssl	Thu Apr  5 15:12:13 2001
++++ openssl-0.9.6a-patched/crypto/mdc2/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,14 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3943,9 +4041,9 @@ diff -r -u openssl-0.9.6a/crypto/mdc2/Makefile.ssl openssl/crypto/mdc2/Makefile.
 -mdc2dgst.o: ../../include/openssl/des.h ../../include/openssl/e_os2.h
 -mdc2dgst.o: ../../include/openssl/mdc2.h ../../include/openssl/opensslconf.h
 Only in openssl-0.9.6a/crypto/objects: Makefile
-diff -r -u openssl-0.9.6a/crypto/objects/Makefile.ssl openssl/crypto/objects/Makefile.ssl
---- openssl-0.9.6a/crypto/objects/Makefile.ssl	Thu Apr  5 13:12:14 2001
-+++ openssl/crypto/objects/Makefile.ssl	Wed May 16 13:39:44 2001
+diff -r -u openssl-0.9.6a/crypto/objects/Makefile.ssl openssl-0.9.6a-patched/crypto/objects/Makefile.ssl
+--- openssl-0.9.6a/crypto/objects/Makefile.ssl	Thu Apr  5 15:12:14 2001
++++ openssl-0.9.6a-patched/crypto/objects/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,35 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -3982,9 +4080,9 @@ diff -r -u openssl-0.9.6a/crypto/objects/Makefile.ssl openssl/crypto/objects/Mak
 -obj_lib.o: ../../include/openssl/opensslv.h ../../include/openssl/safestack.h
 -obj_lib.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -obj_lib.o: ../cryptlib.h
-diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl/crypto/opensslconf.h
---- openssl-0.9.6a/crypto/opensslconf.h	Thu Apr  5 13:21:16 2001
-+++ openssl/crypto/opensslconf.h	Wed May 16 13:39:35 2001
+diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl-0.9.6a-patched/crypto/opensslconf.h
+--- openssl-0.9.6a/crypto/opensslconf.h	Thu Apr  5 15:21:16 2001
++++ openssl-0.9.6a-patched/crypto/opensslconf.h	Thu Aug  2 17:20:29 2001
 @@ -6,8 +6,17 @@
     /* no ciphers excluded */
  #endif
@@ -4012,7 +4110,7 @@ diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl/crypto/opensslconf.h
  #endif
  #endif
  
-@@ -45,7 +54,7 @@
+@@ -45,14 +54,14 @@
   * - Intel P6 because partial register stalls are very expensive;
   * - elder Alpha because it lacks byte load/store instructions;
   */
@@ -4021,7 +4119,6 @@ diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl/crypto/opensslconf.h
  #endif
  #if !defined(RC4_CHUNK)
  /*
-@@ -52,7 +61,7 @@
   * This enables code handling data aligned at natural CPU word
   * boundary. See crypto/rc4/rc4_enc.c for further details.
   */
@@ -4048,7 +4145,7 @@ diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl/crypto/opensslconf.h
  #endif /* HEADER_BF_LOCL_H */
  
  #if defined(HEADER_DES_LOCL_H) && !defined(CONFIG_HEADER_DES_LOCL_H)
-@@ -99,7 +108,7 @@
+@@ -99,14 +108,14 @@
  /* the following is tweaked from a config script, that is why it is a
   * protected undef/define */
  #ifndef DES_PTR
@@ -4057,7 +4154,6 @@ diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl/crypto/opensslconf.h
  #endif
  
  /* This helps C compiler generate the correct code for multiple functional
-@@ -106,7 +115,7 @@
   * units.  It reduces register dependancies at the expense of 2 more
   * registers */
  #ifndef DES_RISC1
@@ -4076,9 +4172,9 @@ diff -r -u openssl-0.9.6a/crypto/opensslconf.h openssl/crypto/opensslconf.h
  
  /* These default values were supplied by
 Only in openssl-0.9.6a/crypto/pem: Makefile
-diff -r -u openssl-0.9.6a/crypto/pem/Makefile.ssl openssl/crypto/pem/Makefile.ssl
---- openssl-0.9.6a/crypto/pem/Makefile.ssl	Thu Apr  5 13:12:35 2001
-+++ openssl/crypto/pem/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/pem/Makefile.ssl openssl-0.9.6a-patched/crypto/pem/Makefile.ssl
+--- openssl-0.9.6a/crypto/pem/Makefile.ssl	Thu Apr  5 15:12:35 2001
++++ openssl-0.9.6a-patched/crypto/pem/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -79,126 +79,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4207,9 +4303,9 @@ diff -r -u openssl-0.9.6a/crypto/pem/Makefile.ssl openssl/crypto/pem/Makefile.ss
 -pem_sign.o: ../../include/openssl/x509.h ../../include/openssl/x509_vfy.h
 -pem_sign.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/pkcs12: Makefile
-diff -r -u openssl-0.9.6a/crypto/pkcs12/Makefile.ssl openssl/crypto/pkcs12/Makefile.ssl
---- openssl-0.9.6a/crypto/pkcs12/Makefile.ssl	Thu Apr  5 13:12:40 2001
-+++ openssl/crypto/pkcs12/Makefile.ssl	Wed May 16 13:39:44 2001
+diff -r -u openssl-0.9.6a/crypto/pkcs12/Makefile.ssl openssl-0.9.6a-patched/crypto/pkcs12/Makefile.ssl
+--- openssl-0.9.6a/crypto/pkcs12/Makefile.ssl	Thu Apr  5 15:12:40 2001
++++ openssl-0.9.6a-patched/crypto/pkcs12/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -84,317 +84,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4529,9 +4625,9 @@ diff -r -u openssl-0.9.6a/crypto/pkcs12/Makefile.ssl openssl/crypto/pkcs12/Makef
 -pk12err.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -pk12err.o: ../../include/openssl/x509.h ../../include/openssl/x509_vfy.h
 Only in openssl-0.9.6a/crypto/pkcs7: Makefile
-diff -r -u openssl-0.9.6a/crypto/pkcs7/Makefile.ssl openssl/crypto/pkcs7/Makefile.ssl
---- openssl-0.9.6a/crypto/pkcs7/Makefile.ssl	Thu Apr  5 13:12:45 2001
-+++ openssl/crypto/pkcs7/Makefile.ssl	Wed May 16 13:39:41 2001
+diff -r -u openssl-0.9.6a/crypto/pkcs7/Makefile.ssl openssl-0.9.6a-patched/crypto/pkcs7/Makefile.ssl
+--- openssl-0.9.6a/crypto/pkcs7/Makefile.ssl	Thu Apr  5 15:12:45 2001
++++ openssl-0.9.6a-patched/crypto/pkcs7/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -97,122 +97,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff enc dec sign verify
  
@@ -4656,9 +4752,9 @@ diff -r -u openssl-0.9.6a/crypto/pkcs7/Makefile.ssl openssl/crypto/pkcs7/Makefil
 -pkcs7err.o: ../../include/openssl/symhacks.h ../../include/openssl/x509.h
 -pkcs7err.o: ../../include/openssl/x509_vfy.h
 Only in openssl-0.9.6a/crypto/rand: Makefile
-diff -r -u openssl-0.9.6a/crypto/rand/Makefile.ssl openssl/crypto/rand/Makefile.ssl
---- openssl-0.9.6a/crypto/rand/Makefile.ssl	Thu Apr  5 13:12:52 2001
-+++ openssl/crypto/rand/Makefile.ssl	Wed May 16 13:39:42 2001
+diff -r -u openssl-0.9.6a/crypto/rand/Makefile.ssl openssl-0.9.6a-patched/crypto/rand/Makefile.ssl
+--- openssl-0.9.6a/crypto/rand/Makefile.ssl	Thu Apr  5 15:12:52 2001
++++ openssl-0.9.6a-patched/crypto/rand/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,31 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4692,9 +4788,9 @@ diff -r -u openssl-0.9.6a/crypto/rand/Makefile.ssl openssl/crypto/rand/Makefile.
 -randfile.o: ../../include/openssl/safestack.h ../../include/openssl/stack.h
 -randfile.o: ../../include/openssl/symhacks.h
 Only in openssl-0.9.6a/crypto/rc2: Makefile
-diff -r -u openssl-0.9.6a/crypto/rc2/Makefile.ssl openssl/crypto/rc2/Makefile.ssl
---- openssl-0.9.6a/crypto/rc2/Makefile.ssl	Thu Apr  5 13:12:57 2001
-+++ openssl/crypto/rc2/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/rc2/Makefile.ssl openssl-0.9.6a-patched/crypto/rc2/Makefile.ssl
+--- openssl-0.9.6a/crypto/rc2/Makefile.ssl	Thu Apr  5 15:12:57 2001
++++ openssl-0.9.6a-patched/crypto/rc2/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,14 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4711,9 +4807,9 @@ diff -r -u openssl-0.9.6a/crypto/rc2/Makefile.ssl openssl/crypto/rc2/Makefile.ss
 -rc2ofb64.o: ../../include/openssl/opensslconf.h ../../include/openssl/rc2.h
 -rc2ofb64.o: rc2_locl.h
 Only in openssl-0.9.6a/crypto/rc4: Makefile
-diff -r -u openssl-0.9.6a/crypto/rc4/Makefile.ssl openssl/crypto/rc4/Makefile.ssl
---- openssl-0.9.6a/crypto/rc4/Makefile.ssl	Thu Apr  5 13:12:59 2001
-+++ openssl/crypto/rc4/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/rc4/Makefile.ssl openssl-0.9.6a-patched/crypto/rc4/Makefile.ssl
+--- openssl-0.9.6a/crypto/rc4/Makefile.ssl	Thu Apr  5 15:12:59 2001
++++ openssl-0.9.6a-patched/crypto/rc4/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -107,9 +107,3 @@
  	rm -f asm/rx86unix.cpp *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff asm/*.o
  
@@ -4725,9 +4821,9 @@ diff -r -u openssl-0.9.6a/crypto/rc4/Makefile.ssl openssl/crypto/rc4/Makefile.ss
 -rc4_skey.o: ../../include/openssl/opensslv.h ../../include/openssl/rc4.h
 -rc4_skey.o: rc4_locl.h
 Only in openssl-0.9.6a/crypto/rc5: Makefile
-diff -r -u openssl-0.9.6a/crypto/rc5/Makefile.ssl openssl/crypto/rc5/Makefile.ssl
---- openssl-0.9.6a/crypto/rc5/Makefile.ssl	Thu Apr  5 13:13:01 2001
-+++ openssl/crypto/rc5/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/rc5/Makefile.ssl openssl-0.9.6a-patched/crypto/rc5/Makefile.ssl
+--- openssl-0.9.6a/crypto/rc5/Makefile.ssl	Thu Apr  5 15:13:01 2001
++++ openssl-0.9.6a-patched/crypto/rc5/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -104,10 +104,3 @@
  	rm -f asm/r586unix.cpp *.o asm/*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4740,9 +4836,9 @@ diff -r -u openssl-0.9.6a/crypto/rc5/Makefile.ssl openssl/crypto/rc5/Makefile.ss
 -rc5cfb64.o: ../../include/openssl/rc5.h rc5_locl.h
 -rc5ofb64.o: ../../include/openssl/rc5.h rc5_locl.h
 Only in openssl-0.9.6a/crypto/ripemd: Makefile
-diff -r -u openssl-0.9.6a/crypto/ripemd/Makefile.ssl openssl/crypto/ripemd/Makefile.ssl
---- openssl-0.9.6a/crypto/ripemd/Makefile.ssl	Thu Apr  5 13:13:04 2001
-+++ openssl/crypto/ripemd/Makefile.ssl	Wed May 16 13:39:43 2001
+diff -r -u openssl-0.9.6a/crypto/ripemd/Makefile.ssl openssl-0.9.6a-patched/crypto/ripemd/Makefile.ssl
+--- openssl-0.9.6a/crypto/ripemd/Makefile.ssl	Thu Apr  5 15:13:04 2001
++++ openssl-0.9.6a-patched/crypto/ripemd/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -102,8 +102,3 @@
  	rm -f asm/rm86unix.cpp *.o asm/*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4753,9 +4849,9 @@ diff -r -u openssl-0.9.6a/crypto/ripemd/Makefile.ssl openssl/crypto/ripemd/Makef
 -rmd_dgst.o: ../md32_common.h rmd_locl.h rmdconst.h
 -rmd_one.o: ../../include/openssl/ripemd.h
 Only in openssl-0.9.6a/crypto/rsa: Makefile
-diff -r -u openssl-0.9.6a/crypto/rsa/Makefile.ssl openssl/crypto/rsa/Makefile.ssl
---- openssl-0.9.6a/crypto/rsa/Makefile.ssl	Thu Apr  5 13:13:06 2001
-+++ openssl/crypto/rsa/Makefile.ssl	Wed May 16 13:39:39 2001
+diff -r -u openssl-0.9.6a/crypto/rsa/Makefile.ssl openssl-0.9.6a-patched/crypto/rsa/Makefile.ssl
+--- openssl-0.9.6a/crypto/rsa/Makefile.ssl	Thu Apr  5 15:13:06 2001
++++ openssl-0.9.6a-patched/crypto/rsa/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -80,121 +80,3 @@
  	rm -f *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4879,9 +4975,9 @@ diff -r -u openssl-0.9.6a/crypto/rsa/Makefile.ssl openssl/crypto/rsa/Makefile.ss
 -rsa_ssl.o: ../../include/openssl/safestack.h ../../include/openssl/stack.h
 -rsa_ssl.o: ../../include/openssl/symhacks.h ../cryptlib.h
 Only in openssl-0.9.6a/crypto/sha: Makefile
-diff -r -u openssl-0.9.6a/crypto/sha/Makefile.ssl openssl/crypto/sha/Makefile.ssl
---- openssl-0.9.6a/crypto/sha/Makefile.ssl	Thu Apr  5 13:13:12 2001
-+++ openssl/crypto/sha/Makefile.ssl	Wed May 16 13:39:40 2001
+diff -r -u openssl-0.9.6a/crypto/sha/Makefile.ssl openssl-0.9.6a-patched/crypto/sha/Makefile.ssl
+--- openssl-0.9.6a/crypto/sha/Makefile.ssl	Thu Apr  5 15:13:12 2001
++++ openssl-0.9.6a-patched/crypto/sha/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -102,12 +102,3 @@
  	rm -f asm/sx86unix.cpp *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff asm/*.o
  
@@ -4896,9 +4992,9 @@ diff -r -u openssl-0.9.6a/crypto/sha/Makefile.ssl openssl/crypto/sha/Makefile.ss
 -sha_dgst.o: ../md32_common.h sha_locl.h
 -sha_one.o: ../../include/openssl/sha.h
 Only in openssl-0.9.6a/crypto/stack: Makefile
-diff -r -u openssl-0.9.6a/crypto/stack/Makefile.ssl openssl/crypto/stack/Makefile.ssl
---- openssl-0.9.6a/crypto/stack/Makefile.ssl	Thu Apr  5 13:13:15 2001
-+++ openssl/crypto/stack/Makefile.ssl	Wed May 16 13:39:43 2001
+diff -r -u openssl-0.9.6a/crypto/stack/Makefile.ssl openssl-0.9.6a-patched/crypto/stack/Makefile.ssl
+--- openssl-0.9.6a/crypto/stack/Makefile.ssl	Thu Apr  5 15:13:15 2001
++++ openssl-0.9.6a-patched/crypto/stack/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,11 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4912,9 +5008,9 @@ diff -r -u openssl-0.9.6a/crypto/stack/Makefile.ssl openssl/crypto/stack/Makefil
 -stack.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -stack.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/txt_db: Makefile
-diff -r -u openssl-0.9.6a/crypto/txt_db/Makefile.ssl openssl/crypto/txt_db/Makefile.ssl
---- openssl-0.9.6a/crypto/txt_db/Makefile.ssl	Thu Apr  5 13:13:22 2001
-+++ openssl/crypto/txt_db/Makefile.ssl	Wed May 16 13:39:43 2001
+diff -r -u openssl-0.9.6a/crypto/txt_db/Makefile.ssl openssl-0.9.6a-patched/crypto/txt_db/Makefile.ssl
+--- openssl-0.9.6a/crypto/txt_db/Makefile.ssl	Thu Apr  5 15:13:22 2001
++++ openssl-0.9.6a-patched/crypto/txt_db/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -78,11 +78,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -4928,9 +5024,9 @@ diff -r -u openssl-0.9.6a/crypto/txt_db/Makefile.ssl openssl/crypto/txt_db/Makef
 -txt_db.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 -txt_db.o: ../../include/openssl/txt_db.h ../cryptlib.h
 Only in openssl-0.9.6a/crypto/x509: Makefile
-diff -r -u openssl-0.9.6a/crypto/x509/Makefile.ssl openssl/crypto/x509/Makefile.ssl
---- openssl-0.9.6a/crypto/x509/Makefile.ssl	Thu Apr  5 13:13:25 2001
-+++ openssl/crypto/x509/Makefile.ssl	Wed May 16 13:39:42 2001
+diff -r -u openssl-0.9.6a/crypto/x509/Makefile.ssl openssl-0.9.6a-patched/crypto/x509/Makefile.ssl
+--- openssl-0.9.6a/crypto/x509/Makefile.ssl	Thu Apr  5 15:13:25 2001
++++ openssl-0.9.6a-patched/crypto/x509/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -88,434 +88,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -5367,9 +5463,9 @@ diff -r -u openssl-0.9.6a/crypto/x509/Makefile.ssl openssl/crypto/x509/Makefile.
 -x_all.o: ../../include/openssl/x509.h ../../include/openssl/x509_vfy.h
 -x_all.o: ../cryptlib.h
 Only in openssl-0.9.6a/crypto/x509v3: Makefile
-diff -r -u openssl-0.9.6a/crypto/x509v3/Makefile.ssl openssl/crypto/x509v3/Makefile.ssl
---- openssl-0.9.6a/crypto/x509v3/Makefile.ssl	Thu Apr  5 13:13:37 2001
-+++ openssl/crypto/x509v3/Makefile.ssl	Wed May 16 13:39:43 2001
+diff -r -u openssl-0.9.6a/crypto/x509v3/Makefile.ssl openssl-0.9.6a-patched/crypto/x509v3/Makefile.ssl
+--- openssl-0.9.6a/crypto/x509v3/Makefile.ssl	Thu Apr  5 15:13:37 2001
++++ openssl-0.9.6a-patched/crypto/x509v3/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -82,433 +82,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -5804,11 +5900,106 @@ diff -r -u openssl-0.9.6a/crypto/x509v3/Makefile.ssl openssl/crypto/x509v3/Makef
 -v3err.o: ../../include/openssl/sha.h ../../include/openssl/stack.h
 -v3err.o: ../../include/openssl/symhacks.h ../../include/openssl/x509.h
 -v3err.o: ../../include/openssl/x509_vfy.h ../../include/openssl/x509v3.h
-Only in openssl-0.9.6a: include
+Only in openssl-0.9.6a/demos/bio: Makefile
+Only in openssl-0.9.6a/demos/eay: Makefile
+Only in openssl-0.9.6a/demos/maurice: Makefile
+Only in openssl-0.9.6a/demos/prime: Makefile
+Only in openssl-0.9.6a/demos/sign: Makefile
+diff -r -u openssl-0.9.6a/include/openssl/opensslconf.h openssl-0.9.6a-patched/include/openssl/opensslconf.h
+--- openssl-0.9.6a/include/openssl/opensslconf.h	Thu Apr  5 15:21:16 2001
++++ openssl-0.9.6a-patched/include/openssl/opensslconf.h	Thu Aug  2 17:20:29 2001
+@@ -6,8 +6,17 @@
+    /* no ciphers excluded */
+ #endif
+ #ifdef OPENSSL_THREAD_DEFINES
++# ifndef THREADS
++#  define THREADS
++# endif
+ #endif
+ #ifdef OPENSSL_OTHER_DEFINES
++# ifndef DSO_DLFCN
++#  define DSO_DLFCN
++# endif
++# ifndef HAVE_DLFCN_H
++#  define HAVE_DLFCN_H
++# endif
+ #endif
+ 
+ /* crypto/opensslconf.h.in */
+@@ -17,7 +26,7 @@
+ 
+ #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
+ #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
+-#define OPENSSLDIR "/usr/local/ssl"
++#define OPENSSLDIR "/opt/globus-mds/install/openssl/ssl"
+ #endif
+ #endif
+ 
+@@ -45,14 +54,14 @@
+  * - Intel P6 because partial register stalls are very expensive;
+  * - elder Alpha because it lacks byte load/store instructions;
+  */
+-#define RC4_INT unsigned int
++#define RC4_INT unsigned char
+ #endif
+ #if !defined(RC4_CHUNK)
+ /*
+  * This enables code handling data aligned at natural CPU word
+  * boundary. See crypto/rc4/rc4_enc.c for further details.
+  */
+-#undef RC4_CHUNK
++#define RC4_CHUNK unsigned long long
+ #endif
+ #endif
+ 
+@@ -66,7 +75,7 @@
+ 
+ #if defined(HEADER_BN_H) && !defined(CONFIG_HEADER_BN_H)
+ #define CONFIG_HEADER_BN_H
+-#undef BN_LLONG
++#define BN_LLONG
+ 
+ /* Should we define BN_DIV2W here? */
+ 
+@@ -90,7 +99,7 @@
+ 
+ #if defined(HEADER_BF_LOCL_H) && !defined(CONFIG_HEADER_BF_LOCL_H)
+ #define CONFIG_HEADER_BF_LOCL_H
+-#undef BF_PTR
++#define BF_PTR
+ #endif /* HEADER_BF_LOCL_H */
+ 
+ #if defined(HEADER_DES_LOCL_H) && !defined(CONFIG_HEADER_DES_LOCL_H)
+@@ -99,14 +108,14 @@
+ /* the following is tweaked from a config script, that is why it is a
+  * protected undef/define */
+ #ifndef DES_PTR
+-#undef DES_PTR
++#define DES_PTR
+ #endif
+ 
+ /* This helps C compiler generate the correct code for multiple functional
+  * units.  It reduces register dependancies at the expense of 2 more
+  * registers */
+ #ifndef DES_RISC1
+-#undef DES_RISC1
++#define DES_RISC1
+ #endif
+ 
+ #ifndef DES_RISC2
+@@ -120,7 +129,7 @@
+ /* Unroll the inner loop, this sometimes helps, sometimes hinders.
+  * Very mucy CPU dependant */
+ #ifndef DES_UNROLL
+-#undef DES_UNROLL
++#define DES_UNROLL
+ #endif
+ 
+ /* These default values were supplied by
 Only in openssl-0.9.6a/rsaref: Makefile
-diff -r -u openssl-0.9.6a/rsaref/Makefile.ssl openssl/rsaref/Makefile.ssl
---- openssl-0.9.6a/rsaref/Makefile.ssl	Thu Apr  5 13:14:36 2001
-+++ openssl/rsaref/Makefile.ssl	Wed May 16 13:39:44 2001
+diff -r -u openssl-0.9.6a/rsaref/Makefile.ssl openssl-0.9.6a-patched/rsaref/Makefile.ssl
+--- openssl-0.9.6a/rsaref/Makefile.ssl	Thu Apr  5 15:14:36 2001
++++ openssl-0.9.6a-patched/rsaref/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -85,18 +85,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -5829,9 +6020,9 @@ diff -r -u openssl-0.9.6a/rsaref/Makefile.ssl openssl/rsaref/Makefile.ssl
 -rsaref.o: ../include/openssl/rsaref.h ../include/openssl/safestack.h
 -rsaref.o: ../include/openssl/stack.h ../include/openssl/symhacks.h
 Only in openssl-0.9.6a/ssl: Makefile
-diff -r -u openssl-0.9.6a/ssl/Makefile.ssl openssl/ssl/Makefile.ssl
---- openssl-0.9.6a/ssl/Makefile.ssl	Thu Apr  5 13:14:45 2001
-+++ openssl/ssl/Makefile.ssl	Wed May 16 13:39:32 2001
+diff -r -u openssl-0.9.6a/ssl/Makefile.ssl openssl-0.9.6a-patched/ssl/Makefile.ssl
+--- openssl-0.9.6a/ssl/Makefile.ssl	Thu Apr  5 15:14:45 2001
++++ openssl-0.9.6a-patched/ssl/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -94,791 +94,3 @@
  	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
  
@@ -6625,9 +6816,9 @@ diff -r -u openssl-0.9.6a/ssl/Makefile.ssl openssl/ssl/Makefile.ssl
 -t1_srvr.o: ../include/openssl/tls1.h ../include/openssl/x509.h
 -t1_srvr.o: ../include/openssl/x509_vfy.h ssl_locl.h
 Only in openssl-0.9.6a/test: Makefile
-diff -r -u openssl-0.9.6a/test/Makefile.ssl openssl/test/Makefile.ssl
---- openssl-0.9.6a/test/Makefile.ssl	Thu Apr  5 13:15:09 2001
-+++ openssl/test/Makefile.ssl	Wed May 16 13:39:34 2001
+diff -r -u openssl-0.9.6a/test/Makefile.ssl openssl-0.9.6a-patched/test/Makefile.ssl
+--- openssl-0.9.6a/test/Makefile.ssl	Thu Apr  5 15:15:09 2001
++++ openssl-0.9.6a-patched/test/Makefile.ssl	Thu Aug  2 17:20:29 2001
 @@ -318,103 +318,3 @@
  	$(CC) -o $(SSLTEST) $(CFLAGS) $(SSLTEST).o $(PEX_LIBS) $(LIBSSL) $(LIBCRYPTO) $(EX_LIBS)
  
@@ -6732,33 +6923,10 @@ diff -r -u openssl-0.9.6a/test/Makefile.ssl openssl/test/Makefile.ssl
 -ssltest.o: ../include/openssl/stack.h ../include/openssl/symhacks.h
 -ssltest.o: ../include/openssl/tls1.h ../include/openssl/x509.h
 -ssltest.o: ../include/openssl/x509_vfy.h
-Only in openssl-0.9.6a/test: bftest.c
-Only in openssl-0.9.6a/test: bntest.c
-Only in openssl-0.9.6a/test: casttest.c
-Only in openssl-0.9.6a/test: destest.c
-Only in openssl-0.9.6a/test: dhtest.c
-Only in openssl-0.9.6a/test: dsatest.c
-Only in openssl-0.9.6a/test: enginetest.c
-Only in openssl-0.9.6a/test: exptest.c
-Only in openssl-0.9.6a/test: hmactest.c
-Only in openssl-0.9.6a/test: ideatest.c
-Only in openssl-0.9.6a/test: md2test.c
-Only in openssl-0.9.6a/test: md4test.c
-Only in openssl-0.9.6a/test: md5test.c
-Only in openssl-0.9.6a/test: mdc2test.c
-Only in openssl-0.9.6a/test: randtest.c
-Only in openssl-0.9.6a/test: rc2test.c
-Only in openssl-0.9.6a/test: rc4test.c
-Only in openssl-0.9.6a/test: rc5test.c
-Only in openssl-0.9.6a/test: rmdtest.c
-Only in openssl-0.9.6a/test: rsa_test.c
-Only in openssl-0.9.6a/test: sha1test.c
-Only in openssl-0.9.6a/test: shatest.c
-Only in openssl-0.9.6a/test: ssltest.c
 Only in openssl-0.9.6a/tools: Makefile
-diff -r -u openssl-0.9.6a/tools/c_rehash openssl/tools/c_rehash
---- openssl-0.9.6a/tools/c_rehash	Thu Apr  5 13:21:28 2001
-+++ openssl/tools/c_rehash	Wed May 16 13:39:46 2001
+diff -r -u openssl-0.9.6a/tools/c_rehash openssl-0.9.6a-patched/tools/c_rehash
+--- openssl-0.9.6a/tools/c_rehash	Thu Apr  5 15:21:28 2001
++++ openssl-0.9.6a-patched/tools/c_rehash	Thu Aug  2 17:20:29 2001
 @@ -1,4 +1,4 @@
 -#!/usr/local/bin/perl
 +#!/local/bin/perl5

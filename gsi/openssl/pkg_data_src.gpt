@@ -26,6 +26,11 @@ Globus binary package of openssl
 patch -N -p1 -i ../patches/openssl-0.9.6a-patch
 </Build_Step>
 
+
+<Build_Step>MAKE_GPTMACRO clean</Build_Step>
+
+<Build_Step Macro_Args="libs='ssl crypto sasl' regex='lib$${i}FLAVOR'">RUN_FLAVOR_MAKEFILES_GPTMACRO</Build_Step>
+
 <Build_Step>./config --prefix=INSTALLDIR_GPTMACRO threads shared</Build_Step>
 
 <Build_Step>MAKE_GPTMACRO</Build_Step>
