@@ -33,7 +33,7 @@ int main()
 
    major_status = gss_release_cred(
        &minor_status,
-       cred);
+       &cred);
    
    if(GSS_ERROR(major_status))
    {
