@@ -35,9 +35,6 @@ EXTERN_C_BEGIN
 			       Type definitions
 ******************************************************************************/
 
-typedef unsigned char	     globus_byte_t;
-typedef int		     globus_bool_t;
-
 #ifndef SWIG
 
 EXTERN_C_END
@@ -170,15 +167,12 @@ EXTERN_C_END
 #undef GLOBUS_OFF_T_FORMAT
 #endif
 
-typedef GLOBUS_OFF_T globus_off_t;
-
 #include "globus_release.h"
 #include "globus_module.h"
 #include "globus_url.h"
 #include "globus_list.h"
 #include "globus_hashtable.h"
 #include "globus_fifo.h"
-#include "globus_cfifo.h"
 #include "globus_symboltable.h"
 #include "globus_object.h"
 #include "globus_object_hierarchy.h"
@@ -303,36 +297,6 @@ void globus_dump_stack();
 #else
 #define GLOBUS_DUMP_STACK()
 #endif
-
-#if defined(BUILD_DEBUG)
-#   define globus_assert(assertion)					\
-    do {								\
-        if (!(assertion))						\
-        {								\
-            fprintf(stderr, "Assertion " #assertion			\
-		    " failed in file %s at line %d\n",			\
-		    __FILE__, __LINE__);				\
-	                                                \
-	    GLOBUS_DUMP_STACK(); \
-	    abort();							\
-         }								\
-    } while(0)
-
-#   define globus_assert_string(assertion, string)			\
-    do {								\
-    	if (!(assertion))						\
-    	{								\
-    	    fprintf(stderr, "Assertion " #assertion			\
-		    " failed in file %s at line %d: %s",		\
-		    __FILE__, __LINE__, string);			\
-		GLOBUS_DUMP_STACK(); \
-	    abort();							\
-    	}								\
-    } while(0)
-#else /* BUILD_DEBUG */
-#   define globus_assert(assertion)
-#   define globus_assert_string(assertion, string)
-#endif /* BUILD_DEBUG */
 
 #define GLOBUS_MAX(V1,V2) (((V1) > (V2)) ? (V1) : (V2))
 #define GLOBUS_MIN(V1,V2) (((V1) < (V2)) ? (V1) : (V2))
