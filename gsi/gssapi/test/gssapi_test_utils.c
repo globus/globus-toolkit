@@ -318,6 +318,13 @@ accept_sec_context(
                                               &ret_flags,
                                               &time_ret,
                                               delegated_cred);
+
+	if(major_status != GSS_S_COMPLETE &&
+	   major_status != GSS_S_CONTINUE_NEEDED)
+	{
+	    abort();
+	}
+
         if(output_token.length != 0)
         {
             token_status = put_token(client_fd,
@@ -430,6 +437,11 @@ init_sec_context(
 					    &output_token,
 					    &ret_flags,
 					    &time_ret);
+	if(major_status != GSS_S_COMPLETE &&
+	   major_status != GSS_S_CONTINUE_NEEDED)
+	{
+	    abort();
+	}
 	/* free any token we've just processed */
 	if(input_token.length > 0)
 	{
