@@ -2,7 +2,7 @@
 INSTALL		myproxy installation directions
 =======
 
- 1. Prerequisits for building
+ 1. Prerequisites for building
  2. Building the software
  3. Installing the client (user) software
  4. Installing the myproxy-server
@@ -25,7 +25,7 @@ directions for building standard GSI package:
 
 http://www.globus.org/security/v1.1/
 
-NOTE that you only need the encryption-enable GSI for building
+NOTE that you only need the encryption-enabled GSI for building
 myproxy, you can use the myproxy binaries with any recent GSI
 or Globus distribution.
 

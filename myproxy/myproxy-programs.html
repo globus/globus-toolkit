@@ -1,13 +1,13 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
   <head>
-    <title>MyProxy Programs</title>
+    <title>Myproxy Programs</title>
   </head>
   <body bgcolor=white link=blue vlink=red>
-    <h1>MyProxy Programs</h1>
+    <h1>Myproxy Programs</h1>
 
     <h3>Preliminaries</h3>
-    The full set of MyProxy programs require <i>either</i> of the following packages be installed:
+    The full set of Myproxy programs require <i>either</i> of the following packages be installed:
 <ul>
       <li><a href="http://www.globus.org/security/v1.1">GSI</a> v0.4.0 or later</li>
       <li><a href="http://www.globus.org">Globus</a> v1.1 or later</li>
@@ -15,17 +15,16 @@
     <hr>
     <h3>Programs</h3>
 <ul>
-    <li><b><a href="#myproxyinit">MyProxyInit</a></b>
-    <li><b><a href="#myproxyinfo">MyProxyInfo</a></b>
-    <li><b><a href="#myproxydestroy">MyProxyDestroy</a></b>	
-    <li><b><a href="#myproxygetdelegation">MyProxyGetDelegation</a></b>
-    <li><b><a href="#myproxyserver">MyProxyServer</a></b>
+    <li><b><a href="#myproxyinit">myproxy-init</a></b>
+    <li><b><a href="#myproxydestroy">myproxy-destroy</a></b>	
+    <li><b><a href="#myproxygetdelegation">myproxy-get-delegation</a></b>
+    <li><b><a href="#myproxyserver">myproxy-server</a></b>
 </ul>
     
 <!---------------------- MYPROXY_INIT ----------------------------->
     
     <hr>
-    <h3><a name="myproxyinit">myproxy-init</a></h3> Creates and sends a delegated proxy to the MyProxyServer for later use.
+    <h3><a name="myproxyinit">myproxy-init</a></h3> Creates and sends a delegated proxy to myproxy-server for later use.
     <h3>SYNOPSIS</h3>
     <b>myproxy-init</b> [{-h, -u}| {--help, --usage}] [-l | --username <i>username</i>] [-c | --cred_lifetime <i>hours</i>] [-t | --portal_lifetime <i>hours</i>] [-pshost <i>proxy server hostname</i>] [-psport <i>proxy server port #</i>]
     <h3>DESCRIPTION</h3>
@@ -67,9 +66,9 @@
     <dt>-l | --username</dt>
       <dd>Specifies the username for the delegated proxy.</dd>
     <dt>-s | --pshost</dt>
-      <dd>Specifies the hostname of the MyProxyServer.</dd>
+      <dd>Specifies the hostname of the myproxy-server.</dd>
     <dt>-p | --psport</dt>
-      <dd>Specifies the port number of the MyProxyServer.</dd>
+      <dd>Specifies the port number of the myproxy-server.</dd>
   </dl>
   <h3>EXIT STATUS</h3>
    <p>
