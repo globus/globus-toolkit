@@ -5,7 +5,7 @@
 </head>
 <body>
 <img border="0" src="gt_logo.jpg">
-<h1>Reliable File Transfer Service - Alpha</h1>
+<h1>Reliable File Transfer Service -Beta</h1>
 <!-- --------------------------- -->
 <h3>Overview</h3>
 <p>The Reliable Transfer Service (RFT) is an OGSA based service that
@@ -14,23 +14,22 @@ transfers using GridFTP servers. The client controlling the transfer is
 hosted inside of a grid service so it can be managed using the soft
 state model and queried using the ServiceData interfaces available to
 all grid services. It is esentially a reliable and recoverable version
-of the GT2 globus-url-copy tool.<!-- --------------------------- --> </p>
+of the GT2 globus-url-copy tool and more.<!-- --------------------------- --> </p>
 <h3>Prerequisites and Dependencies</h3>
 <p> The Prerequisites to RFT are: </p>
 <ul>
-	<li><b>Core Alpha Distribution</b> 	</li>
+	<li><b>Core Beta Distribution</b> 	</li>
   <li><b>GridFTP</b> with a properly configured <b>Host Certificate</b> 	</li>
   <li><b>PostgreSQL</b> </li>
 </ul>
-<p><b>PostgreSQL</b> is used to store the state of the transfer to
-allow for restart after failures. The interface to PostgreSQL is JDBC
-so any DBMS that supports JDBC can be used, although no other has been
-tested. </p>
+<p><b>PostgreSQL</b> is used to store the state of the transfer to allow
+for restart after failures. The interface to PostgreSQL is JDBC so any
+DBMS that supports JDBC can be used, although no other has been tested. </p>
 <p> <b>GridFTP</b> perfoms the actual file transfer. </p>
 <p>GridFTP server can only be run on Unix or Linux. There are 2 ways to
 get GridFTP: </p>
 <ol>
-  <li>Packaged with the core GT3 Alpha installation. </li>
+  <li>Packaged with the core GT3 Beta installation. </li>
   <li>As part of the Globus Toolkit 2.2 distribution. </li>
 </ol>
 If you don't already have GridFTP from GT2 installed, use the GT3
@@ -80,8 +79,7 @@ perform a file transfer. However to perform a simple test of RFT, one
 GridFTP server is sufficient. Another alternative is to start two
 GridFTP servers on one machine using different ports.
 <p> A properly installed <b>Host Certificate</b> is required to run
-GridFTP. See the Alpha Admin Guide, Security Configuration for details.
-<!-- --------------------------- --> </p>
+GridFTP. See the Alpha Admin Guide, Security Configuration for details.<!-- --------------------------- --> </p>
 <h3>Run a GridFTP Server</h3>
 <b>As root</b>, start a GridFTP server as follows:
 <pre>    $GLOBUS_LOCATION/sbin/in.ftpd -S [-p &lt;port&gt;]<p></p>
@@ -98,8 +96,8 @@ command: </p>
 <p>Check to make sure that /tmp/file2 now exists.<!-- --------------------------- --> </p>
 <h3>Configure a GridFTP Server</h3>
 <p>If you want a GridFTP server to be started automatically when
-requests come in over a particular socket, then configure your system
-as follows. Otherwise, this step may be ignored. </p>
+requests come in over a particular socket, then configure your system as
+follows. Otherwise, this step may be ignored. </p>
 <p> If you already have a GT2 GridFTP server installed, skip this step. </p>
 <p> Make the following changes to your system as root. </p>
 <p>Add this entry to /etc/services: </p>
@@ -109,16 +107,16 @@ need to modify its configuration accordingly. </p>
 <ul>
   <p><b>Inetd</b><br>
 Add the following entry, all on one line, to /etc/inetd.conf.   Replace
-GLOBUS_LOCATION below with the actual value of $GLOBUS_LOCATION in your
- environment. </p>
+GLOBUS_LOCATION below with the actual value of $GLOBUS_LOCATION in your 
+environment. </p>
   <pre>    gsiftp  stream  tcp     nowait  root<br>      /usr/bin/env env LD_LIBRARY_PATH=GLOBUS_LOCATION/lib<br>      GLOBUS_LOCATION/sbin/in.ftpd -l -a -G GLOBUS_LOCATION<br></pre>
   <p><b>New to 2.2:</b> This entry has changed from the entry provided
 for the GridFTP server in the Globus Toolkit 2.0 Administrator's
 Guide.&nbsp; The reason is that if you followed the instructions from
 the install section, you do not have a static in.ftpd.&nbsp; This
 requires you to set the LD_LIBRARY_PATH so that the server can
-dynamically link against the libraries in $GLOBUS_LOCATION/lib.&nbsp;
-To accomplish the setting of the environment variable in inetd, we use
+dynamically link against the libraries in $GLOBUS_LOCATION/lib.&nbsp; To
+accomplish the setting of the environment variable in inetd, we use
 /usr/bin/env (the location may vary on your system) to first set
 LD_LIBRARY_PATH, and then to call in.ftpd itself. </p>
   <p> The advantage of this setup is that when you apply a security
@@ -130,11 +128,11 @@ with the following contents. Be sure to replace GLOBUS_LOCATION below
 with the actual value of $GLOBUS_LOCATION in your environment. </p>
   <pre>    service gsiftp<br>    {<br>	    instances               = 1000<br>	    socket_type             = stream<br>	    wait                    = no<br>	    user                    = root<br>	    env			    = LD_LIBRARY_PATH=GLOBUS_LOCATION/lib<br>	    server                  = GLOBUS_LOCATION/sbin/in.ftpd<br>	    server_args             = -l -a -G GLOBUS_LOCATION<br>	    log_on_success         += DURATION USERID<br>	    log_on_failure         += USERID<br>	    nice                    = 10<br>            disable                 = no<br>    }<br></pre>
   <p><b>New to 2.2:</b> This entry has changed from the   entry provided
-for the GridFTP server in the Globus Toolkit 2.0 Administrator's  
+for the GridFTP server in the Globus Toolkit 2.0 Administrator's
 Guide.&nbsp; The reason is that if you followed the instructions from
 the install section,   you do not have a static in.ftpd.&nbsp; This
 requires you to set the LD_LIBRARY_PATH so   that the server can
-dynamically link against the libraries in $GLOBUS_LOCATION/lib.&nbsp;  
+dynamically link against the libraries in $GLOBUS_LOCATION/lib.&nbsp;
 To accomplish the setting of the environment variable in xinetd, we use
 the "env   =" option to set LD_LIBRARY_PATH in the gatekeeper's
 environment. </p>
@@ -144,8 +142,8 @@ dynamically without your having to   rebuild it. </p>
 </ul>
 <p>The -G GLOBUS_LOCATION (remember to substitute your real
 GLOBUS_LOCATION) tells the in.ftpd to look for ftpaccess in
-$GLOBUS_LOCATION.&nbsp; If you do not specify this flag, the server
-will use /etc/ftpaccess. </p>
+$GLOBUS_LOCATION.&nbsp; If you do not specify this flag, the server will
+use /etc/ftpaccess. </p>
 <p>After you have added the gridftp service to either inetd or xinetd,
 notify inetd (or xinetd) that its configuration file has changed as
 follows: </p>
@@ -168,8 +166,8 @@ named <code>reliabletransfer.gar</code>. </p>
 <p>First, set the following parameters in
 reliabletransfer-server-config.wsdd: <br>
 <b>&nbsp;JdbcDriver</b> : Name of the JDBC Driver for the database you
-want to use. For a PostgreSQL installation as described above this
-value is: org.postgresql.Driver. The driver is shipped along with our
+want to use. For a PostgreSQL installation as described above this value
+is: org.postgresql.Driver. The driver is shipped along with our
 distribution.<br>
 <b>connectionURL</b>: URL for the Database in order make the
 connection. For postgres this is jdbc:postgresql:&lt;db&gt;, and in our
@@ -179,15 +177,15 @@ this would be Administrator) <br>
 <b>password</b>: Password set up to access the database for the
 particular user. </p>
 <p> Deploy the gar by running the following command in $GLOBUS_LOCATION:</p>
-<pre>    ant -f build-packages.xml deployGar -Dgar.name=&lt;location of reliabletransfer.gar&gt;<br></pre>
+<pre>    ant -f build-packages.xml deployGar -Dgar.name=&lt;location of multirft.gar&gt;<br></pre>
 <h3>Build the GAR from Source Distribution</h3>
 This step is optional.
 <p> If you downloaded the RFT source code then you can make a deployable
 gar file as follows: <br>
 Change the ogsacore.javadir property in build.xml to point to
-ogsa/impl/java directory in your  ogsa installation (or you can
-override the default property by doing  ant -Dogsacore.dir=&lt;your
-ogsa installation&gt; compile) <br>
+ogsa/impl/java directory in your  ogsa installation (or you can override
+the default property by doing  ant -Dogsacore.dir=&lt;your ogsa
+installation&gt; compile) <br>
 Run: </p>
 <pre>    cd data_management/multirft<br>    ant deployGar<br></pre>
 This builds a gar that can be deployed in a service container. Now
@@ -217,7 +215,8 @@ gsiftp://dg0n1.mcs.anl.gov/sandbox/madduri/test2&nbsp;&nbsp;&nbsp;
 .<br>
 .<br>
 3.<br>
-<pre>java org.globus.ogsa.gui.RFTClient &lt;handle to RFT factory&gt; &lt;path to transfers list&gt; <br>submits the transfer to deployed RFT service </pre>
+<pre>java org.globus.ogsa.gui.RFTClient &lt;handle to RFT factory&gt; &lt;path to transfers list&gt; <br></pre>
+submits the transfer to deployed RFT service <br>
 &nbsp;<!-- ====================================== -->
 <h2>Service Data Elements for RFT</h2>
 <span style="font-weight: bold;">Version :</span>version of RFT.<br>

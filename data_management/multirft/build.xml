@@ -26,6 +26,8 @@ Southern California. All Rights Reserved.
 
   <!-- Directories created during build -->
   <property name="build.dir" value="build" />
+  <property name="docs.dir" value="docs"/>
+  <property name="etc.dir" value="./etc"/>
   <property name="build.javadocs" value="${build.dir}/javadocs"/>
   <property name="build.dest" value="${build.dir}/classes"/>
 
@@ -169,6 +171,8 @@ Southern California. All Rights Reserved.
     <ant antfile="${ogsa.root}/build-packages.xml" target="makeGar">
       <property name="gar.name" value="${build.lib}/${gar.name}"/>
       <property name="garlib.dir" value="${build.lib}"/>
+      <property name="gardocs.dir" value="docs"/>
+      <property name="garetc.dir" value="etc"/>
 
       <property name="garserverdeployment.file" value="${server.config}"/>
       <property name="garclientdeployment.file" value="${client.config}"/>
