@@ -152,8 +152,6 @@ main(
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
-    rc = globus_module_activate(GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE);
-    globus_assert(rc == 0);
 
     globus_xio_driver_load("test", &driver);
 
