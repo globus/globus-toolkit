@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gass-server", "gass-server.vcproj", "{038D9160-1872-47E3-8E87-BD1488340DA8}"
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = DebugThr
+		ConfigName.2 = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{038D9160-1872-47E3-8E87-BD1488340DA8}.Debug.ActiveCfg = Debug|Win32
+		{038D9160-1872-47E3-8E87-BD1488340DA8}.Debug.Build.0 = Debug|Win32
+		{038D9160-1872-47E3-8E87-BD1488340DA8}.DebugThr.ActiveCfg = DebugThr|Win32
+		{038D9160-1872-47E3-8E87-BD1488340DA8}.DebugThr.Build.0 = DebugThr|Win32
+		{038D9160-1872-47E3-8E87-BD1488340DA8}.Release.ActiveCfg = Release|Win32
+		{038D9160-1872-47E3-8E87-BD1488340DA8}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
