@@ -25,6 +25,8 @@ typedef struct test_info_s
     globus_bool_t                           write_done;
     globus_bool_t                           read_done;
 
+    globus_bool_t                           server;
+
     globus_mutex_t                          mutex;
 } test_info_t;
 

@@ -6,6 +6,7 @@
 static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
 static globus_bool_t                        globus_l_closed = GLOBUS_FALSE;
+static globus_bool_t                        globus_l_accepted = GLOBUS_FALSE;
 
 void
 print_help()
@@ -20,6 +21,27 @@ print_help()
 
     exit(1);
 }
+
+void
+accept_cb(
+    globus_xio_target_t                         target,
+    globus_xio_operation_t                      op,
+    globus_result_t                             result,
+    void *                                      user_arg)
+{
+    globus_xio_target_t *                       t;
+
+    t = (globus_xio_target_t *) user_arg;
+
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        *t = target;
+        globus_l_accepted = GLOBUS_TRUE;
+        globus_cond_signal(&globus_l_cond);
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+}
+
 
 void
 close_cb(
@@ -81,7 +103,7 @@ read_cb(
                 test_res(res, __LINE__);
             }
         }
-        else if(!info->closed)
+        else if(!info->read_done)
         {
             res = globus_xio_register_read(
                     handle,
@@ -139,7 +161,7 @@ write_cb(
                 test_res(res, __LINE__);
             }
         }
-        else if(!info->closed)
+        else if(!info->write_done)
         {
             res = globus_xio_register_write(
                     handle,
@@ -207,10 +229,13 @@ main(
     globus_xio_target_t                     target;
     globus_xio_attr_t                       attr;
     globus_result_t                         res;
+    globus_xio_server_t                     server;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 
+    globus_mutex_init(&globus_l_mutex, NULL);    
+    globus_cond_init(&globus_l_cond, NULL);    
 
     driver = globus_xio_driver_test_transport_get_driver();
 
@@ -225,8 +250,33 @@ main(
     res = globus_xio_stack_push_driver(stack, driver);
     test_res(res, __LINE__);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(res, __LINE__);
+    if(globus_l_test_info.server)
+    {
+        res = globus_xio_server_init(&server, attr, stack);
+        test_res(res, __LINE__);
+
+        res = globus_xio_server_register_accept(
+                server,
+                NULL,
+                accept_cb,
+                &target);
+
+        globus_mutex_lock(&globus_l_mutex);
+        {
+            while(!globus_l_accepted)
+            {
+                globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+            }
+        }
+        globus_mutex_unlock(&globus_l_mutex);
+        
+    }
+    else
+    {
+        res = globus_xio_target_init(&target, NULL, "whatever", stack);
+        test_res(res, __LINE__);
+    }
+
 
     res = globus_xio_register_open(
             &handle,

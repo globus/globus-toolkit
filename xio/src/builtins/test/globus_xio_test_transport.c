@@ -286,7 +286,7 @@ globus_l_xio_test_accept(
     globus_xio_operation_t              accept_op)
 {
     globus_l_xio_test_handle_t *        server;
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
 
     server = (globus_l_xio_test_handle_t *) driver_server;
 

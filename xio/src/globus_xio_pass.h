@@ -21,15 +21,22 @@ do                                                                          \
     _attr = (_in_attr);                                                     \
     _driver = (_in_driver);                                                 \
                                                                             \
-    _entry = _attr->entry;                                                  \
-    for(_ctr = 0; _ctr < _attr->ndx && _ds == NULL; _ctr++)                 \
+    if(_in_attr == NULL)                                                    \
     {                                                                       \
-        if(_entry[_ctr].driver == _driver)                                  \
-        {                                                                   \
-            _ds = _entry[_ctr].driver_data;                                 \
-        }                                                                   \
+        _out_ds = NULL;                                                     \
     }                                                                       \
-    _out_ds = _ds;                                                          \
+    else                                                                    \
+    {                                                                       \
+        _entry = _attr->entry;                                              \
+        for(_ctr = 0; _ctr < _attr->ndx && _ds == NULL; _ctr++)             \
+        {                                                                   \
+            if(_entry[_ctr].driver == _driver)                              \
+            {                                                               \
+                _ds = _entry[_ctr].driver_data;                             \
+            }                                                               \
+    }                                                                       \
+        _out_ds = _ds;                                                      \
+    }                                                                       \
 } while(0)
     
 #define GlobusIXIODDGetDS(_out_ds, _in_dd, _in_driver)                      \

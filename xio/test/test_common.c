@@ -67,7 +67,8 @@ parse_parameters(
     globus_l_argv = argv;
     
     /* parse the parameters */
-    while((c = getopt(argc, argv, "iF:d:s:R:W:r:w:b:")) != -1)
+    globus_l_test_info.server = GLOBUS_FALSE;
+    while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:")) != -1)
     {
         switch(c)
         {
@@ -83,8 +84,12 @@ parse_parameters(
                 delay = atoi(optarg);
                 break;
 
-            case 's':
+            case 'c':
                 chunk_size = atoi(optarg);
+                break;
+
+            case 's':
+                globus_l_test_info.server = GLOBUS_TRUE;
                 break;
 
             case 'b':

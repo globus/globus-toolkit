@@ -240,7 +240,7 @@ globus_xio_driver_pass_server_accept(
 {
     globus_result_t                             res;
 
-    GlobusXIODriverPassServerAccept(res, op, cb, user_arg);
+    GlobusXIODriverPassAccept(res, op, cb, user_arg);
 
     return res;
 }

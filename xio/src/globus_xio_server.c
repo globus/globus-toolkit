@@ -81,6 +81,7 @@ globus_l_xio_server_accept_kickout(
     GlobusXIOName(globus_l_xio_server_accept_kickout);
 
     xio_op = (globus_i_xio_op_t *) user_arg;
+    xio_server = xio_op->_op_server;
 
     /* create the structure if successful, otherwise the target is null */
     if(xio_op->cached_res == GLOBUS_SUCCESS)
@@ -100,7 +101,7 @@ globus_l_xio_server_accept_kickout(
             xio_target->entry[ctr].target = 
                     xio_op->entry[ctr].target;
             xio_target->entry[ctr].driver = 
-                    xio_op->entry[ctr]._op_ent_driver;
+                    xio_server->entry[ctr].driver;
         }
     }
     /* if failed clean up the operation */
@@ -119,7 +120,7 @@ globus_l_xio_server_accept_kickout(
     }
 
     /* call the users callback */
-    xio_op->_accept_cb(
+    xio_op->_op_accept_cb(
         xio_target,
         xio_op,
         xio_op->cached_res,
@@ -150,7 +151,6 @@ globus_l_xio_server_accept_kickout(
         xio_op->ref--;
         if(xio_op->ref == 0)
         {
-            globus_assert(xio_op->cached_res == GLOBUS_SUCCESS);
             xio_op->ref--;
             globus_free(xio_op);
             if(xio_server->ref == 0)
@@ -397,7 +397,7 @@ globus_xio_server_init(
     globus_xio_stack_t                          stack)
 {
     globus_list_t *                             list;
-    globus_i_xio_server_t *                     xio_server;
+    globus_i_xio_server_t *                     xio_server = NULL;
     globus_result_t                             res;
     globus_bool_t                               done = GLOBUS_FALSE;
     int                                         ctr;
@@ -430,11 +430,16 @@ globus_xio_server_init(
         xio_server->stack_size = globus_list_size(stack->driver_stack);
         xio_server->ref = 1;
         xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
+        xio_server->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
         globus_mutex_init(&xio_server->mutex, NULL);
+        xio_server->accept_timeout = NULL;
 
         /* timeout handling */
-        xio_server->accept_timeout = server_attr->accept_timeout_cb;
-
+        if(server_attr != NULL)
+        {
+            xio_server->accept_timeout = server_attr->accept_timeout_cb;
+            xio_server->space = server_attr->space;
+        }
         /* walk through the stack and add each entry to the array */
         ctr = 0;
         for(list = stack->driver_stack;
@@ -469,6 +474,8 @@ globus_xio_server_init(
         }
     }
     globus_mutex_unlock(&stack->mutex);
+
+    *server = xio_server;
 
     return res;
 }
@@ -587,6 +594,8 @@ globus_xio_server_register_accept(
                 xio_op->progress = GLOBUS_TRUE;
                 xio_op->ndx = 0;
                 xio_op->stack_size = xio_server->stack_size;
+                xio_op->_op_accept_cb = cb;
+                xio_op->user_arg = user_arg;
 
                 xio_server->op = xio_op;
                 /* get all the driver specific attrs and put htem in the 
@@ -613,7 +622,7 @@ globus_xio_server_register_accept(
                 xio_server->ref++;
                 /* no sense unlocking here since accepts are serialized 
                     anyway */
-                GlobusXIODriverPassServerAccept(res, xio_op, \
+                GlobusXIODriverPassAccept(res, xio_op, \
                     globus_i_xio_server_accept_callback, NULL);
 
                 /* if the register failed */

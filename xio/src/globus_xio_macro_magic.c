@@ -945,7 +945,6 @@ globus_xio_driver_finished_accept_DEBUG(
     globus_result_t                                 _in_res)
 {                                                                           
     globus_i_xio_op_t *                             _op;                    
-    int                                             _caller_ndx;            
     globus_i_xio_op_entry_t *                       _my_op;                 
                                                                             
     _op = (globus_i_xio_op_t *)(_in_op);                                    
@@ -956,8 +955,6 @@ globus_xio_driver_finished_accept_DEBUG(
     _my_op = &_op->entry[_op->ndx - 1];                                     
     _op->cached_res = (_in_res);                                            
                                                                             
-    _caller_ndx = _my_op->caller_ndx;                                       
-    _op->ndx = _caller_ndx;                                                 
     _my_op->target = (_in_target);                                          
                                                                             
     if(_op->entry[_op->ndx].in_register)                                    
@@ -971,7 +968,7 @@ globus_xio_driver_finished_accept_DEBUG(
     }                                                                       
     else                                                                    
     {                                                                       
-        _op->ndx = _caller_ndx;                                             
+        _op->ndx = _my_op->caller_ndx;                                      
         _my_op->cb(_op, _op->cached_res, _my_op->user_arg);                 
     }                                                                       
 }                                                                           
