@@ -1,7 +1,7 @@
 globus_version_t local_version = 
 {
-    @PACKAGE_MAJOR@,
-    @PACKAGE_MINOR@,
+    @GPT_MAJOR_VERSION@,
+    @GPT_MINOR_VERSION@,
     @DIRT_TIMESTAMP@,
     @DIRT_BRANCH_ID@
 };
