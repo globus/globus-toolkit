@@ -1516,11 +1516,17 @@ int main(int argc,
 
     if (!jm_request_failed)
     {
+        globus_reltime_t          delay_time;
+        globus_reltime_t          period_time;
+
         if (!request->job_id)
             request->job_id = (char *) globus_libc_strdup ("UNKNOWN");
 
         /* send callback with the status */
+	GRAM_UNLOCK;
         globus_l_gram_client_callback(request->status, request->failure_code);
+	GRAM_LOCK;
+
 
         /* if we are publishing jobs, then setup the necessary variables */
         if (publish_jobs_flag)
@@ -1548,14 +1554,6 @@ int main(int argc,
                                           request->job_id,
 					  request->status);
 	}
-    }
- 
-    GRAM_UNLOCK;
-
-    if (!jm_request_failed)
-    {
-        globus_reltime_t          delay_time;
-        globus_reltime_t          period_time;
 
         if (request->poll_frequency == 0)
         {
@@ -1583,7 +1581,6 @@ int main(int argc,
 					  (void *) request,
 					  GLOBUS_NULL,
 					  GLOBUS_NULL);
-	GRAM_LOCK;
         while (!graml_jm_done)
         {
 	    /* 
