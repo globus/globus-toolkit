@@ -54,6 +54,7 @@ EXTERN_C_BEGIN
 #define ASN1_F_PROXYCERTINFO_NEW                         430
 #define ASN1_F_D2I_PROXYCERTINFO                         431
 
+
 /* data structures */
 
 /**
