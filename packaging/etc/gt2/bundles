@@ -154,7 +154,6 @@ BUNDLE globus-data-management-server
 	gssapi_error
 	globus_ftp_control
 	globus_gridftp_server
-	globus_gridftp_server_control
         globus_libxml2
         globus_libxml25
 	globus_libxslt
@@ -169,7 +168,6 @@ BUNDLE globus-data-management-server
 	gaa_gss_generic
 	gaa_simple
 	globus_authz_gaa_callout
-	globus_gridftp_server2
 
 BUNDLE globus-data-management-sdk
 	globus_core
