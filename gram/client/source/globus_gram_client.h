@@ -64,16 +64,17 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_CLIENT_STDIN_PARAM                    "stdin"
 #define GLOBUS_GRAM_CLIENT_STDOUT_PARAM                   "stdout"
 #define GLOBUS_GRAM_CLIENT_STDERR_PARAM                   "stderr"
-#define GLOBUS_GRAM_CLIENT_MAX_TIME_PARAM                 "max_time"
+#define GLOBUS_GRAM_CLIENT_MAX_TIME_PARAM                 "maxtime"
 #define GLOBUS_GRAM_CLIENT_PARADYN_PARAM                  "paradyn"
-#define GLOBUS_GRAM_CLIENT_JOB_TYPE_PARAM                 "job_type"
-#define GLOBUS_GRAM_CLIENT_MYJOB_PARAM                    "gram_myjob"
+#define GLOBUS_GRAM_CLIENT_JOB_TYPE_PARAM                 "jobtype"
+#define GLOBUS_GRAM_CLIENT_MYJOB_PARAM                    "grammyjob"
 #define GLOBUS_GRAM_CLIENT_QUEUE_PARAM                    "queue"
 #define GLOBUS_GRAM_CLIENT_PROJECT_PARAM                  "project"
-#define GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM               "host_count"
-#define GLOBUS_GRAM_CLIENT_DRY_RUN_PARAM                  "dry_run"
-#define GLOBUS_GRAM_CLIENT_MIN_MEMORY_PARAM               "min_memory"
-#define GLOBUS_GRAM_CLIENT_MAX_MEMORY_PARAM               "max_memory"
+#define GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM               "hostcount"
+#define GLOBUS_GRAM_CLIENT_DRY_RUN_PARAM                  "dryrun"
+#define GLOBUS_GRAM_CLIENT_MIN_MEMORY_PARAM               "minmemory"
+#define GLOBUS_GRAM_CLIENT_MAX_MEMORY_PARAM               "maxmemory"
+#define GLOBUS_GRAM_CLIENT_START_TIME_PARAM               "starttime"
 
 /*
  *  Job Default Constants
@@ -84,6 +85,7 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB                  "collective"
 #define GLOBUS_GRAM_CLIENT_DEFAULT_JOBTYPE                "multiple"
 #define GLOBUS_GRAM_CLIENT_DEFAULT_DRYRUN                 "no"
+#define GLOBUS_GRAM_CLIENT_DEFAULT_START_TIME             "none"
 
 
 /******************************************************************************

@@ -106,7 +106,8 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /*  95 */     "the client failed to close the listener associated with the callback URL",
 /*  96 */     "the gatekeeper contact cannot be parsed"
 /*  97 */     "the job manager could not find the 'poe' command"
-/*  98 */     "the job manager could not find the 'mpirun' command"
+/*  98 */     "the job manager could not find the 'mpirun' command",
+/*  99 */     "the provided RSL 'start_time' parameter is invalid"
 };
 
 const char *
