@@ -3233,10 +3233,6 @@ globus_ftp_control_local_dcau(
 		GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 		delegated_credential_handle);
 
-            globus_io_attr_set_secure_channel_mode(
-                &dc_handle->io_attr,
-		GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP);
-
             globus_io_attr_set_secure_proxy_mode(
                 &dc_handle->io_attr,
 		GLOBUS_IO_SECURE_PROXY_MODE_MANY);
