@@ -1,4 +1,4 @@
-#include <globus_ftp_control.h>
+#include "globus_ftp_control.h"
 #include <string.h>
 
 static globus_bool_t  g_done;

@@ -31,9 +31,9 @@ EXTERN_C_BEGIN
 #include "globus_gsi_callback.h"
 #include "globus_gsi_cert_utils.h"
 
-#include <openssl/x509.h>
-#include <openssl/bio.h>
-#include <openssl/ssl.h>
+#include "openssl/x509.h"
+#include "openssl/bio.h"
+#include "openssl/ssl.h"
 
 /** 
  * @defgroup globus_gsi_credential_activation Activation
@@ -129,7 +129,7 @@ typedef struct globus_l_gsi_cred_handle_attrs_s *
 
 #ifndef DOXYGEN
 
-#include <globus_error_generic.h>
+#include "globus_error_generic.h"
 #include "globus_error_openssl.h"
 
 globus_result_t globus_gsi_cred_handle_init(

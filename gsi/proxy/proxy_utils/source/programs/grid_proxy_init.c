@@ -16,6 +16,9 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
+#ifdef WIN32
+#include "globus_gssapi_config.h"
+#endif
 
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.1.1.8"
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_SN  "GENERICPOLICY"
@@ -948,6 +951,18 @@ main(
         globus_libc_fprintf(
             stdout,
             "Proxy Verify OK\n");
+    }
+    else
+    {
+        result = globus_gsi_cred_verify(proxy_cred_handle);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\n\nERROR: Could not verify the signature of the generated proxy certificate\n       This is likely due to a non-matching user key and cert\n\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
     }
 
     if(ca_cert_dir)

@@ -1,6 +1,6 @@
 
 #define EXT_SIZE 16
-#include <gssapi.h>
+#include "gssapi.h"
 #include "gssapi_openssl.h"
 #include "globus_gss_assist.h"
 
@@ -53,6 +53,10 @@ int main()
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
     ret_flags = 0;
     req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
+
+    /* Activate Modules */
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
 /*      oid_buffer.value = malloc(EXT_SIZE); */
 /*      oid_buffer.length = EXT_SIZE; */
@@ -639,6 +643,8 @@ int main()
 /*             __FILE__, */
 /*             __LINE__, */
 /*             (char *) inquire_buffers->elements[0].value); */
+
+    globus_module_deactivate_all();
 
     exit(0);
 }

@@ -4,7 +4,7 @@
 <gpt_package_metadata Format_Version="0.02" Name="globus_gridmap_callout_setup" >
 
   <Aging_Version Age="0" Major="0" Minor="1" />
-  <Description >Job Manager Authorization Callout Setup</Description>
+  <Description >Gridmap Authorization Callout Setup</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Alpha" />
 
@@ -28,14 +28,14 @@
     </Build_Environment>
 
     <Post_Install_Message >
-	Run the setup-globus-job-manager-callout setup script to configure a fork job manager.
+	Run the setup-globus-gridmap-callout setup script to configure a gridmap callout.
     </Post_Install_Message>
 
     <Post_Install_Program >
-        setup-globus-job-manager-callout-message
+        setup-globus-gridmap-callout-message
     </Post_Install_Program>
 
-    <Setup Name="globus_gram_job_manager_setup_callout" >
+    <Setup Name="globus_gridmap_callout_setup" >
       <Aging_Version Age="0" Major="0" Minor="1" />
     </Setup>
 

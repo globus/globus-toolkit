@@ -15,12 +15,17 @@ static char *rcsid = "$Id$";
 #include "globus_gsi_credential.h"
 #include "globus_gsi_callback.h"
 #include "globus_gsi_system_config.h"
-#include <openssl/ssl3.h>
+#include "openssl/ssl3.h"
 
 #include <string.h>
 #include <stdlib.h>
 
 #include "ssl_locl.h"
+
+#ifdef WIN32
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
+#endif
 
 extern int                              globus_i_gsi_gssapi_debug_level;
 extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
@@ -613,6 +618,16 @@ globus_i_gsi_gss_put_token(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    if(input_token == GSS_C_NO_BUFFER)
+    {
+        major_status = GSS_S_DEFECTIVE_TOKEN;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+            ("The input token is NULL (GSS_C_NO_BUFFER)\n"));
+        goto exit;        
+    }
+
     if(bio)
     {
         read_bio = bio;
@@ -646,7 +661,7 @@ globus_i_gsi_gss_put_token(
             BIO_free(debug_bio);
         }
     }
-    else
+    else 
     {
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             3, (globus_i_gsi_gssapi_debug_fstream,
@@ -656,7 +671,7 @@ globus_i_gsi_gss_put_token(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The input token has an invalid length of: %u", 
+            ("The input token has an invalid length of: %u\n", 
              input_token->length));
         goto exit;
     }
@@ -1088,7 +1103,7 @@ globus_i_gsi_gss_retrieve_peer(
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream, 
                     "X509 subject after proxy : %s\n", subject));
-            globus_libc_free(subject);
+            OPENSSL_free(subject);
         }
 
     }

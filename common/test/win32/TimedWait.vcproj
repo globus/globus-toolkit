@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="TimedWaitTest"
+	Name="CommonTimedWaitTest"
 	ProjectGUID="{6A3A584F-DBB4-4D10-B5BC-66CFB9398742}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -111,7 +111,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\nonthreaded"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -126,18 +126,21 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="globus_common_win32dbgthr.lib Ws2_32.lib"
-				OutputFile="$(OutDir)/TimedWaitTestThr.exe"
+				AdditionalDependencies="libglobus_common_win32dbgthr.lib Ws2_32.lib"
+				OutputFile="$(OutDir)/TimedWaitTest.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib\"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/TimedWait.pdb"
+				ProgramDatabaseFile="$(OutDir)/TimedWaitTest.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
+copy $(OutDir)\$(TargetName).pdb \bin\*.*
+"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

@@ -1,8 +1,8 @@
 /**
  *  This program tests the globus_ftp_control_data library
  */
-#include <globus_ftp_control.h>
-#include <globus_common.h>
+#include "globus_ftp_control.h"
+#include "globus_common.h"
 #include <string.h>
 #include <ctype.h>
 #include "test_common.h"

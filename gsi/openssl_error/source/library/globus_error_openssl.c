@@ -13,8 +13,8 @@
 #include "globus_i_error_openssl.h"
 #include "globus_common.h"
 #include "version.h"
-#include <openssl/err.h>
-#include <openssl/ssl.h>
+#include "openssl/err.h"
+#include "openssl/ssl.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -479,13 +479,13 @@ globus_error_construct_openssl_error(
 
     newerror = globus_object_construct(GLOBUS_ERROR_TYPE_OPENSSL);
     openssl_error_handle = globus_i_openssl_error_handle_init();
-
+    
     openssl_error_handle->error_code =
         ERR_get_error_line_data((const char **)&openssl_error_handle->filename, 
                                 &openssl_error_handle->linenumber,
                                 &openssl_error_handle->data,
                                 &openssl_error_handle->flags);
-    
+        
     if((openssl_error_handle->flags & ERR_TXT_MALLOCED)
        && (openssl_error_handle->flags & ERR_TXT_STRING))
     {
@@ -498,10 +498,11 @@ globus_error_construct_openssl_error(
         base_source,
         base_cause,
         openssl_error_handle);
-
+    
     if (error == NULL)
     {
         globus_object_free(newerror);
+        globus_i_openssl_error_handle_destroy(openssl_error_handle);        
     }
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
@@ -545,15 +546,13 @@ globus_error_initialize_openssl_error(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    if(openssl_error_handle->error_code == 0 && base_cause != NULL)
+    if(openssl_error_handle->error_code == 0)
     {
         /* no more errors in the static openssl stack exist,
          * so delete newly created error and return base_cause
          * this should shut down the recursive building of the 
          * openssl error chain
          */
-        globus_object_free(error);
-        globus_i_openssl_error_handle_destroy(openssl_error_handle);        
         error = base_cause;
         goto done;
     }
@@ -1065,12 +1064,6 @@ globus_error_wrap_openssl_error(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
     causal_error = globus_error_construct_openssl_error(base_source, NULL);
-
-    if(!causal_error)
-    {
-        error = GLOBUS_NULL;
-        goto done;
-    }
 
     va_start(ap, format);
 

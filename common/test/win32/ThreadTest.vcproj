@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="ThreadTest"
+	Name="CommonThreadTest"
 	ProjectGUID="{F4FD43A9-238F-4778-B699-71A08C28FF60}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -111,8 +111,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\threaded"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TARGET_ARCH_WIN32"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
@@ -126,8 +126,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="globus_common_win32dbgthr.lib Ws2_32.lib"
-				OutputFile="$(OutDir)/ThreadTestThr.exe"
+				AdditionalDependencies="libglobus_common_win32dbgthr.lib Ws2_32.lib"
+				OutputFile="$(OutDir)/ThreadTest.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib\"
 				GenerateDebugInformation="TRUE"
@@ -137,7 +137,10 @@
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
+copy $(OutDir)\$(TargetName).pdb \bin\*.*
+"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

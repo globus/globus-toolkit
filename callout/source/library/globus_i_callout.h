@@ -13,7 +13,9 @@
 #define _GLOBUS_I_CALLOUT_H_
 
 #include "globus_callout.h"
+#ifndef WIN32
 #include <ltdl.h>
+#endif
 
 /* DEBUG MACROS */
 

@@ -14,9 +14,9 @@ static char *rcsid = "$Id$";
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 
-#include <openssl/crypto.h>
-#include <openssl/rand.h>
-#include <openssl/ssl2.h>
+#include "openssl/crypto.h"
+#include "openssl/rand.h"
+#include "openssl/ssl2.h"
 #include "ssl_locl.h"
 #include <string.h>
 

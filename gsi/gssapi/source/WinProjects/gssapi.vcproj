@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="gssapi"
+	Name="GSI_gssapi"
 	ProjectGUID="{54D6F358-9F94-4605-9F34-F82CE9B9F5D5}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,26 +19,28 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;;..\..\..\ssl_utils\source\library;..\..\..\openssl_module\source\library"
+				AdditionalIncludeDirectories="\include;\include\nonthreaded;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				ExceptionHandling="FALSE"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="TRUE"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="1"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gssapi.lib"/>
+				OutputFile="$(OutDir)/libglobus_gssapi_gsi_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy .\debug\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -103,6 +105,9 @@
 				RelativePath="..\library\buffer_set.c">
 			</File>
 			<File
+				RelativePath="..\library\certdump.c">
+			</File>
+			<File
 				RelativePath="..\library\compare_name.c">
 			</File>
 			<File
@@ -115,6 +120,9 @@
 				RelativePath="..\library\display_status.c">
 			</File>
 			<File
+				RelativePath="..\library\duplicate_name.c">
+			</File>
+			<File
 				RelativePath="..\library\export_cred.c">
 			</File>
 			<File
@@ -124,19 +132,16 @@
 				RelativePath="..\library\export_sec_context.c">
 			</File>
 			<File
-				RelativePath="..\library\get_group.c">
-			</File>
-			<File
 				RelativePath="..\library\get_mic.c">
 			</File>
 			<File
+				RelativePath="..\library\globus_gsi_gss_error.c">
+			</File>
+			<File
+				RelativePath="..\library\globus_i_gsi_gss_utils.c">
+			</File>
+			<File
 				RelativePath="..\library\gssapi_working.c">
-			</File>
-			<File
-				RelativePath="..\library\gsserr.c">
-			</File>
-			<File
-				RelativePath="..\library\gssutils.c">
 			</File>
 			<File
 				RelativePath="..\library\import_cred.c">
@@ -197,6 +202,18 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
+				RelativePath="..\library\globus_gsi_gss_constants.h">
+			</File>
+			<File
+				RelativePath="..\library\globus_i_gsi_gss_utils.h">
+			</File>
+			<File
+				RelativePath="..\library\gssapi.h">
+			</File>
+			<File
+				RelativePath="..\library\gssapi_openssl.h">
+			</File>
+			<File
 				RelativePath="..\library\gssapi_ssleay.h">
 			</File>
 			<File
@@ -212,7 +229,13 @@
 				RelativePath="..\library\pkcs11t.h">
 			</File>
 			<File
+				RelativePath="..\library\ssl_locl.h">
+			</File>
+			<File
 				RelativePath="..\library\version.h">
+			</File>
+			<File
+				RelativePath="..\library\winglue.h">
 			</File>
 		</Filter>
 	</Files>

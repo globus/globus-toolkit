@@ -24,6 +24,7 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	Makefile
 	globus_gaa.conf
+	globus_gaa_custom.conf
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         doxygen/Makefile

@@ -6,13 +6,14 @@
  */
 
 #include "config.h"
-
+#include "proto.h"
 #ifdef GSSAPI
 
 #ifdef GSSAPI_KRB5
 #include <krb5.h>
 #endif /* GSSAPI_KRB5 */
 
+#include "gssapi-local.h"
 #include "secure_ext.h"
 
 #include <unistd.h>		/* For syslog() */
@@ -40,7 +41,7 @@ extern struct sockaddr_in ctrl_addr;
 #endif /* GSS_C_NT_HOSTBASED_SERVICE */
 #endif /* GSSAPI_KRB5 */
 
-#include <gssapi.h>
+#include "gssapi.h"
 
 #ifdef GSSAPI_GLOBUS
 char* gss_services[] = { "ftp", "host", 0 };
@@ -140,7 +141,7 @@ gssapi_setup_environment()
  * Fix up our environment
  */
 int
-gssapi_fix_env(void)
+gssapi_fix_env()
 {
   int status = 0;
 
@@ -232,7 +233,7 @@ gssapi_chown_delegation(uid_t uid, gid_t gid)
  * Remove the forwarded proxy credentials
  */
 int
-gssapi_remove_delegation(void)
+gssapi_remove_delegation()
 {
     char *envstr;
     int envstr_index;

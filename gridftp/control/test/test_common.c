@@ -1,7 +1,7 @@
-#include <globus_ftp_control_test.h>
-#include <globus_common.h>
+#include "globus_ftp_control_test.h"
+#include "globus_common.h"
 #include <string.h>
-#include <test_common.h>
+#include "test_common.h"
 
 int                                      verbose_print_level;
 

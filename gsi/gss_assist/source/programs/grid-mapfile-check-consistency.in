@@ -232,9 +232,12 @@ EOF
     check_fields=`echo $line | ${GLOBUS_SH_GREP-grep} "O=" | ${GLOBUS_SH_GREP-grep} "CN="`
     if [ -z "$check_fields" ]
     then
-        echo "The following entry is missing a O= or CN= field"
+        echo "Warning: The following entry is missing either a  O=, a CN= field or both"
         echo "$line"
-        RC=1
+        echo "This does not necessarily mean that the entry is wrong"
+        echo "If it is indeed correct the CA issuing that certificate"
+        echo "should take a look at the guide lines in"
+        echo "http://www.cs.auckland.ac.nz/~pgut001/pubs/x509guide.txt"
     fi
     
 
