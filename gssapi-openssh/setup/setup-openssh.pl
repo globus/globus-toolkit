@@ -69,6 +69,7 @@ $exec_prefix = "${prefix}";
 $bindir = "${exec_prefix}/bin";
 $sysconfdir = "$prefix/etc/ssh";
 $localsshdir = "/etc/ssh";
+$setupdir = "$prefix/setup/gsi_openssh_setup";
 
 my $keyfiles = {
                  "dsa" => "ssh_host_dsa_key",
@@ -298,20 +299,19 @@ sub fixpaths
 
 sub alterFileGlobusLocation
 {
-    my ($file) = @_;
+    my ($in, $out) = @_;
 
-    $data = readFile($file);
-    $data =~ s|\@GSI_OPENSSH_GLOBUS_LOCATION\@|$gpath|g;
-    writeFile($file, $data);
+    if ( ! -e $out )
+    {
+        $data = readFile($in);
+        $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
+        writeFile($out, $data);
+    }
 }
 
 sub alterFiles
 {
-    my (@files);
-
-    @files = (
-        "$gosharedir/contrib/caldera/sshd.init",
-             );
+    alterFileGlobusLocation("$setupdir/SXXsshd.in", "$bindir/SXXsshd");
 }
 
 ### readFile( $filename )
@@ -392,6 +392,7 @@ $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
 copyKeyFiles($keyhash->{copy});
 fixpaths();
+alterFiles();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 

@@ -19,7 +19,7 @@
       <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/</Build_Step>
       <Build_Step>cp ./setup-openssh INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh</Build_Step>
       <Build_Step>cp ./setup-openssh.pl INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh.pl</Build_Step>
-      <Build_Step>cp ./SXXsshd INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/SXXsshd</Build_Step>
+      <Build_Step>cp ./SXXsshd.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/SXXsshd.in</Build_Step>
 
     </Build_Instructions>
 
