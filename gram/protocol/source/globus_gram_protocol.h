@@ -248,6 +248,11 @@ globus_gram_protocol_unpack_status_update_message(
     int *				status,
     int *				failure_code);
 
+int
+globus_gram_protocol_get_sec_context(
+    globus_gram_protocol_handle_t       handle,
+    gss_ctx_id_t *                      context);
+
 const char *
 globus_gram_protocol_error_string(int error_code);
 

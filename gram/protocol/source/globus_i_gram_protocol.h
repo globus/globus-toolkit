@@ -105,6 +105,10 @@ typedef struct
     OM_uint32				delegation_time_req;
     gss_buffer_desc			delegation_input_token;
     gss_buffer_desc			delegation_output_token;
+
+    /* added for gram authz callout support */
+    
+    gss_ctx_id_t                        context;
 }
 globus_i_gram_protocol_connection_t;
 
