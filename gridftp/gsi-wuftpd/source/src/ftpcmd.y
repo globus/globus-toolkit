@@ -624,8 +624,25 @@ cmd: USER SP username CRLF
 		switch ($4) {
 
 		case MODE_S:
-		    reply(200, "MODE S ok.");
-		    mode = $4;
+#                   if defined(USE_GLOBUS_DATA_CODE)
+			res = globus_ftp_control_local_mode(
+				  &g_data_handle,
+				  GLOBUS_FTP_CONTROL_MODE_STREAM);
+			if(res == GLOBUS_SUCCESS)
+			{
+			    g_send_restart_info = GLOBUS_FALSE;
+			    mode = $4;
+			    reply(200, "MODE S ok.");
+			    
+			}
+			else
+			{
+			    reply(502, "Failure setting MODE S.");
+			}
+#		    else
+			reply(200, "MODE S ok.");
+			mode = $4;
+#                   endif
 		    break;
 
 #               if defined(USE_GLOBUS_DATA_CODE)
