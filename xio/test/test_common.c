@@ -89,6 +89,7 @@ parse_parameters(
     int                                     total_read_bytes = 2048 * 10;
     globus_xio_driver_t                     driver;
     globus_xio_driver_t                     base_driver;
+    int                                     seed = 0;
 
     globus_l_argc = argc;
     globus_l_argv = argv;
@@ -101,7 +102,7 @@ parse_parameters(
     
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
-    while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:")) != -1)
+    while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != -1)
     {
         switch(c)
         {
@@ -152,6 +153,10 @@ parse_parameters(
                 total_write_bytes = atoi(optarg);
                 break;
 
+            case 'X':
+                seed = atoi(optarg);
+                break;
+
             default:
                 break;
         }
@@ -160,7 +165,7 @@ parse_parameters(
     globus_l_test_info.failure = failure;
     globus_l_test_info.write_count = write_count;
     globus_l_test_info.read_count = read_count;
-    globus_l_test_info.buffer = (void *)0x10;
+    globus_l_test_info.buffer = globus_malloc(buffer_length);
     globus_l_test_info.buffer_length = buffer_length;
     globus_l_test_info.chunk_size = chunk_size;
     globus_mutex_init(&globus_l_test_info.mutex, NULL);
@@ -211,6 +216,16 @@ parse_parameters(
             GLOBUS_XIO_TEST_READ_EOF_BYTES,
             eof_bytes);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+    if(seed != 0)
+    {
+        res = globus_xio_attr_cntl(
+                attr,
+                base_driver,
+                GLOBUS_XIO_TEST_RANDOM,
+                eof_bytes);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    }
 
     return optind;
 }

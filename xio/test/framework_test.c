@@ -297,8 +297,6 @@ framework_main(
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
 
-
-    globus_l_test_info.buffer = 0x10;
     res = globus_xio_register_open(
             &handle,
             attr,

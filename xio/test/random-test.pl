@@ -18,42 +18,34 @@ my $test_name="framework";
 my @drivers;
 push(@drivers, "");
 push(@drivers, "-D debug");
+push(@drivers, "-D test_bounce_transform");
 
-my @failures;
-push(@failures, "-F 1");
-push(@failures, "-F 2");
-push(@failures, "-F 5");
-push(@failures, "-F 6");
-push(@failures, "-F 7");
-push(@failures, "-F 8");
-push(@failures, "-F 9");
-push(@failures, "-F 10");
-
-sub failure_tests
+sub basic_tests
 {
     my $inline_finish="-i";
+    my $server_flag="-s";
 
     for(my $i = 0; $i < 2; $i++)
     {
         foreach(@drivers)
         {
             my $d=$_;
-            foreach(@failures)
+            for(my $j = 0; $j < 10; $j++)
             {
-                my $f=$_;
-                push(@tests, "$test_exec $test_name $f -w 1 -r 1 -s $inline_finish $d");
+                my $sd = time % 1000;
+                push(@tests, "$test_exec $test_name -X $sd -w 32 -r 32 $inline_finish $d -W 524288 -R 524288");
             }
         }
         $inline_finish="";
     }
 }
 
-&failure_tests();
-plan tests => scalar(@tests), todo => \@todo;
+&basic_tests();
 my $cnt=0;
+plan tests => scalar(@tests), todo => \@todo;
 foreach(@tests)
 {
-    my $test_str="$test_name.$cnt";
+    my $test_str="random.$cnt";
     &run_test($_, $test_str);
     $cnt++;
 }

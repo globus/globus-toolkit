@@ -142,9 +142,10 @@ open_cb(
 {
     globus_result_t                             res;
     int                                         ctr;
-    globus_byte_t *                             buffer = 0x10;
+    globus_byte_t *                             buffer;
     globus_size_t                               buffer_length;
 
+    buffer = globus_l_test_info.buffer;
     buffer_length = globus_l_test_info.buffer_length;
     globus_l_total_read_post = globus_l_test_info.total_read_bytes +
                                 (buffer_length * globus_l_test_info.read_count);

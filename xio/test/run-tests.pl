@@ -18,6 +18,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             read-barrier-test.pl
             close-barrier-test.pl
             timeout-test.pl
+            random-test.pl
             );
 
 my $runserver;

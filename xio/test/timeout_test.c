@@ -100,9 +100,12 @@ open_cb(
     void *                                      user_arg)
 {
     globus_result_t                             res;
-    globus_byte_t *                             buffer = 0x10;
-    globus_size_t                               buffer_length = 1024;
+    globus_byte_t *                             buffer;
+    globus_size_t                               buffer_length;
     char *                                      timeout_type;
+
+    buffer = globus_l_test_info.buffer;
+    buffer_length = globus_l_test_info.buffer_length;
 
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "O") == 0)
