@@ -627,7 +627,7 @@ sub remote_io_file_create
     {
 	# no remote_io_url in the cache yet
 	my $tmpname = POSIX::tmpnam();
-        open(FH, '>', $tmpname)
+        open(FH, '>'. $tmpname)
             || return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
 	print FH $description->remote_io_url(), "\n";
         close FH;

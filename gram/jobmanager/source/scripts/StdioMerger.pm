@@ -107,7 +107,7 @@ sub poll_list
         next if @stat == 0;
 
         local(*FH);
-        open(FH, '<', $record->[1]);
+        open(FH, '<'. $record->[1]);
 
 	# We want to merge up to the last newline ... but if
 	# we're in the DONE state, then we want to poll until
