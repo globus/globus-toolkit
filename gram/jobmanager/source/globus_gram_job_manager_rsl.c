@@ -822,6 +822,7 @@ globus_gram_job_manager_rsl_evaluate_value(
     {
 	*value_string =
 	    globus_libc_strdup(globus_rsl_value_literal_get_string(copy));
+	rc = GLOBUS_SUCCESS;
     }
     else
     {

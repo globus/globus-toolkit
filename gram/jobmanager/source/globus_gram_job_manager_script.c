@@ -732,7 +732,7 @@ globus_gram_job_manager_script_make_scratchdir(
     fclose(script_arg_fp);
 
     globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_make_scratchdir()\n" );
+          "JMI: in globus_gram_job_manager_script_make_scratchdir()\n" );
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
@@ -1515,6 +1515,17 @@ globus_l_gram_job_manager_print_rsl(
     }
     else
     {
+	/* Skip these, as they will be over-ridden by the todo lists */
+	if((strcmp(globus_rsl_relation_get_attribute(ast_node),
+		    "filestagein") == 0) ||
+	   (strcmp(globus_rsl_relation_get_attribute(ast_node),
+		    "filestageinshared") == 0) ||
+	   (strcmp(globus_rsl_relation_get_attribute(ast_node),
+		    "filestageout") == 0))
+	{
+	    return 0;
+	}
+		  
 	fprintf(fp,
 		"    '%s' => ",
 		globus_rsl_relation_get_attribute(ast_node));

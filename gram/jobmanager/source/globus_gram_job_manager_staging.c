@@ -134,11 +134,25 @@ globus_gram_job_manager_staging_remove(
 					item;
     globus_list_t **			list;
     globus_list_t *			node;
+    const char *			typestr = "";
+
+    switch(type)
+    {
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN:
+	  typestr = "file_stage_in";
+	  break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED:
+	  typestr = "file_stage_in_shared";
+	  break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
+	  typestr = "file_stage_out";
+	  break;
+    }
 
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: Finished staging (%s = (%s %s))\n",
-	    type,
+	    typestr,
 	    from,
 	    to);
 
@@ -177,7 +191,7 @@ globus_gram_job_manager_staging_remove(
 	globus_gram_job_manager_request_log(
 	    request,
 	    "JM: successfully removed (%s = (%s %s)) from todo list\n",
-	    type,
+	    typestr,
 	    from,
 	    to);
     }
@@ -186,7 +200,7 @@ globus_gram_job_manager_staging_remove(
 	globus_gram_job_manager_request_log(
 	    request,
 	    "JM: strange... (%s = (%s %s)) wasn't in the todo list\n",
-	    type,
+	    typestr,
 	    from,
 	    to);
     }

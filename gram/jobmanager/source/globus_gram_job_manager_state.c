@@ -665,11 +665,18 @@ globus_gram_job_manager_state_machine(
 		&request->symbol_table,
 		"SCRATCH_DIRECTORY",
 		request->scratchdir);
+	    globus_gram_job_manager_rsl_env_add(
+		request->rsl,
+		"SCRATCH_DIRECTORY",
+		request->scratchdir);
 	}
 	else if(globus_gram_job_manager_rsl_need_scratchdir(request))
 	{
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	    request->failure_code =
+		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
 	    break;
 	}
 
