@@ -14,8 +14,8 @@
 #include "gssapi.h"
 #include "globus_rsl.h"
 #include "globus_rsl_assist.h"
-#include "globus_callout.h"
 #include "globus_gram_protocol.h"
+#include "globus_gram_jobmanager_callout_error.h"
 #include "version.h"
 #include <stdlib.h>
 #include "openssl/crypto.h"
@@ -75,7 +75,6 @@ globus_gram_callout(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     STACK_OF(X509)                      cert_chain;
-    globus_object_t *                   error = NULL;
     unsigned char *                     tmp_ptr;
     gss_OID_desc                        cert_chain_oid =
         {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
@@ -104,15 +103,11 @@ globus_gram_callout(
 
     if(GSS_ERROR(major_status))
     {
-        /* TODO: Need to define standard errors for authz callback */
-        error = globus_error_construct_error(
-            GLOBUS_CALLOUT_MODULE,
-            NULL,
-            GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR,
-            "%s: %s: %s",
-            __FILE__, "globus_gram_callout", "Authorization failed");
-        result = globus_error_put(error);
-        error = NULL;
+        result = minor_status;
+        GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR(
+            result,
+            GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_SYSTEM_ERROR,
+            ("gss_inquire_sec_context_by_oid failed"));
         goto exit;
     }
 
@@ -123,15 +118,10 @@ globus_gram_callout(
                         cert_chain_buffers->elements[i].length);
         if(cert == NULL)
         {
-            /* TODO: Need to define standard errors for authz callback */
-            error = globus_error_construct_error(
-                GLOBUS_CALLOUT_MODULE,
-                NULL,
-                GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR,
-                "%s: %s: %s",
-                __FILE__, "globus_gram_callout", "Authorization failed");
-            result = globus_error_put(error);
-            error = NULL;
+            GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_SYSTEM_ERROR,
+                ("Failed to construct cert chain"));
             gss_release_buffer_set(&minor_status,
                                    &cert_chain_buffers);
             goto exit;
@@ -156,15 +146,12 @@ globus_gram_callout(
         if(globus_gram_protocol_authorize_self(requester_ctx)
            != GLOBUS_TRUE)
         {
-            /* TODO: Need to define standard errors for authz callback */
-            error = globus_error_construct_error(
-                GLOBUS_CALLOUT_MODULE,
-                NULL,
-                GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR,
-                "%s: %s: %s",
-                __FILE__, "globus_gram_callout", "Authorization failed");
-            result = globus_error_put(error);
-            error = NULL;
+            GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR(
+                result,
+                GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED,
+                ("Client is not authorized"));
+            gss_release_buffer_set(&minor_status,
+                                   &cert_chain_buffers);
             goto exit;
         }
     }

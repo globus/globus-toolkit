@@ -91,6 +91,8 @@ typedef enum
 }
 globus_gram_jobmanager_callout_error_t;
 
+extern char * globus_i_gram_jobmanager_callout_error_strings[];
+
 #define GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR(__RESULT, __TYPE, __ERRSTR) \
 {                                                                        \
     char *                          _tmp_str_ =                          \
@@ -102,7 +104,7 @@ globus_gram_jobmanager_callout_error_t;
             __TYPE,                                                      \
             "%s:%d: %s: %s%s%s",                                         \
             __FILE__, __LINE__, "GRAM Authorization Callout",            \
-            globus_l_gram_jobmanager_callout_error_strings[__TYPE],      \
+            globus_i_gram_jobmanager_callout_error_strings[__TYPE],      \
             _tmp_str_ ? ": " : "",                                       \
             _tmp_str_ ? _tmp_str_ : ""));                                \
     if(_tmp_str_) free(_tmp_str_);                                       \

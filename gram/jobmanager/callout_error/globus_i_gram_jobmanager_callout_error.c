@@ -12,7 +12,7 @@
 #include "version.h"
 
 char * 
-globus_l_gram_jobmanager_callout_error_strings[GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_LAST] =
+globus_i_gram_jobmanager_callout_error_strings[GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_LAST] =
 {
 /* 0 */   "Credentials not acceptable",
 /* 1 */   "Authorization system configuration error",
