@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 /**********************************************************************
  *
@@ -26,6 +27,16 @@ struct verror_context
 };
 
 static struct verror_context my_context = { 0, NULL, 0, 0 };
+
+/**********************************************************************
+ *
+ * Internal constants
+ *
+ */
+
+/* Values for where_flag to verror_add_string() */
+#define VERROR_PREPEND			0
+#define VERROR_APPEND			1
 
 /**********************************************************************
  *
@@ -93,6 +104,95 @@ my_vsnprintf(const char *format, va_list ap)
     return buffer;
 }
 
+/*
+ * Added a string to the current error.
+ *
+ * If where_flag == VERROR_PREPEND, then prepend the string.
+ *               == VERROR_APPEND, then append the string.
+ */
+static void
+verror_add_string(const char			*string,
+		  int				where_flag)
+{
+    int				need_cr = 0;
+    int				string_len;
+    int				new_string_length;
+    char			*new_string;
+    
+    assert(string != NULL);
+    
+    string_len = strlen(string);
+    
+    /* Do we need to add a carriage return to the string */
+    if (string[string_len - 1] != '\n')
+    {
+	need_cr = 1;
+    }
+    
+    /* Determine the length of the new string */
+    new_string_length = (my_context.string == NULL ?
+			 0 : strlen(my_context.string));
+    
+    new_string_length += strlen(string) + 1 /* NUL */;
+    
+    if (need_cr == 1)
+    {
+	new_string_length++;
+    }
+    
+    new_string = malloc(new_string_length);
+    
+    if (new_string == NULL)
+    {
+	/* Punt */
+	return;
+    }
+
+    new_string[0] = '\0';
+    
+    /* Fill in new_string */
+    switch (where_flag) 
+    {
+      case VERROR_PREPEND:
+	strcat(new_string, string);
+	if (need_cr)
+	{
+	    strcat(new_string, "\n");
+	}
+	if (my_context.string != NULL)
+	{
+	    strcat(new_string, my_context.string);
+	}
+	break;
+	
+      default:
+	/* Punt */
+      case VERROR_APPEND:
+	if (my_context.string != NULL)
+	{
+	    strcat(new_string, my_context.string);
+	}
+	strcat(new_string, string);
+	if (need_cr)
+	{
+	    strcat(new_string, "\n");
+	}
+	break;
+    }
+    
+    /* And put new_string in place */
+    if (my_context.string != NULL)
+    {
+	free(my_context.string);
+    }
+    
+    my_context.string = new_string;
+    
+    return;
+}
+
+	
+    
     
 /**********************************************************************
  *
@@ -100,13 +200,10 @@ my_vsnprintf(const char *format, va_list ap)
  *
  */
 
-
 void
-verror_put_string(const char *format, ...)
+verror_prepend_string(const char *format, ...)
 {
     char *string = NULL;
-    char *new_string = NULL;
-    int new_string_len;
     va_list ap;
     
     my_context.is_set = 1;
@@ -124,45 +221,39 @@ verror_put_string(const char *format, ...)
 	
     }
 
-    if (my_context.string == NULL)
+    verror_add_string(string, VERROR_PREPEND);
+    
+  error:
+    if (string != NULL)
     {
-	my_context.string = string;
-
-	/* To avoide free() below */
-	string = NULL;
+	free(string);
     }
-    else 
-    {
-	/* Make existing string buffer long enough */
-	new_string_len = strlen(string) +
-	    strlen(my_context.string) +
-	    1 /* NUL */;
     
-	new_string = realloc(my_context.string, new_string_len);
-    
-	if (new_string == NULL)
-	{
-	    goto error;
-	}
+    return;
+}
 
-	my_context.string = strcat(new_string, string);
-    }
-
-    /* Append a carriage return if not present */
-    new_string_len = strlen(my_context.string);
+void
+verror_put_string(const char *format, ...)
+{
+    char *string = NULL;
+    va_list ap;
     
-    if (my_context.string[new_string_len - 1] != '\n') 
+    my_context.is_set = 1;
+    
+    va_start(ap, format);
+    
+    string = my_vsnprintf(format, ap);
+    
+    va_end(ap);
+    
+    if (string == NULL)
     {
-	new_string = realloc(my_context.string,
-			     new_string_len + 2 /* CR and NUL */);
+	/* Punt */
+	goto error;
 	
-	/* Just do nothing if realloc() failed */
-	if (new_string != NULL) 
-	{
-	    strcat(new_string, "\n");
-	    my_context.string = new_string;
-	}
     }
+
+    verror_add_string(string, VERROR_APPEND);
     
   error:
     if (string != NULL)

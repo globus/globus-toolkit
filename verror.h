@@ -7,6 +7,14 @@
 #define __VERROR_H
 
 /*
+ * verror_prepend_string()
+ *
+ * Prepend a string to the current error string. Accepts the
+ * same arguments as sprintf().
+ */
+void verror_prepend_string(const char *format, ...);
+
+/*
  * verror_put_string()
  *
  * Add a string to the current error. Accepts the same argumnets
