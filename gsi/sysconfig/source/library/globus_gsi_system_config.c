@@ -4066,7 +4066,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
             ("The host cert could not be found in: \n"
              "1) env. var. X509_USER_CERT=%s\n"
              "2) %s\n3) %s\n4) %s\n\n"
-             "The host key could not be found in:\n,"
+             "The host key could not be found in:\n"
              "1) env. var. X509_USER_KEY=%s\n"
              "2) %s\n3) %s\n4) %s\n",
              env_host_cert,
