@@ -31,8 +31,8 @@ static char *rcsid = "$Header$";
  *        The requested period of validity (seconds) of the delegated
  *        credential. May be NULL.
  * @param time_rec
- *        This parameter will contain the received period of the
- *        delegated credential upon success. May be NULL.
+ *        This parameter will contain the received period of validity
+ *        of the delegated credential upon success. May be NULL.
  * @param delegated_cred_handle
  *        This parameter will contain the delegated credential upon
  *        success. 

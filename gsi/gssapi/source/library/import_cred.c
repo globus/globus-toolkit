@@ -192,5 +192,5 @@ err:
     }
     return major_status;
 }
-#endif /*  _HAVE_GSI_EXTENDED_GSSAPI */
+
 
