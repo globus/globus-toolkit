@@ -33,13 +33,18 @@ tar -C $INSTALLER -xzf fait_accompli/$GPT
 # Symlink over the bootstrapped CVS dirs.
 # Must use -h in tar command to dereference them
 mkdir $INSTALLER/source-trees
-for f in `pwd`/source-trees/gt2-cvs/*; do
-   g=$INSTALLER/source-trees/`basename $f`
-   mkdir $g;
-   lndir -silent $f $g;
-done
-for f in `pwd`/source-trees/wsrf-cvs/*; do
-   g=$INSTALLER/source-trees/`basename $f`
-   mkdir $g;
-   lndir -silent $f $g;
-done
+if [ -x `which lndir` ]; then
+   for f in `pwd`/source-trees/gt2-cvs/*; do
+      g=$INSTALLER/source-trees/`basename $f`
+      mkdir $g;
+      lndir -silent $f $g;
+   done
+   for f in `pwd`/source-trees/wsrf-cvs/*; do
+      g=$INSTALLER/source-trees/`basename $f`
+      mkdir $g;
+      lndir -silent $f $g;
+   done
+else
+   cp -Rp source-trees/wsrf-cvs/* $INSTALLER/source-trees
+   cp -Rp source-trees/gt2-cvs/* $INSTALLER/source-trees
+fi

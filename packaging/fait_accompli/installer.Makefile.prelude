@@ -1,6 +1,6 @@
-all: gpt @prewsgram@ @prewsgridftp@ @prewsmds@ @rls@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @wsc@ @i18n@ @tests@ @wstests@ postinstall
+all: gpt @prewsgram@ @gridftp@ @prewsmds@ @rls@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @wsc@ @i18n@ @tests@ @wstests@ postinstall
 GLOBUS_LOCATION=@prefix@
-GPT_LOCATION=@prefix@
+GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_PATH=@globus_iodbc@
 export GLOBUS_IODBC_PATH GPT_LOCATION GLOBUS_LOCATION
 BUILD_OPTS=@buildopts@
@@ -9,9 +9,9 @@ THR=@thr@
 
 # Functional group dependencies, expressed in bundles.
 i18n: gpt globus-internationalization globus-internationalization-thr
-prews: prewsgram prewsgridftp prewsmds
+prews: prewsgram gridftp prewsmds
 prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus-resource-management-sdk-thr
-prewsgridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk globus-data-management-sdk-thr
+gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk globus-data-management-sdk-thr
 prewsmds: gpt globus-information-services-server globus-information-services-client globus-information-services-sdk
 rls: gpt globus-rls-server
 wsjava: gpt gt4-java-ws-core gt4-java-ws-core-test

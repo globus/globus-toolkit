@@ -404,10 +404,17 @@ sub generate_build_list()
             
        foreach my $pack ( @package_build_list )
        {
+	    my $extras="";
+
+	    if ( $pack=~/globus_gridmap_and_execute/ )
+	    {
+                 $extras = "-static ";
+	    }
+
             print "$pack:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
             print "${pack}-thr:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
