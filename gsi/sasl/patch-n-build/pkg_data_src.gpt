@@ -32,7 +32,7 @@
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
 	<Build_Step>touch aclocal.m4</Build_Step>
-	<Build_Step>find . -name "Makefile.in" -print | touch</Build_Step>
+	<Build_Step>find . -name "Makefile.in" -print | xargs touch</Build_Step>
       <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi</Build_Step>
       <Build_Step>MAKE_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO DESTDIR_GPTMACRO install</Build_Step>
