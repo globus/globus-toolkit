@@ -256,15 +256,23 @@ Attribute: gass_cache
 Description: Specifies location to override the GASS cache location.
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
+Attribute: label
+Description: "DUROC attribute"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+Publish: false
+
 Attribute: resource_manager_contact
+Description: "DUROC attribute"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Publish: false
 
 Attribute: sub_job_start_type
+Description: "DUROC attribute"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Publish: false
 
 Attribute: sub_job_comms_type
+Description: "DUROC attribute"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Publish: false
 
