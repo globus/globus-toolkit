@@ -46,8 +46,6 @@ static char short_options[] = "dhc:p:s:vVuD:";
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
-static const char default_config_file[] = "/etc/myproxy-server.config";
-
 /* Signal handling */
 typedef void Sigfunc(int);  
 
@@ -101,11 +99,6 @@ static char *timestamp(void);
 
 static int become_daemon(myproxy_server_context_t *server_context);
 
-static int check_passphrase_policy(const char *passphrase,
-				   myproxy_server_context_t *context,
-				   myproxy_request_t *client_request,
-				   const char *client_name);
-
 static int myproxy_authorize_accept(myproxy_server_context_t *context,
                                     myproxy_socket_attrs_t *attrs,
 				    myproxy_request_t *client_request,
@@ -141,35 +134,6 @@ main(int argc, char *argv[])
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
         exit(1);
-    }
-
-    if (server_context->config_file == NULL) {
-	if (access(default_config_file, R_OK) == 0) {
-	    server_context->config_file = strdup(default_config_file);
-	    if (server_context->config_file == NULL) {
-		perror("strdup()");
-		exit(1);
-	    }
-	} else {
-	    char *conf, *GL;
-	    GL = getenv("GLOBUS_LOCATION");
-	    if (!GL) {
-		fprintf(stderr, "$GLOBUS_LOCATION undefined.  "
-			"myproxy-server.config not found.\n");
-		exit(1);
-	    }
-	    conf = (char *)malloc(strlen(GL)+strlen(default_config_file)+1);
-	    if (!conf) {
-		perror("malloc()");
-		exit(1);
-	    }
-	    sprintf(conf, "%s%s", GL, default_config_file);
-	    if (access(conf, R_OK) < 0) {
-		fprintf(stderr, "%s not found.\n", conf);
-		exit(1);
-	    }
-	    server_context->config_file = conf;
-	}
     }
 
     /* Read my configuration */
@@ -423,9 +387,13 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	if (client_creds->renewers != NULL)
     	    myproxy_debug("  Renewer policy: %s", client_creds->renewers); 
 
-	if (check_passphrase_policy(client_request->passphrase,
-				    context, client_request,
-				    client_name) < 0) {
+	if (myproxy_check_passphrase_policy(client_request->passphrase,
+					    context->passphrase_policy_pgm,
+					    client_request->username,
+					    client_request->credname,
+					    client_request->retrievers,
+					    client_request->renewers,
+					    client_name) < 0) {
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
@@ -453,9 +421,13 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_log("Received client %s command: CHANGE_PASS", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 
-	if (check_passphrase_policy(client_request->new_passphrase,
-				    context, client_request,
-				    client_name) < 0) {
+	if (myproxy_check_passphrase_policy(client_request->new_passphrase,
+					    context->passphrase_policy_pgm,
+					    client_request->username,
+					    client_request->credname,
+					    client_request->retrievers,
+					    client_request->renewers,
+					    client_name) < 0) {
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
@@ -479,11 +451,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	free(client_creds);
     }
     myproxy_free(attrs, client_request, server_response);
-    if (context->config_file != NULL) {
-        free(context->config_file);
-        context->config_file = NULL;
-    }
-    free(context);
 
     return 0;
 }
@@ -941,118 +908,6 @@ become_daemon(myproxy_server_context_t *context)
       (void)close(fd);
     } 
 #endif /* TIOCNOTTY */
-    return 0;
-}
-
-/*
- * Check for good passphrases:
- * 1. Make sure the passphrase is at least MIN_PASS_PHRASE_LEN long.
- * 2. Optionally run an external passphrase policy program.
- *
- * Returns 0 if passphrase is accepted and -1 otherwise.
- */
-static int
-check_passphrase_policy(const char *passphrase,
-			myproxy_server_context_t *context,
-			myproxy_request_t *client_request,
-			const char *client_name)
-{
-    pid_t childpid;
-    int p0[2], p1[2], p2[2];
-    size_t passphrase_len = 0;
-    int exit_status;
-
-    if (passphrase) {
-	passphrase_len = strlen(passphrase);
-    }
-
-    /* Zero length passphrase is allowed, for authentication methods
-       that don't use a passphrase, like credential renewal
-       or Kerberos. */
-    if (passphrase_len != 0 && passphrase_len < MIN_PASS_PHRASE_LEN) {
-	verror_put_string("Pass phrase too short.  "
-			  "Must be at least %d characters long.",
-			  MIN_PASS_PHRASE_LEN);
-	return -1;
-    }
-
-    if (!context->passphrase_policy_pgm) return 0;
-
-    myproxy_debug("Running passphrase policy program: %s",
-		  context->passphrase_policy_pgm);
-
-    if (pipe(p0) < 0 || pipe(p1) < 0 || pipe(p2) < 0) {
-	verror_put_string("pipe() failed");
-	verror_put_errno(errno);
-	return -1;
-    }
-
-    /* fork/exec passphrase policy program */
-    if ((childpid = fork()) < 0) {
-	verror_put_string("fork() failed");
-	verror_put_errno(errno);
-	return -1;
-    }
-    
-    if (childpid == 0) {	/* child */
-	close(p0[1]); close(p1[0]); close(p2[0]);
-	if (dup2(p0[0], 0) < 0 ||
-	    dup2(p1[1], 1) < 0 ||
-	    dup2(p2[1], 2) < 0)	{
-	    perror("dup2");
-	    exit(1);
-	}
-	execl(context->passphrase_policy_pgm,
-	      context->passphrase_policy_pgm,
-	      client_request->username,
-	      client_name,
-	      (client_request->credname) ? client_request->credname : "",
-	      (client_request->retrievers) ? client_request->retrievers : "",
-	      (client_request->renewers) ? client_request->renewers : "",
-	      NULL);
-	fprintf(stderr, "failed to run %s: %s\n",
-		context->passphrase_policy_pgm, strerror(errno));
-	exit(1);
-    }
-
-    close(p0[0]); close(p1[1]); close(p2[1]);
-
-    /* send passphrase to child's stdin */
-    if (passphrase_len) {
-	write(p0[1], passphrase, passphrase_len);
-    }
-    write(p0[1], "\n", 1);
-    close(p0[1]); 
-
-    /* wait for child */
-    if (wait4(childpid, &exit_status, 0, NULL) < 0) {
-	verror_put_string("wait() failed for passphrase policy child");
-	verror_put_errno(errno);
-	return -1;
-    }
-
-    if (exit_status != 0) { /* passphrase not allowed */
-	FILE *fp = NULL;
-	char buf[100];
-	verror_put_string("pass phrase violates local policy");
-	fp = fdopen(p1[0], "r");
-	if (fp) {
-	    while (fgets(buf, 100, fp) != NULL) {
-		verror_put_string(buf);
-	    }
-	}
-	fclose(fp);
-	fp = fdopen(p2[0], "r");
-	if (fp) {
-	    while (fgets(buf, 100, fp) != NULL) {
-		verror_put_string(buf);
-	    }
-	}
-	fclose(fp);
-	return -1;
-    }
-
-    close(p1[0]); close(p2[0]);
     return 0;
 }
 
