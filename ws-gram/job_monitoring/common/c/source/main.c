@@ -56,6 +56,14 @@ globus_l_fault_handler(
     void *                              user_arg,
     globus_result_t                     fault);
 
+
+static
+void
+usage(char * cmd)
+{
+    printf("Usage: %s [-t timestamp] -s scheduler\n", cmd);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -98,6 +106,8 @@ main(int argc, char *argv[])
 
         default:
             fprintf(stderr, "Invalid option: %c\n", (char) rc);
+            usage(argv[0]);
+
             goto deactivate_error;
         }
     }
@@ -127,7 +137,10 @@ main(int argc, char *argv[])
 
     if (module == NULL)
     {
-        fprintf(stderr, "Missing module name [-s parameter]\n");
+        fprintf(stderr, "Error: no scheduler specified\n");
+
+        usage(argv[0]);
+
         goto deactivate_error;
     }
     else

@@ -637,7 +637,7 @@ globus_scheduler_event_generator_load_module(
         }
 
         module_path = globus_libc_malloc(strlen(globus_loc) +
-                strlen("%s/lib/libglobus_seg_%s_%s.so") + strlen(module_name) +
+                strlen("%s/lib/libglobus_seg_%s_%s.la") + strlen(module_name) +
                 strlen(flavor_name));
 
         if (module_path == NULL)
@@ -647,7 +647,7 @@ globus_scheduler_event_generator_load_module(
             goto free_globus_location_error;
         }
 
-        sprintf(module_path, "%s/lib/libglobus_seg_%s_%s.so",
+        sprintf(module_path, "%s/lib/libglobus_seg_%s_%s.la",
                 globus_loc, module_name, flavor_name);
         globus_l_seg_scheduler_handle = lt_dlopen(module_path);
     }
