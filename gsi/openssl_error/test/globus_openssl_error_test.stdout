@@ -1,4 +1,0 @@
-Test Error: blah:42
-OpenSSL Error: globus_openssl_error_test.c:56: in library: asn1 encoding routines, function USERNOTICE_new: decode error
-OpenSSL Error: globus_openssl_error_test.c:53: in library: BIO routines, function BIO_write: broken pipe
-OpenSSL Error: globus_openssl_error_test.c:50: in library: asn1 encoding routines, function X509_ALGOR_new: too long
