@@ -1212,13 +1212,13 @@ globus_gridft_server_control_send_event(
 }
 
 globus_result_t
-globus_gridftp_server_control_finished_data(
+globus_gridftp_server_control_finished_transfer(
     globus_gridftp_server_control_operation_t       op,
     globus_result_t                                 res)
 {
     globus_i_gsc_op_t *                             i_op;
     globus_i_gsc_server_t *                         i_server;
-    GlobusGridFTPServerName(globus_gridftp_server_control_finished_data);
+    GlobusGridFTPServerName(globus_gridftp_server_control_finished_transfer);
 
     i_op = (globus_i_gsc_op_t *) op;
     if(i_op == NULL)

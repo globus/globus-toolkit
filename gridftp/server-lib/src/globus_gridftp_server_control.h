@@ -559,7 +559,7 @@ globus_gridftp_server_control_disconnected(
  *  parameters should be checked for validity.  If acceptable the user MUST
  *  call this function prior to transfering data along the data pathways.
  *  If it is not acceptable the user must call 
- *  globus_gridftp_server_control_finished_data() with the appropriate error.
+ *  globus_gridftp_server_control_finished_transfer() with the appropriate error.
  */
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
