@@ -908,6 +908,19 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	return GSI_SOCKET_ERROR;
     }
 
+#if 0
+    /* TODO: Display this message when running in debug mode. */
+    {
+	char *cipher;
+	cipher = SSL_get_cipher(self->ssl);
+	if (cipher) {
+	    fprintf(stderr, "SSL encrypting with cipher %s.\n", cipher);
+	} else {
+	    fprintf(stderr, "Warning: SSL_get_cipher() failed!\n");
+	}
+    }
+#endif
+
     /*
      * For compatibility with Globus GSSAPI: send "0" indicating we don't
      * want to perform delegation.
