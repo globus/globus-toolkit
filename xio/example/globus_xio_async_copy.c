@@ -71,7 +71,11 @@ help()
         " %% globus-xio-async-copy -sD tcp -s -dD file -dC <output_file>\n"
         "       The contact info of the tcp server will be printed\n"
         "       globus-xio-client -D tcp <contact info> can be used to communicate"
-        " with this server\n");
+        " with this server\n"
+        "\n"
+        "Hints: the file driver supports stdin://, stdout:// stderr:// for"
+        " contact strings\n"
+        "Their usage should be obvious\n");
 }
 
 static
