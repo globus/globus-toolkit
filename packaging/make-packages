@@ -464,6 +464,10 @@ setup_environment
 #The named packages case.
 if [ x"$package" != "x" ]; then
 	checkout_cvs
+	install_gpt2
+
+	#Build GT2 autotools, as globus_grim needs them
+	build_gt2_autotools
 
 	package_iter $package
 
@@ -474,7 +478,6 @@ if [ x"$package" != "x" ]; then
 	done
 
 	if [ x$dir != "x" ]; then
-		install_gpt2
 
 		export GLOBUS_LOCATION=$dir
 
