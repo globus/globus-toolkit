@@ -392,7 +392,14 @@ globus_l_xio_system_cancel_cb(
                             globus_l_xio_system_kickout,
                             op_info);
                         /* really cant do anything else */
-                        globus_assert(result == GLOBUS_SUCCESS);
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                            globus_panic(
+                                GLOBUS_XIO_SYSTEM_MODULE,
+                                "globus_l_xio_system_cancel_cb",
+                                "Couldn't register callback",
+                                result);
+                        }
                         
                         pend = GLOBUS_FALSE;
                     }
@@ -1237,7 +1244,14 @@ error_canceled:
         result = globus_callback_register_oneshot(
             GLOBUS_NULL, GLOBUS_NULL, globus_l_xio_system_kickout, read_info);
         /* really cant do anything else */
-        globus_assert(result == GLOBUS_SUCCESS);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_panic(
+                GLOBUS_XIO_SYSTEM_MODULE,
+                "globus_l_xio_system_handle_read",
+                "Couldn't register callback",
+                result);
+        }
     }
 
     return handled_it;
@@ -1441,7 +1455,14 @@ error_canceled:
         result = globus_callback_register_oneshot(
             GLOBUS_NULL, GLOBUS_NULL, globus_l_xio_system_kickout, write_info);
         /* really cant do anything else */
-        globus_assert(result == GLOBUS_SUCCESS);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_panic(
+                GLOBUS_XIO_SYSTEM_MODULE,
+                "globus_l_xio_system_handle_read",
+                "Couldn't register callback",
+                result);
+        }
     }
 
     return handled_it;
