@@ -15,20 +15,20 @@
 #include <assert.h>
 
 static char usage[] = \
-"\n"\
-"Syntax: myproxy-get-delegation [-t hours] [-l username] ...\n"\
-"        myproxy-get-delegation [-usage|-help] [-v|--version]\n"\
-"\n"\
-"   Options\n"\
-"       -h | -help                       Displays usage\n"\
-"       -u | -usage                                    \n"\
-"                                                      \n"\
-"       -v | -version                    Displays version\n"\
-"       -l | -username        <username> Username for the delegated proxy\n"\
-"       -t | -portal_lifetime <hours>    Lifetime of delegated proxy on 
-                                         the portal (default 2 hours)\n"\
-"       -s | -pshost          <hostname> Hostname of the myproxy-server\n"\
-"       -p | -psport          <port #>   Port of the myproxy-server\n"\
+"\n"
+"Syntax: myproxy-get-delegation [-t hours] [-l username] ...\n"
+"        myproxy-get-delegation [-usage|-help] [-v|--version]\n"
+"\n"
+"   Options\n"
+"       -h | -help                       Displays usage\n"
+"       -u | -usage                                    \n"
+"                                                      \n"
+"       -v | -version                    Displays version\n"
+"       -l | -username        <username> Username for the delegated proxy\n"
+"       -t | -portal_lifetime <hours>    Lifetime of delegated proxy on\n" 
+"                                         the portal (default 2 hours)\n"
+"       -s | -pshost          <hostname> Hostname of the myproxy-server\n"
+"       -p | -psport          <port #>   Port of the myproxy-server\n"
 "\n";
 
 struct option long_options[] =
