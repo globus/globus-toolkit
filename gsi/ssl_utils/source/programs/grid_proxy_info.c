@@ -341,11 +341,11 @@ main(int argc, char* argv[])
     {
 	char *  tstr;
 	int     res = 0;
-	for (tstr=subject; !res && (int)(*tstr); tstr++)
+	for (tstr=subject; (int)(*tstr); tstr++)
 	{
-	    if (strncmp(tstr,"/CN=limited proxy", 16)==0)
+	    if (strncmp(tstr,"/CN=limited proxy", 17)==0)
 		res=1;
-	    else if (strncmp(tstr,"/CN=proxy", 9)==0)
+	    else if (strncmp(tstr,"/CN=proxy", 9)==0 && res != 1)
 		res=2;
 	}
 	proxy_type = (res) ? ((res==1) ? "limited" : "full") : "not a proxy";
