@@ -811,7 +811,7 @@ globus_l_ftp_client_target_new(
 						      &attr);
 	if(result)
 	{
-	    goto destroy_features;
+	    goto free_url;
 	}
     }
     else
@@ -819,7 +819,7 @@ globus_l_ftp_client_target_new(
 	result = globus_ftp_client_operationattr_init(&target->attr);
 	if(result)
 	{
-	    goto destroy_features;
+	    goto free_url;
 	}
     }
 
