@@ -77,6 +77,7 @@ globus_list_t *					host_port_list = NULL;
 globus_ftp_control_layout_t			g_layout;
 globus_ftp_control_parallelism_t		g_parallelism;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
+globus_fifo_t					g_restarts;
 #endif
 
 extern int dolreplies;
@@ -1199,8 +1200,12 @@ rcmd: RNFR check_login SP pathname CRLF
 
 	    if (log_commands)
 		syslog(LOG_INFO, "RNFR %s", CHECKNULL($4));
-	    if ($2)
+	    if ($2) {
 		restart_point = (off_t) 0;
+#               if USE_GLOBUS_DATA_CODE
+		globus_i_wu_free_ranges(&g_restarts);
+#               endif
+	    }
 	    if ($2 && $4 && !restrict_check($4)) {
 		fromname = renamefrom($4);
 	    }
@@ -1211,6 +1216,15 @@ rcmd: RNFR check_login SP pathname CRLF
 	=	{
 	    if (log_commands)
 		syslog(LOG_INFO, "REST %d", (int) restart_point);
+#           if USE_GLOBUS_DATA_CODE
+            if($2 && mode == MODE_E)
+	    {
+		fromname = 0;
+		restart_point = $4;
+		globus_i_wu_free_ranges(&g_restarts);
+		reply(550, "Invalid MODE E restart Marker");
+	    }
+#           endif
 	    if ($2) {
 		fromname = 0;
 		restart_point = $4;
@@ -1225,9 +1239,19 @@ rcmd: RNFR check_login SP pathname CRLF
 	        syslog(LOG_INFO, "REST [byte ranges]");
 	    if ($2) {
 		fromname = 0;
-		reply(350, 
-		      "Restart Marker OK. "
-		      "Send STORE or RETRIEVE to initiate transfer.");
+		restart_point = 0;
+
+		if(mode == MODE_S)
+		{
+		    reply(550, "Invalid MODE S restart Marker");
+		    globus_i_wu_free_ranges(&g_restarts);
+		}
+		else
+		{
+		    reply(350, 
+			  "Restart Marker OK. "
+			  "Send STORE or RETRIEVE to initiate transfer.");
+		}
 	    }
 #       else
 	    if(log_commands)
@@ -1331,10 +1355,19 @@ opts: SP RETR SP retr_option_list
 
 byte_range_list:
     byte_range COMMA byte_range_list
-    | byte_range
+    | byte_range 
     ;
 byte_range:
     NUMBER HYPHEN NUMBER
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    globus_i_wu_insert_range(&g_restarts,
+				     (globus_size_t) $1,
+				     (globus_size_t) ($3-$1));
+	}
+#       endif
+    }
     ;
 
 retr_option_list: 

@@ -113,6 +113,13 @@ g_start();
 void
 g_end();
 
+void
+globus_i_wu_insert_range(globus_fifo_t * ranges,
+			 globus_size_t offset,
+			 globus_size_t length);
+void
+globus_i_wu_free_ranges(globus_fifo_t * ranges);
+
 #endif /* USE_GLOBUS_DATA_CODE */
 
 /*

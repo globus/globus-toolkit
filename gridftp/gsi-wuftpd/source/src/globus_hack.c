@@ -14,9 +14,7 @@ extern int mode;
 extern SIGNAL_TYPE         
 lostconn(int sig);
 
-int *                                           g_restart_offset;
-int *                                           g_restart_length;
-int                                             g_restart_count = 0;
+extern globus_fifo_t				g_restarts;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
@@ -136,10 +134,6 @@ data_close_callback(
     struct globus_ftp_control_handle_s *        handle,
     globus_object_t *                           error);
 
-static void
-globus_l_wu_insert_range(globus_fifo_t * ranges,
-			 globus_size_t offset,
-			 globus_size_t length);
 static char *
 globus_l_wu_create_range_string(globus_fifo_t * ranges);
 
@@ -249,6 +243,7 @@ g_start()
 
     GlobusTimeReltimeSet(delay_time, 0, 0);
     GlobusTimeReltimeSet(period_time, 0, timeout_connect / 2);
+    globus_fifo_init(&g_restarts);
 
     globus_callback_register_periodic(
         GLOBUS_NULL,
@@ -396,34 +391,44 @@ invert_restart(
     int *                                          offset_a, 
     int *                                          length_a) 
 {
-    int                                            ctr;
     int                                            start = 0;
+    globus_l_wu_range_t *			   tmp;
 
-    if(g_restart_count == 0)
+    if(globus_fifo_size(&g_restarts) == 0)
     {
         offset_a[0] = 0;
         length_a[0] = -1;
   
         return 1;
     }
+    tmp = (globus_l_wu_range_t *) globus_fifo_peek(&g_restarts);
 
-    if(g_restart_offset[ctr] != 0)
+    if(tmp->offset != 0)
     {
         offset_a[0] = 0;
-        length_a[0] = g_restart_offset[0];
+        length_a[0] = tmp->offset;
         start++;
     }
 
-    for(ctr = 0; ctr < g_restart_count - 1; ctr++)
+    while(globus_fifo_size(&g_restarts) != 1)
     {
-        offset_a[start] = g_restart_offset[ctr]+g_restart_length[ctr];
-        length_a[ctr] = g_restart_offset[ctr + 1] - offset_a[start];
+	tmp = (globus_l_wu_range_t *) globus_fifo_dequeue(&g_restarts);
+
+	offset_a[start] = tmp->offset + tmp->length;
+	globus_libc_free(tmp);
+
+	tmp = (globus_l_wu_range_t *) globus_fifo_peek(&g_restarts);
+        length_a[start] = tmp->offset - offset_a[start];
 
         start++;
     }
-    offset_a[start] = g_restart_offset[ctr]+g_restart_length[ctr];
-    length_a[ctr] = -1;
+    tmp = (globus_l_wu_range_t *) globus_fifo_dequeue(&g_restarts);
 
+    offset_a[start] = tmp->offset + tmp->length;
+    length_a[start] = -1;
+
+    globus_libc_free(tmp);
+    start++;
     return start;
 }
 
@@ -578,10 +583,13 @@ g_send_data(
        }
 #      endif
 
-        if(g_restart_count > 0)
+        if(!globus_fifo_empty(&g_restarts))
         {
-            offset_a = (int *)globus_malloc(sizeof(int)*(g_restart_count + 1));
-            length_a = (int *)globus_malloc(sizeof(int)*(g_restart_count + 1));
+            offset_a = (int
+			*)globus_malloc(sizeof(int)*
+					(globus_fifo_size(&g_restarts) + 1));
+            length_a = (int *)globus_malloc(sizeof(int)*(
+		globus_fifo_size(&g_restarts) + 1));
             count_a = invert_restart(offset_a, length_a);
         }
         else
@@ -611,7 +619,7 @@ g_send_data(
                     G_EXIT();
                     perror_reply(451, "Local resource failure: malloc");
                     retrieve_is_data = 1;
-                    return (0);
+		    goto bail0;
                 }
 
                 if(length == -1 || length - jb_count >= blksize)
@@ -630,8 +638,8 @@ g_send_data(
                  *  send in a partial file transfer set eof to true
                  */
                 if(cnt <= 0 || 
-                   (jb_count + cnt == length && length != -1))
-                {
+                   (jb_count + cnt == length && length != -1 && ((ctr+1) == count_a)))
+		{
                     eof = GLOBUS_TRUE;
                 }
 
@@ -749,7 +757,7 @@ g_send_data(
             g_force_close(cb_count);
 
             G_EXIT();
-            return 0;
+	    goto bail0;
         }
 
         if(l_timed_out)
@@ -793,7 +801,7 @@ g_send_data(
         reply(550, "Unimplemented TYPE %d in send_data", type);
         retrieve_is_data = 1;
 
-        return 1;
+	goto bail1;
     }
 
   /* 
@@ -815,14 +823,14 @@ g_send_data(
  
     retrieve_is_data = 1;
 
-    return (0);
+    goto bail0;
 
   connect_err:
     alarm(0);
     transflag = 0;
 
     G_EXIT();
-    return (0);
+    goto bail0;
 
   /*
    *  FILE_ERR
@@ -834,7 +842,14 @@ g_send_data(
     perror_reply(551, "Error on input file");
     retrieve_is_data = 1;
 
+    goto bail0;
+
+  bail0:
+    globus_i_wu_free_ranges(&g_restarts);
     return (0);
+  bail1:
+    globus_i_wu_free_ranges(&g_restarts);
+    return (1);
 
   clean_exit:
 
@@ -1043,7 +1058,7 @@ g_receive_data(
 
                 G_EXIT();
                 perror_reply(451, "Local resource failure: malloc");
-                return (-1);
+                goto bail;
             }
             res = globus_ftp_control_data_read(
                       handle,
@@ -1093,7 +1108,7 @@ g_receive_data(
 	    globus_callback_unregister(g_monitor.callback_handle);
 
             G_EXIT();
-            return -1;
+	    goto bail;
         }
 
         if(l_timed_out || l_error)
@@ -1119,14 +1134,14 @@ g_receive_data(
         G_EXIT();
         reply(553, "TYPE E not implemented.");
         transflag = 0;
-        return (-1);
+        goto bail;
 
     default:
 
         G_EXIT();
         reply(550, "Unimplemented TYPE %d in receive_data", type);
         transflag = 0;
-        return (-1);
+	goto  bail;
     }
 
   data_err:
@@ -1140,7 +1155,7 @@ g_receive_data(
    
     G_EXIT();
     perror_reply(426, "Data Connection");
-    return (-1);
+    goto bail;
 
   file_err:
     globus_callback_unregister(g_monitor.callback_handle);
@@ -1151,6 +1166,8 @@ g_receive_data(
     G_EXIT();
     perror_reply(452, "Error writing file");
 
+    bail:
+    globus_i_wu_free_ranges(&g_restarts);
     return (-1);
 
   clean_exit:
@@ -1253,7 +1270,7 @@ data_read_callback(
 
 	    t = time(NULL);
 
-	    globus_l_wu_insert_range(&monitor->ranges, offset, length);
+	    globus_i_wu_insert_range(&monitor->ranges, offset, length);
 
 	    if(t - monitor->last_range_update > 10)
 	    {
@@ -1297,8 +1314,8 @@ data_read_callback(
     globus_mutex_unlock(&monitor->mutex);
 }
 
-static void
-globus_l_wu_insert_range(
+void
+globus_i_wu_insert_range(
     globus_fifo_t *				ranges,
     globus_size_t				offset,
     globus_size_t				length)
@@ -1370,6 +1387,18 @@ copy_rest:
     while(! globus_fifo_empty(&tmp))
     {
 	globus_fifo_enqueue(ranges, globus_fifo_dequeue(&tmp));
+    }
+}
+
+void
+globus_i_wu_free_ranges(
+    globus_fifo_t *				ranges)
+{
+    while(!globus_fifo_empty(ranges))
+    {
+	globus_l_wu_range_t *			range;
+	range = (globus_l_wu_range_t *) globus_fifo_dequeue(ranges);
+	globus_libc_free(range);
     }
 }
 
