@@ -1,9 +1,8 @@
 This is the current list of things outstanding for the 4.0 release.
 
 protocol:
--- correct FEAT response?
+-- verify FEAT response
 -- reply codes - verify.
--- verify that dsi api is correct wrt to errors
 -- notify server of error when cred problem in gssapi_ftp driver
 
 striping:
@@ -15,12 +14,13 @@ striping:
     
 logging:
 -- instrument code
--- verify output format
 -- clean up transfer and usage logging
 
 other:
+-- error out of option parsing properly
 -- send a connection denied message to connections we don't want to accept, 
     rather than ignoring the accept.
+-- int->void*->int casting over ipc... better way?
 
 cleanup:
 -- format -help screen
@@ -32,16 +32,13 @@ cleanup:
 -----------------------------------------------------------------------
 known issues:
 -- errors in some control.c requests will hang -- need to finish() there
--- error out of option parsing properly
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle. (verify fixed?)
--- need to make sure ints in various places are change to size_t if they
-    need to be, and on passing size_t's over ipc need to do some smarts
-    to treat it as 4 or 8 bytes... possible probs if sizes differ on front
-    and back?  This is specifically a problem with tcp_bs, we treat it as an
-    int on the server side, but server-lib gives it to us as a size_t (as
-    it probably should), which is a different size on most 64 bit platforms.
+-- passing size_t's over ipc as ints... will be a problem on 64 bit systems 
+    where int isn't big enough.  not likely to be a problem in practice
+    since the args we store in size_t (buffer sizes, etc) should never be
+    too large for an int...
 -- problem with preauth timeout    
 -- there may be an issue with group permissions -- not sure if it results
     in any problems.
