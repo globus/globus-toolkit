@@ -18,6 +18,7 @@ BUNDLE gt4-mds
         globus_wsrf_servicegroup
 
 BUNDLE gt4-gram
+        globus_user_env        
         globus_wsrf_gram_service_java_source        
         globus_wsrf_gram_utils_java_source          
         globus_wsrf_gram_common_java_source         
