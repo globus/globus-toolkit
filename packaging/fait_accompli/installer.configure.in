@@ -11,7 +11,7 @@ if test "x$flavor" = "x"; then
    power*-ibm-aix5.*)
       flavor=vendorcc32dbg
    ;;
-   power*-apple-darwin7.*
+   power*-apple-darwin7.*)
       flavor=gcc32dbg
    ;;
    sparc-sun-solaris*)
