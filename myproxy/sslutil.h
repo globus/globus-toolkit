@@ -26,7 +26,7 @@
 #  define GSI_NEW 2
 #else
 #  if GLOBUS_RELEASE_MAJOR > 1
-#     define GSI_NEW 1
+#     define GSI_NEW 2
 #  else
 #     if GLOBUS_RELEASE_BETA != GLOBUS_RELEASE_NOT_BETA
         /* standalone GSI v. 1.1.3a (beta),
@@ -182,6 +182,13 @@ proxy_get_base_name(X509_NAME *subject);
 
 int
 proxy_password_callback_no_prompt(char *buffer, int size, int w);
+
+#if SSLEAY_VERSION_NUMBER >=  0x0090600fL
+   int
+   proxy_check_issued(X509_STORE_CTX *ctx,
+                      X509 *x, 
+                      X509 *issuer);
+#endif
 
 #endif /* GSI_NEW > 1 */
 
