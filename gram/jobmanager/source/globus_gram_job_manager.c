@@ -975,8 +975,6 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
             return(GLOBUS_FAILURE);
         }
 
-	stdin_fd = open(request->my_stdin, O_RDONLY);
-
         if (request->filename_callback_func == GLOBUS_NULL)
         {
             if (request->my_stdout != GLOBUS_NULL)
@@ -1011,22 +1009,6 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
               "JMI: local stdout filename = %s.\n", stdout_filename);
         grami_fprintf( request->jobmanager_log_fp,
               "JMI: local stderr filename = %s.\n", stderr_filename);
-
-        stdout_fd = globus_libc_open(stdout_filename,
-                                     O_APPEND | O_WRONLY | O_CREAT,
-                                     0600);
-        if(stdout_fd < 0)
-        {
-           stdout_fd = globus_libc_open("/dev/null", O_WRONLY);
-        }
-
-        stderr_fd = globus_libc_open(stderr_filename,
-                                     O_APPEND | O_WRONLY | O_CREAT,
-                                     0600);
-        if(stderr_fd < 0)
-        {
-            stderr_fd = globus_libc_open("/dev/null", O_WRONLY);
-        }
 		
         pid = globus_libc_fork();
 
@@ -1041,6 +1023,23 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
         if (pid == 0)
         {
             close(rd);
+
+	    stdin_fd = open(request->my_stdin, O_RDONLY);
+            stdout_fd = globus_libc_open(stdout_filename,
+                                     O_APPEND | O_WRONLY | O_CREAT,
+                                     0600);
+            if(stdout_fd < 0)
+            {
+                stdout_fd = globus_libc_open("/dev/null", O_WRONLY);
+            }
+
+            stderr_fd = globus_libc_open(stderr_filename,
+                                         O_APPEND | O_WRONLY | O_CREAT,
+                                         0600);
+            if(stderr_fd < 0)
+            {
+                stderr_fd = globus_libc_open("/dev/null", O_WRONLY);
+            }
 
             /* close stdin stdout stderr */
             close(0);
