@@ -87,8 +87,10 @@ globus_l_gass_copy_perf_cancel_ftp_callback(
 { \
     if(handle->err == GLOBUS_NULL) \
     { \
-        handle->err = globus_error_get(result); \
-	result = globus_error_put(handle->err); \
+        globus_object_t *tmp_err; \
+        tmp_err = globus_error_get(result); \
+        handle->err = globus_object_copy(tmp_err); \
+	result = globus_error_put(tmp_err); \
     } \
 }
 
@@ -1984,7 +1986,7 @@ globus_l_gass_copy_transfer_start(
 		rc);
 	    globus_i_gass_copy_set_error(handle, err);
 
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 	break;
 
@@ -2076,7 +2078,7 @@ globus_l_gass_copy_transfer_start(
 		rc);
 	    globus_i_gass_copy_set_error(handle, err);
 
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 
 	break;
@@ -2254,7 +2256,7 @@ globus_l_gass_copy_read_from_queue(
 			myname,
 			handle->buffer_length);
 		    globus_i_gass_copy_set_error(handle, err);
-		    result = globus_error_put(handle->err);
+		    result = globus_error_put(err);
 		} /* if(buffer == GLOBUS_NULL), the create failed*/
 	    } /* if(buffer == GLOBUS_NULL), we need to create a buffer */
 
@@ -2842,7 +2844,7 @@ globus_l_gass_copy_ftp_transfer_callback(
 
         if (copy_handle->status != GLOBUS_GASS_COPY_STATUS_CANCEL)
         {
-	    copy_handle->err = error;
+	    globus_i_gass_copy_set_error(copy_handle, error);
 	    copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
         }
 
@@ -2896,7 +2898,11 @@ globus_l_gass_copy_ftp_transfer_callback(
 	    copy_handle->callback_arg,
 	    copy_handle,
 	    err);
-
+    
+    if(err)
+    {
+        globus_object_free(err);
+    }
 } /* globus_l_gass_copy_ftp_transfer_callback() */
 
 void
@@ -3720,7 +3726,7 @@ globus_l_gass_copy_register_write(
 		myname,
 		rc);
 	    globus_i_gass_copy_set_error(handle, err);
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 	else result = GLOBUS_SUCCESS;
 
@@ -5515,7 +5521,7 @@ globus_l_gass_copy_target_cancel(
 		     rc);
 		     globus_i_gass_copy_set_error(cancel_info->handle, err);
 
-		     result = globus_error_put(cancel_info->handle->err);
+		     result = globus_error_put(err);
 		}
 		else
 		{
@@ -5670,6 +5676,9 @@ globus_l_gass_copy_generic_cancel(
 	  break;
 	}
 
+        err = handle->err;
+	handle->err = GLOBUS_NULL;
+	
 	if(handle->user_cancel_callback != GLOBUS_NULL)
         {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -5679,11 +5688,8 @@ globus_l_gass_copy_generic_cancel(
 	    handle->user_cancel_callback(
 		handle->cancel_callback_arg,
 		handle,
-		handle->err);
+		err);
         }
-
-	err = handle->err;
-	handle->err = GLOBUS_NULL;
 
 	if(handle->user_callback != GLOBUS_NULL)
         {
