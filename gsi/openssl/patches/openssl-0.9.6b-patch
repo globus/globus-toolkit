@@ -2175,7 +2175,7 @@ diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
 +        if [ "x$BIT64" = "xtrue" ]; then
 +            OUT="irix64-mips4-$CC"
 +        else
-+            OUT="irix-mips4-$CC"
++            OUT="irix-mips3-$CC"
 +        fi
  	;;
    alpha-*-linux2)
