@@ -1343,6 +1343,12 @@ retr_option:
     {
 #       if USE_GLOBUS_DATA_CODE
 	{
+
+int i = 1;
+while(i)
+{
+    usleep(1);
+}
 	    g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 	    g_parallelism.fixed.size = $3;
 	}

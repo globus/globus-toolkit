@@ -427,14 +427,14 @@ g_send_data(
 		
 		g_layout.partitioned.size = s.st_size;
 
-		globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
+		globus_ftp_control_local_layout(handle, &g_layout, 0);
 	    }
 	}
 	else
 	{
-	    globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
+	    globus_ftp_control_local_layout(handle, &g_layout, 0);
 	}
-	globus_ftp_control_local_parallelism(&g_data_handle,
+	globus_ftp_control_local_parallelism(handle,
 					     &g_parallelism);
 
     }
@@ -607,6 +607,14 @@ g_send_data(
             }
 #           endif
         } /* end while */
+        globus_mutex_lock(&g_monitor.mutex);
+        {   
+            while(g_monitor.count > 0)
+            {
+                globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
+            }
+        }
+        globus_mutex_unlock(&g_monitor.mutex);
 
 #       ifdef THROUGHPUT
         {
