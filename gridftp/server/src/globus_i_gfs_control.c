@@ -1816,6 +1816,10 @@ globus_i_gfs_control_start(
     int                                 idle_timeout;
     char *                              banner;
     char *                              login_msg;
+    globus_list_t *                     module_list;
+    globus_list_t *                     list;
+    char *                              alias;
+    char *                              module;    
     GlobusGFSName(globus_i_gfs_control_start);
     GlobusGFSDebugEnter();
 
@@ -1937,6 +1941,33 @@ globus_i_gfs_control_start(
         goto error_attr_setup;
     }
 
+    module_list = (globus_list_t *) globus_i_gfs_config_get("module_list");  
+    for(list = module_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        /* parse out alias name from <alias> or <alias>:<module> */
+        alias = globus_libc_strdup((char *) globus_list_first(list));
+        module = strchr(alias, ':');
+        if(module != NULL)
+        {
+            *module = '\0';
+        }
+        result = globus_gridftp_server_control_attr_add_recv(
+            attr, alias, globus_l_gfs_request_recv, instance);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_setup;
+        }
+        result = globus_gridftp_server_control_attr_add_send(
+            attr, alias, globus_l_gfs_request_send, instance);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_setup;
+        }
+        globus_free(alias);
+    } 
+    
     result = globus_gridftp_server_control_attr_set_list(
         attr, globus_l_gfs_request_list, instance);
     if(result != GLOBUS_SUCCESS)

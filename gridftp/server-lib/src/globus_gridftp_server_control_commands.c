@@ -2726,6 +2726,16 @@ globus_l_gsc_cmd_stor_retr(
             tmp_ptr += 2;
             mod_parm = globus_libc_strdup(tmp_ptr);
             tmp_ptr = strchr(mod_parm, '\"');
+            /* XXX if mod_parm has a space, it has already been misparsed...
+               need to fix this upstream, but just error out for now */
+            if(tmp_ptr == NULL)
+            {
+                globus_free(mod_name);
+                globus_free(mod_parm);
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, _FSMSL("500 command failed: space.\r\n"));
+                return;
+            }            
             *tmp_ptr = '\0';
 
             path = globus_libc_strdup(cmd_a[2]);
