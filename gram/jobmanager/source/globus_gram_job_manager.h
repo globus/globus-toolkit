@@ -370,6 +370,7 @@ typedef struct
     char *				url_base;
     char *				job_contact;
     char *				job_contact_path;
+    char *				old_job_contact;
     gss_ctx_id_t			response_context;
     globus_fifo_t			pending_queries;
     globus_bool_t			publish_jobs;
@@ -685,10 +686,6 @@ globus_gram_job_manager_state_file_read(
     globus_gram_jobmanager_request_t *	request);
 int
 globus_gram_job_manager_state_file_write(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_state_file_update(
     globus_gram_jobmanager_request_t *	request);
 
 int

@@ -107,6 +107,7 @@ globus_gram_job_manager_state_file_write(
 	return GLOBUS_FAILURE;
     }
 
+    fprintf(fp, "%s\n", request->job_contact ? request->job_contact : " ");
     fprintf(fp, "%4d\n", (int) request->jobmanager_state);
     fprintf(fp, "%4d\n", (int) request->status);
     fprintf(fp, "%4d\n", request->failure_code);
@@ -178,6 +179,14 @@ globus_gram_job_manager_state_file_read(
 	    {
 		globus_gram_job_manager_request_log(request,
 			"JM: State lock file is locked, old jm is still alive\n");
+		fp = fopen( request->job_state_file, "r" );
+		if(fp)
+		{
+		    fgets( buffer, sizeof(buffer), fp );
+		    buffer[strlen(buffer)-1] = '\0';
+		    request->old_job_contact = globus_libc_strdup(buffer);
+		    fclose(fp);
+		}
 	    }
 	    else
 	    {
@@ -198,23 +207,29 @@ globus_gram_job_manager_state_file_read(
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
-    fscanf( fp, "%[^\n]%*c", buffer );
+    fgets( buffer, sizeof(buffer), fp );
+    /* job contact string */
+    fgets( buffer, sizeof(buffer), fp );
     request->restart_state = atoi( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
+    fgets( buffer, sizeof(buffer), fp );
     request->status = atoi( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
+    fgets( buffer, sizeof(buffer), fp );
     request->failure_code = atoi( buffer );
 
-    fscanf( fp, "%[^\n]%*c", buffer );
+    fgets( buffer, sizeof(buffer), fp );
+    buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
-	request->job_id = strdup( buffer );
+	request->job_id = globus_libc_strdup( buffer );
     }
-    fscanf( fp, "%[^\n]%*c", buffer );
-    request->rsl_spec = strdup( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
-    request->cache_tag = strdup( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer);
+    fgets( buffer, sizeof(buffer), fp );
+    buffer[strlen(buffer)-1] = '\0';
+    request->rsl_spec = globus_libc_strdup( buffer );
+    fgets( buffer, sizeof(buffer), fp );
+    buffer[strlen(buffer)-1] = '\0';
+    request->cache_tag = globus_libc_strdup( buffer );
+    fgets( buffer, sizeof(buffer), fp );
+    buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
 	/*
@@ -235,38 +250,6 @@ globus_gram_job_manager_state_file_read(
 
     return GLOBUS_SUCCESS;
 }
-
-int
-globus_gram_job_manager_state_file_update(
-    globus_gram_jobmanager_request_t *	request)
-{
-    FILE *				fp;
-    char				buffer[16];
-
-    /*
-     * We're doing a single write, which is atomic enough, so don't bother
-     * with creating a new file and renaming it over the old one.
-     */
-
-    sprintf(buffer,
-	    "%4d\n%4d\n%4d\n",
-	    request->restart_state ? request->restart_state
-	                           : request->jobmanager_state,
-	    request->status,
-	    (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-		? request->failure_code
-		: 0);
-
-    fp = fopen( request->job_state_file, "r+" );
-    if ( fp == NULL )
-        return GLOBUS_FAILURE;
-
-    fprintf( fp, "%s", buffer );
-    fclose( fp );
-
-    return GLOBUS_SUCCESS;
-}
-/* globus_gram_job_manager_state_file_update() */
 
 static
 int

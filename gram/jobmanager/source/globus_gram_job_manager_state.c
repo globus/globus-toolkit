@@ -2053,6 +2053,10 @@ globus_l_gram_job_manager_reply(
     {
 	sent_contact = request->job_contact;
     }
+    else if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+    {
+	sent_contact = request->old_job_contact;
+    }
     else
     {
 	sent_contact = NULL;
