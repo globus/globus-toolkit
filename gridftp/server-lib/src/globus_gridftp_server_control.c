@@ -2854,7 +2854,7 @@ globus_i_gsc_authenticate(
         op->password = globus_libc_strdup(pass);
     }
 
-    if(op->server_handle->security_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
+    if(op->server_handle->security_type & GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
         /* if this fails the values are just left null */
         globus_xio_handle_cntl(
