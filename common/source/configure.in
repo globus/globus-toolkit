@@ -12,7 +12,7 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE(globus_common, 2.0.0)
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 
 dnl Determine thread library flags
 if test "x$NO_FLAVOR" = "x"; then
@@ -67,9 +67,9 @@ AC_OUTPUT(
 	Makefile
 	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
 	pkg_data_src.gpt
-	library/globus_common.h
 	library/Makefile
 	tests/run-tests
+	tests/globus_thread_test.sh
 	tests/Makefile
 	,
 	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkg_data_src.gpt" \

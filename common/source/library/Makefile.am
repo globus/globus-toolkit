@@ -8,7 +8,6 @@ Sources= \
 	globus_cfifo.c \
 	globus_cfifo.h \
 	globus_common.c \
-	globus_common_paths.c \
 	globus_debug.c \
 	globus_debug.h \
 	globus_error.c \
@@ -94,7 +93,9 @@ include_HEADERS = \
 
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME) @GPT_INCLUDES@
+INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME) -I . \
+	-I $(srcdir)/library @GPT_INCLUDES@
+
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIBS@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)

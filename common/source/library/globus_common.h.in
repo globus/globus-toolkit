@@ -44,6 +44,22 @@ EXTERN_C_END
 /******************************************************************************
 		      Include globus_common header files
 ******************************************************************************/
+#ifndef GLOBUS_USE_SOLARIS_THREADS
+#undef GLOBUS_USE_SOLARIS_THREADS
+#endif
+#ifndef GLOBUS_USE_PTHREADS
+#undef GLOBUS_USE_PTHREADS
+#endif
+#ifndef GLOBUS_USE_SPROC
+#undef GLOBUS_USE_SPROC
+#endif
+#ifndef GLOBUS_USE_NO_THREADS
+#undef GLOBUS_USE_NO_THREADS
+#endif
+#ifndef GLOBUS_USE_EXTERNAL_THREADS
+#undef GLOBUS_USE_EXTERNAL_THREADS
+#endif
+
 #include "globus_config.h"
 #include "config.h"
 
@@ -61,7 +77,27 @@ typedef GLOBUS_OFF_T globus_off_t;
 #include "globus_object_hierarchy.h"
 #include "globus_error.h"
 #include "globus_error_hierarchy.h"
-#include "globus_thread_@GLOBUS_THREADS@.h"
+
+#ifdef GLOBUS_USE_PTHREADS
+#include "globus_thread_pthreads.h"
+#endif
+
+#ifdef GLOBUS_USE_SOLARIS_THREADS
+#include "globus_thread_solaristhreads.h"
+#endif
+
+#ifdef GLOBUS_USE_EXTERNAL_THREADS
+#include "globus_thread_external.h"
+#endif
+
+#ifdef GLOBUS_USE_SPROC
+#include "globus_thread_sproc.h"
+#endif
+
+#ifdef GLOBUS_USE_NONE
+#include "globus_thread_none.h"
+#endif
+
 #include "globus_time.h"
 #include "globus_thread_pool.h"
 #include "globus_handle_table.h"
