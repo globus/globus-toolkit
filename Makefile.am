@@ -19,6 +19,7 @@ LibSources= \
 	myproxy.h \
 	myproxy_authorization.c \
 	myproxy_authorization.h \
+	myproxy_common.h \
 	myproxy_delegation.c \
 	myproxy_delegation.h \
 	myproxy_read_pass.c \
@@ -27,7 +28,6 @@ LibSources= \
 	myproxy_log.h \
 	ssl_utils.c \
 	ssl_utils.h \
-	sslutil.h \
 	string_funcs.c \
 	string_funcs.h \
 	verror.c \
