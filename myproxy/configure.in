@@ -72,8 +72,31 @@ if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
 fi
 AC_SUBST(SYSLIBS)
 dnl
+dnl Check for SASL
 dnl
+AC_ARG_WITH(sasl,
+	[  --with-sasl=PATH    Build with SASL support],
+	[
+		AC_MSG_CHECKING(for SASL installation)
+
+		CPPFLAGS="$CPPFLAGS -I${withval}/include"
+		LDFLAGS="$LDFLAGS -L${withval}/lib"
+		AC_CHECK_LIB(sasl2, sasl_client_init)
+	]
+)
 dnl
+dnl Check for Kerberos
+dnl
+AC_ARG_WITH(kerberos,
+	[  --with-kerberos=PATH Build with Kerberos V5 support],
+	[
+		AC_MSG_CHECKING(for Kerberos)
+
+		CPPFLAGS="$CPPFLAGS -I${withval}/include"
+		LDFLAGS="$LDFLAGS -L${withval}/lib"
+		AC_CHECK_LIB(krb5, krb5_init_context)
+	]
+)
 
 LAC_DOXYGEN([" ../ "])
 
