@@ -394,6 +394,7 @@ globus_l_gfs_request_auth(
     auth_info->control_op = op;
     auth_info->instance = instance;
     auth_info->subject = globus_libc_strdup(subject);
+    auth_info->username = globus_libc_strdup(user_name);
     auth_info->password = globus_libc_strdup(pw);
 
     remote_cs = globus_i_gfs_config_string("remote");
