@@ -9,6 +9,7 @@ gaa_util			gsi/gaa_util/source
 globus_authz			gsi/authz/source
 globus_authz_callout_error	gsi/authz/error
 globus_authz_gaa_callout	gsi/authz_gaa_callout/source
+globus_gaa_authz_callout_setup  gsi/authz_gaa_callout/setup
 globus_authz_null_callout	gsi/authz_null_callout/source
 globus_authz_test		gsi/authz/test
 globus_callout                  callout/source
