@@ -1868,7 +1868,7 @@ globus_l_io_tcp_register_connect(
     {
         result = globus_xio_register_open(
             &ihandle->xio_handle,
-            attr ? (*attr)->attr : GLOBUS_NULL,
+            ihandle->attr->attr,
             target,
             globus_l_io_bounce_authz_cb,
             bounce_info);
