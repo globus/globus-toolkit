@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <md5.h>
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -208,6 +209,29 @@ sterilize_string(char *string)
     return;
 }
 
+static char *
+strmd5(const char *s, unsigned char *digest)
+{
+    MD5_CTX md5;
+    unsigned char   d[16];
+    int     i;
+    char mbuf[33];
+
+    MD5_Init(&md5);
+    MD5_Update(&md5,s,strlen(s));
+    MD5_Final(d,&md5);
+
+    if (digest) 
+       memcpy(digest,d,sizeof(d));
+    for (i=0; i<16; i++) {
+       int     dd = d[i] & 0x0f;
+       mbuf[2*i+1] = dd<10 ? dd+'0' : dd-10+'a';
+       dd = d[i] >> 4;
+       mbuf[2*i] = dd<10 ? dd+'0' : dd-10+'a';
+    }
+    mbuf[32] = 0;
+    return mystrdup(mbuf);
+}
         
     
 /*
@@ -241,14 +265,22 @@ get_storage_locations(const char *username,
         goto error;
     }
     
-    sterile_username = mystrdup(username);
+    /* The length LOGNAME can be max. 8 chars. If the string is longer suppose 
+       it is a DN from X.509 certificate and hash it. */
+    if (strlen(username) > 8) {
+       sterile_username = strmd5(username, NULL);
+       if (sterile_username == NULL)
+	  goto error;
+    } else {
+       sterile_username = mystrdup(username);
 
-    if (sterile_username == NULL)
-    {
-        goto error;
+       if (sterile_username == NULL)
+       {
+	   goto error;
+       }
+       
+       sterilize_string(sterile_username);
     }
-    
-    sterilize_string(sterile_username);
     
     creds_path[0] = '\0';
     
