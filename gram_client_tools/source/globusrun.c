@@ -38,8 +38,10 @@ CVS Information:
 #include "globus_gass_server_ez.h"
 #include "globus_rsl.h"
 
+#if 0
 #include "lber.h"
 #include "ldap.h"
+#endif
 
 #include "globus_rsl_assist.h"
 #include "globus_gss_assist.h"
@@ -207,16 +209,6 @@ static char *  long_usage = \
 "           Cause SIGINT to terminate globusrun, while leaving the\n"\
 "           submitted job to run to completion. By default the SIGINT\n"\
 "           signal will be trapped and the job will be terminated\n"\
-"    -mdshost   <mds ldap server hostname>\n"\
-"    -mdsport   <mds ldap server port to contact>\n"\
-"    -T | -mdstimeout <timeout in seconds>\n"\
-"    -mdsbasedn <mds ldap server hostname>\n"\
-"           mdshost, mdsport and mdsbasedn let you overwrite the default\n"\
-"           information necessary to contact the MDS ldap server. Used only\n"\
-"           together with the option -list\n"\
-"           Those options can also be set using the environment variable \n"\
-"           GRID_INFO_HOST, GRID_INFO_PORT, GRID_INFO_TIMEOUT and\n"\
-"           GRID_INFO_BASEDN.\n"\
 "    -k | -kill <job ID>\n"\
 "           Kill a disconnected globusrun job\n"\
 "    -status <job ID>\n"\
@@ -245,6 +237,17 @@ static char *  long_usage = \
 "\n";
 
 #if 0 /* unimplemented */
+
+"    -mdshost   <mds ldap server hostname>\n"\
+"    -mdsport   <mds ldap server port to contact>\n"\
+"    -T | -mdstimeout <timeout in seconds>\n"\
+"    -mdsbasedn <mds ldap server hostname>\n"\
+"           mdshost, mdsport and mdsbasedn let you overwrite the default\n"\
+"           information necessary to contact the MDS ldap server. Used only\n"\
+"           together with the option -list\n"\
+"           Those options can also be set using the environment variable \n"\
+"           GRID_INFO_HOST, GRID_INFO_PORT, GRID_INFO_TIMEOUT and\n"\
+"           GRID_INFO_BASEDN.\n"\
 
 "    -l | -list\n"\
 "           List disconnected globusrun jobs\n"
