@@ -2322,6 +2322,7 @@ globus_l_ftp_control_send_cmd_cb(
     struct gss_channel_bindings_struct *        chan_bindings;
     char *                                      radix_buf;
     char *                                      error_str;
+    OM_uint32					max_input_size[2];
 
     cb_arg = (globus_i_ftp_passthru_cb_arg_t *) callback_arg;
     chan_bindings=&(handle->cc_handle.auth_info.chan_bindings);
@@ -2692,39 +2693,33 @@ globus_l_ftp_control_send_cmd_cb(
 	    }
 	    globus_mutex_unlock(&(handle->cc_handle.mutex));
 
-	    globus_mutex_lock(&handle->dc_handle.mutex);
+	    gss_wrap_size_limit(
+		    &min_stat,
+		    &handle->cc_handle.auth_info.auth_gssapi_context,
+		    0,
+		    GSS_C_QOP_DEFAULT,
+		    1<<30,
+		    &max_input_size[0]);
+
+	    gss_wrap_size_limit(
+		    &min_stat,
+		    &handle->cc_handle.auth_info.auth_gssapi_context,
+		    0,
+		    GSS_C_QOP_DEFAULT,
+		    1<<30,
+		    &max_input_size[1]);
+
+
+	    if(max_input_size[0] > max_input_size[1] && max_input_size[1] != 0)
 	    {
-		OM_uint32			max_input_size[2];
-
-		gss_wrap_size_limit(
-			&min_stat,
-			&handle->cc_handle.auth_info.auth_gssapi_context,
-			0,
-			GSS_C_QOP_DEFAULT,
-			1<<30,
-			&max_input_size[0]);
-
-		gss_wrap_size_limit(
-			&min_stat,
-			&handle->cc_handle.auth_info.auth_gssapi_context,
-			0,
-			GSS_C_QOP_DEFAULT,
-			1<<30,
-			&max_input_size[1]);
-
-
-		handle->dc_handle.pbsz = max_input_size[0];
-
-		if(max_input_size[1] < max_input_size[0])
-		{
-		    handle->dc_handle.pbsz = max_input_size[1];
-		}
-		else
-		{
-		    handle->dc_handle.pbsz = max_input_size[0];
-		}
+		globus_ftp_control_local_pbsz(handle,
+					      max_input_size[1]);
 	    }
-	    globus_mutex_unlock(&handle->dc_handle.mutex);
+	    else
+	    {
+		globus_ftp_control_local_pbsz(handle,
+					      max_input_size[0]);
+	    }
 
 	    if(handle->cc_handle.auth_info.user != GLOBUS_NULL)
 	    {

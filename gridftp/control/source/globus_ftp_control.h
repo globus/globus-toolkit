@@ -547,7 +547,6 @@ typedef unsigned long globus_ftp_control_auth_requirements_t;
 #define GLOBUS_FTP_CONTROL_AUTH_REQ_PASS	     8
 #define GLOBUS_FTP_CONTROL_AUTH_REQ_ACCT	     16
 
-
 typedef struct globus_ftp_control_rw_queue_element_s
 {
     globus_ftp_control_response_callback_t	callback;
@@ -621,9 +620,11 @@ typedef globus_result_t (*globus_ftp_control_layout_verify_func_t)(
 
 typedef struct globus_i_ftp_dc_handle_s
 {
-    globus_ftp_control_dcau_t			dcau;
+    char                                        magic[32];
+
+    globus_ftp_control_dcau_t                   dcau;
     unsigned long                               pbsz;
-    globus_ftp_control_protection_t		protection;
+    globus_ftp_control_protection_t             protection;
 
     globus_ftp_data_connection_state_t          state;
 
@@ -634,7 +635,7 @@ typedef struct globus_i_ftp_dc_handle_s
     int                                         form_code;
     globus_ftp_control_parallelism_t            parallel;
 
-    globus_io_attr_t				io_attr;
+    globus_io_attr_t                            io_attr;
 
     struct globus_i_ftp_dc_transfer_handle_s *  transfer_handle;
     globus_list_t *                             transfer_list;

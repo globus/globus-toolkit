@@ -184,6 +184,7 @@ extern const char * globus_i_ftp_server_user_reply;
 extern const char * globus_i_ftp_server_pass_reply;
 
 
+
 #endif
 
 
