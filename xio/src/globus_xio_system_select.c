@@ -896,13 +896,13 @@ globus_l_xio_system_kickout(
       case GLOBUS_L_OPERATION_CONNECT:
       case GLOBUS_L_OPERATION_ACCEPT:
         op_info->sop.non_data.callback(
-            globus_error_put(op_info->error),
+            op_info->error ? globus_error_put(op_info->error) : GLOBUS_SUCCESS,
             op_info->user_arg);
         break;
 
       default:
         op_info->sop.data.callback(
-            globus_error_put(op_info->error),
+            op_info->error ? globus_error_put(op_info->error) : GLOBUS_SUCCESS,
             op_info->nbytes,
             op_info->user_arg);
 
@@ -1673,7 +1673,8 @@ globus_l_xio_system_handle_read(
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        read_info->error = globus_error_get(result);
+        read_info->error = result == GLOBUS_SUCCESS 
+            ? GLOBUS_NULL : globus_error_get(result);
         read_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1848,7 +1849,8 @@ globus_l_xio_system_handle_write(
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        write_info->error = globus_error_get(result);
+        write_info->error = result == GLOBUS_SUCCESS 
+            ? GLOBUS_NULL : globus_error_get(result);
         write_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
