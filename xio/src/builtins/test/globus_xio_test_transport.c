@@ -745,9 +745,7 @@ globus_l_xio_test_transport_load(
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
 
-    res = globus_xio_driver_init(
-            &driver,
-            NULL);
+    res = globus_xio_driver_init(&driver, "test", NULL);
     if(res != GLOBUS_SUCCESS)
     {
         return res;

@@ -358,6 +358,7 @@ typedef struct globus_i_xio_target_s
 
 typedef struct globus_i_xio_driver_s
 {
+    char *                                              name;
     void *                                              user_data;
     /*
      *  main io interface functions

@@ -1324,6 +1324,7 @@ typedef globus_result_t
 globus_result_t
 globus_xio_driver_init(
     globus_xio_driver_t *                       driver,
+    const char *                                driver_name,
     void *                                      user_data);
 
 globus_result_t

@@ -2162,7 +2162,7 @@ globus_l_xio_tcp_init(
     
     /* I dont support any driver options, so I'll ignore the ap */
     
-    result = globus_xio_driver_init(&driver, GLOBUS_NULL);
+    result = globus_xio_driver_init(&driver, "tcp", GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(

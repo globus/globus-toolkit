@@ -27,7 +27,7 @@ typedef enum
     /**
      *  server attrs
      */
-    /* char *                           service_name */
+    /* const char *                     service_name */
     GLOBUS_XIO_TCP_SET_SERVICE,
     /* char **                          service_name_out */
     GLOBUS_XIO_TCP_GET_SERVICE,
@@ -49,7 +49,7 @@ typedef enum
     /**
      *  handle/server attrs
      */
-    /* char *                           interface */
+    /* const char *                     interface */
     GLOBUS_XIO_TCP_SET_INTERFACE,
     /* char **                          interface_out */
     GLOBUS_XIO_TCP_GET_INTERFACE,

@@ -284,9 +284,7 @@ globus_l_xio_debug_load(
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
 
-    res = globus_xio_driver_init(
-            &driver,
-            NULL);
+    res = globus_xio_driver_init(&driver, "debug", NULL);
     if(res != GLOBUS_SUCCESS)
     {
         return res;

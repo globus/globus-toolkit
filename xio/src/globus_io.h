@@ -1,37 +1,17 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_IO_H
 #define GLOBUS_INCLUDE_GLOBUS_IO_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
+#include "globus_xio.h"
+#include "globus_io_error_hierarchy.h"
 
 EXTERN_C_BEGIN
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-#include "globus_common.h"
-#include "globus_gss_assist.h"
-#include "globus_io_error_hierarchy.h"
+#define GLOBUS_IO_MODULE (&globus_l_io_module)
 
-#ifndef _HAVE_GSI_EXTENDED_GSSAPI
-#include "globus_gss_ext_compat.h"
-#endif
-#endif
+extern globus_module_descriptor_t       globus_l_io_module;
 
-#define GLOBUS_IO_MODULE (&globus_i_io_module)
-
-extern
-globus_module_descriptor_t              globus_i_io_module;
-
-typedef struct globus_i_io_handle_s *   globus_io_handle_t;
-typedef struct globus_i_io_attr_s *     globus_io_attr_t;
-typedef globus_i_io_secure_authorization_data_s * 
-    globus_io_secure_authorization_data_t;
+typedef struct globus_l_io_handle_s *   globus_io_handle_t;
+typedef struct globus_l_io_attr_s *     globus_io_attr_t;
 
 typedef void
 (*globus_io_callback_t)(
@@ -73,48 +53,6 @@ typedef void
     globus_size_t                       iovcnt,
     globus_size_t                       nbytes);
 
-typedef globus_bool_t
-(*globus_io_secure_authorization_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    char *                              identity,
-    gss_ctx_id_t *                      context_handle);
-
-typedef void
-(* globus_io_delegation_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    gss_cred_id_t                       delegated_cred,
-    OM_uint32                           time_rec);
-
-typedef void
-(*globus_io_udp_sendto_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes);
-
-typedef void
-(*globus_io_udp_recvfrom_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes_recvd,
-    char *                              host,
-    unsigned short                      port);
-
-typedef void
-(*globus_io_sendto_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes);
-
 typedef enum
 {
     GLOBUS_IO_HANDLE_TYPE_TCP_LISTENER,
@@ -128,51 +66,6 @@ typedef enum
     GLOBUS_IO_HANDLE_TYPE_UDDS_CONNECTED,
     GLOBUS_IO_HANDLE_TYPE_INTERNAL
 } globus_io_handle_type_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE      = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_NONE,
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI    = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_GSSAPI,
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL    = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_MUTUAL,
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_ANONYMOUS
-} globus_io_secure_authentication_mode_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_NONE,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_SELF,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_IDENTITY,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_HOST,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_CALLBACK
-} globus_io_secure_authorization_mode_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR    = GLOBUS_XIO_GSI_CHANNEL_MODE_CLEAR,
-    GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP = GLOBUS_XIO_GSI_CHANNEL_MODE_GSI_WRAP,
-    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP = GLOBUS_XIO_GSI_CHANNEL_MODE_SSL_WRAP
-} globus_io_secure_channel_mode_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_PROTECTION_MODE_NONE    = GLOBUS_XIO_GSI_PROTECTION_MODE_NONE,
-    GLOBUS_IO_SECURE_PROTECTION_MODE_SAFE    = GLOBUS_XIO_GSI_PROTECTION_MODE_SAFE,
-    GLOBUS_IO_SECURE_PROTECTION_MODE_PRIVATE = GLOBUS_XIO_GSI_PROTECTION_MODE_PRIVATE
-} globus_io_secure_protection_mode_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_DELEGATION_MODE_NONE          = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE,
-    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY = GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED_PROXY,
-    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY    = GLOBUS_XIO_GSI_DELEGATION_MODE_FULL_PROXY
-} globus_io_secure_delegation_mode_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_PROXY_MODE_NONE    = GLOBUS_XIO_GSI_PROXY_MODE_NONE,
-    GLOBUS_IO_SECURE_PROXY_MODE_LIMITED = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED,
-    GLOBUS_IO_SECURE_PROXY_MODE_MANY    = GLOBUS_XIO_GSI_PROXY_MODE_MANY
-} globus_io_secure_proxy_mode_t;
 
 typedef enum
 {
@@ -210,8 +103,8 @@ typedef enum
 
 typedef enum
 {
-    GLOBUS_IO_FILE_TYPE_TEXT = GLOBUS_XIO_FILE_TYPE_TEXT,
-    GLOBUS_IO_FILE_TYPE_BINARY = GLOBUS_XIO_FILE_TYPE_BINARY
+    GLOBUS_IO_FILE_TYPE_TEXT = GLOBUS_XIO_FILE_TEXT,
+    GLOBUS_IO_FILE_TYPE_BINARY = GLOBUS_XIO_FILE_BINARY
 } globus_io_file_type_t;
 
 globus_result_t
@@ -225,16 +118,6 @@ globus_result_t
 globus_io_cancel(
     globus_io_handle_t *                handle,
     globus_bool_t                       perform_callbacks);
-
-globus_result_t
-globus_io_register_select(
-    globus_io_handle_t *                handle,
-    globus_io_callback_t                read_callback_func,
-    void *                              read_callback_arg,
-    globus_io_callback_t                write_callback_func,
-    void *                              write_callback_arg,
-    globus_io_callback_t                except_callback_func,
-    void *                              except_callback_arg);
 
 globus_result_t
 globus_io_register_close(
@@ -348,7 +231,7 @@ globus_io_writev(
 
 globus_result_t
 globus_io_tcp_register_connect(
-    char *                              host,
+    const char *                        host,
     unsigned short                      port,
     globus_io_attr_t *                  attr,
     globus_io_callback_t                callback,
@@ -357,7 +240,7 @@ globus_io_tcp_register_connect(
 
 globus_result_t
 globus_io_tcp_connect(
-    char *                              host,
+    const char *                        host,
     unsigned short                      port,
     globus_io_attr_t *                  attr,
     globus_io_handle_t *                handle);
@@ -419,16 +302,6 @@ globus_io_tcp_set_attr(
     globus_io_attr_t *                  attr);
 
 globus_result_t
-globus_io_tcp_get_security_context(
-    globus_io_handle_t *                handle,
-    gss_ctx_id_t *                      context);
-
-globus_result_t
-globus_io_tcp_get_delegated_credential(
-    globus_io_handle_t *                handle,
-    gss_cred_id_t *                     cred);
-
-globus_result_t
 globus_io_tcp_posix_convert(
     int                                 socket,
     globus_io_attr_t *                  attributes,
@@ -459,139 +332,8 @@ globus_io_attr_get_file_type(
     globus_io_file_type_t *             file_type);
 
 globus_result_t
-globus_io_attr_get_udp_restrict_port(
-    globus_io_attr_t *                  attr,
-    globus_bool_t *                     restrict_port);
-
-globus_result_t
-globus_io_attr_set_udp_restrict_port(
-    globus_io_attr_t *                  attr,
-    globus_bool_t                       restrict_port);
-
-globus_result_t
-globus_io_udp_bind(
-    unsigned short *                    port,
-    globus_io_attr_t *                  attr,
-    globus_io_handle_t *                handle);
-
-globus_result_t
-globus_io_udp_sendto(
-    globus_io_handle_t *                handle,
-    globus_byte_t *                     buf,
-    int                                 flags,
-    globus_size_t                       nbytes,
-    const char *                        host,
-    unsigned short                      port,
-    globus_size_t *                     bytes_sent);
-
-globus_result_t
-globus_io_udp_register_recvfrom(
-    globus_io_handle_t *                handle,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes,
-    int                                 flags,
-    globus_io_udp_recvfrom_callback_t   recvfrom_callback,
-    void *                              callback_arg);
-
-globus_result_t
-globus_io_udp_recvfrom(
-    globus_io_handle_t *                handle,
-    globus_byte_t *                     buf,
-    int                                 flags,
-    globus_size_t                       nbytes,
-    char **                             host,
-    unsigned short *                    port,
-    globus_size_t *                     nbytes_received);
-
-globus_result_t
-globus_io_udpattr_init(
-    globus_io_attr_t *                  attr);
-
-globus_result_t
-globus_io_udpattr_destroy(
-    globus_io_attr_t *                  attr);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_loop(
-    globus_io_attr_t *                  attr,
-    globus_bool_t                       enable_loopback);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_loop(
-    globus_io_attr_t *                  attr,
-    globus_bool_t *                     enable_loopback);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_membership(
-    globus_io_attr_t *                  attr,
-    char *                              address,
-    char *                              interface_addr);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_membership(
-    globus_io_attr_t *                  attr,
-    char **                             address,
-    char **                             interface_addr);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_ttl(
-    globus_io_attr_t *                  attr,
-    globus_byte_t                       ttl);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_ttl(
-    globus_io_attr_t *                  attr,
-    globus_byte_t *                     ttl);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_interface(
-    globus_io_attr_t *                  attr,
-    char *                              interface_addr);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_interface(
-    globus_io_attr_t *                  attr,
-    char **                             interface_addr);
-
-globus_result_t
-globus_io_register_init_delegation(
-    globus_io_handle_t *                handle,
-    const gss_cred_id_t                 cred_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
-    globus_io_delegation_callback_t     callback,
-    void *                              callback_arg);
-
-globus_result_t
-globus_io_init_delegation(
-    globus_io_handle_t *                handle,
-    const gss_cred_id_t                 cred_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req);
-
-globus_result_t
-globus_io_register_accept_delegation(
-    globus_io_handle_t *                handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
-    globus_io_delegation_callback_t     callback,
-    void *                              callback_arg);
-
-globus_result_t
-globus_io_accept_delegation(
-    globus_io_handle_t *                handle,
-    gss_cred_id_t *                     delegated_cred,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
-    OM_uint32 *                         time_rec);
-
-globus_result_t
 globus_io_file_open(
-    char *                              path,
+    const char *                        path,
     int                                 flags,
     int                                 mode,
     globus_io_attr_t *                  attr,
@@ -608,16 +350,6 @@ globus_io_file_posix_convert(
     int                                 fd,
     globus_io_attr_t *                  attr,
     globus_io_handle_t *                handle);
-
-globus_result_t
-globus_io_attr_set_callback_space(
-    globus_io_attr_t *                  attr,
-    globus_callback_space_t             space);
-
-globus_result_t
-globus_io_attr_get_callback_space(
-    globus_io_attr_t *                  attr,
-    globus_callback_space_t *           space);
 
 globus_result_t
 globus_io_tcpattr_init(
@@ -718,6 +450,278 @@ globus_result_t
 globus_io_attr_get_tcp_interface(
     globus_io_attr_t *                  attr,
     char **                             interface_addr);
+
+globus_bool_t
+globus_io_eof(
+    globus_object_t *                   eof);
+
+#if 0
+
+globus_result_t
+globus_io_attr_set_callback_space(
+    globus_io_attr_t *                  attr,
+    globus_callback_space_t             space);
+
+globus_result_t
+globus_io_attr_get_callback_space(
+    globus_io_attr_t *                  attr,
+    globus_callback_space_t *           space);
+
+/** XXX UDP stuff **/
+
+typedef void
+(*globus_io_udp_sendto_callback_t)(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes);
+
+typedef void
+(*globus_io_udp_recvfrom_callback_t)(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes_recvd,
+    char *                              host,
+    unsigned short                      port);
+
+typedef void
+(*globus_io_sendto_callback_t)(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes);
+
+globus_result_t
+globus_io_register_select(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                read_callback_func,
+    void *                              read_callback_arg,
+    globus_io_callback_t                write_callback_func,
+    void *                              write_callback_arg,
+    globus_io_callback_t                except_callback_func,
+    void *                              except_callback_arg);
+
+globus_result_t
+globus_io_attr_get_udp_restrict_port(
+    globus_io_attr_t *                  attr,
+    globus_bool_t *                     restrict_port);
+
+globus_result_t
+globus_io_attr_set_udp_restrict_port(
+    globus_io_attr_t *                  attr,
+    globus_bool_t                       restrict_port);
+
+globus_result_t
+globus_io_udp_bind(
+    unsigned short *                    port,
+    globus_io_attr_t *                  attr,
+    globus_io_handle_t *                handle);
+
+globus_result_t
+globus_io_udp_sendto(
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buf,
+    int                                 flags,
+    globus_size_t                       nbytes,
+    const char *                        host,
+    unsigned short                      port,
+    globus_size_t *                     bytes_sent);
+
+globus_result_t
+globus_io_udp_register_recvfrom(
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes,
+    int                                 flags,
+    globus_io_udp_recvfrom_callback_t   recvfrom_callback,
+    void *                              callback_arg);
+
+globus_result_t
+globus_io_udp_recvfrom(
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buf,
+    int                                 flags,
+    globus_size_t                       nbytes,
+    char **                             host,
+    unsigned short *                    port,
+    globus_size_t *                     nbytes_received);
+
+globus_result_t
+globus_io_udpattr_init(
+    globus_io_attr_t *                  attr);
+
+globus_result_t
+globus_io_udpattr_destroy(
+    globus_io_attr_t *                  attr);
+
+globus_result_t
+globus_io_attr_set_udp_multicast_loop(
+    globus_io_attr_t *                  attr,
+    globus_bool_t                       enable_loopback);
+
+globus_result_t
+globus_io_attr_get_udp_multicast_loop(
+    globus_io_attr_t *                  attr,
+    globus_bool_t *                     enable_loopback);
+
+globus_result_t
+globus_io_attr_set_udp_multicast_membership(
+    globus_io_attr_t *                  attr,
+    char *                              address,
+    char *                              interface_addr);
+
+globus_result_t
+globus_io_attr_get_udp_multicast_membership(
+    globus_io_attr_t *                  attr,
+    char **                             address,
+    char **                             interface_addr);
+
+globus_result_t
+globus_io_attr_set_udp_multicast_ttl(
+    globus_io_attr_t *                  attr,
+    globus_byte_t                       ttl);
+
+globus_result_t
+globus_io_attr_get_udp_multicast_ttl(
+    globus_io_attr_t *                  attr,
+    globus_byte_t *                     ttl);
+
+globus_result_t
+globus_io_attr_set_udp_multicast_interface(
+    globus_io_attr_t *                  attr,
+    char *                              interface_addr);
+
+globus_result_t
+globus_io_attr_get_udp_multicast_interface(
+    globus_io_attr_t *                  attr,
+    char **                             interface_addr);
+
+/*** XXX gsi stuff ***/
+
+#include "globus_gss_assist.h"
+
+#ifndef _HAVE_GSI_EXTENDED_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
+#endif
+
+typedef globus_i_io_secure_authorization_data_s * 
+    globus_io_secure_authorization_data_t;
+
+typedef globus_bool_t
+(*globus_io_secure_authorization_callback_t)(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    char *                              identity,
+    gss_ctx_id_t *                      context_handle);
+
+typedef void
+(* globus_io_delegation_callback_t)(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec);
+
+typedef enum
+{
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE      = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_NONE,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI    = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_GSSAPI,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL    = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_MUTUAL,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_ANONYMOUS
+} globus_io_secure_authentication_mode_t;
+
+
+typedef enum
+{
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_NONE,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_SELF,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_IDENTITY,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_HOST,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_CALLBACK
+} globus_io_secure_authorization_mode_t;
+
+typedef enum
+{
+    GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR    = GLOBUS_XIO_GSI_CHANNEL_MODE_CLEAR,
+    GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP = GLOBUS_XIO_GSI_CHANNEL_MODE_GSI_WRAP,
+    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP = GLOBUS_XIO_GSI_CHANNEL_MODE_SSL_WRAP
+} globus_io_secure_channel_mode_t;
+
+typedef enum
+{
+    GLOBUS_IO_SECURE_PROTECTION_MODE_NONE    = GLOBUS_XIO_GSI_PROTECTION_MODE_NONE,
+    GLOBUS_IO_SECURE_PROTECTION_MODE_SAFE    = GLOBUS_XIO_GSI_PROTECTION_MODE_SAFE,
+    GLOBUS_IO_SECURE_PROTECTION_MODE_PRIVATE = GLOBUS_XIO_GSI_PROTECTION_MODE_PRIVATE
+} globus_io_secure_protection_mode_t;
+
+typedef enum
+{
+    GLOBUS_IO_SECURE_DELEGATION_MODE_NONE          = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE,
+    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY = GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED_PROXY,
+    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY    = GLOBUS_XIO_GSI_DELEGATION_MODE_FULL_PROXY
+} globus_io_secure_delegation_mode_t;
+
+typedef enum
+{
+    GLOBUS_IO_SECURE_PROXY_MODE_NONE    = GLOBUS_XIO_GSI_PROXY_MODE_NONE,
+    GLOBUS_IO_SECURE_PROXY_MODE_LIMITED = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED,
+    GLOBUS_IO_SECURE_PROXY_MODE_MANY    = GLOBUS_XIO_GSI_PROXY_MODE_MANY
+} globus_io_secure_proxy_mode_t;
+
+
+globus_result_t
+globus_io_tcp_get_security_context(
+    globus_io_handle_t *                handle,
+    gss_ctx_id_t *                      context);
+
+globus_result_t
+globus_io_tcp_get_delegated_credential(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     cred);
+
+
+globus_result_t
+globus_io_register_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    globus_io_delegation_callback_t     callback,
+    void *                              callback_arg);
+
+globus_result_t
+globus_io_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req);
+
+globus_result_t
+globus_io_register_accept_delegation(
+    globus_io_handle_t *                handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    globus_io_delegation_callback_t     callback,
+    void *                              callback_arg);
+
+globus_result_t
+globus_io_accept_delegation(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     delegated_cred,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    OM_uint32 *                         time_rec);
+
 
 globus_result_t
 globus_io_attr_set_secure_authentication_mode(
@@ -834,9 +838,7 @@ globus_io_attr_get_secure_proxy_mode(
     globus_io_attr_t *                  attr,
     globus_io_secure_proxy_mode_t *     mode);
 
-globus_bool_t
-globus_io_eof(
-    globus_object_t *                   eof);
+#endif
 
 EXTERN_C_END
 

@@ -351,6 +351,7 @@ globus_xio_driver_finished_accept(
 globus_result_t
 globus_xio_driver_init(
     globus_xio_driver_t *                       out_driver,
+    const char *                                driver_name,
     void *                                      user_data)
 {
     globus_i_xio_driver_t *                     driver;
@@ -363,7 +364,14 @@ globus_xio_driver_init(
         return GlobusXIOErrorMemory("driver");
     }
     memset(driver, '\0', sizeof(globus_i_xio_driver_t));
-
+    
+    driver->name = globus_libc_strdup(driver_name);
+    if(!driver->name)
+    {
+        globus_free(driver);
+        return GlobusXIOErrorMemory("driver->name");
+    }
+    
     driver->user_data = user_data;
 
     *out_driver = driver;
@@ -375,6 +383,7 @@ globus_result_t
 globus_xio_driver_destroy(
     globus_xio_driver_t                         driver)
 {
+    globus_free(driver->name);
     globus_free(driver);
 
     return GLOBUS_SUCCESS;

@@ -637,7 +637,7 @@ globus_l_xio_file_init(
     
     /* I dont support any driver options, so I'll ignore the ap */
     
-    result = globus_xio_driver_init(&driver, GLOBUS_NULL);
+    result = globus_xio_driver_init(&driver, "file", GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
