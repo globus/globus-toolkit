@@ -1,4 +1,37 @@
-/* pkcs11.h include file for PKCS #11.  1997 December 22 */
+/* pkcs11.h include file for PKCS #11.  1997 December 22
+ *
+ * DISCLAIMER: RSA Laboratories is providing links to these implementations for
+ * the benefit of PKCS #11 developers. RSA Laboratories has not verified or
+ * reviewed these implementations and therefore can make no statement
+ * regarding their conformance to the current PKCS #11 specification. RSA
+ * Laboratories also makes no representations regarding intellectual
+ * property coverage or ownership of the reference implementations. The
+ * implementations may also be subject to regulations on the import,
+ * export and/or use of cryptography. Resolution of these issues is the
+ * responsibility of the user. should be attached to "Reference
+ * implementations" (perhaps just put the word "DISCLAIMER" next to
+ * reference implementations and put the disclaimer on a separate page).
+ * 
+ * Questions and comments can be directed to pkcs-editor@rsasecurity.com 
+ * 
+ * Copyright (c) 1994-9, RSA Security Inc. All rights reserved. 
+ * 
+ * License to copy and use this software is granted provided that it is
+ * identified as "RSA Security, Inc. Cryptoki Cryptographic Token
+ * Interface" in all material mentioning or referencing this software or
+ * this function.
+ *
+ * License is also granted to make and use derivative works provided
+ * that such works are identified as "derived from the RSA Security Inc.
+ * Cryptoki Cryptographic Token Interface" in all material mentioning or
+ * referencing the derived work.
+ *
+ * RSA Security, Inc. makes no representations concerning either the
+ * merchantability of this software or the suitability of this software
+ * for any particular purpose. It is provided "as is" without express or
+ * implied warranty of any kind. should be attached to "Header files" or
+ * "Include files" wherever present.
+ */
 
 #ifndef _PKCS11_H_
 #define _PKCS11_H_ 1
