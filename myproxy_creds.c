@@ -824,16 +824,22 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
+    char *username = NULL, *credname = NULL;
     
     if ((creds == NULL) || (creds->username == NULL)) {
         verror_put_errno(EINVAL);
         return -1;
     }
 
-    if (get_storage_locations(creds->username,
+    username = mystrdup(creds->username);
+    if (credname) {
+	credname = mystrdup(creds->credname);
+    }
+
+    if (get_storage_locations(username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path),
-			      creds->credname) == -1) {
+			      credname) == -1) {
 	return -1;
     }
 
@@ -842,6 +848,9 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 	return -1;
     }
 
+    creds->username = username;
+    creds->credname = credname;
+    creds->location = mystrdup(creds_path);
     ssl_get_times(creds_path, &creds->start_time, &creds->end_time);
 
     /* Success */
