@@ -15,15 +15,10 @@ AM_CONFIG_HEADER(crypto/opensslconf.h:crypto/opensslconf.h.in)
 dnl static linking hack
 
 if test $GPT_LINKTYPE = "static"; then
-    with_dso="no"
-    GPT_LDFLAGS="-static -L/sandbox/meder/globus/lib"
+    GPT_LDFLAGS="-static -L${GLOBUS_LOCATION}/lib"
     AC_SUBST(GPT_LDFLAGS)
     AC_ENABLE_SHARED([no])
 else
-    with_dso="yes"
-    # Need to determine if we need -ldl or -ldld
-    # maybe should be replaced with the libtool dl library
-    LAC_CHECK_DL_LIB
     AC_ENABLE_SHARED([yes])
 fi
 
@@ -34,13 +29,16 @@ with_tags=
 save_LD=$LD
 LD=
 
-save_CXXCPP=$CXXCPP
-CXXCPP=
+AC_PROVIDE([AC_PROG_CXX])
+AC_PROVIDE([AC_PROG_CXXCPP])
+
+#save_CXXCPP=$CXXCPP
+#CXXCPP=
 
 AM_PROG_LIBTOOL
 
 LD=$save_LD
-CXXCPP=$save_CXXCPP
+#CXXCPP=$save_CXXCPP
 
 
 dnl config header goes here
@@ -62,8 +60,11 @@ LAC_COMPILER
 CHECK_NEED_LSOCKET
 CHECK_NEED_LNSL
 
-GPT_SET_LIBS(["$DL_LIB $EXTERNAL_LIBS"])	
+# Need to determine if we need -ldl or -ldld
+# maybe should be replaced with the libtool dl library
+CHECK_NEED_LDL
 
+GPT_SET_LIBS([[$EXTERNAL_LIBS]])	
 
 GLOBUS_FINALIZE
 
