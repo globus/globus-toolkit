@@ -590,6 +590,14 @@ parse_hostclause ()
 		    else
 			break
 		    fi
+                elif [ "$1" = "--" ]; then
+                    shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
+                    if [ $# -ge 2 -a "$2" = "--" ]; then
+                        shift
+                    else
+                        shift
+                        continue
+                    fi
 		fi
 		subjob_args="$subjob_args `echo "$1" | stringify`"
 		shift_count=`${GLOBUS_SH_EXPR-expr} $shift_count + 1`
