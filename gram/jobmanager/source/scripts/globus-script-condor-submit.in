@@ -53,8 +53,6 @@ fi
 
 $DEBUG_ECHO "JM_SCRIPT: in condor submit script" >> $grami_logfile
 
-$DEBUG_ECHO "JM_SCRIPT: in loadleveler_submit">> $grami_logfile
-
 $DEBUG_ECHO ""                                            >> $grami_logfile
 $DEBUG_ECHO ============================================  >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
@@ -65,7 +63,7 @@ $DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
 $DEBUG_ECHO ""                                            >> $grami_logfile
 
 
-# 4 jobtypes exist               loadleveler jobtype
+# 4 jobtypes exist               condor jobtype
 # -----------------              -------------------
 # jobtype 0 = mpi        ----->  ERROR
 # jobtype 1 = single     ----->  set universe to vanilla
