@@ -1011,7 +1011,7 @@ sub set_cvsroot
         {
             $cvsroot = "cvs.globus.org:$cvsroot";
             $cvsroot = $cvsuser . "@" . $cvsroot if ( $cvsuser );
-            $ENV{CVS_RSH} = "ssh";
+            $ENV{CVS_RSH} = "ssh" unless defined $ENV{'CVS_RSH'};
         }
         # else cvsroot is fine as-is.
     }
