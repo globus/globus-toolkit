@@ -33,6 +33,7 @@ push(@drivers, "-D test_bounce_transform -D debug -D test_bounce_transform");
 sub basic_tests
 {
     my $inline_finish="-i";
+    my $delay=1000;
 
     for(my $i = 0; $i < 2; $i++)
     {
@@ -42,14 +43,14 @@ sub basic_tests
             foreach(@chunk_sizes)
             {
                 my $c = $_;
-                push(@tests, "$test_exec $test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $d");
-                push(@tests, "$test_exec $test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $d");
-                push(@tests, "$test_exec $test_name -w 0 -r 0 -c $c -b $buffer_size $inline_finish $d");
+                push(@tests, "$test_exec $test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $d $delay");
+                push(@tests, "$test_exec $test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $d $delay");
+                push(@tests, "$test_exec $test_name -w 0 -r 0 -c $c -b $buffer_size $inline_finish $d $delay");
                 for(my $write_count = 1; $write_count <= 8; $write_count *= 2)
                 {
                     for(my $read_count = 1; $read_count <= 8; $read_count *= 2)
                     {
-                        push(@tests, "$test_exec $test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $d");
+                        push(@tests, "$test_exec $test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $d $delay");
                     }
                 }
             }

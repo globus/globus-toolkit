@@ -79,7 +79,7 @@ parse_parameters(
     globus_bool_t                           inline_finish = GLOBUS_FALSE;
     globus_result_t                         res;
     int                                     chunk_size = -1;
-    int                                     delay = 1000;
+    int                                     delay = 0;
     int                                     eof_bytes = -1;
     char                                    c;
     globus_size_t                           buffer_length = 2048;
@@ -223,7 +223,7 @@ parse_parameters(
                 attr,
                 base_driver,
                 GLOBUS_XIO_TEST_RANDOM,
-                eof_bytes);
+                seed);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
 

@@ -11,6 +11,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 
 #$Test::Harness::verbose = 1;
 
+unlink("test_results.txt");
 
 @tests = qw(
             basic-test.pl
@@ -19,6 +20,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             close-barrier-test.pl
             timeout-test.pl
             random-test.pl
+            server-test.pl
             );
 
 my $runserver;

@@ -6,7 +6,7 @@
 
 #define GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE &globus_i_xio_test_module
 
-#define MAX_DELAY 1000
+#define MAX_DELAY 100000
 
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
 {                                                                       \
@@ -85,9 +85,10 @@ cancel_cb(
     globus_result_t                     res;
     GlobusXIOName(cancel_cb);
 
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("test driver cancel callback\n"));
     ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
-    ow->res = GlobusXIOErrorCanceled();
+    ow->res = GlobusXIOErrorTimedout();
 
     res = globus_callback_unregister(
             ow->callback_handle,
@@ -119,6 +120,7 @@ test_inline_blocker(
     GlobusTimeReltimeSet(zero, 0, 0);
     if(globus_reltime_cmp(delay, &zero) != 0)
     {
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("nonzero delay\n"));
         GlobusTimeAbstimeGetCurrent(timeout);
         GlobusTimeAbstimeInc(timeout, *delay);
         GlobusTimeReltimeGet(*delay, sec, usec);
@@ -157,10 +159,11 @@ test_get_delay_time(
     globus_reltime_t *                  out_delay)
 {
     int                                 usec = 0;
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("start random delay\n"));
     if(dh->random)
     {
         usec = rand() % MAX_DELAY;
-        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("-> %d", MAX_DELAY));
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("-> %d\n", MAX_DELAY));
         GlobusTimeReltimeSet(*out_delay, 0, usec);
     }
 }
@@ -207,6 +210,7 @@ globus_l_xio_test_attr_cntl(
             attr->random = GLOBUS_TRUE;
             usecs = va_arg(ap, int);
             srand(usecs);
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("turning on random, seed=%d\n", usecs));
             break;
 
     }
@@ -282,6 +286,7 @@ globus_l_xio_operation_kickout(
 
     GlobusXIODriverDisableCancel(ow->op);
 
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("finishing with=%d\n", ow->res));
     switch(ow->type)
     {
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:

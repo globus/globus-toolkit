@@ -7,7 +7,7 @@ static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
-#define USEC_THRESHHOLD  3000000
+#define USEC_THRESHHOLD  300000
 
 static globus_bool_t
 result_is_timeout(

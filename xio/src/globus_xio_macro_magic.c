@@ -130,12 +130,7 @@ globus_xio_driver_finished_open_DEBUG(
         _context->ref++;                                                    
     }                                                                       
                                                                             
-    /* if still in register call stack or at top level and a user           
-       requested a callback space */                                        
-    if(_op->cached_res == GLOBUS_SUCCESS)                                   
-    {                                                                       
-        _op->cached_res = _res;                                             
-    }                                                                       
+    _op->cached_res = _res;                                                 
     if(_my_op->in_register ||                                               
         (_op->ndx == 0 &&                                                   
          _op->_op_handle->space != GLOBUS_CALLBACK_GLOBAL_SPACE))           
@@ -283,12 +278,7 @@ globus_xio_driver_finished_close_DEBUG(
     _my_context->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;                    
                                                                             
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */  
-    /* space is only not global by user request in the top level of the     
-     * of operations */                                                     
-    if(_op->cached_res == GLOBUS_SUCCESS)                                   
-    {                                                                       
-        _op->cached_res = _res;                                             
-    }                                                                       
+    _op->cached_res = _res;                                                 
     if(_my_op->in_register ||                                               
         (_op->ndx == 0 &&                                                   
          _op->_op_handle->space != GLOBUS_CALLBACK_GLOBAL_SPACE))           
@@ -440,10 +430,7 @@ globus_xio_driver_finished_write_DEBUG(
     _my_op = &_op->entry[_op->ndx - 1];                                     
     _my_context = &_context->entry[_my_op->caller_ndx];                     
                                                                             
-    if(_op->cached_res == GLOBUS_SUCCESS)                                   
-    {                                                                       
-        _op->cached_res = _res;                                             
-    }                                                                       
+    _op->cached_res = _res;                                                 
                                                                             
     globus_assert(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPENING &&  
         _my_context->state != GLOBUS_XIO_HANDLE_STATE_CLOSED);              
@@ -688,10 +675,7 @@ globus_xio_driver_finished_read_DEBUG(
     _context = _op->_op_context;                                            
     _my_op = &_op->entry[_op->ndx - 1];                                     
     _my_context = &_context->entry[_my_op->caller_ndx];                     
-    if(_op->cached_res == GLOBUS_SUCCESS)                                   
-    {                                                                       
-        _op->cached_res = _res;                                             
-    }                                                                       
+    _op->cached_res = _res;                                                 
                                                                             
     globus_assert(_op->ndx > 0);                                            
     globus_assert(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPENING &&  
@@ -937,6 +921,7 @@ globus_xio_driver_pass_accept_DEBUG(
                                                                             
         _my_op->cb = (_in_cb);                                              
         _my_op->user_arg = (_in_user_arg);                                  
+        _my_op->caller_ndx = (_caller_ndx);                                 
         _my_op->in_register = GLOBUS_TRUE;                                  
                                                                             
         _res = _driver->server_accept_func(                                 
@@ -964,10 +949,7 @@ globus_xio_driver_finished_accept_DEBUG(
     _op->block_timeout = GLOBUS_FALSE;                                      
                                                                             
     _my_op = &_op->entry[_op->ndx - 1];                                     
-    if(_op->cached_res == GLOBUS_SUCCESS)                                   
-    {                                                                       
-        _op->cached_res = (_in_res);                                        
-    }                                                                       
+    _op->cached_res = (_in_res);                                            
                                                                             
     _my_op->target = (_in_target);                                          
                                                                             
