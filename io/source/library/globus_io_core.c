@@ -2916,17 +2916,20 @@ globus_l_io_deactivate(void)
 			    globus_l_io_cancel_tail,
 			    tmp);
 	
-	if(tmp->read_arg &&
-	   tmp->read_destructor)
+	if(tmp->read_callback &&
+	    tmp->read_arg &&
+	    tmp->read_destructor)
 	{
 	    tmp->read_destructor(tmp->read_arg);
 	}
-	if(tmp->write_arg &&
-	   tmp->write_destructor)
+	if(tmp->write_callback &&
+	    tmp->write_arg &&
+	    tmp->write_destructor)
 	{
 	    tmp->write_destructor(tmp->write_arg);
 	}
-	if(tmp->cancel_arg &&
+	if(tmp->cancel_callback &&
+	   tmp->cancel_arg &&
 	   tmp->cancel_destructor)
 	{
 	    tmp->cancel_destructor(tmp->cancel_arg);
