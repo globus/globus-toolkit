@@ -1928,6 +1928,11 @@ opts:
         mlsx_options($4);
     }
     |
+    SP MLSX
+    {
+        mlsx_options(NULL);
+    }
+    |
     SP RETR SP retr_option_list 
     ;
 
@@ -2442,6 +2447,13 @@ struct tab sitetab[] =
     {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <socket buffer size in bytes> ]"},
     {"PSIZE", PSIZE, ARGS, 1, "[ <sp> <set file size for partitioned file> ]"},
     {"FAULT", FAULT, STR1, 1, "<sp> command" },
+    {NULL, 0, 0, 0, 0}
+};
+
+struct tab optstab[] =
+{
+    {"RETR", RETR, NEWARGS, 1, "<sp> <retr_opts>"},
+    {"MLSX", MLSX, OSTR, 1, "[ <sp> <fact list> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
@@ -2964,16 +2976,22 @@ int yylex(void)
 		c = cbuf[cpos];
 		cbuf[cpos] = '\0';
 		upper(cp);
-		p = lookup(cmdtab, cp);
+		p = lookup(optstab, cp);
 		cbuf[cpos] = c;
-		if (p != 0) {
-		    state = NEWARGS;
-		    /* NOTREACHED */
+	        if (p != 0) {
+                    if (p->implemented == 0) {
+                        state = CMD;
+                        nack(p->name);
+                        longjmp(errcatch, 0);
+                        /* NOTREACHED */
+                    }
+                    state = p->state;
+                    yylval.String = p->name;
+                    return (p->token);
 		}
-		state = NEWARGS;
-		yylval.String = p->name;
-		return (p->token);
-	
+	        state = CMD;
+	        break;
+	        
 	    case NEWARGS:
 	    if (isdigit(cbuf[cpos])) {
 		cp = &cbuf[cpos];
