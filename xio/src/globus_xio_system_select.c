@@ -154,7 +154,6 @@ typedef enum
 {
     GLOBUS_L_OPERATION_ACCEPT,
     GLOBUS_L_OPERATION_CONNECT,
-    GLOBUS_L_OPERATION_OPEN,
     GLOBUS_L_OPERATION_READ,
     GLOBUS_L_OPERATION_READV,
     GLOBUS_L_OPERATION_RECV,
@@ -199,7 +198,7 @@ typedef struct
 
     union
     {
-        /* non data ops -- open, connect, accept */
+        /* non data ops -- connect, accept */
         struct
         {
             globus_xio_system_callback_t        callback;
@@ -560,12 +559,10 @@ globus_l_xio_system_cancel_cb(
                      * because the CancelDisallow() call in the kickout will 
                      * block until I leave this function
                      */
-                    if((op_info->type == GLOBUS_L_OPERATION_OPEN        &&
-                        FD_ISSET(op_info->fd, globus_l_xio_system_read_fds)) ||
-                        op_info->type == GLOBUS_L_OPERATION_READ             ||
-                        op_info->type == GLOBUS_L_OPERATION_READV            ||
-                        op_info->type == GLOBUS_L_OPERATION_RECV             ||
-                        op_info->type == GLOBUS_L_OPERATION_RECVFROM         ||
+                    if(op_info->type == GLOBUS_L_OPERATION_READ             ||
+                        op_info->type == GLOBUS_L_OPERATION_READV           ||
+                        op_info->type == GLOBUS_L_OPERATION_RECV            ||
+                        op_info->type == GLOBUS_L_OPERATION_RECVFROM        ||
                         op_info->type == GLOBUS_L_OPERATION_RECVMSG)
                     {
                         if(pend)
@@ -782,7 +779,6 @@ globus_l_xio_system_kickout(
     
     switch(op_info->type)
     {
-      case GLOBUS_L_OPERATION_OPEN:
       case GLOBUS_L_OPERATION_CONNECT:
       case GLOBUS_L_OPERATION_ACCEPT:
         op_info->sop.non_data.callback(
@@ -1323,10 +1319,6 @@ globus_l_xio_system_handle_read(
     
     switch(read_info->type)
     {
-      case GLOBUS_L_OPERATION_OPEN:
-        /* nothing else to do here */
-        break;
-
       case GLOBUS_L_OPERATION_READ:
         result = globus_l_xio_system_try_read(
             fd,
@@ -1418,7 +1410,6 @@ globus_l_xio_system_handle_read(
         break;
     }
     
-    /* always true for open operations */
     if(read_info->nbytes >= read_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
@@ -1475,10 +1466,6 @@ globus_l_xio_system_handle_write(
     
     switch(write_info->type)
     {
-      case GLOBUS_L_OPERATION_OPEN:
-        /* nothing to do here */
-        break;
-
       case GLOBUS_L_OPERATION_CONNECT:
         {
             int                         err;
@@ -1627,7 +1614,7 @@ globus_l_xio_system_handle_write(
         break;
     }
     
-    /* always true for open, connect, and accept operations */
+    /* always true for connect, and accept operations */
     if(write_info->nbytes >= write_info->waitforbytes || 
         result != GLOBUS_SUCCESS)
     {
@@ -1797,6 +1784,28 @@ globus_l_xio_system_poll(
         !globus_l_xio_system_shutdown_called);
 }
 
+typedef struct
+{
+    int                                 fd;
+    globus_xio_system_callback_t        callback;
+    void *                              user_arg;
+} globus_l_xio_system_open_close_info_t;
+
+static
+void
+globus_l_xio_system_open_close_kickout(
+    void *                              user_arg)
+{
+    globus_l_xio_system_open_close_info_t * info;
+    GlobusXIOName(globus_l_xio_system_open_close_kickout);
+
+    info = (globus_l_xio_system_open_close_info_t *) user_arg;
+
+    info->callback(GLOBUS_SUCCESS, info->user_arg);
+
+    globus_free(info);
+}
+
 globus_result_t
 globus_xio_system_register_open(
     globus_xio_operation_t              op,
@@ -1809,7 +1818,7 @@ globus_xio_system_register_open(
 {
     int                                 fd;
     globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
+    globus_l_xio_system_open_close_info_t *  open_info;
     GlobusXIOName(globus_xio_system_register_open);
 
     do
@@ -1820,50 +1829,42 @@ globus_xio_system_register_open(
     if(fd < 0)
     {
         result = GlobusXIOErrorSystemError("open", errno);
-        goto error_close;
+        goto error_open;
     }
-
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
+    
+    open_info = (globus_l_xio_system_open_close_info_t *)
+        globus_malloc(sizeof(globus_l_xio_system_open_close_info_t));
+    if(!open_info)
     {
-        result = GlobusXIOErrorMemory("op_info");
-        goto error_op_info;
+        result = GlobusXIOErrorMemory("open_info");
+        goto error_open_info;
     }
 
-    op_info->type = GLOBUS_L_OPERATION_OPEN;
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->sop.non_data.callback = callback;
+    open_info->callback = callback;
+    open_info->user_arg = user_arg;
 
-    if(flags & GLOBUS_XIO_SYSTEM_RDONLY)
-    {
-        result = globus_l_xio_system_register_read(fd, op_info);
-    }
-    else
-    {
-        result = globus_l_xio_system_register_write(fd, op_info);
-    }
-
+    result = globus_callback_register_oneshot(
+        GLOBUS_NULL,
+        GLOBUS_NULL,
+        globus_l_xio_system_open_close_kickout,
+        open_info);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_system_register_read/write", result);
+            "globus_callback_register_oneshot", result);
         goto error_register;
-        
     }
-
+    
     *out_fd = fd;
     return GLOBUS_SUCCESS;
 
 error_register:
-    GlobusIXIOSystemFreeOperation(op_info);
+    globus_free(open_info);
     
-error_op_info:
+error_open_info:
     GlobusIXIOSystemCloseFd(fd);
     
-error_close:
+error_open:
     return result;
 }
 
@@ -2395,28 +2396,6 @@ error_op_info:
     return result;
 }
 
-typedef struct
-{
-    int                                 fd;
-    globus_xio_system_callback_t        callback;
-    void *                              user_arg;
-} globus_l_xio_system_close_info_t;
-
-static
-void
-globus_l_xio_system_close_kickout(
-    void *                              user_arg)
-{
-    globus_l_xio_system_close_info_t *             close_info;
-    GlobusXIOName(globus_l_xio_system_close_kickout);
-
-    close_info = (globus_l_xio_system_close_info_t *) user_arg;
-
-    close_info->callback(GLOBUS_SUCCESS, close_info->user_arg);
-
-    globus_free(close_info);
-}
-
 globus_result_t
 globus_xio_system_register_close(
     globus_xio_operation_t              op,
@@ -2424,7 +2403,7 @@ globus_xio_system_register_close(
     globus_xio_system_callback_t        callback,
     void *                              user_arg)
 {
-    globus_l_xio_system_close_info_t *  close_info;
+    globus_l_xio_system_open_close_info_t *  close_info;
     globus_result_t                     result;
     int                                 rc;
     GlobusXIOName(globus_xio_system_register_close);
@@ -2440,8 +2419,8 @@ globus_xio_system_register_close(
         goto error_close;
     }
     
-    close_info = (globus_l_xio_system_close_info_t *)
-        globus_malloc(sizeof(globus_l_xio_system_close_info_t));
+    close_info = (globus_l_xio_system_open_close_info_t *)
+        globus_malloc(sizeof(globus_l_xio_system_open_close_info_t));
     if(!close_info)
     {
         result = GlobusXIOErrorMemory("close_info");
@@ -2454,7 +2433,7 @@ globus_xio_system_register_close(
     result = globus_callback_register_oneshot(
         GLOBUS_NULL,
         GLOBUS_NULL,
-        globus_l_xio_system_close_kickout,
+        globus_l_xio_system_open_close_kickout,
         close_info);
     if(result != GLOBUS_SUCCESS)
     {

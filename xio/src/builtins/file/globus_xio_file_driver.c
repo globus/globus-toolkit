@@ -437,8 +437,8 @@ globus_l_xio_file_system_open_cb(
 static
 globus_result_t
 globus_l_xio_file_open(
-    void *                              driver_attr,
     void *                              driver_target,
+    void *                              driver_attr,
     globus_xio_context_t                context,
     globus_xio_operation_t              op)
 {
