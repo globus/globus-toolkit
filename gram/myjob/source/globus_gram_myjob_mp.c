@@ -18,7 +18,7 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#if GLOBUS_GRAM_MYJOB_MP
+#ifdef GLOBUS_GRAM_MYJOB_MP
 
 #include "globus_gram_myjob.h"
 
