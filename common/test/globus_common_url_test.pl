@@ -15,7 +15,9 @@ use Test;
 
 my $test_prog = 'globus_common_url_test';
 
-my $diff = 'diff'
+my $diff = 'diff';
+my @tests;
+my @todo;
 
 sub basic_func
 {
@@ -50,6 +52,8 @@ sub basic_func
    
    if($errors eq "")
    {
+      ok('success', 'success');
+      
       if( -e "$test_prog.log.stdout" )
       {
 	 unlink("$test_prog.log.stdout");
@@ -60,6 +64,11 @@ sub basic_func
 	 unlink("$test_prog.log.stderr");
       } 
    }
+   else
+   {
+      ok($errors, 'success');
+   }
+
 }
 
 sub sig_handler
