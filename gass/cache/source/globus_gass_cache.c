@@ -979,7 +979,7 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
 
 
 /******************************************************************************
-Function: _globus_l_gass_cache_lock_file()
+Function: globus_l_gass_cache_lock_file()
 
 Description: Create an advisory lock on a file. To methode have been
     implemented: using hard link (if NEW_LOCK is not defined) and
@@ -987,9 +987,6 @@ Description: Create an advisory lock on a file. To methode have been
     ->hard links do not exist on AFS
     -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
     all the new versions/POSIX [IEEE 1988]
-    This function is identical to globus_l_gass_cache_lock_file(), but return
-    GLOBUS_GASS_CACHE_LOCK_TIMEOUT is the lock timed out and the lock had to
-    be broken. (to be used for test purpose.)
 
 Parameters: input:
                file_to_be_locked : path to the file to lock
@@ -1006,7 +1003,7 @@ Note : If compilled with LOCK_TOUT defined, the lock will timeout after
 	    
 ******************************************************************************/
 static int
-_globus_l_gass_cache_lock_file(char* file_to_be_locked)
+globus_l_gass_cache_lock_file(char* file_to_be_locked)
 {
     char   lock_file[FILENAME_MAX+1];
     int    lock_file_fd;
@@ -1014,11 +1011,11 @@ _globus_l_gass_cache_lock_file(char* file_to_be_locked)
     int    uniq_lock_file_fd;
     struct stat file_stat;
     char   hname[MAXHOSTNAMELEN];
+    int    return_code=GLOBUS_SUCCESS;
 
 #   ifdef LOCK_TOUT
     int    lock_tout=0;
     struct timeval tv;
-    int    return_code=GLOBUS_SUCCESS;
 #   endif
 
     /* build the name of the file used to lock "file_to_be_locked" */
@@ -1150,183 +1147,9 @@ _globus_l_gass_cache_lock_file(char* file_to_be_locked)
 	/* try again to lock the file */
     } while ( 1 );
     
-
-#   ifdef LOCK_TOUT
-    {
-        return(return_code);
-    }
-#   endif
-} /* _globus_l_gass_cache_lock_file */
-
-/******************************************************************************
-Function:globus_l_gass_cache_lock_file()
-
-Description: Create an advisory lock on a file. To methode have been
-    implemented: using hard link (if NEW_LOCK is not defined) and
-    using open(... O_CREAT|O_EXCL) which return an error if file exist.
-    ->hard links do not exist on AFS
-    -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
-    all the new versions/POSIX [IEEE 1988]
-
-Parameters: input:
-               file_to_be_locked : path to the file to lock
-	    output:
-	        none
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR
-
-Note : If compilled with LOCK_TOUT defined, the lock will timeout after
-       LOCK_TOUT try to get the lock, if the file to lock is older than
-       LOCK_TOUT*LOOP_TIME
-	    
-******************************************************************************/
-static int
-globus_l_gass_cache_lock_file(char* file_to_be_locked)
-{
-    char   lock_file[FILENAME_MAX+1];
-    int    lock_file_fd;
-    char   uniq_lock_file[FILENAME_MAX+1];
-    int    uniq_lock_file_fd;
-    struct stat file_stat;
-    char   hname[MAXHOSTNAMELEN];
-
-#   ifdef LOCK_TOUT
-    int    lock_tout=0;
-    struct timeval tv;
-#   endif
-
-    /* build the name of the file used to lock "file_to_be_locked" */
-    strcpy(lock_file, file_to_be_locked);
-    strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
-    /* !!! need to handle multi threaded !!! */
-    globus_libc_gethostname(hname,sizeof(hname));
-
-    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
-			lock_file,
-			hname,
-			(long) globus_libc_getpid(),
-			(long) globus_thread_self());
-    
-    while ( (uniq_lock_file_fd = creat(uniq_lock_file,
-				       GLOBUS_L_GASS_CACHE_STATE_MODE)) < 0 )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE2("could not create uniq lock file %s",uniq_lock_file);
-	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
-	}
-    }
-    while (close(uniq_lock_file_fd) < 0 )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE2("could not close uniq lock file %s",uniq_lock_file);
-	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
-	}
-    }
-    
-    do
-    {
-	while ( link(uniq_lock_file, lock_file) < 0)
-	{
-            /* ENOTEMPTY: I try to ignore it for problems on DFS from a      */
-	    /* Solaris machine                                               */
-	    /* EEXIST : the file is locked by an other process               */
-	    /* EINTR : system call interrupted: retry                        */
-	    if (errno != EEXIST && errno != EINTR  && errno != ENOTEMPTY  )
-	    {
-		CACHE_TRACE3("Lock: Could not link files %s and %s\n",uniq_lock_file, lock_file);
-		CACHE_TRACE2("Lock: Errno :%d\n",errno);
-		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
-	    }
-
-#           ifdef LOCK_TOUT
-	    lock_tout++;
-	    if (lock_tout> LOCK_TOUT)
-	    {
-		/* check the age of the file to lock */
-		while ( stat(file_to_be_locked ,&file_stat) != 0)
-		{
-		    if (errno != EINTR)
-		    {
-			CACHE_TRACE2("could not get stat of file %s",
-				     uniq_lock_file);
-			return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
-		    }
-		}
-		/* get system time */
-		gettimeofday(&tv, 0);
-
-		if ( file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec)
-		{
-		    /* the file has not been accessed for long,
-		       lets break the lock */
-		    /*
-		    CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
-				 file_to_be_locked);
-		    */
-		    while (unlink(lock_file) != 0 )
-		    {
-			if (errno != EINTR && errno != ENOENT )
-			{
-			    CACHE_TRACE2("Could not remove lock file %s",lock_file);
-			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-			}
-		    }
-		}
-		
-		lock_tout=0;
-	    }
-	    else
-	    {
-		globus_libc_usleep(LOOP_TIME);
-	    }
-#           else
-		
-	    globus_libc_usleep(LOOP_TIME);
-#           endif
-	    /* try again to lock the file */
-
-	}
-
-	while ( stat(uniq_lock_file ,&file_stat) != 0)
-	{
-	    if (errno != EINTR)
-	    {
-		CACHE_TRACE("could not get stat of files");
-		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
-	    }
-	}
-	
-	if  ( file_stat.st_nlink != 2)
-	{
-	    /* we manage to create the file, but it is not a hard link
-	       to the uniq_file, for some wird reasons. let try again */
-	    while (unlink(lock_file) != 0 )
-	    {
-		if (errno != EINTR && errno != ENOENT )
-		{
-		    CACHE_TRACE2("Could not remove lock file %s",lock_file);
-		    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-		}
-		if (errno == ENOENT )
-		    break;
-	    }
-	}
-	else
-	{
-	    /* we aquired the lock correctly, lets continue */
-	    break;
-	}
-
-	globus_libc_usleep(LOOP_TIME);
-	
-	/* try again to lock the file */
-    } while ( 1 );
-    
-    return(GLOBUS_SUCCESS);
+    return(return_code);
 } /* globus_l_gass_cache_lock_file */
+
 
 /******************************************************************************
 Function:globus_l_gass_cache_unlock_file()
@@ -1431,7 +1254,7 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
     int rc;
 
     rc =globus_l_gass_cache_lock_file(cache_handle->state_file_path);
-    if ( rc != GLOBUS_SUCCESS)
+    if ( rc != GLOBUS_SUCCESS && rc !=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT)
     {
 	return(rc);
     }
