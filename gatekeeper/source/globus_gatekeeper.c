@@ -195,11 +195,12 @@ static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
 static char *	job_manager_exe = "globus-job-manager";
 static char *   jm_conf_path = NULL;
-static char *   libexecdir = GLOBUS_LIBEXECDIR;
+static char *   libexecdir = NULL;
+static char *   libexecdirr = GLOBUS_LIBEXECDIR;
 static char *   service_name = NULL;
-static char *   grid_services = "grid-services";
-static char *   globusmap = "globusmap";
-static char *   globuskmap = "globuskmap";
+static char *   grid_services = "etc/grid-services";
+static char *   globusmap = "etc/globusmap";
+static char *   globuskmap = "etc/globuskmap";
 static char *   globuspwd = NULL;
 static char *   globuscertdir = "cert";
 static char *   globuskeydir = "key";
@@ -510,14 +511,14 @@ main(int xargc,
         else if ((strcmp(argv[i], "-home") == 0)
                 && (i + 1 < argc))
         {
-			/* Also know ad the ${deploy_prefix} */
+			/* Also known as the ${deploy_prefix} */
             gatekeeperhome = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-e") == 0)
                 && (i + 1 < argc))
         {
-            libexecdir = argv[i+1];
+            libexecdirr = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-grid_services") == 0)
@@ -655,6 +656,13 @@ main(int xargc,
         }
     }
 
+	/* 
+	 * define libexec relative to home
+	 * if needed
+	 */
+
+	libexecdir = genfilename(gatekeeperhome, libexecdirr, NULL);
+
     /*
      * Dont use default env proxy cert for gatekeeper if run as root
      * this might get left over. You can still use -x509_user_proxy
@@ -676,14 +684,20 @@ main(int xargc,
         {
             fprintf(stderr,"Local user id (uid)      : root\n");
         }
+		fprintf(stderr,"home %s\n", 
+			(gatekeeperhome) ? gatekeeperhome : "(not defined)");
+		fprintf(stderr,"libexec: %s\n",
+				(libexecdir) ? libexecdir : "(not defined)");
+
         run_from_inetd = 0;
         foreground = 1;
     }
 
 	if (gatekeeperhome)
 	{
-		grami_setenv("GLOBUS_DEPLOY",gatekeeperhome,1);
+		grami_setenv("GLOBUS_DEPLOY_PATH",gatekeeperhome,1);
 	}
+	
     grami_setenv("GLOBUSMAP", genfilename(gatekeeperhome,globusmap,NULL),1);
     if (globuspwd) 
     {
@@ -1415,7 +1429,7 @@ static void doit()
      */
 	
 
-    gram_k5_path = genfilename( gatekeeperhome, libexecdir, GRAM_K5_EXE);
+    gram_k5_path = genfilename(libexecdir, GRAM_K5_EXE, NULL);
 
     /* need k5 plus the number of args in the service_args + NULL */
 	/* we will overlay the previous service arg to do this. */
