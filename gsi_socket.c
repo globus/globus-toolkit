@@ -268,6 +268,16 @@ write_token(const int sock,
     return (return_value == -1 ? -1 : 0);
 }
 
+static int
+assist_write_token(void *sock,
+		   void *buffer,
+		   size_t buffer_size)
+{
+    assert(sock != NULL);
+    assert(buffer != NULL);
+    
+    return write_token(*((int *) sock), (char *) buffer, buffer_size);
+}
 
 /*
  * Wrapper around setenv() function
@@ -693,7 +703,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	self->error_number = errno;
 	goto error;
     }
-    if ((fp = fdopen(sock, "r+")) == NULL) {
+    if ((fp = fdopen(sock, "r")) == NULL) {
 	self->error_string = strdup("fdopen() of socket failed");
 	self->error_number = errno;
 	goto error;
@@ -714,8 +724,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 					   &token_status,
 					   globus_gss_assist_token_get_fd,
 					   (void *)fp,
-					   globus_gss_assist_token_send_fd,
-					   (void *)fp);
+					   assist_write_token,
+					   (void *)&self->sock);
 
     if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
@@ -855,7 +865,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	self->error_number = errno;
 	goto error;
     }
-    if ((fp = fdopen(sock, "r+")) == NULL) {
+    if ((fp = fdopen(sock, "r")) == NULL) {
 	self->error_string = strdup("fdopen() of socket failed");
 	self->error_number = errno;
 	goto error;
@@ -879,8 +889,8 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 						    */
 					     globus_gss_assist_token_get_fd,
 					     (void *)fp,
-					     globus_gss_assist_token_send_fd,
-					     (void *)fp);
+					     assist_write_token,
+					     (void *)&self->sock);
 
     if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
