@@ -36,14 +36,6 @@ CVS Information:
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-static int 
-globus_l_gram_environment_get(char *** env,
-                              FILE * log_fp);
-
-static int
-globus_l_gram_env_not_set(char * env_name,
-                          char *** env_list);
-
 static void
 globus_l_gram_param_prepare( char * param,
                              char * new_param);
@@ -60,13 +52,6 @@ globus_l_gram_script_run(char * cmd,
 static int
 globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request);
 
-static int 
-globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request);
-static int 
-globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request);
-static int 
-globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request);
-
 static int globus_l_gram_jobmanager_activate(void);
 static int globus_l_gram_jobmanager_deactivate(void);
 
@@ -82,12 +67,6 @@ static int globus_l_gram_jobmanager_deactivate(void);
 extern int errno;
 
 static int globus_l_is_initialized = 0;
-
-static int graml_processes_started = 0;
-static int graml_processes_completed = 0;
-
-static int * graml_child_pid_ptr = NULL;
-static int * graml_child_pid_head = NULL;
 
 static char * graml_script_arg_file = NULL;
 static char * graml_env_krb5ccname;
@@ -238,6 +217,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->save_state = GLOBUS_FALSE;
     r->jm_restart = NULL;
     r->scratchdir = GLOBUS_NULL;
+    r->scratch_dir_base = GLOBUS_NULL;
 
     if ( (graml_script_arg_file = tempnam(NULL, "grami")) == NULL )
     {
@@ -293,69 +273,6 @@ globus_jobmanager_request_destroy(globus_gram_jobmanager_request_t * request)
 } /* globus_jobmanager_request_destroy() */
 
 /******************************************************************************
-Function:       globus_jobmanager_request()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_jobmanager_request(globus_gram_jobmanager_request_t * request)
-{
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    if (globus_l_gram_request_validate(request) != GLOBUS_SUCCESS)
-        return(GLOBUS_FAILURE);
-
-    return(globus_l_gram_request_shell(request));
-} /* globus_jobmanager_request() */
-
-/******************************************************************************
-Function:       globus_jobmanager_request_cancel()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_jobmanager_request_cancel(globus_gram_jobmanager_request_t * request)
-{
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    return(globus_l_gram_cancel_shell(request));
-} /* globus_jobmanager_request_cancel() */
-
-/******************************************************************************
-Function:       globus_jobmanager_request_signal()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_jobmanager_request_signal(globus_gram_jobmanager_request_t * request)
-{
-    if (!request)
-        return(GLOBUS_FAILURE);
-
-    return(globus_l_gram_signal_shell(request));
-} /* globus_jobmanager_request_signal() */
-
-/******************************************************************************
-Function:       globus_jobmanager_request_check()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_jobmanager_request_check(globus_gram_jobmanager_request_t * request)
-{
-    if (!request)
-        return(GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED);
-
-    return(globus_l_gram_check_shell(request));
-} /* globus_job_manager_request_check() */
-
-/******************************************************************************
 Function:       globus_jobmanager_log()
 Description:
 Parameters:
@@ -401,13 +318,13 @@ globus_jobmanager_log( FILE *log_fp, const char *format, ... )
 
 
 /******************************************************************************
-Function:       globus_l_gram_request_shell()
+Function:       globus_jobmanager_request()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 int 
-globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
+globus_jobmanager_request(globus_gram_jobmanager_request_t * request)
 {
     char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     FILE * script_arg_fp;
@@ -416,8 +333,14 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     char * stdout_filename = GLOBUS_NULL;
     char * stderr_filename = GLOBUS_NULL;
 
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    if (globus_l_gram_request_validate(request) != GLOBUS_SUCCESS)
+        return(GLOBUS_FAILURE);
+
     globus_jobmanager_log(request->jobmanager_log_fp,
-          "JMI: in globus_l_gram_request_shell()\n" );
+          "JMI: in globus_jobmanager_request()\n" );
 
     request->poll_frequency = 30;
 
@@ -634,23 +557,26 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
 	    "JMI: returning with success\n" );
     return(GLOBUS_SUCCESS);
 
-} /* globus_l_gram_request_shell() */
+} /* globus_jobmanager_request() */
 
 
 /******************************************************************************
-Function:       globus_l_gram_cancel_shell()
+Function:       globus_jobmanager_request_cancel()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 int
-globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request)
+globus_jobmanager_request_cancel(globus_gram_jobmanager_request_t * request)
 {
     char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     int rc;
 
+    if (!request)
+        return(GLOBUS_FAILURE);
+
     globus_jobmanager_log(request->jobmanager_log_fp,
-          "JMI: in globus_l_gram_cancel_shell()\n" );
+          "JMI: in globus_jobmanager_request_cancel()\n" );
 
     sprintf(script_cmd, "%s/globus-script-%s-rm %s\n",
                          request->jobmanager_libexecdir,
@@ -679,25 +605,28 @@ globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request)
 
     return(GLOBUS_SUCCESS);
 
-} /* globus_l_gram_cancel_shell() */
+} /* globus_jobmanager_request_cancel() */
 
 
 /******************************************************************************
-Function:       globus_l_gram_signal_shell()
+Function:       globus_jobmanager_request_signal()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 int
-globus_l_gram_signal_shell(globus_gram_jobmanager_request_t * request)
+globus_jobmanager_request_signal(globus_gram_jobmanager_request_t * request)
 {
     FILE * signal_arg_fp;
     char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     int rc;
     char * tmp_signalfilename = NULL;
 
+    if (!request)
+        return(GLOBUS_FAILURE);
+
     globus_jobmanager_log(request->jobmanager_log_fp,
-          "JMI: in globus_l_gram_signal_shell()\n" );
+          "JMI: in globus_jobmanager_request_signal()\n" );
 
     tmp_signalfilename = tempnam(NULL, "grami_signal");
 
@@ -747,20 +676,23 @@ globus_l_gram_signal_shell(globus_gram_jobmanager_request_t * request)
 
     return(GLOBUS_SUCCESS);
 
-} /* globus_l_gram_signal_shell() */
+} /* globus_jobmanager_request_signal() */
 
 
 /******************************************************************************
-Function:       globus_l_gram_check_shell()
+Function:       globus_jobmanager_request_check()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 int 
-globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request)
+globus_jobmanager_request_check(globus_gram_jobmanager_request_t * request)
 {
     char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     int old_status;
+
+    if (!request)
+        return(GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED);
 
     sprintf(script_cmd, "%s/globus-script-%s-poll %s\n",
                          request->jobmanager_libexecdir,
@@ -781,7 +713,7 @@ globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request)
          (request->status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED) )
     {
 	globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: globus_l_gram_check_shell(): poll script returned unknown "
+              "JMI: globus_jobmanager_request_check(): poll script returned unknown "
               "value: %d\n", request->status );
         request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOBSTATE;
         return(GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED);
@@ -807,217 +739,7 @@ globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request)
         return(GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED);
     }
 
-} /* globus_l_gram_check_shell() */
-
-/******************************************************************************
-Function:       globus_l_gram_environment_get()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-/*
- * globus_l_gram_environment_get()
- *
- * environment vars come in pairs, first the var then the value.
- * So 2 environment vars will be converted to one.
- *
- * For example:
- *       env[0] = "FOO"
- *       env[1] = "bar"
- *
- *       new_env[0] = "FOO=bar"
- */
-static int 
-globus_l_gram_environment_get(char *** env, FILE * log_fp)
-{
-    char ** new_env;
-    int env_count;
-    int i, j;
-    int jm_env_num = 0;
-
-    /* count up the environment vars */
-    for (env_count = 0; (*env)[env_count] != NULL; env_count++)
-        ;
-
-    /* if the number of environment vars is not even then the 
-     * parameter parsed ok, but it invalid because we assume they come in 
-     * pairs.  So return an error
-     */
-    if (env_count % 2)
-    {
-        globus_jobmanager_log(log_fp, 
-              "JMI: Error: Got an uneven number %d of environment variables!\n",
-                env_count);
-        return(GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL_ENVIRONMENT);
-    }
-    
-    /* divided by 2 because 2 rsl env vars equal 1 var=value pair.
-     */
-    env_count = env_count / 2;
-
-    globus_jobmanager_log(log_fp, 
-          "JMI: %d variables identified in the request environment parameter\n",
-          env_count);
-
-    if ( graml_env_krb5ccname ) jm_env_num++;
-    if ( graml_env_nlspath ) jm_env_num++;
-    if ( graml_env_lang ) jm_env_num++;
-    if ( graml_env_logname ) jm_env_num++;
-    if ( graml_env_home ) jm_env_num++;
-    if ( graml_env_tz ) jm_env_num++;
-    
-    globus_jobmanager_log(log_fp, "JMI: %d variables from job manager's environment "
-                          "will be appended to the request environment.\n",
-                          jm_env_num);
-
-    new_env = (char **) globus_libc_malloc(sizeof(char *) * 
-                          (env_count + jm_env_num + 1));
-
-    /* tack on the globus environment vars to the beginning of the list */
-    for (i = 0, j=0; (*env)[i]; i++, j++)
-    {
-        globus_jobmanager_log(log_fp,
-                      "env[%d] is \"%s\"\n", i, (*env)[i]);
-        if ((*env)[i+1])
-        {
-            globus_jobmanager_log(log_fp,
-                          "env[%d] is \"%s\"\n", i+1, (*env)[i+1]);
-
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                       (strlen( (*env)[i]) +
-                                        strlen( (*env)[i+1]) + 2));
-
-            sprintf((new_env)[j], "%s=%s", (*env)[i],
-                                            (*env)[i+1]);
-        }
-        else
-        {
-            (new_env)[j] = (char *) globus_libc_malloc (sizeof(char *) *
-                                       (strlen((*env)[i]) + 2));
-            sprintf((new_env)[j], "%s=", (*env)[i]);
-        }
-        i++;
-    }
-
-    if (graml_env_krb5ccname)
-    {
-        if (globus_l_gram_env_not_set("KRB5CCNAME", env))
-        {
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                   (strlen("KRB5CCNAME") +
-                                    strlen(graml_env_krb5ccname) + 2));
-            sprintf((new_env)[j], "%s=%s", "KRB5CCNAME",
-                                           graml_env_krb5ccname);
-            j++;
-        }
-    }
-
-    if (graml_env_nlspath)
-    {
-        if (globus_l_gram_env_not_set("NLSPATH", env))
-        {
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                   (strlen("NLSPATH") +
-                                    strlen(graml_env_nlspath) + 2));
-            sprintf((new_env)[j], "%s=%s", "NLSPATH",
-                                           graml_env_nlspath);
-            j++;
-        }
-    }
-
-    if (graml_env_lang)
-    {
-        if (globus_l_gram_env_not_set("LANG", env))
-        {
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                   (strlen("LANG") +
-                                    strlen(graml_env_lang) + 2));
-            sprintf((new_env)[j], "%s=%s", "LANG", graml_env_lang);
-            j++;
-        }
-    }
-
-    if (graml_env_logname)
-    {
-        if (globus_l_gram_env_not_set("LOGNAME", env))
-        {
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                   (strlen("LOGNAME") +
-                                    strlen(graml_env_logname) + 2));
-            sprintf((new_env)[j], "%s=%s", "LOGNAME",
-                                           graml_env_logname);
-            j++;
-        }
-    }
-
-    if (graml_env_home)
-    {
-        if (globus_l_gram_env_not_set("HOME", env))
-        {
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                   (strlen("HOME") +
-                                    strlen(graml_env_home) + 2));
-            sprintf((new_env)[j], "%s=%s", "HOME",
-                                           graml_env_home);
-            j++;
-        }
-    }
-
-    if (graml_env_tz)
-    {
-        if (globus_l_gram_env_not_set("TZ", env))
-        {
-            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
-                                   (strlen("TZ") +
-                                    strlen(graml_env_tz) + 2));
-            sprintf((new_env)[j], "%s=%s", "TZ",
-                                           graml_env_tz);
-            j++;
-        }
-    }
-    
-    /* set the last environment var to NULL */
-    (new_env)[j] = NULL;
-
-    /* replace the old environment vars with the newly created one */
-    *env = new_env;
-
-    return(GLOBUS_SUCCESS);
-
-} /* globus_l_gram_environment_get() */
-
-/******************************************************************************
-Function:       globus_l_gram_env_not_set()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int
-globus_l_gram_env_not_set(char * env_name, char *** env_list)
-{
-    int i;
-
-    if (!env_name)
-        return(0);
-
-    /* if the list is empty then it is ok to set the variable */
-    if ( (*env_list)[0] == NULL )
-        return(1);
-
-    /* check every 2 RSL env because they come in the form
-     * env[0] = var
-     * env[1] = value
-     */
-    for (i=0; (*env_list)[i]; i=i+2)
-    {
-        if (strcmp(env_name,(*env_list)[i]) == 0)
-           return(0);
-    }
-
-    /* it is ok to set the variable */
-    return(1);
-
-} /* globus_l_gram_env_not_set() */
+} /* globus_jobmanager_request_check() */
 
 /******************************************************************************
 Function:       globus_l_gram_param_prepare()
@@ -1407,7 +1129,9 @@ globus_jobmanager_request_scratchdir(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "grami_scratchdir='%s'\n", request->scratchdir);
+    fprintf(script_arg_fp,
+	    "grami_scratch_dir_base='%s'\n",
+	    request->scratch_dir_base);
 
     fclose(script_arg_fp);
 
@@ -1427,8 +1151,8 @@ globus_jobmanager_request_scratchdir(
 
 	if(script_arg_fp != GLOBUS_NULL)
 	{
-	    fscanf(script_arg_fp, "grami_scratchdir='%*[^\n]\n");
-	    fscanf(script_arg_fp, "grami_scratch_directory='");
+	    fscanf(script_arg_fp, "grami_scratch_dir_base='%*[^\n]\n");
+	    fscanf(script_arg_fp, "grami_scratch_dir='");
 	    pos = ftell(script_arg_fp);
 	    fscanf(script_arg_fp, "%*[^']'");
 	    end = ftell(script_arg_fp);
@@ -1459,9 +1183,7 @@ globus_jobmanager_request_scratchdir(
     }
 
     return(GLOBUS_SUCCESS);
-
-    return(globus_l_gram_cancel_shell(request));
-} /* globus_jobmanager_request_cancel() */
+} /* globus_jobmanager_request_scratchdir() */
 
 int 
 globus_jobmanager_request_rm_scratchdir(
@@ -1470,7 +1192,6 @@ globus_jobmanager_request_rm_scratchdir(
     char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     int rc;
     FILE * script_arg_fp;
-    long pos, end;
 
     if (!request)
         return(GLOBUS_FAILURE);
@@ -1486,7 +1207,7 @@ globus_jobmanager_request_rm_scratchdir(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "grami_scratchdir='%s'\n", request->scratchdir);
+    fprintf(script_arg_fp, "grami_scratch_dir='%s'\n", request->scratchdir);
 
     fclose(script_arg_fp);
 
@@ -1519,6 +1240,5 @@ globus_jobmanager_request_rm_scratchdir(
     }
 
     return(GLOBUS_SUCCESS);
-
-    return(globus_l_gram_cancel_shell(request));
-} /* globus_jobmanager_request_cancel() */
+}
+/* globus_jobmanager_request_rm_scratchdir() */

@@ -381,6 +381,7 @@ typedef struct
       */
     int					stderr_position;
 
+    char *				scratch_dir_base;
     char *				scratchdir;
 
     globus_gram_job_manager_callback_func_t

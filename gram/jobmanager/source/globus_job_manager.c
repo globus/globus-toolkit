@@ -107,6 +107,7 @@ typedef struct globus_l_gram_conf_values_s
     char *    globus_location;
     char *    tcp_port_range;
     int       num_env_adds;
+    char *    scratch_dir_base;
 } globus_l_gram_conf_values_t;
 
 typedef struct globus_l_jm_http_query_s
@@ -230,12 +231,6 @@ globus_l_gram_jm_check_files(
     globus_abstime_t *         		time_stop,
     void *				callback_arg);
 
-static
-globus_bool_t
-globus_l_gram_jm_check_status(
-    globus_abstime_t *			time_stop,
-    void *				callback_arg);
-
 void
 globus_l_jm_http_query_callback(
     void *				arg,
@@ -299,8 +294,17 @@ globus_l_jobmanager_fault_callback(void *user_arg, int fault_code);
 
 static
 int
+globus_l_gram_job_manager_eval_one_attribute(
+    globus_rsl_t *			rsl_tree,
+    char *				attribute,
+    globus_symboltable_t *		symbol_table,
+    char **				value);
+
+static
+int
 globus_l_gram_job_manager_create_scratchdir(
     globus_gram_jobmanager_request_t *	req,
+    const char *			scratch_dir_base,
     globus_symboltable_t *		symbol_table,
     globus_rsl_t *			rsl_tree);
 
@@ -435,7 +439,6 @@ int main(int argc,
     unsigned long          my_pid;
     unsigned long          my_time;
     FILE *                 fp;
-    FILE *                 test_fp;
     struct stat            statbuf;
     globus_byte_t                       buffer[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
     globus_byte_t *                     reply = NULL;
@@ -661,6 +664,10 @@ int main(int argc,
         {
             publish_jobs_flag = 1;
         }
+	else if (strcmp(argv[i], "-scratch-dir-base") == 0)
+	{
+	    conf.scratch_dir_base = argv[++i];
+	}
         else if (strcmp(argv[i], "-publish-users") == 0)
         {
             /* NOP */ ;
@@ -766,6 +773,7 @@ int main(int argc,
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-publish-jobs\n"
                     "\t-save-logfile [ always | on_errors ]\n"
+		    "\t-scratch-dir-base scratch-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
                     "\n"
                     "Note: if type=condor then\n"
@@ -1203,10 +1211,20 @@ int main(int argc,
 	}
 	else
 	{
-	    rc = globus_l_gram_job_manager_create_scratchdir(
-		    request,
-		    symbol_table,
-		    rsl_tree);
+	    rc = globus_l_gram_job_manager_eval_one_attribute(
+		rsl_tree,
+		"restart",
+		symbol_table,
+		&request->jm_restart);
+
+	    if(rc == GLOBUS_SUCCESS && !request->jm_restart)
+	    {
+		rc = globus_l_gram_job_manager_create_scratchdir(
+			request,
+			conf.scratch_dir_base,
+			symbol_table,
+			rsl_tree);
+	    }
 	}
 
 	if(rc == GLOBUS_SUCCESS)
@@ -1219,17 +1237,14 @@ int main(int argc,
 		     GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 	    }
 
-	    if (request->jobmanager_log_fp != NULL)
+	    if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
 	    {
-		if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
-		{
-		    globus_jobmanager_log( request->jobmanager_log_fp,
-		      "JM: final rsl specification >>>>\n");
-		    globus_jobmanager_log( request->jobmanager_log_fp,
-		      "%s\n", final_rsl_spec);
-		    globus_jobmanager_log( request->jobmanager_log_fp,
-		      "JM: <<<< final rsl specification\n");
-		}
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		  "JM: final rsl specification >>>>\n");
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		  "%s\n", final_rsl_spec);
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		  "JM: <<<< final rsl specification\n");
 	    }
         }
     }
@@ -1246,7 +1261,7 @@ int main(int argc,
 
     }
 
-    if (rc == GLOBUS_SUCCESS)
+    if (rc == GLOBUS_SUCCESS && request->jm_restart == NULL)
     {
         /* fill the request structure with values from the RSL
          */
@@ -1258,8 +1273,10 @@ int main(int argc,
 	char *orig_rsl;
 	globus_rsl_t *orig_rsl_tree;
 
-	sscanf(request->jm_restart, "https://%*[^:]:%*d/%d/%d/", &my_pid,
-	      &my_time);
+	sscanf( request->jm_restart,
+		"https://%*[^:]:%*d/%lu/%lu/",
+		&my_pid,
+		&my_time);
 
 	sprintf(tmp_buffer, "%s%lu/%lu//", my_url_base, my_pid, my_time);
 	graml_job_contact = (char *) globus_libc_strdup (tmp_buffer);
@@ -1881,7 +1898,6 @@ int main(int argc,
 
     if (rc == GLOBUS_SUCCESS && request->save_state == GLOBUS_TRUE)
     {
-	char *pos;
 	globus_reltime_t          delay_time;
 	globus_reltime_t          period_time;
 
@@ -2738,6 +2754,7 @@ globus_l_gram_conf_values_init( globus_l_gram_conf_values_t * conf )
     conf->globus_location   = GLOBUS_NULL;
     conf->tcp_port_range    = GLOBUS_NULL;
     conf->num_env_adds      = 0;
+    conf->scratch_dir_base  = GLOBUS_NULL;
 
     return;
 
@@ -2985,8 +3002,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     char * gram_myjob;
     char * staged_file_path;
     char * ptr;
-    int count;
-    globus_list_t * scheduler_specific_list;
 
     if (rsl_tree == NULL)
     {
@@ -3003,23 +3018,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     {
         req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_SPECIFICATION_TREE;
         return(GLOBUS_FAILURE);
-    }
-
-    /**********************************
-     *  GET RESTART PARAM
-     */
-    if (globus_rsl_param_get(rsl_tree,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
-		             &tmp_param) != 0)
-    {
-        req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_RESTART;
-        return(GLOBUS_FAILURE);
-    }
-
-    if (tmp_param[0])
-    {
-	req->jm_restart = (tmp_param)[0];
     }
 
     /**********************************
@@ -4831,7 +4829,7 @@ globus_l_gram_delete_file_list(globus_list_t **handle_list)
 	globus_libc_free(output);
     }
 
-} /* globus_l_gram_delete_file_list()
+} /* globus_l_gram_delete_file_list() */
 
 
 /******************************************************************************
@@ -5078,13 +5076,10 @@ globus_l_jm_http_query_handler(
     int                                  rc;
     globus_bool_t                        done;
     char *                               after_signal;
-    globus_gram_protocol_job_signal_t    signal;
-
     globus_l_jm_http_query_t *		query_args = callback_arg;
     globus_gram_protocol_handle_t	handle = query_args->handle;
     globus_byte_t *			buf = query_args->buf;
     globus_size_t			nbytes = query_args->nbytes;
-    int					errorcode = query_args->errorcode;
 
     request = query_args->arg;
 
@@ -5153,7 +5148,7 @@ globus_l_jm_http_query_handler(
     }
     else if (strcmp(query,"signal")==0)
     {
-	if (sscanf(rest,"%d", &request->signal) != 1)
+	if (sscanf(rest,"%d", (int *) &request->signal) != 1)
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	}
@@ -5430,7 +5425,6 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
     char *new_remote_io_url = NULL;
     char **tmp_param;
     int x;
-    char *ptr;
 
     rsl_tree = globus_rsl_parse( signal_arg );
     if (!rsl_tree)
@@ -5729,7 +5723,7 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
 
     fprintf( fp, "%4d\n", status );
     fprintf( fp, "%4d\n", failure_code );
-    fprintf( fp, "%10d\n", new_ttl );
+    fprintf( fp, "%10ld\n", new_ttl );
     fprintf( fp, "%s\n", job_id ? job_id : " " );
     fprintf( fp, "%s\n", rsl );
     fprintf( fp, "%s\n", graml_gass_cache_tag );
@@ -5741,8 +5735,10 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
     {
         globus_l_gram_output_t *output_handle =
             (globus_l_gram_output_t *) globus_list_first(tmp_list);
-        fprintf( fp, "%d %d\n", output_handle->idx,
-		 output_handle->last_written );
+        fprintf(fp,
+		"%d %"GLOBUS_OFF_T_FORMAT"\n",
+		output_handle->idx,
+		output_handle->last_written );
 
         tmp_list = globus_list_rest(tmp_list);
     }
@@ -5754,7 +5750,10 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
     {
         globus_l_gram_output_t *output =
             (globus_l_gram_output_t *) globus_list_first(tmp_list);
-        fprintf( fp, "%d %d\n", output->idx, output->last_written );
+        fprintf(fp,
+		"%d %"GLOBUS_OFF_T_FORMAT"\n",
+		output->idx,
+		output->last_written);
 
         tmp_list = globus_list_rest(tmp_list);
     }
@@ -5806,7 +5805,7 @@ globus_l_gram_ttl_update(
 	 */
 	fseek(fp, 10, SEEK_SET);
 
-	fprintf( fp, "%10d\n", new_ttl );
+	fprintf( fp, "%10ld\n", new_ttl );
 
 	fclose(fp);
     }
@@ -5913,8 +5912,10 @@ globus_l_gram_update_state_file_io()
     {
         globus_l_gram_output_t *output_handle =
             (globus_l_gram_output_t *) globus_list_first(tmp_list);
-        fprintf( new_fp, "%d %d\n", output_handle->idx,
-		 output_handle->last_written );
+        fprintf(new_fp,
+		"%d %"GLOBUS_OFF_T_FORMAT"\n",
+		output_handle->idx,
+		output_handle->last_written );
 
         tmp_list = globus_list_rest(tmp_list);
     }
@@ -5926,7 +5927,10 @@ globus_l_gram_update_state_file_io()
     {
         globus_l_gram_output_t *output =
             (globus_l_gram_output_t *) globus_list_first(tmp_list);
-        fprintf( new_fp, "%d %d\n", output->idx, output->last_written );
+        fprintf(new_fp,
+		"%d %"GLOBUS_OFF_T_FORMAT"\n",
+		output->idx,
+		output->last_written );
 
         tmp_list = globus_list_rest(tmp_list);
     }
@@ -5954,7 +5958,6 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
     long ttl;
     FILE *fp;
     char buffer[8192];
-    globus_list_t *tmp_list;
     globus_gass_cache_entry_t *cache_entries;
     int cache_size;
     struct stat statbuf;
@@ -6040,7 +6043,6 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
     for ( i = 0; i < graml_stdout_count; i++ ) {
 	int idx;
 	int size;
-	unsigned long timestamp;
 	globus_l_gram_output_t *output_handle =
 	    globus_libc_malloc(sizeof(globus_l_gram_output_t));
 
@@ -6084,7 +6086,6 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
     for ( i = 0; i < graml_stderr_count; i++ ) {
 	int idx;
 	int size;
-	unsigned long timestamp;
 	globus_l_gram_output_t *output_handle =
 	    globus_libc_malloc(sizeof(globus_l_gram_output_t));
 
@@ -6155,14 +6156,16 @@ globus_l_jobmanager_fault_callback(void *user_arg, int fault_code)
 
 static
 int
-globus_l_gram_job_manager_create_scratchdir(
-    globus_gram_jobmanager_request_t *	req,
+globus_l_gram_job_manager_eval_one_attribute(
+    globus_rsl_t *			rsl_tree,
+    char *				attribute,
     globus_symboltable_t *		symbol_table,
-    globus_rsl_t *			rsl_tree)
+    char **				value)
 {
-    globus_rsl_t *			scratchdir_rsl = GLOBUS_NULL;
     globus_list_t *			operands;
-    int					rc;
+    globus_rsl_t *			attribute_rsl = GLOBUS_NULL;
+
+    *value = GLOBUS_NULL;
 
     if(globus_rsl_is_boolean_and(rsl_tree))
     {
@@ -6176,31 +6179,79 @@ globus_l_gram_job_manager_create_scratchdir(
 	    {
 		if(globus_rsl_is_relation_attribute_equal(
 			    rsl_tree,
-			    "scratchdir"))
+			    attribute))
 		{
-		    scratchdir_rsl = rsl_tree;
+		    attribute_rsl = rsl_tree;
 		    break;
 		}
 	    }
 	    operands = globus_list_rest(operands);
 	}
+	if(attribute_rsl)
+	{
+	    globus_rsl_eval(attribute_rsl, symbol_table);
+	    *value = globus_rsl_value_literal_get_string(
+			globus_rsl_relation_get_single_value(
+			    attribute_rsl));
+
+	    return GLOBUS_SUCCESS;
+	}
+	else
+	{
+	    return GLOBUS_SUCCESS;
+	}
     }
-
-    if(scratchdir_rsl)
+    else
     {
-	globus_rsl_eval(scratchdir_rsl, symbol_table);
-	req->scratchdir =
-	    globus_rsl_value_literal_get_string(
-		    globus_rsl_relation_get_single_value(
-			scratchdir_rsl));
+        return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+    }
+}
+/* globus_l_gram_job_manager_eval_one_attribute() */
+    
+static
+int
+globus_l_gram_job_manager_create_scratchdir(
+    globus_gram_jobmanager_request_t *	req,
+    const char *			scratch_dir_base,
+    globus_symboltable_t *		symbol_table,
+    globus_rsl_t *			rsl_tree)
+{
+    int					rc;
+    const char *			base = scratch_dir_base
+	                                    ? scratch_dir_base
+					    : graml_env_home;
+    char *				tmp_scratch;
 
-	/* This will overwrite req->scratchdir */
-	rc = globus_jobmanager_request_scratchdir(req);
-	globus_symboltable_insert(symbol_table,
-		                  "SCRATCH_DIRECTORY",
-				  req->scratchdir);
+    rc = globus_l_gram_job_manager_eval_one_attribute(
+	    rsl_tree,
+	    "scratchdir",
+	    symbol_table,
+	    &tmp_scratch);
+
+    if(rc != GLOBUS_SUCCESS && tmp_scratch == GLOBUS_NULL)
+    {
 	return rc;
     }
-    return 0;
+
+    if(tmp_scratch[0] == '/')
+    {
+	req->scratch_dir_base = globus_libc_strdup(tmp_scratch);
+    }
+    else
+    {
+	req->scratch_dir_base = globus_libc_malloc(
+		strlen(base) + strlen(tmp_scratch) + 2);
+	sprintf(req->scratch_dir_base, "%s/%s", base, req->scratch_dir_base);
+
+
+    }
+    /* This will fill req->scratchdir from the script */
+    rc = globus_jobmanager_request_scratchdir(req);
+
+    /* Insert the new value of scratchdir into the symbol table */
+    globus_symboltable_insert(symbol_table,
+			      "SCRATCH_DIRECTORY",
+			      req->scratchdir);
+    return rc;
 }
 /* globus_l_gram_job_manager_create_scratchdir() */

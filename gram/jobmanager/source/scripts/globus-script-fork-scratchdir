@@ -2,8 +2,9 @@
 
 . $1
 
-mkdir -p $grami_scratchdir/gram.$$
+scratchdir="$grami_scratch_dir_base/gram.$$"
+mkdir -p "$scratchdir"
 
-echo $grami_scratchdir/gram.$$ >> $1
+echo grami_scratch_dir="'$scratchdir'" >> $1
 
 echo GRAM_SCRIPT_SUCCESS:0

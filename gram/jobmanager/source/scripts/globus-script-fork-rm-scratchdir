@@ -2,4 +2,4 @@
 
 . $1
 
-rm -rf $grami_scratchdir
+rm -rf $grami_scratch_dir
