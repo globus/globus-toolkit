@@ -1493,22 +1493,22 @@ globus_l_gsc_cmd_site(
     void *                              user_arg)
 {
     char *                              tmp_ptr;
-
+    
     /* to upper in the actual initial buffer */
-    for(tmp_ptr = strstr(full_command, cmd_a[1]); *tmp_ptr != ' '; tmp_ptr++)
+    for(tmp_ptr = strstr(full_command, cmd_a[1]); tmp_ptr && *tmp_ptr && *tmp_ptr != ' '; tmp_ptr++)
     {
         *tmp_ptr = toupper(*tmp_ptr);
     }
-    for(tmp_ptr = cmd_a[1]; *tmp_ptr != '\0'; tmp_ptr++)
+    for(tmp_ptr = cmd_a[1]; tmp_ptr && *tmp_ptr && *tmp_ptr != ' '; tmp_ptr++)
     {
         *tmp_ptr = toupper(*tmp_ptr);
     }
-
+    *tmp_ptr = '\0';
+    
     globus_assert(op->cmd_list == NULL);
 
     op->cmd_list = (globus_list_t *) globus_hashtable_lookup(
         &op->server_handle->site_cmd_table, cmd_a[1]);
-
     GlobusLGSCRegisterCmd(op);
 }
 
