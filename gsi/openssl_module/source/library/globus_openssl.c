@@ -9,6 +9,7 @@
  */
 
 #include "globus_openssl.h"
+#include "globus_error_openssl.h"
 #include "proxycertinfo.h"
 #include "version.h"
 #include "openssl/crypto.h"
@@ -57,7 +58,7 @@ globus_l_openssl_activate(void)
     X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     mutex_pool = malloc(CRYPTO_num_locks() * sizeof(globus_mutex_t));
 
     for(i=0;i<CRYPTO_num_locks();i++)
@@ -121,6 +122,7 @@ globus_l_openssl_deactivate(void)
 
     free(mutex_pool);
 
+    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return GLOBUS_SUCCESS;

@@ -78,8 +78,6 @@ globus_l_gsi_openssl_error_activate(void)
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    globus_module_activate(GLOBUS_OPENSSL_MODULE);
-
     /* initializes arrays for the error handling library containing
      * function names, library names, and reasons for errors
      */
@@ -108,8 +106,6 @@ globus_l_gsi_openssl_error_deactivate(void)
      * that maps library/function/reason codes to text strings
      */
     ERR_free_strings();
-
-    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
 

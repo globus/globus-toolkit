@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_openssl_module" Format_Version="0.02">
 
-    <Aging_Version Major="0" Minor="3" Age="0"/>
+    <Aging_Version Major="0" Minor="4" Age="0"/>
     <Description>Globus OpenSSL Module Wraper</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -31,6 +31,11 @@
                     <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
+            <Dependency Name="globus_gsi_openssl_error">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>        
         </Source_Dependencies>
 
         <Source_Dependencies Type="lib_link">
@@ -49,6 +54,11 @@
                     <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gsi_openssl_error">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>        
         </Source_Dependencies>
 
         <With_Flavors build="yes" />
