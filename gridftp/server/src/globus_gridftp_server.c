@@ -254,7 +254,8 @@ globus_l_gfs_server_accept_cb(
                 
                 max = globus_i_gfs_config_int("max_connections");
                 if(!globus_l_gfs_terminated &&
-                    (max == 0 || globus_l_gfs_open_count < max))
+                    (max == 0 || globus_l_gfs_open_count < max) &&
+                    !globus_i_gfs_config_bool("connections_disabled"))
                 {
                     result = globus_xio_server_register_accept(
                         server,
@@ -304,7 +305,8 @@ globus_l_gfs_server_accept_cb(
             
             max = globus_i_gfs_config_int("max_connections");
             if(!globus_l_gfs_terminated &&
-                (max == 0 || globus_l_gfs_open_count < max))
+                (max == 0 || globus_l_gfs_open_count < max) &&
+                !globus_i_gfs_config_bool("connections_disabled"))
             {
                 result = globus_xio_server_register_accept(
                     server,

@@ -16,7 +16,7 @@ typedef struct
     char *                              long_cmdline_option;
     char *                              short_cmdline_option;
     globus_l_gfs_config_type_t          type;
-    union
+    struct
     {
         int                             int_value;
         char *                          string_value;
@@ -25,13 +25,26 @@ typedef struct
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
- {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, {200}},
- {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, {0}},
- {"fork", "fork", NULL, "-fork", "-f", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
- {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
- {"no_gssapi", "no_gssapi", NULL, "-no-gssapi", "-ng", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
- {"allow_clear", "allow_clear", NULL, "-allow-clear", "-ac", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
- {"data_node", "data_node", NULL, "-data-node", "-d", GLOBUS_L_GFS_CONFIG_BOOL, {0}}
+ {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, {200, NULL}},
+ {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
+ {"fork", "fork", NULL, "-fork", "-f", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"no_gssapi", "no_gssapi", NULL, "-no-gssapi", "-ng", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"allow_clear", "allow_clear", NULL, "-allow-clear", "-ac", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"data_node", "data_node", NULL, "-data-node", "-d", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"allow_anonymous", "allow_anonymous", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {1, NULL}},
+ {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
+ {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -53,21 +66,78 @@ globus_l_gfs_config_load_config_file(
     int                                 i;
     int                                 rc;
     globus_l_gfs_config_option_t *      option;
+    int                                 line_num;
+    int                                 optlen;
+    char *                              p;
 
     fptr = fopen(filename, "r");
     if(fptr == NULL)
     {
         return -1; /* XXX construct real error */
     }
-
+    
+    line_num = 0;
     while(fgets(line, sizeof(line), fptr) != NULL)
     {
-        rc = sscanf(line, "%s%s", file_option, value);
-
-        if(rc != 2)
+        line_num++;
+        p = line;
+        optlen = 0;               
+        while(*p && isspace(*p))
         {
-            /* XXX log message, invalid line in config */
+            p++;
+        }
+        if(*p == '\0')
+        {
             continue;
+        }
+        if(*p == '#')
+        {
+            continue;
+        }        
+
+        if(*p == '"')
+        {
+            rc = sscanf(p, "\"%[^\"]\"", file_option);
+            optlen = 2;
+        }
+        else
+        {
+            rc = sscanf(p, "%s", file_option);
+        }        
+        if(rc != 1)
+        {   
+            goto error_parse;
+        }
+        optlen += strlen(file_option);
+        p = p + optlen;
+               
+        optlen = 0;
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
+        if(*p == '"')
+        {
+            rc = sscanf(p, "\"%[^\"]\"", value);
+            optlen = 2;
+        }
+        else
+        {
+            rc = sscanf(p, "%s", value);
+        }        
+        if(rc != 1)
+        {   
+            goto error_parse;
+        }        
+        optlen += strlen(value);
+        p = p + optlen;        
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
+        if(*p && !isspace(*p))
+        {
+            goto error_parse;
         }
 
         for(i = 0; i < option_count; i++)
@@ -114,6 +184,13 @@ globus_l_gfs_config_load_config_file(
     fclose(fptr);
     
     return GLOBUS_SUCCESS;
+
+error_parse:
+    fclose(fptr);
+    fprintf(stderr, 
+        "Problem parsing config file %s: line %d\n", filename, line_num);
+    return -1;
+
 }
 
 static
@@ -283,7 +360,168 @@ globus_l_gfs_config_load_defaults()
     return GLOBUS_SUCCESS; 
 }
 
+static
+int
+globus_l_config_loadfile(
+    const char *                        filename,
+    char **                             data_out)
+{
+    FILE *                              file;
+    int                                 file_len;
+    char *                              out_buf;
+     
+    file = fopen(filename, "r");
+    if(!file)
+    {
+        goto error;
+    }
+         
+    fseek(file, 0L, SEEK_END);
+    file_len = ftell(file);
+    fseek(file, 0L, SEEK_SET);	
 
+    out_buf = (char *) malloc(file_len * sizeof(char));	
+    if(!out_buf)
+    {
+        goto error;
+    }
+
+    fread(out_buf, sizeof(char), file_len, file);
+    fclose(file);
+
+    *data_out = out_buf;
+         
+    return 0;
+
+error:
+    return 1;
+}
+
+
+static
+globus_result_t
+globus_l_gfs_config_misc()
+{
+    int                                 rc;
+    int                                 i;
+    globus_l_gfs_config_option_t *      option;    
+    globus_bool_t                       bool_value;
+    char *                              value;
+    char *                              data;
+    
+    if((bool_value = globus_i_gfs_config_bool("terse_banner")) == GLOBUS_TRUE)
+    {
+        option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                &option_table, "banner");   
+        if(!option)
+        {
+            option = (globus_l_gfs_config_option_t *)
+                globus_malloc(sizeof(globus_l_gfs_config_option_t));
+            for(i = 0; 
+                i < option_count && 
+                    strcmp("banner", option_list[i].option_name); 
+                i++);
+            if(i == option_count)
+            {
+            }    
+            memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+        }
+        
+        option->string_value = globus_common_create_string("");        
+        rc = globus_hashtable_insert(&option_table,
+            "banner",
+            (void *) option);
+        
+        if(rc)
+        {
+        }          
+    }
+    else if((value = globus_i_gfs_config_string("banner_file")) != GLOBUS_NULL)
+    {
+        rc = globus_l_config_loadfile(value, &data);
+        if(!rc)
+        {
+            option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                    &option_table, "banner");   
+            if(!option)
+            {
+                option = (globus_l_gfs_config_option_t *)
+                    globus_malloc(sizeof(globus_l_gfs_config_option_t));
+                for(i = 0; 
+                    i < option_count && 
+                        strcmp("banner", option_list[i].option_name); 
+                    i++);
+                if(i == option_count)
+                {
+                }    
+                memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+            }
+            
+            option->string_value = data;        
+            rc = globus_hashtable_insert(&option_table,
+                "banner",
+                (void *) option);
+            
+            if(rc)
+            {
+            }
+        }          
+        globus_free(value);
+    }
+
+    if((value = globus_i_gfs_config_string("login_msg_file")) != GLOBUS_NULL)
+    {
+        rc = globus_l_config_loadfile(value, &data);
+        if(!rc)
+        {
+            option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                    &option_table, "login_msg");   
+            if(!option)
+            {
+                option = (globus_l_gfs_config_option_t *)
+                    globus_malloc(sizeof(globus_l_gfs_config_option_t));
+                for(i = 0; 
+                    i < option_count && 
+                        strcmp("banner", option_list[i].option_name); 
+                    i++);
+                if(i == option_count)
+                {
+                }    
+                memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+            }
+            
+            option->string_value = data;        
+            rc = globus_hashtable_insert(&option_table,
+                "login_msg",
+                (void *) option);
+            
+            if(rc)
+            {
+            }
+        }
+        globus_free(value);          
+    }
+
+    if((value = globus_i_gfs_config_string("tcp_port_range")) != GLOBUS_NULL)
+    {
+        rc = globus_libc_setenv("GLOBUS_TCP_PORT_RANGE", value, 1);
+        if(rc)
+        {
+        }
+        globus_free(value);
+    }
+
+    if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
+    {
+        rc = globus_libc_setenv("GLOBUS_HOSTNAME", value, 1);
+        if(rc)
+        {
+        }
+        globus_free(value);
+    }
+    
+    return GLOBUS_SUCCESS;
+}
 
 /**
  * load configuration.  read from defaults, file, env, and command line 
@@ -316,6 +554,7 @@ globus_i_gfs_config_init(
     globus_l_gfs_config_load_config_file(local_config_file);
     globus_l_gfs_config_load_config_env();
     globus_l_gfs_config_load_commandline(argc, argv);
+    globus_l_gfs_config_misc();
         
 }
 
@@ -357,7 +596,21 @@ globus_i_gfs_config_int(
     return value;
 }
 
+char *
+globus_i_gfs_config_string(
+    const char *                        option_name)
+{
+    globus_l_gfs_config_option_t *      option;
+    char *                              value = GLOBUS_NULL;    
+    
+    option = (globus_l_gfs_config_option_t *) 
+        globus_hashtable_lookup(&option_table, (void *) option_name);
+        
+    if(option && option->string_value)
+    {        
+        value = globus_libc_strdup(option->string_value);
+    }
 
-
-
+    return value;
+}
 

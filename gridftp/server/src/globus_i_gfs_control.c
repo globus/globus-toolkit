@@ -110,6 +110,8 @@ globus_l_gfs_auth_request(
     struct passwd *                     pwent;
 
 /* XXX add error responses */
+    result = GLOBUS_FAILURE;
+    
     if(secure_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
         rc = globus_gss_assist_gridmap((char *) subject, &local_name);
@@ -118,13 +120,18 @@ globus_l_gfs_auth_request(
             goto error_gridmap;
         }
     }
-    else
+    else if(globus_i_gfs_config_bool("allow_anonymous"))
     {   
         globus_gridftp_server_control_finished_auth(
             op, GLOBUS_SUCCESS, getuid());
         return;    
     }
-    
+    else
+    {
+        globus_gridftp_server_control_finished_auth(
+            op, result, 0);
+    }
+
     pwent = getpwnam(local_name);
     if(pwent == NULL)
     {
@@ -935,10 +942,14 @@ globus_i_gfs_control_start(
     globus_xio_system_handle_t          system_handle,
     const char *                        remote_contact)
 {
+    GlobusGFSName(globus_i_gfs_control_start);
     globus_result_t                     result;
     globus_gridftp_server_control_attr_t attr;
     globus_i_gfs_server_instance_t *    instance;
-    GlobusGFSName(globus_i_gfs_control_start);
+    int                                 idle_timeout;
+    char *                              banner;
+    char *                              login_msg;
+    
     
     instance = (globus_i_gfs_server_instance_t *)
         globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
@@ -970,7 +981,6 @@ globus_i_gfs_control_start(
         GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI |
         ((globus_i_gfs_config_bool("allow_clear")) ?
         GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));
-
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
@@ -982,6 +992,42 @@ globus_i_gfs_control_start(
     {
         goto error_attr_setup;
     }
+
+    idle_timeout = globus_i_gfs_config_int("idle_timeout");
+    if(idle_timeout)
+    {
+        result = globus_gridftp_server_control_attr_set_idle_time(
+            attr, idle_timeout);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_setup;
+        }
+    }
+    
+    banner = globus_i_gfs_config_string("banner");
+    if(banner)
+    {
+        result = globus_gridftp_server_control_attr_set_banner(
+            attr, banner);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_setup;
+        }
+        globus_free(banner);
+    }
+
+    login_msg = globus_i_gfs_config_string("login_banner");
+    if(login_msg)
+    {
+        result = globus_gridftp_server_control_attr_set_message(
+            attr, login_msg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_setup;
+        }
+        globus_free(login_msg);
+    }
+    
     
     result = globus_gridftp_server_control_attr_set_auth(
         attr, globus_l_gfs_auth_request);
