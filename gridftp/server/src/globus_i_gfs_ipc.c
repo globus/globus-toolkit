@@ -1387,7 +1387,7 @@ globus_l_gfs_ipc_read_body_cb(
                 goto err;
             }
             ipc->iface->session_start_func(
-                ipc, request->id, user_dn, NULL, NULL);
+                ipc, request->id, user_dn, NULL, NULL, NULL);
 
         case GLOBUS_GFS_OP_AUTH:
             rc = globus_l_gfs_ipc_unpack_cred(ipc, buffer, len, &cred);
@@ -2695,6 +2695,7 @@ globus_gfs_ipc_start_session(
             ipc_handle,
             request->id,
             user_dn,
+            NULL,
             NULL, 
             NULL);
     }

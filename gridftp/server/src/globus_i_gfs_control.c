@@ -226,6 +226,7 @@ globus_l_gfs_auth_data_cb(
         NULL,
         0,
         auth_info->username,
+        NULL,
         globus_l_gfs_auth_session_cb,
         auth_info);
 
