@@ -131,7 +131,7 @@ do                                                                          \
     {                                                                       \
         (void *) _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;           \
     }                                                                       \
-    else if((_in_op)->user_dd || _force_create)                             \
+    else if((_in_op)->is_user_dd != NULL || _force_create)                  \
     {                                                                       \
         globus_i_xio_driver_t *                     _dd_driver;             \
         globus_result_t                             _res;                   \

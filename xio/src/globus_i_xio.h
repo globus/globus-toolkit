@@ -360,7 +360,7 @@ typedef struct globus_i_xio_op_s
     globus_xio_operation_type_t             type;
     globus_i_xio_op_state_t                 state;
 
-    globus_bool_t                           user_dd;
+    globus_bool_t                           is_user_dd;
 
     /*
      * user callbacks.  only 1 will be used per operation
@@ -767,7 +767,8 @@ extern globus_cond_t                        globus_l_cond;
 #   define GlobusXIODriverPassOpen(                                         \
             _out_res, _out_context, _in_op, _in_cb, _in_user_arg)           \
         globus_xio_driver_pass_open_DEBUG(                                  \
-            &_out_res, &_out_context,  _in_op, _in_cb, _in_user_arg)
+            &_out_res, _out_context == NULL ? NULL : &_out_context,         \
+            _in_op, _in_cb, _in_user_arg)
 
 #   define GlobusXIODriverFinishedOpen(                                     \
             _in_context, _in_dh, _in_op, _in_res)                           \

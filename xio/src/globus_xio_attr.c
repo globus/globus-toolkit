@@ -404,7 +404,7 @@ globus_xio_data_descriptor_init(
             op->type = GLOBUS_XIO_OPERATION_TYPE_DD;
             handle->ref++;
             op->ref = 1;
-            op->user_dd = GLOBUS_TRUE;
+            op->is_user_dd = GLOBUS_TRUE;
         }
         else
         {
