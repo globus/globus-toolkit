@@ -21,286 +21,704 @@ CVS Information:
 #include <fcntl.h>
 #include <string.h>
 
-#include "globus_gass_file.h"
+#include "globus_gass_copy.h"
 
-#if 1
-const char * oneline_usage
-    = "globus-url-copy [-help] [-usage] [-version] [-binary] sourceURL destURL";
+/******************************************************************************
+                               Type definitions
+******************************************************************************/
+typedef struct
+{
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    globus_object_t *                   err;
+    globus_bool_t                       use_err;
+    volatile globus_bool_t              done;
+} my_monitor_t;
+
+
+/*****************************************************************************
+                          Module specific prototypes
+*****************************************************************************/
+
+static globus_callback_handle_t          globus_l_callback_handle;
+
+static void
+globus_l_url_copy_monitor_callback(void * callback_arg,
+                                    globus_gass_copy_handle_t * handle,
+                                    globus_object_t * result);
+
+static void
+globus_l_url_copy_cancel_callback(void * callback_arg,
+                                    globus_gass_copy_handle_t * handle,
+                                    globus_object_t * result);
+
+/**** Support for SIGINT handling ****/
+static RETSIGTYPE
+globus_l_globus_url_copy_sigint_handler(int dummy);
+
+#if defined(BUILD_LITE)
+    static int
+    globus_l_globus_url_copy_signal_wakeup(globus_abstime_t *  time_stop,
+                                           void *              user_args);
+#   define globus_l_globus_url_copy_remove_cancel_poll() globus_callback_unregister(globus_l_callback_handle);
 #else
-const char * oneline_usage
-    = "globus-url-copy [-help] [-usage] [-version] [-binary|-ascii] sourceURL destURL";
+#   define globus_l_globus_url_copy_remove_cancel_poll()
 #endif
 
-const char * long_usage
-    =   "\nglobus-url-copy [options] sourceURL destURL\n"
-        "OPTIONS\n"
-        "\t -help             : Print this message \n" 
-        "\t -usage            : Print a short usage description message\n"
-        "\t -version          : Print the version of this program\n"
-        "\t -ascii            : NOT available yet; convert the file to/from\n"
-        "\t                     netASCII format to/from local file format\n"
-        "\t -binary           : Do not apply any conversion to the files\n"
-        "\t                     -binary is used by default\n\n";
+/*****************************************************************************
+                          Module specific variables
+*****************************************************************************/
 
-#define binary_id   1
-#define ascii_id    2
+#define GLOBUS_URL_COPY_ARG_ASCII       1
+#define GLOBUS_URL_COPY_ARG_BINARY      2
 
-static char *  ascii_aliases[]    = { "-ascii", GLOBUS_NULL };
-static char *  binary_aliases[]   = { "-binary", GLOBUS_NULL };
+const char * oneline_usage
+    = "globus-url-copy [-help] [-usage] [-version] [-b | -a] [-bs <size>]\n"
+      "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
+      "                        sourceURL destURL";
 
-static globus_args_option_descriptor_t option_list[]
-    = { {ascii_id,  ascii_aliases,  0, GLOBUS_NULL, GLOBUS_NULL} ,
-	{binary_id, binary_aliases, 0, GLOBUS_NULL, GLOBUS_NULL} };
+const char * long_usage =
+"\nglobus-url-copy [options] sourceURL destURL\n"
+"OPTIONS\n"
+"\t -help | -usage\n"
+"\t      Print help\n"
+"\t -v | -version\n"
+"\t      Print the version of this program\n"
+"\t -a | -ascii\n"
+"\t      convert the file to/from netASCII format to/from local file format\n"
+"\t -b | -binary\n"
+"\t      Do not apply any conversion to the files. *default*\n"
+"\t -s  <subject> | -subject <subject>\n"
+"\t      Use this subject to match with both the source and dest servers\n"
+"\t -ss <subject> | -source-subject <subject>\n"
+"\t      Use this subject to match with the source server\n"
+"\t -ds <subject> | -dest-subject <subject>\n"
+"\t      Use this subject to match with the destionation server\n"
+"\t -bs <block size> | -block-size <block size>\n"
+"\t      specify the size (in bytes) of the buffer to be used by the\n"
+"\t      underlying transfer methods\n"
+"\n";
 
+/***********
 
-#define NB_OPTIONS (sizeof(option_list)/sizeof(globus_args_option_descriptor_t))
+this feature has not yet been implemented.
 
-static char *got_option[NB_OPTIONS] =
-{GLOBUS_NULL,
- GLOBUS_NULL
-};
+"\t Note: entering a dash \"-\" in the above arguments where <subject> is\n"
+"\t       required will result in the subject being obtained from the users\n"
+"\t       credentials\n"
+"\n";
+***********/
 
+#define globus_url_copy_l_args_error(a) \
+{ \
+    globus_libc_fprintf(stderr, \
+                        "\nERROR: " \
+                        a \
+                        "\n\nSyntax: %s\n" \
+                        "\nUse -help to display full usage\n", \
+                        oneline_usage); \
+    globus_module_deactivate_all(); \
+    exit(1); \
+}
+
+#define globus_url_copy_l_args_error_fmt(fmt,arg) \
+{ \
+    globus_libc_fprintf(stderr, \
+                        "\nERROR: " \
+                        fmt \
+                        "\n\nSyntax: %s\n" \
+                        "\nUse -help to display full usage\n", \
+                        arg, oneline_usage); \
+    globus_module_deactivate_all(); \
+    exit(1); \
+}
+
+int
+test_integer( char *   value,
+              void *   ignored,
+              char **  errmsg )
+{
+    int  res = (atoi(value) <= 0);
+    if (res)
+        *errmsg = strdup("argument is not a positive integer");
+    return res;
+}
+
+enum { arg_a = 1, arg_b, arg_s, arg_ss, arg_ds, arg_bs,
+       arg_num = arg_bs };
+
+#define listname(x) x##_aliases
+#define namedef(id,alias1,alias2) \
+static char * listname(id)[] = { alias1, alias2, GLOBUS_NULL }
+
+#define defname(x) x##_definition
+#define flagdef(id,alias1,alias2) \
+namedef(id,alias1,alias2); \
+static globus_args_option_descriptor_t defname(id) = { id, listname(id), 0, \
+						GLOBUS_NULL, GLOBUS_NULL }
+#define funcname(x) x##_predicate_test
+#define paramsname(x) x##_predicate_params
+#define oneargdef(id,alias1,alias2,testfunc,testparams) \
+namedef(id,alias1,alias2); \
+static globus_args_valid_predicate_t funcname(id)[] = { testfunc }; \
+static void* paramsname(id)[] = { (void *) testparams }; \
+globus_args_option_descriptor_t defname(id) = \
+    { (int) id, (char **) listname(id), 1, funcname(id), (void **) paramsname(id) }
+
+flagdef(arg_a, "-a", "-ascii");
+flagdef(arg_b, "-b", "-binary");
+
+oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
+oneargdef(arg_s, "-s", "-subject", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_ss, "-ss", "-source-subject", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
+
+static globus_args_option_descriptor_t args_options[arg_num];
+
+#define setupopt(id) args_options[id-1] = defname(id)
+
+#define globus_url_copy_i_args_init() \
+    setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_ss); \
+    setupopt(arg_ds); setupopt(arg_bs);
+
+static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
+static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
+
+/******************************************************************************
+Function: main()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
 int
 main(int argc, char **argv)
 {
-    globus_args_option_instance_t *  option;
-    globus_list_t *                  options_found;
-    globus_list_t *                  list;
-    char *                           error_msg;
-    int                              n_options;
-    int                              err;
-    char *                           sourceURL;
-    char *                           destURL;
-    globus_url_t		     test_url;
+    char *                             program           = GLOBUS_NULL;
+    globus_bool_t                      no_more_options   = GLOBUS_FALSE;
+    globus_bool_t                      usage_error       = GLOBUS_FALSE;
+    globus_bool_t                      ignore_ctrlc      = GLOBUS_FALSE;
+    globus_bool_t                      source_is_stdin   = GLOBUS_FALSE;
+    globus_bool_t                      dest_is_stdin     = GLOBUS_FALSE;
+    globus_list_t *                    options_found     = GLOBUS_NULL;
+    globus_list_t *                    list              = GLOBUS_NULL;
+    globus_args_option_instance_t *    instance          = GLOBUS_NULL;
+    unsigned long                      options           = 0UL;
+    globus_io_handle_t *               source_io_handle  = GLOBUS_NULL;
+    globus_io_handle_t *               dest_io_handle    = GLOBUS_NULL;
+    globus_gass_transfer_requestattr_t * source_gass_attr = GLOBUS_NULL;
+    globus_gass_transfer_requestattr_t * dest_gass_attr = GLOBUS_NULL;
+    globus_ftp_client_attr_t *         source_ftp_attr = GLOBUS_NULL;
+    globus_ftp_client_attr_t *         dest_ftp_attr = GLOBUS_NULL;
+    globus_gass_copy_attr_t            source_gass_copy_attr;
+    globus_gass_copy_attr_t            dest_gass_copy_attr;
+    globus_gass_copy_url_mode_t        source_url_mode;
+    globus_gass_copy_url_mode_t        dest_url_mode;
+    int                                err;
+    int                                block_size = 0;
+    char *                             subject = GLOBUS_NULL;
+    char *                             source_subject = GLOBUS_NULL;
+    char *                             dest_subject = GLOBUS_NULL;
+    char *                             sourceURL;
+    char *                             destURL;
+    globus_url_t		       source_url;
+    globus_url_t		       dest_url;
+    int                                fd_source =-1;
+    int                                fd_dest   =-1;
+    int                                nb_read;
+    int                                nb_to_write;
+    int                                nb_written;
+    int                                rc=0;
+    my_monitor_t                       monitor;
+    globus_gass_copy_handle_t          gass_copy_handle;
+    char                               buffer[512];
+    globus_result_t                    result;
 
-    int                              fd_source =-1;
-    int                              fd_dest   =-1;
-    int                              nb_read;
-    int                              nb_to_write;
-    int                              nb_written;
-    int                              rc=0;
-
-    char                             buffer[512];
-
-    n_options = NB_OPTIONS;
-
-    error_msg = GLOBUS_NULL;
-    err = globus_args_scan( &argc,
-			    &argv,
-			    n_options,
-			    option_list,
-			    oneline_usage,
-			    long_usage,
-			    &options_found,
-			    GLOBUS_NULL    );
-
-    if (err >= 0)
+    err = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if ( err != GLOBUS_SUCCESS )
     {
-        /*
-	 * printf("option list : \n");
-	 */
-	for (list = options_found;
-	     !globus_list_empty(list);
-	     list = globus_list_rest(list))
-	{
-	    option = globus_list_first(list);
-	    
-            /* mark that we got this option */
-	    got_option[(option->id_number)-1]=
-		*(option_list[(option->id_number)-1]).names; 
-	}
-
-	globus_args_option_instance_list_free( &options_found );
+        globus_libc_fprintf(stderr, "Error initializing globus\n");
+        return 1;
     }
 
-    /* check for incompatible options */
-    if (got_option[0]!= GLOBUS_NULL && got_option[1]!= GLOBUS_NULL)
-    {
-	fprintf(stderr,"Options -ascii and -binary are exclusive\n");
-	fprintf(stderr,"%s\n",oneline_usage);
-	exit(-1);
-    }
-    /* check for default */
-    if (got_option[ascii_id-1]== GLOBUS_NULL &&
-	got_option[binary_id-1]== GLOBUS_NULL)
-    {
-	/* set this defaults option as set, as if we had got it */
-	got_option[binary_id-1]=*((option_list[binary_id-1]).names);
-    }
-    if (got_option[ascii_id-1]!= GLOBUS_NULL)
-    {
-	fprintf(stderr,"Sorry, ascii mode not yet supported\n");
-	fprintf(stderr,"%s\n",oneline_usage);
-	exit(-1);
-    }
-    
+    if (strrchr(argv[0],'/'))
+        program = strrchr(argv[0],'/') + 1;
+    else
+        program = argv[0];  
 
-    /* check for extra arguments (not options) */
-    if (argc!=3)
+    globus_url_copy_i_args_init();
+
+    if ( 0 > globus_args_scan( &argc,
+                               &argv,
+                               arg_num,
+                               args_options,
+                               oneline_usage,
+                               long_usage,
+                               &options_found,
+                               GLOBUS_NULL   ) )  /* error on argument line */
     {
-	fprintf(stderr,"%s\n",oneline_usage);
-	exit(-1);
+        globus_module_deactivate_all();
+        exit(1);
     }
 
-    sourceURL=argv[1];
-    destURL=argv[2];
+    /* globus_libc_fprintf(stdout, "after args scan\n"); */
 
-    /* if sourceURl and destURL are identical, well lets not care about it,
-       they might be GASS servers actually doing some action the user really
-       want to happen
-       This is commented out:
-    if (!strcmp(sourceURL,destURL))
+    /* there must be 2 additional unflagged arguments:
+     *     the source and destination URL's
+     */
+    if (argc > 3)
+       globus_url_copy_l_args_error("too many url strings specified");
+    if (argc < 3)
+       globus_url_copy_l_args_error("source and dest url strings are required");
+
+    sourceURL=globus_libc_strdup(argv[1]);
+    destURL=globus_libc_strdup(argv[2]);
+
+    for (list = options_found;
+         !globus_list_empty(list);
+         list = globus_list_rest(list))
     {
-	if (strcmp(sourceURL, "-"))
-	{
-	
-	    fprintf(stderr,"sourceURl and destURL are identical\n"); 
-	    exit(GLOBUS_SUCCESS);
-	}
+        instance = globus_list_first(list);
+
+        switch(instance->id_number)
+        {
+        case arg_a:
+            options |= GLOBUS_URL_COPY_ARG_ASCII;
+            break;
+        case arg_b:
+            options |= GLOBUS_URL_COPY_ARG_BINARY;
+        case arg_bs:
+            block_size = atoi(instance->values[0]);
+            break;
+        case arg_s:
+            subject = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_ss:
+            source_subject = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_ds:
+            dest_subject = globus_libc_strdup(instance->values[0]);
+            break;
+        default:
+            globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
+                                       instance->id_number );
+            break;
+        }
     }
-    */
+
+    globus_args_option_instance_list_free( &options_found );
+
+    if ( (options & GLOBUS_URL_COPY_ARG_ASCII) &&
+         (options & GLOBUS_URL_COPY_ARG_BINARY) )
+    {
+        globus_url_copy_l_args_error("option -ascii and -binary are exclusive");
+    }
+
+    /* All below transfer methods must be activated in case an attr structure
+     * needs to be created.
+     */
+    err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
+    if ( err != GLOBUS_SUCCESS )
+    {
+        globus_libc_fprintf(stderr, "Error %d, activating gass copy module\n",
+            err);
+        return 1;
+    }
+
+    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    monitor.done = GLOBUS_FALSE;
+
+    globus_gass_copy_handle_init(&gass_copy_handle);
+    globus_gass_copy_attr_init(&source_gass_copy_attr);
+    globus_gass_copy_attr_init(&dest_gass_copy_attr);
+
+    if (subject && !source_subject)
+        source_subject = subject;
+
+    if (subject && !dest_subject)
+        dest_subject = subject;
+
+    if (block_size > 0)
+       globus_gass_copy_set_buffer_length(&gass_copy_handle, block_size);
 
     /* Verify that the source and destination are valid URLs */
     if (strcmp(sourceURL,"-"))
     {
-	rc = globus_url_parse(sourceURL, &test_url);
-	if(rc != GLOBUS_SUCCESS)
+	if (globus_url_parse(sourceURL, &source_url)
+            != GLOBUS_SUCCESS)
 	{
-	    fprintf(stderr, "can not parse sourceURL \"%s\"\n", sourceURL);
-	    exit(GLOBUS_SUCCESS);
+            globus_url_copy_l_args_error_fmt(
+	        "can not parse sourceURL \"%s\"\n", sourceURL);
 	}
-	globus_url_destroy(&test_url);
+        if (globus_gass_copy_get_url_mode(sourceURL, &source_url_mode)
+            != GLOBUS_SUCCESS)
+	{
+            globus_url_copy_l_args_error_fmt(
+	        "failed to determine mode for sourceURL \"%s\"\n", sourceURL);
+	}
+
+        if (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+        {
+            source_ftp_attr = globus_libc_malloc
+                              (sizeof(globus_ftp_client_attr_t));
+            globus_ftp_client_attr_init(source_ftp_attr);
+
+            if (source_subject  ||
+                source_url.user ||
+                source_url.password)
+            {
+                globus_ftp_control_auth_info_init(&source_ftp_attr->auth_info,
+                                      source_url.user,
+                                      source_url.password,
+                                      source_url.user,
+                                      source_subject);
+            }
+
+            globus_gass_copy_attr_set_ftp(&source_gass_copy_attr,
+                                          source_ftp_attr);
+        }
+        else if (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_GASS)
+        {
+            source_gass_attr = globus_libc_malloc
+                              (sizeof(globus_gass_transfer_requestattr_t));
+            globus_gass_transfer_requestattr_init(source_gass_attr,
+                                                  source_url.scheme);
+
+            if (options & GLOBUS_URL_COPY_ARG_ASCII)
+            {
+                 globus_gass_transfer_requestattr_set_file_mode( 
+                      source_gass_attr,
+                      GLOBUS_GASS_TRANSFER_FILE_MODE_TEXT);
+            }
+            else
+            {
+                 globus_gass_transfer_requestattr_set_file_mode( 
+                      source_gass_attr,
+                      GLOBUS_GASS_TRANSFER_FILE_MODE_BINARY);
+            }
+
+            if (source_subject)
+            {
+                globus_gass_transfer_secure_requestattr_set_authorization(
+                    source_gass_attr,
+                    GLOBUS_GASS_TRANSFER_AUTHORIZE_SUBJECT,
+                    source_subject);
+            }
+
+            globus_gass_copy_attr_set_gass(&source_gass_copy_attr,
+                                           source_gass_attr);
+        }
+    }
+    else
+    {
+        source_io_handle =(globus_io_handle_t *)
+            globus_libc_malloc(sizeof(globus_io_handle_t));
+
+        /* convert stdin to be a globus_io_handle */
+        globus_io_file_posix_convert(fileno(stdin),
+                                     GLOBUS_NULL,
+                                     source_io_handle);
     }
 
     if (strcmp(destURL,"-"))
     {
-	rc = globus_url_parse(destURL, &test_url);
-	if(rc != GLOBUS_SUCCESS)
+	if (globus_url_parse(destURL, &dest_url) != GLOBUS_SUCCESS)
 	{
-	    fprintf(stderr, "can not parse destURL \"%s\"\n", destURL);
-	    exit(GLOBUS_SUCCESS);
+            globus_url_copy_l_args_error_fmt(
+	        "can not parse destURL \"%s\"\n", destURL);
 	}
-	globus_url_destroy(&test_url);
-    }
-    /* end of argument parsing */
-
-    /* To find out if I need to do some netASCII to Unix or
-       Unix to netASCII conversion, I need to know what is the kind of each
-       URL. I will convert netASCII to Unix
-     */
-    
-    /* open the source and dest url */
-   
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_GASS_FILE_MODULE);
-
-    
-    if (strcmp(sourceURL, "-"))
-    {
-	fd_source = globus_gass_open(sourceURL, O_RDONLY, 0);
-	if(fd_source < 0)
+        if (globus_gass_copy_get_url_mode(destURL, &dest_url_mode)
+            != GLOBUS_SUCCESS)
 	{
-	    globus_libc_fprintf(
-		stderr,
-		"%s: Error opening sourceURL %s: error code: %d\n",
-		argv[0],
-		sourceURL,
-		errno);
-	    rc=-2;
-	    goto end;
+            globus_url_copy_l_args_error_fmt(
+	        "failed to determine mode for destURL \"%s\"\n", destURL);
 	}
+
+        if (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+        {
+            dest_ftp_attr = globus_libc_malloc
+                              (sizeof(globus_ftp_client_attr_t));
+            globus_ftp_client_attr_init(dest_ftp_attr);
+
+            if (dest_subject  ||
+                dest_url.user ||
+                dest_url.password)
+            {
+                globus_ftp_control_auth_info_init(&dest_ftp_attr->auth_info,
+                                      dest_url.user,
+                                      dest_url.password,
+                                      dest_url.user,
+                                      dest_subject);
+            }
+
+            globus_gass_copy_attr_set_ftp(&dest_gass_copy_attr,
+                                          dest_ftp_attr);
+        }
+        else if (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_GASS)
+        {
+            dest_gass_attr = globus_libc_malloc
+                              (sizeof(globus_gass_transfer_requestattr_t));
+            globus_gass_transfer_requestattr_init(dest_gass_attr,
+                                                  dest_url.scheme);
+
+            if (options & GLOBUS_URL_COPY_ARG_ASCII)
+            {
+                 globus_gass_transfer_requestattr_set_file_mode(
+                      dest_gass_attr,
+                      GLOBUS_GASS_TRANSFER_FILE_MODE_TEXT);
+            }
+            else
+            {
+                 globus_gass_transfer_requestattr_set_file_mode(
+                      dest_gass_attr,
+                      GLOBUS_GASS_TRANSFER_FILE_MODE_BINARY);
+            }
+
+            if (dest_subject)
+            {
+                globus_gass_transfer_secure_requestattr_set_authorization(
+                    dest_gass_attr,
+                    GLOBUS_GASS_TRANSFER_AUTHORIZE_SUBJECT,
+                    dest_subject);
+            }
+
+            globus_gass_copy_attr_set_gass(&dest_gass_copy_attr,
+                                           dest_gass_attr);
+        }
     }
     else
     {
-	fd_source = 0;
+        dest_io_handle =(globus_io_handle_t *)
+            globus_libc_malloc(sizeof(globus_io_handle_t));
+
+        /* convert stdin to be a globus_io_handle */
+        globus_io_file_posix_convert(fileno(stdout),
+                                     GLOBUS_NULL,
+                                     dest_io_handle);
     }
 
-    if (strcmp(destURL, "-"))
+    if (source_io_handle && dest_io_handle)
     {
-	fd_dest = globus_gass_open(destURL, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU|S_IRWXG|S_IRWXO);
-	if(fd_dest < 0)
-	{
-	    globus_libc_fprintf(
-		stderr,
-		"%s: Error opening destURL %s: error code: %d\n",
-		argv[0],
-		destURL,
-		errno);
-	    rc=-3;
-	    goto end;
-	}
+        globus_url_copy_l_args_error("The sourceURL cannot be stdin and the destURL be stdout");
+    }
+
+    globus_l_globus_url_copy_signal(SIGINT,
+                              globus_l_globus_url_copy_sigint_handler);
+#   if defined(BUILD_LITE)
+    {
+        globus_reltime_t          delay_time;
+        globus_reltime_t          period_time;
+
+        GlobusTimeReltimeSet(delay_time, 0, 0);
+        GlobusTimeReltimeSet(period_time, 0, 500000);
+        globus_callback_register_periodic(&globus_l_callback_handle,
+                                        &delay_time,
+                                        &period_time,
+                                        globus_l_globus_url_copy_signal_wakeup,
+                                        GLOBUS_NULL,
+                                        GLOBUS_NULL,
+                                        GLOBUS_NULL);
+    }
+#   endif
+
+    if (source_io_handle)
+    {
+        result = globus_gass_copy_register_handle_to_url(
+                     &gass_copy_handle,
+                     source_io_handle,
+                     destURL,
+                     &dest_gass_copy_attr,
+                     globus_l_url_copy_monitor_callback,
+                     (void *) &monitor);
+    }
+    else if (dest_io_handle)
+    {
+        result = globus_gass_copy_register_url_to_handle(
+                     &gass_copy_handle,
+                     sourceURL,
+                     &source_gass_copy_attr,
+                     dest_io_handle,
+                     globus_l_url_copy_monitor_callback,
+                     (void *) &monitor);
     }
     else
     {
-	fd_dest = 1;
+        result = globus_gass_copy_register_url_to_url(
+                     &gass_copy_handle,
+                     sourceURL,
+                     &source_gass_copy_attr,
+                     destURL,
+                     &dest_gass_copy_attr,
+                     globus_l_url_copy_monitor_callback,
+                     (void *) &monitor);
     }
 
-
-    while (GLOBUS_TRUE)
+    if (result != GLOBUS_SUCCESS)
     {
- 
-	while ( (nb_read = globus_libc_read(fd_source, buffer,sizeof(buffer)))
-		== -1 )
-	{
-	    if (errno != EINTR && errno !=EAGAIN)
-	    {
-		globus_libc_fprintf(
-		    stderr,
-		    "Error reading from sourceURL %s: error code: %d\n",
-		    sourceURL,
-		    errno);
-		rc=-4;
-		goto end;
-	    }
-	}
-	
-	if (nb_read ==0)
-	{
-	    break;
-	}
-	
-	/* ascii conversion...*/
+        globus_mutex_destroy(&monitor.mutex);
+        globus_cond_destroy(&monitor.cond);
+        exit(1);
+    }
 
-	/* now write the data out */
-	nb_to_write=nb_read;
-	while ( (nb_written=globus_libc_write(fd_dest, buffer,nb_to_write))
-		!= nb_to_write )
-	{
-	    if (nb_written==-1 && errno != EINTR && errno !=EAGAIN)
-	    {
-		globus_libc_fprintf(
-		    stderr,
-		    "Error writing to destURL %s: error code: %d\n",
-		    sourceURL,
-		    errno);
-		rc=-5;
-		goto end;
-	    }
-	    if (nb_written!=-1)
-	    {		
-		nb_to_write-=nb_written;
-	    }
-	}
-	
+    globus_mutex_lock(&monitor.mutex);
+
+    while(!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+        if(globus_l_globus_url_copy_ctrlc &&
+          (!globus_l_globus_url_copy_ctrlc_handled))
+        {
+            printf("Cancelling copy...\n");
+            globus_l_globus_url_copy_remove_cancel_poll();
+            globus_gass_copy_cancel(&gass_copy_handle,
+                                    globus_l_url_copy_cancel_callback,
+                                    (void *) &monitor);
+            globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
+        }
+    }
+
+    if (monitor.use_err)
+    {
+        fprintf(stderr, "error: %s\n",
+                globus_object_printable_to_string(monitor.err));
+        globus_object_free(monitor.err);
     }
     
-    
-end:
-    if(fd_source >= 0)
-    {
-	globus_gass_close(fd_source);
-    }
-    if(fd_dest >= 0)
-    {
-	globus_gass_close(fd_dest);
-    }
-    globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
+    if (!source_io_handle)
+        globus_url_destroy(&source_url);
+
+    if (!dest_io_handle)
+        globus_url_destroy(&dest_url);
+
+    globus_module_deactivate(GLOBUS_GASS_COPY_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
-    return rc;
+    return GLOBUS_SUCCESS;
     
-}
+} /* main() */
+
+/******************************************************************************
+Function: globus_l_url_copy_monitor_callback()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void
+globus_l_url_copy_monitor_callback(void * callback_arg,
+    globus_gass_copy_handle_t * handle,
+    globus_object_t * result)
+{
+    my_monitor_t *               monitor;
+    globus_object_t *            err;
+    globus_bool_t                use_err = GLOBUS_FALSE;
+    monitor = (my_monitor_t * )  callback_arg;
+
+    printf("i'm in the callback\n");
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        use_err = GLOBUS_TRUE;
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->done = GLOBUS_TRUE;
+    if (use_err)
+    {
+        monitor->use_err = GLOBUS_TRUE;
+        monitor->err = err;
+    }
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_lock(&monitor->mutex);
+
+    return;
+} /* globus_l_url_copy_monitor_callback() */
 
 
+/******************************************************************************
+Function: globus_l_url_copy_cancel_callback()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void
+globus_l_url_copy_cancel_callback(void * callback_arg,
+    globus_gass_copy_handle_t * handle,
+    globus_object_t * result)
+{
+    my_monitor_t *               monitor;
+    globus_object_t *            err;
+    globus_bool_t                use_err = GLOBUS_FALSE;
+    monitor = (my_monitor_t * )  callback_arg;
+
+    printf("i'm in the cancel callback\n");
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        use_err = GLOBUS_TRUE;
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->done = GLOBUS_TRUE;
+    if (use_err)
+    {
+        monitor->use_err = GLOBUS_TRUE;
+        monitor->err = err;
+    }
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_lock(&monitor->mutex);
+
+    return;
+} /* globus_l_url_copy_cancel_callback() */
 
 
+/******************************************************************************
+Function: globus_l_globus_url_copy_sigint_handler()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static RETSIGTYPE
+globus_l_globus_url_copy_sigint_handler(int dummy)
+{
+    globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
+
+    /* don't trap any more signals */
+    globus_l_globus_url_copy_signal(SIGINT, SIG_DFL);
+
+} /* globus_l_globus_url_copy_sigint_handler() */
+
+
+/******************************************************************************
+Function: globus_l_globus_url_copy_signal_wakeup()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_globus_url_copy_signal_wakeup(globus_abstime_t *  time_stop,
+                                       void *              user_args)
+{
+    return globus_l_globus_url_copy_ctrlc;
+} /* globus_l_globus_url_copy_signal_wakeup() */
+
+
+/******************************************************************************
+Function: globus_l_globus_url_copy_signal()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int))
+{
+    struct sigaction act;
+
+    memset(&act, '\0', sizeof(struct sigaction));
+    sigemptyset(&(act.sa_mask));
+    act.sa_handler = func;
+    act.sa_flags = 0;
+
+    return sigaction(signum, &act, GLOBUS_NULL);
+} /* globus_l_globus_url_copy_signal() */
