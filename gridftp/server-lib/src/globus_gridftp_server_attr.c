@@ -253,7 +253,7 @@ globus_gridftp_server_attr_add_send(
 }
 
 globus_result_t
-globus_gridftp_server_attr_set_resource_query(
+globus_gridftp_server_attr_set_resource(
     globus_gridftp_server_attr_t            in_attr,
     globus_gridftp_server_resource_func_t   resource_query_func)
 {

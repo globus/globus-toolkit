@@ -172,6 +172,7 @@ typedef struct globus_i_gs_server_s
      */
     char *                                  username;
     char *                                  pw;
+    char *                                  banner;
     gss_cred_id_t                           cred;
     gss_cred_id_t                           del_cred;
     globus_gridftp_server_auth_callback_t   auth_cb;
@@ -241,7 +242,8 @@ typedef struct globus_i_gs_op_s
 
     globus_list_t *                         cmd_list;
 
-    globus_list_t *                         arg_list;
+    void *                                  argv[32];
+    int                                     argc;
 
     int                                     mask;
 } globus_i_gs_op_t;

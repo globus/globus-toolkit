@@ -16,7 +16,6 @@ globus_l_gsp_959_init();
 void
 globus_gs_pmod_959_finished_op(
     globus_gs_pmod_959_op_t                 op,
-    int                                     reply_code,
     char *                                  reply_msg);
 
 typedef void

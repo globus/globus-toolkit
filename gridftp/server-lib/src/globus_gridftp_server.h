@@ -23,9 +23,9 @@ typedef time_t                              globus_time_t;
 typedef struct globus_gridftp_server_stat_s
 {
     int                                     st_mode;
+    int                                     st_nlink;
     uid_t                                   st_uid;
     gid_t                                   st_gid;
-    dev_t                                   st_rdev;
     globus_size_t                           st_size;
     globus_time_t                           mtime;
     globus_time_t                           atime;
@@ -92,7 +92,8 @@ typedef globus_result_t
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list);
+    void **                                 argv,
+    int                                     argc);
 
 /***************************************************************************
  *                      start up
@@ -360,6 +361,21 @@ globus_gridftp_server_get_auth_cb(
     globus_gridftp_server_t                 server,
     globus_gridftp_server_auth_callback_t * auth_cb);
 
+globus_result_t
+globus_gridftp_server_get_resource_cb(
+    globus_gridftp_server_t                 server,
+    globus_gridftp_server_resource_func_t * resource_cb);
+
+globus_result_t
+globus_gridftp_server_get_banner(
+    globus_gridftp_server_t                 server,
+    char **                                 banner);
+
+globus_result_t
+globus_gridftp_server_get_status(
+    globus_gridftp_server_t                 server,
+    char **                                 status);
+
 /***************************************************************************
  *                      user callbacks
  *                      --------------
@@ -392,6 +408,8 @@ void
 globus_gridftp_server_finished_cmd(
     globus_gridftp_server_operation_t       op,
     globus_result_t                         result,
+    void **                                 argv,
+    int                                     argc,
     globus_bool_t                           complete);
 
 /***************************************************************************
@@ -559,7 +577,8 @@ typedef void
     globus_gridftp_server_t                 server,
     globus_result_t                         result,
     const char *                            command_name,
-    globus_list_t *                         list,
+    void **                                 argv,
+    int                                     argc,
     void *                                  user_arg);
 
 /*
@@ -571,7 +590,8 @@ globus_gridftp_server_pmod_command(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_pmod_command_cb_t cb,
-    globus_list_t *                         list,
+    void **                                 argv,
+    int                                     argc,
     void *                                  user_arg);
 
 /*

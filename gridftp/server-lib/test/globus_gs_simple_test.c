@@ -45,6 +45,43 @@ globus_l_done_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
+globus_result_t
+resource_func(
+    globus_gridftp_server_operation_t       op,
+    const char *                            path,
+    int                                     mask)
+{
+    struct stat                             stat_buf;
+    int                                     rc;
+    globus_gridftp_server_stat_t *          gs_stat_buf;
+
+    rc = stat(path, &stat_buf);
+
+    if(rc == 0)
+    {
+        gs_stat_buf = (globus_gridftp_server_stat_t *)
+            globus_malloc(sizeof(globus_gridftp_server_stat_t));
+        gs_stat_buf->st_mode = stat_buf.st_mode;
+        gs_stat_buf->st_uid = stat_buf.st_uid;
+        gs_stat_buf->st_gid = stat_buf.st_gid;
+        gs_stat_buf->atime = stat_buf.st_atime;
+        gs_stat_buf->mtime = stat_buf.st_mtime;
+        gs_stat_buf->ctime = stat_buf.st_ctime;
+        gs_stat_buf->st_size = stat_buf.st_size;
+        gs_stat_buf->st_nlink = stat_buf.st_nlink;
+
+        globus_gridftp_server_finished_resource(
+            op, GLOBUS_SUCCESS, gs_stat_buf, 1);
+    }
+    else
+    {
+        globus_gridftp_server_finished_resource(
+            op, (void *)1, NULL, 0);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
 int
 main(
     int                                     argc,
@@ -58,7 +95,6 @@ main(
     globus_xio_server_t                     server;
     globus_result_t                         res;
     char *                                  cs;
-    globus_size_t                           nbytes;
     globus_gridftp_server_attr_t            ftp_attr;
     globus_gridftp_server_t                 ftp_server;
 
@@ -101,15 +137,6 @@ main(
     res = globus_xio_open(&xio_handle, NULL, target);
     test_res(res, __LINE__);
 
-    /* send the banner */
-    res = globus_xio_write(
-        xio_handle, 
-        REPLY_220, 
-        strlen(REPLY_220),
-        strlen(REPLY_220),
-        &nbytes,
-        NULL);
-
     /*
      *  server connection is all set up, hand it to server_lib
      */
@@ -119,7 +146,11 @@ main(
     res = globus_gridftp_server_attr_init(&ftp_attr);
     test_res(res, __LINE__);
 
+    res = globus_gridftp_server_attr_set_resource(ftp_attr, resource_func);
+    test_res(res, __LINE__);
+
     res = globus_gridftp_server_attr_set_done(ftp_attr, globus_l_done_cb);
+    test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {

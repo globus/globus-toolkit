@@ -46,7 +46,7 @@ globus_gridftp_server_finished_auth(
     }
     globus_free(auth_info);
 
-    globus_gridftp_server_finished_cmd(op, res, GLOBUS_TRUE);
+    globus_gridftp_server_finished_cmd(op, res, NULL, 0, GLOBUS_TRUE);
 }
 /*
  *  SInce these commands are internal they can look at the 
@@ -56,7 +56,8 @@ globus_l_gs_cmd_auth(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list)
+    void **                                 argv,
+    int                                     argc)
 {
     globus_result_t                         res;
     globus_l_gs_auth_info_t *               auth_info;
@@ -82,23 +83,20 @@ globus_l_gs_cmd_auth(
 
     auth_info = (globus_l_gs_auth_info_t *) globus_malloc(
         sizeof(globus_l_gs_auth_info_t));
-    auth_info->username = (char *) globus_list_first(list);
+    auth_info->username = (char *) argv[0];
     if(auth_info->username != NULL)
     {
         auth_info->username = globus_libc_strdup(auth_info->username);
     }
-    list = globus_list_rest(list);
 
-    auth_info->pw = globus_list_first(list);
+    auth_info->pw = argv[1];
     if(auth_info->pw != NULL)
     {
         auth_info->pw = globus_libc_strdup(auth_info->pw);
     }
-    list = globus_list_rest(list);
 
-    auth_info->cred = (gss_cred_id_t) globus_list_first(list);
-    list = globus_list_rest(list);
-    auth_info->del_cred = (gss_cred_id_t) globus_list_first(list);
+    auth_info->cred = (gss_cred_id_t) argv[2];
+    auth_info->del_cred = (gss_cred_id_t) argv[3];
 
     GlobusGridFTPServerOpSetUserArg(op, auth_info);
     if(auth_cb != NULL)
@@ -132,7 +130,8 @@ globus_l_gs_simple_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list)
+    void **                                 argv,
+    int                                     argc)
 {
     globus_i_gs_server_t *                  i_server;
     int                                     ch;
@@ -143,7 +142,7 @@ globus_l_gs_simple_cmd(
     i_op = (globus_i_gs_op_t *) op;
     i_server = (globus_i_gs_server_t *) server;
 
-    ch = (int) globus_list_first(list);
+    ch = (int) argv[0];
     if(strcmp(command_name, "MODE") == 0)
     {
         if(ch != 'E' && ch != 'S')
@@ -176,7 +175,8 @@ globus_l_gs_simple_cmd(
         goto err;
     }
 
-    globus_gridftp_server_finished_cmd(op, GLOBUS_SUCCESS, GLOBUS_TRUE);
+    globus_gridftp_server_finished_cmd(
+        op, GLOBUS_SUCCESS, NULL, 0, GLOBUS_TRUE);
 
     return GLOBUS_SUCCESS;
 
@@ -199,7 +199,8 @@ globus_l_gs_directory_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list)
+    void **                                 argv,
+    int                                     argc)
 {
     globus_i_gs_server_t *                  i_server;
     globus_result_t                         res;
@@ -208,9 +209,8 @@ globus_l_gs_directory_cmd(
     i_server = (globus_i_gs_server_t *) server;
     i_op = (globus_i_gs_op_t *) op;
 
-    i_op->mask = (int) globus_list_first(list);
-    list = globus_list_rest(list);
-    i_op->str_arg = (char *) globus_list_first(list);
+    i_op->mask = (int) argv[0];
+    i_op->str_arg = (char *) argv[1];
     globus_assert(i_op->str_arg == NULL
         && "This should not be allowed to be NULL");
     i_op->str_arg = globus_libc_strdup(i_op->str_arg);
@@ -223,12 +223,66 @@ globus_l_gs_directory_cmd(
     return res;
 }
 
+/*
+ *  stat a file
+ */
+void
+globus_gridftp_server_finished_resource(
+    globus_gridftp_server_operation_t       op,
+    globus_result_t                         result,
+    globus_gridftp_server_stat_t *          stat_info_array,
+    int                                     stat_count)
+{
+    void *                                  argv[2];
+
+    argv[0] = stat_info_array;
+    argv[1] = stat_count;
+
+    globus_gridftp_server_finished_cmd(op, result, argv, 2, GLOBUS_TRUE);
+}
+
+globus_result_t
+globus_l_gs_stat_cmd(
+    globus_gridftp_server_t                 server,
+    const char *                            command_name,
+    globus_gridftp_server_operation_t       op,
+    void **                                 argv,
+    int                                     argc)
+{
+    globus_i_gs_server_t *                  i_server;
+    char *                                  filename;
+    int                                     mask;
+    globus_gridftp_server_resource_func_t   resource_cb;
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_l_gs_stat_cmd);
+
+    i_server = (globus_i_gs_server_t *) server;
+
+    filename = (char *) argv[0];
+    mask = (int) argv[1];
+
+    globus_gridftp_server_get_resource_cb(server, &resource_cb);
+
+    if(resource_cb != NULL)
+    {
+        resource_cb(op, filename, mask);
+    }
+    else
+    {
+        res = GlobusGridFTPServerNotACommand();
+        globus_gridftp_server_finished_cmd(op, res, NULL, 0, GLOBUS_TRUE);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
 globus_result_t
 globus_l_gs_port_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list)
+    void **                                 argv,
+    int                                     argc)
 {
     return GLOBUS_SUCCESS;
 }
@@ -238,13 +292,14 @@ globus_l_gs_noop_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list)
+    void **                                 argv,
+    int                                     argc)
 {
     globus_result_t                         res;
 
     res = globus_gridftp_server_ping(server);
 
-    globus_gridftp_server_finished_cmd(op, res, GLOBUS_TRUE);
+    globus_gridftp_server_finished_cmd(op, res, NULL, 0, GLOBUS_TRUE);
 
     return GLOBUS_SUCCESS;
 }
@@ -254,9 +309,11 @@ globus_l_gs_quit_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    globus_list_t *                         list)
+    void **                                 argv,
+    int                                     argc)
 {
-    globus_gridftp_server_finished_cmd(op, GLOBUS_SUCCESS, GLOBUS_TRUE);
+    globus_gridftp_server_finished_cmd(
+        op, GLOBUS_SUCCESS, NULL, 0, GLOBUS_TRUE);
 
     return GLOBUS_SUCCESS;
 }
@@ -282,6 +339,17 @@ globus_i_gs_cmd_add_builtins(
             attr,
             "MODE",
             globus_l_gs_simple_cmd,
+            NULL,
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+    res = globus_gridftp_server_attr_command_add(
+            attr,
+            "STAT",
+            globus_l_gs_stat_cmd,
             NULL,
             GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
                 GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
