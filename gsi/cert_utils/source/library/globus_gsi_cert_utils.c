@@ -2,9 +2,9 @@
 #include "globus_i_gsi_cert_utils.h"
 #include "proxycertinfo.h"
 #include "globus_openssl.h"
-#include <openssl/asn1.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
+#include "openssl/asn1.h"
+#include "openssl/x509.h"
+#include "openssl/x509v3.h"
 #include "version.h"
 #include "config.h"
 #include <ctype.h>

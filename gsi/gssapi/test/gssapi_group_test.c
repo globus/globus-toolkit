@@ -20,7 +20,7 @@ gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_
  */
 
 
-#include <gssapi.h>
+#include "gssapi.h"
 #include "gssapi_openssl.h"
 
 static int establish_context(

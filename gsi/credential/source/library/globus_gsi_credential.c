@@ -13,10 +13,10 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_cert_utils.h"
 #include "version.h"
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <openssl/pkcs12.h>
-#include <openssl/err.h>
+#include "openssl/pem.h"
+#include "openssl/x509.h"
+#include "openssl/pkcs12.h"
+#include "openssl/err.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 

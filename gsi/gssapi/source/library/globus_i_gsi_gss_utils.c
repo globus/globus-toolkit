@@ -15,7 +15,7 @@ static char *rcsid = "$Id$";
 #include "globus_gsi_credential.h"
 #include "globus_gsi_callback.h"
 #include "globus_gsi_system_config.h"
-#include <openssl/ssl3.h>
+#include "openssl/ssl3.h"
 
 #include <string.h>
 #include <stdlib.h>

@@ -48,9 +48,9 @@ EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_gsi_credential.h"
-#include <globus_error_generic.h>
+#include "globus_error_generic.h"
 #include "globus_error_openssl.h"
-#include <openssl/evp.h>
+#include "openssl/evp.h"
 #include "proxycertinfo.h"
 #endif
 
