@@ -151,6 +151,7 @@ if ( not $noupdates )
     # Need autotools for gt2 or gt3
     if ($cvs_build_hash{'gt2'} eq 1 or
 	$cvs_build_hash{'gt3'} eq 1 or
+	$cvs_build_hash{'gt4'} eq 1 or
 	$cvs_build_hash{'cbindings'} eq 1)
     {
 	if ( $cvs_build_hash{'autotools'} ne 1)
@@ -640,6 +641,7 @@ sub build_prerequisites()
     if ( $cvs_build_hash{'autotools'} eq 1 or
 	 $cvs_build_hash{'gt2'} eq 1 or
 	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'gt4'} eq 1 or
 	 $cvs_build_hash{'cbindings'})
     {
 	install_gt2_autotools() if $autotools;
@@ -647,6 +649,7 @@ sub build_prerequisites()
 
     if ( $cvs_build_hash{'gt2'} eq 1 or 
 	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'gt4'} eq 1 or
 	 $cvs_build_hash{'cbindings'} eq 1)
     {
 	install_globus_core();
