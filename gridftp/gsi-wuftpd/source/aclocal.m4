@@ -26,17 +26,10 @@ AC_DEFUN([GSSAPI_CONFIG],
 
 AC_MSG_CHECKING(for type of gssapi support)
 
-AC_ARG_WITH(gssapi,
-[  --with-gssapi=<type>    Obsolete. Use --enable-gssapi instead.],
-[gssapi_type=$withval],
-[if test -z "$gssapi_type"; then
-     gssapi_type="none"
-fi])
-
 AC_ARG_ENABLE(gssapi,
-[  --enable-gssapi=<type>  Specify type of GSSAPI
+[  --enable-gssapi=<type>  Specify type of GSSAPI [default=globus]
                           Options are: none, krb5, globus, gsi],
-[gssapi_type=$enableval], [gssapi_type="none"])
+[gssapi_type=$enableval], [gssapi_type="globus"])
 
 AC_ARG_ENABLE(authorization,
 [  --enable-authorization=<type>
