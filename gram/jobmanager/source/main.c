@@ -28,9 +28,7 @@
 #include "globus_rsl.h"
 #include "globus_nexus.h"
 #include "globus_duct_control.h"
-#include "globus_gass_file.h"
 #include "globus_gass_cache.h"
-#include "globus_gass_copy.h"
 #include "globus_io.h"
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
@@ -554,25 +552,11 @@ globus_l_gram_job_manager_activate(void)
 	goto gram_protocol_failed;
     }
 
-    rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "gass_copy activation failed with rc=%d\n", rc);
-	goto gass_copy_failed;
-    }
-
     rc = globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
 	fprintf(stderr, "gass_cache activation failed with rc=%d\n", rc);
 	goto gass_cache_failed;
-    }
-
-    rc = globus_module_activate(GLOBUS_GASS_FILE_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "gass_file activation failed with rc=%d\n", rc);
-	goto gass_file_failed;
     }
 
     rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
@@ -590,9 +574,7 @@ globus_l_gram_job_manager_activate(void)
     }
 nexus_failed:
 duct_control_failed:
-gass_file_failed:
 gass_cache_failed:
-gass_copy_failed:
 gram_protocol_failed:
 io_failed:
     if(rc)
