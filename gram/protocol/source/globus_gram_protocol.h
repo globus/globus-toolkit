@@ -1,6 +1,16 @@
 #if !defined(GLOBUS_GRAM_PROTOCOL_H)
 #define GLOBUS_GRAM_PROTOCOL_H
 
+/**
+ * @mainpage Globus GRAM Protocol
+ *
+ * The Globus GRAM Protocol Library implements the GRAM protocol, and is used
+ * by the GRAM Client and GRAM Job Manager. It provides the constants used
+ * by in the sending and receiving of GRAM messages. It also provides
+ * functions to encode GRAM requests and replies, and to send and receive
+ * the GRAM messages.
+ */
+
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
 #        define EXTERN_C_BEGIN extern "C" {

@@ -2,7 +2,7 @@
 # C libraries and the shell script interfaces. This is converted at
 # configuration time to the globus_gram_protocol_constants.h file
 
-## globus_gram_protocol_error_t
+## globus_gram_protocol_error_t GRAM Error codes
 GLOBUS_GRAM_PROTOCOL_ERROR_PARAMETER_NOT_SUPPORTED=1
 GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST=2
 GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES=3
@@ -138,24 +138,65 @@ GLOBUS_GRAM_PROTOCOL_ERROR_JOB_UNSUBMITTED=132
 GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT=133
 GLOBUS_GRAM_PROTOCOL_ERROR_LAST=134
 
-## globus_gram_protocol_job_state_t
+## globus_gram_protocol_job_state_t GRAM Job States
+### The job is waiting for resources to become available to run.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING=1
+### The job has received resources and the application is executing.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE=2
+### The job terminated before completion because an error, user-triggered
+### cancel, or system-triggered cancel.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED=4
+### The job completed successfully
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE=8
+### The job has been suspended. Resources which were allocated for
+### this job may have been released due to some scheduler-specific
+### reason.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED=16
+### The job has not been submitted to the scheduler yet, pending the
+### reception of the GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST
+### signal from a client.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED=32
+### A mask of all job states.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL=0xFFFFF
 
-## globus_gram_protocol_job_signal_t
+## globus_gram_protocol_job_signal_t GRAM Signals
+### Cancel a job
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL=1
+### Suspend a job
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND=2
+### Resume a previously suspended job
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME=3
+### Change the priority of a job
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_PRIORITY=4
+### Signal the job manager to commence with a job submission if the job
+### request was accompanied by the (two_state=yes) RSL attribute.
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST=5
+### Signal the job manager to wait an additional number of seconds
+### (specified by an integer value string as the signal's argument) before
+### timing out a two-phase job commit.
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_EXTEND=6
+### Signal the job manager to change the way it is currently handling
+### standard output and/or standard error. The argument for this
+### signal is an RSL containing new @a stdout, @a stderr, @a stdout_position, 
+### @a stderr_position, or @a remote_io_url relations.
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE=7
+### Signal the job manager to verify  that streamed I/O has been completely
+### received. The argument to this signal contains the number of bytes of stdout
+### and stderr received, seperated by a space. The reply to this signal
+### will be a SUCCESS message if these matched the amount sent by the
+### job manager. Otherwise, an error reply indicating
+### GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE is returned.
+### If standard output and standard error are merged, only one number should be
+### sent as an argument to this signal. An argument of -1 for either stream
+### size indicates that the client is not interested in the size of that
+### stream.
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_SIZE=8
+### Signal the job manager to stop managing the current job and terminate.
+### The job continues to run as normal. The job manager will send a
+### state change callback with the job status being FAILED and the error
+### GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED.
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STOP_MANAGER=9
+### Signal the job manager to clean up after the completion of the job if
+### the job RSL contained the (two-phase = yes) relation.
 GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END=10
 
