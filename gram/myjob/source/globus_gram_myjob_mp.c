@@ -20,7 +20,8 @@ CVS Information:
 ******************************************************************************/
 #include "gram_myjob.h"
 #include "nexus.h"
-#include GRAM_MYJOB_MP_HEADER
+
+#include "gram_myjob_mp.h"
 
 
 /******************************************************************************
