@@ -86,6 +86,7 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
 	map.put(GSIConstants.GSI_AUTHORIZATION, org.globus.gsi.gssapi.auth.NoAuthorization.getInstance());
 	map.put(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
 	map.put(Constants.GSI_SEC_CONV, Constants.SIGNATURE);
+    map.put(Constants.GRIM_POLICY_HANDLER, new IgnoreProxyPolicyHandler());
 	nm = NotificationSinkManager.getManager();
 	nm.init(map);
 
@@ -209,7 +210,7 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
             ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
                                          Constants.SIGNATURE);
             ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                                          new IgnoreProxyPolicyHandler());
+                                         new IgnoreProxyPolicyHandler());
 
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);

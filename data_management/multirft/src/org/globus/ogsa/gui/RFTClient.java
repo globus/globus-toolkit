@@ -179,9 +179,16 @@ public class RFTClient extends ServicePropertiesImpl
             Factory factory = factoryService.getFactoryPort(new URL(handle));
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
 
-            /* ((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
-             ((Stub)factory)._setProperty(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
-             ((Stub)factory)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE);*/
+            /*
+            ((Stub)factory)._setProperty(Constants.AUTHORIZATION, 
+                                         NoAuthorization.getInstance());
+            ((Stub)factory)._setProperty(GSIConstants.GSI_MODE,
+                                         GSIConstants.GSI_MODE_FULL_DELEG);
+            ((Stub)factory)._setProperty(Constants.GSI_SEC_CONV, 
+                                         Constants.SIGNATURE);
+            ((Stub)factory)._setProperty(Constants.GRIM_POLICY_HANDLER,
+                                         new IgnoreProxyPolicyHandler());
+                                         */
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
@@ -205,9 +212,14 @@ public class RFTClient extends ServicePropertiesImpl
             notificationSinkProperties.put(
                 Constants.AUTHORIZATION,
                 NoAuthorization.getInstance());
+            /*
             notificationSinkProperties.put(
                 GSIConstants.GSI_MODE, 
                 GSIConstants.GSI_MODE_FULL_DELEG);
+                */
+            notificationSinkProperties.put(
+                GSIConstants.GSI_MODE, 
+                GSIConstants.GSI_MODE_LIMITED_DELEG);
             notificationSinkProperties.put(
                 Constants.GRIM_POLICY_HANDLER,
                 new IgnoreProxyPolicyHandler());
