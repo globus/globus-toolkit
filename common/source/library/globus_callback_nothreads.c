@@ -1830,6 +1830,7 @@ globus_l_callback_signal_handler(
                  */
                 globus_l_callback_restart_info->time_stop = 
                     &globus_i_abstime_zero;
+                globus_l_callback_restart_info->signaled = GLOBUS_TRUE;
             }
         }
     }
