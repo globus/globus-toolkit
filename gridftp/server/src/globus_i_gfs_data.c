@@ -334,7 +334,7 @@ globus_gridftp_server_operation_finished(
     finished_info->id = op->id;
     finished_info->result = result;
 
-    switch(finished-info->type)
+    switch(finished_info->type)
     {
         case GLOBUS_GFS_OP_SESSION_START:
             if(op->session_handle)
