@@ -67,44 +67,31 @@ wc=${GLOBUS_SH_WC-wc}
 #
 
 GetNodeCountFork () {
-case "`./grid-info-osguess`" in
-  *linux*)
-     # linux doesn't provide a sysctl interface to get cpu count
-     # so grid-info-num-procs won't give correct data
-     if [ -r /proc/cpuinfo ]
-     then
-        # handle multiple CPU sections for SMP machines
-        TOTALNODES=`${grep} processor /proc/cpuinfo | ${wc} | ${awk} '{ print $1 }'`
-     else
-        # assume not SMP
-        TOTALNODES=1
-     fi
-     ;;
-  *)
-     TOTALNODES=`./grid-info-num-procs`
-     ;;
-esac
 
-
-if test ! -x "${uptime}" ; then
+   # defaults...
    FREENODES=0
-else
-   # Get the load average over the last minute
-   # Round to the nearst whole number
+   TOTALNODES=0
+
+   ${GLOBUS_LOCATION}/libexec/grid-info-cpufast-uptime -hostobj | \
+   {
+      while read attr val
+      do
+          case "$attr" in
+              Mds-Cpu-Smp-size:)
+                  TOTALNODES="$val"
+              ;;
 
 
-   FREENODES=`(@ECHO@ "$TOTALNODES " ; $uptime) |       \
-              ${awk} '{tnodes=$1 ; getline ;
-                      for (i=1; $i != "average:" && $i != "averages:"; i++) ;
-                      v = $(i+1) ;
-                      l = substr(v,1,length(v)-1) ;
-                      if(@GLOBUS_UPTIME_IS_AVERAGE@ == 1) {
-                        print tnodes - int(l * tnodes + 0.5);
-                      } else {
-                        print tnodes - int(l + 0.5) ;
-                      }
-                    }'`
-fi
+              Mds-Cpu-Free-1min:)
+                  smp_free_1minX100="$val"
+                  # truncate fixed-precision fraction to whole integer
+                  FREENODES=`expr $smp_free_1min / 100`
+              ;;
+          esac
+      done
+      echo "${TOTALNODES} ${FREENODES}"
+   }
+
 } #########################
 
 
@@ -148,7 +135,9 @@ GetNodeCount() {
 
 
     if [ $TOTALNODES -eq 0 ] && [ $FREENODES -eq 0 ]; then
-        GetNodeCountFork
+        NODE_COUNTS=`GetNodeCountFork`
+        TOTALNODES=`echo "$NODE_COUNTS" | ${awk} '{ print $1 }'`
+        FREENODES=`echo "$NODE_COUNTS" | ${awk} '{ print $2 }'`
     fi
 } #########################
 
