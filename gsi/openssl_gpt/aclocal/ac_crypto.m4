@@ -96,10 +96,20 @@ AC_DEFUN([LAC_CRYPTO_SET],
                     lac_BF_PTR="1"
 
                     if test "$GCC" = "yes"; then
-                    lac_BN_LLONG="1"
-                    lac_BN_DIV2W="1"
                         lac_RC4_CHUNK="unsigned long"
+                        case ${GLOBUS_FLAVOR_NAME} in
+                            *64* )
+                                lac_SIXTY_FOUR_BIT_LONG="1"
+                                lac_THIRTY_TWO_BIT=""
+                                lac_DES_LONG="unsigned int"
+                            ;;
+                            *32* )
+                                lac_BN_LLONG="1"
+                                lac_BN_DIV2W="1"
+                            ;;
+                        esac
                     else
+                        # vendorcc flavor
                         lac_DES_PTR="1"
                         lac_DES_RISC1="1"
                         case ${GLOBUS_FLAVOR_NAME} in
