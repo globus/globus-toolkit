@@ -37,8 +37,9 @@ typedef int                                   globus_thread_callback_index_t;
 *  function prototypes
 **************************************************************************/
 typedef
-void *
+void
 (*globus_thread_blocking_func_t)(
+    int                                 space,
     globus_thread_callback_index_t      ndx,
     void *                              user_args);
 
@@ -61,8 +62,12 @@ globus_thread_result_t
 globus_thread_blocking_callback_disable(
     globus_thread_callback_index_t *  i);
 
+#define globus_thread_blocking_will_block()                             \
+    globus_thread_blocking_space_will_block(GLOBUS_CALLBACK_GLOBAL_SPACE)
+
 globus_thread_result_t 
-globus_thread_blocking_will_block();
+globus_thread_blocking_space_will_block(
+    int                                 blocking_space);
 
 void
 globus_thread_prefork();
