@@ -3307,6 +3307,9 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
                                         timestamp);
         if(rc != GLOBUS_SUCCESS)
         {
+	    grami_fprintf( req->jobmanager_log_fp, 
+			   "JM: globus_gass_cache_add_done failed for user proxy file --> %s\n",
+			   user_proxy_path);
             if (remove(user_proxy_path) != 0)
             {
                 grami_fprintf( req->jobmanager_log_fp, 
@@ -3318,6 +3321,9 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
     }
     else
     {
+	grami_fprintf( req->jobmanager_log_fp, 
+		       "JM: Cannot get a cache entry for user proxy file %s : %s\n",
+		       unique_file_name, globus_gass_cache_error_string(rc));
         if (remove(user_proxy_path) != 0)
         {
             grami_fprintf( req->jobmanager_log_fp, 
