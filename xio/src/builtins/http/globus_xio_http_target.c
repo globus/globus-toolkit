@@ -22,7 +22,7 @@ globus_i_xio_http_target_init(
     globus_i_xio_http_target_t **       out_target,
     const globus_xio_contact_t *        contact_info)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     globus_i_xio_http_target_t *        target;
     GlobusXIOName(globus_l_xio_http_target_init);
 
