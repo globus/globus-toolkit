@@ -1159,28 +1159,15 @@ globus_i_gsi_callback_check_critical_extensions(
             }
 
             policy = PROXYCERTINFO_get_policy(proxycertinfo);
-
-            if(policy && policy->policy)
-            {
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    ("Certificate has unknown critical extension, "
-                     "with numeric ID: %d, "
-                     "rejected during validation",
-                     OBJ_obj2nid(PROXYPOLICY_get_policy_language(policy))));
-                x509_context->error = X509_V_ERR_CERT_REJECTED;
-                goto exit;
-            }
         }
         
-        if(nid != NID_basic_constraints &&
-           nid != NID_key_usage &&
-           nid != NID_ext_key_usage &&
-           nid != NID_netscape_cert_type &&
-           nid != NID_subject_key_identifier &&
-           nid != NID_authority_key_identifier &&
-           nid != pci_NID)
+        if((nid != NID_basic_constraints &&
+            nid != NID_key_usage &&
+            nid != NID_ext_key_usage &&
+            nid != NID_netscape_cert_type &&
+            nid != NID_subject_key_identifier &&
+            nid != NID_authority_key_identifier &&
+            nid != pci_NID) || (policy && policy->policy))
         {
             if(callback_data->extension_cb)
             {
