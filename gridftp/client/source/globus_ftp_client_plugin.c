@@ -843,6 +843,126 @@ globus_ftp_client_plugin_restart_modification_time(
 							when);
 }
 /* globus_ftp_client_plugin_restart_modification_time() */
+
+
+/**
+ * Get restart marker
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will allow this user to get the restart marker
+ * associated with a restarted file transfer.  This function may only be
+ * called within the get, put, or third party transfer callback in which
+ * the 'restart' argument is GLOBUS_TRUE
+ *
+ * @param handle
+ *        The handle which is associated with the transfer.
+ *
+ * @param marker
+ *        Pointer to an uninitialized restart marker type
+ *
+ * @return
+ *        - Error on NULL handle or marker
+ *        - Error on invalid use of function
+ *        - GLOBUS_SUCCESS (marker will be populated)
+ */
+
+globus_result_t
+globus_ftp_client_plugin_restart_get_marker(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_restart_marker_t *	marker)
+{
+    globus_result_t				result;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char * myname = "globus_ftp_client_plugin_restart_get_marker";
+
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL handle at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    if(marker == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL marker at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    i_handle = *handle;
+
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(i_handle->handle))
+    {
+	return globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] Invalid internal handle at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    globus_i_ftp_client_handle_lock(i_handle);
+
+    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+        if(i_handle->op == GLOBUS_FTP_CLIENT_GET ||
+            i_handle->op == GLOBUS_FTP_CLIENT_PUT ||
+            i_handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
+        {
+            if(i_handle->restart_info)
+            {
+                result = globus_ftp_client_restart_marker_copy(
+                    marker,
+                    &i_handle->restart_info->marker);
+            }
+            else
+            {
+                result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_FTP_CLIENT_MODULE,
+                        GLOBUS_NULL,
+                        "[%s] Could not find restart info %s\n",
+                        GLOBUS_FTP_CLIENT_MODULE->module_name,
+                        myname));
+            }
+        }
+        else
+        {
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_FTP_CLIENT_MODULE,
+                    GLOBUS_NULL,
+                    "[%s] No restart marker for restarted operation at %s\n",
+                    GLOBUS_FTP_CLIENT_MODULE->module_name,
+                    myname));
+        }
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] Handle not in restart state %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    globus_i_ftp_client_handle_unlock(i_handle);
+
+
+    return result;
+}
+
 /**
  * Abort a transfer operation.
  * @ingroup globus_ftp_client_plugins

@@ -112,7 +112,7 @@ globus_ftp_client_restart_marker_copy(
 	    globus_i_ftp_client_range_t *	range;
 
 	    range = (globus_i_ftp_client_range_t *) globus_fifo_dequeue(tmp);
-	    
+
 	    globus_ftp_client_restart_marker_insert_range(new_marker,
 							  range->offset,
 							  range->end_offset);
@@ -170,7 +170,7 @@ globus_ftp_client_restart_marker_destroy(
     case GLOBUS_FTP_CLIENT_RESTART_STREAM:
 	memset(marker, '\0', sizeof(globus_ftp_client_restart_marker_t));
 	marker->type = GLOBUS_FTP_CLIENT_RESTART_NONE;
-	
+
 	break;
     }
     return GLOBUS_SUCCESS;
@@ -182,7 +182,7 @@ globus_ftp_client_restart_marker_destroy(
  * @ingroup globus_ftp_client_restart_marker
  *
  * This function updates a restart marker with a new byte range,
- * suitable for using to restart an extended block mode transfer. 
+ * suitable for using to restart an extended block mode transfer.
  * Adjacent ranges within the marker will be combined into a single
  * entry in the marker.
  *
@@ -335,7 +335,7 @@ copy_rest:
  * @ingroup globus_ftp_client_restart_marker
  *
  * This function modifies a restart marker to contain a stream offset,
- * suitable for using to restart a steam mode transfer. 
+ * suitable for using to restart a steam mode transfer.
  *
  * The marker must first be initialized by calling
  * globus_ftp_client_restart_marker_init() or
@@ -400,7 +400,7 @@ globus_ftp_client_restart_marker_set_ascii_offset(
  * @ingroup globus_ftp_client_restart_marker
  *
  * This function modifies a restart marker to contain a stream offset,
- * suitable for using to restart a steam mode transfer. 
+ * suitable for using to restart a steam mode transfer.
  *
  * The marker must first be initialized by calling
  * globus_ftp_client_restart_marker_init() or
@@ -452,6 +452,86 @@ globus_ftp_client_restart_marker_set_offset(
 }
 /* globus_ftp_client_restart_marker_set_offset() */
 
+
+/**
+ * Get total bytes accounted for in restart marker
+ * @ingroup globus_ftp_client_restart_marker
+ *
+ * This funtion will return the sum of all bytes accounted for in
+ * a restart marker.  If this restart marker contains a stream offset
+ * then this value is the same as the offset (not the ascii offset)
+ * that it was set with.  If it is a range list, it a sum of all the
+ * bytes in the ranges.
+ *
+ * @param marker
+ *        A previously initialized or copied restart marker
+ *
+ * @param total_bytes
+ *        pointer to storage for total bytes in marker
+ *
+ * @return
+ *        - Error on NULL marker or total bytes
+ *        - <possible return>
+ */
+globus_result_t
+globus_ftp_client_restart_marker_get_total(
+    globus_ftp_client_restart_marker_t *	marker,
+    globus_off_t *				total_bytes)
+{
+    static char * myname = "globus_ftp_client_restart_marker_get_total";
+
+    if(marker == GLOBUS_NULL)
+    {
+        return globus_error_put(
+	    globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot process NULL marker at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname));
+    }
+
+    if(total_bytes == GLOBUS_NULL)
+    {
+        return globus_error_put(
+	    globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] NULL total_bytes at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname));
+    }
+
+    *total_bytes = 0;
+
+    if(marker->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
+    {
+        *total_bytes = marker->stream.offset;
+    }
+    else if(marker->type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK &&
+            !globus_fifo_empty(&marker->extended_block.ranges))
+    {
+        globus_fifo_t *			        tmp;
+        globus_off_t			        total;
+        globus_i_ftp_client_range_t *           range;
+
+        tmp = globus_fifo_copy(&marker->extended_block.ranges);
+        total = 0;
+
+        while((!globus_fifo_empty(tmp)))
+        {
+	    range = (globus_i_ftp_client_range_t *) globus_fifo_dequeue(tmp);
+
+            total += range->end_offset - range->offset;
+        }
+
+        *total_bytes = total;
+        globus_libc_free(tmp);
+    }
+
+    return GLOBUS_SUCCESS;
+
+}
 
 /**
  * Create a string representation of a restart marker.
@@ -562,7 +642,7 @@ globus_ftp_client_restart_marker_to_string(
 	    mylen++;
 	    mylen += globus_i_ftp_client_count_digits(range->end_offset);
 	    mylen++;
-    
+
 	    tbuf = realloc(buf, length + mylen + 1);
 
 	    if(!tbuf)

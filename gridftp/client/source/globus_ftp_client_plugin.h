@@ -898,6 +898,11 @@ globus_ftp_client_plugin_restart_modification_time(
     const globus_abstime_t *            	when);
 
 globus_result_t
+globus_ftp_client_plugin_restart_get_marker(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_restart_marker_t *	marker);
+
+globus_result_t
 globus_ftp_client_plugin_abort(
     globus_ftp_client_handle_t *		handle);
 
