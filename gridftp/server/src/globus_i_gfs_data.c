@@ -1476,7 +1476,7 @@ globus_l_gfs_data_transfer_event_kickout(
             globus_range_list_remove(
                 bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
         }
-        if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+        if(bounce_info->event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
             /* destroy the transfer op here */
         }

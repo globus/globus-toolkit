@@ -93,6 +93,13 @@ globus_l_gfs_request_abort(
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR,
         "Aborting \n");
+
+    globus_i_gfs_data_request_transfer_event(
+        NULL, 
+        instance->session_id,
+        instance->transfer_id,
+        GLOBUS_GFS_EVENT_TRANSFER_ABORT);
+
     return;   
 }
 
@@ -719,11 +726,12 @@ globus_l_gfs_data_event_cb(
     globus_gfs_data_event_reply_t *      reply,
     void *                              user_arg)
 {
+    globus_result_t                     result;
     globus_gridftp_server_control_op_t  op;
     char                                mode;
-
-    /* XXX */
     globus_i_gfs_server_instance_t *    instance;
+    GlobusGFSName(globus_l_gfs_data_event_cb);
+
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     op = instance->op;    
     switch(reply->type)
@@ -736,6 +744,14 @@ globus_l_gfs_data_event_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
             globus_l_gfs_request_transfer_event,
             instance);
+
+        result = globus_gridftp_server_abort_enable(
+            op, globus_l_gfs_request_abort, instance);
+        if(result != GLOBUS_SUCCESS)
+        {
+            /* TODO: can we ignore this */
+        }
+
         break;
       
       case GLOBUS_GFS_EVENT_DISCONNECTED:
@@ -789,6 +805,8 @@ globus_l_gfs_data_transfer_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }
+    /* no more aborts once this returns */
+    globus_gridftp_server_abort_disable(op);
     globus_i_gfs_data_request_transfer_event(
         NULL, 
         instance->session_id,
@@ -818,15 +836,6 @@ globus_l_gfs_request_send(
     send_info = (globus_gfs_transfer_info_t *) 
         globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
 
-    result = globus_gridftp_server_abort_enable(
-        op, globus_l_gfs_request_abort, instance);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_gridftp_server_abort_enable", result);
-        goto error_attr;
-    }
-        
     if(mod_name && strcmp("P", mod_name) == 0)
     {
         args = sscanf(
@@ -868,7 +877,6 @@ globus_l_gfs_request_send(
     return;
 
 error_data:
-error_attr:
 /*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
@@ -899,15 +907,6 @@ globus_l_gfs_request_recv(
     recv_info = (globus_gfs_transfer_info_t *) 
         globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
 
-    result = globus_gridftp_server_abort_enable(
-        op, globus_l_gfs_request_abort, instance);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_gridftp_server_abort_enable", result);
-        goto error_attr;
-    }
-    
     if(mod_name && strcmp("A", mod_name) == 0)
     {
         args = sscanf(
@@ -948,7 +947,6 @@ globus_l_gfs_request_recv(
     return;
     
 error_data:
-error_attr:
 /*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
@@ -976,15 +974,6 @@ globus_l_gfs_request_list(
     list_info = (globus_gfs_transfer_info_t *) 
         globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
 
-    result = globus_gridftp_server_abort_enable(
-        op, globus_l_gfs_request_abort, instance);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_gridftp_server_abort_enable", result);
-        goto error_data;
-    }
-    
     globus_l_gfs_get_full_path(instance, path, &list_info->pathname);
     list_info->list_type = globus_libc_strdup(list_type);
     list_info->data_handle_id = (int) data_handle;
