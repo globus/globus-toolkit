@@ -28,6 +28,7 @@ RCSID("$OpenBSD: auth2.c,v 1.85 2002/02/24 19:14:59 markus Exp $");
 #include <openssl/evp.h>
 
 #include "ssh2.h"
+#include "ssh1.h"
 #include "xmalloc.h"
 #include "rsa.h"
 #include "sshpty.h"
@@ -269,6 +270,9 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 #endif /* USE_PAM */
 
 	/* Log before sending the reply */
+	if (!compat20)
+	auth_log(authctxt, authenticated, method, " ssh1");
+	else
 	auth_log(authctxt, authenticated, method, " ssh2");
 
 	if (authctxt->postponed)
@@ -278,6 +282,9 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 	if (authenticated == 1) {
 		/* turn off userauth */
 		dispatch_set(SSH2_MSG_USERAUTH_REQUEST, &dispatch_protocol_ignore);
+		if (!compat20)
+		packet_start(SSH_SMSG_SUCCESS);
+		else
 		packet_start(SSH2_MSG_USERAUTH_SUCCESS);
 		packet_send();
 		packet_write_wait();
@@ -293,6 +300,9 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
 		}
 		methods = authmethods_get();
+		if (!compat20)
+		packet_disconnect("GSSAPI authentication failed");
+		else
 		packet_start(SSH2_MSG_USERAUTH_FAILURE);
 		packet_put_cstring(methods);
 		packet_put_char(0);	/* XXX partial success, unused */
