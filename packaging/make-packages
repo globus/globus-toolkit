@@ -248,7 +248,7 @@ collate_packages() {
         rm package-output/hostinfo-0.3-src.tar.gz
         cp fait_accompli/gt3_hostinfo-0.3_src.tar.gz package-output
 
-	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=$release -srcdir=package-output -all
+	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=1 -srcdir=package-output -all
 
 	if [ $release = 1 ]; then
 		mkdir -p release-candidate/gt3-alpha3-source-installer
@@ -279,7 +279,7 @@ install_bundle() {
 		# Package it with the gt2 binary bundle to make a distro
 		# Do this before installing GT2 to avoid getting all those
 		# packages also.
-		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=$release -all -bindir=binaries
+		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
 
 		mkdir -p release-candidate/gt3-alpha3-binary-installer
 		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
