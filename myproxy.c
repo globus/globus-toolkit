@@ -782,6 +782,11 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
         return(-1);
     }
 
+    if (responselen == 0) {
+	verror_put_string("Server closed connection.\n");
+	return(-1);
+    }
+
     /* Make a response object from the response buffer */
     if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
       verror_put_string("Error in myproxy_deserialize_response()");
