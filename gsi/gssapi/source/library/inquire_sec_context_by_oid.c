@@ -42,7 +42,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     STACK_OF(X509) *                    cert_chain = NULL;
     ASN1_OBJECT *                       asn1_desired_obj = NULL;
     ASN1_OCTET_STRING *                 asn1_oct_string;
-    gss_buffer_desc                     data_set_buffer;
+    gss_buffer_desc                     data_set_buffer = GSS_C_EMPTY_BUFFER;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     unsigned char *                     tmp_ptr;
     static char *                       _function_name_ =
@@ -249,16 +249,17 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 goto exit;                
             }
             
-            data_set_buffer.value = malloc(data_set_buffer.length);
+            tmp_ptr = realloc(data_set_buffer.value,
+                              data_set_buffer.length);
 
-            if(data_set_buffer.value == NULL)
+            if(tmp_ptr == NULL)
             {
                 GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
                 major_status = GSS_S_FAILURE;
                 goto exit;                
             }
 
-            tmp_ptr = data_set_buffer.value;
+            data_set_buffer.value = tmp_ptr;
             
             if(i2d_X509(cert,&tmp_ptr) < 0)
             {
@@ -282,7 +283,12 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
                 goto exit;
             }
-        }        
+        }
+        
+        if(data_set_buffer.value != NULL)
+        {
+            free(data_set_buffer.value);
+        }
     }
  exit:
 
