@@ -1,0 +1,16 @@
+#
+# myproxy server configuration file
+#
+# Any line starting with a pound sign (#) is a comment.
+#
+######################################################################
+
+#
+# Allowed clients
+#
+allowed_clients  "/C=US/O=National Computational Science Alliance/CN=*"
+
+#
+# Servers allowed to connect
+#
+allowed_services "/C=US/O=National Computational Science Alliance/CN=portal/*"
