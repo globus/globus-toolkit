@@ -381,6 +381,9 @@ main(int argc,
                    GRAMI_CLIENT_REPLY_HANDLER_ID,
                    NEXUS_TRUE,
                    NEXUS_FALSE);
+
+    nexus_startpoint_destroy(&reply_sp);
+
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
 */
@@ -578,6 +581,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
                         gram_request_param_t * params)
 {
     char pgm_count[GRAM_PARAM_SIZE];
+    char pgm_maxtime[GRAM_PARAM_SIZE];
     char * tmp_dir;
     struct stat statbuf;
 
@@ -591,7 +595,8 @@ grami_jm_request_params(gram_specification_t * description_tree,
     *(params->std_in)    = '\0';
     *(params->std_out)   = '\0';
     *(params->std_err)   = '\0';
-    *pgm_count = '\0';
+    *pgm_maxtime         = '\0';
+    *pgm_count           = '\0';
 
     grami_jm_param_get(description_tree, GRAM_EXECUTABLE_PARAM, params->pgm);
     grami_jm_param_get(description_tree, GRAM_ARGUMENTS_PARAM, params->pgm_args);
@@ -601,6 +606,18 @@ grami_jm_request_params(gram_specification_t * description_tree,
     grami_jm_param_get(description_tree, GRAM_STDIN_PARAM, params->std_in);
     grami_jm_param_get(description_tree, GRAM_STDOUT_PARAM, params->std_out);
     grami_jm_param_get(description_tree, GRAM_STDERR_PARAM, params->std_err);
+    grami_jm_param_get(description_tree, GRAM_MAXTIME_PARAM, pgm_maxtime);
+
+    if (strlen(pgm_maxtime) == 0)
+    {
+        params->maxtime = 0;
+    }
+    else
+    {
+        params->maxtime = atoi(pgm_maxtime);
+        if (params->maxtime < 1)
+            return (GRAM_ERROR_INVALID_MAXTIME);
+    }
 
     if (strlen(pgm_count) == 0)
         params->count = 1;
@@ -608,7 +625,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
         params->count = atoi(pgm_count);
 
     if (params->count < 1)
-        return (GRAM_ERROR_INVALID_REQUEST);
+        return (GRAM_ERROR_INVALID_COUNT);
 
     /* save count parameter for reporting to MDS */ 
     my_count = params->count;
@@ -766,6 +783,8 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
                    0,
                    NEXUS_TRUE,
                    NEXUS_FALSE);
+
+    nexus_startpoint_destroy(&reply_sp);
 
 } /* graml_start_time_handler() */
 
