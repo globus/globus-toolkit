@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <proxycertinfo.h>
 #include <proxyrestriction.h>
-#include <proxygroup.h>
 #include <string.h>
 #include <openssl/pem.h>
 
