@@ -694,7 +694,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 
     if (myproxy_creds_store(creds) < 0) {
 	myproxy_log_verror();
-        response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        response->response_type = MYPROXY_ERROR_RESPONSE; 
         strcat(response->error_string, "Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
@@ -879,21 +879,15 @@ become_daemon(myproxy_server_context_t *context)
 
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
- * GET:
- *   Only allowed_services can GET a proxy.
- *   The client must pass a second authorization check:
- *     In get_client_authdata(), if the client didn't supply a passphrase,
- *     the server requests a second X509 authentication from the client.
- *     Then, authorization for the credentials is checked, using the
- *     passphrase or second X509 identity, in authorization_check() in
- *     myproxy_authorization.c.  Either the passphrase must match or
- *     the X509 subjects must match.
- * PUT:
- *   Only allowed_clients can PUT a proxy.
+ * GET with passphrase (credential retrieval):
+ *   Client DN must match allowed_retrievers.
+ *   Passphrase in request must match passphrase for credentials.
+ * GET with certificate (credential renewal):
+ *   Client DN must match allowed_renewers.
+ *   DN in second X.509 authentication must match owner of credentials.
+ * PUT and DESTROY:
+ *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
- * DESTROY:
- *   Only allowed_clients can DESTROY a proxy.
- *   The client must own the credentials to destroy them.
  */
 static int
 myproxy_authorize_accept(myproxy_server_context_t *context,
@@ -913,15 +907,73 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    
    switch (client_request->command_type) {
    case MYPROXY_GET_PROXY:
-	 /* Only services are allowed to retrieve proxies */
-       authorization_ok = myproxy_server_check_service(context, client_name);
+       /* Gather all authorization information for the GET request. */
+       if (get_client_authdata(attrs, client_request, client_name,
+			       &auth_data) < 0) {
+	   myproxy_log_verror();
+	   verror_put_string("Unable to get client authorization data");
+	   goto end;
+       }
+       switch (auth_data.method) {
+       case AUTHORIZETYPE_PASSWD:
+	   /* Is the client authorized to retrieve creds with a passphrase? */
+	   authorization_ok = myproxy_server_check_retriever(context,
+							     client_name);
+	   
+	   break;
+       case AUTHORIZETYPE_CERT:
+	   /* Is the client authorized to renew existing credentials? */
+	   authorization_ok = myproxy_server_check_renewer(context,
+							   client_name);
+	   break;
+       }
+       if (!(authorization_ok == 1)) break;
+
+       if (myproxy_creds_fetch_entry(client_request->username, &creds) < 0) {
+	   myproxy_log_verror();
+	   verror_put_string("Unable to retrieve credentials.\n");
+	   goto end;
+       }
+	 
+       /* Does the authorization information check out for this cred? 
+	  Does passphrase match or does cert DN match cred owner? */
+       authorization_ok = authorization_check(&auth_data, &creds, client_name);
        break;
 
    case MYPROXY_PUT_PROXY:
    case MYPROXY_INFO_PROXY:
    case MYPROXY_DESTROY_PROXY:
-       /* Only clients can do these operations */
-       authorization_ok = myproxy_server_check_client(context, client_name);
+       /* Is this client authorized to store credentials here? */
+       authorization_ok = myproxy_server_check_cred(context, client_name);
+       if (!(authorization_ok == 1)) break;
+
+       credentials_exist = myproxy_creds_exist(client_request->username);
+       if (credentials_exist == -1) {
+	   myproxy_log_verror();
+	   verror_put_string("Error checking credential existence");
+	   goto end;
+       }
+
+       if (credentials_exist == 1) {
+	   client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_name);
+	   if (client_owns_credentials == -1) {
+	       verror_put_string("Error checking credential ownership");
+	       goto end;
+	   }
+       }
+
+       if (credentials_exist && !client_owns_credentials) {
+	   myproxy_log("Username \"%s\" in use by another client",
+		       client_request->username);
+	   verror_put_string("Username in use by another client");
+	   goto end;
+       }
+
+       if (strchr(client_request->username, '/') != NULL) {
+	   myproxy_log("Requested username contains invalid characters");
+	   verror_put_string("Requested username contains invalid characters");
+	   goto end;
+       }
        break;
    }
 
@@ -936,84 +988,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
       goto end;
    }
 
-   /*
-    * Find out if the credentials already exist and if the client owns
-    * them. These values are then used below for further checking.
-    */
-   credentials_exist = myproxy_creds_exist(client_request->username);
-   if (credentials_exist == -1) {
-      myproxy_log_verror();
-      verror_put_string("Error checking credential existence");
-      goto end;
-   }
-
-   if (credentials_exist == 1) {
-      /* If credentials exist are we the owner? */
-      client_owns_credentials = myproxy_creds_is_owner(client_request->username,
-                                                       client_name);
-      if (client_owns_credentials == -1) {
-	 verror_put_string("Error checking credential ownership");
-	 goto end;
-      }
-   }
-
-   switch (client_request->command_type) {
-      case MYPROXY_GET_PROXY:
-	 if (myproxy_creds_fetch_entry(client_request->username, &creds) < 0) {
-	    myproxy_log_verror();
-	    verror_put_string("Unable to retrieve credentials.\n");
-	    goto end;
-	 }
-	 
-	 if (get_client_authdata(attrs, client_request, client_name, 
-		                 &auth_data) < 0) {
-	    myproxy_log_verror();
-	    verror_put_string("Unable to get client authorization data");
-	    goto end;
-	 }
-
-	 authorization_ok = authorization_check(&auth_data,
-	                                        &creds,
-						client_name);
-	 if (!authorization_ok) {
-	    verror_put_string("Authorization failed");
-	    goto end;
-	 }
-	 break;
-
-      case MYPROXY_PUT_PROXY:
-	 if (strcmp(client_name, client_request->username) == 0)
-	    break;
-	 
-	 if (credentials_exist) {
-	    if (!client_owns_credentials) {
-	       myproxy_log("Username \"%s\" in use by another client",
-		            client_request->username);
-	       verror_put_string("Username in use by another client");
-	       goto end;
-	    }
-	 } else
-	    if (strchr(client_request->username, '/') != NULL) {
-	       myproxy_log("Requested username contains invalid characters");
-	       verror_put_string("Requested username contains invalid characters");
-	       goto end;
-	    }
-	 break;
-	    
-      case MYPROXY_INFO_PROXY:
-      case MYPROXY_DESTROY_PROXY:
-	 if (strcmp(client_name, client_request->username) == 0)
-	    break;
-
-	 if (credentials_exist && !client_owns_credentials) {
-	    myproxy_log("Username \"%s\" in use by another client",
-		        client_request->username);
-	    verror_put_string("Username in use by another client");
-	    goto end;
-	 }
-
-	 break;
-   }
    return_status = 0;
 
 end:
