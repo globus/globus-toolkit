@@ -1,5 +1,3 @@
-/* OPENBSD ORIGINAL: lib/libc/gen/getcwd.c */
-
 /*
  * Copyright (c) 1989, 1991, 1993
  *	The Regents of the University of California.  All rights reserved.

@@ -1,5 +1,3 @@
-/* OPENBSD ORIGINAL: lib/libc/net/base64.c */
-
 /*	$OpenBSD: base64.c,v 1.4 2002/01/02 23:00:10 deraadt Exp $	*/
 
 /*

@@ -104,6 +104,10 @@ shadow_pw(struct passwd *pw)
 
 	if (spw != NULL)
 		pw_password = spw->ufld.fd_encrypt;
+# elif defined(__hpux) && !defined(HAVE_SECUREWARE)
+	struct pr_passwd *spw;
+        if (iscomsec() && (spw = getprpwnam(pw->pw_name)) != NULL)
+                pw_password = spw->ufld.fd_encrypt;
 # endif
 
 	return pw_password;

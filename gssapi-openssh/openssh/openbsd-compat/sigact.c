@@ -1,5 +1,3 @@
-/* OPENBSD ORIGINAL: lib/libcurses/base/sigaction.c */
-
 /*	$OpenBSD: sigaction.c,v 1.3 1999/06/27 08:14:21 millert Exp $	*/
 
 /****************************************************************************

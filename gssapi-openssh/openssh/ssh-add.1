@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.40 2003/11/25 23:10:08 matthieu Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.39 2003/06/10 09:12:11 jmc Exp $
 .\"
 .\"  -*- nroff -*-
 .\"
@@ -69,9 +69,8 @@ The passphrase is read from the user's tty.
 .Nm
 retries the last passphrase if multiple identity files are given.
 .Pp
-The authentication agent must be running and the
-.Ev SSH_AUTH_SOCK
-environment variable must contain the name of its socket for
+The authentication agent must be running and must be an ancestor of
+the current process for
 .Nm
 to work.
 .Pp
