@@ -111,12 +111,12 @@ server-install:	$(SERVER_PROGS)
 client-install: $(CLIENT_PROGS)
 	@for prog in $(CLIENT_PROGS) ; do \
 	  echo Installing $${prog} in $(MYPROXY_CLIENT_DIR)/bin ; \
-	  $(INSTALL) -o $(INSTALL_OWNER) -m 755 $${prog} $(MYPROXY_CLIENT_DIR)/bin ;	\
+	  $(INSTALL) -o $(INSTALL_OWNER) -m 755 $${prog} $(MYPROXY_CLIENT_DIR)/bin/$${prog} ;	\
 	done
 
 tools-install: $(TOOL_PROGS)
 	@for prog in $(TOOL_PROGS) ; do \
 	  echo Installing $${prog} in $(MYPROXY_TOOLS_DIR)/bin ; \
-	  $(INSTALL) -o $(INSTALL_OWNER) -m 755 $${prog} $(MYPROXY_TOOLS_DIR)/bin ;	\
+	  $(INSTALL) -o $(INSTALL_OWNER) -m 755 $${prog} $(MYPROXY_TOOLS_DIR)/bin/$${prog} ;	\
 	done
 
