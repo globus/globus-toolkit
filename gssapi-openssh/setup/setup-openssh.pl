@@ -308,7 +308,7 @@ print "are some last minute details that I've got to set straight\n";
 print "in the config and man files, along with generating the ssh keys\n";
 print "for this machine (if it doesn't already have them).\n";
 print "\n";
-print "I like to install my config-related files in:
+print "I like to install my config-related files in:\n";
 print "  ${sysconfdir}\n";
 print "and, if you choose to continue, you will find a backup of the\n";
 print "original files in:\n";
