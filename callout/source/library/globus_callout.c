@@ -468,7 +468,7 @@ globus_callout_call_type(
         GLOBUS_CALLOUT_ERROR_RESULT(
             result,
             GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED,
-            ("unknown type: %s", type));
+            ("unknown type: %s\n", type));
         goto exit;
     }
 
