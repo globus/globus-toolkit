@@ -3537,6 +3537,7 @@ globus_l_xio_gsi_setup_target_name(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     char *                              contact_string;
+    globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_l_xio_gsi_setup_target_name);
     GlobusXIOGSIDebugInternalEnter();
 
@@ -3556,6 +3557,15 @@ globus_l_xio_gsi_setup_target_name(
             goto error;
         }
         
+        result = globus_xio_contact_parse(&contact_info, contact_string);
+        globus_free(contact_string);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_contact_parse", result);
+            goto error;
+        }
+        
         if(handle->attr->target_name != GSS_C_NO_NAME)
         {
             gss_release_name(&minor_status,
@@ -3564,9 +3574,9 @@ globus_l_xio_gsi_setup_target_name(
         }
         
         result = globus_gss_assist_authorization_host_name(
-            contact_string,
+            contact_info.host,
             &handle->attr->target_name);
-        globus_free(contact_string);
+        globus_xio_contact_destroy(&contact_info);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
