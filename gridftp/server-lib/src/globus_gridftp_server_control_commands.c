@@ -2321,8 +2321,8 @@ globus_i_gsc_add_commands(
         globus_l_gsc_cmd_all,
         GLOBUS_GSC_COMMAND_PRE_AUTH |
             GLOBUS_GSC_COMMAND_POST_AUTH,
-        2,
-        2,
+        1,
+        1,
         "ALLO <sp> <size>",
         NULL);
 
