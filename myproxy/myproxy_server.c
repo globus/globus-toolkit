@@ -563,6 +563,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     int on = 1;
     int listen_sock;
     struct sockaddr_in sin;
+    struct linger lin = {0,0};
     
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -572,6 +573,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 
     /* Allow reuse of socket */
     setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on));
+    setsockopt(listen_sock, SOL_SOCKET, SO_LINGER, (char *) &lin, sizeof(lin));
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
