@@ -136,11 +136,11 @@ typedef struct
 
  char * paradyn; 
 
- globus_gram_jobmanager_jobtype_t jobtype;   /* The way in which the job 
+ globus_gram_jobmanager_jobtype_t job_type;   /* The way in which the job 
                                               * should be started
                                               */
 
- unsigned long maxtime;    /* Maximum runtime in minutes, 0 means use the
+ unsigned long max_time;    /* Maximum runtime in minutes, 0 means use the
                             * system default
                             */
 
@@ -152,7 +152,7 @@ typedef struct
                                * 0 is the default which means unlimited.
                                */
 
- globus_bool_t dryrun;    /* GLOBUS_TRUE if this is a dryrun */
+ globus_bool_t dry_run;    /* GLOBUS_TRUE if this is a dryrun */
 
  /* Other opaque fields may be added here */
 
