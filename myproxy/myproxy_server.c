@@ -1041,10 +1041,15 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       verror_put_string("invalid credential for renewal");
 	       goto end;
 	   }
-	   /* Sanity check: Renewal credentials should not have a passphrase */
+	   /* Sanity check: Renewal credentials should not have a passphrase.
+	      We store a crypt'ed empty passphrase instead.  (yuk!) */
 	   if (creds.passphrase && creds.passphrase[0]) {
-	       verror_put_string("credential configured for retrieval, not renewal");
-	       goto end;
+	       char *tmp;
+	       tmp = (char *)crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
+	       if (strcmp(tmp, creds.passphrase)) {
+		   verror_put_string("credential configured for retrieval, not renewal");
+		   goto end;
+	       }
 	   }
 	   break;
 
