@@ -699,7 +699,7 @@ globus_l_cache_local_op(
 	{
 	    name = url;
 	}
-	rc = globus_gass_cache_add(&cache_handle,
+	rc = globus_gass_cache_add(cache_handle,
 			           name,
 			           tag,
 			           GLOBUS_TRUE,
@@ -707,7 +707,7 @@ globus_l_cache_local_op(
 			           &local_filename);
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
-	    globus_gass_cache_add_done(&cache_handle,
+	    globus_gass_cache_add_done(cache_handle,
 				       name,
 				       tag,
 				       timestamp);
@@ -741,7 +741,7 @@ globus_l_cache_local_op(
 		    printf("Error transferring %s\n",
 			   url);
 
-		    rc = globus_gass_cache_delete(&cache_handle,
+		    rc = globus_gass_cache_delete(cache_handle,
 						  name,
 						  tag,
 						  timestamp,
@@ -751,7 +751,7 @@ globus_l_cache_local_op(
 	    }
 	    if(return_value == GLOBUS_SUCCESS)
 	    {
-		rc = globus_gass_cache_add_done(&cache_handle,
+		rc = globus_gass_cache_add_done(cache_handle,
 						name,
 						tag,
 						timestamp);
@@ -777,7 +777,7 @@ globus_l_cache_local_op(
 	break;
 
     case GASSL_DELETE:
-	rc = globus_gass_cache_delete_start(&cache_handle,
+	rc = globus_gass_cache_delete_start(cache_handle,
 				            url,
 				            tag,
 				            &timestamp);
@@ -788,7 +788,7 @@ globus_l_cache_local_op(
 				globus_gass_cache_error_string(rc));
 	    return_value = GLOBUS_FAILURE;
 	}
-	rc = globus_gass_cache_delete(&cache_handle,
+	rc = globus_gass_cache_delete(cache_handle,
 			              url,
 			              tag,
 			              timestamp,
@@ -805,11 +805,11 @@ globus_l_cache_local_op(
     case GASSL_CLEANUP_TAG:
 	if( url == GLOBUS_NULL )
 	{
-	    rc = globus_gass_cache_cleanup_tag_all( &cache_handle, tag );
+	    rc = globus_gass_cache_cleanup_tag_all( cache_handle, tag );
 	}
 	else
 	{
-	    rc = globus_gass_cache_cleanup_tag(&cache_handle,
+	    rc = globus_gass_cache_cleanup_tag(cache_handle,
 			                       url,
 			                       tag);
 	}
@@ -823,7 +823,7 @@ globus_l_cache_local_op(
 	break;
 
     case GASSL_QUERY_URL:
-	rc = globus_gass_cache_query(&cache_handle,
+	rc = globus_gass_cache_query(cache_handle,
 				     url,
 				     tag,
 				     GLOBUS_FALSE,	/* Don't wait 4 lock */
@@ -854,7 +854,7 @@ globus_l_cache_local_op(
 	int	mangled_length;
 	if ( GLOBUS_NULL != url )
 	{
-	    rc = globus_gass_cache_mangle_url( &cache_handle,
+	    rc = globus_gass_cache_mangle_url( cache_handle,
 					       url, 
 					       &mangled,
 					       &mangled_length
@@ -873,7 +873,7 @@ globus_l_cache_local_op(
 	}
 	if ( GLOBUS_NULL != tag )
 	{
-	    rc = globus_gass_cache_mangle_tag( &cache_handle,
+	    rc = globus_gass_cache_mangle_tag( cache_handle,
 					       tag, 
 					       &mangled,
 					       &mangled_length
@@ -898,11 +898,11 @@ globus_l_cache_local_op(
 	char	*global_dir, *local_dir;
 
 	/* Go get 'em all */
-	rc = globus_gass_cache_get_cache_dir( &cache_handle,
+	rc = globus_gass_cache_get_cache_dir( cache_handle,
 					      &cache_root );
 	if ( GLOBUS_SUCCESS == rc )
 	{
-	    rc = globus_gass_cache_get_dirs( &cache_handle,
+	    rc = globus_gass_cache_get_dirs( cache_handle,
 					     url,
 					     tag,
 					     &global_root,
@@ -969,7 +969,7 @@ globus_l_cache_local_op(
 	char	*cache_type;
 
 	/* Go get the cache type string */
-	rc = globus_gass_cache_get_cache_type_string( &cache_handle,
+	rc = globus_gass_cache_get_cache_type_string( cache_handle,
 						      &cache_type );
 	if ( GLOBUS_SUCCESS != rc )
 	{

@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
@@ -37,14 +37,22 @@ TMPSCRIPT="${local_tmpdir}/cdscript$$"
 ${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
 ${GLOBUS_SH_CAT-cat} > $TMPSCRIPT  <<MYEND
 
-(\${GLOBUS_SH_SLEEP} 5; \${GLOBUS_SH_RM}  -rf .globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
+(\${GLOBUS_SH_SLEEP} \$CACHE_SLEEP_TIME; \${GLOBUS_SH_RM}  -rf \$HOME/.globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
 
-\${GLOBUS_SH_ECHO} successfull
+if test "\$CACHE_SLEEP_TIME" = "0"; then
+    wait
+fi
+
+echo successful
 exit 0
  
 MYEND
 
-RESULT=`echo "" |${bindir}/globusrun -s -r "${TARGET_MACH}"  "&(executable=\\${bindir}/globus-sh-exec)(arguments=\\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+if test ${TARGET_MACH} = "localhost" -o ${TARGET_MACH} = "localhost.localdomain"; then
+    RESULT=`CACHE_SLEEP_TIME=0 ${bindir}/globus-sh-exec $TMPSCRIPT`
+else
+    RESULT=`echo "" |${bindir}/globusrun -s -r "${TARGET_MACH}"  "&(environment=(CACHE_SLEEP_TIME 60))(executable=\\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(library_path=\\$(GLOBUS_LOCATION)/lib)(arguments=\\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+fi
 
 THIS_STATUS=$?
 if [ $THIS_STATUS -ne 0 ]
@@ -57,7 +65,7 @@ fi
 
 ${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
 
-if [ "x$RESULT" != "xsuccessfull" ]
+if [ "x$RESULT" != "xsuccessful" ]
 then
     echo "globus-gass-cache-destroy: $RESULT" 1>&2
 fi

@@ -1,11 +1,7 @@
 #! /usr/bin/perl
-BEGIN
-{
-    push(@INC, "$ENV{GLOBUS_LOCATION}" . '/lib/perl');
-}
-
 #use warnings;
 use strict;
+use lib $ENV{'GLOBUS_LOCATION'} . '/lib/perl';
 use Globus::Core::Paths;
 
 # Prototypes
@@ -45,39 +41,39 @@ my $OptionLong = 0;
 
 # C Program flags & args
 my @CprogFlags = (
-		  "-a", "-add",
-		  "-d", "-delete",
-		  "-dirs",
-		  "-m", "-mangle",
-		  "-q", "-query",
-		  "-cleanup-tag",
+		  '-a', '-add',
+		  '-d', '-delete',
+		  '-dirs',
+		  '-m', '-mangle',
+		  '-q', '-query',
+		  '-cleanup-tag',
 		  );
 my $CprogFlagsRE =
-    "(" . join( ")|(", @CprogFlags ) . ")";
+    '(' . join( ')|(', @CprogFlags ) . ')';
 
 # C Program flags & args
 my @CprogArgs = (
-		 "-h", "-mdshost",
-		 "-p", "-mdsport",
-		 "-b", "-mdsbasedn",
-		 "-T", "-mdstimeout",
-		 "-r", "-resource",
-		 "-n", "-newname",
-		 "-t", "-tag" );
+		 '-h', '-mdshost',
+		 '-p', '-mdsport',
+		 '-b', '-mdsbasedn',
+		 '-T', '-mdstimeout',
+		 '-r', '-resource',
+		 '-n', '-newname',
+		 '-t', '-tag' );
 my $CprogArgsRE =
-    "(" . join( ")|(", @CprogArgs ) . ")";
+    '(' . join( ')|(', @CprogArgs ) . ')';
 
 # Arguments that the "C" _doesn't_ understand, and need to be stripped
 # off before we punt to the C program
 my @CprogNonArgs = (
-		    "-l", "-list",
-		    "-cleanup-url",
+		    '-l', '-list',
+		    '-cleanup-url',
 		   );
 my $CprogNonArgsRE =
-    "(" . join( ")|(", @CprogNonArgs ) . ")";
+    '(' . join( ')|(', @CprogNonArgs ) . ')';
 
 # The manglings we know about..
-my @Manglings = ( "html", "md5" );
+my @Manglings = ( 'html', 'md5' );
 
 # Hash of the "Root" directories & other cache info
 my %CacheInfo;
@@ -87,10 +83,10 @@ $|=1;
 
 # Store the settings to use
 my %Settings = (
-		Url => "",		# URL to process
-		MangleUrl => "",	#  Mangled version
-		Tag => "",		# Tag to process
-		MangledTag => "",	#  Mangled version
+		Url => '',		# URL to process
+		MangleUrl => '',	#  Mangled version
+		Tag => '',		# Tag to process
+		MangledTag => '',	#  Mangled version
 	       );
 
 # Invoke "main"
@@ -128,23 +124,23 @@ sub main( @ )
 	    next;
 	}
 
-	if ( ( $Arg eq "-l" ) || ( $Arg eq "-list" ) )
+	if ( ( $Arg eq '-l' ) || ( $Arg eq '-list' ) )
 	{
-	    push @JobList, "list";
+	    push @JobList, 'list';
 	}
-	elsif ( ( $Arg eq "-cu" ) || ( $Arg eq "-cleanup-url" ) )
+	elsif ( ( $Arg eq '-cu' ) || ( $Arg eq '-cleanup-url' ) )
 	{
-	    push @JobList, "cleanup-url";
+	    push @JobList, 'cleanup-url';
 	}
-	elsif ( $Arg eq "-long" )
+	elsif ( $Arg eq '-long' )
 	{
 	    $OptionLong = 1;
 	}
-	elsif ( ( $Arg eq "-v" ) || ( $Arg eq "-verbose" ) )
+	elsif ( ( $Arg eq '-v' ) || ( $Arg eq '-verbose' ) )
 	{
 	    $Verbose++;
 	}
-	elsif ( ( $Arg eq "-t" ) || ( $Arg eq "-tag" ) )
+	elsif ( ( $Arg eq '-t' ) || ( $Arg eq '-tag' ) )
 	{
 	    if ( $ArgNo >= $#_ )
 	    {
@@ -196,7 +192,8 @@ sub main( @ )
 	open( TYPE, "$Cmd|" ) || die "Can't run '$Cmd'";
 	while ( <TYPE> )
 	{
-	    if ( /^CACHE_TYPE: '(.*)'/ )
+	    chomp;
+	    if ( /^CACHE_TYPE: '(.*)'/o )
 	    {
 		$CacheInfo{CACHE_TYPE} = $1;
 	    }
@@ -209,11 +206,11 @@ sub main( @ )
 	open( DIRS, "$Cmd|" ) || die "Can't run '$Cmd'";
 	while ( <DIRS> )
 	{
-	    if ( /^CACHE_DIRECTORY: '(.*)'/ )
+	    if ( /^CACHE_DIRECTORY: '(.*)'/o )
 	    {
 		$CacheInfo{CACHE_DIR} = $1;
 	    }
-	    elsif ( /^(\w+_ROOT): '(.*)'/ )
+	    elsif ( /^(\w+_ROOT): '(.*)'/o )
 	    {
 		$CacheInfo{$1} = $2;
 	    }
@@ -222,12 +219,12 @@ sub main( @ )
     }
 
     # Mangle the URLs
-    if ( $Settings{Url} ne "" )
+    if ( $Settings{Url} ne '' )
     {
 	$Settings{MangledUrl} = Mangle( $Settings{Url} )
     }
     # Mangle the Tags
-    if ( $Settings{Tag} ne "" )
+    if ( $Settings{Tag} ne '' )
     {
 	$Settings{MangledTag} = Mangle( $Settings{Tag} );
     }
@@ -235,11 +232,11 @@ sub main( @ )
     # Do the work...
     foreach my $Job ( @JobList )
     {
-	if ( $Job eq "list" )
+	if ( $Job eq 'list' )
 	{
 	    GassCacheList( );
 	}
-	elsif ( $Job eq "cleanup-url" )
+	elsif ( $Job eq 'cleanup-url' )
 	{
 	    GassCacheCleanupUrl( );
 	}
@@ -266,19 +263,19 @@ sub GassCacheList ( )
     my $Settings = shift;
 
     # Check the type & invoke the proper
-    if ( $CacheInfo{CACHE_TYPE} eq "normal" )
+    if ( $CacheInfo{CACHE_TYPE} eq 'normal' )
     {
-	print "-- Normal cache --\n" if ($Verbose);
+	print "-- Normal cache --\n" if ( $Verbose );
 	GassCacheListNormal( );
     }
-    elsif ( $CacheInfo{CACHE_TYPE} eq "flat" )
+    elsif ( $CacheInfo{CACHE_TYPE} eq 'flat' )
     {
-	print "-- Flat cache --\n" if ($Verbose);
+	print "-- Flat cache --\n" if ( $Verbose );
 	GassCacheListFlat( );
     }
     else
     {
-	print STDERR "Unknown cache type '%s'\n", $CacheInfo{CACHE_TYPE};
+	printf STDERR "Unknown cache type '%s'\n", $CacheInfo{CACHE_TYPE};
     }
 
 }   # GassCacheList()
@@ -351,11 +348,12 @@ sub GassCacheListNormal ( )
     }
     close( FIND );
 
+
     # ******************************************
     # Scan through the local directory, now..
     # ******************************************
     print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n" if( $Verbose );
-    my @Local;
+    my %Local;
     $Cmd = "find $CacheInfo{LOCAL_ROOT} -name 'data.*' -print";
     foreach my $FullPath (`$Cmd` )
     {
@@ -423,24 +421,25 @@ sub GassCacheListNormal ( )
 	    }
 	}
 
-	# Store it all in a (perl) hash
+	# Store it all away in an Inode based hash of arrays
 	my $r = ();
 	$r->{Inode} = $Inode;
 	$r->{Size} = $Size;
 	$r->{Tag} = $Tag;
 	$r->{Mangled} = $Mangled;
 	$r->{Dir} = $Dir;
-	push( @Local, $r );
+	push( @{$Local{$Inode}}, $r );
 	$r = ();
     }
+
 
     # ********************
     # Dump it all out..
     # ********************
     if ( $Verbose )
     {
-	print "Matching $Settings{MangledUrl}\n";
-	print "Matching $Settings{Tag}\n";
+	print "Matching URL=$Settings{Url}\n" if ( $Settings{Url} ne "" );
+	print "Matching Tag=$Settings{Tag}\n" if ( $Settings{Tag} ne "" );
     }
     foreach my $Inode ( keys %Global )
     {
@@ -450,9 +449,9 @@ sub GassCacheListNormal ( )
 	if ( $Settings{Tag} ne "" )
 	{
 	    my $Match = 0;
-	    foreach my $Local ( @Local )
+	    foreach my $Local ( @{$Local{$Inode}} )
 	    {
-		if (  ( $Local->{Inode} == $Inode ) && ( $Local->{Tag} eq $Settings{Tag} ) )
+		if ( $Local->{Tag} eq $Settings{Tag} )
 		{
 		    $Match++;
 		    last;
@@ -468,9 +467,8 @@ sub GassCacheListNormal ( )
 	    print "\tSize: $Global{$Inode}->{Size}\n";
 	    print "\tMangled: $Global{$Inode}->{Mangled}\n";
 	}
-	foreach my $Local ( @Local )
+	foreach my $Local ( @{$Local{$Inode}} )
 	{
-	    next if ( $Local->{Inode} != $Inode );
 	    next if (  ( $Settings{Tag} ne "" ) && ( $Local->{Tag} ne $Settings{Tag} ) );
 
 	    print "\tTag:" . $Local->{Tag} . "\n";
@@ -605,12 +603,12 @@ sub GassCacheCleanupUrl ( )
     # Check the type & invoke the proper sub function
     if ( $CacheInfo{CACHE_TYPE} eq "normal" )
     {
-	print "-- Normal cache --\n";
+	print "-- Normal cache --\n" if ($Verbose);
 	GassCacheCleanupUrlNormal(  );
     }
     elsif ( $CacheInfo{CACHE_TYPE} eq "flat" )
     {
-	print "-- Flat cache --\n";
+	print "-- Flat cache --\n" if ($Verbose);
 	GassCacheCleanupUrlFlat(  );
     }
     else
@@ -1041,7 +1039,11 @@ sub GassCacheFlatDir ( $ )
 	{
 	    my $Type = $1;
 	    my $Mangled = $2;
-	    $r{Text} = `cat $FullPath`;
+
+	    local($/,*FP);	# slurp mode
+	    open( FP, '<' . $FullPath );
+	    $r{Text} = <FP>;
+	    close(FP);
 	    $r{Type} = "url";
 
 	    $Dir->{MangleTypes}{$Type} = 1;
@@ -1093,8 +1095,11 @@ sub GassCacheFlatDir ( $ )
 	    {
 		my $LKey = $1;
 		my $GKey = $2;
+		local($/,*FP);
 		$r{Type} = "tag";
-		$r{Text} = `cat $FullPath`;
+		open( FP, '<' . $FullPath );
+		$r{Text} = <FP>;
+		close(FP);
 
 		# Add this to "Tag" list for this URL
 		$Dir->{Urls}{$Type}{$GKey}{TagKeys}{$LKey} = 1;
@@ -1105,9 +1110,12 @@ sub GassCacheFlatDir ( $ )
 	    # local_md5_hash_tag
 	    elsif ( $Details =~ /^(.*)_tag/ )
 	    {
+		local($/,*FP);
 		my $LKey = $1;
 		$r{Type} = "tag";
-		$r{Text} = `cat $FullPath`;
+		open( FP, '<' . $FullPath );
+		$r{Text} = <FP>;
+		close(FP);
 		$Dir->{Tags}{$Type}{$LKey}{Tag} = \%r;
 	    }
 	    # local_md5_hash_md5_hash
@@ -1196,6 +1204,7 @@ sub Mangle( $ )
 # ******************************************************
 sub DumpHelp( )
 {
+    # help does not need to be efficient...
     open( PROGC,  "$ProgramC -help 2>&1 |" )
 	or die "Can't run '$ProgramC' for help";
 
