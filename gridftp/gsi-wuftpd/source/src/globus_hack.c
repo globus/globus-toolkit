@@ -23,9 +23,11 @@ static globus_bool_t                            g_send_range;
 #include "bmap_file.h"
 #endif 
 
+/*
 #define G_DEBUG 1
+*/
 
-#if defined(G_DEBUG)
+#if G_DEBUG
 FILE * g_out;
 
 #define DEBUG_OPEN() \
@@ -34,24 +36,26 @@ g_out = fopen("/disks/space1/wuftpd_out", "w")
 #define DEBUG_CLOSE() \
 fclose(g_out)
 
+#else
+
+#define DEBUG_OPEN()
+#define DEBUG_CLOSE()
+
+#endif
+
 void
 debug_printf(char * fmt, ...)
 {
+#if G_DEBUG
     va_list          ap;
 
     va_start(ap, fmt);
     vfprintf(g_out, fmt, ap);
 
     va_end(ap);
+#endif
 }
 
-#else
-
-#define DEBUG_OPEN()
-#define DEBUG_CLOSE()
-#define debug_printf()
-
-#endif
 
 /*
  *  The enter and exit macros need to be around any code that will
