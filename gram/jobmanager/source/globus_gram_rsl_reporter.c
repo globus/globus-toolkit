@@ -180,13 +180,14 @@ main(int argc, char *argv[])
     printf("objectclass: Mds\n");
     printf("objectclass: MdsJobAttributes\n"\
 	    "objectclass: MdsJobAttribute\n"\
-	    "Mds-Job-Attribute-name: All Attributes\n\n");
+	    "Mds-Job-Attribute-name: All Attributes\n");
     if (valid_from)
     {
         printf("Mds-validfrom: %sZ\n", valid_from);
         printf("Mds-validto: %sZ\n", valid_to);
         printf("Mds-keepto: %sZ\n", keep_to);
     }
+    printf("\n");
 
     tmp = request->validation_records;
     while(!globus_list_empty(tmp))
