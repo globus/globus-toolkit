@@ -133,6 +133,14 @@ GSS_CALLCONV gss_import_cred(
         else if(option_req == 1) 
         {
             filename = strchr((char *) import_buffer->value, '=');
+
+            if(filename == NULL)
+            {
+                /* right error? */
+                major_status = GSS_S_DEFECTIVE_TOKEN;
+                goto err;
+            }
+            
             filename++;
             
             if ((fp = fopen(filename,"r")) == NULL)
