@@ -330,7 +330,7 @@ BUNDLE	schedulers
 	globus_gram_reporter_setup_fork
 	globus_gram_reporter_setup_lsf
 	globus_gram_reporter_setup_pbs
-BUNDLE	all-test
+BUNDLE	prews-test
 	globus_test
 	globus_common_test
 	globus_ftp_client_test
@@ -466,7 +466,7 @@ BUNDLE gt2-unthreaded
 	gssapi_error
         globus_gridftp_server_control
         globus_gridftp_server2
-        globus_gridftp_driver
+        globus_xio_gridftp_driver
 
 BUNDLE gt2-threaded THREADED
 	globus_callout

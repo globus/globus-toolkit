@@ -15,3 +15,6 @@ First, download the 3.9.3 all source installer. Create a user named
 
 You may replace "/usr/local/globus-3.9.3" with whatever directory you
 wish to install to.
+
+Then see http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/
+for setup details.
