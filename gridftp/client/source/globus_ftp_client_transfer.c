@@ -3909,7 +3909,7 @@ globus_ftp_client_abort(
 
     case GLOBUS_FTP_CLIENT_HANDLE_RESTART:
 	result = globus_callback_unregister(
-	    &handle->restart_info->callback_handle,
+	    handle->restart_info->callback_handle,
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
 
