@@ -389,6 +389,15 @@ typedef globus_bool_t
 (*globus_i_xio_timer_cb_t)(
     void *                                      datum);
 
+typedef struct globus_i_xio_op_timer_s
+{
+    globus_reltime_t                                minimal_delay;
+    globus_mutex_t                                  mutex;
+    globus_mutex_t                                  cond;
+    globus_list_t *                                 op_list;
+    globus_bool_t                                   running;
+    globus_callback_handle_t                        periodic_handle;
+} globus_i_xio_timer_t;
 
 void
 globus_i_xio_timer_init(
