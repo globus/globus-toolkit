@@ -12,7 +12,7 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
     1. Set up your environment to point to the correct CVS repository.
 
-          $ export CVSROOT="/afs/ncsa/projects/globus/Repository"
+          $ export CVSROOT="<username>@cvs.ncsa.uiuc.edu:/CVS/gssapi-openssh"
 
     2. Commit any locally-modified files and tag the repository before the merge.
 
