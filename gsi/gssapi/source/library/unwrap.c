@@ -65,6 +65,7 @@ GSS_CALLCONV gss_unwrap(
     gss_ctx_id_desc *                   context =
         (gss_ctx_id_desc *)context_handle; 
     int                                 rc;
+    int                                 ssl_error;
     char                                readarea[SSL3_RT_MAX_PLAIN_LENGTH];
     unsigned char *                     p;
     gss_buffer_desc                     mic_buf_desc;
@@ -197,26 +198,26 @@ GSS_CALLCONV gss_unwrap(
         rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea));
         if (rc < 0)
         {
-            if(BIO_should_retry(context->gs_rbio) &&
-               !BIO_pending(context->gs_rbio))
+            ssl_error = SSL_get_error(context->gs_ssl, rc);
+            
+            if(ssl_error == SSL_ERROR_WANT_READ)
             {
                 output_message_buffer->value = NULL;
                 output_message_buffer->length = 0;
             }
             else
             { 
-            char errbuf[256];
-        
-            /* Problem, we should have some data here! */
-                        
-            GSSerr(GSSERR_F_UNWRAP,GSSERR_R_WRAP_BIO);
-            sprintf(errbuf,"\n        SSL_read rc=%d SSLerr=%d",
-                    rc,
-                    SSL_get_error(context->gs_ssl, rc));
-            ERR_add_error_data(1,errbuf);
-            *minor_status = gsi_generate_minor_status();
-            major_status = GSS_S_FAILURE;
-            goto err;
+                char errbuf[256];
+                
+                /* Problem, we should have some data here! */
+                
+                GSSerr(GSSERR_F_UNWRAP,GSSERR_R_WRAP_BIO);
+                sprintf(errbuf,"\n        SSL_read rc=%d SSLerr=%d",
+                        rc,ssl_error);
+                ERR_add_error_data(1,errbuf);
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
+                goto err;
             }
         }
         else if (rc == 0)
