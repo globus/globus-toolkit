@@ -439,7 +439,7 @@ globus_l_gfs_ipc_event_cb(
         break;
       
       case GLOBUS_I_GFS_EVENT_DISCONNECTED:
-        /* globus_gridftp_server_control_disconnected(data); */
+           /* globus_gridftp_server_control_disconnected(data); */
         break;
         
       default:
@@ -623,7 +623,15 @@ globus_l_gfs_list_request(
     GlobusGFSName(globus_l_gfs_list_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
-        
+
+    instance = (globus_i_gfs_server_instance_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
+    if(!instance)
+    {
+        result = GlobusGFSErrorMemory("instance");
+        goto error_malloc;
+    }    
+
     result = globus_i_gfs_ipc_list_request(
         instance,
         data,
@@ -639,7 +647,7 @@ globus_l_gfs_list_request(
     }
     
     return;
-
+error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_resource(
         op, result, GLOBUS_NULL, 0);
@@ -738,6 +746,13 @@ globus_l_gfs_passive_data_connect(
      * optimize for when receiving data in mode E? 
      */
     
+    instance = (globus_i_gfs_server_instance_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
+    if(!instance)
+    {
+        result = GlobusGFSErrorMemory("instance");
+        goto error_malloc;
+    }    
     
     result = globus_i_gfs_ipc_passive_data_request(
         instance,
@@ -752,7 +767,7 @@ globus_l_gfs_passive_data_connect(
     }
     
     return;
-
+error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_passive_connect(
         op, GLOBUS_NULL, result, 0, GLOBUS_NULL, 0);
@@ -794,6 +809,14 @@ globus_l_gfs_active_data_connect(
     GlobusGFSName(globus_l_gfs_active_data_connect);
     
     globus_l_gfs_op_to_attr(op, &attr, net_prt);
+
+    instance = (globus_i_gfs_server_instance_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
+    if(!instance)
+    {
+        result = GlobusGFSErrorMemory("instance");
+        goto error_malloc;
+    }    
     
     result = globus_i_gfs_ipc_active_data_request(
         instance,
@@ -810,7 +833,7 @@ globus_l_gfs_active_data_connect(
     }
     
     return;
-
+error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_active_connect(
         op, GLOBUS_NULL, result, 0);

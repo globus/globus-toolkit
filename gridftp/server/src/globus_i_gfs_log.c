@@ -20,7 +20,8 @@ globus_i_gfs_log_open(void)
         0xFFFFFFFF, 
         &globus_logging_stdio_module,
         stderr);
-
+    
+    /* XXX put this somewhere else */
     if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("detach"))
     {
         freopen("/dev/null", "w", stderr);
@@ -44,7 +45,6 @@ globus_i_gfs_log_message(
     
     va_start(ap, format);
     globus_logging_vwrite(log_handle, type, format, ap);
-   // globus_libc_vfprintf(stderr, format, ap);
     va_end(ap);
 }
 

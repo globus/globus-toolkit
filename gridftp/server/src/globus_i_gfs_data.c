@@ -1068,12 +1068,11 @@ globus_l_gfs_data_list_resource_cb(
     int                                 stat_count,
     void *                              user_arg)
 {
+    GlobusGFSName(globus_l_gfs_data_list_resource_cb);
     globus_gridftp_server_operation_t   op;
     globus_byte_t *                     list_buffer;
     globus_size_t                       buffer_len;
     globus_gridftp_server_control_op_t  control_op;
-    globus_object_t                     error;
-    
     globus_l_gfs_data_bounce_t *        bounce_info;
     
  
@@ -1090,8 +1089,8 @@ globus_l_gfs_data_list_resource_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
-//        error = GlobusGFSErrorObjWrapFailed(
-//           "globus_gridftp_server_control_list_buffer_alloc", result);
+        result = GlobusGFSErrorWrapFailed(
+           "globus_gridftp_server_control_list_buffer_alloc", result);
         goto error;
     }
     
@@ -1108,14 +1107,18 @@ globus_l_gfs_data_list_resource_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
-//        error = GlobusGFSErrorObjWrapFailed(
-//            "globus_gridftp_server_register_write", result);
+        result = GlobusGFSErrorWrapFailed(
+            "globus_gridftp_server_register_write", result);
         goto error;
     }
 
-error:
     return;
     
+error:
+    op->state = GLOBUS_L_GFS_DATA_ERROR;
+    globus_gridftp_server_finished_transfer(op, result); 
+
+    return;
 }
 
 globus_result_t
@@ -1288,13 +1291,14 @@ globus_gridftp_server_finished_transfer(
         
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
+            /* 
             globus_i_gfs_data_kickoff_event(
                 op->instance,
                 GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF);
             globus_i_gfs_data_kickoff_event(
                 op->instance,
                 GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART);
-
+            */
             /* XXX mode s only */
             op->event_callback(
                 op->instance,
