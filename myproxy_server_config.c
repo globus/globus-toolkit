@@ -9,6 +9,7 @@
 #include "myproxy_server.h"
 #include "vparse.h"
 #include "verror.h"
+#include "string_funcs.h"
 
 #include <sys/param.h>
 #include <errno.h>
@@ -363,8 +364,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     
     if (context->config_file != NULL)
     {
-	snprintf(config_file, sizeof(config_file), "%s",
-		 context->config_file);
+	my_strncpy(config_file, context->config_file, sizeof(config_file));
     }
     else
     {

@@ -10,6 +10,7 @@
 #include "myproxy_server.h"
 
 #include "verror.h"
+#include "string_funcs.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -249,16 +250,20 @@ get_storage_locations(const char *username,
     
     sterilize_string(sterile_username);
     
-    if (snprintf(creds_path, creds_path_len, "%s/%s%s",
-                 storage_dir, sterile_username, creds_suffix) == -1)
+    creds_path[0] = '\0';
+    
+    if (concatenate_strings(creds_path, creds_path_len, storage_dir,
+			    "/", sterile_username, creds_suffix, NULL) == -1)
     {
         verror_put_string("Internal error: creds_path too small: %s line %s",
                           __FILE__, __LINE__);
         goto error;
     }
 
-    if (snprintf(data_path, data_path_len, "%s/%s%s",
-                 storage_dir, sterile_username, data_suffix) == -1)
+    data_path[0] = '\0';
+    
+    if (concatenate_strings(data_path, data_path_len, storage_dir,
+			    "/", sterile_username, data_suffix, NULL) == -1)
     {
         verror_put_string("Internal error: data_path too small: %s line %s",
                           __FILE__, __LINE__);
