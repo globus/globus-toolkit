@@ -36,6 +36,7 @@ sub submit
     my @arguments;
     my $email_when = "";
     my $library_path;
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my @library_vars;
 
     $self->log("Entering lsf submit");
@@ -119,8 +120,8 @@ sub submit
     $self->log('Building job script');
 
     $script_url = "$tag/lsf_job_script.$$"; 
-    system("globus-gass-cache -add -t $tag -n $script_url file:/dev/null");
-    $lsf_job_script_name = `globus-gass-cache -query -t $tag $script_url`;
+    system("$cache_pgm -add -t $tag -n $script_url file:/dev/null");
+    $lsf_job_script_name = `$cache_pgm -query -t $tag $script_url`;
     chomp($lsf_job_script_name);
     if($lsf_job_script_name eq "")
     {
@@ -212,6 +213,7 @@ EOF
 	fi
 	export $_
 EOF
+    }
 
     $lsf_job_script->print("\n#Change to directory requested by user\n");
     $lsf_job_script->print('cd ' . $description->directory() . "\n");
@@ -281,7 +283,7 @@ EOF
 		   JOB_STATE => Globus::GRAM::JobState::PENDING
 		};
     }
-    system("globus-gass-cache -cleanup-url $tag/lsf_job_script.$$");
+    system("$cache_pgm -cleanup-url $tag/lsf_job_script.$$");
 
     return Globus::GRAM::Error::INVALID_SCRIPT_REPLY;
 }
