@@ -714,6 +714,12 @@ globus_gsi_callback_set_cert_dir(
         goto exit;
     }
 
+
+    if(callback_data->cert_dir != NULL)
+    {
+        free(callback_data->cert_dir);
+    }
+    
     callback_data->cert_dir = strdup(cert_dir);
 
  exit:
