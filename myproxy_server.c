@@ -1304,10 +1304,10 @@ end:
 
 
 #if defined(HAVE_LIBSASL2)
-char *mech = "GSSAPI",
+char *mech = NULL, /* can force mechanism here if needed */
   *iplocal = NULL,
   *ipremote = NULL,
-  *service = "host",
+  *service = "myproxy",
   *localdomain = NULL,
   *userdomain = NULL;
 sasl_conn_t *conn = NULL;
@@ -1517,7 +1517,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        }
    }
 
-   myproxy_debug("Sending list of %d mechanism(s)\n", count);
+   myproxy_debug("Sending list of %d mechanism(s): %s\n", count, data);
    send_response_sasl_data(attrs, data, len);
    
    if(mech) {
