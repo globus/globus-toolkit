@@ -9,6 +9,7 @@
 #include "globus_i_gsi_authz.h"
 #include "globus_callout.h"
 #include "globus_gsi_system_config.h"
+#include "globus_gsi_authz_callout_error.h"
 
 static int globus_l_gsi_authz_activate(void);
 static int globus_l_gsi_authz_deactivate(void);
@@ -96,6 +97,12 @@ static int globus_l_gsi_authz_activate(void)
         goto exit;
     }
 
+    result = globus_module_activate(GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_MODULE);
+    if(result != (int)GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
     result = (int)GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
 
     /* initialize a globus callout handle */
@@ -138,61 +145,68 @@ static int globus_l_gsi_authz_activate(void)
  ***/
 static int globus_l_gsi_authz_deactivate(void)
 {
-  /* deactivate any module used by the implementation */
-  /* destroy globus callout handle */
-  /* call authz system destroy callout */
-  /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_DESTROY" */
-  /* arguments are: void ** authz_system_state, ie &authz_system_state */
-  /* should define some standard errors for this callout */
-
-  int                                 result = (int) GLOBUS_SUCCESS;
-  static char *                       _function_name_ =
-    "globus_l_gsi_authz_deactivate";
-  
-  GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
+    /* deactivate any module used by the implementation */
+    /* destroy globus callout handle */
+    /* call authz system destroy callout */
+    /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_DESTROY" */
+    /* arguments are: void ** authz_system_state, ie &authz_system_state */
+    /* should define some standard errors for this callout */
     
-  /* deactivate any module used by the implementation */
+    int                                 result = (int) GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+	"globus_l_gsi_authz_deactivate";
+    
+    GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
+    
+    /* deactivate any module used by the implementation */
+    
+    result = globus_module_deactivate(GLOBUS_CALLOUT_MODULE);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto exit;
+    }
+    
+    result = globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto exit;
+    }
 
-  result = globus_module_deactivate(GLOBUS_CALLOUT_MODULE);
-  if(result != GLOBUS_SUCCESS)
-  {
-    goto exit;
-  }
+    result = globus_module_deactivate(GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_MODULE);
+    if(result != (int)GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
 
-  result = globus_module_deactivate(GLOBUS_COMMON_MODULE);
-  if(result != GLOBUS_SUCCESS)
-  {
-    goto exit;
-  }
 
-  /* destroy globus callout handle here */
-  /* call authz system destroy callout */
-  /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_DESTROY" */
-  /* arguments are: void ** authz_system_state, ie &authz_system_state */
-  result = (int) globus_callout_call_type(callout_handle,
-					  "GLOBUS_GSI_AUTHZ_SYSTEM_DESTROY",
-					  &authz_system_state);
-  if(result != GLOBUS_SUCCESS)
-  {
-    goto exit;
-  }
+    /* destroy globus callout handle here */
+    /* call authz system destroy callout */
+    /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_DESTROY" */
+    /* arguments are: void ** authz_system_state, ie &authz_system_state */
+    result = (int) globus_callout_call_type(callout_handle,
+					    "GLOBUS_GSI_AUTHZ_SYSTEM_DESTROY",
+					    &authz_system_state);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto exit;
+    }
+    
+    result = (int)globus_callout_handle_destroy(callout_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto exit;
+    }
+    
+    GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;
+    
+    if(globus_i_gsi_authz_debug_fstream != stderr)
+    {
+	fclose(globus_i_gsi_authz_debug_fstream);
+    }
+    
+ exit:
 
-  result = (int)globus_callout_handle_destroy(callout_handle);
-  if(result != GLOBUS_SUCCESS)
-  {
-    goto exit;
-  }
-
-  GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;
-
-  if(globus_i_gsi_authz_debug_fstream != stderr)
-  {
-    fclose(globus_i_gsi_authz_debug_fstream);
-  }
-
-  exit:
-
-  return result;
+    return result;
 }
 
 
@@ -284,39 +298,38 @@ globus_gsi_authorize(
   globus_gsi_authz_cb_t               callback,
   void *                              callback_arg)
 {
-  globus_result_t                  result = GLOBUS_SUCCESS;
-  static char *                   _function_name_ =
-    "globus_gsi_authorize";
-
-  if(callback == GLOBUS_NULL)
-  {
-    GLOBUS_GSI_AUTHZ_ERROR_NULL_PARAMETER("callback");
-    goto exit;
-  }
-
-  GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
-
-  /* call main authorization callout */
-  /* the callout type is "GLOBUS_GSI_AUTHORIZE_ASYNC" */
-  /* arguments are: globus_gsi_authz_handle_t handle,
-                    const void * action,
-                    const void * object,                      
-                    globus_gsi_authz_cb_t callback,
-                    void * callback_arg,
-                    void * authz_system_state */
-  result = globus_callout_call_type(callout_handle,
-				    "GLOBUS_GSI_AUTHORIZE_ASYNC",
-				    handle,
-				    action,
-				    object,
-				    callback,
-				    callback_arg,
-				    authz_system_state);
-
+    globus_result_t                  result = GLOBUS_SUCCESS;
+    static char *                   _function_name_ =
+	"globus_gsi_authorize";
+    
+    if(callback == GLOBUS_NULL)
+    {
+	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_PARAMETER("callback");
+	goto exit;
+    }
+    
+    GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
+    
+    /* call main authorization callout */
+    /* the callout type is "GLOBUS_GSI_AUTHORIZE_ASYNC" */
+    /* arguments are: globus_gsi_authz_handle_t handle,
+       const void * action,
+       const void * object,                      
+       globus_gsi_authz_cb_t callback,
+       void * callback_arg,
+       void * authz_system_state */
+    result = globus_callout_call_type(callout_handle,
+				      "GLOBUS_GSI_AUTHORIZE_ASYNC",
+				      handle,
+				      action,
+				      object,
+				      callback,
+				      callback_arg,
+				      authz_system_state);
+    
  exit:
-  GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;  
-  return result;
-
+    GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;  
+    return result;
 }
 
 
@@ -324,39 +337,30 @@ globus_result_t
 globus_gsi_cancel_authz(
     globus_gsi_authz_handle_t           handle)
 {
-  /* call cancel callout */
-  /* the callout type is "GLOBUS_GSI_AUTHZ_CANCEL" */
-  /* arguments are: globus_gsi_authz_handle_t * handle,
-     void * authz_system_state */
-  /* should define some standard errors for this callout */    
-  globus_result_t                     result = GLOBUS_SUCCESS;
-  static char *                       _function_name_ =
-    "globus_gsi_cancel_authz";
+    /* call cancel callout */
+    /* the callout type is "GLOBUS_GSI_AUTHZ_CANCEL" */
+    /* arguments are: globus_gsi_authz_handle_t * handle,
+       void * authz_system_state */
+    /* should define some standard errors for this callout */    
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+	"globus_gsi_cancel_authz";
+    
+    
+    GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER; 
 
-
-  GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER; 
-
-  result = globus_callout_call_type(callout_handle,
-                                    "GLOBUS_GSI_AUTHZ_CANCEL",
-                                    &authz_system_state);
-  if(result != GLOBUS_SUCCESS)
-  {
-    goto exit;
-  }
-
-  GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT; 
-
-  /*
-    Sam:
-    Just return success
-  */
-  
-/*   GLOBUS_GSI_AUTHZ_ERROR_NOT_SUPPORTED("NoSupport"); */
-
-  exit:
-
-
-  return result;
+    result = globus_callout_call_type(callout_handle,
+				      "GLOBUS_GSI_AUTHZ_CANCEL",
+				      &authz_system_state);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto exit;
+    }
+    
+ exit:
+    
+    GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT; 
+    return result;
 }
 
 
@@ -387,30 +391,28 @@ globus_gsi_authz_handle_destroy(
                       void * authz_system_state */
     /* should define some standard errors for this callout */    
 
-  globus_result_t                     result = GLOBUS_SUCCESS;
-  static char *                       _function_name_ =
-    "globus_gsi_authz_handle_destroy";
-  GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+	"globus_gsi_authz_handle_destroy";
+
+    GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
+
+    result = globus_callout_call_type(callout_handle,
+				      "GLOBUS_GSI_AUTHZ_HANDLE_DESTROY",
+				      handle,
+				      callback,
+				      callback_arg,
+				      &authz_system_state);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto exit;
+    }
     
-
-  result = globus_callout_call_type(callout_handle,
-                                    "GLOBUS_GSI_AUTHZ_HANDLE_DESTROY",
-				    handle,
-                                    callback,
-                                    callback_arg,
-                                    &authz_system_state);
-  if(result != GLOBUS_SUCCESS)
-  {
-    goto exit;
-  }
+   
+ exit:
     
-  GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;
-
-  exit:
-  
-
-  return result;
-
+    GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;    
+    return result;
 }
 /*globus_gsi_authz_handle_destroy*/
 /*@}*/

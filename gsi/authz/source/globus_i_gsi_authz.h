@@ -4,13 +4,6 @@
 #include "globus_gsi_authz_constants.h"
 #include "globus_gsi_authz.h"
 
-
-typedef struct globus_i_gsi_authz_handle_s
-{
-  void  *authz_state;
-} globus_i_gsi_authz_handle_t;
-
-
 /* DEBUG MACROS */
 
 #ifdef BUILD_DEBUG

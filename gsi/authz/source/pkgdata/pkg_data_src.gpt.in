@@ -18,6 +18,11 @@
 <Simple_Version Major="3" />
 </Version>
 </Dependency>
+<Dependency Name="globus_authz_callout_error" >
+<Version >
+<Simple_Version Major="0" />
+</Version>
+</Dependency>
 </Source_Dependencies>
 <Source_Dependencies Type="lib_link" >
 <Dependency Name="globus_callout" >
@@ -30,9 +35,19 @@
 <Simple_Version Major="3" />
 </Version>
 </Dependency>
+<Dependency Name="globus_authz_callout_error" >
+<Version >
+<Simple_Version Major="0" />
+</Version>
+</Dependency>
 </Source_Dependencies>
 <Source_Dependencies Type="pgm_link" >
 <Dependency Name="globus_callout" >
+<Version >
+<Simple_Version Major="0" />
+</Version>
+</Dependency>
+<Dependency Name="globus_authz_callout_error" >
 <Version >
 <Simple_Version Major="0" />
 </Version>
@@ -41,7 +56,7 @@
 <Build_Environment >
 <cflags >@GPT_PKG_CFLAGS@</cflags>
 <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
-<pkg_libs >-lglobus_authz </pkg_libs>
+<pkg_libs >-lglobus_authz</pkg_libs>
 <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
 </Build_Environment>
 </src_pkg>

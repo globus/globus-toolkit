@@ -31,27 +31,5 @@ typedef enum
     GLOBUS_GSI_AUTHZ_ERROR_LAST = 24
 } globus_gsi_authz_error_t;
 
-/**
- * GSI Credential Type
- * @ingroup globus_gsi_authz_handle
- *
- * An enum representing a GSI Credential Type which holds info about 
- * the type of a particular credential.  The three types of credential
- * can be: GLOBUS_PROXY, GLOBUS_USER, or GLOBUS_HOST.
- * 
- * @see globus_gsi_authz_handle
- */
-typedef enum 
-{
-    GLOBUS_PROXY,
-    GLOBUS_USER,
-    GLOBUS_HOST,
-    GLOBUS_SERVICE,
-    GLOBUS_SO_END
-} globus_gsi_authz_type_t;
-
-#define GLOBUS_NULL_GROUP               "GLOBUS_NULL_GROUP"
-#define GLOBUS_NULL_POLICY              "GLOBUS_NULL_POLICY"
-
 #endif
 
