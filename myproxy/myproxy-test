@@ -35,6 +35,8 @@ $Expect::Log_Stdout=0; # suppress output to STDOUT
 #
 # make sure I have a valid proxy
 #
+chomp($grid_proxy_init = `which grid-proxy-init 2>/dev/null`);
+die "grid-proxy-init not found, stopped" if (!(-x $grid_proxy_init));
 chomp($grid_proxy_info = `which grid-proxy-info 2>/dev/null`);
 die "grid-proxy-info not found, stopped" if (!(-x $grid_proxy_info));
 $timeleft = `$grid_proxy_info -timeleft`;
@@ -66,7 +68,8 @@ die "myproxy-change-pass-phrase not in PATH" if (!(-x $myproxy_passwd));
 # setup environment variables
 #
 if (!defined($ENV{'MYPROXY_SERVER'})) {
-    $ENV{'MYPROXY_SERVER'} = "localhost";
+    chomp($hostname = `hostname 2>/dev/null`);
+    $ENV{'MYPROXY_SERVER'} = $hostname;
 }
 if (!defined($ENV{'X509_USER_PROXY'})) {
     $ENV{'X509_USER_PROXY'} = "/tmp/x509up_u$<";
@@ -296,6 +299,12 @@ if ($exitstatus == 0) {
 }
 &runtest("myproxy-destroy -v", undef);
 
+if (defined($ENV{"COG_INSTALL_PATH"})) {
+    &docogtests();
+} else {
+    print "\$COG_INSTALL_PATH undefined. Skipping Java CoG tests.\n";
+}
+
 #
 # END TESTS
 #
@@ -326,4 +335,72 @@ sub runtest {
     $output = $ex->before();
     $ex->soft_close();
     return ($ex->exitstatus(), $output);
+}
+
+sub docogtests {
+
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -a -c 1 -t 1",
+		 $passphrase . "\n" . $passphrase . "\n");
+    print "MyProxy CoG Test 1 (anonget of myproxy-init credential): ";
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &runtest("$ENV{COG_INSTALL_PATH}/bin/myproxy -h $ENV{MYPROXY_SERVER} anonget -o /tmp/myproxy-test.$$",
+		     $passphrase . "\n");
+    }
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+    }
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+}
+
+#
+# verify_proxy
+#
+# Check to see if user has a valid proxy, and verify proxy is usable
+#
+# Dependencies: (-x grid-proxy-info)
+#
+# grid-proxy-info -timeleft
+#     die if no output, or output is less than 60 seconds
+# $proxy = grid-proxy-info -path
+# grid-proxy-init -debug -verify -cert $proxy -key $proxy
+#     if $? == 0 then proxy is valid
+#     if $? != 0, die, b/c proxy is invalid and won't work
+#
+sub verifyproxy {
+    local($proxyfile) = @_;
+
+    chomp (my $timeleft = `$grid_proxy_info -file $proxyfile -timeleft`);
+    if (!defined($timeleft) || $timeleft eq "") {
+	$output = "failed to verify proxy\n";
+	$output .= "'grid-proxy-info -timeleft' failed\n";
+	return (1, $output);
+    }
+    if ($timeleft < 1) {
+	$output = "proxy is expired\n";
+	return (1, $output);
+    }
+    chomp (my $proxytype = `$grid_proxy_info -file $proxyfile -type`);
+    local($oldproxy) = "";
+    if ($proxytype =~ /legacy/) {
+	$oldproxy = "-old";
+    }
+    local($output) = '$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$';
+    if ($? != 0) {
+	$output = "failed to verify proxy\n" . $output;
+	unlink("/tmp/tmpproxy.$$");
+	return (1, $output);
+    }
+
+    # remove the new proxy we created for validation
+    # NOTE: this does not affect the user's original proxy in any way
+    unlink("/tmp/tmpproxy.$$");
+
+    return (0, "");
 }
