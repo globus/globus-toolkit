@@ -40,7 +40,11 @@ main(int argc, char **argv)
       exit(1);
   }
 
-  globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
+  if (globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE) != (int)GLOBUS_SUCCESS)
+  {
+      fprintf(stderr, "globus_module_activate failed\n");
+      exit(1);
+  }
   
   globus_gsi_authz_handle_init(&handle, servicename, ctx,
 			       authtest_l_init_callback,
