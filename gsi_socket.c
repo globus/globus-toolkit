@@ -767,6 +767,9 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 					     NULL, /* ret_flags */
 					     NULL, /* u2u flag */
 					     &token_status,
+					     NULL, /* Delegated creds
+						    * added in Globus 1.1.3
+						    */
 					     assist_read_token,
 					     &self->sock,
 					     assist_write_token,
@@ -1179,6 +1182,9 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 					     NULL, /* ret_flags */
 					     NULL, /* u2u flag */
 					     &token_status,
+					     NULL, /* Delegated creds
+						    * added in Globus 1.1.3
+						    */
 					     assist_read_token,
 					     &self->sock,
 					     assist_write_token,
