@@ -215,7 +215,7 @@ typedef struct globus_l_gram_scheduler_entry_s
     unsigned long start_time;
     unsigned long finish_time;
     unsigned long elapsed_time;
-    int requested memory;
+    int requested_memory;
     int requested_time;
     char * schedulerspecific;
     char * specification;
