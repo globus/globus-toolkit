@@ -408,17 +408,29 @@ main(int xargc,
          * gatekeeperhome (-home path) when not run from inetd. 
          * otherwise it is NULL
          */
+#if defined(TARGET_ARCH_LINUX)
+        /* There is a memory corruption bug in the getcwd in
+         * glibc-2.1.1 and earlier
+         */
+	{
+	    char tmppath[PATH_MAX];
+
+	    if(getwd(tmppath))
+	    {
+		gatekeeperhome = strdup(tmppath);
+	    }
+	}
+#else
         {
             char *tmppath = NULL;
             int size = 1;
-
             while ( (tmppath = getcwd (NULL, size)) == NULL )
             {
                 size++;
             }
             gatekeeperhome = tmppath;
         }
-
+#endif
         run_from_inetd = 0;
     }
     else
