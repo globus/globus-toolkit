@@ -1113,7 +1113,7 @@ int i = 0;
     data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
     data_source.sin_port = 0;
 #endif /* DAEMON */
-    
+
 #ifdef GLOBUS_AUTHORIZATION
     if (!ftp_authorization_initialize(my_hostname,
 				      ftp_authorization_error_buffer,
@@ -6300,6 +6300,21 @@ void delete(char *name)
 	return;
     }
 
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+        if (!ftp_check_authorization(name, "delete"))  /* DELE */
+        {
+            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                  "%s: Permission denied by proxy credential ('delete')",
+                  name);       
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                   "%s of %s tried to delete %s",
+                   pw->pw_name, remoteident, realname);        
+            return;
+        } 
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+
     if (lstat(name, &st) < 0) {
 	perror_reply(550, name);
 	return;
@@ -6323,21 +6338,6 @@ void delete(char *name)
 			   pw->pw_name, remoteident, realname);
 	    return;
 	}
-
-#ifdef GSSAPI_GLOBUS
-#ifdef GLOBUS_AUTHORIZATION
-        if (!ftp_check_authorization(name, "delete"))  /* DELE */
-        {
-            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
-                  "%s: Permission denied by proxy credential ('delete')",
-                  name);       
-            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
-                   "%s of %s tried to delete directory %s",
-                   pw->pw_name, remoteident, realname);        
-            return;
-        } 
-#endif /* GLOBUS_AUTHORIZATION */
-#endif /* GSSAPI_GLOBUS */
 
 
 	if (rmdir(name) < 0) {
@@ -6765,7 +6765,6 @@ void renamecmd(char *from, char *to)
 	return;
     }
 
-
 #ifdef PARANOID
 /* Almost forgot about this.  Don't allow renaming TO existing files --
    otherwise someone can rename "trivial" to "warez", and "warez" is gone!
@@ -6782,9 +6781,8 @@ void renamecmd(char *from, char *to)
 	return;
     }
 #endif
-
 #ifdef GSSAPI_GLOBUS
-#ifdef GLOBUS_AUTHORIZATOIN
+#ifdef GLOBUS_AUTHORIZATION
     /*
      * Check permissions for file we are renaming to.
      */

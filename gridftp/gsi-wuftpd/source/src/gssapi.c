@@ -400,15 +400,11 @@ gssapi_check_authorization(char *gssapi_name, char *account)
 	 *  Check mapping between client name and local name
 	 */
 
-#ifdef GLOBUS_AUTHORIZATION
-	result = globus_gss_assist_userok(gssapi_name, account);
-#else
         result = globus_gss_assist_map_and_authorize(gssapi_get_gss_ctx_id_t(),
                                                      "gridftp",
                                                      account,
                                                      identity_buffer,
                                                      256);
-#endif
         
 	if (result == GLOBUS_SUCCESS) {
 	    /* Success */
@@ -1075,15 +1071,6 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
 char *globus_local_name(globus_id)
      char *globus_id;
 {
-#ifdef GLOBUS_AUTHORIZATION
-    char * idptr = 0;
-    if (globus_gss_assist_gridmap(globus_id, &idptr))
-    {
-	return(0);
-    }
-    return(idptr);
-#else /* GLOBUS_AUTHORIZATION */
-
     char identity_buffer[256];
     globus_result_t result;
 
@@ -1103,7 +1090,6 @@ char *globus_local_name(globus_id)
     {
         return strdup(identity_buffer);
     }
-#endif /* GLOBUS_AUTHORIZATION */
 }
 #endif /* GSSAPI_GLOBUS */
 
