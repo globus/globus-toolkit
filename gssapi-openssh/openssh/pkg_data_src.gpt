@@ -46,11 +46,7 @@
       <Build_Step>
         . $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
 
-        if test "STATIC_LINK_GPTMACRO" = "yes"; then
-          static_option=--enable-static-only
-        fi
-
-        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh $static_option GSI_OPENSSH_GPTMACRO
+        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh GSI_OPENSSH_GPTMACRO
       </Build_Step>
 
       <Build_Step>
