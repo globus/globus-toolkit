@@ -52,6 +52,19 @@ int
 globus_gass_server_ez_shutdown(unsigned short port);
 
 #define globus_gass_server_ez_poll() globus_gass_server_poll()
+/******************************************************************************
+ *                    Module Definition
+ *****************************************************************************/
+  #define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_gass_server_ez_module)
+
+  static globus_module_descriptor_t globus_gass_server_ez_module =
+  {
+      "globus_gass_server_ez",
+      GLOBUS_NULL,
+      GLOBUS_NULL,
+      GLOBUS_NULL
+ };
+
 
 EXTERN_C_END
 
