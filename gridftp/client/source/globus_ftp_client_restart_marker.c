@@ -283,14 +283,17 @@ globus_ftp_client_restart_marker_insert_range(
 	}
 	else
 	{
-	    if(range->end_offset < offset-1)
+	    if(range->end_offset < offset - 1)
 	    {
 		globus_fifo_enqueue(&marker->extended_block.ranges, range);
 	    }
-	    else if(range->end_offset == offset-1)
+	    else if(range->end_offset >= offset - 1)
 	    {
 		offset = range->offset;
-		end_offset = end_offset;
+		if(end_offset < range->end_offset)
+		{
+		    end_offset = range->end_offset;
+		}
 		globus_libc_free(range);
 	    }
 	    else

@@ -54,6 +54,8 @@ restart_marker_begin_cb(
     marker_state = (marker_state_t *) user_arg;
 
     printf("restart_marker_begin_cb\n");
+
+    return GLOBUS_FALSE;
 }
 
 static
@@ -68,7 +70,7 @@ restart_marker_marker_cb(
 
     marker_state = (marker_state_t *) user_arg;
 
-    
+
     globus_ftp_client_restart_marker_to_string(marker, &marker_str);
     printf("Received marker:'%s'\n", marker_str);
     globus_free(marker_str);
@@ -119,7 +121,7 @@ main(int argc, char **argv)
         restart_marker_begin_cb,
         restart_marker_marker_cb,
         restart_marker_complete_cb,
-        GLOBUS_NULL);
+        &marker_state);
 
     /* Set up our handle to use the new plugin */
     globus_ftp_client_handleattr_init(&handleattr);
@@ -141,7 +143,7 @@ main(int argc, char **argv)
         client_complete_cb,
         &monitor);
 
-    if(result = GLOBUS_SUCCESS)
+    if(result == GLOBUS_SUCCESS)
     {
         nbytes = 0;
         while((num_read = read(STDIN_FILENO, buffer + nbytes, BUFLEN - nbytes)) > 0 &&
@@ -156,7 +158,7 @@ main(int argc, char **argv)
             buffer,
             nbytes,
             0,
-            (nbytes == BUFLEN) ? GLOBUS_FALSE : GLOBUS_TRUE;
+            (nbytes == BUFLEN) ? GLOBUS_FALSE : GLOBUS_TRUE,
             client_write_data_cb,
             GLOBUS_NULL);
 
@@ -171,7 +173,7 @@ main(int argc, char **argv)
         globus_mutex_lock(&monitor.mutex);
         while(!monitor.done)
         {
-            globus_cond_wait(&monitor.cond);
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
         }
         globus_mutex_unlock(&monitor.mutex);
 
@@ -234,11 +236,11 @@ client_write_data_cb(
             globus_libc_fprintf(stderr, "Error reading from stdin\n");
         }
 
-        result = globus_ftp_client_register_write(&handle,
+        result = globus_ftp_client_register_write(handle,
             buffer,
             nbytes,
             offset + length,
-            (nbytes == BUFLEN) ? GLOBUS_FALSE : GLOBUS_TRUE;
+            (nbytes == BUFLEN) ? GLOBUS_FALSE : GLOBUS_TRUE,
             client_write_data_cb,
             GLOBUS_NULL);
 
