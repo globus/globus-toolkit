@@ -8,7 +8,6 @@ Description:
 #ifndef GLOBUS_INCLUDE_GLOBUS_LIBC_H_
 #define GLOBUS_INCLUDE_GLOBUS_LIBC_H_ 1
 
-#include "globus_common.h"
 #include "globus_common_include.h"
 #include GLOBUS_THREAD_INCLUDE
 

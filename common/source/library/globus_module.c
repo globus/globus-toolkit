@@ -358,8 +358,8 @@ globus_module_get_module_pointer(
 
 void
 globus_module_setenv(
-       char * name,
-       char * value)
+    const char *                        name,
+    const char *                        value)
 {
     int				rc;
 
@@ -414,11 +414,11 @@ globus_module_setenv(
 
     globus_hashtable_remove(
 	&globus_l_environ_table,
-	name);
+	(void *) name);
     globus_hashtable_insert(
          &globus_l_environ_table,
-         name,
-         value);
+         (void *) name,
+         (void *) value);
 
     if(globus_i_module_initialized == GLOBUS_TRUE)
     {
@@ -434,7 +434,7 @@ globus_module_setenv(
 
 char * 
 globus_module_getenv(
-       char * name)
+    const char *                        name)
 {
     char * 			entry;
 
@@ -449,7 +449,7 @@ globus_module_getenv(
         entry =
            globus_hashtable_lookup(
                &globus_l_environ_table,
-               name); 
+               (void *) name); 
 
 
 	if((globus_i_module_initialized == GLOBUS_TRUE)

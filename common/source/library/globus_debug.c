@@ -1,125 +1,168 @@
 #include "globus_debug.h"
 #include "globus_libc.h"
+#include "globus_module.h"
 
-/* MACRO to instantiate module-specific static storage */
-#define globus_implement_debug_interface_storage(module_name) \
-static FILE *module_name##_diagnostics_file = NULL; \
-static int   module_name##_diagnostics_file_is_initialized = 0;
+#ifdef BUILD_DEBUG
 
-globus_implement_debug_interface_storage(globus)
-
-globus_implement_debug_interface_storage(duroc_runtime)
-globus_implement_debug_interface_storage(duroc_control)
-globus_implement_debug_interface_storage(duroc_bootstrap)
-globus_implement_debug_interface_storage(duroc)
-
-globus_implement_debug_interface_storage(gram_client)
-globus_implement_debug_interface_storage(gram)
-
-globus_implement_debug_interface_storage(globus_thread)
-
-/* ADD ADDITIONAL MODULE STORAGE INSTANTIATIONS HERE... */
-
-
-/* MACROS to instantiate module-specific debug redirection interface */
-#define globus_implement_debug_interface_set_file_begin(module_name)     \
-void module_name##_set_diagnostics_file (FILE *file)                     \
-{                                                                        \
-  module_name##_diagnostics_file = file;                                 \
-  module_name##_diagnostics_file_is_initialized = 1;                     \
-                                                                         \
-  /* set diagnostics file for sub-systems */
-
-#define globus_implement_debug_interface_set_file_subsystem(subsystem)   \
-  subsystem##_set_diagnostics_file (file);
-
-#define globus_implement_debug_interface_set_file_end(module_name)       \
-} /* module_name##_set_diagnostics_file() */
-
-
-globus_implement_debug_interface_set_file_begin (globus)
-  globus_implement_debug_interface_set_file_subsystem (duroc)
-  globus_implement_debug_interface_set_file_subsystem (gram)
-  globus_implement_debug_interface_set_file_subsystem (globus_thread)
-globus_implement_debug_interface_set_file_end (globus)
-
-
-globus_implement_debug_interface_set_file_begin (duroc)
-  globus_implement_debug_interface_set_file_subsystem (duroc_runtime)
-  globus_implement_debug_interface_set_file_subsystem (duroc_control)
-  globus_implement_debug_interface_set_file_subsystem (duroc_bootstrap)
-globus_implement_debug_interface_set_file_end (duroc)
-
-globus_implement_debug_interface_set_file_begin (duroc_runtime)
-globus_implement_debug_interface_set_file_end (duroc_runtime)
-
-globus_implement_debug_interface_set_file_begin (duroc_control)
-globus_implement_debug_interface_set_file_end (duroc_control)
-
-globus_implement_debug_interface_set_file_begin (duroc_bootstrap)
-globus_implement_debug_interface_set_file_end (duroc_bootstrap)
-
-
-globus_implement_debug_interface_set_file_begin (gram)
-  globus_implement_debug_interface_set_file_subsystem (gram_client)
-globus_implement_debug_interface_set_file_end (gram)
-
-globus_implement_debug_interface_set_file_begin (gram_client)
-globus_implement_debug_interface_set_file_end (gram_client)
-
-globus_implement_debug_interface_set_file_begin (globus_thread)
-globus_implement_debug_interface_set_file_end (globus_thread)
-
-
-/* ADD ADDITIONAL MODULE DEBUG REDIRECTION INSTANTIATIONS HERE... */
-
-
-/* MACRO to instantiate a module-specific set of output routines */
-#define globus_implement_debug_interface_output_functions(module_name)    \
-int module_name##_diagnostics_vprintf (const char *format, va_list ap)    \
-{                                                                         \
-  FILE *fp;                                                               \
-  int res;                                                                \
-                                                                          \
-  if ( module_name##_diagnostics_file_is_initialized )                    \
-    fp = module_name##_diagnostics_file;                                  \
-  else                                                                    \
-    fp = stderr;                                                          \
-                                                                          \
-  if ( fp != NULL ) {                                                     \
-    res = globus_libc_vfprintf (fp, format, ap);                          \
-                                                                          \
-    return res;                                                           \
-  }                                                                       \
-  else {                                                                  \
-    return 0;                                                             \
-  }                                                                       \
-}                                                                         \
-                                                                          \
-int module_name##_diagnostics_printf (const char *format, /* args */ ... ) \
-{                                                                         \
-  va_list ap;                                                             \
-  int res;                                                                \
-                                                                          \
-  va_start(ap, format);                                                   \
-  res = module_name##_diagnostics_vprintf (format, ap);                   \
-  va_end(ap);                                                             \
-                                                                          \
-  return res;                                                             \
+static
+int
+globus_l_debug_get_level(
+    const char *                        env_name,
+    const char *                        level_names,
+    char *                              levels  /* gets mangled */)
+{
+    int                                 level;
+    
+    level = atoi(levels);
+    if(level == 0)
+    {
+        char *                          my_names;
+        char *                          name;
+        char *                          next_name;
+        char *                          my_levels[31];
+        int                             i;
+        
+        my_names = globus_libc_strdup(level_names);
+        if(!my_names)
+        {
+            return 0;
+        }
+        
+        /* check for level names */
+        /* prune whitespace */
+        name = my_names + strspn(my_names, " \t\n");
+        for(i = 0; i < 31; i++)
+        {
+            if(*name)
+            {
+                my_levels[i] = name;
+                
+                /* find end of name */
+                name += strcspn(name, " \t\n");
+                /* terminate previous name */
+                if(*name)
+                {
+                    *(name++) = 0;
+                    /* prune whitespace */
+                    name += strspn(name, " \t\n");
+                }
+            }
+            else
+            {
+                my_levels[i] = GLOBUS_NULL;
+            }
+        }
+        
+        /* map all names in levels to my_levels */
+        do
+        {
+            next_name = strchr(levels, '|');
+            if(next_name)
+            {
+                *(next_name++) = 0;
+            }
+            
+            for(i = 0;
+                i < 31 && my_levels[i] && strcmp(levels, my_levels[i]) != 0;
+                i++);
+            
+            if(i < 31 && my_levels[i])
+            {
+                /* matched name */
+                level |= 1 << i;
+            }
+            else
+            {
+                fprintf(stderr,
+                    "Invalid level name (%s) in %s env variable... ignoring\n",
+                    levels,
+                    env_name);
+            }
+        } while((levels = next_name));
+        
+        globus_free(my_names);
+    }
+    else if(level < 0)
+    {
+        level = 0;
+    }
+    
+    return level;
 }
 
+void
+globus_debug_init(
+    const char *                        env_name,
+    const char *                        level_names,
+    int *                               debug_level,
+    FILE **                             out_file,
+    globus_bool_t *                     using_file,
+    globus_bool_t *                     show_tids)
+{
+    char *                              tmp;
 
-globus_implement_debug_interface_output_functions (globus)
+    *debug_level = 0;
+    *out_file = stderr;
+    *using_file = GLOBUS_FALSE;
+    *show_tids = GLOBUS_FALSE;
 
-globus_implement_debug_interface_output_functions (duroc_runtime)
-globus_implement_debug_interface_output_functions (duroc_control)
-globus_implement_debug_interface_output_functions (duroc_bootstrap)
-globus_implement_debug_interface_output_functions (duroc)
+    tmp = globus_module_getenv(env_name);
+    if(tmp && *tmp)
+    {
+        char *                          levels;
+        char *                          filename;
+        char *                          show_tid;
+        
+        levels = globus_libc_strdup(tmp);
+        if(!levels)
+        {
+            return;
+        }
+        
+        show_tid = GLOBUS_NULL;
+        filename = strchr(levels, ',');
+        if(filename)
+        {
+            *(filename++) = 0;
+            
+            show_tid = strchr(filename, ',');
+            if(show_tid)
+            {
+                *(show_tid++) = 0;
+            }
+        }
+        
+        *debug_level = globus_l_debug_get_level(env_name, level_names, levels);
 
-globus_implement_debug_interface_output_functions (gram_client)
-globus_implement_debug_interface_output_functions (gram)
+        if(*debug_level)
+        {
+            if(filename && *filename)
+            {
+                *out_file = fopen(filename, "a");
+                if(*out_file)
+                {
+                    *using_file = GLOBUS_TRUE;
+                    fprintf(*out_file, "### %d: %s ###\n", getpid(), env_name);
+                }
+                else
+                {
+                    *out_file = stderr;
+                    fprintf(stderr,
+                        "%s: Could not open %s, "
+                        "using stderr for debug messages\n",
+                        env_name,
+                        filename);
+                }
+            }
+            
+            if(show_tid && *show_tid != '0') /* I DO mean the digit 0 */
+            {
+                *show_tids = GLOBUS_TRUE;
+            }
+        }
+        
+        globus_free(levels);
+    }
+}
 
-globus_implement_debug_interface_output_functions (globus_thread)
-
-/* ADD ADDITIONAL MODULE OUTPUT FUNCTION INSTANTIATIONS HERE... */
-
+#endif
