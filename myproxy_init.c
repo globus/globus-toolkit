@@ -162,21 +162,21 @@ main(int argc, char *argv[])
     cleanup_user_proxy = 1;
     
     if (client_request->username == NULL) { /* set default username */
-	char *username = NULL;
 	if (dn_as_username) {
 	    if (ssl_get_base_subject_file(proxyfile,
-					  &username)) {
+					  &client_request->username)) {
 		fprintf(stderr,
 			"Cannot get subject name from your certificate\n");
 		goto cleanup;
 	    }
 	} else {
+	    char *username = NULL;
 	    if (!(username = getenv("LOGNAME"))) {
 		fprintf(stderr, "Please specify a username.\n");
 		goto cleanup;
 	    }
+	    client_request->username = strdup(username);
 	}
-	client_request->username = strdup(username);
     }
 
     /* Allow user to provide a passphrase */
@@ -263,13 +263,13 @@ main(int argc, char *argv[])
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
 
-    exit(0);
+    return 0;
 
  cleanup:
     if (cleanup_user_proxy) {
         grid_proxy_destroy(proxyfile);
     }
-    exit(1);
+    return 1;
 }
 
 int
@@ -343,7 +343,7 @@ init_arguments(int argc,
 	      request->renewers = strdup (gnu_optarg);
 	    else   //prepend a "*/CN=" string
 	    {
-		request->renewers = (char *) malloc (strlen (gnu_optarg) + 5);
+		request->renewers = (char *) malloc (strlen (gnu_optarg) + 6);
 		strcpy (request->renewers, "*/CN=");
 		myproxy_log (DBG_HI, debug_level,"gnu-optarg  %s\n", gnu_optarg);
 		request->renewers = strcat (request->renewers,gnu_optarg);
