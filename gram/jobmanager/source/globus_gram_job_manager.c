@@ -22,7 +22,7 @@ CVS Information:
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <strings.h>
+#include <string.h>
 #include <pwd.h>
 #include <signal.h>
 #include <fcntl.h>
