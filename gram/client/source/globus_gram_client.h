@@ -129,6 +129,8 @@ CVS Information:
 	@GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED@
 #define GLOBUS_GRAM_CLIENT_ERROR_BAD_RSL_ENVIRONMENT \
 	@GLOBUS_GRAM_CLIENT_ERROR_BAD_RSL_ENVIRONMENT@
+#define GLOBUS_GRAM_CLIENT_ERROR_DRYRUN \
+	@GLOBUS_GRAM_CLIENT_ERROR_DRYRUN@
 
 /* Add new GLOBUS_GRAM_CLIENT_ERROR code here */
 /* don't forget to update GLOBUS_GRAM_CLIENT_error.c also !! */
@@ -153,6 +155,7 @@ CVS Information:
 #define GLOBUS_GRAM_CLIENT_QUEUE_PARAM                    "queue"
 #define GLOBUS_GRAM_CLIENT_PROJECT_PARAM                  "project"
 #define GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM               "host_count"
+#define GLOBUS_GRAM_CLIENT_DRYRUN_PARAM                   "dryrun"
 
 /*
  *  Job Default Constants
@@ -163,6 +166,7 @@ CVS Information:
 #define GLOBUS_GRAM_CLIENT_DEFAULT_STDERR                 "/dev/null"
 #define GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB                  "collective"
 #define GLOBUS_GRAM_CLIENT_DEFAULT_JOBTYPE                "multiple"
+#define GLOBUS_GRAM_CLIENT_DEFAULT_DRYRUN                 "no"
 
 
 /******************************************************************************
