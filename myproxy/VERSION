@@ -4,6 +4,14 @@ This version should be compatible with all versions since v0.2.
 Version History
 ---------------
 v0.6.2
+  - changed myproxy-admin-change-pass so an empty pass phrase
+    can be used for unencrypted keys (for example, for renewal keys)
+  - fixed myproxy-admin-adduser to not depend on nonexistent
+    myproxy-admin-adduser-config command.
+  - removed pass phrase functions from myproxy-admin-load-credential,
+    so the existing pass phrase on the source key is kept as is.
+    Use myproxy-admin-change-pass to change the pass phrase of a
+    credential after loading.
   - fixed GT 2.2 and Java CoG incompatibility introduced in v0.6.1.
     Note: if repository contains end-entity credentials, Java CoG
     will retrieve old-style (legacy) proxies because the Java CoG
