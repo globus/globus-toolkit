@@ -11,6 +11,9 @@
 
 #if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
 #include "sslutil.h"
+#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
+#include <x509v3.h>
+#endif
 #else
 #include <globus_gss_assist.h>
 #include <gssapi.h>
@@ -966,13 +969,26 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 #if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
     peer = SSL_get_peer_certificate(self->ssl);
     if (peer != NULL) {
-	char buf[1024], *cn=NULL;
-	X509_NAME_oneline(X509_get_subject_name(peer), buf, sizeof(buf));
-	cn = strstr(buf, "/CN=");
-	if (!cn || strcmp(cn+4, server_name)) {
-	    self->error_string = strdup("Server authentication failed");
-	    return GSI_SOCKET_ERROR;
+        X509_NAME_ENTRY *ne = NULL;
+	X509_NAME * subject = NULL;
+	char cn[1024];
+
+	subject = X509_get_subject_name(peer);
+	if (X509_NAME_get_text_by_NID(subject, NID_commonName, cn, sizeof(cn))<= 0) {
+	   self->error_string = strdup("Cannot find CN field in server's certificate");
+	   return GSI_SOCKET_ERROR;
 	}
+
+	if (strcmp(cn, server_name)) {
+	   self->error_string = strdup("Server authorization failed");
+	   self->error_string = strcat(self->error_string, "\n Expected target subject name=\"");
+	   self->error_string = strcat(self->error_string, server_name);
+	   self->error_string = strcat(self->error_string, "\"\n Target returned subject name=\"");
+	   self->error_string = strcat(self->error_string, cn);
+	   self->error_string = strcat(self->error_string, "\"");
+	   return GSI_SOCKET_ERROR;
+	}
+
     } else {
 	self->error_string = strdup("Server authentication failed");
 	return GSI_SOCKET_ERROR;
