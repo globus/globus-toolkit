@@ -135,6 +135,8 @@ transfer(
     const char *                            mod_name,
     const char *                            mod_parms)
 {
+    globus_gridftp_server_control_begin_transfer(op);
+    globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
 
@@ -230,6 +232,10 @@ main(
 
     res = globus_gridftp_server_control_attr_data_functions(
         ftp_attr, active_connect, passive_connect, data_destroy_cb);
+
+    res = globus_gridftp_server_control_attr_add_send(
+        ftp_attr, NULL, transfer);
+
     globus_mutex_lock(&globus_l_mutex);
     {
         res = globus_gridftp_server_control_start(

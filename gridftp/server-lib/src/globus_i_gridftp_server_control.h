@@ -353,12 +353,9 @@ typedef struct globus_i_gsc_server_handle_s
     int                                     pasv_prt;
     int                                     pasv_max;
     globus_bool_t                           passive_only;
-    globus_bool_t                           opts_delayed_passive;
-    int                                     opts_pasv_prt;
-    int                                     opts_pasv_max;
-    int                                     opts_dc_parsing_alg;
-    int                                     opts_port_prt;
-    int                                     opts_port_max;
+    int                                     dc_parsing_alg;
+    globus_gridftp_server_control_network_protocol_t     port_prt;
+    globus_gridftp_server_control_network_protocol_t     port_max;
 
     globus_bool_t                           authenticated;
     /*
@@ -431,7 +428,8 @@ globus_i_gsc_command_add(
     const char *                            command_name,
     globus_gsc_command_cb_t                 command_cb,
     globus_gsc_command_desc_t               desc,
-    int                                     argc,
+    int                                     min_argc,
+    int                                     max_argc,
     const char *                            help,
     void *                                  user_arg);
 

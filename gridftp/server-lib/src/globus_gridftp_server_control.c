@@ -117,7 +117,8 @@ typedef struct globus_l_gsc_cmd_ent_s
     globus_gsc_command_desc_t               desc;
     char *                                  help;
     void *                                  user_arg;
-    int                                     argc;
+    int                                     max_argc;
+    int                                     min_argc;
 } globus_l_gsc_cmd_ent_t;
 
 typedef struct globus_l_gsc_reply_ent_s
@@ -233,7 +234,7 @@ globus_l_gsc_op_create(
 {
     globus_i_gsc_op_t *                     op;
 
-    op = (globus_i_gsc_op_t *) globus_malloc(sizeof(globus_i_gsc_op_t));
+    op = (globus_i_gsc_op_t *) globus_calloc(sizeof(globus_i_gsc_op_t), 1);
     if(op == NULL)
     {
         return NULL;
@@ -547,6 +548,7 @@ globus_l_gsc_final_reply_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
+        server_handle->reply_outstanding = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gsc_terminate(server_handle, 0);
@@ -1026,16 +1028,21 @@ globus_l_gsc_command_callout(
     if(cmd_cb != NULL)
     {
         argc = globus_l_gsc_parse_command(
-            op->command, &cmd_array, cmd_ent->argc);
-        /*
-         *  call out to the users command
-         */
-        cmd_ent->cmd_cb(
-            op,
-            op->command,
-            cmd_array,
-            argc,
-            cmd_ent->user_arg);
+            op->command, &cmd_array, cmd_ent->max_argc);
+        if(argc < cmd_ent->min_argc)
+        {
+            globus_i_gsc_finished_command(op,
+                "500 unrecognized command.\r\n");
+        }
+        else
+        {
+            cmd_ent->cmd_cb(
+                op,
+                op->command,
+                cmd_array,
+                argc,
+                cmd_ent->user_arg);
+        }
         globus_l_gsc_free_command_array(cmd_array);
     }
 }
@@ -1202,6 +1209,7 @@ globus_l_gsc_final_reply(
 
     globus_assert(globus_fifo_empty(&server_handle->reply_q));
 
+    server_handle->reply_outstanding = GLOBUS_TRUE;
     tmp_ptr = globus_libc_strdup(message);
     /*TODO: check state */
     res = globus_xio_register_write(
@@ -1214,6 +1222,7 @@ globus_l_gsc_final_reply(
             server_handle);
     if(res != GLOBUS_SUCCESS)
     {
+        server_handle->reply_outstanding = GLOBUS_FALSE;
         goto err;
     }
 
@@ -1428,6 +1437,18 @@ globus_gridftp_server_control_start(
         server_handle->parallelism = 1;
         server_handle->type = 'A';
         server_handle->mode = 'S';
+
+        server_handle->parallelism = 1;
+        server_handle->send_buf = -1;
+        server_handle->receive_buf = -1;
+        server_handle->packet_size = -1;
+        server_handle->delayed_passive = GLOBUS_FALSE;
+        server_handle->passive_only = GLOBUS_FALSE;
+        server_handle->pasv_max = 1;
+        server_handle->port_max = 1;
+        server_handle->port_prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
+        server_handle->pasv_prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
+        server_handle->dc_parsing_alg = 0;;
 
         if(server_handle->cwd != NULL)
         {
@@ -1698,7 +1719,8 @@ globus_i_gsc_command_add(
     const char *                            command_name,
     globus_gsc_command_cb_t                 command_cb,
     globus_gsc_command_desc_t               desc,
-    int                                     argc,
+    int                                     min_argc,
+    int                                     max_argc,
     const char *                            help,
     void *                                  user_arg)
 {
@@ -1720,7 +1742,8 @@ globus_i_gsc_command_add(
     cmd_ent->desc = desc;
     cmd_ent->user_arg = user_arg;
     cmd_ent->help = globus_libc_strdup(help);
-    cmd_ent->argc = argc;
+    cmd_ent->min_argc = min_argc;
+    cmd_ent->max_argc = max_argc;
 
     list = (globus_list_t *) globus_hashtable_lookup(
         &server_handle->cmd_table, (char *)command_name);
@@ -2438,6 +2461,8 @@ globus_gridftp_server_control_begin_transfer(
     if(op == NULL)
     {
     }
+
+    globus_i_gsc_intermediate_reply(op, "150 Begining transfer.\r\n");
 
     return GLOBUS_SUCCESS;
 }
