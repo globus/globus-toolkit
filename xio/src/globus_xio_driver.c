@@ -172,12 +172,12 @@ globus_i_xio_handle_destroy(
             handle->sd_monitor = NULL;
             globus_cond_signal(&globus_l_cond);
         }
+        handle->context = NULL;
         else
         {
             globus_list_remove(&globus_l_outstanding_handles_list,
                 globus_list_search(globus_l_outstanding_handles_list, handle));
         }
-
     }
     globus_mutex_unlock(&globus_l_mutex);
 
@@ -222,6 +222,9 @@ globus_i_xio_handle_dec(
         context->ref--;
         if(context->ref == 0)
         {
+            GlobusXIODebugPrintf(
+                GLOBUS_XIO_DEBUG_INFO,
+               ("[globus_i_xio_handle_dec] :: context->ref == 0.\n"));
             *destroy_context = GLOBUS_TRUE;
         }
         /* purge the ch list */
@@ -736,6 +739,9 @@ globus_xio_driver_context_close(
             xio_context->ref--;
             if(xio_context->ref == 0)
             {
+                GlobusXIODebugPrintf(
+                    GLOBUS_XIO_DEBUG_INFO,
+               ("[globus_xio_driver_context_close] :: context->ref == 0.\n"));
                 destroy_context = GLOBUS_TRUE;
             }
         }
@@ -977,6 +983,9 @@ globus_xio_driver_operation_destroy(
             l_context->ref--;
             if(l_context->ref == 0)
             {
+                GlobusXIODebugPrintf(
+                    GLOBUS_XIO_DEBUG_INFO,
+      ("[globus_xio_driver_operation_destroy] :: context->ref == 0.\n"));
                 destroy_context = GLOBUS_TRUE;
             }
             globus_memory_push_node(&l_context->op_memory, op);
