@@ -345,12 +345,6 @@ case ${host}--$1 in
 	;;
     mips-sgi-irix6* )
 
-        case $lac_cv_build_64bit in
-            yes )  lac_64bit_flag="-64" ;;
-            -*  )  lac_64bit_flag="$lac_cv_build_64bit" ;;
-            *   )  lac_64bit_flag="-n32" ;;
-        esac
-
 	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 
 	if test "$GLOBUS_CC" = "gcc"; then
@@ -359,6 +353,23 @@ case ${host}--$1 in
 	    AC_PATH_PROGS(lac_cv_CC, $CC cc)
 	fi
 	CC="$lac_cv_CC"
+        
+        LAC_PROG_CC_GNU([$lac_cv_CC],
+                [
+                case $lac_cv_build_64bit in
+                        yes )  lac_64bit_flag="-mabi=64" ;;
+                        -*  )  lac_64bit_flag="$lac_cv_build_64bit" ;;
+                        *   )  lac_64bit_flag="-mabi=32" ;;
+                esac
+                ],
+                [
+                case $lac_cv_build_64bit in
+                        yes )  lac_64bit_flag="-64" ;;
+                        -*  )  lac_64bit_flag="$lac_cv_build_64bit" ;;
+                        *   )  lac_64bit_flag="-n32" ;;
+                esac
+                ])      
+
 	LAC_CHECK_CFLAGS($lac_cv_CC,[$lac_64bit_flag $lac_CFLAGS],
 		[lac_CFLAGS="$lac_64bit_flag $lac_CFLAGS"
 		 lac_LDFLAGS="$lac_64bit_flag $lac_LDFLAGS"])
