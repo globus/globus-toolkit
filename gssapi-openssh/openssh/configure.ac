@@ -538,6 +538,7 @@ AC_ARG_WITH(mechglue,
 
 		AC_DEFINE(GSSAPI)
 		AC_DEFINE(MECHGLUE)
+		AC_DEFINE(HAVE_GSSAPI_EXT)
 		GSSAPI="mechglue"
 
 	]
@@ -639,6 +640,7 @@ if test "x$gsi_path" != "xno" ; then
 		GSI_CPPFLAGS="-I${globus_dev_dir}/include"
 		AC_MSG_RESULT(none)
 	else
+		AC_DEFINE(HAVE_GSSAPI_EXT)
                 GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
 
 		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
@@ -646,11 +648,7 @@ if test "x$gsi_path" != "xno" ; then
                 fi
 
 		AC_MSG_RESULT($globus_flavor_type)
-		if test "$GSSAPI" = "mechglue"; then
-			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a"
-		else
-			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
-		fi
+		GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
 		GSI_CPPFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
 	fi
 
