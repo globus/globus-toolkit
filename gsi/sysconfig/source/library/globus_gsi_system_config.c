@@ -4689,7 +4689,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
     }
 
     if(!(*user_proxy))
-    {            
+    {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT( 
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PROXY_FILENAME,
@@ -4697,7 +4697,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
              "1) env. var. X509_USER_PROXY=%s\n"
              "2) %s\n",
              (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
-             env_user_proxy,
+             env_user_proxy ? env_user_proxy : "NULL",
              default_user_proxy));
         
         goto done;
