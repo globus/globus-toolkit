@@ -69,13 +69,13 @@ fi
 # jobtype 2 = multiple   ----->  ok
 # jobtype 3 = condor     ----->  error
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
-if [ $grami_jobtype = "0" ] ; then
+if [ $grami_job_type = "0" ] ; then
     :
-elif [ $grami_jobtype = "1" ] ; then
+elif [ $grami_job_type = "1" ] ; then
     grami_count=1
-elif [ $grami_jobtype = "2" ] ; then
+elif [ $grami_job_type = "2" ] ; then
     :
-elif [ $grami_jobtype = "3" ] ; then
+elif [ $grami_job_type = "3" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported " >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
    exit 1
@@ -109,8 +109,8 @@ $DEBUG_ECHO "JM_SCRIPT: count        =" ${grami_count} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stdin        =" ${grami_stdin} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stdout       =" ${grami_stdout} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stderr       =" ${grami_stderr} >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: maxtime      =" ${grami_maxtime} >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: jobtype      =" ${grami_jobtype} >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: maxtime      =" ${grami_max_time} >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: jobtype      =" ${grami_job_type} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: myjob        =" ${grami_myjob} >> $grami_logfile
 $DEBUG_ECHO "" >> $grami_logfile
 

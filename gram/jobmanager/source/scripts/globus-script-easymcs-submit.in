@@ -78,13 +78,13 @@ new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\
 # jobtype 3 = condor     ----->  ERROR
 #
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
-if [ $grami_jobtype = "0" ] ; then
+if [ $grami_job_type = "0" ] ; then
     sp_progtype="M"
-elif [ $grami_jobtype = "1" ] ; then
+elif [ $grami_job_type = "1" ] ; then
     sp_progtype="S"
-elif [ $grami_jobtype = "2" ] ; then
+elif [ $grami_job_type = "2" ] ; then
     sp_progtype="N"
-elif [ $grami_jobtype = "3" ] ; then
+elif [ $grami_job_type = "3" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported "
                >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
@@ -97,10 +97,10 @@ else
 fi
 
 $DEBUG_ECHO "JM_SCRIPT: testing maxtime">> $grami_logfile
-if [ $grami_maxtime -eq 0 ] ; then
-    grami_maxtime=""
+if [ $grami_max_time -eq 0 ] ; then
+    grami_max_time=""
 else
-    grami_maxtime="-maxtime $grami_maxtime"
+    grami_max_time="-maxtime $grami_max_time"
 fi
 
 $DEBUG_ECHO "JM_SCRIPT: checking if directory exists -- ${grami_directory}">> $grami_logfile
@@ -127,8 +127,8 @@ $DEBUG_ECHO "JM_SCRIPT: count        =" ${grami_count} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stdin        =" ${grami_stdin} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stdout       =" ${grami_stdout} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stderr       =" ${grami_stderr} >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: maxtime      =" ${grami_maxtime} >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: jobtype      =" ${grami_jobtype} >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: maxtime      =" ${grami_max_time} >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: jobtype      =" ${grami_job_type} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: myjob        =" ${grami_myjob} >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: progtype     =" ${sp_progtype} >> $grami_logfile
 $DEBUG_ECHO "" >> $grami_logfile
@@ -138,7 +138,7 @@ $DEBUG_ECHO "JM_SCRIPT: executing spsubmit command" >> $grami_logfile
 status=`eval "${spsubmit} -np ${grami_count} ${new_grami_env} \
          -progtype ${sp_progtype} -nomail \
          -stdin ${grami_stdin} -stdout ${grami_stdout} \
-         -stderr ${grami_stderr} ${grami_maxtime} ${grami_program} \
+         -stderr ${grami_stderr} ${grami_max_time} ${grami_program} \
          \\''${new_grami_args}'\\' "</dev/null 2>/dev/null \
          | head -1 | ${grep}  '^[^\.]*\.[0-9][0-9]*\.[0-9][0-9]*$'`
 

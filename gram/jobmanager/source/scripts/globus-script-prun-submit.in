@@ -46,9 +46,9 @@ $DEBUG_ECHO "JM_SCRIPT: in gram_script_prun_submit">> $grami_logfile
 
 
 $DEBUG_ECHO "JM_SCRIPT: testing maxtime">> $grami_logfile
-if [ $grami_maxtime -eq 0 ] ; then
+if [ $grami_max_time -eq 0 ] ; then
     $DEBUG_ECHO "JM_SCRIPT: no maxtime specified, using default 900 sec.">>$grami_logfile
-    grami_maxtime="900"
+    grami_max_time="900"
 fi
 
 if [ -z "${grami_directory}" ] ; then
@@ -111,8 +111,8 @@ $DEBUG_ECHO "JM_SCRIPT: count     =" $grami_count >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stdin     =" $grami_stdin >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stdout    =" $grami_stdout >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: stderr    =" $grami_stderr >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: maxtime   =" $grami_maxtime >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: jobtype   =" $grami_jobtype >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: maxtime   =" $grami_max_time >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: jobtype   =" $grami_job_type >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: myjob     =" $grami_myjob >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: progtype  =" $sp_progtype >> $grami_logfile
 $DEBUG_ECHO "" >> $grami_logfile
@@ -124,7 +124,7 @@ $DEBUG_ECHO "" >> $grami_logfile
 
 $DEBUG_ECHO "JM_SCRIPT: executing preserve" >> $grami_logfile
 
-res_stat_1=`${preserve} -# ${grami_count} -t ${grami_maxtime}`
+res_stat_1=`${preserve} -# ${grami_count} -t ${grami_max_time}`
 
 $DEBUG_ECHO "JM_SCRIPT: reservation status:" >> $grami_logfile
 $DEBUG_ECHO "${res_stat_1}" >> $grami_logfile

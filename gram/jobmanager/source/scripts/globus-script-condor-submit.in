@@ -56,15 +56,15 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 # jobtype 2 = multiple   ----->  set universe to vanilla
 # jobtype 3 = condor     ----->  set universe to condor
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
-if [ $grami_jobtype = "0" ] ; then
+if [ $grami_job_type = "0" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: error: jobtype MPI not supported " >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
    exit 1
-elif [ $grami_jobtype = "1" ] ; then
+elif [ $grami_job_type = "1" ] ; then
     condor_universe="vanilla"
-elif [ $grami_jobtype = "2" ] ; then
+elif [ $grami_job_type = "2" ] ; then
     condor_universe="vanilla"
-elif [ $grami_jobtype = "3" ] ; then
+elif [ $grami_job_type = "3" ] ; then
     condor_universe="standard"
 else
    $DEBUG_ECHO "JM_SCRIPT: error: invalid jobtype parameter" >> $grami_logfile

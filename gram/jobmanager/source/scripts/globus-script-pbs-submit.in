@@ -153,13 +153,13 @@ fi
 # jobtype 2 = multiple   ----->  multiple
 # jobtype 3 = condor     ----->  ERROR
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
-if [ $grami_jobtype = "0" ] ; then
+if [ $grami_job_type = "0" ] ; then
     pbs_jobtype="mpi"
-elif [ $grami_jobtype = "1" ] ; then
+elif [ $grami_job_type = "1" ] ; then
     pbs_jobtype="single"
-elif [ $grami_jobtype = "2" ] ; then
+elif [ $grami_job_type = "2" ] ; then
     pbs_jobtype="multiple"
-elif [ $grami_jobtype = "3" ] ; then
+elif [ $grami_job_type = "3" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported "
                >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
@@ -173,11 +173,11 @@ fi
 	# Determining per process cpu time limit
 
 $DEBUG_ECHO testing for per process cpu time limit >> $grami_logfile
-if [ $grami_maxtime -eq 0 ] ; then
+if [ $grami_max_time -eq 0 ] ; then
     cpu_time=0
     $DEBUG_ECHO No per process cpu time specified, using [queue default] per process cpu time >> $grami_logfile
 else
-    cpu_time="$grami_maxtime"
+    cpu_time="$grami_max_time"
     $DEBUG_ECHO using [$cpu_time] minutes for max per process cpu time >> $grami_logfile
 fi
 

@@ -197,7 +197,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->host_count = 0;
     r->queue = NULL;
     r->project = NULL;
-    r->maxtime = 0;
+    r->max_time = 0;
     r->min_memory = 0;
     r->max_memory = 0;
     r->filename_callback_func = NULL;
@@ -358,7 +358,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
     }
     else
     {
-        if (request->jobtype == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
+        if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
         {
             processes_requested = request->count;
         }
@@ -393,7 +393,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 
     if (strncmp(request->jobmanager_type, "poe", 3) == 0)
     {   /* GRAMI_POE_MANAGER */
-        if (request->jobtype == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
+        if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
 	{
 	    char hostname[MAXHOSTNAMELEN];
 	    FILE *tmp_hostfile;
@@ -483,7 +483,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
     }
     else
     {
-	if (request->jobtype == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI)
+	if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI)
 	{
 	    /* total up the number of arguments
 	     */
@@ -529,7 +529,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
     /* used to test job manager functionality without actually submitting
      * job
      */
-    if (request->dryrun)
+    if (request->dry_run)
     {
         grami_fprintf(request->jobmanager_log_fp,"JMI: This is a dry run!!\n");
         request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
@@ -684,11 +684,11 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_stdin='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
     fprintf(script_arg_fp,"grami_stderr='%s'\n", stderr_filename);
-    fprintf(script_arg_fp,"grami_maxtime='%d'\n", request->maxtime);
+    fprintf(script_arg_fp,"grami_max_time='%d'\n", request->max_time);
     fprintf(script_arg_fp,"grami_min_memory='%d'\n", request->min_memory);
     fprintf(script_arg_fp,"grami_max_memory='%d'\n", request->max_memory);
     fprintf(script_arg_fp,"grami_host_count='%d'\n", request->host_count);
-    fprintf(script_arg_fp,"grami_jobtype='%d'\n", request->jobtype);
+    fprintf(script_arg_fp,"grami_job_type='%d'\n", request->job_type);
     globus_l_gram_param_prepare(request->queue, new_param);
     fprintf(script_arg_fp,"grami_queue='%s'\n", new_param);
     globus_l_gram_param_prepare(request->project, new_param);
@@ -731,7 +731,7 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     /* used to test job manager functionality without actually submitting
      * job
      */
-    if (request->dryrun)
+    if (request->dry_run)
     {
         grami_fprintf(request->jobmanager_log_fp,"JMI: This is a dry run!!\n");
         request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
@@ -1661,10 +1661,10 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
         return(GLOBUS_FAILURE);
     }
 
-    if (req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI &&
-        req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_SINGLE &&
-        req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE &&
-        req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_CONDOR)
+    if (req->job_type != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI &&
+        req->job_type != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_SINGLE &&
+        req->job_type != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE &&
+        req->job_type != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_CONDOR)
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE;
         return(GLOBUS_FAILURE);

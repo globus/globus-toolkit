@@ -2373,15 +2373,28 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
 
     /********************************** 
-     *  GET MAXTIME PARAM
+     *  GET MAX_TIME PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_CLIENT_MAXTIME_PARAM,
+                             GLOBUS_GRAM_CLIENT_MAX_TIME_PARAM,
 		             &tmp_param) != 0)
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MAXTIME;
         return(GLOBUS_FAILURE);
+    }
+
+    if (! tmp_param[0])
+    {
+        /* extra check for backward compatibility */
+        if (globus_rsl_param_get(rsl_tree,
+                                 GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                                 "maxtime",
+                                 &tmp_param) != 0)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MAXTIME;
+            return(GLOBUS_FAILURE);
+        }
     }
 
     if (tmp_param[0])
@@ -2395,12 +2408,12 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         }
         else
         {
-            req->maxtime = x;
+            req->max_time = x;
         }
     }
     else
     {
-        req->maxtime = 0;
+        req->max_time = 0;
     }
 
     /********************************** 
@@ -2452,27 +2465,40 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         req->paradyn = NULL;
 
     /********************************** 
-     *  GET JOBTYPE PARAM
+     *  GET JOB_TYPE PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM,
+                             GLOBUS_GRAM_CLIENT_JOB_TYPE_PARAM,
 		             &tmp_param) != 0)
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_JOBTYPE;
         return(GLOBUS_FAILURE);
     }
 
+    if (! tmp_param[0])
+    {
+        /* extra check for backward compatibility */
+        if (globus_rsl_param_get(rsl_tree,
+                                 GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                                 "jobtype",
+                                 &tmp_param) != 0)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_JOBTYPE;
+            return(GLOBUS_FAILURE);
+        }
+    }
+
     if (tmp_param[0])
     {
         if (strncmp(tmp_param[0], "mpi", 3) == 0)
-            req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI;
+            req->job_type = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI;
         else if (strncmp(tmp_param[0], "single", 6) == 0)
-            req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_SINGLE;
+            req->job_type = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_SINGLE;
         else if (strncmp(tmp_param[0], "multiple", 8) == 0)
-            req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
+            req->job_type = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
         else if (strncmp(tmp_param[0], "condor", 6) == 0)
-            req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_CONDOR;
+            req->job_type = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_CONDOR;
         else
         {
             req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE;
@@ -2481,7 +2507,7 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
     else
     {
-        req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
+        req->job_type = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
     }
 
     /********************************** 
@@ -2511,24 +2537,37 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         gram_myjob = GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB;
 
     /********************************** 
-     *  GET DRYRUN PARAM
+     *  GET DRY_RUN PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
                              GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                             GLOBUS_GRAM_CLIENT_DRYRUN_PARAM,
+                             GLOBUS_GRAM_CLIENT_DRY_RUN_PARAM,
 		             &tmp_param) != 0)
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_DRYRUN;
         return(GLOBUS_FAILURE);
     }
 
+    if (! tmp_param[0])
+    {
+        /* extra check for backward compatibility */
+        if (globus_rsl_param_get(rsl_tree,
+                                 GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                                 "dryrun",
+                                 &tmp_param) != 0)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_DRYRUN;
+            return(GLOBUS_FAILURE);
+        }
+    }
+
     if (tmp_param[0])
         if (strncmp(tmp_param[0], "yes", 3) == 0)
-            req->dryrun = GLOBUS_TRUE;
+            req->dry_run = GLOBUS_TRUE;
         else
-            req->dryrun = GLOBUS_FALSE;
+            req->dry_run = GLOBUS_FALSE;
     else
-        req->dryrun = GLOBUS_FALSE;
+        req->dry_run = GLOBUS_FALSE;
 
     /**********************************
      *  GET QUEUE PARAM
