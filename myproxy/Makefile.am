@@ -1,3 +1,5 @@
+## Process this file with automake to produce Makefile.in
+
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
@@ -99,7 +101,9 @@ gsi_socket_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gsi_socket_test_LDADD = $(GPT_PGM_LINKS)  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
+sysconf_DATA = myproxy-server.config
 
+pkgdata_DATA = LICENSE README INSTALL VERSION
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
