@@ -93,10 +93,12 @@ myproxy_socket_attrs_t *socket_attrs,
 	return(1);
     }      
 
+#if 0 /* response was lost in myproxy_accept_delegation() */
     if (myproxy_recv_response(socket_attrs, server_response) < 0) {
        fprintf(stderr, "%s\n", verror_get_string());
        return(1);
     }
+#endif
 
     /* move delegfile to outputfile if specified */
     if (outfile != NULL) {
