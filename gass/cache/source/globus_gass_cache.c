@@ -108,7 +108,9 @@ globus_gass_cache_error_strings[] =
     "the cache handle was invalid",
     "the cache handle was already opened",
     "the cache_directory_path parameter is not supported",
-    "the cache library and the cache state file have an incompatible versions"
+    "the cache library and the cache state file have an incompatible versions",
+    "the cache file system is full",
+    "your quota is exceeded in your home filesystem"
 };
 
 
@@ -386,8 +388,19 @@ globus_l_gass_cache_write_comment(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
     return(GLOBUS_SUCCESS);
@@ -434,8 +447,19 @@ globus_l_gass_cache_write_one_str(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
     /* write buffer */
@@ -443,16 +467,38 @@ globus_l_gass_cache_write_one_str(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
     while ( write(fd, "\n", 1 ) != 1 ) /* replace 0 with \n                  */
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
     return(GLOBUS_SUCCESS);
@@ -618,8 +664,19 @@ globus_l_gass_cache_write_nb_entries(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
 
@@ -632,7 +689,19 @@ globus_l_gass_cache_write_nb_entries(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE(("Error writing state file"));
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
 	}
     }
@@ -683,8 +752,19 @@ globus_l_gass_cache_write_one_entry(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
     /* write url */
@@ -710,8 +790,19 @@ globus_l_gass_cache_write_one_entry(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
 
@@ -723,8 +814,19 @@ globus_l_gass_cache_write_one_entry(
 	{
 	    if (errno != EINTR)
 	    {
-		CACHE_TRACE("Error writing state file");
-		return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	        if (errno = ENOSPC)
+                {
+                    return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+                }
+                else if (errno = EDQUOT)
+                {
+                    return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+                }
+                else
+                {
+	            CACHE_TRACE("Error writing state file");
+	            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+                }
 	    }
 	}
         /* write the tag_lock */
@@ -741,8 +843,19 @@ globus_l_gass_cache_write_one_entry(
 	{
 	    if (errno != EINTR)
 	    {
-		CACHE_TRACE("Error writing state file");
-		return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	        if (errno = ENOSPC)
+                {
+                    return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+                }
+                else if (errno = EDQUOT)
+                {
+                    return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+                }
+                else
+                {
+	            CACHE_TRACE("Error writing state file");
+	            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+                }
 	    }
 	}
     }
@@ -770,8 +883,19 @@ globus_l_gass_cache_write_one_entry(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
 
@@ -801,8 +925,19 @@ globus_l_gass_cache_write_one_entry(
 	    {
 		if (errno != EINTR)
 		{
-		    CACHE_TRACE("Error writing state file");
-		    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	            if (errno = ENOSPC)
+                    {
+                        return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+                    }
+                    else if (errno = EDQUOT)
+                    {
+                        return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+                    }
+                    else
+                    {
+	                CACHE_TRACE("Error writing state file");
+	                return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+                    }
 		}
 	    }
 	} /* this tag has not been deleted */
@@ -1244,8 +1379,19 @@ globus_l_gass_cache_lock_file(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE2("could not create uniq lock file %s",uniq_lock_file);
-	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }
     
@@ -1257,8 +1403,19 @@ globus_l_gass_cache_lock_file(
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	    if (errno = ENOSPC)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+            }
+            else if (errno = EDQUOT)
+            {
+                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+            }
+            else
+            {
+	        CACHE_TRACE("Error writing state file");
+	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+            }
 	}
     }*/
     
@@ -1329,10 +1486,18 @@ globus_l_gass_cache_lock_file(
 					 GLOBUS_L_GASS_CACHE_STATE_MODE))
 				   == -1)
 			    {
-				if (errno != EINTR )
-				{
-				    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-				}
+	                        if (errno = ENOSPC)
+                                {
+                                    return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
+                                }
+                                else if (errno = EDQUOT)
+                                {
+                                    return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
+                                }
+                                else
+                                {
+	                            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+                                }
 			    }
 			    while (close (temp_file_fd) == -1)
 			    {
