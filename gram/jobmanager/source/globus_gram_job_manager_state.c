@@ -338,18 +338,29 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 	
-	/* Need to do this before unique id is set */
-	rc = globus_gram_job_manager_rsl_eval_one_attribute(
-		request,
-		GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
-		&request->jm_restart);
-
-	if(rc != GLOBUS_SUCCESS)
+	if(globus_gram_job_manager_rsl_need_restart(request))
 	{
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
+	    /* Need to do this before unique id is set */
+	    rc = globus_gram_job_manager_rsl_eval_one_attribute(
+		    request,
+		    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
+		    &request->jm_restart);
+
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
+	    else if(request->jm_restart == NULL)
+	    {
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_RESTART;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
 	}
 
 	/* This sets request->job_contact and request->uniq_id */
@@ -388,6 +399,21 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 
+	/* cache location in rsl, but not a literal after eval */
+	if(request->cache_location == GLOBUS_NULL &&
+		!globus_list_empty(
+		    globus_rsl_param_get_values(
+			request->rsl,
+			GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM)))
+	{
+	    request->failure_code = 
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
+	    request->jobmanager_state = 
+	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
+
+
 	rc = globus_gass_cache_open(request->cache_location,
 		                    &request->cache_handle);
 	if(rc != GLOBUS_SUCCESS)
@@ -395,7 +421,7 @@ globus_gram_job_manager_state_machine(
 	    if(request->cache_location)
 	    {
 		request->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
+		    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_CACHE;
 	    }
 	    else
 	    {
@@ -579,6 +605,14 @@ globus_gram_job_manager_state_machine(
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 		request->failure_code = rc;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
+	    else if(tmp_str == GLOBUS_NULL)
+	    {
+		/* scratch_dir did not evaluate to a string */
+		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
@@ -927,12 +961,31 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
 
+	if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED && 
+	   request->dry_run)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
+
+	    globus_l_gram_job_manager_reply(request);
+	    break;
+	}
+	else if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+	{
+	    request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+	    break;
+	}
+
 	rc = globus_gram_job_manager_script_submit(request);
 
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+	    if(request->failure_code != GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN)
+	    {
+		request->jobmanager_state = 
+			GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+	    }
 	}
 	else
 	{
@@ -1330,8 +1383,16 @@ globus_gram_job_manager_state_machine(
 	if(request->jobmanager_state ==
 		GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP)
 	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP;
+	    if(request->status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+	    {
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP;
+	    }
+	    else
+	    {
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP;
+	    }
 	}
 	else if(request->jobmanager_state ==
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP)

@@ -123,7 +123,7 @@ globus_l_gram_job_manager_output_destination_flush(
     const char *			type);
 
 static
-void
+int
 globus_l_gram_job_manager_output_destination_open(
     globus_gram_jobmanager_request_t *	request,
     globus_l_gram_job_manager_output_destination_t *
@@ -264,7 +264,7 @@ globus_gram_job_manager_output_set_urls(
     globus_list_t *			url_list,
     globus_list_t *			position_list)
 {
-    int					rc;
+    int					rc = GLOBUS_SUCCESS;
     globus_list_t *			tmp_list;
     globus_list_t **			destinations;
     globus_l_gram_job_manager_output_destination_t *
@@ -277,14 +277,12 @@ globus_gram_job_manager_output_set_urls(
 	destinations = &request->output->stdout_destinations;
 	which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT;
     }
-    else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_STDERR_PARAM) == 0)
-    {
-	destinations = &request->output->stderr_destinations;
-	which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR;
-    }
     else
     {
-	return GLOBUS_FAILURE;
+	globus_assert(strcmp(type, GLOBUS_GRAM_PROTOCOL_STDERR_PARAM) == 0);
+
+	destinations = &request->output->stderr_destinations;
+	which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR;
     }
 
     /*
@@ -315,7 +313,7 @@ globus_gram_job_manager_output_set_urls(
 	    GLOBUS_FALSE);
     if(rc != GLOBUS_SUCCESS)
     {
-	return GLOBUS_FAILURE;
+	return rc;
     }
 
     tmp_list = *destinations;
@@ -364,6 +362,7 @@ globus_gram_job_manager_output_open(
     globus_reltime_t			period;
     char *				out_cache_name;
     char *				err_cache_name;
+    int					rc = GLOBUS_SUCCESS;
 
     request->output->close_flag = GLOBUS_FALSE;
 
@@ -377,7 +376,7 @@ globus_gram_job_manager_output_open(
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: stdout goes to %s\n",
-	                                out_cache_name);
+	    out_cache_name);
 
     err_cache_name = globus_gram_job_manager_output_get_cache_name(
 		    request,
@@ -404,9 +403,13 @@ globus_gram_job_manager_output_open(
 	       && strcmp(destination->url, out_cache_name) != 0
 	       && strcmp(destination->url, err_cache_name) != 0)
 	    {
-		globus_l_gram_job_manager_output_destination_open(
+		rc = globus_l_gram_job_manager_output_destination_open(
 			request,
 			destination);
+		if(rc != GLOBUS_SUCCESS)
+		{
+		    goto error_exit;
+		}
 	    }
 	    else
 	    {
@@ -431,9 +434,13 @@ globus_gram_job_manager_output_open(
 		&& strcmp(destination->url, out_cache_name) != 0
 		&& strcmp(destination->url, err_cache_name) != 0)
 	    {
-		globus_l_gram_job_manager_output_destination_open(
+		rc = globus_l_gram_job_manager_output_destination_open(
 			request,
 			destination);
+		if(rc != GLOBUS_SUCCESS)
+		{
+		    goto error_exit;
+		}
 	    }
 	    else
 	    {
@@ -442,6 +449,8 @@ globus_gram_job_manager_output_open(
 	    }
 	}
     }
+
+error_exit:
 
     globus_libc_free(out_cache_name);
     globus_libc_free(err_cache_name);
@@ -478,7 +487,7 @@ globus_gram_job_manager_output_open(
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: Finished opening output destinations\n");
-    return GLOBUS_SUCCESS;
+    return rc;
 }
 /* globus_l_gram_job_manager_output_open() */
 
@@ -1004,7 +1013,8 @@ globus_gram_job_manager_output_read_state(
  * @return 
  * This function returns GLOBUS_SUCCESS if the rsl value list is
  * syntactically valid and the destinations were created; otherwise,
- * GLOBUS_FAILURE is returned.
+ * GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT or
+ * GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR will be returned.
  */
 static
 int
@@ -1022,15 +1032,18 @@ globus_l_gram_job_manager_output_insert_urls(
 					destination;
     int					rc;
     globus_list_t **			destinations;
+    int					error_value;
 
     if(which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT)
     {
 	destinations = &request->output->stdout_destinations;
+	error_value = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
     }
     else
     {
 	globus_assert(which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR);
 	destinations = &request->output->stderr_destinations;
+	error_value = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
     }
     globus_gram_job_manager_request_log(
 	request,
@@ -1048,7 +1061,7 @@ globus_l_gram_job_manager_output_insert_urls(
 	/* Old style stdout or stderr rsl (stdout = url [tag]) */
 	if(globus_list_size(value_list) > 2)
 	{
-	    return GLOBUS_FAILURE;
+	    return error_value;
 	}
 	filename = globus_rsl_value_literal_get_string(value);
 
@@ -1058,7 +1071,7 @@ globus_l_gram_job_manager_output_insert_urls(
 
 	    if(!globus_rsl_value_is_literal(value))
 	    {
-		return GLOBUS_FAILURE;
+		return error_value;
 	    }
 	    tag = globus_rsl_value_literal_get_string(value);
 	}
@@ -1110,7 +1123,7 @@ globus_l_gram_job_manager_output_insert_urls(
     }
     else
     {
-	return GLOBUS_FAILURE;
+	return error_value;
     }
 }
 /* globus_l_gram_job_manager_output_insert_urls() */
@@ -1353,13 +1366,13 @@ globus_l_gram_job_manager_output_destination_flush(
 /* globus_l_gram_job_manager_output_destination_flush() */
 
 static
-void
+int
 globus_l_gram_job_manager_output_destination_open(
     globus_gram_jobmanager_request_t *	request,
     globus_l_gram_job_manager_output_destination_t *
     					destination)
 {
-    int					rc;
+    int					rc = GLOBUS_SUCCESS;
     globus_result_t			result;
     char *				local_filename = NULL;
     unsigned long			timestamp;
@@ -1380,11 +1393,19 @@ globus_l_gram_job_manager_output_destination_open(
 		GLOBUS_TRUE,
 		&timestamp,
 		&local_filename);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    break;
+	}
 	rc = globus_gass_cache_add_done(
 		&request->cache_handle,
 		destination->url,
 		request->cache_tag,
 		0);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    break;
+	}
 	globus_gram_job_manager_request_log(
 		request,
 		"JM: %s maps to %s\n",
@@ -1417,6 +1438,7 @@ globus_l_gram_job_manager_output_destination_open(
 	else
 	{
 	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+	    rc = GLOBUS_FAILURE;
 	}
 	if(local_filename)
 	{
@@ -1447,6 +1469,7 @@ globus_l_gram_job_manager_output_destination_open(
 	else
 	{
 	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+	    rc = GLOBUS_FAILURE;
 	}
 	break;
 
@@ -1481,19 +1504,37 @@ globus_l_gram_job_manager_output_destination_open(
 	else
 	{
 	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+	    rc = GLOBUS_FAILURE;
 	}
 	break;
 
       default:
-	    globus_gram_job_manager_request_log(
-		    request,
-		    "JM: Can't open unknown output type.\n");
+	globus_gram_job_manager_request_log(
+		request,
+		"JM: Can't open unknown output type.\n");
+	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+	rc = GLOBUS_FAILURE;
 	break;
     }
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: "
 	    "exiting globus_l_gram_job_manager_output_destination_open()\n");
+    if(rc != GLOBUS_SUCCESS)
+    {
+	if(destination->which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT)
+	{
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
+	}
+	else
+	{
+	    globus_assert(destination->which ==
+		          GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR);
+
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
+	}
+    }
+    return GLOBUS_SUCCESS;
 }
 /* globus_l_gram_job_manager_output_destination_open() */
 

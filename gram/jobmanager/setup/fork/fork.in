@@ -54,15 +54,31 @@ sub submit
     my $merge_filename;
     my $pipe;
     my @cmdline;
+    my @environment;
+    my @arguments;
     
+    if(!defined($description->directory()))
+    {
+        return Globus::GRAM::Error::RSL_DIRECTORY;
+    }
     chdir $description->directory() or
-        return Globus::GRAM::Error::INVALID_DIRECTORY;
+        return Globus::GRAM::Error::BAD_DIRECTORY;
 
+    @environment = $description->environment();
     foreach $tuple ($description->environment())
     {
+	if(!ref($tuple) || scalar(@$tuple) != 2)
+	{
+	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
+	}
 	$CHILD_ENV{$tuple->[0]} = $tuple->[1];
     }
 
+    if(ref($description->count()) ||
+       $description->count() != int($description->count()))
+    {
+	return Globus::GRAM::Error::INVALID_COUNT();
+    }
     if($description->jobtype() eq 'multiple')
     {
 	$count = $description->count();
@@ -79,7 +95,27 @@ sub submit
     }
     else
     {
-        return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
+        return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED();
+    }
+    if( $description->executable eq "")
+    {
+	return Globus::GRAM::Error::RSL_EXECUTABLE();
+    }
+    elsif(! -f $description->executable())
+    {
+	return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
+    }
+    elsif(! -x $description->executable())
+    {
+	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+    }
+    elsif( $description->stdin() eq "")
+    {
+	return Globus::GRAM::Error::RSL_STDIN;
+    }
+    elsif(! -r $description->stdin())
+    {
+	return Globus::GRAM::Error::STDIN_NOT_FOUND();
     }
 
     if($multi_output)
@@ -100,11 +136,19 @@ sub submit
 	}
     }
 
-
     push(@cmdline, $description->executable());
-    if(defined($description->arguments()))
+
+    @arguments = $description->arguments();
+    foreach(@arguments)
     {
-	push(@cmdline, $description->arguments());
+	if(ref($_))
+	{
+	    return Globus::GRAM::Error::RSL_ARGUMENTS;
+	}
+    }
+    if(defined($arguments[0]))
+    {
+	push(@cmdline, @arguments);
     }
 
     for(my $i = 0; $i < $count; $i++)

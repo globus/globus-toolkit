@@ -367,6 +367,10 @@ sub file_cleanup
 	{
 	    next;
 	}
+	if(ref($_))
+	{
+	    return Globus::GRAM::Error::RSL_FILE_CLEANUP();
+	}
 	$self->log("Removing $_");
 
 	unlink($_);

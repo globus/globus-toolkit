@@ -48,6 +48,12 @@ globus_l_gram_job_manager_attribute_match(
     void *				args);
 
 static
+globus_bool_t
+globus_l_gram_job_manager_validation_string_match(
+    const char *			str1,
+    const char *			str2);
+
+static
 int
 globus_l_gram_job_manager_check_rsl_attributes(
     globus_gram_jobmanager_request_t *	request,
@@ -79,6 +85,21 @@ globus_l_gram_job_manager_validate_log(
     globus_gram_jobmanager_request_t *	request,
     const char *			fmt,
     ...);
+
+static
+int
+globus_l_gram_job_manager_validation_rsl_error(
+    const char *			attribute);
+
+static
+int
+globus_l_gram_job_manager_validation_value_error(
+    const char *			attribute);
+
+static
+int
+globus_l_gram_job_manager_missing_value_error(
+    const char *			attribute);
 
 /**
  * @param request
@@ -256,7 +277,7 @@ globus_gram_job_manager_validate_rsl(
     /* First validation: RSL is a boolean "&" */
     if(!globus_rsl_is_boolean_and(request->rsl))
     {
-	return GLOBUS_FAILURE;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
 
     /*
@@ -635,9 +656,19 @@ globus_l_gram_job_manager_attribute_match(
 {
     globus_gram_job_manager_validation_record_t *
 					tmp = datum;
-    char *				str1 = tmp->attribute;
-    char *				str2 = args;
 
+    return globus_l_gram_job_manager_validation_string_match(
+		tmp->attribute,
+		args);
+}
+/* globus_l_gram_job_manager_attribute_match() */
+
+static
+globus_bool_t
+globus_l_gram_job_manager_validation_string_match(
+    const char *			str1,
+    const char *			str2)
+{
     while(str1 && *str1 && str2 && *str2)
     {
 	if(*str1 == '_')
@@ -665,7 +696,7 @@ globus_l_gram_job_manager_attribute_match(
 
     return GLOBUS_TRUE;
 }
-/* globus_l_gram_job_manager_attribute_match() */
+/* globus_l_gram_job_manager_validation_string_match() */
 
 /**
  * Validate RSL attributes
@@ -713,7 +744,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
 		request,
 		"JMI: RSL contains something besides an \"=\" relation\n");
 
-	    return GLOBUS_FAILURE;
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 	}
 	attribute = globus_rsl_relation_get_attribute(relation);
 
@@ -728,7 +759,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
 		request,
 		"RSL attribute '%s' is not in the validation file!\n",
 		attribute);
-	    return GLOBUS_FAILURE;
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_PARAMETER_NOT_SUPPORTED;
 	}
 
 	record = globus_list_first(node);
@@ -741,7 +772,15 @@ globus_l_gram_job_manager_check_rsl_attributes(
 		"RSL attribute '%s' is not valid when %d\n",
 		when);
 
-	    return GLOBUS_FAILURE;
+	    switch(when)
+	    {
+	      case GLOBUS_GRAM_VALIDATE_JOB_SUBMIT:
+	        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SUBMIT_ATTRIBUTE;
+	      case GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART:
+	        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_RESTART_ATTRIBUTE;
+	      case GLOBUS_GRAM_VALIDATE_STDIO_UPDATE:
+	        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDIO_UPDATE_ATTRIBUTE;
+	    }
 	}
 	/* Check enumerated values if applicable */
 	if(record->enumerated_values)
@@ -750,12 +789,14 @@ globus_l_gram_job_manager_check_rsl_attributes(
 
 	    if(!value)
 	    {
-		return GLOBUS_FAILURE;
+		return
+		    globus_l_gram_job_manager_validation_rsl_error(attribute);
 	    }
 	    value_str = globus_rsl_value_literal_get_string(value);
 	    if(!value_str)
 	    {
-		return GLOBUS_FAILURE;
+		return globus_l_gram_job_manager_validation_rsl_error(
+			attribute);
 	    }
 	    if(strstr(record->enumerated_values, value_str) == GLOBUS_NULL)
 	    {
@@ -764,7 +805,8 @@ globus_l_gram_job_manager_check_rsl_attributes(
 		    "RSL attribute %s's value is not in the enumerated set\n",
 		    attribute);
 
-		return GLOBUS_FAILURE;
+		return globus_l_gram_job_manager_validation_value_error(
+			    attribute);
 	    }
 	}
     }
@@ -860,7 +902,8 @@ globus_l_gram_job_manager_insert_default_rsl(
 			request,
 			"No, invalid RSL\n");
 
-		return GLOBUS_FAILURE;
+		return globus_l_gram_job_manager_missing_value_error(
+			    record->attribute);
 	    }
 	    else
 	    {
@@ -898,7 +941,9 @@ globus_l_gram_job_manager_attribute_exists(
 	attributes = globus_list_rest(attributes);
 	tmp = globus_rsl_relation_get_attribute(relation);
 
-	if(strcmp(tmp, attribute_name) == 0)
+	if(globus_l_gram_job_manager_validation_string_match(
+		    tmp,
+		    attribute_name))
 	{
 	    return GLOBUS_TRUE;
 	}
@@ -965,5 +1010,148 @@ globus_l_gram_job_manager_validate_log(
 #endif
 }
 /* globus_l_gram_job_manager_validate_log() */
+
+#define HANDLE_RSL_ERROR(param,error) \
+    if(globus_l_gram_job_manager_validation_string_match( \
+		attribute, param)) \
+    { \
+        return error; \
+    }
+
+/**
+ * Decide what type of RSL error to return when the value of @a attribute.
+ * is not of the appropriate type.
+ *
+ * @param attribute
+ *        Attribute to check.
+ *
+ * @note This should go away when we have better error reporting in the
+ *       GRAM protocol.
+ */
+static
+int
+globus_l_gram_job_manager_validation_rsl_error(
+    const char *			attribute)
+{
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_ARGUMENTS_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_ARGUMENTS)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_COUNT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_DIR_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_DIRECTORY)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_DRY_RUN_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_DRYRUN)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_ENVIRONMENT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_ENVIRONMENT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_EXECUTABLE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EXECUTABLE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_CLEANUP)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_GASS_CACHE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MYJOB_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MYJOB)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_HOST_COUNT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_HOST_COUNT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_JOB_TYPE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_JOBTYPE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_CPU_TIME_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MAX_CPU_TIME)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_MEMORY_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MAX_MEMORY)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_TIME_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MAXTIME)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_WALL_TIME_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MAX_WALL_TIME)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MIN_MEMORY_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MIN_MEMORY)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_PROJECT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_PROJECT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_QUEUE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_QUEUE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_RESTART)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_SAVE_STATE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SAVE_STATE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR_POSITION)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDIN_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDIN)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT_POSITION)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_RSL_TWO_PHASE_COMMIT)
+
+    return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCHEDULER_SPECIFIC;
+}
+/* globus_l_gram_job_manager_validation_rsl_error() */
+
+static
+int
+globus_l_gram_job_manager_validation_value_error(
+    const char *			attribute)
+{
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COUNT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MYJOB_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_GRAM_MYJOB)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_HOST_COUNT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_HOST_COUNT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_JOB_TYPE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOBTYPE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_CPU_TIME_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MAX_CPU_TIME)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_MEMORY_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MAX_MEMORY)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_TIME_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MAXTIME)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MAX_WALL_TIME_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MAX_WALL_TIME)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_MIN_MEMORY_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MIN_MEMORY)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_PROJECT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_PROJECT)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_QUEUE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_QUEUE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_SAVE_STATE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SAVE_STATE)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDERR_POSITION)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDOUT_POSITION)
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_TWO_PHASE_COMMIT)
+
+    return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCHEDULER_SPECIFIC;
+}
+/* globus_l_gram_job_manager_validation_value_error() */
+
+static
+int
+globus_l_gram_job_manager_missing_value_error(
+    const char *			attribute)
+{
+    HANDLE_RSL_ERROR(GLOBUS_GRAM_PROTOCOL_EXECUTABLE_PARAM,
+	             GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_EXE)
+
+    return GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_ATTRIBUTE;
+}
+/* globus_l_gram_job_manager_missing_value_error() */
 
 #endif /* !GLOBUS_DONT_DOCUMENT_INTERNAL */

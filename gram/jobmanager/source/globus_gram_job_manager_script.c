@@ -432,7 +432,7 @@ globus_gram_job_manager_script_submit(
     {
         globus_gram_job_manager_request_log(request,
                 "JMI: This is a dry run!!\n");
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
         request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
         return(GLOBUS_FAILURE);
     }

@@ -203,6 +203,26 @@ globus_gram_job_manager_rsl_need_scratchdir(
 }
 /* globus_gram_job_manager_rsl_need_scratchdir() */
 
+globus_bool_t
+globus_gram_job_manager_rsl_need_restart(
+    globus_gram_jobmanager_request_t *	request)
+{
+    globus_list_t *			attributes;
+
+    attributes = globus_rsl_boolean_get_operand_list(request->rsl);
+
+    if(globus_list_search_pred(attributes,
+		               globus_l_gram_job_manager_rsl_match,
+			       GLOBUS_GRAM_PROTOCOL_RESTART_PARAM))
+    {
+	return GLOBUS_TRUE;
+    }
+    else
+    {
+	return GLOBUS_FALSE;
+    }
+}
+/* globus_gram_job_manager_rsl_need_restart() */
 int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
     globus_gram_jobmanager_request_t *	request)
@@ -394,8 +414,7 @@ globus_gram_job_manager_rsl_request_fill(
 
     if (request->rsl == NULL)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_SPECIFICATION_TREE;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NULL_SPECIFICATION_TREE;
     }
 
     /* Canonize the RSL attributes.  This will remove underscores and lowercase
@@ -405,8 +424,7 @@ globus_gram_job_manager_rsl_request_fill(
      */
     if (globus_rsl_assist_attributes_canonicalize(request->rsl) != GLOBUS_SUCCESS)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_SPECIFICATION_TREE;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NULL_SPECIFICATION_TREE;
     }
 
     /* Process stdout */
@@ -422,7 +440,7 @@ globus_gram_job_manager_rsl_request_fill(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return GLOBUS_FAILURE;
+	return rc;
     }
 
     /* Process stderr */
@@ -438,7 +456,7 @@ globus_gram_job_manager_rsl_request_fill(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return GLOBUS_FAILURE;
+	return rc;
     }
 
     /*
@@ -460,8 +478,7 @@ globus_gram_job_manager_rsl_request_fill(
                              GLOBUS_GRAM_PROTOCOL_COUNT_PARAM,
 		             &tmp_param) != 0)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_COUNT;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_COUNT;
     }
 
     if (tmp_param[0])
@@ -471,8 +488,7 @@ globus_gram_job_manager_rsl_request_fill(
 
         if (x < 1)
         {
-            request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COUNT;
-            return(GLOBUS_FAILURE);
+            return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COUNT;
         }
         else
         {
@@ -490,8 +506,7 @@ globus_gram_job_manager_rsl_request_fill(
                              GLOBUS_GRAM_PROTOCOL_MYJOB_PARAM,
 		             &tmp_param) != 0)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MYJOB;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MYJOB;
     }
 
     if (tmp_param[0])
@@ -509,8 +524,7 @@ globus_gram_job_manager_rsl_request_fill(
                              GLOBUS_GRAM_PROTOCOL_DRY_RUN_PARAM,
 		             &tmp_param) != 0)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_DRYRUN;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_DRYRUN;
     }
 
     if (tmp_param[0])
@@ -536,8 +550,7 @@ globus_gram_job_manager_rsl_request_fill(
                              GLOBUS_GRAM_PROTOCOL_SAVE_STATE_PARAM,
 		             &tmp_param) != 0)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SAVE_STATE;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SAVE_STATE;
     }
 
     if (tmp_param[0])
@@ -559,8 +572,7 @@ globus_gram_job_manager_rsl_request_fill(
                              GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM,
 		             &tmp_param) != 0)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_TWO_PHASE_COMMIT;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_TWO_PHASE_COMMIT;
     }
 
     if (tmp_param[0])
@@ -575,8 +587,7 @@ globus_gram_job_manager_rsl_request_fill(
 
 	    if (strlen(ptr) > 0 || x < 0)
 	    {
-		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_TWO_PHASE_COMMIT;
-		return(GLOBUS_FAILURE);
+		return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_TWO_PHASE_COMMIT;
 	    }
 	    else
 	    {
@@ -599,8 +610,7 @@ globus_gram_job_manager_rsl_request_fill(
                              GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM,
 		             &tmp_param) != 0)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
     }
 
     if (tmp_param[0])
@@ -798,6 +808,7 @@ globus_gram_job_manager_rsl_evaluate_value(
     char **				value_string)
 {
     globus_rsl_value_t *		copy;
+    int					rc;
 
     *value_string = NULL;
 
@@ -814,7 +825,11 @@ globus_gram_job_manager_rsl_evaluate_value(
     }
     else
     {
-	globus_rsl_value_eval(copy, &request->symbol_table, value_string, 0);
+	rc = globus_rsl_value_eval(
+		copy,
+		&request->symbol_table,
+		value_string,
+		0);
     }
 
     globus_rsl_value_free_recursive(copy);
@@ -822,9 +837,9 @@ globus_gram_job_manager_rsl_evaluate_value(
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: Evaluated RSL Value to %s",
-	    *value_string);
+	    *value_string ? *value_string : "NULL");
 
-    return GLOBUS_SUCCESS;
+    return rc;
 }
 /* globus_gram_job_manager_rsl_evaluate_value() */
 

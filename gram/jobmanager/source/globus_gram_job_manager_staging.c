@@ -79,7 +79,19 @@ globus_gram_job_manager_staging_create_list(
 
 	    if(globus_list_size(pairs) != 2)
 	    {
-		rc = GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED;
+		switch(i)
+		{
+		  case 0:
+		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN;
+		    break;
+		  case 1:
+		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED;
+		    break;
+		  case 2:
+		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT;
+		    break;
+		}
+		goto failed_adding_exit;
 	    }
 
 	    from = globus_list_first(pairs);
@@ -90,6 +102,7 @@ globus_gram_job_manager_staging_create_list(
 		    from,
 		    to,
 		    can_stage_list[i]);
+
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 		goto failed_adding_exit;
@@ -361,43 +374,86 @@ globus_l_gram_job_manager_staging_add_pair(
     info->from = globus_rsl_value_copy_recursive(from);
     info->to = globus_rsl_value_copy_recursive(to);
 
-    globus_gram_job_manager_rsl_evaluate_value(
+    if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM) == 0)
+    {
+	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN;
+    }
+    else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM)== 0)
+    {
+	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED;
+
+    }
+    else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM) == 0)
+    {
+	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
+    }
+
+    rc = globus_gram_job_manager_rsl_evaluate_value(
 	    request,
 	    info->from,
 	    &info->evaled_from);
 
     if(!info->evaled_from)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    /* Not a literal after a successful eval */
+	    switch(info->type)
+	    {
+	      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN:
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN;
+		break;
+	      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED:
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED;
+		break;
+	      case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT;
+		break;
+	    }
+	}
+
 	goto eval_from_failed;
     }
-    globus_gram_job_manager_rsl_evaluate_value(
+    rc = globus_gram_job_manager_rsl_evaluate_value(
 	    request,
 	    info->to,
 	    &info->evaled_to);
 
     if(!info->evaled_to)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    /* Not a literal after a successful eval */
+	    switch(info->type)
+	    {
+	      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN:
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN;
+		break;
+	      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED:
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED;
+		break;
+	      case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT;
+		break;
+	    }
+	}
+
 	goto eval_to_failed;
     }
 
-    if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM) == 0)
+    switch(info->type)
     {
-	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN:
 	globus_list_insert(&request->stage_in_todo, info);
-    }
-    else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM)== 0)
-    {
-	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED;
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED:
 	globus_list_insert(&request->stage_in_shared_todo, info);
-
-    }
-    else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM) == 0)
-    {
-	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT:
 	globus_list_insert(&request->stage_out_todo, info);
+	break;
     }
+
     return GLOBUS_SUCCESS;
 
 eval_to_failed:

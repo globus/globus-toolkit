@@ -225,7 +225,14 @@ sub AUTOLOAD
     {
 	return undef;
     }
-    if(scalar(@{$self->{$name}} == 1))
+    if(wantarray)
+    {
+	# Return a list containing the contents of the value array for
+	# this attribute.
+	# This makes things like $description->environment() act as expected.
+	return @{$self->{$name}};
+    }
+    elsif(scalar(@{$self->{$name}}) == 1 && !ref($self->{$name}[0]))
     {
 	# If there is only a single value in the value array for this
 	# attribute, return that value
@@ -234,10 +241,7 @@ sub AUTOLOAD
     }
     else
     {
-	# Return a list containing the contents of the value array for
-	# this attribute.
-	# This makes things like $description->environment() act as expected.
-	return @{$self->{$name}};
+	return undef;
     }
 }
 1;
