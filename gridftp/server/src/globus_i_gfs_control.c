@@ -331,6 +331,10 @@ globus_l_gfs_request_auth(
     {
         goto del_error;
     }
+    if(strcmp(session_info->username, GLOBUS_MAPPING_STRING) == 0)
+    {
+        session_info->map_user = GLOBUS_TRUE;
+    }
     if(pw != NULL)
     {
         session_info->password = strdup(pw);

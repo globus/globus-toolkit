@@ -131,6 +131,7 @@ typedef struct globus_l_gfs_ipc_connection_s
     char *                              username;
     char *                              subject;
     char *                              host_id;
+    globus_bool_t                       map_user;
 } globus_l_gfs_ipc_connection_t;
 
 typedef struct globus_i_gfs_ipc_handle_s
@@ -1016,6 +1017,7 @@ globus_l_gfs_ipc_reply_ss_body_cb(
         globus_libc_strdup(ipc->connection_info.cookie);
     ipc->session_info->host_id = 
         globus_libc_strdup(ipc->connection_info.host_id);
+    ipc->session_info->map_user = ipc->connection_info.map_user;
     GFSDecodeString(buffer, len, ipc->session_info->password);
     
     rc = globus_l_gfs_ipc_unpack_cred(
@@ -1319,6 +1321,7 @@ globus_l_gfs_ipc_read_new_body_cb(
     GFSDecodeString(ptr, size, ipc->connection_info.subject);
     GFSDecodeString(ptr, size, ipc->connection_info.username);
     GFSDecodeString(ptr, size, ipc->connection_info.host_id);
+    GFSDecodeUInt32(ptr, size, ipc->connection_info.map_user);
 
     if(strcmp(ipc->connection_info.version, globus_l_gfs_local_version) != 0)
     {
@@ -1882,6 +1885,8 @@ globus_l_gfs_ipc_client_open_cb(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.username);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.host_id);
+        GFSEncodeUInt32(
+            buffer, ipc->buffer_size, ptr, ipc->connection_info.map_user);
         msg_size = ptr - buffer;
         ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
         GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
@@ -2010,6 +2015,7 @@ globus_l_gfs_ipc_handle_connect(
     ipc->connection_info.username = 
         session_info->username ? strdup(session_info->username) : NULL;
     ipc->connection_info.host_id = strdup(session_info->host_id);
+    ipc->connection_info.map_user = session_info->map_user;
 
     if(allowed_to_connect)
     {
@@ -2157,6 +2163,7 @@ globus_gfs_ipc_handle_obtain_by_path(
         tmp_ci.cookie = session_info->cookie;
         tmp_ci.username = session_info->username;
         tmp_ci.subject = session_info->subject;
+        tmp_ci.map_user = session_info->map_user;
 
         memcpy(&tmp_si, session_info, sizeof(globus_gfs_session_info_t));
 

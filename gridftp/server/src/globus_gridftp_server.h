@@ -4,6 +4,8 @@
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
+#define GLOBUS_MAPPING_STRING ":globus-mapping:"
+
 #define _GSSL(s) globus_common_i18n_get_string_by_key(\
 		    NULL, \
 		    "globus_gridftp_server", \
@@ -373,6 +375,7 @@ typedef struct globus_gfs_session_info_s
 {
     gss_cred_id_t                       del_cred;
     globus_bool_t                       free_cred;
+    globus_bool_t                       map_user;
     char *                              username;
     char *                              password;
     char *                              subject;

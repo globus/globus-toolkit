@@ -584,7 +584,7 @@ globus_l_gfs_data_authorize(
     {
         if(context != NULL)
         {
-            if(strcmp(":globus-mapping:", session_info->username) == 0)
+            if(session_info->map_user)
             {
                 usr = NULL;
             }
@@ -603,11 +603,15 @@ globus_l_gfs_data_authorize(
                 goto pwent_error;
             }
             usr = authz_usr;
+            if(session_info->username)
+            {
+                globus_free(session_info->username);
+            }
             session_info->username = strdup(usr);
         }
         else
         {
-            if(strcmp(":globus-mapping:", session_info->username) == 0)
+            if(session_info->map_user)
             {
                 rc = globus_gss_assist_gridmap(
                     (char *) session_info->subject, &usr);
@@ -623,8 +627,13 @@ globus_l_gfs_data_authorize(
                 res = GlobusGFSErrorParameter("gridmap");
                 goto pwent_error;
             }
+            if(session_info->username)
+            {
+                globus_free(session_info->username);
+            }
+            session_info->username = strdup(usr);
         }
-        pwent = getpwnam(usr);
+        pwent = getpwnam(session_info->username);
         if(pwent == NULL)
         {
             res = GlobusGFSErrorParameter("pwent id");
