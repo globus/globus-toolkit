@@ -41,11 +41,42 @@ typedef void * globus_grim_assertion_t;
  *                   external api functions
  ************************************************************************/
 
+/**
+ *  @defgroup globus_grim_misc Grim Misc Functions
+ */
+/**
+ *  @ingroup globus_grim_misc
+ *
+ *  Get the NID for this assertion type.
+ *
+ *  Gives the user the nid for the grim assertion.  This can then be used
+ *  to set a policy.
+ *
+ *  @param nid
+ *         A out parameter.  Uppon completion it will point to an integer
+ *         representing the nid.
+ */
+globus_result_t
+globus_grim_devel_get_NID(
+    int *                                   nid);
+/**
+ *  @ingroup globus_grim_misc
+ */
 globus_result_t
 globus_grim_get_default_configuration_filename(
     char **                                 conf_filename);
 
 /**
+ *  @defgroup globus_grim_assertion Grim Asserion Functions
+ *
+ *  These functions are used to extract information from an serialized
+ *  assertion and to add information to an ADT to create serialized 
+ *  assertion.
+ */
+
+/**
+ *  @ingroup globus_grim_assertion
+ *
  *  Initialize an assertion type.
  *
  *  This function initializes an assertion data type.  All
@@ -70,6 +101,8 @@ globus_grim_assertion_init(
     char *                                  username);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Initialize an assertion type from a buffer.
  *
  *  This function will parse an assertion and use the values contained
@@ -92,6 +125,8 @@ globus_grim_assertion_init_from_buffer(
     int                                     buffer_length);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Convert an assertion object into serializable xml.
  *
  *  This will convert the assertion object into a memory buffer
@@ -111,6 +146,8 @@ globus_grim_assertion_serialize(
     char **                                 out_assertion_string);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Destroy an assertion object.
  *
  *  This will clean up an assertion object and all memory associated with
@@ -124,6 +161,8 @@ globus_grim_assertion_destroy(
     globus_grim_assertion_t                 assertion);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Get the subject.
  *
  *  This function returns the subject associated with the assertion to
@@ -143,6 +182,8 @@ globus_grim_assertion_get_subject(
     char **                                 subject);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Get the username
  *
  *  This function gets the username associated with the assertion for
@@ -162,6 +203,8 @@ globus_grim_assertion_get_username(
     char **                                 username);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Get the dn array.
  *
  *  This function returns the dn array contained in the assertion.
@@ -180,6 +223,8 @@ globus_grim_assertion_get_dn_array(
     char ***                                dn_array);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Set the dn array.
  *
  *  This function associates a NULL terminated array of dns with
@@ -198,6 +243,8 @@ globus_grim_assertion_set_dn_array(
     char **                                 dn_array);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Get the port_types array.
  *
  *  This function returns the port types array contained in the assertion.
@@ -216,6 +263,8 @@ globus_grim_assertion_get_port_types_array(
     char ***                                port_types_array);
 
 /**
+ *  @ingroup globus_grim_assertion
+ *
  *  Set the port type array.
  *
  *  This function associates a NULL terminated array of port types with
@@ -234,6 +283,15 @@ globus_grim_assertion_set_port_types_array(
     char **                                 port_types_array);
 
 /**
+ *  @defgroup globus_grim_config Grim Config Functions
+ *
+ *  These functions are used to extract information from a grim
+ *  configuration file, or to get deafult grim configuration values.
+ */
+
+/**
+ *  @ingroup globus_grim_config
+ *
  *  Initialize a configure data type.
  *
  *  This will initialize the configure structure with default values.
@@ -247,6 +305,8 @@ globus_grim_config_init(
     globus_grim_config_t *                  config);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Destroy a config data type
  *
  *  This will clean up all resources associated with a config data type.
@@ -259,6 +319,8 @@ globus_grim_config_destroy(
     globus_grim_config_t                    config);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Load From File
  *
  *  Load the attributes for the config data type from the given file.
@@ -275,6 +337,8 @@ globus_grim_config_load_from_file(
     FILE *                                  fptr);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get Max Time
  *
  *  Get the maximum amount of time a proxy may be valid.
@@ -293,6 +357,8 @@ globus_grim_config_get_max_time(
     int *                                   max_time);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set Max Time
  *
  *  Set the maximum amount of time a proxy may be valid.
@@ -309,6 +375,8 @@ globus_grim_config_set_max_time(
     int                                     max_time);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get Default Time
  *
  *  Get the default amount of time a proxy may be valid.
@@ -327,6 +395,8 @@ globus_grim_config_get_default_time(
     int *                                   default_time);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set Default Time
  *
  *  Set the default amount of time a proxy may be valid.
@@ -343,6 +413,8 @@ globus_grim_config_set_default_time(
     int                                     default_time);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get Key Bits
  *
  *  Get the number of bits to be used in the key creation.
@@ -360,6 +432,8 @@ globus_grim_config_get_key_bits(
     int *                                   key_bits);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set Key Bits
  *
  *  Set the number of bits in the key.
@@ -376,6 +450,8 @@ globus_grim_config_set_key_bits(
     int                                     key_bits);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get the ca certificate directory
  *
  *  Get the path to the ca certificate directory.
@@ -393,6 +469,8 @@ globus_grim_config_get_ca_cert_dir(
     char **                                 ca_cert_dir);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set the ca cert dir
  *
  *  Set the directory path pf the ca certificate.
@@ -409,6 +487,8 @@ globus_grim_config_set_ca_cert_dir(
     char *                                  ca_cert_dir);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get the certificate filename
  *  
  *  Get the path to the certificate
@@ -426,6 +506,8 @@ globus_grim_config_get_cert_filename(
     char **                                 cert_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set the cert filename
  *
  *  Set the path to the cert filename
@@ -442,6 +524,8 @@ globus_grim_config_set_cert_filename(
     char *                                  cert_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get the key filename
  * 
  *  Get the path to the key
@@ -459,6 +543,8 @@ globus_grim_config_get_key_filename(
     char **                                 key_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set the key filename
  *
  *  Set the path to the key filename
@@ -475,6 +561,8 @@ globus_grim_config_set_key_filename(
     char *                                  key_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get the gridmap filename
  * 
  *  Get the path to the certificate
@@ -492,6 +580,8 @@ globus_grim_config_get_gridmap_filename(
     char **                                 gridmap_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set the gridmap filename.
  *
  *  Set the path to the gridmap filename
@@ -508,6 +598,8 @@ globus_grim_config_set_gridmap_filename(
     char *                                  gridmap_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Get the port type filename
  * 
  *  Get the path to the port type file.
@@ -525,6 +617,8 @@ globus_grim_config_get_port_type_filename(
     char **                                 port_type_filename);
 
 /**
+ *  @ingroup globus_grim_config
+ *
  *  Set the port type filename.
  *
  *  Set the path to the port type filename
@@ -540,21 +634,16 @@ globus_grim_config_set_port_type_filename(
     globus_grim_config_t                    config,
     char *                                  port_type_filename);
 
-/**
- *  Get the NID for this assertion type.
- *
- *  Gives the user the nid for the grim assertion.  This can then be used
- *  to set a policy.
- *
- *  @param nid
- *         A out parameter.  Uppon completion it will point to an integer
- *         representing the nid.
+/** 
+ *  @defgroup globus_grim_port_type Grim Port Type Functions
+ *  
+ *  These function provide a way to parse out port types associate with
+ *  groups and/or users.
  */
-globus_result_t
-globus_grim_devel_get_NID(
-    int *                                   nid);
 
 /**
+ *  @ingroup globus_grim_port_type
+ *
  *  Parse the port type file
  * 
  *  parse the port type file for all port types associated with the
@@ -573,7 +662,8 @@ globus_grim_devel_get_NID(
  * 
  *  @param port_types
  *         An out parameter.  Upon completion of this function this will
- *         point to a null terminated array.  
+ *         point to a null terminated array.  The user will need to free this
+ *         array.
  */
 globus_result_t
 globus_grim_devel_port_type_file_parse(
@@ -583,6 +673,8 @@ globus_grim_devel_port_type_file_parse(
     char ***                                port_types);
 
 /**
+ *  @ingroup globus_grim_port_type
+ *
  *  Parse a port type file
  *
  *  parse the port type file for all port types independent of what 
@@ -602,6 +694,8 @@ globus_grim_devel_get_all_port_types(
     char ***                                port_types);
 
 /**
+ *  @ingroup globus_grim_port_type
+ *
  *  Parse a port type file
  *
  *  parse the port type file for all port types assocaited with the

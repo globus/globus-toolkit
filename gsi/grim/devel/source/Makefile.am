@@ -2,7 +2,8 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
-	pkgdata
+	pkgdata \
+    doxygen
 
 Sources= \
 	globus_grim_devel.c                 \
