@@ -1000,6 +1000,11 @@ globus_l_xio_gsi_read_token_cb(
                                             &output_token,
                                             &handle->ret_flags,
                                             &handle->time_rec);
+
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            ("Generated output token of length %d", output_token.length));
+        
         if(GSS_ERROR(major_status))
         {
             result = GlobusXIOErrorWrapGSSFailed("gss_init_sec_context",
@@ -1069,6 +1074,11 @@ globus_l_xio_gsi_read_token_cb(
                                               &handle->ret_flags,
                                               &handle->time_rec,
                                               &handle->delegated_cred);
+
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            ("Generated output token of length %d", output_token.length));
+        
         if(GSS_ERROR(major_status))
         {
             result = GlobusXIOErrorWrapGSSFailed("gss_accept_sec_context",
@@ -1275,6 +1285,10 @@ globus_l_xio_gsi_open_cb(
                                             &output_token,
                                             &handle->ret_flags,
                                             &handle->time_rec);
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            ("Generated output token of length %d", output_token.length));
+
         if(GSS_ERROR(major_status))
         {
             result = GlobusXIOErrorWrapGSSFailed("gss_init_sec_context",
