@@ -5,7 +5,7 @@
 
 if ( ! $?GLOBUS_LOCATION ) then
     echo "ERROR: environment variable GLOBUS_LOCATION not defined"
-    return 1
+    exit 1
 endif
 
 if ( ! $?MANPATH ) then
