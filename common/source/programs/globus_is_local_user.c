@@ -73,7 +73,7 @@ int main(int argc, char * argv[])
 			    "NOTE: globus_libc_getpwnam_r not supported on Windows\n");
 	/* leave return code as undisturbed from previous tests */
 	#endif
-	// ~ToDo
+	/* ~ToDo */
 
 	if (rc == GLOBUS_SUCCESS)
 	    exit_code = 0;
