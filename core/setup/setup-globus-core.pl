@@ -19,12 +19,10 @@ my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
 my $result = `$setupdir/findshelltools`;
 
-for my $f ('globus-script-initializer', 'globus-sh-tools.sh')
+for my $setupfile ('globus-script-initializer', 'globus-sh-tools.sh')
 {
-    $result = system("cp $f $globusdir/libexec");
+    $result = system("cp $setupdir/$setupfile $globusdir/libexec");
+    $result = system("chmod 0755 $globusdir/libexec/$setupfile");
 }
-
-
-
 
 $metadata->finish();
