@@ -19,7 +19,7 @@ struct vparse_options {
 /*
  * Defaults for above
  */
-#define VPARSE_DEFAULT_WHITESPACE_CHARS		" \t"
+#define VPARSE_DEFAULT_WHITESPACE_CHARS		" \t\n"
 #define VPARSE_DEFAULT_QUOTING_CHARS		"\""
 #define VPARSE_DEFAULT_ESCAPING_CHARS		"\\"
 #define VPARSE_DEFAULT_COMMENT_CHARS		"#"

@@ -95,7 +95,7 @@ line_parse_callback(void *context_arg,
     
     if (strcmp(directive, "allowed_clients") == 0)
     {
-	int index = 0;
+	int index = 1; /* Skip directive */
 	
 	matched = 1;
 	
@@ -105,16 +105,18 @@ line_parse_callback(void *context_arg,
 		add_entry(context->authorized_client_dns,
 			  tokens[index]);
 	    
-	    if (context->authorized_service_dns == NULL)
+	    if (context->authorized_client_dns == NULL)
 	    {
 		goto error;
 	    }
+
+	    index++;
 	}
     }
 
     if (strcmp(directive, "allowed_services") == 0)
     {
-	int index = 0;
+	int index = 1; /* Skip directive */
 	
 	matched = 1;
 	
@@ -128,6 +130,8 @@ line_parse_callback(void *context_arg,
 	    {
 		goto error;
 	    }
+
+	    index++;
 	}
     }
     
@@ -136,6 +140,8 @@ line_parse_callback(void *context_arg,
 	verror_put_string("Unrecognized directive \"%s\" on line %d of configuration file",
 			  directive, line_number);
     }
+
+    return_code = 0;
     
   error:
     return return_code;
@@ -165,7 +171,8 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     
     if (context->config_file != NULL)
     {
-	snprintf(config_file, sizeof(config_file), "%s", config_file);
+	snprintf(config_file, sizeof(config_file), "%s",
+		 context->config_file);
     }
     else
     {

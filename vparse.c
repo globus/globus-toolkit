@@ -111,6 +111,13 @@ tokenize_line(char *line,
 
     assert(line != NULL);
     assert(options != NULL);
+
+    tokens = malloc(sizeof(char *));
+    if (tokens == NULL)
+    {
+	goto error;
+    }
+    tokens[0] = NULL;
     
     while (pline && (*pline != NUL))
     {
@@ -118,7 +125,7 @@ tokenize_line(char *line,
 	char *token_end;
 	
 	/* Skip over leading whitespace */
-	pline += strspn(line, options->whitespace_chars);
+	pline += strspn(pline, options->whitespace_chars);
 
 	/*
 	 * Are we at the end of the line or looking at the start
@@ -163,7 +170,22 @@ tokenize_line(char *line,
 	 * token or NULL if the token had a unclosed quote. pline ==
 	 * token_start.
 	 */
+
+	/*
+	 * Set processing point to just past end of token or set to
+	 * NULL if we're done.
+	 */
+	if ((token_end == NULL) ||
+	    (*token_end == NUL))
+	{
+	    pline = NULL;
+	}
+	else
+	{
+	    pline = token_end + 1;
+	}
 	
+	    
 	/* Terminate token and add to line */
 	if (token_end != NULL)
 	{
@@ -258,6 +280,9 @@ vparse_stream(FILE *stream,
 	/* Some sort of error */
 	goto error;
     }
+
+    /* Success */
+    return_code = 0;
     
   error:
     return return_code;
