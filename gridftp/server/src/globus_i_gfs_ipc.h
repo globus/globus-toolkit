@@ -374,6 +374,7 @@ typedef void
 
 void
 globus_gfs_ipc_data_destroy(
+    globus_gfs_ipc_handle_t             ipc_handle,
     int                                 data_connection_id);
 
 globus_result_t
@@ -407,7 +408,7 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_command_t      command_func;
     globus_gfs_ipc_iface_active_data_t  active_func;
     globus_gfs_ipc_iface_passive_data_t passive_func;
-    globus_gfs_ipc_iface_data_destroy_t data_destory_func;
+    globus_gfs_ipc_iface_data_destroy_t data_destroy_func;
     globus_gfs_ipc_iface_resource_t     resource_func;
     globus_gfs_ipc_iface_list_t         list_func;
 } globus_i_gfs_ipc_iface_t;

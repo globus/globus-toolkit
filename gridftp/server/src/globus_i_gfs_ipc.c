@@ -803,7 +803,6 @@ globus_gfs_ipc_reply_event(
     globus_gfs_ipc_request_t *          request;
     globus_byte_t *                     buffer;
     globus_byte_t *                     ptr;
-    globus_byte_t *                     size_ptr;
     globus_result_t                     res;
     GlobusGFSName(globus_gfs_ipc_reply_event);
 
@@ -892,8 +891,7 @@ globus_l_gfs_ipc_write_cb(
 
         if(error_cb)
         {
-            error_cb(request->ipc, 
-                result, &request->reply, request->user_arg);
+            error_cb(request->ipc, result, request->user_arg);
             globus_free(request);
         }
     }
@@ -997,7 +995,7 @@ globus_gfs_ipc_set_cred(
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
 {
-
+    return GLOBUS_SUCCESS;
 }
 
 /*
@@ -1192,14 +1190,10 @@ globus_gfs_ipc_request_command(
 
         if(ipc->local)
         {
-            res = ipc->iface->command_func(
+            ipc->iface->command_func(
                 ipc,
                 request->id,
                 cmd_state);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
         }
         else
         {
@@ -1473,9 +1467,6 @@ globus_gfs_ipc_request_resource_query(
     globus_result_t                     res;
     globus_gfs_ipc_request_t *          request = NULL;
     globus_byte_t *                     buffer = NULL;
-    globus_byte_t *                     ptr;
-    globus_byte_t *                     size_ptr;
-    globus_size_t                       msg_size;
     globus_i_gfs_ipc_handle_t *         ipc;
     GlobusGFSName(globus_gfs_ipc_request_resource_query);
 
@@ -1506,34 +1497,6 @@ globus_gfs_ipc_request_resource_query(
         }
         else
         {
-            buffer = globus_malloc(ipc->buffer_size);
-            ptr = buffer;
-            GFSEncodeChar(
-                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_PASSIVE);
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
-            size_ptr = ptr;
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
-            GFSEncodeString(
-                buffer, ipc->buffer_size, ptr, resource_state->pathname);
-            GFSEncodeUInt32(
-                buffer, ipc->buffer_size, ptr, resource_state->mask);
-
-            /* now that we know size, add it in */
-            msg_size = ptr - buffer;
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->buffer_len);
-
-            res = globus_xio_register_write(
-                ipc_handle->xio_handle,
-                buffer,
-                msg_size,
-                msg_size,
-                NULL,
-                globus_l_gfs_ipc_write_cb,
-                request);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
         }
     }
     globus_mutex_unlock(&ipc->mutex);
@@ -1567,19 +1530,18 @@ globus_gfs_ipc_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,   
     int                                 data_connection_id)
 {
-    globus_result_t                     result;
+    globus_i_gfs_ipc_handle_t *         ipc;
     GlobusGFSName(globus_gfs_ipc_data_destroy);
 
-    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
+    if(ipc->xio_handle == GLOBUS_NULL)
     {
-        result = ipc_handle->iface->data_destroy_func(data_connection_id);
+        ipc->iface->data_destroy_func(data_connection_id);
     }
     else
     {
         /* i like wires */
     }
-    
-    return result;
 }
 
 
