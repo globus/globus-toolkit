@@ -32,10 +32,12 @@ main(
     res = globus_xio_driver_load(
             driver_name,
             &driver);
-    assert(res != GLOBUS_SUCCESS);
+    assert(res == GLOBUS_SUCCESS);
     
-    globus_xio_stack_init(&stack, NULL);
-    globus_xio_stack_push_driver(stack, driver);
+    res = globus_xio_stack_init(&stack, NULL);
+    assert(res == GLOBUS_SUCCESS);
+    res = globus_xio_stack_push_driver(stack, driver);
+    assert(res == GLOBUS_SUCCESS);
 
     if(contact_string == NULL)
     {
@@ -57,22 +59,23 @@ main(
     }
     else
     {
-        globus_xio_target_init(
+        res = globus_xio_target_init(
             &target, 
             NULL,
             contact_string, 
             stack);
+        assert(res == GLOBUS_SUCCESS);
     }
 
     res = globus_xio_open(
             &handle,
             NULL,
             target);
-    assert(res != GLOBUS_SUCCESS);
+    assert(res == GLOBUS_SUCCESS);
 
     do
     {
-        res = globus_xio_read(handle, buf, sizeof(buf), 1, &nbytes, NULL);
+        res = globus_xio_read(handle, buf, sizeof(buf) - 1, 1, &nbytes, NULL);
         if(nbytes > 0)
         {
             buf[nbytes] = '\0';
