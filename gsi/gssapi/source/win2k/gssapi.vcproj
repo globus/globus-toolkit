@@ -18,9 +18,9 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)/include"
+					IncludePaths="$(GLOBUS_LOCATION)/include;$(SolutionDir)"
 					Defines="WIN32;_DEBUG;_CONSOLE"
-					MinimalRebuild="TRUE"
+					MinimalRebuild="FALSE"
 					FullRuntimeChecks="TRUE"
 					RuntimeLibrary="5"
 					TreatWChar_tAsBuiltInType="TRUE"
@@ -89,10 +89,16 @@
 			Name="Source Files"
 			Filter="c;def;odl;idl;">
 			<File
+				RelativePath="..\library\accept_delegation.c">
+			</File>
+			<File
 				RelativePath="..\library\accept_sec_context.c">
 			</File>
 			<File
 				RelativePath="..\library\acquire_cred.c">
+			</File>
+			<File
+				RelativePath="..\library\buffer_set.c">
 			</File>
 			<File
 				RelativePath="..\library\compare_name.c">
@@ -107,13 +113,22 @@
 				RelativePath="..\library\display_status.c">
 			</File>
 			<File
+				RelativePath="..\library\export_cred.c">
+			</File>
+			<File
 				RelativePath="..\library\export_name.c">
 			</File>
 			<File
 				RelativePath="..\library\export_sec_context.c">
 			</File>
 			<File
+				RelativePath="..\library\get_group.c">
+			</File>
+			<File
 				RelativePath="..\library\get_mic.c">
+			</File>
+			<File
+				RelativePath="..\library\gssapi_working.c">
 			</File>
 			<File
 				RelativePath="..\library\gsserr.c">
@@ -122,28 +137,49 @@
 				RelativePath="..\library\gssutils.c">
 			</File>
 			<File
+				RelativePath="..\library\import_cred.c">
+			</File>
+			<File
 				RelativePath="..\library\import_name.c">
 			</File>
 			<File
 				RelativePath="..\library\import_sec_context.c">
 			</File>
 			<File
-				RelativePath="..\library\init_sec_context.c">
+				RelativePath="..\library\init_delegation.c">
 			</File>
 			<File
-				RelativePath="..\library\inquire_cred.c">
+				RelativePath="..\library\init_sec_context.c">
 			</File>
 			<File
 				RelativePath="..\library\inquire_context.c">
 			</File>
 			<File
+				RelativePath="..\library\inquire_cred.c">
+			</File>
+			<File
+				RelativePath="..\library\inquire_cred_by_oid.c">
+			</File>
+			<File
+				RelativePath="..\library\inquire_sec_context_by_oid.c">
+			</File>
+			<File
 				RelativePath="..\library\oid_functions.c">
+			</File>
+			<File
+				RelativePath="..\library\release_buffer.c">
 			</File>
 			<File
 				RelativePath="..\library\release_cred.c">
 			</File>
 			<File
 				RelativePath="..\library\release_name.c">
+			</File>
+			<File
+				RelativePath="..\library\set_group.c">
+			</File>
+			<File
+				RelativePath="..\library\set_sec_context_option.c">
 			</File>
 			<File
 				RelativePath="..\library\unwrap.c">
@@ -154,51 +190,15 @@
 			<File
 				RelativePath="..\library\wrap.c">
 			</File>
-			<File
-				RelativePath="..\library\release_buffer.c">
-			</File>
-			<File
-				RelativePath="..\library\gssapi_working.c">
-			</File>
-			<File
-				RelativePath="..\library\accept_delegation.c">
-			</File>
-			<File
-				RelativePath="..\library\import_cred.c">
-			</File>
-			<File
-				RelativePath="..\library\export_cred.c">
-			</File>
-			<File
-				RelativePath="..\library\init_delegation.c">
-			</File>
-			<File
-				RelativePath="..\library\inquire_cred_by_oid.c">
-			</File>
-			<File
-				RelativePath="..\library\inquire_sec_context_by_oid.c">
-			</File>
-			<File
-				RelativePath="..\library\buffer_set.c">
-			</File>
-			<File
-				RelativePath="..\library\set_sec_context_option.c">
-			</File>
-			<File
-				RelativePath="..\library\set_group.c">
-			</File>
-			<File
-				RelativePath="..\library\get_group.c">
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h">
 			<File
-				RelativePath="..\library\gssapi.h">
+				RelativePath="..\library\globus_gssapi_config.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_gssapi_config.h">
+				RelativePath="..\..\..\..\..\gsi\gssapi\source\win2k\gssapi.h">
 			</File>
 		</Filter>
 	</Files>

@@ -3,16 +3,26 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gssapi", "gssapi.vcproj", "
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 	ProjectSection(SolutionConfiguration) = postProject
-		Release.ActiveCfg = Release|Win32
-		Release.Build.0 = Release|Win32
 		Debug.ActiveCfg = Debug|Win32
 		Debug.Build.0 = Debug|Win32
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "link-test", "link-test.vcproj", "{AE398F59-7398-4310-9618-10D52FC44722}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+	ProjectSection(SolutionConfiguration) = postProject
+		Debug.ActiveCfg = Debug|Win32
+		Debug.Build.0 = Debug|Win32
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
 	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
-		ConfigName.0 = Debug
-		ConfigName.1 = Release
+		ConfigName.0 = Release
+		ConfigName.1 = Debug
 		DoSign = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
