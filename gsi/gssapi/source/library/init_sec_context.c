@@ -383,7 +383,7 @@ GSS_CALLCONV gss_init_sec_context(
            context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
         {
             local_result =
-                globus_gsi_proxy_handle_set_proxy_type(
+                globus_gsi_proxy_handle_set_type(
                     context->proxy_handle,
                     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
             if(local_result != GLOBUS_SUCCESS)
@@ -399,7 +399,7 @@ GSS_CALLCONV gss_init_sec_context(
         else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY)
         {
             local_result =
-                globus_gsi_proxy_handle_set_proxy_type(
+                globus_gsi_proxy_handle_set_type(
                     context->proxy_handle,
                     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
             if(local_result != GLOBUS_SUCCESS)

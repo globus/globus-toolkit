@@ -967,6 +967,148 @@ globus_gsi_proxy_handle_clear_cert_info(
 /*@}*/
 
 /**
+ * @name Get Cert Info
+ */
+/*@{*/
+/**
+ * Get the proxy cert info extension stored in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function retrieves the proxy cert info extension from the GSI Proxy
+ * handle. 
+ *
+ * @param handle
+ *        The handle from which to get the proxy cert info extension.
+ * @param pci
+ *        Contains the proxy cert info extension upon successful return. If the
+ *        handle does not contain a pci extension, this parameter will be NULL
+ *        upon return.
+ * @return
+ *        GLOBUS_SUCCESS upon success
+ *        GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE if handle is invalid
+ *        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO if the pci
+ *        pointer is invalid or if the get failed.
+ */
+globus_result_t
+globus_gsi_proxy_handle_get_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO **                    pci)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_get_proxy_cert_info";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+    
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    if(!pci)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+            ("Invalid PROXYCERTINFO passed to function"));
+        goto exit;
+    }
+
+    if(handle->proxy_cert_info)
+    { 
+        *pci = PROXYCERTINFO_dup(handle->proxy_cert_info);
+        if(!*pci)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Couldn't copy PROXYCERTINFO structure"));
+            goto exit;
+        }
+    }
+    else
+    {
+        *pci = NULL;
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_get_proxy_cert_info */
+/*@}*/
+
+/**
+ * @name Set Cert Info
+ */
+/*@{*/
+/**
+ * Set the proxy cert info extension stored in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function sets the proxy cert info extension in the GSI Proxy handle.
+ *
+ * @param handle
+ *        The handle for which to set the proxy cert info extension.
+ * @param pci
+ *        The proxy cert info extension to set.
+ * @return
+ *        GLOBUS_SUCCESS upon success
+ *        GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE if handle is invalid
+ *        GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO if the pci
+ *        pointer is invalid or if the set failed.
+ */
+globus_result_t
+globus_gsi_proxy_handle_set_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO *                     pci)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_set_proxy_cert_info";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    if(handle->proxy_cert_info)
+    {
+        PROXYCERTINFO_free(handle->proxy_cert_info);
+        handle->proxy_cert_info = NULL;
+    }
+    
+    if(pci)
+    {
+        handle->proxy_cert_info = PROXYCERTINFO_dup(pci);
+        if(!handle->proxy_cert_info)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Couldn't copy PROXYCERTINFO"));
+            goto exit;
+        }
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_set_proxy_cert_info */
+/*@}*/
+
+/**
  * @name Get Signing Algorithm
  */
 /* @{ */

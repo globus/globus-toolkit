@@ -222,6 +222,16 @@ globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle);
 
 globus_result_t
+globus_gsi_proxy_handle_get_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO **                    pci);
+
+globus_result_t
+globus_gsi_proxy_handle_set_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO *                     pci);
+
+globus_result_t
 globus_gsi_proxy_is_limited(
     globus_gsi_proxy_handle_t           handle,
     globus_bool_t *                     is_limited);
