@@ -1,5 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT *)
-&(two_phase=5)
- (executable=/etc/badness)
- (stdout=/etc/badness)
- (save_state=yes)
