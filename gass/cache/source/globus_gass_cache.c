@@ -1150,7 +1150,12 @@ _globus_l_gass_cache_lock_file(char* file_to_be_locked)
 	/* try again to lock the file */
     } while ( 1 );
     
-    return(return_code);
+
+#   ifdef LOCK_TOUT
+    {
+        return(return_code);
+    }
+#   endif
 } /* _globus_l_gass_cache_lock_file */
 
 /******************************************************************************
