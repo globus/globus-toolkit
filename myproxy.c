@@ -352,7 +352,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     int totlen = 0;
     char lifetime_string[64];
     char str[64];
-    char expr_type_string[5];
     const char *command_string;
     char **authorized_services, **authorized_clients;
 
@@ -784,7 +783,6 @@ myproxy_serialize_response(const myproxy_response_t *response,
     int totlen = 0;
     const char *response_string;
     authorization_data_t **p;
-    char date[64];
     char *buf = NULL;
     
     assert(data != NULL);
@@ -830,7 +828,6 @@ myproxy_serialize_response(const myproxy_response_t *response,
     /* Response */
     if (response->response_type == MYPROXY_OK_RESPONSE) 
     {
-	char tmp[10];
 	char date[64];
 	int i;
 	
@@ -1053,10 +1050,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     char response_type_str[128];
     char authorization_data[4096];
     int value,i, num_creds ;
-    char buf[10];
-    char *response_str;
     char buffer[128];
-    int response_size = 0;
     int idx = 0;
 
     assert(data != NULL); 
@@ -2074,8 +2068,6 @@ parse_entry(char *buffer, authorization_data_t *data)
    char *str_method;
    char *p = buffer;
    author_method_t method;
-   int length;
-   char *parse_end;
 
    assert (data != NULL);
 
@@ -2117,7 +2109,6 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 {
    char *p = buffer;
    char *buffer_end;
-   char *str;
    void *tmp;
    authorization_data_t **data = NULL;
    int num_data = 0;
