@@ -199,6 +199,7 @@ public class TestRFT extends TestCase {
 		  + rftFactory, rftSrcURL + "/" + rftSrcFile , rftDestURL 
 		  + "/" + rftDestFile, rftTCPBuffer, rftTCPStream );
 
+	Thread.currentThread().sleep(10);
 	verifyOutput("/" + rftSrcFile, "/" + rftDestFile);
     }
 

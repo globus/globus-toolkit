@@ -141,9 +141,7 @@ public class PackageTests extends TestSuite {
 
     public static Test suite() throws Exception {
         TestSuite suite = new PackageTests("RFT Test");
-	if ( (System.getProperty("testRft") == null) || ( System.getProperty("testRft").equalsIgnoreCase("yes"))) {
-	    suite.addTestSuite(TestRFT.class);
-	}
+	suite.addTestSuite(TestRFT.class);
         return suite;
     }
 }
