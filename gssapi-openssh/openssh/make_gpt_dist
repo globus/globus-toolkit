@@ -6,8 +6,8 @@
 # the source directory and package names to suit your needs.
 #
 
-$srcdirname = "gsi-openssh";
-$srcpkgname = "gsi-openssh";
+$srcdirname = "gsi_openssh";
+$srcpkgname = "gsi_openssh-3.1p1";
 
 #
 # uncomment when we're more mature
