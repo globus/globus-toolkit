@@ -336,4 +336,6 @@ globus_i_ftp_client_count_digits(globus_off_t num)
 }
 /* globus_i_ftp_client_count_digits() */
 
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
