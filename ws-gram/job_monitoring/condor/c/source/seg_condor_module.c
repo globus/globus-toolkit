@@ -3,6 +3,7 @@
 #include "globus_scheduler_event_generator.h"
 #include "version.h"
 
+#include <time.h>
 #include <string.h>
 
 #define SEG_CONDOR_DEBUG(level, message) \
@@ -81,12 +82,10 @@ typedef struct
 
 static
 int
-globus_l_condor_parse_exit_code(
-    const char *                        buffer,
-    globus_bool_t *                     normal_termination,
-    int *                               exit_status);
+globus_l_condor_parse_event(
+    char *                              buffer,
+    time_t                              start_timestamp);
 
-static const time_t                     SECS_IN_DAY = 60*60*24;
 static globus_mutex_t                   globus_l_condor_mutex;
 static globus_cond_t                    globus_l_condor_cond;
 static globus_bool_t                    shutdown_called;
@@ -424,9 +423,9 @@ error:
 static
 int
 globus_l_condor_find_logfile(
-    globus_l_condor_logfile_state_t *      state)
+    globus_l_condor_logfile_state_t *   state)
 {
-    char                                log_dir[] = "/home/joe/condor_test";
+    char                                logfile[] = "/tmp/gram_condor_log";
     struct stat                         s;
     int                                 rc;
 
@@ -436,7 +435,7 @@ globus_l_condor_find_logfile(
     if (state->path == NULL)
     {
         SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE, ("allocating path\n"));
-        state->path = malloc(sizeof(log_dir) + strlen("results.log") + 2);
+        state->path = globus_libc_strdup(logfile);
 
         if (state->path == NULL)
         {
@@ -448,18 +447,6 @@ globus_l_condor_find_logfile(
 
     do
     {
-        rc = sprintf(state->path,
-                "%s/%s",
-                log_dir,
-                "results.log");
-
-        if (rc < 0)
-        {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
-                    ("couldn't format path\n"));
-            rc = SEG_CONDOR_ERROR_OUT_OF_MEMORY;
-            goto error;
-        }
         rc = stat(state->path, &s);
 
         if (rc < 0)
@@ -612,122 +599,42 @@ int
 globus_l_condor_parse_events(
     globus_l_condor_logfile_state_t *   state)
 {
-    char *                              eor;
-    struct tm                           tm;
-    time_t                              stamp;
-    size_t                              nb;
-    int                                 evttype;
-    int                                 cluster;
-    int                                 process;
-    int                                 sub;
+    char *                              eot;
     int                                 rc;
-    int                                 exit_status;
-    char *                              jobid;
-    globus_bool_t                       normal_termination;
+    char *                              p;
     SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
             ("globus_l_condor_parse_events() called\n"));
 
     state->buffer[state->buffer_point + state->buffer_valid] = '\0';
 
-    while ((eor = strstr(state->buffer + state->buffer_point,
-                "\n...\n")) != NULL)
+    p = state->buffer + state->buffer_point;
+
+    while (isspace(*p))
     {
-        *eor = '\0';
+        p++;
+    }
+    while ((eot = strstr(p, "</c>\n"))
+            != NULL)
+    {
+        *(eot+4) = '\0';
 
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
-                ("parsing event %s\n", state->buffer + state->buffer_point));
-
-        /*
-         * Grab a current timestamp to find out what year we are in. We'll
-         * use the year in our events, since condor doesn't provide it in the
-         * logs.
-         */
-        stamp = time(NULL);
-        if (globus_libc_localtime_r(&stamp, &tm) == NULL)
+        if (strncmp(p, "<c>", 3) == 0)
         {
-            goto next_msg;
-        }
-        tm.tm_isdst = -1;
+            p += 3;
 
-        rc = sscanf(state->buffer + state->buffer_point,
-                "%03d (%d.%d.%d) %02d/%2d %d:%d:%d%n",
-                &evttype, &cluster, &process, &sub, &tm.tm_mon, &tm.tm_mday,
-                &tm.tm_hour, &tm.tm_min, &tm.tm_sec, &nb);
-
-        if (rc < 9)
-        {
-            goto next_msg;
+            rc = globus_l_condor_parse_event(p, state->start_timestamp);
         }
 
-        jobid = globus_libc_malloc(strlen(state->buffer+state->buffer_point));
-        if (jobid == NULL)
+        state->buffer_valid -= eot + 4 - state->buffer - state->buffer_point;
+        state->buffer_point = eot + 4 - state->buffer;
+
+        if (state->buffer_valid > 0)
         {
-            goto next_msg;
-        }
-        rc = sprintf(jobid, "%03d.%03d.%03d", cluster, process, sub);
-        if (rc < 0)
-        {
-            goto next_msg;
+            state->buffer_valid--;
+            state->buffer_point++;
         }
 
-        stamp = mktime(&tm);
-
-        if (stamp < state->start_timestamp)
-        {
-            goto next_msg;
-        }
-
-        switch (evttype)
-        {
-        case 0: /* Job Submitted */
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
-                    ("job submitted\n"));
-            globus_scheduler_event_pending(stamp, jobid);
-            break;
-        case 1: /* Job Executing */
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
-                    ("job started\n"));
-            globus_scheduler_event_active(stamp, jobid);
-            break;
-        case 5: /* Job Terminated */
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
-                    ("job done\n"));
-            globus_l_condor_parse_exit_code(
-                    state->buffer + state->buffer_point + nb + 1,
-                    &normal_termination,
-                    &exit_status);
-            
-            if (normal_termination)
-            {
-                globus_scheduler_event_done(stamp, jobid, exit_status);
-            }
-            else
-            {
-                globus_scheduler_event_failed(stamp, jobid, exit_status);
-            }
-            break;
-        case 2: /* Job Not Executable */
-        case 9: /* Job Aborted By User */
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
-                    ("job failed\n"));
-            globus_scheduler_event_failed(stamp, jobid, exit_status);
-            break;
-        case 4: /* Job Evicted (suspended?)*/
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
-                    ("job suspended\n"));
-        }
-
-next_msg:
-        if (jobid != NULL)
-        {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-                    ("freeing jobid\n"));
-            globus_libc_free(jobid);
-            jobid = NULL;
-        }
-
-        state->buffer_valid -= eor + 5 - state->buffer - state->buffer_point;
-        state->buffer_point = eor + 5 - state->buffer;
+        p = state->buffer + state->buffer_point;
     }
 
     SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
@@ -739,39 +646,402 @@ next_msg:
 
 static
 int
-globus_l_condor_parse_exit_code(
-    const char *                        buffer,
-    globus_bool_t *                     normal_termination,
-    int *                               exit_status)
+globus_l_condor_parse_event(
+    char *                              buffer,
+    time_t                              start_timestamp)
 {
-    char *                              eol;
-    int                                 rc;
+    char *                              p;
+    char *                              attr;
+    char *                              tmp;
+    int                                 event_type_number;
+    char *                              event_time;
+    int                                 cluster;
+    int                                 proc;
+    int                                 subproc;
+    globus_bool_t                       terminated_normally;
+    int                                 return_value = 0;
+    struct tm                           event_tm;
+    time_t                              event_stamp;
+    char *                              jobid;
+    int                                 jobid_len;
+    size_t                              len;
+    globus_result_t                     result;
 
-    *exit_status = 0;
-    *normal_termination = GLOBUS_TRUE;
-
-    while ((eol = strchr(buffer, '\n')) != NULL)
+    enum condor_attr_e
     {
-        buffer = eol+1;
+        DONTCARE,
+        EVENT_TYPE_NUMBER,
+        EVENT_TIME,
+        CLUSTER,
+        PROC,
+        SUBPROC,
+        TERMINATED_NORMALLY,
+        RETURN_VALUE
+    } condor_attr;
+    typedef enum
+    {
+        CONDOR_STRING,
+        CONDOR_INTEGER,
+        CONDOR_BOOLEAN,
+        CONDOR_REAL
+    } condor_parse_type_t;
+    union
+    {
+        condor_parse_type_t type;
 
-        rc = sscanf(buffer,
-                "\t(1) Normal termination (return value %d)",
-                exit_status);
-        if (rc == 1)
+        struct
         {
-            return 0;
+            condor_parse_type_t type;
+            char * s;
+        } s;
+
+        struct
+        {
+            condor_parse_type_t type;
+            int i;
+        } i;
+
+        struct
+        {
+            condor_parse_type_t type;
+            globus_bool_t b;
+        } b;
+
+        struct
+        {
+            condor_parse_type_t type;
+            float r;
+        } r;
+    } pu;
+
+    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+            ("parsing event %s\n", buffer));
+    p = buffer;
+
+    while(isspace(*p))
+    {
+        p++;
+    }
+    while ((strncmp(p, "<a", 2)) == 0)
+    {
+        p += 6; /* [[<a n="]] */
+        attr = p;
+        while (*p && *p != '"')
+        {
+            p++;
         }
-        
-        rc = sscanf(buffer,
-                "\t(0) Abnormal termination (signal %d)",
-                exit_status);
-        if (rc == 1)
+        if (!*p)
         {
-            *normal_termination = GLOBUS_FALSE;
-            return 0;
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                ("short buffer"));
+            return 1;
+        }
+        *(p++) = '\0';
+        if (*p == '\0')
+        {
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                ("short buffer"));
+            return 1;
+        }
+        p++;
+
+        if (strcmp(attr, "EventTypeNumber") == 0)
+        {
+            condor_attr = EVENT_TYPE_NUMBER;
+        }
+        else if (strcmp(attr, "EventTime") == 0)
+        {
+            condor_attr = EVENT_TIME;
+        }
+        else if (strcmp(attr, "Cluster") == 0)
+        {
+            condor_attr = CLUSTER;
+        }
+        else if (strcmp(attr, "Proc") == 0)
+        {
+            condor_attr = PROC;
+        }
+        else if (strcmp(attr, "Subproc") == 0)
+        {
+            condor_attr = SUBPROC;
+        }
+        else if (strcmp(attr, "TerminatedNormally") == 0)
+        {
+            condor_attr = TERMINATED_NORMALLY;
+        }
+        else if (strcmp(attr, "ReturnValue") == 0)
+        {
+            condor_attr = RETURN_VALUE;
+        }
+        else
+        {
+            condor_attr = DONTCARE;
+        }
+        if (strncmp(p, "<s>", 3) == 0)
+        {
+            /* String value */
+            p += 3;
+
+            if (*p == '\0')
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("short buffer"));
+                return 1;
+            }
+            pu.type = CONDOR_STRING;
+            pu.s.s = p;
+            p = strstr(p, "</s>");
+            *p = '\0';
+            p += 4;
+
+        }
+        else if (strncmp(p, "<i>", 3) == 0)
+        {
+            /* Integer value */
+            p += 3;
+            if (*p == '\0')
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("short buffer"));
+                return 1;
+            }
+            pu.type = CONDOR_INTEGER;
+            tmp = p;
+            p = strstr(p, "</i>");
+            *p = '\0';
+            p += 4;
+            pu.i.i = atoi(tmp);
+        }
+        else if (strncmp(p, "<b v=\"t\"/>", 10) == 0)
+        {
+            /* Boolean true value */
+            p += 10;
+            pu.type = CONDOR_BOOLEAN;
+            pu.b.b = GLOBUS_TRUE;
+        }
+        else if (strncmp(p, "<b v=\"f\"/>", 10) == 0)
+        {
+            /* Boolean false value */
+            p += 10;
+            pu.type = CONDOR_BOOLEAN;
+            pu.b.b = GLOBUS_TRUE;
+        }
+        else if (strncmp(p, "<r>", 3) == 0)
+        {
+            /* Real value */
+            p += 3;
+            if (*p == '\0')
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("short buffer"));
+                return 1;
+            }
+            pu.type = CONDOR_REAL;
+            tmp = p;
+            sscanf(p, "%f%n", &pu.r.r, &len);
+            p += len;
+            if (*p == '\0')
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("short buffer"));
+                return 1;
+            }
+            if (strncmp(p, "</r>", 4) != 0)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("expected </r>, got %s\n", p));
+                return 1;
+            }
+            *p = '\0';
+            p += 4;
+
+        }
+        else
+        {
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+                ("unknown token at %s\n", p));
+            break;
+        }
+
+        switch (condor_attr)
+        {
+        case EVENT_TYPE_NUMBER:
+            if (pu.type != CONDOR_INTEGER)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("EventTypeNumber: expected int, got %d\n", pu.type));
+                break;
+
+            }
+            event_type_number = pu.i.i;
+            break;
+        case EVENT_TIME:
+            if (pu.type != CONDOR_STRING)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("EventTime: expected string, got %d\n", pu.type));
+                break;
+            }
+            event_time = pu.s.s;
+
+            sscanf(event_time, "%04d-%02d-%02dT%2d:%2d:%2d",
+                &event_tm.tm_year,
+                &event_tm.tm_mon,
+                &event_tm.tm_mday,
+                &event_tm.tm_hour,
+                &event_tm.tm_min,
+                &event_tm.tm_sec);
+
+            event_tm.tm_year -= 1900;
+            event_tm.tm_mon -= 1;
+            event_tm.tm_isdst = -1;
+
+            event_stamp = mktime(&event_tm);
+
+            break;
+        case CLUSTER:
+            if (pu.type != CONDOR_INTEGER)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("Cluster: expected int, got %d\n", pu.type));
+                break;
+
+            }
+            cluster = pu.i.i;
+            break;
+        case PROC:
+            if (pu.type != CONDOR_INTEGER)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("Proc: expected int, got %d\n", pu.type));
+                break;
+
+            }
+            proc = pu.i.i;
+            break;
+        case SUBPROC:
+            if (pu.type != CONDOR_INTEGER)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("Subproc: expected int, got %d\n", pu.type));
+                break;
+
+            }
+            subproc = pu.i.i;
+            break;
+        case TERMINATED_NORMALLY:
+            if (pu.type != CONDOR_BOOLEAN)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("TerminatedNormally: expected bool, got %d\n", pu.type));
+                break;
+
+            }
+            terminated_normally = pu.b.b;
+            break;
+        case RETURN_VALUE:
+            if (pu.type != CONDOR_INTEGER)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("ReturnValue: expected int, got %d\n", pu.type));
+                break;
+
+            }
+            return_value = pu.i.i;
+            break;
+        case DONTCARE:
+        default:
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+                ("Ignoring attribute %s\n", attr));
+            break;
+        }
+        if (strncmp(p, "</a>", 4) != 0)
+        {
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                ("missing </a> at %s\n", p));
+            return 1;
+        }
+        p += 4;
+
+        while (isspace(*p))
+        {
+            p++;
         }
     }
 
+    if (event_stamp < start_timestamp)
+    {
+        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+            ("ignoring old event type %d for job %03d.%03d.%03d\n",
+            event_type_number, cluster, proc, subproc));
+
+        return 0;
+    }
+
+    jobid_len = globus_libc_printf_length(
+            "%03d.%03d.%03d", cluster, proc, subproc);
+
+    jobid = malloc(jobid_len+1);
+
+    sprintf(jobid, "%03d.%03d.%03d", cluster, proc, subproc);
+
+    switch (event_type_number)
+    {
+    case 0: /* SubmitEvent */
+        result = globus_scheduler_event_pending(event_stamp, jobid);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                ("Unable to send pending event: %s\n",
+                globus_object_printable_to_string(
+                    globus_error_peek(result))));
+        }
+        break;
+    case 1: /* ExecuteEvent */
+        result = globus_scheduler_event_active(event_stamp, jobid);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                ("Unable to send pending event: %s\n",
+                globus_object_printable_to_string(
+                    globus_error_peek(result))));
+        }
+        break;
+
+    case 5: /* JobTerminatedEvent */
+        if (terminated_normally)
+        {
+            result = globus_scheduler_event_done(event_stamp, jobid,
+                return_value);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("Unable to send done event: %s\n",
+                    globus_object_printable_to_string(
+                        globus_error_peek(result))));
+            }
+        }
+        else
+        {
+    case 9: /* JobAbortedEvent */
+            result = globus_scheduler_event_failed(event_stamp, jobid,
+                return_value);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    ("Unable to send failed event: %s\n",
+                    globus_object_printable_to_string(
+                        globus_error_peek(result))));
+            }
+        }
+        break;
+    }
+    globus_libc_free(jobid);
+
     return 0;
 }
-/* globus_l_condor_parse_exit_code() */
+/* globus_l_condor_parse_event() */
