@@ -45,9 +45,6 @@ sub check_for_commands
            grid-mapfile-add-entry          
            grid-mapfile-delete-entry
            grid-mapfile-check-consistency
-           grid-mapfile-add-entry
-           grid-mapfile-check-consistency
-           grid-mapfile-delete-entry
            );
     
     foreach my $command (@commands) 
