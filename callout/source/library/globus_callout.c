@@ -338,6 +338,8 @@ globus_callout_read_config(
         }
     }
 
+    fclose(conf_file);
+    
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
     return GLOBUS_SUCCESS;
@@ -347,6 +349,11 @@ globus_callout_read_config(
     if(datum != NULL)
     {
         globus_l_callout_data_free(datum);
+    }
+
+    if(conf_file != NULL)
+    {
+        fclose(conf_file);
     }
 
     return result;
