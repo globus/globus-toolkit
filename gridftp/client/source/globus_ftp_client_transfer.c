@@ -3906,6 +3906,17 @@ abort:
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
  * @param attr
  *	  Attributes for this file transfer.
+ * @param cksm
+ *        A pointer to a string to be filled with the checksum of the
+ *        file. On error the value pointed to by it is undefined.          
+ * @param offset
+ *        File offset to start calculating checksum.    
+ * @param length
+ *        Length of data to read from the starting offset.  Use -1 to read the
+ *        entire file.
+ * @param algorithm
+ *        A pointer to a string to be filled with the checksum of the
+ *        file. On error the value pointed to by it is undefined.          
  * @param complete_callback
  *        Callback to be invoked once the size check is completed.
  * @param callback_arg

@@ -247,6 +247,14 @@ typedef void (*globus_ftp_client_plugin_chmod_t)(
  *        The handle associated with the delete operation.
  * @param url
  *        The url to chmod.
+ * @param offset
+ *        File offset to start calculating checksum.    
+ * @param length
+ *        Length of data to read from the starting offset.  Use -1 to read the
+ *        entire file.
+ * @param algorithm
+ *        A pointer to a string to be filled with the checksum of the
+ *        file. On error the value pointed to by it is undefined.          
  * @param attr
  *        The attributes to be used during this operation.
  * @param restart

@@ -390,6 +390,14 @@ globus_ftp_client_plugin_restart_chmod(
  *        the original cksm's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
+ * @param offset
+ *        File offset to start calculating checksum.    
+ * @param length
+ *        Length of data to read from the starting offset.  Use -1 to read the
+ *        entire file.
+ * @param algorithm
+ *        A pointer to a string to be filled with the checksum of the
+ *        file. On error the value pointed to by it is undefined.          
  * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original cksm's attribute set.
