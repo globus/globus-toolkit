@@ -2271,7 +2271,7 @@ globus_libc_readdir_r(DIR *dirp,
 	    
 	    rc = readdir_r(dirp, entry, result);
 
-            if(rc != 0)
+            if(rc != 0 || *result == NULL)
             { 
 		globus_free(entry);
 		*result = GLOBUS_NULL;
