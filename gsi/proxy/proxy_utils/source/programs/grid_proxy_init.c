@@ -442,6 +442,15 @@ main(
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
+    result = globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(stderr,
+                            "\n\nERROR: Couldn't destroy proxy "
+                            "handle attributes.\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+    
     /* set the time valid in the proxy handle
      * used to be hours - now the time valid needs to be set in minutes 
      */
