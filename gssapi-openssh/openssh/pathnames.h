@@ -116,9 +116,7 @@ extern char *_PATH_SSH_HOSTS_EQUIV;
 #endif
 
 /* Location of ssh-keysign for hostbased authentication */
-#ifndef _PATH_SSH_KEY_SIGN
-#define _PATH_SSH_KEY_SIGN            "/usr/libexec/ssh-keysign"
-#endif
+extern char *_PATH_SSH_KEY_SIGN;
 
 /* xauth for X11 forwarding */
 #ifndef _PATH_XAUTH
