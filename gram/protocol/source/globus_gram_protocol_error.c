@@ -108,7 +108,11 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /*  97 */     "the job manager could not find the 'poe' command",
 /*  98 */     "the job manager could not find the 'mpirun' command",
 /*  99 */     "the provided RSL 'start_time' parameter is invalid",
-/* 100 */     "the provided RSL 'reservation_handle' parameter is invalid"
+/* 100 */     "the provided RSL 'reservation_handle' parameter is invalid",
+/* 101 */     "the provided RSL 'max_wall_time' parameter is invalid",
+/* 102 */     "the RSL 'max_wall_time' value is not zero or greater",
+/* 103 */     "the provided RSL 'max_cpu_time' parameter is invalid",
+/* 104 */     "the RSL 'max_cpu_time' value is not zero or greater"
 };
 
 static char *

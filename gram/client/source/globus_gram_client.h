@@ -64,6 +64,8 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_CLIENT_STDIN_PARAM                    "stdin"
 #define GLOBUS_GRAM_CLIENT_STDOUT_PARAM                   "stdout"
 #define GLOBUS_GRAM_CLIENT_STDERR_PARAM                   "stderr"
+#define GLOBUS_GRAM_CLIENT_MAX_WALL_TIME_PARAM            "maxwalltime"
+#define GLOBUS_GRAM_CLIENT_MAX_CPU_TIME_PARAM             "maxcputime"
 #define GLOBUS_GRAM_CLIENT_MAX_TIME_PARAM                 "maxtime"
 #define GLOBUS_GRAM_CLIENT_PARADYN_PARAM                  "paradyn"
 #define GLOBUS_GRAM_CLIENT_JOB_TYPE_PARAM                 "jobtype"

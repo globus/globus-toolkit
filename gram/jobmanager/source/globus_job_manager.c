@@ -2483,6 +2483,68 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
 
     /********************************** 
+     *  GET MAX_WALL_TIME PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_CLIENT_MAX_WALL_TIME_PARAM,
+		             &tmp_param) != 0)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MAX_WALL_TIME;
+        return(GLOBUS_FAILURE);
+    }
+
+    if (tmp_param[0])
+    {
+        x = atoi(tmp_param[0]);
+
+        if (x < 1)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_MAX_WALL_TIME;
+            return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->max_wall_time = x;
+        }
+    }
+    else
+    {
+        req->max_wall_time = 0;
+    }
+
+    /********************************** 
+     *  GET MAX_CPU_TIME PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_CLIENT_MAX_CPU_TIME_PARAM,
+		             &tmp_param) != 0)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MAX_CPU_TIME;
+        return(GLOBUS_FAILURE);
+    }
+
+    if (tmp_param[0])
+    {
+        x = atoi(tmp_param[0]);
+
+        if (x < 1)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_MAX_CPU_TIME;
+            return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->max_cpu_time = x;
+        }
+    }
+    else
+    {
+        req->max_cpu_time = 0;
+    }
+
+    /********************************** 
      *  GET MAX_TIME PARAM
      */
     if (globus_rsl_param_get(rsl_tree,

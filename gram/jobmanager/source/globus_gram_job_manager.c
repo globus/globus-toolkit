@@ -226,6 +226,8 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->reservation_handle = NULL;
     r->project = NULL;
     r->max_time = 0;
+    r->max_cpu_time = 0;
+    r->max_wall_time = 0;
     r->min_memory = 0;
     r->max_memory = 0;
     r->filename_callback_func = NULL;
@@ -726,6 +728,8 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_stdin='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
     fprintf(script_arg_fp,"grami_stderr='%s'\n", stderr_filename);
+    fprintf(script_arg_fp,"grami_max_wall_time='%lu'\n", request->max_wall_time);
+    fprintf(script_arg_fp,"grami_max_cpu_time='%lu'\n", request->max_cpu_time);
     fprintf(script_arg_fp,"grami_max_time='%lu'\n", request->max_time);
     globus_l_gram_param_prepare(request->start_time, new_param);
     fprintf(script_arg_fp,"grami_start_time='%s'\n", new_param);

@@ -143,6 +143,14 @@ typedef struct
                                               */
  char * start_time;     /* The wallclock time the job should be started */
 
+ unsigned long max_wall_time;    /* Maximum system wall clock runtime
+                                  * in minutes, 0 means use the system default
+                                  */
+
+ unsigned long max_cpu_time;    /* Maximum system cpu runtime
+                                 * in minutes, 0 means use the system default
+                                 */
+
  unsigned long max_time;    /* Maximum runtime in minutes, 0 means use the
                             * system default
                             */
