@@ -21,40 +21,8 @@
 /* Must be included after stdio.h */
 #include "ssl_utils.h"
 
-#if SSLEAY_VERSION_NUMBER > 0x0903
-
-/* OpenSSL 0.9.4 */
 #define PEM_CALLBACK(func)	func, NULL
 #define PEM_NO_CALLBACK		NULL, NULL
-
-#else /* ! SSLEAY_VERSION_NUMBER > 0x0903 */
-
-/* SSLeay 0.9.0 */
-#define PEM_CALLBACK(func)	func
-#define PEM_NO_CALLBACK		NULL
-
-#define STACK_OF(A) STACK
-
-#define sk_X509_NAME_ENTRY_num  sk_num
-#define sk_X509_NAME_ENTRY_value  sk_value
-
-#define sk_SSL_CIPHER_num  sk_num
-#define sk_SSL_CIPHER_value  sk_value
-#define sk_SSL_CIPHER_insert  sk_insert
-#define sk_SSL_CIPHER_delete  sk_delete
-
-#define sk_X509_EXTENSION_num sk_num
-#define sk_X509_EXTENSION_value sk_value
-#define sk_X509_EXTENSION_push sk_push
-#define sk_X509_EXTENSION_new_null sk_new_null
-#define sk_X509_EXTENSION_pop_free sk_pop_free
-
-#define sk_X509_REVOKED_num sk_num
-#define sk_X509_REVOKED_value sk_value
-
-#define sk_X509_num  sk_num
-#define sk_X509_value  (X509 *)sk_value
-#endif /* ! SSLEAY_VERSION_NUMBER > 0x0903 */
 
 /**********************************************************************
  *
@@ -2366,8 +2334,6 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
 
    memset(&csc, 0, sizeof(csc));
    cert_store=X509_STORE_new();
-   X509_STORE_set_verify_func(cert_store,
-			      globus_gsi_callback_X509_verify_cert);
    if (chain->certificate_chain != NULL) {
       for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
 	 xcert = sk_X509_value(chain->certificate_chain, i);
@@ -2409,9 +2375,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
       goto end;
    }
 
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
    SSL_CTX_set_purpose(sslContext, X509_PURPOSE_ANY);
-#endif
 
    ssl = SSL_new(sslContext);
    if (ssl == NULL) {
@@ -2420,10 +2384,8 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
       goto end;
    }
 
-#if SSLEAY_VERSION_NUMBER >=  0x0090600fL
    /* override the check_issued with our version */
    csc.check_issued = globus_gsi_callback_check_issued;
-#endif
 
    X509_STORE_CTX_set_app_data(&csc, (void*)ssl);
 
