@@ -35,7 +35,6 @@ opensslinclude_HEADERS= \
 	bn.h
 
 noinst_HEADERS = \
-	bn_prime.h \
 	bn_lcl.h
 
 Test_Sources = \
