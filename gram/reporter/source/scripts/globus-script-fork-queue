@@ -1,0 +1,120 @@
+#! @SH@ -f
+###################################################################
+# globus-script-<scheduler>-queue script
+# --------------------------------------
+#
+# The purpose of this script is to communicate the queue values and
+# current queue entries (jobs) to the globus-gram-scheduler function.
+# This function will then compile the information into C structures to 
+# present a uniform interface to more easily facilitate multi queue
+# analysis.
+#
+# Note: This script is copied and used as the poe-queue script
+#
+# queue information is output in the form:
+#     GRAM_SCRIPT_Q:<gram queue parameter> <local scheduler value>
+#
+# queue entry information (i.e. jobs) are output in the form:
+#     GRAM_SCRIPT_QE:<gram queue entry parameter> <local scheduler job value>
+#      
+#
+###################################################################
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+
+globus_source ${libexecdir}/globus-gram-protocol-constants.sh
+globus_source ${libexecdir}/globus-sh-tools.sh
+globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
+
+# programs used in this script located by autoconf:
+uptime=${GLOBUS_SH_UPTIME-uptime}
+grep=${GLOBUS_SH_GREP-grep}                                 
+awk=${GLOBUS_SH_AWK-awk}
+wc=${GLOBUS_SH_WC-wc}
+########
+
+
+############################################################
+#
+# GetNodeCount
+#
+#
+# Get free and total nodes from the system.
+#
+#
+
+GetNodeCount () {
+case "`${libexecdir}/grid-info-osguess`" in
+  *linux*)
+     # linux doesn't provide a sysctl interface to get cpu count
+     # so grid-info-num-procs won't give correct data
+     if [ -r /proc/cpuinfo ] ; then
+        # handle multiple CPU sections for SMP machines
+        TOTALNODES=`${grep} processor /proc/cpuinfo | ${wc} | ${awk} '{ print $1 }'`
+        if [ "X${TOTALNODES}" = "X" -o "X${TOTALNODES}" = "X0" ] ; then
+            TOTALNODES=`${grep} "cpus detected" /proc/cpuinfo | ${awk} '{ print $4 }'`
+        fi
+     else
+        # assume not SMP
+        TOTALNODES=1
+     fi
+     ;;
+  *)
+     TOTALNODES=`${libexecdir}/grid-info-num-procs`
+     ;;
+esac
+
+if test ! -x "${uptime}" ; then
+   FREENODES=0
+else
+   # Get the load average over the last minute
+   # Round to the nearst whole number
+
+   FREENODES=`(echo "$TOTALNODES " ; $uptime) |       \
+              ${awk} '{tnodes=$1 ; getline ;
+                      for (i=1; $i != "average:" && $i != "averages:"; i++) ;
+                      v = $(i+1) ;
+                      l = substr(v,1,length(v)-1) ;
+                      if(@GLOBUS_UPTIME_IS_AVERAGE@ == 1) {
+                        fnodes = tnodes - int(l * tnodes + 0.5);
+                      } else {
+                        fnodes = tnodes - int(l + 0.5) ;
+                      }
+                      if (fnodes < 0) {
+                         print 0;
+                      } else {
+                         print fnodes;
+                      }
+                    }'`
+fi
+} #########################
+
+
+################## main section #######################
+# Ouput queue values where possible
+
+echo "GRAM_SCRIPT_Q:StartQueue"
+GetNodeCount
+echo "GRAM_SCRIPT_Q:totalNodes ${TOTALNODES}"
+echo "GRAM_SCRIPT_Q:freeNodes ${FREENODES}"
+echo "GRAM_SCRIPT_Q:maxtime 0"
+echo "GRAM_SCRIPT_Q:maxCPUtime 0"
+echo "GRAM_SCRIPT_Q:maxCount 0"
+echo "GRAM_SCRIPT_Q:maxRunningJobs 0"
+echo "GRAM_SCRIPT_Q:maxJobsInQueue 0"
+echo "GRAM_SCRIPT_Q:maxTotalMemory 0"
+echo "GRAM_SCRIPT_Q:maxSingleMemory 0"
+echo "GRAM_SCRIPT_Q:whenActive 0"
+echo "GRAM_SCRIPT_Q:status 0"
+echo "GRAM_SCRIPT_Q:dispatchType Immediate"
+#echo "GRAM_SCRIPT_Q:priority 0"
+#echo "GRAM_SCRIPT_Q:allowedUser user1"
+#echo "GRAM_SCRIPT_Q:allowedUser user2"
+#echo "GRAM_SCRIPT_Q:jobWait 0"
+#echo "GRAM_SCRIPT_Q:schedulerSpecific"
+echo "GRAM_SCRIPT_Q:EndQueue"
+
+#
+# For the fork script we do not output the job entries.
+# They are obtained from the jobmanager status files.
+#
