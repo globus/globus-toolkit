@@ -4,6 +4,9 @@ libexec_SCRIPTS = \
 	globus-build-env-$(GLOBUS_FLAVOR_NAME).sh \
 	globus-bootstrap.sh
 
+sbin_SCRIPTS = \
+	globus_build_doxygen_dependencies
 EXTRA_DIST = globus-build-env.sh.in \
              globus-args-parser-header \
-	     globus-bootstrap.sh
+	     globus-bootstrap.sh \
+	     globus_build_doxygen_dependencies

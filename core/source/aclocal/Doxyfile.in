@@ -95,7 +95,7 @@ TAGFILES               = @lac_doxygen_tagfiles@
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create 
 # a tag file that is based on the input files it reads. 
 
-GENERATE_TAGFILE       = @lac_doxygen_output_tagfile@.tag
+GENERATE_TAGFILE       = doc/html/@lac_doxygen_output_tagfile@.tag
 
 # The PERL_PATH should be the absolute path and name of the perl script 
 # interpreter (i.e. the result of `which perl'). 
