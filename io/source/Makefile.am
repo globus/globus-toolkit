@@ -1,6 +1,10 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
+SUBDIRS= \
+        pkgdata \
+        doxygen
+
 Sources= \
 	globus_io.h \
 	globus_io_error_hierarchy.c \
