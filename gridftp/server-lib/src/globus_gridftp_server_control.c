@@ -1529,10 +1529,8 @@ globus_i_gridftp_server_control_cs_verify(
     globus_gridftp_server_control_network_protocol_t net_prt)
 {
     int                                 sc;
-    int                                 ctr;
     unsigned int                        ip[8];
     unsigned int                        port;
-    char *                              host_str;
 
     if(cs == NULL)
     {
