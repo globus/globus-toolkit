@@ -1219,7 +1219,7 @@ globus_l_gram_http_field_value_quote_string(
 static
 int
 globus_l_gram_http_field_value_unquote_string(
-    const char **inp		/* Incremented to point past the end */,
+    char **inp		/* Incremented to point past the end */,
     globus_size_t inbytes /* Ignored; we check for null termination
 			     instead. */,
     char *out_start,
@@ -1273,26 +1273,30 @@ globus_i_gram_pack_http_job_request_fb(
     const char *description /* user's RSL (IN) */)
 {
     int rc;
-    globus_byte_t *o = query_start;		/* Output pointer */
+    char * o = (char *) query_start;		/* Output pointer */
     globus_size_t out_bytes;		/* How many byts */
-    /* Advance to the next point for further output. */
+
 #define advance_o() do { while(*o) ++o; } while(0)
     
-    sprintf(o, "protocol-version: %d\r\n", GLOBUS_GRAM_PROTOCOL_VERSION);
-    advance_o();
-    sprintf(o, "job-state-mask: %d\r\n", job_state_mask);
-    advance_o();
-    sprintf(o, "callback-url: %s\r\n", callback_url);
-    advance_o();
-    sprintf(o, "rsl: ");
+    sprintf(o, 
+	    "protocol-version: %d\r\n"
+	    "job-state-mask: %d\r\n"
+	    "callback-url: %s\r\n"
+	    "rsl: ",
+	    GLOBUS_GRAM_PROTOCOL_VERSION,
+	    job_state_mask,
+	    callback_url);
     advance_o();
     rc = globus_l_gram_http_field_value_quote_string(
-	description, strlen(description), 
-	o, &out_bytes);
+	          description,
+		  strlen(description), 
+		  o, 
+		  &out_bytes);
     if (rc)			/* can't happen */
 	return rc;
     o += out_bytes;
-    *query_sizep = o - query_start;
+    *query_sizep = (globus_size_t)(o - (char *)query_start);
+
     return GLOBUS_SUCCESS;
 }
 
@@ -1306,36 +1310,39 @@ globus_i_gram_unpack_http_job_request_fb(
     char *rsl_spec,
     globus_size_t *rsl_spec_sizep)
 {
-    int protocol_version;
-    int rc;			/* Result code */
+    int     protocol_version;
+    int     rc;
+    char *  q = (char *) query;
 
-    if(sscanf(query, "protocol-version: %d", &protocol_version) != 1)
+    if(sscanf(q, "protocol-version: %d", &protocol_version) != 1)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error code. */
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
 	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-    query = strchr(query, '\n');	/*  Skip to next line */
-    if (!query)
+    q = strchr(q, '\n');	/*  Skip to next line */
+    if (!q)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error message. */
-    ++query;
-    if (sscanf(query, "job-state-mask: %d", job_state_maskp) != 1)
+    ++q;
+    if (sscanf(q, "job-state-mask: %d", job_state_maskp) != 1)
 	return GLOBUS_FAILURE;	/* TODO: Parse_error error code */
-    query = strchr(query, '\n');
-    if (!query)
+    q = strchr(q, '\n');
+    if (!q)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error message. */
-    ++query;
-    if (sscanf(query, "callback-url: %s", client_contact_str) != 1)
+    ++q;
+    if (sscanf(q, "callback-url: %s", client_contact_str) != 1)
 	return GLOBUS_FAILURE;	/* TODO: Parse_error error code */
-    query = strchr(query, '\n');
-    if (!query)
+    q = strchr(q, '\n');
+    if (!q)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error message. */
-    ++query;
+    ++q;
     /* rsl_spec is actually a dummy here. */
-    if (strncmp(query, "rsl: ", 5) != 0)
+    if (strncmp(q, "rsl: ", 5) != 0)
 	return GLOBUS_FAILURE;	/* TODO: Parse_error error code */
-    query += 5;
+    q += 5;
     rc = globus_l_gram_http_field_value_unquote_string(
-	&query, strlen(query), 
-	rsl_spec, rsl_spec_sizep);
+	          &q, 
+		  strlen(q), 
+		  rsl_spec,
+		  rsl_spec_sizep);
     
     return GLOBUS_SUCCESS;	/* TODO: Fill in details. */
 }
@@ -1348,16 +1355,20 @@ globus_i_gram_pack_http_job_request_result_fb(
     int gram_status_code		/* IN */,
     const char *graml_job_contact /* IN */)
 {
-    globus_byte_t *o = reply_start;
-    sprintf(o, "protocol-version: %d\r\n", GLOBUS_GRAM_PROTOCOL_VERSION);
+    char * o = (char *) reply_start;
+    sprintf(o,
+	    "protocol-version: %d\r\n"
+	    "status: %d\r\n",
+	    GLOBUS_GRAM_PROTOCOL_VERSION, 
+	    gram_status_code);
     advance_o();
-    sprintf(o, "status: %d\r\n", gram_status_code);
-    advance_o();
-    if (graml_job_contact) {
+
+    if (graml_job_contact)
+    {
 	sprintf(o, "job-manager-url: %s\r\n", graml_job_contact);
 	advance_o();
     }
-    *reply_sizep = o - reply_start;
+    *reply_sizep = (globus_size_t)(o - (char *)reply_start);
     return GLOBUS_SUCCESS;
 }
 
@@ -1371,22 +1382,24 @@ globus_i_gram_unpack_http_job_request_result_fb(
     int *result_statusp, /* GLOBUS_SUCCESS or a failure */
     char **result_contactp /* NULL if not SUCCESS */)
 {
-    int protocol_version;
-    if(sscanf(query, "protocol-version: %d", &protocol_version) != 1)
+    int     protocol_version;
+    char *  q = (char *) query;
+
+    if(sscanf(q, "protocol-version: %d", &protocol_version) != 1)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error code. */
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
 	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-    query = strchr(query, '\n');	/*  Skip to next line */
-    if (!query)
+    q = strchr(q, '\n');	/*  Skip to next line */
+    if (!q)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error message. */
-    ++query;
-    if (sscanf(query, "status: %d", result_statusp) != 0)
+    ++q;
+    if (sscanf(q, "status: %d", result_statusp) != 0)
 	return GLOBUS_FAILURE;
-    query = strchr(query, '\n');	/*  Skip to next line */
-    if (!query)
+    q = strchr(q, '\n');	/*  Skip to next line */
+    if (!q)
 	return GLOBUS_FAILURE;	/* TODO: Better parse error message. */
-    ++query;
-    if (sscanf(query, "job-manager-url: %s", *result_contactp) != 1)
+    ++q;
+    if (sscanf(q, "job-manager-url: %s", *result_contactp) != 1)
 	return GLOBUS_FAILURE;
     return GLOBUS_SUCCESS;	
 } 
