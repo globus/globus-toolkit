@@ -2067,7 +2067,6 @@ globus_libc_readdir_r(DIR *dirp,
 #   else
     {
 	int errno;
-        int rc=0;
 
 #       if defined(GLOBUS_HAVE_READDIR_R_3)
 	{
@@ -2075,21 +2074,14 @@ globus_libc_readdir_r(DIR *dirp,
 						 + MAXPATHLEN
 						 + 1);
 	    
-	    rc = readdir_r(dirp, entry, result);
-
-            if(rc)
-            {
-                globus_free(entry);
-                *result = NULL;
-            }
-            
-            return rc;
+	    return readdir_r(dirp, entry, result);
 	}
 #       elif defined(GLOBUS_HAVE_READDIR_R_2)
 	{
 	    struct dirent *entry = globus_malloc(sizeof(struct dirent)
 						 + MAXPATHLEN
 						 + 1);
+	    int rc=0;
 
 #           if defined(TARGET_ARCH_SOLARIS)
 	    {
