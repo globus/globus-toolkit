@@ -774,7 +774,7 @@ globus_ftp_control_data_connect_read(
 globus_result_t
 globus_ftp_control_data_set_interface(
     globus_ftp_control_handle_t *               handle,
-    const char *                                interface)
+    const char *                                interface_addr)
 {
     globus_result_t                             res;
     globus_i_ftp_dc_handle_t *                  dc_handle;
@@ -792,12 +792,12 @@ globus_ftp_control_data_set_interface(
                   my_name);
         return globus_error_put(err);
     }
-    if(interface == GLOBUS_NULL)
+    if(interface_addr == GLOBUS_NULL)
     {
         err = globus_io_error_construct_null_parameter(
                   GLOBUS_FTP_CONTROL_MODULE,
                   GLOBUS_NULL,
-                  "interface",
+                  "interface_addr",
                   2,
                   my_name);
         return globus_error_put(err);
@@ -820,10 +820,10 @@ globus_ftp_control_data_set_interface(
     {
         res = globus_io_attr_set_tcp_interface(
                   &dc_handle->io_attr,
-                  interface);
+                  interface_addr);
         if(res == GLOBUS_SUCCESS)
         {
-            dc_handle->interface = strdup(interface);
+            dc_handle->interface_addr = strdup(interface_addr);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
@@ -6676,7 +6676,7 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->nl_io_handle_set = GLOBUS_FALSE;
             dc_handle->nl_ftp_handle_set = GLOBUS_FALSE;
 
-            dc_handle->interface = NULL;
+            dc_handle->interface_addr = NULL;
 
             globus_io_tcpattr_init(&dc_handle->io_attr);
             globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr,
@@ -6851,9 +6851,9 @@ globus_i_ftp_control_data_cc_destroy(
             {
                 globus_netlogger_handle_destroy(&dc_handle->nl_ftp_handle);
             }
-            if(dc_handle->interface)
+            if(dc_handle->interface_addr)
             {
-                free(dc_handle->interface);
+                free(dc_handle->interface_addr);
             }
         }
         else

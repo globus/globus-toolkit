@@ -643,7 +643,7 @@ typedef struct globus_i_ftp_dc_handle_s
     globus_ftp_control_parallelism_t            parallel;
 
     globus_io_attr_t                            io_attr;
-    char *                                      interface;
+    char *                                      interface_addr;
 
     struct globus_i_ftp_dc_transfer_handle_s *  transfer_handle;
     globus_list_t *                             transfer_list;
@@ -768,7 +768,7 @@ globus_ftp_control_set_netlogger(
 globus_result_t
 globus_ftp_control_data_set_interface(
     globus_ftp_control_handle_t *               handle,
-    const char *                                interface);
+    const char *                                interface_addr);
 
 /*****************************************************************
  *  standard layout functions 
