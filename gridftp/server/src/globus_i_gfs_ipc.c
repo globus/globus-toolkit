@@ -1706,6 +1706,7 @@ globus_l_gfs_ipc_handshake_write_cb(
         }
         globus_mutex_unlock(&ipc->mutex);
     }
+    globus_free(buffer);
 
     return;
 
@@ -1714,6 +1715,7 @@ read_error:
 alloc_error:
     globus_l_gfs_ipc_error_close(ipc);
     globus_mutex_unlock(&ipc->mutex);
+    globus_free(buffer);
 }
 
 static
@@ -3271,6 +3273,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
     {
         goto mem_error;
     }
+    globus_free(buffer);
 
     return;
 
