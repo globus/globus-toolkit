@@ -153,8 +153,10 @@ globus_l_xio_server_accept_kickout(
 
             case GLOBUS_XIO_SERVER_STATE_CLOSED:
             case GLOBUS_XIO_SERVER_STATE_CLOSING:
-            case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
                 xio_server->op = NULL;
+                break;
+                
+            case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
                 break;
 
             default:
