@@ -3021,6 +3021,19 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 	pcd->certfile = strdup(cert_file);
     }
 
+    /* Assumed to be proxy or permanent early for
+       error messages that occure during parsing
+       similiar functions are repeated after file is parsed*/ 
+ 
+    if (user_proxy)
+    {
+        pcd->type = CRED_TYPE_PROXY;
+    }
+    else
+    {
+        pcd->type = CRED_TYPE_PERMANENT;
+    }
+
     SSLeay_add_ssl_algorithms();
     pcd->gs_ctx = SSL_CTX_new(SSLv3_method());
     if(pcd->gs_ctx == NULL) {
@@ -3210,7 +3223,7 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 		}
 	    }
 	}
-    }
+    } else pcd->type = CRED_TYPE_PERMANENT;
 
     status = 0;
   err:
