@@ -37,6 +37,7 @@ static char *  LONG_USAGE = \
 "    -verify                   Verifies certificate to make proxy for\n" \
 "    -pwstdin                  Allows passphrase from stdin\n" \
 "    -limited                  Creates a limited globus proxy\n" \
+"    -independent              Creates a independent globus proxy\n" \
 "    -old                      Creates a legacy globus proxy\n" \
 "    -valid <h:m>              Proxy is valid for h hours and m \n" \
 "                              minutes (default:12:00)\n" \
@@ -308,6 +309,10 @@ main(
             {
                 cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
             }
+        }
+        else if(strcmp(argp, "-independent") == 0)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
         }
         else if(strcmp(argp, "-old") == 0)
         {

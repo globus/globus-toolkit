@@ -222,6 +222,10 @@ globus_result_t globus_gsi_cred_get_issuer_name(
     globus_gsi_cred_handle_t            handle,
     char **                             issuer_name);
 
+globus_result_t globus_gsi_cred_get_identity_name(
+    globus_gsi_cred_handle_t            handle,
+    char **                             identity_name);
+
 globus_result_t globus_gsi_cred_set_cert(
     globus_gsi_cred_handle_t            handle,
     X509 *                              cert);

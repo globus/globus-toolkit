@@ -35,6 +35,7 @@ static char *  LONG_USAGE = \
 "    [printoptions]\n" \
 "        -subject              Distinguished name (DN) of subject\n" \
 "        -issuer               DN of issuer (certificate signer)\n" \
+"        -identity             DN of the identity represented by the proxy\n" \
 "        -type                 Type of proxy (full or limited)\n" \
 "        -timeleft             Time (in seconds) until proxy expires\n" \
 "        -strength             Key size (in bits)\n" \
@@ -133,6 +134,7 @@ main(
     globus_gsi_statcheck_t              status;
     char *                              subject;
     char *                              issuer;
+    char *                              identity;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     char *                              cert_type_name;
     time_t                              lifetime;
@@ -290,6 +292,7 @@ main(
                 bits = atoi(argv[++arg_index]);
         }
         else if ((strcmp(argp, "-subject") == 0)  ||
+                 (strcmp(argp, "-identity") == 0)  ||
                  (strcmp(argp, "-issuer") == 0)   ||
                  (strcmp(argp, "-strength") == 0) ||
                  (strcmp(argp, "-type") == 0)     ||
@@ -396,8 +399,28 @@ main(
     }
 
     /* issuer */
-    issuer = X509_NAME_oneline(X509_get_issuer_name(proxy_cert), NULL, 0);
 
+    result = globus_gsi_cred_get_issuer_name(proxy_cred, &issuer);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(
+            stderr,
+            "\n\nERROR: Couldn't get a valid issuer "
+            "name from the proxy credential.\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+    /* issuer */
+
+    result = globus_gsi_cred_get_identity_name(proxy_cred, &identity);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(
+            stderr,
+            "\n\nERROR: Couldn't get a valid identity "
+            "name from the proxy credential.\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+    
     /* validity: set time_diff to time to expiration (in seconds) */
     result = globus_gsi_cred_get_lifetime(proxy_cred,
                                           &lifetime);
@@ -475,6 +498,10 @@ main(
 	{
 	    printf("%s\n", issuer);
 	}
+	else if (strcmp(argp, "-identity") == 0)
+	{
+	    printf("%s\n", identity);
+	}
 	else if (strcmp(argp, "-timeleft") == 0)
 	{
 	    printf("%ld\n", (long) ((lifetime >= 0) ? lifetime : -1));
@@ -494,13 +521,15 @@ main(
         else if (strcmp(argp, "-all") == 0)
         {
             printf("subject  : %s\n" 
-                   "issuer   : %s\n" 
+                   "issuer   : %s\n"
+                   "identity : %s\n" 
                    "type     : %s\n" 
                    "strength : %d bits\n"
                    "path     : %s\n"
 		   "timeleft : ",
 		   subject,
 		   issuer,
+                   identity,
 		   cert_type_name,
 		   strength,
                    proxy_filename);
@@ -534,12 +563,14 @@ main(
     if (argc == 1 || (argc == 2 && strcmp(argv[1], "-debug") == 0))
     {
         printf("subject  : %s\n" 
-               "issuer   : %s\n" 
+               "issuer   : %s\n"
+               "identity : %s\n" 
                "type     : %s\n" 
                "strength : %d bits\n"
                "timeleft : ",
                subject,
                issuer,
+               identity,
                cert_type_name,
                strength);
         
@@ -558,6 +589,7 @@ main(
 
     free(subject);
     free(issuer);
+    free(identity);
 
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
 
