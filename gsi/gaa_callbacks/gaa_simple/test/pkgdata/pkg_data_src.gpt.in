@@ -48,6 +48,11 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gaa_simple">
+                <Version>
+                    <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
          </Source_Dependencies>
 
         <Build_Environment>
