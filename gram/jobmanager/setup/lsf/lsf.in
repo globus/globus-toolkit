@@ -267,7 +267,10 @@ EOF
 	$job_id =~ m/<([^>]*)>/;
 	$job_id = $1;
 
-	return {JOB_ID => $job_id};
+	return {
+	           JOB_ID => $job_id,
+		   JOB_STATE => Globus::GRAM::JobState::PENDING
+		};
     }
     system("globus-gass-cache -cleanup-url $tag/lsf_job_script.$$");
 

@@ -10,9 +10,9 @@
 use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
+use Globus::GRAM::StdioMerger;
 use Globus::Core::Paths;
 
-use File::stat;
 use IO::Pipe;
 use Fcntl;
 use Config;
@@ -28,6 +28,29 @@ BEGIN
     $mpirun = '@MPIRUN@';
 }
 
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = $class->SUPER::new(@_);
+    my $description = $self->{JobDescription};
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $stdout = $description->stdout();
+    my $stderr = $description->stderr();
+
+    if($description->jobtype() eq 'multiple' && $description->count > 1)
+    {
+	$self->{STDIO_MERGER} =
+	    new Globus::GRAM::StdioMerger($tag, $stdout, $stderr);
+    }
+    else
+    {
+	$self->{STDIO_MERGER} = 0;
+    }
+
+    return $self;
+}
+
 sub submit
 {
     my $self = shift;
@@ -37,12 +60,6 @@ sub submit
     my $count;
     my $multi_output = 0;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my $format = "x-gass-cache://$tag/dev/std\%s/\%03d";
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $merge_urlname = "x-gass-cache://$tag/dev/stdio_merge";
-    my $merge_file = undef;
-    my $merge_filename;
     my $pipe;
     my @cmdline;
     my @environment;
@@ -125,24 +142,6 @@ sub submit
 	return Globus::GRAM::Error::STDIN_NOT_FOUND();
     }
 
-    if($multi_output)
-    {
-	if($description->stdout() eq '/dev/null' &&
-           $description->stderr() eq '/dev/null')
-	{
-            # Don't bother merging to /dev/null
-	    $multi_output = 0;
-	}
-	else
-	{
-	    system("$cache_pgm -add -n $merge_urlname -t $tag file:/dev/null");
-
-	    chomp($merge_filename = `$cache_pgm -query $merge_urlname`);
-
-	    $merge_file = new IO::File(">$merge_filename");
-	}
-    }
-
     push(@cmdline, $description->executable());
 
     @arguments = $description->arguments();
@@ -162,18 +161,8 @@ sub submit
     {
 	if($multi_output)
 	{
-	    my $out_name = sprintf($format, 'out', $i);
-	    my $err_name = sprintf($format, 'err', $i);
-
-	    system("$cache_pgm -add -n $out_name -t $tag file:/dev/null");
-	    system("$cache_pgm -add -n $err_name -t $tag file:/dev/null");
-
-	    chomp($job_stdout = `$cache_pgm -query $out_name`);
-	    chomp($job_stderr = `$cache_pgm -query $err_name`);
-
-	    $merge_file->print("stdout \"$job_stdout\" 0\n".
-	                       "stderr \"$job_stderr\" 0\n");
-
+	    $job_stdout = $self->{STDIO_MERGER}->add_file('out');
+	    $job_stderr = $self->{STDIO_MERGER}->add_file('err');
 	}
 	else
 	{
@@ -251,9 +240,10 @@ sub poll
     {
 	$state = Globus::GRAM::JobState::DONE;
     }
-
-    $self->_merge_multi_output($state);
-
+    if($self->{STDIO_MERGER})
+    {
+	$self->{STDIO_MERGER}->poll($state == Globus::GRAM::JobState::DONE);
+    }
 
     return { JOB_STATE => $state };
 }
@@ -272,109 +262,6 @@ sub cancel
     kill(SIGKILL, split(/,/, $description->jobid()));
 
     return { JOB_STATE => Globus::GRAM::JobState::FAILED };
-}
-
-sub _merge_multi_output
-{
-    my $self = shift;
-    my $state = shift;
-    my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $merge_urlname = "x-gass-cache://$tag/dev/stdio_merge";
-    my $merge_filename = `$cache_pgm -query $merge_urlname`;
-    my $merge_file;
-    my $tmp_merge_file;
-    my $stdout;
-    my $stderr;
-    my ($type, $local_filename, $offset, $stat);
-    my $tmpfile;
-
-    chomp($merge_filename);
-    if($merge_filename ne '')
-    {
-	$stdout = new IO::File('>>'.$description->stdout());
-	$stderr = new IO::File('>>'.$description->stderr());
-
-	$self->log("mergine stdio");
-	$merge_file = new IO::File("<$merge_filename");
-	$tmp_merge_file = new IO::File(">$merge_filename.tmp");
-
-	while(<$merge_file>)
-	{
-	    m/^(stdout|stderr)\s+"([^"]+)"\s+([0-9]+)$/;
-
-	    ($type, $local_filename, $offset) = ($1, $2, $3);
-
-	    $self->log("mergine data from $local_filename");
-
-	    $stat = File::stat::stat($local_filename) or next;
-	    $tmpfile = new IO::File("<$local_filename");
-
-            # We want to merge up to the last newline... but if
-	    # we're in the DONE state, then we want to poll until
-	    # EOF
-            do
-	    {
-		if($stat->size > $offset)
-		{
-		    my($buffer, $buffersize, $writable);
-		    $self->log("$local_filename has grown");
-
-		    # File has grown... merge in new data
-		    $buffersize = $stat->size - $offset;
-		    $buffersize = 4096 if $buffersize > 4096;
-
-		    $self->log("going to process $buffersize bytes");
-
-		    $tmpfile->seek($offset, SEEK_SET);
-		    $tmpfile->read($buffer, $buffersize);
-
-		    $writable = $buffer;
-
-		    # we want to do line buffering, so we'll just
-		    # strip off all data after the last newline
-		    if($state != Globus::GRAM::JobState::DONE)
-		    {
-			my (@writable);
-
-			@writable = split(//, $writable);
-			while (@writable)
-			{
-			    $_ = pop(@writable);
-			    if($_ eq "\n")
-			    {
-				push(@writable, "\n");
-				last;
-			    }
-			}
-			$writable = join('', @writable);
-		    }
-		    $self->log("after truncating to last newline, ".
-		               "going to process " . length($writable) .
-			       " bytes");
-		    $offset += length($writable);
-
-		    if($type eq 'stdout')
-		    {
-			$stdout->print($writable);
-		    }
-		    else
-		    {
-			$stderr->print($writable);
-		    }
-		}
-	    }
-	    while($state == Globus::GRAM::JobState::DONE &&
-		  $offset < $stat->size);
-	    $tmpfile->close();
-	    $tmp_merge_file->print("$type \"$local_filename\" $offset\n");
-	}
-
-	$tmp_merge_file->close();
-	$merge_file->close();
-	rename("$merge_filename.tmp", $merge_filename);
-    }
 }
 
 1;
