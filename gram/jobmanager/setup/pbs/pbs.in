@@ -233,7 +233,7 @@ EOF
 	    $library_vars{$tuple->[0]} = 1;
 	}
 
-	push(@new_env, $tuple->[0] . "=" . $tuple->[1]);
+        push(@new_env, $tuple->[0] . "=" . '"' . $tuple->[1] . '"');
 
 	$tuple->[0] =~ s/\\/\\\\/g;
 	$tuple->[0] =~ s/\$/\\\$/g;
@@ -245,7 +245,7 @@ EOF
 	$tuple->[1] =~ s/"/\\\"/g;
 	$tuple->[1] =~ s/`/\\\`/g;
 
-	$rsh_env .= $tuple->[0] . "=" . $tuple->[1] . ";\n"
+        $rsh_env .= $tuple->[0] . "=" . '"' . $tuple->[1] . '"' . ";\n"
 	         .  "export " . $tuple->[0] . ";\n";
     }
     foreach (keys %library_vars)
