@@ -955,6 +955,10 @@ sub cvs_checkout_package
     my $tree = package_tree($package);
     my $subdir = $package_list{$package}[1];
 
+    if (! defined($tree)) {
+        die "ERROR: There was a dependency on package $package which I know nothing about.\n";
+    }
+
     print "Checking out $subdir from $tree.\n";
     cvs_checkout_subdir($tree, $subdir);
 }
