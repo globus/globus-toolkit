@@ -1124,8 +1124,8 @@ globus_i_gfs_data_request_active(
         }
         else
         {
-            layout.mode = GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
-            layout.round_robin.block_size = data_info->blocksize;
+            layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
+            layout.partitioned.size = data_info->blocksize;
 
             result = globus_ftp_control_local_spor(
                 &handle->data_channel, addresses, data_info->cs_count);
@@ -2091,25 +2091,29 @@ globus_gridftp_server_update_bytes_written(
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
 
-    op->recvd_bytes += length;
-    globus_range_list_insert(op->recvd_ranges, offset, length);
+    globus_mutex_lock(&op->lock);
+    {
+        op->recvd_bytes += length;
+        globus_range_list_insert(op->recvd_ranges, offset, length);
+    }
+    globus_mutex_unlock(&op->lock);
 
     return;
 }
 
 void
 globus_gridftp_server_get_optimal_concurrency(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     int *                               count)
 {
     GlobusGFSName(globus_gridftp_server_get_optimal_concurrency);
     
-    *count = op->data_handle->attr.nstreams * 2;
+    *count = op->data_handle->attr.nstreams * op->stripe_count * 2;
 }
 
 void
 globus_gridftp_server_get_block_size(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_size_t *                     block_size)
 {
     GlobusGFSName(globus_gridftp_server_get_block_size);
@@ -2260,10 +2264,19 @@ globus_l_gfs_data_transfer_event_kickout(
         globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
          
     event_reply->id = bounce_info->op->id;
-    event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
-    event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
     event_reply->node_ndx = bounce_info->op->node_ndx;
-                
+    globus_mutex_lock(&bounce_info->op->lock);
+    {
+        event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
+        bounce_info->op->recvd_bytes = 0;
+    
+        globus_range_list_merge(
+            &event_reply->recvd_ranges, bounce_info->op->recvd_ranges, NULL);
+        globus_range_list_destroy(bounce_info->op->recvd_ranges);
+        globus_range_list_init(&bounce_info->op->recvd_ranges);
+    }
+    globus_mutex_unlock(&bounce_info->op->lock);
+    
     switch(bounce_info->event_type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
@@ -2289,6 +2302,7 @@ globus_l_gfs_data_transfer_event_kickout(
             bounce_info->op->ipc_handle,
             event_reply);
     }
+    
         
     globus_free(bounce_info);       
 }

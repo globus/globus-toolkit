@@ -47,6 +47,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, NULL},
  {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, NULL},
  {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, (void *) 1},
+ {"blocksize", "blocksize", NULL, "-blocksize", "-bs", GLOBUS_L_GFS_CONFIG_INT, (void *) (256 * 1024)},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, NULL},
  {"dsi", "storage_type", NULL, "-dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, "file"},
  {"version", NULL, NULL, "-version", "-v", GLOBUS_L_GFS_CONFIG_BOOL, 0},
