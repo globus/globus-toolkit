@@ -1720,7 +1720,7 @@ globus_ftp_client_move(
 
 
     rc = globus_url_parse(dest_url,
-			   &url);
+                          &url);
     
     if(rc != GLOBUS_SUCCESS)
     {
@@ -1743,11 +1743,13 @@ globus_ftp_client_move(
 	    "[%s] Destination URL does not contain a path compenent at %s\n",
 	    GLOBUS_FTP_CLIENT_MODULE->module_name,
 	    myname);
-
+        globus_url_destroy(&url);
 	goto free_urls_exit;
-
     }
 
+    globus_url_destroy(&url);
+
+    
     /* Obtain a connection to the source FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
 					  source_url,
@@ -1830,7 +1832,6 @@ source_problem_exit:
 	globus_i_ftp_client_target_release(handle,
 					   handle->source);
     }
-
 free_urls_exit:
     globus_libc_free(handle->dest_url);
 free_source_url_exit:

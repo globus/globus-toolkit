@@ -2089,21 +2089,32 @@ redo:
 	break;
 	
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO:
-
+    {
+        globus_url_t                    dest_url; 
+        
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
 	
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
+        result = globus_url_parse(client_handle->dest_url,
+                                  &dest_url);
+
+        if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+        
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    &target->url,
 	    target->mask,
 	    "RNTO %s" CRLF,
-	    client_handle->dest->url.url_path);
+	    dest_url.url_path);
 	
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
+            globus_url_destroy(&dest_url);
 	    break;
 	}
 	
@@ -2117,14 +2128,17 @@ redo:
 		    "RNTO %s" CRLF,
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
-		    client_handle->dest->url.url_path);
+		    dest_url.url_path);
 	}
-	
+
+        globus_url_destroy(&dest_url);
+        
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
+    }
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
