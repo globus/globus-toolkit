@@ -36,8 +36,8 @@ globus_gridftp_server_control_get_buffer_size(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_recv_bs = op->server_handle->receive_buf;
-        *out_send_bs = op->server_handle->send_buf;
+        *out_recv_bs = op->server_handle->opts.receive_buf;
+        *out_send_bs = op->server_handle->opts.send_buf;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -55,7 +55,7 @@ globus_gridftp_server_control_get_parallelism(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_parallelism = op->server_handle->parallelism;
+        *out_parallelism = op->server_handle->opts.parallelism;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 

@@ -661,6 +661,13 @@ globus_gridftp_server_control_restart_get(
     globus_off_t *                          offset,
     globus_off_t *                          length);
 
+globus_result_t
+globus_gridftp_server_control_update_bytes(
+    globus_gridftp_server_control_op_t      op,
+    int                                     stripe_ndx,
+    globus_off_t                            offset,
+    globus_off_t                            length);
+
 extern globus_module_descriptor_t      globus_i_gsc_module;
 
 #define GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE (&globus_i_gsc_module)

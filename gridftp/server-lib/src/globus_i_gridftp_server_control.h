@@ -198,6 +198,7 @@ typedef void
 
 typedef struct globus_i_gsc_data_s
 {
+    int                                     stripe_count;
     void *                                  user_handle;
     globus_gridftp_server_control_data_dir_t dir;
 } globus_i_gsc_data_t;
@@ -216,6 +217,51 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_NLST,
     GLOBUS_L_GSC_OP_TYPE_MLSD
 } globus_i_gsc_op_type_t;
+
+typedef struct globus_i_gsc_event_data_s
+{
+    globus_callback_handle_t                periodic_handle;
+    int                                     perf_frequency;
+    int                                     restart_frequency;
+    int                                     stripe_count;
+    globus_off_t *                          stripe_total_bytes;
+    globus_bool_t                           perf_running;
+} globus_i_gsc_event_data_t;
+
+typedef struct globus_i_gsc_handle_opts_s
+{
+    char                                    mlsx_fact_str[8];
+    int                                     parallelism;
+    globus_size_t                           send_buf;
+    globus_size_t                           receive_buf;
+    globus_bool_t                           refresh;
+    globus_size_t                           packet_size;
+    globus_bool_t                           delayed_passive;
+    int                                     port_max;
+    int                                     pasv_max;
+    globus_bool_t                           passive_only;
+    int                                     dc_parsing_alg;
+    int                                     perf_frequency;
+    int                                     restart_frequency;
+    globus_gridftp_server_control_network_protocol_t     port_prt;
+    globus_gridftp_server_control_network_protocol_t     pasv_prt;
+} globus_i_gsc_handle_opts_t;
+
+typedef struct globus_i_gsc_user_funcs_s
+{
+    globus_hashtable_t                                  send_cb_table;
+    globus_hashtable_t                                  recv_cb_table;
+    globus_gridftp_server_control_transfer_cb_t         default_send_cb;
+    globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
+    globus_gridftp_server_control_auth_cb_t             auth_cb;
+    globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
+    globus_gridftp_server_control_active_connect_cb_t   active_cb;
+    globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
+    globus_gridftp_server_control_list_cb_t             list_cb;
+    globus_gridftp_server_control_resource_cb_t         resource_cb;
+    globus_gridftp_server_control_cb_t                  done_cb;
+    globus_gridftp_server_control_abort_cb_t            abort_cb;
+} globus_i_gsc_user_funcs_t;
 
 typedef struct globus_i_gsc_restart_s
 {
@@ -263,8 +309,6 @@ typedef struct globus_i_gsc_op_s
     globus_i_gsc_port_cb_t                  port_cb;
     globus_i_gsc_transfer_cb_t              transfer_cb;
 
-    void *                                  old_data_obj;
-
     char *                                  command;
 
     /* stuff for transfer */
@@ -274,6 +318,7 @@ typedef struct globus_i_gsc_op_s
     globus_bool_t                           transfer_started;
 
     globus_i_gsc_restart_t *                restart_marker;
+    globus_i_gsc_event_data_t               event;
 
     void *                                  user_arg;
 } globus_i_gsc_op_t;
@@ -281,22 +326,13 @@ typedef struct globus_i_gsc_op_s
 typedef struct globus_i_gsc_attr_s
 {
     int                                     version_ctl;
-    globus_hashtable_t                      send_cb_table;
-    globus_hashtable_t                      recv_cb_table;
-    globus_gridftp_server_control_resource_cb_t resource_cb;
     char *                                  modes;
     char *                                  types;
     char *                                  base_dir;
     char *                                  post_auth_banner;
     char *                                  pre_auth_banner;
 
-    globus_gridftp_server_control_auth_cb_t auth_cb;
-    globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
-    globus_gridftp_server_control_active_connect_cb_t   active_cb;
-    globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
-    globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
-    globus_gridftp_server_control_transfer_cb_t         default_send_cb;
-    globus_gridftp_server_control_list_cb_t             list_cb;
+    globus_i_gsc_user_funcs_t               funcs;
 } globus_i_gsc_attr_t;
 
 
@@ -318,14 +354,6 @@ typedef enum globus_l_gsc_state_e
     GLOBUS_L_GSC_STATE_STOPPING,
     GLOBUS_L_GSC_STATE_STOPPED,
 } globus_l_gsc_state_t;
-
-typedef struct globus_i_gsc_event_data_s
-{
-    int                                     perf_frequency;
-    int                                     restart_frequency;
-    int                                     stripe_count;
-    globus_off_t *                          stripe_total_bytes;
-} globus_i_gsc_event_data_t;
 
 /* the server handle */
 typedef struct globus_i_gsc_server_handle_s
@@ -359,50 +387,26 @@ typedef struct globus_i_gsc_server_handle_s
     char                                    mode;
     char *                                  modes;
     char *                                  types;
-    int                                     parallelism;
-    globus_size_t                           send_buf;
-    globus_size_t                           receive_buf;
-    globus_bool_t                           refresh;
-    globus_size_t                           packet_size;
-    globus_bool_t                           delayed_passive;
-    int                                     pasv_prt;
-    int                                     pasv_max;
-    globus_bool_t                           passive_only;
-    int                                     dc_parsing_alg;
-    globus_gridftp_server_control_network_protocol_t     port_prt;
-    globus_gridftp_server_control_network_protocol_t     port_max;
+    int                                     stripe_count;
+
+    /* opts state */
+    globus_i_gsc_handle_opts_t              opts;
 
     /*
      *  user function pointers
      */
     void *                                  user_arg;
+    void *                                  abort_arg;
 
     globus_i_gsc_restart_t *                restart_marker;
 
-    /* user functions */
-    globus_hashtable_t                                  send_cb_table;
-    globus_hashtable_t                                  recv_cb_table;
-    globus_gridftp_server_control_transfer_cb_t         default_send_cb;
-    globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
-    globus_gridftp_server_control_auth_cb_t             auth_cb;
-    globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
-    globus_gridftp_server_control_active_connect_cb_t   active_cb;
-    globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
-    globus_gridftp_server_control_list_cb_t             list_cb;
-    globus_gridftp_server_control_resource_cb_t         resource_cb;
-    globus_gridftp_server_control_cb_t                  done_cb;
-    globus_gridftp_server_control_abort_cb_t            abort_cb;
-    void *                                              abort_arg;
-    
+    globus_i_gsc_user_funcs_t               funcs;
+
     globus_i_gsc_data_t *                   data_object;
-    globus_fifo_t                           data_q;
 
     globus_result_t                         cached_res;
     globus_list_t *                         feature_list;
 
-    globus_i_gsc_event_data_t               event;
-
-    char                                    mlsx_fact_str[8];
     /* 
      *  read.c members 
      */

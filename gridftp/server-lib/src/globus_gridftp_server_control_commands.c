@@ -117,12 +117,12 @@ globus_l_gsc_cmd_trev(
 
     if(strcmp(event_name, "RESTART") == 0)
     {
-        op->server_handle->event.restart_frequency = frequency;
+        op->server_handle->opts.restart_frequency = frequency;
         globus_gsc_959_finished_command(op, "200 Command Successful.\r\n");
     }
     else if(strcmp(event_name, "PERF") == 0)
     {
-        op->server_handle->event.perf_frequency = frequency;
+        op->server_handle->opts.perf_frequency = frequency;
         globus_gsc_959_finished_command(op, "200 Command Successful.\r\n");
     }
     else
@@ -516,7 +516,7 @@ globus_l_gsc_cmd_stat_cb(
         else
         {
             tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle->mlsx_fact_str, op->server_handle->uid, 
+                op->server_handle->opts.mlsx_fact_str, op->server_handle->uid, 
                 stat_info);
         }
         msg =  globus_common_create_string(
@@ -610,7 +610,7 @@ globus_l_gsc_cmd_size_cb(
     }
     else
     {
-        msg = globus_common_create_string("213 %d.\r\n", stat_info->size);
+        msg = globus_common_create_string("213 %d\r\n", stat_info->size);
     }
     if(msg == NULL)
     {
@@ -940,7 +940,10 @@ globus_l_gsc_cmd_opts(
     int                                     tmp_i;
     char *                                  msg;
     char *                                  tmp_ptr;
+    globus_i_gsc_handle_opts_t *            opts;
     GlobusGridFTPServerName(globus_l_gsc_cmd_opts);
+
+    opts = &op->server_handle->opts;
 
     for(tmp_ptr = cmd_a[1]; *tmp_ptr != '\0'; tmp_ptr++)
     {
@@ -956,15 +959,15 @@ globus_l_gsc_cmd_opts(
         msg = "200 OPTS Command Successful.\r\n";
         if(sscanf(cmd_a[2], "Parallelism=%d,%*d,%*d;", &tmp_i)==1)
         {
-            op->server_handle->parallelism = tmp_i;
+            opts->parallelism = tmp_i;
         }
         else if(sscanf(cmd_a[2], "PacketSize=%d;", &tmp_i) == 1)
         {
-            op->server_handle->packet_size = tmp_i;
+            opts->packet_size = tmp_i;
         }
         else if(sscanf(cmd_a[2], "WindowSize=%d;", &tmp_i) == 1)
         {
-            op->server_handle->send_buf = tmp_i;
+            opts->send_buf = tmp_i;
         }
         else
         {
@@ -977,14 +980,14 @@ globus_l_gsc_cmd_opts(
         msg = "200 OPTS Command Successful.\r\n";
         if(sscanf(cmd_a[2], "AllowDelayed=%d", &tmp_i) == 1)
         {
-            op->server_handle->delayed_passive = tmp_i;
+            opts->delayed_passive = tmp_i;
         }
         else if(sscanf(cmd_a[2], "DefaultProto=%d", &tmp_i) == 1)
         {
             if(tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 ||
                 tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
             {
-                op->server_handle->pasv_prt = tmp_i;
+                opts->pasv_prt = tmp_i;
             }
             else
             {
@@ -994,13 +997,13 @@ globus_l_gsc_cmd_opts(
         }
         else if(sscanf(cmd_a[2], "DefaultStripes=%d", &tmp_i) == 1)
         {
-            op->server_handle->pasv_max = tmp_i;
+            opts->pasv_max = tmp_i;
         }
         else if(sscanf(cmd_a[2], "ParsingAlgrythm=%d", &tmp_i) == 1)
         {
             if(tmp_i == 0 || tmp_i == 1)
             {
-                op->server_handle->dc_parsing_alg = tmp_i;
+                opts->dc_parsing_alg = tmp_i;
             }
             else
             {
@@ -1021,7 +1024,7 @@ globus_l_gsc_cmd_opts(
             if(tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 ||
                 tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
             {
-                op->server_handle->port_prt = tmp_i;
+                opts->port_prt = tmp_i;
             }
             else
             {
@@ -1031,13 +1034,13 @@ globus_l_gsc_cmd_opts(
         }
         else if(sscanf(cmd_a[2], "DefaultStripes=%d", &tmp_i) == 1)
         {
-            op->server_handle->port_max = tmp_i;
+            opts->port_max = tmp_i;
         }
         else if(sscanf(cmd_a[2], "ParsingAlgrythm=%d", &tmp_i) == 1)
         {
             if(tmp_i == 0 || tmp_i == 1)
             {
-                op->server_handle->dc_parsing_alg = tmp_i;
+                opts->dc_parsing_alg = tmp_i;
             }
             else
             {
@@ -1052,7 +1055,7 @@ globus_l_gsc_cmd_opts(
     else if(strcmp("MLST", cmd_a[1]) == 0 || 
         strcmp("MLSD", cmd_a[1]) == 0)
     {
-        tmp_ptr = op->server_handle->mlsx_fact_str;
+        tmp_ptr = opts->mlsx_fact_str;
         if(strstr(cmd_a[2], "type"))
         {
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_TYPE;
@@ -1127,8 +1130,8 @@ globus_l_gsc_cmd_sbuf(
         }
         else
         {
-            op->server_handle->send_buf = tmp_i;
-            op->server_handle->receive_buf = tmp_i;
+            op->server_handle->opts.send_buf = tmp_i;
+            op->server_handle->opts.receive_buf = tmp_i;
 
             globus_gsc_959_finished_command(
                 op, "200 SBUF Command Successful.\r\n");
@@ -1169,22 +1172,22 @@ globus_l_gsc_cmd_site(
                     strcmp(cmd_a[1], "SBUF") == 0)
             {
                 msg = globus_libc_strdup("200 Site Command Successful.\r\n");
-                op->server_handle->send_buf = tmp_i;
-                op->server_handle->receive_buf = tmp_i;
+                op->server_handle->opts.send_buf = tmp_i;
+                op->server_handle->opts.receive_buf = tmp_i;
             }
             else if(strcmp(cmd_a[1], "RETRBUFSIZE") == 0 ||
                     strcmp(cmd_a[1], "RBUFSZ") == 0 ||
                     strcmp(cmd_a[1], "RBUFSIZ") == 0)
             {
                 msg = globus_libc_strdup("200 Site Command Successful.\r\n");
-                op->server_handle->send_buf = tmp_i;
+                op->server_handle->opts.send_buf = tmp_i;
             }
             else if(strcmp(cmd_a[1], "STORBUFSIZE") == 0 ||
                     strcmp(cmd_a[1], "SBUFSZ") == 0 ||
                     strcmp(cmd_a[1], "SBUFSIZ") == 0)
             {
                 msg = globus_libc_strdup("200 Site Command Successful.\r\n");
-                op->server_handle->receive_buf = tmp_i;
+                op->server_handle->opts.receive_buf = tmp_i;
             }
             break;
 
@@ -1232,7 +1235,7 @@ globus_l_gsc_cmd_rest(
     if(strchr(cmd_a[1], '-') == NULL)
     {
         sc = sscanf(cmd_a[1], "%"GLOBUS_OFF_T_FORMAT, &length);
-        if(sc != 0)
+        if(sc != 1)
         {
             globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
             globus_i_gsc_restart_destroy(restart_marker);
@@ -1481,14 +1484,14 @@ globus_l_gsc_cmd_pasv(
     wrapper = (globus_l_gsc_cmd_wrapper_t *)
         globus_calloc(sizeof(globus_l_gsc_cmd_wrapper_t), 1);
 
-    dp = op->server_handle->delayed_passive;
-    reply_flag = op->server_handle->delayed_passive;
+    dp = op->server_handle->opts.delayed_passive;
+    reply_flag = op->server_handle->opts.delayed_passive;
 
     if(strcmp(cmd_a[0], "PASV") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->dc_parsing_alg;
-        wrapper->max = op->server_handle->pasv_max;
-        wrapper->prt = op->server_handle->pasv_prt;
+        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
+        wrapper->max = op->server_handle->opts.pasv_max;
+        wrapper->prt = op->server_handle->opts.pasv_prt;
         msg = "227 Passive delayed.\r\n";
         wrapper->cmd_ndx = 1;
         wrapper->reply_code = 227;
@@ -1500,29 +1503,29 @@ globus_l_gsc_cmd_pasv(
         if(strstr(cmd_a[1], "ALL") != NULL)
         {
             reply_flag = GLOBUS_TRUE;
-            op->server_handle->passive_only = GLOBUS_TRUE;
+            op->server_handle->opts.passive_only = GLOBUS_TRUE;
             msg = "229 EPSV ALL Successful.\r\n";
-            dp = op->server_handle->delayed_passive;
+            dp = op->server_handle->opts.delayed_passive;
         }
         else
         {
             sc = sscanf(cmd_a[1], "%d", (int*)&wrapper->prt);
             if(sc != 1)
             {
-                dp = op->server_handle->delayed_passive;
+                dp = op->server_handle->opts.delayed_passive;
                 reply_flag = GLOBUS_TRUE;
                 msg = "501 Invalid network command.\r\n";
             }
             else if(wrapper->prt != GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4
                 && wrapper->prt != GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
             {
-                dp = op->server_handle->delayed_passive;
+                dp = op->server_handle->opts.delayed_passive;
                 reply_flag = GLOBUS_TRUE;
                 msg = "501 Invalid protocol.\r\n";
             }
             else
             {
-                wrapper->max = op->server_handle->pasv_max;
+                wrapper->max = op->server_handle->opts.pasv_max;
             }
         }
         wrapper->reply_code = 229;
@@ -1530,10 +1533,10 @@ globus_l_gsc_cmd_pasv(
     }
     else if(strcmp(cmd_a[0], "SPAS") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->dc_parsing_alg;
+        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
         msg = "229 Passive delayed.\r\n";
         wrapper->max = -1;
-        wrapper->prt = op->server_handle->pasv_prt;
+        wrapper->prt = op->server_handle->opts.pasv_prt;
         wrapper->cmd_ndx = 3;
         wrapper->reply_code = 229;
     }
@@ -1560,7 +1563,7 @@ globus_l_gsc_cmd_pasv(
     }
     else
     {
-        op->server_handle->delayed_passive = dp;
+        op->server_handle->opts.delayed_passive = dp;
         globus_gsc_959_finished_command(op, msg);
         globus_free(wrapper);
     }
@@ -1584,7 +1587,7 @@ globus_l_gsc_cmd_port_cb(
     else
     {
         /* if port is successful we know that we are not delaying the pasv */
-        op->server_handle->delayed_passive = GLOBUS_FALSE;
+        op->server_handle->opts.delayed_passive = GLOBUS_FALSE;
         globus_gsc_959_finished_command(
             op, "200 PORT Command successful.\r\n");
     }
@@ -1628,21 +1631,21 @@ globus_l_gsc_cmd_port(
 
     if(strcmp(cmd_a[0], "PORT") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->dc_parsing_alg;
-        wrapper->prt = op->server_handle->port_prt;
-        wrapper->max = op->server_handle->port_max;
+        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
+        wrapper->prt = op->server_handle->opts.port_prt;
+        wrapper->max = op->server_handle->opts.port_max;
     }
     else if(strcmp(cmd_a[0], "SPOR") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->dc_parsing_alg;
-        wrapper->prt = op->server_handle->port_prt;
+        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
+        wrapper->prt = op->server_handle->opts.port_prt;
         wrapper->max = -1;
     }
     else if(strcmp(cmd_a[0], "EPRT") == 0)
     {
         wrapper->dc_parsing_alg = 1;
-        wrapper->prt = op->server_handle->port_prt;
-        wrapper->max = op->server_handle->port_max;
+        wrapper->prt = op->server_handle->opts.port_prt;
+        wrapper->max = op->server_handle->opts.port_max;
     }
     else
     {
@@ -2148,7 +2151,7 @@ globus_l_gsc_cmd_stor_retr(
     wrapper->path = path;
     wrapper->reply_code = 129;
     /* if in delayed passive tell library to go passive */
-    if(op->server_handle->delayed_passive)
+    if(op->server_handle->opts.delayed_passive)
     {
         res = globus_i_gsc_passive(
             wrapper->op,
