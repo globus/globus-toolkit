@@ -901,6 +901,17 @@ typedef struct gss_buffer_set_desc_struct {
                gss_buffer_set_t
               );
 
+   GSS_MAKE_TYPEDEF
+   OM_uint32
+   GSS_CALLCONV GSS_FUNC(gss_set_sec_context_option)
+    (OM_uint32 *,                       /* minor_status */
+     gss_ctx_id_t *,                    /* context_handle */
+     const gss_OID,                     /* option */
+     const gss_buffer_t                 /* value */
+    );
+
+extern const gss_OID_desc * const GSS_DISALLOW_ENCRYPTION;
+extern const gss_OID_desc * const GSS_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION;
 
 #endif /* GSI_EXTENDED_GSSAPI */
 

@@ -40,6 +40,10 @@ CVS Information:
                                Define constants
 **********************************************************************/
 
+#define GSS_I_DISALLOW_ENCRYPTION 1
+#define GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION 2
+
+
 #define GSS_C_QOP_GLOBUS_GSSAPI_SSLEAY_BIG 1
 /* 
  * Use the SSLeay error facility with the ERR_LIB_USER
@@ -295,6 +299,7 @@ typedef struct gss_ctx_id_desc_struct{
     gss_cred_id_desc *                  cred_handle;
     OM_uint32                           ret_flags;
     OM_uint32                           req_flags;
+    OM_uint32                           ctx_flags;
     int                                 cred_obtained;
     SSL *                               gs_ssl; 
     BIO *                               gs_rbio;
