@@ -767,14 +767,14 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
 	    goto globus_i_rsl_assist_get_ldap_param_ERR;
 
 	mds_conf_path=globus_libc_malloc(strlen(inst_path)+
-					 strlen("etc/grid-info.conf")+1);
+					 strlen("/etc/grid-info.conf")+1);
 	if (mds_conf_path==GLOBUS_NULL)
 	    goto globus_i_rsl_assist_get_ldap_param_ERR;
 
 	globus_libc_sprintf(mds_conf_path,
 			    "%s%s",
 			    inst_path,
-			    "etc/grid-info.conf");
+			    "/etc/grid-info.conf");
 
 	mds_conf = fopen(mds_conf_path, "r");
 	globus_libc_free(mds_conf_path);
