@@ -140,7 +140,7 @@ globus_debug_init(
         {
             if(filename && *filename)
             {
-                if(*filename == '*')
+                if(*filename == '#')
                 {
                     *out_file = fopen(filename + 1, "w");
                 }

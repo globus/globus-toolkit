@@ -50,10 +50,10 @@ globus_debug_init(
  *    they will map to a 2^i value (so, list them in same order as value)
  *
  * will look in env for {module_name}_DEBUG whose value is:
- * <levels> [ , [ [ * ] <file name> ] [ , <show tids>] ]
+ * <levels> [ , [ [ # ] <file name> ] [ , <show tids>] ]
  * where <levels> can be a single numeric or '|' separated level names
  * <file name> is a debug output file... can be empty.  stderr by default
- *    if a * precedes the filename, the file will be overwritten on each run
+ *    if a '#' precedes the filename, the file will be overwritten on each run
  *    otherwise, the default is to append to the existing (if one exists)
  * <show tids> is 0 or 1 to show thread ids on all messages.  0 by default
  */
