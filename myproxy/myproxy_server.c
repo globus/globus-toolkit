@@ -148,6 +148,11 @@ main(int argc, char *argv[])
 	myproxy_log_use_syslog(LOG_DAEMON, server_context->my_name);
     }
 
+    /*
+     * Logging initialized: For here on use myproxy_log functions
+     * instead of fprintf() and ilk.
+     */
+
     myproxy_log("%s: pid=%d starting at %s", server_context->my_name,
 		getpid(), timestamp());
 
@@ -168,13 +173,13 @@ main(int argc, char *argv[])
             if (errno == EINTR) {
                 continue; 
             } else {
-                perror("Error in accept()\n");
+                myproxy_log_perror("Error in accept()");
             }
         }
         childpid = fork();
         
         if (childpid < 0) {              /* check for error */
-            perror("Error in fork\n");
+            myproxy_log_perror("Error in fork");
 	    close(socket_attrs->socket_fd);
         } else if (childpid == 0) {      /* child process */
             fd = open("/dev/tty",O_RDWR);
@@ -188,7 +193,7 @@ main(int argc, char *argv[])
 	    numclients++;
 	    myproxy_log("Client has connected, total clients=%d", numclients);
             if (handle_client(socket_attrs, server_context) < 0) {
-                my_failure("error in handle_client()\n");
+                my_failure("error in handle_client()");
             } 
             _exit(0);
         }
@@ -225,15 +230,14 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
-        perror("GSI_SOCKET_new()\n");
+        myproxy_log_perror("GSI_SOCKET_new()");
         return -1;
     }
 
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
-        myproxy_log("Unable to authenticate client %s", client_name);
-        fprintf(stderr, "error in myproxy_authenticate_accept()\n");
-        exit(1);
+	/* Client_name may not be set on error so don't use it. */
+        my_failure("Error authenticating client");
     }
 
     /* Log client name */
@@ -242,8 +246,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
     if (requestlen < 0) {
-        fprintf(stderr, "error in myproxy_recv_response()\n");
-        exit(1);
+        my_failure("Error in myproxy_recv_response()");
     }
 
     /* Log client request */
@@ -252,8 +255,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
-        fprintf(stderr, "error in myproxy_deserialize_request()\n");
-        exit(1);
+        my_failure("error in myproxy_deserialize_request()");
     }
 
     /* Check client version */
@@ -303,7 +305,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
                                              server_buffer, sizeof(server_buffer));
     
     if (responselen < 0) {
-        fprintf(stderr, "\nerror in myproxy_serialize_response()\n");
+        myproxy_log("error in myproxy_serialize_response()");
         return -1;
     }
 
@@ -355,9 +357,6 @@ init_arguments(int argc, char *argv[],
     {
 	context->my_name = strdup(last_directory_seperator + 1);
     }
-    
-    context->my_name = strdup("myproxy-server.log");
-    printf("logfile: %s\n", context->my_name);
     
     while((arg = gnu_getopt_long(argc, argv, short_options, 
 			     long_options, NULL)) != EOF) 
@@ -418,7 +417,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number)
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 
     if (listen_sock == -1) {
-        failure("Error in socket()\n");
+        failure("Error in socket()");
     } 
 
     /* Allow reuse of socket */
@@ -430,10 +429,10 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number)
     sin.sin_port = htons(attrs->psport);
 
     if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-	    failure("Error in bind()\n");
+	    failure("Error in bind()");
     }
     if (listen(listen_sock, 5) < 0) {
-	    failure("Error in listen()\n");
+	    failure("Error in listen()");
     }
     return listen_sock;
 }
@@ -453,9 +452,9 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     if (myproxy_init_delegation(attrs, creds->location, creds->lifetime) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
-	myproxy_log("Unable to delegate credentials for %s\n", creds->owner_name);
+	myproxy_log("Unable to delegate credentials for %s", creds->owner_name);
     } else {
-        myproxy_log("Delegating credentials to: %s\n", creds->owner_name);
+        myproxy_log("Delegating credentials to: %s", creds->owner_name);
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
   
@@ -469,10 +468,10 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
-        fprintf(stderr, "\nerror in myproxy_accept_delegation()\n");
+	myproxy_log("error in myproxy_accept_delegation()");
         exit(1);
     }
-    myproxy_log("Accepted delegation: %s\n", delegfile);
+    myproxy_log("Accepted delegation: %s", delegfile);
  
     creds->location = malloc(strlen(delegfile) + 1);
     strcpy(creds->location, delegfile);
@@ -539,28 +538,25 @@ sig_chld(int signo) {
     int   stat;
 
     while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
-        myproxy_debug("child %d terminated\n", pid);
+        myproxy_debug("child %d terminated", pid);
     return;
 } 
 
 void sig_exit(int signo) {
-    myproxy_log("Server killed\n");
+    myproxy_log("Server killed");
     exit(0);
 }
 
 
 static void
 failure(const char *failure_message) {
-    
-    verror_put_errno(errno);
-    verror_put_string("Failure: %s\n", failure_message);       
-    myproxy_log_verror();
+    myproxy_log_perror("Failure: %s", failure_message);
     exit(1);
 } 
 
 static void
 my_failure(const char *failure_message) {
-    myproxy_log("Failure: %s\n", failure_message);       
+    myproxy_log("Failure: %s", failure_message);       
     exit(1);
 } 
 
@@ -589,7 +585,7 @@ become_daemon(myproxy_server_context_t *context)
     case 0:         /* child */
       break;
     case -1:        /* error */
-      perror("Error in fork()\n");
+      perror("Error in fork()");
       return -1;
     default:        /* exit the original process */
       _exit(0);
@@ -597,7 +593,7 @@ become_daemon(myproxy_server_context_t *context)
 
     /* 2. Set session id to become a process group and session group leader */
     if (setsid() < 0) { 
-        perror("Error in setsid()\n"); 
+        perror("Error in setsid()"); 
 	return -1;
     } 
 
@@ -611,7 +607,7 @@ become_daemon(myproxy_server_context_t *context)
     case 0:             /* child */
 	break;
     case -1:            /* error */
-	perror("Error in fork()\n");
+	perror("Error in fork()");
 	return -1;
     default:            /* exit the original process */
 	_exit(0);
