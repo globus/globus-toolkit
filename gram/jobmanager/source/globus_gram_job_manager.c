@@ -333,8 +333,6 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
         tmp_hostfilename = tempnam(NULL, "grami_poe");
     }
 
-    request->poll_frequency = 1;
-
     if (strncmp(request->jobmanager_type, "poe", 3) == 0)
     {
         processes_requested = 1;
@@ -350,6 +348,15 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 	    /* single or mpi */
 	    processes_requested = 1;
         }
+    }
+
+    if (processes_requested > 30)
+    {
+        request->poll_frequency = 30;
+    }
+    else
+    {
+        request->poll_frequency = processes_requested;
     }
 
     if ((rc = globus_l_gram_environment_get(&(request->environment),
