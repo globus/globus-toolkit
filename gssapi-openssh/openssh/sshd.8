@@ -493,6 +493,25 @@ This option is similar to
 and applies to protocol version 2 only.
 The default is
 .Dq no .
+.It Cm GssapiAuthentication
+Specifies whether authentication based on GSSAPI may be used, either using
+the result of a successful key exchange, or using GSSAPI user
+authentication.
+The default is 
+.Dq yes .
+Note that this option applies to protocol version 2 only.
+.It Cm GssapiKeyExchange
+Specifies whether key exchange based on GSSAPI may be used. When using
+GSSAPI key exchange the server need not have a host key.
+The default is
+.Dq yes .
+Note that this option applies to protocol version 2 only.
+.It Cm GssapiUseSessionCredCache
+Specifies whether a unique credentials cache name should be generated per
+session for storing delegated credentials.
+The default is
+.Dq yes .
+Note that this option applies to protocol version 2 only.
 .It Cm HostKey
 Specifies a file containing a private host key
 used by SSH.

@@ -54,6 +54,7 @@
 #define SSH_BUG_DUMMYCHAN	0x00100000
 #define SSH_BUG_EXTEOF		0x00200000
 #define SSH_BUG_K5USER		0x00400000
+#define SSH_OLD_GSSAPI		0x00800000
 
 void     enable_compat13(void);
 void     enable_compat20(void);

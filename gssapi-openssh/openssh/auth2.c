@@ -53,6 +53,10 @@ RCSID("$OpenBSD: auth2.c,v 1.91 2002/05/13 02:37:39 itojun Exp $");
 #include "monitor_wrap.h"
 #include "atomicio.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 /* import */
 extern ServerOptions options;
 extern u_char *session_id2;
@@ -87,10 +91,23 @@ static int userauth_pubkey(Authctxt *);
 static int userauth_hostbased(Authctxt *);
 static int userauth_kbdint(Authctxt *);
 
+#ifdef GSSAPI
+int 	userauth_external(Authctxt *authctxt);
+int	userauth_gssapi(Authctxt *authctxt);
+#endif
+
 Authmethod authmethods[] = {
 	{"none",
 		userauth_none,
 		&one},
+#ifdef GSSAPI
+	{"external-keyx",
+		userauth_external,
+		&options.gss_authentication},
+	{"gssapi",
+		userauth_gssapi,
+		&options.gss_authentication},
+#endif
 	{"publickey",
 		userauth_pubkey,
 		&options.pubkey_authentication},
@@ -215,6 +232,12 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	}
 	/* reset state */
 	auth2_challenge_stop(authctxt);
+
+#ifdef GSSAPI
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
+#endif
+
 	authctxt->postponed = 0;
 
 	/* try to authenticate user */

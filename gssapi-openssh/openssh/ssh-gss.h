@@ -106,7 +106,6 @@ OM_uint32 ssh_gssapi_getclient(Gssctxt *ctx,
 				gss_buffer_desc *name,
 				gss_cred_id_t *creds);
 void ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status);
-void ssh_gssapi_send_error(OM_uint32 major_status,OM_uint32 minor_status);
 void ssh_gssapi_build_ctx(Gssctxt *ctx);
 void ssh_gssapi_delete_ctx(Gssctxt *ctx);
 
