@@ -144,7 +144,7 @@ server2_main(
             {
                 accept_count++;
                 fprintf(stderr, 
-                    "MINOR WARNING: 2nd register accept didn't failed\n"); 
+                    "MINOR WARNING: 2nd register accept didn't fail.\n"); 
             }
 #           endif
         }

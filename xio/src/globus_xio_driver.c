@@ -138,6 +138,9 @@ globus_i_xio_pass_failed(
         globus_assert(my_context->close_op != NULL);
         *close = GLOBUS_TRUE;
     }
+
+    op->ndx = op->entry[op->ndx - 1].prev_ndx;
+
     GlobusXIOOpDec(op);
     if(op->ref == 0)
     {
@@ -547,6 +550,9 @@ globus_i_xio_driver_start_close(
     }
     globus_mutex_unlock(&context->mutex);
 
+    GlobusXIODebugPrintf(
+        GLOBUS_XIO_DEBUG_INFO,
+       ("[%s:%d] :: Index = %d\n", _xio_name, __LINE__, op->ndx));
     my_op->in_register = GLOBUS_TRUE;
     res = my_context->driver->close_func(
                     my_context->driver_handle,
@@ -623,7 +629,7 @@ globus_l_xio_driver_op_accept_kickout(
 {
     globus_i_xio_op_t *                     op;
     globus_i_xio_op_entry_t *               my_op;
-    GlobusXIOName(globus_l_xio_driver_op_kickout);
+    GlobusXIOName(globus_l_xio_driver_op_accept_kickout);
                                                                                 
     GlobusXIODebugInternalEnter();
     op = (globus_i_xio_op_t *) user_arg;

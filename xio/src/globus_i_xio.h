@@ -22,8 +22,8 @@ do                                                                          \
     (_in_op)->ref++;                                                        \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_STATE,                                             \
-        ("[%s:%d] Op ref increased to %d:\n", _xio_name, __LINE__,          \
-        (_in_op)->ref));                                                    \
+        ("[%s:%d] Op @ 0x%x ref increased to %d:\n", _xio_name, __LINE__,   \
+         (_in_op), (_in_op)->ref));                                         \
 } while(0)
 
 #define GlobusXIOOpDec(_in_op)                                              \
@@ -32,8 +32,8 @@ do                                                                          \
     (_in_op)->ref--;                                                        \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_STATE,                                             \
-        ("[%s:%d] Op ref decreased to %d:\n", _xio_name, __LINE__,          \
-        (_in_op)->ref));                                                    \
+        ("[%s:%d] Op @ 0x%x ref decreased to %d:\n", _xio_name, __LINE__,   \
+         (_in_op), (_in_op)->ref));                                         \
 } while(0)
 
 #define GlobusXIODebugPrintf(level, message)                                \
@@ -53,11 +53,12 @@ do                                                                          \
     _l_h = (_h);                                                            \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_STATE,                                             \
-        ("[%s:%d] Handle state change:\n"                                   \
+        ("[%s:%d] Handle @ 0x%x state change:\n"                            \
          "    From:%s\n"                                                    \
          "    to:  %s\n",                                                   \
             _xio_name,                                                      \
             __LINE__,                                                       \
+            _l_h,                                                           \
             globus_i_xio_handle_state_name_table[_l_h->state],              \
             globus_i_xio_handle_state_name_table[_new]));                   \
    _l_h->state = _new;                                                      \
@@ -71,11 +72,12 @@ do                                                                          \
     _l_op = (_op);                                                          \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_STATE,                                             \
-        ("[%s:%d] Op state change:\n"                                       \
+        ("[%s:%d] Op @ 0x%x state change:\n"                                \
          "    From:%s\n"                                                    \
          "    to:  %s\n",                                                   \
             _xio_name,                                                      \
             __LINE__,                                                       \
+            _l_op,                                                          \
             globus_i_xio_op_state_name_table[_l_op->state],                 \
             globus_i_xio_op_state_name_table[_new]));                       \
    _l_op->state = _new;                                                     \
@@ -89,11 +91,12 @@ do                                                                          \
     _l_context = (_c);                                                      \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_STATE,                                             \
-        ("[%s:%d] Context state change:\n"                                  \
+        ("[%s:%d] Context @ 0x%x state change:\n"                           \
          "    From:%s\n"                                                    \
          "    to:  %s\n",                                                   \
             _xio_name,                                                      \
             __LINE__,                                                       \
+            _l_context,                                                     \
             globus_i_xio_context_state_name_table[_l_context->state],       \
             globus_i_xio_context_state_name_table[_new]));                  \
    _l_context->state = _new;                                                \

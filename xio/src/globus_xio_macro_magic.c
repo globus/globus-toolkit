@@ -693,6 +693,12 @@ globus_xio_driver_write_deliver_DEBUG(
 
         _my_context->outstanding_operations--;
 
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : Context @ 0x%x State=%d Count=%d close_start=%d\n",
+            _xio_name, _my_context, _my_context->state,
+            _my_context->outstanding_operations,
+            _my_context->close_started));
+
         /* if we have a close delayed */
         if((_my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
             _my_context->state ==
@@ -1038,6 +1044,12 @@ globus_xio_driver_read_deliver_DEBUG(
         {
              globus_l_xio_driver_purge_read_eof(_my_context);
         }
+
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : Context @ 0x%x State=%d Count=%d close_start=%d\n",
+            _xio_name, _my_context, _my_context->state,
+            _my_context->outstanding_operations,
+            _my_context->close_started));
 
         if((_my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
             _my_context->state ==

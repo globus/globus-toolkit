@@ -28,6 +28,7 @@ unlink("test_results.txt");
             space-test.pl
             server2-test.pl
             block-barrier-test.pl
+            stack-test.pl
             unload-test.pl
             );
 

@@ -452,7 +452,7 @@ globus_xio_data_descriptor_destroy(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--;
+        GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
             globus_i_xio_op_destroy(op, &destroy_handle);

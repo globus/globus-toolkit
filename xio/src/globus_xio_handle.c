@@ -787,13 +787,23 @@ globus_i_xio_read_write_callback(
 
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_WRITE)
         {
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                ("[%s] : removing write op @ 0x%x\n", 
+                _xio_name, op));
             globus_list_remove(&handle->write_op_list, 
                 globus_list_search(handle->write_op_list, op));
         }
         else if(op->type == GLOBUS_XIO_OPERATION_TYPE_READ)
         {
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                ("[%s] : removing read op @ 0x%x\n", 
+                _xio_name, op));
             globus_list_remove(&handle->read_op_list, 
                 globus_list_search(handle->read_op_list, op));
+        }
+        else
+        {
+            globus_assert(0);
         }
 
         op->cached_obj = GlobusXIOResultToObj(result);
@@ -904,7 +914,10 @@ globus_i_xio_operation_cancel(
 
     if(op->canceled)
     {
-        return GLOBUS_SUCCESS;
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : op @ 0x%x alread canceled\n", 
+                    _xio_name, op));
+        goto exit;
     }
     /* 
      * if the user oks the cancel then remove the timeout from 
@@ -922,8 +935,13 @@ globus_i_xio_operation_cancel(
     op->canceled = GLOBUS_TRUE;
     if(op->cancel_cb != NULL)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : op @ 0x%x calling cancel\n",
+                    _xio_name, op));
         op->cancel_cb(op, op->cancel_arg);
     }
+
+  exit:
 
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
@@ -1144,6 +1162,9 @@ globus_l_xio_register_writev(
                 &handle->write_timeout_period);
         }
 
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : inserting write op @ 0x%x\n", 
+            _xio_name, op));
         globus_list_insert(&handle->write_op_list, op);
         /* may be zero if it was already referenced via data descriptor */
         handle->ref += ref;
@@ -1262,6 +1283,9 @@ globus_l_xio_register_readv(
                 &handle->read_timeout_period);
         }
 
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : inserting read op @ 0x%x\n", 
+            _xio_name, op));
         globus_list_insert(&handle->read_op_list, op);
         handle->ref += ref;
     }
@@ -1457,7 +1481,8 @@ globus_l_xio_register_close(
             if(handle->open_op != NULL)
             {
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                    ("[%s] : canceling open\n", _xio_name));
+                    ("[%s] : canceling open op @ 0x%x\n", 
+                    _xio_name, handle->open_op));
                 /* we delay the pass close until the open callback */
                 globus_i_xio_operation_cancel(handle->open_op);
 
@@ -1478,7 +1503,8 @@ globus_l_xio_register_close(
                     list = globus_list_rest(list))
                 {
                     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                        ("[%s] : canceling a read\n", _xio_name));
+                        ("[%s] : canceling read op @ 0x%x\n", 
+                        _xio_name, tmp_op));
                     tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
                     globus_i_xio_operation_cancel(tmp_op);
                 }
@@ -1488,9 +1514,10 @@ globus_l_xio_register_close(
                     list = globus_list_rest(list))
                 {
                     tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                    globus_i_xio_operation_cancel(tmp_op);
                     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                        ("[%s] : canceling a write\n", _xio_name));
+                        ("[%s] : canceling write op @ 0x%x\n", 
+                        _xio_name, tmp_op));
+                    globus_i_xio_operation_cancel(tmp_op);
                 }
             }
         }

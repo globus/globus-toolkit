@@ -15,6 +15,7 @@
     ow->dh = _in_dh;                                                    \
     ow->op = (_in_op);                                                  \
     ow->res = res;                                                      \
+    ow->canceled = GLOBUS_FALSE;                                        \
     ow->nbytes = nb;                                                    \
     globus_mutex_init(&ow->mutex, NULL);                                \
     ow->callback_out = GLOBUS_FALSE;                                    \
@@ -56,6 +57,7 @@ typedef struct globus_l_xio_test_op_wrapper_s
     globus_size_t                       nbytes;
     globus_callback_handle_t            callback_handle;
     globus_bool_t                       callback_out;
+    globus_bool_t                       canceled;
     globus_mutex_t                      mutex;
 } globus_l_xio_test_op_wrapper_t;
 
@@ -85,13 +87,16 @@ cancel_cb(
     globus_result_t                     res;
     GlobusXIOName(cancel_cb);
 
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("test driver cancel callback\n"));
-    ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
+    GlobusXIODebugInternalEnter();
 
-    ow->res = GlobusXIOErrorTimedout();
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+        ("[%s:%d] test driver cancel callback\n", _xio_name, __LINE__));
+    ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
     globus_mutex_lock(&ow->mutex);
     {
+        ow->res = GlobusXIOErrorTimedout();
+        ow->canceled = GLOBUS_TRUE;
         if(ow->callback_out)
         {
             res = globus_callback_unregister(
@@ -103,17 +108,49 @@ cancel_cb(
             if(!active)
             {
                 /* if we could stop it, register it for right now */
-                globus_callback_space_register_oneshot(
+                res = globus_callback_space_register_oneshot(
                     NULL,
                     NULL,
                     globus_l_xio_operation_kickout,
                     (void *) ow,
                     GLOBUS_CALLBACK_GLOBAL_SPACE);
+                globus_assert(res == GLOBUS_SUCCESS);
             }
             ow->callback_out = GLOBUS_FALSE;
         }
     }
     globus_mutex_unlock(&ow->mutex);
+    GlobusXIODebugInternalExit();
+}
+
+static void
+test_l_delay_register(
+    globus_l_xio_test_op_wrapper_t *        ow,
+    globus_reltime_t *                      delay)
+{
+    globus_result_t                         res;
+    GlobusXIOName(test_l_delay_register);
+
+    GlobusXIODebugInternalEnter();
+    globus_mutex_lock(&ow->mutex);
+    {
+        if(ow->canceled)
+        {
+            delay = NULL;
+            ow->res = GlobusXIOErrorTimedout();
+        }
+        ow->callback_out = GLOBUS_TRUE;
+        res = globus_callback_space_register_oneshot(
+            &ow->callback_handle,
+            delay,
+            globus_l_xio_operation_kickout,
+            (void *) ow,
+            GLOBUS_CALLBACK_GLOBAL_SPACE);
+                                                                                
+        globus_assert(res == GLOBUS_SUCCESS);
+    }
+    globus_mutex_unlock(&ow->mutex);
+    GlobusXIODebugInternalExit();
 }
 
 static void
@@ -124,29 +161,34 @@ test_inline_blocker(
     globus_reltime_t                            zero;
     int                                         sec;
     int                                         usec;
+    GlobusXIOName(test_inline_blocker);
 
+    GlobusXIODebugInternalEnter();
     GlobusTimeReltimeSet(zero, 0, 0);
     if(globus_reltime_cmp(delay, &zero) != 0)
     {
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("nonzero delay\n"));
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+            ("nonzero delay\n"));
         GlobusTimeAbstimeGetCurrent(timeout);
         GlobusTimeAbstimeInc(timeout, *delay);
         GlobusTimeReltimeGet(*delay, sec, usec);
         sleep(sec);
         globus_libc_usleep(usec);
     }
+    GlobusXIODebugInternalExit();
 }
 
 /*
  *  initialize a driver attribute
  */
-static
-globus_result_t
+static globus_result_t
 globus_l_xio_test_attr_init(
     void **                             out_attr)
 {
     globus_l_xio_test_handle_t *        attr;
+    GlobusXIOName(globus_l_xio_test_attr_init);
 
+    GlobusXIODebugInternalEnter();
     attr = (globus_l_xio_test_handle_t *)
                 globus_malloc(sizeof(globus_l_xio_test_handle_t));
     memset(attr, '\0', sizeof(globus_l_xio_test_handle_t));
@@ -157,6 +199,7 @@ globus_l_xio_test_attr_init(
     attr->chunk_size = -1; /* default: entire chunk requested */
 
     *out_attr = attr;
+    GlobusXIODebugInternalExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -167,20 +210,21 @@ test_get_delay_time(
     globus_reltime_t *                  out_delay)
 {
     int                                 usec = 0;
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("start random delay\n"));
+    GlobusXIOName(test_get_delay_time);
+
+    GlobusXIODebugInternalEnter();
     if(dh->random)
     {
         usec = rand() % MAX_DELAY;
-        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("-> %d\n", MAX_DELAY));
         GlobusTimeReltimeSet(*out_delay, 0, usec);
     }
+    GlobusXIODebugInternalExit();
 }
 
 /*
  *  modify the attribute structure
  */
-static
-globus_result_t
+static globus_result_t
 globus_l_xio_test_attr_cntl(
     void *                              driver_attr,
     int                                 cmd,
@@ -188,6 +232,9 @@ globus_l_xio_test_attr_cntl(
 {
     globus_l_xio_test_handle_t *        attr;
     int                                 usecs;
+    GlobusXIOName(globus_l_xio_test_attr_cntl);
+
+    GlobusXIODebugInternalEnter();
 
     attr = (globus_l_xio_test_handle_t *) driver_attr;
 
@@ -218,10 +265,12 @@ globus_l_xio_test_attr_cntl(
             attr->random = GLOBUS_TRUE;
             usecs = va_arg(ap, int);
             srand(usecs);
-        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("turning on random, seed=%d\n", usecs));
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+            ("turning on random, seed=%d\n", usecs));
             break;
 
     }
+    GlobusXIODebugInternalExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -236,12 +285,16 @@ globus_l_xio_test_attr_copy(
     void *                              src)
 {
     globus_l_xio_test_handle_t *        attr;
+    GlobusXIOName(globus_l_xio_test_attr_copy);
+
+    GlobusXIODebugInternalEnter();
 
     attr = (globus_l_xio_test_handle_t *)
                 globus_malloc(sizeof(globus_l_xio_test_handle_t));
     memcpy(attr, src, sizeof(globus_l_xio_test_handle_t));
 
     *dst = attr;
+    GlobusXIODebugInternalExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -275,20 +328,21 @@ globus_l_xio_test_target_init(
 /*
  *  destroy the target structure
  */
-static
-globus_result_t
+static globus_result_t
 globus_l_xio_test_target_destroy(
     void *                              driver_target)
 {
     return GLOBUS_SUCCESS;
 }
 
-static
-void
+static void 
 globus_l_xio_operation_kickout(
     void *                              user_arg)
 {
     globus_l_xio_test_op_wrapper_t *    ow;
+    GlobusXIOName(globus_l_xio_operation_kickout);
+
+    GlobusXIODebugInternalEnter();
 
     ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
@@ -299,41 +353,48 @@ globus_l_xio_operation_kickout(
     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
         ("[globus_l_xio_test_operation_kickout] : finishing with=%d\n", 
         ow->res));
-    switch(ow->type)
+
+    globus_mutex_lock(&ow->mutex);
     {
-        case GLOBUS_XIO_OPERATION_TYPE_OPEN:
-            GlobusXIODriverFinishedOpen(ow->dh->context, ow->dh, ow->op, \
-                ow->res);
-            if(ow->res != GLOBUS_SUCCESS)
-            {
+        switch(ow->type)
+        {
+            case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+                GlobusXIODriverFinishedOpen(ow->dh->context, ow->dh, ow->op, \
+                    ow->res);
+                if(ow->res != GLOBUS_SUCCESS)
+                {
+                    globus_l_xio_test_attr_destroy(ow->dh);
+                }
+                break;
+
+            case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
+                GlobusXIODriverFinishedClose(ow->op, ow->res);
+                globus_xio_driver_context_close(ow->dh->context);
                 globus_l_xio_test_attr_destroy(ow->dh);
-            }
-            break;
+                break;
 
-        case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
-            GlobusXIODriverFinishedClose(ow->op, ow->res);
-            globus_xio_driver_context_close(ow->dh->context);
-            globus_l_xio_test_attr_destroy(ow->dh);
-            break;
+            case GLOBUS_XIO_OPERATION_TYPE_READ:
+                GlobusXIODriverFinishedRead(ow->op, ow->res, ow->nbytes);
+                break;
 
-        case GLOBUS_XIO_OPERATION_TYPE_READ:
-            GlobusXIODriverFinishedRead(ow->op, ow->res, ow->nbytes);
-            break;
+            case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+                GlobusXIODriverFinishedWrite(ow->op, ow->res, ow->nbytes);
+                break;
 
-        case GLOBUS_XIO_OPERATION_TYPE_WRITE:
-            GlobusXIODriverFinishedWrite(ow->op, ow->res, ow->nbytes);
-            break;
+            case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
+                GlobusXIODriverFinishedAccept(ow->op, NULL, ow->res);
+                break;
 
-        case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
-            GlobusXIODriverFinishedAccept(ow->op, NULL, ow->res);
-            break;
-
-        default:
-            globus_assert(0);
+            default:
+                globus_assert(0);
+        }
     }
+    globus_mutex_unlock(&ow->mutex);
 
     globus_mutex_destroy(&ow->mutex);
     globus_free(ow);
+
+    GlobusXIODebugInternalExit();
 }
 
 /**********************************
@@ -371,6 +432,7 @@ globus_l_xio_test_accept(
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_test_accept);
 
+    GlobusXIODebugInternalEnter();
 
     server = (globus_l_xio_test_handle_t *) driver_server;
 
@@ -399,29 +461,24 @@ globus_l_xio_test_accept(
         delay = &server->delay;
         GlobusXIODriverEnableCancel(accept_op, canceled, cancel_cb, ow);
 
-        globus_mutex_lock(&ow->mutex);
+        if(canceled)
         {
-            if(canceled)
-            {
-                delay = NULL;
-                ow->res = GlobusXIOErrorCanceled();
-            }
-            else if(server->random)
+            delay = NULL;
+            ow->canceled = GLOBUS_TRUE;
+        }
+        else
+        {
+            if(server->random)
             {
                 test_get_delay_time(server, &end_time);
                 delay = &end_time;
             }
 
-            ow->callback_out = GLOBUS_TRUE;
-            globus_callback_space_register_oneshot(
-                &ow->callback_handle,
-                delay,
-                globus_l_xio_operation_kickout,
-                (void *) ow,
-                GLOBUS_CALLBACK_GLOBAL_SPACE);
+            test_l_delay_register(ow, delay);
         }
-        globus_mutex_unlock(&ow->mutex);
     }
+
+    GlobusXIODebugInternalExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -463,6 +520,7 @@ globus_l_xio_test_open(
     globus_reltime_t                    end_time;
     GlobusXIOName(globus_l_xio_test_open);
 
+    GlobusXIODebugInternalEnter();
     attr = (globus_l_xio_test_handle_t *) driver_attr;
 
     if(attr == NULL)
@@ -506,21 +564,19 @@ globus_l_xio_test_open(
         if(canceled)
         {
             delay = NULL;
+            ow->canceled = GLOBUS_TRUE;
         }
-        else if(dh->random)
+        else 
         {
-            test_get_delay_time(dh, &end_time);
-            delay = &end_time;
+            if(dh->random)
+            {
+                test_get_delay_time(dh, &end_time);
+                delay = &end_time;
+            }
+            test_l_delay_register(ow, delay);
         }
-
-        ow->callback_out = GLOBUS_TRUE;
-        globus_callback_space_register_oneshot(
-            &ow->callback_handle,
-            delay,
-            globus_l_xio_operation_kickout,
-            (void *) ow,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
+    GlobusXIODebugInternalExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -576,20 +632,17 @@ globus_l_xio_test_close(
         if(canceled)
         {
             delay = NULL;
+            ow->canceled = GLOBUS_TRUE;
         }
-        else if(dh->random)
+        else 
         {
-            test_get_delay_time(dh, &end_time);
-            delay = &end_time;
+            if(dh->random)
+            {
+                test_get_delay_time(dh, &end_time);
+                delay = &end_time;
+            }
         }
-
-        ow->callback_out = GLOBUS_TRUE;
-        globus_callback_space_register_oneshot(
-            &ow->callback_handle,
-            delay,
-            globus_l_xio_operation_kickout,
-            (void *)ow,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+        test_l_delay_register(ow, delay);
     }
 
     GlobusXIODebugInternalExit();
@@ -618,6 +671,8 @@ globus_l_xio_test_read(
     int                                 ctr;
     globus_size_t                       tb;
     GlobusXIOName(globus_l_xio_test_read);
+
+    GlobusXIODebugInternalEnter();
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
@@ -672,20 +727,19 @@ globus_l_xio_test_read(
         if(canceled)
         {
             delay = NULL;
+            ow->canceled = GLOBUS_TRUE;
         }
-        else if(dh->random)
+        else 
         {
-            test_get_delay_time(dh, &end_time);
-            delay = &end_time;
+            if(dh->random)
+            {
+                test_get_delay_time(dh, &end_time);
+                delay = &end_time;
+            }
         }
-        ow->callback_out = GLOBUS_TRUE;
-        globus_callback_space_register_oneshot(
-            &ow->callback_handle,
-            delay,
-            globus_l_xio_operation_kickout,
-            (void *)ow,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+        test_l_delay_register(ow, delay);
     }
+    GlobusXIODebugInternalExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -707,11 +761,14 @@ globus_l_xio_test_write(
     int                                 ctr;
     globus_size_t                       tb;
     GlobusXIOName(globus_l_xio_test_write);
+
+    GlobusXIODebugInternalEnter();
     
     dh = (globus_l_xio_test_handle_t *) driver_handle;
     
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
     {
+        GlobusXIODebugInternalExitWithError();
         return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_WRITE);
     }
     else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_WRITE)
@@ -756,21 +813,20 @@ globus_l_xio_test_write(
         if(canceled)
         {
             delay = NULL;
+            ow->canceled = GLOBUS_TRUE;
         }
-        else if(dh->random)
+        else 
         {
-            test_get_delay_time(dh, &end_time);
-            delay = &end_time;
+            if(dh->random)
+            {
+                test_get_delay_time(dh, &end_time);
+                delay = &end_time;
+            }
         }
-        ow->callback_out = GLOBUS_TRUE;
-        globus_callback_space_register_oneshot(
-            &ow->callback_handle,
-            delay,
-            globus_l_xio_operation_kickout,
-            (void *)ow,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+        test_l_delay_register(ow, delay);
     }
 
+    GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 }
 

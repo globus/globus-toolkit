@@ -333,66 +333,81 @@ main(
 
     globus_l_program_name = argv[0];
 
-    globus_module_activate(GLOBUS_COMMON_MODULE);
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_assert(rc == 0);
 
     /* add all the known tests to hash table */
-    globus_hashtable_init(
+    rc = globus_hashtable_init(
         &globus_l_test_hash, 
         16,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "read_barrier",
         read_barrier_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "close_barrier",
         close_barrier_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "framework",
         framework_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "timeout",
         timeout_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "cancel",
         cancel_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "attr",
         attr_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "close_cancel",
         close_cancel_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "space",
         space_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "server2",
         server2_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "block_barrier",
         block_barrier_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "blocking_dd",
         blocking_dd_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "unload",
         unload_main);
-    globus_hashtable_insert(
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
         &globus_l_test_hash, 
         "stack",
         stack_main);
+    globus_assert(rc == 0);
 
 
     for(ctr = 1; ctr < argc && !done; ctr++)
@@ -466,14 +481,6 @@ main(
         globus_module_deactivate(GLOBUS_XIO_MODULE);
     }
 
-    globus_hashtable_remove(&globus_l_test_hash, "read_barrier");
-    globus_hashtable_remove(&globus_l_test_hash, "close_barrier");
-    globus_hashtable_remove(&globus_l_test_hash, "framework");
-    globus_hashtable_remove(&globus_l_test_hash, "timeout");
-    globus_hashtable_remove(&globus_l_test_hash, "cancel");
-    globus_hashtable_remove(&globus_l_test_hash, "attr");
-    globus_hashtable_remove(&globus_l_test_hash, "close_cancel");
-    globus_hashtable_remove(&globus_l_test_hash, "space");
     globus_hashtable_destroy(&globus_l_test_hash);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
