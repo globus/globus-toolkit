@@ -197,7 +197,9 @@ extern int port_allowed(const char *remoteaddr);
     A   B   C   E   F   I
     L   N   P   R   S   T
 
-    SP  CRLF    COMMA  SEMICOLON EQUALS STRING  NUMBER   BIGNUM
+    SP  CRLF    COMMA  SEMICOLON EQUALS HYPHEN
+    
+    STRING  NUMBER   BIGNUM
 
     USER    PASS    ACCT    REIN    QUIT    PORT
     PASV    TYPE    STRU    MODE    RETR    STOR
@@ -242,6 +244,7 @@ extern int port_allowed(const char *remoteaddr);
 %type <estor_eret> esto_mode eret_mode
 %type <Bignum>	BIGNUM OFFSET LENGTH
 %type <address> host_port
+%type <Number>  byte_range byte_range_list
 %start  cmd_list
 
 %%
@@ -1215,7 +1218,24 @@ rcmd: RNFR check_login SP pathname CRLF
 		      "Send STORE or RETRIEVE to initiate transfer.");
 	    }
 	}
+    | REST check_login SP byte_range_list CRLF
+        =       {
+#       if USE_GLOBUS_DATA_CODE
+	    if(log_commands)
+	        syslog(LOG_INFO, "REST [byte ranges]");
+	    if ($2) {
+		fromname = 0;
+		reply(350, 
+		      "Restart Marker OK. "
+		      "Send STORE or RETRIEVE to initiate transfer.");
+	    }
+#       else
+	    if(log_commands)
+	        syslog(LOG_INFO, "REST [byte ranges] (invalid)");
+	    reply(500, "'REST': invalid restart offset.");
 
+#	endif
+	}
     | SITE check_login SP ALIAS CRLF
 	=	{
 	    if (log_commands)
@@ -1307,6 +1327,14 @@ byte_size: NUMBER
     ;
 
 opts: SP RETR SP retr_option_list 
+    ;
+
+byte_range_list:
+    byte_range COMMA byte_range_list
+    | byte_range
+    ;
+byte_range:
+    NUMBER HYPHEN NUMBER
     ;
 
 retr_option_list: 
@@ -1721,7 +1749,7 @@ struct tab cmdtab[] =
     {"MRSQ", MRSQ, OSTR, 0, "(mail recipient scheme question)"},
     {"MRCP", MRCP, STR1, 0, "(mail recipient)"},
     {"ALLO", ALLO, ARGS, 1, "allocate storage (vacuously)"},
-    {"REST", REST, ARGS, 1, "(restart command)"},
+    {"REST", REST, NEWARGS, 1, "(restart command)"},
     {"RNFR", RNFR, STR1, 1, "<sp> file-name"},
     {"RNTO", RNTO, STR1, 1, "<sp> file-name"},
     {"ABOR", ABOR, ARGS, 1, "(abort operation)"},
@@ -2325,6 +2353,9 @@ int yylex(void)
 	    case ';':
 		cpos++;
 		return (SEMICOLON);
+	    case '-':
+		cpos++;
+		return (HYPHEN);
 	    case '=':
 		cpos++;
 		return EQUALS;
