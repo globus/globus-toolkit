@@ -592,27 +592,33 @@ if test "x$gsi_path" != "xno" ; then
         if test "x$globus_flavor_type" = "xyes" ; then
                 AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
 	fi
+	AC_MSG_RESULT(yes)
 
+	AC_MSG_CHECKING(for Globus include path)
 	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
 	if test ! -d "$GLOBUS_INCLUDE" ; then
 		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
 	fi
 	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
-	
-	if test -x ${gsi_path}/bin/globus-makefile-header ; then
-		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header -static -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
-	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+	AC_MSG_RESULT(yes)
+
+	AC_MSG_CHECKING(for Globus linkline)
+	if test -x $GPT_LOCATION/sbin/gpt_build_config ; then
+		$GPT_LOCATION/sbin/gpt_build_config -f gcc32 -link static -src pkg_data_src.gpt
+		. ./gpt_build_temp.sh
 		GSI_LDFLAGS="-L${gsi_path}/lib"
-		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
 	else
-		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
+		AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
 	fi
 	if test -z "$GSI_LIBS" ; then
-		AC_MSG_ERROR(globus-makefile-header failed)
+		AC_MSG_ERROR(gpt_build_config failed)
 	fi
+	AC_MSG_RESULT(yes)
 
 	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
 
+	AC_MSG_CHECKING(that Globus linkline works)
 	# test that we got the libraries OK
 	AC_TRY_LINK(
 		[],
