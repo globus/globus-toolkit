@@ -147,10 +147,6 @@ for arg in "$@"; do
     fi
 
     case ${arg} in
-	-version)
-	    echo "${PROGRAM_VERSION}"
-	    exit 0
-	    ;;
 	-debug)
 	    debug=yes
 	    ;;
