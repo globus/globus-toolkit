@@ -532,18 +532,26 @@ err:
 	    
 	    l=ERR_get_error_line(&file,&line);
 	    if (debug)
-		fprintf(stderr,
-			"%s:%s:%d",
+		/*fprintf(stderr,
+			"%s%s:\nLocation: %s:%d\n",
 			ERR_error_string(l,buf),
+            data,
 			file,
-			line);
+			line);*/
+
+            fprintf(stderr,
+                    "%s:%s:%d%s\n",
+                    ERR_error_string(l,buf),
+                    file,
+                    line,
+                    data);
+
 	    else
                 fprintf(stderr,
-                        "%s:  %s",
+                        "%s%s\nFunction: %s\n",
                         ERR_reason_error_string(l),
+                        data,
                         ERR_func_error_string(l));
-	    fprintf(stderr," %s",data);
-	    fprintf(stderr,"\n");
 	}
     }
     exit(3);
