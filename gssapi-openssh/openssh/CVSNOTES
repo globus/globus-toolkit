@@ -58,41 +58,20 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 	- new base: OPENSSH_3_5P1_GSI_20030317
       Conflicts: 0
 
-    2002/09/23
+    2003/03/07
     ----------
       Action: Merge
         - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
-        - original base: OPENSSH_3_4P1_GSI_20020701
-        - new base: OPENSSH_3_4P1_GSI_20020923
+        - original base: OPENSSH_3_5P1_GSI_20021018
+        - new base: OPENSSH_3_5P1_GSI_20030227
       Conflicts: 1
         - configure.ac
-            resolved by ignoring mainline changes and keeping the text that was
-            originally in the file on this branch.  (We require a specified flavor type
-            where the trunk can compensate in that case.)
+            cvs choked on my changes to the globus additions.  wasn't a "real" conflict.
 
-    2002/09/24
+    2003/02/06
     ----------
-      Action: Merge
+      Action: Tag GPT branch as new release
         - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
-        - original base: OPENSSH_3_4P1_GSI_20020923
-        - new base: OPENSSH_3_4P1_GSI_20020924
-      Conflicts: 0
-
-    2002/09/26
-    ----------
-      Action: Merge
-        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
-        - original base: OPENSSH_3_4P1_GSI_20020924
-        - new base: OPENSSH_3_4P1_GSI_20020926
-      Conflicts: 0
-
-    2002/10/08
-    ----------
-      Action: Merge
-        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
-        - original base: OPENSSH_3_4P1_GSI_20020926
-        - new base: OPENSSH_3_4P1_GSI_20021008
-      Conflicts: 0
 
     2002/10/18
     ----------
@@ -104,17 +83,38 @@ contains the GSI-OpenSSH code.  Consider it a living document.
         - Makefile.in
             resolved by removing check-user and adding check-config.
 
-    2003/02/06
-    ----------
-      Action: Tag GPT branch as new release
-        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
-
-    2003/03/07
+    2002/10/08
     ----------
       Action: Merge
         - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
-        - original base: OPENSSH_3_5P1_GSI_20021018
-        - new base: OPENSSH_3_5P1_GSI_20030227
+        - original base: OPENSSH_3_4P1_GSI_20020926
+        - new base: OPENSSH_3_4P1_GSI_20021008
+      Conflicts: 0
+
+    2002/09/26
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20020924
+        - new base: OPENSSH_3_4P1_GSI_20020926
+      Conflicts: 0
+
+    2002/09/24
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20020923
+        - new base: OPENSSH_3_4P1_GSI_20020924
+      Conflicts: 0
+
+    2002/09/23
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20020701
+        - new base: OPENSSH_3_4P1_GSI_20020923
       Conflicts: 1
         - configure.ac
-            cvs choked on my changes to the globus additions.  wasn't a "real" conflict.
+            resolved by ignoring mainline changes and keeping the text that was
+            originally in the file on this branch.  (We require a specified flavor type
+            where the trunk can compensate in that case.)
