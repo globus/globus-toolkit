@@ -634,7 +634,8 @@ static
 void
 globus_l_xio_system_cancel_cb(
     globus_xio_operation_t              op,
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_xio_error_type_t             reason)
 {
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_l_xio_system_cancel_cb);

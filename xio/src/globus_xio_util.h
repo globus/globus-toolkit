@@ -76,7 +76,20 @@ globus_xio_contact_info_to_encoded_string(
         _xio_name,                                                          \
         __LINE__,							    \
         "Operation was canceled")                                          
-                                                                            
+
+#define GlobusXIOErrorTimeout()                                             \
+    globus_error_put(GlobusXIOErrorObjTimeout())                               
+
+#define GlobusXIOErrorObjTimeout()                                          \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GlobusXIOErrorObjCanceled(),                                        \
+        GLOBUS_XIO_ERROR_TIMEOUT,                                           \
+        __FILE__,                                                           \
+        _xio_name,                                                          \
+        __LINE__,                                                           \
+        "Operation timed out")
+
 #define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
