@@ -167,7 +167,10 @@ globus_xio_driver_finished_open_DEBUG(
     }
     else
     {
-        _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPEN;
+        if(_my_context->state == GLOBUS_XIO_HANDLE_STATE_OPENING)
+        {
+            _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPEN;
+        }
         _context->ref++;
     }
 
@@ -221,9 +224,8 @@ globus_xio_driver_open_deliver_DEBUG(
         _my_context->outstanding_operations--;
 
         /* if we have a close delayed */
-        if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
-            _my_context->state ==
-                GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&
+        if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSED ||
+            _my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING) &&
             _my_context->outstanding_operations == 0)
         {
             globus_assert(_my_context->close_op != NULL);
@@ -237,23 +239,24 @@ globus_xio_driver_open_deliver_DEBUG(
     {
         /* if closed before fully opened and open was successful we need
            to start the regular close process */
-        if(op->cached_res == GLOBUS_SUCCESS)
+        if(_close_op->cached_res == GLOBUS_SUCCESS)
         {
             globus_i_xio_driver_start_close(_close_op, GLOBUS_FALSE);
         }
         /* if open failed then just kickout the close */
         else
         {
-            _op->cached_res = GLOBUS_SUCCESS;
-            if(_my_op->caller_ndx == 0 && !_op->blocking)
+            _close_op->cached_res = GLOBUS_SUCCESS;
+            if(_close_op->entry[_close_op->ndx - 1].caller_ndx == 0 &&
+                    !_close_op->blocking)
             {
-                _space = _op->_op_handle->space;
+                _space = _close_op->_op_handle->space;
             }
             globus_callback_space_register_oneshot(
                 NULL,
                 NULL,
                 globus_l_xio_driver_op_kickout,
-                (void *)_op,
+                (void *)_close_op,
                 _space);
         }
     }
@@ -314,6 +317,7 @@ globus_xio_driver_pass_close_DEBUG(
             switch(_my_context->state)
             {
                 case GLOBUS_XIO_HANDLE_STATE_OPEN:
+                case GLOBUS_XIO_HANDLE_STATE_OPENING:
                     _my_context->state = GLOBUS_XIO_HANDLE_STATE_CLOSING;
                     break;
 

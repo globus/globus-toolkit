@@ -280,24 +280,34 @@ globus_l_xio_open_close_callback_kickout(
         /* this is likely useless, but may help in debugging */
         op->state = GLOBUS_XIO_OP_STATE_FINISHED;
 
-        /* 
-         *  if we were trying toclose or the open has a failed result.
-         */
-        if(op->type == GLOBUS_XIO_OPERATION_TYPE_CLOSE ||
-           op->cached_res != GLOBUS_SUCCESS)
+        if(op->type == GLOBUS_XIO_OPERATION_TYPE_CLOSE)
         {
             handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
             GlobusIXIOHandleDec(destroy_handle, handle);
             /* destroy handle cannot possibly be true yet 
                 the handle stll has the operation reference */
             globus_assert(!destroy_handle);
-
-            /* we can remove both open and close since this branch
-               only enters if open failed or close happened.  in either
-               case both are removed */
             handle->close_op = NULL;
         }
-        handle->open_op = NULL;
+        else if(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN)
+        {
+            if(op->cached_res != GLOBUS_SUCCESS)
+            {
+                handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
+                GlobusIXIOHandleDec(destroy_handle, handle);
+                /* destroy handle cannot possibly be true yet 
+                    the handle stll has the operation reference */
+                globus_assert(!destroy_handle);
+            }
+            /* if we arealready trying to close than we have uped the
+                reference count and need to dec it */
+            else if(handle->close_op != NULL)
+            {
+                GlobusIXIOHandleDec(destroy_handle, handle);
+                globus_assert(!destroy_handle);
+            }
+            handle->open_op = NULL;
+        }
 
         /* decrement reference for the operation */
         op->ref--;
@@ -1025,7 +1035,6 @@ globus_l_xio_register_close(
     globus_list_t *                         list;
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_op_t *                     tmp_op;
-    globus_bool_t                           pass_close = GLOBUS_TRUE;
     globus_result_t                         res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_register_close);
 
@@ -1046,7 +1055,16 @@ globus_l_xio_register_close(
             {
                 /* we delay the pass close until the open callback */
                 globus_l_xio_operation_cancel(handle->open_op);
-                pass_close = GLOBUS_FALSE;
+
+                /* this next line is strange.  what happens is this,
+                   typically read if open comes back with a failure we
+                   clean up the handle right after the open callback is
+                   called.  However if it is an error due to a close
+                   being called then we can't destroy because we have 
+                   a close callback to call.  we up the refrence count here
+                   to force this.
+                */
+                handle->ref++;
             }
             else
             {
@@ -1426,7 +1444,7 @@ globus_xio_register_read(
     {
         return GlobusXIOErrorParameter("buffer");
     }
-    if(buffer_length <= 0)
+    if(buffer_length < 0)
     {
         return GlobusXIOErrorParameter("buffer_length");
     }
@@ -1586,7 +1604,7 @@ globus_xio_register_write(
     {
         return GlobusXIOErrorParameter("buffer");
     }
-    if(buffer_length <= 0)
+    if(buffer_length < 0)
     {
         return GlobusXIOErrorParameter("buffer_length");
     }

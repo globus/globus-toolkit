@@ -8,7 +8,6 @@ static globus_cond_t                    globus_l_cond;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
 #define OP_COUNT                            16
-#define SLEEP_TIME                          10000
 
 static void
 close_cb(
@@ -47,9 +46,15 @@ data_cb(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
+}
 
-    globus_thread_blocking_will_block();
-    globus_libc_usleep(SLEEP_TIME);
+static void
+open_cb2(
+    globus_xio_handle_t                         handle,
+    globus_result_t                             result,
+    void *                                      user_arg)
+{
+    return;
 }
 
 static void
@@ -70,7 +75,7 @@ open_cb(
     {
         for(ctr = 0; ctr < OP_COUNT; ctr++)
         {
-/*
+
             res = globus_xio_register_write(
                     handle,
                     buffer,
@@ -80,7 +85,7 @@ open_cb(
                     data_cb,
                     user_arg);
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-*/
+
             res = globus_xio_register_read(
                     handle,
                     buffer,
@@ -147,11 +152,37 @@ close_cancel_main(
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
-        GlobusTimeAbstimeSet(end_time, 0, SLEEP_TIME);
-        globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &end_time);
     }
     globus_mutex_unlock(&globus_l_mutex);
-    
+
+    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+    globus_l_closed = GLOBUS_FALSE;
+    res = globus_xio_register_open(
+            &handle,
+            attr,
+            target,
+            open_cb2,
+            NULL);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+    res = globus_xio_register_close(
+            handle,
+            NULL,
+            close_cb,
+            NULL);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        while(!globus_l_closed)
+        {
+            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+        }
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
     res = globus_xio_attr_destroy(attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
