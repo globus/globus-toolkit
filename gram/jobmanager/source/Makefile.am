@@ -8,10 +8,13 @@ validationdir = $(datadir)/globus-gram-job-manager-rsl-validation
 
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
-libexec_PROGRAMS = globus-job-manager
+libexec_PROGRAMS = globus-job-manager \
+                   globus-gram-rsl-reporter
 bin_SCRIPTS = globus-personal-gatekeeper
-sbin_PROGRAMS = globus-gram-job-manager-print-validation
 validation_DATA = globus-gram-job-manager.rvf
+
+sysconf_DATA = \
+        grid-info-gram-rsl-reporter.schema
 
 # Mapping of source files to libraries and executables
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
@@ -32,8 +35,8 @@ libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 
 globus_job_manager_SOURCES = main.c
 
-globus_gram_job_manager_print_validation_SOURCES = \
-	globus_gram_job_manager_print_validation.c \
+globus_gram_rsl_reporter_SOURCES = \
+	globus_gram_rsl_reporter.c \
 	globus_gram_job_manager_validation.h
 
 # Compiler flags
@@ -42,13 +45,13 @@ globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
-globus_gram_job_manager_print_validation_LDFLAGS = $(GPT_LDFLAGS)
-globus_gram_job_manager_print_validation_LDADD = \
+globus_gram_rsl_reporter_LDFLAGS = $(GPT_LDFLAGS)
+globus_gram_rsl_reporter_LDADD = \
 	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper $(validation_DATA) \
-	version.h.in \
+	$(sysconf_DATA) version.h.in \
 	globus_job_manager_rsl_validation.dox    main.dox \
 	globus_gram_job_manager_rsl.dox \
 	dirt.sh
