@@ -1107,7 +1107,8 @@ globus_l_gfs_data_stat_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
-    globus_gfs_finished_info_t              reply;
+    globus_gfs_finished_info_t          reply;
+    int                                 i;
     GlobusGFSName(globus_l_gfs_data_stat_kickout);
     GlobusGFSDebugEnter();
 
@@ -1141,6 +1142,17 @@ globus_l_gfs_data_stat_kickout(
     globus_l_gfs_data_operation_destroy(bounce_info->op);
     if(bounce_info->stat_array)
     {
+        for(i = 0; i < bounce_info->stat_count; i++)
+        {
+            if(bounce_info->stat_array[i].name != NULL)
+            {
+                globus_free(bounce_info->stat_array[i].name);
+            }        
+            if(bounce_info->stat_array[i].symlink_target != NULL)
+            {
+                globus_free(bounce_info->stat_array[i].symlink_target);
+            }
+        }
         globus_free(bounce_info->stat_array);
     }
     globus_free(bounce_info);
@@ -4209,6 +4221,7 @@ globus_gridftp_server_finished_stat(
 {
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
     globus_gfs_stat_t *                 stat_copy;
+    int                                 i;
     GlobusGFSName(globus_gridftp_server_finished_stat);
     GlobusGFSDebugEnter();
 
@@ -4225,6 +4238,20 @@ globus_gridftp_server_finished_stat(
             stat_copy,
             stat_array,
             sizeof(globus_gfs_stat_t) * stat_count);
+        for(i = 0; i < stat_count; i++)
+        {
+            if(stat_array[i].name != NULL)
+            { 
+                stat_copy[i].name = globus_libc_strdup(stat_array[i].name);
+            }
+            else
+            {
+                /* XXX probably not acceptable to proceed */
+                stat_copy[i].name = globus_libc_strdup("(null)");
+            }
+            stat_copy[i].symlink_target = 
+                globus_libc_strdup(stat_array[i].symlink_target);
+        }
     }
     else
     {

@@ -820,7 +820,11 @@ globus_l_gsc_cmd_stat_cb(
         {
             code = 250;
             /* for mlst we want the requested path, not just the filename */
-            snprintf(stat_info->name, MAXPATHLEN, "%s", path);
+            if(stat_info->name != NULL)
+            {
+                globus_free(stat_info->name);
+            }
+            stat_info->name = globus_libc_strdup(path);
             tmp_ptr = globus_i_gsc_mlsx_line_single(
                 op->server_handle->opts.mlsx_fact_str, uid, stat_info);
         }

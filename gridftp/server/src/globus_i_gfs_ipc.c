@@ -395,9 +395,9 @@ void
 globus_l_gfs_ipc_request_destroy(
     globus_gfs_ipc_request_t *          request)
 {
-    globus_gfs_data_finished_info_t *       data_reply;
-    globus_gfs_cmd_finshed_info_t *    command_reply;
-    globus_gfs_stat_finished_info_t *       stat_reply;
+    globus_gfs_data_finished_info_t *   data_reply;
+    globus_gfs_cmd_finshed_info_t *     command_reply;
+    globus_gfs_stat_finished_info_t *   stat_reply;
     globus_gfs_command_info_t *         cmd_info;
     globus_gfs_transfer_info_t *        trans_info;
     globus_gfs_data_info_t *            data_info;
@@ -426,6 +426,18 @@ globus_l_gfs_ipc_request_destroy(
                     &request->reply->info.stat;
                 if(stat_reply->stat_array != NULL)
                 {
+                    for(ctr = 0; ctr < stat_reply->stat_count; ctr++)
+                    {
+                        if(stat_reply->stat_array[ctr].name != NULL)
+                        {
+                            globus_free(stat_reply->stat_array[ctr].name);
+                        }        
+                        if(stat_reply->stat_array[ctr].symlink_target != NULL)
+                        {
+                            globus_free(
+                                stat_reply->stat_array[ctr].symlink_target);
+                        }
+                    }
                     globus_free(stat_reply->stat_array);
                 }
                 if(stat_reply->gid_array != NULL)
@@ -2795,32 +2807,12 @@ globus_l_gfs_ipc_unpack_reply(
                 GFSDecodeString(buffer, len, str);
                 if(str != NULL)
                 {
-                    if(strlen(str) < MAXPATHLEN)
-                    {
-                        strcpy(
-                            reply->info.stat.stat_array[ctr].name, 
-                            str);
-                        globus_free(str);
-                    }
-                    else
-                    {
-                        goto decode_err;
-                    }
+                    reply->info.stat.stat_array[ctr].name = str;
                 }
                 GFSDecodeString(buffer, len, str);
                 if(str != NULL)
                 {
-                    if(strlen(str) < MAXPATHLEN)
-                    {
-                        strcpy(
-                            reply->info.stat.stat_array[ctr].symlink_target, 
-                            str);
-                        globus_free(str);
-                    }
-                    else
-                    {
-                        goto decode_err;
-                    }
+                    reply->info.stat.stat_array[ctr].symlink_target = str;
                 }
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].uid);

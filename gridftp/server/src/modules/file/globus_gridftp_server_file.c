@@ -299,11 +299,51 @@ globus_l_gfs_file_copy_stat(
     stat_object->dev      = stat_buf->st_dev;
     stat_object->ino      = stat_buf->st_ino;
     
-    strcpy(stat_object->name, filename);
-    strcpy(stat_object->symlink_target, symlink_target);
+    if(filename && *filename)
+    {
+        stat_object->name = globus_libc_strdup(filename);
+    }
+    else
+    {
+        stat_object->name = NULL;
+    }
+    if(symlink_target && *symlink_target)
+    {
+        stat_object->symlink_target = globus_libc_strdup(symlink_target);
+    }
+    else
+    {
+        stat_object->symlink_target = NULL;
+    }
 
     GlobusGFSFileDebugExit();
 }
+static
+void
+globus_l_gfs_file_destroy_stat(
+    globus_gfs_stat_t *                 stat_array,
+    int                                 stat_count)
+{
+    int                                 i;
+    GlobusGFSName(globus_l_gfs_file_destroy_stat);
+    GlobusGFSFileDebugEnter();
+        
+    for(i = 0; i < stat_count; i++)
+    {
+        if(stat_array[i].name != NULL)
+        {
+            globus_free(stat_array[i].name);
+        }        
+        if(stat_array[i].symlink_target != NULL)
+        {
+            globus_free(stat_array[i].symlink_target);
+        }
+    }
+    globus_free(stat_array);     
+
+    GlobusGFSFileDebugExit();
+}
+    
 
 static
 void
@@ -315,7 +355,7 @@ globus_l_gfs_file_stat(
     globus_result_t                     result;
     struct stat                         stat_buf;
     globus_gfs_stat_t *                 stat_array;
-    int                                 stat_count;
+    int                                 stat_count = 0;
     DIR *                               dir;
     char                                basepath[MAXPATHLEN];
     char                                filename[MAXPATHLEN];
@@ -457,13 +497,14 @@ globus_l_gfs_file_stat(
     globus_gridftp_server_finished_stat(
         op, GLOBUS_SUCCESS, stat_array, stat_count);
     
-    globus_free(stat_array);
+    
+    globus_l_gfs_file_destroy_stat(stat_array, stat_count);
     
     GlobusGFSFileDebugExit();
     return;
 
 error_read:
-    globus_free(stat_array);
+    globus_l_gfs_file_destroy_stat(stat_array, stat_count);
     
 error_alloc2:
     closedir(dir);

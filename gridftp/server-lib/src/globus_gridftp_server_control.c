@@ -396,6 +396,17 @@ globus_i_gsc_op_destroy(
         }
         if(op->stat_info != NULL)
         {
+            for(ctr = 0; ctr < op->stat_count; ctr++)
+            {
+                if(op->stat_info[ctr].name != NULL)
+                {
+                    globus_free(op->stat_info[ctr].name);
+                }        
+                if(op->stat_info[ctr].symlink_target != NULL)
+                {
+                    globus_free(op->stat_info[ctr].symlink_target);
+                }
+            }            
             globus_free(op->stat_info);
         }
         if(op->cs != NULL)
@@ -1836,6 +1847,8 @@ globus_i_gsc_stat_cp(
     globus_gridftp_server_control_stat_t *  src)
 {
     memcpy(dst, src, sizeof(globus_gridftp_server_control_stat_t));
+    dst->name = globus_libc_strdup(src->name);
+    dst->symlink_target = globus_libc_strdup(src->symlink_target);
 }
 
 static void
@@ -3144,7 +3157,7 @@ globus_i_gsc_nlst_line(
     GlobusGridFTPServerDebugInternalEnter();
 
     /* take a guess at the size needed */
-    buf_len = stat_count * sizeof(char) * 32;
+    buf_len = stat_count * sizeof(char) * 64;
     buf_left = buf_len;
     buf = globus_malloc(buf_len);
     tmp_ptr = buf;
@@ -3346,7 +3359,8 @@ globus_i_gsc_mlsx_line_single(
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_UNIXSLINK:
-                if(*stat_info->symlink_target != '\0')
+                if(stat_info->symlink_target != NULL && 
+                    *stat_info->symlink_target != '\0')
                 {
                     encoded_symlink_target = NULL;
                     globus_l_gsc_mlsx_urlencode(
@@ -3517,7 +3531,7 @@ globus_i_gsc_list_single_line(
     sprintf(tmp_ptr, "%s", grpname);
 
     tmp_ptr = globus_common_create_string(
-        "%s %3d %s %s %8ld %s %2d %02d:%02d %s",
+        "%s %3d %s %s %12"GLOBUS_OFF_T_FORMAT" %s %2d %02d:%02d %s",
         perms,
         stat_info->nlink,
         user,

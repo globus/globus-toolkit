@@ -141,8 +141,8 @@ typedef struct globus_gridftp_server_control_stat_s
 {
     int                                     mode;
     int                                     nlink;
-    char                                    name[MAXPATHLEN];
-    char                                    symlink_target[MAXPATHLEN];
+    char *                                  name;
+    char *                                  symlink_target;
     uid_t                                   uid;
     gid_t                                   gid;
     globus_off_t                            size;
