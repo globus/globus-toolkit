@@ -340,8 +340,8 @@ if((! -l "$target_dir/grid-security.conf") && (-f "$target_dir/grid-security.con
         die "\nERROR: Can't move config files form $target_dir to $trusted_certs_dir\n\n" if($ret_value != 0);
 
         $ret_value = symlink("$trusted_certs_dir/grid-security.conf.PREV_DEFAULT", "$target_dir/grid-security.conf");
-        $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.PREV_DEFAULT", "$target_dir/globus-host-ssl.conf");
-        $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.PREV_DEFAULT", "$target_dir/globus-user-ssl.conf");
+        $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.PREV_DEFAULT", "$target_dir/globus-user-ssl.conf");
+        $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.PREV_DEFAULT", "$target_dir/globus-host-ssl.conf");
         
         die "\nERROR: Can't create symlinks of config files from $trusted_certs_dir to $target_dir\n\n" if ($ret_value < 3);
     }
