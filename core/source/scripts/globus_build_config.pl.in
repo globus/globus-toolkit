@@ -37,12 +37,14 @@ for (@deppackages) {
   scan_package($_);
 }
 
+$rawldflags =~ s/-L\s*/-L/g;
+$rawldflags =~ s/-l\s*/-l/g;
 my @flaglist = split /\s+/, $rawldflags;
 my (%lib_dir_map, @libs_reversed, $currentlib_dir);
 
 for (@flaglist) {
   my $lib;
-  if (/(-l\w+)/) {
+  if (/(-l(?:\w+|\$\(\w+\))+)/) {
     $lib = $1;
     unshift @libs_reversed, $1;
     if (defined($currentlib_dir)) {
@@ -50,7 +52,7 @@ for (@flaglist) {
     }
   }
 
-  if (/(-L[\w\/]+)/) {
+  if (/(-L(?:\w+|\$\(\w+\)|\/)+)/) {
    $currentlib_dir = $1;
   }
 }
@@ -72,7 +74,7 @@ for (@libs_reversed) {
     }    
   }
 
-  $resulting_libline = "$add_libdir $_ $resulting_libline";
+  $resulting_libline = "$_ $add_libdir $resulting_libline";
   $added_libs{$_} = 1;
 }
 

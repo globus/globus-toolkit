@@ -3,7 +3,7 @@
 install_pkg () {
 if test ! -d "$pkg_dir/$1"; then
     mkdir $pkg_dir/$1
-    echo "$1_libraries=\"-l$1 $2\"" > $pkg_dir/$1/build_parameters_sweet
+    echo "$1_libraries=\"-L\$(GLOBUS_INSTALL_PATH)/include -l$1_\$(GLOBUS_FLAVOR_NAME) $2\"" > $pkg_dir/$1/build_parameters_sweet
     echo "$1_requires_build=\"$3\"" >> $pkg_dir/$1/build_parameters_sweet
 fi
 }
