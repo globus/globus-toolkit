@@ -428,6 +428,10 @@ globus_i_io_setup_cond_space_from_handle(
         globus_cond_init(cond, &condattr);
         globus_condattr_destroy(&condattr);
     }
+    else
+    {
+        globus_cond_init(cond, GLOBUS_NULL);
+    }
 }
 
 void
@@ -446,6 +450,10 @@ globus_i_io_setup_cond_space_from_attr(
         globus_condattr_setspace(&condattr, user_space);
         globus_cond_init(cond, &condattr);
         globus_condattr_destroy(&condattr);
+    }
+    else
+    {
+        globus_cond_init(cond, GLOBUS_NULL);
     }
 }
 
