@@ -6,6 +6,7 @@
 
 #include "myproxy_read_pass.h"
 #include "verror.h"
+#include "ssl_utils.h"
 
 #include <string.h>
 #include <assert.h>
