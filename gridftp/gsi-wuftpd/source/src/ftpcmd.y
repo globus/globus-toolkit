@@ -1404,7 +1404,7 @@ struct tab sitetab[] =
     {"GROUPS", GROUPS, OSTR, 1, "[ <sp> ] "},
     {"CHECKMETHOD", CHECKMETHOD, OSTR, 1, "[ <sp> method ]"},
     {"CHECKSUM", CHECKSUM, OSTR, 1, "[ <sp> file-name ]"},
-    {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <bufsize in kilobytes> ]"},
+    {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <socket buffer size in bytes> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
