@@ -107,6 +107,9 @@ typedef struct
     /* Valid mangling options */
     unsigned	mangling_options;
 
+    /* Cache directory type (hierarchial, flat,...) */
+    int         cache_type;
+
     /* Logging info */
     FILE*	log_FILE;
     char	*log_file_name;
@@ -563,6 +566,45 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
 			    char			**log_root,
 			    char			**global_dir,
 			    char			**local_dir );
+
+/*
+ * globus_gass_cache_get_cache_dir()
+ *
+ * Gets a the root cache of directory.  This is exported for use in the
+ * globus_gass_cache program.
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	cache_dir - Pointer to the cache directory
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_get_cache_dir( const globus_gass_cache_t	*cache_handle,
+				 char			**cache_dir );
+
+/*
+ * globus_gass_cache_get_cache_type_string()
+ *
+ * Gets a string which describes the cache type ("normal" or "flat")
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	cache_type - Pointer to the strdup()ed string
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_get_cache_type_string( const globus_gass_cache_t	*cache_handle,
+					 char			**cache_type );
 
 /*
  * globus_gass_cache_error_string()

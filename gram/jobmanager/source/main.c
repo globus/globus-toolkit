@@ -323,6 +323,11 @@ main(
 	{
 	    request->x509_cert_dir = globus_libc_strdup(argv[++i]);
 	}
+        else if ((strcmp(argv[i], "-extra-envvars") == 0)
+                 && (i + 1 < argc))
+        {
+            request->extra_envvars = globus_libc_strdup(argv[++i]);
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -359,6 +364,7 @@ main(
 		    "\t-k\n"
 		    "\t-globus-org-dn DN\n"
 		    "\t-machine-type TYPE\n"
+                    "\t-extra-envvars VAR1,VAR2,...\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"

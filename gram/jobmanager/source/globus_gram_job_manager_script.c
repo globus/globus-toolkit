@@ -1789,6 +1789,10 @@ globus_l_gram_request_validate(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
     }
+    if(request->rsl == NULL)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+    }
 
    /*
     * test that the scheduler script files exist and

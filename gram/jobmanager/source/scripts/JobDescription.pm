@@ -188,6 +188,7 @@ sub print_recursive
     }
     elsif(!ref($value))
     {
+        $value =~ s|'|\\'|g;
 	$file->print("'$value'");
     }
     return;

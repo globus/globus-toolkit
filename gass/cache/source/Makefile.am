@@ -18,8 +18,10 @@ EXTRA_DIST = \
 # will need to be seperated into seperate macros.
 Sources= \
 	globus_gass_cache.c \
+	globus_gass_cache_config.c \
 	globus_gass_cache.h \
-	globus_i_gass_cache.h
+	globus_i_gass_cache.h \
+	globus_i_gass_cache_config.h
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.

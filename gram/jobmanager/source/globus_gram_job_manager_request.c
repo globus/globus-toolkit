@@ -79,7 +79,8 @@ globus_gram_job_manager_request_init(
     globus_gram_job_manager_output_init(r);
     globus_mutex_init(&r->mutex, GLOBUS_NULL);
     globus_cond_init(&r->cond, GLOBUS_NULL);
-
+    r->extra_envvars = GLOBUS_NULL;
+    
     return(GLOBUS_SUCCESS);
 
 }
@@ -132,7 +133,8 @@ globus_gram_job_manager_request_destroy(
 	globus_libc_free(request->job_state_file);
     if (request->job_state_lock_file)
 	globus_libc_free(request->job_state_lock_file);
-
+    if (request->extra_envvars)
+        globus_libc_free(request->extra_envvars);
     globus_libc_free(request);
 
     return(GLOBUS_SUCCESS);

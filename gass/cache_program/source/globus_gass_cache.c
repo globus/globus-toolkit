@@ -37,7 +37,8 @@ typedef enum {
     GASSL_CLEANUP_TAG,
     GASSL_QUERY_URL,
     GASSL_MANGLE,
-    GASSL_DIRS
+    GASSL_DIRS,
+    GASSL_TYPE
 } globus_l_cache_op_t;
 
 /******************************************************************************
@@ -95,6 +96,7 @@ static char * long_usage =
 "                     The \"local\" data directory (from the tag / URL )\n"
 "                     The \"global\" data directory (from the URL )\n"
 "                     The base directories\n"
+"    -type          - prints the cache type (normal/flat):\n"
 "    -query         - prints the name of the local file in the cache that\n"
 "                     is associated with the URL\n"
 "\n"
@@ -149,6 +151,7 @@ enum { arg_a = 1,	/* Add */
        arg_ct,		/* Cleanup Tag */
        arg_m,		/* Mangled output */
        arg_dir,		/* Directories */
+       arg_type,	/* Directories */
        arg_q,		/* Query */
        arg_h,		/* hostname */
        arg_p,		/* Port */
@@ -178,6 +181,7 @@ globus_args_option_descriptor_t defname(id) = \
 flagdef(arg_a,   "-a", "-add");
 flagdef(arg_d,   "-d", "-delete");
 flagdef(arg_dir, "-dirs", GLOBUS_NULL );
+flagdef(arg_type, "-type", GLOBUS_NULL );
 flagdef(arg_m,   "-m", "-mangle" );
 flagdef(arg_q,   "-q", "-query");
 flagdef(arg_v,   "-v", "-vebose");
@@ -201,6 +205,7 @@ static globus_args_option_descriptor_t args_options[n_args];
     setupopt(arg_d);	\
     setupopt(arg_m);	\
     setupopt(arg_dir);	\
+    setupopt(arg_type);	\
     setupopt(arg_q);	\
     setupopt(arg_ct);	\
     setupopt(arg_h);	\
@@ -276,13 +281,6 @@ main(int argc, char **argv)
 			   rc);
 	exit(1);
     }
-    if(GLOBUS_SUCCESS !=
-            (rc = globus_module_activate(GLOBUS_GASS_CACHE_MODULE)))
-    {
-	globus_libc_printf("Error %d activating GASS cache library\n",
-			   rc);
-	exit(1);
-    }
     
     globus_i_gass_cache_args_init();
 
@@ -315,6 +313,7 @@ main(int argc, char **argv)
 	case arg_a:
 	case arg_d:
 	case arg_dir:
+	case arg_type:
 	case arg_m:
 	case arg_q:
 	case arg_ct:
@@ -336,6 +335,9 @@ main(int argc, char **argv)
 		break;
 	    case arg_dir:
 		op = GASSL_DIRS;
+		break;
+	    case arg_type:
+		op = GASSL_TYPE;
 		break;
 	    case arg_ct: 
 		op = GASSL_CLEANUP_TAG;
@@ -526,6 +528,8 @@ globus_l_cache_op_string(globus_l_cache_op_t op)
 	return "-mangle";
     case GASSL_DIRS:
 	return "-dirs";
+    case GASSL_TYPE:
+	return "-type";
     default:
 	return "";
     }
@@ -890,21 +894,30 @@ globus_l_cache_local_op(
 
     case GASSL_DIRS:
     {
-	char	*global_root, *local_root, *tmp_root, *log_root;
+	char	*cache_root, *global_root, *local_root, *tmp_root, *log_root;
 	char	*global_dir, *local_dir;
 
 	/* Go get 'em all */
-	rc = globus_gass_cache_get_dirs( &cache_handle,
-					 url,
-					 tag,
-					 &global_root,
-					 &local_root,
-					 &tmp_root,
-					 &log_root,
-					 &global_dir,
-					 &local_dir );
+	rc = globus_gass_cache_get_cache_dir( &cache_handle,
+					      &cache_root );
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    rc = globus_gass_cache_get_dirs( &cache_handle,
+					     url,
+					     tag,
+					     &global_root,
+					     &local_root,
+					     &tmp_root,
+					     &log_root,
+					     &global_dir,
+					     &local_dir );
+	}
 	if ( GLOBUS_SUCCESS != rc )
 	{
+	    if ( cache_root )
+	    {
+		globus_free( cache_root );
+	    }
 	    globus_libc_fprintf(stderr,
 				"Could not get global because %s\n",
 				globus_gass_cache_error_string(rc) );
@@ -913,6 +926,11 @@ globus_l_cache_local_op(
 	}
 
 	/* Dump 'em all out.. */
+	if ( cache_root )
+	{
+	    globus_libc_printf( "CACHE_DIRECTORY: '%s'\n", cache_root );
+	    globus_free( cache_root );
+	}
 	if ( global_root )
 	{
 	    globus_libc_printf( "GLOBAL_ROOT: '%s'\n", global_root );
@@ -943,6 +961,28 @@ globus_l_cache_local_op(
 	    globus_libc_printf( "LOCAL_DIR: '%s'\n", local_dir );
 	    globus_free( local_dir );
 	}
+	break;
+    }
+
+    case GASSL_TYPE:
+    {
+	char	*cache_type;
+
+	/* Go get the cache type string */
+	rc = globus_gass_cache_get_cache_type_string( &cache_handle,
+						      &cache_type );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    globus_libc_fprintf(stderr,
+				"Could not get global because %s\n",
+				globus_gass_cache_error_string(rc) );
+	    return_value = GLOBUS_FAILURE;
+	    break;
+	}
+
+	/* Dump 'em all out.. */
+	globus_libc_printf( "CACHE_TYPE: '%s'\n", cache_type );
+	globus_free( cache_type );
 	break;
     }
 

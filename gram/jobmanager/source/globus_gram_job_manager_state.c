@@ -758,6 +758,30 @@ globus_gram_job_manager_state_machine(
 	    "HOME",
 	    request->home);
 
+        if (request->extra_envvars)
+        {
+            char *  p = request->extra_envvars;
+            while (p && *p)
+            {
+                char * val = GLOBUS_NULL;
+                char * q   = strchr(p,',');
+                if (q) *q = '\0';
+                if (*p && (val = globus_libc_getenv(p)))
+                {
+                    globus_gram_job_manager_request_log(
+                        request,
+                        "Appending extra env.var %s=%s\n",
+                        p,
+                        val);
+                    globus_gram_job_manager_rsl_env_add(
+                        request->rsl,
+                        p,
+                        val);
+                }
+                p = (q) ? q+1 : GLOBUS_NULL;
+            }
+        }
+                
 	globus_gram_job_manager_reporting_file_start_cleaner(request);
 
 	if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
@@ -1908,9 +1932,9 @@ globus_gram_job_manager_state_machine(
 	{
 	    event_registered = GLOBUS_TRUE;
 	}
-	else
+	else if(rc != GLOBUS_SUCCESS && request->failure_code == 0)
 	{
-	    request->failure_code = rc;
+            request->failure_code = rc;
 	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
 	    if(request->jobmanager_state == 
@@ -2264,7 +2288,7 @@ globus_l_gram_job_manager_read_request(
     if (jrbuf_size > GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
     {
 	globus_gram_job_manager_request_log( request,
-	    "JM: RSL file to big\n");
+	    "JM: RSL file too big\n");
 	return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
     if (read(args_fd, buffer, jrbuf_size) != jrbuf_size)

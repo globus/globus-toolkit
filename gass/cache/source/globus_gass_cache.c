@@ -45,6 +45,7 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
+#include "globus_hashtable.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,9 +58,10 @@ CVS Information:
 
 #include "openssl/md5.h"
 
-/* #define DEBUG				0 */
-/* #define GLOBUS_L_GASS_CACHE_LOG 	0 */
+/*#define DEBUG				1*/
+/*#define GLOBUS_L_GASS_CACHE_LOG 	1*/
 #include "globus_i_gass_cache.h"
+#include "globus_i_gass_cache_config.h"
 #include "globus_gass_cache.h"
 #include "version.h"
 
@@ -105,18 +107,21 @@ CVS Information:
 static
 int
 globus_l_gass_cache_mangle_html(const char	*string,
+				const char      *separator,
 				char		*mangled,
 				int		*length );
 static
 int
 globus_l_gass_cache_mangle_md5(const char	*string,
+				const char      *separator,
 			       char		*mangled,
 			       int		*length );
 
 /* Other prototypes */
 static
 int
-globus_l_gass_cache_make_dirtree( const char *filepath );
+globus_l_gass_cache_make_dirtree( const char *filepath,
+                                  int         cache_type);
 
 
 /* Structure for storing directory paths & other info */
@@ -163,7 +168,11 @@ typedef struct cache_names_s
        original tag & URL */
     const char	*tag;
     const char	*url;
-} cache_names;
+
+    /* This never get freed up 'cause it's an alias to a static string */
+    int         cache_type;
+    const char  *separator;
+} cache_names_t;
 
 /* Size of an MD5ed URL / tag */
 #define MD5_SIZE	(32 + 3)
@@ -181,12 +190,12 @@ typedef struct cache_mangling_option_s
 {
     unsigned	flagbits;
     char	*prefix;
-    int (* function) (const char *, char *, int * );
-} cache_mangling_option;
-static cache_mangling_option cache_mangling_list [] =
+    int (* mangle_function) (const char *, const char*, char *, int * );
+} cache_mangling_option_t;
+static cache_mangling_option_t cache_mangling_list [] =
 {
-    { MANGLING_OPTION_HTML, "html/", globus_l_gass_cache_mangle_html },
-    { MANGLING_OPTION_MD5, "md5/", globus_l_gass_cache_mangle_md5 },
+    { MANGLING_OPTION_HTML, "html", globus_l_gass_cache_mangle_html },
+    { MANGLING_OPTION_MD5, "md5", globus_l_gass_cache_mangle_md5 },
     { 0x0000, GLOBUS_NULL, GLOBUS_NULL }
 };
 
@@ -196,14 +205,43 @@ typedef struct url_list_elem_s
     struct url_list_elem_s	*next;		/* Next in the linked list */
     char			*mangled;	/* Full path to the dir */
     int				data_count;	/* How many data files */
-} url_list_elem;
+} url_list_elem_t;
 typedef struct
 {
-    url_list_elem	*head;		/* Head of the list */
+    url_list_elem_t	*head;		/* Head of the list */
     int			count;		/* Size of the list */
-} url_list_head;
+} url_list_head_t;
 
-static globus_bool_t globus_l_gass_cache_link_works = GLOBUS_TRUE;
+/* directory types that are supported.
+ * - a flat cache is performing worse than a normal due to slow listing
+ *   of 1000s of files, but required on some file systems such as AFS due
+ *   to the use of  hard links
+ * - the nolink definition is for file systems with no link support at all,
+ *   such as current releases of PVFS. Needed for a linktest() tool below,
+ *   but we don't write any code for it at this time...
+ */
+#define DIRECTORY_TYPE_NORMAL   0x0000
+#define DIRECTORY_TYPE_FLAT     0x0001
+#define DIRECTORY_TYPE_NOLINK   0x0002
+
+/*
+ * Config settings: the file name is appended to the gass cache directory
+ * name. Note that the order in the arrays below correspond to the values
+ * of the DIRECTORY_TYPE_XXX definitions above.
+ */
+#define GLOBUS_L_GASS_CACHE_CONFIG_FILE      "/config"
+#define GLOBUS_L_GASS_CACHE_CONFIG_KEY_TYPE  "type"
+static char* directory_type_values[] = { "normal", "flat", GLOBUS_NULL };
+static char* directory_separator[] = { "/", "_", GLOBUS_NULL };
+
+
+/*
+ * OLLE: Hmm??? This variable is never used. Commenting it out, instead
+ * suggesting that work on this is to be continued as an implementation
+ * for the DIRECTORY_TYPE_NOLINK cache type (currently unsupported).
+ */
+/* static globus_bool_t globus_l_gass_cache_link_works = GLOBUS_TRUE; */
+
 
 static int
 globus_l_gass_cache_module_activate(void);
@@ -584,6 +622,89 @@ globus_l_gass_cache_trace(
 /* globus_l_gass_cache_trace() */
 #endif
 
+
+/*
+ * globus_l_gass_cache_linktest()
+ *
+ * Perform a test if hard links can be used in the current directory.
+ * Two tests are performed:
+ *   (a) link inside a local directory
+ *   (b) link across a directory boundary
+ *  
+ * Parameters:
+ *	cache	  - Cache handle, containing cache_directory_path which
+ *                  is known to exist
+ *
+ * Returns:
+ *     DIRECTORY_TYPE_NOLINK  - test (a) doesn't work
+ *     DIRECTORY_TYPE_NORMAL  - tests (a) and (b) both work
+ *     DIRECTORY_TYPE_FLAT    - test (a) work but not (b)
+ */
+static int
+globus_l_gass_cache_linktest(globus_gass_cache_t  *cache)
+{
+    char         dir[PATH_MAX];
+    char         file[PATH_MAX];
+    char         link1[PATH_MAX];
+    char         link2[PATH_MAX];
+    int          fd;
+    int          rc;
+    struct stat  stx;
+
+    rc = DIRECTORY_TYPE_NOLINK;
+
+    globus_libc_sprintf(dir, "%s/dir-%ld-%ld",
+                        cache->cache_directory_path,
+                        (long) globus_libc_getpid(),
+                        (long) globus_thread_self() );
+    
+    globus_libc_sprintf(file, "%s/file", dir );
+    globus_libc_sprintf(link1, "%s/link", dir );
+
+    globus_libc_sprintf(link2, "%s/link-%ld-%ld",
+	    cache->cache_directory_path,
+	    (long) globus_libc_getpid(),
+	    (long) globus_thread_self() );
+
+    /* create test dir and file */
+    rmdir(dir);
+    if (mkdir( dir, GLOBUS_L_GASS_CACHE_DIR_MODE ))
+       goto cleanup;
+
+    fd = open(file, O_RDWR|O_CREAT|O_TRUNC, GLOBUS_L_GASS_CACHE_MODE_RW);
+    if (fd < 0)
+       goto cleanup;
+
+    close(fd);
+
+    /* verify n_link returns correct value */
+    stx.st_nlink = 0;
+    if (stat(file, &stx) || (stx.st_nlink != 1))
+        goto cleanup;
+
+    /* test (a): link in same directory */
+    stx.st_nlink = 0;
+    if (link(file,link1) || stat(file,&stx) || stx.st_nlink!=2)
+        goto cleanup;
+
+    rc = DIRECTORY_TYPE_FLAT;
+
+    /* test (b): link from another directory */
+    stx.st_nlink = 0;
+    if (link(file,link2) || stat(file,&stx) || stx.st_nlink!=3)
+        goto cleanup;
+
+    rc = DIRECTORY_TYPE_NORMAL;
+    
+ cleanup:
+    remove(link1);
+    remove(link2);
+    remove(file);
+    rmdir(dir);
+
+    return rc;
+}
+
 /*
  * globus_l_gass_cache_build_filename()
  *
@@ -592,9 +713,14 @@ globus_l_gass_cache_trace(
  * alone is copied into the output path buffer.
  *  
  * Parameters:
- *	dir	- Incoming directory name
- *	file	- Optional file name
- *	path	- Outgoing full file path
+ *	dir	  - Incoming directory name
+ *	separator - Incoming directory separator
+ *	file	  - Optional file name
+ *      uniq      - Optional uniqueness string to append at the end
+ *      pathsize  - if non-null, points to size of already allocated memory
+ *                  for path. Will realloc if more is necessary.
+ *	path	  - Outgoing full file path
+ 
  *
  * Returns: VOID
  *
@@ -602,57 +728,56 @@ globus_l_gass_cache_trace(
 static
 int
 globus_l_gass_cache_build_filename(const char	*dir,
+				   const char   *separator,
 				   const char	*file,
 				   const char	*uniq,
-				   int		overwrite,
+				   int *         pathsize,
 				   char		**path )
 {
-    int		len = strlen( dir ) + 1;	/* String + \0 */
-
-    /* Did we already do this? */
-    if ( GLOBUS_NULL != *path )
-    {
-	/* If we're supposed to overwrite, free up the buffer */
-	if ( overwrite )
-	{
-	    globus_free( *path );
-	}
-	/* Otherwise, we're done! */
-	else
-	{
-	    return GLOBUS_SUCCESS;
-	}
-    }
-
+    globus_size_t   dirlen = strlen( dir );
+    globus_size_t   filelen;
+    globus_size_t   uniqlen;
+    globus_size_t   len;
+    char *          p;
+    
     /* Compute the lengths */
-    if ( file )
-    {
-	len += strlen( file ) + 1;		/* slash + string */
-    }
-    if ( uniq )
-    {
-	len += strlen( uniq ) + 1;		/* (no slash) string */
-    }
+    filelen = (file) ? strlen( file ) : 0;
+    uniqlen = (uniq) ? strlen( uniq ) : 0;
 
+    len = dirlen + filelen + uniqlen + 2;   /* a separator and \0 */
+    
     /* Allocate the buffer */
-    *path = globus_malloc( len );
+    if ( !*path || !pathsize || *pathsize < len )
+    {
+        if ( *path ) globus_free( *path );
+        if ( pathsize ) *pathsize = len;
+        *path = globus_malloc( len );
+    }
     if ( GLOBUS_NULL == *path )
     {
 	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
     }
 
     /* Fill it */
-    strcpy( *path, dir );
+    memcpy( *path, dir, dirlen );
+    p = *path + dirlen;
     if ( file )
     {
-	strcat( *path, "/" );
-	strcat( *path, file );
+        *p++ = *separator;
+    }
+    if ( file )
+    {
+	memcpy( p, file, filelen );
+        p += filelen;
     }
     if ( uniq )
     {
-	strcat( *path, uniq );
+	memcpy( p, uniq, uniqlen );
+        p += uniqlen;
     }
 
+    *p = '\0';
+    
     /* All done, good */
     return GLOBUS_SUCCESS;
 
@@ -672,13 +797,14 @@ globus_l_gass_cache_build_filename(const char	*dir,
 static
 int
 globus_l_gass_cache_mangle_html(const char	*string,
+				const char      *separator,
 				char		*mangled,
 				int		*length )
 {
     /* These are "safe" characters */
     const char	*safe = "$-_.+";
     const char	*extra = "!*'(),";
-    int		mangle_slash = 0;	/* Bool: Mangle extra slashes? */
+    int		mangle_separator = 0;	/* Bool: Mangle extra slashes? */
     int		len = 0;
     int		c;
 
@@ -706,7 +832,7 @@ globus_l_gass_cache_mangle_html(const char	*string,
 	}
 
 	/* Copy slashes (/) directly... */
-	else if (  ( '/' == c ) && ( ! mangle_slash )  )
+	else if (  ( *separator == c ) && ( ! mangle_separator )  )
 	{
 	    /* Do nothing */
 	}
@@ -720,7 +846,7 @@ globus_l_gass_cache_mangle_html(const char	*string,
 	/* Copy directly.. */
 	if ( ! mangle )
 	{
-	    mangle_slash = ( '/' == c );
+	    mangle_separator = ( *separator == c );
 	    len++;
 	    if ( mangled )
 	    {
@@ -733,14 +859,14 @@ globus_l_gass_cache_mangle_html(const char	*string,
 	    len += 3;
 	    if ( mangled )
 	    {
-		sprintf( mangled, "%%%02x", c );
+                globus_libc_sprintf( mangled, "%%%02x", c );
 		mangled += 3;
 	    }
 
 	    /* If this isn't a slash, force off / mangling for the next one */
-	    if ( '/' != c )
+	    if ( *separator != c )
 	    {
-		mangle_slash = 0;
+		mangle_separator = 0;
 	    }
 	}
     }
@@ -776,6 +902,7 @@ globus_l_gass_cache_mangle_html(const char	*string,
 static
 int
 globus_l_gass_cache_mangle_md5(const char	*string,
+			       const char       *separator,
 			       char		*mangled,
 			       int		*length )
 {
@@ -798,12 +925,12 @@ globus_l_gass_cache_mangle_md5(const char	*string,
 	/* Convert it to string format */
 	for ( i=0;  i<MD5_DIGEST_LENGTH;  i++ )
 	{
-	    sprintf( mangled, "%02x", *md5ptr );
+	    globus_libc_sprintf( mangled, "%02x", *md5ptr );
 	    mangled += 2;
 	    md5ptr++;
 	    if ( i <= 2 )
 	    {
-		*mangled++ = '/';
+		*mangled++ = *separator;
 	    }
 	}
 	*mangled = '\0';
@@ -821,12 +948,9 @@ globus_l_gass_cache_mangle_md5(const char	*string,
  * suitable for using as a file / path name.
  *  
  * Parameters:
- *	string - The incoming string to mangle (\0 terminated)
+ *      cache  - GASS cache handle
  *
- *	mangling_options - Flag bits defining the mangling options to
- *	try.
- *	
- *	max_mangled_len - Max allowable length of the mangled string
+ *	string - The incoming string to mangle (\0 terminated)
  *
  *	mangled - Pointer to the output string; a buffer for the real
  *	string is malloc()ed for the application.  If mangled is NULL,
@@ -843,31 +967,34 @@ globus_l_gass_cache_mangle_md5(const char	*string,
  *
  */
 int
-globus_l_gass_cache_mangle( const char	*string,
-			    unsigned	mangling_options,
-			    int		max_mangled_len,
-			    char	**mangled,
-			    int		*length )
+globus_l_gass_cache_mangle(const globus_gass_cache_t   *cache,
+			   const char	               *string,
+			   const int                   max_mangled_len,
+			   char	                       **mangled,
+			   int		               *length )
 {
+    cache_mangling_option_t	*option;
     int				rc;
-    int				len;
     int				option_no;
-    cache_mangling_option	*option;
+    int				len;
+    char                        *separator;
+    
+    separator = directory_separator[cache->cache_type];
 
     /* Get the mangled length */
     for ( option_no = 0, option = &cache_mangling_list[0];
 	  option->flagbits;
 	  option_no++, option++ )
     {
-	if ( mangling_options & option->flagbits )
+	if ( cache->mangling_options & option->flagbits )
 	{
-	    rc = option->function( string, GLOBUS_NULL, &len );
+	    rc = option->mangle_function(string, separator, GLOBUS_NULL, &len);
 	    if ( GLOBUS_SUCCESS != rc )
 	    {
 		RET_ERROR( rc );
 	    }
-	    len += strlen( option-> prefix );
-	    if (  ( max_mangled_len > 0 ) && ( len <= max_mangled_len )  )
+	    len += strlen( option-> prefix ) + 1; /* for the separator */
+ 	    if (  max_mangled_len > 0 && len <= max_mangled_len )
 	    {
 		break;
 	    }
@@ -897,7 +1024,11 @@ globus_l_gass_cache_mangle( const char	*string,
 	}
 	strcpy( mptr, option->prefix );
 	mptr += strlen( mptr );
-	rc = option->function( string, mptr, GLOBUS_NULL );
+	*mptr++ = *separator;
+	rc = option->mangle_function( string,
+				      separator,
+				      mptr,
+				      GLOBUS_NULL );
 	if ( GLOBUS_SUCCESS != rc )
 	{
 	    RET_ERROR( rc );
@@ -922,6 +1053,7 @@ globus_l_gass_cache_mangle( const char	*string,
 static
 int
 globus_l_gass_cache_build_dirname( const char	*root,
+				   const char   *separator,
 				   const char	*mangled_tag,
 				   const char	*mangled_url,
 				   char		**path,
@@ -961,12 +1093,12 @@ globus_l_gass_cache_build_dirname( const char	*root,
     strcpy( *path, root );
     if ( mangled_tag )
     {
-	strcat( *path, "/" );
+	strcat( *path, separator );
 	strcat( *path, mangled_tag );
     }
     if ( mangled_url )
     {
-	strcat( *path, "/" );
+	strcat( *path, separator );
 	strcat( *path, mangled_url );
     }
 
@@ -1024,7 +1156,7 @@ globus_l_gass_cache_build_uniqname( char **uniq )
  */
 static
 int
-globus_l_gass_cache_names_free( cache_names	*names )
+globus_l_gass_cache_names_free( cache_names_t	*names )
 {
 
     /* Free the mangled URL & tag */
@@ -1058,7 +1190,7 @@ globus_l_gass_cache_names_free( cache_names	*names )
 
 
     /* Finally, zero out the PATHs */
-    memset( names, 0, sizeof( cache_names ) );
+    memset( names, 0, sizeof( cache_names_t ) );
 
     /* Here, all is good.  Return ok. */
     return GLOBUS_SUCCESS;
@@ -1080,7 +1212,7 @@ globus_l_gass_cache_names_free( cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_names_fill_global( cache_names *names )
+globus_l_gass_cache_names_fill_global( cache_names_t *names )
 {
     int		rc = GLOBUS_SUCCESS;
 
@@ -1094,6 +1226,7 @@ globus_l_gass_cache_names_fill_global( cache_names *names )
     {
 	rc = globus_l_gass_cache_build_dirname( 
 	    names->global_root,
+	    names->separator,
 	    GLOBUS_NULL,
 	    names->mangled_url,
 	    &names->global_dir,
@@ -1103,14 +1236,22 @@ globus_l_gass_cache_names_fill_global( cache_names *names )
     /* Build the global data file name; *everything* uses it anyway */
     if ( GLOBUS_SUCCESS == rc )
     {
-	rc = globus_l_gass_cache_build_filename( 
-	    names->global_dir, DATA_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	rc = globus_l_gass_cache_build_filename(
+	    names->global_dir,
+	    names->separator,
+	    DATA_FILE,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
 	    &names->global_data_file );
     }
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename( 
-	    names->global_dir, URL_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    names->global_dir,
+	    names->separator,
+	    URL_FILE,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
 	    &names->global_url_file );
     }
 
@@ -1141,7 +1282,7 @@ globus_l_gass_cache_names_fill_global( cache_names *names )
  */
 static
 int
-globus_l_gass_cache_names_fill_local( cache_names *names )
+globus_l_gass_cache_names_fill_local( cache_names_t *names )
 {
     int		rc = GLOBUS_SUCCESS;
 
@@ -1156,6 +1297,7 @@ globus_l_gass_cache_names_fill_local( cache_names *names )
     {
 	rc = globus_l_gass_cache_build_dirname( 
 	    names->local_root,
+	    names->separator,
 	    names->mangled_tag,
 	    GLOBUS_NULL,
 	    &names->local_base_dir,
@@ -1170,7 +1312,11 @@ globus_l_gass_cache_names_fill_local( cache_names *names )
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename( 
-	    names->local_base_dir, TAG_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    names->local_base_dir,
+	    names->separator,
+	    TAG_FILE,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
 	    &names->local_tag_file );
     }
 
@@ -1185,6 +1331,7 @@ globus_l_gass_cache_names_fill_local( cache_names *names )
     {
 	rc = globus_l_gass_cache_build_dirname( 
 	    names->local_root,
+	    names->separator,
 	    names->mangled_tag,
 	    names->mangled_url,
 	    &names->local_dir,
@@ -1195,14 +1342,22 @@ globus_l_gass_cache_names_fill_local( cache_names *names )
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename( 
-	    names->local_dir, DATA_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    names->local_dir,
+	    names->separator,
+	    DATA_FILE,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
 	    &names->local_data_file );
     }
     /* The local tag "link" name */
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename( 
-	    names->local_dir, TAG_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    names->local_dir,
+	    names->separator,
+	    TAG_FILE,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
 	    &names->local_tag_link );
     }
 
@@ -1233,12 +1388,12 @@ int
 globus_l_gass_cache_names_init( const globus_gass_cache_t	*cache,
 				const char			*url,
 				const char			*tag,
-				cache_names			*names )
+				cache_names_t			*names )
 {
     int		rc = GLOBUS_SUCCESS;
 
     /* Zero out the PATHs first... */
-    memset( names, 0, sizeof( cache_names ) );
+    memset( names, 0, sizeof( cache_names_t ) );
 
     /* Create the links to the root dirs */
     names->global_root = cache->global_directory_path;
@@ -1260,21 +1415,28 @@ globus_l_gass_cache_names_init( const globus_gass_cache_t	*cache,
     /* Mangle the URL */
     if (  ( GLOBUS_SUCCESS == rc ) && ( GLOBUS_NULL != url )  )
     {
-	rc = globus_l_gass_cache_mangle( url,
-					 cache->mangling_options,
-					 cache->max_mangled_url,
-					 &names->mangled_url,
-					 GLOBUS_NULL );
+        rc = globus_l_gass_cache_mangle(cache,
+					url,
+					cache->max_mangled_url,
+					&names->mangled_url,
+					GLOBUS_NULL );
     }
 
     /* And, the tag */
     if (  ( GLOBUS_SUCCESS == rc ) && ( GLOBUS_NULL != tag )  )
     {
-	rc = globus_l_gass_cache_mangle( tag,
-					 cache->mangling_options,
-					 cache->max_mangled_tag,
-					 &names->mangled_tag, 
-					 GLOBUS_NULL );
+        rc = globus_l_gass_cache_mangle(cache,
+					tag,
+					cache->max_mangled_tag,
+					&names->mangled_tag, 
+					GLOBUS_NULL );
+    }
+
+    /* directory separator character (for flat vs. hierarchial) */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	names->cache_type  = cache->cache_type;
+	names->separator   = directory_separator[cache->cache_type];
     }
 
     /* Assemble the global dir & related names */
@@ -1321,7 +1483,7 @@ globus_l_gass_cache_names_init( const globus_gass_cache_t	*cache,
 static
 int
 globus_l_gass_cache_names_new_murl( const char	*mangled_url,
-				    cache_names	*names )
+				    cache_names_t	*names )
 {
     int		rc = GLOBUS_SUCCESS;
 
@@ -1444,11 +1606,11 @@ static void TODOgu( const char *g, const char *u, const char *msg )
 
     if ( g )
     {
-	sprintf( data_name, "%s/%s", g, DATA_FILE );
+	globus_libc_sprintf( data_name, "%s/%s", g, DATA_FILE );
 	CACHE_TRACE3( "%d: Data name is '%s'", getpid(), data_name );
 	if ( u )
 	{
-	    sprintf( uniq_name, "%s/%s%s", g, UDATA_FILE, u );
+	    globus_libc_sprintf( uniq_name, "%s/%s%s", g, UDATA_FILE, u );
 	    CACHE_TRACE3( "%d: Uniq name is '%s'", getpid(), uniq_name );
 	}
     }
@@ -1503,7 +1665,9 @@ globus_l_gass_cache_create( const char	*filepath,
 	    if (  ( GLOBUS_NULL != dir ) && 
 		  ( ++mkdir_try < CREATE_MAX_TRIES ) )
 	    {
-		int	rc = globus_l_gass_cache_make_dirtree( dir );
+		int rc = globus_l_gass_cache_make_dirtree(
+                              dir,
+                              DIRECTORY_TYPE_NORMAL );
 		if ( GLOBUS_SUCCESS != rc )
 		{
 		    RET_ERROR( rc );
@@ -1817,29 +1981,48 @@ globus_l_gass_cache_scandir_free( struct dirent **list,
 static
 int
 globus_l_gass_cache_scandir( const char		*directory,
+                             const int          cache_type,
 			     struct dirent	***list,
 			     int		*list_count,
-			     int (*selectfn)(const struct dirent *) )
+			     globus_bool_t (*selectfn)(const struct dirent *,
+                                                       const char *,
+                                                       const int) )
 {
     DIR			*dirptr;
     struct dirent	*dir_entry = GLOBUS_NULL;
     struct dirent	**newlist;
+    char                *dirname;
+    char                *prefix = GLOBUS_NULL;
+    int                 prefix_len = -1;
     int			newlist_size = 2;
     int			count = 0;
     int			rc = GLOBUS_SUCCESS;
 
+    
     /* Initialize the count */
     *list_count = 0;
 
+    dirname = globus_libc_strdup(directory);
+    if (cache_type == DIRECTORY_TYPE_FLAT)
+    {
+        prefix = strrchr(dirname, '/');
+        *prefix++ = '\0';
+        prefix_len = strlen(prefix);
+    }
+
+    dirptr = globus_libc_opendir( dirname );
+    
     /* Open the directory for reading.. */
-    if (  ( dirptr = globus_libc_opendir( directory ) ) == NULL )
+    if (  dirptr == NULL )
     {
 	if ( ENOENT == errno )
 	{
+            globus_free(dirname);
 	    RET_ERROR( GLOBUS_L_ENOENT );
 	}
 	else if ( EINTR != errno )
 	{
+            globus_free(dirname);
 	    RET_ERROR( GLOBUS_L_EOTHER );
 	}
     }
@@ -1848,6 +2031,7 @@ globus_l_gass_cache_scandir( const char		*directory,
     newlist = globus_malloc( newlist_size * sizeof( struct dirent * ) );
     if ( GLOBUS_NULL == newlist )
     {
+        globus_free(dirname);
 	closedir( dirptr );
 	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
     }
@@ -1861,14 +2045,26 @@ globus_l_gass_cache_scandir( const char		*directory,
 	int	keep = GLOBUS_FALSE;
 
 	/* Invoke the select function... */
-	if (  ( GLOBUS_NULL == selectfn ) || ( selectfn( dir_entry ) )  )
+        if ( selectfn==GLOBUS_NULL || selectfn(dir_entry, prefix, prefix_len) )
 	{
 	    keep = GLOBUS_TRUE;
+            if (prefix)
+            {
+                /* remove prefix from d_name */
+                char *p = dir_entry->d_name;
+                char *q = p + prefix_len + 1; /* +1 for the separator */
+                
+                while (*q)
+                {
+                    *p++ = *q++;
+                }
+                *p = '\0';
+            }
 	}
 
 	/* If we should keep this entry.. */
-	if ( GLOBUS_TRUE == keep )
-	{
+	if ( GLOBUS_TRUE == keep)
+        {
 	    /* Did we exceed the size of our list? */
 	    if ( count >= newlist_size )
 	    {
@@ -1882,6 +2078,7 @@ globus_l_gass_cache_scandir( const char		*directory,
 		if ( GLOBUS_NULL == tmp )
 		{
 		    globus_l_gass_cache_scandir_free( newlist, count );
+                    globus_free(dirname);
 		    closedir( dirptr );
 		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
 		}
@@ -1904,6 +2101,7 @@ globus_l_gass_cache_scandir( const char		*directory,
     /* Done */
     *list = newlist;
     *list_count = count;
+    globus_free(dirname);
     closedir( dirptr );
     return GLOBUS_SUCCESS;
 
@@ -2084,13 +2282,18 @@ globus_l_gass_cache_calc_file_age( const char	*tmp_file,
  * globus_l_gass_cache_make_dirtree()
  *  
  * Parameters:
+ * - filepath    -- the directory to create
+ * - cache_type  -- one of DIRECTORY_TYPE_NORMAL or DIRECTORY_TYPE_FLAT
+ *                  if FLAT, will assume anything after the last / is a
+ *                  file name component: thus, no directory hiearchies
+ *                  will be created below the base directory.
  *
  * Returns:
  *
  */
 static
 int
-globus_l_gass_cache_make_dirtree( const char *filepath )
+globus_l_gass_cache_make_dirtree( const char *filepath, int cache_type )
 {
     char	*temppath = (char *) globus_malloc( strlen( filepath ) + 1 );
     const char	*pos;
@@ -2106,6 +2309,32 @@ globus_l_gass_cache_make_dirtree( const char *filepath )
 	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
     }
 
+    if (cache_type==DIRECTORY_TYPE_FLAT)
+    {
+        /* anything after the last / is a file name */
+        pos = strrchr(filepath, '/');
+        if (pos)
+        {
+            int n = pos - filepath;
+            if (n==0)
+            {
+                /* root file system always exist... */
+                return GLOBUS_SUCCESS;
+            }
+            /* put parent directory in temppath */
+            strncpy(temppath,filepath,n);
+            *(temppath+n) = '\0';
+
+            /* now create the file */
+            rc = globus_l_gass_cache_create(filepath,
+                                            temppath,
+                                            GLOBUS_L_GASS_CACHE_MODE_RW,
+                                            GLOBUS_NULL,
+                                            0 );
+            globus_free(temppath);
+            return rc;
+        }
+    }
 
     /* Loop through each component of the path... */
     while( *(filepath + offset) != '\0' )
@@ -2206,6 +2435,205 @@ globus_l_gass_cache_make_dirtree( const char *filepath )
 } /* globus_l_gass_cache_make_dirtree() */
 
 /*
+ * globus_l_gass_cache_scandir_select_uniq()
+ *
+ * Select only files which match any file name.  Passed as the third
+ * paramter to scandir()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- 0: Don't include in the dirlist
+ *	- <>0: Include in dirlist
+ */
+static
+globus_bool_t
+globus_l_gass_cache_scandir_select_uniq(const struct dirent *entry,
+                                        const char          *prefix,
+                                        const int           prefix_len)
+{
+    char *      p = entry->d_name;
+    char *      pattern = UDATA_FILE_PAT;
+    int         len = UDATA_FILE_PAT_LEN;
+
+    if (prefix)
+    {
+        if (strncmp(p, prefix, prefix_len) || *(p+prefix_len)=='\0')
+        {
+            return GLOBUS_FALSE;
+        }
+        p += prefix_len+1;  /* +1 for the separator */
+    }
+    
+    /* All uniq files should start with our "data" pattern */
+    return ( ! strncmp( p, pattern, len )  );
+} /* globus_l_gass_cache_scandir_select_uniq() */
+
+/*
+ * globus_l_gass_cache_scandir_select_data()
+ *
+ * Select only files which match any *data* file name.  Passed as the
+ * third paramter to scandir()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- 0: Don't include in the dirlist
+ *	- <>0: Include in dirlist
+ */
+static
+globus_bool_t
+globus_l_gass_cache_scandir_select_data(const struct dirent *entry,
+                                        const char          *prefix,
+                                        const int            prefix_len)
+{
+    char *      p = entry->d_name;
+    char *      pattern = DATA_FILE_PAT;
+    int         len = DATA_FILE_PAT_LEN;
+
+    if (prefix)
+    {
+        if (strncmp(p, prefix, prefix_len) || *(p+prefix_len)=='\0')
+        {
+            return GLOBUS_FALSE;
+        }
+        p += prefix_len+1;  /* +1 for the separator */
+    }
+    
+    /* All uniq files should start with our "data" pattern */
+    return ( ! strncmp( p, pattern, len )  );
+} /* globus_l_gass_cache_scandir_select_data() */
+
+/*
+ * globus_l_gass_cache_scandir_select_all()
+ *
+ * Select only files which match all patterns.  Passed as the third
+ * paramter to scandir()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- 0: Don't include in the dirlist
+ *	- <>0: Include in dirlist
+ */
+static
+globus_bool_t
+globus_l_gass_cache_scandir_select_all(const struct dirent *entry,
+                                       const char          *prefix,
+                                       const int            prefix_len)
+{
+    char * p = entry->d_name;
+    return (prefix)
+        ? ( ! strncmp(p, prefix, prefix_len) ) && ( *(p+prefix_len)!='\0' )
+        : GLOBUS_TRUE;
+} /* globus_l_gass_cache_scandir_select_all() */
+
+
+/*
+ * globus_l_gass_cache_remove_dirtree_flat()
+ *
+ * This function is a replacement for remove_dirtree() that works for
+ * both cache directory types. Instead of discovering afterwards that
+ * an operation failed (by checking errno), we instead perform a listing
+ * first...
+ *
+ * Currently only used for the flat cache type though, thereby the name.
+ *
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_remove_dirtree_flat( const cache_names_t   *names,
+                                         const char            *base,
+                                         const char            *tree )
+{
+    struct dirent 	**list = NULL;
+    struct stat         statbuf;
+    int			list_count;
+    int                 rc = GLOBUS_SUCCESS;
+
+    /* check if subdir is empty */
+    rc = globus_l_gass_cache_scandir( 
+	tree,
+        names->cache_type,
+	&list,
+	&list_count,
+	globus_l_gass_cache_scandir_select_all );
+    
+    if (rc != GLOBUS_SUCCESS)
+    {
+        /* nothing to do */
+        return rc;
+    }
+
+    globus_l_gass_cache_scandir_free(list, list_count);
+
+    if (list_count>0)
+    {
+        return 1;  /* "oppurtunistic error code" */
+    }
+
+    if ((rc = globus_l_gass_cache_stat(tree, &statbuf)) != GLOBUS_SUCCESS)
+    {
+        /* 'tree' is no more... someone already removed it for us */
+        return GLOBUS_SUCCESS;
+    }
+
+    /* Check if it's a file or a directory */
+    if ( ! S_ISDIR( statbuf.st_mode ) )
+    {
+        rc = globus_l_gass_cache_unlink(tree);
+    }
+    else
+    {
+        while ( rmdir( tree ) < 0 )
+        {
+            /* Not empty (Solaris returns EEXIST - go figure) */
+            if (  ( ENOTEMPTY == errno ) || ( EEXIST == errno ) )
+            {
+                return 1;
+            }
+            else if ( EINTR == errno )
+            {
+                continue;
+            }
+            else if ( ENOENT == errno )
+            {
+                break;	/* Somebody else beat me to it! */
+            }
+            RET_ERROR( -1 );
+        }
+    }
+    
+    if (rc==GLOBUS_SUCCESS)
+    {
+        char *q, *p = strdup(tree);
+        if (!p) 
+        {
+            RET_ERROR( -1 );
+        }
+        if ((q = strrchr(p,*names->separator)))
+        {
+            *q = '\0';
+            if (strlen(p) > strlen(base))
+            {
+                rc = globus_l_gass_cache_remove_dirtree_flat(names,
+                                                             base,
+                                                             p     );
+            }
+        }
+        globus_free(p);
+    }
+
+    return rc;
+}
+/* globus_l_gass_cache_remove_dirtree_flat() */
+
+
+/*
  * globus_l_gass_cache_remove_dirtree()
  *  
  * Parameters:
@@ -2215,8 +2643,9 @@ globus_l_gass_cache_make_dirtree( const char *filepath )
  */
 static
 int
-globus_l_gass_cache_remove_dirtree( const char *base,
-				    const char *tree )
+globus_l_gass_cache_remove_dirtree( const cache_names_t   *names,
+                                    const char            *base,
+				    const char            *tree )
 {
     char	*fullpath = GLOBUS_NULL;
     char	*pos;
@@ -2224,6 +2653,11 @@ globus_l_gass_cache_remove_dirtree( const char *base,
     int		rc;
     unsigned	length = strlen( base );
 
+    if (names->cache_type==DIRECTORY_TYPE_FLAT)
+    {
+        return globus_l_gass_cache_remove_dirtree_flat(names, base, tree);
+    }
+    
     /* Make a local copy of hte full path.. */
     fullpath = strdup( tree );
     if ( GLOBUS_NULL == fullpath )
@@ -2286,72 +2720,6 @@ globus_l_gass_cache_remove_dirtree( const char *base,
 
 } /* globus_l_gass_cache_remove_dirtree() */
 
-/*
- * globus_l_gass_cache_scandir_select_uniq()
- *
- * Select only files which match any file name.  Passed as the third
- * paramter to scandir()
- *  
- * Parameters:
- *
- * Returns:
- *	- 0: Don't include in the dirlist
- *	- <>0: Include in dirlist
- */
-static
-int
-globus_l_gass_cache_scandir_select_uniq(const struct dirent *entry )
-{
-    const char	*pattern = UDATA_FILE_PAT;
-
-    /* All uniq files should start with our "data" pattern */
-    return ( ! strncmp( entry->d_name, pattern, UDATA_FILE_PAT_LEN )  );
-
-} /* globus_l_gass_cache_scandir_select_uniq() */
-
-/*
- * globus_l_gass_cache_scandir_select_data()
- *
- * Select only files which match any *data* file name.  Passed as the
- * third paramter to scandir()
- *  
- * Parameters:
- *
- * Returns:
- *	- 0: Don't include in the dirlist
- *	- <>0: Include in dirlist
- */
-static
-int
-globus_l_gass_cache_scandir_select_data(const struct dirent *entry )
-{
-    const char	*pattern = DATA_FILE_PAT;
-
-    /* All uniq files should start with our "data" pattern */
-    return ( ! strncmp( entry->d_name, pattern, DATA_FILE_PAT_LEN )  );
-
-} /* globus_l_gass_cache_scandir_select_data() */
-
-/*
- * globus_l_gass_cache_scandir_select_all()
- *
- * Select only files which match all patterns.  Passed as the third
- * paramter to scandir()
- *  
- * Parameters:
- *
- * Returns:
- *	- 0: Don't include in the dirlist
- *	- <>0: Include in dirlist
- */
-static
-int
-globus_l_gass_cache_scandir_select_all(const struct dirent *entry )
-{
-    (void) entry;
-    return 1;
-
-} /* globus_l_gass_cache_scandir_select_all() */
 
 /*
  * globus_l_gass_cache_check_global_file()
@@ -2366,7 +2734,7 @@ globus_l_gass_cache_scandir_select_all(const struct dirent *entry )
  */
 static
 int
-globus_l_gass_cache_check_global_file( const cache_names	*names,
+globus_l_gass_cache_check_global_file( const cache_names_t	*names,
 				       int			*num_data,
 				       int			*num_uniq )
 {
@@ -2374,7 +2742,6 @@ globus_l_gass_cache_check_global_file( const cache_names	*names,
     struct dirent 	**data_list = NULL;
     int			data_list_count;
     int			data_num;
-    struct stat		statbuf;
     int			data_count = 0;
     int			uniq_count = 0;
 
@@ -2387,29 +2754,10 @@ globus_l_gass_cache_check_global_file( const cache_names	*names,
     {
 	*num_uniq = 0;
     }
-
-    /* Stat the data directory */
-    rc = globus_l_gass_cache_stat( names->global_dir, &statbuf );
-
-    /* There are no errors that I can handle here... */
-    if ( GLOBUS_L_ENOENT == rc )
-    {
-	return GLOBUS_L_ENODATA;
-    }
-    else if ( GLOBUS_SUCCESS != rc )
-    {
-	RET_ERROR( rc );
-    }
-
-    /* Verify that it's a directory.. */
-    if ( ! S_ISDIR( statbuf.st_mode ) )
-    {
-	RET_ERROR( GLOBUS_L_EOTHER );
-    }
-
     /* Scan the directory; we're looking at *all* of the "data" files */
     rc = globus_l_gass_cache_scandir( 
 	names->global_dir,
+        names->cache_type,
 	&data_list,
 	&data_list_count,
 	globus_l_gass_cache_scandir_select_data );
@@ -2429,8 +2777,9 @@ globus_l_gass_cache_check_global_file( const cache_names	*names,
     /* Here, there's one or more entries ( count in rc ).. */
     for ( data_num = 0;  data_num < data_list_count; data_num++ )
     {
+        int len = strlen(data_list[data_num]->d_name) - DATA_FILE_PAT_LEN;
 	/* Is it *the* data file? */
-	if ( ! strcmp( DATA_FILE_PAT, data_list[data_num]->d_name ) )
+	if ( ! strcmp( DATA_FILE_PAT, data_list[data_num]->d_name + len) )
 	{
 	    data_count++;
 	}
@@ -2473,7 +2822,7 @@ globus_l_gass_cache_check_global_file( const cache_names	*names,
  */
 static
 int
-globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
+globus_l_gass_cache_create_uniq_global_file( const cache_names_t	*names )
 {
     int			rc;
     int			uniq_count;
@@ -2511,6 +2860,7 @@ globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
     /* Scan the directory; we're looking at *all* of the "uniq" files */
     rc = globus_l_gass_cache_scandir( 
 	names->global_dir,
+        names->cache_type,
 	&uniq_list,
 	&uniq_count,
 	globus_l_gass_cache_scandir_select_uniq );
@@ -2597,7 +2947,7 @@ globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_create_global_url_file( cache_names	*names )
+globus_l_gass_cache_create_global_url_file( cache_names_t	*names )
 {
     int		rc = GLOBUS_SUCCESS;
     char	*uniq_filename = GLOBUS_NULL;
@@ -2605,9 +2955,10 @@ globus_l_gass_cache_create_global_url_file( cache_names	*names )
     /* Build "uniq" file name */
     rc = globus_l_gass_cache_build_filename( 
 	names->global_dir,
+	names->separator,
 	URL_FILE,
 	names->uniq,
-	GLOBUS_FALSE,
+	GLOBUS_NULL,
 	&uniq_filename );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -2659,7 +3010,7 @@ globus_l_gass_cache_create_global_url_file( cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_create_global_file( cache_names	*names,
+globus_l_gass_cache_create_global_file( cache_names_t	*names,
 					globus_bool_t	force )
 {
     int			rc = GLOBUS_SUCCESS;
@@ -2671,15 +3022,17 @@ globus_l_gass_cache_create_global_file( cache_names	*names,
     {
 	rc = globus_l_gass_cache_build_filename( 
 	    names->global_dir,
+	    names->separator,
 	    UDATA_FILE,
 	    names->uniq,
-	    GLOBUS_FALSE,
+	    GLOBUS_NULL,
 	    &names->global_uniq_file );
     }
 
     /* Scan the directory */
     rc = globus_l_gass_cache_scandir( 
 	names->global_dir,
+        names->cache_type,
 	&uniq_list,
 	&uniq_count,
 	globus_l_gass_cache_scandir_select_uniq );
@@ -2733,7 +3086,7 @@ globus_l_gass_cache_create_global_file( cache_names	*names,
  */
 static
 int
-globus_l_gass_cache_make_ready( cache_names	*names,
+globus_l_gass_cache_make_ready( cache_names_t	*names,
 				unsigned long	timestamp )
 {
     struct stat		statbuf;
@@ -2746,7 +3099,11 @@ globus_l_gass_cache_make_ready( cache_names	*names,
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename( 
-	    names->global_dir, UDATA_FILE, names->uniq, GLOBUS_FALSE,
+	    names->global_dir,
+	    names->separator,
+	    UDATA_FILE,
+	    names->uniq,
+	    GLOBUS_NULL,
 	    &names->global_uniq_file );
     }
 
@@ -2850,7 +3207,7 @@ globus_l_gass_cache_make_ready( cache_names	*names,
  */
 static
 int
-globus_l_gass_cache_make_unready( cache_names	*names )
+globus_l_gass_cache_make_unready( cache_names_t	*names )
 {
 # if GLOBUS_L_GASS_CACHE_RENAMEBUG
     struct stat	statbuf;
@@ -2863,7 +3220,11 @@ globus_l_gass_cache_make_unready( cache_names	*names )
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename( 
-	    names->global_dir, UDATA_FILE, names->uniq, GLOBUS_FALSE,
+	    names->global_dir,
+	    names->separator,
+	    UDATA_FILE,
+	    names->uniq,
+	    GLOBUS_NULL,
 	    &names->global_uniq_file );
     }
     if ( GLOBUS_SUCCESS != rc )
@@ -2890,7 +3251,11 @@ globus_l_gass_cache_make_unready( cache_names	*names )
 
     /* Create lock file name */
     rc = globus_l_gass_cache_build_filename(
-	names->global_dir, LOCK_FILE, GLOBUS_NULL, GLOBUS_FALSE, 
+	names->global_dir,
+	names->separator,
+	LOCK_FILE,
+	GLOBUS_NULL,
+	GLOBUS_NULL, 
 	&names->globaldir_lock_file );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -3015,7 +3380,7 @@ globus_l_gass_cache_make_unready( cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_wait_ready( const cache_names	*names,
+globus_l_gass_cache_wait_ready( const cache_names_t	*names,
 				unsigned long		*timestamp )
 {
     int			rc;
@@ -3028,13 +3393,13 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
     time_t		cur_time;
     time_t		dir_age = 0;
     time_t		TODOmin_age = 9999999;
-    int			global_dir_len;
-    int			cur_statpath_size = 0;
-    char		*cur_statpath;
+    int                 global_dir_len;
+    int                 cur_statpath_size = 0;
+    char *              cur_statpath;
 
     /* Default to check right away, then we'll wait before further checks */
     checktime = ( time(NULL) + 0 );
-
+    
     /* Run til we're done */
     while( 1 )
     {
@@ -3085,6 +3450,7 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	/* Scan the directory; we're looking at *all* of the "uniq" files */
 	rc = globus_l_gass_cache_scandir( 
 	    names->global_dir,
+            names->cache_type,
 	    &uniq_list,
 	    &uniq_count,
 	    globus_l_gass_cache_scandir_select_uniq );
@@ -3107,55 +3473,32 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	}
 
 	/* Stat them all, check their mtime's */
-	global_dir_len = strlen( names->global_dir );
+        global_dir_len = strlen( names->global_dir );
 	uniq_num_recent = 0;
 	cur_time = time( NULL );
-	cur_statpath = GLOBUS_NULL;
+        cur_statpath = GLOBUS_NULL;
 	for ( uniq_num = 0;  uniq_num < uniq_count; uniq_num++ )
 	{
 	    time_t	age;		/* Age (seconds) of the file */
-	    int		min_size;	/* Min file name buffer size */
-	    int		request_size;	/* Buffer size to request */
-
-	    /* Compute the required file name buffer size. */
-	    min_size =
-		strlen( uniq_list[uniq_num]->d_name ) + global_dir_len + 2;
-	    request_size = min_size + 50;
-
-	    /* Allocate (or reallocate if our buffer is too small) a file name
-	       buffer to use with stat() */
-	    if ( GLOBUS_NULL == cur_statpath )
-	    {
-		cur_statpath = globus_libc_malloc( request_size );
-		if ( GLOBUS_NULL == cur_statpath )
-		{
-		    globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
-		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
-		}
-		cur_statpath_size = request_size;
-	    }
-	    else if ( min_size > cur_statpath_size )
-	    {
-		char	*new;
-		new = globus_libc_realloc( cur_statpath,
-						    request_size );
-		if ( GLOBUS_NULL == new )
-		{
-		    globus_libc_free( cur_statpath );
-		    globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
-		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
-		}
-		cur_statpath = new;
-		cur_statpath_size = request_size;
-	    }
-
+            
 	    /* Fill in the file name buffer */
-	    strcpy( cur_statpath, names->global_dir );
-	    strcat( cur_statpath, "/" );
-	    strcat( cur_statpath, uniq_list[uniq_num]->d_name );
+            rc = globus_l_gass_cache_build_filename(
+                names->global_dir,
+                names->separator,
+                uniq_list[uniq_num]->d_name,
+                GLOBUS_NULL,
+                &cur_statpath_size,
+                &cur_statpath );
 
+            if (rc != GLOBUS_SUCCESS)
+            { 
+                globus_libc_free( cur_statpath );
+                globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
+                RET_ERROR( rc );
+            }
+            
 	    /* Now, go stat() the file and learn all about it */
-	    rc = globus_l_gass_cache_stat( cur_statpath, & statbuf);
+	    rc = globus_l_gass_cache_stat( cur_statpath, &statbuf);
 
 	    /* If it's gone away, ignore it.. */
 	    if ( GLOBUS_L_ENOENT == rc )
@@ -3166,7 +3509,8 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	    else if ( GLOBUS_SUCCESS != rc )
 	    {
 		/* BAD */
-		globus_free( uniq_list );
+                globus_libc_free( cur_statpath );
+                globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
 		RET_ERROR( rc );
 	    }
 
@@ -3184,14 +3528,12 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	    }
 	}
 
-	/* Free our stat file name buffer */
-	if ( GLOBUS_NULL != cur_statpath )
-	{
-	    globus_libc_free( cur_statpath );
-	}
-
 	/* Done with the list! */
 	globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
+        if ( cur_statpath )
+        { 
+            globus_libc_free( cur_statpath );
+        }
 
 	/*
 	 * If there are none, it means we should give up waiting, and
@@ -3208,6 +3550,7 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	sleep( 1 );
 	continue;
     }
+
 
 } /* globus_l_gass_cache_wait_ready() */
 
@@ -3228,6 +3571,7 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 static
 int
 globus_l_gass_cache_find_uniq( const char	*dir,
+                               int              cache_type,
 			       char		**uniq_file,
 			       int		*uniq_count )
 {
@@ -3238,6 +3582,7 @@ globus_l_gass_cache_find_uniq( const char	*dir,
     *uniq_count = 0;
     rc = globus_l_gass_cache_scandir( 
 	dir,
+        cache_type,
 	&uniq_list,
 	uniq_count,
 	globus_l_gass_cache_scandir_select_uniq );
@@ -3315,7 +3660,7 @@ globus_l_gass_cache_lock_delay( int tryno )
  */
 static
 int
-globus_l_gass_cache_lock_local_dir( cache_names	*names,
+globus_l_gass_cache_lock_local_dir( cache_names_t	*names,
 				    const char	*existing_file )
 {
     int			rc;
@@ -3326,8 +3671,12 @@ globus_l_gass_cache_lock_local_dir( cache_names	*names,
 
     /* Build the lock file name */
     rc = globus_l_gass_cache_build_filename(
-	names->local_dir, LOCK_FILE, GLOBUS_NULL,
-	GLOBUS_FALSE, &names->localdir_lock_file );
+	names->local_dir,
+	names->separator,
+	LOCK_FILE,
+	GLOBUS_NULL,
+	GLOBUS_NULL,
+	&names->localdir_lock_file );
     if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3407,15 +3756,19 @@ globus_l_gass_cache_lock_local_dir( cache_names	*names,
 
 static
 int
-globus_l_gass_cache_unlock_local_dir( cache_names	*names,
+globus_l_gass_cache_unlock_local_dir( cache_names_t	*names,
 				      const char	*target_name )
 {
     int		rc = GLOBUS_SUCCESS;
 
     /* Build the lock file name (should be valid already, but doesn't hurt */
     rc = globus_l_gass_cache_build_filename(
-	names->local_dir, LOCK_FILE, GLOBUS_NULL,
-	GLOBUS_FALSE, &names->localdir_lock_file );
+	names->local_dir,
+	names->separator,
+	LOCK_FILE,
+	GLOBUS_NULL,
+	GLOBUS_NULL,
+	&names->localdir_lock_file );
     if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3478,7 +3831,7 @@ globus_l_gass_cache_unlock_local_dir( cache_names	*names,
  */
 static
 int
-globus_l_gass_cache_create_local_tag_file( cache_names	*names )
+globus_l_gass_cache_create_local_tag_file( cache_names_t	*names )
 {
     int		rc = GLOBUS_SUCCESS;
     char	*uniq_filename = GLOBUS_NULL;
@@ -3486,9 +3839,10 @@ globus_l_gass_cache_create_local_tag_file( cache_names	*names )
     /* Build "uniq" file name */
     rc = globus_l_gass_cache_build_filename( 
 	names->tmp_root,
+	names->separator,
 	TAG_FILE,
 	names->uniq,
-	GLOBUS_FALSE,
+	GLOBUS_NULL,
 	&uniq_filename );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -3540,7 +3894,7 @@ globus_l_gass_cache_create_local_tag_file( cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_make_local_file( cache_names	*names,
+globus_l_gass_cache_make_local_file( cache_names_t	*names,
 				     const char		*global_name,
 				     const char		*global_uniq )
 {
@@ -3551,12 +3905,16 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename(
-	    names->local_dir, UDATA_FILE, names->uniq,
-	    GLOBUS_FALSE, &names->local_uniq_file );
+	    names->local_dir,
+	    names->separator,
+	    UDATA_FILE,
+	    names->uniq,
+	    GLOBUS_NULL,
+	    &names->local_uniq_file );
     }
 
     /* Make sure the local directory exists. */
-    rc = globus_l_gass_cache_make_dirtree( names->local_dir );
+    rc = globus_l_gass_cache_make_dirtree(names->local_dir, names->cache_type);
     if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3573,7 +3931,11 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
      * Note: We're using our own "global_file" here, and it must
      *  be freed up before returning */
     rc = globus_l_gass_cache_build_filename(
-	names->global_dir, global_name, global_uniq, GLOBUS_TRUE,
+	names->global_dir,
+	names->separator,
+	global_name,
+	global_uniq,
+	GLOBUS_NULL,
 	&global_file );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -3642,7 +4004,7 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
  */
 static
 int
-globus_l_gass_cache_unlink_local( cache_names	*names )
+globus_l_gass_cache_unlink_local( cache_names_t	*names )
 {
     char	*uniq_file = GLOBUS_NULL;
     int		uniq_count;
@@ -3657,6 +4019,7 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
 
     /* Find a uniq file to kill... */
     rc = globus_l_gass_cache_find_uniq( names->local_dir,
+                                        names->cache_type,
 					&uniq_file, 
 					&uniq_count );
     if ( GLOBUS_SUCCESS != rc )
@@ -3670,7 +4033,11 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
     {
 	char	*uniq_filepath = GLOBUS_NULL;
 	rc = globus_l_gass_cache_build_filename(
-	    names->local_dir, uniq_file, GLOBUS_NULL, GLOBUS_FALSE,
+	    names->local_dir,
+	    names->separator,
+	    uniq_file,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
 	    &uniq_filepath );
 	globus_free( uniq_file );	/* We're done with this */
 	uniq_file = GLOBUS_NULL;
@@ -3729,9 +4096,10 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
 	}
 
 	/* Kill the URL under the local tag dir (if empty) */
-	rc = globus_l_gass_cache_remove_dirtree( names->local_root,
-						 names->local_dir );
-
+        rc = globus_l_gass_cache_remove_dirtree( names,
+                                                 names->local_root,
+                                                 names->local_dir );
+        
 	/* >0 is ok: remove_dirtree() is oportunistic... */
 	if ( rc < 0 )
 	{
@@ -3754,7 +4122,8 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
 	}
 
 	/* Finally, try to kill the rest of the tree... */
-	rc = globus_l_gass_cache_remove_dirtree( names->local_root,
+	rc = globus_l_gass_cache_remove_dirtree( names,
+                                                 names->local_root,
 						 names->local_dir );
 
 	/* >0 is ok: remove_dirtree() is oportunistic... */
@@ -3787,7 +4156,7 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_unlink_global( cache_names		*names,
+globus_l_gass_cache_unlink_global( cache_names_t		*names,
 				   globus_bool_t	is_locked )
 {
     struct stat	statbuf;
@@ -3800,9 +4169,10 @@ globus_l_gass_cache_unlink_global( cache_names		*names,
 	/* Make sure that the uniq file name is valid */
 	rc = globus_l_gass_cache_build_filename( 
 	    names->global_dir,
+	    names->separator,
 	    UDATA_FILE,
 	    names->uniq,
-	    GLOBUS_FALSE,
+	    GLOBUS_NULL,
 	    &names->global_uniq_file );
 	if ( GLOBUS_SUCCESS != rc )
 	{
@@ -3851,7 +4221,8 @@ globus_l_gass_cache_unlink_global( cache_names		*names,
     }
 
     /* And, clean up the dirtree.. */
-    rc = globus_l_gass_cache_remove_dirtree( names->global_root, 
+    rc = globus_l_gass_cache_remove_dirtree( names,
+                                             names->global_root,
 					     names->global_dir );
     if ( rc < 0 )
     {
@@ -3862,6 +4233,107 @@ globus_l_gass_cache_unlink_global( cache_names		*names,
     return GLOBUS_L_UNLINK_LAST;
 
 } /* globus_l_gass_cache_unlink_global() */
+
+static
+int
+globus_l_gass_cache_list_all_urls_flat( globus_gass_cache_t *  cache_handle,
+                                        const char *           search_dir,
+                                        url_list_head_t *      url_list )
+{
+    int			rc;
+    int			dirent_count;
+    int			dirent_num;
+    struct dirent 	**dirent_list = NULL;
+    globus_hashtable_t  table;
+    int                 table_size = 16;
+
+    /* Scan the directory; we're looking at *all* of the "uniq" files */
+    rc = globus_l_gass_cache_scandir( 
+	search_dir,
+        cache_handle->cache_type,
+	&dirent_list,
+	&dirent_count,
+        globus_l_gass_cache_scandir_select_all );
+
+    /* Something bad happenned */
+    if ( rc < 0 )
+    {
+	CACHE_TRACE2( "SCAN: Error scanning '%s'", search_dir );
+	RET_ERROR( rc );
+    }
+    /* No matches?  Hmmmm..  Skip it for now  */
+    else if ( 0 == dirent_count )
+    {
+	globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
+	RET_ERROR( GLOBUS_L_ENOENT );
+    }
+
+    while (dirent_count > table_size)
+    {
+        table_size *= 2;
+    }
+    rc = globus_hashtable_init( &table, table_size,
+			       (void*) globus_hashtable_string_hash,
+			       (void*) globus_hashtable_string_keyeq );
+    if ( rc != GLOBUS_SUCCESS )
+    {
+	CACHE_TRACE2( "SCAN: hashtable error, dir = '%s'", search_dir );
+	RET_ERROR( rc );
+    }
+                                
+    /* Walk through the matches... */
+    for ( dirent_num = 0;  dirent_num < dirent_count; dirent_num++ )
+    {
+	const char	*name = dirent_list[dirent_num]->d_name;
+	char		*p;
+	url_list_elem_t	*elem;
+
+        /* is it a "data." file? */
+        if ( ( p = strstr( name, UDATA_FILE_PAT ) ) == GLOBUS_NULL  )
+        {
+            continue;
+        }
+        
+        /* remove the {separator}data.* part of the file.
+           'name' now holds the mangled url!!! */
+        if ( p > name)
+        { 
+            *(p-1) = '\0';
+        }
+
+        /* any hits on this mangled url before? */
+        elem = (url_list_elem_t*) globus_hashtable_lookup(&table, (void*)name);
+        if (elem)
+        {
+            elem->data_count++;
+        }
+        else
+        {
+            /* add new entry to the list and the hashtable */
+            elem = (url_list_elem_t*) globus_malloc(sizeof(url_list_elem_t));
+            if (!elem)
+            {
+                CACHE_TRACE( "list_all_files: malloc failed" );
+                RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+            }
+            elem->mangled = globus_libc_strdup(name);
+            elem->data_count = 1;
+            elem->next = url_list->head;
+
+            globus_hashtable_insert(&table, elem->mangled, elem);
+            
+            url_list->head = elem;
+            url_list->count++;
+        }
+    }
+
+    /* Free up stuff */
+    globus_hashtable_destroy(&table);
+    globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
+
+    return GLOBUS_SUCCESS;
+} /* globus_l_gass_cache_list_all_urls_flat() */
+
 
 /*
  * globus_l_gass_cache_list_all_urls()
@@ -3880,9 +4352,10 @@ globus_l_gass_cache_unlink_global( cache_names		*names,
  */
 static
 int
-globus_l_gass_cache_list_all_urls( const char		*search_dir,
-				   const char		*base_mangled,
-				   url_list_head	*url_list )
+globus_l_gass_cache_list_all_urls( globus_gass_cache_t  *cache_handle,
+                                   const char		*search_dir,
+                                   const char		*base_mangled,
+                                   url_list_head_t	*url_list )
 {
     int			rc;
     int			dirent_count;
@@ -3890,13 +4363,24 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
     struct dirent 	**dirent_list = NULL;
     struct stat		statbuf;
     int			data_count = 0;
+    char                *separator;
+
+    if (cache_handle->cache_type==DIRECTORY_TYPE_FLAT)
+    {
+        return globus_l_gass_cache_list_all_urls_flat(cache_handle,
+                                                      search_dir,
+                                                      url_list);
+    }
+    
+    separator = directory_separator[cache_handle->cache_type];
 
     /* Scan the directory; we're looking at *all* of the "uniq" files */
     rc = globus_l_gass_cache_scandir( 
 	search_dir,
+        cache_handle->cache_type,
 	&dirent_list,
 	&dirent_count,
-	globus_l_gass_cache_scandir_select_all );
+        globus_l_gass_cache_scandir_select_all );
 
     /* Something bad happenned */
     if ( rc < 0 )
@@ -3916,18 +4400,18 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
 	globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
 	return GLOBUS_SUCCESS;
     }
-
     /* Walk through the matches... */
     for ( dirent_num = 0;  dirent_num < dirent_count; dirent_num++ )
     {
 	const char	*name = dirent_list[dirent_num]->d_name;
-	char		name_path[ PATH_MAX + 1 ];
+        int             pathsize = PATH_MAX+1;
+	char		name_path[PATH_MAX+1];
 
-	/* Build it's full path */
+        /* Build it's full path */
 	strcpy( name_path, search_dir );
-	strcat( name_path, "/" );
+	strcat( name_path, separator );
 	strcat( name_path, name );
-
+    
 	/* Stat it to find out what it is... */
 	rc = globus_l_gass_cache_stat( name_path, &statbuf );
 
@@ -3943,7 +4427,7 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
 	if ( ! S_ISDIR( statbuf.st_mode ) )
 	{
 	    /* If it's a "uniq" data file ("data.*"), count it */
-	    if ( ! strncmp( name, UDATA_FILE_PAT, UDATA_FILE_PAT_LEN ) )
+            if ( ! strncmp( name, UDATA_FILE_PAT, UDATA_FILE_PAT_LEN ) )
 	    {
 		data_count++;
 	    }
@@ -3960,9 +4444,10 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
 		strcat( new_mangled, "/" );
 	    }
 	    strcat( new_mangled, name );
-	    rc = globus_l_gass_cache_list_all_urls( name_path,
-						    new_mangled,
-						    url_list );
+	    rc = globus_l_gass_cache_list_all_urls( cache_handle,
+                                                    name_path,
+                                                    new_mangled,
+                                                    url_list );
 	}
     }
 
@@ -3972,8 +4457,8 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
     /* Add myself to the list */
     if ( data_count )
     {
-	url_list_elem	*new_url_elem = 
-	    globus_malloc( sizeof( url_list_elem ) );
+	url_list_elem_t	*new_url_elem = 
+	    globus_malloc( sizeof( url_list_elem_t ) );
 	if ( GLOBUS_NULL == new_url_elem )
 	{
 	    CACHE_TRACE( "list_all_files: malloc failed" );
@@ -4009,7 +4494,7 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
  */
 static
 int
-globus_l_gass_cache_delete( cache_names		*names,
+globus_l_gass_cache_delete( cache_names_t		*names,
 			    const unsigned long	*timestamp,
 			    globus_bool_t	is_locked )
 {
@@ -4130,6 +4615,9 @@ globus_gass_cache_open(const char		*cache_directory_path,
 #  endif
     char	*uniq;
     char        homedir[PATH_MAX];
+    char        *separator;
+
+    globus_l_gass_cache_config_t   config;
 
     CHECK_CACHE_IS_NOT_INIT(cache_handle);
     memset( cache_handle, 0, sizeof( globus_gass_cache_t ) );
@@ -4151,7 +4639,6 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	if ( f_name_length == 0 )
 	{
 	    cache_directory_path = GLOBUS_NULL;
-
 	    CACHE_TRACE("Error: cache_directory_path empty");
 	}
     }
@@ -4163,13 +4650,9 @@ globus_gass_cache_open(const char		*cache_directory_path,
 
 	/* if GLOBUS_GASS_CACHE_DEFAULT empty (""),
 	   behave as if not defined */
-	if ( GLOBUS_NULL != pt )
+	if ( pt && (0 == (f_name_length = strlen(pt))) )
 	{
-	    f_name_length = strlen(pt);
-	    if ( 0 == f_name_length )
-	    {
 		pt = GLOBUS_NULL;
-	    }
 	}
 
 	if ( GLOBUS_NULL == pt )
@@ -4226,7 +4709,8 @@ globus_gass_cache_open(const char		*cache_directory_path,
 
 	    /* Build & verify the whole tree */
 	    rc = globus_l_gass_cache_make_dirtree( 
-		cache_handle->cache_directory_path );
+		cache_handle->cache_directory_path,
+                DIRECTORY_TYPE_NORMAL);
 	    if ( GLOBUS_L_ENOTDIR == rc )
 	    {
 		CACHE_TRACE( " .globus is not a directory" );
@@ -4239,7 +4723,6 @@ globus_gass_cache_open(const char		*cache_directory_path,
 		LOG_ERROR(rc);
 		return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
 	    }
-
 	}
 	else /* *pt is not null or empty */
 	{
@@ -4283,7 +4766,8 @@ globus_gass_cache_open(const char		*cache_directory_path,
     /* here, *cache_handle.cache_directory_path should be defined */
     /* let see if it exists, and create it if it does not */
     rc = globus_l_gass_cache_make_dirtree( 
-	cache_handle->cache_directory_path );
+	cache_handle->cache_directory_path,
+        DIRECTORY_TYPE_NORMAL);
     if ( GLOBUS_L_ENOTDIR == rc )
     {
 	CACHE_TRACE( " The cache directory is not a directory" );
@@ -4294,7 +4778,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
     {
 	CACHE_TRACE( "Could not create the cache directory" );
 	LOG_ERROR(rc);
-		return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
+	return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
     }
 
 
@@ -4305,24 +4789,74 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	LOG_ERROR(0);
 	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
     }
+
+    /* read config file... */
     strcpy(f_name,cache_handle->cache_directory_path);
-    strcat(f_name,GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME);
-    
+    strcat(f_name,GLOBUS_L_GASS_CACHE_CONFIG_FILE);
+
+    cache_handle->cache_type = -1;
+
+    if (globus_l_gass_cache_config_init(f_name, &config) == GLOBUS_SUCCESS)
+    {
+        int   i;
+        char* value = globus_l_gass_cache_config_get(
+			&config,
+			GLOBUS_L_GASS_CACHE_CONFIG_KEY_TYPE);
+
+	for (i=0; value && directory_type_values[i]; i++)
+	{
+	    if (strcmp(directory_type_values[i], value)==0)
+	    {
+		cache_handle->cache_type = i;
+		break;
+	    }
+	}
+    }
+
+    globus_l_gass_cache_config_destroy(&config);
+
+    /* if no config, perform link test */
+    if (cache_handle->cache_type < 0)
+    {
+        FILE*          fp;
+
+	/* find out what type by performing a link test */
+	cache_handle->cache_type = globus_l_gass_cache_linktest(cache_handle);
+
+        /* save these settings */
+	fp = fopen(f_name, "a");
+	if (fp)
+	{
+	    globus_libc_fprintf(
+		fp, 
+		"%s=%s\n", 
+		GLOBUS_L_GASS_CACHE_CONFIG_KEY_TYPE,
+		directory_type_values[cache_handle->cache_type]);
+	}
+	if (fp)
+	{
+	    fclose(fp);
+	}
+    }
+
+    separator = directory_separator[cache_handle->cache_type];
+
     /* open the log file and log the some informations */
 # if defined GLOBUS_L_GASS_CACHE_LOG
     {
 	char	tmp[20];
 	strcpy( log_f_name, cache_handle->cache_directory_path );
-	strcat( log_f_name, "/" );
+	strcat( log_f_name, separator );
 	strcat( log_f_name, GLOBUS_L_GASS_CACHE_LOG_DIR );
-	rc = globus_l_gass_cache_make_dirtree( log_f_name );
+	rc = globus_l_gass_cache_make_dirtree( log_f_name,
+                                               DIRECTORY_TYPE_NORMAL);
 	if ( GLOBUS_SUCCESS != rc )
 	{
 	    CACHE_TRACE("Could NOT open or create the log directory");
 	}
 	else
 	{
-	    sprintf( tmp, "/%05d", getpid() );
+	    globus_libc_sprintf( tmp, "%s%05d", separator, getpid() );
 	    strcat( log_f_name, tmp );
 	    cache_handle->log_FILE = fopen( log_f_name, "a" );
 	    if ( cache_handle->log_FILE == GLOBUS_NULL )
@@ -4341,9 +4875,10 @@ globus_gass_cache_open(const char		*cache_directory_path,
     /* Crate the global directory name & path */
     rc = globus_l_gass_cache_build_filename(
 	cache_handle->cache_directory_path,
+	"/", /* always */
 	GLOBUS_L_GASS_CACHE_GLOBAL_DIR,
 	GLOBUS_NULL,
-	GLOBUS_FALSE,
+	GLOBUS_NULL,
 	&cache_handle->global_directory_path );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -4351,7 +4886,8 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	return rc;
     }
     rc = globus_l_gass_cache_make_dirtree(
-	cache_handle->global_directory_path );
+	cache_handle->global_directory_path,
+        cache_handle->cache_type);
     if ( GLOBUS_SUCCESS != rc )
     {
 	CACHE_TRACE( "Can't create the global cache directory" );
@@ -4362,9 +4898,10 @@ globus_gass_cache_open(const char		*cache_directory_path,
     /* Crate the local directory name & path */
     rc = globus_l_gass_cache_build_filename(
 	cache_handle->cache_directory_path,
+	"/", /* always */
 	GLOBUS_L_GASS_CACHE_LOCAL_DIR,
 	GLOBUS_NULL,
-	GLOBUS_FALSE,
+	GLOBUS_NULL,
 	&cache_handle->local_directory_path );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -4372,7 +4909,8 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	return rc;
     }
     rc = globus_l_gass_cache_make_dirtree(
-	cache_handle->local_directory_path );
+	cache_handle->local_directory_path,
+        cache_handle->cache_type );
     if ( GLOBUS_SUCCESS != rc )
     {
 	CACHE_TRACE( "Can't create the local cache directory" );
@@ -4383,9 +4921,10 @@ globus_gass_cache_open(const char		*cache_directory_path,
     /* Crate the tmp directory name & path */
     rc = globus_l_gass_cache_build_filename(
 	cache_handle->cache_directory_path,
+	"/", /* always */
 	GLOBUS_L_GASS_CACHE_TMP_DIR,
 	GLOBUS_NULL,
-	GLOBUS_FALSE,
+	GLOBUS_NULL,
 	&cache_handle->tmp_directory_path );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -4393,7 +4932,8 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	return rc;
     }
     rc = globus_l_gass_cache_make_dirtree(
-	cache_handle->tmp_directory_path );
+	cache_handle->tmp_directory_path,
+        cache_handle->cache_type );
     if ( GLOBUS_SUCCESS != rc )
     {
 	CACHE_TRACE( "Can't create the tmp cache directory" );
@@ -4407,8 +4947,12 @@ globus_gass_cache_open(const char		*cache_directory_path,
     {
 	char	*skew_file = GLOBUS_NULL;
 	rc = globus_l_gass_cache_build_filename( 
-	    cache_handle->tmp_directory_path, GLOBUS_NULL,
-	    uniq, GLOBUS_FALSE, &skew_file );
+	    cache_handle->tmp_directory_path,
+	    separator,
+	    GLOBUS_NULL,
+	    uniq,
+	    GLOBUS_NULL,
+	    &skew_file );
 	globus_free( uniq );
 	if ( GLOBUS_SUCCESS != rc )
 	{
@@ -4597,7 +5141,7 @@ globus_gass_cache_add(
 {
     int			rc;			/* general purpose ret code */
     int			retval = GLOBUS_SUCCESS; /* Our return value. */
-    cache_names		names;
+    cache_names_t		names;
     int			TODOattempts = 0;
     int			data_count, uniq_count;
     double		TODOstime = TODOGetTime();
@@ -4632,7 +5176,8 @@ globus_gass_cache_add(
 	/* Create the global directory tree if we need to */
 	if ( create )
 	{
-	    rc = globus_l_gass_cache_make_dirtree( names.global_dir );
+	    rc = globus_l_gass_cache_make_dirtree( names.global_dir,
+                                                   names.cache_type );
 	    if ( rc != GLOBUS_SUCCESS )
 	    {
 		globus_l_gass_cache_names_free( &names );
@@ -4795,13 +5340,11 @@ globus_gass_cache_add(
 
     {
 	char buf[256];
-	globus_libc_lock();
-	sprintf( buf, "%s: %d attempts; %.5fs",
-		 (  ( GLOBUS_GASS_CACHE_ADD_NEW == retval ) ?
-		    "AddNew" : "AddExists" ),
-		 TODOattempts,
-		 TODOGetTime() - TODOstime );
-	globus_libc_unlock();
+	globus_libc_sprintf( buf, "%s: %d attempts; %.5fs",
+                             (  ( GLOBUS_GASS_CACHE_ADD_NEW == retval ) ?
+                                "AddNew" : "AddExists" ),
+                             TODOattempts,
+                             TODOGetTime() - TODOstime );
 	CACHE_TRACE( buf );
 	TODOgu( NULL, NULL, "AddExists" );
     }
@@ -4849,15 +5392,14 @@ globus_gass_cache_add_done(
     unsigned long	timestamp)
 {
     int		rc;			/* general purpose return code */
-    cache_names	names;
+    cache_names_t	names;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT(cache_handle);
     CLR_ERROR;
     
     /* Generate the local and global filenames */
-    rc = globus_l_gass_cache_names_init( 
-	cache_handle, url, tag, &names );
+    rc = globus_l_gass_cache_names_init( cache_handle, url, tag, &names );
     if ( GLOBUS_SUCCESS != rc )
     {
 	LOG_ERROR( rc );
@@ -4953,7 +5495,7 @@ globus_gass_cache_query(
     globus_bool_t		*is_locked )
 {
     int			rc;			/* general purpose ret code */
-    cache_names		names;
+    cache_names_t		names;
     globus_bool_t	locked;
     int			data_count, uniq_count;
 
@@ -5050,15 +5592,14 @@ globus_gass_cache_delete_start(globus_gass_cache_t	*cache_handle,
 			       unsigned long		*timestamp)
 {
     int		rc;			/* general purpose return code */
-    cache_names	names;
+    cache_names_t	names;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT(cache_handle);
     CLR_ERROR;
     
     /* Generate the local and global filenames */
-    rc = globus_l_gass_cache_names_init( 
-	cache_handle, url, tag, &names );
+    rc = globus_l_gass_cache_names_init( cache_handle, url, tag, &names );
     if ( GLOBUS_SUCCESS != rc )
     {
 	LOG_ERROR( rc );
@@ -5160,15 +5701,14 @@ globus_gass_cache_delete(
 { 
     int		rc;			/* general purpose return code */
     int		retval = GLOBUS_SUCCESS; /* Our return value. */
-    cache_names	names;
+    cache_names_t	names;
     double	TODOstime = TODOGetTime();
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT(cache_handle);
     
     /* Generate the local and global filenames */
-    rc = globus_l_gass_cache_names_init( 
-	cache_handle, url, tag, &names );
+    rc = globus_l_gass_cache_names_init( cache_handle, url, tag, &names );
 
     /* Check if they all succeeded. */
     if ( GLOBUS_SUCCESS != rc )
@@ -5194,9 +5734,7 @@ globus_gass_cache_delete(
     /* Build some file names that we'll use. */
     {
 	char buf[256];
-	globus_libc_lock();
-	sprintf( buf, "DELETE; %.3fs", TODOGetTime() - TODOstime );
-	globus_libc_unlock();
+	globus_libc_sprintf( buf, "DELETE; %.3fs", TODOGetTime() - TODOstime );
 	CACHE_TRACE( buf );
     }
     return retval;
@@ -5242,7 +5780,7 @@ globus_gass_cache_cleanup_tag(
     const char		*tag)
 {
     int		rc;			/* general purpose return code */
-    cache_names	names;
+    cache_names_t	names;
     double	TODOstime = TODOGetTime();
     int		TODOnum = 0;
     
@@ -5250,8 +5788,7 @@ globus_gass_cache_cleanup_tag(
     CHECK_CACHE_IS_INIT(cache_handle);
     
     /* Generate the local and global filenames */
-    rc = globus_l_gass_cache_names_init( 
-	cache_handle, url, tag, &names );
+    rc = globus_l_gass_cache_names_init( cache_handle, url, tag, &names );
 
     /* Check if they all succeeded. */
     if ( GLOBUS_SUCCESS != rc )
@@ -5276,9 +5813,8 @@ globus_gass_cache_cleanup_tag(
     /* Build some file names that we'll use. */
     {
 	char buf[256];
-	globus_libc_lock();
-	sprintf( buf, "Cleanup %d; %.3fs", TODOnum, TODOGetTime()-TODOstime );
-	globus_libc_unlock();
+	globus_libc_sprintf( buf, "Cleanup %d; %.3fs",
+                             TODOnum, TODOGetTime()-TODOstime );
 	CACHE_TRACE( buf );
     }
     return rc;
@@ -5323,23 +5859,24 @@ globus_gass_cache_cleanup_tag_all(
 {
     int			rc;			/* Temp return code */
     int			retval = GLOBUS_SUCCESS; /* Our return value. */
-    cache_names		names;
+    cache_names_t		names;
     char		*base_local_dir;
     double		TODOstime = TODOGetTime();
-    url_list_head	url_list;
-    url_list_elem	*url_elem, *url_next;
+    url_list_head_t	url_list;
+    url_list_elem_t	*url_elem, *url_next;
     int			data_num;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT(cache_handle);
     
     /* Build the base local directory to use. */
-    rc = globus_l_gass_cache_names_init( 
-	cache_handle, GLOBUS_NULL, tag, &names );
+    rc = globus_l_gass_cache_names_init(
+        cache_handle, GLOBUS_NULL, tag, &names );
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_dirname(
 	    names.local_root,
+	    names.separator,
 	    names.mangled_tag,
 	    GLOBUS_NULL,
 	    &base_local_dir,
@@ -5349,7 +5886,8 @@ globus_gass_cache_cleanup_tag_all(
     /* Scan for URLs */
     url_list.head = GLOBUS_NULL;
     url_list.count = 0;
-    rc = globus_l_gass_cache_list_all_urls( base_local_dir,
+    rc = globus_l_gass_cache_list_all_urls( cache_handle,
+                                            base_local_dir,
 					    "",
 					    &url_list );
     CACHE_TRACE4( "cleanup: scanned '%s' (tag '%s'), found %d", 
@@ -5383,7 +5921,7 @@ globus_gass_cache_cleanup_tag_all(
 		if ( GLOBUS_SUCCESS != rc )
 		{
 		    char	buff[1024];
-		    sprintf(buff,"MURL=\"%s\"", url_elem->mangled);
+                    globus_libc_sprintf(buff,"MURL=\"%s\"", url_elem->mangled);
 		    MARK_ERRORMSG( rc, buff );
 		    LOG_ERROR( rc );
 		    retval = rc;
@@ -5395,12 +5933,12 @@ globus_gass_cache_cleanup_tag_all(
 	/* Free up the mangled URL buffer */
 	if ( GLOBUS_NULL != url_elem->mangled )
 	{
-	    free( url_elem->mangled );
+	    globus_free( url_elem->mangled );
 	}
 
 	/* Free up the URL list structure & name buffer */
 	url_next = url_elem->next;
-	free( url_elem );
+	globus_free( url_elem );
 	url_elem = url_next;
     }
 
@@ -5410,9 +5948,9 @@ globus_gass_cache_cleanup_tag_all(
     /* Build some file names that we'll use. */
     {
 	char buf[256];
-	globus_libc_lock();
-	sprintf( buf, "CleanupAll %.3fs", TODOGetTime()-TODOstime );
-	globus_libc_unlock();
+	globus_libc_sprintf( buf,
+                             "CleanupAll %.3fs",
+                             TODOGetTime()-TODOstime );
 	CACHE_TRACE( buf );
     }
     return retval;
@@ -5453,11 +5991,11 @@ globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
 {
 
     /* Let _mangle() do all the work! */
-    return globus_l_gass_cache_mangle( url,
-				       cache_handle->mangling_options,
-				       cache_handle->max_mangled_url,
-				       mangled_url,
-				       length );
+  return globus_l_gass_cache_mangle(cache_handle,
+				    url,
+				    cache_handle->max_mangled_url,
+				    mangled_url,
+				    length );
 
 } /* globus_gass_cache_mangle_url() */
 
@@ -5495,13 +6033,54 @@ globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
 {
 
     /* Let _mangle() do all the work! */
-    return globus_l_gass_cache_mangle( tag,
-				       cache_handle->mangling_options,
-				       cache_handle->max_mangled_tag,
-				       mangled_tag,
-				       length );
+  return globus_l_gass_cache_mangle(cache_handle,
+				    tag,
+				    cache_handle->max_mangled_tag,
+				    mangled_tag,
+				    length );
+
 
 } /* globus_gass_cache_mangle_tag() */
+
+/*
+ * globus_gass_cache_get_cache_dir()
+ *
+ * Gets a the root cache of directory.  This is exported for use in the
+ * globus_gass_cache program.
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	cache_dir - Pointer to the cache directory
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_get_cache_dir( const globus_gass_cache_t	*cache_handle,
+				 char			**cache_dir )
+{
+    int		rc = GLOBUS_SUCCESS;	/* general purpose return code */
+
+    if ( cache_dir )
+    {
+	*cache_dir = GLOBUS_NULL;
+    }
+
+    /* Copy the cache root directory out */
+    if ( ( cache_dir ) && ( cache_handle->cache_directory_path ) )
+    {
+	*cache_dir = strdup( cache_handle->cache_directory_path );
+        if ( GLOBUS_NULL == *cache_dir )
+        {
+            rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+        }
+    }
+
+    return rc;
+} /* globus_gass_cache_get_cache_dir() */
 
 /*
  * globus_gass_cache_get_dirs()
@@ -5545,7 +6124,7 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
 			    char			**local_dir )
 {
     int		rc = GLOBUS_SUCCESS;	/* general purpose return code */
-    cache_names	names;
+    cache_names_t	names;
 
     /* Initialize 'em all to NULL */
     if ( global_root )
@@ -5577,8 +6156,7 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
     CHECK_CACHE_IS_INIT(cache_handle);
     
     /* Generate the local and global filenames */
-    rc = globus_l_gass_cache_names_init( 
-	cache_handle, url, tag, &names );
+    rc = globus_l_gass_cache_names_init( cache_handle, url, tag, &names );
 
     /* Check if they all succeeded. */
     if ( GLOBUS_SUCCESS != rc )
@@ -5588,48 +6166,24 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
     }
 
     /* Copy out the path pieces.... */
-    if ( ( global_root ) && ( names.global_root ) )
-    {
-	if (  ( *global_root = strdup( names.global_root ) ) == GLOBUS_NULL )
-	{
-	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
-	}
+#define copy(var) \
+    if ( ( var ) && ( names.var ) ) \
+    { \
+        if ( ( *var = strdup( names.var ) ) == GLOBUS_NULL ) \
+        { \
+            rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY; \
+        } \
     }
-    if ( ( local_root ) && ( names.local_root ) )
-    {
-	if (  ( *local_root = strdup( names.local_root ) ) == GLOBUS_NULL )
-	{
-	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
-	}
-    }
-    if ( ( tmp_root ) && ( names.tmp_root ) )
-    {
-	if (  ( *tmp_root = strdup( names.tmp_root ) ) == GLOBUS_NULL )
-	{
-	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
-	}
-    }
-    if ( ( log_root ) && ( names.log_root ) )
-    {
-	if (  ( *log_root = strdup( names.log_root ) ) == GLOBUS_NULL )
-	{
-	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
-	}
-    }
-    if ( ( global_dir ) && ( names.global_dir ) )
-    {
-	if (  ( *global_dir = strdup( names.global_dir ) ) == GLOBUS_NULL )
-	{
-	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
-	}
-    }
-    if ( ( local_dir ) && ( names.local_dir ) )
-    {
-	if (  ( *local_dir = strdup( names.local_dir ) ) == GLOBUS_NULL )
-	{
-	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
-	}
-    }
+
+    copy(global_root);
+    copy(local_root);
+    copy(tmp_root);
+    copy(log_root);
+    copy(global_dir);
+    copy(local_dir);
+
+#undef copy
+
 
     /* Free up name buffers */
     globus_l_gass_cache_names_free( &names );
@@ -5641,141 +6195,65 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
     }
 
     /* Handle errors w/o leaking memory! */
-    if ( ( global_root ) && ( *global_root ) )
-    {
-	globus_free( *global_root );
-	*global_root = GLOBUS_NULL;
+#define clean(var) \
+    if ( var && *var ) \
+    { \
+        globus_libc_free( *var ); \
+        *var = GLOBUS_NULL; \
     }
-    if ( ( local_root ) && ( *local_root ) )
-    {
-	globus_free( *local_root );
-	*local_root = GLOBUS_NULL;
-    }
-    if ( ( tmp_root ) && ( *tmp_root ) )
-    {
-	globus_free( *tmp_root );
-	*tmp_root = GLOBUS_NULL;
-    }
-    if ( ( log_root ) && ( *log_root ) )
-    {
-	globus_free( *log_root );
-	*log_root = GLOBUS_NULL;
-    }
-    if ( ( global_dir ) && ( *global_dir ) )
-    {
-	globus_free( *global_dir );
-	*global_dir = GLOBUS_NULL;
-    }
-    if ( ( local_dir ) && ( *local_dir ) )
-    {
-	globus_free( *local_dir );
-	*local_dir = GLOBUS_NULL;
-    }
+
+    clean(global_root);
+    clean(local_root);
+    clean(tmp_root);
+    clean(log_root);
+    clean(global_dir);
+    clean(local_dir);
+
+#undef clean
 
     return rc;
 
 } /* globus_gass_cache_get_dirs() */
 
-#if 0
 /*
- * Function: globus_gass_cache_cleanup_file()
- * 
- * Description:
- * Remove the cache entry and delete the associated local cache file,
- * regardless of the tags in tag list, and regardless of whether or not
- * the cache entry is locked.
- * 
- * This function does not block on a locked reference.
- *     
- * Parameters:   
+ * globus_gass_cache_get_cache_type_string()
+ *
+ * Gets a string which describes the cache type ("normal" or "flat")
+ *  
+ * Parameters:
  *      cache_handle - Handler to the opened cahe directory to use.
  *
- * 	url - url of the file to be cached. It is used as the main
- * 	key to the cache entries.
- *  		
+ *	cache_type - Pointer to the strdup()ed string
+ *
  * Returns:
- *      GLOBUS_SUCCESS or error code:
- *      or any of the defined gass error code.   
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
  */
 int
-globus_gass_cache_cleanup_file(
-    globus_gass_cache_t *cache_handle,
-    char                *url)
+globus_gass_cache_get_cache_type_string( const globus_gass_cache_t	*cache_handle,
+					 char			**cache_type )
 {
-    int                        rc; /* general purpose return code */
-    globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[PATH_MAX+1];
+    int		rc = GLOBUS_SUCCESS;	/* general purpose return code */
 
-    /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT(cache_handle);
+    if ( cache_type )
+    {
+	*cache_type = GLOBUS_NULL;
+    }
 
-    rc = globus_l_gass_cache_lock_open(cache_handle);
-    if (rc != GLOBUS_SUCCESS)
+    /* Copy the cache root directory out */
+    if ( cache_type )
     {
-	LOG_ERROR(rc);
-	return(rc);
+	char	*temp = ( 0 == cache_handle->cache_type ) ? "normal" : "flat";
+	*cache_type = strdup( temp );
+        if ( GLOBUS_NULL == *cache_type )
+        {
+            rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+        }
     }
-    
-    rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
-					 url,
-					 cache_handle);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_DO_NOT_COMMIT);
-	LOG_ERROR(rc);
-	return(rc);
-    }
-    
-    if (entry_found_pt == GLOBUS_NULL)   /* url not found */
-    {
-	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_file() "
-			       "called with  URL not in cache state file");
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_DO_NOT_COMMIT);
-	LOG_ERROR(0);
-	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
-    }
-    /* URL found */
-    GLOBUS_L_GASS_CACHE_LG("URL found");
-    
-    
-    /* delete the cache file */
-    if ( unlink(entry_found_pt->filename) )
-    {
-       CACHE_TRACE("Could not delete data file, but continue cleanup");
-    }
-    /* decrease the number of entries */
-    cache_handle->nb_entries--;
-    
-    /* remove the lock */
-    if (entry_found_pt->lock_tag != NULL)
-    {
-        strcpy(notready_file_path,
-	       entry_found_pt->filename);
-        strcat(notready_file_path,
-	       GLOBUS_L_EXT_NOTREADY);
-        if ( unlink(notready_file_path) )
-	{
-	    CACHE_TRACE("Could not delete data file lock, "
-			"but continue cleanup");
-	}
-   }
-    
-    /* do not write the last entry, in order to delete it */
-    /* since we do not write it, lets free the entry here */
-    globus_l_gass_cache_entry_free(&entry_found_pt,
-				   GLOBUS_TRUE);
-    /* release lock */
-    rc = globus_l_gass_cache_unlock_close(cache_handle,
-					  GLOBUS_L_COMMIT);
-    /* and return */
-    return(rc);
-    
-}
-/*globus_gass_cache_add_cleanup_file() */
-#endif
 
+    return rc;
+} /* globus_gass_cache_get_cache_type_string() */
 
 /*
  * globus_gass_cache_error_string()

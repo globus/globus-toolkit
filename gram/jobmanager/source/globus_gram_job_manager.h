@@ -341,6 +341,7 @@ typedef struct
     globus_bool_t			kerberos;
     char *				x509_user_proxy;
     char *                              x509_cert_dir;
+    char *                              extra_envvars;
 
     char *				home;
     char *				logname;

@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 BEGIN
 {
     push(@INC, "$ENV{GLOBUS_LOCATION}" . '/lib/perl');
@@ -8,8 +9,14 @@ use strict;
 use Globus::Core::Paths;
 
 # Prototypes
+sub main( @ );
 sub GassCacheList ( );
-sub GassCacheCleanupUrl ( $ );
+sub GassCacheListNormal ( );
+sub GassCacheListFlat ( );
+sub GassCacheCleanupUrl ( );
+sub GassCacheCleanupUrlNormal ( );
+sub GassCacheCleanupUrlFlat ( );
+sub GassCacheFlatDir ( $ );
 sub DumpHelp( );
 
 
@@ -72,81 +79,160 @@ my $CprogNonArgsRE =
 # The manglings we know about..
 my @Manglings = ( "html", "md5" );
 
+# Hash of the "Root" directories & other cache info
+my %CacheInfo;
+
 # Make stdout sane
 $|=1;
 
-# Store the URL to process
-my $URL = "";
+# Store the settings to use
+my %Settings = (
+		Url => "",		# URL to process
+		MangleUrl => "",	#  Mangled version
+		Tag => "",		# Tag to process
+		MangledTag => "",	#  Mangled version
+	       );
 
-# Empty command line; punt it
-if ( $#ARGV < 0 )
+# Invoke "main"
+main( @ARGV );
+
+# "Main" logic
+sub main( @ )
 {
-    exec ( "$ProgramC", @ARGV );
-}
-
-# Build list of C program arguments..
-my @CprogArgv = grep{!/^$CprogNonArgsRE$/} @ARGV;
-
-# Help; punt + our own processing...
-if ( grep( /^-help$/, @ARGV ) >= 1 )
-{
-    DumpHelp();
-    exit 0;
-}
-
-# Walk through the command line
-my @JobList;
-my $ArgNo;
-for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
-{
-    my $Arg = $ARGV[$ArgNo];
-
-    if ( ( $Arg eq "-l" ) || ( $Arg eq "-list" ) )
+    # Empty command line; punt it
+    if ( $#_ < 0 )
     {
-	push @JobList, "list";
+	exec ( "$ProgramC", @_ );
     }
-    elsif ( ( $Arg eq "-cu" ) || ( $Arg eq "-cleanup-url" ) )
+
+    # Build list of C program arguments..
+    my @CprogArgv = grep{!/^$CprogNonArgsRE$/} @_;
+
+    # Help; punt + our own processing...
+    if ( grep( /^-help$/, @_ ) >= 1 )
     {
-	push @JobList, "cleanup-url";
+	DumpHelp();
+	exit 0;
     }
-    elsif ( $Arg eq "-long" )
+
+    # Walk through the command line
+    my @JobList;
+    my $ArgNo;
+    my $Skip = 0;
+    for ($ArgNo = 0; $ArgNo <= $#_; $ArgNo++)
     {
-	$OptionLong = 1;
+	my $Arg = $_[$ArgNo];
+	if ( $Skip > 0 )
+	{
+	    $Skip--;
+	    next;
+	}
+
+	if ( ( $Arg eq "-l" ) || ( $Arg eq "-list" ) )
+	{
+	    push @JobList, "list";
+	}
+	elsif ( ( $Arg eq "-cu" ) || ( $Arg eq "-cleanup-url" ) )
+	{
+	    push @JobList, "cleanup-url";
+	}
+	elsif ( $Arg eq "-long" )
+	{
+	    $OptionLong = 1;
+	}
+	elsif ( ( $Arg eq "-v" ) || ( $Arg eq "-verbose" ) )
+	{
+	    $Verbose++;
+	}
+	elsif ( ( $Arg eq "-t" ) || ( $Arg eq "-tag" ) )
+	{
+	    if ( $ArgNo >= $#_ )
+	    {
+		print STDERR "-tag: no tag specified!\n";
+		die;
+	    }
+	    $Settings{Tag} = $_[$ArgNo+1];
+	    $Skip = 1;
+	}
+	elsif ( $Arg =~ /^($CprogFlagsRE)$/ )
+	{
+	    # Invoke the C program
+	    exec ( "$ProgramC", @CprogArgv );
+	}
+	elsif ( $Arg =~ /^($CprogArgsRE)$/ )
+	{
+	    # Skip next arg...
+	    $ArgNo++;
+	}
+	elsif ( $Arg =~ /^-/ )
+	{
+	    # Not sure what the hell it is, punt it off to the C prog...
+	    exec ( "$ProgramC", @CprogArgv );
+	}
+	# Must be the URL
+	else
+	{
+	    $Settings{Url} = $Arg;
+	}
     }
-    elsif ( ( $Arg eq "-v" ) || ( $Arg eq "-verbose" ) )
+
+    # Did we do anything?  If not, punt to the C program...
+    if ( $#JobList < 0 )
     {
-	$Verbose++;
-    }
-    elsif ( $Arg =~ /^($CprogFlagsRE)$/ )
-    {
-	# Invoke the C program
 	exec ( "$ProgramC", @CprogArgv );
+	return;		# Should never *get* here!
     }
-    elsif ( $Arg =~ /^($CprogArgsRE)$/ )
-    {
-	# Skip next arg...
-        $ArgNo++;
-    }
-    elsif ( $Arg =~ /^-/ )
-    {
-	# Not sure what the hell it is, punt it off to the C prog...
-	exec ( "$ProgramC", @CprogArgv );
-    }
-    # Must be the URL
-    else
-    {
-	$URL = $Arg;
-    }
-}
 
-# Did we do anything?  If not, punt to the C program...
-if ( $#JobList < 0 )
-{
-    exec ( "$ProgramC", @CprogArgv );
-}
-else
-{
-    $#ARGV = -1;
+    # Ok, here we have real work to do..
+    $#_ = -1;
+
+    # Disable debugging output while learnging about the cache...
+    {
+	local $ENV{GLOBUS_GASS_CACHE_DEBUG};
+	delete( $ENV{GLOBUS_GASS_CACHE_DEBUG} );
+
+	# Get the cache type...
+	my $Cmd = "$ProgramC -type";
+	open( TYPE, "$Cmd|" ) || die "Can't run '$Cmd'";
+	while ( <TYPE> )
+	{
+	    if ( /^CACHE_TYPE: '(.*)'/ )
+	    {
+		$CacheInfo{CACHE_TYPE} = $1;
+	    }
+	}
+	close( TYPE );
+	die "Cache type unknown" if ( ! exists $CacheInfo{CACHE_TYPE} );
+
+	# Get the main cache directory
+	$Cmd = "$ProgramC -dirs";
+	open( DIRS, "$Cmd|" ) || die "Can't run '$Cmd'";
+	while ( <DIRS> )
+	{
+	    if ( /^CACHE_DIRECTORY: '(.*)'/ )
+	    {
+		$CacheInfo{CACHE_DIR} = $1;
+	    }
+	    elsif ( /^(\w+_ROOT): '(.*)'/ )
+	    {
+		$CacheInfo{$1} = $2;
+	    }
+	}
+	close( DIRS );
+    }
+
+    # Mangle the URLs
+    if ( $Settings{Url} ne "" )
+    {
+	$Settings{MangledUrl} = Mangle( $Settings{Url} )
+    }
+    # Mangle the Tags
+    if ( $Settings{Tag} ne "" )
+    {
+	$Settings{MangledTag} = Mangle( $Settings{Tag} );
+    }
+
+    # Do the work...
     foreach my $Job ( @JobList )
     {
 	if ( $Job eq "list" )
@@ -155,9 +241,10 @@ else
 	}
 	elsif ( $Job eq "cleanup-url" )
 	{
-	    GassCacheCleanupUrl( $URL );
+	    GassCacheCleanupUrl( );
 	}
     }
+
 }   # End of logical "main"
 # ******************************************************
 
@@ -176,30 +263,58 @@ else
 # ******************************************************
 sub GassCacheList ( )
 {
-    my %RootDirs;
+    my $Settings = shift;
 
-    # Read the directories from the program...
-    delete( $ENV{GLOBUS_GASS_CACHE_DEBUG} );
-    my $Cmd = "$ProgramC -dirs";
-    open( DIRS, "$Cmd|" ) || die "Can't run '$Cmd'";
-    while( <DIRS> )
+    # Check the type & invoke the proper
+    if ( $CacheInfo{CACHE_TYPE} eq "normal" )
     {
-	if ( /^(\w+)_ROOT: '(.*)'/ )
-	{
-	    $RootDirs{$1} = $2;
-	}
+	print "-- Normal cache --\n" if ($Verbose);
+	GassCacheListNormal( );
     }
-    close( DIRS );
-    die "No GLOBAL root" if ( ! defined $RootDirs{GLOBAL} );
-    die "No LOCAL root" if ( ! defined $RootDirs{LOCAL} );
+    elsif ( $CacheInfo{CACHE_TYPE} eq "flat" )
+    {
+	print "-- Flat cache --\n" if ($Verbose);
+	GassCacheListFlat( );
+    }
+    else
+    {
+	print STDERR "Unknown cache type '%s'\n", $CacheInfo{CACHE_TYPE};
+    }
+
+}   # GassCacheList()
+# ******************************************************
+
+# ******************************************************
+# Function: GassCacheListNormal()
+#
+# Description:
+#	List the contents of the Cache "Normal" mode
+#
+# Parameters:
+#  None
+#
+# Return Values:
+#  None
+#
+# ******************************************************
+sub GassCacheListNormal ( )
+{
+
+    # Verify the directories
+    die "No GLOBAL root" if ( ! defined $CacheInfo{GLOBAL_ROOT} );
+    die "No LOCAL root" if ( ! defined $CacheInfo{LOCAL_ROOT} );
+
+    # This will be used several times...
+    my $Cmd;
+
 
     # *************************************************
     # Now, let's do the real fun...
     #  Scan through the global directory for all URLs
     # *************************************************
-    print "Scanning the global entries in $RootDirs{GLOBAL}\n" if( $Verbose );
+    print "Scanning the global entries in $CacheInfo{GLOBAL_ROOT}\n" if( $Verbose );
     my %Global;
-    $Cmd = "find $RootDirs{GLOBAL} -name 'data*' -print";
+    $Cmd = "find $CacheInfo{GLOBAL_ROOT} -name 'data*' -print";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -222,7 +337,7 @@ sub GassCacheList ( )
 
 	# Pull out it's mangled dir
 	my $Mangled = $Dir;
-	$Mangled =~ s/$RootDirs{GLOBAL}\///;
+	$Mangled =~ s/$CacheInfo{GLOBAL_ROOT}\///;
 
 	# Store it all in a (perl) hash
 	my $r = ();
@@ -239,9 +354,9 @@ sub GassCacheList ( )
     # ******************************************
     # Scan through the local directory, now..
     # ******************************************
-    print "Scanning the local entries in $RootDirs{LOCAL}\n" if( $Verbose );
+    print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n" if( $Verbose );
     my @Local;
-    $Cmd = "find $RootDirs{LOCAL} -name 'data.*' -print";
+    $Cmd = "find $CacheInfo{LOCAL_ROOT} -name 'data.*' -print";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -264,7 +379,7 @@ sub GassCacheList ( )
 
 	# Strip the local dir portion off the hash
 	my $Mangled = $Dir;
-	$Mangled =~ s/$RootDirs{LOCAL}\///;
+	$Mangled =~ s/$CacheInfo{LOCAL_ROOT}\///;
 
 	# There *should* be a matching global... Let's look
 	my $MangledOk = 0;
@@ -322,8 +437,31 @@ sub GassCacheList ( )
     # ********************
     # Dump it all out..
     # ********************
+    if ( $Verbose )
+    {
+	print "Matching $Settings{MangledUrl}\n";
+	print "Matching $Settings{Tag}\n";
+    }
     foreach my $Inode ( keys %Global )
     {
+	# Does it match??
+	next if (  ( $Settings{MangledUrl} ne "" ) &&
+		   ( $Settings{MangledUrl} ne $Global{$Inode}->{Mangled} )  );
+	if ( $Settings{Tag} ne "" )
+	{
+	    my $Match = 0;
+	    foreach my $Local ( @Local )
+	    {
+		if (  ( $Local->{Inode} == $Inode ) && ( $Local->{Tag} eq $Settings{Tag} ) )
+		{
+		    $Match++;
+		    last;
+		}
+	    }
+	    next if ( ! $Match );
+	}
+
+	# Matching URL found
 	print "URL: $Global{$Inode}->{Url}\n";
 	if ( $OptionLong )
 	{
@@ -332,14 +470,113 @@ sub GassCacheList ( )
 	}
 	foreach my $Local ( @Local )
 	{
-	    if ( $Local->{Inode} == $Inode )
+	    next if ( $Local->{Inode} != $Inode );
+	    next if (  ( $Settings{Tag} ne "" ) && ( $Local->{Tag} ne $Settings{Tag} ) );
+
+	    print "\tTag:" . $Local->{Tag} . "\n";
+	}
+    }
+
+}   # GassCacheListNormal()
+# ******************************************************
+
+# ******************************************************
+# Function: GassCacheListFlat()
+#
+# Description:
+#	List the contents of the Cache "Flat" mode
+#
+# Parameters:
+#  None
+#
+# Return Values:
+#  None
+#
+# ******************************************************
+sub GassCacheListFlat ( )
+{
+
+    # Requested URL logic
+    my $ReqUrl = $Settings{Url};
+    my $ReqUrlKey = "";
+    if ( $Settings{MangledUrl} ne "" )
+    {
+	my @UrlKey;
+	( $ReqUrlKey, @UrlKey ) = split( /_/, $Settings{MangledUrl} );
+	$ReqUrlKey = join( "_", @UrlKey );
+    }
+
+    # Requested Tag logic
+    my $ReqTag = $Settings{Tag};
+    my $ReqTagKey = "";
+    if ( $Settings{MangledTag} ne "" )
+    {
+	my @TagKey;
+	( $ReqTagKey, @TagKey ) = split( /_/, $Settings{MangledTag} );
+	$ReqTagKey = join( "_", @TagKey );
+    }
+
+
+    # *************************************************
+    # Now, let's do the real fun...
+    #  Scan through the global directory for all URLs
+    # *************************************************
+    my %Dir;
+    GassCacheFlatDir( \%Dir );
+
+
+    # ********************
+    # Dump it all out..
+    # ********************
+    if ( $Verbose )
+    {
+	print "Matching URL=$ReqUrl K=$ReqUrlKey\n";
+	print "Matching Tag=$ReqTag K=$ReqTagKey\n";
+    }
+    foreach my $Type ( keys %{$Dir{MangleTypes}} )
+    {
+	foreach my $UrlKey ( keys %{$Dir{Urls}{$Type}} )
+	{
+	    # Does it match the request????
+	    next if (  ( $ReqUrlKey ne "" ) &&
+		       ( $ReqUrlKey ne $Dir{Urls}{$Type}{$UrlKey}{Data}->{Mangled} )  );
+	    next if (  ( $ReqTagKey ne "" ) &&
+		       ( ! exists $Dir{Urls}{$Type}{$UrlKey}{TagKeys}{$ReqTagKey} )  );
+
+	    print "URL: " . $Dir{Urls}{$Type}{$UrlKey}{Url}->{Text} . "\n";
+	    if ( $OptionLong )
 	    {
-		print "\tTag:" . $Local->{Tag} . "\n";
+		print "\tSize: " .
+		    $Dir{Urls}{$Type}{$UrlKey}{Data}->{Size} . "\n";
+		print "\tMangled: " .
+		    $Dir{Urls}{$Type}{$UrlKey}{Data}->{Mangled} . "\n";
+	    }
+
+	    my @TagKeys = keys %{$Dir{Urls}{$Type}{$UrlKey}{TagKeys}};
+	    foreach my $TagType ( keys %{$Dir{MangleTypes}} )
+	    {
+		foreach my $TagKey ( @TagKeys )
+		{
+		    next if ( ! exists $Dir{Tags}{$TagType}{$TagKey} );
+		    next if (  ( $ReqTagKey ne "" ) && ( $ReqTagKey ne $TagKey ) );
+
+		    my $r = $Dir{Tags}{$TagType}{$TagKey};
+		    print "\tTag: $r->{Tag}->{Text}\n";
+
+		    # Sanity check...
+		    if ( ! exists $r->{Keys}{$UrlKey} )
+		    {
+			print STDERR "$UrlKey does not exist for tag!!\n";
+			next;
+		    }
+		}
 	    }
 	}
     }
-}   # GassCacheList()
 
+
+}   # GassCacheListFlat()
+# ******************************************************
 
 # ******************************************************
 # Function: GassCacheCleanupUrl
@@ -354,55 +591,59 @@ sub GassCacheList ( )
 #  None
 #
 # ******************************************************
-sub GassCacheCleanupUrl ( $ )
+sub GassCacheCleanupUrl ( )
 {
-    my $Url = shift;
-    my %RootDirs;
 
     # Sanity check...
-    if ( !defined( $Url ) || ( $Url eq "" )  )
+    if ( $Settings{Url} eq "" )
     {
 	print STDERR "CleanupUrl requires a URL to cleanup\n";
 	DumpHelp( );
 	exit 1;
     }
 
-    # Mangle the URL
-    delete( $ENV{GLOBUS_GASS_CACHE_DEBUG} );
-    my $Mangled = "";
+    # Check the type & invoke the proper sub function
+    if ( $CacheInfo{CACHE_TYPE} eq "normal" )
     {
-	my $Cmd = "$ProgramC -mangle $Url";
-	open( MANGLE, "$Cmd|" ) || die "Can't run '$Cmd'\n";
-	while ( <MANGLE> )
-	{
-	    chomp;
-	    if ( /URL:\s+\'(.*)\'/ )
-	    {
-		$Mangled = $1;
-	    }
-	}
-	close( MANGLE );
-	if ( $Mangled eq "" )
-	{
-	    print STDERR "Failed to mangle URL!\n";
-	    exit 1;
-	}
+	print "-- Normal cache --\n";
+	GassCacheCleanupUrlNormal(  );
+    }
+    elsif ( $CacheInfo{CACHE_TYPE} eq "flat" )
+    {
+	print "-- Flat cache --\n";
+	GassCacheCleanupUrlFlat(  );
+    }
+    else
+    {
+	print STDERR "Unknown cache type '%s'\n", $CacheInfo{CACHE_TYPE};
     }
 
-    # Read the directories from the program...
-    my $Cmd = "$ProgramC -dirs";
-    open( DIRS, "$Cmd|" ) || die "Can't run '$Cmd'";
-    while( <DIRS> )
-    {
-	if ( /^(\w+)_ROOT: '(.*)'/ )
-	{
-	    $RootDirs{$1} = $2;
-	}
-    }
-    close( DIRS );
+
+}   # GassCacheCleanupUrl()
+# ******************************************************
+
+# ******************************************************
+# Function: GassCacheCleanupUrlNormal
+#
+# Description:
+#	Cleanup a URL in a "normal" GASS Cache
+#
+# Parameters:
+#  URL to cleanup
+#
+# Return Values:
+#  None
+#
+# ******************************************************
+sub GassCacheCleanupUrlNormal ( )
+{
+    my $Url = $Settings{Url};
+    my $Mangled = $Settings{MangledUrl};
+
+    # Sanity checks
 
     # Let's learn all about our data file...
-    my $FullGlobalDir = "$RootDirs{GLOBAL}/$Mangled";
+    my $FullGlobalDir = "$CacheInfo{GLOBAL_ROOT}/$Mangled";
     if ( ! -d $FullGlobalDir )
     {
 	print STDERR "Could not clean up file because ".
@@ -434,10 +675,10 @@ sub GassCacheCleanupUrl ( $ )
     # Scan through the local directory, now..
     my %Local;
     my $LocalCount = 0;
-    $Cmd =
-	"find $RootDirs{LOCAL} -inum $FullGlobalDataInode -print";
+    my $Cmd = "find $CacheInfo{LOCAL_ROOT} -inum $FullGlobalDataInode -print";
     open( FIND, "$Cmd|" ) || die "Can't run '$Cmd'";
-    print "Scanning the local entries in $RootDirs{LOCAL}\n" if( $Verbose );
+    print "Scanning the local entries in $CacheInfo{LOCAL_ROOT}\n"
+	if( $Verbose );
     while( <FIND> )
     {
 	chomp;
@@ -537,7 +778,7 @@ sub GassCacheCleanupUrl ( $ )
 	while( 1 )
 	{
 	    $TmpDir = join ('/', @Dirs );
-	    last if ( $TmpDir eq $RootDirs{LOCAL} );
+	    last if ( $TmpDir eq $CacheInfo{LOCAL_ROOT} );
 	    last if ( ! rmdir( $TmpDir ) );
 	    print "\t$TmpDir\n " if ( $Verbose );
 	    pop @Dirs;
@@ -545,7 +786,7 @@ sub GassCacheCleanupUrl ( $ )
 
 	# Check: does this directory have only a "tag" file?
 	my $TagFile = "$TmpDir/tag";
-	if (  ( $TmpDir ne $RootDirs{LOCAL} ) && ( -f "$TagFile" )  )
+	if (  ( $TmpDir ne $CacheInfo{LOCAL_ROOT} ) && ( -f "$TagFile" )  )
 	{
 	    my @Stat = stat( "$TagFile" );
 
@@ -559,7 +800,7 @@ sub GassCacheCleanupUrl ( $ )
 	    while( 1 )
 	    {
 		$TmpDir = join ('/', @Dirs );
-		last if ( $TmpDir eq $RootDirs{LOCAL} );
+		last if ( $TmpDir eq $CacheInfo{LOCAL_ROOT} );
 		last if ( ! rmdir( $TmpDir ) );
 		print "\t$TmpDir\n " if ( $Verbose );
 		pop @Dirs;
@@ -578,7 +819,7 @@ sub GassCacheCleanupUrl ( $ )
 	while( 1 )
 	{
 	    my $TmpDir = join ('/', @Dirs );
-	    last if ( $TmpDir eq $RootDirs{GLOBAL} );
+	    last if ( $TmpDir eq $CacheInfo{GLOBAL_ROOT} );
 	    last if ( ! rmdir( $TmpDir ) );
 	    print "\n\t$TmpDir " if( $Verbose );
 	    pop @Dirs;
@@ -586,8 +827,373 @@ sub GassCacheCleanupUrl ( $ )
 	print "\n" if ( $Verbose );
     }
 
-}   # GassCacheCleanupUrl()
+}   # GassCacheCleanupUrlNormal()
+# ******************************************************
 
+# ******************************************************
+# Function: GassCacheCleanupUrlFlat
+#
+# Description:
+#	Cleanup a URL in a "flat" GASS Cache
+#
+# Parameters:
+#  URL to cleanup
+#
+# Return Values:
+#  None
+#
+# ******************************************************
+sub GassCacheCleanupUrlFlat ( )
+{
+    my $Url = $Settings{Url};
+    my $Mangled = $Settings{MangledUrl};
+    my ( $UrlMangle, @UrlKey ) = split( /_/, $Mangled );
+    my $UrlKey = join( "_", @UrlKey );
+
+    # Let's go hunting..  :-)
+    my %Dir;
+    GassCacheFlatDir( \%Dir );
+
+    # Does it exist in the cache anywhere??
+    if ( ! exists $Dir{Urls}{$UrlMangle}{$UrlKey} )
+    {
+	print STDERR "Could not clean up file because ".
+	    "the URL was not found in the GASS cache.\n";
+	return 1;
+    }
+
+    # Shortcut...
+    my $UrlRec = $Dir{Urls}{$UrlMangle}{$UrlKey};
+
+    # Report to the user...
+    if ( $Verbose )
+    {
+	print "URL: " . $UrlRec->{Url}->{Text} . "\n";
+	print "Local:\n";
+	if ( ! exists $UrlRec->{LocalData} )
+	{
+	    print "\tNo local links found\n";
+	}
+	else
+	{
+	    print "\tFound " . $UrlRec->{LocalData} . " local links:\n";
+	}
+    }
+
+    # Ok, now let's find tags that match this URL
+    my @TagKeys = keys %{$UrlRec->{TagKeys}};
+    foreach my $TagKey ( @TagKeys )
+    {
+	foreach my $TagType ( keys %{$Dir{MangleTypes}} )
+	{
+	    next if ( ! exists $Dir{Tags}{$TagType}{$TagKey} );
+
+	    my $r = $Dir{Tags}{$TagType}{$TagKey};
+
+	    # Sanity check!
+	    if ( ! exists $r->{Keys}{$UrlKey} )
+	    {
+		print STDERR "$Url does not exist for tag!!\n";
+		next;
+	    }
+
+	    # For verbose output, let's go count the data files...
+	    if ( $Verbose )
+	    {
+		my $DataCount = 0;
+		if ( exists $r->{Keys}{$UrlKey}{Data} )
+		{
+		    $DataCount = $#{$r->{Keys}{$UrlKey}{Data}} + 1;
+		}
+		print "\tTag [$DataCount]: " . $r->{Tag}->{Text} . "\n";
+	    }
+
+	    # Data files..
+	    if ( exists $r->{Keys}{$UrlKey}{Data} )
+	    {
+		foreach my $Data ( @{$r->{Keys}{$UrlKey}{Data}} )
+		{
+		    print "\tL.Data = " . $Data->{Name} . "\n" if ( $Verbose );
+		    unlink( $CacheInfo{CACHE_DIR} . "/" . $Data->{Name} );
+		}
+	    }
+
+	    # Tag file?
+	    if ( exists $r->{Keys}{$UrlKey}{Tag} )
+	    {
+		print "\tL.Tag File: " .
+		    $r->{Keys}{$UrlKey}{Tag}->{Name} . "\n" if ( $Verbose > 1 );
+		unlink( $CacheInfo{CACHE_DIR} . "/" .
+			$r->{Keys}{$UrlKey}{Tag}->{Name} );
+	    }
+
+	    # Entry file?
+	    if ( exists $r->{Keys}{$UrlKey}{Entry} )
+	    {
+		if ( $Verbose > 1 )
+		{
+		    print "\tL.Entry File: " .
+			$r->{Keys}{$UrlKey}{Entry}->{Name} . "\n";
+		}
+		unlink( $CacheInfo{CACHE_DIR} . "/" .
+			$r->{Keys}{$UrlKey}{Entry}->{Name} );
+	    }
+	}
+    }
+
+    # Ok, now the global files...
+    print "Global..\n" if ( $Verbose );
+    if ( exists $UrlRec->{DataLinks} )
+    {
+	foreach my $Data ( @{$UrlRec->{DataLinks}} )
+	{
+	    print "\tG.DataLink = " . $Data->{Name} . "\n" if ( $Verbose );
+	    unlink( $CacheInfo{CACHE_DIR} . "/" . $Data->{Name} );
+	}
+    }
+    if ( exists $UrlRec->{Data} )
+    {
+	print "\tG.Data = " . $UrlRec->{Data}->{Name} . "\n" if ( $Verbose );
+	unlink( $CacheInfo{CACHE_DIR} . "/" . $UrlRec->{Data}->{Name} );
+    }
+    if ( exists $UrlRec->{Url} )
+    {
+	if ( $Verbose > 1 )
+	{
+	    print "\tG.Url = " . $UrlRec->{Url}->{Name} . "\n";
+	    print "\tG.Url = '" . $UrlRec->{Url}->{Text} . "'\n";
+	}
+	unlink( $CacheInfo{CACHE_DIR} . "/" . $UrlRec->{Url}->{Name} );
+    }
+    if ( exists $UrlRec->{Entry} )
+    {
+	print "\tG.Entry = " . $UrlRec->{Entry}->{Name} . "\n"
+	    if ( $Verbose > 1 );
+	unlink( $CacheInfo{CACHE_DIR} . "/" . $UrlRec->{Entry}->{Name} );
+    }
+
+}   # GassCacheCleanupUrlFlat()
+# ******************************************************
+
+# ******************************************************
+# Function: GassCacheFlatDir()
+#
+# Description:
+#	Gather info on a "Flat" cache
+#
+# Parameters:
+#  None
+#
+# Return Values:
+#  None
+#
+# ******************************************************
+sub GassCacheFlatDir ( $ )
+{
+    my $Dir = shift;
+
+
+    # *************************************************
+    # Now, let's do the real fun...
+    #  Scan through the global directory for all URLs
+    # *************************************************
+    print "Scanning the global entries in $CacheInfo{CACHE_DIR}\n"
+	if( $Verbose );
+    opendir( CACHE, $CacheInfo{CACHE_DIR} );
+    while( $_ = readdir( CACHE ) )
+    {
+	next if ( ! /_/ );
+	study;
+
+	my $FullPath = "$CacheInfo{CACHE_DIR}/$_";
+	my @Stat = stat( $FullPath );
+	my $Inode = $Stat[1];
+	my $Size = $Stat[7];
+
+	# Record to store...
+	my %r = ( Inode => $Stat[1], Size => $Stat[7],
+		  Links=>$Stat[3], Name => $_ );
+
+	# global_md5_hash_data
+	if ( /^global_([^_]+)_(.*)_data$/ )
+	{
+	    my $Type = $1;
+	    my $Mangled = $2;
+	    $r{Mangled} = $Mangled;
+	    $r{Type} = "data";
+
+	    $Dir->{MangleTypes}{$Type} = 1;
+	    $Dir->{Urls}{$Type}{$Mangled}{Data} = \%r;
+	}
+	# global_md5_hash_data...
+	elsif ( /^global_([^_]+)_(.*)_data/ )
+	{
+	    my $Type = $1;
+	    my $Mangled = $2;
+	    $r{Mangled} = $Mangled;
+	    $r{Type} = "data";
+
+	    $Dir->{MangleTypes}{$Type} = 1;
+	    push( @{$Dir->{Urls}{$Type}{$Mangled}{DataLinks}}, \%r );
+	}
+	# global_md5_hash_url
+	elsif ( /^global_([^_]+)_(.*)_url/ )
+	{
+	    my $Type = $1;
+	    my $Mangled = $2;
+	    $r{Text} = `cat $FullPath`;
+	    $r{Type} = "url";
+
+	    $Dir->{MangleTypes}{$Type} = 1;
+	    $Dir->{Urls}{$Type}{$Mangled}{Url} = \%r;
+	}
+	# global_md5_hash
+	elsif ( /^global_([^_]+)_(.*)/ )
+	{
+	    my $Type = $1;
+	    my $Mangled = $2;
+	    $r{Type} = "entry";
+
+	    $Dir->{MangleTypes}{$Type} = 1;
+	    $Dir->{Urls}{$Type}{$Mangled}{Entry} = \%r;
+	}
+	# local_md5_hash_.*
+	elsif ( /^local_([^_]+)_(.*)/ )
+	{
+	    my $Type = $1;
+	    my $Details = $2;
+	    my $Separator = "_" . $Type . "_";
+
+	    $Dir->{MangleTypes}{$Type} = 1;
+
+	    study $Details;
+
+	    # local_md5_hash_md5_hash_data
+	    if ( $Details =~ /^(.*)$Separator(.*)_data/ )
+	    {
+		my $LKey = $1;
+		my $GKey = $2;
+		$r{Type} = "data";
+
+		# Update local data count for this URL
+		if ( ! exists $Dir->{Urls}{$Type}{$GKey}{LocalData} )
+		{
+		    $Dir->{Urls}{$Type}{$GKey}{LocalData} = 0;
+		}
+		$Dir->{Urls}{$Type}{$GKey}{LocalData}++;
+
+		# Add this to "Tag" list for this URL
+		$Dir->{Urls}{$Type}{$GKey}{TagKeys}{$LKey} = 1;
+
+		# Store the data file reference
+		push( @{$Dir->{Tags}{$Type}{$LKey}{Keys}{$GKey}{Data}}, \%r );
+	    }
+	    # local_md5_hash_md5_hash_tag
+	    elsif ( $Details =~ /^(.*)$Separator(.*)_tag/ )
+	    {
+		my $LKey = $1;
+		my $GKey = $2;
+		$r{Type} = "tag";
+		$r{Text} = `cat $FullPath`;
+
+		# Add this to "Tag" list for this URL
+		$Dir->{Urls}{$Type}{$GKey}{TagKeys}{$LKey} = 1;
+
+		# Store the file reference
+		$Dir->{Tags}{$Type}{$LKey}{Keys}{$GKey}{Tag} = \%r;
+	    }
+	    # local_md5_hash_tag
+	    elsif ( $Details =~ /^(.*)_tag/ )
+	    {
+		my $LKey = $1;
+		$r{Type} = "tag";
+		$r{Text} = `cat $FullPath`;
+		$Dir->{Tags}{$Type}{$LKey}{Tag} = \%r;
+	    }
+	    # local_md5_hash_md5_hash
+	    elsif ( $Details =~ /^(.*)$Separator(.*)/ )
+	    {
+		my $LKey = $1;
+		my $GKey = $2;
+		$r{Type} = "entry";
+
+		# Add this to "Tag" list for this URL
+		$Dir->{Urls}{$Type}{$GKey}{TagKeys}{$LKey} = 1;
+
+		# Store the file reference
+		$Dir->{Tags}{$Type}{$LKey}{Keys}{$GKey}{Entry} = \%r;
+	    }
+	    else
+	    {
+		print STDERR "Warning: Ignoring local file '$_'\n";
+	    }
+	}
+	else
+	{
+	    print STDERR "Warning; Ignoring '$_'\n";
+	}
+    }
+    closedir( CACHE );
+
+}   # GassCacheFlatDir()
+# ******************************************************
+
+# ******************************************************
+# Function: Mangle
+#
+# Description:
+#	Mangle a string
+#
+# Parameters:
+#  String to mangle
+#
+# Return Values:
+#  None
+#
+# ******************************************************
+sub Mangle( $ )
+{
+    my $String = shift;
+
+    local $ENV{GLOBUS_GASS_CACHE_DEBUG};
+    delete( $ENV{GLOBUS_GASS_CACHE_DEBUG} );
+    my $Mangled = "";
+
+    my $Cmd = "$ProgramC -mangle $String";
+    open( MANGLE, "$Cmd|" ) || die "Can't run '$Cmd'\n";
+    while ( <MANGLE> )
+    {
+	chomp;
+	if ( /URL:\s+\'(.*)\'/ )
+	{
+	    $Mangled = $1;
+	}
+    }
+    close( MANGLE );
+
+    if ( $Mangled eq "" )
+    {
+	print STDERR "Failed to mangle URL!\n";
+    }
+
+    return $Mangled;
+
+}   # Mangle()
+# ******************************************************
+
+# ******************************************************
+# Function: DumpHelp
+#
+# Description:
+#	Dumps out some help
+#
+# Parameters:
+#  URL to cleanup
+#
+# Return Values:
+#  None
+#
+# ******************************************************
 sub DumpHelp( )
 {
     open( PROGC,  "$ProgramC -help 2>&1 |" )
@@ -622,4 +1228,6 @@ sub DumpHelp( )
     # Print out _our- options
     print "$PerlOptions\n";
     close( PROGC );
-}
+
+}   # DumpHelp()
+# ******************************************************

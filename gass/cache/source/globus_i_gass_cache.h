@@ -14,6 +14,8 @@ CVS Information:
     
 ******************************************************************************/
 
+#include "globus_symboltable.h"
+
 /* defines the environment variable to be used as default cache dir.         */
 #define GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR "GLOBUS_GASS_CACHE_DEFAULT"
 #define GLOBUS_L_GASS_CACHE_DEBUG		"GLOBUS_GASS_CACHE_DEBUG"
@@ -94,6 +96,7 @@ CVS Information:
 #define LOCK_TOUT 600
     
 #define GLOBUS_L_GASS_CACHE_NULL_TAG "null"
+
 
 
 /******************************************************************************
