@@ -1,2 +1,0 @@
-myproxy-server stream tcp nowait root /usr/local/myproxy-server/sbin/myproxy-server myproxy-server -c /usr/local/myproxy-server/etc/myproxy-server.config
-
