@@ -229,7 +229,7 @@ do                                                                          \
     ((_in_op)->_op_context->entry[_in_op->ndx - 1].driver_handle)
 
 #define GlobusXIOOperationGetContext(_in_op)                                \
-    ((_in_op)->_op_context)
+    &((_in_op)->_op_context->entry[_in_op->ndx - 1])
 /*********************************************************************
  *              function signatures used by the macros
  ********************************************************************/
