@@ -7,8 +7,9 @@
 use strict;
 use POSIX;
 use Test;
+use FtpTestLib;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-multiple-block-get-test';
+my $test_exec = './globus-ftp-client-multiple-block-get-test';
 my @tests;
 my @todo;
 
@@ -20,6 +21,8 @@ if (!defined($gpath))
 }
 
 @INC = (@INC, "$gpath/lib/perl");
+
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test #1-2. Basic functionality: Do a get of /etc/group from
 # localhost (with and without a valid proxy).
@@ -40,10 +43,11 @@ sub basic_func
     {
         $ENV{'X509_USER_PROXY'} = "/dev/null";
     }
-    $rc = system("$test_exec >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -s 'gsiftp://$source_host$source_file' >$tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -51,13 +55,7 @@ sub basic_func
     }
     if($use_proxy)
     {
-    	my $diffs = `diff /etc/group $tmpname | sed -e 's/^/# /'`;
-	
-	if($diffs ne "")
-	{
-	    $errors .= "\n# Differences between /etc/group and output.";
-	    $errors .= "$diffs";
-	}
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -66,6 +64,7 @@ sub basic_func
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -90,7 +89,8 @@ sub bad_url
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -s 'gsiftp://localhost/no-such-file-here' >/dev/null 2>/dev/null") / 256;
+    my $command = "$test_exec -s 'gsiftp://$source_host/no-such-file-here' >/dev/null 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -106,6 +106,7 @@ sub bad_url
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -123,8 +124,9 @@ sub abort_test
     my ($abort_point) = shift;
 
     unlink('core', $tmpname);
-
-    $rc = system("$test_exec -a $abort_point >/dev/null 2>/dev/null") / 256;
+    
+    my $command = "$test_exec -a $abort_point -s 'gsiftp://$source_host$source_file' >/dev/null 2>/dev/null";
+    $rc = system($command) / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
@@ -136,6 +138,7 @@ sub abort_test
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -158,20 +161,18 @@ sub restart_test
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -r $restart_point > $tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -r $restart_point -s 'gsiftp://$source_host$source_file' >$tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
-    my $diffs = `grep -v '\\[restart plugin\\]' $tmpname | diff /etc/group - | sed -e 's/^/#/'`;
-    if($diffs ne "")
-    {
-        $errors .= "\n# Differences between /etc/group and output.\n$diffs";
-    }
+    
+    $errors .= compare_local_files($local_copy, $tmpname);
 
     if($errors eq "")
     {
@@ -179,7 +180,8 @@ sub restart_test
     }
     else
     {
-        ok("\n# $test_exec -r $restart_point\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -188,11 +190,21 @@ for(my $i = 1; $i <= 41; $i++)
     push(@tests, "restart_test($i);");
 }
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
 }

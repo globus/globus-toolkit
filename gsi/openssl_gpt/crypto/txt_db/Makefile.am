@@ -9,7 +9,7 @@ opensslinclude_HEADERS= \
 
 noinst_LTLIBRARIES = libtxt_db_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libtxt_db___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

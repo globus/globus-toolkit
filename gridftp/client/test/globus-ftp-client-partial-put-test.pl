@@ -8,8 +8,9 @@ use strict;
 use POSIX;
 use Test;
 use FileHandle;
+use FtpTestLib;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . "/test/" . 'globus-ftp-client-partial-put-test';
+my $test_exec = './globus-ftp-client-partial-put-test';
 my @tests;
 my @todo;
 my $fh = new FileHandle;
@@ -50,8 +51,9 @@ sub basic_func
     $data .= "\n";
     print $newfile $data;
     close $newfile;
-
-    open($newfile, "|$test_exec -R $offset -d gsiftp://localhost$tmpname -p >/dev/null 2>&1");
+    
+    my $command = "$test_exec -R $offset -d gsiftp://localhost$tmpname -p >/dev/null 2>&1";
+    open($newfile, "|$command");
     my $i = $offset;
     if($offset > 4096)
     {
@@ -70,7 +72,7 @@ sub basic_func
     $rc = $? >> 8;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -92,20 +94,40 @@ sub basic_func
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
 }
+
+if(source_is_remote())
+{
+    print "using remote source, skipping basic_func()\n";
+}
+else
+{
+    
 push(@tests, "basic_func(0);");
 push(@tests, "basic_func(100);");
 push(@tests, "basic_func(5000);");
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
 }
 
+}
