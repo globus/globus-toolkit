@@ -393,7 +393,7 @@ public class TransferClient {
      * @param destPath DOCUMENT ME!
      */
     public void setDestinationPath(String destPath) {
-        this.destinationPath = destPath;
+        this.destinationPath = "/" + destPath;
     }
 
     /**
@@ -422,7 +422,7 @@ public class TransferClient {
      * @param sourcePath DOCUMENT ME!
      */
     public void setSourcePath(String sourcePath) {
-        this.sourcePath = sourcePath;
+        this.sourcePath = "/"+sourcePath;
     }
 
     /**

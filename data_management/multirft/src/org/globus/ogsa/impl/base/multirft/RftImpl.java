@@ -521,6 +521,8 @@ public class RftImpl
             if((source.getHost().equals(tempSource.getHost())) && (destination.getHost().equals(tempDest.getHost())) && 
                 ((status==0)||(status==2))) {
                 transferClient = tempTransferClient;
+                transferClient.setSourcePath(tempSource.getPath());
+                transferClient.setDestinationPath(tempDest.getPath());
                 return transferClient;
             }
         }
