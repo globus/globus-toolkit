@@ -1,0 +1,17 @@
+Required software
+
+    * JDK 1.4.2+
+    * Ant 1.5+
+    * C compiler. If gcc, version 3.2.1 or higher.
+    * GNU tar
+    * JDBC compliant database. For instance, postgres
+
+Installing GT 3.9.3
+
+First, download the 3.9.3 all source installer. Create a user named
+"globus". As the globus user, run
+
+./install-wsrf /usr/local/globus-3.9.3
+
+You may replace "/usr/local/globus-3.9.3" with whatever directory you
+wish to install to.

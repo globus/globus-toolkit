@@ -1,0 +1,29 @@
+The main documentation for 3.9.3 is at
+http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/
+
+About the Globus Toolkit
+
+The open source Globus Toolkit is a fundamental enabling technology for
+the "Grid," letting people share computing power, databases, and other
+tools securely online across corporate, institutional, and geographic
+boundaries without sacrificing local autonomy. The toolkit includes
+software services and libraries for resource monitoring, discovery,
+and management, plus security and file management. In addition to being
+a central part of science and engineering projects that total nearly a
+half-billion dollars internationally, the Globus Toolkit is a substrate
+on which leading IT companies are building significant commercial Grid
+products.
+
+The toolkit includes software for security, information infrastructure,
+resource management, data management, communication, fault detection, and
+portability. It is packaged as a set of components that can be used either
+independently or together to develop applications. Every organization
+has unique modes of operation, and collaboration between multiple
+organizations is hindered by incompatibility of resources such as data
+archives, computers, and networks. The Globus Toolkit was conceived to
+remove obstacles that prevent seamless collaboration. Its core services,
+interfaces and protocols allow users to access remote resources as if
+they were located within their own machine room while simultaneously
+preserving local control over who can use resources and when.
+
+
