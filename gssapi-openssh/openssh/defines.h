@@ -84,7 +84,7 @@ enum
 # define S_ISDIR(mode)	(((mode) & (_S_IFMT)) == (_S_IFDIR))
 #endif /* S_ISDIR */
 
-#ifndef S_ISREG 
+#ifndef S_ISREG
 # define S_ISREG(mode)	(((mode) & (_S_IFMT)) == (_S_IFREG))
 #endif /* S_ISREG */
 
@@ -240,6 +240,7 @@ typedef unsigned char u_char;
 #ifndef HAVE_SIZE_T
 typedef unsigned int size_t;
 # define HAVE_SIZE_T
+# define SIZE_T_MAX UINT_MAX
 #endif /* HAVE_SIZE_T */
 
 #ifndef HAVE_SSIZE_T
@@ -528,6 +529,14 @@ struct winsize {
 #if defined(KRB5) && !defined(HEIMDAL)
 #  define krb5_get_err_text(context,code) error_message(code)
 #endif
+
+/* Maximum number of file descriptors available */
+#ifdef HAVE_SYSCONF
+# define SSH_SYSFDMAX sysconf(_SC_OPEN_MAX)
+#else
+# define SSH_SYSFDMAX 10000
+#endif
+
 
 /*
  * Define this to use pipes instead of socketpairs for communicating with the

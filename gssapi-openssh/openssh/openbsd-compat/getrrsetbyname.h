@@ -1,3 +1,5 @@
+/* OPENBSD BASED ON : include/netdb.h */
+
 /* $OpenBSD: getrrsetbyname.c,v 1.4 2001/08/16 18:16:43 ho Exp $ */
 
 /*
@@ -48,7 +50,7 @@
 
 #include "includes.h"
 
-#if defined(DNS) && !defined(HAVE_GETRRSETBYNAME)
+#ifndef HAVE_GETRRSETBYNAME
 
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -95,6 +97,6 @@ struct rrsetinfo {
 int		getrrsetbyname(const char *, unsigned int, unsigned int, unsigned int, struct rrsetinfo **);
 void		freerrset(struct rrsetinfo *);
 
-#endif /* defined(DNS) && !defined(HAVE_GETRRSETBYNAME) */
+#endif /* !defined(HAVE_GETRRSETBYNAME) */
 
 #endif /* _GETRRSETBYNAME_H */

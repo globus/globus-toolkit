@@ -39,7 +39,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: channels.c,v 1.195 2003/09/16 21:02:40 markus Exp $");
+RCSID("$OpenBSD: channels.c,v 1.199 2003/12/02 17:01:14 markus Exp $");
 
 #include "ssh.h"
 #include "ssh1.h"
@@ -217,7 +217,6 @@ channel_new(char *ctype, int type, int rfd, int wfd, int efd,
 		channels = xmalloc(channels_alloc * sizeof(Channel *));
 		for (i = 0; i < channels_alloc; i++)
 			channels[i] = NULL;
-		fatal_add_cleanup((void (*) (void *)) channel_free_all, NULL);
 	}
 	/* Try to find a free slot where to put the new channel. */
 	for (found = -1, i = 0; i < channels_alloc; i++)
@@ -971,7 +970,7 @@ channel_decode_socks5(Channel *c, fd_set * readset, fd_set * writeset)
 	have = buffer_len(&c->input);
 	if (!(c->flags & SSH_SOCKS5_AUTHDONE)) {
 		/* format: ver | nmethods | methods */
-		if (have < 2) 
+		if (have < 2)
 			return 0;
 		nmethods = p[1];
 		if (have < nmethods + 2)
@@ -1036,7 +1035,7 @@ channel_decode_socks5(Channel *c, fd_set * readset, fd_set * writeset)
 	else if (inet_ntop(af, dest_addr, c->path, sizeof(c->path)) == NULL)
 		return -1;
 	c->host_port = ntohs(dest_port);
-	
+
 	debug2("channel %d: dynamic request: socks5 host %s port %u command %u",
 	    c->self, c->path, c->host_port, s5_req.command);
 
@@ -1398,9 +1397,9 @@ channel_handle_wfd(Channel *c, fd_set * readset, fd_set * writeset)
 		data = buffer_ptr(&c->output);
 		dlen = buffer_len(&c->output);
 #ifdef _AIX
-		/* XXX: Later AIX versions can't push as much data to tty */ 
-		if (compat20 && c->wfd_isatty && dlen > 8*1024)
-			dlen = 8*1024;
+		/* XXX: Later AIX versions can't push as much data to tty */
+		if (compat20 && c->wfd_isatty)
+			dlen = MIN(dlen, 8*1024);
 #endif
 		len = write(c->wfd, data, dlen);
 		if (len < 0 && (errno == EINTR || errno == EAGAIN))
@@ -2196,7 +2195,7 @@ channel_setup_fwd_listener(int type, const char *listen_addr, u_short listen_por
 			continue;
 		}
 		/* Start listening for connections on the socket. */
-		if (listen(sock, 5) < 0) {
+		if (listen(sock, SSH_LISTEN_BACKLOG) < 0) {
 			error("listen: %.100s", strerror(errno));
 			close(sock);
 			continue;
@@ -2551,7 +2550,7 @@ x11_create_display_inet(int x11_display_offset, int x11_use_localhost,
 	/* Start listening for connections on the socket. */
 	for (n = 0; n < num_socks; n++) {
 		sock = socks[n];
-		if (listen(sock, 5) < 0) {
+		if (listen(sock, SSH_LISTEN_BACKLOG) < 0) {
 			error("listen: %.100s", strerror(errno));
 			close(sock);
 			return -1;
@@ -2838,47 +2837,4 @@ auth_request_forwarding(void)
 	packet_start(SSH_CMSG_AGENT_REQUEST_FORWARDING);
 	packet_send();
 	packet_write_wait();
-}
-
-/* This is called to process an SSH_SMSG_AGENT_OPEN message. */
-
-void
-auth_input_open_request(int type, u_int32_t seq, void *ctxt)
-{
-	Channel *c = NULL;
-	int remote_id, sock;
-
-	/* Read the remote channel number from the message. */
-	remote_id = packet_get_int();
-	packet_check_eom();
-
-	/*
-	 * Get a connection to the local authentication agent (this may again
-	 * get forwarded).
-	 */
-	sock = ssh_get_authentication_socket();
-
-	/*
-	 * If we could not connect the agent, send an error message back to
-	 * the server. This should never happen unless the agent dies,
-	 * because authentication forwarding is only enabled if we have an
-	 * agent.
-	 */
-	if (sock >= 0) {
-		c = channel_new("", SSH_CHANNEL_OPEN, sock, sock,
-		    -1, 0, 0, 0, "authentication agent connection", 1);
-		c->remote_id = remote_id;
-		c->force_drain = 1;
-	}
-	if (c == NULL) {
-		packet_start(SSH_MSG_CHANNEL_OPEN_FAILURE);
-		packet_put_int(remote_id);
-	} else {
-		/* Send a confirmation to the remote host. */
-		debug("Forwarding authentication connection.");
-		packet_start(SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
-		packet_put_int(remote_id);
-		packet_put_int(c->self);
-	}
-	packet_send();
 }

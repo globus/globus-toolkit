@@ -25,7 +25,7 @@
 /* XXX: recursive operations */
 
 #include "includes.h"
-RCSID("$OpenBSD: sftp-int.c,v 1.62 2003/08/25 08:13:09 fgsch Exp $");
+RCSID("$OpenBSD: sftp-int.c,v 1.65 2003/11/21 11:57:03 djm Exp $");
 
 #include "buffer.h"
 #include "xmalloc.h"
@@ -50,7 +50,7 @@ extern int num_requests;
 /* This is set to 0 if the progressmeter is not desired. */
 int showprogress = 1;
 
-/* Seperators for interactive commands */
+/* Separators for interactive commands */
 #define WHITESPACE " \t\r\n"
 
 /* Define what type of ls view (0 - multi-column) */
@@ -350,8 +350,8 @@ get_pathname(const char **cpp, char **path)
 		/* Search for terminating quote, unescape some chars */
 		for (i = j = 0; i <= strlen(cp); i++) {
 			if (cp[i] == quot) {	/* Found quote */
-				(*path)[j] = '\0';
 				i++;
+				(*path)[j] = '\0';
 				break;
 			}
 			if (cp[i] == '\0') {	/* End of string */
@@ -360,7 +360,7 @@ get_pathname(const char **cpp, char **path)
 			}
 			if (cp[i] == '\\') {	/* Escaped characters */
 				i++;
-				if (cp[i] != '\'' && cp[i] != '\"' && 
+				if (cp[i] != '\'' && cp[i] != '\"' &&
 				    cp[i] != '\\') {
 					error("Bad escaped character '\%c'",
 					    cp[i]);
@@ -388,8 +388,8 @@ get_pathname(const char **cpp, char **path)
 	return (0);
 
  fail:
- 	xfree(*path);
-	*path = NULL;	
+	xfree(*path);
+	*path = NULL;
 	return (-1);
 }
 
@@ -529,7 +529,7 @@ process_put(struct sftp_conn *conn, char *src, char *dst, char *pwd, int pflag)
 
 	for (i = 0; g.gl_pathv[i]; i++) {
 		if (!is_reg(g.gl_pathv[i])) {
-			error("skipping non-regular file %s", 
+			error("skipping non-regular file %s",
 			    g.gl_pathv[i]);
 			continue;
 		}
@@ -597,7 +597,7 @@ do_ls_dir(struct sftp_conn *conn, char *path, char *strip_path, int lflag)
 		for (n = 0; d[n] != NULL; n++)
 			m = MAX(m, strlen(d[n]->filename));
 
-		if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) != -1) 
+		if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) != -1)
 			width = ws.ws_col;
 
 		columns = width / (m + 2);
@@ -667,7 +667,7 @@ do_globbed_ls(struct sftp_conn *conn, char *path, char *strip_path,
 	    strncmp(path, g.gl_pathv[0], strlen(g.gl_pathv[0]) - 1) == 0) {
 		if ((a = do_lstat(conn, path, 1)) == NULL) {
 			globfree(&g);
-	    		return (-1);
+			return (-1);
 		}
 		if ((a->flags & SSH2_FILEXFER_ATTR_PERMISSIONS) &&
 		    S_ISDIR(a->perm)) {
@@ -678,10 +678,10 @@ do_globbed_ls(struct sftp_conn *conn, char *path, char *strip_path,
 
 	if (!(lflag & SHORT_VIEW)) {
 		int m = 0, width = 80;
-		struct winsize ws;	
+		struct winsize ws;
 
 		/* Count entries for sort and find longest filename */
- 		for (i = 0; g.gl_pathv[i]; i++)
+		for (i = 0; g.gl_pathv[i]; i++)
 			m = MAX(m, strlen(g.gl_pathv[i]));
 
 		if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) != -1)
@@ -758,7 +758,7 @@ parse_args(const char **cpp, int *pflag, int *lflag, int *iflag,
 		*iflag = 1;
 		cp++;
 	}
-		
+
 	/* Figure out which command we have */
 	for (i = 0; cmds[i].c; i++) {
 		int cmdlen = strlen(cmds[i].c);

@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: auth.c,v 1.49 2003/08/26 09:58:43 markus Exp $");
+RCSID("$OpenBSD: auth.c,v 1.51 2003/11/21 11:57:02 djm Exp $");
 
 #ifdef HAVE_LOGIN_H
 #include <login.h>
@@ -90,6 +90,7 @@ allowed_user(struct passwd * pw)
 #ifdef HAS_SHADOW_EXPIRE
 #define	DAY		(24L * 60 * 60) /* 1 day in seconds */
 	if (!options.use_pam && spw != NULL) {
+		int disabled = 0;
 		time_t today;
 
 		today = time(NULL) / DAY;
@@ -106,13 +107,19 @@ allowed_user(struct passwd * pw)
 			return 0;
 		}
 
-		if (spw->sp_lstchg == 0) {
+#if defined(__hpux) && !defined(HAVE_SECUREWARE)
+		if (iscomsec() && spw->sp_min == 0 && spw->sp_max == 0 &&
+		     spw->sp_warn == 0)
+			disabled = 1;   /* Trusted Mode: expiry disabled */
+#endif
+
+		if (!disabled && spw->sp_lstchg == 0) {
 			logit("User %.100s password has expired (root forced)",
 			    pw->pw_name);
 			return 0;
 		}
 
-		if (spw->sp_max != -1 &&
+		if (!disabled && spw->sp_max != -1 &&
 		    today > spw->sp_lstchg + spw->sp_max) {
 			logit("User %.100s password has expired (password aged)",
 			    pw->pw_name);
@@ -122,7 +129,7 @@ allowed_user(struct passwd * pw)
 #endif /* HAS_SHADOW_EXPIRE */
 #endif /* defined(HAVE_SHADOW_H) && !defined(DISABLE_SHADOW) */
 
-    	/* grab passwd field for locked account check */
+	/* grab passwd field for locked account check */
 #if defined(HAVE_SHADOW_H) && !defined(DISABLE_SHADOW)
 	if (spw != NULL)
 		passwd = spw->sp_pwdp;
@@ -130,7 +137,7 @@ allowed_user(struct passwd * pw)
 	passwd = pw->pw_passwd;
 #endif
 
-	/* check for locked account */ 
+	/* check for locked account */
 	if (!options.use_pam && passwd && *passwd) {
 		int locked = 0;
 
@@ -242,7 +249,7 @@ allowed_user(struct passwd * pw)
 	if ((pw->pw_uid != 0) && (geteuid() == 0)) {
 		char *msg;
 
-	   	if (loginrestrictions(pw->pw_name, S_RLOGIN, NULL, &msg) != 0) {
+		if (loginrestrictions(pw->pw_name, S_RLOGIN, NULL, &msg) != 0) {
 			int loginrestrict_errno = errno;
 
 			if (msg && *msg) {
@@ -252,7 +259,7 @@ allowed_user(struct passwd * pw)
 				    pw->pw_name, msg);
 			}
 			/* Don't fail if /etc/nologin  set */
-		    	if (!(loginrestrict_errno == EPERM && 
+			if (!(loginrestrict_errno == EPERM &&
 			    stat(_PATH_NOLOGIN, &st) == 0))
 				return 0;
 		}
@@ -261,14 +268,6 @@ allowed_user(struct passwd * pw)
 
 	/* We found no reason not to let this user try to log on... */
 	return 1;
-}
-
-Authctxt *
-authctxt_new(void)
-{
-	Authctxt *authctxt = xmalloc(sizeof(*authctxt));
-	memset(authctxt, 0, sizeof(*authctxt));
-	return authctxt;
 }
 
 void
@@ -598,7 +597,7 @@ fakepw(void)
 	memset(&fake, 0, sizeof(fake));
 	fake.pw_name = "NOUSER";
 	fake.pw_passwd =
-	    "$2a$06$r3.juUaHZDlIbQaO2dS9FuYxL1W9M81R1Tc92PoSNmzvpEqLkLGrK";	
+	    "$2a$06$r3.juUaHZDlIbQaO2dS9FuYxL1W9M81R1Tc92PoSNmzvpEqLkLGrK";
 	fake.pw_gecos = "NOUSER";
 	fake.pw_uid = -1;
 	fake.pw_gid = -1;

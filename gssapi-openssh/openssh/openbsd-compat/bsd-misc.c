@@ -164,7 +164,6 @@ int nanosleep(const struct timespec *req, struct timespec *rem)
 
 	return(rc);
 }
-
 #endif
 
 #ifndef HAVE_TCGETPGRP
@@ -223,6 +222,7 @@ mysignal(int sig, mysig_t act)
 	}
 	return (osa.sa_handler);
 #else
+	#undef signal
 	return (signal(sig, act));
 #endif
 }

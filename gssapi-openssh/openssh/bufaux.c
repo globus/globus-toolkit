@@ -37,7 +37,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: bufaux.c,v 1.29 2003/04/08 20:21:28 itojun Exp $");
+RCSID("$OpenBSD: bufaux.c,v 1.31 2003/11/10 16:23:41 jakob Exp $");
 
 #include <openssl/bn.h>
 #include "bufaux.h"
@@ -50,7 +50,7 @@ RCSID("$OpenBSD: bufaux.c,v 1.29 2003/04/08 20:21:28 itojun Exp $");
  * by (bits+7)/8 bytes of binary data, msb first.
  */
 void
-buffer_put_bignum(Buffer *buffer, BIGNUM *value)
+buffer_put_bignum(Buffer *buffer, const BIGNUM *value)
 {
 	int bits = BN_num_bits(value);
 	int bin_size = (bits + 7) / 8;
@@ -80,7 +80,7 @@ buffer_put_bignum(Buffer *buffer, BIGNUM *value)
 void
 buffer_get_bignum(Buffer *buffer, BIGNUM *value)
 {
-	int bits, bytes;
+	u_int bits, bytes;
 	u_char buf[2], *bin;
 
 	/* Get the number for bits. */
@@ -101,12 +101,12 @@ buffer_get_bignum(Buffer *buffer, BIGNUM *value)
  * Stores an BIGNUM in the buffer in SSH2 format.
  */
 void
-buffer_put_bignum2(Buffer *buffer, BIGNUM *value)
+buffer_put_bignum2(Buffer *buffer, const BIGNUM *value)
 {
-	int bytes = BN_num_bytes(value) + 1;
+	u_int bytes = BN_num_bytes(value) + 1;
 	u_char *buf = xmalloc(bytes);
 	int oi;
-	int hasnohigh = 0;
+	u_int hasnohigh = 0;
 
 	buf[0] = '\0';
 	/* Get the value of in binary */

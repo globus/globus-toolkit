@@ -51,12 +51,14 @@
 # include <sys/timers.h>
 #endif
 
+void aix_usrinfo(struct passwd *);
+
 #ifdef WITH_AIXAUTHENTICATE
 # define CUSTOM_FAILED_LOGIN 1
 void record_failed_login(const char *, const char *);
-void aix_setauthdb(const char *);
 #endif
 
-void aix_usrinfo(struct passwd *);
+int aix_authenticate(const char *, const char *, const char *);
+void aix_setauthdb(const char *);
 void aix_remove_embedded_newlines(char *);
 #endif /* _AIX */
