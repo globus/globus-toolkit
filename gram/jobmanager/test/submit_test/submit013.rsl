@@ -1,3 +1,0 @@
-&(executable = $(GLOBUS_LOCATION) # "/bin/globus-sh-exec")
- (gass_cache=$(HOME) # "/.globus/.gass_cache")
- (arguments  = -e '$GLOBUS_SH_PERL -e ''if(-d $ENV{GLOBUS_GASS_CACHE_DEFAULT}) { print "1\n";} else { print "0\n";}''')
