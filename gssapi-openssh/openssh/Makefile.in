@@ -292,19 +292,23 @@ install-files: scard-install
 		echo "$(DESTDIR)$(sysconfdir)/moduli already exists, install will not overwrite"; \
 	fi
 
+###
 #
-# When a new version of OpenSSH is imported into the repository, it may just be more
-# useful to pitch the text in the gpt-install-files target here and replicate the
-# install-files target above, keeping in mind that gpt-install-files is install-files
-# minus:
+# Upon a new OpenSSH merge into the repository:
 #
-#   o copying the configuration files
-#   o copying the configuration file man pages
-#   o the scard-install target
-#   o creating and chmod'ing PRIVSEP_PATH
-#   o removing the conditionals around ssh-rand-helper*
-#   o install docs into $GL/doc/gsi_openssh
-#   o add links for gsi tools (gsissh -> ssh, etc)
+#   o Set up new $(MANPAGES).
+#   o Set up new gpt-install-files.
+#     o Destroy current/old gpt-install-files target.
+#     o Copy install-files target into gpt-install-files target.
+#     o Change the following items in gpt-install-files:
+#       o Remove the following sections:
+#         o Copying the configuration files.
+#         o Copying the configuration file man pages.
+#         o The scard-install target.
+#         o Creating and chmod'ing PRIVSEP_PATH.
+#       o Removing the conditionals around ssh-rand-helper*.
+#       o Install docs into $GL/doc/gsi_openssh.
+#       o Add links for gsi tools (gsissh -> ssh, etc).
 #
 
 gpt-install-files:
