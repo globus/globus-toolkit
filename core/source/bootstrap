@@ -28,8 +28,8 @@ fi
  echo "running libtoolize --automake --copy --force"
 libtoolize --automake --copy --force || error
 
-echo "running aclocal -I ./config"
-aclocal -I config || error
+echo "running aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal  -I ./config"
+aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal -I ./config || error
 
 if test -f acconfig.h ; then
  echo "running autoheader"

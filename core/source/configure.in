@@ -4,6 +4,12 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(globus_core, 2.0.0,0)
 AM_CONFIG_HEADER(globus_config.h)
 
+GPT_INIT
+dnl define FILELIST_FILE variable
+FILELIST_FILE=`pwd`;
+FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
+AC_SUBST(FILELIST_FILE)
+
 AC_ARG_WITH(
     flavor,
     [  --with-flavor                 Globus flavor string],
@@ -59,11 +65,19 @@ AC_OBJEXT
 AC_EXEEXT
 
 AC_OUTPUT(Makefile
-       	scripts/globus-build-env-${globus_cv_flavor}.sh:scripts/globus-build-env.sh.in
+       	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
 	scripts/globus-sh-tools.sh
 	scripts/Makefile
 	scripts/globus_build_config.pl
 	aclocal/Makefile
 	config/Makefile
 	tests/Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+	,
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkgdata/pkg_data_src.gpt" \
+	--flavor=$GLOBUS_FLAVOR_NAME
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+
 	)

@@ -1,4 +1,5 @@
 ## Process this file with automake to produce Makefile.in.
+include $(top_srcdir)/aclocal/automake_targets
 
 all:
 
@@ -14,3 +15,5 @@ TESTS = ${MY_TESTS}
 
 clean-local:
 	rm -r ./globus
+
+include $(top_srcdir)/aclocal/automake_rules

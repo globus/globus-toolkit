@@ -1,3 +1,4 @@
+include $(top_srcdir)/aclocal/automake_targets
 aclocaldir = $(GLOBUS_INSTALL_PATH)/share/globus_aclocal
 
 aclocal_DATA = globus_package.m4 \
@@ -15,3 +16,5 @@ EXTRA_DIST = $(aclocal_DATA) \
 	progs.am \
 	scripts.am \
 	subdirs.am
+
+include $(top_srcdir)/aclocal/automake_rules
