@@ -3767,6 +3767,9 @@ globus_l_ftp_client_guess_buffer_command(
     int                                         first_maybe;
 
     if(handle->op == GLOBUS_FTP_CLIENT_GET ||
+       handle->op == GLOBUS_FTP_CLIENT_LIST ||
+       handle->op == GLOBUS_FTP_CLIENT_NLST ||
+       handle->op == GLOBUS_FTP_CLIENT_MLSD ||
        (handle->op == GLOBUS_FTP_CLIENT_TRANSFER && handle->source == target))
     {
 	retr_desired = GLOBUS_TRUE;
@@ -3837,6 +3840,9 @@ globus_l_ftp_client_update_buffer_feature(
     globus_bool_t				retr_desired = GLOBUS_FALSE;
 
     if(handle->op == GLOBUS_FTP_CLIENT_GET ||
+       handle->op == GLOBUS_FTP_CLIENT_LIST ||
+       handle->op == GLOBUS_FTP_CLIENT_NLST ||
+       handle->op == GLOBUS_FTP_CLIENT_MLSD ||
        (handle->op == GLOBUS_FTP_CLIENT_TRANSFER && handle->source == target))
     {
 	retr_desired = GLOBUS_TRUE;
