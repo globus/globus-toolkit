@@ -796,6 +796,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     response.response_type = MYPROXY_ERROR_RESPONSE;
     response.authorization_data = NULL;
     //response.response_string = strdup ("");  REMOVE
+    response.data.error_str = (char *) malloc (strlen(error));
     my_strncpy(response.data.error_str, error, sizeof(response.data.error_str));
     
     responselen = myproxy_serialize_response(&response,
