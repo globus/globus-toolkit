@@ -1,5 +1,0 @@
-name=rft
-subdir=data_management/filetransfer/rft
-build="ant stubs -Dogsacore.javadir=\$OGSA_HOME
-ant gar -Dogsacore.javadir=\$OGSA_HOME"
-gar=lib/reliabletransfer.gar
