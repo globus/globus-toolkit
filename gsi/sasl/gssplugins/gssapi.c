@@ -46,13 +46,13 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <config.h>
-
 #ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
 #else
 #include <gssapi/gssapi.h>
 #endif
+
+#include <config.h>
 
 #ifdef WIN32
 #  include <winsock.h>
