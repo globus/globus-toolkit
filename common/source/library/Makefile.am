@@ -78,6 +78,7 @@ include_HEADERS = \
 	globus_object_hierarchy.h \
 	globus_error.h \
 	globus_error_hierarchy.h \
+	globus_error_string.h \
 	globus_time.h \
 	globus_thread_pool.h \
 	globus_handle_table.h \
