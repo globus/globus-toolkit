@@ -233,6 +233,7 @@ globus_gram_protocol_error_string(int error_code);
 #define GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM           "filestageout"
 #define GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM             "filecleanup"
 #define GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM               "scratchdir"
+#define GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM               "gasscache"
 
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_STDIN                  "/dev/null"
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT                 "/dev/null"
