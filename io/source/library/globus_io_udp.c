@@ -482,8 +482,6 @@ globus_io_udp_bind(
         /* error stuff */	    
     }
 
-
-    thread_print("myport = %d\n", myport);
     if(port != GLOBUS_NULL)
     {
         *port = (unsigned short) ntohs(my_addr.sin_port);
