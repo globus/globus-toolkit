@@ -3,7 +3,7 @@
 TAG2=HEAD
 TAG3=HEAD
 
-INSTALL_BUNDLES=globus-resource-management-server,gt3-all-src,mmjfs,mmjfs-static,scheduler-fork,gt3-extras
+INSTALL_BUNDLES=globus-resource-management-server,gt3-all-src,mmjfs,mmjfs-static,scheduler-fork,ogsi-cbindings,gt3-extras
 BUILD_BUNDLES=ogsi-cbindings,scheduler-pbs,scheduler-condor,scheduler-lsf
 
 if [ x$GLOBUS_LOCATION = x ]; then
