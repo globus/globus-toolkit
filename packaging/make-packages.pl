@@ -1347,7 +1347,7 @@ sub inplace_build()
     my $build_args = "";
     $build_args .= " CONFIGOPTS_GPTMACRO=--enable-doxygen " if $doxygen;
     $build_args .= " -verbose " if $verbose;
-#    $build_args .= " -force " if $force;
+    $build_args .= " -force " if $force;
 
     if($force)
     {
