@@ -1,4 +1,6 @@
-/*This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.*/
+/*
+ *  This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.
+ */
 package org.globus.ogsa.impl.base.multirft;
 
 import java.io.BufferedReader;
@@ -75,9 +77,14 @@ import org.ietf.jgss.GSSCredential;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-
+/**
+ *  Description of the Class
+ *
+ * @author     madduri
+ * @created    September 17, 2003
+ */
 public class RftImpl
-    extends GridServiceImpl {
+         extends GridServiceImpl {
 
     static Log logger = LogFactory.getLog(RftImpl.class.getName());
     String configPath;
@@ -108,40 +115,53 @@ public class RftImpl
     private int persistentRequestId = 0;
     private int requestId_ = 0;
     private int transferJobId_ = 0;
-    private boolean check = false; // check to update transferids of Status SDEs
+    private boolean check = false;
+    // check to update transferids of Status SDEs
     Vector activeTransferThreads;
     Vector transferClients;
     RFTOptionsType globalRFTOptionsType;
 
+
+    /**
+     *Constructor for the RftImpl object
+     */
     public RftImpl() {
         super("MultifileRFTService");
         this.transferRequest = null;
     }
 
+
+    /**
+     *Constructor for the RftImpl object
+     *
+     * @param  transferRequest  Description of the Parameter
+     */
     public RftImpl(TransferRequestType transferRequest) {
         super("MultifileRFTService");
 
         String name = "MultifileRFTService";
 
         this.transferRequest = transferRequest;
-        this.globalRFTOptionsType=transferRequest.getRftOptions();
+        this.globalRFTOptionsType = transferRequest.getRftOptions();
 
         if (transferRequest == null) {
             logger.debug("transfer request is null");
         }
     }
 
+
     /**
      * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
-     * @throws RemoteException DOCUMENT ME!
+     *
+     *
+     * @return                   requestId
+     * @throws  RemoteException  
      */
     public int start()
-              throws RemoteException {
+             throws RemoteException {
 
         Subject subject = SecurityManager.getManager().setServiceOwnerFromContext(
-                                  this);
+                this);
         GSSCredential cred = JaasGssUtil.getCredential(subject);
 
         if (cred == null) {
@@ -152,19 +172,15 @@ public class RftImpl
 
             String path = TransferClient.saveCredential(cred);
             Util.setFilePermissions(path, 600);
-            logger.debug("Credential saved at : " + path);
-            logger.debug(
-                    "Got a credential with Subject: " + 
-                    cred.getName().toString());
             dbAdapter.storeProxyLocation(requestId, path);
 
             int temp = 0;
 
             while (temp < concurrency) {
 
-                TransferJob transferJob = new TransferJob(transfers[temp], 
-                                                          TransferJob.STATUS_PENDING, 
-                                                          0);
+                TransferJob transferJob = new TransferJob(transfers[temp],
+                        TransferJob.STATUS_PENDING,
+                        0);
                 processURLs(transferJob);
                 TransferThread transferThread = new TransferThread(transferJob);
                 transferThread.start();
@@ -179,86 +195,97 @@ public class RftImpl
         return requestId;
     }
 
+
     /**
      * DOCUMENT ME!
-     * 
-     * @param requestId DOCUMENT ME!
-     * @param fromId DOCUMENT ME!
-     * @param toId DOCUMENT ME!
-     * @throws RemoteException DOCUMENT ME!
+     *
+     *
+     * @param  requestId         DOCUMENT ME!
+     * @param  fromId            DOCUMENT ME!
+     * @param  toId              DOCUMENT ME!
+     * @throws  RemoteException  DOCUMENT ME!
      */
     public void cancel(int requestId, int fromId, int toId)
-                throws RemoteException {
+             throws RemoteException {
         logger.debug("Cancelling transfers of the request: " + requestId);
         logger.debug("from id: " + fromId + "to id: " + toId);
         dbAdapter.cancelTransfers(requestId, fromId, toId);
         cancelActiveTransfers(fromId, toId);
     }
 
+
     /**
      * DOCUMENT ME!
-     * 
-     * @param fromId DOCUMENT ME!
-     * @param toId DOCUMENT ME!
-     * @throws RftDBException DOCUMENT ME!
+     *
+     *
+     * @param  fromId           DOCUMENT ME!
+     * @param  toId             DOCUMENT ME!
+     * @throws  RftDBException  DOCUMENT ME!
      */
     public void cancelActiveTransfers(int fromId, int toId)
-                               throws RftDBException {
+             throws RftDBException {
 
         for (int i = fromId; i <= toId; i++) {
 
-            TransferThread tempTransferThread = (TransferThread)activeTransferThreads.elementAt(
-                                                        i);
+            TransferThread tempTransferThread = (TransferThread) activeTransferThreads.elementAt(
+                    i);
             tempTransferThread.killThread();
         }
     }
 
     /**
-     * DOCUMENT ME!
+     *  Description of the Method
+     *
+     * @param  transferJob  Description of the Parameter
+     * @return              Description of the Return Value
      */
-    private void notifyUpdate() {
-        logger.debug("Notifying Update");
-    }
-    
     public TransferJob processURLs(TransferJob transferJob) {
         logger.debug("checking to see if destination URL is a directory");
         String destinationURL = transferJob.getDestinationUrl();
         String sourceURL = transferJob.getSourceUrl();
-        
-        if((destinationURL.endsWith("/")) && !(sourceURL.endsWith("/"))) {
-            logger.debug("The destinationURL : " + destinationURL + 
-            " appears to be a directory");
+
+        if ((destinationURL.endsWith("/")) && !(sourceURL.endsWith("/"))) {
+            logger.debug("The destinationURL : " + destinationURL +
+                    " appears to be a directory");
             String fileName = extractFileName(sourceURL);
             destinationURL = destinationURL + fileName;
             transferJob.setDestinationUrl(destinationURL);
             try {
                 dbAdapter.update(transferJob);
-            } catch(RftDBException rdb) {
+            } catch (RftDBException rdb) {
                 logger.debug("Error processing urls");
             }
             //change the destUrl by appending filename to it
         }
         return transferJob;
     }
-    
+
+
+    /**
+     *  Description of the Method
+     *
+     * @param  sourceURL  Description of the Parameter
+     * @return            Description of the Return Value
+     */
     public String extractFileName(String sourceURL) {
-      return sourceURL.substring(sourceURL.lastIndexOf("/")+1);
+        return sourceURL.substring(sourceURL.lastIndexOf("/") + 1);
     }
+
+
     /**
      * DOCUMENT ME!
-     * 
-     * @param messageContext DOCUMENT ME!
-     * @throws GridServiceException DOCUMENT ME!
+     *
+     *
+     * @param  messageContext         DOCUMENT ME!
+     * @throws  GridServiceException  DOCUMENT ME!
      */
     public void postCreate(GridContext messageContext)
-                    throws GridServiceException {
+             throws GridServiceException {
 
         try {
             super.postCreate(messageContext);
-            logger.debug("In postCreate");
-
-            ServiceProperties factoryProperties = (ServiceProperties)getProperty(
-                                                          ServiceProperties.FACTORY);
+            ServiceProperties factoryProperties = (ServiceProperties) getProperty(
+                    ServiceProperties.FACTORY);
             transferProgress = new FileTransferProgressType();
             restartMarkerDataType = new FileTransferRestartMarker();
             fileTransferStatusElement = new FileTransferStatusElement();
@@ -266,17 +293,17 @@ public class RftImpl
             gridFTPPerfMarkerSDE = new GridFTPPerfMarkerElement();
             version = new Version();
             this.requestStatusData = this.serviceData.create(
-                                             "FileTransferStatus");
+                    "FileTransferStatus");
             this.transferProgressData = this.serviceData.create(
-                                                "FileTransferProgress");
+                    "FileTransferProgress");
             this.singleFileTransferStatusSDE = this.serviceData.create(
-                                                       "SingleFileTransferStatus");
+                    "SingleFileTransferStatus");
             this.restartMarkerServiceData = this.serviceData.create(
-                                                    "FileTransferRestartMarker");
+                    "FileTransferRestartMarker");
             this.gridFTPRestartMarkerSD = this.serviceData.create(
-                                                  "GridFTPRestartMarker");
+                    "GridFTPRestartMarker");
             this.gridFTPPerfMarkerSD = this.serviceData.create(
-                                               "GridFTPPerfMarker");
+                    "GridFTPPerfMarker");
             this.versionSD = this.serviceData.create("MultiRFTVersion");
             this.version.setVersion("1.0");
             this.versionSD.setValue(this.version);
@@ -305,57 +332,57 @@ public class RftImpl
             this.gridFTPPerfMarkerSD.setValue(this.gridFTPPerfMarkerSDE);
             this.serviceData.add(this.gridFTPPerfMarkerSD);
 
-            String persistentRequestIdString = (String)getPersistentProperty(
-                                                       "requestId");
-            String temp = (String)factoryProperties.getProperty("maxAttempts");
+            String persistentRequestIdString = (String) getPersistentProperty(
+                    "requestId");
+            String temp = (String) factoryProperties.getProperty("maxAttempts");
             int maxAttempts = Integer.parseInt(temp);
-            String jdbcDriver = (String)factoryProperties.getProperty(
-                                        "JdbcDriver");
-            String connectionURL = (String)factoryProperties.getProperty(
-                                           "connectionURL");
-            String userName = (String)factoryProperties.getProperty(
-                                      "dbusername");
-            String password = (String)factoryProperties.getProperty("password");
-            dbOptions = new TransferDbOptions(jdbcDriver, connectionURL, 
-                                              userName, password);
+            String jdbcDriver = (String) factoryProperties.getProperty(
+                    "JdbcDriver");
+            String connectionURL = (String) factoryProperties.getProperty(
+                    "connectionURL");
+            String userName = (String) factoryProperties.getProperty(
+                    "dbusername");
+            String password = (String) factoryProperties.getProperty("password");
+            dbOptions = new TransferDbOptions(jdbcDriver, connectionURL,
+                    userName, password);
             dbAdapter = TransferDbAdapter.setupDBConnection(dbOptions);
             activeTransferThreads = new Vector();
             transferClients = new Vector();
 
             if (persistentRequestIdString != null) {
                 logger.debug(
-                        "recovering transfer request: " + 
+                        "recovering transfer request: " +
                         persistentRequestIdString);
                 this.persistentRequestId = Integer.parseInt(
-                                                   persistentRequestIdString);
+                        persistentRequestIdString);
                 this.requestId = this.persistentRequestId;
 
                 String proxyLocation = dbAdapter.getProxyLocation(
-                                               this.persistentRequestId);
+                        this.persistentRequestId);
                 GSSCredential credential = TransferClient.loadCredential(
-                                                   proxyLocation);
+                        proxyLocation);
                 setNotifyProps(credential, Constants.ENCRYPTION);
 
                 Vector recoveredTransferJobs = dbAdapter.getActiveTransfers(
-                                                       persistentRequestId);
+                        persistentRequestId);
                 int tempSize = recoveredTransferJobs.size();
                 transfers = new TransferType[tempSize];
 
                 for (int i = 0; i < tempSize; i++) {
 
-                    TransferJob transferJob = (TransferJob)recoveredTransferJobs.elementAt(
-                                                      i);
+                    TransferJob transferJob = (TransferJob) recoveredTransferJobs.elementAt(
+                            i);
 
                     //converting recovered transfers to transfer types
                     transfers[i] = new TransferType();
-                   // transfers[i].setTransferId(transferJob.getTransferId());
+                    // transfers[i].setTransferId(transferJob.getTransferId());
                     transfers[i].setSourceUrl(transferJob.getSourceUrl());
                     transfers[i].setDestinationUrl(transferJob.getDestinationUrl());
                     transfers[i].setRftOptions(transferJob.getRftOptions());
                 }
 
                 int concurrency_ = dbAdapter.getConcurrency(
-                                           this.persistentRequestId);
+                        this.persistentRequestId);
                 logger.debug(
                         "Concurrency of recovered request: " + concurrency_);
                 logger.debug("Populating FileTransferStatus SDEs");
@@ -374,20 +401,20 @@ public class RftImpl
                 }
 
                 requestStatusData.setValues(
-                        new Object[] { fileTransferStatusElements });
+                        new Object[]{fileTransferStatusElements});
                 this.serviceData.add(requestStatusData);
 
                 for (int i = 0; i < concurrency_; i++) {
 
-                    TransferJob transferJob = (TransferJob)recoveredTransferJobs.elementAt(
-                                                      i);
+                    TransferJob transferJob = (TransferJob) recoveredTransferJobs.elementAt(
+                            i);
                     int tempStatus = transferJob.getStatus();
 
-                    if ((tempStatus == TransferJob.STATUS_ACTIVE) || 
-                        (tempStatus == TransferJob.STATUS_PENDING)) {
+                    if ((tempStatus == TransferJob.STATUS_ACTIVE) ||
+                            (tempStatus == TransferJob.STATUS_PENDING)) {
 
                         TransferThread transferThread = new TransferThread(
-                                                                transferJob);
+                                transferJob);
                         logger.debug("Starting recovered transfer jobs ");
                         transferThread.start();
                     }
@@ -396,14 +423,14 @@ public class RftImpl
                 SecurityManager manager = SecurityManager.getManager();
 
                 GSSCredential cred = SecureServicePropertiesHelper.getCredential(
-                                             this);
+                        this);
                 transfers = this.transferRequest.getTransferArray();
                 this.concurrency = transferRequest.getConcurrency();
                 requestId = dbAdapter.storeTransferRequest(
-                                    this.transferRequest);
+                        this.transferRequest);
                 setPersistentProperty("requestId", Integer.toString(requestId));
-                setPersistentProperty("activateOnStartup", 
-                                      Boolean.TRUE.toString());
+                setPersistentProperty("activateOnStartup",
+                        Boolean.TRUE.toString());
                 flush();
                 this.persistentRequestId = requestId;
                 logger.debug("Populating FileTransferStatus SDEs");
@@ -411,7 +438,7 @@ public class RftImpl
                 statusTypes = new FileTransferJobStatusType[transfers.length];
                 transferJobId_ = dbAdapter.getTransferJobId(requestId);
                 logger.debug(
-                        "setting transferid in statusTypes to : " + 
+                        "setting transferid in statusTypes to : " +
                         transferJobId_);
 
                 for (int i = 0; i < transfers.length; i++) {
@@ -425,7 +452,7 @@ public class RftImpl
                 }
 
                 requestStatusData.setValues(
-                        new Object[] { fileTransferStatusElements });
+                        new Object[]{fileTransferStatusElements});
                 this.serviceData.add(requestStatusData);
             }
         } catch (Exception e) {
@@ -433,11 +460,13 @@ public class RftImpl
         }
     }
 
+
     /**
      * DOCUMENT ME!
-     * 
-     * @param transferStatus DOCUMENT ME!
-     * @return DOCUMENT ME! 
+     *
+     *
+     * @param  transferStatus  DOCUMENT ME!
+     * @return                 DOCUMENT ME!
      */
     private TransferStatusType mapStatus(int transferStatus) {
 
@@ -474,42 +503,50 @@ public class RftImpl
         return null;
     }
 
-    /**
-     * DOCUMENT ME!
-     * 
-     * @param credential DOCUMENT ME!
-     * @param msgProt DOCUMENT ME!
-     */
-    private void setNotifyProps(GSSCredential credential, Object msgProt) {
-        this.notifyProps = new HashMap();
-        this.notifyProps.put(GSIConstants.GSI_MODE, 
-                             GSIConstants.GSI_MODE_NO_DELEG);
-        this.notifyProps.put(Constants.GSI_SEC_CONV, msgProt);
-        this.notifyProps.put(Constants.AUTHORIZATION, 
-                             SelfAuthorization.getInstance());
-        this.notifyProps.put(GSIConstants.GSI_CREDENTIALS, credential);
-    }
 
     /**
      * DOCUMENT ME!
-     * 
-     * @throws Exception DOCUMENT ME!
+     *
+     *
+     * @param  credential  DOCUMENT ME!
+     * @param  msgProt     DOCUMENT ME!
      */
-    public void preDestroy(GridContext context) 
-    throws GridServiceException {
+    private void setNotifyProps(GSSCredential credential, Object msgProt) {
+        this.notifyProps = new HashMap();
+        this.notifyProps.put(GSIConstants.GSI_MODE,
+                GSIConstants.GSI_MODE_NO_DELEG);
+        this.notifyProps.put(Constants.GSI_SEC_CONV, msgProt);
+        this.notifyProps.put(Constants.AUTHORIZATION,
+                SelfAuthorization.getInstance());
+        this.notifyProps.put(GSIConstants.GSI_CREDENTIALS, credential);
+    }
+
+
+    /**
+     * DOCUMENT ME!
+     *
+     *
+     * @param  context                   Description of the Parameter
+     * @exception  GridServiceException  Description of the Exception
+     * @throws  Exception                DOCUMENT ME!
+     */
+    public void preDestroy(GridContext context)
+             throws GridServiceException {
         super.preDestroy(context);
         logger.debug("RFT instance destroyed");
     }
 
+
     /**
      * DOCUMENT ME!
-     * 
-     * @param transferJob DOCUMENT ME!
-     * @throws GridServiceException DOCUMENT ME!
+     *
+     *
+     * @param  transferJob            DOCUMENT ME!
+     * @throws  GridServiceException  DOCUMENT ME!
      */
     public void statusChanged(TransferJob transferJob)
-                       throws GridServiceException {
-        logger.debug("Single File Transfer Status SDE changed "+transferJob.getStatus());
+             throws GridServiceException {
+        logger.debug("Single File Transfer Status SDE changed " + transferJob.getStatus());
         dbAdapter.update(transferJob);
         transferJobId_ = transferJob.getTransferId();
 
@@ -530,22 +567,30 @@ public class RftImpl
         }
     }
 
-    public TransferClient getTransferClient(String sourceURL,String destinationURL) 
-    throws MalformedURLException  {
+
+    /**
+     *  Gets the transferClient attribute of the RftImpl object
+     *
+     * @param  sourceURL                  Description of the Parameter
+     * @param  destinationURL             Description of the Parameter
+     * @return                            The transferClient value
+     * @exception  MalformedURLException  Description of the Exception
+     */
+    public TransferClient getTransferClient(String sourceURL, String destinationURL)
+             throws MalformedURLException {
         TransferClient transferClient = null;
-        boolean flag=false;
-        logger.debug("Inside getTransferClient"+this.transferClients.size());
-        for(int i=0;i<this.transferClients.size();i++) {
+        boolean flag = false;
+        for (int i = 0; i < this.transferClients.size(); i++) {
             TransferClient tempTransferClient = (TransferClient) this.transferClients.elementAt(i);
             GlobusURL source = tempTransferClient.getSourceURL();
             GlobusURL destination = tempTransferClient.getDestinationURL();
             int status = tempTransferClient.getStatus();
             GlobusURL tempSource = new GlobusURL(sourceURL);
             GlobusURL tempDest = new GlobusURL(destinationURL);
-            if((status==0) || (status==2)) {
-                flag=true;
+            if ((status == 0) || (status == 2)) {
+                flag = true;
             }
-            if((source.getHost().equals(tempSource.getHost())) && (destination.getHost().equals(tempDest.getHost())) && flag) { 
+            if ((source.getHost().equals(tempSource.getHost())) && (destination.getHost().equals(tempDest.getHost())) && flag) {
                 transferClient = tempTransferClient;
                 transferClient.setSourcePath(tempSource.getPath());
                 transferClient.setDestinationPath(tempDest.getPath());
@@ -555,9 +600,16 @@ public class RftImpl
         }
         return transferClient;
     }
-            
+
+
+    /**
+     *  Description of the Class
+     *
+     * @author     madduri
+     * @created    September 17, 2003
+     */
     public class TransferThread
-        extends Thread {
+             extends Thread {
 
         TransferJob transferJob;
         TransferClient transferClient;
@@ -566,25 +618,41 @@ public class RftImpl
         BufferedReader stdInput;
         BufferedReader stdError;
 
+
+        /**
+         *Constructor for the TransferThread object
+         *
+         * @param  transferJob  Description of the Parameter
+         */
         TransferThread(TransferJob transferJob) {
             this.transferJob = transferJob;
             this.attempts = transferJob.getAttempts();
             this.status = transferJob.getStatus();
         }
+
+
+        /**
+         *  Sets the transferClient attribute of the TransferThread object
+         *
+         * @param  transferClient  The new transferClient value
+         */
         public void setTransferClient(TransferClient transferClient) {
             this.transferClient = transferClient;
         }
 
+
         /**
          * DOCUMENT ME!
-         * 
-         * @throws RftDBException DOCUMENT ME!
+         *
+         *
+         * @throws  RftDBException  DOCUMENT ME!
          */
         public void killThread()
-                        throws RftDBException {
+                 throws RftDBException {
             transferJob.setStatus(TransferJob.STATUS_CANCELLED);
             dbAdapter.update(transferJob);
         }
+
 
         /**
          * DOCUMENT ME!
@@ -596,36 +664,31 @@ public class RftImpl
                 int tempId = transferJob.getTransferId();
                 TransferThread transferThread;
                 RFTOptionsType rftOptions = transferJob.getRftOptions();
-                if(rftOptions==null) {
-                    logger.debug("Setting globalRFTOptions");
+                if (rftOptions == null) {
                     rftOptions = globalRFTOptionsType;
                 }
                 String proxyLocation = dbAdapter.getProxyLocation(requestId);
-                logger.debug(
-                        "Proxy location" + proxyLocation + " " + requestId);
-
                 try {
-                    logger.debug("in run");
                     transferClient = getTransferClient(transferJob.getSourceUrl(),
-                    transferJob.getDestinationUrl());
-                    
-                    if(transferClient==null) {
-                    logger.debug("No transferClient in the pool");
-                    transferClient = new TransferClient(tempId, 
-                                                        transferJob.getSourceUrl(), 
-                                                        transferJob.getDestinationUrl(), 
-                                                        proxyLocation, 
-                                                        dbOptions, 
-                                                        transferProgress, 
-                                                        serviceData, 
-                                                        transferProgressData, 
-                                                        restartMarkerServiceData, 
-                                                        restartMarkerDataType, 
-                                                        gridFTPRestartMarkerSD, 
-                                                        gridFTPRestartMarkerSDE, 
-                                                        gridFTPPerfMarkerSD, 
-                                                        gridFTPPerfMarkerSDE, 
-                                                        rftOptions);
+                            transferJob.getDestinationUrl());
+
+                    if (transferClient == null) {
+                        logger.debug("No transferClient in the pool");
+                        transferClient = new TransferClient(tempId,
+                                transferJob.getSourceUrl(),
+                                transferJob.getDestinationUrl(),
+                                proxyLocation,
+                                dbOptions,
+                                transferProgress,
+                                serviceData,
+                                transferProgressData,
+                                restartMarkerServiceData,
+                                restartMarkerDataType,
+                                gridFTPRestartMarkerSD,
+                                gridFTPRestartMarkerSDE,
+                                gridFTPPerfMarkerSD,
+                                gridFTPPerfMarkerSDE,
+                                rftOptions);
                     } else {
                         logger.debug("Reusing TransferClient from the pool");
                         transferClient.setSourceURL(transferJob.getSourceUrl());
@@ -636,19 +699,17 @@ public class RftImpl
                     logger.error("Error in Transfer Client" + e.toString(), e);
                     transferJob.setStatus(TransferJob.STATUS_FAILED);
                     statusChanged(transferJob);
-                    notifyUpdate();
 
                     TransferJob newTransferJob = dbAdapter.getTransferJob(
-                                                         requestId);
+                            requestId);
 
                     if (newTransferJob != null) {
                         transferThread = new TransferThread(newTransferJob);
                         logger.debug(
-                                "Attempts in new transfer: " + 
+                                "Attempts in new transfer: " +
                                 newTransferJob.getAttempts());
                         transferThread.start();
                         newTransferJob.setStatus(TransferJob.STATUS_ACTIVE);
-                        notifyUpdate();
                         statusChanged(newTransferJob);
                     } else {
                         logger.debug("No more transfers ");
@@ -681,36 +742,32 @@ public class RftImpl
                     if (x == 0) {
                         transferJob.setStatus(TransferJob.STATUS_FINISHED);
                         this.status = TransferJob.STATUS_FINISHED;
-                        notifyUpdate();
+                        logger.debug("Transfer " + transferJob.getTransferId() + " DONE");
                         statusChanged(transferJob);
                         transferProgress.setPercentComplete(100);
                         transferProgressData.setValue(transferProgress);
                         transferClient.setStatus(TransferJob.STATUS_FINISHED);
                         transferClients.add(transferClient);
-                    } else if ((x == 1) && 
-                               (transferJob.getAttempts() < maxAttempts)) {
+                    } else if ((x == 1) &&
+                            (transferJob.getAttempts() < maxAttempts)) {
                         transferJob.setStatus(TransferJob.STATUS_PENDING);
                         transferClient.setStatus(TransferJob.STATUS_PENDING);
                         this.status = TransferJob.STATUS_PENDING;
-                        notifyUpdate();
+                        logger.debug("Transfer " + transferJob.getTransferId() + " Retrying");
                         statusChanged(transferJob);
 
-                        /*     transferThread = new TransferThread(transferJob);
-                               transferThread.start();
-                               transferJob.setStatus(TransferJob.STATUS_ACTIVE);
-                               notifyUpdate(); */
-                    } else if ((x == 2) || 
-                               (transferJob.getAttempts() >= maxAttempts)) {
+                    } else if ((x == 2) ||
+                            (transferJob.getAttempts() >= maxAttempts)) {
                         transferJob.setStatus(TransferJob.STATUS_FAILED);
                         this.status = TransferJob.STATUS_FAILED;
+                        logger.debug("Transfer " + transferJob.getTransferId() + " Failed");
                         statusChanged(transferJob);
                         transferClient.setStatus(TransferJob.STATUS_FAILED);
                         transferClients.add(transferClient);
                     } else {
                         transferJob.setStatus(TransferJob.STATUS_RETRYING);
                         transferClient.setStatus(TransferJob.STATUS_RETRYING);
-                        this.status= TransferJob.STATUS_RETRYING;
-                        notifyUpdate();
+                        this.status = TransferJob.STATUS_RETRYING;
                         statusChanged(transferJob);
                     }
                 } else {
@@ -724,27 +781,23 @@ public class RftImpl
                 dbAdapter.update(transferJob);
 
                 TransferJob newTransferJob = dbAdapter.getTransferJob(
-                                                     requestId);
-                logger.debug("starting a new transfer");
+                        requestId);
 
                 if (newTransferJob != null) {
+                    logger.debug("starting a new transfer");
                     transferThread = new TransferThread(newTransferJob);
-                    logger.debug(
-                            "Attempts in new transfer: " + 
-                            newTransferJob.getAttempts());
                     transferThread.start();
                     newTransferJob.setStatus(TransferJob.STATUS_ACTIVE);
-                    notifyUpdate();
                     statusChanged(newTransferJob);
                 } else {
                     logger.debug("No more transfers ");
                 }
             } catch (Exception ioe) {
                 logger.error("Error in Transfer Thread" + ioe.toString(), ioe);
-            }
-             catch (Throwable ee) {
+            } catch (Throwable ee) {
                 logger.error("Error in Transfer Thread" + ee.toString(), ee);
             }
         }
     }
 }
+

@@ -35,6 +35,7 @@ Southern California. All Rights Reserved.
   <property name="test.reports.dir" value="test-reports"/>
   <property name="schema.dir" value="schema"/>
   <property name="stubs.dir" value="src/org/globus/ogsa/base"/>
+  <property name="ogsi.stubs.dir" value="src/org/gridforum"/>
 
   <!-- Properties for deploying service -->
   <property name="jar.name" value="multirft.jar"/>
@@ -181,6 +182,7 @@ Southern California. All Rights Reserved.
     <mkdir dir="${build.lib}"/>
     <jar jarfile="${build.lib}/${jar.name}" basedir="${build.dest}">
      <exclude name="**/test/**"/>
+     <exclude name="**/org/gridforum/**"/>
     </jar>
   </target>
 
@@ -240,6 +242,7 @@ Southern California. All Rights Reserved.
         </fileset>
     </delete>
     <delete dir="${stubs.dir}"/>
+    <delete dir="${ogsi.stubs.dir}"/>
 </target>
 
   <!-- Generate java docs -->  

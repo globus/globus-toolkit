@@ -152,10 +152,6 @@ public class RFTClient {
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
             Factory factory = factoryService.getFactoryPort(new URL(handle));
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
-
-            /* ((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
-             ((Stub)factory)._setProperty(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
-             ((Stub)factory)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE);*/
             org.apache.axis.client.Stub s = (org.apache.axis.client.Stub) factory;
             s.setTimeout(100000000);
             LocatorType locator = gridFactory.createService(extension);
@@ -172,17 +168,11 @@ public class RFTClient {
             ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
                                                           new IgnoreProxyPolicyHandler());
 
-            /* WSDLReferenceType ref = (WSDLReferenceType) locator.getReference()[0];
-             opts.setOptions( ((Stub)factory));
-             //AnyHelper.setAny(extension,requestElement);
-            //  extension.set_any(any); 
-            */
             org.apache.axis.client.Stub s2 = (org.apache.axis.client.Stub) rftPort;
             s2.setTimeout(100000000);
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
 
-            //multirftPortType.cancel(requestid,3,4);
         } catch (Exception e) {
             System.err.println(MessageUtils.toString(e));
         }
