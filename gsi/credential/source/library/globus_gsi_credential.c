@@ -1943,7 +1943,7 @@ globus_l_gsi_cred_get_service(
 
     /* find /CN entry in subject */
 
-    cn_index = X509_NAME_get_index_by_NID(subject, NID_commonName, 0);
+    cn_index = X509_NAME_get_index_by_NID(subject, NID_commonName, -1);
 
     /* error if no common name was found */
         
