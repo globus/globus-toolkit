@@ -2,6 +2,7 @@ bin/gsiscp
 bin/gsissh
 bin/scp
 bin/sftp
+bin/slogin
 bin/ssh
 bin/ssh-add
 bin/ssh-agent
