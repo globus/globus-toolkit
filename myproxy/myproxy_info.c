@@ -6,6 +6,8 @@
 
 #include "myproxy.h"
 #include "myproxy_server.h"
+#include "myproxy_log.h"
+#include "ssl_utils.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
@@ -61,7 +63,7 @@ void init_arguments(int argc, char *argv[],
 int
 main(int argc, char *argv[])
 {
-    char *username, *pshost;
+    char *pshost;
     char request_buffer[1024], response_buffer[10240];
     int requestlen, responselen;
     int i;
@@ -168,7 +170,7 @@ main(int argc, char *argv[])
     /* Make a response object from the response buffer */
 
     if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
-        fprintf(stderr, "%s\n",verror_get_string);
+        fprintf(stderr, "%s\n",verror_get_string());
         exit(1);
     }
 
