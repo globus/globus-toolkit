@@ -348,7 +348,7 @@ main(
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-history job-history-directory\n" 
                     "\t-publish-jobs\n"
-                    "\t-save-logfile [ always | on_errors ]\n"
+                    "\t-save-logfile [ always | on_error ]\n"
 		    "\t-scratch-dir-base scratch-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
 		    "\t-x509-cert-dir DIRECTORY\n"
