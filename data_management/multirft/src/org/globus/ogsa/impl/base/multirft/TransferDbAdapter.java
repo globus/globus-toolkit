@@ -53,9 +53,9 @@ public class TransferDbAdapter {
     public final static String multiRftURI = "multiRft";
     static int connNumber;
     static GenericObjectPool connectionPool = null;
-    static int def_activeConnections = 32;
+    static int def_activeConnections = 64;
     static byte def_onExhaustAction = 1;
-    static long def_maxWait = -1;
+    static long def_maxWait = 4000;
     static int def_idleConnections = 2;
     RFTOptionsType globalRFTOptions;
     int requestId;
@@ -413,7 +413,44 @@ public class TransferDbAdapter {
             logger.error( "Unable to insert transferJob into transfer table" + e.toString(), e );
             throw new RftDBException( "Failed to insert transferJob into DB", e );
         }
+        returnDBConnection( c );
     }
+	public int storeTransferJobs( Vector transferJobVector )
+             throws RftDBException {
+        Connection c = getDBConnection();
+		TransferJob transferJob;
+		int returnInt = -1;
+		for( int i=0;i<transferJobVector.size();i++) {
+			transferJob = (TransferJob) transferJobVector.elementAt(i);
+        	try {
+        		    Statement st = c.createStatement();
+            		StringBuffer query = new StringBuffer();
+            		query.append(
+                    "INSERT into transfer(request_id,source_url,dest_url," );
+            		query.append( "dcau,parallel_streams,tcp_buffer_size," );
+            		query.append( "block_size,notpt,binary_mode) VALUES(" );
+            		query.append( this.requestId ).append( ",'" )
+					.append( transferJob.getSourceUrl() );
+            		query.append( "','" ).append( transferJob.getDestinationUrl() )
+					.append( "'," );
+            		query.append( this.globalRFTOptions.isDcau() )
+					.append( "," ).append( this.globalRFTOptions.getParallelStreams() )
+                	.append( "," ).append( this.globalRFTOptions.getTcpBufferSize() )
+					.append("," ).append( this.globalRFTOptions.getBlockSize() )
+					.append( "," ).append( this.globalRFTOptions.isNotpt() )
+               		.append( "," ).append( this.globalRFTOptions.isBinary() ).append( ")" );
+            		logger.debug( "Query in storeTransferJobs: " );
+            		logger.debug( query.toString() );
+            		returnInt = st.executeUpdate( query.toString() );
+        		} catch ( SQLException e ) {
+            	logger.error( "Unable to insert transferJob into transfer table" + e.toString(), e );
+            	throw new RftDBException( "Failed to insert transferJob into DB", e );
+        	}
+		}
+        returnDBConnection( c );
+		return returnInt;
+    }
+
 
 
     /**

@@ -28,7 +28,7 @@ public class FileSystemUtil {
             
         } catch(ServerException e) {
             System.out.println("Error Code : " + ((UnexpectedReplyCodeException)(e.getRootCause())).getReply().getCode());
-            throw new RemoteException("Exception while making directories"+e.getMessage());
+            //throw new RemoteException("Exception while making directories"+e.getMessage());
         }       
     }
     /* this method takes a string and cd's to that location
@@ -38,7 +38,7 @@ public class FileSystemUtil {
         try {
             this.gridFTPClient.changeDir(dirString);
         }catch(Exception e) {
-            throw new RemoteException("Exception while changing directories" + e.getMessage());
+           // throw new RemoteException("Exception while changing directories" + e.getMessage());
         }
     }
 

@@ -34,6 +34,7 @@ public class URLExpander extends Thread {
     FileSystemUtil fileSystemUtil;
     Vector processURLs;
     Vector sourceUrlsEx;
+	Vector transferJobVector;
     GlobusURL sourceGlobusUrl, destinationGlobusUrl;
     TransferDbAdapter dbAdapter;
     boolean done = false;
@@ -67,6 +68,7 @@ public class URLExpander extends Thread {
             this.sourceUrlsEx.add( this.sourcePath );
             this.fileSystemUtil.setGridFTPClient( this.destinationHost );
             this.dbAdapter = TransferDbAdapter.getTransferDbAdapter();
+			transferJobVector = new Vector();
         } catch ( Exception e ) {
             logger.debug( "Invalid source/dest urls" );
             throw new RemoteException( MessageUtils.toString( e ) );
@@ -154,7 +156,8 @@ public class URLExpander extends Thread {
                         transferType.setDestinationUrl( newDestinationUrl );
                         TransferJob transferJob = new
                                 TransferJob( transferType, 0, 4 );
-                        this.dbAdapter.storeTransferJob( transferJob );
+						this.transferJobVector.add( transferJob );
+                       // this.dbAdapter.storeTransferJob( transferJob );
                     }
                 }
                 currentUrl = (String) this.sourceUrlsEx.elementAt( 0 );
@@ -173,6 +176,11 @@ public class URLExpander extends Thread {
         }
         if ( this.sourceUrlsEx.size() == 0 ) {
             logger.debug( "UrlExpander is done" );
+			try {
+				int storeSuccess=this.dbAdapter.storeTransferJobs( transferJobVector );
+			} catch(Exception ee) {
+			logger.debug("Exception while storing transfer jobs",ee);
+			}
             this.done = true;
         }
     }
