@@ -19,7 +19,7 @@ mv sources/gsi_openssh_bundle-$VERSION-src_src.tar.gz $NAME
 #
 
 mkdir -p temp/
-tar xvzf $NAME -C foo/
+tar xvzf $NAME -C temp/
 cd temp/
 rm globus_core-99.tar.gz
 cat packaging_list | grep -v 'globus_core' > packaging_list
