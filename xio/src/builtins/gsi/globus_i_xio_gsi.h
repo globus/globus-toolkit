@@ -45,8 +45,8 @@
     globus_error_put(                                                        \
         globus_error_wrap_gssapi_error(                                      \
             GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
-            major_status,                                                    \
-            minor_status,                                                    \
+            (major_status),                                                  \
+            (minor_status),                                                  \
             GLOBUS_XIO_ERROR_WRAPPED,                                        \
             "[%s:%d] %s failed.",                                            \
             _xio_name, __LINE__, (failed_func)))
@@ -153,7 +153,8 @@ typedef struct
     globus_size_t                       unwrapped_buffer_offset;
     globus_size_t                       bytes_returned;
     globus_bool_t                       done;
-    globus_result_t                     result;
+    globus_object_t *                   result_obj;
+    globus_bool_t                       eof;
     globus_xio_driver_handle_t          xio_driver_handle;
     int                                 connection_id;
 } globus_l_handle_t;
@@ -179,7 +180,7 @@ typedef struct
     globus_xio_iovec_t                  iovec[2];
     unsigned char                       header[4];
     globus_bool_t                       done;
-    globus_result_t                     result;
+    globus_object_t *                   result_obj;
     globus_bool_t                       reading_header;
 } globus_l_delegation_handle_t;
 
