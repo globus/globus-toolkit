@@ -45,9 +45,10 @@ EXTERN_C_END
 #include <pthread.h>
 #endif /* TARGET_ARCH_AIX */
 
-EXTERN_C_BEGIN
+#include <globus_module.h>
+#include <globus_time.h>
 
-typedef struct timespec      globus_abstime_t;
+EXTERN_C_BEGIN
 
 typedef pthread_t		globus_thread_t;
 typedef pthread_attr_t		globus_threadattr_t;
