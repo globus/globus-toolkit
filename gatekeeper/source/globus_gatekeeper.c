@@ -1262,7 +1262,8 @@ static void doit()
     extension_oids.count = 1;
     
     option_token.value = (void *) &extension_oids;
-
+#if 0
+    /* don't use this code until we require CAS for the gatekeeper */
     major_status = gss_set_sec_context_option(
         &minor_status,
         &context_handle,
@@ -1284,7 +1285,7 @@ static void doit()
                  "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
                  major_status,minor_status,token_status);
     }
-
+#endif
     
     /* 
      * We will not accept limited proxies for authentication, as
@@ -1517,14 +1518,14 @@ static void doit()
             (got_ping_request) ? "[PING ONLY]" : "");
 
     if ((rc = globus_gatekeeper_util_globusxmap(
-             genfilename(gatekeeperhome,grid_services,service_name), 
-             NULL, 
-             &service_line)) != 0)
-    {
-        failure3(FAILED_SERVICELOOKUP,
-                 "Failed to find requested service: %s: %d", 
-                 service_name, rc);
-    }
+		genfilename(gatekeeperhome,grid_services,service_name), 
+		NULL, 
+		&service_line)) != 0)
+      {
+	    failure3(FAILED_SERVICELOOKUP,
+		     "Failed to find requested service: %s: %d", 
+		     service_name, rc);
+      }
     
     /* 
      * Parse the command line.
