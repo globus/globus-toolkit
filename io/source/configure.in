@@ -8,7 +8,13 @@ GLOBUS_INIT
 
 AM_PROG_LIBTOOL
 
-dnl config header goes here
+dnl check for -lsocket -lnsl
+
+CHECK_NEED_LNSL
+
+CHECK_NEED_LSOCKET
+
+GPT_SET_LIBS(["$EXTERNAL_LIBS"])
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
@@ -40,4 +46,6 @@ AC_OUTPUT(
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
 
 )
+
+
 
