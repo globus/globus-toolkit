@@ -5,11 +5,14 @@ AC_PREFIX_DEFAULT(/usr/local/globus-3.9.4)
 AC_CANONICAL_BUILD
 if test "x$flavor" = "x"; then
    case "$build" in
-   i*86-*-linux-*)
+   i*86-*-*-*)
       flavor=gcc32dbg
    ;;
    power*-ibm-aix5.*)
       flavor=vendorcc32dbg
+   ;;
+   ppc-*-*-*)
+      flavor=gcc32dbg
    ;;
    power*-apple-darwin7.*)
       flavor=gcc32dbg
@@ -17,10 +20,16 @@ if test "x$flavor" = "x"; then
    sparc-sun-solaris*)
       flavor=gcc32dbg
    ;;
-   ia64-*-linux-*)
+   sparc64-*-*)
+      flavor=gcc64dbg
+   ;;
+   ia64-*-*-*)
       flavor=gcc64dbg
    ;; 
-   x86_64-*-linux-*)
+   x86_64-*-*-*)
+      flavor=gcc64dbg
+   ;;
+   amd64-*-*-*)
       flavor=gcc64dbg
    ;;
    s390-ibm-linux-*)
