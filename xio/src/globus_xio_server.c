@@ -143,30 +143,6 @@ do                                                                          \
     globus_mutex_unlock(&_server->mutex);                                   \
 } while(0)
 
-#define GlobusIXIOTargetDriverDestroy(res, op)                              \
-do                                                                          \
-{                                                                           \
-    int                                                 _ctr;               \
-    globus_i_xio_op_t *                                 _op;                \
-    globus_result_t                                     tmp_res;            \
-                                                                            \
-    res = GLOBUS_SUCCESS;                                                   \
-    _op = (op);                                                             \
-    for(_ctr = 0; _op->stack_size; _ctr++)                                  \
-    {                                                                       \
-        /* if a target was intialized we need to destroy it */              \
-        if(_op->entry[ctr].target != NULL)                                  \
-        {                                                                   \
-            tmp_res = _op->entry[ctr].driver.target_destroy_func(           \
-                _op->entry[ctr].target);                                    \
-            if(tmp_res != GLOBUS_SUCCESS)                                   \
-            {                                                               \
-                res = tmp_res;                                              \
-            }                                                               \
-        }                                                                   \
-    }                                                                       \
-} while(0)
-
 /**************************************************************************
  *                       Internal functions
  *                       ------------------
@@ -197,10 +173,29 @@ void
 globus_l_xio_server_accept_kickout(
     globus_i_xio_op_t *                         xio_op)
 {
+    globus_i_xio_target_t                       xio_target = NULL;
+
     /* call the users callback */
+    if(xio_op->cached_res == GLOBUS_SUCCESS)
+    {
+        xio_target = globus_malloc(sizeof(globus_i_xio_target_t) +
+                        (sizeof(globus_i_xio_target_entry_t) * 
+                            (xio_op->stack_size - 1)));
+        if(xio_target == NULL)
+        {
+            xio_op->cached_res = MallocFailed();
+        }
+        /* initialize the target structure */
+        xio_target->stack_size = xio_op->stack_size;
+        for(ctr = 0;  ctr < xio_target->stack_size; ctr++)
+        {
+            xio_target->entry[ctr].target = xio_op->entry[ctr]._op_ent_target;
+            xio_target->entry[ctr].driver = xio_op->entry[ctr].driver;
+        }
+    }
 
     xio_op->accept_cb(
-        xio_op,
+        xio_target,
         xio_op->xio_server,
         xio_op->cached_res,
         xio_op->accept_arg);
@@ -210,8 +205,8 @@ globus_l_xio_server_accept_kickout(
     globus_mutex_lock(&xio_server->mutex);
     {
         globus_assert(xio_server->state == GLOBUS_XIO_SERVER_STATE_ACCEPTING);
-        globus_assert(xio_op->state == GLOBUS_XIO_TARGET_STATE_SERVER ||
-                xio_op->state == GLOBUS_XIO_TARGET_STATE_CLOSED);
+        globus_assert(xio_op->state == GLOBUS_XIO_OP_STATE_SERVER ||
+                xio_op->state == GLOBUS_XIO_OP_STATE_CLOSED);
 
         /* decrement reference for the callback */
         xio_op->ref--;
@@ -233,7 +228,7 @@ globus_l_xio_server_accept_kickout(
         else if(xio_op->cached_res != GLOBUS_SUCCESS)
         {
             /* insit if error we are in the closed state */
-            globus_assert(xio_op->state == GLOBUS_XIO_TARGET_STATE_CLOSED);
+            globus_assert(xio_op->state == GLOBUS_XIO_OP_STATE_CLOSED);
             /* If an error occured we walk through all the drivers that
                created finished successfully and free tell them to 
                destroy their targets. If the driver did not initialize a
@@ -241,7 +236,13 @@ globus_l_xio_server_accept_kickout(
                that only drivers lower in the stack than the one that 
                reported the error have targets but we make no check for
                this in case the driver stack did something strange */
-            GlobusIXIOTargetDriverDestroy(res, xio_op);
+            for(ctr = 0; ctr < xio_op->stack_size; ctr++)
+            {
+                /* ignorew the return code since there is nothing we can do 
+                about it here */
+                _op->entry[ctr].driver.target_destroy_func(
+                                _op->entry[ctr]._op_ent_target);
+            }
 
             xio_op->ref--;
             if(xio_op->ref == 0)
@@ -282,10 +283,10 @@ globus_i_xio_server_accept_callback(
            get a cancel callback.  we must delay the delivery of this
            callback until that returns */
         xio_op->cached_res = result;
-        if(xio_op->state == GLOBUS_XIO_TARGET_STATE_TIMEOUT_PENDING)
+        if(xio_op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)
         {
             accept = GLOBUS_FALSE;
-            xio_op->state = GLOBUS_XIO_TARGET_STATE_ACCEPT_WAITING;
+            xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPT_WAITING;
         }
         else
         {
@@ -306,11 +307,11 @@ globus_i_xio_server_accept_callback(
 
             if(xio_op->cached_res == GLOBUS_SUCCESS)
             {
-                xio_op->state = GLOBUS_XIO_TARGET_STATE_ACCEPT_SERVER;
+                xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPT_SERVER;
             }
             else
             {
-                xio_op->state = GLOBUS_XIO_TARGET_STATE_ACCEPT_CLOSED;
+                xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPT_CLOSED;
             }
         }
     }
@@ -342,7 +343,7 @@ globus_l_xio_accept_timeout_callback(
         {
             /* this case only happens when we have a timeout registered on the
             target taht we were unable to cancel and the AcceptPass failed */
-            case GLOBUS_XIO_TARGET_STATE_CLOSED:
+            case GLOBUS_XIO_OP_STATE_CLOSED:
 
                 /* insist that only 1 ref is left for this target, don't 
                    bother decrementing, just destroy it */
@@ -364,7 +365,7 @@ globus_l_xio_accept_timeout_callback(
 
             /* this case happens when the server was succefully created but
                 we were unable to cancel the timeout callback */
-            case GLOBUS_XIO_TARGET_STATE_SERVER:
+            case GLOBUS_XIO_OP_STATE_SERVER:
 
                 /* decerement the reference for the timeout callback */
                 xio_op->ref--;
@@ -378,7 +379,7 @@ globus_l_xio_accept_timeout_callback(
             /* this case happens when we actually want to cancel the operation
                 The timeout code should insure that prograess is false if this
                 gets called in this state */
-            case GLOBUS_XIO_TARGET_STATE_ACCEPTING:
+            case GLOBUS_XIO_OP_STATE_ACCEPTING:
                 /* it is up to the timeout callback to set this to true */
                 rc = GLOBUS_FALSE;
                 /* cancel the sucker */
@@ -393,7 +394,7 @@ globus_l_xio_accept_timeout_callback(
                 break;
 
             /* no reason we should get to this state */
-            case GLOBUS_XIO_TARGET_STATE_CLIENT:
+            case GLOBUS_XIO_OP_STATE_CLIENT:
             default:
                 globus_assert(0);
         }
@@ -427,7 +428,7 @@ globus_l_xio_accept_timeout_callback(
 
         /* if an accept callback has already arriverd set flag to later
             call accept callback and set rc to remove timed event */
-        if(xio_op->state == GLOBUS_XIO_TARGET_STATE_ACCEPT_WAITING)
+        if(xio_op->state == GLOBUS_XIO_OP_STATE_ACCEPT_WAITING)
         {
             accept = GLOBUS_TRUE;
             rc = GLOBUS_TRUE;
@@ -435,17 +436,17 @@ globus_l_xio_accept_timeout_callback(
             /* set the rext state based on the result code */
             if(xio_op->cached_res == GLOBUS_SUCCESS)
             {
-                xio_op->state = GLOBUS_XIO_TARGET_STATE_SERVER;
+                xio_op->state = GLOBUS_XIO_OP_STATE_SERVER;
             }
             else
             {
-                xio_op->state = GLOBUS_XIO_TARGET_STATE_CLOSED;
+                xio_op->state = GLOBUS_XIO_OP_STATE_CLOSED;
             }
         }
         /* if no accept is waiting, set state back to accepting */
         else
         {
-            xio_op->state = GLOBUS_XIO_TARGET_STATE_ACCEPTING;
+            xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPTING;
         }
 
         /* if we are remvoing the timed event */
@@ -708,8 +709,8 @@ globus_xio_server_register_accept(
             }
             else
             {
-                xio_op->op_type = GLOBUS_XIO_OPERATION_TYPE_TARGET;
-                xio_op->state = GLOBUS_XIO_TARGET_STATE_ACCEPTING;
+                xio_op->op_type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
+                xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPTING;
                 xio_op->server = xio_server;
                 xio_op->ref = 1;
                 xio_op->cancel_cb = NULL;
@@ -874,8 +875,10 @@ globus_result_t
 globus_xio_target_destroy(
     globus_xio_target_t                         target)
 {   
-    globus_i_xio_op_t *                         xio_op;
+    globus_i_xio_target_t *                     xio_target;
     globus_i_xio_server_t *                     xio_server;
+    globus_result_t                             res;
+    globus_result_t                             tmp_res;
 
     /*
      *  parameter checking 
@@ -884,45 +887,26 @@ globus_xio_target_destroy(
     {
         return GlobusXIOErrorBadParameter("globus_xio_target_cntl");
     }
-    xio_op = (globus_i_xio_op_t *) target;
-    if(xio_op->state != GLOBUS_XIO_TARGET_STATE_SERVER &&
-       xio_op->state != GLOBUS_XIO_TARGET_STATE_CLIENT)
+    xio_target = (globus_i_xio_target_t *) target;
+    if(xio_target->type != GLOBUS_XIO_TARGET_TYPE_SERVER &&
+       xio_target->type != GLOBUS_XIO_TARGET_TYPE_CLIENT)
     {
         return GlobusXIOErrorBadState("globus_xio_target_cntl");
     }
 
-    server = xio_op->server;
-
-    /* This should be safe because the user doesn't see the target until
-       it is set into the server stat and the mutex is unlocked.  Once
-       the mutex is unlocked in the SERVER state it is not chacneged until
-       this function is called */
-    if(xio_op->state == GLOBUS_XIO_TARGET_STATE_SERVER)
+    if(ctr = 0; ctr < xio_target->stack_size; ctr++)
     {
-        /* in this state we must mind the reference count */
-        globus_mutex_lock(&xio_server->mutex);
+        GlobusXIODriverTargetDestroy(
+            tmp_res,
+            xio_target->entry[ndx].driver,
+            xio_target->entry[ndx].target);
+        /* this will effectively report the last error detected */
+        if(tmp_res != GLOBUS_SUCCESS)
         {
-            xio_op->state = GLOBUS_XIO_TARGET_STATE_CLOSED;
-            xio_xio_op->ref--;
-            if(xio_xio_op->ref == 0)
-            {
-                GlobusIXIOTargetDriverDestroy(res, xio_op);
-                globus_free(xio_op);
-                xio_server->ref--;
-                if(xio_server->ref == 0)
-                {
-                    assert(xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSED);
-                    globus_free(xio_server);
-                }
-            }
+            res = tmp_res;
         }
-        globus_mutex_unlock(&xio_server->mutex);
     }
-    else if(xio_op->state == GLOBUS_XIO_TARGET_STATE_CLIENT)
-    {
-        GlobusIXIOTargetDriverDestroy(res, xio_op);
-        globus_free(xio_op);
-    }
+    globus_free(xio_target);
 
     return res;
 }
@@ -940,7 +924,7 @@ globus_xio_target_cntl(
     int                                         cmd,
     ...)
 {
-    globus_i_xio_op_t *                         xio_op;
+    globus_i_xio_target_t *                     xio_target;
     int                                         ctr;
     globus_result_t                             res;
     va_list                                     ap;
@@ -964,23 +948,20 @@ globus_xio_target_cntl(
     }
 #   endif
 
-    /* TODO: does this need a mutex?
-        I think the answer is no.  This alterns no state, it would be
-        up to the driver to do any locking */
     res = globus_i_xio_target_cntl(l_target, l_driver, cmd, ap);
 
-    xio_op = (globus_i_xio_op_t *) target;
+    xio_target = (globus_i_xio_target_t *) target;
 
     if(driver != NULL)
     {
-        for(ctr = 0; ctr < l_target->stack_size; ctr++)
+        for(ctr = 0; ctr < xio_target->stack_size; ctr++)
         {
-            if(xio_op->entry[ctr].driver == driver)
+            if(xio_target->entry[ctr].driver == driver)
             {
                 GlobusXIODriverTargetCntl(
                     res,
                     driver,
-                    xio_op->entry[ctr].target,
+                    xio_target->entry[ctr].target,
                     cmd,
                     ap);
 
@@ -1009,7 +990,7 @@ globus_xio_target_init(
     const char *                                contact_string,
     globus_xio_stack_t                          stack)
 {
-    globus_i_xio_op_t *                         xio_op;
+    globus_i_xio_target_t                       xio_target;
 
     /*
      *  parameter checking 
@@ -1035,32 +1016,35 @@ globus_xio_target_init(
     }
 
     /* TODO: check stack, make sure it meets requirements */
-
-    xio_op = (globus_i_xio_op_t *)
-                    globus_malloc(sizeof(globus_i_xio_op_t) +
-                        (sizeof(globus_i_xio_op_entry_t) * (stack_size - 1)));
+    xio_target = (globus_i_xio_target_t *)
+                    globus_malloc(sizeof(globus_i_xio_target_t) +
+                        (sizeof(globus_i_xio_target_entry_t) * 
+                            (stack_size - 1)));
     if(xio_op == NULL)
     {
         return GlobusXIOErrorMemoryAlloc("globus_xio_target_init");
     }
+
+    /* initialize what we need of the target structure */
+    xio_target->stack_size = stack_size;
 
     ndx = 0;
     for(list = stack->driver_stack;
     !globus_list_empty(list);
         list = globus_list_rest(list))
     {
-        xio_op->entry[ndx].driver = (globus_xio_driver_t) 
+        xio_target->entry[ndx].driver = (globus_xio_driver_t) 
                                         globus_list_first(list);
 
         /* pull driver specific info out of target attr */
         driver_attr = globus_i_xio_attr_get_ds(
                         target_attr,
-                        xio_op->entry[ndx].driver);
+                        xio_target->entry[ndx].driver);
 
         GlobusXIODriverTargetInit(
             res,
-            xio_op->entry[ndx].driver,
-            &xio_op->entry[ndx].target,
+            xio_target->entry[ndx].driver,
+            &xio_target->entry[ndx].target,
             driver_attr,
             contact_string);
         if(res != GLOBUS_SUCCESS)
@@ -1073,10 +1057,10 @@ globus_xio_target_init(
                 /* ignore the result, but it must be passed */
                 GlobusXIODriverTargetDestroy(
                     res2,
-                    xio_op->entry[ndx].driver,
-                    xio_op->entry[ndx].target);
+                    xio_target->entry[ndx].driver,
+                    xio_target->entry[ndx].target);
             }
-            globus_free(xio_op);
+            globus_free(xio_taqrget);
             return res;
         }
 
@@ -1085,7 +1069,7 @@ globus_xio_target_init(
     /* hell has broken loose if these are not equal */
     globus_assert(ndx == stack_size);
 
-    *target = xio_op;
+    *target = (globus_xio_target_t) xio_target;
 
     return GLOBUS_SUCCESS;
 }

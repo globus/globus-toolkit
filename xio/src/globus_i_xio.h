@@ -169,6 +169,15 @@ typedef struct globus_i_xio_context_s
     globus_i_xio_context_entry_t                entry_array[1];
 } globus_i_xio_context_t;
 
+/* MACROS for accessing the op_entry structure unin elements */
+#define _op_ent_data_cb             type_u.handle_s.data_cb
+#define _op_ent_waitforbytes        type_u.handle_s.wait_for_bytes
+#define _op_ent_nbytes              type_u.handle_s.nbytes
+#define _op_ent_iovec               type_u.handle_s.iovec
+#define _op_ent_iovec_count         type_u.handle_s.iove_count
+
+#define _op_ent_target              type_u.target_s.target
+#define _op_ent_accept_attr         type_u.target_s.accept_attr
 /*
  *  represents a entry in an array of operations.  each entry
  *  is mapped to a driver at the same index.
@@ -178,6 +187,7 @@ typedef struct globus_i_xio_op_entry_s
     /* callback info arrays */
     globus_xio_driver_callback_t                cb;
     void *                                      user_arg;
+    globus_xio_driver_t                         driver;
 
     union
     {
@@ -189,20 +199,34 @@ typedef struct globus_i_xio_op_entry_s
             globus_size_t                       nbytes;
             globus_iovec_t                      iovec;
             int                                 iovec_count;
-        };
+        } handle_s;
         /* target op entries */
         struct
         {
-            globus_xio_driver_t                 driver;
             void *                              target;
             void *                              accept_attr;
-        };
-    };
+        } target_s;
+    } type_u;
     globus_bool_t                               in_register;
     globus_bool_t                               is_limited;
 
     void *                                      target;
 } globus_i_xio_op_entry_t;
+
+
+#define _op_data_cb                             callback_u.data_cb
+#define _op_iovec_cb                            callback_u.iovec_cb
+#define _op_cb                                  callback_u.cb
+#define _accept_cb                              callback_u.accept_cb
+
+#define _op_handle                              type_u.handle_s.handle
+#define _op_iovec                               type_u.handle_s.iovec
+#define _op_iovec_count                         type_u.handle_s.iovec_count
+#define _op_mem_iovec                           type_u.handle_s.mem_iovec
+#define _op_context                             type_u.handle_s.context
+
+#define _op_server                              type_u.target_s.server
+#define _op_target                              type_u.target_s.target
 
 /*
  *  represents a requested io operation (open close read or write).
@@ -211,6 +235,7 @@ typedef struct globus_i_xio_op_s
 {
     /* operation type */
     globus_i_xio_op_type_t                      op_type;
+    globus_i_xio_op_state_t                     state;
 
     /*
      * user callbacks.  only 1 will be used per operation
@@ -221,7 +246,7 @@ typedef struct globus_i_xio_op_s
         globus_xio_iovec_callback_t             iovec_cb;
         globus_xio_callback_t                   cb;
         globus_xio_accept_callback_t            accept_cb;
-    };
+    }callback_u;
     void *                                      user_arg;
    
     /*
@@ -242,14 +267,14 @@ typedef struct globus_i_xio_op_s
             globus_i_xio_context_t *            context;
             /* data descriptor */
             globus_i_xio_data_descriptor_t *    data_desc;
-        };
+        } handle_s;
         /* target stuff */
         struct
         {
             globus_i_xio_server_t *             server;
-            globus_i_xio_target_state_t         state;
-        };
-    };
+            void *                              target;
+        } target_s;
+    } type_u;
 
     /* flag to determine if cancel should happen */
     globus_bool_t                               progress;
@@ -274,8 +299,20 @@ typedef struct globus_i_xio_op_s
     /* current index in the driver stack */
     int                                         ndx;
     /* entry for each thing driver in the stack */
-    globus_i_xio_op_entry_t                     entry_array[1];
+    globus_i_xio_op_entry_t                     entry[1];
 } globus_i_xio_op_t;
+
+typedef struct globus_i_xio_target_entry_s
+{
+    globus_xio_driver_t                         driver;
+    void *                                      target;
+} globus_i_xio_op_entry_t;
+
+typedef struct globus_i_xio_target_s
+{
+    int                                         stack_size;
+    globus_i_xio_target_entry_t                 entry[1];
+} globus_i_xio_target_t; 
 
 
 typedef enum globus_i_xio_handle_state_e
@@ -297,19 +334,19 @@ typedef enum globus_i_xio_op_type_e
     GLOBUS_XIO_OPERATION_TYPE_CLOSE,
     GLOBUS_XIO_OPERATION_TYPE_READ,
     GLOBUS_XIO_OPERATION_TYPE_WRITE,
-    GLOBUS_XIO_OPERATION_TYPE_TARGET,
+    GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
     GLOBUS_XIO_OPERATION_TYPE_EOF,
 } globus_i_xio_op_type_t;
 
-typedef enum globus_i_xio_target_state_e
+typedef enum globus_i_xio_op_state_e
 {
-    GLOBUS_XIO_TARGET_STATE_ACCEPTING,
-    GLOBUS_XIO_TARGET_STATE_SERVER,
-    GLOBUS_XIO_TARGET_STATE_CLIENT,
-    GLOBUS_XIO_TARGET_STATE_TIMEOUT_PENDING,
-    GLOBUS_XIO_TARGET_STATE_ACCEPT_WAITING,
-    GLOBUS_XIO_TARGET_STATE_CLOSED,
-} globus_i_xio_target_state_t;
+    GLOBUS_XIO_TARGET_OP_ACCEPTING,
+    GLOBUS_XIO_TARGET_OP_SERVER,
+    GLOBUS_XIO_TARGET_OP_CLIENT,
+    GLOBUS_XIO_TARGET_OP_TIMEOUT_PENDING,
+    GLOBUS_XIO_TARGET_OP_ACCEPT_WAITING,
+    GLOBUS_XIO_TARGET_OP_CLOSED,
+} globus_i_xio_op_state_t;
 
 typedef enum globus_xio_server_state_e
 {
