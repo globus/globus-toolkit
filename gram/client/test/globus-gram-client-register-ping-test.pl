@@ -29,7 +29,7 @@ sub register_test
     my ($contact, $credential, $result) = @_;
     my $rc;
     my $cmdline;
-    my $errors;
+    my $errors='';
 
     if($contact ne '')
     {
