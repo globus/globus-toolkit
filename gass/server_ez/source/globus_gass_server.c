@@ -62,8 +62,8 @@ static char *  long_usage = \
 
 
 
-const enum { arg_c = 1, arg_s, arg_l, arg_t, arg_u, arg_r, arg_w, arg_o,
-	     arg_e, arg_n, arg_p, arg_num=arg_p };
+enum { arg_c = 1, arg_s, arg_l, arg_t, arg_u, arg_r, arg_w, arg_o,
+       arg_e, arg_n, arg_p, arg_num=arg_p };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -113,7 +113,7 @@ test_dashn( char *   value,
 
     for (p=value; p && !res; ++p)
     {
-	if (!strchr("sclturwoe",p))
+	if (!strchr("sclturwoe",*p))
 	{
 	    *errmsg =globus_libc_strdup("other characters than \"sclturwoe\"");
 	    res = 1;
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 	case arg_n:
 	    for (p=instance->values[0]; p; ++p)
 	    {
-		switch(p[0])
+		switch(*p)
 		{
 		case 's':
 		    silent = GLOBUS_FALSE;
