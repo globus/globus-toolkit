@@ -2832,6 +2832,10 @@ globus_l_gfs_ipc_event_reply_kickout(
     {
         globus_free(request->event_reply->eof_count);
     }
+    if(request->event_reply->type == GLOBUS_GFS_EVENT_RANGES_RECVD)
+    {
+        globus_range_list_destroy(request->event_reply->recvd_ranges);
+    }
     globus_free(request->event_reply);
 }
 
