@@ -1290,6 +1290,14 @@ globus_l_gass_cache_lock_file(
 				    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
 				}
 			    }
+			    while (close (temp_file_fd) == -1)
+			    {
+				if (errno != EINTR )
+				{
+				    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+				}
+			    }
+  
 			    
 			    /* let's wait again */
 			    lock_tout = 0;
