@@ -75,6 +75,7 @@ int
 main(int argc, char *argv[]) 
 {    
     int rc;
+    int noerr = 1;
     char *pshost;
     char request_buffer[1024];
     int  requestlen;
@@ -159,13 +160,19 @@ main(int argc, char *argv[])
 
     /* move delegfile to outputfile if specified */
     if (outputfile != NULL) {
-        copy_file(delegfile, outputfile, 0600);
+        if (copy_file(delegfile, outputfile, 0600) < 0) {
+		fprintf(stderr, "Error creating file: %s\n",
+		outputfile);
+		noerr=0;
+	}
 	unlink(delegfile);
 	strcpy(delegfile, outputfile);
 	free(outputfile);
     }
-
-    printf("A proxy has been received for user %s in %s\n", client_request->username, delegfile);
+    
+    if (noerr) {
+    	printf("A proxy has been received for user %s in %s\n", client_request->username, delegfile);
+    }
 
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
