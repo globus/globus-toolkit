@@ -1058,6 +1058,10 @@ globus_l_gsc_intermediate_reply_cb(
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gsc_terminate(server_handle);
+            /* dec again here for the op because the final_reply_cb
+               won't come */
+            server_handle->ref--;
+            globus_l_gsc_server_ref_check(server_handle);
             globus_mutex_unlock(&server_handle->mutex);
             return;
         }
