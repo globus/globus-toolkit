@@ -51,6 +51,7 @@ typedef struct
 *****************************************************************************/
 
 static globus_callback_handle_t          globus_l_callback_handle;
+static globus_callback_handle_t          globus_l_cb_handle_perf;
 
 static void
 globus_l_url_copy_monitor_callback(void * callback_arg,
@@ -74,6 +75,9 @@ globus_l_globus_url_copy_sigint_handler(int dummy);
 #else
 #   define globus_l_globus_url_copy_remove_cancel_poll()
 #endif
+
+static int
+globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int));
 
 static int
 globus_l_globus_get_performance(globus_abstime_t *  time_stop,
@@ -668,7 +672,7 @@ main(int argc, char **argv)
 
         GlobusTimeReltimeSet(delay_time, 0, 0);
         GlobusTimeReltimeSet(period_time, 0, 1000000);
-        globus_callback_register_periodic(&globus_l_callback_handle,
+        globus_callback_register_periodic(&globus_l_cb_handle_perf,
                                         &delay_time,
                                         &period_time,
                                         globus_l_globus_get_performance,
@@ -694,6 +698,9 @@ main(int argc, char **argv)
             globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
         }
     }
+
+    if (verbose_flag)
+        globus_callback_unregister(globus_l_cb_handle_perf);
 
 #if defined(USE_NETLOGGER)
     NetLoggerClose(lp);
@@ -745,8 +752,10 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
 
     if (error != GLOBUS_SUCCESS)
     {
+/*
         fprintf(stderr, " url copy error: %s\n",
                 globus_object_printable_to_string(error));
+*/
         use_err = GLOBUS_TRUE;
     }
 
@@ -869,6 +878,8 @@ globus_l_globus_get_performance(globus_abstime_t *  time_stop,
     {
         printf("bytes transfered = %lu\n", perf_info.bytes_transfered);
         printf("bytes transfered per second = %d\n", perf_info.transfer_rate);
+        printf("source url = %s\n", perf_info.source_url);
+        printf("dest url = %s\n", perf_info.dest_url);
 
 #if defined(USE_NETLOGGER)
         NetLoggerWrite(lp,
