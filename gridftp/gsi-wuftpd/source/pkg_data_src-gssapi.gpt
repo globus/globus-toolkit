@@ -45,7 +45,7 @@
 	    </Build_Step>
 	    <Build_Step>
 		. $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
-		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi --with-flavor=FLAVOR_GPTMACRO
+		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi --with-flavor=FLAVOR_GPTMACRO --with-bufsize=65536
 	    </Build_Step>
 
 	    <Build_Step>
