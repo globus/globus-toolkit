@@ -3,6 +3,7 @@
 #include "myproxy_common.h"	/* all needed headers included here */
 
 static sasl_conn_t *conn = NULL;
+static char *prompt = NULL;
 
 static int
 send_response_sasl_data(myproxy_socket_attrs_t *attrs,
@@ -112,8 +113,9 @@ sasl_secret_callback(sasl_conn_t *conn,
 
     if (! conn || ! psecret || id != SASL_CB_PASS)
 	return SASL_BADPARAM;
-
-    if (myproxy_read_passphrase(password, MAX_PASS_LEN, "Password: ") < 0){
+    
+    if (!prompt) prompt = strdup("Password: ");
+    if (myproxy_read_passphrase(password, MAX_PASS_LEN, prompt) < 0){
 	return SASL_FAIL;
     }
 	
@@ -212,6 +214,14 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
    
     memset(server_buffer, 0, sizeof(*server_buffer));
 
+    if (prompt) free(prompt);
+    prompt = malloc(strlen(client_request->username)+strlen(fqdn)+15);
+    if (!prompt) {
+	verror_put_string("malloc() failed in auth_sasl_negotiate_client");
+	return SASL_FAIL;
+    }
+    sprintf(prompt, "%s@%s's password: ", client_request->username, fqdn);
+
     result = sasl_client_init(callbacks);
     if (result != SASL_OK) {
         verror_put_string("Allocating sasl connection state failed");
@@ -259,7 +269,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
     if (data) {
         if (SASL_BUFFER_SIZE - strlen(server_buffer) - 1 < len) {
             verror_put_string("Not enough buffer space for SASL");
-	    return -1;
+	    return SASL_FAIL;
         }
         memcpy(server_buffer + strlen(server_buffer) + 1, data, len);
         len += strlen(server_buffer) + 1;
