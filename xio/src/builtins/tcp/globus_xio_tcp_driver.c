@@ -1215,6 +1215,7 @@ globus_l_xio_tcp_server_cntl(
             goto error_sockopt;
         }
         
+        /* XXX should probably be makeing use of globus_libc_hostname here */
         result = globus_libc_getnameinfo(
             &sock_name, host, sizeof(host), port, sizeof(port), ni_flags);
         if(result != GLOBUS_SUCCESS)

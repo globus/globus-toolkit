@@ -27,7 +27,9 @@ INCLUDES = $(GPT_INCLUDES)
 
 libglobus_xio___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources) 
 libglobus_xio___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_xio___GLOBUS_FLAVOR_NAME__la_LIBADD = builtins/test/libglobus_xio_test_driver_$(GLOBUS_FLAVOR_NAME).la  $(GPT_LIB_LINKS) 
+libglobus_xio___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+	$(GPT_LIB_LINKS) \
+	$(XIO_BUILTINS)
 
 EXTRA_DIST = \
 	version.h.in
