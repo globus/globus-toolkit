@@ -37,9 +37,9 @@ AC_ARG_WITH(globus,
 	[  --with-globus=PATH           Specify Globus install path (for GSI)],
 	GSI_INSTALL_PATH=$withval)
 
-dnl --with-globus-flavor
-AC_ARG_WITH(globus-flavor,
-	[  --with-globus-flavor=FLAVOR  Specify Globus build flavor],
+dnl --with-flavor
+AC_ARG_WITH(flavor,
+	[  --with-flavor=FLAVOR         Specify Globus build flavor],
 	GLOBUS_FLAVOR=$withval)
 
 dnl --with-gsi
