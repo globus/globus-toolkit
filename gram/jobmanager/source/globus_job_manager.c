@@ -31,6 +31,7 @@ CVS Information:
 
 #include "globus_nexus.h"
 #include "globus_gram_client.h"
+#include "globus_i_gram_handlers.h"
 #include "grami_fprintf.h"
 #include "globus_rsl.h"
 #include "globus_i_gram_jm.h"
@@ -494,6 +495,9 @@ main(int argc,
      */
     description_tree = globus_rsl_parse(description);
 
+    printf("\n------------  after parse  ---------------\n\n");
+    globus_rsl_print_recursive(description_tree);
+
     symbol_table = (globus_symboltable_t *) globus_malloc 
                             (sizeof(globus_symboltable_t));
 
@@ -516,13 +520,21 @@ main(int argc,
 			    (void *) "GLOBUS_PREFIX",
 			    (void *) GLOBUS_PREFIX);
     
-    globus_rsl_eval(description_tree, symbol_table);
+    if (globus_rsl_eval(description_tree, symbol_table) != 0)
+    {
+        job_status = 22;
+    }
+    else
+    {
+        printf("\n------------  after eval  ---------------\n\n");
+        globus_rsl_print_recursive(description_tree);
+        /*
+         * Start the job.  If successful reply with graml_job_contact else
+         * send error status.
+         */
+        job_status = grami_jm_job_request(graml_job_contact, description_tree);
+    }
 
-    /*
-     * Start the job.  If successful reply with graml_job_contact else
-     * send error status.
-     */
-    job_status = grami_jm_job_request(graml_job_contact, description_tree);
 
     if (job_status == 0)
     {
@@ -988,21 +1000,21 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     }
 
     /********************************** 
-     *  GET MPITASKS PARAM
+     *  GET HOST_COUNT PARAM
      */
     globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_MPITASKS_PARAM,
+		       GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM,
 		       &tmp_param);
     if (tmp_param[0])
     {
-        params->mpitasks = atoi(tmp_param[0]);
+        params->host_count = atoi(tmp_param[0]);
 
-        if (params->mpitasks < 1)
-            return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_MPITASKS);
+        if (params->host_count < 1)
+            return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_HOST_COUNT);
     }
     else
     {
-        params->mpitasks = 0;
+        params->host_count = 0;
     }
 
     /********************************** 
