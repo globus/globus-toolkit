@@ -1555,6 +1555,7 @@ globus_l_xio_encode_hex(
                 *(e++) = '%';
                 *(e++) = hexchars[n >> 4];
                 *(e++) = hexchars[n & 15];
+                s++;
             }
             else
             {
