@@ -146,6 +146,7 @@ globus_i_xio_timer_unregister_timeout(
     void *                                          datum)
 {
     globus_list_t *                                 list;
+    globus_list_t *                                 tmp_list = NULL;
     globus_bool_t                                   found = GLOBUS_FALSE;
     globus_i_xio_timer_entry_t *                    entry;
     GlobusXIOName(globus_i_xio_timer_unregister_timeout);
@@ -162,19 +163,22 @@ globus_i_xio_timer_unregister_timeout(
             if(entry->datum == datum)
             {
                 found = GLOBUS_TRUE;
-                globus_list_remove(&timer->op_list, list);
-                globus_free(entry);
+                tmp_list = list;
                 /* if the list is empty pause the callback */
-                if(globus_list_empty(timer->op_list))
-                {
-                    globus_callback_adjust_period(
-                        timer->periodic_handle,
-                        NULL);
-                    timer->running = GLOBUS_FALSE;
-                }
             }
         }
-
+        if(found)
+        {
+            globus_list_remove(&timer->op_list, tmp_list);
+            globus_free(entry);
+            if(globus_list_empty(timer->op_list))
+            {
+                globus_callback_adjust_period(
+                    timer->periodic_handle,
+                    NULL);
+                timer->running = GLOBUS_FALSE;
+            }
+        }
     }
     globus_mutex_unlock(&timer->mutex);
 
