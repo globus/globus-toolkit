@@ -715,7 +715,7 @@ globus_l_gsc_cmd_cwd(
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_OTHER);
     if(strcmp(cmd_a[0], "CDUP") == 0 && argc == 1)
     {
-        path = globus_libc_strdup("..");
+        path = globus_i_gsc_concat_path(op->server_handle, "..");
         if(path == NULL)
         {
             globus_i_gsc_command_panic(op);
