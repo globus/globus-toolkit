@@ -2056,3 +2056,27 @@ error_oneshot:
 error_alloc:
     return;  
 }
+
+
+
+globus_result_t
+globus_i_gfs_data_node_start(
+    globus_xio_handle_t                 handle,
+    globus_xio_system_handle_t          system_handle,
+    const char *                        remote_contact)
+{
+    globus_result_t                     res;
+    globus_gfs_ipc_handle_t             ipc_handle;
+    
+    res = globus_gfs_ipc_handle_create(
+        &ipc_handle,
+        &globus_gfs_ipc_default_iface,
+        handle,
+        NULL,
+        NULL);
+
+    
+    return res;
+}
+
+

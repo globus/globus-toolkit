@@ -159,18 +159,6 @@ globus_l_gfs_done_cb(
     }
 }
 
-globus_gfs_ipc_iface_t  globus_gfs_ipc_local_iface = 
-{
-    globus_i_gfs_data_recv_request,
-    globus_i_gfs_data_send_request,
-    globus_i_gfs_data_command_request,
-    globus_i_gfs_data_active_request,
-    globus_i_gfs_data_passive_request,
-    NULL,
-    globus_i_gfs_data_resource_request,
-    globus_i_gfs_data_list_request
-};
-
 
 static
 void
@@ -192,6 +180,15 @@ globus_l_gfs_request_auth(
     uid_t                               current_uid;
     gid_t                               gid;
     char *                              err_msg = GLOBUS_NULL;
+
+
+
+    globus_i_gfs_server_instance_t *        instance;
+    globus_gfs_ipc_handle_t                 ipc_handle;
+    char *                                  remote_cs;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    
+    remote_cs = globus_i_gfs_config_string("remote");
 
 /* XXX add error responses */
     result = GLOBUS_FAILURE;
@@ -246,23 +243,17 @@ globus_l_gfs_request_auth(
                 NULL, 
                 GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
                 GLOBUS_NULL);
-{
-            globus_i_gfs_server_instance_t *        instance;
-            globus_gfs_ipc_handle_t                 ipc_handle;
-            
-            instance = (globus_i_gfs_server_instance_t *) user_arg;
-                    
+                
             globus_gfs_ipc_open(
                 &ipc_handle,
-                &globus_gfs_ipc_local_iface,
+                &globus_gfs_ipc_default_iface,
+                remote_cs,
                 NULL,
                 NULL,
                 NULL,
-                NULL,
-                NULL);
-        
+                NULL);      
             instance->ipc_handle = ipc_handle;
-}
+            
             return;    
         }
         else if(globus_i_gfs_config_bool("inetd") || 
@@ -333,23 +324,16 @@ globus_l_gfs_request_auth(
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
         GLOBUS_NULL);
 
-{
-    globus_i_gfs_server_instance_t *        instance;
-    globus_gfs_ipc_handle_t                 ipc_handle;
-    
-    instance = (globus_i_gfs_server_instance_t *) user_arg;
-    
     globus_gfs_ipc_open(
         &ipc_handle,
-        &globus_gfs_ipc_local_iface,
-        NULL,
+        &globus_gfs_ipc_default_iface,
+        remote_cs,
         NULL,
         NULL,
         NULL,
         NULL);
-
     instance->ipc_handle = ipc_handle;
-}
+
     return;
 
 error:

@@ -6,7 +6,6 @@
 // after local version / single stripe is working i guess.
 // typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
 
-
 typedef enum
 {
     GLOBUS_GFS_IPC_STATE_OPENING,
@@ -415,6 +414,8 @@ globus_gfs_ipc_close(
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg);
 
+
+extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 
 #endif
 

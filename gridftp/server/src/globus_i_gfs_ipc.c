@@ -2,6 +2,8 @@
 #include "globus_i_gridftp_server.h"
 #include "globus_gridftp_server.h"
 
+static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
+
 /*
  *  header:
  *  type:    single charater representing type of message
@@ -172,6 +174,21 @@ do                                                                      \
  * node is assumed to be part of the same process and these calls are merely
  * wrappers
  */
+ 
+globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface = 
+{
+    globus_i_gfs_data_recv_request,
+    globus_i_gfs_data_send_request,
+    globus_i_gfs_data_command_request,
+    globus_i_gfs_data_active_request,
+    globus_i_gfs_data_passive_request,
+    NULL,
+    globus_i_gfs_data_resource_request,
+    globus_i_gfs_data_list_request,
+    NULL,
+    NULL
+};
+
 typedef struct
 {
     void *                              callback1;
@@ -182,7 +199,7 @@ typedef struct
 typedef struct globus_i_gfs_ipc_handle_s
 {
     uid_t                               uid;
-    char *                              contact_string;
+    const char *                        contact_string;
     globus_xio_handle_t                 xio_handle;
     globus_bool_t                       local;
 
@@ -326,11 +343,13 @@ globus_gfs_ipc_open(
         goto err;
     }
     ipc->iface = iface;
+    ipc->contact_string = contact_string;
     ipc->open_cb = open_cb;
     ipc->error_cb = error_cb;
     ipc->open_arg = open_arg;
     ipc->error_arg = error_arg;
     ipc->state = GLOBUS_GFS_IPC_STATE_OPENING;
+    ipc->buffer_size = GFS_IPC_DEFAULT_BUFFER_SIZE;
     globus_hashtable_init(
         &ipc->call_table,
         256,
@@ -352,6 +371,15 @@ globus_gfs_ipc_open(
     else
     {
         ipc->local = GLOBUS_FALSE;
+
+        res = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
+        
+        res = globus_xio_stack_init(
+            &globus_l_gfs_ipc_stack, GLOBUS_NULL);
+    
+        res = globus_xio_stack_push_driver(
+            globus_l_gfs_ipc_stack, globus_l_gfs_tcp_driver);
+
         res = globus_xio_handle_create(
             &ipc->xio_handle, globus_l_gfs_ipc_stack);
         if(res != GLOBUS_SUCCESS)
@@ -360,7 +388,7 @@ globus_gfs_ipc_open(
         }
         res = globus_xio_register_open(
             ipc->xio_handle,
-            contact_string,
+            ipc->contact_string,
             NULL,
             globus_l_gfs_ipc_open_cb,
             ipc);
@@ -421,7 +449,9 @@ globus_gfs_ipc_handle_create(
     ipc->iface = iface;
     ipc->error_cb = error_cb;
     ipc->error_arg = error_arg;
-    ipc->local = GLOBUS_TRUE;
+    ipc->local = GLOBUS_FALSE;
+    ipc->buffer_size = GFS_IPC_DEFAULT_BUFFER_SIZE;
+
     globus_hashtable_init(
         &ipc->call_table,
         256,

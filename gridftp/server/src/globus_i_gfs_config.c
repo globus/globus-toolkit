@@ -46,6 +46,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
  {"globus_location", "globus_location", "GLOBUS_LOCATION", "-G", NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, {1, NULL}},
  {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}}
 };

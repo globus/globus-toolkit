@@ -95,77 +95,6 @@ globus_i_gfs_data_active_request(
     int                                 id,
     globus_gfs_data_state_t *           data_state);
 
-
-
-
-#if 0
-
-globus_result_t
-globus_i_gfs_data_resource_request(
-    globus_i_gfs_server_instance_t *    instance,
-    const char *                        pathname,
-    globus_bool_t                       file_only,
-    globus_i_gfs_data_resource_cb_t     callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_data_recv_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *            op_attr,
-    globus_i_gfs_data_handle_t *        data_handle,
-    const char *                        pathname,
-    const char *                        module_name,
-    const char *                        module_args,
-    globus_i_gfs_data_transfer_cb_t     callback,
-    globus_i_gfs_data_transfer_event_cb_t event_callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_data_send_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *            op_attr,
-    globus_i_gfs_data_handle_t *        data_handle,
-    const char *                        pathname,
-    const char *                        module_name,
-    const char *                        module_args,
-    globus_i_gfs_data_transfer_cb_t     callback,
-    globus_i_gfs_data_transfer_event_cb_t event_callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_data_list_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_data_handle_t *        data_handle,
-    const char *                        pathname,
-    globus_i_gfs_data_transfer_cb_t     callback,
-    globus_i_gfs_data_transfer_event_cb_t event_callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_data_command_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_cmd_attr_t *           cmd_attr,
-    globus_i_gfs_ipc_command_cb_t       callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_data_passive_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_data_attr_t *          attr,
-    globus_i_gfs_data_passive_cb_t      callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_data_active_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_data_attr_t *          attr,
-    const char **                       contact_strings,
-    int                                 cs_count,
-    globus_i_gfs_data_active_cb_t       callback,
-    void *                              user_arg);
-
-#endif
-
 void
 globus_i_gfs_data_handle_destroy(
     globus_i_gfs_data_handle_t *        data_handle);
@@ -174,6 +103,12 @@ void
 globus_i_gfs_data_transfer_event(
     globus_i_gfs_server_instance_t *    instance,
     int                                 event_type);
+
+globus_result_t
+globus_i_gfs_data_node_start(
+    globus_xio_handle_t                 handle,
+    globus_xio_system_handle_t          system_handle,
+    const char *                        remote_contact);
 
 
 #endif
