@@ -206,6 +206,7 @@ globus_i_callout_handle_t;
 
 typedef struct globus_i_callout_data_s
 {
+    char *                              type;
     char *                              file;
     char *                              symbol;
 } globus_i_callout_data_t;

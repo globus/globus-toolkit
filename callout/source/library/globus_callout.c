@@ -213,7 +213,7 @@ globus_callout_handle_destroy(
 
     globus_hashtable_destroy_all(
         &(handle->symbol_htable),
-        globus_l_callout_symbol_table_element_free);
+        globus_l_callout_data_free);
 
     free(handle);
     
@@ -233,7 +233,6 @@ globus_callout_read_config(
     char                                library[256];
     char                                symbol[128];
     char *                              pound;
-    char *                              key = NULL;
     int                                 index;
     int                                 rc;
     globus_result_t                     result;
@@ -319,16 +318,16 @@ globus_callout_read_config(
             goto error_exit;
         }
         
-        key = strdup(type);
+        datum->type = strdup(type);
 
-        if(key == NULL)
+        if(datum->type == NULL)
         {
             GLOBUS_CALLOUT_MALLOC_ERROR(result);
             goto error_exit;
         }
         
         if((rc = globus_hashtable_insert(&handle->symbol_htable,
-                                         key,
+                                         datum->type,
                                          datum)) < 0)
         {
             GLOBUS_CALLOUT_ERROR_RESULT(
@@ -349,12 +348,7 @@ globus_callout_read_config(
     {
         globus_l_callout_data_free(datum);
     }
- 
-    if(key != NULL)
-    {
-        free(key);
-    }
-    
+
     return result;
 }
 
@@ -365,7 +359,6 @@ globus_callout_register(
     char *                              library,
     char *                              symbol)
 {
-    char *                              key = NULL;
     int                                 rc;
     globus_result_t                     result;
     globus_i_callout_data_t *           datum = NULL;
@@ -404,16 +397,16 @@ globus_callout_register(
         goto error_exit;
     }
     
-    key = strdup(type);
+    datum->type = strdup(type);
     
-    if(key == NULL)
+    if(datum->type == NULL)
     {
         GLOBUS_CALLOUT_MALLOC_ERROR(result);
         goto error_exit;
     }
     
     if((rc = globus_hashtable_insert(&handle->symbol_htable,
-                                     key,
+                                     datum->type,
                                      datum)) < 0)
     {
         GLOBUS_CALLOUT_ERROR_RESULT(
@@ -434,11 +427,6 @@ globus_callout_register(
         globus_l_callout_data_free(datum);
     }
  
-    if(key != NULL)
-    {
-        free(key);
-    }
-    
     return result;
 }
 
@@ -556,7 +544,12 @@ globus_l_callout_data_free(
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
     if(data != NULL)
-    { 
+    {
+        if(data->type != NULL)
+        {
+            free(data->type);
+        }
+        
         if(data->file != NULL)
         {
             free(data->file);
@@ -575,39 +568,19 @@ globus_l_callout_data_free(
     return result;
 }
 
-static void
-globus_l_callout_symbol_table_element_free(
-    void *                              element)
-{
-    globus_hashtable_entry_t *          entry;
-    static char *                       _function_name_ =
-        "globus_l_callout_symbol_table_element_free";
-    GLOBUS_I_CALLOUT_DEBUG_ENTER;
-
-    entry = element;
-    
-    globus_l_callout_data_free(entry->datum);
-    free(entry->key);
-    
-    GLOBUS_I_CALLOUT_DEBUG_EXIT;
-    return;
-}
 
 
 static void
 globus_l_callout_library_table_element_free(
     void *                              element)
 {
-    globus_hashtable_entry_t *          entry;
     lt_dlhandle *                       dlhandle;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_l_callout_library_table_element_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    entry = element;
-    
-    dlhandle = entry->datum;
+    dlhandle = (lt_dlhandle *) element;
 
     if(dlhandle != NULL)
     { 
@@ -618,7 +591,7 @@ globus_l_callout_library_table_element_free(
                 GLOBUS_CALLOUT_ERROR_RESULT(
                     result,
                     GLOBUS_CALLOUT_ERROR_WITH_DL,
-                    ("failed to close library: %s", entry->key));
+                    ("failed to close library"));
             }
         }
 
