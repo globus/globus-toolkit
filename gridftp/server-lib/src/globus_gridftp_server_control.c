@@ -3995,7 +3995,7 @@ globus_gridftp_server_control_finished_active_connect(
 
     return GLOBUS_SUCCESS;
 }
-                                                                                
+ 
 globus_result_t
 globus_gridftp_server_control_finished_passive_connect(
     globus_gridftp_server_control_op_t  op,

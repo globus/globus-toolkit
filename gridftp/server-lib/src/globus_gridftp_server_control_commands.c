@@ -2069,10 +2069,13 @@ globus_l_gsc_cmd_port_cb(
     char *                                  response_msg,
     void *                                  user_arg)
 {
+    int                                     i;
+    globus_l_gsc_cmd_wrapper_t *            wrapper;
     int                                     code;
     char *                                  msg;
     char *                                  tmp_ptr;
 
+    wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
         /* TODO: evaulated error type */
@@ -2096,6 +2099,13 @@ globus_l_gsc_cmd_port_cb(
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
+
+    for(i = 0; i < wrapper->cs_count; i++)
+    {
+        globus_free(wrapper->cs[i]);
+    }
+    globus_free(wrapper->cs);
+    globus_free(wrapper);
 }
 
 static void

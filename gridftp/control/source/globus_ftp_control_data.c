@@ -8857,7 +8857,11 @@ globus_l_ftp_eb_read_callback(
                                  sizeof(globus_l_ftp_eb_header_t),
                                  globus_l_ftp_eb_read_header_callback,
                                  (void *)data_conn);
-                    globus_assert(res == GLOBUS_SUCCESS);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        error = globus_error_get(result);
+                        eof = GLOBUS_TRUE;
+                    }
                 }
             }
             else

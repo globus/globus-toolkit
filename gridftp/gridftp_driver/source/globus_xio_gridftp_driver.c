@@ -480,7 +480,8 @@ static
 void
 globus_l_xio_gridftp_cancel_cb(
     globus_xio_operation_t              op,
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_xio_error_type_t             reason)
 {
     globus_i_xio_gridftp_requestor_t *  requestor;
     globus_l_xio_gridftp_handle_t *     handle;

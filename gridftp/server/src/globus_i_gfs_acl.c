@@ -289,6 +289,7 @@ globus_i_gfs_acl_destroy(
         {
             globus_free(acl_handle->grpent.gr_mem[ctr]);
         }
+        globus_free(acl_handle->grpent.gr_mem);
     }
 }
 
