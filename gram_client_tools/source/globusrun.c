@@ -149,18 +149,21 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
 /*****************************************************************************
                           Module specific variables
 *****************************************************************************/
-#define GLOBUSRUN_ARG_INTERACTIVE   	1
-#define GLOBUSRUN_ARG_QUIET         	2
-#define GLOBUSRUN_ARG_DRYRUN        	4
-#define GLOBUSRUN_ARG_PARSE_ONLY    	8
-#define GLOBUSRUN_ARG_AUTHENTICATE_ONLY 16
-#define GLOBUSRUN_ARG_USE_GASS		32
-#define GLOBUSRUN_ARG_ALLOW_READS      	64
-#define GLOBUSRUN_ARG_ALLOW_WRITES 	128
-#define GLOBUSRUN_ARG_IGNORE_CTRLC	256
-#define GLOBUSRUN_ARG_BATCH             512
-#define GLOBUSRUN_ARG_STATUS            1024
-#define GLOBUSRUN_ARG_LIST              2048
+enum
+{
+    GLOBUSRUN_ARG_INTERACTIVE           = 1,
+    GLOBUSRUN_ARG_QUIET                 = 2,
+    GLOBUSRUN_ARG_DRYRUN                = 4,
+    GLOBUSRUN_ARG_PARSE_ONLY            = 8,
+    GLOBUSRUN_ARG_AUTHENTICATE_ONLY     = 16,
+    GLOBUSRUN_ARG_USE_GASS              = 32,
+    GLOBUSRUN_ARG_ALLOW_READS           = 64,
+    GLOBUSRUN_ARG_ALLOW_WRITES          = 128,
+    GLOBUSRUN_ARG_IGNORE_CTRLC          = 256,
+    GLOBUSRUN_ARG_BATCH                 = 512,
+    GLOBUSRUN_ARG_STATUS                = 1024,
+    GLOBUSRUN_ARG_LIST                  = 2048
+};
 
 static globus_byte_t globus_l_globusrun_file_version=1;
 
@@ -1402,15 +1405,10 @@ globus_l_globusrun_gramrun(char * request_string,
      * if that's already happened or if we aren't doing any file staging in
      * batch mode
      */
-    if((options & (GLOBUSRUN_ARG_BATCH|GLOBUSRUN_ARG_ALLOW_READS)) &&
+    if((options & (GLOBUSRUN_ARG_BATCH)) &&
        (monitor.job_state != 0 &&
         monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
         monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
-    {
-        monitor.done = GLOBUS_TRUE;
-    }
-    else if (GLOBUSRUN_ARG_BATCH ==
-            (options & (GLOBUSRUN_ARG_BATCH|GLOBUSRUN_ARG_ALLOW_READS)))
     {
         monitor.done = GLOBUS_TRUE;
     }
