@@ -525,7 +525,7 @@ status_file_gen(char * my_job_status)
     sprintf(status_file, "%s/%s_%lu",
             grami_jm_status_dir,
             STATUS_FILE_PREFIX,
-            (unsigned long) getpid(0) );
+            (unsigned long) getpid() );
 
     if (stat(status_file, &statbuf) == 0)
     {
