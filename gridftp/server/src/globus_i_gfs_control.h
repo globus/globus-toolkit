@@ -10,9 +10,5 @@ globus_i_gfs_control_start(
     const char *                        remote_contact,
     globus_i_gfs_server_close_cb_t      close_func,
     void *                              user_arg);
-    
-void
-globus_i_gfs_op_attr_destroy(
-    globus_i_gfs_op_attr_t *            attr);
 
 #endif

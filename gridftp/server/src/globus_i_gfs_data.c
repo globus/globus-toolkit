@@ -33,6 +33,7 @@ typedef struct
 {
     gss_cred_id_t                       del_cred;   
     void *                              session_arg;
+    void *                              data_handle;
 } globus_l_gfs_data_session_t;
     
 typedef struct globus_l_gfs_data_operation_s
@@ -574,6 +575,8 @@ globus_i_gfs_data_destroy_handle(
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     
+    session_handle->data_handle = NULL;
+    
     if(globus_l_gfs_dsi->data_destroy_func != NULL)
     {
         globus_l_gfs_dsi->data_destroy_func(
@@ -727,6 +730,8 @@ globus_i_gfs_data_request_passive(
         bounce_info->contact_string = cs;
         bounce_info->callback = cb;
         bounce_info->user_arg = user_arg;
+
+        session_handle->data_handle = handle;
         
         result = globus_callback_register_oneshot(
             GLOBUS_NULL,
@@ -897,6 +902,8 @@ globus_i_gfs_data_request_active(
         bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
         bounce_info->callback = cb;
         bounce_info->user_arg = user_arg;
+        
+        session_handle->data_handle = handle;
         
         result = globus_callback_register_oneshot(
             GLOBUS_NULL,
@@ -1468,7 +1475,7 @@ globus_i_gfs_data_request_transfer_event(
     op = (globus_l_gfs_data_operation_t *) transfer_id;
     
     if(globus_l_gfs_dsi->trev_func != NULL && 
-        op->event_mask & event_type)
+        event_type & op->event_mask)
     {
         globus_l_gfs_dsi->trev_func(
             op->transfer_id, event_type, session_handle->session_arg);
@@ -1713,6 +1720,11 @@ globus_i_gfs_data_session_stop(
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
 
+    if(session_handle->data_handle != NULL)
+    {
+        globus_i_gfs_data_destroy_handle(
+            ipc_handle, session_id, (int) session_handle->data_handle);
+    }    
     if(globus_l_gfs_dsi->destroy_func != NULL)
     {
         globus_l_gfs_dsi->destroy_func(session_handle->session_arg);
