@@ -2133,6 +2133,17 @@ globus_l_gram_client_monitor_callback(
     monitor->errorcode = errorcode;
     monitor->done = GLOBUS_TRUE;
 
+    /* 
+     * Connection failed error means "couldn't connect to gatekeeper". For
+     * non-job request messages, we were talking to the job manager, so we'll
+     * map to another error.
+     */
+    if(monitor->errorcode == GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED &&
+       monitor->type != GLOBUS_GRAM_CLIENT_JOB_REQUEST)
+    {
+	monitor->errorcode = GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
+    }
+
     if(!errorcode)
     {
 	switch(monitor->type)
