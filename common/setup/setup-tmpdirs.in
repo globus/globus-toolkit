@@ -1,13 +1,14 @@
 
 AC_REVISION($Revision$)
-AC_INIT(Makefile.am)
+AC_INIT(Paths.in)
 
-GLOBUS_INIT
 
-AM_PROG_LIBTOOL
+# checking for the GLOBUS_LOCATION
 
-dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
 
 AC_ARG_WITH(tmpdir,
         [  --with-tmpdir=DIR             temporary files in DIR [/tmp]],
@@ -33,11 +34,8 @@ AC_SUBST(secure_tmpdir)
 
 
 AC_OUTPUT(
-        Makefile
 	globus-script-initializer
 	Paths.pm:Paths.in
-        pkgdata/Makefile
-        pkgdata/pkg_data_src.gpt
 )
 
 

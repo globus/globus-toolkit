@@ -1,4 +1,4 @@
-#! @SH@
+#!/bin/sh
 
 # This is a simple shell script that acts like 
 # the hostname command.  But is returns the FQN
