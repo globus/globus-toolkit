@@ -169,7 +169,7 @@ print "MyProxy Test 11 (store credentials with retrieval policies): ";
 	     $passphrase . "\n" . $passphrase . "\n");
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-init -v -r $cert_subject -k 'mine' -c 1 -t 1",
+	&runtest("myproxy-init -v -x -r '$cert_subject' -k 'mine' -c 1 -t 1",
 		 $passphrase . "\n" . $passphrase . "\n");
 }
 if ($exitstatus == 0) {
@@ -186,6 +186,8 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v",
 		 $passphrase . "\n" . $passphrase . "\n");
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
