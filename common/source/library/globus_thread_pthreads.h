@@ -52,11 +52,21 @@ typedef struct timespec      globus_abstime_t;
 typedef pthread_t		globus_thread_t;
 typedef pthread_attr_t		globus_threadattr_t;
 typedef pthread_mutexattr_t	globus_mutexattr_t;
-typedef pthread_condattr_t	globus_condattr_t;
 typedef pthread_key_t		globus_thread_key_t;
 typedef pthread_once_t		globus_thread_once_t;
 typedef pthread_mutex_t		globus_mutex_t;
-typedef pthread_cond_t		globus_cond_t;
+
+typedef struct
+{
+    pthread_cond_t              cond;
+    globus_callback_space_t     space;
+} globus_cond_t;
+
+typedef struct
+{
+    pthread_condattr_t          condattr;
+    globus_callback_space_t     space;
+} globus_condattr_t;
 
 typedef void *(*globus_thread_func_t)(void *);
 
@@ -116,7 +126,6 @@ extern int	globus_thread_create(globus_thread_t *thread,
 extern void	globus_thread_exit(void *status);
 
 #define globus_macro_i_am_only_thread() GLOBUS_FALSE
-
 
 #ifdef GLOBUS_THREAD_RETURN_USES_ERRNO
 
@@ -221,9 +230,9 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 #define globus_macro_cond_destroy(cv) \
     (pthread_cond_destroy(cv) ? errno : 0)
 #define globus_macro_cond_wait(cv, mut) \
-    (globus_thread_blocking_will_block(), pthread_cond_wait(cv, mut) ? errno : 0)
+    (pthread_cond_wait(cv, mut) ? errno : 0)
 #define globus_macro_cond_timedwait(cv, mut, abstime) \
-    (globus_thread_blocking_will_block(), pthread_cond_timedwait(cv, mut, abstime) ? errno : 0) 
+    (pthread_cond_timedwait(cv, mut, abstime) ? errno : 0) 
 #define globus_macro_cond_signal(cv) \
     (pthread_cond_signal(cv) ? errno : 0)
 #define globus_macro_cond_broadcast(cv) \
@@ -307,9 +316,9 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 #define globus_macro_cond_destroy(cv) \
     pthread_cond_destroy(cv)
 #define globus_macro_cond_wait(cv, mut) \
-    (globus_thread_blocking_will_block(), pthread_cond_wait(cv, mut))
+    (pthread_cond_wait(cv, mut))
 #define globus_macro_cond_timedwait(cv, mut, abstime) \
-    (globus_thread_blocking_will_block(), pthread_cond_timedwait(cv, mut, abstime)) 
+    (pthread_cond_timedwait(cv, mut, abstime)) 
 #define globus_macro_cond_signal(cv) \
     pthread_cond_signal(cv)
 #define globus_macro_cond_broadcast(cv) \
@@ -317,6 +326,63 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 
 #endif /* PORTS0_RETURN_USES_ERRNO */
 
+
+/* callback space handling macros */
+#define globus_macro_condattr_space_init(attr) \
+    (globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE), \
+    (attr)->space = GLOBUS_CALLBACK_GLOBAL_SPACE, \
+    globus_macro_condattr_init((attr)->condattr))
+    
+#define globus_macro_condattr_space_destroy(attr) \
+    (globus_callback_space_destroy((attr)->space), \
+    globus_macro_condattr_destroy((attr)->condattr))
+
+#define globus_macro_cond_space_init(cv, attr) \
+    (((attr) ? \
+        ((cv)->space = (attr)->space) : \
+        ((cv)->space = GLOBUS_CALLBACK_GLOBAL_SPACE)), \
+        globus_callback_space_reference((cv)->space), \
+        globus_macro_cond_init((cv)->cond, (attr)->condattr))
+
+#define globus_macro_cond_space_destroy(cv) \
+    (globus_callback_space_destroy((cv)->space), \
+    globus_macro_cond_destroy((cv)->cond))
+
+#define globus_macro_cond_space_wait(cv, mut) \
+    (globus_thread_blocking_will_block(), \
+    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (globus_macro_cond_wait((cv)->cond, (mut))) : \
+    (globus_mutex_unlock((mut)), \
+    globus_callback_space_poll(&globus_i_abstime_infinity, (cv)->space), \
+    globus_mutex_lock((mut)), 0)))
+
+#define globus_macro_cond_space_timedwait(cv, mut, abstime) \
+    (globus_thread_blocking_will_block(), \
+    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (globus_macro_cond_timedwait((cv)->cond, (mut), (abstime))) : \
+    (globus_mutex_unlock((mut)), \
+    globus_callback_space_poll((abstime), (cv)->space), \
+    globus_mutex_lock((mut)), \
+    (time(GLOBUS_NULL) >= (T)->tv_sec) ? ETIMEDOUT : 0)))
+    
+#define globus_macro_cond_space_signal(cv) \
+    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (globus_macro_cond_signal((cv)->cond)) : \
+    (globus_callback_signal_poll(), 0))
+
+#define globus_macro_cond_space_broadcast(cv) \
+    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (globus_macro_cond_broadcast((cv)->cond)) : \
+    (globus_callback_signal_poll(), 0))
+
+#define globus_macro_condattr_setspace(attr, space) \
+    ((globus_callback_space_reference((space)) \
+     ? 1 \
+     : (globus_callback_space_destroy((attr)->space), \
+       ((attr)->space = (space)), 0)))
+
+#define globus_macro_condattr_getspace(attr, space) \
+    ((*(space) = (attr)->space), 0)
 
 #ifdef USE_MACROS
 
@@ -361,21 +427,25 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 #define globus_mutex_unlock(mut) \
     globus_macro_mutex_unlock(mut)
 #define globus_condattr_init(attr) \
-    globus_macro_condattr_init(attr)
+    globus_macro_condattr_space_init(attr)
 #define globus_condattr_destroy(attr) \
-    globus_macro_condattr_destroy(attr)
+    globus_macro_condattr_space_destroy(attr)
 #define globus_cond_init(cv, attr) \
-    globus_macro_cond_init(cv, attr)
+    globus_macro_cond_space_init(cv, attr)
 #define globus_cond_destroy(cv) \
-    globus_macro_cond_destroy(cv)
+    globus_macro_cond_space_destroy(cv)
 #define globus_cond_wait(cv, mut) \
-    globus_macro_cond_wait(cv, mut)
+    globus_macro_cond_space_wait(cv, mut)
 #define globus_cond_timedwait(cv, mut, time) \
-    globus_macro_cond_timedwait(cv, mut, time)
+    globus_macro_cond_space_timedwait(cv, mut, time)
 #define globus_cond_signal(cv) \
-    globus_macro_cond_signal(cv)
+    globus_macro_cond_space_signal(cv)
 #define globus_cond_broadcast(cv) \
-    globus_macro_cond_broadcast(cv)
+    globus_macro_cond_space_broadcast(cv)
+#define globus_condattr_setspace(A,S) \
+    globus_macro_condattr_setspace(A,S)
+#define globus_condattr_getspace(A,S) \
+    globus_macro_condattr_getspace(A,S)
 
 #else  /* USE_MACROS */
 

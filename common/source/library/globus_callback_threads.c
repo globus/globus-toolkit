@@ -1286,10 +1286,14 @@ globus_l_callback_blocked_cb(
         if(callback_info->my_space->handle == GLOBUS_CALLBACK_GLOBAL_SPACE ||
             callback_info->my_space->handle == space)
         {
-            if(callback_info->is_periodic)
+            globus_mutex_lock(&callback_info->my_space->lock);
             {
-                globus_l_callback_requeue(callback_info);
+                if(callback_info->is_periodic)
+                {
+                    globus_l_callback_requeue(callback_info);
+                }
             }
+            globus_mutex_unlock(&callback_info->my_space->lock);
 
             restart_info->restarted = GLOBUS_TRUE;
         }
@@ -1330,7 +1334,6 @@ globus_callback_space_poll(
     globus_callback_space_t             space)
 {
     globus_bool_t                       done;
-    globus_priority_q_t *               space_queue;
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t *  last_restart_info;
     globus_l_callback_restart_info_t    restart_info;
@@ -1353,11 +1356,7 @@ globus_callback_space_poll(
     }
     globus_mutex_unlock(&globus_l_callback_space_lock);
     
-    if(i_space)
-    {
-        space_queue = &i_space->queue;
-    }
-    else
+    if(!i_space)
     {
         return;
     }        
@@ -1398,7 +1397,7 @@ globus_callback_space_poll(
         globus_mutex_lock(&i_space->lock);
         {
             callback_info = globus_l_callback_get_next(
-                space_queue, &time_now, &next_ready_time);
+                &i_space->queue, &time_now, &next_ready_time);
             
             if(callback_info)
             {
@@ -1435,7 +1434,7 @@ globus_callback_space_poll(
             unregister = GLOBUS_FALSE;
             globus_mutex_lock(&i_space->lock);
             {
-                /* incremented by get_next */
+                /* this was incremented after the 'get_next' call */
                 callback_info->running_count--;
     
                 /* a periodic that was canceled has is_periodic == false */
@@ -1774,7 +1773,16 @@ globus_l_callback_thread_poll(
                     else
                     {
                         callback_info->running_count++;
-                        GlobusTimeReltimeCopy(period, callback_info->period);
+                        if(callback_info->is_periodic)
+                        {
+                            GlobusTimeReltimeCopy(
+                                period, callback_info->period);
+                        }
+                        else
+                        {
+                            GlobusTimeReltimeCopy(
+                                period, globus_i_reltime_infinity);
+                        }
                     }
                 }
             }
