@@ -1692,7 +1692,7 @@ static void doit()
 	s = index(buf, '\n');
 	if (s)
 	    *s = 0;
-	failure2("child failed: %s", buf);
+	failure2(FAILED_SERVER, "child failed: %s", buf);
     }
     if (n < 0)
     {
@@ -1944,9 +1944,9 @@ notice(int prty, char * s)
 
 #if defined(TARGET_ARCH_CRAYT3E)
 /* Make callable entries to failure() and notice() */
-void gatekeeper_failure(char * s)
+void gatekeeper_failure(short failure_type, char * s)
 {
-  failure(s);
+  failure(failure_type, s);
 }
 
 void gatekeeper_notice(int prty, char * s)
@@ -1968,7 +1968,8 @@ error_check(int val,
 {
     if (val < 0)
     {
-        failure3("error check %s: %s\n", str, sys_errlist[errno]);
+        failure3(FAILED_SERVER, 
+		 "error check %s: %s\n", str, sys_errlist[errno]);
 /*
 	fprintf(usrlog_fp, "%s: %s\n",
 		str,
