@@ -60,7 +60,7 @@ pp           _OBJ_NAME_##_print_fp(globus_i_gsi_authz_debug_fstream, _OBJ_); \
 #define GLOBUS_I_GSI_AUTHZ_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) {}
 
 #endif
-         
+
 #define GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER \
             GLOBUS_I_GSI_AUTHZ_DEBUG_FPRINTF( \
                 2, (globus_i_gsi_authz_debug_fstream, \
@@ -75,18 +75,39 @@ pp           _OBJ_NAME_##_print_fp(globus_i_gsi_authz_debug_fstream, _OBJ_); \
 
 /* ERROR MACROS */
 
+extern char * globus_l_gsi_authz_error_strings[];
+
 #define GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
         GLOBUS_GSI_AUTHZ_MODULE, \
         errno, \
         GLOBUS_GSI_AUTHZ_ERROR_ERRNO, \
-        "%s:%d: Could not allocate enough memory: %d bytes", \
-        __FILE__, __LINE__, _LENGTH_))
+        "%s:%d: %s: Could not allocate enough memory: %d bytes", \
+        __FILE__, __LINE__, _function_name_, (_LENGTH_)))
 
 
 #define GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE(_WHAT_) \
-    globus_error_put(globus_error_construct_string( \
+    globus_error_put(globus_error_construct_error( \
         GLOBUS_GSI_AUTHZ_MODULE, \
-	GLOBUS_NULL, \
-        "%s:%d: %s is null", \
-        __FILE__, __LINE__, _WHAT_))
+        NULL, \
+	GLOBUS_GSI_AUTHZ_ERROR_BAD_PARAMETER, \
+        "%s:%d: %s: %s %s is null", \
+        __FILE__, __LINE__, _function_name_, \
+        globus_l_gsi_authz_error_strings[GLOBUS_GSI_AUTHZ_ERROR_BAD_PARAMETER]\
+        , (_WHAT_)))
+
+#define GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(_RESULT_) \
+    globus_error_put(globus_error_construct_error( \
+        GLOBUS_GSI_AUTHZ_MODULE, \
+        globus_error_get(_RESULT_), \
+	GLOBUS_GSI_AUTHZ_ERROR_CALLOUT, \
+        "%s:%d: %s: %s", \
+        __FILE__, __LINE__, _function_name_, \
+        globus_l_gsi_authz_error_strings[GLOBUS_GSI_AUTHZ_ERROR_CALLOUT]))
+
+typedef struct globus_l_gsi_authz_cb_arg_s
+{
+    globus_gsi_authz_handle_t           handle;
+    void *                              arg;
+    globus_gsi_authz_cb_t		callback;
+} globus_l_gsi_authz_cb_arg_t;
