@@ -3395,8 +3395,6 @@ error_exit:
         (int) init_info->min_stat,
         0);
 
-    globus_i_io_close(handle);
-
     globus_i_io_mutex_unlock();
     init_info->callback(init_info->callback_arg,
                         handle,
@@ -3522,8 +3520,6 @@ error_exit:
         (int) accept_info->maj_stat,
         (int) accept_info->min_stat,
         0);
-
-    globus_i_io_close(handle);
 
     globus_i_io_mutex_unlock();
     accept_info->callback(accept_info->callback_arg,
