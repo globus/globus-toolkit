@@ -12,9 +12,10 @@
 #    endif
 #endif
 
-EXTERN_C_BEGIN
 
 #include <globus_io.h>
+
+EXTERN_C_BEGIN
 
 #define GRAM_GOES_HTTP 1
 #define GLOBUS_GRAM_HTTP_BUFSIZE     64000

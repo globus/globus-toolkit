@@ -42,6 +42,7 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_CLIENT_PARAM_SIZE                      1024
 #define GLOBUS_GRAM_CLIENT_STRING_SIZE                     256
 
+EXTERN_C_END
 /* 
  *  Job State Constants
  */
@@ -51,7 +52,7 @@ EXTERN_C_BEGIN
  *  Job Result Constants
  */
 #include "globus_gram_error.h"
-
+EXTERN_C_BEGIN
 
 /*
  *  Job Parameter Constants
