@@ -12,7 +12,7 @@ AC_ARG_WITH(flavor,
 		exit 1
 		;;
 	*)
-		FL=$withval
+		GLOBUS_FLAVOR_NAME=$withval
 		;;
 	esac
 	],
@@ -24,7 +24,7 @@ AC_ARG_WITH(flavor,
 )
 
 AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
-AC_SUBST(FL)
+AC_SUBST(GLOBUS_FLAVOR_NAME)
 
 # checking for the GLOBUS_INSTALL_PATH
 
@@ -36,7 +36,7 @@ fi
 # get the environment scripts
 . $GLOBUS_INSTALL_PATH/etc/globus-sh-tools.sh
 
-. $GLOBUS_INSTALL_PATH/etc/globus-build-env-$FL.sh
+. $GLOBUS_INSTALL_PATH/etc/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 
 prefix='$(GLOBUS_INSTALL_PATH)'
 exec_prefix='$(GLOBUS_INSTALL_PATH)'
@@ -61,8 +61,13 @@ AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
 
 define([AM_PROG_LIBTOOL],[
-	LIBTOOL='$(SHELL) $(GLOBUS_INSTALL_PATH)/bin/libtool-$(FL)'
+	LIBTOOL='$(SHELL) $(GLOBUS_INSTALL_PATH)/bin/libtool-$(GLOBUS_FLAVOR_NAME)'
 	AC_SUBST(LIBTOOL) 
 ])
+
+dnl define FILELIST_FILE variable
+FILELIST_FILE=`pwd`;
+FILELIST_FILE="$FILELIST_FILE/$GLOBUS_FLAVOR_NAME.filelist"
+AC_SUBST(FILELIST_FILE)
 
 ])

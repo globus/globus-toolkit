@@ -13,6 +13,7 @@ aclocal -I config || error
 if test -f acconfig.h ; then
     autoheader || error
 fi
+perl ./aclocal/create_automake_rules.pl ./aclocal
 automake --copy --add-missing --foreign || \
   automake --copy --add-missing --foreign  || error
 autoconf || error

@@ -1,0 +1,6 @@
+filelist_file:
+	mydir=`pwd`; \
+	if test "$$mydir/$(GLOBUS_FLAVOR_NAME).filelist" =  "$(FILELIST_FILE)"; then \
+		rm $(FILELIST_FILE); \
+	fi
+
