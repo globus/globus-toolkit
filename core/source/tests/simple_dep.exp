@@ -1,1 +1,1 @@
- -lfum  -ldee -L/opt/dum/lib -lfoo  -lX  -lfee -L/usr/local/lib -lm -L/opt/dum/lib -ldum 
+-L/home/mystuff/lib  -lXm -L/opt/dum/lib -lfum  -ldee -L/usr/local/lib -lfoo  -lX  -lfee -L/opt/dum/lib -lm  -ldum 
