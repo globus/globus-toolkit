@@ -16,7 +16,6 @@ globus_l_gfs_acl_next(
     globus_result_t *                   out_res)
 {
     int                                 rc = GLOBUS_GFS_ACL_COMPLETE;
-    globus_gfs_acl_module_t *           module;
     globus_l_gfs_acl_request_t *        acl_request;
 
     *out_res = GLOBUS_SUCCESS;
@@ -27,17 +26,17 @@ globus_l_gfs_acl_next(
     {
         acl_request = (globus_l_gfs_acl_request_t *) globus_list_remove(
             &acl_handle->current_list, acl_handle->current_list);
-        globus_assert(module != NULL);
+        globus_assert(acl_request->module != NULL);
 
         switch(acl_handle->type)
         {
             case GLOBUS_L_GFS_ACL_TYPE_INIT:
                 rc = acl_request->module->init_func(
                     &acl_request->user_handle,
-                    (const gss_ctx_id_t) acl_handle->context,
-                    (const char *)acl_handle->user_id,
+                    (const struct passwd *) &acl_handle->pwent,
+                    (const char *)acl_handle->given_pw,
                     (const char *)acl_handle->auth_action,
-                    (int)acl_handle,
+                    acl_handle,
                     out_res);
                 break;
 
@@ -46,7 +45,7 @@ globus_l_gfs_acl_next(
                     acl_request->user_handle,
                     acl_handle->auth_action, 
                     acl_handle->auth_object,
-                    (int)acl_handle, 
+                    acl_handle, 
                     out_res);
                 break;
 
@@ -92,8 +91,10 @@ globus_l_gfs_acl_kickout(
 int
 globus_i_gfs_acl_init(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const gss_ctx_id_t                  context,
-    const char *                        user_id,
+    const struct passwd *               pwent,
+    const struct group *                grpent,
+    const char *                        given_pw,
+    const char *                        ipaddr,
     const char *                        resource_id,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
@@ -102,20 +103,96 @@ globus_i_gfs_acl_init(
     globus_l_gfs_acl_request_t *        acl_request;
     globus_list_t *                     list;
     int                                 rc;
+    int                                 ctr;
 
+    memset(acl_handle, '\0', sizeof(struct globus_i_gfs_acl_handle_s));
     acl_handle->type = GLOBUS_L_GFS_ACL_TYPE_INIT;
-    acl_handle->context = context;
     acl_handle->cb = cb;
     acl_handle->user_arg = user_arg;
-    acl_handle->user_id = strdup(user_id);
-    if(acl_handle->user_id == NULL)
-    {
-        goto err;
-    }
+
     acl_handle->auth_action = strdup(resource_id);
     if(acl_handle->auth_action == NULL)
     {
         goto err;
+    }
+    memset(&acl_handle->pwent, '\0', sizeof(struct passwd));
+    memset(&acl_handle->grpent, '\0', sizeof(struct group));
+
+    /* copy the pwent info */
+    if(pwent->pw_name)
+    {
+        acl_handle->pwent.pw_name = strdup(pwent->pw_name);
+        if(acl_handle->pwent.pw_name == NULL)
+        {
+        }
+    }
+    if(pwent->pw_passwd)
+    {
+        acl_handle->pwent.pw_passwd = strdup(pwent->pw_passwd);
+        if(acl_handle->pwent.pw_passwd == NULL)
+        {
+        }
+    }
+    if(pwent->pw_dir)
+    {
+        acl_handle->pwent.pw_dir = strdup(pwent->pw_dir);
+        if(acl_handle->pwent.pw_dir == NULL)
+        {
+        }
+    }
+    if(pwent->pw_shell)
+    {
+        acl_handle->pwent.pw_shell = strdup(pwent->pw_shell);
+        if(acl_handle->pwent.pw_shell == NULL)
+        {
+        }
+    }
+    acl_handle->pwent.pw_uid = pwent->pw_uid;
+    acl_handle->pwent.pw_gid = pwent->pw_gid;
+
+    /* copy the group info */
+    if(grpent->gr_name)
+    {
+        acl_handle->grpent.gr_name = strdup(grpent->gr_name);
+        if(acl_handle->grpent.gr_name == NULL)
+        {
+        }
+    }
+    if(grpent->gr_passwd)
+    {
+        acl_handle->grpent.gr_passwd = strdup(grpent->gr_passwd);
+        if(acl_handle->grpent.gr_passwd == NULL)
+        {
+        }
+    }
+    acl_handle->grpent.gr_gid = grpent->gr_gid;
+    for(ctr = 0; grpent->gr_mem[ctr] != NULL; ctr++)
+    {
+    }
+    acl_handle->grpent.gr_mem = globus_calloc(1, sizeof(char *) * (ctr+1));
+    if(acl_handle->grpent.gr_mem == NULL)
+    {
+    }
+    for(ctr = 0; grpent->gr_mem[ctr] != NULL; ctr++)
+    {
+        acl_handle->grpent.gr_mem[ctr] = strdup(grpent->gr_mem[ctr]);
+        if(acl_handle->grpent.gr_mem[ctr] == NULL)
+        {
+        }
+    }
+    if(ipaddr != NULL)
+    {
+        acl_handle->ipaddr = strdup(ipaddr);
+        if(acl_handle->ipaddr == NULL)
+        {
+        }
+    }
+    if(given_pw != NULL)
+    {
+        acl_handle->given_pw = strdup(given_pw);
+        if(acl_handle->ipaddr == NULL)
+        {
+        }
     }
 
     /* needed memory for each module 'cause of handle back, only on init */
@@ -157,10 +234,6 @@ globus_i_gfs_acl_destroy(
         acl_request->module->destroy_func(acl_request->user_handle);
         globus_free(acl_request);
     }
-    if(acl_handle->user_id != NULL)
-    {
-        globus_free(acl_handle->user_id);
-    }
     if(acl_handle->auth_action != NULL)
     {
         globus_free(acl_handle->auth_action);
@@ -201,12 +274,9 @@ globus_gfs_acl_authorize(
 
 void
 globus_gfs_acl_authorized_finished(
-    int                                 request_id,
+    globus_i_gfs_acl_handle_t *         acl_handle,
     globus_result_t                     result)
 {
-    globus_i_gfs_acl_handle_t *         acl_handle;
-
-    acl_handle = (globus_i_gfs_acl_handle_t *) request_id;
     acl_handle->cached_res = result;
 
     globus_callback_register_oneshot(
@@ -216,3 +286,9 @@ globus_gfs_acl_authorized_finished(
         acl_handle);
 }
 
+void
+globus_gfs_acl_add_module(
+    globus_gfs_acl_module_t *           module)
+{
+    globus_list_insert(&globus_l_acl_module_list, module);
+}

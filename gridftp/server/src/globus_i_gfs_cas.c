@@ -12,16 +12,20 @@ globus_gfs_acl_cas_cb(
     globus_gsi_authz_handle_t           handle,
     globus_result_t                     result)
 {
-    globus_gfs_acl_authorized_finished((int)callback_arg, result);
+    globus_i_gfs_acl_handle_t *         acl_handle;
+
+    acl_handle = (globus_i_gfs_acl_handle_t *) callback_arg;
+    globus_gfs_acl_authorized_finished(acl_handle, result);
 }
 
-static int
+static
+int
 globus_gfs_acl_cas_init(
     void **                             out_handle,
-    const gss_ctx_id_t                  context,
-    const char *                        user_id,
+    const struct passwd *               passwd,
+    const char *                        given_pw,
     const char *                        resource_id,
-    int                                 request_id,
+    globus_i_gfs_acl_handle_t *         acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
@@ -29,28 +33,27 @@ globus_gfs_acl_cas_init(
     *out_res = globus_gsi_authz_handle_init(
         &cas_handle,
         resource_id,
-        context,
+        acl_handle->context,
         globus_gfs_acl_cas_cb,
-        (void *) request_id);
+        acl_handle);
     if(*out_res != GLOBUS_SUCCESS)
     {
         goto err;
     }
-
     *out_handle = cas_handle;
-
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
 
   err:
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 
-static int
+static
+int
 globus_gfs_acl_cas_authorize(
     void *                              out_handle,
     const char *                        action,
     const char *                        object,
-    int                                 request_id,
+    globus_i_gfs_acl_handle_t *         acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
@@ -62,7 +65,7 @@ globus_gfs_acl_cas_authorize(
         action,
         object,
         globus_gfs_acl_cas_cb,
-        (void *) request_id);
+        acl_handle);
     if(*out_res != GLOBUS_SUCCESS)
     {
         goto err;
@@ -71,6 +74,9 @@ globus_gfs_acl_cas_authorize(
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
 
   err:
+
+*out_res = GLOBUS_SUCCESS;
+
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 
@@ -83,5 +89,13 @@ globus_gfs_acl_cas_destroy(
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
 
-    globus_gsi_authz_handle_destroy(cas_handle, NULL, NULL);
+//    globus_gsi_authz_handle_destroy(cas_handle, NULL, NULL);
 }
+
+globus_gfs_acl_module_t                 globus_gfs_acl_cas_module = 
+{
+    globus_gfs_acl_cas_init,
+    globus_gfs_acl_cas_authorize,
+    globus_gfs_acl_cas_destroy
+};
+

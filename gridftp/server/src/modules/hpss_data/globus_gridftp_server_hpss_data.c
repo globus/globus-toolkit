@@ -1,36 +1,47 @@
+/* hpss.c */
 
+#include <openssl/md5.h>
 #include "globus_gridftp_server.h"
 #include "globus_xio.h"
-#include "globus_xio_file_driver.h"
-#include "openssl/md5.h"
-#include "version.h"
+#include "hpss_api.h"
 
 typedef struct
 {
     globus_mutex_t                      lock;
-    globus_memory_t                     mem;
-    globus_priority_q_t                 queue;
     globus_list_t *                     buffer_list;
-    globus_gfs_operation_t              op;
+    globus_gridftp_server_operation_t   op;
     globus_xio_handle_t                 file_handle;
     globus_off_t                        file_offset;
     globus_off_t                        read_offset;
     globus_off_t                        read_length;
     globus_off_t                        write_delta;
-    globus_off_t                        transfer_delta;
     int                                 pending_writes;
-    int                                 pending_reads;
+    int                                 pending_read;
     globus_size_t                       block_size;
     int                                 optimal_count;
-    int                                 node_ndx;
     globus_object_t *                   error;
     globus_bool_t                       first_read;
     globus_bool_t                       eof;
-    globus_bool_t                       aborted;
-    int                                 concurrency_check;
-    int                                 concurrency_check_interval;
-} globus_l_file_monitor_t;
+    globus_byte_t                       buffer_block[1];
+} globus_l_send_monitor_t;
 
+typedef struct
+{
+    globus_mutex_t                      lock;
+    globus_priority_q_t                 queue;
+    globus_gridftp_server_operation_t   op;
+    globus_xio_handle_t                 file_handle;
+    int                                 pending_reads;
+    int                                 pending_write;
+    globus_off_t                        file_offset;
+    globus_off_t                        write_delta;
+    globus_off_t                        transfer_delta;
+    globus_size_t                       block_size;
+    int                                 optimal_count;
+    globus_object_t *                   error;
+    globus_bool_t                       eof;
+    globus_byte_t                       buffer_block[1];
+} globus_l_recv_monitor_t;
 
 typedef struct
 {
@@ -39,154 +50,48 @@ typedef struct
     globus_size_t                       length;
 } globus_l_buffer_info_t;
 
-static globus_xio_driver_t              globus_l_gfs_file_driver;
-
-/*
- * if priority_1 comes after priority_2, return > 0
- * else if priority_1 comes before priority_2, return < 0
- * else return 0
- */
- 
-static
+/* XXX static */
 int
-globus_l_gfs_file_queue_compare(
-    void *                              priority_1,
-    void *                              priority_2)
+globus_l_gfs_hpss_activate(void)
 {
-    globus_l_buffer_info_t *            buf_info1;
-    globus_l_buffer_info_t *            buf_info2;
-    
-    buf_info1 = (globus_l_buffer_info_t *) priority_1;
-    buf_info2 = (globus_l_buffer_info_t *) priority_2;
-    
-    /* the void * are really just offsets */
-    if(buf_info1->offset > buf_info2->offset)
-        return 1;
-    if(buf_info1->offset < buf_info2->offset)
-        return -1;
-    return 0;
-}
-static
-globus_result_t
-globus_l_gfs_file_monitor_init(
-    globus_l_file_monitor_t **          u_monitor,
-    globus_size_t                       block_size,
-    int                                 optimal_count)
-{
-    globus_l_file_monitor_t *           monitor;
-    globus_result_t                     result;
-    int                                 rc;
-    GlobusGFSName(globus_l_gfs_file_monitor_init);
-    
-    monitor = (globus_l_file_monitor_t *) globus_malloc(
-        sizeof(globus_l_file_monitor_t));
-    if(!monitor)
-    {
-        result = GlobusGFSErrorMemory("monitor");
-        goto error_alloc;
-    }
-       
-    rc = globus_memory_init(&monitor->mem, block_size, optimal_count);
-    if(!rc)
-    {
-        globus_free(monitor);
-        result = GlobusGFSErrorMemory("buffer");
-        goto error_alloc;
-    } 
-    
-    globus_mutex_init(&monitor->lock, GLOBUS_NULL);
-    globus_priority_q_init(
-        &monitor->queue, globus_l_gfs_file_queue_compare);
-    monitor->buffer_list = GLOBUS_NULL;
-    monitor->op = GLOBUS_NULL;
-    monitor->file_handle = GLOBUS_NULL;
-    monitor->pending_reads = 0;
-    monitor->pending_writes = 0;
-    monitor->file_offset = 0;
-    monitor->write_delta = 0;
-    monitor->transfer_delta = 0;    
-    monitor->block_size = block_size;
-    monitor->optimal_count = optimal_count;
-    monitor->error = GLOBUS_NULL;
-    monitor->eof = GLOBUS_FALSE;
-    monitor->aborted = GLOBUS_FALSE;
-    monitor->concurrency_check = 2;
-    monitor->concurrency_check_interval = 2;
-        
-    *u_monitor = monitor;
-    
+    /*
+mlink whispers to you, "the server will activate your module, and in
+your activation func you'd call some server api like
+globus_gridftp_server_register_my_functions()"
+mlink whispers to you, "and it would all work"
+mlink whispers to you, "but currently none of that is in place and it
+is hardcoded to the file module"
+Shishir [to mlink]: does tihs mkae snese to you?
+You whisper to mlink, "aha, that explains my inability to find it."
+You whisper to mlink, "where is this hardcoded?"
+mlink whispers to you, "if it is not in beofre you're ready to test,
+you can copy out the globus_i_gfs_data.c file and replace all the
+_file_ stuff with _hpss_"
+mlink whispers to you, "in that file"
+(to mlink) rw2 nods
+    */
+    //no hpss setup necessary.  All work done at file open
+
     return GLOBUS_SUCCESS;
-
-error_alloc:
-    return result;
 }
 
-static
-void
-globus_l_gfs_file_close_cb(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    void *                              user_arg)
+/* XXX static */
+int
+globus_l_gfs_hpss_deactivate(void)
 {
-    /* dont need to do anything here */
-}
-
-static
-void
-globus_l_gfs_file_monitor_destroy(
-    globus_l_file_monitor_t *           monitor)
-{
-    globus_l_buffer_info_t *            buf_info;
-    globus_list_t *                     list;
-    globus_byte_t *                     buffer;
-    
-    if(monitor->file_handle)
-    {
-        globus_xio_register_close(
-            monitor->file_handle,
-            GLOBUS_NULL,
-            globus_l_gfs_file_close_cb,
-            GLOBUS_NULL);
-    }
-            
-    while(!globus_priority_q_empty(&monitor->queue))
-    {
-        buf_info = (globus_l_buffer_info_t *)
-            globus_priority_q_dequeue(&monitor->queue);
-        if(buf_info)
-        {
-            if(buf_info->buffer)
-            {
-                globus_memory_push_node(&monitor->mem, buf_info->buffer);
-            }
-            globus_free(buf_info);
-        }
-    }
-    
-    for(list = monitor->buffer_list;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
-    {
-        buffer = (globus_byte_t *) globus_list_first(list);
-        globus_memory_push_node(&monitor->mem, buffer);
-    }
-    
-    globus_priority_q_destroy(&monitor->queue);
-    globus_list_free(monitor->buffer_list);
-    globus_memory_destroy(&monitor->mem);
-    globus_mutex_destroy(&monitor->lock);
-    globus_free(monitor);
+    //no hpss teardown necessary.  All work done at file close.
+    return GLOBUS_SUCCESS;
 }
 
 /**
- * stat calls
+ * resource calls
  */
  
 /* basepath and filename must be MAXPATHLEN long 
  * the pathname may be absolute or relative, basepath will be the same */
 static
 void
-globus_l_gfs_file_partition_path(
+globus_l_gfs_hpss_partition_path(
     const char *                        pathname,
     char *                              basepath,
     char *                              filename)
@@ -228,11 +133,10 @@ globus_l_gfs_file_partition_path(
 
 static
 void
-globus_l_gfs_file_copy_stat(
-    globus_gfs_stat_t *                 stat_object,
+globus_l_gfs_hpss_copy_stat(
+    globus_gridftp_server_stat_t *      stat_object,
     struct stat *                       stat_buf,
-    const char *                        filename,
-    const char *                        symlink_target)
+    const char *                        filename)
 {
     stat_object->mode     = stat_buf->st_mode;
     stat_object->nlink    = stat_buf->st_nlink;
@@ -245,15 +149,14 @@ globus_l_gfs_file_copy_stat(
     stat_object->dev      = stat_buf->st_dev;
     stat_object->ino      = stat_buf->st_ino;
     
-    strcpy(stat_object->name, filename);
-    strcpy(stat_object->symlink_target, symlink_target);
+    strcpy(stat_info->name, filename);
 }
 
-static
-void
-globus_l_gfs_file_stat(
-    globus_gfs_operation_t              op,
-    globus_gfs_stat_info_t *            stat_info,
+/* XXX static */
+globus_result_t
+globus_l_gfs_hpss_stat(
+    globus_gfs_operation_t   op,
+    globus_gfs_stat_info_t *           stat_info,
     void *                              user_arg)
 {
     globus_result_t                     result;
@@ -263,35 +166,17 @@ globus_l_gfs_file_stat(
     DIR *                               dir;
     char                                basepath[MAXPATHLEN];
     char                                filename[MAXPATHLEN];
-    char                                symlink_target[MAXPATHLEN];
-    GlobusGFSName(globus_l_gfs_file_stat);
-    
-    /* lstat is the same as stat when not operating on a link */
-    if(lstat(stat_info->pathname, &stat_buf) != 0)
+    GlobusGFSName(globus_l_gfs_hpss_resource);
+
+    if(hpss_Stat(pathname, &stat_buf) != 0)
     {
-        result = GlobusGFSErrorSystemError("lstat", errno);
+        result = GlobusGFSErrorSystemError("stat", errno);
         goto error_stat1;
     }
-    /* if this is a link we still need to stat to get the info we are 
-        interested in and then use realpath() to get the full path of 
-        the symlink target */
-    *symlink_target = '\0';
-    if(S_ISLNK(stat_buf.st_mode))
-    {
-        if(stat(stat_info->pathname, &stat_buf) != 0)
-        {
-            result = GlobusGFSErrorSystemError("stat", errno);
-            goto error_stat1;
-        }
-        if(realpath(stat_info->pathname, symlink_target) == NULL)
-        {
-            result = GlobusGFSErrorSystemError("realpath", errno);
-            goto error_stat1;
-        }
-    }    
-    globus_l_gfs_file_partition_path(stat_info->pathname, basepath, filename);
     
-    if(!S_ISDIR(stat_buf.st_mode) || stat_info->file_only)
+    globus_l_gfs_hpss_partition_path(stat_info->pathname, basepath, filename);
+    
+    if(!S_ISDIR(stat_buf.st_mode) || (mask & GLOBUS_GFS_FILE_ONLY))
     {
         stat_array = (globus_gfs_stat_t *)
             globus_malloc(sizeof(globus_gfs_stat_t));
@@ -301,8 +186,7 @@ globus_l_gfs_file_stat(
             goto error_alloc1;
         }
         
-        globus_l_gfs_file_copy_stat(
-            stat_array, &stat_buf, filename, symlink_target);
+        globus_l_gfs_file_copy_stat(stat_array, &stat_buf, filename);
         stat_count = 1;
     }
     else
@@ -311,7 +195,7 @@ globus_l_gfs_file_stat(
         int                             i;
         char                            dir_path[MAXPATHLEN];
     
-        dir = globus_libc_opendir(stat_info->pathname);
+        dir = hpss_Opendir(pathname);
         if(!dir)
         {
             result = GlobusGFSErrorSystemError("opendir", errno);
@@ -319,19 +203,18 @@ globus_l_gfs_file_stat(
         }
         
         stat_count = 0;
-        while(globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry)
+        while(hpss_Readdir(dir, &dir_entry) == 0 && dir_entry)
         {
             stat_count++;
-            globus_free(dir_entry);
         }
         
-        globus_libc_rewinddir(dir);
+        hpss_Rewinddir(dir);
         
-        stat_array = (globus_gfs_stat_t *)
-            globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
+        stat_array = (globus_gridftp_server_stat_t *)
+            globus_malloc(sizeof(globus_gridftp_server_stat_t) * stat_count);
         if(!stat_array)
         {
-            result = GlobusGFSErrorMemory("stat_array");
+            result = GlobusGFSErrorMemory("stat_info");
             goto error_alloc2;
         }
         
@@ -339,7 +222,7 @@ globus_l_gfs_file_stat(
         dir_path[MAXPATHLEN - 1] = '\0';
         
         for(i = 0;
-            globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry;
+            hpss_Readdir(dir, &dir_entry) == 0 && dir_entry;
             i++)
         {
             char                        path[MAXPATHLEN];
@@ -347,44 +230,18 @@ globus_l_gfs_file_stat(
             snprintf(path, sizeof(path), "%s/%s", dir_path, dir_entry->d_name);
             path[MAXPATHLEN - 1] = '\0';
         
-            /* lstat is the same as stat when not operating on a link */
-            if(lstat(path, &stat_buf) != 0)
+            if(stat(path, &stat_buf) != 0)
             {
-                result = GlobusGFSErrorSystemError("lstat", errno);
+                result = GlobusGFSErrorSystemError("stat", errno);
                 globus_free(dir_entry);
                 /* just skip invalid entries */
                 stat_count--;
                 i--;
                 continue;
             }
-            /* if this is a link we still need to stat to get the info we are 
-                interested in and then use realpath() to get the full path of 
-                the symlink target */
-            *symlink_target = '\0';
-            if(S_ISLNK(stat_buf.st_mode))
-            {
-                if(stat(path, &stat_buf) != 0)
-                {
-                    result = GlobusGFSErrorSystemError("stat", errno);
-                    globus_free(dir_entry);
-                    /* just skip invalid entries */
-                    stat_count--;
-                    i--;
-                    continue;
-                }
-                if(realpath(path, symlink_target) == NULL)
-                {
-                    result = GlobusGFSErrorSystemError("realpath", errno);
-                    globus_free(dir_entry);
-                    /* just skip invalid entries */
-                    stat_count--;
-                    i--;
-                    continue;
-                }
-            }    
-     
-            globus_l_gfs_file_copy_stat(
-                &stat_array[i], &stat_buf, dir_entry->d_name, symlink_target);
+            
+            globus_l_gfs_hpss_copy_stat(
+                &stat_array[i], &stat_buf, dir_entry->d_name);
             globus_free(dir_entry);
         }
         
@@ -394,40 +251,41 @@ globus_l_gfs_file_stat(
             goto error_read;
         }
         
-        closedir(dir);
+        hpss_Closedir(dir);
     }
     
-    globus_gridftp_server_finished_stat(
-        op, GLOBUS_SUCCESS, stat_array, stat_count);
+    globus_gridftp_server_finished_resource(
+        op, GLOBUS_SUCCESS, stat_info, stat_count);
     
     globus_free(stat_array);
     
-    return;
+    return GLOBUS_SUCCESS;
 
 error_read:
     globus_free(stat_array);
-    
+error_stat2:
+    hpss
 error_alloc2:
-    closedir(dir);
+    hpss_Closedir(dir);
     
 error_open:
 error_alloc1:
 error_stat1:
-    globus_gridftp_server_finished_stat(op, result, NULL, 0);
-    return;
+    return result;
 }
 
-static
+
+/* XXX static */
 globus_result_t
-globus_l_gfs_file_mkdir(
-    globus_gfs_operation_t   op,
+globus_l_gfs_hpss_mkdir(
+    globus_gridftp_server_operation_t   op,
     const char *                        pathname)
 {
     int                                 rc;
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_mkdir);
+    GlobusGFSName(globus_l_gfs_hpss_mkdir);
 
-    rc = mkdir(pathname, 0777);
+    rc = hpss_Mkdir(pathname, 0777);
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("mkdir", errno);
@@ -442,17 +300,16 @@ error:
     return result;
 }
 
-static
 globus_result_t
-globus_l_gfs_file_rmdir(
-    globus_gfs_operation_t   op,
+globus_l_gfs_hpss_rmdir(
+    globus_gridftp_server_operation_t   op,
     const char *                        pathname)
 {
     int                                 rc;
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_rmdir);
+    GlobusGFSName(globus_l_gfs_hpss_rmdir);
 
-    rc = rmdir(pathname);
+    rc = hpss_Rmdir(pathname);
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("rmdir", errno);
@@ -467,17 +324,16 @@ error:
     return result;
 }
 
-static
 globus_result_t
-globus_l_gfs_file_delete(
-    globus_gfs_operation_t   op,
+globus_l_gfs_hpss_delete(
+    globus_gridftp_server_operation_t   op,
     const char *                        pathname)
 {
     int                                 rc;
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_delete);
+    GlobusGFSName(globus_l_gfs_hpss_delete);
 
-    rc = unlink(pathname);
+    rc = hpss_Unlink(pathname);
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("unlink", errno);
@@ -492,18 +348,17 @@ error:
     return result;
 }
 
-static
 globus_result_t
-globus_l_gfs_file_rename(
-    globus_gfs_operation_t   op,
+globus_l_gfs_hpss_rename(
+    globus_gridftp_server_operation_t   op,
     const char *                        from_pathname,
     const char *                        to_pathname)
 {
     int                                 rc;
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_rename);
+    GlobusGFSName(globus_l_gfs_hpss_rename);
 
-    rc = rename(from_pathname, to_pathname);
+    rc = hpss_Rename(from_pathname, to_pathname);
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("rename", errno);
@@ -518,18 +373,17 @@ error:
     return result;
 }
 
-static
 globus_result_t
-globus_l_gfs_file_chmod(
-    globus_gfs_operation_t   op,
+globus_l_gfs_hpss_chmod(
+    globus_gridftp_server_operation_t   op,
     const char *                        pathname,
     mode_t                              mode)
 {
     int                                 rc;
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_chmod);
+    GlobusGFSName(globus_l_gfs_hpss_chmod);
 
-    rc = chmod(pathname, mode);
+    rc = hpss_Chmod(pathname, mode);
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("chmod", errno);
@@ -546,17 +400,23 @@ error:
 
 #define GFS_CKSM_BUFSIZE 1024*1024
 
-static
+//xxx there is nothing about this method which promises it will not be
+//called over and over thus causing thrashing on the mass store.  This 
+//would be bad.  The use case as explained to rw2 on 4/8/2004 was that 
+//a file or partial file would be transfered and then this method 
+//would be called to verify.  This might be a hard requirement to 
+//begin with on some systems, but should work in most situations.
 globus_result_t
-globus_l_gfs_file_cksm(
-    globus_gfs_operation_t   op,
+globus_l_gfs_hpss_cksm(
+    globus_gridftp_server_operation_t   op,
     const char *                        pathname,
     const char *                        algorithm,
     globus_off_t                        offset,
     globus_off_t                        length)
 {
+    int                                 rc;
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_cksm);
+    GlobusGFSName(globus_l_gfs_hpss_cksm);
     
     MD5_CTX                             mdctx;
     char *                              md5ptr;
@@ -569,7 +429,17 @@ globus_l_gfs_file_cksm(
     int                                 n;
     globus_off_t                        count;
     globus_off_t                        read_left;
-    
+
+    int                                 flags;
+    int                                 perms;
+    hpss_cos_hints_t                    hints_in;
+    hpss_cos_hints_t                    hints_out;
+    hpss_cos_priorities_t               hints_pri;    
+
+    flags = O_RDONLY;
+    recsize = MAX_BUF_SIZE;
+    memset( &hints_in, 0, sizeof(hpss_cos_hints_t) );
+    memset( &hints_pri, 0, sizeof(hpss_cos_priorities_t) );
 
     if(offset < 0)
     {
@@ -586,21 +456,20 @@ globus_l_gfs_file_cksm(
         count = GFS_CKSM_BUFSIZE;
     }
     
-    fd = open(pathname, O_RDONLY);        
+    fd = hpss_Open(pathname, O_flags, &hints_in, &hints_pri, &hints_out);        
     if(fd < 0)
     {
         goto fd_error;
     }
 
-    if (lseek(fd, offset, SEEK_SET) == -1)
+    if (hpss_Lseek(fd, offset, SEEK_SET) == -1)
     {
         goto seek_error;
     }
-
     
     MD5_Init(&mdctx);        
 
-    while((n = read(fd, buf, count)) > 0)
+    while((n = hpss_Read(fd, buf, count)) > 0)
     {
         if(length >= 0)
         {
@@ -613,7 +482,7 @@ globus_l_gfs_file_cksm(
 
     MD5_Final(md, &mdctx);
     
-    close(fd);
+    hpss_Close(fd);
         
     md5ptr = md5sum;
     for(i = 0; i < MD5_DIGEST_LENGTH; i++)
@@ -634,42 +503,42 @@ seek_error:
     close(fd);
 fd_error:
 param_error:
+error:
      /* reply(501, "Error calculating checksum"); */
 
     return result;
 }
 
 
-static
-void
-globus_l_gfs_file_command(
-    globus_gfs_operation_t   op,
-    globus_gfs_command_info_t *        cmd_info,
-    void *                              user_arg)
+globus_result_t
+globus_l_gfs_hpss_command(
+    globus_gfs_operation_t            op,
+    globus_gfs_command_info_t *       cmd_info,
+    void *                            user_arg)
 {
     globus_result_t                     result;
     
     switch(cmd_info->command)
     {
       case GLOBUS_GFS_CMD_MKD:
-        result = globus_l_gfs_file_mkdir(op, cmd_info->pathname);
+        result = globus_l_gfs_hpss_mkdir(op, cmd_info->pathname);
         break;
       case GLOBUS_GFS_CMD_RMD:
-        result = globus_l_gfs_file_rmdir(op, cmd_info->pathname);
+        result = globus_l_gfs_hpss_rmdir(op, cmd_info->pathname);
         break;
       case GLOBUS_GFS_CMD_DELE:
-        result = globus_l_gfs_file_delete(op, cmd_info->pathname);
+        result = globus_l_gfs_hpss_delete(op, cmd_info->pathname);
         break;
       case GLOBUS_GFS_CMD_RNTO:
-        result = globus_l_gfs_file_rename(
+        result = globus_l_gfs_hpss_rename(
             op, cmd_info->rnfr_pathname, cmd_info->pathname);
         break;
       case GLOBUS_GFS_CMD_SITE_CHMOD:
-        result = globus_l_gfs_file_chmod(
+        result = globus_l_gfs_hpss_chmod(
             op, cmd_info->pathname, cmd_info->chmod_mode);
         break;
       case GLOBUS_GFS_CMD_CKSM:
-        result = globus_l_gfs_file_cksm(
+        result = globus_l_gfs_hpss_cksm(
             op, 
             cmd_info->pathname, 
             cmd_info->cksm_alg,
@@ -682,16 +551,7 @@ globus_l_gfs_file_command(
         break;
     }
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    
-    return;
-
-error:
-    globus_gridftp_server_finished_command(op, result, NULL);    
-    return;
+    return result;
 }
 
 
@@ -699,10 +559,109 @@ error:
  * recv calls
  */
 
+/*
+ * if priority_1 comes after priority_2, return > 0
+ * else if priority_1 comes before priority_2, return < 0
+ * else return 0
+ */
+ 
+static
+int
+globus_l_gfs_hpss_queue_compare(
+    void *                              priority_1,
+    void *                              priority_2)
+{
+    globus_l_buffer_info_t *            buf_info1;
+    globus_l_buffer_info_t *            buf_info2;
+    
+    buf_info1 = (globus_l_buffer_info_t *) priority_1;
+    buf_info2 = (globus_l_buffer_info_t *) priority_2;
+    
+    /* the void * are really just offsets */
+    if(buf_info1->offset > buf_info2->offset)
+        return 1;
+    if(buf_info1->offset < buf_info2->offset)
+        return -1;
+    return 0;
+}
+
+static
+globus_result_t
+globus_l_gfs_recv_monitor_init(
+    globus_l_recv_monitor_t **          u_monitor,
+    globus_size_t                       block_size,
+    int                                 optimal_count)
+{
+    globus_l_recv_monitor_t *           monitor;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_recv_monitor_init);
+    
+    monitor = (globus_l_recv_monitor_t *) globus_malloc(
+        sizeof(globus_l_recv_monitor_t) - 1 + (block_size * optimal_count));
+    if(!monitor)
+    {
+        result = GlobusGFSErrorMemory("monitor/buffer");
+        goto error_alloc;
+    }
+    
+    globus_mutex_init(&monitor->lock, GLOBUS_NULL);
+    globus_priority_q_init(
+        &monitor->queue, globus_l_gfs_file_queue_compare);
+    monitor->op = GLOBUS_NULL;
+    monitor->file_handle = GLOBUS_NULL;
+    monitor->pending_reads = 0;
+    monitor->pending_write = 0;
+    monitor->file_offset = 0;
+    monitor->write_delta = 0;
+    monitor->transfer_delta = 0;    
+    monitor->block_size = block_size;
+    monitor->optimal_count = optimal_count;
+    monitor->error = GLOBUS_NULL;
+    monitor->eof = GLOBUS_FALSE;
+    
+    *u_monitor = monitor;
+    
+    return GLOBUS_SUCCESS;
+
+error_alloc:
+    return result;
+}
+
+static
+void 
+globus_l_gfs_hpss_close_oneshot(void *user_args)
+{
+    //Close the hpss file
+    //xxx how can an error here get back to the user?
+    int file_handle = (int)user_args;
+    hpss_Close(file_handle);
+}
+
 static
 void
-globus_l_gfs_file_server_read_cb(
-    globus_gfs_operation_t   op,
+globus_l_gfs_recv_monitor_destroy(
+    globus_l_recv_monitor_t *           monitor)
+{
+    //close the file, we're done.
+    if(monitor->file_handle)
+    {
+        globus_callback_register_oneshot(
+            NULL, 
+            NULL, 
+            globus_l_gfs_hpss_close_oneshot,
+            monitor->file_handle);
+    }
+
+    /* maybe dequeue all and free buf infos */
+    globus_priority_q_destroy(&monitor->queue);
+    globus_mutex_destroy(&monitor->lock);
+    globus_free(monitor);
+}
+
+static
+void
+globus_l_gfs_hpss_server_read_cb(
+    globus_gridftp_server_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -712,117 +671,20 @@ globus_l_gfs_file_server_read_cb(
 
 static
 globus_result_t
-globus_l_gfs_file_dispatch_write(
-    globus_l_file_monitor_t *           monitor);
-    
-static
-void
-globus_l_gfs_file_write_cb(
-    globus_xio_handle_t                 xio_handle, 
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes, 
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
-{
-    globus_l_file_monitor_t *           monitor;
-    GlobusGFSName(globus_l_gfs_file_write_cb);
-    
-    monitor = (globus_l_file_monitor_t *) user_arg;
-    
-    globus_mutex_lock(&monitor->lock);
-    { 
-        monitor->pending_writes--;
-        globus_gridftp_server_update_bytes_written(
-            monitor->op, 
-            monitor->file_offset + monitor->transfer_delta,
-            nbytes);
-        monitor->file_offset += nbytes;
-
-        if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
-        {
-            monitor->error = GlobusGFSErrorObjWrapFailed("callback", result);
-        }
-        if(monitor->error != GLOBUS_NULL)
-        {
-            goto error;
-        }
-        
-        if(!monitor->eof)
-        {
-            result = globus_gridftp_server_register_read(
-                monitor->op,
-                buffer,
-                monitor->block_size,
-                globus_l_gfs_file_server_read_cb,
-                monitor);
-            if(result != GLOBUS_SUCCESS)
-            {
-                monitor->error = GlobusGFSErrorObjWrapFailed(
-                    "globus_gridftp_server_register_read", result);
-                goto error;
-            }
-            
-            monitor->pending_reads++;
-        }
-        else
-        {
-            globus_memory_push_node(&monitor->mem, buffer);
-        }
-        
-        result = globus_l_gfs_file_dispatch_write(monitor);
-        if(result != GLOBUS_SUCCESS)
-        {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_l_gfs_file_dispatch_write", result);
-            goto error_dispatch;
-        }
-        
-        if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
-        {
-            globus_assert(monitor->eof || monitor->aborted);
-            globus_mutex_unlock(&monitor->lock);
-            globus_gridftp_server_finished_transfer(
-                monitor->op, GLOBUS_SUCCESS);
-            globus_l_gfs_file_monitor_destroy(monitor);
-        }
-        else
-        {
-            globus_mutex_unlock(&monitor->lock);
-        }
-    }
-    /* already unlocked */
-    
-    return;
-
-error:
-    globus_memory_push_node(&monitor->mem, buffer);
-error_dispatch:
-    if(monitor->pending_reads != 0 || monitor->pending_writes != 0)
-    {
-        /* there are still outstanding callbacks, wait for them */
-        globus_mutex_unlock(&monitor->lock);
-        return;
-    }
-    globus_mutex_unlock(&monitor->lock);
-
-    globus_gridftp_server_finished_transfer(
-        monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
-}
+globus_l_gfs_hpss_dispatch_write(
+    globus_l_recv_monitor_t *           monitor);
 
 /* Called LOCKED */
 static
 globus_result_t
-globus_l_gfs_file_dispatch_write(
-    globus_l_file_monitor_t *           monitor)
+globus_l_gfs_hpss_dispatch_write(
+    globus_l_recv_monitor_t *           monitor)
 {
     globus_l_buffer_info_t *            buf_info;
     globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_file_dispatch_write);
     
-    if(monitor->pending_writes == 0 && !monitor->aborted)
+    if(monitor->pending_write == 0)
     {
         buf_info = (globus_l_buffer_info_t *)
             globus_priority_q_dequeue(&monitor->queue);
@@ -863,88 +725,23 @@ globus_l_gfs_file_dispatch_write(
                 goto error_register;
             }
             
-            monitor->pending_writes++;
-            
+            monitor->pending_write++;
             globus_free(buf_info);
         }
     }
     
     return GLOBUS_SUCCESS;
 
-error_register:
 error_seek:
-    if(buf_info->buffer)
-    {
-        globus_memory_push_node(&monitor->mem, buf_info->buffer);
-    }
+error_register:
     globus_free(buf_info);
     return result;
-}
-
-/* called locked */
-static
-void
-globus_l_gfs_file_update_concurrency(
-    globus_l_file_monitor_t *           monitor)
-{
-    globus_result_t                     result;
-    int                                 optimal_count;
-    int                                 extra;
-    GlobusGFSName(globus_l_gfs_file_update_concurrency);
-
-    if(monitor->eof)
-    {
-        return;
-    }
-    
-    monitor->concurrency_check = monitor->concurrency_check_interval;
-    monitor->concurrency_check_interval *= 2;
-    if(monitor->concurrency_check_interval > 1024)
-    {
-        monitor->concurrency_check_interval = 1024;
-    }
-    
-    globus_gridftp_server_get_optimal_concurrency(
-        monitor->op, &optimal_count);
-    extra = optimal_count - monitor->optimal_count;
-    
-    if(extra <= 0)
-    {
-        return;
-    }
-    
-    monitor->optimal_count = optimal_count;
-    while(extra--)
-    {
-        globus_byte_t *             buffer;
-        
-        buffer = globus_memory_pop_node(&monitor->mem);
-        result = globus_gridftp_server_register_read(
-            monitor->op,
-            buffer,
-            monitor->block_size,
-            globus_l_gfs_file_server_read_cb,
-            monitor);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_memory_push_node(&monitor->mem, buffer);
-            result = GlobusGFSErrorWrapFailed(
-                "globus_gridftp_server_register_read", result);
-            goto error_register;
-        }
-        
-        monitor->pending_reads++;
-    }
-    return;
-
-error_register:
-    return;
 }
 
 static
 void
 globus_l_gfs_file_server_read_cb(
-    globus_gfs_operation_t   op,
+    globus_gridftp_server_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -952,16 +749,17 @@ globus_l_gfs_file_server_read_cb(
     globus_bool_t                       eof,
     void *                              user_arg)
 {
-    globus_l_file_monitor_t *           monitor;
+    globus_l_recv_monitor_t *           monitor;
     globus_l_buffer_info_t *            buf_info;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_file_server_read_cb);
     
-    monitor = (globus_l_file_monitor_t *) user_arg;
+    monitor = (globus_l_recv_monitor_t *) user_arg;
     
     globus_mutex_lock(&monitor->lock);
     {
         monitor->pending_reads--;
+        
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
             monitor->error = GlobusGFSErrorObjWrapFailed("callback", result);
@@ -999,12 +797,6 @@ globus_l_gfs_file_server_read_cb(
                 "globus_priority_q_enqueue failed");
             goto error_enqueue;
         }
-
-        monitor->concurrency_check--;
-        if(monitor->concurrency_check == 0 && !eof)
-        {
-            globus_l_gfs_file_update_concurrency(monitor);
-        }        
         
         result = globus_l_gfs_file_dispatch_write(monitor);
         if(result != GLOBUS_SUCCESS)
@@ -1028,8 +820,7 @@ error_enqueue:
     
 error_alloc:
 error:
-    globus_memory_push_node(&monitor->mem, buffer);
-    if(monitor->pending_reads != 0 || monitor->pending_writes != 0)
+    if(monitor->pending_reads != 0 || monitor->pending_write != 0)
     {
         /* there are still outstanding callbacks, wait for them */
         globus_mutex_unlock(&monitor->lock);
@@ -1039,7 +830,7 @@ error:
 
     globus_gridftp_server_finished_transfer(
         monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_recv_monitor_destroy(monitor);
 }
 
 static
@@ -1049,10 +840,10 @@ globus_l_gfs_file_open_write_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_l_file_monitor_t *           monitor;
+    globus_l_recv_monitor_t *           monitor;
     GlobusGFSName(globus_l_gfs_file_open_write_cb);
     
-    monitor = (globus_l_file_monitor_t *) user_arg;
+    monitor = (globus_l_recv_monitor_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -1061,8 +852,24 @@ globus_l_gfs_file_open_write_cb(
         goto error_open;
     }
 
-    globus_gridftp_server_begin_transfer(
-        monitor->op, 0, monitor);
+    if(monitor->partial_offset > 0)
+    {
+        result = globus_xio_handle_cntl(
+            monitor->file_handle,
+            globus_l_gfs_file_driver,
+            GLOBUS_XIO_FILE_SEEK,
+            &monitor->partial_offset,
+            SEEK_SET);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_xio_handle_cntl", result);
+            goto error_open;
+        }
+    }
+    
+    globus_gridftp_server_begin_transfer(monitor->op);
     
     globus_mutex_lock(&monitor->lock);
     {
@@ -1075,7 +882,7 @@ globus_l_gfs_file_open_write_cb(
         {
             globus_byte_t *             buffer;
             
-            buffer = globus_memory_pop_node(&monitor->mem);
+            buffer = monitor->buffer_block + (optimal_count * block_size);
             result = globus_gridftp_server_register_read(
                 monitor->op,
                 buffer,
@@ -1084,7 +891,6 @@ globus_l_gfs_file_open_write_cb(
                 monitor);
             if(result != GLOBUS_SUCCESS)
             {
-                globus_memory_push_node(&monitor->mem, buffer);
                 result = GlobusGFSErrorWrapFailed(
                     "globus_gridftp_server_register_read", result);
                 goto error_register;
@@ -1109,7 +915,7 @@ error_register:
 
 error_open:
     globus_gridftp_server_finished_transfer(monitor->op, result);
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_recv_monitor_destroy(monitor);
 }
 
 static
@@ -1124,57 +930,17 @@ globus_result_t
 globus_l_gfs_file_open(
     globus_xio_handle_t *               file_handle,
     const char *                        pathname,
-    globus_xio_file_flag_t              open_flags,
+    int                                 open_flags,
     void *                              arg)
 {
     globus_result_t                     result;
     globus_xio_attr_t                   attr;
     globus_xio_stack_t                  stack;
-    GlobusGFSName(globus_l_gfs_file_open);
-    
-    result = globus_xio_attr_init(&attr);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
-        goto error_attr;
-    }
-    
+    GlobusGFSName(globus_l_gfs_hpss_open);
+        
     /* XXX should probably have an option to specify create mode.
      * for now, just the default (u+rw)
-     */     
-    result = globus_xio_attr_cntl(
-        attr,
-        globus_l_gfs_file_driver,
-        GLOBUS_XIO_FILE_SET_FLAGS,
-        open_flags);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
-        goto error_cntl;
-    }
-    
-    result = globus_xio_stack_init(&stack, GLOBUS_NULL);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
-        goto error_stack;
-    }
-    
-    result = globus_xio_stack_push_driver(stack, globus_l_gfs_file_driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_xio_stack_push_driver", result);
-        goto error_push;
-    }
-
-    result = globus_xio_handle_create(file_handle, stack);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed("globus_xio_handle_create", result);
-        goto error_create;
-    }
-    
+     */         
     result = globus_xio_register_open(
         *file_handle,
         pathname,
@@ -1209,72 +975,149 @@ error_attr:
     return result;
 }
 
-static
-void
-globus_l_gfs_file_recv(
-    globus_gfs_operation_t              op,
-    globus_gfs_transfer_info_t *        transfer_info,
+/* XXX static */
+globus_result_t
+globus_l_gfs_hpss_recv(
+    globus_gfs_operation_t   op,
+    globus_gfs_transfer_info_t *       transfer_info,
     void *                              user_arg)
 {
     globus_result_t                     result;
-    globus_l_file_monitor_t *           monitor;
+    globus_l_recv_monitor_t *           monitor;
     int                                 optimal_count;
     globus_size_t                       block_size;
     globus_xio_file_flag_t              open_flags;
-    globus_off_t                        offset;
-    globus_off_t                        length;
     GlobusGFSName(globus_l_gfs_file_recv);
 
-    globus_gridftp_server_get_optimal_concurrency(op, &optimal_count);
-    globus_gridftp_server_get_block_size(op, &block_size);
-    globus_assert(optimal_count > 0 && block_size > 0);
-
-    result = globus_l_gfs_file_monitor_init(
-        &monitor, block_size, optimal_count);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_file_monitor_init", result);
-        goto error_alloc;
-    }
-    
     globus_gridftp_server_get_write_range(
         op,
         &offset,
         &length,
         &monitor->write_delta, 
         &monitor->transfer_delta);
+
+    if(offset != 0 || length != -1) 
+    {
+        globus_gridftp_server_finished_transfer(
+          monitor->op, GlobusGFSErrorGeneric("Partial files not supported for HPSS");
+        goto error_open;
+    }
+
+    globus_gridftp_server_get_optimal_concurrency(op, &optimal_count);
+    globus_gridftp_server_get_block_size(op, &block_size);
+    globus_assert(optimal_count > 0 && block_size > 0);
+
+    result = globus_l_gfs_recv_monitor_init(
+        &monitor, block_size, optimal_count);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_l_gfs_recv_monitor_init", result);
+        goto error_alloc;
+    }
     
+    globus_gridftp_server_get_partial_offset(op, 
+        &monitor->partial_offset, GLOBUS_NULL);
     monitor->op = op;
     open_flags = GLOBUS_XIO_FILE_BINARY | 
         GLOBUS_XIO_FILE_CREAT | 
         GLOBUS_XIO_FILE_WRONLY;
-    if(transfer_info->truncate)
+    if(monitor->partial_offset == 0) 
     {
         open_flags |= GLOBUS_XIO_FILE_TRUNC;
     }
-        
+    /* XXX get restart here, and set better trunc condition */
+    
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
+        &monitor->file_handle, pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
         goto error_open;
     }
     
-    return;
+    return GLOBUS_SUCCESS;
 
 error_open:
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_recv_monitor_destroy(monitor);
     
 error_alloc:
-    globus_gridftp_server_finished_transfer(op, result);
-    return;
+    return result;
 }
 
 /**
  * send calls
  */
+
+static
+globus_result_t
+globus_l_gfs_send_monitor_init(
+    globus_l_send_monitor_t **          u_monitor,
+    globus_size_t                       block_size,
+    int                                 optimal_count)
+{
+    globus_l_send_monitor_t *           monitor;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_send_monitor_init);
+    
+    monitor = (globus_l_send_monitor_t *) globus_malloc(
+        sizeof(globus_l_send_monitor_t) - 1 + (block_size * optimal_count));
+    if(!monitor)
+    {
+        result = GlobusGFSErrorMemory("monitor/buffer");
+        goto error_alloc;
+    }
+    
+    globus_mutex_init(&monitor->lock, GLOBUS_NULL);
+    monitor->buffer_list = GLOBUS_NULL;
+    monitor->op = GLOBUS_NULL;
+    monitor->file_handle = GLOBUS_NULL;
+    monitor->pending_writes = 0;
+    monitor->pending_read = 0;
+    monitor->file_offset = 0;
+    monitor->read_offset = 0;
+    monitor->read_length = -1;
+    monitor->write_delta = 0;
+    monitor->block_size = block_size;
+    monitor->optimal_count = optimal_count;
+    monitor->error = GLOBUS_NULL;
+    monitor->eof = GLOBUS_FALSE;
+    
+    while(optimal_count--)
+    {
+        globus_byte_t *                 buffer;
+        
+        buffer = monitor->buffer_block + (optimal_count * block_size);
+        globus_list_insert(&monitor->buffer_list, buffer);
+    }
+    
+    *u_monitor = monitor;
+    
+    return GLOBUS_SUCCESS;
+
+error_alloc:
+    return result;
+}
+
+static
+void
+globus_l_gfs_send_monitor_destroy(
+    globus_l_send_monitor_t *           monitor)
+{
+    if(monitor->file_handle)
+    {
+        globus_xio_register_close(
+            monitor->file_handle,
+            GLOBUS_NULL,
+            globus_l_gfs_file_close_cb,
+            GLOBUS_NULL);
+    }
+            
+    /* maybe dequeue all and free buf infos */
+    globus_list_free(monitor->buffer_list);
+    globus_mutex_destroy(&monitor->lock);
+    globus_free(monitor);
+}
 
 static
 void
@@ -1291,16 +1134,15 @@ globus_l_gfs_file_read_cb(
 static
 globus_result_t
 globus_l_gfs_file_dispatch_read(
-    globus_l_file_monitor_t *           monitor)
+    globus_l_send_monitor_t *           monitor)
 {
     globus_result_t                     result;
     globus_byte_t *                     buffer;
     globus_size_t                       read_length;
     GlobusGFSName(globus_l_gfs_file_dispatch_read);
     
-    if(monitor->first_read && monitor->pending_reads == 0 && 
-        !monitor->eof && !globus_list_empty(monitor->buffer_list) &&
-        !monitor->aborted)
+    if(monitor->first_read && monitor->pending_read == 0 && 
+        !monitor->eof && !globus_list_empty(monitor->buffer_list))
     {
         globus_gridftp_server_get_read_range(
             monitor->op,
@@ -1335,8 +1177,8 @@ globus_l_gfs_file_dispatch_read(
         monitor->first_read = GLOBUS_FALSE;
     }             
 
-    if(monitor->pending_reads == 0 && !monitor->eof && 
-        !globus_list_empty(monitor->buffer_list) && !monitor->aborted)
+    if(monitor->pending_read == 0 && !monitor->eof && 
+        !globus_list_empty(monitor->buffer_list))
     {
         buffer = globus_list_remove(
             &monitor->buffer_list, monitor->buffer_list);
@@ -1362,13 +1204,12 @@ globus_l_gfs_file_dispatch_read(
             monitor);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_list_insert(&monitor->buffer_list, buffer);
             result = GlobusGFSErrorWrapFailed(
                 "globus_xio_register_read", result);
             goto error_register;
         }
         
-        monitor->pending_reads++;
+        monitor->pending_read++;
     }
     
     return GLOBUS_SUCCESS;
@@ -1381,21 +1222,20 @@ error_register:
 static
 void
 globus_l_gfs_file_server_write_cb(
-    globus_gfs_operation_t   op,
+    globus_gridftp_server_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_l_file_monitor_t *           monitor;
+    globus_l_send_monitor_t *           monitor;
     GlobusGFSName(globus_l_gfs_file_server_write_cb);
     
-    monitor = (globus_l_file_monitor_t *) user_arg;
+    monitor = (globus_l_send_monitor_t *) user_arg;
     
     globus_mutex_lock(&monitor->lock);
     { 
         monitor->pending_writes--;
-        globus_list_insert(&monitor->buffer_list, buffer);
 
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
@@ -1406,6 +1246,8 @@ globus_l_gfs_file_server_write_cb(
             goto error;
         }
         
+        globus_list_insert(&monitor->buffer_list, buffer);
+        
         result = globus_l_gfs_file_dispatch_read(monitor);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1414,13 +1256,13 @@ globus_l_gfs_file_server_write_cb(
             goto error;
         }
         
-        if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
+        if(monitor->pending_read == 0 && monitor->pending_writes == 0)
         {
-            globus_assert(monitor->eof || monitor->aborted);
+            globus_assert(monitor->eof);
             globus_mutex_unlock(&monitor->lock);
             globus_gridftp_server_finished_transfer(
                 monitor->op, GLOBUS_SUCCESS);
-            globus_l_gfs_file_monitor_destroy(monitor);
+            globus_l_gfs_send_monitor_destroy(monitor);
         }
         else
         {
@@ -1432,7 +1274,7 @@ globus_l_gfs_file_server_write_cb(
     return;
 
 error:
-    if(monitor->pending_reads != 0 || monitor->pending_writes != 0)
+    if(monitor->pending_read != 0 || monitor->pending_writes != 0)
     {
         /* there are still outstanding callbacks, wait for them */
         globus_mutex_unlock(&monitor->lock);
@@ -1442,7 +1284,7 @@ error:
 
     globus_gridftp_server_finished_transfer(
         monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_send_monitor_destroy(monitor);
 }
 
 static
@@ -1456,14 +1298,14 @@ globus_l_gfs_file_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_l_file_monitor_t *           monitor;
+    globus_l_send_monitor_t *           monitor;
     GlobusGFSName(globus_l_gfs_file_read_cb);
     
-    monitor = (globus_l_file_monitor_t *) user_arg;
+    monitor = (globus_l_send_monitor_t *) user_arg;
     
     globus_mutex_lock(&monitor->lock);
     {
-        monitor->pending_reads--;
+        monitor->pending_read--;
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
             if(globus_xio_error_is_eof(result))
@@ -1478,7 +1320,6 @@ globus_l_gfs_file_read_cb(
         }
         if(monitor->error != GLOBUS_NULL)
         {
-            globus_list_insert(&monitor->buffer_list, buffer);
             goto error;
         }
         
@@ -1488,13 +1329,12 @@ globus_l_gfs_file_read_cb(
                 monitor->op,
                 buffer,
                 nbytes,
-                monitor->file_offset + monitor->write_delta,
+                monitor->file_offset,
                 -1,
                 globus_l_gfs_file_server_write_cb,
                 monitor);
             if(result != GLOBUS_SUCCESS)
             {
-                globus_list_insert(&monitor->buffer_list, buffer);
                 monitor->error = GlobusGFSErrorObjWrapFailed(
                     "globus_gridftp_server_register_write", result);
                 goto error;
@@ -1502,17 +1342,17 @@ globus_l_gfs_file_read_cb(
             
             monitor->pending_writes++;
             monitor->file_offset += nbytes;
-            if(monitor->read_length != -1)
+            if(monitor->restart_length != -1)
             {
-                monitor->read_length -= nbytes;
+                monitor->restart_length -= nbytes;
+            }
+            else if(monitor->partial_length != -1)
+            {
+                monitor->partial_length -= nbytes;
             }
         }
-        else
-        {
-            globus_list_insert(&monitor->buffer_list, buffer);
-        }
-                    
-        if(monitor->read_length == 0)
+        
+        if(monitor->partial_length == 0 || monitor->restart_length == 0)
         {
             monitor->first_read = GLOBUS_TRUE;
         }
@@ -1525,13 +1365,13 @@ globus_l_gfs_file_read_cb(
             goto error;
         }
        
-        if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
+        if(monitor->pending_read == 0 && monitor->pending_writes == 0)
         {
-            globus_assert(monitor->eof || monitor->aborted);
+            globus_assert(monitor->eof);
             globus_mutex_unlock(&monitor->lock);
             globus_gridftp_server_finished_transfer(
                 monitor->op, GLOBUS_SUCCESS);
-            globus_l_gfs_file_monitor_destroy(monitor);
+            globus_l_gfs_send_monitor_destroy(monitor);
         }
         else
         {
@@ -1543,7 +1383,7 @@ globus_l_gfs_file_read_cb(
     return;
 
 error:
-    globus_assert(monitor->pending_reads == 0);
+    globus_assert(monitor->pending_read == 0);
     if(monitor->pending_writes != 0)
     {
         /* there are still outstanding callbacks, wait for them */
@@ -1554,20 +1394,20 @@ error:
 
     globus_gridftp_server_finished_transfer(
         monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_send_monitor_destroy(monitor);
 }
 
 static
 void
-globus_l_gfs_file_open_read_cb(
+globus_l_gfs_hpss_open_read_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_l_file_monitor_t *           monitor;
-    GlobusGFSName(globus_l_gfs_file_open_read_cb);
+    globus_l_send_monitor_t *           monitor;
+    GlobusGFSName(globus_l_gfs_hpss_open_read_cb);
     
-    monitor = (globus_l_file_monitor_t *) user_arg;
+    monitor = (globus_l_send_monitor_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -1576,16 +1416,15 @@ globus_l_gfs_file_open_read_cb(
         goto error_open;
     }
     
-    globus_gridftp_server_begin_transfer(
-        monitor->op, 0, monitor);
+    globus_gridftp_server_begin_transfer(monitor->op);
     
     globus_mutex_lock(&monitor->lock);
     monitor->first_read = GLOBUS_TRUE;
-    result = globus_l_gfs_file_dispatch_read(monitor);
+    result = globus_l_gfs_hpss_dispatch_read(monitor);
     if(result != GLOBUS_SUCCESS)
     {
         monitor->error = GlobusGFSErrorObjWrapFailed(
-            "globus_l_gfs_file_dispatch_read", result);
+            "globus_l_gfs_hpss_dispatch_read", result);
         goto error_dispatch;
     }
 
@@ -1598,171 +1437,55 @@ error_dispatch:
 
 error_open:
     globus_gridftp_server_finished_transfer(monitor->op, result);
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_send_monitor_destroy(monitor);
 }
 
-static
-void
-globus_l_gfs_file_send(
-    globus_gfs_operation_t              op,
-    globus_gfs_transfer_info_t *        transfer_info,
+/* called on each stripe.  */
+/* XXX static */
+globus_result_t
+globus_l_gfs_hpss_send(   
+    globus_gfs_operation_t             op,
+    globus_gfs_transfer_info_t *       transfer_info,
     void *                              user_arg)
 {
     globus_result_t                     result;
-    globus_l_file_monitor_t *           monitor;
+    globus_l_send_monitor_t *           monitor;
     int                                 optimal_count;
     globus_size_t                       block_size;
-    globus_xio_file_flag_t              open_flags;
+    int                                 open_flags;
     GlobusGFSName(globus_l_gfs_file_send);
     
     globus_gridftp_server_get_optimal_concurrency(op, &optimal_count);
     globus_gridftp_server_get_block_size(op, &block_size);
     globus_assert(optimal_count > 0 && block_size > 0);
     
-    result = globus_l_gfs_file_monitor_init(
+    result = globus_l_gfs_send_monitor_init(
         &monitor, block_size, optimal_count);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_file_monitor_init", result);
+            "globus_l_gfs_send_monitor_init", result);
         goto error_alloc;
-    }
-          
-    while(optimal_count--)
-    {
-        globus_byte_t *                 buffer;
-        buffer = globus_memory_pop_node(&monitor->mem);
-        globus_list_insert(&monitor->buffer_list, buffer);
-    }
+    }           
 
+    globus_gridftp_server_get_partial_offset(op, 
+        &monitor->partial_offset, &monitor->partial_length);    
     monitor->op = op;
-    open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
+    open_flags = O_RDONLY;
 
-    result = globus_l_gfs_file_open(
-        &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
+    result = globus_l_gfs_hpss_open(
+        &monitor->file_handle, pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
         goto error_open;
     }
     
-    return;
+    return GLOBUS_SUCCESS;
 
 error_open:
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_send_monitor_destroy(monitor);
     
-error_alloc:  
-    globus_gridftp_server_finished_transfer(op, result);
-    return;
-}
-
-static
-void
-globus_l_gfs_file_event(
-    int                                 transfer_id,
-    int                                 event_type,
-    void *                              user_arg)
-{
-    globus_l_file_monitor_t *           monitor;
-    GlobusGFSName(globus_l_gfs_file_event);
-        
-    monitor = (globus_l_file_monitor_t *) transfer_id;
-
-    switch(event_type)
-    {
-        case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-            /* currently this will just prevent any further reads
-              or writes from being registered.  should probably
-              cancel/flush pending/current reads and writes somehow */
-            globus_mutex_lock(&monitor->lock);
-            {
-                monitor->aborted = GLOBUS_TRUE;
-            }
-            globus_mutex_unlock(&monitor->lock);
-            fprintf(stderr, "globus_l_gfs_file_event: aborted.\n");
-            break;
-            
-        default:
-            break;
-    }
-    
-    return;
-}
-
-static
-int
-globus_l_gfs_file_activate(void);
-
-static
-int
-globus_l_gfs_file_deactivate(void);
-
-static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface = 
-{
-    GLOBUS_GFS_DSI_DESCRIPTOR_SENDER,
-    NULL, /* globus_l_gfs_file_init, */
-    NULL, /* globus_l_gfs_file_destroy, */
-    NULL, /* list */
-    globus_l_gfs_file_send,
-    globus_l_gfs_file_recv,
-    globus_l_gfs_file_event, /* trev */
-    NULL, /* active */
-    NULL, /* passive */
-    NULL, /* data destroy */
-    globus_l_gfs_file_command, 
-    globus_l_gfs_file_stat,
-    NULL,
-    NULL
-};
-
-GlobusExtensionDefineModule(globus_gridftp_server_file) =
-{
-    "globus_gridftp_server_file",
-    globus_l_gfs_file_activate,
-    globus_l_gfs_file_deactivate,
-    GLOBUS_NULL,
-    GLOBUS_NULL,
-    &local_version
-};
-
-static
-int
-globus_l_gfs_file_activate(void)
-{
-    if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
-    {
-        goto error_activate;
-    }
-    
-    if(globus_xio_driver_load(
-        "file", &globus_l_gfs_file_driver) != GLOBUS_SUCCESS)
-    {
-        goto error_load_file;
-    }
-    
-    globus_extension_registry_add(
-        GLOBUS_GFS_DSI_REGISTRY,
-        "file",
-        GlobusExtensionMyModule(globus_gridftp_server_file),
-        &globus_l_gfs_file_dsi_iface);
-    
-    return GLOBUS_SUCCESS;
-    
-error_load_file:
-    globus_module_deactivate(GLOBUS_XIO_MODULE);
-    
-error_activate:
-    return GLOBUS_FAILURE;
-}
-
-static
-int
-globus_l_gfs_file_deactivate(void)
-{
-    globus_extension_registry_remove(
-        GLOBUS_GFS_DSI_REGISTRY, "file");
-        
-    globus_xio_driver_unload(globus_l_gfs_file_driver);
-    
-    return globus_module_deactivate(GLOBUS_XIO_MODULE);
+error_alloc:
+    return result;
 }

@@ -255,13 +255,8 @@ globus_ftp_control_host_port_init(
     globus_byte_t                                 bs_buf[8192];
     int                                           err_no;
     char                                          hostip[30];
-    char                                          l_hostname[512];
 
-    host_port->host[0] = 0;
-    host_port->host[1] = 0;
-    host_port->host[2] = 0;
-    host_port->host[3] = 0;
-
+    memset(host_port, 0, sizeof(*host_port));
     if(host != GLOBUS_NULL)
     {
 	struct in_addr tmp_addr;
@@ -284,6 +279,7 @@ globus_ftp_control_host_port_init(
             &host_port->host[1],
             &host_port->host[2],
             &host_port->host[3]);
+        host_port->hostlen = 4;
     }
     host_port->port = port;
 }
@@ -294,16 +290,33 @@ globus_ftp_control_host_port_destroy(
 {
 }
 
+/* XX this is crap.. no idea how big host is.  should probably be at least
+ * 50 bytes
+ */
 void
 globus_ftp_control_host_port_get_host(
     globus_ftp_control_host_port_t *                   host_port,
     char *                                             host)
 {
-    sprintf(host, "%d.%d.%d.%d",
-            host_port->host[0],
-            host_port->host[1],
-            host_port->host[2],
-            host_port->host[3]);
+    char *                              str;
+    
+    /* this api doesnt let me play nice with people that arent aware of the new
+     * hostlen field in host_port.  since i have tried to assume 4 wherever
+     * ipv6 is not allowed, I will assume 4 unless the len is actually 16.
+     * this is in the hopes that it is not likely for a random unitialized int
+     * to be 16
+     */
+    str = globus_libc_ints_to_contact_string(
+        host_port->host, host_port->hostlen == 16 ? 16 : 4, 0);
+    if(str)
+    {
+        strcpy(host, str);
+        globus_free(str);
+    }
+    else
+    {
+        *host = 0;
+    }
 }
 
 unsigned short
@@ -318,12 +331,7 @@ globus_ftp_control_host_port_copy(
     globus_ftp_control_host_port_t *                   dest,
     globus_ftp_control_host_port_t *                   src)
 {
-    dest->host[0] = src->host[0];
-    dest->host[1] = src->host[1];
-    dest->host[2] = src->host[2];
-    dest->host[3] = src->host[3];
-
-    dest->port = src->port;
+    memcpy(dest, src, sizeof(*src));
 }
 
 globus_result_t
