@@ -28,7 +28,7 @@ static char usage[] = \
 "       -y | --keyfile        <filename>  Key file name\n"
 "       -l | --username       <username>  Username for the delegated proxy\n"
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
-"                                         server (default 2 hours)\n"
+"                                         server (default 12 hours)\n"
 "       -a | --allow_anonymous_retrievers Allow credentials to be retrieved\n"
 "                                         with just username/passphrase\n"
 "       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"

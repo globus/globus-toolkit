@@ -24,7 +24,7 @@ static char usage[] = \
 "       -c | --cred_lifetime   <hours>    Lifetime of delegated proxy on\n" 
 "                                         server (default 1 week)\n"
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
-"                                         server (default 2 hours)\n"
+"                                         server (default 12 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "                                         Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
