@@ -884,13 +884,13 @@ globus_xio_target_destroy(
     {
         return GlobusXIOErrorBadParameter("globus_xio_target_cntl");
     }
-    if(target->state != GLOBUS_XIO_TARGET_STATE_SERVER &&
-        arget->state != GLOBUS_XIO_TARGET_STATE_CLIENT)
+    xio_op = (globus_i_xio_op_t *) target;
+    if(xio_op->state != GLOBUS_XIO_TARGET_STATE_SERVER &&
+       xio_op->state != GLOBUS_XIO_TARGET_STATE_CLIENT)
     {
         return GlobusXIOErrorBadState("globus_xio_target_cntl");
     }
 
-    xio_op = (globus_i_xio_op_t *) target;
     server = xio_op->server;
 
     /* This should be safe because the user doesn't see the target until
@@ -964,7 +964,9 @@ globus_xio_target_cntl(
     }
 #   endif
 
-    /* TODO: does this need a mutex */
+    /* TODO: does this need a mutex?
+        I think the answer is no.  This alterns no state, it would be
+        up to the driver to do any locking */
     res = globus_i_xio_target_cntl(l_target, l_driver, cmd, ap);
 
     xio_op = (globus_i_xio_op_t *) target;
@@ -997,6 +999,9 @@ globus_xio_target_cntl(
     return GLOBUS_SUCCESS;
 }
 
+/*
+ *
+ */
 globus_result_t
 globus_xio_target_init(
     globus_xio_target_t *                       target,
@@ -1004,7 +1009,7 @@ globus_xio_target_init(
     const char *                                contact_string,
     globus_xio_stack_t                          stack)
 {
-    struct globus_i_xio_target_s *              l_target;
+    globus_i_xio_op_t *                         xio_op;
 
     /*
      *  parameter checking 
@@ -1022,61 +1027,40 @@ globus_xio_target_init(
         return GlobusXIOErrorBadParameter("globus_xio_target_init");
     }
 
-    l_target = (struct globus_i_xio_target_s *)
-                    globus_malloc(sizeof(struct globus_i_xio_target_s));
-    if(l_target == NULL)
-    {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_target_init");
-    }
-
-    res = globus_i_xio_target_init(
-              l_target,
-              target_attr,
-              contact_string,
-              stack);
-    if(res != GLOBUS_SUCCESS)
-    {
-        globus_free(l_target);
-        return res;
-    }
-
-    return GLOBUS_SUCCESS;
-}
-
-    GlobusXIOStackGetDrivers(l_stack, driver_list);
-    stack_size = globus_list_size(driver_list);
+    stack_size = globus_list_size(stack->driver_stack);
     if(stack_size == 0)
     {
         res = GlobusXIOErrorInvalidStack("globus_xio_target_init");
         goto err;
     }
 
-    target_stack = (struct globus_i_xio_target_stack_s *)
-                        globus_malloc(
-                            sizeof(struct globus_i_xio_target_stack_s) *
-                                stack_size);
-    if(target_stack == NULL)
+    /* TODO: check stack, make sure it meets requirements */
+
+    xio_op = (globus_i_xio_op_t *)
+                    globus_malloc(sizeof(globus_i_xio_op_t) +
+                        (sizeof(globus_i_xio_op_entry_t) * (stack_size - 1)));
+    if(xio_op == NULL)
     {
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_target_init");
-        goto err;
+        return GlobusXIOErrorMemoryAlloc("globus_xio_target_init");
     }
 
     ndx = 0;
-    for(list = driver_list;
+    for(list = stack->driver_stack;
     !globus_list_empty(list);
         list = globus_list_rest(list))
     {
-        target_stack[ndx].driver = globus_list_first(list);
+        xio_op->entry[ndx].driver = (globus_xio_driver_t) 
+                                        globus_list_first(list);
 
         /* pull driver specific info out of target attr */
-        driver_attr = globus_l_xio_attr_find_driver(
-                        l_target_attr,
-                        target_stack[ndx].driver);
+        driver_attr = globus_i_xio_attr_get_ds(
+                        target_attr,
+                        xio_op->entry[ndx].driver);
 
         GlobusXIODriverTargetInit(
             res,
-            target_stack[ndx].driver,
-            &target_stack[ndx].target,
+            xio_op->entry[ndx].driver,
+            &xio_op->entry[ndx].target,
             driver_attr,
             contact_string);
         if(res != GLOBUS_SUCCESS)
@@ -1089,10 +1073,11 @@ globus_xio_target_init(
                 /* ignore the result, but it must be passed */
                 GlobusXIODriverTargetDestroy(
                     res2,
-                    target_stack[ndx].driver,
-                    target_stack[ndx].target);
+                    xio_op->entry[ndx].driver,
+                    xio_op->entry[ndx].target);
             }
-            goto err;
+            globus_free(xio_op);
+            return res;
         }
 
         ndx++;
@@ -1100,7 +1085,7 @@ globus_xio_target_init(
     /* hell has broken loose if these are not equal */
     globus_assert(ndx == stack_size);
 
-    l_target->target_stack = target_stack;
-    l_target->stack_size = stack_size;
-    *target = l_target;
+    *target = xio_op;
 
+    return GLOBUS_SUCCESS;
+}

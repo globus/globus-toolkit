@@ -193,6 +193,7 @@ typedef struct globus_i_xio_op_entry_s
         /* target op entries */
         struct
         {
+            globus_xio_driver_t                 driver;
             void *                              target;
             void *                              accept_attr;
         };

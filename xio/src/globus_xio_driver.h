@@ -302,7 +302,7 @@ typedef globus_result_t
 
 globus_result_t
 globus_xio_driver_pass_accept(
-    globus_xio_driver_accpet_operation_t        accept_op,
+    globus_xio_driver_operation_t               accept_op,
     globus_xio_driver_callback_t                cb,
     void *                                      user_arg);
 
