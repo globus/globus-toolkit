@@ -3111,7 +3111,8 @@ globus_l_libc_i00afunc (long address)
  *  -- Might be better to do !defined(TARGET_ARCH_LINUX) and maybe BSD... */
 #if defined(TARGET_ARCH_AIX)   || defined(TARGET_ARCH_OSF1)     ||   \
     defined(TARGET_ARCH_HPUX)  || defined(TARGET_ARCH_SOLARIS)  ||   \
-    defined(TARGET_ARCH_IRIX)  || defined(TARGET_ARCH_SUNOS41)
+    defined(TARGET_ARCH_IRIX)  || defined(TARGET_ARCH_SUNOS41)  ||   \
+    defined(TARGET_ARCH_FREEBSD)
 #define GLOBUS_GETADDRINFO_DOESNT_GET_CANONNAME 1
 #endif
 
@@ -3252,10 +3253,13 @@ globus_libc_getaddrinfo(
         globus_l_libc_copy_addrinfo(&addrinfo, *res);
         freeaddrinfo(*res);
         *res = addrinfo;
+        /* check if canonname is null, an ip address, or an empty string */
         if(addrinfo && hints && hints->ai_flags & GLOBUS_AI_CANONNAME &&
-            addrinfo->ai_canonname && 
-            (isdigit(addrinfo->ai_canonname[0]) || 
-            strchr(addrinfo->ai_canonname, ':')))
+            (!addrinfo->ai_canonname || 
+            (addrinfo->ai_canonname && 
+                (isdigit(addrinfo->ai_canonname[0]) || 
+                strchr(addrinfo->ai_canonname, ':') || 
+                !(*addrinfo->ai_canonname)))))
         {
             char                    hostbuf[MAXHOSTNAMELEN];
             result = globus_libc_getnameinfo(
@@ -3269,7 +3273,10 @@ globus_libc_getaddrinfo(
             {
                 goto error;
             }
-            globus_free(addrinfo->ai_canonname);
+            if(addrinfo->ai_canonname)
+            {
+                globus_free(addrinfo->ai_canonname);
+            }
             addrinfo->ai_canonname = globus_libc_strdup(hostbuf);
         }
     }
