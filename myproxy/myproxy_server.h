@@ -6,6 +6,8 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
+#include "myproxy.h"
+
 #ifndef MYPROXY_SERVER_DIR
 #define MYPROXY_SERVER_DIR	"/usr/local/myproxy-server"
 #endif /* !MYPROXY_SERVER_DIR */ 

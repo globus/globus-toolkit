@@ -3,6 +3,14 @@
  *
  * See gsi_socket.h for documentation.
  */
+#include <string.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <netinet/in.h>
+#include <errno.h>
+#include <netdb.h>
+#include <unistd.h>
 
 #include "gsi_socket.h"
 #include "ssl_utils.h"
@@ -12,13 +20,6 @@
 #include <globus_gss_assist.h>
 
 #include <gssapi.h>
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <netdb.h>
-#include <unistd.h>
 
 struct _gsi_socket 
 {
@@ -93,6 +94,11 @@ append_gss_status(char *buffer,
 	}
 
 	(void) gss_release_buffer(&min_stat, &error_string);
+	if (gss_code == GSS_S_BAD_QOP) 
+	   strncat(buffer, 
+		   "\nEncryption is not supported by the GSS implementation, "
+		   "try to use the latest GSI version",
+		   bufferlen - error_string.length);
 
     } while(context);
     
@@ -519,6 +525,7 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 			       &output_token_desc);
 	
 	/* XXX Should deal with output_token_desc here */
+	gss_release_buffer(&self->minor_status, &output_token_desc);
     }
 
     if (self->input_buffer != NULL)

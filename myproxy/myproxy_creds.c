@@ -26,6 +26,11 @@
 #include <unistd.h>
 
 /*
+#include <strmd5.h>
+*/
+#include <md5.h>
+
+/*
  * Doesn't always seem to be define in <unistd.h>
  */
 char *crypt(const char *key, const char *salt);
@@ -208,6 +213,29 @@ sterilize_string(char *string)
     return;
 }
 
+static char *
+strmd5(char *s,unsigned char *digest)
+{
+        MD5_CTX md5;
+        unsigned char   d[16];
+        int     i;
+        static  char mbuf[33];
+
+        MD5_Init(&md5);
+        MD5_Update(&md5,s,strlen(s));
+        MD5_Final(d,&md5);
+
+        if (digest) memcpy(digest,d,sizeof(d));
+
+        for (i=0; i<16; i++) {
+                int     dd = d[i] & 0x0f;
+                mbuf[2*i+1] = dd<10 ? dd+'0' : dd-10+'a';
+                dd = d[i] >> 4;
+                mbuf[2*i] = dd<10 ? dd+'0' : dd-10+'a';
+        }
+        mbuf[32] = 0;
+        return (char *) mbuf;
+}
         
     
 /*
@@ -227,7 +255,6 @@ get_storage_locations(const char *username,
                       const int data_path_len)
 {
     int return_code = -1;
-    char *sterile_username = NULL;
     const char *creds_suffix = ".creds";
     const char *data_suffix = ".data";
     
@@ -241,19 +268,10 @@ get_storage_locations(const char *username,
         goto error;
     }
     
-    sterile_username = mystrdup(username);
-
-    if (sterile_username == NULL)
-    {
-        goto error;
-    }
-    
-    sterilize_string(sterile_username);
-    
     creds_path[0] = '\0';
     
     if (concatenate_strings(creds_path, creds_path_len, storage_dir,
-			    "/", sterile_username, creds_suffix, NULL) == -1)
+			    "/", strmd5(username, NULL), creds_suffix, NULL) == -1)
     {
         verror_put_string("Internal error: creds_path too small: %s line %s",
                           __FILE__, __LINE__);
@@ -263,7 +281,7 @@ get_storage_locations(const char *username,
     data_path[0] = '\0';
     
     if (concatenate_strings(data_path, data_path_len, storage_dir,
-			    "/", sterile_username, data_suffix, NULL) == -1)
+			    "/", strmd5(username, NULL), data_suffix, NULL) == -1)
     {
         verror_put_string("Internal error: data_path too small: %s line %s",
                           __FILE__, __LINE__);
@@ -274,10 +292,6 @@ get_storage_locations(const char *username,
     return_code = 0;
 
   error:
-    if (sterile_username != NULL)
-    {
-        free(sterile_username);
-    }
     
     return return_code;
 }
@@ -652,7 +666,32 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 }
 
 int
-myproxy_creds_retrieve(struct myproxy_creds *creds)
+myproxy_creds_fetch_entry(char *user_name, struct myproxy_creds *creds)
+{
+   char creds_path[MAXPATHLEN];
+   char data_path[MAXPATHLEN];
+
+   if (user_name == NULL || creds == NULL) {
+      verror_put_errno(EINVAL);
+      return -1;
+   }
+
+   if (get_storage_locations(user_name,
+	                     creds_path, sizeof(creds_path),
+			     data_path, sizeof(data_path)) == -1)
+      return -1;
+
+   if (read_data_file(creds, data_path) == -1)
+      return -1;
+
+   creds->user_name = mystrdup(user_name);
+   creds->location = mystrdup(creds_path);
+   creds->restrictions = NULL;
+   return 0;
+}
+
+int
+myproxy_creds_retrieve(struct myproxy_creds *creds, int check_passwd)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
@@ -683,27 +722,34 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
         goto error;
     }
 
-    /*
-     * Check pass phrase
-         * support for crypt() added btemko /6/16/00
-         * Please, don't try to free tmp1 - crypt() uses one 
-         * static string space, a la getenv()
-     */
-    if ((retrieved_creds.pass_phrase != NULL) &&
-        (creds->pass_phrase != NULL) && (tmp1=(char *)crypt(creds->pass_phrase, 
-&retrieved_creds.owner_name[strlen(retrieved_creds.owner_name)-3]))!=NULL &&
-        (strcmp(retrieved_creds.pass_phrase, tmp1) == 0))
-    {
-        authorization_ok = 1;
-    }
-    
-    if (authorization_ok == 0)
-    {
-        verror_put_string("bad pass phrase");
-        goto error;
+    if (check_passwd) {
+       /*
+	* Check pass phrase
+	    * support for crypt() added btemko /6/16/00
+	    * Please, don't try to free tmp1 - crypt() uses one 
+	    * static string space, a la getenv()
+	*/
+       if ((retrieved_creds.pass_phrase != NULL) && 
+	   (creds->pass_phrase != NULL) && strlen(creds->pass_phrase) &&
+	   (tmp1=(char *)crypt(creds->pass_phrase, 
+	    &retrieved_creds.owner_name[strlen(retrieved_creds.owner_name)-3]))!=NULL &&
+	   (strcmp(retrieved_creds.pass_phrase, tmp1) == 0))
+       {
+	   authorization_ok = 1;
+       }
+       
+       if (authorization_ok == 0)
+       {
+	   verror_put_string("bad pass phrase");
+	   goto error;
+       }
     }
     
     /* Copy creds */
+    if (creds->owner_name != NULL)
+       free(creds->owner_name);
+    if (creds->location != NULL)
+       free(creds->location);
     creds->owner_name = mystrdup(retrieved_creds.owner_name);
     creds->location = mystrdup(creds_path);
     creds->lifetime = retrieved_creds.lifetime;
@@ -889,6 +935,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
         goto error;
     }
     
+#if 0
     /*
      * Either the pass phrase needs to match or the
      * owner name needs to match.
@@ -917,6 +964,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
         verror_put_string("authorization failed");
         goto error;
     }
+#endif
 
     if (unlink(creds_path) == -1)
     {
@@ -971,3 +1019,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     }
 }
 
+void myproxy_set_storage_dir(char *dir)
+{ 
+    storage_dir=dir;
+}

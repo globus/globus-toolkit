@@ -70,6 +70,12 @@ static int
 string_to_int(const char			*string,
 	      int				*integer);
 
+static char *
+parse_entry(char *buffer, authorization_data_t *data);
+
+static int
+parse_auth_data(char *buffer, authorization_data_t ***auth_data);
+
 /* Values for string_to_int() */
 #define STRING_TO_INT_SUCCESS		1
 #define STRING_TO_INT_ERROR		-1
@@ -316,7 +322,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     int len;
     char version_str[128];
     char command_str[128];
-    char username_str[128];
+    char username_str[1024];
     char passphrase_str[MAX_PASS_LEN+1];
     char lifetime_str[128];
 
@@ -418,6 +424,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
     int len;
     int totlen = 0;
     const char *response_string;
+    authorization_data_t **p;
     
     assert(data != NULL);
     assert(response != NULL);
@@ -455,6 +462,17 @@ myproxy_serialize_response(const myproxy_response_t *response,
         totlen += len;
     }
 
+    if ((p = response->authorization_data))
+       while (*p) {
+	  len = concatenate_strings(data, datalen, MYPROXY_AUTHORIZATION_STRING,
+		     authorization_get_name((*p)->method), ":", 
+		     (*p)->server_data, "\n", NULL);
+	  if (len < 0)
+	     return -1;
+	  totlen += len;
+	  p++;
+       }
+
     return totlen+1;
 }
 
@@ -466,10 +484,12 @@ myproxy_deserialize_response(myproxy_response_t *response,
     int len;
     char version_str[128];
     char response_str[128];
+    char authorization_data[4096];
 
     assert(data != NULL); 
       
     strcpy(response->error_string, "");
+    response->authorization_data = NULL;
 
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
@@ -512,6 +532,17 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
                           response->error_string,
 			  sizeof(response->error_string));
+
+    len = convert_message(data, datalen,
+	                  MYPROXY_AUTHORIZATION_STRING,
+			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
+			  authorization_data, sizeof(authorization_data));
+    if (len > 0)
+       if (parse_auth_data(authorization_data, 
+		           &response->authorization_data)) {
+	  verror_prepend_string("Error parsing authorization data from server response");
+	  return -1;
+       }
 
     /* Success */
     return 0;
@@ -563,27 +594,29 @@ myproxy_destroy(myproxy_socket_attrs_t *attrs,
 		       myproxy_request_t *request, 
 		       myproxy_response_t *response)
 { 
-    if ((attrs == NULL) || (request == NULL) || (response == NULL)) 
-      return;
-  
-    if (attrs->pshost != NULL) 
-      free(attrs->pshost);
+    if (attrs != NULL) {
+       if (attrs->pshost != NULL) 
+	  free(attrs->pshost);
+       GSI_SOCKET_destroy(attrs->gsi_socket);
+       close(attrs->socket_fd);
+       free(attrs);
+    }
 
-    if (request->version != NULL)     
-      free(request->version);
+    if (request != NULL) {
+       if (request->version != NULL)     
+	  free(request->version);
+       if (request->username != NULL) 
+    	  free(request->username);
+       free(request);
+    }
     
-    if (request->username != NULL) 
-      free(request->username);
-    
-    if (response->version != NULL) 
-      free(response->version);
-
-    GSI_SOCKET_destroy(attrs->gsi_socket);
-    close(attrs->socket_fd);
-
-    free(attrs);
-    free(request);
-    free(response);
+    if (response != NULL) {
+       if (response->version != NULL) 
+    	  free(response->version);
+       if (response->authorization_data != NULL)
+    	  authorization_data_free(response->authorization_data);
+       free(response);
+    }
 }
 
 /*--------- Helper functions ------------*/
@@ -724,6 +757,9 @@ convert_message(const char			*buffer,
     return_value = strlen(line);
     
   error:
+    if (buffer_copy)
+       free(buffer_copy);
+
     if (return_value == -1)
     {
 	/* Don't return anything in line on error */
@@ -952,6 +988,10 @@ encode_response(const myproxy_proto_response_type_t	response_value)
       case MYPROXY_ERROR_RESPONSE:
 	string = "1";
 	break;
+
+      case MYPROXY_AUTHORIZATION_RESPONSE:
+	string = "2";
+	break;
 	
       default:
 	/* Should never get here */
@@ -1020,3 +1060,110 @@ string_to_int(const char			*string,
     return return_value;
 }
 
+/* Returns pointer to last processed char in the buffer or NULL on error */
+/* The entries are separated either by '\n' or by '\0' */
+static char *
+parse_entry(char *buffer, authorization_data_t *data)
+{
+   char *str;
+   char *str_method;
+   char *p = buffer;
+   author_method_t method;
+   int length;
+   char *parse_end;
+
+   assert (data != NULL);
+
+   while (*p == '\0') 
+      p++;
+   str_method = p;
+
+   if ((p = strchr(str_method, ':')) == NULL) {
+      verror_put_string("Parse error");
+      return NULL;
+   }
+   *p = '\0';
+   method = authorization_get_method(str_method);
+   
+   str = p + 1;
+
+   if ((p = strchr(str, '\n'))) 
+      *p = '\0';
+
+   data->server_data = malloc(strlen(str) + 1);
+   if (data->server_data == NULL) {
+      verror_put_string("malloc()");
+      verror_put_errno(errno);
+      return NULL;
+   }
+   strcpy(data->server_data, str);
+   data->client_data = NULL;
+   data->client_data_len = 0;
+   data->method = method;
+
+   return str + strlen(str);
+}
+
+/* 
+  Parse buffer into author_data. The buffer is supposed to be '0'-terminated
+*/
+static int
+parse_auth_data(char *buffer, authorization_data_t ***auth_data)
+{
+   char *p = buffer;
+   char *buffer_end;
+   char *str;
+   void *tmp;
+   authorization_data_t **data = NULL;
+   int num_data = 0;
+   authorization_data_t entry;
+   int return_status = -1;
+
+   data = malloc(sizeof(*data));
+   if (data == NULL) {
+      verror_put_string("malloc()");
+      verror_put_errno(errno);
+      return -1;
+   }
+   data[0] = NULL;
+   
+   buffer_end = buffer + strlen(buffer);
+   do {
+      p = parse_entry(p, &entry);
+      if (p == NULL)
+	 goto end;
+
+      if (entry.method == AUTHORIZETYPE_NULL)
+	 continue;
+
+      tmp = realloc(data, (num_data + 1 + 1) * sizeof(*data));
+      if (tmp == NULL) {
+	 verror_put_string("realloc()");
+	 verror_put_errno(errno);
+	 goto end;
+      }
+      data = tmp;
+
+      data[num_data] = malloc(sizeof(entry));
+      if (data[num_data] == NULL) {
+	 verror_put_string("malloc()");
+	 verror_put_errno(errno);
+	 goto end;
+      }
+
+      data[num_data]->server_data = entry.server_data;
+      data[num_data]->client_data = entry.client_data;
+      data[num_data]->client_data_len = entry.client_data_len;
+      data[num_data]->method = entry.method;
+      data[num_data + 1] = NULL;
+      num_data++;
+   } while (p < buffer_end);
+
+   return_status = 0;
+   *auth_data = data;
+
+end:
+   if (return_status == -1)
+      authorization_data_free(data);
+   return return_status;
+}

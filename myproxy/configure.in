@@ -59,6 +59,7 @@ if test -d ${GSI_INSTALL_PATH}/lib ; then
 	# Looks like a flat directory structure from configure/make and not
 	# gsi-install
 	GSI_DEV_PATH=${GSI_INSTALL_PATH}
+        GLOBUS_MAKEFILE_HEADER=${srcdir}/globus_makefile_header
 
 else
 	# Assume a true gsi installation with architecture
@@ -91,10 +92,13 @@ else
 	if test ! -d "$GSI_DEV_PATH" ; then
 		AC_MSG_ERROR(Cannot find GSI development directory: $GSI_DEV_PATH does not exist)
 	fi
+
+        GLOBUS_MAKEFILE_HEADER=${GSI_DEV_PATH}/etc/makefile_header
 fi
 
 AC_MSG_RESULT($GSI_DEV_PATH)
 AC_SUBST(GSI_DEV_PATH)
+AC_SUBST(GLOBUS_MAKEFILE_HEADER)
 
 dnl
 dnl Figure out which regular expression parser to use.

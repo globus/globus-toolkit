@@ -32,12 +32,24 @@ int myproxy_creds_store(const struct myproxy_creds *creds);
  *
  * Retrieve the credentials associated with the given username in the
  * given myproxy_creds structure. The pass_phrase field in the structure
- * should also be filled in and will be checked.
+ * should also be filled in and will be checked. This password checking is 
+ * performed only if check_passwd is nonzero.
  *
  * Returns -1 on error, 0 on success.
  */
-int myproxy_creds_retrieve(struct myproxy_creds *creds);
+int myproxy_creds_retrieve(struct myproxy_creds *creds, int check_passwd);
 
+/*
+ * myproxy_creds_fetch_entry()
+ *
+ * Retrieve the credentials associated with the given username in the
+ * given myproxy_creds structure. This function performes no pass_phrase 
+ * checking.
+ *
+ * Returns -1 on error, 0 on success.
+ */
+int myproxy_creds_fetch_entry(char *user_name, struct myproxy_creds *creds);
+ 
 /*
  * myproxy_creds_delete()
  *
@@ -78,4 +90,10 @@ int myproxy_creds_is_owner(const char *username,
  */
 void myproxy_creds_free_contents(struct myproxy_creds *creds);
 
+/* 
+ * myproxy_set_storage_dir()
+ * 
+ * Change default storage directory.
+ */
+void myproxy_set_storage_dir(char *dir);
 #endif /* __MYPROXY_CREDS_H */

@@ -9,12 +9,14 @@
 #include "version.h"
 #include "verror.h"
 #include "myproxy_read_pass.h"
+#include "myproxy_delegation.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <fcntl.h> 
 #include <assert.h>
 #include <errno.h>
@@ -36,6 +38,8 @@ static char usage[] = \
 "       -o | --out             <path>     Location of delegated proxy\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
+"       -a | --authorization   <path>     Use special credential for authorization\n"
+"                                         (instead of common pass phrase)\n"
 "\n";
 
 struct option long_options[] =
@@ -48,10 +52,11 @@ struct option long_options[] =
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"version",                no_argument, NULL, 'v'},
+    {"authorization",    required_argument, NULL, 'r'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:v";
+static char short_options[] = "hus:p:l:t:o:va:";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -64,13 +69,6 @@ init_arguments(int argc, char *argv[],
 int  read_passphrase(char *passphrase, const int passlen, 
                      const int min, const int max);
 
-void receive_response(myproxy_socket_attrs_t *attrs, 
-		      myproxy_response_t *response);
-
-static int copy_file(const char *source,
-		     const char *dest,
-		     const mode_t mode);
-
 /*
  * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
  * setlinebuf().
@@ -79,23 +77,19 @@ static int copy_file(const char *source,
 
 /* location of delegated proxy */
 char *outputfile = NULL;
+char *creds_to_authorization = NULL;
 
 int
 main(int argc, char *argv[]) 
 {    
-    int noerr = 1;
-    char *pshost;
-    char request_buffer[1024];
-    int  requestlen;
-    char delegfile[128];
-
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
+    char proxyfile[MAXPATHLEN];
 
     my_setlinebuf(stdout);
     my_setlinebuf(stderr);
-    
+
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 
@@ -106,85 +100,51 @@ main(int argc, char *argv[])
     memset(server_response, 0, sizeof(*server_response));
 
     /* Setup defaults */
-    client_request->version = strdup(MYPROXY_VERSION);
-    client_request->command_type = MYPROXY_GET_PROXY;
-
-    pshost = getenv("MYPROXY_SERVER");
-    if (pshost != NULL) {
-	socket_attrs->pshost = strdup(pshost);
-    }
-
-    client_request->portal_lifetime = 60*60*MYPROXY_DEFAULT_PORTAL_HOURS;
- 
-    socket_attrs->psport = MYPROXY_SERVER_PORT;
+    myproxy_set_delegation_defaults(socket_attrs,client_request);
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    /* Allow user to provide a passphrase */
-    if (myproxy_read_passphrase(client_request->passphrase,
-				sizeof(client_request->passphrase)) == -1)
-    {
-        fprintf(stderr, "Error reading passphrase\n");
-        exit(1);
-    }
-    
-    /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error: %s\n", verror_get_string());
-        exit(1);
-    }
-    
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "Error: %s: %s\n", 
-		socket_attrs->pshost, verror_get_string());
-        exit(1);
+    if (creds_to_authorization == NULL) {
+       /* Allow user to provide a passphrase */
+       if (myproxy_read_passphrase(client_request->passphrase,
+				   sizeof(client_request->passphrase)) == -1)
+       {
+	   fprintf(stderr, "Error reading passphrase\n");
+	   exit(1);
+       }
     }
 
-    /* Serialize client request object */
-    requestlen = myproxy_serialize_request(client_request, 
-                                           request_buffer, sizeof(request_buffer));
-    if (requestlen < 0) {
-        fprintf(stderr, "Error in myproxy_serialize_request():\n");
-        exit(1);
+    if (client_request->username == NULL && creds_to_authorization) 
+       if (ssl_get_base_subject_file(creds_to_authorization,
+		                     &client_request->username)) {
+	  fprintf(stderr, "Cannot get subject name from your certificate %s\n",
+		  creds_to_authorization);
+	  exit(1);
+       }
+    if (client_request->username == NULL) {
+       fprintf(stderr, usage);
+       fprintf(stderr, "Please specify a username!\n");
+       exit(1);
     }
 
-    /* Send request to the myproxy-server */
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "Error in myproxy_send_request(): %s\n", 
-		verror_get_string());
-        exit(1);
+    if (outputfile == NULL) {
+       snprintf(proxyfile, sizeof(proxyfile), "%s/XXXXXX", P_tmpdir);
+       if (mkstemp(proxyfile) == -1) {
+          fprintf(stderr, "Cannot create filename to store the proxy (%s)\n",
+		  strerror(errno));
+          exit(1);
+       }
+       outputfile = strdup(proxyfile);
     }
 
-    /* Continue unless the response is not OK */
-    receive_response(socket_attrs, server_response);
-
-    /* Accept delegated credentials from client */
-    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile)) < 0) {
-        fprintf(stderr, "Error in myproxy_accept_delegation(): %s\n", 
-		verror_get_string());
-	exit(1);
-    }      
-
-    /* Continue unless the response is not OK */
-    receive_response(socket_attrs, server_response);
-
-    /* move delegfile to outputfile if specified */
-    if (outputfile != NULL) {
-        if (copy_file(delegfile, outputfile, 0600) < 0) {
-		fprintf(stderr, "Error creating file: %s\n",
-		outputfile);
-		noerr=0;
-	}
-	unlink(delegfile);
-	strcpy(delegfile, outputfile);
-	free(outputfile);
+    if (myproxy_get_delegation(socket_attrs, client_request, 
+	    creds_to_authorization, server_response, outputfile)==0) {
+        printf("A proxy has been received for user %s in %s\n",
+           client_request->username, outputfile);
     }
-    
-    if (noerr) {
-    	printf("A proxy has been received for user %s in %s\n", client_request->username, delegfile);
-    }
+    free(outputfile);
+    verror_clear();
 
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
@@ -228,6 +188,9 @@ init_arguments(int argc,
 	case 'o':	/* output file */
 	    outputfile = strdup(gnu_optarg);
             break;    
+	case 'a':       /* special authorization */
+	    creds_to_authorization = strdup(gnu_optarg);
+	    break; 
         case 'v':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
@@ -245,12 +208,14 @@ init_arguments(int argc,
 	exit(1);
     }
 
+#if 0
     /* Check to see if username specified */
     if (request->username == NULL) {
 	fprintf(stderr, usage);
 	fprintf(stderr, "Please specify a username!\n");
 	exit(1);
     }
+#endif
 
     return;
 }
@@ -291,131 +256,4 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
     }
     strncpy(passphrase, pass, passlen);
     return 0;
-}
-
-void
-receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
-    int responselen;
-    char response_buffer[1024];
-
-    /* Receive a response from the server */
-    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
-    if (responselen < 0) {
-        fprintf(stderr, "Error in myproxy_recv_response():\n");
-        exit(1);
-    }
-
-    /* Make a response object from the response buffer */
-    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      fprintf(stderr, "Error in myproxy_deserialize_response():\n");
-      exit(1);
-    }
-
-    /* Check version */
-    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
-      fprintf(stderr, "Error: Received invalid version number from server\n");
-      exit(1);
-    } 
-
-    /* Check response */
-    switch(response->response_type) {
-        case MYPROXY_ERROR_RESPONSE:
-            fprintf(stderr, "%s\n", response->error_string);
-	    exit(1);
-            break;
-        case MYPROXY_OK_RESPONSE:
-            break;
-        default:
-            fprintf(stderr, "Error: Received unknown response type\n");
-	    exit(1);
-            break;
-    }
-    return;
-}
-
-/*
- * copy_file()
- *
- * Copy source to destination, creating destination if necessary
- * Set permissions on destination to given mode.
- *
- * Returns 0 on success, -1 on error. 
- */
-static int
-copy_file(const char *source,
-	  const char *dest,
-	  const mode_t mode)
-{
-    int src_fd = -1;
-    int dst_fd = -1;
-    int src_flags = O_RDONLY;
-    int dst_flags = O_WRONLY | O_CREAT;
-    char buffer[2048];
-    int bytes_read;
-    int return_code = -1;
-    
-    assert(source != NULL);
-    assert(dest != NULL);
-    
-    src_fd = open(source, src_flags);
-    
-    if (src_fd == -1)
-    {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for reading", source);
-	goto error;
-    }
-     
-    dst_fd = open(dest, dst_flags, mode);
-    
-    if (dst_fd == -1)
-    {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for writing", dest);
-	goto error;
-    }
-    
-    do 
-    {
-	bytes_read = read(src_fd, buffer, sizeof(buffer));
-	
-	if (bytes_read == -1)
-	{
-	    verror_put_errno(errno);
-	    verror_put_string("reading %s", source);
-	    goto error;
-	}
-
-	if (bytes_read != 0)
-	{
-	    if (write(dst_fd, buffer, bytes_read) == -1)
-	    {
-		verror_put_errno(errno);
-		verror_put_string("writing %s", dest);
-		goto error;
-	    }
-	}
-    }
-    while (bytes_read > 0);
-    
-    /* Success */
-    return_code = 0;
-	
-  error:
-    if (src_fd != -1)
-    {
-	close(src_fd);
-    }
-    
-    if (dst_fd != -1)
-    {
-	close(dst_fd);
-
-	if (return_code == -1)
-	{
-	    unlink(dest);
-	}
-    }
-    
-    return return_code;
 }

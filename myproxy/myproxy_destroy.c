@@ -65,6 +65,8 @@ main(int argc, char *argv[])
     char *username, *pshost; 
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
+    char proxyfile[64];
+    int return_status = 1;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -84,8 +86,10 @@ main(int argc, char *argv[])
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_DESTROY_PROXY;
 
+#if 0
     username = getenv("LOGNAME");
     client_request->username = strdup(username);
+#endif
     
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
@@ -98,6 +102,21 @@ main(int argc, char *argv[])
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
+
+    /* Create a proxy by running [grid-proxy-init] */
+    /* A proxy is created here because the myproxy_authenticate_init() function 
+       is not able to use user's long-term key if encrypted. The new proxy is 
+       created even if a valid proxy is available. This breaks the single 
+       sign-on principle but helps to avoid other problems with checking whether
+       current proxy is valid. (Which is the right way to do that??)
+    */
+    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getpid());
+
+    /* Run grid-proxy-init to create a proxy valid for one hour*/
+    if (grid_proxy_init(1, proxyfile) != 0) { 
+       fprintf(stderr, "Program grid_proxy_init failed\n");
+       exit(1);
+    }
 
     /*
      * We don't need to send the real pass phrase to the server as it
@@ -112,14 +131,26 @@ main(int argc, char *argv[])
     if (myproxy_init_client(socket_attrs) < 0) {
         fprintf(stderr, "error in myproxy_init_client(): %s\n",
 		verror_get_string());
-        exit(1);
+        goto end;
+    }
+
+    /* As we neither send the real passphrase nor another sensitive data we 
+       can disable encryption entirely */
+    GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
+
+    /* If the user didn't provide us with required username, we will try to use
+       subject name from user's default certificate. */
+    if (client_request->username == NULL &&
+	ssl_get_base_subject_file(NULL, &client_request->username)) {
+        fprintf(stderr, "Cannot get subject name from your certificate\n");
+	goto end;
     }
 
     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
+    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
 		verror_get_string());
-        exit(1);
+        goto end;
     }
 
     /* Serialize client request object */
@@ -128,14 +159,14 @@ main(int argc, char *argv[])
     
     if (requestlen < 0) {
         fprintf(stderr, "error in myproxy_serialize_request()\n");
-        exit(1);
+        goto end;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s,\n",
 		verror_get_string());
-        exit(1);
+        goto end;
     }
 
     /* Receive a response from the server */
@@ -144,13 +175,13 @@ main(int argc, char *argv[])
     if (responselen < 0) {
         fprintf(stderr, "error in myproxy_recv_response(): %s\n",
 		verror_get_string());
-        exit(1);
+        goto end;
     }
 
     /* Make a response object from the response buffer */
     if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
         fprintf(stderr, "error in myproxy_deserialize_response()\n");
-        exit(1);
+        goto end;
     }
 
     /* Check version */
@@ -171,10 +202,18 @@ main(int argc, char *argv[])
         break;
     }
     
+    return_status = 0;
+end:
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
 
-    exit(0);
+    /* Delete proxy file */
+     if (grid_proxy_destroy(proxyfile) != 0) {
+	fprintf(stderr, "Program grid_proxy_destroy failed\n");
+	return_status = 1;
+     }
+
+    exit(return_status);
 }
 
 void 
@@ -226,12 +265,14 @@ init_arguments(int argc,
 	exit(1);
     }
 
+#if 0
     /* Check to see if username specified */
     if (request->username == NULL) {
 	fprintf(stderr, usage);
 	fprintf(stderr, "Please specify a username!\n");
 	exit(1);
     }
+#endif
 
     return;
 }

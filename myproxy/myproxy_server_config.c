@@ -340,7 +340,6 @@ is_name_in_list(const char **list,
 }
 
 
-
 /**********************************************************************
  *
  * API Functions
@@ -434,6 +433,8 @@ myproxy_server_check_client(myproxy_server_context_t *context,
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->authorized_client_dns,
 				  client_name);
+    if (return_code != 1)
+       return return_code;
 
   error:
     return return_code;

@@ -16,14 +16,19 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/param.h>
 
 /* Must be included after stdio.h */
 #include "ssl_utils.h"
+#include "gsi_proxy.h"
 
 #include <ssl.h>
 #include <x509.h>
 #include <pem.h>
 #include <err.h>
+#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
+#  include <x509v3.h>
+#endif
 
 #if SSLEAY_VERSION_NUMBER > 0x0903
 
@@ -56,6 +61,8 @@
 #define sk_X509_REVOKED_num sk_num
 #define sk_X509_REVOKED_value sk_value
 
+#define sk_X509_num  sk_num
+#define sk_X509_value  (X509 *)sk_value
 #endif /* ! SSLEAY_VERSION_NUMBER > 0x0903 */
 
 /**********************************************************************
@@ -131,7 +138,7 @@ buffer_from_file(const char			*path,
     int				open_flags;
     int				return_status = SSL_ERROR;
     struct stat			statbuf;
-    unsigned char		*buffer;
+    unsigned char		*buffer = NULL;
     int				buffer_len;
     
     assert(path != NULL);
@@ -371,6 +378,134 @@ ssl_credentials_free_contents(SSL_CREDENTIALS	*creds)
     }
 }
 
+static int
+creds_from_bio(BIO *bio, SSL_CREDENTIALS **creds)
+{
+   STACK               *cert_chain = NULL;
+   X509                *cert = NULL;
+   unsigned char       number_of_certs;
+   int                 cert_index;
+   int                 return_status = SSL_ERROR;
+ 
+   if (BIO_read(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR) {
+      verror_put_string("Failed unpacking chain from buffer"
+                        "(reading number of certificates)");
+      ssl_error_to_verror();
+      return SSL_ERROR;
+   }
+
+   if (number_of_certs == 0) {
+      verror_put_string("Failed unpacking chain from buffer"
+                        "(number of certificates is zero)");
+      ssl_error_to_verror();
+      return SSL_ERROR;
+   }
+
+   cert = d2i_X509_bio(bio, NULL /* make new cert */);
+
+   if (cert == NULL) {
+      verror_put_string("Failed unpacking chain from buffer"
+                        "(reading user's certificate)");
+      ssl_error_to_verror();
+      goto end;
+   }
+
+   /* Now read the certificate chain */
+   cert_chain = sk_new_null();
+   for (cert_index = 1; cert_index < number_of_certs; cert_index++) {
+      X509  *x509;
+
+      x509 = d2i_X509_bio(bio, NULL /* make new cert */);
+      if (x509 == NULL) {
+         verror_put_string("Failed unpacking chain from buffer"
+                           "(reading certificate)");
+         ssl_error_to_verror();
+         goto end;
+      }
+
+      if (sk_push(cert_chain, (char *) x509) == SSL_ERROR) {
+         verror_put_string("Failed unpacking chain from buffer"
+                           "(building a new chain)");
+         ssl_error_to_verror();
+         X509_free(x509);
+         goto end;
+      }
+   }
+
+   *creds = ssl_credentials_new();
+   if (*creds == NULL) {
+       verror_put_string("Failed unpacking chain from buffer"
+                         "(building a new chain)");
+       goto end;
+   }
+   (*creds)->certificate_chain = cert_chain;
+   cert_chain = NULL;
+   (*creds)->certificate = cert;
+   cert = NULL;
+
+   return_status = SSL_SUCCESS;
+
+end:
+   if (cert)
+      X509_free(cert);
+   if (cert_chain)
+      ssl_cert_chain_free(cert_chain);
+
+   return return_status;
+}
+
+static int
+creds_to_bio(SSL_CREDENTIALS *chain, BIO **bio)
+{
+    unsigned char number_of_certs;
+    BIO  *output_bio = NULL;
+    int index;
+    int return_status = SSL_ERROR;
+
+    output_bio = BIO_new(BIO_s_mem());
+    if (output_bio == NULL) {
+       verror_put_string("BIO_new() failed");
+       ssl_error_to_verror();
+       return SSL_ERROR;
+    }
+
+    number_of_certs = sk_num(chain->certificate_chain) + 1;
+
+    if (BIO_write(output_bio, &number_of_certs,sizeof(number_of_certs)) == SSL_ERROR) {
+       verror_put_string("Failed dumping chain to buffer"
+                         "(BIO_write() failed)");
+       ssl_error_to_verror();
+       goto end;
+    }
+
+    if (i2d_X509_bio(output_bio, chain->certificate) == SSL_ERROR) {
+       verror_put_string("Failed dumping chain to buffer "
+                         "(write of user's certificate failed)");
+       ssl_error_to_verror();
+       goto end;
+    }
+
+    for (index = 0; index < sk_num(chain->certificate_chain); index++) {
+       X509  *cert;
+
+       cert = (X509 *) sk_value(chain->certificate_chain, index);
+       if (i2d_X509_bio(output_bio, cert) == SSL_ERROR) {
+          verror_put_string("Failed dumping chain to buffer "
+                            "(write of cert chain failed)");
+          ssl_error_to_verror();
+          goto end;
+       }
+    }
+    *bio = output_bio;
+    output_bio = NULL;
+    return_status = SSL_SUCCESS;
+    
+end:
+    if (output_bio)
+       BIO_free(output_bio);
+
+    return return_status;
+}
 
 /*
  * ssl_proxy_generate_name()
@@ -589,6 +724,8 @@ ssl_keys_check_match(X509			*certificate,
     }
 
   error:
+    if (public_key != NULL)
+       EVP_PKEY_free(public_key);
     return return_status;
 }
 
@@ -765,6 +902,9 @@ ssl_x509_request_verify(X509_REQ		*request)
     return_status = SSL_SUCCESS;
     
   error:
+    if (request_public_key != NULL)
+       EVP_PKEY_free(request_public_key);
+       
     return return_status;
 }
 
@@ -829,6 +969,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 	requested_bits = default_key_size;
     }
 
+    /* XXX DK: feed RAND_seed() with enough data */
      /* Generate key for request */
     rsa = RSA_generate_key(requested_bits,
 			   RSA_F4 /* public exponent */,
@@ -1036,6 +1177,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     X509_NAME			*proxy_name = NULL;
     X509			*proxy_certificate = NULL;
     ASN1_INTEGER		*serial_number = NULL;
+    EVP_PKEY                    *request_public_key = NULL;
     int				return_status = SSL_ERROR;
     
     assert(creds != NULL);
@@ -1123,8 +1265,8 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }
 
     /* Copy public key from request to certificate */
-    if (X509_set_pubkey(proxy_certificate,
-			X509_REQ_get_pubkey(request)) == SSL_ERROR)
+    request_public_key = X509_REQ_get_pubkey(request);
+    if (X509_set_pubkey(proxy_certificate, request_public_key) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (setting public key)");
 	ssl_error_to_verror();
@@ -1165,6 +1307,8 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
 	{
 	    EVP_PKEY_copy_parameters(pktmp, creds->private_key);
 	}
+	if (pktmp != NULL)
+	   EVP_PKEY_free(pktmp);
     }
 #endif
 
@@ -1189,6 +1333,9 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }
 
     /* XXX Need to free serial_number? */
+
+    if (request_public_key != NULL)
+       EVP_PKEY_free(request_public_key);
 
     if (return_status == SSL_ERROR)
     {
@@ -1311,7 +1458,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 	
 	error = ERR_peek_error();
 
-	/* If this is a bad password, return a better error message */
+	/* If this is a bad assword, return a better error message */
 	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT)
 	{
 	    verror_put_string("Bad password");
@@ -2137,10 +2284,242 @@ ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
     return return_value;
 }
 
-    
-    
-	    
-	    
+int
+ssl_get_base_subject_file(const char *proxyfile, char **subject)
+{
+   FILE       *cert_file = NULL;
+   X509       *cert = NULL;
+   char       client[1024];
+   X509_NAME  *client_subject = NULL;
+   char       path[MAXPATHLEN];
 
+   if (proxyfile == NULL) {
+      char *user_cert = NULL;
+      
+      proxy_get_filenames(NULL, 0, NULL, NULL, NULL, &user_cert, NULL);
+      strncpy(path, user_cert, sizeof(path));
+      free(user_cert);
+   } else
+      strncpy(path, proxyfile, sizeof(path));
 
- 
+   cert_file = fopen(path, "r");
+   if (cert_file == NULL)
+      return -1;
+
+   if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL) {
+      fclose(cert_file);
+      return -1;
+   }
+
+   client_subject = X509_NAME_dup(X509_get_subject_name(cert));
+   if (client_subject == NULL) {
+      fclose(cert_file);
+      return -1;
+   }
+
+   proxy_get_base_name(client_subject);
+   X509_NAME_oneline(client_subject, client, sizeof(client));
+   *subject = strdup(client);
+   X509_free(cert);
+   X509_NAME_free(client_subject);
+   fclose(cert_file);
+   return 0;
+}
+
+int
+ssl_creds_to_buffer(SSL_CREDENTIALS *creds, unsigned char **buffer,
+                    int *buffer_length)
+{
+   BIO  *bio = NULL;
+
+   if (creds_to_bio(creds, &bio) == SSL_ERROR)
+       return SSL_ERROR;
+
+   if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR) {
+       BIO_free(bio);
+       return SSL_ERROR;
+   }
+
+   BIO_free(bio);
+
+   return SSL_SUCCESS;
+}
+
+int
+ssl_creds_from_buffer(unsigned char *buffer, int buffer_length,
+                      SSL_CREDENTIALS **creds)
+{
+   BIO  *bio = NULL;
+   int return_status = SSL_ERROR;
+
+   bio = bio_from_buffer(buffer, buffer_length);
+   if (bio == NULL)
+      return SSL_ERROR;
+
+   if (creds_from_bio(bio, creds) == SSL_ERROR) {
+      BIO_free(bio);
+      return SSL_ERROR;
+   }
+
+   BIO_free(bio);
+   return SSL_SUCCESS;
+}
+
+int
+ssl_sign(unsigned char *data, int length,
+         SSL_CREDENTIALS *creds,
+	 unsigned char **signature, int *signature_len)
+{
+   EVP_MD_CTX ctx;
+
+   *signature = malloc(EVP_PKEY_size(creds->private_key));
+   if (*signature == NULL) {
+      verror_put_string("malloc()");
+      verror_put_errno(errno);
+      return SSL_ERROR;
+   }
+
+   EVP_SignInit(&ctx, EVP_sha1());
+   EVP_SignUpdate(&ctx, (void *)data, length);
+   if (EVP_SignFinal(&ctx, *signature, signature_len, creds->private_key) != 1) {
+      verror_put_string("Creating signature (EVP_SignFinal())");
+      ssl_error_to_verror();
+      free(*signature);
+      return SSL_ERROR;
+   }
+
+   return SSL_SUCCESS;
+}
+
+int
+ssl_verify(unsigned char *data, int length,
+           SSL_CREDENTIALS *creds,
+	   unsigned char *signature, int signature_len)
+{
+   EVP_MD_CTX ctx;
+
+   EVP_VerifyInit(&ctx, EVP_sha1());
+   EVP_VerifyUpdate(&ctx, (void*) data, length);
+   if (EVP_VerifyFinal(&ctx, signature, signature_len,
+	              X509_get_pubkey(creds->certificate)) != 1 ) {
+      verror_put_string("Verifying signature (EVP_VerifyFinal())");
+      ssl_error_to_verror();
+      return SSL_ERROR;
+   }
+
+   return SSL_SUCCESS;
+}
+
+/* Chain verifying is inspired by proxy_verify_chain() from GSI. */
+int
+ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
+{
+   int                   return_status = SSL_ERROR;
+   int                   i,j;
+   char                  *certdir = NULL;
+   X509                  *xcert = NULL;
+   X509_LOOKUP           *lookup = NULL;
+   X509_STORE            *cert_store = NULL;
+   X509_STORE_CTX        csc;
+   proxy_verify_desc     pvd;
+   SSL                   *ssl;
+   SSL_CTX               *sslContext = NULL;
+
+   memset(&pvd, 0, sizeof(pvd));
+   memset(&csc, 0, sizeof(csc));
+   cert_store=X509_STORE_new();
+   X509_STORE_set_verify_cb_func(cert_store, proxy_verify_callback);
+   if (chain->certificate_chain != NULL) {
+      for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
+	 xcert = sk_X509_value(chain->certificate_chain, i);
+	 j = X509_STORE_add_cert(cert_store, xcert);
+	 if (!j) {
+	    if ((ERR_GET_REASON(ERR_peek_error()) == 
+		                       X509_R_CERT_ALREADY_IN_HASH_TABLE)) {
+	       ERR_clear_error();
+	       break;
+	    }
+	    else {
+	       verror_put_string("X509_STORE_add_cert()");
+	       ssl_error_to_verror();
+	       goto end;
+	    }
+	 }
+      }
+   }
+   lookup = X509_STORE_add_lookup(cert_store, X509_LOOKUP_hash_dir());
+   if (lookup == NULL) {
+      verror_put_string("X509_STORE_add_lookup()");
+      ssl_error_to_verror();
+      goto end;
+   }
+
+   proxy_get_filenames(NULL, 0, NULL, &certdir, NULL, NULL, NULL);
+   if (certdir == NULL) {
+      verror_put_string("proxy_get_filenames()");
+      ssl_error_to_verror();
+      goto end;
+   }
+   X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
+   X509_STORE_CTX_init(&csc, cert_store, chain->certificate, NULL);
+   
+   proxy_pvd_init(certdir, &pvd);
+
+#if 1
+   sslContext = SSL_CTX_new(SSLv3_server_method());
+   if (sslContext == NULL) {
+      verror_put_string("Initializing SSL_CTX");
+      ssl_error_to_verror();
+      goto end;
+   }
+
+#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
+   SSL_CTX_set_purpose(sslContext, X509_PURPOSE_ANY);
+#endif
+
+   ssl = SSL_new(sslContext);
+   if (ssl == NULL) {
+      verror_put_string("Initializing SSL");
+      ssl_error_to_verror();
+      goto end;
+   }
+
+#if SSLEAY_VERSION_NUMBER >=  0x0090600fL
+   /* override the check_issued with our version */
+   csc.check_issued = proxy_check_issued;
+#endif
+
+   X509_STORE_CTX_set_app_data(&csc, (void*)ssl);
+   SSL_set_ex_data(ssl, PVD_SSL_EX_DATA_IDX, (char *)&pvd);
+
+#else
+   /* this works only for the GSI v. 1.1.3b14 (the latest version) */
+   X509_STORE_CTX_set_ex_data(&csc,
+	 6 /* XXX */, (void *)&pvd);
+#endif 
+   
+   if(!X509_verify_cert(&csc)) {
+      verror_put_string("X509_verify_cert() failed");
+      ssl_error_to_verror();
+      goto end;
+   }
+
+   if (peer) 
+      *peer = X509_dup(chain->certificate);
+
+   return_status = SSL_SUCCESS;
+
+end:
+   proxy_pvd_destroy(&pvd);
+   X509_STORE_CTX_cleanup(&csc);
+   if (ssl)
+      SSL_free(ssl);
+   if (sslContext)
+      SSL_CTX_free(sslContext);
+   if (certdir)
+      free(certdir);
+   if (cert_store)
+      X509_STORE_free(cert_store);
+
+   return return_status;
+}

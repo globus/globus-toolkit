@@ -1,0 +1,111 @@
+This file lists all changes made to Myproxy during development of Proxy
+Repository for the Datagrid project.
+
+gsi_proxy.[ch] (new)
+  - contain the proxy-* function prototypes and types defined but not made 
+    public in Globus. These functions are available in the libglobus_gss.a 
+    library but their prototypes are not public.
+  - It should be prepared for Globus 2.0 that exports this stuff.
+
+gsi_socket.c
+  - if encryption is not supported by the GSS library, a warning is generated
+
+myproxy.c
+  - increased length of the buffer for username storage (because subject
+    names are sent as usernames)
+  - Handling of authorization message added to the myproxy_serialize_response()
+    function. Encoding of response was also updated.
+
+myproxy.h
+  - Added a new message type for server's response 
+    (MYPROXY_AUTHORIZATION_RESPONSE) 
+    and a new message field (MYPROXY_AUTHORIZATION_STRING).
+    Added a new field (authorization_data) to the myproxy_response_t struct.
+    This field is intended to store authorization data.
+
+myproxy_authorization.{c,h} (new)
+  - implementation of user authorization for the GET command (a simple
+    identity based checking is sufficient for the other commands)
+  - a new structure for storing and passing of authorization data is defined
+    here as well as few functions for manipulating the data and performing the
+    authorization cheking.
+  - a passphrase based auhtorization (compatible with the original method) and
+    a X.509 certificate based authorization is implemented
+
+myproxy_creds.c
+  - added a new function for getting a complete metadata entry from the
+    repository (myproxy_creds_fetch_entry()). No password checking or other
+    authorization checking is performed.
+  - added a new parameter check_passwd to the myproxy_creds_retrieve()
+    function controling whether passpword checkig should be done.
+  - names of the files in the repository containg the users' credentials, 
+    are generated from hashed usernames supplied by the user. In this way the
+    DN from certificates can be directly used as owner identification.
+
+myproxy_creds.h
+  - myproxy_set_storage_dir nastavujici default storage directory
+
+myproxy_delegation.{c,h} (new)
+  - functions for retrieving proxy from a repository were moved from the
+    myproxy-get client to a separate module forming a new library useable from
+    other applications too (datagrid proxy repository).
+  - these files suggest the myproxy_get_delegation() for credential retrieving
+    and myproxy_set_delegation_defaults() for setting the default parametres
+    (name of the server, lifetime). These function were created by cut&paste
+    from the myproxy_get_delegation.c
+
+myproxy_destroy.c
+  - encrytion is disabled entirely
+  - Subject name from user's certificate is used as a repository username 
+    (if not specified at the commandline)
+  - a special proxy to authentication to the server is created (i.e. the 
+    default proxy is not used) and destroyed at the end (similar to the init
+    command).
+
+myproxy_get_delegation.c
+  - a new commandline option was added to allow the user to specify the
+    authorization creds to be used for retrieving instead of a passphrase.
+  - if password-based authorization is not used within the session, encryption
+    is disabled.
+  - use the myproxy_delegation.{c,h}
+  - if the user asks for certificate based authorization and hasn't specified
+    the repository username, a subject name user's authotrization cert is used
+
+myproxy_init.c
+  - a new commandline option was added to specify that an empty passphrase
+    shell be stored along with the proxy (i.e. only certificate based
+    authorization will be required for accessing it later)
+  - if password-based authorization is not used within the session, encryption 
+    is disabled.
+  - if the username is not supplied at the commandline, a subject name from 
+    user's X.509 certificate will be used. 
+  - status message about a proxy to stored is printed before the proxy is 
+    stored
+
+myproxy_read_pass.c 
+  - the des_read_pw function from ssleay 0.9.0b coredumps on our machines so
+    it was replaced by new one from OpenSSL 0.9.3
+
+myproxy_server.c
+  - a new commandline option option was added to allow to specify the 
+    credential storage directory for the server
+  - the server doesn't encrypt messages for the client at all
+  - all the authorization checking are grouped into one function called
+    immediately after user's authentication. This function employs the
+    myproxy_authorization.{c,h} implementation.
+
+read_pwd.c (new)
+  - des_read_pw from OpenSSL 0.9.6
+
+ssl_utils.{c,h}
+  - ssl_get_base_subject_file(): Get user's subject name from certificate in
+    the supplied filename
+  - ssl_creds_to_buffer()/ssl_creds_from_buffer(): coding/encoding
+    SSL_CREDENTIALS
+  - ssl_sign()/ssl_verify(): creating/verifying a public key signature
+  - ssl_verify_gsi_chain(): Verify that supplied chain is valid for GSI
+    authentication
+
+Daniel Kouril <kouril@ics.muni.cz>
+Miroslav Ruda <ruda@ics.muni.cz>
+$Date$

@@ -9,6 +9,7 @@
 #define __MYPROXY_H
 
 #include "gsi_socket.h"
+#include "myproxy_authorization.h"
 
 /* Maximum pass phrase length */
 #define MAX_PASS_LEN  1024 /* Arbitrary */
@@ -31,6 +32,7 @@
 /* myproxy server protocol information */
 #define MYPROXY_RESPONSE_STRING     "RESPONSE="
 #define MYPROXY_ERROR_STRING        "ERROR="
+#define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 
 /* number of last error */
 extern int errno;
@@ -48,7 +50,8 @@ typedef enum
 typedef enum
 {
     MYPROXY_OK_RESPONSE,
-    MYPROXY_ERROR_RESPONSE 
+    MYPROXY_ERROR_RESPONSE,
+    MYPROXY_AUTHORIZATION_RESPONSE
 } myproxy_proto_response_type_t;
 
 /* client/server socket attributes */
@@ -76,6 +79,8 @@ typedef struct
   char                          *version;
   myproxy_proto_response_type_t response_type;
   char                          error_string[2048];
+  authorization_data_t          **authorization_data; 
+  /* NULL-terminated array describing acceptable authorization methods */
 } myproxy_response_t;
 
 

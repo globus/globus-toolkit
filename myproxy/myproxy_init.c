@@ -36,6 +36,10 @@ static char usage[] = \
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
+"       -n | --empty_passwd               Use an empty password while storing\n"
+"                                         the proxy.\n"
+		         /* i.e require certificate based authorization while 
+		            getting the creds */
 "\n";
 
 struct option long_options[] =
@@ -48,14 +52,16 @@ struct option long_options[] =
   {"usage",                 no_argument, NULL, 'u'},
   {"username",        required_argument, NULL, 'l'},
   {"version",               no_argument, NULL, 'v'},
+  {"empty_passwd",          no_argument, NULL, 'n'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:v";
+static char short_options[] = "uhs:p:t:c:l:vn";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+static int use_empty_passwd = 0;
 
 /* Function declarations */
 void init_arguments(int argc, char *argv[], 
@@ -78,6 +84,7 @@ main(int argc, char *argv[])
     char proxyfile[64];
     char request_buffer[1024]; 
     int requestlen;
+    int return_status = 1;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -97,10 +104,12 @@ main(int argc, char *argv[])
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_PUT_PROXY;
 
+#if 0
     username = getenv("LOGNAME");
     if (username != NULL) {
       client_request->username = strdup(username);
     }
+#endif
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
@@ -119,34 +128,51 @@ main(int argc, char *argv[])
     init_arguments(argc, argv, socket_attrs, client_request, &cred_lifetime);
 
     /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
+    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getpid());
 
     /* Run grid-proxy-init to create a proxy */
     if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
         fprintf(stderr, "Program grid_proxy_init failed\n");
-        exit(1);
+	exit(1);
     }
 
-    /* Allow user to provide a passphrase */
-    if (myproxy_read_verified_passphrase(client_request->passphrase,
-					 sizeof(client_request->passphrase)) == -1) {
-        fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
-		verror_get_string());
-        exit(1);
+    if (client_request->username == NULL &&
+	ssl_get_base_subject_file(proxyfile, &client_request->username)) {
+	fprintf(stderr, "Cannot get subject name from your certificate\n");
+	goto end;
     }
+
+    hours = (int)(cred_lifetime/SECONDS_PER_HOUR);
+    days = (float)(hours/24.0);
+    printf("Trying to put a proxy valid for %d hours (%5.1f days ) for user: %s on %s.\n",
+	   hours, days, client_request->username, socket_attrs->pshost);
+	   
+    /* Allow user to provide a passphrase */
+    if (!use_empty_passwd) 
+       if (myproxy_read_verified_passphrase(client_request->passphrase,
+				 sizeof(client_request->passphrase)) == -1) {
+	  fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
+		verror_get_string());
+          goto end;
+       }
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
         fprintf(stderr, "error in myproxy_init_client(): %s\n", 
 		verror_get_string());
-        exit(1);
+        goto end;
     }
+
+    /* if the client requires using an empty password there is no need to 
+       encrypt the channel (and we can use the export version of Globus) */
+    if (use_empty_passwd) 
+       GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init(): %s\n", 
 		verror_get_string());
-        exit(1);
+        goto end;
     }
 
     /* Serialize client request object */
@@ -154,14 +180,14 @@ main(int argc, char *argv[])
                                            request_buffer, sizeof(request_buffer));
     if (requestlen < 0) {
         fprintf(stderr, "error in myproxy_serialize_request()\n");
-        exit(1);
+        goto end;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s\n", 
 		verror_get_string());
-        exit(1);
+        goto end;
     }
 
     /* Continue unless the response is not OK */
@@ -171,27 +197,27 @@ main(int argc, char *argv[])
     if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime) < 0) {
 	fprintf(stderr, "error in myproxy_init_delegation(): %s\n", 
 		verror_get_string());
-	exit(1);
+	goto end;
     }
 
-    /* Delete proxy file */
-    if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_destroy failed\n");
-        exit(1);
-    }
-    
     /* Get final response from server */
     receive_response(socket_attrs, server_response);
 
-    hours = (int)(cred_lifetime/SECONDS_PER_HOUR);
-    days = (float)(hours/24.0);
-    printf("A proxy valid for %d hours (%5.1f days  ) for user %s now exists on %s.\n", 
-	   hours, days, client_request->username, socket_attrs->pshost); 
+    printf("The proxy has been stored. Certificate based%s authorization is required to get it.\n",
+	  (use_empty_passwd) ? "" : " or password-based");
     
+    return_status = 0;
+end:
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
+    
+    /* Delete proxy file */
+    if (grid_proxy_destroy(proxyfile) != 0) {
+        fprintf(stderr, "Program grid_proxy_destroy failed\n");
+        return_status = 1;
+    }
 
-    exit(0);
+    exit(return_status);
 }
 
 void 
@@ -237,6 +263,10 @@ init_arguments(int argc,
 	    fprintf(stderr, version);
 	    exit(1);
 	    break;
+	case 'n':   /* use an empty passwd == require certificate based
+		       authorization while getting the creds */
+	    use_empty_passwd = 1;
+	    break;
         default:  
 	    fprintf(stderr, usage);
 	    exit(1);
@@ -250,12 +280,14 @@ init_arguments(int argc,
 	exit(1);
     }
 
+#if 0
     /* Check to see if username specified */
     if (request->username == NULL) {
 	fprintf(stderr, usage);
 	fprintf(stderr, "Unspecified username!\n");
 	exit(1);
     }
+#endif
 
     return;
 }

@@ -7,11 +7,15 @@
 #include "myproxy_read_pass.h"
 #include "verror.h"
 
-#include <des.h>	/* From SSLeay */
 
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+
+/* RUDA */
+int des_read_pw_openssl(char *buf, char *buff, int size, const char *prompt,
+             int verify);
+
 
 /**********************************************************************
  *
@@ -64,8 +68,9 @@ read_passphrase(char				*buffer,
 	    return -1;
 	}
     }
-    
-    return_code = des_read_pw(buffer,
+
+    /* RUDA */
+    return_code = des_read_pw_openssl(buffer,
 			      verify_buffer,
 			      buffer_len,
 			      PROMPT,

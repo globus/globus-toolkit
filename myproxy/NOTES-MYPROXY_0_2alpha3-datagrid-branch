@@ -1,0 +1,140 @@
+Changes made to Myproxy are described here
+
+Changes in the Myproxy Protocol
+-------------------------------
+The main change in the protocol is the possibility to use several authorization
+methods for GET requests. The MyProxyGet clients were allowed to pass empty
+passwords in the messages in order to request a special authorization method.
+If the client sends an empty password in its GET request, the server will
+require the client to prove its authorizaton rights by some additional method.
+A new server's message type was added to the protocol to perform such
+additional authorization and the fourth step of the MyProxyGet <->
+MyProxyServer protocol was modified (compare with the PROTOCOL file). Besides
+an OK or an ERROR message MyProxyServer can also respond with a
+MYPROXY_AUTHORIZATION_RESPONSE message:
+
+   VERSION=MYPROXYv2
+   COMMAND=2
+   AUTHORIZATION_DATA=<method id>:<method data>
+   ...
+
+There may be more then one line of authorization data. The purpose of this
+message is to provide the client with available authorization methods along
+with data needed to use the methods. The client will choose one method, create
+a response according to server's challenge and send it back to the server.  The
+first four bytes of the response must convey an method identifier (see
+myproxy_authorization.[ch] for supported methods), contents of remaining part
+of the response depends on the particular authorization method and is not
+specified here.
+
+The server will verify the response, check authorization data, check 
+authorization policy and reply with either an OK or an ERROR message. Then the
+protocol will continue with the fifth step of the original protocol (i.e.
+delegating of credentials). 
+
+Currently there are two supported methods: the original password based and 
+a new X.509 certificate based. When using the later one, the server will 
+generate a random 32 bytes long challenge, encode it into an ASCII string and 
+send to the client as <method data>. The client will sign the challenge with 
+its private key and send the result back along with the whole certificate chain.
+Format of the client's response in this case is following:
+ - first four bytes state length of the signature
+ - signature itself
+ - four bytes state number of certificates sent
+ - certificates in the ASN.1 encoding.
+
+Since the original client never sends an empty password, compatibility is
+retained (the MYPROXY_AUTHORIZATION_RESPONSE message is sent iff the server
+receives an empty password.
+
+Authorization rules in the Myproxy server
+-----------------------------------------
+PUT:
+ (1) client's DN (i.e. DN under which the client authenticated himself) must be
+     allowed by the 'allowed_clients' list in a configuration file.
+ (2) (a) authorization is granted if client's DN match the requested username
+     (b) otherwise, if the requsted proxy exists in the repository, client's 
+         name must match the requested proxy's owner (stored along with the
+	 proxy in the repository. If the requsted proxy doesn't exist, the
+	 username must not contain a '/' character (as every DN contains '/')
+     (c) otherwise authorization will fail
+     
+
+DESTROY:
+  the same as for the PUT command. If the requested credentials doesn't
+  exist authorization is OK.
+  
+GET:
+ (1) client's DN (i.e. DN under which the user authenticated himself) must be
+     allowed by a configuration file in the 'allowed_services' list.
+ (2) clients must also prove its autorization by other means:
+     By password: password sent by the client must match the password stored 
+                  along with the requested proxy.
+     By certificate: The client must send a valid GSI certificate and prove 
+       possesion of the corresponding private key. For the sake of
+       authorization the subject name from the autorization certificate (the
+       last cert in the chain) must match the proxy owner's DN (stored along 
+       with the proxy)
+
+Note that the (1)-items were modified in contrast to the original Myproxy
+implementation.
+
+
+Determining the default usernames
+---------------------------------
+Users are no longer required to explicitly specify usernames they want to
+use for requested operations. If the username is left unspecified on the 
+command line, a default one is set according to the following rules:
+
+In contrast to the original implementation, the LOGNAME enviroment variable is
+not used to set the default username.
+
+The myproxy-init and myproxy-destroy commands get subject names from the
+default user's long-term certificates and use them as the default usernames
+(location of the certificate is determined by standard GSI mechanisms, see
+some description of the X509* enviroment variables).
+
+If no username is specified for the myproxy-get-delegation command and the
+user asks for a certificate based authorization, a subject name from the
+authorization certificate is used as the username. A username must be
+explicitly specified as a command-line option if password authorization is
+requested.
+
+In all cases the subject name acquired from a certificate is "normalized" 
+before using, i.e. all occurences of 'CN=proxy' or 'CN=limited proxy' are 
+removed.
+
+
+New command-line options 
+------------------------
+myproxy-init 
+   -n    Don't ask a Myproxy password and use an empty one. It means that 
+         an empty password will be stored along with the proxy and an extra 
+         certificate based authorization will always be required to get 
+         the proxy. 
+
+myproxy-get-delegation
+   -a <file>   Use specified proxy file for authorization to the server.
+
+myproxy-server 
+   -s <dir>    Specifies a non-default credential storage directory.
+
+
+Other minor changes
+-------------------
+Encryption is used only if needed, i.e. the server doesn't encrypt anything at
+all, the clients encrypt messages only if password auhtorization take place.
+It makes possible to use Myproxy with export versions of the Globus.
+
+Filenames containing users' creds in the repository are created by means of
+MD5 hashes computed from owners' subject name.
+
+Functions needed to get delegated credentials from repository were grouped
+into a separate library, libmyproxy.
+
+The myproxy-destroy command always generates user's proxy before contacting the
+Myproxy server (it doesn't use the default proxy or long-term cert to contact
+the server any more). This is little awkward but helps to avoid problems with 
+checking whether current proxy is still valid.
+
+Fixed several bugfixes and memleaks.

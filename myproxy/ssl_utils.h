@@ -6,6 +6,8 @@
 #ifndef _SSL_UTILS_H
 #define _SSL_UTILS_H
 
+#include <x509.h>
+
 struct _ssl_credentials;
 typedef struct _ssl_credentials SSL_CREDENTIALS;
 
@@ -238,4 +240,65 @@ int ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS *restrictions,
 					long seconds);
 
 			   
+/* ssl_get_base_subject_file()
+ *
+ * Get user's subject name from certificate in the supplied filename
+ *
+ * Returns 0 on success or -1 on error
+ */
+int
+ssl_get_base_subject_file(const char *proxyfile, char **subject);
+
+/* 
+ * ssl_creds_to_buffer()
+ *
+ * Encode credentials from SSL_CREDENTIALS struct into buffer. Memory for the 
+ * buffer is obtained with malloc(3) and must be freed with free(3).
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR
+ */
+int ssl_creds_to_buffer(SSL_CREDENTIALS *chain, unsigned char **buffer, 
+                        int *buffer_length);
+
+/*
+ * ssl_creds_from_buffer()
+ *
+ * Decode credentals from buffer into SSL_CREDENTIALS struct. Caller should 
+ * free *creds with ssl_credentials_destroy()
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR
+ */
+int ssl_creds_from_buffer(unsigned char *buffer, int buffer_length,
+                          SSL_CREDENTIALS **creds);
+
+/*
+ * ssl_sign()
+ * 
+ * Sign data with private key passed in SSL_CREDENTIALS. Memory for the
+ * signature is allocated with malloc(3) and must be freed with free(2) when
+ * no needed.
+ */
+int ssl_sign(unsigned char *data, int length, SSL_CREDENTIALS *creds,
+             unsigned char **signature, int *signature_len);
+
+/*
+ * ssl_verify()
+ *
+ * Verify signature
+ */
+int ssl_verify(unsigned char *data, int length, SSL_CREDENTIALS *creds,
+               unsigned char *signature, int signature_len);
+
+/*
+ * int ssl_verify_gsi_chain()
+ *
+ * Verify that supplied chain is valid for GSI authentication. On success peer
+ * contains the client's certificate (the first certificate from the certificate
+ * chain).
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR
+ */
+int ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer);
+ 
+
 #endif /* _SSL_UTILS_H */
