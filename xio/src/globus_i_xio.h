@@ -131,15 +131,15 @@ typedef struct globus_i_xio_handle_s
     int                                         stack_size;
     globus_i_xio_context_t *                    context_array;
 
-    globus_bool_t                               op_list;
+    globus_list_t *                             op_list;
 
-    globus_xio_timeout_callback                 open_timeout;
+    globus_xio_timeout_callback_t               open_timeout;
     globus_reltime_t                            open_timeout_period;
-    globus_xio_timeout_callback                 read_timeout;
+    globus_xio_timeout_callback_t               read_timeout;
     globus_reltime_t                            read_timeout_period;
-    globus_xio_timeout_callback                 write_timeout;
+    globus_xio_timeout_callback_t               write_timeout;
     globus_reltime_t                            write_timeout_period;
-    globus_xio_timeout_callback                 close_timeout;
+    globus_xio_timeout_callback_t               close_timeout;
     globus_reltime_t                            close_timeout_period;
 } globus_i_xio_handle_t;
 
@@ -195,7 +195,7 @@ typedef struct globus_i_xio_operation_s
 
     /* flag to determine if cancel should happen */
     globus_bool_t                               progress;
-    globus_xio_timeout_callback                 timeout_cb;
+    globus_xio_timeout_callback_t               timeout_cb;
 
     /* reference count for destruction */
     int                                         ref;
