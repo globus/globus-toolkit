@@ -10,6 +10,7 @@ if test "x$flavor" = "x"; then
    ;;
    power*-ibm-aix5.*)
       flavor=vendorcc32dbg
+      AIX=yes
    ;;
    ppc-*-*-*)
       flavor=gcc32dbg
@@ -52,6 +53,12 @@ fi
 thr=pthr
 AC_SUBST(flavor, $flavor)
 AC_SUBST(thr, $thr)
+
+aixargs=""
+if test "x$AIX" = "xtrue" -a "x$flavor"="xvendorcc64dbg"; then
+   aixargs="OBJECT_MODE=64"
+fi
+AC_SUBST(aixargs,$aixargs)
 
 AC_ARG_WITH(buildopts, AC_HELP_STRING([--with-buildopts="args"],\
    [Arguments to pass to gpt-build, like "--verbose" or "--force".]),\
