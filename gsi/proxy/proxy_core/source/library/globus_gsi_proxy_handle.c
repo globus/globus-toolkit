@@ -395,7 +395,7 @@ globus_gsi_proxy_handle_get_private_key(
 
     if(!der_encoded)
     {
-        GLOBUS_GSI_PROXY_MALLOC_ERROR(length);
+        GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(length);
         goto exit;
     }
 
@@ -504,7 +504,7 @@ globus_gsi_proxy_handle_set_private_key(
         
         if(!der_encoded)
         {
-            GLOBUS_GSI_PROXY_MALLOC_ERROR(length);
+            GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(length);
             goto exit;
         }
         
