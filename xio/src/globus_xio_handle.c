@@ -817,12 +817,18 @@ globus_l_xio_register_writev(
         {
             globus_i_xio_op_destroy(op, &destroy_handle, 
                     &destroy_context);
-            /* handle should always have a reference left at this point */
-            globus_assert(!destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
+    if(destroy_handle)
+    {
+        if(destroy_context)
+        {
+            globus_i_xio_context_destroy(handle->context);
+        }
+        globus_i_xio_handle_destroy(handle);
+    }
 
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
@@ -935,12 +941,19 @@ globus_l_xio_register_readv(
         {
             globus_i_xio_op_destroy(op, &destroy_handle, 
                     &destroy_context);
-            /* handle should always have a reference left at this point */
-            globus_assert(!destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
+    globus_mutex_unlock(&handle->context->mutex);
+    if(destroy_handle)
+    {
+        if(destroy_context)
+        {
+            globus_i_xio_context_destroy(handle->context);
+        }
+        globus_i_xio_handle_destroy(handle);
+    }
 
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
@@ -1032,12 +1045,18 @@ globus_l_xio_register_open(
         {
             globus_i_xio_op_destroy(op, &destroy_handle, 
                     &destroy_context);
-            /* handle should always have a reference left at this point */
-            globus_assert(!destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
+    if(destroy_handle)
+    {
+        if(destroy_context)
+        {
+            globus_i_xio_context_destroy(handle->context);
+        }
+        globus_i_xio_handle_destroy(handle);
+    }
     
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
@@ -1179,12 +1198,18 @@ globus_l_xio_register_close(
         {
             globus_i_xio_op_destroy(op, &destroy_handle, 
                     &destroy_context);
-            /* handle should always have a reference left at this point */
-            globus_assert(!destroy_handle);
         }
 
     }
     globus_mutex_unlock(&handle->context->mutex);
+    if(destroy_handle)
+    {
+        if(destroy_context)
+        {
+            globus_i_xio_context_destroy(handle->context);
+        }
+        globus_i_xio_handle_destroy(handle);
+    }
 
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;

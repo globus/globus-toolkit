@@ -202,7 +202,7 @@ globus_l_xio_driver_op_write_kickout(
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
             (void *) op,
-            handle->space,
+            op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
             &wb_ndx);
 
         my_op->_op_ent_data_cb(op, op->cached_res,
@@ -320,7 +320,7 @@ globus_l_xio_driver_op_read_kickout(
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
             (void *) op,
-            handle->space,
+            op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
             &wb_ndx);
         my_op->_op_ent_data_cb(op, op->cached_res,
             my_op->_op_ent_nbytes, my_op->user_arg);
@@ -490,7 +490,7 @@ globus_l_xio_driver_open_op_kickout(
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
             (void *) op,
-            handle->space,
+            op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
             &wb_ndx);
         my_op->cb(op, op->cached_res, my_op->user_arg);
         if(op->restarted)
