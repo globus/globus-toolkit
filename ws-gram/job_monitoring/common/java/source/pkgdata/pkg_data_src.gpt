@@ -40,8 +40,7 @@
     <Build_Instructions>
         <Build_Step> ant -Denv.GLOBUS_LOCATION=INSTALLDIR_GPTMACRO</Build_Step>
         <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars/ </Build_Step>
-        <Build_Step> cp build/lib/gram-service.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>        
-        <Build_Step> cp build.xml INSTALLDIR_GPTMACRO/gars/build-mjs.xml </Build_Step>
+        <Build_Step> cp build/lib/gram-monitoring.jar INSTALLDIR_GPTMACRO/lib/ </Build_Step>        
     </Build_Instructions>
 
   </src_pkg >
