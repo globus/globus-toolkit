@@ -444,7 +444,9 @@ typedef struct globus_i_xio_op_entry_s
 
     void *                                  dd;
     void *                                  target;
-    void *                                  attr;
+    void *                                  open_attr;
+    void *                                  accept_attr;
+    void *                                  close_attr;
     int                                     prev_ndx;
     int                                     next_ndx;
 

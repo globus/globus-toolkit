@@ -594,6 +594,7 @@ globus_l_xio_server_register_accept(
     globus_i_xio_op_t *                     xio_op,
     globus_xio_attr_t                       accept_attr)
 {
+    void *                                  driver_attr;
     globus_i_xio_server_t *                 xio_server;
     int                                     ctr;
     globus_result_t                         res = GLOBUS_SUCCESS;
@@ -629,8 +630,15 @@ globus_l_xio_server_register_accept(
             correct place */
         for(ctr = 0; ctr < xio_op->stack_size; ctr++)
         {
-            GlobusIXIOAttrGetDS(xio_op->entry[ctr].attr,     \
+            xio_op->entry[ctr].accept_attr = NULL;
+            GlobusIXIOAttrGetDS(driver_attr,
                 accept_attr, xio_server->entry[ctr].driver);
+
+            if(driver_attr != NULL)
+            {
+                xio_server->entry[ctr].driver->attr_copy_func(
+                    &xio_op->entry[ctr].accept_attr, driver_attr);
+            }
         }
 
         /*i deal with timeout if there is one */

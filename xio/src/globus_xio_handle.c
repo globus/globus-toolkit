@@ -285,7 +285,7 @@ globus_l_xio_hande_pre_close(
     /* set up op */
     for(ctr = 0; ctr < handle->context->stack_size; ctr++)
     {
-        op->entry[ctr].attr = NULL;
+        op->entry[ctr].close_attr = NULL;
         if(attr != NULL)
         {
             driver_attr = NULL;
@@ -295,7 +295,7 @@ globus_l_xio_hande_pre_close(
             if(driver_attr != NULL)
             {
                 handle->context->entry[ctr].driver->attr_copy_func(
-                    &op->entry[ctr].attr, driver_attr);
+                    &op->entry[ctr].close_attr, driver_attr);
             }
         }
     }
@@ -1768,7 +1768,7 @@ globus_xio_register_open(
     {
         context->entry[ctr].driver = target->entry[ctr].driver;
 
-        op->entry[ctr].attr = NULL;
+        op->entry[ctr].open_attr = NULL;
         if(user_attr != NULL)
         {
             GlobusIXIOAttrGetDS(driver_attr, user_attr,
@@ -1777,7 +1777,7 @@ globus_xio_register_open(
             if(driver_attr != NULL)
             {
                 context->entry[ctr].driver->attr_copy_func(
-                    &op->entry[ctr].attr, driver_attr);
+                    &op->entry[ctr].open_attr, driver_attr);
             }
         }
     }
@@ -2521,7 +2521,7 @@ globus_xio_open(
     {
         context->entry[ctr].driver = target->entry[ctr].driver;
 
-        op->entry[ctr].attr = NULL;
+        op->entry[ctr].open_attr = NULL;
         if(user_attr != NULL)
         {
             GlobusIXIOAttrGetDS(driver_attr, user_attr,
@@ -2530,7 +2530,7 @@ globus_xio_open(
             if(driver_attr != NULL)
             {
                 context->entry[ctr].driver->attr_copy_func(
-                    &op->entry[ctr].attr, driver_attr);
+                    &op->entry[ctr].open_attr, driver_attr);
             }
         }
     }

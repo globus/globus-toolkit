@@ -81,7 +81,7 @@ globus_xio_driver_pass_open(
         {
             res = driver->transport_open_func(
                         handle->target->entry[op->ndx - 1].target,
-                        my_op->attr,
+                        my_op->open_attr,
                         my_context,
                         op);
         }
@@ -89,13 +89,14 @@ globus_xio_driver_pass_open(
         {
             res = driver->transform_open_func(
                         handle->target->entry[op->ndx - 1].target,
-                        my_op->attr,
+                        my_op->open_attr,
                         op);
         }
 
-        if(driver->attr_destroy_func != NULL && my_op->attr != NULL)
+        if(driver->attr_destroy_func != NULL && my_op->open_attr != NULL)
         {
-            driver->attr_destroy_func(my_op->attr);
+            driver->attr_destroy_func(my_op->open_attr);
+            my_op->open_attr = NULL;
         }
 
         my_op->in_register = GLOBUS_FALSE;
@@ -230,7 +231,7 @@ globus_xio_driver_open_delivered(
     {
         /* make sure it only gets delivered once */
         if(deliver_type == NULL ||
-            *deliver_type == GLOBUS_XIO_OPERATION_TYPE_NONE)
+            *deliver_type == GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                 ("[%s] : Already delivered\n", _xio_name));
@@ -242,7 +243,7 @@ globus_xio_driver_open_delivered(
             globus_mutex_unlock(&context->mutex);
             goto exit;
         }
-        *deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
+        *deliver_type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
         op->entry[in_ndx].deliver_type = NULL;
 
         GlobusXIOOpDec(op);
@@ -349,7 +350,7 @@ globus_xio_driver_pass_close(
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_xio_driver_t                     driver;
     globus_xio_operation_type_t             deliver_type = 
-        GLOBUS_XIO_OPERATION_TYPE_NONE;
+        GLOBUS_XIO_OPERATION_TYPE_FINISHED;
     GlobusXIOName(globus_xio_driver_pass_close);
 
     GlobusXIODebugInternalEnter();
@@ -432,7 +433,7 @@ globus_xio_driver_pass_close(
                 /* set copy in finished to null, thus preventing Delived 
                     from being called twice */
                 *op->entry[prev_ndx].deliver_type = 
-                    GLOBUS_XIO_OPERATION_TYPE_NONE;
+                    GLOBUS_XIO_OPERATION_TYPE_FINISHED;
                 /* set the op ppinter to NULL for completeness */
                 op->entry[prev_ndx].deliver_type = NULL;
 
@@ -443,7 +444,7 @@ globus_xio_driver_pass_close(
         }
         globus_mutex_unlock(&context->mutex);
 
-        if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_NONE)
+        if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             globus_i_xio_driver_deliver_op(op, prev_ndx, deliver_type);
         }
@@ -542,7 +543,7 @@ globus_xio_driver_pass_write(
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_xio_driver_t                     driver;
     globus_xio_operation_type_t             deliver_type = 
-        GLOBUS_XIO_OPERATION_TYPE_NONE;
+        GLOBUS_XIO_OPERATION_TYPE_FINISHED;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
     GlobusXIOName(GlobusXIODriverPassWrite);
 
@@ -601,7 +602,7 @@ globus_xio_driver_pass_write(
                 /* set copy in finished to null, thus preventing Delived 
                     from being called twice */
                 *op->entry[prev_ndx].deliver_type = 
-                    GLOBUS_XIO_OPERATION_TYPE_NONE;
+                    GLOBUS_XIO_OPERATION_TYPE_FINISHED;
                 /* set the op ppinter to NULL for completeness */
                 op->entry[prev_ndx].deliver_type = NULL;
                 /* op ref count so that op stays around long enough to check
@@ -613,7 +614,7 @@ globus_xio_driver_pass_write(
         }
         globus_mutex_unlock(&context->mutex);
 
-        if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_NONE)
+        if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             globus_i_xio_driver_deliver_op(op, prev_ndx, deliver_type);
         }
@@ -757,7 +758,7 @@ globus_xio_driver_write_delivered(
     {
         /* make sure it only gets delivered once */
         if(deliver_type == NULL ||
-            *deliver_type == GLOBUS_XIO_OPERATION_TYPE_NONE)
+            *deliver_type == GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                 ("[%s] : Already delivered\n", _xio_name));
@@ -770,7 +771,7 @@ globus_xio_driver_write_delivered(
             goto exit;
         }
         op->entry[in_ndx].deliver_type = NULL;
-        *deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
+        *deliver_type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
 
         GlobusXIOOpDec(op);
         if(op->ref == 0)
@@ -837,7 +838,7 @@ globus_xio_driver_pass_read(
     globus_xio_driver_t                     driver;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
     globus_xio_operation_type_t             deliver_type = 
-        GLOBUS_XIO_OPERATION_TYPE_NONE;
+        GLOBUS_XIO_OPERATION_TYPE_FINISHED;
     GlobusXIOName(globus_xio_driver_pass_read);
 
     GlobusXIODebugInternalEnter();
@@ -901,7 +902,7 @@ globus_xio_driver_pass_read(
                 /* set copy in finished to null, thus preventing Delived 
                     from being called twice */
                 *op->entry[prev_ndx].deliver_type = 
-                    GLOBUS_XIO_OPERATION_TYPE_NONE;
+                    GLOBUS_XIO_OPERATION_TYPE_FINISHED;
                 /* set the op ppinter to NULL for completeness */
                 op->entry[prev_ndx].deliver_type = NULL;
                 /* op ref count so that op stays around long enough to check
@@ -914,7 +915,7 @@ globus_xio_driver_pass_read(
         }
         globus_mutex_unlock(&context->mutex);
 
-        if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_NONE)
+        if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             globus_i_xio_driver_deliver_op(op, prev_ndx, deliver_type);
         }
@@ -1101,7 +1102,7 @@ globus_xio_driver_read_delivered(
     {
         /* make sure it only gets delivered once */
         if(deliver_type == NULL || 
-            *deliver_type == GLOBUS_XIO_OPERATION_TYPE_NONE)
+            *deliver_type == GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                 ("[%s] : Already delivered\n", _xio_name));
@@ -1113,7 +1114,7 @@ globus_xio_driver_read_delivered(
             globus_mutex_unlock(&context->mutex);
             goto exit;
         }
-        *deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
+        *deliver_type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
         op->entry[in_ndx].deliver_type = NULL;
 
         GlobusXIOOpDec(op);
@@ -1256,9 +1257,10 @@ globus_xio_driver_pass_accept(
 
         res = driver->server_accept_func(
                     my_server->server_handle,
-                    my_op->attr,
+                    my_op->accept_attr,
                     op);
         my_op->in_register = GLOBUS_FALSE;
+        my_op->accept_attr = NULL;
     }
     GlobusXIODebugInternalExit();
 

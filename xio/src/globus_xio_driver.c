@@ -358,12 +358,13 @@ globus_i_xio_will_block_cb(
             {
                 GlobusXIOOpInc(op);
                 deliver_type = *op->entry[ndx].deliver_type;
-                *op->entry[ndx].deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
+                *op->entry[ndx].deliver_type = 
+                        GLOBUS_XIO_OPERATION_TYPE_FINISHED;
                 op->entry[ndx].deliver_type = NULL;
             }
             else
             {
-                deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
+                deliver_type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
             }
         }
         globus_mutex_unlock(&context->mutex);
@@ -382,11 +383,17 @@ globus_i_xio_will_block_cb(
                 globus_xio_driver_write_delivered(op, ndx, &deliver_type);
                 break;
 
+            /* none happens if a driver finishes without passing*/
+            case GLOBUS_XIO_OPERATION_TYPE_NONE:
+                GlobusXIODebugPrintf(
+                    GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                    ("[%s:%d] :: type none, exiting\n", _xio_name, __LINE__));
+                goto exit;
+
+            /* finishe state means the operation was already delivered */
             case GLOBUS_XIO_OPERATION_TYPE_FINISHED:
-                return;
                 break;
 
-            case GLOBUS_XIO_OPERATION_TYPE_NONE:
             case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
                 break;
 
@@ -400,6 +407,8 @@ globus_i_xio_will_block_cb(
             GLOBUS_XIO_DEBUG_INFO_VERBOSE,
            ("[%s:%d] :: Index = %d\n", _xio_name, __LINE__, ndx));
     }
+
+  exit:
     GlobusXIODebugInternalExit();
 }
 
@@ -625,14 +634,16 @@ globus_i_xio_driver_start_close(
     my_op->in_register = GLOBUS_TRUE;
     res = my_context->driver->close_func(
                     my_context->driver_handle,
-                    my_op->attr,
+                    my_op->close_attr,
                     my_context,
                     op);
     my_op->in_register = GLOBUS_FALSE;
 
-    if(my_context->driver->attr_destroy_func != NULL && my_op->attr != NULL)
+    if(my_context->driver->attr_destroy_func != NULL && 
+        my_op->close_attr != NULL)
     {
-        my_context->driver->attr_destroy_func(my_op->attr);
+        my_context->driver->attr_destroy_func(my_op->close_attr);
+        my_op->close_attr = NULL;
     }
 
     if(res != GLOBUS_SUCCESS && !can_fail)
