@@ -2133,6 +2133,7 @@ globus_i_gsi_gssapi_init_ssl_context(
                                                           &ca_cert_file_list);
     if(local_result != GLOBUS_SUCCESS)
     {
+        major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL);
