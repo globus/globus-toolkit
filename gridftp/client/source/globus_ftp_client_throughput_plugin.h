@@ -93,10 +93,10 @@ typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
  *        The total number of bytes received on this stripe
  *
  * @param instantaneous_throughput
- *        Instanteous throughput on this stripe
+ *        Instanteous throughput on this stripe (bytes / sec)
  *
  * @param avg_throughput
- *        Average throughput on this stripe
+ *        Average throughput on this stripe (bytes / sec)
  *
  * @param stripe_ndx
  *        This stripe's index
@@ -130,10 +130,10 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
  *        The total number of bytes received on all stripes
  *
  * @param instantaneous_throughput
- *        Total instanteous throughput on all stripes
+ *        Total instanteous throughput on all stripes (bytes / sec)
  *
  * @param avg_throughput
- *        Average total throughput on all stripes
+ *        Average total throughput on all stripes (bytes / sec)
  *
  */
 
