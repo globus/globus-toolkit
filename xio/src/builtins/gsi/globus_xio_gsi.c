@@ -1,6 +1,21 @@
 #include "globus_i_xio_gsi.h"
 #include "version.h"
 
+
+/* default attributes */
+
+static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
+{
+    GSS_C_NO_CREDENTIAL,
+    GSS_C_MUTUAL_FLAG,
+    0,
+    GSS_C_NO_OID,
+    GSS_C_NO_CHANNEL_BINDINGS,
+    GLOBUS_FALSE,
+    131072, /* 128K default read buffer */
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE
+};
+
 static
 void
 globus_l_xio_gsi_read_token_cb(
@@ -59,6 +74,8 @@ globus_l_xio_gsi_attr_init(
         result = GlobusXIOErrorMemory("attr");
         goto error_attr;
     }
+
+    /* set to default attributes */
     
     *attr = globus_l_xio_gsi_attr_default;
     *out_attr = attr;
@@ -98,7 +115,7 @@ globus_l_xio_gsi_attr_cntl(
     attr = (globus_l_attr_t *) driver_attr;
     switch(cmd) 
     {
-        /**
+        /*
          * Credential
          */
       case GLOBUS_XIO_GSI_SET_CREDENTIAL:
@@ -109,7 +126,7 @@ globus_l_xio_gsi_attr_cntl(
         *out_cred = attr->credential;
         break;
         
-        /**
+        /*
          * GSSAPI flags
          */
       case GLOBUS_XIO_GSI_SET_GSSAPI_REQ_FLAGS:
@@ -119,21 +136,26 @@ globus_l_xio_gsi_attr_cntl(
         out_flags = va_arg(ap, OM_uint32 *);
         *out_flags = attr->req_flags;
         break;
-        /* allow setting of flags one by one */
+        /*
+         * Proxy mode
+         */ 
       case GLOBUS_XIO_GSI_SET_PROXY_MODE:
         proxy_mode = va_arg(ap, globus_xio_gsi_proxy_mode_t);
         if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_FULL)
         {
-            attr->req_flags &= (~GSS_C_GLOBUS_LIMITED_PROXY_FLAG &
-                                ~GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG);
-        }
-        else if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_LIMITED)
-        {
+            /* set limited flag and clear many flag */
             attr->req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
             attr->req_flags &= ~GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
         }
+        else if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_LIMITED)
+        {
+            /* clear any proxy related flags */
+            attr->req_flags &= (~GSS_C_GLOBUS_LIMITED_PROXY_FLAG &
+                                ~GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG);
+        }
         else if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_MANY)
         {
+            /* set many flag and clear limited flag */
             attr->req_flags &= ~GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
             attr->req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
         }
@@ -142,7 +164,7 @@ globus_l_xio_gsi_attr_cntl(
         out_proxy_mode = va_arg(ap, globus_xio_gsi_proxy_mode_t *);
         if(attr->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG)
         {
-            *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED;
+            *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_FULL;
         }
         else if(attr->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG)
         {
@@ -150,9 +172,12 @@ globus_l_xio_gsi_attr_cntl(
         }
         else
         { 
-             *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_FULL;
+            *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED;
         }
         break;
+        /*
+         * Delegation mode
+         */
       case GLOBUS_XIO_GSI_SET_DELEGATION_MODE:
         delegation_mode = va_arg(ap, globus_xio_gsi_delegation_mode_t);
         if(delegation_mode == GLOBUS_XIO_GSI_DELEGATION_MODE_NONE)
@@ -191,19 +216,25 @@ globus_l_xio_gsi_attr_cntl(
             *out_delegation_mode = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE;
         }
         break;
+        /*
+         * SSL compatibility mode
+         */
       case GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE:
         attr->req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
         attr->req_flags &= ~(GSS_C_DELEG_FLAG |
                              GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
         attr->wrap_tokens = GLOBUS_FALSE;
         break;
+        /*
+         * Anonymous authentication
+         */
       case GLOBUS_XIO_GSI_SET_ANON:
         attr->req_flags |= GSS_C_ANON_FLAG;
         attr->req_flags &= ~(GSS_C_DELEG_FLAG |
                              GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
         break;
 
-        /**
+        /*
          * Wrap mode
          */
       case GLOBUS_XIO_GSI_SET_WRAP_MODE:
@@ -214,7 +245,7 @@ globus_l_xio_gsi_attr_cntl(
         *out_bool = attr->wrap_tokens;
         break;
 
-        /**
+        /*
          * Read buffer size
          */
       case GLOBUS_XIO_GSI_SET_BUFFER_SIZE:
@@ -232,7 +263,7 @@ globus_l_xio_gsi_attr_cntl(
         *out_size = attr->buffer_size;
         break;
 
-        /**
+        /*
          * Protection level
          */
       case GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL:
@@ -335,7 +366,7 @@ globus_l_xio_gsi_target_init(
     GlobusXIOName(globus_l_xio_gsi_target_init);
     GlobusXIOGSIDebugEnter();
 
-    /* create the target structure and copy the contact string into it */
+    /* create the target structure */
     target = (globus_l_target_t *) malloc(sizeof(globus_l_target_t));
     if(!target)
     {
@@ -343,6 +374,8 @@ globus_l_xio_gsi_target_init(
         goto error_target;
     }
 
+    /* initialize the target structure */
+    
     target->target_name = GSS_C_NO_NAME;
     target->init = GLOBUS_TRUE;
 
@@ -355,6 +388,10 @@ globus_l_xio_gsi_target_init(
     GlobusXIOGSIDebugExitWithError();
     return result;
 }
+
+/*
+ * modify the target structure
+ */
 
 static
 globus_result_t
@@ -373,10 +410,11 @@ globus_l_xio_gsi_target_cntl(
 
     target = (globus_l_target_t *) driver_target;
 
-    /* Q: should more stuff go in here? */
-    
     switch(cmd)
     {
+        /*
+         * Get and set the expected target/peer name
+         */
       case GLOBUS_XIO_GSI_GET_TARGET_NAME:
         out_name = va_arg(ap, gss_name_t *);
         *out_name = target->target_name;
@@ -441,6 +479,10 @@ globus_l_xio_gsi_target_destroy(
     return GLOBUS_SUCCESS;
 }
 
+/*
+ * Accept callback - just intializes the target structure
+ */ 
+
 void
 globus_l_xio_gsi_accept_cb(
     globus_i_xio_op_t *                 op,
@@ -465,6 +507,8 @@ globus_l_xio_gsi_accept_cb(
         goto error;
     }
 
+    /* since we are on the accept side set init to false */
+    
     target->init = GLOBUS_FALSE;
     
     GlobusXIODriverFinishedAccept(op, target, result);
@@ -477,6 +521,11 @@ globus_l_xio_gsi_accept_cb(
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }
+
+/*
+ * Accept - pass to callback
+ */
+
 
 static globus_result_t
 globus_l_xio_gsi_accept(
@@ -495,6 +544,9 @@ globus_l_xio_gsi_accept(
     return result;
 }
 
+/*
+ * destroy driver structure - internal use only 
+ */
 
 static
 void
@@ -561,6 +613,10 @@ globus_l_xio_gsi_handle_destroy(
     return;
 }
 
+/*
+ * Check if a security token is a pure SSL token or if it was wrapped and
+ * calculate it's length - internal use only
+ */
 
 static
 globus_bool_t
@@ -580,12 +636,14 @@ globus_l_xio_gsi_is_ssl_token(
          t[1] == 2 && t[2] == 0)) ||
        ((t[0] & 0x80) && t[2] == 1))
     {
+        /* it's a SSL token */
         *length = (t[3] << 8) | t[4];
         *length += 5;
         result = GLOBUS_TRUE;
     }
     else
     {
+        /* it's wrapped */
         *length = ((globus_size_t) (*((t)++))) << 24;         
         *length |= ((globus_size_t) (*((t)++))) << 16;
         *length |= ((globus_size_t) (*((t)++))) << 8;
@@ -597,6 +655,11 @@ globus_l_xio_gsi_is_ssl_token(
     return result;
 }
 
+/*
+ * Fill out a user supplied iovec with plaintext from a unwrapped buffer -
+ * internal only
+ */
+
 static globus_result_t
 globus_l_xio_gsi_unwrapped_buffer_to_iovec(
     globus_l_handle_t *                 handle,
@@ -605,12 +668,20 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
     globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_gsi_unwrapped_buffer_to_iovec);
     GlobusXIOGSIDebugInternalEnter();
+
+
+    /* bytes_read keeps track of the number of bytes transferred */
     
     *bytes_read = 0;
+
+    /* move data as long as there are more iovecs to fill */
     
     for( ; handle->user_iovec_index < handle->user_iovec_count;
          handle->user_iovec_index++)
     {
+        /* if the iovec can hold all remaining unwrapped data fill it and
+         * return
+         */
         if(handle->user_iovec[handle->user_iovec_index].iov_len -
            handle->user_iovec_offset >= handle->unwrapped_buffer_length -
            handle->unwrapped_buffer_offset)
@@ -624,6 +695,7 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
                    handle->unwrapped_buffer_offset);
             handle->user_iovec_offset += handle->unwrapped_buffer_length -
                 handle->unwrapped_buffer_offset;
+            /* reset variables */
             handle->unwrapped_buffer_offset = 0;
             handle->unwrapped_buffer_length = 0;
             free(handle->unwrapped_buffer);
@@ -631,6 +703,7 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
             result = handle->result;
             goto done;
         }
+        /* else fill it and continue */
         else
         {
             memcpy(handle->user_iovec[handle->user_iovec_index].iov_base +
@@ -651,6 +724,10 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
     return result;
 }
 
+/*
+ * Fill out a user supplied iovec with plaintext from a wrapped buffer. Should
+ * only be called if we are out of unwrapped data - internal only
+ */
 static globus_result_t
 globus_l_xio_gsi_wrapped_buffer_to_iovec(
     globus_l_handle_t *                 handle,
@@ -668,6 +745,8 @@ globus_l_xio_gsi_wrapped_buffer_to_iovec(
 
     GlobusXIOName(globus_l_xio_gsi_wrapped_buffer_to_iovec);
     GlobusXIOGSIDebugInternalEnter();
+
+    /* unwrap */
     
     wrapped_buf.value = &handle->read_buffer[offset];
     wrapped_buf.length = frame_length;
@@ -691,6 +770,8 @@ globus_l_xio_gsi_wrapped_buffer_to_iovec(
     handle->unwrapped_buffer = unwrapped_buf.value;
     handle->unwrapped_buffer_length = unwrapped_buf.length;
     handle->unwrapped_buffer_offset = 0;
+
+    /* fill */
     
     result = globus_l_xio_gsi_unwrapped_buffer_to_iovec(handle,
                                                         bytes_read);
@@ -698,13 +779,16 @@ globus_l_xio_gsi_wrapped_buffer_to_iovec(
     return result;
 }
 
-static
-void
+/* Write callback received after writing a security token. Checks the
+ * result and registers another read unless the handle indicates we are
+ * done - internal only
+ */
+static void
 globus_l_xio_gsi_write_token_cb(
-    struct globus_i_xio_op_s *              op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    struct globus_i_xio_op_s *          op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
     globus_xio_context_t                context;
     globus_l_handle_t *                 handle;
@@ -721,10 +805,14 @@ globus_l_xio_gsi_write_token_cb(
      
     context = GlobusXIOOperationGetContext(op);
 
+    /* read iovec was used to write a sec token */
+    
     tmp_buffer.length = handle->read_iovec[1].iov_len;
     tmp_buffer.value = handle->read_iovec[1].iov_base;
 
     gss_release_buffer(&minor_status, &tmp_buffer);
+
+    /* reset the read_iovec */
     
     handle->read_iovec[1].iov_base = handle->read_buffer;
     handle->read_iovec[1].iov_len = handle->attr->buffer_size;
@@ -736,6 +824,7 @@ globus_l_xio_gsi_write_token_cb(
     
     if(handle->done == GLOBUS_TRUE)
     {
+        /* done */
         if(handle->result != GLOBUS_SUCCESS)
         {
             goto error_pass_close;
@@ -747,6 +836,7 @@ globus_l_xio_gsi_write_token_cb(
     }
     else
     {
+        /* read another sec token */
         iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
         /* ssl record header is 5 bytes */
@@ -783,13 +873,19 @@ globus_l_xio_gsi_write_token_cb(
     return;
 }
 
+
+
+/* Read callback received after reading a security token. Checks the
+ * result, passes the read token to the right gss call and starts a write if
+ * the gss call did emit another token. - internal only
+ */
 static
 void
 globus_l_xio_gsi_read_token_cb(
-    struct globus_i_xio_op_s *              op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    struct globus_i_xio_op_s *          op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
     globus_xio_context_t                context;
     globus_l_handle_t *                 handle;
@@ -816,6 +912,8 @@ globus_l_xio_gsi_read_token_cb(
     }
 
     handle->bytes_read += nbytes;
+
+    /* if it is not a ssl token we have a header */
     
     if(globus_l_xio_gsi_is_ssl_token(handle->read_buffer,
                                      &wait_for) ==
@@ -848,6 +946,10 @@ globus_l_xio_gsi_read_token_cb(
         handle->read_buffer = tmp_ptr;
     }
 
+    /* read more if we have not received a full token or in the case of non
+     * wrapped ssl at least a full record.
+     */
+    
     if(offset > handle->bytes_read)
     {
         handle->read_iovec[1].iov_base =
@@ -873,6 +975,8 @@ globus_l_xio_gsi_read_token_cb(
         input_token.value = &handle->read_buffer[header];
     }
 
+    /* init/accept sec context */
+    
     if(handle->target->init == GLOBUS_TRUE)
     {
         major_status = gss_init_sec_context(&minor_status,
@@ -894,6 +998,7 @@ globus_l_xio_gsi_read_token_cb(
                                                  major_status,
                                                  minor_status);
 
+            /* if we have a output token try to send it */
             if(output_token.length == 0)
             {
                 goto error_pass_close;
@@ -906,6 +1011,7 @@ globus_l_xio_gsi_read_token_cb(
         }
         else if(major_status == GSS_S_COMPLETE)
         {
+            /* get the wrap size limit and peer and local names */
             handle->done = GLOBUS_TRUE;
 
             major_status = gss_wrap_size_limit(
@@ -960,6 +1066,7 @@ globus_l_xio_gsi_read_token_cb(
             result = GlobusXIOErrorWrapGSSFailed("gss_accept_sec_context",
                                                  major_status,
                                                  minor_status);
+            /* if we have a output token try to send it */
             if(output_token.length == 0)
             {
                 goto error_pass_close;
@@ -972,6 +1079,7 @@ globus_l_xio_gsi_read_token_cb(
         }
         else if(major_status == GSS_S_COMPLETE)
         {
+            /* get the wrap size limit and local name */
             handle->done = GLOBUS_TRUE;
 
             major_status = gss_wrap_size_limit(
@@ -1009,6 +1117,8 @@ globus_l_xio_gsi_read_token_cb(
         }
     }
 
+    /* deal with excess data */
+    
     if(offset < handle->bytes_read)
     {
         handle->bytes_read -= offset;
@@ -1023,6 +1133,7 @@ globus_l_xio_gsi_read_token_cb(
 
     if(output_token.length != 0)
     {
+        /* send the output token */
         if(handle->attr->wrap_tokens == GLOBUS_TRUE)
         {
             iovec = handle->read_iovec;
@@ -1057,10 +1168,12 @@ globus_l_xio_gsi_read_token_cb(
     }
     else if(handle->done == GLOBUS_TRUE)
     {
+        /* we're done */
         GlobusXIODriverFinishedOpen(context, handle, op, result);
     }
     else
     {
+        /* read another token */
         handle->read_iovec[1].iov_base =
             &(handle->read_buffer[handle->bytes_read]);
         handle->read_iovec[1].iov_len =
@@ -1107,7 +1220,8 @@ globus_l_xio_gsi_read_token_cb(
 }
 
 /*
- *  open
+ *  Open callback. Calls the intial init sec context and sends the output token
+ *  or reads the initial token for the accept side - internal only
  */
 static
 void
@@ -1171,6 +1285,7 @@ globus_l_xio_gsi_open_cb(
         }
         else if(major_status == GSS_S_COMPLETE)
         {
+            /* if we are already done, deal with it here */
             handle->done = GLOBUS_TRUE;
 
             major_status = gss_wrap_size_limit(
@@ -1259,6 +1374,7 @@ globus_l_xio_gsi_open_cb(
     }
     else
     {
+        /* read first token */
         iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
         /* ssl record header is 5 bytes */
@@ -1297,6 +1413,8 @@ globus_l_xio_gsi_open_cb(
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }   
+
+/* open interface function. just initializes the handle and passes */
 
 static
 globus_result_t
@@ -1384,7 +1502,7 @@ globus_l_xio_gsi_open(
 }
 
 /*
- *  close
+ *  close callback. Only called upon failure in open. Destroys the handle.
  */
 static
 void
@@ -1408,7 +1526,11 @@ globus_l_xio_gsi_close_cb(
     globus_l_xio_gsi_handle_destroy(handle);
     GlobusXIOGSIDebugInternalExit();
     return;
-}   
+}
+
+/*
+ * close interface function. Destroys handle and passes null callback.
+ */
 
 static
 globus_result_t
@@ -1431,7 +1553,7 @@ globus_l_xio_gsi_close(
 }
 
 /*
- *  read
+ *  read callback - internal only
  */
 static
 void
@@ -1459,20 +1581,26 @@ globus_l_xio_gsi_read_cb(
     if(result != GLOBUS_SUCCESS)
     {
         if(globus_xio_error_is_eof(result) == GLOBUS_FALSE || nbytes == 0)
-        { 
+        {
+            /* only error if error isn't eof and we haven't read anything */
             goto error;
         }
         else
         {
+            /* save result */
             handle->result = result;
             result = GLOBUS_SUCCESS;
         }
     }
+
+    /* if we aren't using security, just transfer the buffer */
+    /* no need to check wait_for since we should have read enough */
     
     if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE) 
     {
         result = globus_l_xio_gsi_unwrapped_buffer_to_iovec(
             handle,&bytes_read);
+        /* above will return result from handle */
         if(result != GLOBUS_SUCCESS &&
            globus_xio_error_is_eof(result) == GLOBUS_FALSE)
         {
@@ -1489,6 +1617,8 @@ globus_l_xio_gsi_read_cb(
     }
     
     context = GlobusXIOOperationGetContext(op);
+
+    /* figure out how much more to read */
     
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
@@ -1497,6 +1627,8 @@ globus_l_xio_gsi_read_cb(
     handle->bytes_read += nbytes;
 
     offset = 0;
+
+    /* check if we need to deal with header */
     
     ssl_record = globus_l_xio_gsi_is_ssl_token(handle->read_buffer,
                                                &frame_length);
@@ -1509,7 +1641,11 @@ globus_l_xio_gsi_read_cb(
     {
         header = 4;
     }
-            
+
+    /* while we have full frames convert wrapped data to unwrapped data
+       and push it to the user
+    */
+    
     while(frame_length + offset + header <= handle->bytes_read &&
           wait_for > 0 && no_header == GLOBUS_FALSE &&
           result == GLOBUS_SUCCESS)
@@ -1527,6 +1663,8 @@ globus_l_xio_gsi_read_cb(
             goto error;
         }
 
+        /* don't let wait_for underflow */
+        
         if(wait_for > bytes_read)
         {
             wait_for -= bytes_read;
@@ -1539,6 +1677,8 @@ globus_l_xio_gsi_read_cb(
         handle->bytes_returned += bytes_read;
         
         offset += frame_length;
+
+        /* get the length of the next frame */
         
         if(handle->bytes_read > offset + 5)
         {
@@ -1561,8 +1701,10 @@ globus_l_xio_gsi_read_cb(
     }
 
     handle->bytes_read -= offset;
+
+    /* reset the read buffer */
     
-    if(handle->bytes_read > offset)
+    if(handle->bytes_read)
     {
         memmove(handle->read_buffer, &handle->read_buffer[offset],
                handle->bytes_read);
@@ -1574,10 +1716,12 @@ globus_l_xio_gsi_read_cb(
     {
         if(no_header == GLOBUS_TRUE)
         {
+            /* read at least another header */
             wait_for = 5 - handle->bytes_read;
         }
         else
         {
+            /* or the next full frame if we already have the header info */
             wait_for = frame_length - handle->bytes_read;
 
             if(frame_length + 4 > handle->attr->buffer_size)
@@ -1596,6 +1740,9 @@ globus_l_xio_gsi_read_cb(
                 handle->read_buffer = tmp_ptr;
             }
         }
+
+        /* set up the iovec for the next read */
+        
         handle->read_iovec[1].iov_base =
             &(handle->read_buffer[handle->bytes_read]);
         handle->read_iovec[1].iov_len =
@@ -1606,6 +1753,7 @@ globus_l_xio_gsi_read_cb(
     }
     else
     {
+        /* done with either error or success */
         GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
     }
     GlobusXIOGSIDebugInternalExit();
@@ -1616,6 +1764,8 @@ globus_l_xio_gsi_read_cb(
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }
+
+/* read interface function */
 
 static
 globus_result_t
@@ -1643,21 +1793,32 @@ globus_l_xio_gsi_read(
     
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
+    /* reset read related state */
+    
     handle->bytes_returned = 0;
     handle->user_iovec = iovec;
     handle->user_iovec_count = iovec_count;
     handle->user_iovec_index = 0;
     handle->user_iovec_offset = 0;
+    handle->result = GLOBUS_SUCCESS;
 
+    /* if we don't get any iovecs and wait_for is greater thant 0 return an
+     * error
+     */
+    
     if(iovec_count < 1)
     {
         if(wait_for > 0)
-        { 
+        {
             result = GlobusXIOErrorParameter("iovec_count");
         }
         goto error;
     }
 
+    /* if we previously have read data (say during end of handshake) move data
+     * to unwrapped buffer variable and reset the read buffer
+     */
+    
     if(handle->bytes_read != 0 &&
        handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {
@@ -1674,6 +1835,8 @@ globus_l_xio_gsi_read(
         handle->bytes_read = 0;
         handle->unwrapped_buffer_offset = 0;
     }
+
+    /* if we have unwrapped data return it to user */
     
     if(handle->unwrapped_buffer_length != 0)
     {
@@ -1704,6 +1867,8 @@ globus_l_xio_gsi_read(
         
         handle->bytes_returned += bytes_read;
     }
+
+    /* deal with any buffered wrapped data */
 
     if(wait_for > 0 && handle->bytes_read != 0)
     {
@@ -1786,10 +1951,12 @@ globus_l_xio_gsi_read(
 
     if(wait_for == 0)
     {
+        /* done */
         GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
     }
     else if(handle->attr->prot_level != GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {
+        /* read either a new header or a new frame */
         if(no_header == GLOBUS_TRUE)
         {
             wait_for = 5 - handle->bytes_read;
@@ -1825,6 +1992,7 @@ globus_l_xio_gsi_read(
     }
     else
     {
+        /* if no protection just read as much as we need */
         if(handle->user_iovec_index > 0 ||
            handle->user_iovec_offset > 0)
         { 
@@ -1860,7 +2028,7 @@ globus_l_xio_gsi_read(
 }
 
 /*
- *  write
+ *  write callback - internal only
  */
 void
 globus_l_xio_gsi_write_cb(
@@ -1876,10 +2044,13 @@ globus_l_xio_gsi_write_cb(
 
     handle = (globus_l_handle_t *) user_arg;
 
+    /* free the memory used for writes */
+    
     if(handle->frame_writes == GLOBUS_FALSE)
     { 
         for(i = 0;i < handle->write_iovec_count;i++)
         {
+            /* include the headers for framed writes */
             if(handle->write_iovec[i].iov_base != NULL)
             {
                 free(handle->write_iovec[i].iov_base);
@@ -1902,6 +2073,9 @@ globus_l_xio_gsi_write_cb(
     return;
 }
 
+/*
+ * write interface function
+ */
 static
 globus_result_t
 globus_l_xio_gsi_write(
@@ -1942,6 +2116,8 @@ globus_l_xio_gsi_write(
         goto error;
     }
 
+    /* no protection -> just pass the write with a null callback */
+    
     if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {
         GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
@@ -1962,6 +2138,8 @@ globus_l_xio_gsi_write(
         j++;
     }
 
+    /* if all iovecs are empty then we are done */
+    
     if(j == iovec_count)
     {
         GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
@@ -1969,6 +2147,9 @@ globus_l_xio_gsi_write(
         GlobusXIOGSIDebugExit();
         return result;
     }
+
+    /* wrap first iovec up to max wrap size */
+    /* need this info to detect if we are dealing with SSL based GSSAPI */
     
     plaintext_buffer.value = iovec[j].iov_base;
 
@@ -2012,6 +2193,8 @@ globus_l_xio_gsi_write(
         handle->bytes_written += iovec[i].iov_len;
     }
 
+    /* frame any non SSL writes */
+    
     if(globus_l_xio_gsi_is_ssl_token(wrapped_buffer.value, &frame_length)
        != GLOBUS_TRUE)
     {
@@ -2038,6 +2221,8 @@ globus_l_xio_gsi_write(
         write_iovec_count *= 2;
     }
 
+    /* allocate enough write iovecs */
+    
     if(write_iovec_count > handle->write_iovec_count)
     {
         void *                          tmp_ptr;
@@ -2054,6 +2239,10 @@ globus_l_xio_gsi_write(
         handle->write_iovec_count = write_iovec_count;
     }
 
+    /* if we didn't wrap complete iovec start with first iovec found, otherwise
+     * start with next.
+     */
+    
     if(iovec_offset)
     {
         i = j;
@@ -2063,6 +2252,8 @@ globus_l_xio_gsi_write(
         i = j + 1;
     }
 
+    /* initialize 1st write iovec (&header) */
+    
     if(handle->frame_writes == GLOBUS_TRUE)
     {
         handle->write_iovec[j].iov_base = handle->write_headers;
@@ -2081,6 +2272,8 @@ globus_l_xio_gsi_write(
     handle->write_iovec[j].iov_len = wrapped_buffer.length;
     wait_for +=  wrapped_buffer.length;
     j++;
+
+    /* wrap and initialize the rest */
     
     for(;i < iovec_count;i++)
     {
@@ -2138,6 +2331,8 @@ globus_l_xio_gsi_write(
         }
         while(iovec_offset);
     }
+
+    /* pass the write */
     
     GlobusXIODriverPassWrite(result, op, handle->write_iovec,
                              write_iovec_count, wait_for,
@@ -2151,6 +2346,10 @@ globus_l_xio_gsi_write(
 
 }
 
+
+/*
+ * driver cntl interface function
+ */
 static
 globus_result_t
 globus_l_xio_gsi_cntl(
@@ -2172,18 +2371,22 @@ globus_l_xio_gsi_cntl(
     
     switch(cmd)
     {
+        /* extract the context */
       case GLOBUS_XIO_GSI_GET_CONTEXT:
         out_ctx = va_arg(ap, gss_ctx_id_t *);
         *out_ctx= handle->context;
         break;
+        /* extract the delegated cred */
       case GLOBUS_XIO_GSI_GET_DELEGATED_CRED:
         out_cred = va_arg(ap, gss_cred_id_t *);
         *out_cred = handle->delegated_cred;
         break;
+        /* get the peer name */
       case GLOBUS_XIO_GSI_GET_PEER_NAME:
         out_name = va_arg(ap, gss_name_t *);
         *out_name = handle->peer_name;
         break;
+        /* get the local name */
       case GLOBUS_XIO_GSI_GET_LOCAL_NAME:
         out_name = va_arg(ap, gss_name_t *);
         *out_name = handle->local_name;
@@ -2201,6 +2404,9 @@ globus_l_xio_gsi_cntl(
     return result;
 }
 
+/*
+ * Driver load function
+ */
 static globus_result_t
 globus_l_xio_gsi_load(
     globus_xio_driver_t *               out_driver,
@@ -2255,6 +2461,9 @@ globus_l_xio_gsi_load(
     return GLOBUS_SUCCESS;
 }
 
+/*
+ * Driver unload function
+ */
 static void
 globus_l_xio_gsi_unload(
     globus_xio_driver_t                 driver)
@@ -2266,7 +2475,9 @@ globus_l_xio_gsi_unload(
     return;
 }
 
-
+/*
+ * Module activation
+ */
 static
 int
 globus_l_xio_gsi_activate(void)
@@ -2281,6 +2492,9 @@ globus_l_xio_gsi_activate(void)
     return rc;
 }
 
+/*
+ * Module deactivation
+ */
 static
 int
 globus_l_xio_gsi_deactivate(void)
@@ -2294,6 +2508,10 @@ globus_l_xio_gsi_deactivate(void)
     return rc;
 }
 
+
+/*
+ * Driver definition
+ */
 GlobusXIODefineDriver(
     gsi,
     &globus_i_xio_gsi_module,

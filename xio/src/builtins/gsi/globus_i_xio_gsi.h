@@ -11,6 +11,8 @@
 
 #define GLOBUS_XIO_GSI_DRIVER_MODULE &globus_i_xio_gsi_module
 
+/* create/calculate a token header */
+
 #define GlobusLXIOGSICreateHeader(__iovec, __length)              \
     {                                                             \
         *(((unsigned char *) (__iovec).iov_base)) =               \
@@ -23,6 +25,8 @@
             (unsigned char) (((__length)      ) & 0xff);          \
     }
 
+/* get the token length from a wrapped token */
+
 #define GlobusLXIOGSIGetTokenLength(__iovec, __length)            \
     {                                                             \
         globus_byte_t *                 c;                        \
@@ -34,7 +38,7 @@
     }
 
 
-
+/* macro for wrapping gssapi errors */
 
 #define GlobusXIOErrorWrapGSSFailed(failed_func, major_status, minor_status) \
     globus_error_put(                                                        \
@@ -45,6 +49,8 @@
             GLOBUS_XIO_ERROR_WRAPPED,                                        \
             "[%s:%d] %s failed.",                                            \
             _xio_name, __LINE__, (failed_func)))
+
+/* XIO debug stuff */
 
 GlobusDebugDeclare(GLOBUS_XIO_GSI);
 
@@ -99,17 +105,9 @@ typedef struct
     globus_xio_gsi_protection_level_t   prot_level;
 } globus_l_attr_t;
 
-static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
-{
-    GSS_C_NO_CREDENTIAL,
-    GSS_C_MUTUAL_FLAG,
-    0,
-    GSS_C_NO_OID,
-    GSS_C_NO_CHANNEL_BINDINGS,
-    GLOBUS_FALSE,
-    131072, /* 128K default read buffer */
-    GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE
-};
+/*
+ * target structure
+ */
 
 typedef struct
 {
@@ -118,6 +116,9 @@ typedef struct
     globus_bool_t                       init;
 } globus_l_target_t;
 
+/*
+ * driver handle structure
+ */
 
 typedef struct
 {
