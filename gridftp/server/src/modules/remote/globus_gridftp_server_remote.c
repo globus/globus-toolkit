@@ -108,7 +108,7 @@ globus_l_gfs_remote_stripe_request_kickout(
 
     bounce_info->callback(
         stripe_info,
-        GLOBUS_SUCCESS,
+        result,
         bounce_info->user_arg);
         
     return;    
@@ -968,6 +968,7 @@ globus_l_gfs_remote_session_start_kickout(
     finished_info = (globus_gfs_finished_info_t *)            
         globus_calloc(1, sizeof(globus_gfs_finished_info_t)); 
     finished_info->type = GLOBUS_GFS_OP_SESSION_START;          
+    finished_info->result = result;          
     finished_info->session_arg = bounce_info->my_handle;                          
                                                               
     globus_gridftp_server_operation_finished(                 
