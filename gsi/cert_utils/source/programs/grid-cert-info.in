@@ -128,33 +128,23 @@ fi
 command_stub="${SSL_EXEC} x509 -noout -in ${certfile}"
 
 # Will probably need this...
-subject=`eval "${command_stub}" -subject | ${GLOBUS_SH_SED-sed} 's%^subject=\ *%%'`
+subject=`eval ${command_stub} -subject` 
+
+if test $? -ne 0 ; then
+    exit 1
+fi
+
+subject=`echo ${subject} | ${GLOBUS_SH_SED-sed} 's%^subject=\ *%%'`
 
 eval set -- "$toprint"
 for i in "$@"; do
     case "$i" in
     -*)
-	eval "${command_stub} $i | ${GLOBUS_SH_SED-sed} 's/^[A-z]*=[ ]*//'"
+	eval "{ ${command_stub} $i || exit $?; } | ${GLOBUS_SH_SED-sed} 's/^[A-z]*=[ ]*//'"
 	;;
     SUBJECT)
 	# Do not show the proxy levels
 	echo "${subject}" | ${GLOBUS_SH_SED-sed} -e 's%/CN=proxy%%g' -e 's%/CN=limited proxy%%g'
-	;;
-    PROXY)
-	proxy=`echo "${subject}" | ${GLOBUS_SH_AWK-awk} -F/ '{for (i=1;i<=NF;i++) printf "%s\n", $i;}' | ${GLOBUS_SH_SED-sed} -n '/^CN=.*proxy/p' | ${GLOBUS_SH_GREP-grep} -c "CN=proxy"`
-	limited=`echo "${subject}" | ${GLOBUS_SH_AWK-awk} -F/ '{for (i=1;i<=NF;i++) printf "%s\n", $i;}'| ${GLOBUS_SH_SED-sed} -n '/^CN=.*proxy/p' | ${GLOBUS_SH_GREP-grep} -c "CN=limited proxy"`
-	if [ "${limited}" -gt 0 ]; then
-	    echo "Limited proxy, number of levels : `expr ${proxy} + ${limited}`"
-	elif [ "${proxy}" -gt 0 ]; then
-	    echo "Full proxy, number of levels : ${proxy}"
-        else
-	    echo "Not a proxy"
-	fi
-	;;
-    O*2)
-	# print second instance of O or OU.
-	o=`echo $i | ${GLOBUS_SH_SED-sed} 's/2//'`
-	echo "${subject}" | ${GLOBUS_SH_AWK-awk} -F/ '{for (i=1;i<=NF;i++) printf "%s\n", $i;}' | ${GLOBUS_SH_GREP-grep} "^${o}=" | ${GLOBUS_SH_SED-sed} -e 1d -e 's/^[A-z]*=//'
 	;;
     esac
 done
