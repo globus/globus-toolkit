@@ -114,7 +114,7 @@ globus_l_uuid_get_mac(
         {
             struct sockaddr_dl *        sdl;
         
-            sdl = (struct sockaddr_dl *)ifap->ifa_addr;
+            sdl = (struct sockaddr_dl *)interface->ifa_addr;
             if(sdl->sdl_alen == 6)
             {
                 memcpy(mac, sdl->sdl_data + sdl->sdl_nlen, 6);
