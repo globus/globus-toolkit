@@ -26,7 +26,8 @@ BUNDLE gt4-c-ws-core
         globus_c_wsrf_resource
         globus_js
         globus_xio_buffer
-        globus_c_wsrf_resource
+        globus_c_wsrf_providers
+        globus_notification_consumer
 
 BUNDLE gt4-mds
         globus_wsrf_mds_aggregator
