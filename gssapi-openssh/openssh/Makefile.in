@@ -188,8 +188,8 @@ distprep: catman-do
 install: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files host-key
 install-nokeys: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files
 
-gpt-install: $(TARGETS) gpt-install-files
-gpt-install-nokeys: $(TARGETS) gpt-install-files
+gpt-install: gpt-all gpt-install-files
+gpt-install-nokeys: gpt-all gpt-install-files
 
 scard-install:
 	(cd scard && $(MAKE) DESTDIR=$(DESTDIR) install)
@@ -269,13 +269,13 @@ gpt-install-files:
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
 	$(INSTALL) -m $(SSH_MODE) -s ssh $(DESTDIR)$(bindir)/ssh
 	$(INSTALL) -m 0755 -s scp $(DESTDIR)$(bindir)/scp.real
-	$(INSTALL) -m 0755 -s scp.wrapper $(DESTDIR)$(bindir)/scp
+	$(INSTALL) -m 0755 scp.wrapper $(DESTDIR)$(bindir)/scp
 	$(INSTALL) -m 0755 -s ssh-add $(DESTDIR)$(bindir)/ssh-add
 	$(INSTALL) -m 0755 -s ssh-agent $(DESTDIR)$(bindir)/ssh-agent
 	$(INSTALL) -m 0755 -s ssh-keygen $(DESTDIR)$(bindir)/ssh-keygen
 	$(INSTALL) -m 0755 -s ssh-keyscan $(DESTDIR)$(bindir)/ssh-keyscan
 	$(INSTALL) -m 0755 -s sshd $(DESTDIR)$(sbindir)/sshd.real
-	$(INSTALL) -m 0755 -s sshd.wrapper $(DESTDIR)$(sbindir)/sshd
+	$(INSTALL) -m 0755 sshd.wrapper $(DESTDIR)$(sbindir)/sshd
 	if test ! -z "$(INSTALL_SSH_RAND_HELPER)" ; then \
 		$(INSTALL) -m 0755 -s ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper ; \
 	fi
@@ -289,7 +289,7 @@ gpt-install-files:
 	@NO_SFTP@$(INSTALL) -m 644 sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
 	@NO_SFTP@$(INSTALL) -m 644 sftp-server.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
 	@NO_SFTP@$(INSTALL) -m 0755 -s sftp $(DESTDIR)$(bindir)/sftp.real
-	@NO_SFTP@$(INSTALL) -m 0755 -s sftp.wrapper $(DESTDIR)$(bindir)/sftp
+	@NO_SFTP@$(INSTALL) -m 0755 sftp.wrapper $(DESTDIR)$(bindir)/sftp
 	@NO_SFTP@$(INSTALL) -m 0755 -s sftp-server $(DESTDIR)$(SFTP_SERVER)
 	-rm -f $(DESTDIR)$(bindir)/slogin
 	ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
