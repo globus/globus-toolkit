@@ -65,7 +65,7 @@ globus_l_gsi_credential_activate(void)
     tmp_string = globus_module_getenv("GLOBUS_GSI_CRED_DEBUG_FILE");
     if(tmp_string != GLOBUS_NULL)
     {
-        globus_i_gsi_cred_debug_fstream = fopen(tmp_string, "w");
+        globus_i_gsi_cred_debug_fstream = fopen(tmp_string, "a");
         if(globus_i_gsi_cred_debug_fstream == NULL)
         {
             result = (int) GLOBUS_FAILURE;
@@ -163,11 +163,11 @@ globus_result_t globus_gsi_cred_read(
     char *                              service_name)
 {
     int                                 index = 0;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              found_subject = NULL;
-    char *                              cert;
-    char *                              key;
-    char *                              proxy;
+    char *                              cert = NULL;
+    char *                              key = NULL;
+    char *                              proxy = NULL;
 
     static char *                       _function_name_ =
         "globus_gsi_cred_read";
@@ -187,8 +187,6 @@ globus_result_t globus_gsi_cred_read(
 
     do
     {
-        result = GLOBUS_SUCCESS;
-
         switch(handle->attrs->search_order[index])
         {
             case GLOBUS_PROXY:
@@ -200,6 +198,11 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED);
+                    if(proxy)
+                    {
+                        /* a proxy exists but is invalid */
+                        goto exit;
+                    }
                     break;
                 }
                 
@@ -209,7 +212,7 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED);
-                    break;
+                    goto exit;
                 }
             
                 result = globus_gsi_cred_get_subject_name(handle, 
@@ -219,7 +222,7 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED);
-                    break;
+                    goto exit;
                 }
 
                 if(desired_subject == NULL ||
@@ -242,6 +245,11 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
+                    if(cert || key)
+                    {
+                        /* cert or key exist, but are malformed */
+                        goto exit;
+                    }
                     break;
                 }                    
 
@@ -251,7 +259,7 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
-                    break;
+                    goto exit;
                 }
 
                 result = globus_gsi_cred_read_key(handle, key, NULL);
@@ -260,6 +268,7 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
+                    goto exit;
                 }
 
                 result = globus_i_gsi_cred_goodtill(
@@ -270,7 +279,7 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_WITH_CRED);
-                    break;
+                    goto exit;
                 }
 
                 result = globus_gsi_cred_get_subject_name(handle, 
@@ -280,7 +289,7 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
-                    break;
+                    goto exit;
                 }
 
                 if(desired_subject == NULL ||
@@ -304,6 +313,11 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                                  result,
                                  GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
+                        if(cert || key)
+                        {
+                            /* cert or key exist, but are invalid */
+                            goto exit;
+                        }
                         break;
                     }                    
 
@@ -313,7 +327,7 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                             result,
                             GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
-                        break;
+                        goto exit;
                     }
                     
                     result = globus_gsi_cred_read_key(handle, key, NULL);
@@ -322,7 +336,7 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                             result,
                             GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
-                        break;
+                        goto exit;
                     }
                     
                     result = globus_i_gsi_cred_goodtill(
@@ -333,7 +347,7 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                             result,
                             GLOBUS_GSI_CRED_ERROR_WITH_CRED);
-                        break;
+                        goto exit;
                     }
 
                     result = globus_gsi_cred_get_subject_name(handle, 
@@ -343,7 +357,7 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                             result,
                             GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
-                        break;
+                        goto exit;
                     }
 
                     if(desired_subject == NULL || 
@@ -535,7 +549,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     if(handle->cert_chain != NULL)
     {
         sk_X509_pop_free(handle->cert_chain, X509_free);
-        handle->cert_chain = NULL
+        handle->cert_chain = NULL;
     }
 
     if((handle->cert_chain = sk_X509_new_null()) == NULL)
