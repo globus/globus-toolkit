@@ -3,11 +3,6 @@
 /*
  *  note:
  *
- *  both globus_xio_driver_server_t and globus_xio_driver_accept_request_t
- *  are internally cast to the same object.  The typedef difference is
- *  there to force an api.  This will help to force the driver to finish
- *  only when the callback returns.
- *
  *  Cancel Process
  *  --------------
  *  The only exception to when the accept can finish before the callback occurs
@@ -161,7 +156,7 @@ globus_l_xio_server_accept_kickout(
  */
 void
 globus_i_xio_server_accept_callback(
-    globus_xio_driver_server_t                  server_handle,
+    globus_xio_operation_t                      op;
     globus_result_t                             result,
     void *                                      user_arg)
 {
@@ -169,8 +164,7 @@ globus_i_xio_server_accept_callback(
     globus_i_xio_op_entry_t *                   xio_op;
     globus_bool_t                               accept = GLOBUS_TRUE;
 
-    xio_server = server;
-    xio_op = xio_server->op;
+    xio_op = op;
 
     globus_mutex_lock(&xio_server->mutex);
     {

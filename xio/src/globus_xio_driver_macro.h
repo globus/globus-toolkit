@@ -331,42 +331,42 @@ do                                                                          \
     if(_next_entry->_op_ent_nwritten < _next_entry->_op_ent_wait_for)       \
     {                                                                       \
         /* TODO: form the fake iovec */                                     \
-        if(_next_entry->fake_iovec == NULL)                       \
+        if(_next_entry->fake_iovec == NULL)                                 \
         {                                                                   \
-            _next_entry->fake_iovec = (globus_iovec_t *)
-                globus_malloc(sizeof(globus_iovec_t) * 
-                    _next_entry->iovec_count);
+            _next_entry->fake_iovec = (globus_iovec_t *)                    \
+                globus_malloc(sizeof(globus_iovec_t) *                      \
+                    _next_entry->iovec_count);                              \
         }                                                                   \
-
-        tmp_iovec = _next_entry->iovec;
-        offset = 0;
-        iovec_ndx = 0;
-        while(offset + tmp_iovec.iov_len < _next_entry->_op_ent_nwritten)
-        {
-            offset += tmp_iovec.iov_len;
-            iovec_ndx++;
-            tmp_iovec = &_next_entry->iovec[iovec_ndx];
-        }
-
-        _iovec_count = _next_entry->iovec_count - iovec_ndx;
-        offset = _next_entry->_op_ent_nwritten - offset;
-        _next_entry->fake_iovec[0].iov_base = 
-            &_next_entry->iovec[iovec_ndx].iov_bass[offset];
-        _next_entry->fake_iovec[0].iov_len = 
-            _next_entry->iovec[iovec_ndx].iov_len - offset;
-        /* simply coping in the remaining ones */
-        for(ctr = 1; ctr < _iovec_count; ctr++)
-        {
-            _next_entry->fake_iovec[ctr].iov_base = 
-                _next_entry->iovec[iovec_ndx + ctr].iov_bass;
-            _next_entry->fake_iovec[ctr].iov_len = 
-                _next_entry->iovec[iovec_ndx + ctr].iov_len;
-        }
+                                                                            \
+        tmp_iovec = _next_entry->iovec;                                     \
+        offset = 0;                                                         \
+        iovec_ndx = 0;                                                      \
+        while(offset + tmp_iovec.iov_len < _next_entry->_op_ent_nwritten)   \
+        {                                                                   \
+            offset += tmp_iovec.iov_len;                                    \
+            iovec_ndx++;                                                    \
+            tmp_iovec = &_next_entry->iovec[iovec_ndx];                     \
+        }                                                                   \
+                                                                            \
+        _iovec_count = _next_entry->iovec_count - iovec_ndx;                \
+        offset = _next_entry->_op_ent_nwritten - offset;                    \
+        _next_entry->fake_iovec[0].iov_base =                               \
+            &_next_entry->iovec[iovec_ndx].iov_bass[offset];                \
+        _next_entry->fake_iovec[0].iov_len =                                \
+            _next_entry->iovec[iovec_ndx].iov_len - offset;                 \
+        /* simply coping in the remaining ones */                           \
+        for(ctr = 1; ctr < _iovec_count; ctr++)                             \
+        {                                                                   \
+            _next_entry->fake_iovec[ctr].iov_base =                         \
+                _next_entry->iovec[iovec_ndx + ctr].iov_bass;               \
+            _next_entry->fake_iovec[ctr].iov_len =                          \
+                _next_entry->iovec[iovec_ndx + ctr].iov_len;                \
+        }                                                                   \
                                                                             \
         _res = context->driver->write_func(                                 \
                 _context->driver_handle,                                    \
-                _next_entry->fake_iovec,      \
-                _iovec_count,                 \
+                _next_entry->fake_iovec,                                    \
+                _iovec_count,                                               \
                 _op);                                                       \
         if(_res != GLOBUS_SUCCESS)                                          \
         {                                                                   \
@@ -375,10 +375,10 @@ do                                                                          \
     }                                                                       \
     if(fire_cb)                                                             \
     {                                                                       \
-        if(_next_entry->fake_iovec != NULL)
-        {
-            globus_free(_next_entry->fake_iovec);
-        }
+        if(_next_entry->fake_iovec != NULL)                                 \
+        {                                                                   \
+            globus_free(_next_entry->fake_iovec);                           \
+        }                                                                   \
         if(_op->entry[_op->ndx].in_register)                                \
         {                                                                   \
             _op->cached_res = (_res);                                       \
