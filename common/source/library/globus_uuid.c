@@ -92,7 +92,7 @@ globus_l_uuid_get_mac(
         return GLOBUS_FAILURE
     }
     
-    memcpy(mac, ar.arp_ha.sa_data, 6);
+    memcpy(mac, req.arp_ha.sa_data, 6);
     close(sock);
     return GLOBUS_SUCCESS;
 
