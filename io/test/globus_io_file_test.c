@@ -29,13 +29,13 @@ main(int argc, char **argv)
 #ifdef TARGET_ARCH_WIN32
 	HANDLE						outputFile;
     globus_io_handle_t			write_handle;
-#endif
 
 	if ( argc < 3 )
 	{
 		usage( argv[0] );
 		return -1;
 	}
+#endif
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
