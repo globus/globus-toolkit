@@ -146,7 +146,7 @@ static char     tmpbuf[1024];
 #define failure3(a,b,c) {sprintf(tmpbuf, a,b,c); failure(tmpbuf);}
 #define failure4(a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(tmpbuf);}
 
-#ifndef TARGET_ARCH_LINUX
+#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
 extern char *   sys_errlist[];
 #endif
 
