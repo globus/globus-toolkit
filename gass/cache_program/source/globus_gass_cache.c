@@ -311,7 +311,7 @@ globus_l_cache_get_rm_contact(char *resource)
     }
 
     
-    mds_conf = fopen(GLOBUS_SYSCONFDIR "/globus-mds.conf", "r");
+    mds_conf = fopen(GLOBUS_SYSCONFDIR "/grid-info.conf", "r");
     if(mds_conf != GLOBUS_NULL)
     {
 	while(fgets(buf, 512, mds_conf) != GLOBUS_NULL)
