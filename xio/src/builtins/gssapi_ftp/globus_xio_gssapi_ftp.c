@@ -2243,6 +2243,7 @@ globus_l_xio_gssapi_ftp_write(
                 globus_free(handle->write_buffer);
                 handle->auth_write_iov.iov_len = globus_libc_strlen(out_buf);
                 handle->auth_write_iov.iov_base = out_buf;
+                cb = globus_l_xio_gssapi_ftp_write_cb;
             }
         }
 
