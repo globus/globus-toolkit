@@ -1,4 +1,5 @@
 #include "globus_common.h"
+#include "config.h"
 
 #include <assert.h>
 

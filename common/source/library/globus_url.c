@@ -13,6 +13,7 @@ Description:
                              Include header files
 ******************************************************************************/
 
+#include "config.h"
 #include "globus_common.h"
 
 #include <stdlib.h>

@@ -35,6 +35,7 @@
 /* based on @(#)getenv.c	8.1 (Berkeley) 6/4/93 */
 
 #include "globus_common.h"
+#include "config.h"
 
 #include <stddef.h>
 #ifdef TARGET_ARCH_CRAYT3E

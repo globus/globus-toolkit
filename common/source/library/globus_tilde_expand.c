@@ -18,6 +18,7 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "config.h"
 #include "globus_common.h"
 #include "globus_tilde_expand.h"
 

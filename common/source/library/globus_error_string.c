@@ -1,4 +1,5 @@
 #include "globus_common.h"
+#include "config.h"
 #include "globus_error_string.h"
 #include <string.h>
 

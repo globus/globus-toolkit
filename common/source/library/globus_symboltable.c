@@ -6,6 +6,7 @@
  *
  ********************************************************************/
 
+#include "config.h"
 #include "globus_common.h"
 #include "globus_symboltable.h"
 #include "globus_list.h"

@@ -1,3 +1,4 @@
+#include "config.h"
 #include "globus_common.h"
 #include "globus_thread_pool.h"
 

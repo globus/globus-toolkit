@@ -16,6 +16,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common.h"
+#include "config.h"
 
 /******************************************************************************
 			       Type definitions

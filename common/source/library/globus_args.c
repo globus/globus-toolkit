@@ -3,6 +3,7 @@
 */
 
 #include "globus_common.h"
+#include "config.h"
 #include <string.h>
 
 #define globus_l_args_malloc(type,n)  (type *) globus_malloc(n * sizeof(type))

@@ -19,6 +19,7 @@ ry/globus_strptime.c,v $
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "config.h"
 #include "globus_common.h"
 #include "globus_libc.h"
 

@@ -44,6 +44,8 @@ EXTERN_C_END
 /******************************************************************************
 		      Include globus_common header files
 ******************************************************************************/
+#include "globus_config.h"
+
 #ifndef GLOBUS_USE_SOLARIS_THREADS
 #undef GLOBUS_USE_SOLARIS_THREADS
 #endif
@@ -59,9 +61,63 @@ EXTERN_C_END
 #ifndef GLOBUS_USE_EXTERNAL_THREADS
 #undef GLOBUS_USE_EXTERNAL_THREADS
 #endif
+#ifndef GLOBUS_GLOBUS_TIMESPEC_EXISTS
+#undef GLOBUS_GLOBUS_TIMESPEC_EXISTS
+#endif
+#ifndef HAVE_DIRENT_H
+#undef HAVE_DIRENT_H
+#endif
+#ifndef HAVE_FCNTL_H
+#undef HAVE_FCNTL_H
+#endif
+#ifndef HAVE_MEMMOVE
+#undef HAVE_MEMMOVE
+#endif
 
-#include "globus_config.h"
-/** stu 3/8/01 commenting out for now #include "config.h" **/
+#ifndef HAVE_NETDB_H
+#undef HAVE_NETDB_H
+#endif
+
+#ifndef HAVE_STRUCT_IOVEC
+#undef HAVE_STRUCT_IOVEC
+#endif
+
+#ifndef HAVE_SYS_SIGNAL_H
+#undef HAVE_SYS_SIGNAL_H
+#endif
+
+#ifndef HAVE_SYS_TYPES_H
+#undef HAVE_SYS_TYPES_H
+#endif
+
+#ifndef HAVE_SYS_UIO_H
+#undef HAVE_SYS_UIO_H
+#endif
+
+#ifndef HAVE_UNISTD_H
+#undef HAVE_UNISTD_H
+#endif
+
+#ifndef HAVE_WRITEV
+#undef HAVE_WRITEV
+#endif
+
+#ifndef MAXPATHLEN
+#undef MAXPATHLEN
+#endif
+
+
+#ifndef TIME_WITH_SYS_TIME
+#undef TIME_WITH_SYS_TIME
+#endif
+
+#ifndef USE_MACROS
+#undef USE_MACROS
+#endif
+
+#ifndef GLOBUS_OFF_T
+#undef GLOBUS_OFF_T
+#endif
 
 typedef GLOBUS_OFF_T globus_off_t;
 

@@ -11,6 +11,7 @@ CVS Information:
    $State$
    $Author$
 ******************************************************************************/
+#include "config.h"
 
 #include "globus_common.h"
 

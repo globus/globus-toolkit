@@ -1,4 +1,5 @@
 
+#include "config.h"
 
 #include "globus_common.h"
 
