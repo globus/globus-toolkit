@@ -77,6 +77,7 @@ globus_list_t *					host_port_list = NULL;
 globus_ftp_control_layout_t			g_layout;
 globus_size_t                                   g_striped_file_size;
 globus_ftp_control_parallelism_t		g_parallelism;
+globus_ftp_control_dcau_t			g_dcau;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
 #endif
@@ -211,7 +212,7 @@ extern int port_allowed(const char *remoteaddr);
     STAT    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
 
-    AUTH    ADAT    PROT    PBSZ    CCC
+    AUTH    ADAT    PROT    PBSZ    CCC     DCAU
 
     ESTO    ERET    SPAS    SPOR    FEAT    OPTS
 
@@ -450,6 +451,23 @@ cmd: USER SP username CRLF
 #ifdef FTP_SECURITY_EXTENSIONS
 	    set_prot_level($3);
 #endif /* FTP_SECURITY_EXTENSIONS */
+#           if USE_GLOBUS_DATA_CODE
+	    {
+		switch($3)
+		{
+		  case PROT_C:
+		    globus_ftp_control_local_prot(&g_data_handle,
+		         GLOBUS_FTP_CONTROL_PROTECTION_CLEAR);
+		    break;
+		  case PROT_P:
+		    globus_ftp_control_local_prot(&g_data_handle,
+		         GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
+		  case PROT_S:
+		    globus_ftp_control_local_prot(&g_data_handle,
+		         GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
+		}
+	    }
+#           endif
 	}
 	|	CCC CRLF
 	=   	{
@@ -856,6 +874,46 @@ cmd: USER SP username CRLF
 		syslog(LOG_INFO, "FEAT");
 	    if ($2)
 		feat(feattab);
+	}
+    | DCAU check_login SP STRING CRLF
+        =	{
+	    if (log_commands)
+		syslog(LOG_INFO, "DCAU");
+	    if($2)
+	    {
+#               if defined(USE_GLOBUS_DATA_CODE)
+                {
+		    globus_result_t                            res;
+		    if(g_dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT)
+		    {
+			globus_libc_free(g_dcau.subject.subject);
+		    }
+		    if($4[0] == 'N')
+		    {
+			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+		    }
+		    else if($4[0] == 'A')
+		    {
+			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
+		    }
+		    else if($4[0] == 'S')
+		    {
+			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SUBJECT;
+			g_dcau.subject.subject = globus_libc_strdup($4+2);
+		    }
+		    res = globus_ftp_control_local_dcau(&g_data_handle,
+		                                        &g_dcau);
+		    if(res != GLOBUS_SUCCESS)
+		    {
+		        reply(432, "Data channel authentication failed");
+		    }
+		    else
+		    {
+		        reply(200, "DCAU %c", $4[0]);
+		    }
+                }
+#               endif
+	    }
 	}
     | NOOP check_login CRLF
 	=	{
@@ -1899,6 +1957,7 @@ struct tab cmdtab[] =
 #ifdef USE_GLOBUS_DATA_CODE
     { "SPAS", SPAS, ARGS, 1, "(set server in striped passive mode"},
     { "SPOR", SPOR, ARGS, 1, "<sp> h1,h2,h2,h3,p1,p2..."},
+    { "DCAU", DCAU, STR1, 1, "<sp> N|A|S <subject>"},
 #endif
     { "FEAT", FEAT, ARGS, 1, "(return list of FTP extensions supported)"},
     { "OPTS", OPTS, OPTSARGS, 1, "(set operation-specific options)"},

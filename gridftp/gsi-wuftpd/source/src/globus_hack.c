@@ -15,6 +15,7 @@ extern SIGNAL_TYPE
 lostconn(int sig);
 
 extern globus_fifo_t				g_restarts;
+extern globus_ftp_control_dcau_t                g_dcau;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
@@ -421,6 +422,9 @@ G_ENTER();
     wu_monitor_init(&g_monitor);
     g_monitor.handle = &g_data_handle;
 
+    g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+
+
     a = (char *)&his_addr;
     host_port.host[0] = (int)a[0];
     host_port.host[1] = (int)a[1];
@@ -459,7 +463,7 @@ G_ENTER();
     globus_fifo_init(&g_restarts);
 
     debug_printf("registering wakeup at %d secs\n", timeout_connect / 2);
-    res = globus_callback_register_periodic(
+    rc = globus_callback_register_periodic(
              GLOBUS_NULL,
              &delay_time,
              &period_time,

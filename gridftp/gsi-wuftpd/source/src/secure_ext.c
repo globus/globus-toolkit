@@ -52,7 +52,9 @@ static unsigned int actual_pbuf_size = 0;
 static unsigned char *cleartext_buffer = NULL;
 
 
-
+#if USE_GLOBUS_DATA_CODE
+#   define DATA_CHANNEL_PROTECTION 1
+#endif
 /*
  * setlevel()
  *
@@ -84,10 +86,6 @@ set_prot_level(int prot_level)
 	
 
     case PROT_P:
-
-#ifndef NOENCRYPTION
-	break;
-#endif /* NOCENCRYPTION */
 
 #ifdef DATA_CHANNEL_PROTECTION
 #ifdef GSSAPI
@@ -471,12 +469,9 @@ encode_secure_message(char *message, char *smessage, int smessage_size)
 #ifdef GSSAPI
     if (strcmp(auth_type, "GSSAPI") == 0) {
 
-	/* GSSAPI doesn't support confidential, use private */
-	if (msg_prot_level == PROT_E)
-	    msg_prot_level = PROT_P;
-	
+	/* Always wrap messages with integrity checking */
 	if (gssapi_wrap_message(unwrapped_buf, wrapped_buf, &wrapped_buf_size,
-				msg_prot_level) < 0) {
+				PROT_S) < 0) {
 	    *smessage = '\0';
 	    return -1;
 	}

@@ -6687,8 +6687,10 @@ void dologout(int status)
     if (xferlog)
 	close(xferlog);
     acl_remove();
-    close(data);		/* H* fix: clean up a little better */
-    close(pdata);
+    if(data >= 0)
+	close(data);		/* H* fix: clean up a little better */
+    if(pdata >= 0)
+	close(pdata);
 #ifdef AFS
     afs_logout();
 #endif

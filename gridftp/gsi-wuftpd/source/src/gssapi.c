@@ -45,6 +45,11 @@ char* gss_services[] = { "host", 0 };
 
 #include <gssapi.h>
 
+#if USE_GLOBUS_DATA_CODE
+#include "globus_ftp_control.h"
+extern globus_ftp_control_handle_t g_data_handle;
+#endif
+
 extern int debug;			/* From ftpd.c */
 
 /* GSSAPI context */
@@ -634,6 +639,8 @@ gssapi_handle_auth_data(char *data, int length)
     OM_uint32 accept_min;
     OM_uint32 stat_maj;
     OM_uint32 stat_min;
+    gss_ctx_id_t g_deleg_ctx = GSS_C_NO_CREDENTIAL;
+
 
     gss_OID mechid;
     gss_buffer_desc in_tok;
@@ -748,9 +755,16 @@ gssapi_handle_auth_data(char *data, int length)
 					    &out_tok, /* output_token */
 					    &ret_flags,
 					    NULL, 	/* ignore time_rec */
-					    NULL   /* ignore del_cred_handle */
+					    &g_deleg_ctx   /* ignore del_cred_handle */
 					    );
 
+#if USE_GLOBUS_DATA_CODE
+	/* Don't write code like this. */
+	if (accept_maj == GSS_S_COMPLETE) {
+	    g_data_handle.cc_handle.auth_info.delegated_credential_handle =
+		g_deleg_ctx;
+	}
+#endif
 	if ((accept_maj == GSS_S_COMPLETE) ||
 	    (accept_maj == GSS_S_CONTINUE_NEEDED))
 	    break;
