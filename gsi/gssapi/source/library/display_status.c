@@ -41,7 +41,7 @@ static char *rcsid = "$Header$";
 Function:   gss_display_status
 
 Description:
-    Calls the SSLeay error ptint routines to produce a printable
+    Calls the SSLeay error print routines to produce a printable
 	message. This may need some work, as the SSLeay error messages 
 	are more of a trace, and my not be the best for the user. 
 	Also don't take advantage of being called in a loop. 
@@ -71,9 +71,9 @@ GSS_CALLCONV gss_display_status
 #endif
 	char * data;
 #ifdef DEBUG
-        char format[] = "%s %s  Function:%s\n        Source:%s:%d";
+        char format[] = "%s %s\n  Function:%s        Source:%s:%d";
 #else
-        char format[] = "%s %s  Function:%s";
+        char format[] = "%s %s\n  Function:%s";
 #endif
 	int line;
 	char fbuf[1024];
@@ -106,10 +106,10 @@ GSS_CALLCONV gss_display_status
 					  "not be understood";
 				break;
 			case GSS_S_UNAUTHORIZED:
-				reason = "Unauthorized Gatekeeper or Service";
+				reason = "Unexpected Gatekeeper or Service";
 				break;
 			case GSS_S_NO_CRED:
-				reason = "No Credentials";			
+				reason = "Problem with local credentials";			
 				break;
 			case GSS_S_BAD_SIG:
 				reason = "Invalid signature on message";
@@ -126,6 +126,7 @@ GSS_CALLCONV gss_display_status
 		/* exported, so simulate it till it is fixed */
 		/* in SSLeay-0.9.0 so simulate it */
 	else if (status_type == GSS_C_MECH_CODE) {
+        /* Returns last error code from error queue without modifying it */ 
 		if ((ERR_peek_error()) != 0)
 		{
 			int i;
@@ -138,7 +139,8 @@ GSS_CALLCONV gss_display_status
 			} else {
 				data = es->err_data[i];
 			}
-
+            
+            /* removes error from error queue along with file and line info */
             err = ERR_get_error_line(&file,&line);
 			fs=ERR_func_error_string(err);
 			if (fs == NULL) {
