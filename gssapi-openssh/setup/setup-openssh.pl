@@ -1,9 +1,13 @@
-#!/usr/bin/perl -w
 #
-# setup-openssh.pl - substitutes variables into text files and runs
-#                     ssh key gen programs
+# setup-openssh.pl:
+#   Adapts the installed gsi-ssh environment to the current machine,
+#   performing actions that originally occurred during the package's
+#   'make install' phase.
 #
-# adapted from 'fixpath', located in the openssh-3.0.2p1 package
+# Large parts adapted from 'fixpath', a tool found in openssh-3.0.2p1.
+#
+# Send comments/fixes/suggestions to:
+# Chase Phillips <cphillip@ncsa.uiuc.edu>
 #
 
 $gpath = $ENV{GLOBUS_LOCATION};
