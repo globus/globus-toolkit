@@ -199,13 +199,13 @@ globus_i_callout_error_chain_result(
  */
 typedef struct globus_i_callout_s
 {
-    globus_hashtable_t                  htable;
+    globus_hashtable_t                  symbol_htable;
+    globus_hashtable_t                  library_htable;
 }
 globus_i_callout_t;
 
 typedef struct globus_i_callout_data_s
 {
-    lt_dlhandle                         dlhandle;
     char *                              file;
     char *                              symbol;
 } globus_i_callout_data_t;

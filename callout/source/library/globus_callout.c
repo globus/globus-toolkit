@@ -19,7 +19,12 @@
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
 static void
-globus_l_callout_element_free(
+globus_l_callout_library_table_element_free(
+    void *                              key,
+    void *                              data);
+
+static void
+globus_l_callout_symbol_table_element_free(
     void *                              key,
     void *                              data);
 
@@ -140,7 +145,86 @@ globus_l_callout_deactivate(void)
 
 globus_result_t
 globus_callout_handle_init(
-    globus_callout_handle_t *           handle,
+    globus_callout_handle_t *           handle)
+{
+    int                                 rc;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    static char *                       _function_name_ =
+        "globus_callout_handle_init";
+
+    GLOBUS_I_CALLOUT_DEBUG_ENTER;
+
+    *handle = malloc(sizeof(globus_callout_handle_t));
+
+    if(*handle == NULL)
+    {
+        GLOBUS_CALLOUT_MALLOC_ERROR(result);
+        goto exit;
+    }
+    
+    if((rc = globus_hashtable_init(&((*handle)->symbol_htable),
+                                   GLOBUS_I_CALLOUT_HASH_SIZE,
+                                   globus_hashtable_string_hash,
+                                   globus_hashtable_string_keyeq)) < 0)
+    {
+        free(*handle);
+        GLOBUS_CALLOUT_ERROR_RESULT(
+            result,
+            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
+            ("globus_hashtable_init retuned %d", rc));
+        goto exit;
+    }    
+
+    if((rc = globus_hashtable_init(&((*handle)->library_htable),
+                                   GLOBUS_I_CALLOUT_HASH_SIZE,
+                                   globus_hashtable_string_hash,
+                                   globus_hashtable_string_keyeq)) < 0)
+    {
+        globus_hashtable_destroy(&((*handle)->library_htable));
+        free(*handle);
+        GLOBUS_CALLOUT_ERROR_RESULT(
+            result,
+            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
+            ("globus_hashtable_init retuned %d", rc));
+        goto exit;
+    }    
+
+    GLOBUS_I_CALLOUT_DEBUG_EXIT;
+
+ exit:
+    
+    return result;
+}
+
+
+globus_result_t
+globus_callout_handle_destroy(
+    globus_callout_handle_t             handle)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_callout_handle_destroy";
+    GLOBUS_I_CALLOUT_DEBUG_ENTER;
+    
+    /* free hashes */
+
+    globus_hashtable_destroy_all(
+        &handle->symbol_htable,
+        globus_l_callout_library_table_element_free);
+
+    globus_hashtable_destroy_all(
+        &handle->symbol_htable,
+        globus_l_callout_symbol_table_element_free);
+
+    GLOBUS_I_CALLOUT_DEBUG_EXIT;
+
+    return result;
+}
+
+globus_result_t
+globus_callout_read_config(
+    globus_callout_handle_t             handle,
     char *                              filename)
 {
     FILE *                              conf_file;
@@ -156,31 +240,9 @@ globus_callout_handle_init(
     globus_i_callout_data_t *           datum = NULL;
 
     static char *                       _function_name_ =
-        "globus_callout_handle_init";
+        "globus_callout_read_config";
 
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
-
-    *handle = malloc(sizeof(globus_callout_handle_t));
-
-    if(*handle == NULL)
-    {
-        GLOBUS_CALLOUT_MALLOC_ERROR(result);
-        goto error_exit;
-    }
-    
-    if((rc = globus_hashtable_init(&((*handle)->htable),
-                                   GLOBUS_I_CALLOUT_HASH_SIZE,
-                                   globus_hashtable_string_hash,
-                                   globus_hashtable_string_keyeq)) < 0)
-    {
-        free(*handle);
-        *handle = NULL;
-        GLOBUS_CALLOUT_ERROR_RESULT(
-            result,
-            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
-            ("globus_hashtable_init retuned %d", rc));
-        goto error_exit;
-    }
     
     conf_file = fopen(filename, "r");
 
@@ -262,7 +324,7 @@ globus_callout_handle_init(
             goto error_exit;
         }
         
-        if((rc = globus_hashtable_insert(&((*handle)->htable),
+        if((rc = globus_hashtable_insert(&handle->symbol_htable,
                                          key,
                                          datum)) < 0)
         {
@@ -280,11 +342,6 @@ globus_callout_handle_init(
 
  error_exit:
 
-    if(*handle != NULL)
-    {
-        globus_hashtable_destroy(&((*handle)->htable));
-    }
-
     if(datum != NULL)
     {
         globus_l_callout_data_free(datum);
@@ -299,22 +356,86 @@ globus_callout_handle_init(
 }
 
 globus_result_t
-globus_callout_handle_destroy(
-    globus_callout_handle_t             handle)
+globus_callout_register(
+    globus_callout_handle_t             handle,
+    char *                              type,
+    char *                              library,
+    char *                              symbol)
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
+    char *                              key = NULL;
+    int                                 rc;
+    globus_result_t                     result;
+    globus_i_callout_data_t *           datum = NULL;
+
     static char *                       _function_name_ =
-        "globus_callout_handle_destroy";
+        "globus_callout_register";
+
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
     
-    /* free hash */
+    
+    /* push values into hash */
 
-    globus_hashtable_destroy_all(
-        handle->htable,
-        globus_l_callout_element_free);
-
+    datum = malloc(sizeof(globus_i_callout_data_t));
+    
+    if(datum == NULL)
+    {
+        GLOBUS_CALLOUT_MALLOC_ERROR(result);
+        goto error_exit;
+    }
+    
+    memset(datum,'\0',sizeof(globus_i_callout_data_t));
+    
+    datum->file = strdup(library);
+    
+    if(datum->file == NULL)
+    {
+        GLOBUS_CALLOUT_MALLOC_ERROR(result);
+        goto error_exit;
+    }
+    
+    datum->symbol = strdup(symbol);
+    
+    if(datum->symbol == NULL)
+    {
+        GLOBUS_CALLOUT_MALLOC_ERROR(result);
+        goto error_exit;
+    }
+    
+    key = strdup(type);
+    
+    if(key == NULL)
+    {
+        GLOBUS_CALLOUT_MALLOC_ERROR(result);
+        goto error_exit;
+    }
+    
+    if((rc = globus_hashtable_insert(&handle->symbol_htable,
+                                     key,
+                                     datum)) < 0)
+    {
+        GLOBUS_CALLOUT_ERROR_RESULT(
+            result,
+            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
+            ("globus_hashtable_insert retuned %d", rc));
+        goto error_exit;
+    }
+    
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
+    return GLOBUS_SUCCESS;
+
+ error_exit:
+
+    if(datum != NULL)
+    {
+        globus_l_callout_data_free(datum);
+    }
+ 
+    if(key != NULL)
+    {
+        free(key);
+    }
+    
     return result;
 }
 
@@ -329,11 +450,13 @@ globus_callout_call_type(
     lt_ptr                              function;
     globus_result_t                     result = GLOBUS_SUCCESS;
     va_list                             ap;
+    int                                 rc;
+    lt_dlhandle *                       dlhandle;
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    datum = globus_hashtable_lookup(handle->htable,
+    datum = globus_hashtable_lookup(&handle->symbol_htable,
                                     type);
 
     if(datum == NULL)
@@ -345,14 +468,41 @@ globus_callout_call_type(
         goto exit;
     }
 
-    if(datum->dlhandle == NULL)
+    dlhandle = globus_hashtable_lookup(&handle->library_htable,
+                                       datum->file);
+
+    if(dlhandle == NULL)
+    {
+        dlhandle = malloc(sizeof(lt_dlhandle));
+
+        if(dlhandle == NULL)
+        {
+            GLOBUS_CALLOUT_MALLOC_ERROR(result);
+        }
+        
+        *dlhandle = NULL;
+        rc = globus_hashtable_insert(&handle->library_htable,
+                                     datum->file,
+                                     dlhandle);
+        if(rc < 0)
+        {
+            free(dlhandle);
+            GLOBUS_CALLOUT_ERROR_RESULT(
+                result,
+                GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
+                ("globus_hashtable_insert retuned %d", rc));
+            goto exit;
+        }                             
+    }
+    
+    if(*dlhandle == NULL)
     {
         /* first time a symbol is referenced in this library -> need to open it
          */
 
-        datum->dlhandle = lt_dlopen(datum->file);
+        *dlhandle = lt_dlopen(datum->file);
 
-        if(datum->dlhandle == NULL)
+        if(*dlhandle == NULL)
         {
             GLOBUS_CALLOUT_ERROR_RESULT(
                 result,
@@ -363,7 +513,7 @@ globus_callout_call_type(
 
     }
 
-    function = lt_dlsym(datum->dlhandle, datum->symbol);
+    function = lt_dlsym(*dlhandle, datum->symbol);
 
     if(function == NULL)
     {
@@ -400,17 +550,6 @@ globus_l_callout_data_free(
 
     if(data != NULL)
     { 
-        if(data->dlhandle != NULL)
-        {
-            if(lt_dlclose(data->dlhandle) < 0)
-            {
-                GLOBUS_CALLOUT_ERROR_RESULT(
-                    result,
-                    GLOBUS_CALLOUT_ERROR_WITH_DL,
-                    ("failed to close library: %s", data->file));
-            }
-        }
-
         if(data->file != NULL)
         {
             free(data->file);
@@ -430,16 +569,50 @@ globus_l_callout_data_free(
 }
 
 static void
-globus_l_callout_element_free(
+globus_l_callout_symbol_table_element_free(
     void *                              key,
     void *                              data)
 {
     static char *                       _function_name_ =
-        "globus_i_callout_data_free";
+        "globus_l_callout_symbol_table_element_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
     globus_l_callout_data_free(data);
     free(key);
+    
+    GLOBUS_I_CALLOUT_DEBUG_EXIT;
+    return;
+}
+
+
+static void
+globus_l_callout_library_table_element_free(
+    void *                              key,
+    void *                              data)
+{
+    lt_dlhandle *                       dlhandle;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_l_callout_library_table_element_free";
+    GLOBUS_I_CALLOUT_DEBUG_ENTER;
+
+    dlhandle = data;
+
+    if(dlhandle != NULL)
+    { 
+        if(*dlhandle != NULL)
+        {
+            if(lt_dlclose(*dlhandle) < 0)
+            {
+                GLOBUS_CALLOUT_ERROR_RESULT(
+                    result,
+                    GLOBUS_CALLOUT_ERROR_WITH_DL,
+                    ("failed to close library: %s", key));
+            }
+        }
+
+        free(dlhandle);
+    }
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return;

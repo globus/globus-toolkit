@@ -73,8 +73,19 @@ typedef globus_result_t (*globus_callout_function_t)(
 
 globus_result_t
 globus_callout_handle_init(
-    globus_callout_handle_t *           handle,
+    globus_callout_handle_t *           handle);
+
+globus_result_t
+globus_callout_read_config(
+    globus_callout_handle_t             handle,
     char *                              filename);
+
+globus_result_t
+globus_callout_register(
+    globus_callout_handle_t             handle,
+    char *                              type,
+    char *                              library,
+    char *                              symbol);
 
 globus_result_t
 globus_callout_handle_destroy(
