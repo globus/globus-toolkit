@@ -12,6 +12,7 @@
 #ifndef _GLOBUS_I_CALLOUT_H_
 #define _GLOBUS_I_CALLOUT_H_
 
+#include "globus_callout.h"
 #include <ltdl.h>
 
 /* DEBUG MACROS */
@@ -37,7 +38,7 @@ extern FILE *                           globus_i_callout_debug_fstream;
         if (GLOBUS_I_CALLOUT_DEBUG(_LEVEL_)) \
         { \
            char *                          _tmp_str_ = \
-               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+               globus_common_create_nstring _MESSAGE_; \
            globus_libc_fprintf(globus_i_callout_debug_fstream, \
                                _tmp_str_); \
            globus_libc_free(_tmp_str_); \
@@ -86,7 +87,7 @@ extern FILE *                           globus_i_callout_debug_fstream;
 #define GLOBUS_CALLOUT_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_callout_error_result(_ERRORTYPE_, \
                                                   __FILE__, \
                                                   _function_name_, \
@@ -113,7 +114,7 @@ extern FILE *                           globus_i_callout_debug_fstream;
                                               _LONG_DESC_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_callout_error_result(_ERRORTYPE_, \
                                                   __FILE__, \
                                                   _function_name_, \
@@ -135,12 +136,12 @@ extern FILE *                           globus_i_callout_debug_fstream;
                        NULL, \
                        _LONG_DESC_)
 
-#define GLOBUS_CALLOUT_MALLOC_ERROR(_MIN_RESULT_) \
+#define GLOBUS_CALLOUT_MALLOC_ERROR(_RESULT_) \
     { \
         char *                          _tmp_str_ = \
-        globus_l_gsi_gssapi_error_strings[ \
+        globus_l_callout_error_strings[ \
             GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY]; \
-        *_MIN_RESULT_ = (OM_uint32) globus_error_put( \
+        _RESULT_ = globus_error_put( \
             globus_error_wrap_errno_error( \
                 GLOBUS_CALLOUT_MODULE, \
                 errno, \
@@ -151,12 +152,12 @@ extern FILE *                           globus_i_callout_debug_fstream;
         globus_libc_free(_tmp_str_); \
     }
 
-#define GLOBUS_CALLOUT_ERRNO_ERROR_RESULT(_MIN_RESULT_, \
-                                               _ERRORTYPE_, _ERRORSTR_) \
+#define GLOBUS_CALLOUT_ERRNO_ERROR_RESULT(_RESULT_, \
+                                          _ERRORTYPE_, _ERRORSTR_) \
     { \
         char *                          _tmp_str_ = \
-             globus_gsi_cert_utils_create_string _ERRORSTR_; \
-        *_MIN_RESULT_ = (OM_uint32) globus_error_put( \
+             globus_common_create_string _ERRORSTR_; \
+        _RESULT_ = globus_error_put( \
             globus_error_wrap_errno_error( \
                 GLOBUS_CALLOUT_MODULE, \
                 errno, \
@@ -168,6 +169,26 @@ extern FILE *                           globus_i_callout_debug_fstream;
     }
 
 extern char *                    globus_l_callout_error_strings[];
+
+globus_result_t
+globus_i_callout_error_result(
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        short_desc,
+    const char *                        long_desc);
+
+globus_result_t
+globus_i_callout_error_chain_result(
+    globus_result_t                     chain_result,
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        short_desc,
+    const char *                        long_desc);
+
 
 /**
  * Globus Callout Implementation

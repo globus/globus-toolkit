@@ -13,8 +13,10 @@
 #include "globus_common.h"
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
+#include "ltdl.h"
 #include "version.h" 
 
+#define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
 static void
 globus_l_callout_element_free(
@@ -138,7 +140,7 @@ globus_l_callout_deactivate(void)
 
 globus_result_t
 globus_callout_handle_init(
-    globus_callout_handle_t *           handle
+    globus_callout_handle_t *           handle,
     char *                              filename)
 {
     FILE *                              conf_file;
@@ -151,7 +153,7 @@ globus_callout_handle_init(
     int                                 index;
     int                                 rc;
     globus_result_t                     result;
-    globus_i_callout_handle_data_t *    datum = NULL;
+    globus_i_callout_data_t *           datum = NULL;
 
     static char *                       _function_name_ =
         "globus_callout_handle_init";
@@ -203,7 +205,7 @@ globus_callout_handle_init(
         
         index = 0;
 
-        while(buffer[index] == '\t' || buffer[index] = ' ')
+        while(buffer[index] == '\t' || buffer[index] == ' ')
         {
             index++;
         }
@@ -301,22 +303,15 @@ globus_callout_handle_destroy(
     globus_callout_handle_t             handle)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    int                                 rc;
     static char *                       _function_name_ =
         "globus_callout_handle_destroy";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
     
     /* free hash */
 
-    if((rc = globus_hashtable_destroy_all(
-            *handle,
-            globus_i_callout_handle_data_destroy)) < 0)
-    {
-        GLOBUS_CALLOUT_ERROR_RESULT(
-            result,
-            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
-            ("globus_hashtable_destroy_all retuned %d", rc));
-    }
+    globus_hashtable_destroy_all(
+        handle->htable,
+        globus_l_callout_element_free);
 
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
@@ -330,15 +325,15 @@ globus_callout_call_type(
     char *                              type,
     ...)
 {
-    globus_i_callout_handle_data_t *    datum;
-    lt_ptr_t                            function;
+    globus_i_callout_data_t *           datum;
+    lt_ptr                              function;
     globus_result_t                     result = GLOBUS_SUCCESS;
     va_list                             ap;
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    datum = globus_hashtable_lookup(handle,
+    datum = globus_hashtable_lookup(handle->htable,
                                     type);
 
     if(datum == NULL)
@@ -383,7 +378,7 @@ globus_callout_call_type(
 
     va_start(ap,type);
     
-    result = function(ap);
+    result = ((globus_callout_function_t) function)(ap);
 
     va_end(ap);
     
@@ -412,7 +407,7 @@ globus_l_callout_data_free(
                 GLOBUS_CALLOUT_ERROR_RESULT(
                     result,
                     GLOBUS_CALLOUT_ERROR_WITH_DL,
-                    ("failed to close library: %s", datum->file));
+                    ("failed to close library: %s", data->file));
             }
         }
 

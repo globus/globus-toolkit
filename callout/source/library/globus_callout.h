@@ -68,7 +68,23 @@ globus_module_descriptor_t              globus_i_callout_module;
 
 typedef struct globus_i_callout_s * globus_callout_handle_t;
 
+typedef globus_result_t (*globus_callout_function_t)(
+    va_list                             ap);
 
+globus_result_t
+globus_callout_handle_init(
+    globus_callout_handle_t *           handle,
+    char *                              filename);
+
+globus_result_t
+globus_callout_handle_destroy(
+    globus_callout_handle_t             handle);
+
+globus_result_t
+globus_callout_call_type(
+    globus_callout_handle_t             handle,
+    char *                              type,
+    ...);
 
 
 EXTERN_C_END
