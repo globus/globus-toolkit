@@ -4,13 +4,23 @@ $title = "Globus Toolkit&reg; 3.2 Release Notes";
 
 include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" ); 
 ?>
+<link href="../../../../CSS/style.css" rel="stylesheet" type="text/css">
+
 
 <p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
           Notes</a> &gt; 3.2 &lt;</p>
       <a name="top"></a><h1>Globus Toolkit® 3.2 Release
       Notes</h1>
-      <p>      The following topics contain high level descriptions of what's new in 
+      <p>The following topics contain high level descriptions of what's new in 
       the following technology areas:      </p>
+      <blockquote>
+        <p class="small"><strong>General</strong></p>
+      </blockquote>
+      <ul>
+        <li><a href="#documentation">Documentation</a>
+                  </li>
+        <li><a href="#terminology">Terminology</a> (web services vs pre-web services) </li>
+      </ul>
       <blockquote>
         <p class="small"><strong>Core Components</strong> </p>
       </blockquote>
@@ -31,8 +41,8 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
         href="#CAS">Community Authorization Server (CAS)</a>
 </UL>
       <blockquote>
-        <h2 class="small"><strong>        Data Management</strong>
-        </h2>
+        <p class="small"><strong>        Data Management</strong>
+        </p>
       </blockquote>
       <UL>
         <LI><A 
@@ -45,8 +55,8 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
         href="#XIO">XIO</A>        
 </UL>
       <blockquote>
-        <h2 class="small">          <strong>          Resource Management</strong>          
-        </h2>
+        <p class="small">          <strong>          Resource Management</strong>          
+        </p>
       </blockquote>
       <UL>
         <LI><A 
@@ -54,8 +64,8 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
               Management (GRAM)</A> 
 </UL>
       <blockquote>
-        <h2 class="small">          <strong>Information Management </strong>
-        </h2>
+        <p class="small">          <strong>Information Management </strong>
+        </p>
       </blockquote>
       <UL>
         <LI><A 
@@ -63,24 +73,62 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
                 Services</A> 
 </UL>
       <blockquote>
-        <h2 class="small">C Bindings</h2>
+        <p class="small"><strong>C Bindings</strong></p>
       </blockquote>
       <ul>
         <li><A 
         href="#CB">C Bindings</A>
-                </li>
+        </li>
       </ul>
       <blockquote>
-        <h2 class="small"><strong>Contributions</strong></h2>
+        <p class="small"><strong>Contributions</strong></p>
       </blockquote>
       <UL>
         <LI><a href="#PB">Python Bindings</a>         
-                <LI><a href="#pyglobus">pyGlobus</a>                                                                                            
+        <LI><a href="#pyglobus">pyGlobus</a>                                                                                            
         <LI><A 
         href="#TP">OGSA-DAI (Tech Preview)</A>                                                                                        
 </UL>
       <p>For more information please see resources specified 
       in each of the technology sections.</p>
+      <h2><a name="documentation"></a>Documentation</h2>
+      <p>With this release comes the first phase of new and improved
+        documentation for the Globus Toolkit. You can go to the documentation
+        home page for GT3.2
+        <a href="../../docs/3.2/index.html">here</a>. </p>
+      <p> In this phase, we've</p>
+      <ul>
+        <li>set up the framework for the new documentation by creating areas
+          for each technology and consistent guides within each (see <a href="../../docs/3.2/index.html">Globus
+          Toolkit 3.2 Documentation</a> for more information.) 
+        <li>created a comprehensive<a href="../../docs/3.2/installation/index.html"> Installation
+            Guide</a>, the new starting point for
+          anyone downloading the Globus Toolkit. </li>
+        <li>created and updated content for many technologies. </li>
+      </ul>
+      <p><strong>Note:</strong> This is an ongoing process. Where we were not
+        able to create new content in time for the 3.2 release, we've linked
+        to existing documentation or indicated the page is under construction.
+        In future phases, we will update these pages further. We also appreciate
+        your feedback. If you find any broken links or have issues affecting
+        your user experience, please send an email to: </p>
+      <h2><a name="terminology"></a>Terminology </h2>
+      <p>We've also introduced new terminology to describe two types of services
+        in the Globus Toolkit:   GT3 components developed for open-standard
+        Grid services and pre-existing GT2 components. See the breakdown in the
+        table below: </p>
+      <table width="650" border="1" cellpadding="5">
+        <tr>
+          <td width="76"><strong>Pre-WS</strong></td>
+          <td width="123">pre-web services </td>
+          <td width="405">&lt;need content&gt; </td>
+        </tr>
+        <tr>
+          <td><strong>WS</strong></td>
+          <td>web services </td>
+          <td>&lt;need content&gt; </td>
+        </tr>
+      </table>
       <h2><A name=Core>Core</A></h2>
       <p>The Core component  shipped in the 3.2  release contains 
       important bug fixes and improvements on existing functionality. Changes
