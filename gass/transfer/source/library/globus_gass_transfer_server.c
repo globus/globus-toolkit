@@ -248,6 +248,7 @@ globus_gass_transfer_register_listen(
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
 	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED;
 	goto error_exit;
+
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
 	l->status = GLOBUS_GASS_TRANSFER_LISTENER_LISTENING;
 	l->listen_callback = callback;
@@ -260,13 +261,13 @@ globus_gass_transfer_register_listen(
       case GLOBUS_GASS_TRANSFER_LISTENER_LISTENING:
       case GLOBUS_GASS_TRANSFER_LISTENER_ACCEPTING:
 	rc = GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED;
-	break;
+        goto error_exit;
 
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING1:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING2:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSED:
 	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
-	break;
+        goto error_exit;
     }
     
     globus_i_gass_transfer_unlock();
