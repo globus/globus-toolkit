@@ -116,32 +116,36 @@ open_cb(
     buffer = globus_l_test_info.buffer;
     buffer_length = globus_l_test_info.buffer_length;
 
-    for(ctr = 0; ctr < OP_COUNT; ctr++)
+    globus_mutex_lock(&globus_l_mutex);
     {
-        if(globus_l_test_info.write_count > 0)
+        for(ctr = 0; ctr < OP_COUNT; ctr++)
         {
-            res = globus_xio_register_write(
-                    handle,
-                    buffer,
-                    buffer_length,
-                    buffer_length,
-                    NULL,
-                    data_cb,
-                    user_arg);
+            if(globus_l_test_info.write_count > 0)
+            {
+                res = globus_xio_register_write(
+                        handle,
+                        buffer,
+                        buffer_length,
+                        buffer_length,
+                        NULL,
+                        data_cb,
+                        user_arg);
+            }
+            else
+            {
+                res = globus_xio_register_read(
+                        handle,
+                        buffer,
+                        buffer_length,
+                        buffer_length,
+                        NULL,
+                        data_cb,
+                        user_arg);
+            }
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         }
-        else
-        {
-            res = globus_xio_register_read(
-                    handle,
-                    buffer,
-                    buffer_length,
-                    buffer_length,
-                    NULL,
-                    data_cb,
-                    user_arg);
-        }
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
+    globus_mutex_unlock(&globus_l_mutex);
 }
 
 int

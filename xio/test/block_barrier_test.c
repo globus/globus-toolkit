@@ -41,8 +41,10 @@
 
 static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
+static globus_cond_t                    globus_l_cond2;
 static globus_bool_t                    globus_l_close_called = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
+static globus_bool_t                    globus_l_closed2 = GLOBUS_FALSE;
 
 #define OP_COUNT                            8
 #define SLEEP_TIME                          10000
@@ -55,8 +57,8 @@ close_cb(
 {
     globus_mutex_lock(&globus_l_mutex);
     {
-        globus_l_closed = GLOBUS_TRUE;
-        globus_cond_signal(&globus_l_cond);
+        globus_l_closed2 = GLOBUS_TRUE;
+        globus_cond_signal(&globus_l_cond2);
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
@@ -89,10 +91,12 @@ data_cb(
                     close_cb,
                     user_arg);
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-            while(!globus_l_closed)
+            while(!globus_l_closed2)
             {
-                globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+                globus_cond_wait(&globus_l_cond2, &globus_l_mutex);
             }
+            globus_l_closed = GLOBUS_TRUE;
+            globus_cond_signal(&globus_l_cond);
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
@@ -113,47 +117,53 @@ open_cb(
     buffer = globus_l_test_info.buffer;
     buffer_length = globus_l_test_info.buffer_length;
 
-    for(ctr = 0; ctr < globus_l_test_info.write_count; ctr++)
+    globus_mutex_lock(&globus_l_mutex);
     {
-        res = globus_xio_register_write(
-                handle,
-                buffer,
-                buffer_length,
-                buffer_length,
-                NULL,
-                data_cb,
-                user_arg);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-        close = GLOBUS_FALSE;
-    }
-    for(ctr = 0; ctr < globus_l_test_info.write_count; ctr++)
-    {
-        res = globus_xio_register_read(
-                handle,
-                buffer,
-                buffer_length,
-                buffer_length,
-                NULL,
-                data_cb,
-                user_arg);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-        close = GLOBUS_FALSE;
-    }
-
-    if(close)
-    {
-        globus_l_close_called = GLOBUS_TRUE;
-        res = globus_xio_register_close(
-                handle,
-                NULL,
-                close_cb,
-                user_arg);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-        while(!globus_l_closed)
+        for(ctr = 0; ctr < globus_l_test_info.write_count; ctr++)
         {
-            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+            res = globus_xio_register_write(
+                    handle,
+                    buffer,
+                    buffer_length,
+                    buffer_length,
+                    NULL,
+                    data_cb,
+                    user_arg);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            close = GLOBUS_FALSE;
+        }
+        for(ctr = 0; ctr < globus_l_test_info.write_count; ctr++)
+        {
+            res = globus_xio_register_read(
+                    handle,
+                    buffer,
+                    buffer_length,
+                    buffer_length,
+                    NULL,
+                    data_cb,
+                    user_arg);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            close = GLOBUS_FALSE;
+        }
+
+        if(close)
+        {
+            globus_l_close_called = GLOBUS_TRUE;
+            res = globus_xio_register_close(
+                    handle,
+                    NULL,
+                    close_cb,
+                    user_arg);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            while(!globus_l_closed2)
+            {
+                globus_cond_wait(&globus_l_cond2, &globus_l_mutex);
+            }
+            globus_l_closed = GLOBUS_TRUE;
+            globus_cond_signal(&globus_l_cond);
         }
     }
+    globus_mutex_unlock(&globus_l_mutex);
 }
 
 int
@@ -170,6 +180,7 @@ block_barrier_main(
 
     globus_l_close_called = GLOBUS_FALSE;
     globus_l_closed = GLOBUS_FALSE;
+    globus_l_closed2 = GLOBUS_FALSE;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
@@ -184,6 +195,7 @@ block_barrier_main(
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
+    globus_cond_init(&globus_l_cond2, NULL);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
