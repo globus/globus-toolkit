@@ -26,6 +26,7 @@ struct _gsi_socket
 {
     int				sock;
     int				encryption;	/* Boolean */
+    int				allow_anonymous; /* Boolean */
     /* All these variables together indicate the last error we saw */
     char			*error_string;
     int				error_number;
@@ -690,6 +691,19 @@ GSI_SOCKET_set_encryption(GSI_SOCKET *self,
 
 
 int
+GSI_SOCKET_allow_anonymous(GSI_SOCKET *self, const int value)
+{
+    if (self == NULL)
+    {
+	return GSI_SOCKET_ERROR;
+    }
+
+    self->allow_anonymous = value;
+
+    return GSI_SOCKET_SUCCESS;
+}
+
+int
 GSI_SOCKET_set_expected_peer_name(GSI_SOCKET *self,
 				  const char *name)
 {
@@ -757,7 +771,7 @@ create_minimal_context(char *certdir)
 }
 
 static void *
-my_ssl_init(int verify, int peer_has_proxy)
+my_ssl_init(int verify, int peer_has_proxy, int allow_anonymous)
 {
     char			*certfile = NULL, *keyfile = NULL;
     char			*certdir = NULL, *userproxy = NULL;
@@ -808,11 +822,10 @@ my_ssl_init(int verify, int peer_has_proxy)
 #endif
 
 
-    /* if we failed to load a credential above, proceed with
-       a minimal context instead */
-    if (cred_handle->gs_ctx == NULL || 
-	!SSL_CTX_check_private_key(cred_handle->gs_ctx) ||
-	load_err) {
+    /* if we failed to load a credential above */
+    if ((cred_handle->gs_ctx == NULL || 
+	 !SSL_CTX_check_private_key(cred_handle->gs_ctx) ||
+	 load_err)) {
 	if (cred_handle->ucert != NULL) {
 	    X509_free(cred_handle->ucert);
 	    cred_handle->ucert = NULL;
@@ -821,10 +834,21 @@ my_ssl_init(int verify, int peer_has_proxy)
 	    EVP_PKEY_free(cred_handle->upkey);
 	    cred_handle->upkey = NULL;
 	}
-	if (cred_handle->gs_ctx != NULL) 
+	if (cred_handle->gs_ctx != NULL) {
 	    SSL_CTX_free(cred_handle->gs_ctx);
-     
-	cred_handle->gs_ctx = create_minimal_context(certdir);
+	    cred_handle->gs_ctx = NULL;
+	}
+
+	if (allow_anonymous) {
+	    cred_handle->gs_ctx = create_minimal_context(certdir);
+	} else {
+	    verror_put_string("Failed to load credential.");
+	    if (peer_has_proxy) {
+		verror_put_string("A valid service credential is required.");
+	    } else {
+		verror_put_string("Run grid-proxy-init or myproxy-get-delegation first.");
+	    }
+	}
     }
 
     if (cred_handle->gs_ctx != NULL) {
@@ -881,7 +905,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     }
 
 #if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    self->cred_handle = my_ssl_init(SSL_VERIFY_PEER, 0);
+    self->cred_handle = my_ssl_init(SSL_VERIFY_PEER, 0, self->allow_anonymous);
 
     if (self->cred_handle == NULL || self->cred_handle->gs_ctx == NULL)
     {
@@ -1145,7 +1169,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	return GSI_SOCKET_ERROR;
     }
 
-    self->cred_handle = my_ssl_init(SSL_VERIFY_PEER, 1);
+    self->cred_handle = my_ssl_init(SSL_VERIFY_PEER, 1, 0);
 
     if (self->cred_handle == NULL || self->cred_handle->gs_ctx == NULL)
     {
