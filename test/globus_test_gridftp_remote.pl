@@ -28,7 +28,7 @@ sub test_gridftp_remote {
         gsiftp://$remote/etc/termcap \\
         gsiftp://$hostname/tmp/gridftp.test");
     $output = $u->command("head /tmp/gridftp.test");
-    $output =~ "^#" ? $u->report("ok") : $u->report("not ok");
+    $output =~ "^#" ? $u->report("SUCCESS") : $u->report("FAILURE");
 
     $u->command("rm -f /tmp/gridftp.test");
 }
