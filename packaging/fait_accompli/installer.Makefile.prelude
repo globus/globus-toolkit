@@ -9,3 +9,7 @@ THR=@thr@
 
 gpt:
 	cd gpt-3.2autotools2004 && ./build_gpt
+
+postinstall:
+	${GPT_LOCATION}/sbin/gpt-postinstall
+
