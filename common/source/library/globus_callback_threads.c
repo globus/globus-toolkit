@@ -324,9 +324,6 @@ globus_l_callback_deactivate()
     globus_mutex_destroy(&globus_l_callback_global_space.lock);
     globus_priority_q_destroy(&globus_l_callback_global_space.queue);
     
-    globus_mutex_destroy(&globus_l_callback_handle_lock);
-    globus_mutex_destroy(&globus_l_callback_space_lock);
-    
     /* any handles left here will be destroyed by destructor.
      * important that globus_l_callback_handle_table be destroyed
      * BEFORE globus_l_callback_space_table since destructor for the former
@@ -339,6 +336,9 @@ globus_l_callback_deactivate()
     globus_memory_destroy(&globus_l_callback_info_memory);
     globus_memory_destroy(&globus_l_callback_space_memory);
     globus_memory_destroy(&globus_l_callback_space_attr_memory);
+    
+    globus_mutex_destroy(&globus_l_callback_handle_lock);
+    globus_mutex_destroy(&globus_l_callback_space_lock);
     
     return globus_module_deactivate(GLOBUS_THREAD_MODULE);
 }

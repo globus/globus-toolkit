@@ -31,7 +31,9 @@
 #define EXTERN_C_END
 #endif
 #endif
- 
+
+#include "globus_common.h"
+
 #ifdef TARGET_ARCH_AIX
 /* Only add the 'extern "C" {' for AIX since doing so for some other platforms
  * (e.g. SunOS 4.1.3 using FSU pthreads and G++) can cause problems.  For
@@ -46,6 +48,7 @@ EXTERN_C_END
 #endif /* TARGET_ARCH_AIX */
 
 EXTERN_C_BEGIN
+
 
 typedef struct timespec      globus_abstime_t;
 
@@ -363,7 +366,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
     (globus_mutex_unlock((mut)), \
     globus_callback_space_poll((abstime), (cv)->space), \
     globus_mutex_lock((mut)), \
-    (time(GLOBUS_NULL) >= (T)->tv_sec) ? ETIMEDOUT : 0)))
+    (time(GLOBUS_NULL) >= (abstime)->tv_sec) ? ETIMEDOUT : 0)))
     
 #define globus_macro_cond_space_signal(cv) \
     (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
@@ -498,6 +501,16 @@ extern int		globus_cond_timedwait(globus_cond_t *cond,
 					 globus_abstime_t * abstime);
 extern int		globus_cond_signal(globus_cond_t *cond);
 extern int		globus_cond_broadcast(globus_cond_t *cond);
+
+extern int
+globus_condattr_setspace(
+    globus_condattr_t *                 attr,
+    globus_callback_space_t             space);
+
+extern int
+globus_condattr_getspace(
+    globus_condattr_t *                 attr,
+    globus_callback_space_t *           space);
 
 /******************************************************************************
 			       Module definition
