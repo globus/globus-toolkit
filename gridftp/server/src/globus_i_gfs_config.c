@@ -113,7 +113,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"log_filemode", "log_filemode", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "File access permissions of log files. Should be an octal number such as "
     "0644 (the leading 0 is required)."},
- {"disable_usage_stats", "disable_usage_stats", NULL, "disable-usage-stats", "GLOBUS_USAGE_STATS_DISABLE", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"disable_usage_stats", "disable_usage_stats", "GLOBUS_USAGE_OPTOUT", "disable-usage-stats", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow usage statistics to be transmitted to a Globus database or other specified target."},
  {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of contact strings for usage statistics listeners."},
@@ -159,6 +159,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"ipc_port", "ipc_port", NULL, "ipc-port", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which the frontend will listen for data node connections."},
 {NULL, "Timeouts", NULL, NULL, NULL, 0, 0, NULL, NULL},
+ {"control_preauth_timeout", "control_preauth_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "Time in seconds to allow a client to remain connected to the control "
+    "channel without activity before authenticating."},
  {"control_idle_timeout", "control_idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity."},

@@ -2280,11 +2280,31 @@ globus_l_gfs_ipc_handle_connect(
                 }
                 else if(strncasecmp(auth_mode_str, "subject:", 8) == 0)
                 {
+                    gss_buffer_desc     send_tok;
+                    OM_uint32           min_stat;
+                    OM_uint32           maj_stat;
+                    gss_name_t          target_name;
+                    
                     auth_mode = GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION;                   
+                    send_tok.value = (void *) (auth_mode_str + 8);
+                    send_tok.length = strlen(auth_mode_str + 8) + 1;
+                    maj_stat = gss_import_name(
+                                    &min_stat,
+                                    &send_tok,
+                                    GSS_C_NT_USER_NAME,
+                                    &target_name);
+                    if(maj_stat != GSS_S_COMPLETE || 
+                        target_name == GSS_C_NO_NAME)
+                    {
+                        goto ipc_error;
+                    }
+
                     globus_xio_attr_cntl(
                         attr, globus_l_gfs_gsi_driver,
                         GLOBUS_XIO_GSI_SET_TARGET_NAME,
-                        auth_mode_str + 8);
+                        target_name);
+                        
+                    gss_release_name(&min_stat, &target_name);
                 }
                 else
                 {

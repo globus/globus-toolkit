@@ -685,7 +685,7 @@ globus_l_gfs_data_command_cb(
             globus_error_peek(reply->result));
         tmp_msg = globus_common_create_string("Command failed : %s", msg);
         globus_free(msg);
-        msg = globus_i_gsc_string_to_959(500, tmp_msg, NULL);
+        msg = globus_gsc_string_to_959(500, tmp_msg, NULL);
         globus_gsc_959_finished_command(op, msg);
         globus_free(tmp_msg);
         globus_free(msg);
@@ -1880,6 +1880,7 @@ globus_i_gfs_control_start(
     globus_gridftp_server_control_attr_t attr;
     globus_l_gfs_server_instance_t *    instance;
     int                                 idle_timeout;
+    int                                 preauth_timeout;
     char *                              banner;
     char *                              login_msg;
     globus_list_t *                     module_list;
@@ -1933,14 +1934,13 @@ globus_i_gfs_control_start(
     }
 
     idle_timeout = globus_i_gfs_config_int("control_idle_timeout");
-    if(idle_timeout)
+    preauth_timeout = globus_i_gfs_config_int("control_preauth_timeout");
+    
+    result = globus_gridftp_server_control_attr_set_idle_time(
+        attr, idle_timeout, preauth_timeout);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = globus_gridftp_server_control_attr_set_idle_time(
-            attr, idle_timeout);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_attr_setup;
-        }
+        goto error_attr_setup;
     }
 
     banner = globus_i_gfs_config_string("banner");

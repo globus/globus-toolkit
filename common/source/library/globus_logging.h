@@ -29,7 +29,7 @@ typedef void
     void *                              user_arg);
 
 typedef void
-(*globus_logging_time_func_t)(
+(*globus_logging_header_func_t)(
     char *                              buffer,
     globus_size_t *                     buf_len);
 
@@ -38,7 +38,7 @@ typedef struct globus_logging_module_s
     globus_logging_open_func_t          open_func;
     globus_logging_write_func_t         write_func;
     globus_logging_close_func_t         close_func;
-    globus_logging_time_func_t          time_func;
+    globus_logging_header_func_t        header_func;
 } globus_logging_module_t;
 
 

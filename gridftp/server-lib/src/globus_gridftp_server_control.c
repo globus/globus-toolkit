@@ -1110,7 +1110,7 @@ globus_l_gsc_open_cb(
         goto err;
     }
 
-    msg = globus_i_gsc_string_to_959(220, server_handle->pre_auth_banner, NULL);
+    msg = globus_gsc_string_to_959(220, server_handle->pre_auth_banner, NULL);
     globus_mutex_lock(&server_handle->mutex);
     {
         res = globus_xio_register_write(
@@ -2998,7 +2998,7 @@ globus_i_gsc_get_help(
     one space, but general multiline responses are allowed to have any 
     (or none at all, i.e. "") padding text */
 char *
-globus_i_gsc_string_to_959(
+globus_gsc_string_to_959(
     int                                 code,
     const char *                        in_str,
     const char *                        preline)
@@ -3011,7 +3011,7 @@ globus_i_gsc_string_to_959(
     char *                              end_ptr;
     char *                              prepad = NULL;
     int                                 ctr = 0;
-    GlobusGridFTPServerName(globus_i_gsc_string_to_959);
+    GlobusGridFTPServerName(globus_gsc_string_to_959);
 
     GlobusGridFTPServerDebugInternalEnter();
 

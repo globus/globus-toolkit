@@ -9,7 +9,7 @@
 #else
 #define GlobusLoggingName(func) static const char * _globus_logging_name = #func
 #endif
-                                                                                
+static int                              globus_l_logging_pid;
 /*
  *  error types
  */
@@ -150,10 +150,12 @@ globus_logging_init(
         goto err;
     }
 
+    globus_l_logging_pid = getpid();
+    
     handle->module.open_func = module->open_func;
     handle->module.write_func = module->write_func;
     handle->module.close_func = module->close_func;
-    handle->module.time_func = module->time_func;
+    handle->module.header_func = module->header_func;
 
     globus_mutex_init(&handle->mutex, NULL);
     handle->type_mask = log_type;
@@ -228,10 +230,10 @@ globus_logging_vwrite(
                 globus_l_logging_flush(handle);
                 remain = handle->buffer_length;
             }
-            if(handle->module.time_func != NULL)
+            if(handle->module.header_func != NULL)
             {
                 nbytes = remain;
-                handle->module.time_func(
+                handle->module.header_func(
                     &handle->buffer[handle->used_length],
                     &nbytes);
                 handle->used_length += nbytes;
@@ -339,7 +341,7 @@ globus_logging_stdio_write_func(
 }
 
 void
-globus_logging_stdio_time_func(
+globus_logging_stdio_header_func(
     char *                              buf,
     globus_size_t *                     len)
 {
@@ -350,20 +352,11 @@ globus_logging_stdio_time_func(
     tm = time(NULL);
     str = ctime(&tm);
     str_len = strlen(str);
-
-    if(str_len < *len)
+    if(str[str_len - 1] == '\n')
     {
-        *len = str_len-1;
+        str[str_len - 1] = '\0';
     }
-    memcpy(buf, str, *len);
-    buf[*len] = ' ';
-    (*len)++;
-    buf[*len] = ':';
-    (*len)++;
-    buf[*len] = ':';
-    (*len)++;
-    buf[*len] = ' ';
-    (*len)++;
+    (*len) = snprintf(buf, *len, "[%d] %s :: ", globus_l_logging_pid, str);
 }
 
 void
@@ -394,7 +387,7 @@ globus_logging_module_t                 globus_logging_stdio_module =
     NULL,
     globus_logging_stdio_write_func,
     NULL,
-    globus_logging_stdio_time_func
+    globus_logging_stdio_header_func
 };
 
 globus_logging_module_t                 globus_logging_syslog_module =

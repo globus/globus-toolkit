@@ -604,7 +604,8 @@ globus_gridftp_server_control_attr_set_banner(
 globus_result_t
 globus_gridftp_server_control_attr_set_idle_time(
     globus_gridftp_server_control_attr_t    in_attr,
-    int                                     idle_timeout)
+    int                                     idle_timeout,
+    int                                     preauth_timeout)
 {
     globus_i_gsc_attr_t *                   attr;
     GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
@@ -616,6 +617,7 @@ globus_gridftp_server_control_attr_set_idle_time(
     attr = (globus_i_gsc_attr_t *) in_attr;
 
     attr->idle_timeout = idle_timeout;
+    attr->preauth_timeout = preauth_timeout;
 
     return GLOBUS_SUCCESS;
 }

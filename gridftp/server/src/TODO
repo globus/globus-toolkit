@@ -6,7 +6,7 @@ protocol:
 -- correct FEAT response?
 -- reply codes - verify.
 -- verify that dsi api is correct wrt to errors
--- error out usefully to server and client when cred problem in gssapi_ftp driver
+-- notify server of error when cred problem in gssapi_ftp driver
 
 striping:
 -- verify eofc handling, should move out of remote into data.c
@@ -17,14 +17,12 @@ ipc:
 XX connect backwards!! 0
 XX ipc local mode doesn't work (besides no way to initiate it)
 
-XX commands belong in server-lib
-
 logging:
 -- instrument code
 -- verify output format
 -- specify log format by configuration
 
-Pre-Auth Timeout
+
 
 GID and MLST need to wotk correctly.
 
@@ -53,32 +51,16 @@ known bugs:
     and back?  This is specifically a problem with tcp_bs, we treat it as an
     int on the server side, but server-lib gives it to us as a size_t (as
     it probably should), which is a different size on most 64 bit platforms.
-    
-
+-- problem with preauth timeout    
 
 
 ability to send 500 go away to control channel before server-lib has control
 
-
+M K G b input
 add interface changes for cmdline/config options we want
 add -mkbasedir to globus-url-copy
-add -host -subject -none auth options to ipc
-add id to log lines to associtate messages to their connection.
 
+set default ipc auth mode (host?)
 perf logging output/usage cleanup
 striping bugs
 error messages
-
-
-
-
-
-
-
-
-
-
-done
-~ expansion
-site rdel
-async cksm

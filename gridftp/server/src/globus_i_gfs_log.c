@@ -232,7 +232,7 @@ globus_i_gfs_log_result_warn(
     }
     else
     {
-        message = globus_libc_strdup("(no error)");
+        message = globus_libc_strdup("(unknown error)");
     }
     globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_WARN, "%s:\n%s\n", lead, message);
     globus_free(message);
@@ -255,7 +255,7 @@ globus_i_gfs_log_result(
     }
     else
     {
-        message = globus_libc_strdup("(no error)");
+        message = globus_libc_strdup("(unknown error)");
     }
     globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, "%s:\n%s\n", lead, message);
     globus_free(message);

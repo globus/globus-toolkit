@@ -4265,7 +4265,7 @@ error_alloc:
     GlobusGFSDebugExitWithError();
 }
 
-globus_result_t
+void
 globus_gridftp_server_begin_transfer(
     globus_gfs_operation_t              op,
     int                                 event_mask,
@@ -4472,7 +4472,6 @@ globus_gridftp_server_begin_transfer(
     }
 
     GlobusGFSDebugExit();
-    return GLOBUS_SUCCESS;
 }
 
 void
@@ -5123,6 +5122,86 @@ error_alloc:
     return result;
 }
 
+void
+globus_gridftp_server_finished_session_start(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    void *                              session_arg,
+    char *                              username,
+    char *                              home_dir)
+{
+    globus_gfs_finished_info_t          finished_info;                         
+    GlobusGFSName(globus_gridftp_server_finished_session_start);
+    GlobusGFSDebugEnter();
+
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
+    finished_info.result = result;          
+    finished_info.info.session.session_arg = session_arg;                          
+    finished_info.info.session.username = username;                          
+    finished_info.info.session.home_dir = home_dir;                          
+                                                              
+    globus_gridftp_server_operation_finished(                 
+        op,                                                   
+        result,                                               
+        &finished_info);
+    
+    GlobusGFSDebugExit();
+}    
+
+void
+globus_gridftp_server_finished_active_data(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    void *                              data_arg,
+    globus_bool_t                       bi_directional)
+{
+    globus_gfs_finished_info_t          finished_info;                         
+    GlobusGFSName(globus_gridftp_server_finished_active_data);
+    GlobusGFSDebugEnter();
+
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    finished_info.type = GLOBUS_GFS_OP_ACTIVE;          
+    finished_info.result = result;          
+    finished_info.info.data.data_arg = data_arg;                          
+    finished_info.info.data.bi_directional = bi_directional;                          
+                                                              
+    globus_gridftp_server_operation_finished(                 
+        op,                                                   
+        result,                                               
+        &finished_info);
+    
+    GlobusGFSDebugExit();
+}    
+
+void
+globus_gridftp_server_finished_passive_data(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    void *                              data_arg,
+    globus_bool_t                       bi_directional,
+    const char **                       contact_strings,
+    int                                 cs_count)
+{
+    globus_gfs_finished_info_t          finished_info;                         
+    GlobusGFSName(globus_gridftp_server_finished_passive_data);
+    GlobusGFSDebugEnter();
+
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    finished_info.type = GLOBUS_GFS_OP_PASSIVE;          
+    finished_info.result = result;          
+    finished_info.info.data.data_arg = data_arg;                          
+    finished_info.info.data.bi_directional = bi_directional;                          
+    finished_info.info.data.contact_strings = contact_strings;                          
+    finished_info.info.data.cs_count = cs_count;                          
+                                                              
+    globus_gridftp_server_operation_finished(                 
+        op,                                                   
+        result,                                               
+        &finished_info);
+    
+    GlobusGFSDebugExit();
+}    
 
 void
 globus_i_gfs_data_request_set_cred(

@@ -645,7 +645,7 @@ globus_gridftp_server_operation_event(
  * 
  * Speficic event notification for the start of a transfer.
  */ 
-globus_result_t
+void
 globus_gridftp_server_begin_transfer(
     globus_gfs_operation_t              op,
     int                                 event_mask,
@@ -661,6 +661,20 @@ globus_gridftp_server_finished_transfer(
     globus_gfs_operation_t              op, 
     globus_result_t                     result);
 
+/*
+ * finished session_start
+ * 
+ * Specific finished notification for session start completion.
+ * 
+ */ 
+void
+globus_gridftp_server_finished_session_start(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    void *                              session_arg,
+    char *                              username,
+    char *                              home_dir);
+    
 /*
  * finished command
  * 
@@ -687,7 +701,7 @@ globus_gridftp_server_finished_stat(
     int                                 stat_count);
 
 /*
- * finished stat
+ * finished active data
  * 
  * Speficic finished notification for completion of a active data creation.
  */ 
@@ -699,7 +713,7 @@ globus_gridftp_server_finished_active_data(
     globus_bool_t                       bi_directional);
 
 /*
- * finished stat
+ * finished passive data
  * 
  * Speficic finished notification for completion of a passive data creation.
  */ 
