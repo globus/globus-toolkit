@@ -15,7 +15,7 @@ CVS Information:
 ******************************************************************************/
 
 #include "globus_common.h"
-#include "globus_gram_client.h"
+#include "globus_gram_protocol.h"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
