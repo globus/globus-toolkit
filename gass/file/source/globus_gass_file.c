@@ -515,7 +515,7 @@ globus_gass_open(
 	     */
 	    globus_l_gass_file_table[file->fd] = GLOBUS_NULL;
 	    close(file->fd);
-	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+	    globus_gass_cache_delete(globus_l_gass_file_cache_handle,
 				     file->url,
 				     globus_l_gass_file_tag,
 				     file->timestamp,
@@ -671,7 +671,7 @@ globus_gass_close(
 	globus_libc_close(file->fd);
 	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
 	{
-	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+	    globus_gass_cache_delete(globus_l_gass_file_cache_handle,
 				     file->url,
 				     globus_l_gass_file_tag,
 				     file->timestamp,
@@ -684,7 +684,7 @@ globus_gass_close(
 	    switch(file->oflag & (O_RDONLY|O_WRONLY|O_APPEND|O_RDWR))
 	    {
 	      case (O_RDONLY):
-		globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+		globus_gass_cache_delete(globus_l_gass_file_cache_handle,
 					 file->url,
 					 globus_l_gass_file_tag,
 					 file->timestamp,
@@ -752,7 +752,7 @@ globus_gass_close(
 
 		globus_free(file->append);
 
-		globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+		globus_gass_cache_delete(globus_l_gass_file_cache_handle,
 					 file->url,
 					 globus_l_gass_file_tag,
 					 file->timestamp,
@@ -804,7 +804,7 @@ globus_gass_close(
 		  globus_libc_free(tmp_filename);
 		  
 	      }
-	        globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+	        globus_gass_cache_delete(globus_l_gass_file_cache_handle,
 					 file->url,
 					 globus_l_gass_file_tag,
 					 file->timestamp,
@@ -893,7 +893,7 @@ globus_l_gass_add_and_get(
    open local file with (oflag)
    globus_gass_cache_add_done;
 */
-    rc = globus_gass_cache_add(&globus_l_gass_file_cache_handle,
+    rc = globus_gass_cache_add(globus_l_gass_file_cache_handle,
 			       file->url,
 			       globus_l_gass_file_tag,
 			       GLOBUS_TRUE,
@@ -903,7 +903,7 @@ globus_l_gass_add_and_get(
     switch(rc)
     {
     case GLOBUS_GASS_CACHE_ADD_EXISTS:
-	globus_gass_cache_add_done(&globus_l_gass_file_cache_handle,
+	globus_gass_cache_add_done(globus_l_gass_file_cache_handle,
 			    file->url,
 			    globus_l_gass_file_tag,
 			    file->timestamp);
@@ -960,7 +960,7 @@ globus_l_gass_add_and_get(
 	if(result != GLOBUS_SUCCESS &&
 	   ((oflag & O_CREAT) != O_CREAT))
 	{
-	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+	    globus_gass_cache_delete(globus_l_gass_file_cache_handle,
 				     file->url,
 				     globus_l_gass_file_tag,
 				     file->timestamp,
@@ -969,7 +969,7 @@ globus_l_gass_add_and_get(
 	}
 	else
 	{
-	    globus_gass_cache_add_done(&globus_l_gass_file_cache_handle,
+	    globus_gass_cache_add_done(globus_l_gass_file_cache_handle,
 				       file->url,
 				       globus_l_gass_file_tag,
 				       file->timestamp);
@@ -1013,7 +1013,7 @@ globus_l_gass_add_and_trunc(
 {
     int					rc;
     
-    rc = globus_gass_cache_add(&globus_l_gass_file_cache_handle,
+    rc = globus_gass_cache_add(globus_l_gass_file_cache_handle,
 			       file->url,
 			       globus_l_gass_file_tag,
 			       GLOBUS_TRUE,
@@ -1030,7 +1030,7 @@ globus_l_gass_add_and_trunc(
 	file->fd = open(file->filename,
 			oflag,
 			mode);
-	globus_gass_cache_add_done(&globus_l_gass_file_cache_handle,
+	globus_gass_cache_add_done(globus_l_gass_file_cache_handle,
 				   file->url,
 				   globus_l_gass_file_tag,
 				   file->timestamp);
