@@ -97,7 +97,7 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_gram_jobmanager_callout_error">
+            <Dependency Name="globus_gram_job_manager_callout_error">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
@@ -183,7 +183,7 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_gram_jobmanager_callout_error">
+            <Dependency Name="globus_gram_job_manager_callout_error">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
