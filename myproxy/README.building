@@ -20,7 +20,9 @@ To build source packages from CVS workspace:
 $ make dist
 
 To make a source bundle, first setup a subdirectory named src-packages
-with all the needed source packages (Globus and MyProxy):
+with all the needed source packages (Globus and MyProxy).  Packages
+from ftp.globus.org have known problems with their packaging data.
+Use packages from ftp.nsf-middleware.org instead.
 $ ls src-packages/
 globus_common-2.0.tar.gz        globus_openssl-0.9.tar.gz
 globus_common_setup-2.0.tar.gz  globus_ssl_utils-2.1.tar.gz
