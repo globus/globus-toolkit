@@ -449,21 +449,44 @@ sub stage_in
     my $description = $self->{JobDescription};
     my $tag = $description->cache_tag()
         or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
-    my ($remote, $local, $local_resolved, $cached, @arg);
+    my ($remote, $local, $local_resolved, $cached, $stderr, $rc, @arg);
 
     $self->log("stage_in(enter)");
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
     {
         @arg = ($cache_pgm, '-add', '-t', $tag, $description->executable());
-        return Globus::GRAM::Error::STAGING_EXECUTABLE
-            if (fork_and_exec_cmd(@arg) != 0);
+
+        ($stderr, $rc) = pipe_err_cmd(@arg);
+
+        if ($rc != 0) {
+            $self->log("executable staging failed with $stderr");
+
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'executable',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $description->executable()
+            });
+
+            return GLOBUS::GRAM::Error::STAGING_EXECUTABLE;
+        }
     }
     if($description->stdin() =~ m|^[a-zA-Z]+://|)
     {
         @arg = ($cache_pgm, '-add', '-t', $tag, $description->stdin());
-        return Globus::GRAM::Error::STAGING_STDIN
-            if (fork_and_exec_cmd(@arg) != 0);
+        ($stderr, $rc) = pipe_err_cmd(@arg);
+
+        if ($rc != 0) {
+            $self->log("stdin staging failed with $stderr");
+
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'stdin',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $description->stdin()
+            });
+
+            return Globus::GRAM::Error::STAGING_STDIN
+        }
     }
     foreach ($description->file_stage_in())
     {
@@ -481,8 +504,19 @@ sub stage_in
         }
 
         @arg = ($url_copy_pgm, $remote, 'file://' . $local_resolved);
-        return Globus::GRAM::Error::STAGE_IN_FAILED
-            if (fork_and_exec_cmd(@arg) != 0);
+
+        ($stderr, $rc) = pipe_err_cmd(@arg);
+        if($rc != 0) {
+            $self->log("filestagein staging failed with $stderr");
+
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'filestagein',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $remote,
+                'GT3_FAILURE_DESTINATION' => $local
+            });
+            return Globus::GRAM::Error::STAGE_IN_FAILED
+        }
 	$self->respond({'STAGED_IN' => "$remote $local"});
     }
     foreach($description->file_stage_in_shared())
@@ -502,8 +536,18 @@ sub stage_in
 
         @arg = ($cache_pgm, '-add', '-t', $tag, $remote);
 
-        return Globus::GRAM::Error::STAGE_IN_FAILED
-            if (fork_and_exec_cmd(@arg) != 0);
+        ($stderr, $rc) = pipe_err_cmd(@arg);
+        if($rc != 0) {
+            $self->log("filestagein staging failed with $stderr");
+
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'filestagein',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $remote,
+                'GT3_FAILURE_DESTINATION' => $local
+            });
+            return Globus::GRAM::Error::STAGE_IN_FAILED
+        }
 
         @arg = ($cache_pgm, '-query', '-t', $tag, $remote);
         $cached = pipe_out_cmd(@arg);
@@ -567,8 +611,20 @@ sub stage_out
 	}
 
         @arg = ($url_copy_pgm, 'file://' . $local_path, $remote);
-        return Globus::GRAM::Error::STAGE_OUT_FAILED
-            if (fork_and_exec_cmd(@arg) != 0);
+
+        ($stderr, $rc) = pipe_err_cmd(@arg);
+        if($rc != 0) {
+            $self->log("filestageout staging failed with $stderr");
+
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'filestageout',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $local,
+                'GT3_FAILURE_DESTINATION' => $remote
+            });
+            return Globus::GRAM::Error::STAGE_OUT_FAILED
+        }
+
 	$self->respond({'STAGED_OUT' => "$local $remote"});
     }
     $self->log("stage_out(exit)");
@@ -741,6 +797,34 @@ sub pipe_out_cmd
         }
     }
     $result;
+}
+
+sub pipe_err_cmd
+{
+    my $result;
+    local(*READ);
+
+    my $pid = open( READ, "-|" );
+
+    return ("Error " . $! . " forking sub-process", -1) unless defined($pid);
+
+    if ( $pid )
+    {
+        # parent
+        chomp($result = scalar <READ>);
+        close(READ);
+    } else {
+        # child
+        open( STDERR, '>&STDOUT');
+        open( STDOUT, '>>/dev/null' );
+        select(STDERR); $|=1;
+        select(STDOUT); $|=1;
+        if (!  exec { $_[0] } @_ )
+        {
+            exit(127);
+        }
+    }
+    ($result, $?);
 }
 
 sub fork_and_exec_cmd

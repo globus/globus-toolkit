@@ -1338,6 +1338,14 @@ globus_l_gram_job_manager_default_done(
     {
 	request->remote_io_url_file = globus_libc_strdup(value);
     }
+    else if(strncmp(variable, "GRAM_SCRIPT_GT3", 15) == 0)
+    {
+	globus_gram_job_manager_request_log(
+		request,
+		"JM: GT3 extended error message: %s:%s\n",
+		variable,
+		value ? value : "");
+    }
     else if(request->jobmanager_state == starting_jobmanager_state)
     {
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;

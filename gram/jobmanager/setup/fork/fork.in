@@ -134,11 +134,12 @@ sub submit
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
     }
-    elsif(! -f $description->executable())
+    elsif(! -e $description->executable())
     {
 	return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
     }
-    elsif(! -x $description->executable())
+    elsif( (! -x $description->executable())
+        || (! -f $description->executable()))
     {
 	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
     }
