@@ -53,6 +53,10 @@ typedef struct
 {
     globus_fifo_t                       user_url_list;
     globus_fifo_t                       expanded_url_list;
+    globus_fifo_t                       matched_url_list;
+
+    globus_hashtable_t                  recurse_hash;
+    
     char *                              source_subject;
     char *                              dest_subject;
     unsigned long                       options;
@@ -133,6 +137,14 @@ globus_l_gass_copy_performance_cb(
     float                                           avg_throughput);
 
 static
+void
+globus_l_guc_entry_cb(
+    const char *                        url,
+    globus_gass_copy_glob_entry_t       type,
+    const char *                        unique_id,      
+    void *                              user_arg);
+    
+static
 int
 globus_l_guc_parse_arguments(
     int                                             argc,
@@ -144,6 +156,7 @@ globus_result_t
 globus_l_guc_expand_urls(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    gass_copy_attr,   
+    globus_gass_copy_attr_t *                    dest_gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle);
 
 static
@@ -155,7 +168,7 @@ globus_l_guc_expand_single_url(
     globus_gass_copy_handle_t *                  gass_copy_handle);
 
 static
-int
+globus_result_t
 globus_l_guc_transfer_files(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    source_gass_copy_attr,   
@@ -193,6 +206,12 @@ static
 void
 globus_l_guc_destroy_url_list(
     globus_fifo_t *                     url_list);
+
+static 
+void
+globus_l_guc_hashtable_element_free(
+    void *                              datum);
+
 
 
 /*****************************************************************************
@@ -587,32 +606,14 @@ main(int argc, char **argv)
     /* expand globbed urls */
     result = globus_l_guc_expand_urls(
                  &guc_info,
-                 &source_gass_copy_attr,       
+                 &source_gass_copy_attr,
+                 &dest_gass_copy_attr,    
                  &gass_copy_handle);
     if(result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Error: unable to expand url: %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
-        return 1;
+        ret_val = 1;
     }
     
-    if(globus_fifo_size(&guc_info.expanded_url_list) < 1 )
-    {
-        fprintf(stderr, "No files matched the source url.\n");
-        return 1;
-    }
-
-
-    if((ret_val = globus_l_guc_transfer_files(
-                      &guc_info,
-                      &source_gass_copy_attr,   
-                      &dest_gass_copy_attr,   
-                      &gass_copy_handle)) != 0)
-    {
-        fprintf(stderr, 
-            "There was an error with one or more file transfers.\n");
-    }
-
     globus_l_guc_destroy_url_list(&guc_info.user_url_list);
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
 
@@ -784,6 +785,49 @@ globus_l_gass_copy_performance_cb(
     fflush(stdout);
 }
 
+static
+void
+globus_l_guc_entry_cb(
+    const char *                        url,
+    globus_gass_copy_glob_entry_t       type,
+    const char *                        unique_id,      
+    void *                              user_arg)
+{
+    globus_l_guc_info_t *               guc_info;
+    char *                              tmp_unique;
+    globus_bool_t                       seen = GLOBUS_FALSE;
+    int                                 retval;
+    
+    guc_info = (globus_l_guc_info_t *) user_arg;
+    
+    if(guc_info->recurse && 
+        type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR)
+    {
+        tmp_unique = globus_libc_strdup(unique_id);
+
+        retval = globus_hashtable_insert(
+            &guc_info->recurse_hash,
+            tmp_unique,
+            tmp_unique);
+            
+        if(retval != 0)
+        {
+            globus_free(tmp_unique);
+            seen = GLOBUS_TRUE;
+        }
+    }
+    
+    if(!seen)
+    {
+        globus_fifo_enqueue(
+            &guc_info->matched_url_list,
+           globus_libc_strdup(url));
+    }
+    
+    return;   
+}    
+
+
 static 
 void
 globus_l_guc_info_destroy(
@@ -939,7 +983,7 @@ error_parse:
 
 
 static
-int
+globus_result_t
 globus_l_guc_transfer_files(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    source_gass_copy_attr,   
@@ -959,9 +1003,9 @@ globus_l_guc_transfer_files(
     int                                          dst_url_base_len;
     globus_l_guc_src_dst_pair_t *                url_pair;
     globus_result_t                              result;
-    int                                          ret_val = 0;
     globus_bool_t                                new_url;
     globus_bool_t                                dst_is_dir;
+    globus_result_t                              first_error = GLOBUS_SUCCESS;
         
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
@@ -1150,16 +1194,13 @@ globus_l_guc_transfer_files(
                      gass_copy_handle);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    ret_val=1;
                     goto error_dirlist;
                 }
                 
                 result = globus_gass_copy_mkdir(
                     gass_copy_handle,
                     dst_url,
-                    dest_gass_copy_attr,
-                    globus_l_url_copy_monitor_callback,
-                    (void *) &monitor);
+                    dest_gass_copy_attr);
                     
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -1183,14 +1224,17 @@ globus_l_guc_transfer_files(
 
         if (result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "error: %s\n",
-                    globus_error_print_friendly(globus_error_get(result)));
             monitor.done = GLOBUS_TRUE;
-            ret_val=1;
             if(!g_continue)
             {
                 goto error_transfer;
             }
+            
+            if(first_error == GLOBUS_SUCCESS)
+            {
+                first_error = result;
+            }
+
         }
 
         globus_mutex_lock(&monitor.mutex);
@@ -1221,16 +1265,17 @@ globus_l_guc_transfer_files(
 	
         if (monitor.use_err)
         {
-            fprintf(stderr, "error: %s\n",
-                    globus_error_print_friendly(monitor.err));
             fprintf(stderr, "failed to transfer %s to %s.\n",
                 src_url,
                 dst_url);
-            globus_object_free(monitor.err);
-            ret_val = 1;
+            result = globus_error_put(monitor.err);
             if(!g_continue)
             {
                 goto error_transfer;
+            }
+            if(first_error == GLOBUS_SUCCESS)
+            {
+                first_error = result;
             }
 
         }
@@ -1265,7 +1310,7 @@ globus_l_guc_transfer_files(
     globus_mutex_destroy(&monitor.mutex);
 
 
-    return ret_val;
+    return first_error;
 
 error_transfer:
 error_dirlist:
@@ -1273,7 +1318,7 @@ error_dirlist:
     globus_mutex_destroy(&monitor.mutex);
 
 
-    return ret_val;
+    return result;
 
 }
 
@@ -1547,6 +1592,7 @@ globus_result_t
 globus_l_guc_expand_urls(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    gass_copy_attr,   
+    globus_gass_copy_attr_t *                    dest_gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle)
 {
     char *                                       src_url;
@@ -1554,6 +1600,8 @@ globus_l_guc_expand_urls(
     globus_l_guc_src_dst_pair_t *                user_url_pair;
     globus_result_t                              result;
     globus_io_handle_t *                         source_io_handle;
+    globus_bool_t                                no_matches = GLOBUS_TRUE;
+    globus_bool_t                                was_error = GLOBUS_FALSE;
         
     while(!globus_fifo_empty(&guc_info->user_url_list))
     {
@@ -1574,7 +1622,14 @@ globus_l_guc_expand_urls(
 
             continue;
         }
+
         
+        globus_hashtable_init(
+            &guc_info->recurse_hash,
+            4096,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+                   
         globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
 
         globus_l_guc_gass_attr_init(
@@ -1595,7 +1650,33 @@ globus_l_guc_expand_urls(
         {
             goto error_expand;
         }
-                                        
+        
+        if(globus_fifo_size(&guc_info->expanded_url_list))
+        {
+            no_matches = GLOBUS_FALSE;
+            
+            result = globus_l_guc_transfer_files(
+                guc_info,
+                gass_copy_attr,
+                dest_gass_copy_attr,
+                gass_copy_handle);
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                was_error = GLOBUS_TRUE;
+
+                fprintf(stderr, "error: %s\n",
+                    globus_error_print_friendly(globus_error_get(result)));
+
+                if (!g_continue)
+                {
+                    goto error_transfer;
+                }
+            }
+        }
+        
+        globus_hashtable_destroy_all(&guc_info->recurse_hash,
+            globus_l_guc_hashtable_element_free);
         globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
         
         globus_free(user_url_pair->src_url);
@@ -1603,11 +1684,30 @@ globus_l_guc_expand_urls(
         globus_free(user_url_pair);
         
     }
+    
+    if(no_matches)
+    {
+        fprintf(stderr, "No files matched the source url.\n");
+    }
+    if(was_error)
+    {
+        fprintf(stderr, 
+            "There was an error with one or more file transfers.\n");
+    }
+    
+    return result;
 
-    return GLOBUS_SUCCESS;
-            
+error_transfer:            
 error_expand:
+    if(was_error)
+    {
+        fprintf(stderr, 
+            "There was an error with one or more file transfers.\n");
+    }
+
     globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
+    globus_hashtable_destroy_all(&guc_info->recurse_hash,
+        globus_l_guc_hashtable_element_free);
     
     globus_free(user_url_pair->src_url);
     globus_free(user_url_pair->dst_url);
@@ -1626,7 +1726,6 @@ globus_l_guc_expand_single_url(
     globus_gass_copy_attr_t *                    gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle)
 {
-    globus_fifo_t                                matched_url_list;
     char *                                       src_url;
     char *                                       dst_url;
     int                                          url_len;
@@ -1639,7 +1738,7 @@ globus_l_guc_expand_single_url(
     globus_bool_t                                dst_is_file;
     int						 files_matched;    
                 
-    globus_fifo_init(&matched_url_list);
+    globus_fifo_init(&guc_info->matched_url_list);
 
     src_url = url_pair->src_url;
     dst_url = url_pair->dst_url;
@@ -1648,7 +1747,8 @@ globus_l_guc_expand_single_url(
                 gass_copy_handle,
                 src_url,
                 gass_copy_attr,
-                &matched_url_list);
+                globus_l_guc_entry_cb,
+                guc_info);
     
     if(result != GLOBUS_SUCCESS)
     {
@@ -1669,9 +1769,9 @@ globus_l_guc_expand_single_url(
     files_matched = 0;
     base_url_len = strrchr(src_url, '/') - src_url + 1;
                                  
-    while(!globus_fifo_empty(&matched_url_list))
+    while(!globus_fifo_empty(&guc_info->matched_url_list))
     {
-        matched_src_url = (char *) globus_fifo_dequeue(&matched_url_list);
+        matched_src_url = (char *) globus_fifo_dequeue(&guc_info->matched_url_list);
     
         matched_file = matched_src_url + base_url_len;
     
@@ -1712,7 +1812,7 @@ globus_l_guc_expand_single_url(
     }
     
     
-    globus_fifo_destroy(&matched_url_list);
+    globus_fifo_destroy(&guc_info->matched_url_list);
     
         
 
@@ -1726,7 +1826,7 @@ error_too_many_matches:
             
 error_expand:
 
-    globus_fifo_destroy(&matched_url_list);
+    globus_fifo_destroy(&guc_info->matched_url_list);
      
     return result;                
 }
@@ -2108,3 +2208,20 @@ globus_l_guc_destroy_url_list(
     }      
     globus_fifo_destroy(url_list);
 }   
+
+static 
+void
+globus_l_guc_hashtable_element_free(
+    void *                              datum)
+{
+    char *                              string;
+    
+    string = (char *) datum;
+
+    if(string != GLOBUS_NULL)
+    { 
+        globus_free(string);
+    }
+    
+    return;
+}

@@ -120,6 +120,22 @@ typedef void (*globus_gass_copy_performance_cb_t)(
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
 
+
+typedef enum {
+    GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN,
+    GLOBUS_GASS_COPY_GLOB_ENTRY_FILE,
+    GLOBUS_GASS_COPY_GLOB_ENTRY_DIR,
+    GLOBUS_GASS_COPY_GLOB_ENTRY_OTHER
+} globus_gass_copy_glob_entry_t;
+
+
+typedef void (*globus_gass_copy_glob_entry_cb_t)(
+    const char *                        url,
+    globus_gass_copy_glob_entry_t       type,
+    const char *                        unique_id,      
+    void *                              user_arg);
+
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
@@ -509,18 +525,17 @@ globus_gass_copy_attr_set_secure_channel(
 
 globus_result_t 
 globus_gass_copy_glob_expand_url( 
-     globus_gass_copy_handle_t *         handle, 
-     const char *                        url, 
-     globus_gass_copy_attr_t *           attr, 
-     globus_fifo_t *                     url_list); 
+     globus_gass_copy_handle_t *        handle, 
+     const char *                       url, 
+     globus_gass_copy_attr_t *          attr,
+     globus_gass_copy_glob_entry_cb_t   entry_cb,
+     void *                             user_arg);
      
 globus_result_t
 globus_gass_copy_mkdir(
-    globus_gass_copy_handle_t * handle,
-    char * url,
-    globus_gass_copy_attr_t * attr,
-    globus_gass_copy_callback_t callback_func,
-    void * callback_arg);
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr);
 
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
