@@ -43,7 +43,6 @@ append_gss_status(char *buffer,
 		  const OM_uint32 gss_code,
 		  const int type)
 {
-    OM_uint32 maj_stat;
     OM_uint32 min_stat;
     gss_buffer_desc error_string;
     OM_uint32 context = 0;
@@ -54,9 +53,8 @@ append_gss_status(char *buffer,
     
     do 
     {
-	maj_stat = gss_display_status(&min_stat, gss_code, type,
-				      GSS_C_NULL_OID,
-				      &context, &error_string);
+	gss_display_status(&min_stat, gss_code, type, GSS_C_NULL_OID,
+			   &context, &error_string);
 
 	if ((error_string.value != NULL) &&
 	    (error_string.length > 0))
