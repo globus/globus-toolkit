@@ -334,7 +334,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
-    if (requestlen < 0) {
+    if (requestlen <= 0) {
         myproxy_log_verror();
 	respond_with_error_and_die(attrs, "Error in myproxy_recv()");
     }
@@ -1029,7 +1029,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
       contain a specification of the method that the client chose to
       authorization. */
    client_length = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
-   if (client_length < 0)
+   if (client_length <= 0)
       goto end;
 
    client_auth_method = (*client_buffer);
