@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/home/meder/globus"
+#       define OPENSSLDIR "/home/bresnaha/Dev/Globus-trunk/GL"
 #   endif
 #endif
 
@@ -68,6 +68,9 @@
 #   ifndef BF_PTR
 /* #       undef BF_PTR */
 #   endif
+#   ifndef BF_PTR2
+/* #       undef BF_PTR2 */
+#   endif
 #endif
 
 #ifdef HEADER_RC4_H
@@ -105,8 +108,8 @@
 #endif
 
 #ifdef OPENSSL_THREAD_DEFINES
-#   ifndef THREADS
-/* #       undef THREADS */
+#   ifndef OPENSSL_THREADS
+/* #       undef OPENSSL_THREADS */
 #   endif
 #endif
 
