@@ -48,7 +48,7 @@ do                                                                      \
 /*
  *  if architecture is big endian already
  */
-#ifdef WORDS_BIGENDIAN                                               
+#if !defined(WORDS_BIGENDIAN)
 
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
 do                                                                      \
@@ -109,12 +109,12 @@ do                                                                      \
         goto decode_err;                                                \
     }                                                                   \
                                                                         \
-    memcpy(&_w, _buf, 8);                                               \
-    _lo = _w & 0xffffffff;                                              \
-    _hi = _w >> 32U;                                                    \
+    memcpy(&_cw, _buf, 8);                                              \
+    _lo = _cw & 0xffffffff;                                             \
+    _hi = _cw >> 32U;                                                   \
     _lo = ntohl(_lo);                                                   \
     _hi = ntohl(_hi);                                                   \
-    _cw = ((uint64_t) _lo) << 32U | _hi;                                \
+    _w = ((uint64_t) _lo) << 32U | _hi;                                 \
     _buf += 8;                                                          \
     _len -= 8;                                                          \
 } while(0)
@@ -1280,7 +1280,7 @@ globus_gfs_ipc_reply_finished(
                     break;
             }
 
-            msg_size = ptr - buffer - GFS_IPC_HEADER_SIZE;
+            msg_size = ptr - buffer;
             GFSEncodeUInt32(
                 buffer, ipc->buffer_size, size_ptr, msg_size);
             res = globus_xio_register_write(
@@ -1647,7 +1647,7 @@ globus_l_gfs_ipc_transfer_pack(
     /* TODO: pack op */
 
     /* now that we know size, add it in */
-    msg_size = ptr - buffer - GFS_IPC_HEADER_SIZE;
+    msg_size = ptr - buffer;
     GFSEncodeUInt32(buffer, ipc->buffer_size, size_ptr, msg_size);
 
     res = globus_xio_register_write(
