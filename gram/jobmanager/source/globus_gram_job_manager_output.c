@@ -1375,8 +1375,8 @@ globus_l_gram_job_manager_output_destination_open(
       case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_CACHE:
         rc = globus_gass_cache_add(
 		&request->cache_handle,
-		request->cache_tag,
 		destination->url,
+		request->cache_tag,
 		GLOBUS_TRUE,
 		&timestamp,
 		&local_filename);
