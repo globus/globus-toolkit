@@ -131,6 +131,7 @@ $DEBUG_ECHO "JM_SCRIPT: getting environment vars" >> $grami_logfile
 #
 euilib=""
 euidev=""
+pool=""
 comment=""
 new_grami_env=""
 if [ ! -z "${grami_env}" ] ; then
@@ -146,6 +147,8 @@ if [ ! -z "${grami_env}" ] ; then
 	    euilib=$2
 	  elif [ "$1" = "MP_EUIDEVICE" -a -n "$2" ]; then
 	    euidev=$2
+	  elif [ "$1" = "MP_RMPOOL" -a -n "$2" ]; then
+	    pool=$2
 	  elif [ "$1" = "MAUI_COMMENT" -a -n "$2" ]; then
 	    comment=$2
 	  fi
@@ -179,6 +182,10 @@ if [ -z "${grami_requirements}" ] ; then
 	    grami_requirements=${default_eth_requirements}
         fi
     fi
+
+    if [ ! -z "${pool}" ]; then
+       grami_requirements="${grami_requirements} && (Pool == $pool)"
+    fi
 fi
 
 createScript () {
@@ -192,6 +199,7 @@ createScript () {
    echo "#@ initialdir       = ${grami_directory}"
    echo "#@ class            = ${grami_queue}"
    echo "#@ Requirements     = ${grami_requirements}"
+   echo "#@ Restart     = ${grami_requirements}"
    echo "#" 
 
    if [ -n "${new_grami_env}" ] ; then
