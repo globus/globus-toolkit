@@ -133,6 +133,7 @@ main(int argc,
     int                    message_handled;
     char                   description[GRAM_MAX_MSG_SIZE];
     char                   test_dat_file[GRAM_MAX_MSG_SIZE];
+    char                   logfile[GRAM_MAX_MSG_SIZE];
     char *                 tmp_ptr;
     char *                 my_host;
     unsigned short         my_port;
@@ -149,9 +150,15 @@ main(int argc,
     /*
      * Open the logfile just for testing!
      */
-    if ((log_fp = fopen("job_mgr.tmp", "a")) == NULL)
+    sprintf(logfile, "gram_job_mgr_%lu.log",
+            (unsigned long) getpid());
+
+    if ((log_fp = fopen(logfile, "a")) == NULL)
     {
-        if ((log_fp = fopen("/tmp/job_mgr.tmp", "a")) == NULL)
+        sprintf(logfile, "/tmp/gram_job_mgr_%lu.log",
+               (unsigned long) getpid());
+
+        if ((log_fp = fopen(logfile, "a")) == NULL)
         {
             fprintf(stderr, "Cannot open logfile.\n");
             exit(1);
@@ -452,11 +459,11 @@ grami_jm_request_params(gram_specification_t * description_tree,
     grami_jm_param_get(description_tree, GRAM_STDERR_PARAM, params->std_err);
 
     if (strlen(pgm_count) == 0)
-        params->processes_requested = 1;
+        params->count = 1;
     else
-        params->processes_requested = atoi(pgm_count);
+        params->count = atoi(pgm_count);
 
-    if (params->processes_requested < 1)
+    if (params->count < 1)
         return (GRAM_ERROR_INVALID_REQUEST);
 
     if (strlen(params->pgm) == 0)
