@@ -1,6 +1,6 @@
 diff -r -u openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
 --- openssl-0.9.6b/Configure	Mon Jul  9 09:08:37 2001
-+++ openssl-0.9.6b-patched/Configure	Fri Oct 26 18:51:24 2001
++++ openssl-0.9.6b-patched/Configure	Fri Oct 26 20:05:16 2001
 @@ -186,11 +186,11 @@
  # Only N32 and N64 ABIs are supported. If you need O32 ABI build, invoke
  # './Configure irix-[g]cc' manually.
@@ -156,7 +156,7 @@ diff -r -u openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
  	@echo "Makefile.ssl is older than Makefile.org."
 diff -r -u openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
 --- openssl-0.9.6b/Makefile.org	Mon Jul  9 09:08:41 2001
-+++ openssl-0.9.6b-patched/Makefile.org	Fri Oct 26 17:49:11 2001
++++ openssl-0.9.6b-patched/Makefile.org	Fri Oct 26 19:33:53 2001
 @@ -231,20 +231,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -233,7 +233,7 @@ diff -r -u openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
 +	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
 +	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
 +		-Wl,-bexpall -Wl,-bnoentry ${wl}-berok \
-+		lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++		lib$${i}.a $$libs ${EX_LIBS} ) || exit 1; \
 +	libs="$$libs -l$$i"; \
 +	done
 +
