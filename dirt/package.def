@@ -122,5 +122,6 @@ autotools                       autotools                       dirt.sh
 globus_utp                      utp/source                      dirt.sh
 globus_callout                  callout/source                  dirt.sh
 globus_callout_test             callout/test                    dirt.sh
-globus_gram_jobmanager_callout  gram/jobmanager/callout         dirt.sh
-globus_gram_jobmanager_callout_error  gram/jobmanager/callout_error dirt.sh
+globus_gram_job_manager_callout  gram/jobmanager/callout         dirt.sh
+globus_gram_job_manager_callout_error  gram/jobmanager/callout_error dirt.sh
+globus_gram_job_manager_callout_setup gram/jobmanager/setup/callout  dirt.sh
