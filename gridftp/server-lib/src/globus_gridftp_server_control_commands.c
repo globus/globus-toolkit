@@ -951,7 +951,8 @@ globus_l_gsc_cmd_size_cb(
     else
     {
         code = 213;
-        msg = globus_common_create_string("%d", stat_info->size);
+        msg = globus_common_create_string(
+            "%"GLOBUS_OFF_T_FORMAT, stat_info->size);
     }
     if(msg == NULL)
     {
@@ -2516,7 +2517,10 @@ globus_l_gsc_data_cb(
     {
         globus_free(wrapper->mod_parms);
     }
-    globus_free(wrapper->path);
+    if(wrapper->path)
+    {
+        globus_free(wrapper->path);
+    }
     globus_free(wrapper);
 }
 
@@ -2567,8 +2571,109 @@ globus_l_gsc_cmd_transfer(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_gsc_959_finished_command(wrapper->op, _FSMSL("500 Command failed\r\n"));
+        globus_gsc_959_finished_command(
+            wrapper->op, _FSMSL("500 Command failed\r\n"));
+        if(wrapper->mod_name)
+        {
+            globus_free(wrapper->mod_name);
+        }
+        if(wrapper->mod_parms)
+        {
+            globus_free(wrapper->mod_parms);
+        }
+        if(wrapper->path)
+        {
+            globus_free(wrapper->path);
+        }
+        globus_free(wrapper);
     }
+}
+
+/*
+ *  stor/retr when we needed a size (APPE)
+ */
+static void
+globus_l_gsc_cmd_stor_retr_cb(
+    globus_i_gsc_op_t *                     op,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
+    char *                                  path,
+    globus_gridftp_server_control_stat_t *  stat_info,
+    int                                     stat_count,
+    uid_t                                   uid,
+    void *                                  user_arg)
+{
+    int                                     code;
+    char *                                  tmp_ptr;
+    char *                                  msg = NULL;
+    globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    GlobusGridFTPServerName(globus_l_gsc_cmd_stor_retr_cb);
+
+    wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
+    wrapper->op = op;
+    wrapper->path = globus_libc_strdup(path);    
+
+    if(response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS &&
+        stat_count > 1)
+    {
+        code = 550;
+        msg = globus_common_create_string(
+            _FSMSL("Path is a directory."));
+    }
+       
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS ||
+        stat_count < 1)
+    {
+        /* we'll mimic a STOR here since the file doesn't exist */
+        wrapper->mod_name = NULL;
+        wrapper->mod_parms = NULL;        
+    }
+    else
+    {
+        /* for an append we mimic an ESTO A */
+        wrapper->mod_name = globus_libc_strdup("A");
+        wrapper->mod_parms = globus_common_create_string(
+            "%"GLOBUS_OFF_T_FORMAT, stat_info->size);
+    }
+    
+    if(msg != NULL)
+    {
+        tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
+        globus_gsc_959_finished_command(op, tmp_ptr);
+        globus_free(tmp_ptr);
+        globus_free(msg);
+        if(wrapper->mod_name)
+        {
+            globus_free(wrapper->mod_name);
+        }
+        if(wrapper->mod_parms)
+        {
+            globus_free(wrapper->mod_parms);
+        }
+        if(wrapper->path)
+        {
+            globus_free(wrapper->path);
+        }
+        globus_free(wrapper);
+    }
+    else
+    {
+        /* clean up these here since we are going to reuse this op and
+            they will get leaked  --- should probably fix at leak time */
+        if(op->response_msg != NULL)
+        {
+            globus_free(op->response_msg);
+            op->response_msg = NULL;
+        }
+        if(op->path != NULL)
+        {
+            globus_free(op->path);
+            op->path = NULL;
+        }
+        globus_l_gsc_cmd_transfer(wrapper);
+    }
+    return;
+    
 }
 
 /*
@@ -2590,6 +2695,7 @@ globus_l_gsc_cmd_stor_retr(
     char *                                  tmp_ptr = NULL;
     globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
     globus_off_t                            tmp_o;
+    globus_bool_t                           transfer = GLOBUS_TRUE;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stor);
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *) globus_malloc(
@@ -2603,7 +2709,9 @@ globus_l_gsc_cmd_stor_retr(
 
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER);
-    if(strcmp(cmd_a[0], "STOR") == 0 ||  strcmp(cmd_a[0], "ESTO") == 0)
+    if(strcmp(cmd_a[0], "STOR") == 0 ||
+        strcmp(cmd_a[0], "ESTO") == 0 ||
+        strcmp(cmd_a[0], "APPE") == 0)
     {
         wrapper->type = GLOBUS_L_GSC_OP_TYPE_RECV;
     }
@@ -2640,6 +2748,32 @@ globus_l_gsc_cmd_stor_retr(
         path = globus_libc_strdup(cmd_a[1]);
         mod_name = NULL;
         mod_parm = NULL;
+    }
+    else if(strcmp(cmd_a[0], "APPE") == 0)
+    {
+        int                             mask = 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY;
+        if(argc != 2)
+        {
+            globus_free(wrapper);
+            globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
+            return;
+        }
+
+        res = globus_i_gsc_resource_query(
+                op,
+                cmd_a[1],
+                mask,
+                globus_l_gsc_cmd_stor_retr_cb,
+                wrapper);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_free(wrapper);
+            globus_gsc_959_finished_command(
+                op, _FSMSL("500 Command not supported.\r\n"));
+            return;
+        }
+        transfer = GLOBUS_FALSE;
     }
     else if(strcmp(cmd_a[0], "ESTO") == 0 ||
         strcmp(cmd_a[0], "ERET") == 0)
@@ -2758,29 +2892,32 @@ globus_l_gsc_cmd_stor_retr(
         }
     }
 
-    wrapper->mod_name = mod_name;
-    wrapper->mod_parms = mod_parm;
-    wrapper->path = path;
-    wrapper->reply_code = 129;
-    /* if in delayed passive tell library to go passive */
-    if(op->server_handle->opts.delayed_passive)
+    if(transfer)
     {
-        res = globus_i_gsc_passive(
-            wrapper->op,
-            wrapper->max,
-            wrapper->prt,
-            wrapper->path,
-            globus_l_gsc_cmd_pasv_cb,
-            wrapper);
-        if(res != GLOBUS_SUCCESS)
+        wrapper->mod_name = mod_name;
+        wrapper->mod_parms = mod_parm;
+        wrapper->path = path;
+        wrapper->reply_code = 129;
+        /* if in delayed passive tell library to go passive */
+        if(op->server_handle->opts.delayed_passive)
         {
-            globus_free(wrapper);
-            globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
+            res = globus_i_gsc_passive(
+                wrapper->op,
+                wrapper->max,
+                wrapper->prt,
+                wrapper->path,
+                globus_l_gsc_cmd_pasv_cb,
+                wrapper);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
+            }
         }
-    }
-    else
-    {
-        globus_l_gsc_cmd_transfer(wrapper);
+        else
+        {
+            globus_l_gsc_cmd_transfer(wrapper);
+        }
     }
 
     return;
@@ -2814,6 +2951,16 @@ globus_i_gsc_add_commands(
         2,
         2,
         "ALLO <sp> <size>",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
+        "APPE", 
+        globus_l_gsc_cmd_stor_retr,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "APPE <sp> pathname",
         NULL);
 
     globus_gsc_959_command_add(

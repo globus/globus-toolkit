@@ -540,7 +540,8 @@ globus_range_list_remove(
         }
         /* this range starts fair and extends foul, adjust length */
         else if(ent->offset < offset && 
-            (ent_end < end_offset || end_offset == GLOBUS_RANGE_LIST_MAX) && 
+            ((ent_end < end_offset && ent_end != GLOBUS_RANGE_LIST_MAX) ||
+                end_offset == GLOBUS_RANGE_LIST_MAX) && 
             (ent_end > offset || ent_end == GLOBUS_RANGE_LIST_MAX))
         {   
             ent->length = offset - ent->offset;
@@ -548,7 +549,8 @@ globus_range_list_remove(
         }
         /* this range starts foul and extends fair, adjust offset */
         else if(ent->offset >= offset && ent->offset < end_offset &&
-            (ent_end > end_offset || ent_end == GLOBUS_RANGE_LIST_MAX))
+            ((ent_end > end_offset && end_offset != GLOBUS_RANGE_LIST_MAX) || 
+                ent_end == GLOBUS_RANGE_LIST_MAX))
         {
             ent->offset = end_offset;
             prev = ent;

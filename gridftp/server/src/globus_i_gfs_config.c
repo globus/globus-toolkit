@@ -210,9 +210,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Sets options that make server easier to debug. Not recommended for production servers.", NULL, NULL}, 
 /* internal use */
  {"globus_location", "globus_location", "GLOBUS_LOCATION", "G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    NULL} /* "GLOBUS_LOCATION." */,
+    NULL, NULL, NULL} /* "GLOBUS_LOCATION." */,
  {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    NULL} /*"Port range to use for PASV data connections.  Sets GLOBUS_TCP_PORT_RANGE."}*/,
+    NULL, NULL, NULL} /*"Port range to use for PASV data connections.  Sets GLOBUS_TCP_PORT_RANGE."}*/,
  {"bad_signal_exit", "bad_signal_exit", NULL, "exit", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     NULL, NULL, NULL}, /* exit cleanly on bad signals (no core dump) */
  {"test_acl", NULL, NULL, NULL, "testacl", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,

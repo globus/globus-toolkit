@@ -1,6 +1,8 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
+EXTRA_DIST=
+
 SUBDIRS= \
 	pkgdata 
 
@@ -13,7 +15,7 @@ client_Sources=                             \
 server_Sources=                             \
     globus_xio_ftp_server.c
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 test_PROGRAMS= \
 	globus_gs_simple_test       \
@@ -25,7 +27,7 @@ globus_gs_simple_test_LDFLAGS = $(GPT_LDFLAGS) -L .
 globus_gs_simple_test_LDADD = $(GPT_PGM_LINKS) 
 
 globus_ftp_telnet_client_SOURCES = $(client_Sources)
-globus_ftp_telnet_client_LDFLAGS = $(GPT_LDFLAGS) -L .
+globus_ftp_telnet_client_LDFLAGS = $(GPT_LDFLAGS) 
 globus_ftp_telnet_client_LDADD = $(GPT_PGM_LINKS) 
 
 globus_xio_ftp_server_SOURCES = $(server_Sources)

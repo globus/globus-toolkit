@@ -50,8 +50,7 @@ known issues:
     fork/exec time when using only config file.
 -- server exec name discovery fails when there is not a valid $GL. -exec
     flag works around this, but not ideal.
-
-
+-- parsing problem if module params have a space
 
 
 
