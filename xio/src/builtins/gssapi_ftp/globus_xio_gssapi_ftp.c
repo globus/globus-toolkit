@@ -122,6 +122,7 @@ typedef struct globus_l_xio_gssapi_attr_s
     globus_bool_t                           encrypt;
     char *                                  subject;
     globus_i_xio_gssapi_ftp_state_t         start_state;
+    globus_bool_t                           super_mode;
 } globus_l_xio_gssapi_attr_t;
 
 typedef struct globus_l_xio_gssapi_read_req_s
@@ -293,6 +294,9 @@ globus_l_xio_gssapi_ftp_handle_create()
     handle->host = NULL;
     handle->super_mode = GLOBUS_FALSE;
     handle->subject = NULL;
+    handle->target_name = GSS_C_NO_NAME;
+
+    handle->context = NULL;
 
     /* read data members */
     globus_fifo_init(&handle->read_command_q);
@@ -343,6 +347,7 @@ static void
 globus_l_xio_gssapi_ftp_handle_destroy(
     globus_l_xio_gssapi_ftp_handle_t *      handle)
 {
+    OM_uint32                               min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_handle_destroy);
 
     if(handle->subject)
@@ -353,11 +358,30 @@ globus_l_xio_gssapi_ftp_handle_destroy(
     {
         globus_free(handle->host);
     }
+
+    if(handle->target_name != GSS_C_NO_NAME)
+    {
+        gss_release_name(&min_stat, &handle->target_name);
+    }
+    if(handle->gssapi_context != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(
+            &min_stat,
+            &handle->gssapi_context,
+            GLOBUS_NULL);
+    }
+
+    if(handle->context != NULL)
+    {
+        globus_xio_driver_context_close(handle->context);
+    }
+
     globus_free(handle->read_buffer);
     globus_free(handle->write_buffer);
     globus_free(handle->write_iov);
     globus_fifo_destroy(&handle->read_req_q);
     globus_fifo_destroy(&handle->unwrapped_q);
+    globus_fifo_destroy(&handle->read_command_q);
 
     globus_free(handle);
 }
@@ -596,7 +620,6 @@ globus_l_xio_gssapi_ftp_parse_command(
                 multi = GLOBUS_TRUE;
                 len -= 4;
                 tmp_ptr += 4;
-                start_ndx = 0;
                 sub_len -= 4;
                 ctr++;
             }
@@ -614,7 +637,15 @@ globus_l_xio_gssapi_ftp_parse_command(
                 {
                     len -= 4;
                     tmp_ptr += 4;
-                    start_ndx = 0;
+                    sub_len -= 4;
+                }
+                /* feat is returning continuation commands that look strabge
+                   this allows it to work, but TODO: verifiy server is 
+                   correct */
+                else
+                {
+                    len -= 4;
+                    tmp_ptr += 4;
                     sub_len -= 4;
                 }
             }
@@ -1779,7 +1810,7 @@ globus_l_xio_gssapi_ftp_client_incoming(
                     }
                     w_buf->length += strlen(send_buffer);
                     w_buf->buf = globus_libc_realloc(
-                        w_buf->buf, w_buf->length);
+                        w_buf->buf, w_buf->length + 1);
                     memcpy(&w_buf->buf[w_buf->ndx], 
                         send_buffer, strlen(send_buffer) + 1);
                     w_buf->ndx += strlen(send_buffer);
@@ -1926,6 +1957,7 @@ globus_l_xio_gssapi_ftp_attr_init(
     }
     attr->subject = NULL;
     attr->start_state = GSSAPI_FTP_STATE_NONE;
+    attr->super_mode = GLOBUS_FALSE;
 
     *out_attr = attr;
 
@@ -1964,6 +1996,10 @@ globus_l_xio_gssapi_ftp_attr_cntl(
 
         case GLOBUS_XIO_GSSAPI_ATTR_TYPE_ENCRYPT:
             attr->encrypt = va_arg(ap, int);
+            break;
+
+        case GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE:
+            attr->super_mode = va_arg(ap, globus_bool_t);
             break;
 
         default:
@@ -2055,6 +2091,7 @@ globus_l_xio_gssapi_ftp_open(
             handle->subject = strdup(attr->subject);
         }
         handle->encrypt = attr->encrypt;
+        handle->super_mode = attr->super_mode;
     }
 
     /* do client protocol */
@@ -2447,6 +2484,8 @@ static int
 globus_l_xio_gssapi_ftp_deactivate(void)
 {
     GlobusXIOName(globus_l_xio_gssapi_ftp_deactivate);
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 

@@ -3046,6 +3046,8 @@ globus_xio_close(
         goto alloc_error;
     }
 
+    globus_i_xio_blocking_destroy(info);
+
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
