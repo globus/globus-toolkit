@@ -111,11 +111,16 @@ createScript () {
     if test -n "${new_grami_env}"; then
        echo "Environment    = ${new_grami_env}"
     fi
-
     echo ""
-    eval echo "Input          = ${grami_stdin}"
-    eval echo "Output         = ${grami_stdout}"
-    eval echo "Error          = ${grami_stderr}"
+    if [ "${condor_universe}" = "vanilla" ] ; then
+       echo "Input = /dev/null"
+       echo "Output = /dev/null"
+       echo "Error = /dev/null"
+    else
+       eval echo "Input = ${grami_stdin}"
+       eval echo "Output = ${grami_stdout}"
+       eval echo "Error = ${grami_stderr}"
+    fi
     echo ""
     echo "queue ${grami_count}"
     echo ""
@@ -195,6 +200,7 @@ status=`${condor_submit} $condor_file | ${grep} "submitted to cluster" | ${awk} 
 if test -n "${status}"; then
    $DEBUG_ECHO "JM_SCRIPT: returning job state: "\
                "@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@" >> $grami_logfile
+   echo "GRAM_SCRIPT_JOB_ID:$status"
    echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
 else
    $DEBUG_ECHO "##############################" >> $grami_logfile

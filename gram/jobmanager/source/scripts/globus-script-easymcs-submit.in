@@ -142,6 +142,7 @@ status=`eval "${spsubmit} -np ${grami_count} ${new_grami_env} \
 if test -n "${status}"; then
    $DEBUG_ECHO "JM_SCRIPT: returning job state: "\
                "@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@" >> $grami_logfile
+   echo "GRAM_SCRIPT_JOB_ID:$status"
    echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
 else
    $DEBUG_ECHO "##############################" >> $grami_logfile

@@ -276,6 +276,7 @@ if (test "$?" -eq "0") then
    echo "GRAM_SCRIPT_JOB_ID:$job_id"
    $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
    $DEBUG_ECHO "returning job state: 1" >> $grami_logfile
+   echo "GRAM_SCRIPT_JOB_ID:$job_id"
    echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
 else
    $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile

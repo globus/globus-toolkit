@@ -285,10 +285,11 @@ $DEBUG_ECHO submitting LSF job script >> $grami_logfile
 status=`${bsub} < $LSF_JOB_SCRIPT`
 
 if (test "$?" -eq "0") then
-   echo $status | ${awk} '{sub(/</,"",$2);sub(/>/,"",$2);
-	print "grami_job_id="$2}' >> $arg_file
+   job_id=`echo $status | ${awk} '{sub(/</,"",$2);sub(/>/,"",$2);print $2}'`
+   echo "grami_job_id=${job_id}" >> $arg_file
    $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
    $DEBUG_ECHO "returning job state: @GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@" >> $grami_logfile
+   echo "GRAM_SCRIPT_JOB_ID:$job_id"
    echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
 else
    $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
