@@ -296,7 +296,7 @@ globus_l_io_iattr_copy(
     globus_l_io_attr_t *                source_iattr;
     globus_l_io_attr_t *                dest_iattr;
     globus_result_t                     result;
-    GlobusIOName(globus_io_fileattr_init);
+    GlobusIOName(globus_l_io_iattr_copy);
     
     source_iattr = (globus_l_io_attr_t *) *source;
     

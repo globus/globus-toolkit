@@ -199,11 +199,6 @@
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_none.h"
 #endif
 
-typedef unsigned char	                                globus_byte_t;
-typedef int		                                        globus_bool_t;
-typedef void *                                          globus_result_t;
-typedef GLOBUS_OFF_T                                    globus_off_t;
-
 #if !defined(TARGET_ARCH_WIN32)
     typedef size_t                                      globus_size_t;
     typedef ssize_t                                     globus_ssize_t;
@@ -234,6 +229,11 @@ typedef GLOBUS_OFF_T                                    globus_off_t;
 	#define uint32_t ULONG32
 #define vsnprintf _vsnprintf
 #endif
+
+typedef unsigned char	                                globus_byte_t;
+typedef int		                                globus_bool_t;
+typedef uint32_t                                        globus_result_t;
+typedef GLOBUS_OFF_T                                    globus_off_t;
 
 #endif  /* GLOBUS_COMMON_INCLUDE_H */
 
