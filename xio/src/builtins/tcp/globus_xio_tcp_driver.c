@@ -165,14 +165,14 @@ globus_l_xio_tcp_activate(void)
     GlobusXIOName(globus_l_xio_tcp_activate);
     
     if(globus_l_xio_tcp_get_env_pair(
-        "GLOBUS_XIO_TCP_LISTEN_RANGE", &min, &max) && min <= max)
+        "GLOBUS_TCP_PORT_RANGE", &min, &max) && min <= max)
     {
         globus_l_xio_tcp_attr_default.listener_min_port = min;
         globus_l_xio_tcp_attr_default.listener_max_port = max;
     }
     
     if(globus_l_xio_tcp_get_env_pair(
-        "GLOBUS_XIO_TCP_CONNECT_RANGE", &min, &max) && min <= max)
+        "GLOBUS_TCP_SOURCE_RANGE", &min, &max) && min <= max)
     {
         globus_l_xio_tcp_attr_default.connector_min_port = min;
         globus_l_xio_tcp_attr_default.connector_max_port = max;

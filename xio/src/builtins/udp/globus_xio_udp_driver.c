@@ -138,7 +138,7 @@ globus_l_xio_udp_activate(void)
     GlobusXIOName(globus_l_xio_udp_activate);
     
     if(globus_l_xio_udp_get_env_pair(
-        "GLOBUS_XIO_UDP_LISTEN_RANGE", &min, &max) && min <= max)
+        "GLOBUS_UDP_PORT_RANGE", &min, &max) && min <= max)
     {
         globus_l_xio_udp_attr_default.listener_min_port = min;
         globus_l_xio_udp_attr_default.listener_max_port = max;
