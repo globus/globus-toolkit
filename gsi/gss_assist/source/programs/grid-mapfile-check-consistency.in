@@ -120,7 +120,6 @@ check_perms() {
 #3. at least one login name
 #DONE - 4. duplicate entries
 #5. Each line contains some DN/Ln pair
-#DONE - 6. Check for minimum of C=, O=, and CN= fields
 
 
 # Verify mapfile existance
@@ -225,21 +224,7 @@ EOF
 
         remaining_line=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ,]*[,	 ]*//'`
         ln_list="${ln_list} ${ln_string}"
-    done
-
-    # Check for existance of O=,CN= fields
-
-    check_fields=`echo $line | ${GLOBUS_SH_GREP-grep} "/O=" | ${GLOBUS_SH_GREP-grep} "/CN="`
-    if [ -z "$check_fields" ]
-    then
-        echo "Warning: The following entry is missing either a  O=, a CN= field or both"
-        echo "$line"
-        echo "This does not necessarily mean that the entry is wrong"
-        echo "If it is indeed correct the CA issuing that certificate"
-        echo "should take a look at the guide lines in"
-        echo "http://www.cs.auckland.ac.nz/~pgut001/pubs/x509guide.txt"
-    fi
-    
+    done    
 
     # Check for valid login names
 
