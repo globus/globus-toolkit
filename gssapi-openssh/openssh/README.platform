@@ -13,6 +13,14 @@ Accounts in this state must have their passwords reset manually by the
 administrator.  As a precaution, it is recommended that the administrative
 passwords be reset before upgrading from OpenSSH <3.8.
 
+
+Cygwin
+------
+To build on Cygwin, OpenSSH requires the following packages:
+gcc, gcc-mingw-core, mingw-runtime, binutils, make, openssl,
+openssl-devel, zlib, minres, minires-devel.
+
+
 Solaris
 -------
 Currently, sshd does not support BSM auditting.  This can show up as errors

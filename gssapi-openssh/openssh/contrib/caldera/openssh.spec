@@ -17,11 +17,11 @@
 #old cvs stuff.  please update before use.  may be deprecated.
 %define use_stable	1
 %if %{use_stable}
-  %define version 	3.8.1p1
+  %define version 	3.9p1
   %define cvs		%{nil}
   %define release 	1
 %else
-  %define version 	3.8.1p1
+  %define version 	3.9p1
   %define cvs		cvs20011009
   %define release 	0r1
 %endif
@@ -60,7 +60,7 @@ Source0: see-above:/.../openssh-%{version}.tar.gz
 %if %{use_stable}
 Source1: see-above:/.../openssh-%{version}.tar.gz.sig
 %endif
-Source2: http://www.ntrnet.net/~jmknoble/software/%{xsa}/%{askpass}.tar.gz
+Source2: http://www.jmknoble.net/software/%{xsa}/%{askpass}.tar.gz
 Source3: http://www.openssh.com/faq.html
 
 %Package server
@@ -80,7 +80,7 @@ Summary(pt_BR) 	: Servidor do protocolo Secure Shell OpenSSH (sshd).
 %Package askpass
 Group       	: System/Network
 Requires    	: openssh = %{version}
-URL       	: http://www.ntrnet.net/~jmknoble/software/x11-ssh-askpass/
+URL       	: http://www.jmknoble.net/software/x11-ssh-askpass/
 Obsoletes   	: ssh-extras
 
 Summary     	: OpenSSH X11 pass-phrase dialog.
