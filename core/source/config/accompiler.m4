@@ -467,6 +467,13 @@ case ${host}--$1 in
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	fi
+
+        LAC_PROG_CC_GNU($lac_cv_CC,
+	    [],
+	    [
+                AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
+	    ])
+
 	lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
 	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
@@ -501,6 +508,13 @@ case ${host}--$1 in
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	fi
+
+        LAC_PROG_CC_GNU($lac_cv_CC,
+	    [],
+	    [
+                AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
+	    ])
+
 	lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
 	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
