@@ -1896,6 +1896,26 @@ void user(char *name)
     DelayedMessageFile[0] = '\0';
 #endif
 
+#ifdef GLOBUS_AUTHORIZATION
+    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t(),
+                                         ftp_authorization_error_buffer,
+                                         sizeof(ftp_authorization_error_buffer)))
+    {
+        syslog(LOG_NOTICE,
+               "Error initializing gss security context for authorization: %s",
+               ftp_authorization_error_buffer);
+
+        /*
+         * Could probably reply with something better here, but what
+         * escapes me at the moment.
+         */
+        reply(530,
+              "Error initializing gss security context for authorization: %s",
+              ftp_authorization_error_buffer);
+        return;
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+
 #ifdef GSSAPI
     if (gssapi_authentication_required)
     {
@@ -1931,26 +1951,6 @@ void user(char *name)
 	if (debug)
 	    syslog(LOG_INFO, "Globus user maps to local user %s", name);
     }	
-
-#ifdef GLOBUS_AUTHORIZATION
-    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t(),
-                                         ftp_authorization_error_buffer,
-                                         sizeof(ftp_authorization_error_buffer)))
-    {
-        syslog(LOG_NOTICE,
-               "Error initializing gss security context for authorization: %s",
-               ftp_authorization_error_buffer);
-
-        /*
-         * Could probably reply with something better here, but what
-         * escapes me at the moment.
-         */
-        reply(530,
-              "Error initializing gss security context for authorization: %s",
-              ftp_authorization_error_buffer);
-        return;
-    }
-#endif /* GLOBUS_AUTHORIZATION */
 #endif /* GSSAPI_GLOBUS */
 
 #ifdef	BSD_AUTH
@@ -3540,12 +3540,38 @@ void pass(char *passwd)
 		   remoteident, passwd);
     }
     else {
+#if (defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION))
+	{
+	    char estr[2048];
+	    if (!ftp_check_local_condition("userok", estr, sizeof(estr)))
+	    {
+		if (logging)
+		    syslog(LOG_NOTICE, "FTP LOGIN REFUSED (local id check failed) from %s, %s: %s",
+			   remotehost, gssapi_identity(), estr);
+		
+		reply(530, "Access denied.");
+		goto bad;
+	    }
+	}
+#endif
 	reply(230, "User %s logged in.%s", pw->pw_name, guest ?
 	      "  Access restrictions apply." : "");
 	sprintf(proctitle, "%s: %s", remotehost, pw->pw_name);
 	setproctitle("%s", proctitle);
 	if (logging)
 	    syslog(LOG_INFO, "FTP LOGIN FROM %s, %s", remoteident, pw->pw_name);
+#if (defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION))
+	if (logging)
+	{
+	    char *policy_str;
+	    syslog(LOG_INFO, "remote authorization identity is %s",
+		   gssapi_identity());
+	    syslog(LOG_INFO, "remote audit identity is %s",
+		   ftp_authorization_client_audit_identity());
+	    if (policy_str = ftp_authorization_client_policy_string())
+		syslog(LOG_INFO, "remote policy is %s", policy_str);
+	}
+#endif
 /* H* mod: if non-anonymous user, copy it to "authuser" so everyone can
    see it, since whoever he was @foreign-host is now largely irrelevant.
    NMM mod: no, it isn't!  Think about accounting for the transfers from or

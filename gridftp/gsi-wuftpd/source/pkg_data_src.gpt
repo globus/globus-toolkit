@@ -41,10 +41,7 @@
 	    <Build_Step>
 		. $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
 
-		if test "STATIC_LINK_GPTMACRO" = "yes"; then
-		    static_option=--enable-static-only
-		fi
-		CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO $static_option --with-globus-paths --with-bufsize=65536
+		CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO --enable-static-only --with-globus-paths --with-bufsize=65536 --with-globus-authorization
 	    </Build_Step>
 
 	    <Build_Step>
