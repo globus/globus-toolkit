@@ -1,5 +1,4 @@
 include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_xmlsec_pre
 
 ##SUBDIRS=xmlsec
 
@@ -67,4 +66,3 @@ install-exec-hook: remove-old-headers
 	$(mkinstalldirs) $(DESTDIR)$(xmlsecincdir)
 
 include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_xmlsec_post

@@ -236,7 +236,6 @@ docdir = $(GLOBUS_LOCATION)/share/doc
 
 LINK_BAK = orig
 AUTOMAKE_OPTIONS = no-dependencies
-xmlsecincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1/xmlsec
 
 NULL = 
 
@@ -367,7 +366,7 @@ all: all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_xmlsec_pre $(top_srcdir)/globus_automake_post $(top_srcdir)/globus_xmlsec_post $(top_srcdir)/configure.in $(ACLOCAL_M4)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_automake_post $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign  src/Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status

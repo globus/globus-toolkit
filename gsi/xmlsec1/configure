@@ -1585,7 +1585,6 @@ XMLSEC_VERSION="$XMLSEC_VERSION_MAJOR.$XMLSEC_VERSION_MINOR.$XMLSEC_VERSION_SUBM
 XMLSEC_VERSION_INFO=`echo $XMLSEC_VERSION | awk -F. '{ printf "%d:%d:%d", $1+$2, $3, $2 }'`
 XMLSEC_VERSION_SAFE=`echo $XMLSEC_VERSION | sed 's/\./_/g'`
 
-PACKAGE=$XMLSEC_PACKAGE
 VERSION=$XMLSEC_VERSION
 
 
@@ -1824,8 +1823,8 @@ echo "$as_me: error: source directory already configured; run \"make distclean\"
 fi
 
 # Define the identity of the package.
- PACKAGE=$PACKAGE
- VERSION=$VERSION
+ PACKAGE=$GPT_NAME
+ VERSION=$GPT_VERSION
 
 
 # Some tools Automake needs.
@@ -6323,7 +6322,7 @@ chmod -w .
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -o out/conftest2.$ac_objext"
 compiler_c_o=no
-if { (eval echo configure:6326: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
+if { (eval echo configure:6325: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>out/conftest.err; } && test -s out/conftest2.$ac_objext; then
   # The compiler can only warn and ignore the option if not recognized
   # So say no if there are warnings
   if test -s out/conftest.err; then
@@ -8145,7 +8144,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8148 "configure"
+#line 8147 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8243,7 +8242,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8246 "configure"
+#line 8245 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9611,7 +9610,7 @@ else
     lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9614 "configure"
+#line 9613 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11257,7 +11256,7 @@ OPENSSL_PREFIX=""
 OPENSSL_CFLAGS="-DXMLSEC_CRYPTO_OPENSSL=1"
 OPENSSL_LIBS=""
 OPENSSL_LDADDS=""
-OPENSSL_CRYPTO_LIB="$PACKAGE-openssl"
+OPENSSL_CRYPTO_LIB="$XMLSEC_PACKAGE-openssl"
 echo "$as_me:$LINENO: checking for openssl libraries >= $OPENSSL_MIN_VERSION" >&5
 echo $ECHO_N "checking for openssl libraries >= $OPENSSL_MIN_VERSION... $ECHO_C" >&6
 
@@ -11405,7 +11404,7 @@ GNUTLS_PREFIX=""
 GNUTLS_CFLAGS="-DXMLSEC_CRYPTO_GNUTLS=1"
 GNUTLS_LIBS=""
 GNUTLS_LDADDS=""
-GNUTLS_CRYPTO_LIB="$PACKAGE-gnutls"
+GNUTLS_CRYPTO_LIB="$XMLSEC_PACKAGE-gnutls"
 
 echo "$as_me:$LINENO: checking for gnutls libraries >= $GNUTLS_MIN_VERSION" >&5
 echo $ECHO_N "checking for gnutls libraries >= $GNUTLS_MIN_VERSION... $ECHO_C" >&6
@@ -11494,7 +11493,7 @@ NSS_PREFIX=""
 NSPR_PREFIX=""
 NSS_LIBS_LIST="-lnss3 -lsmime3"
 NSPR_LIBS_LIST="-lnspr4 -lplds4 -lplc4"
-NSS_CRYPTO_LIB="$PACKAGE-nss"
+NSS_CRYPTO_LIB="$XMLSEC_PACKAGE-nss"
 
 
 # Check whether --with-nss or --without-nss was given.
@@ -12316,7 +12315,7 @@ XMLSEC_LIBS="-L${libdir} -l$XMLSEC_CRYPTO_LIB $XMLSEC_CORE_LIBS $LIBXML_LIBS $LI
 
 XMLSEC_CRYPTO_PC_FILES_LIST=""
 for i in $XMLSEC_CRYPTO_LIST ; do
-    XMLSEC_CRYPTO_PC_FILES_LIST="$XMLSEC_CRYPTO_PC_FILES_LIST $PACKAGE-$i.pc"
+    XMLSEC_CRYPTO_PC_FILES_LIST="$XMLSEC_CRYPTO_PC_FILES_LIST $XMLSEC_PACKAGE-$i.pc"
 done
 
 

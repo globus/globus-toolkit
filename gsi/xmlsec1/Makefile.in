@@ -236,7 +236,6 @@ docdir = $(GLOBUS_LOCATION)/share/doc
 
 LINK_BAK = orig
 AUTOMAKE_OPTIONS = no-dependencies
-xmlsecincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1/xmlsec
 
 SUBDIRS = include src pkgdata
 
@@ -347,7 +346,7 @@ all: config.h
 
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/globus_automake_pre_top $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_xmlsec_pre $(top_srcdir)/globus_automake_post_top $(top_srcdir)/globus_automake_post $(top_srcdir)/globus_xmlsec_post $(top_srcdir)/configure.in $(ACLOCAL_M4)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/globus_automake_pre_top $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_automake_post_top $(top_srcdir)/globus_automake_post $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign  Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status

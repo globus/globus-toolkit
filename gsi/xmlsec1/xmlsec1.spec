@@ -1,14 +1,14 @@
 Summary: Library providing support for "XML Signature" and "XML Encryption" standards
-Name: xmlsec1
-Version: 1.2.1
+Name: globus_xmlsec1
+Version: 1.2
 Release: 1
 License: MIT
 Group: Development/Libraries
 Vendor: Aleksey Sanin <aleksey@aleksey.com>
 Distribution:  Aleksey Sanin <aleksey@aleksey.com>
 Packager: Aleksey Sanin <aleksey@aleksey.com>
-Source: ftp://ftp.aleksey.com/pub/xmlsec/releases/xmlsec1-%{version}.tar.gz
-BuildRoot: %{_tmppath}/xmlsec1-%{version}-root
+Source: ftp://ftp.aleksey.com/pub/xmlsec/releases/globus_xmlsec1-%{version}.tar.gz
+BuildRoot: %{_tmppath}/globus_xmlsec1-%{version}-root
 URL: http://www.aleksey.com/xmlsec
 Requires: libxml2 >= @LIBXML_MIN_VERSION@
 Requires: libxslt >= 1.0.20
@@ -116,7 +116,7 @@ fi
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-mkdir -p $RPM_BUILD_ROOT/usr/include/xmlsec1
+mkdir -p $RPM_BUILD_ROOT/usr/include/globus_xmlsec1
 mkdir -p $RPM_BUILD_ROOT/usr/lib
 mkdir -p $RPM_BUILD_ROOT/usr/man/man1
 make prefix=$RPM_BUILD_ROOT%{prefix} mandir=$RPM_BUILD_ROOT%{_mandir} install
