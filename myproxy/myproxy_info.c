@@ -54,8 +54,8 @@ int
 main(int argc, char *argv[])
 {
     char *pshost;
-    char request_buffer[1024], *response_buffer = NULL;
-    int requestlen, responselen;
+    char request_buffer[1024];
+    int requestlen;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -147,26 +147,10 @@ main(int argc, char *argv[])
     }
 
     /* Receive a response from the server */
-    responselen = myproxy_recv_ex(socket_attrs, &response_buffer);
-    if (responselen < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
-        return 1;
-    }
-
-    /* Make a response object from the response buffer */
-
-    if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
+    if (myproxy_recv_response_ex(socket_attrs, server_response,
+				 client_request) < 0) {
         fprintf(stderr, "%s\n",verror_get_string());
         exit(1);
-    }
-    free(response_buffer);
-    response_buffer = NULL;
-
-    /* Check version */
-    if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
-        fprintf(stderr, "Invalid version number received from server\n");
-	exit(1);
     }
 
     /* Check response */

@@ -68,19 +68,11 @@ int myproxy_get_delegation(
     }
 
     /* Continue unless the response is not OK */
-    do {
-	if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-	    fprintf(stderr, "%s\n", verror_get_string());
-	    return(1);
-	}
-	if (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE) {
-	    if (myproxy_handle_authorization(socket_attrs, server_response,
-					     client_request) != 0) {
-		fprintf(stderr, "%s\n", verror_get_string());
-		return(1);
-	    }
-	}
-    } while (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE);
+    if (myproxy_recv_response_ex(socket_attrs, server_response,
+				 client_request) != 0) {
+	fprintf(stderr, "%s\n", verror_get_string());
+	return(1);
+    }
     
     /* Accept delegated credentials from server */
     if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile),

@@ -224,7 +224,8 @@ main(int argc, char *argv[])
     }
 
     /* Continue unless the response is not OK */
-    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
+    if (myproxy_recv_response_ex(socket_attrs, server_response,
+				 client_request) != 0) {
         fprintf(stderr, "%s\n", verror_get_string());
         goto cleanup;
     }
