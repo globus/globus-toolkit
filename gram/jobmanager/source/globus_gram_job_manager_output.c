@@ -107,8 +107,6 @@ globus_l_gram_job_manager_output_get_positions(
 static
 void
 globus_l_gram_job_manager_output_poll(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				user_arg);
 
 static
@@ -805,8 +803,6 @@ globus_gram_job_manager_output_check_size(
 static
 void
 globus_l_gram_job_manager_output_poll(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				user_arg)
 {
     globus_gram_jobmanager_request_t *	request;

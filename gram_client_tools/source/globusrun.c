@@ -137,8 +137,6 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
 
 #if defined(BUILD_LITE)
     static void globus_l_globusrun_signal_wakeup(
-                   const globus_abstime_t *            time_now,
-                   const globus_abstime_t *            time_stop,
                    void *                              user_args);
 
 #   define globus_l_globusrun_remove_cancel_poll()  \
@@ -2239,8 +2237,6 @@ Returns:
 static
 void
 globus_l_globusrun_signal_wakeup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     if(globus_l_globusrun_ctrlc)

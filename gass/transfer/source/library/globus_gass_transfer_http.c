@@ -3885,8 +3885,6 @@ globus_l_gass_transfer_http_request_callback(
 static
 void
 globus_l_gass_transfer_http_callback_send_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *		proto;
@@ -3909,8 +3907,6 @@ globus_l_gass_transfer_http_callback_send_callback(
 static
 void
 globus_l_gass_transfer_http_callback_ready_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *	proto;
@@ -3925,8 +3921,6 @@ globus_l_gass_transfer_http_callback_ready_callback(
 static
 void
 globus_l_gass_transfer_http_callback_read_buffered_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *	proto;
@@ -3953,8 +3947,6 @@ globus_l_gass_transfer_http_callback_read_buffered_callback(
 static
 void
 globus_l_gass_transfer_http_callback_listen_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_listener_proto_t *proto;
@@ -6143,8 +6135,6 @@ globus_l_gass_transfer_http_extract_referral(
 static
 void
 globus_l_gass_transfer_http_callback_denied(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;

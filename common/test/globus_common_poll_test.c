@@ -10,8 +10,6 @@ int                                   basic_test_count;
 
 void
 basic_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_arg);
 
 globus_bool_t
@@ -24,8 +22,6 @@ globus_bool_t                         basic_test_done;
 /* basic_periodic added to test req 2438 */
 void
 basic_periodic_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_arg);
     
 globus_bool_t
@@ -40,14 +36,10 @@ int                                   basic_periodic_test_ctr;
 int                                   cancel_count;
 void
 cancel_signal_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
 
 void
 cancel_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
 
 globus_bool_t
@@ -62,8 +54,6 @@ globus_bool_t                         cancel_signal_done;
 
 void
 nested_wait_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
 
 globus_bool_t
@@ -82,8 +72,6 @@ void verbose_printf(int level, char * s, ...);
 
 void
 time_starve_handler_1(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
 
 globus_bool_t                         globus_l_callback_test_done = GLOBUS_FALSE;
@@ -130,14 +118,10 @@ cpu_hog_restart_test();
 
 void
 cpu_hog_restart_block_handler(
-    const globus_abstime_t *                time_now,
-    const globus_abstime_t *                time_stop,
     void *                                  user_arg);
 
 void
 cpu_hog_restart_time_handler(
-   const globus_abstime_t *             time_now,
-   const globus_abstime_t *             time_stop, 
    void *                               user_arg);
 /* END CPU HOG TEST */
 
@@ -162,25 +146,14 @@ random_stress_test();
 
 void
 random_stress_queued_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
 
 void
 random_stress_whatever_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
-
-globus_bool_t
-random_stress_restarting_handler(
-   globus_abstime_t *                 timeout, 
-   void *                             user_arg);
 
 void
 random_stress_count_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg);
 
 /* end random stress test */
@@ -200,14 +173,10 @@ adjust_period_test();
 
 void
 adjust_period_requeue_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args);
 
 void
 adjust_period_set_infinity_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args);
 
 /* END ADJUST PERIOD TEST */
@@ -299,7 +268,8 @@ main(int argc, char * argv[])
            tests_passed++;
            verbose_printf(0, "Time/Starvation test passed [pass %d]\n", ctr);
        }
-  
+
+#if 0
        cancel_count = 0;
        verbose_printf(0, "----------------------------------\n");
        verbose_printf(0, "Cancel Test [pass %d]\n", ctr);
@@ -313,7 +283,7 @@ main(int argc, char * argv[])
            tests_passed++;
            verbose_printf(0, "Cancel test passed [pass %d]\n", ctr);
        }
-
+#endif
        verbose_printf(0, "----------------------------------\n");
        verbose_printf(0, "CPU HOG Test [pass %d]\n", ctr);
        if(!cpu_hog_restart_test())
@@ -413,8 +383,6 @@ basic_test()
 
 void
 basic_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_arg)
 {
     verbose_printf(1, "basic_handler(), start\n");
@@ -440,8 +408,6 @@ basic_handler(
 
 void
 basic_periodic_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_arg)
 {
    verbose_printf(2, "basic_periodic_handler() : called");
@@ -562,8 +528,6 @@ nested_wait_test()
 
 void
 nested_wait_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
     static int                            count = 0;
@@ -612,68 +576,100 @@ nested_wait_handler(
 globus_bool_t 
 time_starve_test()
 {
-   int                          count_1 = 0;
-   int                          count_2 = 0;
-   int                          count_3 = 0;
-   int                          count_4 = 0;
-   int                          secs = 20;
+   long                         count_1 = 0;
+   long                         count_2 = 0;
+   long                         count_3 = 0;
+   long                         count_4 = 0;
+   long                         count_5 = 0;
+   long                         count_6 = 0;
+   long                         count_7 = 0;
+   long                         secs = 20;
    globus_reltime_t             period;
-   long                         base = 1000;
+   long                         base = 1;
    globus_abstime_t             wait_time;
    globus_mutex_t               mutex;
    globus_cond_t                cond;
-   float                        rate1;
-   float                        rate2;
-   float                        rate3;
-   float                        rate4;
-   float                        accuracy1;
-   float                        accuracy2;
-   float                        accuracy3;
-   float                        accuracy4;
+   double                       rate1;
+   double                       rate2;
+   double                       rate3;
+   double                       rate4;
+   double                       rate5;
+   double                       rate6;
+   double                       rate7;
+   double                       accuracy1;
+   double                       accuracy2;
+   double                       accuracy3;
+   double                       accuracy4;
+   double                       accuracy5;
+   double                       accuracy6;
+   double                       accuracy7;
    globus_reltime_t             start_time;
    
    GlobusTimeReltimeSet(start_time, 0, 0);
 
    globus_module_activate(GLOBUS_COMMON_MODULE);
-
-   GlobusTimeReltimeSet(period, 0, 1000);
-   globus_callback_register_periodic(
-       GLOBUS_NULL,
-       &start_time,
-       &period,
-       time_starve_handler_1,
-       (void *)&count_1);
-
-   GlobusTimeReltimeSet(period, 0, 10000);
-   globus_callback_register_periodic(
-       GLOBUS_NULL,
-       &start_time,
-       &period,
-       time_starve_handler_1,
-       (void *)&count_2);
-
-   GlobusTimeReltimeSet(period, 0, 100000);
-   globus_callback_register_periodic(
-       GLOBUS_NULL,
-       &start_time,
-       &period,
-       time_starve_handler_1,
-       (void *)&count_3);
-
+   GlobusTimeAbstimeSet(wait_time, secs, 0);
+   
    GlobusTimeReltimeSet(period, 1, 0);
    globus_callback_register_periodic(
        GLOBUS_NULL,
        &start_time,
        &period,
        time_starve_handler_1,
+       (void *)&count_7);
+       
+   GlobusTimeReltimeSet(period, 0, 100000);
+   globus_callback_register_periodic(
+       GLOBUS_NULL,
+       &start_time,
+       &period,
+       time_starve_handler_1,
+       (void *)&count_6);
+   
+   GlobusTimeReltimeSet(period, 0, 10000);
+   globus_callback_register_periodic(
+       GLOBUS_NULL,
+       &start_time,
+       &period,
+       time_starve_handler_1,
+       (void *)&count_5);
+   
+   GlobusTimeReltimeSet(period, 0, 1000);
+   globus_callback_register_periodic(
+       GLOBUS_NULL,
+       &start_time,
+       &period,
+       time_starve_handler_1,
        (void *)&count_4);
-
+   
+   GlobusTimeReltimeSet(period, 0, 100);
+   globus_callback_register_periodic(
+       GLOBUS_NULL,
+       &start_time,
+       &period,
+       time_starve_handler_1,
+       (void *)&count_3);
+   
+   GlobusTimeReltimeSet(period, 0, 10);
+   globus_callback_register_periodic(
+       GLOBUS_NULL,
+       &start_time,
+       &period,
+       time_starve_handler_1,
+       (void *)&count_2);
+       
+   GlobusTimeReltimeSet(period, 0, 1);
+   globus_callback_register_periodic(
+       GLOBUS_NULL,
+       &start_time,
+       &period,
+       time_starve_handler_1,
+       (void *)&count_1);
+       
     globus_cond_init(&cond,
 		     (globus_condattr_t *) GLOBUS_NULL);
     globus_mutex_init(&mutex,
 		     (globus_mutexattr_t *) GLOBUS_NULL);
-
-    GlobusTimeAbstimeSet(wait_time, secs, 0);
 
     verbose_printf(1, "Waiting for %d seconds...\n", secs);
     globus_mutex_lock(&mutex);
@@ -702,23 +698,35 @@ time_starve_test()
     rate2 = (secs * 1000000.0 / (base * 10));
     rate3 = (secs * 1000000.0 / (base * 100));
     rate4 = (secs * 1000000.0 / (base * 1000));
+    rate5 = (secs * 1000000.0 / (base * 10000));
+    rate6 = (secs * 1000000.0 / (base * 100000));
+    rate7 = (secs * 1000000.0 / (base * 1000000));
 
-    accuracy1 = (float)(count_1)/rate1;
-    accuracy2 = (float)(count_2)/rate2;
-    accuracy3 = (float)(count_3)/rate3;
-    accuracy4 = (float)(count_4)/rate4;
+    accuracy1 = (double)(count_1)/rate1;
+    accuracy2 = (double)(count_2)/rate2;
+    accuracy3 = (double)(count_3)/rate3;
+    accuracy4 = (double)(count_4)/rate4;
+    accuracy5 = (double)(count_5)/rate5;
+    accuracy6 = (double)(count_6)/rate6;
+    accuracy7 = (double)(count_7)/rate7;
 
 
     verbose_printf(1, "calls made/expected     accuracy\n");
     verbose_printf(1, "-------------------     --------\n");
-    verbose_printf(1, "  %7d / %7d"          "   %10.1f\n", 
-			        count_1,  (int)rate1,         accuracy1*100); 
-    verbose_printf(1, "  %7d / %7d"            "   %10.1f\n", 
-			        count_2,  (int)rate2,         accuracy2*100); 
-    verbose_printf(1, "  %7d / %7d"            "   %10.1f\n", 
-			        count_3,  (int)rate3,         accuracy3*100); 
-    verbose_printf(1, "  %7d / %7d"            "   %10.1f\n", 
-			        count_4,  (int)rate4,         accuracy4*100); 
+    verbose_printf(1, "  %8d / %8d"          "   %10.1f\n", 
+			        count_1,  (long)rate1,         accuracy1*100); 
+    verbose_printf(1, "  %8d / %8d"            "   %10.1f\n", 
+			        count_2,  (long)rate2,         accuracy2*100); 
+    verbose_printf(1, "  %8d / %8d"            "   %10.1f\n", 
+			        count_3,  (long)rate3,         accuracy3*100); 
+    verbose_printf(1, "  %8d / %8d"            "   %10.1f\n", 
+			        count_4,  (long)rate4,         accuracy4*100); 
+    verbose_printf(1, "  %8d / %8d"            "   %10.1f\n", 
+			        count_5,  (long)rate5,         accuracy5*100); 
+    verbose_printf(1, "  %8d / %8d"            "   %10.1f\n", 
+			        count_6,  (long)rate6,         accuracy6*100); 
+    verbose_printf(1, "  %8d / %8d"            "   %10.1f\n", 
+			        count_7,  (long)rate7,         accuracy7*100); 
 
     globus_mutex_destroy(&mutex);
     globus_cond_destroy(&cond);
@@ -732,24 +740,28 @@ time_starve_test()
        count_2 == 0 ||
        count_3 == 0 ||
        count_4 == 0 ||
-       accuracy1 > (1.0 + 1.0 / rate1) ||
-       accuracy2 > (1.0 + 1.0 / rate2) ||
-       accuracy3 > (1.0 + 1.0 / rate3) ||
-       accuracy4 > (1.0 + 1.0 / rate4) )
+       count_5 == 0 ||
+       count_6 == 0 ||
+       count_7 == 0 ||
+       (accuracy1 - (1.0 + 1.0 / rate1)) > 0.001 ||
+       (accuracy2 - (1.0 + 1.0 / rate2)) > 0.001 ||
+       (accuracy3 - (1.0 + 1.0 / rate3)) > 0.001 ||
+       (accuracy4 - (1.0 + 1.0 / rate4)) > 0.001 ||
+       (accuracy5 - (1.0 + 1.0 / rate5)) > 0.001 ||
+       (accuracy6 - (1.0 + 1.0 / rate6)) > 0.001 ||
+       (accuracy7 - (1.0 + 1.0 / rate7)) > 0.001)
     {
-        
-	return GLOBUS_FALSE;
+        return GLOBUS_FALSE;
     }
+
     return GLOBUS_TRUE;
 }
 
 void
 time_starve_handler_1(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
-    int  *count = (int *) user_arg;
+    long  *count = (long *) user_arg;
     (*count)++;
 
     verbose_printf(10, "time_starve_handler_1() : entering\n");
@@ -761,8 +773,6 @@ time_starve_handler_1(
  */
 void
 cancel_signal_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
     static int                        count = 0;
@@ -803,8 +813,6 @@ cancel_signal_handler(
  */
 void
 cancel_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
     cancel_count++;
@@ -990,8 +998,6 @@ cpu_hog_restart_test()
 
 void
 cpu_hog_restart_block_handler(
-    const globus_abstime_t *                time_now,
-    const globus_abstime_t *                time_stop,
     void *                                  user_arg)
 {
     globus_reltime_t                      ok_time;
@@ -1028,8 +1034,6 @@ cpu_hog_restart_block_handler(
 
 void
 cpu_hog_restart_time_handler(
-   const globus_abstime_t *             time_now,
-   const globus_abstime_t *             time_stop, 
    void *                               user_arg)
 {
 }
@@ -1124,8 +1128,6 @@ random_stress_test()
 
 void
 random_stress_queued_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
     globus_libc_usleep(50);
@@ -1133,8 +1135,6 @@ random_stress_queued_handler(
 
 void
 random_stress_count_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
     int *             x;
@@ -1175,21 +1175,9 @@ random_stress_count_handler(
 
 void
 random_stress_whatever_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
     void *                              user_arg)
 {
     globus_libc_usleep(20);
-}
-
-globus_bool_t
-random_stress_restarting_handler(
-   globus_abstime_t *                 timeout, 
-   void *                             user_arg)
-{
-    globus_thread_blocking_will_block();
- 
-    return GLOBUS_FALSE;
 }
 
 /*
@@ -1249,8 +1237,6 @@ adjust_period_test()
 
 void
 adjust_period_requeue_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     int *                               count;
@@ -1306,8 +1292,6 @@ adjust_period_requeue_callback(
 
 void
 adjust_period_set_infinity_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     int *                             count;

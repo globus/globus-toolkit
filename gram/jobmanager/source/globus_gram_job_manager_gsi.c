@@ -5,8 +5,6 @@
 static
 void
 globus_l_gram_job_manager_proxy_expiration(
-    const globus_abstime_t *   		time_now,
-    const globus_abstime_t *   		time_stop,
     void *				callback_arg);
 
 static
@@ -584,8 +582,6 @@ stat_failed:
 static
 void
 globus_l_gram_job_manager_proxy_expiration(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				callback_arg)
 {
     globus_gram_jobmanager_request_t *	request;

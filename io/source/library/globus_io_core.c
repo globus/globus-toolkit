@@ -117,8 +117,6 @@ typedef struct
 static 
 void
 globus_l_io_poll(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args);
 
 /*
@@ -1809,8 +1807,6 @@ globus_io_register_cancel(
 static
 void
 globus_l_io_kickout_cb(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     globus_io_operation_info_t *        operation_info;
@@ -1876,8 +1872,6 @@ exit:
 static
 void
 globus_l_io_kickout_cancel_cb(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     globus_io_cancel_info_t *           cancel_info;
@@ -2083,7 +2077,7 @@ globus_l_io_kickout_cancel_cb(
             
             result = globus_callback_space_register_oneshot(
                 &cancel_info->callback_handle,
-                &globus_i_reltime_zero,
+                GLOBUS_NULL,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
                 handle->socket_attr.space);
@@ -2170,14 +2164,13 @@ globus_l_io_handle_events(
     globus_bool_t                       time_left_is_zero;
     globus_bool_t                       handled_something = GLOBUS_FALSE;
     int                                 select_highest_fd;
-    globus_abstime_t                    time_now;
     globus_result_t                     result;
     
     globus_i_io_debug_printf(5,
         (stderr, "%s(): entering\n", myname));
 
     done = GLOBUS_FALSE;
-    while(!done && !globus_l_io_shutdown_called)
+    while(!done && !handled_something && !globus_l_io_shutdown_called)
     {
         if(globus_reltime_cmp(time_left, &globus_i_reltime_zero) == 0)
         {
@@ -2187,8 +2180,6 @@ globus_l_io_handle_events(
         {
             time_left_is_zero = GLOBUS_FALSE;
         }
-        
-        GlobusTimeAbstimeGetCurrent(time_now);
         
         /* Handle any cancel or secure read callbacks right away.
          * They do not need to block on the select but will 
@@ -2212,9 +2203,9 @@ globus_l_io_handle_events(
             
             globus_l_io_pending_count++;
             
-            result = globus_callback_space_register_abstime_oneshot(
+            result = globus_callback_space_register_oneshot(
                 &operation_info->callback_handle,
-                &time_now,
+                GLOBUS_NULL,
                 globus_l_io_kickout_cb,
                 operation_info,
                 handle->blocking_read
@@ -2248,9 +2239,9 @@ globus_l_io_handle_events(
             
             globus_l_io_pending_count++;
             
-            result = globus_callback_space_register_abstime_oneshot(
+            result = globus_callback_space_register_oneshot(
                 &cancel_info->callback_handle,
-                &time_now,
+                GLOBUS_NULL,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
                 cancel_info->handle->blocking_cancel
@@ -2402,11 +2393,6 @@ globus_l_io_handle_events(
         {
             int fd;
             
-            if(!time_left_is_zero)
-            {
-                GlobusTimeAbstimeGetCurrent(time_now);
-            }
-            
             done = GLOBUS_TRUE;
             handled_something = GLOBUS_TRUE;
         
@@ -2435,9 +2421,9 @@ globus_l_io_handle_events(
                         
                         globus_l_io_pending_count++;
                         
-                        result = globus_callback_space_register_abstime_oneshot(
+                        result = globus_callback_space_register_oneshot(
                             &operation_info->callback_handle,
-                            &time_now,
+                            GLOBUS_NULL,
                             globus_l_io_kickout_cb,
                             operation_info,
                             handle->blocking_read
@@ -2475,9 +2461,9 @@ globus_l_io_handle_events(
 
                         globus_l_io_pending_count++;
                         
-                        result = globus_callback_space_register_abstime_oneshot(
+                        result = globus_callback_space_register_oneshot(
                             &operation_info->callback_handle,
-                            &time_now,
+                            GLOBUS_NULL,
                             globus_l_io_kickout_cb,
                             operation_info,
                             handle->blocking_write
@@ -2515,9 +2501,9 @@ globus_l_io_handle_events(
                         
                         globus_l_io_pending_count++;
                         
-                        result = globus_callback_space_register_abstime_oneshot(
+                        result = globus_callback_space_register_oneshot(
                             &operation_info->callback_handle,
-                            &time_now,
+                            GLOBUS_NULL,
                             globus_l_io_kickout_cb,
                             operation_info,
                             handle->blocking_except
@@ -2597,21 +2583,12 @@ globus_l_io_wakeup_pipe_callback(
 static 
 void
 globus_l_io_poll(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     int                                 events_handled=0;
     globus_reltime_t                    time_left;
     
-    if(globus_time_abstime_is_infinity(time_stop))
-    {
-        GlobusTimeReltimeCopy(time_left, globus_i_reltime_infinity);
-    }
-    else
-    {
-        GlobusTimeAbstimeDiff(time_left, *time_now, *time_stop);
-    }
+    globus_callback_get_timeout(&time_left);
     
     globus_i_io_mutex_lock();
     
@@ -2930,8 +2907,6 @@ globus_l_io_activate(void)
 static
 void
 globus_l_unregister_periodic_cb(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     globus_i_io_mutex_lock();

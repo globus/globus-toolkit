@@ -195,27 +195,6 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
 /**
  * @hideinitializer
  *
- * Specifies the global space for
- * globus_callback_space_register_abstime_oneshot()
- * all other arguments are the same as specified there.
- *
- * @see globus_callback_space_register_abstime_oneshot()
- */
-#define globus_callback_register_abstime_oneshot(                           \
-        callback_handle,                                                    \
-        start_time,                                                         \
-        callback_func,                                                      \
-        callback_user_args)                                                 \
-    globus_callback_space_register_abstime_oneshot(                         \
-        (callback_handle),                                                  \
-        (start_time),                                                       \
-        (callback_func),                                                    \
-        (callback_user_args),                                               \
-        GLOBUS_CALLBACK_GLOBAL_SPACE)
-
-/**
- * @hideinitializer
- *
  * Specifies the global space for globus_callback_space_register_periodic()
  * all other arguments are the same as specified there.
  *
@@ -254,13 +233,9 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  * globus_callback_unregister() is called to cancel this periodic from within 
  * this callback, it is guaranteed that the callback will NOT be requeued again
  * 
- *
- * @param time_now
- *        The current time
- *
- * @param time_stop
- *        The timeout for this callback.  The user either must not violate this
- *        timeout, or he must call globus_thread_blocking_space_will_block()
+ * If the function will block at all, the user should call 
+ * globus_callback_get_timeout() to see how long this function can safely block
+ * or call globus_thread_blocking_space_will_block()
  *
  * @param user_args
  *        The user argument registered with this callback
@@ -269,15 +244,13 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  *        - void
  * 
  * @see globus_callback_space_register_oneshot()
- * @see globus_callback_space_register_abstime_oneshot()
  * @see globus_callback_space_register_periodic()
  * @see globus_thread_blocking_space_will_block()
+ * @see globus_callback_get_timeout()
  */
 typedef
 void
 (*globus_callback_func_t)(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args);
 
 /* @} */
@@ -298,7 +271,8 @@ void
  *        must unregister the callback to reclaim resources.
  *
  * @param delay_time
- *        The relative time from now to fire this callback
+ *        The relative time from now to fire this callback.  If NULL, will fire
+ *        as soon as possible
  *
  * @param callback_func
  *        the user func to call
@@ -325,42 +299,6 @@ globus_callback_space_register_oneshot(
     void *                              callback_user_args,
     globus_callback_space_t             space);
 
-/**
- * Register a oneshot for a specific time
- *
- * This function registers the callback_func to start at a specific time
- *
- * @param callback_handle
- *        Storage for a handle.  This may be NULL.  If it is NOT NULL, you
- *        must unregister the callback to reclaim resources.
- *
- * @param start_time
- *        The absolute time to fire this callback
- *
- * @param callback_func
- *        the user func to call
- *
- * @param callback_user_args
- *        user args that will be passed to callback
- *
- * @param space
- *        The space with which to register this callback
- *
- * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT
- *        - GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC
- *        - GLOBUS_SUCCESS
- * 
- * @see globus_callback_func_t
- * @see globus_callback_spaces
- */
-globus_result_t
-globus_callback_space_register_abstime_oneshot(
-    globus_callback_handle_t *          callback_handle,
-    const globus_abstime_t *            start_time,
-    globus_callback_func_t              callback_func,
-    void *                              callback_user_args,
-    globus_callback_space_t             space);
 /* @} */
 
 /**
@@ -379,7 +317,8 @@ globus_callback_space_register_abstime_oneshot(
  *        must cancel the periodic to reclaim resources.
  *
  * @param delay_time
- *        The relative time from now to fire this callback
+ *        The relative time from now to fire this callback.  If NULL, will fire
+ *        the first callback as soon as possible
  *
  * @param period
  *        The relative period of this callback
@@ -579,8 +518,7 @@ globus_callback_signal_poll();
  * GLOBUS_FALSE and an infinite time_left)
  *
  * @param time_left
- *        storage for the remaining time.  If this is NULL, this function
- *        behaves similarly to globus_callback_has_time_expired()
+ *        storage for the remaining time.
  *
  * @return
  *        - GLOBUS_FALSE if time remaining

@@ -1093,8 +1093,6 @@ globus_l_gass_transfer_ftp_put_done_callback(
 static
 void
 globus_l_gass_transfer_ftp_callback_denied(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;

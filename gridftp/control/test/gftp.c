@@ -313,16 +313,6 @@ abort_callback(
     printf("abort_callback() : %d\n.", ftp_response->code);
 }
 
-globus_bool_t
-wakeup_periodic_cb(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
-{
-    globus_result_t                              res;
-
-    return GLOBUS_TRUE;
-}
-
 void
 control_c_signal(
     int                                   sig)

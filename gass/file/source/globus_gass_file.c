@@ -128,8 +128,6 @@ globus_l_gass_add_and_get(
 static
 void
 globus_l_gass_file_append_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *			        callback_arg);
 
 static
@@ -1053,8 +1051,6 @@ globus_l_gass_add_and_trunc(
 static
 void
 globus_l_gass_file_append_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *	                        callback_arg)
 {
     globus_fifo_t		processed;

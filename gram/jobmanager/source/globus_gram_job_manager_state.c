@@ -82,8 +82,6 @@ globus_l_gram_job_manager_state_string(
  */
 void
 globus_gram_job_manager_state_machine_callback(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				user_arg)
 {
     globus_gram_jobmanager_request_t *	request;

@@ -32,8 +32,6 @@ int *tests[] = { test1, test2, test3, NULL};
 static
 void
 wakeup_func(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *			        arg)
 {
     globus_mutex_lock(&mutex);

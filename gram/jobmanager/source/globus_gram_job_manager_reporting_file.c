@@ -11,8 +11,6 @@ enum
 static
 void
 globus_l_gram_job_manager_reporting_file_cleaner(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				callback_arg);
 
 int
@@ -194,8 +192,6 @@ globus_gram_job_manager_reporting_file_stop_cleaner(
 static
 void
 globus_l_gram_job_manager_reporting_file_cleaner(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				callback_arg)
 {
     time_t				now;

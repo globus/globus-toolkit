@@ -36,8 +36,6 @@ globus_l_gass_transfer_size_check(
 static
 void
 globus_l_gass_transfer_drain_callbacks(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 /* @} */
 #endif
@@ -706,8 +704,6 @@ globus_i_gass_transfer_recv_dispatcher(
 static
 void
 globus_l_gass_transfer_drain_callbacks(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;

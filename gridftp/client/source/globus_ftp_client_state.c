@@ -3418,8 +3418,6 @@ globus_l_ftp_client_parallelism_string(
 static
 void
 globus_i_ftp_client_faked_force_close_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     globus_i_ftp_client_target_t *      target;

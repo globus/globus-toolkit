@@ -528,8 +528,6 @@ globus_gram_job_manager_output_check_size(
 /* globus_gram_job_manager_state.c */
 void
 globus_gram_job_manager_state_machine_callback(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				arg);
 
 globus_bool_t
