@@ -3187,6 +3187,7 @@ globus_l_gass_transfer_http_request_callback(
 				    GLOBUS_NULL,
 				    10);
 	    save_errno=errno;
+	    globus_libc_unlock();
 	    if(save_errno != 0)
 	    {
 		proto->code = GLOBUS_L_PROTOCOL_FAILURE_CODE;
