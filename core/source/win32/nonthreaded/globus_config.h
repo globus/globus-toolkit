@@ -78,7 +78,7 @@
 #define GLOBUS_TRUE	    1
 #define GLOBUS_FALSE	0
 #define GLOBUS_NULL  	0
-#define GLOBUS_FAILURE  1
+#define GLOBUS_FAILURE  -1
 #define GLOBUS_SUCCESS  0
 
 #endif /*GLOBUS_CONFIG_H*/
