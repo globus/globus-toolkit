@@ -215,7 +215,9 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->arguments = NULL;
     r->my_stdin = NULL;
     r->my_stdout = NULL;
+    r->my_stdout_tag = NULL;
     r->my_stderr = NULL;
+    r->my_stderr_tag = NULL;
     r->start_time = NULL;
     r->condor_os = NULL;
     r->condor_arch = NULL;
