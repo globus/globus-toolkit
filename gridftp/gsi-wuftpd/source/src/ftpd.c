@@ -4429,9 +4429,17 @@ void retrieve(char *cmd, char *name, int offset, int length)
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
+        int                                         connect_rc;
+
+        connect_rc = g_connect_write(fin, &g_data_handle);
+        if(connect_rc != 0)
+        {
+            goto done;
+        }
+
 #       ifdef BUFFER_SIZE
             TransferComplete = G_SEND_DATA(name, fin, 
-                                   g_control_channel, offset, 
+                                   &g_data_handle, offset, 
                                    BUFFER_SIZE, length);
 #       else
 #           ifdef HAVE_ST_BLKSIZE

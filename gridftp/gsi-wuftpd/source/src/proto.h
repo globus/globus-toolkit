@@ -99,6 +99,11 @@ g_receive_data(
     FILE *                                          outstr,
     int                                             offset);
 
+int
+g_connect_write(
+    FILE *                                          instr,
+    globus_ftp_control_handle_t *                   handle);
+
 void
 g_passive();
 
