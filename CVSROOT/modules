@@ -104,4 +104,5 @@ gs -a \
 
 ws -a \
 	ws-gram\
+	ws-mds\
 	wsrf
