@@ -1,4 +1,5 @@
 # (Package name) (Package subdir) (Build type, if not default) (pnb)
+globus_callout                  callout/source
 globus_common			common/source
 globus_common_setup		common/setup
 globus_common_test		common/test

@@ -2,6 +2,8 @@ BUNDLE globus-resource-management-server
 	globus_core
 	globus_common
 	globus_common_setup
+	globus_libtool
+        globus_callout
 	globus_data_conversion
 	globus_gatekeeper_setup
 	globus_gram_job_manager_setup
@@ -44,6 +46,8 @@ BUNDLE globus-resource-management-sdk
 	globus_core
 	globus_common
 	globus_common_setup
+	globus_libtool
+        globus_callout
 	globus_data_conversion
 	globus_openssl
 	globus_trusted_ca_42864e48_setup
@@ -84,6 +88,8 @@ BUNDLE globus-resource-management-client
 	globus_core
 	globus_common
 	globus_common_setup
+	globus_libtool
+        globus_callout
 	globus_data_conversion
 	globus_openssl
 	globus_proxy_wrapper
@@ -120,6 +126,8 @@ BUNDLE globus-data-management-server
 	globus_core
 	globus_common
 	globus_common_setup
+	globus_libtool
+        globus_callout
 	globus_openssl
 	globus_trusted_ca_42864e48_setup
 	globus_user_env
@@ -142,6 +150,8 @@ BUNDLE globus-data-management-sdk
 	globus_core
 	globus_common
 	globus_common_setup
+	globus_libtool
+        globus_callout
 	globus_openssl
 	globus_trusted_ca_42864e48_setup
 	globus_user_env
@@ -166,6 +176,8 @@ BUNDLE globus-data-management-client
 	globus_core
 	globus_common
 	globus_common_setup
+	globus_libtool
+        globus_callout
 	globus_openssl
 	globus_proxy_wrapper
 	globus_trusted_ca_42864e48_setup
@@ -193,6 +205,7 @@ BUNDLE globus-information-services-server THREADED
 	globus_common
 	globus_common_setup
 	globus_libtool
+        globus_callout
 	globus_mds_common
 	globus_mds_common_setup
 	globus_mds_gris
@@ -222,6 +235,7 @@ BUNDLE globus-information-services-sdk THREADED
 	globus_common
 	globus_common_setup
 	globus_libtool
+        globus_callout
 	globus_openssl
 	globus_trusted_ca_42864e48_setup
 	globus_user_env
@@ -246,8 +260,9 @@ BUNDLE globus-information-services-client THREADED
 	globus_core
 	globus_common
 	globus_common_setup
-	globus_hostname2contacts
 	globus_libtool
+        globus_callout
+	globus_hostname2contacts
 	globus_mds_common
 	globus_mds_common_setup
 	globus_openssl
@@ -308,6 +323,8 @@ BUNDLE globus-gsi
 	globus_trusted_ca_42864e48_setup
 	globus_proxy_wrapper
 	globus_openssl
+	globus_libtool
+        globus_callout
 	globus_common_setup
 	globus_common
 	globus_core
