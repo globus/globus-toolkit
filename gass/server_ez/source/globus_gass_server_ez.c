@@ -202,6 +202,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
     server->options=options;
     server->listener=*listener;
     server->reqattr=reqattr;
+    server->callback=callback;
 
     globus_hashtable_insert(&globus_l_gass_server_ez_listeners,
 			    (void *)*listener,
@@ -522,9 +523,8 @@ globus_l_gass_server_ez_register_accept_callback(
         	{
             	    s->callback();
         	}
-            globus_url_destroy(&parsed_url);
-            globus_free(path);
-            return;
+                globus_url_destroy(&parsed_url);
+		goto deny;
     	    }
 
             rc = globus_libc_open(path, flags, 0600);
