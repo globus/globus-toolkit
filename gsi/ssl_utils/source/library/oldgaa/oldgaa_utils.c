@@ -65,7 +65,7 @@ oldgaa_handle_error(char       **errstring,
     /* If this fails we're hosed so don't bother checking */
     if (errstring)
       {
-      if (errstring == NULL) *errstring = strdup(message);
+      if (*errstring == NULL) *errstring = strdup(message);
       else
         {
         *errstring = (char *)realloc(*errstring, strlen(message)+1);
