@@ -23,9 +23,6 @@
 static char version[] =
 "myproxy-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
-int receive_response(myproxy_socket_attrs_t *attrs, 
-		     myproxy_response_t *response);
-
 static int copy_file(const char *source,
 		     const char *dest,
 		     const mode_t mode);
@@ -43,10 +40,15 @@ int myproxy_set_delegation_defaults(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request)
 { 
-    char *pshost;
+    char *username, *pshost;
 
     client_request->version = strdup(MYPROXY_VERSION);
     client_request->command_type = MYPROXY_GET_PROXY;
+
+    username = getenv("LOGNAME");
+    if (username != NULL) {
+      client_request->username = strdup(username);
+    }
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
@@ -83,11 +85,13 @@ myproxy_socket_attrs_t *socket_attrs,
         return(1);
     }
 
+#if defined(CONDITIONAL_ENCRYPTION)
     /* DK: due to compatibility with globus 1.1.4 that doesn't support 
        encryption. In this way at least certificate based authorization will
        be available. */
     if (strlen(client_request->passphrase) == 0)
        GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
+#endif
 
     /* Serialize client request object */
     requestlen = myproxy_serialize_request(client_request, 
@@ -105,11 +109,10 @@ myproxy_socket_attrs_t *socket_attrs,
     }
 
     /* Continue unless the response is not OK */
-    if (myproxy_authorize_init(socket_attrs, client_request->passphrase,
-	                       certfile) < 0) {
-	  fprintf(stderr, "Error in myproxy_authorize_init(): %s\n",
-	          verror_get_string());
-	  return(1);
+    if (myproxy_recv_response(socket_attrs, server_response) < 0) {
+       fprintf(stderr, "Error in myproxy_recv_response(): %s\n",
+	       verror_get_string());
+       return(1);
     }
 
     /* Accept delegated credentials from client */
@@ -119,8 +122,8 @@ myproxy_socket_attrs_t *socket_attrs,
 	return(1);
     }      
 
-    if (receive_response(socket_attrs, server_response) < 0) {
-       fprintf(stderr, "Error in receive_response(): %s\n",
+    if (myproxy_recv_response(socket_attrs, server_response) < 0) {
+       fprintf(stderr, "Error in myproxy_recv_response(): %s\n",
 	       verror_get_string());
        return(1);
     }
@@ -137,47 +140,6 @@ myproxy_socket_attrs_t *socket_attrs,
     }
 
     return(0);
-}
-
-int
-receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
-    int responselen;
-    char response_buffer[1024];
-
-    /* Receive a response from the server */
-    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
-    if (responselen < 0) {
-        verror_put_string("Error in myproxy_recv_response()");
-        return(-1);
-    }
-
-    /* Make a response object from the response buffer */
-    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      verror_put_string("Error in myproxy_deserialize_response()");
-      return(-1);
-    }
-
-    /* Check version */
-    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
-      verror_put_string("Error: Received invalid version number from server");
-      return(-1);
-    } 
-
-    /* Check response */
-    switch(response->response_type) {
-        case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from server: %s", response->error_string);
-	    return(-1);
-            break;
-        case MYPROXY_OK_RESPONSE:
-	case MYPROXY_AUTHORIZATION_RESPONSE:
-            break;
-        default:
-            verror_put_string("Received unknown response type");
-	    return(-1);
-            break;
-    }
-    return 0;
 }
 
 /*
@@ -265,71 +227,4 @@ copy_file(const char *source,
     }
     
     return return_code;
-}
-
-static int
-myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
-                       char *passphrase,
-		       char *certfile)
-{
-   myproxy_response_t *server_response = NULL;
-   myproxy_proto_response_type_t response_type;
-   authorization_data_t *d; 
-   /* just pointer into server_response->authorization_data, no memory is 
-      allocated for this pointer */
-   int return_status = -1;
-   char buffer[8192];
-   int bufferlen;
-
-   do {
-      server_response = malloc(sizeof(*server_response));
-      memset(server_response, 0, sizeof(*server_response));
-      if (receive_response(attrs, server_response) < 0) {
-	 verror_put_string("Error in receive_response()");
-	 goto end;
-      }
-
-      response_type = server_response->response_type;
-      if (response_type == MYPROXY_AUTHORIZATION_RESPONSE) {
-	 if (certfile == NULL)
-	    d = authorization_create_response(
-		              server_response->authorization_data,
-			      AUTHORIZETYPE_PASSWD,
-			      passphrase,
-			      strlen(passphrase) + 1);
-	 else 
-	    d = authorization_create_response(
-		               server_response->authorization_data,
-			       AUTHORIZETYPE_CERT,
-			       certfile,
-			       strlen(certfile) + 1);
-	 if (d == NULL) {
-	    verror_put_string("Cannot create authorization response");
-       	    goto end;
-	 }
-
-	 if (d->client_data_len + sizeof(int) > sizeof(buffer)) {
-	       verror_put_string("Internal buffer too small");
-	       goto end;
-	 }
-	 /* XXX hton */
-	 (*buffer) = d->method;
-	 bufferlen = d->client_data_len + sizeof(int);
-
-	 memcpy(buffer + sizeof(int), d->client_data, d->client_data_len);
-	 /* Send the authorization data to the server */
-	 if (myproxy_send(attrs, buffer, bufferlen) < 0) {
-	    verror_put_string("Error in myproxy_send()");
-	    goto end;
-	 }
-      }
-      myproxy_destroy(NULL, NULL, server_response);
-      server_response = NULL;
-   } while (response_type == MYPROXY_AUTHORIZATION_RESPONSE);
-
-   return_status = 0;
-end:
-   myproxy_destroy(NULL, NULL, server_response);
-
-   return return_status;
 }
