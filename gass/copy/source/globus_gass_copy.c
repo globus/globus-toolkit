@@ -1845,8 +1845,9 @@ globus_l_gass_copy_gass_setup_callback(
 	    globus_libc_fprintf(stderr, "REQUEST_REFERRED:  STATE_INITIAL\n");
 #endif
 	    current_url = globus_libc_strdup(state->source.url);
-	    state->source.url =
-		globus_gass_transfer_referral_get_url(&referral, 0);
+	    globus_libc_free(state->source.url);
+	    state->source.url =globus_libc_strdup(
+		globus_gass_transfer_referral_get_url(&referral, 0));
 	       
 #ifdef GLOBUS_I_GASS_COPY_DEBUG              
 	    globus_libc_fprintf(stderr, "REQUEST_REFERRED: about to globus_gass_transfer_register_get() again with: %s\n",state->source.url);
@@ -1885,8 +1886,9 @@ globus_l_gass_copy_gass_setup_callback(
 	     * and that we are now setting up the destination with the register put
 	     */
 	    current_url = globus_libc_strdup(state->dest.url);
-	    state->dest.url =
-		globus_gass_transfer_referral_get_url(&referral, 0);
+	    globus_libc_free(state->dest.url);
+	    state->dest.url =globus_libc_strdup(
+		globus_gass_transfer_referral_get_url(&referral, 0));
 
 	    globus_gass_transfer_referral_destroy(&referral);
 
