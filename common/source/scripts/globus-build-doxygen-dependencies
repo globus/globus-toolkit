@@ -30,7 +30,7 @@ require Grid::GPT::V1::Package;
 
 use Cwd;
 
-my $prefix = $gpath;
+my $prefix = $ENV{GLOBUS_LOCATION};
 my $srcfile;
 my $help;
 my $debug = 0;
@@ -80,16 +80,16 @@ sub process_package($)
     {
 	my %hash;
 
-	%hash = %{$pkg->{$deptype}};
+	%hash = %{$pkg->{$deptype}->{table}};
 
 	if(exists($hash{$depmap{$deptype}}))
 	{
-	    %doc_dependencies = %{${$pkg->{$deptype}}{$depmap{$deptype}}};
+	    %doc_dependencies = %{$hash{$depmap{$deptype}}};
 	}
     }
     foreach (keys %doc_dependencies)
     {
-        $_ = $doc_dependencies{$_}->name;
+        $_ = $doc_dependencies{$_}{ANY}{ANY}{depnode}->name;
         print STDERR "Found dependency $_\n" if $debug;
         $dependencies{$_} = 1;
 	$new_pkgfile =
