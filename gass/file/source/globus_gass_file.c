@@ -334,6 +334,8 @@ globus_gass_open(
     file->fd = -1;
     file->fp = GLOBUS_NULL;
     file->scheme_type=globus_url.scheme_type;
+
+    globus_gass_file_enter();
     
     if(globus_url.scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
     {
@@ -345,11 +347,13 @@ globus_gass_open(
 	    goto failure;
 	}
 	globus_url_destroy(&globus_url);
+
+	globus_gass_file_exit();
 	return file->fd;
     }
 
     globus_url_destroy(&globus_url);
-    
+
     switch(oflag & (O_RDONLY|O_WRONLY|O_RDWR|O_TRUNC|O_APPEND))
     {
     case (O_RDONLY):
