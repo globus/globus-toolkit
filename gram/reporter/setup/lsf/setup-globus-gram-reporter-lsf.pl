@@ -61,6 +61,7 @@ else
         print STDERR "Error locating LSF commands, aborting!\n";
         exit 2;
     }
+    system("chmod 755 $globusdir/libexec/globus-script-${type}-queue");
 }
 
 # un/setup reporter entries in MDS
