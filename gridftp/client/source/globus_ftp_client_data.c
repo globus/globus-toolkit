@@ -35,6 +35,8 @@ typedef struct
     globus_ftp_client_data_callback_t		callback;
     /** The user-supplied parameter to the callback. */
     void *					callback_arg;
+    /** handle this buffer is associated with (used for faking callbacks) */
+    globus_i_ftp_client_handle_t *		i_handle;
 }
 globus_l_ftp_client_data_t;
 
@@ -164,12 +166,13 @@ globus_ftp_client_register_read(
 
 	goto unlock_error;
     }
-    if((i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
+    if(((i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
 	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
 	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST || 
 	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE) &&
-       (i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE ||
-	i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE))
+       !(i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
+        i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)) ||
+        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FINALIZE)
     {
 	/* We've already hit EOF on the data channel. We'll just
 	 * return that information to the user.
@@ -195,8 +198,6 @@ globus_ftp_client_register_read(
     if((i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
 	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
        	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST)
-       && (i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
-	   i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)
        && globus_priority_q_empty(&i_handle->stalled_blocks))
     {
 	/*
@@ -212,11 +213,6 @@ globus_ftp_client_register_read(
 					       data->buffer,
 					       data->buffer_length);
 
-	/* We don't check for state changes here. Because we've
-	 * already added this block to the hashtable and num_blocks,
-	 * we don't need to, because the transfer can't finish without
-	 * us.
-	 */
 	result = globus_ftp_control_data_read(
 	    i_handle->source->control_handle,
 	    data->buffer,
@@ -242,23 +238,33 @@ globus_ftp_client_register_read(
 	       (i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
 		i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST ||
 		i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
-		i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE) &&
-	       i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE)
+		i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE))
 	    {
-		/* We are finished, kick out a complete callback */
+	        if(i_handle->source->state == 
+                    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE)
+                {
+                    /* We are finished, kick out a complete callback */
+                    globus_reltime_t                         reltime;
+                    
+                    i_handle->source->state = 
+                        GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
 
-		globus_reltime_t                         reltime;
-
-		GlobusTimeReltimeSet(reltime, 0, 0);
-		globus_callback_register_oneshot(
-		    GLOBUS_NULL,
-		    &reltime,
-		    globus_l_ftp_client_complete_kickout,
-		    (void *) handle,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
-
-	    }
+                    GlobusTimeReltimeSet(reltime, 0, 0);
+                    globus_callback_register_oneshot(
+                        GLOBUS_NULL,
+                        &reltime,
+                        globus_l_ftp_client_complete_kickout,
+                        (void *) i_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL);
+                }
+                else if(i_handle->source->state == 
+                    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)
+                {
+                    i_handle->source->state =
+                        GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+                }
+             }
 
 	    goto unlock_error;
 	}
@@ -372,9 +378,10 @@ globus_ftp_client_register_write(
 	goto unlock_error;
     }
 
-    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO &&
-       (i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE ||
-	i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE))
+    if((i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO &&
+       !(i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
+        i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)) ||
+        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FINALIZE)
     {
 	/* We've already sent EOF. We'll just return that information
 	 * to the user. 
@@ -403,10 +410,8 @@ globus_ftp_client_register_write(
 	goto unlock_error;
     }
 
-    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO
-       && (i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
-	   i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)
-       && globus_priority_q_empty(&i_handle->stalled_blocks))
+    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO && 
+        globus_priority_q_empty(&i_handle->stalled_blocks))
     {
 	/*
 	 * The data block can be processed immediately if there is
@@ -452,22 +457,32 @@ globus_ftp_client_register_write(
 	     */
 	    if(i_handle->num_active_blocks == 0 &&
 	       (i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
-		i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE) &&
-	       i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE)
+		i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE))
 	    {
-		/* We are finished, kick out a complete callback */
+	        if(i_handle->dest->state == 
+                    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE)
+                {
+                    /* We are finished, kick out a complete callback */
+                    globus_reltime_t                         reltime;
+                    
+                    i_handle->dest->state = 
+                        GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
 
-		globus_reltime_t                         reltime;
-
-		GlobusTimeReltimeSet(reltime, 0, 0);
-		globus_callback_register_oneshot(
-		    GLOBUS_NULL,
-		    &reltime,
-		    globus_l_ftp_client_complete_kickout,
-		    (void *) handle,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
-
+                    GlobusTimeReltimeSet(reltime, 0, 0);
+                    globus_callback_register_oneshot(
+                        GLOBUS_NULL,
+                        &reltime,
+                        globus_l_ftp_client_complete_kickout,
+                        (void *) i_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL);
+                }
+                else if(i_handle->dest->state == 
+                    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)
+                {
+                    i_handle->dest->state =
+                        GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+  	        }
 	    }
 
 	    goto unlock_error;
@@ -614,7 +629,9 @@ globus_l_ftp_client_data_callback(
     globus_l_ftp_client_data_t *		data;
     globus_bool_t				dispatch_final = GLOBUS_FALSE;
     globus_i_ftp_client_target_t *		target;
+    globus_i_ftp_client_target_t **		ptarget;
     globus_off_t				user_offset;
+    globus_bool_t                               user_eof;
     
     globus_i_ftp_client_debug_printf(3, (stderr, 
         "globus_l_ftp_client_data_callback() entering\n"));
@@ -629,12 +646,15 @@ globus_l_ftp_client_data_callback(
        client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
        client_handle->op == GLOBUS_FTP_CLIENT_NLST)
     {
-	target = client_handle->source;
+	ptarget = &client_handle->source;
+	
     }
     else
     {
-	target = client_handle->dest;
+        ptarget = &client_handle->dest;
     }
+    
+    target = *ptarget;
     
     globus_i_ftp_client_debug_states(4, client_handle);
 
@@ -701,13 +721,47 @@ globus_l_ftp_client_data_callback(
 	client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
     }
 
+    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART &&
+        (client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
+        client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+        client_handle->op == GLOBUS_FTP_CLIENT_NLST ))
+    {
+        user_eof = GLOBUS_FALSE;
+    }
+    else
+    {
+        user_eof = eof;
+    }
+    
+    /* Call back to the user */
+    globus_i_ftp_client_handle_unlock(client_handle);
+
+    data->callback(
+        data->callback_arg,
+        client_handle->handle,
+        error,
+        buffer,
+        length,
+        user_offset,
+        user_eof);
+    
+    globus_l_ftp_client_data_delete(data);
+    
+    globus_i_ftp_client_handle_lock(client_handle);
+    
+    /* gave up lock, target could have gone bad, reload */
+    target = *ptarget;
+    
     /* 
      * Figure out if we need to call the completion function
      * once this block's callback has been done
      */
     client_handle->num_active_blocks--;
 
-    if(eof)
+    /* if eof now, or eof was received before */
+    if(eof || 
+        (target && (target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
+            target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)))
     {
         if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
             client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
@@ -715,7 +769,9 @@ globus_l_ftp_client_data_callback(
             client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
             client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
         {
-            if(target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA)
+            if(target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
+                target->state == 
+                    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)
             {
                 if(client_handle->num_active_blocks == 0)
                 {
@@ -728,7 +784,11 @@ globus_l_ftp_client_data_callback(
                     target->state =
                         GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
                 }
-                /* otherwise, we just deal with this as normal */
+                else
+                {
+                    target->state = 
+                        GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE;
+            }
             }
             else if(target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK ||
                 target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
@@ -752,38 +812,6 @@ globus_l_ftp_client_data_callback(
         }
     }
 
-    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
-    {
-	if(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
-	   client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
-	   client_handle->op == GLOBUS_FTP_CLIENT_NLST )
-	{
-	    eof = GLOBUS_FALSE;
-	    dispatch_final = GLOBUS_FALSE;
-	}
-    }
-
-    globus_assert(
-	client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET
-	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST
-	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST
-	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO 
-	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
-	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT 
-	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART);
-
-   /* Call back to the user */
-    globus_i_ftp_client_handle_unlock(client_handle);
-
-    data->callback(data->callback_arg,
-		   client_handle->handle,
-		   error,
-		   buffer,
-		   length,
-		   user_offset,
-		   eof);
-    globus_l_ftp_client_data_delete(data);
-
     if(dispatch_final)
     {
 	/*
@@ -793,8 +821,11 @@ globus_l_ftp_client_data_callback(
 	 * This function is a bit weird in that you call it locked,
 	 * and it returns unlocked.
 	 */
-	globus_i_ftp_client_handle_lock(client_handle);
 	globus_i_ftp_client_transfer_complete(client_handle);
+    }
+    else
+    {
+        globus_i_ftp_client_handle_unlock(client_handle);
     }
     
     globus_i_ftp_client_debug_printf(3, (stderr, 
@@ -925,7 +956,9 @@ globus_l_ftp_client_read_all_callback(
             client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST ||
             client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
         {
-            if(target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA)
+            if(target->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
+                target->state == 
+                    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)
             {
                 if(client_handle->num_active_blocks == 0)
                 {
@@ -938,7 +971,11 @@ globus_l_ftp_client_read_all_callback(
                     target->state =
                         GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
                 }
-                /* otherwise, we just deal with this as normal */
+                else
+                {
+                    target->state = 
+                        GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE;
+                }
             }
             else if(target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK ||
                 target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
@@ -964,7 +1001,9 @@ globus_l_ftp_client_read_all_callback(
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
     {
-	if(client_handle->op == GLOBUS_FTP_CLIENT_GET)
+	if(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
+	   client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+	   client_handle->op == GLOBUS_FTP_CLIENT_NLST)
 	{
 	    eof = GLOBUS_FALSE;
 	    dispatch_final = GLOBUS_FALSE;
@@ -1185,7 +1224,9 @@ globus_i_ftp_client_data_dispatch_queue(
 		 handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
 		 handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE) &&
 		(target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE ||
-		 target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE))
+		 target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
+		 target->state == 
+		    GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE))
 	{
 	    /* 
 	     * Registration can fail if the data connection has been

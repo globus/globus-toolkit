@@ -836,6 +836,7 @@ main(int argc, char **argv)
             globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
         }
     }
+    globus_mutex_unlock(&monitor.mutex);
 
     if (verbose_flag)
     {

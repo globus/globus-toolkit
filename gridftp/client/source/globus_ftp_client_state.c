@@ -2731,6 +2731,7 @@ redo:
 
 	break;
     case GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA:
+    case GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE:
 	/*
 	 * We've received the callback for this operation, so now we
 	 * just need to wait for the final data callbacks
@@ -2767,7 +2768,14 @@ redo:
                     GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
             }
             
+            if(target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE;
+            }
+            else
+            {
             target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
+            }
         }
 	
 	break;
