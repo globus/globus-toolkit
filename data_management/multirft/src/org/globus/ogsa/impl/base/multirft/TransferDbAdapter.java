@@ -282,9 +282,10 @@ public class TransferDbAdapter {
         try {
 
             Statement st = c.createStatement();
+            st.setMaxRows(1);
             ResultSet rs = st.executeQuery(
                                    "select id from transfer where request_id=" + 
-                                   requestId + " limit 1");
+                                   requestId );
 
             while (rs != null && rs.next()) {
                 transferId = rs.getInt(1);
