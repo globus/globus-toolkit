@@ -45,6 +45,8 @@ extern int transflag;
 extern int retrieve_is_data;
 extern int type;
 extern unsigned int timeout_data;
+extern unsigned int timeout_connect;
+extern unsigned int timeout_accept;
 extern int data_count_total;
 extern int data_count_in;
 extern int data_count_out;
@@ -324,7 +326,7 @@ g_send_data(
      *  perhaps a time out should be added here
      */
     (void) signal(SIGALRM, g_alarm_signal);
-    alarm(timeout_data);
+    alarm(timeout_connect);
 
     res = globus_ftp_control_data_connect_write(
               handle,
@@ -702,7 +704,7 @@ g_receive_data(
     g_monitor.offset = offset;
 
     (void) signal(SIGALRM, g_alarm_signal);
-    alarm(timeout_data);
+    alarm(timeout_accept);
 
     res = globus_ftp_control_data_connect_read(
               handle,
