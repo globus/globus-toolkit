@@ -107,6 +107,13 @@ main(int argc, char *argv[])
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
+    /* Set up client socket attributes */
+    if (myproxy_init_client(socket_attrs) < 0) {
+        fprintf(stderr, "error in myproxy_init_client(): %s\n",
+                verror_get_string());
+        return 1;
+    }
+
     /*Accept credential passphrase*/
     if (read_passwd_from_stdin) {
 	rval = myproxy_read_passphrase_stdin(client_request->passphrase,
@@ -135,13 +142,6 @@ main(int argc, char *argv[])
     if (rval == -1) {
 	fprintf (stderr, "%s\n", verror_get_string());
 	return 1;
-    }
-
-    /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client(): %s\n",
-                verror_get_string());
-        return 1;
     }
 
     /* Authenticate client to server */

@@ -102,6 +102,12 @@ main(int argc, char *argv[])
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
+    /* Connect to server. */
+    if (myproxy_init_client(socket_attrs) < 0) {
+        fprintf(stderr, "Error: %s\n", verror_get_string());
+        return(1);
+    }
+    
     if (!outputfile) {
 	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
 						GLOBUS_PROXY_FILE_OUTPUT);

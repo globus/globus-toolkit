@@ -149,6 +149,13 @@ main(int argc, char *argv[])
       goto cleanup;
     }
     
+    /* Set up client socket attributes */
+    if (myproxy_init_client(socket_attrs) < 0) {
+        fprintf(stderr, "%s\n", 
+		verror_get_string());
+        goto cleanup;
+    }
+
     /* Create a proxy by running [grid-proxy-init] */
     sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getuid());
 
@@ -193,13 +200,6 @@ main(int argc, char *argv[])
 	}
     }
     
-    /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "%s\n", 
-		verror_get_string());
-        goto cleanup;
-    }
-
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "%s\n", 
