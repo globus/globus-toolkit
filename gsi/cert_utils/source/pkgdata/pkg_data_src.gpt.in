@@ -62,11 +62,6 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_runtime">
-            <Dependency Name="globus_common" Package="pgm">
-                <Version>
-                    <Simple_Version Major="3"/>
-                </Version>
-            </Dependency>        
             <Dependency Name="globus_openssl" Package="pgm">
                 <Version>
                     <Simple_Version Major="0"/>
@@ -78,6 +73,12 @@
             <Setup_Dependency Name="trusted_ca_setup"> 
                 <Version> 
                     <Simple_Version Major="0"/> 
+                </Version>
+            </Setup_Dependency>
+
+            <Setup_Dependency Name="globus_common_setup"> 
+                <Version>
+                    <Simple_Version Major="2"/> 
                 </Version>
             </Setup_Dependency>
         </Source_Setup_Dependency>
