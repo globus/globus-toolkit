@@ -749,7 +749,7 @@ globus_gsi_proxy_sign_req(
     result = globus_gsi_cred_get_cert(issuer_credential, &issuer_cert);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL);
         goto done;
@@ -1050,7 +1050,7 @@ globus_gsi_proxy_sign_req(
     result = globus_i_gsi_proxy_set_subject(new_pc, issuer_cert, common_name);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509);
         goto done;
@@ -1088,7 +1088,7 @@ globus_gsi_proxy_sign_req(
                                              handle->time_valid);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509);
         goto done;
@@ -1107,7 +1107,7 @@ globus_gsi_proxy_sign_req(
     if((result = globus_gsi_cred_get_key(issuer_credential, &issuer_pkey))
        != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL);
         goto done;
@@ -1490,7 +1490,7 @@ globus_gsi_proxy_assemble_cred(
     result = globus_gsi_cred_handle_attrs_init(&cred_handle_attrs);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE_ATTRS);        
         goto free_signed_cert;
@@ -1500,7 +1500,7 @@ globus_gsi_proxy_assemble_cred(
                                          cred_handle_attrs);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
         goto free_cred_handle_attrs;
@@ -1509,7 +1509,7 @@ globus_gsi_proxy_assemble_cred(
     result = globus_gsi_cred_set_cert(*proxy_credential, signed_cert);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
         goto free_cred_handle;

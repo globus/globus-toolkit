@@ -21,7 +21,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = librc4_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 librc4___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

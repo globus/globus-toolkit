@@ -13,7 +13,8 @@ Sources= \
 	rsa_none.c \
 	rsa_oaep.c \
 	rsa_chk.c \
-	rsa_null.c
+	rsa_null.c \
+	rsa_asn1.c
 
 Test_Sources = \
 	rsa_test.c
@@ -23,7 +24,7 @@ opensslinclude_HEADERS= \
 
 noinst_LTLIBRARIES = librsa_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 librsa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

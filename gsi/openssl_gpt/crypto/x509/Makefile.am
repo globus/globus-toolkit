@@ -7,7 +7,7 @@ Sources= \
 	x509_set.c x509rset.c x509_err.c \
 	x509name.c x509_v3.c x509_ext.c x509_att.c \
 	x509type.c x509_lu.c x_all.c x509_txt.c \
-	x509_trs.c by_file.c by_dir.c 
+	x509_trs.c by_file.c by_dir.c x509cset.c
 
 opensslinclude_HEADERS= \
 	x509.h \
@@ -15,7 +15,7 @@ opensslinclude_HEADERS= \
 
 noinst_LTLIBRARIES = libx509_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libx509___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

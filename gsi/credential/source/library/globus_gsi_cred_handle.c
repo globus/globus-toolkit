@@ -917,7 +917,98 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
     return result;
 }
 /* @} */
+
+/**
+ * Get X509 Identity Name
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * Get the identity's X509 subject name from the credential handle
+ *
+ * @param handle
+ *        The credential handle containing the certificate to
+ *        get the identity from
+ * @param issuer_name
+ *        The identity certificate's X509 subject name
+ *
+ * @return
+ *        GLOBUS_SUCCESS if no error, otherwise an error object
+ *        identifier is returned
+ */
+globus_result_t globus_gsi_cred_get_X509_identity_name(
+    globus_gsi_cred_handle_t            handle,
+    X509_NAME **                        identity_name)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    X509_NAME *                         identity = NULL;
+    STACK_OF(X509) *                    cert_chain = NULL;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_X509_identity_name";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL cred handle passed to function: %s", _function_name_));
+        goto error_exit;
+    }
+
+    if(identity_name == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL identity name passed to function: %s", _function_name_));
+        goto error_exit;
+    }
+    
+    identity = X509_NAME_dup(X509_get_subject_name(handle->cert));
+
+    if(handle->cert_chain == NULL)
+    {
+        cert_chain = sk_X509_new_null();
+    }
+    else
+    {
+        cert_chain = sk_X509_dup(handle->cert_chain);
+    }
+
+    sk_X509_unshift(cert_chain, handle->cert);
+
+    result = globus_gsi_cert_utils_get_base_name(identity, cert_chain);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+        goto error_exit;
+    }
+
+    *identity_name = identity;
+    identity = NULL;
+
+ error_exit:
+
+    if(identity)
+    {
+        X509_NAME_free(identity);
+    }
+
+    if(cert_chain)
+    {
+        sk_X509_free(cert_chain);
+    }
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
 /**
  * Get Cred Cert Subject Name
  * @ingroup globus_gsi_cred_handle
@@ -1343,8 +1434,7 @@ globus_result_t globus_gsi_cred_get_identity_name(
     char **                             identity_name)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    X509_NAME *                         identity;
-    STACK_OF(X509) *                    cert_chain;
+    X509_NAME *                         identity = NULL;
     static char *                       _function_name_ =
         "globus_gsi_cred_get_identity_name";
 
@@ -1364,25 +1454,12 @@ globus_result_t globus_gsi_cred_get_identity_name(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL issuer name passed to function: %s", _function_name_));
+            ("NULL identity name passed to function: %s", _function_name_));
         goto error_exit;
     }
+
+    result = globus_gsi_cred_get_X509_identity_name(handle, &identity);
     
-    identity = X509_NAME_dup(X509_get_subject_name(handle->cert));
-
-    if(handle->cert_chain == NULL)
-    {
-        cert_chain = sk_X509_new_null();
-    }
-    else
-    {
-        cert_chain = sk_X509_dup(handle->cert_chain);
-    }
-
-    sk_X509_unshift(cert_chain, handle->cert);
-
-    result = globus_gsi_cert_utils_get_base_name(identity, cert_chain);
-
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -1392,6 +1469,14 @@ globus_result_t globus_gsi_cred_get_identity_name(
     }
 
     *identity_name = X509_NAME_oneline(identity, NULL, 0);
+
+    if(*identity_name == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_NAME,
+            ("Unable to convert X509_NAME to string"));
+    }
     
  error_exit:
 
@@ -1400,11 +1485,6 @@ globus_result_t globus_gsi_cred_get_identity_name(
         X509_NAME_free(identity);
     }
 
-    if(cert_chain)
-    {
-        sk_X509_free(cert_chain);
-    }
-    
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }

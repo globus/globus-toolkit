@@ -3,8 +3,6 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
-use IO::File;
-use POSIX;
 use Config;
 
 package Globus::GRAM::JobManager::lsf;
@@ -26,21 +24,21 @@ sub submit
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $status;
     my $lsf_job_script;
     my $lsf_job_script_name;
-    my $errfile = "";
+    my $errfile = '';
     my $queue;
     my $job_id;
     my $script_url;
     my @arguments;
-    my $email_when = "";
+    my $email_when = '';
     my $library_path;
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my @library_vars;
 
-    $self->log("Entering lsf submit");
+    $self->log('Entering lsf submit');
 
     # check jobtype
     if(defined($description->jobtype()))
@@ -49,7 +47,7 @@ sub submit
 	{
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
-	elsif($description->jobtype() eq 'mpi' && $mpirun eq "no")
+	elsif($description->jobtype() eq 'mpi' && $mpirun eq 'no')
 	{
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
@@ -62,7 +60,14 @@ sub submit
     {
 	return Globus::GRAM::Error::BAD_DIRECTORY;
     }
-    if( $description->executable eq "")
+
+    # make sure the files are accessible (NFS sync) when you check for them
+    $self->nfssync( $description->executable() )
+	unless $description->executable() eq '';
+    $self->nfssync( $description->stdin() )
+	unless $description->stdin() eq '';
+
+    if( $description->executable eq '')
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
     }
@@ -74,7 +79,7 @@ sub submit
     {
 	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
     }
-    elsif( $description->stdin() eq "")
+    elsif( $description->stdin() eq '')
     {
 	return Globus::GRAM::Error::RSL_STDIN;
     }
@@ -83,8 +88,7 @@ sub submit
        return Globus::GRAM::Error::STDIN_NOT_FOUND();
    }
 
-
-    $self->log("Determining job max time cpu from job description");
+    $self->log('Determining job max time cpu from job description');
     if(defined($description->max_cpu_time())) 
     {
 	$cpu_time = $description->max_cpu_time();
@@ -101,7 +105,7 @@ sub submit
 	$self->log('   using queue default');
     }
 
-    $self->log("Determining job max wall time limit from job description");
+    $self->log('Determining job max wall time limit from job description');
     if(defined($description->max_wall_time()))
     {
 	$wall_time = $description->max_wall_time();
@@ -110,7 +114,7 @@ sub submit
     else
     {
 	$wall_time = 0;
-	$self->log("    using queue default");
+	$self->log('    using queue default');
     }
 
     if($description->queue() ne '')
@@ -121,17 +125,19 @@ sub submit
     $self->log('Building job script');
 
     $script_url = "$tag/lsf_job_script.$$"; 
-    system("$cache_pgm -add -t $tag -n $script_url file:/dev/null");
-    $lsf_job_script_name = `$cache_pgm -query -t $tag $script_url`;
+    $self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag, 
+			      '-n', $script_url, 'file:/dev/null' );
+    $lsf_job_script_name = $self->pipe_out_cmd( $cache_pgm, '-query', '-t', 
+						$tag, $script_url );
     chomp($lsf_job_script_name);
-    if($lsf_job_script_name eq "")
+    if($lsf_job_script_name eq '')
     {
 	return Globus::GRAM::ERROR::TEMP_SCRIPT_FILE_FAILED();
     }
 
-    $lsf_job_script = new IO::File($lsf_job_script_name, '>');
-
-    $lsf_job_script->print(<<EOF);
+    local(*JOB);
+    open( JOB, '>' . $lsf_job_script_name );
+    print JOB<<"EOF";
 #! /bin/sh
 #
 # LSF batch job script built by Globus Job Manager
@@ -140,11 +146,11 @@ EOF
 
     if(defined($queue))
     {
-	$lsf_job_script->print("#BSUB -q $queue\n");
+	print JOB "#BSUB -q $queue\n";
     }
     if(defined($description->project()))
     {
-	$lsf_job_script->print("#BSUB -P " . $description->project() . "\n");
+	print JOB '#BSUB -P ', $description->project(), "\n";
     }
 
     if($cpu_time != 0)
@@ -157,12 +163,12 @@ EOF
 	{
 	    $total_cpu_time = $cpu_time;
 	}
-	$lsf_job_script->print("#BSUB -c ${total_cpu_time}\n");
+	print JOB "#BSUB -c ${total_cpu_time}\n";
     }
 
     if($wall_time != 0)
     {
-	$lsf_job_script->print("#BSUB -W $wall_time\n");
+	print JOB "#BSUB -W $wall_time\n";
     }
 
     if($description->max_memory() != 0)
@@ -177,13 +183,13 @@ EOF
 	{
 	    $total_max_memory = $max_memory;
 	}
-	$lsf_job_script->print("#BSUB -M ${total_max_memory}\n");
+	print JOB "#BSUB -M ${total_max_memory}\n";
     }
-    $lsf_job_script->print("#BSUB -i " . $description->stdin() . "\n");
-    $lsf_job_script->print("#BSUB -e " . $description->stderr() . "\n");
-    $lsf_job_script->print("#BSUB -o " . $description->stdout() . "\n");
-    $lsf_job_script->print("#BSUB -N\n");
-    $lsf_job_script->print("#BSUB -n " . $description->count() . "\n");
+    print JOB '#BSUB -i ', $description->stdin(), "\n";
+    print JOB '#BSUB -e ', $description->stderr(), "\n";
+    print JOB '#BSUB -o ', $description->stdout(), "\n";
+    print JOB "#BSUB -N\n";
+    print JOB '#BSUB -n ', $description->count(), "\n";
 
     foreach my $tuple ($description->environment())
     {
@@ -191,8 +197,8 @@ EOF
 	{
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
 	}
-	$lsf_job_script->print($tuple->[0] . "=" . $tuple->[1]
-	                       . "; export " . $tuple->[0] . "\n");
+	print JOB $tuple->[0], '=', $tuple->[1],
+		'; export ', $tuple->[0], "\n";
     }
 
     $library_path = join(':', $description->library_path());
@@ -205,7 +211,7 @@ EOF
 
     foreach (@library_vars)
     {
-	$lsf_job_script->print(<<EOF);
+	print JOB <<"EOF";
 
 	if test 'X\${$_}' != 'X'; then
 	    $_="\${LD_LIBRARY_PATH}:$library_path"
@@ -216,8 +222,8 @@ EOF
 EOF
     }
 
-    $lsf_job_script->print("\n#Change to directory requested by user\n");
-    $lsf_job_script->print('cd ' . $description->directory() . "\n");
+    print JOB "\n#Change to directory requested by user\n";
+    print JOB 'cd ', $description->directory(), "\n";
 
     @arguments = $description->arguments();
 
@@ -234,43 +240,41 @@ EOF
         {
              $_ =~ s/\\/\\\\/g;
 	     $_ =~ s/\$/\\\$/g;
-	     $_ =~ s/"/\\\"/g;
-	     $_ =~ s/`/\\\`/g;
+	     $_ =~ s/"/\\\"/g; #"
+	     $_ =~ s/`/\\\`/g; #`
 	     
 	     $args .= '"' . $_ . '" ';
         }
     }
     else
     {
-	$args = "";
+	$args = '';
     }
-    if($description->jobtype() eq "mpi")
+    if($description->jobtype() eq 'mpi')
     {
-	$lsf_job_script->print("$mpirun -np " . $description->count() . " ");
-
-	$lsf_job_script->print($description->executable()
-	                       . " $args \n");
+	print JOB "$mpirun -np ", $description->count(), ' ';
+	print JOB $description->executable(), " $args \n";
     }
     elsif($description->jobtype() eq 'multiple')
     {
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
-	    $lsf_job_script->print($description->executable() . " $args &\n");
+	    print JOB $description->executable(), " $args &\n";
 	}
-	$lsf_job_script->print("wait\n");
+	print JOB "wait\n";
     }
     else
     {
-	$lsf_job_script->print($description->executable() . " $args\n");
+	print JOB $description->executable(), " $args\n";
     }
-    $lsf_job_script->close();
+    close(JOB);
     chmod 0755, $lsf_job_script_name;
 
-    if($description->logfile() ne "")
+    if($description->logfile() ne '')
     {
         $errfile = "2>" . $description->logfile();
     }
-
+    $self->nfssync( $lsf_job_script_name );
     $job_id = (grep(/is submitted/,
                    split(/\n/, `$bsub < $lsf_job_script_name $errfile`)))[0];
 
@@ -284,7 +288,9 @@ EOF
 		   JOB_STATE => Globus::GRAM::JobState::PENDING
 		};
     }
-    system("$cache_pgm -cleanup-url $tag/lsf_job_script.$$");
+    #system("$cache_pgm -cleanup-url $tag/lsf_job_script.$$");
+    $self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
+			      "$tag/lsf_job_script.$$" );
 
     return Globus::GRAM::Error::INVALID_SCRIPT_REPLY;
 }
@@ -318,6 +324,7 @@ sub poll
     $self->log("polling job $job_id");
 
     # Get first line matching job id
+    # needs to be back-ticks to source lsf profile
     $_ = (grep(/$job_id/, `$bjobs $job_id 2>/dev/null`))[0];
 
     # get the exit code of the bjobs command.  For more info, do a 
@@ -330,6 +337,10 @@ sub poll
     {
         $self->log("bjobs rc is 255 == Job <123> is not found == DONE");
         $state = Globus::GRAM::JobState::DONE;
+	$self->nfssync( $description->stdout() )
+	    if $description->stdout() ne '';
+	$self->nfssync( $description->stderr() )
+	    if $description->stderr() ne '';
     }
     else
     {
@@ -344,6 +355,10 @@ sub poll
         elsif(/DONE/)
         {
             $state = Globus::GRAM::JobState::DONE;
+	    $self->nfssync( $description->stdout() )
+		if $description->stdout() ne '';
+	    $self->nfssync( $description->stderr() )
+		if $description->stderr() ne '';
         }
         elsif(/USUSP|SSUSP|PSUSP/)
         {
@@ -390,7 +405,7 @@ sub cancel
     my $job_id = $description->jobid();
 
     $self->log("cancel job $job_id");
-
+    # needs to be back-ticks to source lsf profile
     system("$bkill $job_id >/dev/null 2>/dev/null");
 
     if($? == 0)

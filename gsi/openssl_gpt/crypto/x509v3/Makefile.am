@@ -22,7 +22,9 @@ Sources = \
 	v3_cpols.c \
 	v3_crld.c \
 	v3_purp.c \
-	v3_info.c
+	v3_info.c \
+	v3_akeya.c \
+	v3_ocsp.c
 
 opensslinclude_HEADERS = \
 	x509v3.h
@@ -32,7 +34,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = libx509v3_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libx509v3___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

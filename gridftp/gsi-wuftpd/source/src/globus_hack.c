@@ -1638,6 +1638,9 @@ g_receive_data(
         g_monitor.done = GLOBUS_FALSE;
         g_monitor.fd = filefd;
         cb_count = 0;
+#ifndef BUILD_LITE
+        /** XXX JoeL
+         */
 	res = globus_ftp_control_data_query_channels(
 			  handle,
                           &data_connection_count,
@@ -1655,7 +1658,7 @@ g_receive_data(
         {
             data_connection_count = 2;
         }
-
+#endif
 	GlobusTimeReltimeSet(five_seconds, TIME_DELAY_112, 0);
 
         g_send_range = GLOBUS_FALSE;
@@ -1666,11 +1669,14 @@ g_receive_data(
 	    &five_seconds,
 	    globus_l_wu_perf_update_callback,
 	    &g_monitor);
-
+#ifndef BUILD_LITE
+        /** XXX JoeL
+         */
         globus_l_wu_perf_update(&g_monitor);
         g_monitor.callback_count = 0; 
         for(ctr = 0; ctr < data_connection_count; ctr++)
         {
+#endif
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
             {
                 transflag = 0;
@@ -1699,8 +1705,11 @@ g_receive_data(
             }
             g_monitor.callback_count++;
             cb_count++;
+#ifndef BUILD_LITE
+        /** XXX JoeL
+         */
         }
-
+#endif
         globus_mutex_lock(&g_monitor.mutex);
         {
             while(!g_monitor.done && 
@@ -1995,6 +2004,14 @@ data_read_callback(
         }
         else
         {
+
+#ifndef BUILD_LITE
+            /** XXX JoeL
+             * due to reetrancy issues caused by the blocking write above
+             * we cant have any more than one read callback outstanding
+             * -- a better solution for this would be to add callback space
+             * support to data channel code.
+             */
             unsigned int                 data_connection_count;
             int                          new_callbacks;
             int                          ctr;
@@ -2018,6 +2035,7 @@ data_read_callback(
                 monitor->callback_count += (new_callbacks - 1);
             for(ctr = 0; ctr < new_callbacks; ctr++)
             {
+#endif
                 res = globus_ftp_control_data_read(
                           handle,
                           buffer,
@@ -2035,11 +2053,15 @@ data_read_callback(
 
                     return;
                 }
+#ifndef BUILD_LITE
+                /** XXX JoeL
+                 */
 		if(ctr < new_callbacks-1)
 		{
 		    buffer = (globus_byte_t *) globus_malloc(buffer_size);
 		}
             }
+#endif
         }
 
         (void) signal(SIGALRM, g_alarm_signal);

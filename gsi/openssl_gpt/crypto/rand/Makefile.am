@@ -7,7 +7,9 @@ Sources = \
 	rand_lib.c \
 	rand_err.c \
 	rand_egd.c \
-	rand_win.c
+	rand_win.c \
+	rand_unix.c \
+	rand_os2.c
 
 Test_Sources = \
 	randtest.c
@@ -20,7 +22,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = librand_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 librand___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

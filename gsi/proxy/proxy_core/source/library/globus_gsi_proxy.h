@@ -247,6 +247,11 @@ globus_gsi_proxy_is_limited(
     globus_bool_t *                     is_limited);
 
 globus_result_t
+globus_gsi_proxy_handle_set_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t                       is_limited);
+
+globus_result_t
 globus_gsi_proxy_handle_get_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
     EVP_MD **                           algorithm);

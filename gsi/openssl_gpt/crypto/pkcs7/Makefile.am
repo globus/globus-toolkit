@@ -7,14 +7,15 @@ Sources= \
 	pk7_doit.c \
 	pk7_smime.c \
 	pk7_attr.c \
-	pk7_mime.c
+	pk7_mime.c \
+	pk7_asn1.c
 
 opensslinclude_HEADERS= \
 	pkcs7.h
 
 noinst_LTLIBRARIES = libpkcs7_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libpkcs7___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

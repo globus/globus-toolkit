@@ -5,12 +5,21 @@
 #   define OPENSSL_UNISTD <unistd.h>
 #endif
 
+/* don't depend on Kerberos */
+
+#ifndef OPENSSL_NO_KRB5
+#   define OPENSSL_NO_KRB5 1
+#endif
+
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
 #       undef OPENSSLDIR
 #   endif
 #endif
 
+#ifndef OPENSSL_EXPORT_VAR_AS_FUNCTION
+#    undef OPENSSL_EXPORT_VAR_AS_FUNCTION
+#endif
 
 #ifdef HEADER_BN_H
 #   ifndef SIXTY_FOUR_BIT_LONG
@@ -48,7 +57,7 @@
 #   endif
 #endif
 
-#ifdef HEADER_DES_H
+#if defined(HEADER_DES_H) || defined(HEADER_NEW_DES_H)
 #   ifndef DES_LONG
 #       undef DES_LONG
 #   endif

@@ -17,7 +17,9 @@ SUBDIRS = \
 
 
 opensslinclude_HEADERS = \
-	e_os2.h \
+	e_os2.h
+
+noinst_HEADERS = \
 	e_os.h
 
 rehash: rehash.time

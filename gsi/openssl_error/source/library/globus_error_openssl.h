@@ -123,6 +123,15 @@ const char *
 globus_openssl_error_handle_get_reason(
     globus_openssl_error_handle_t       handle);
 
+const char *
+globus_openssl_error_handle_get_data(
+    globus_openssl_error_handle_t       handle);
+
+int
+globus_openssl_error_handle_get_data_flags(
+    globus_openssl_error_handle_t       handle);
+
+
 globus_object_t *
 globus_error_construct_openssl_error(
     globus_module_descriptor_t *        base_source,
@@ -177,6 +186,14 @@ globus_error_openssl_error_get_function(
 
 const char *
 globus_error_openssl_error_get_reason(
+    globus_object_t *                   error);
+
+const char *
+globus_error_openssl_error_get_data(
+    globus_object_t *                   error);
+
+int
+globus_error_openssl_error_get_data_flags(
     globus_object_t *                   error);
 
 EXTERN_C_END

@@ -1219,10 +1219,6 @@ globus_url_get_scheme(const char *url_string, globus_url_scheme_t *scheme_type)
     {
 	*scheme_type = GLOBUS_URL_SCHEME_X_GASS_CACHE;
     }
-    else if(strncmp(url_string, "gsiftp:", 7) == 0)
-    {
-	*scheme_type = GLOBUS_URL_SCHEME_GSIFTP;
-    }
     else
     {
 	*scheme_type = GLOBUS_URL_SCHEME_UNKNOWN;

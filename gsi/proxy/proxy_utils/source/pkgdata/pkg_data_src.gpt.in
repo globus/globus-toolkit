@@ -23,7 +23,7 @@
             </Dependency>        
             <Dependency Name="globus_openssl">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">
@@ -38,7 +38,7 @@
             </Dependency>  
             <Dependency Name="globus_gsi_cert_utils">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_sysconfig">
@@ -53,7 +53,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_credential">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_callback">
@@ -63,7 +63,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_proxy_core">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -77,7 +77,7 @@
             </Dependency>        
             <Dependency Name="globus_openssl">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>        
             <Dependency Name="globus_openssl_module">
@@ -92,7 +92,7 @@
             </Dependency>  
             <Dependency Name="globus_gsi_cert_utils">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_sysconfig">
@@ -107,7 +107,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_credential">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_callback">
@@ -117,7 +117,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_proxy_core">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

@@ -1189,6 +1189,7 @@ globus_result_t globus_gsi_cred_read_cert(
         X509 *                          tmp_cert = NULL;
         if(!PEM_read_bio_X509(cert_bio, &tmp_cert, NULL, NULL))
         {
+            ERR_clear_error();
             break;
         }
 

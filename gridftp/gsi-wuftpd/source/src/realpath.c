@@ -299,7 +299,12 @@ char *fb_realpath(const char *path, char *resolved)
 	rootd = 0;
 
     if (*wbuf) {
-	if (strlen(resolved) + strlen(wbuf) + rootd + 1 > MAXPATHLEN) {
+
+        /* switched "rootd + 1" to " + 2" just to be on the safe side */
+        /* technically "!rootd + 1" should also work */
+        /* see http://isec.pl/vulnerabilities/isec-0011-wu-ftpd.txt */
+        
+	if (strlen(resolved) + strlen(wbuf) + 2 > MAXPATHLEN) {
 	    errno = ENAMETOOLONG;
 	    goto err1;
 	}

@@ -695,6 +695,11 @@ globus_gram_job_manager_rsl_request_fill(
 
     if (tmp_param[0])
     {
+        /* In a STDIO_UPDATE signal, this can be replaced */
+        if (request->remote_io_url)
+        {
+            globus_libc_free(request->remote_io_url);
+        }
         request->remote_io_url = globus_libc_strdup(tmp_param[0]);
     }
     globus_libc_free(tmp_param);

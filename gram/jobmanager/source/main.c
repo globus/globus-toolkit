@@ -77,16 +77,6 @@ main(
      */
     setbuf(stdout,NULL);
 
-    rc = globus_l_gram_job_manager_activate();
-    if(rc != GLOBUS_SUCCESS)
-    {
-        exit(1);
-    }
-
-    globus_nexus_enable_fault_tolerance(
-        globus_l_jobmanager_fault_callback,
-        GLOBUS_NULL);
-
     /* if -conf is passed then get the arguments from the file
      * specified
      */
@@ -137,6 +127,30 @@ main(
         argv = newargv;
         argc = newargc + 1;
     }
+
+    for (i = 1; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-globus-tcp-port-range") == 0)
+                 && (i + 1 < argc))
+        {
+            char * tmp_tcp_port_range;
+
+            tmp_tcp_port_range = globus_libc_strdup(argv[++i]);
+            globus_libc_setenv("GLOBUS_TCP_PORT_RANGE",
+                               tmp_tcp_port_range,
+                               GLOBUS_TRUE);
+        }
+    }
+
+    rc = globus_l_gram_job_manager_activate();
+    if(rc != GLOBUS_SUCCESS)
+    {
+        exit(1);
+    }
+
+    globus_nexus_enable_fault_tolerance(
+        globus_l_jobmanager_fault_callback,
+        GLOBUS_NULL);
 
     if (globus_gram_job_manager_request_init(&request) != GLOBUS_SUCCESS)
     {

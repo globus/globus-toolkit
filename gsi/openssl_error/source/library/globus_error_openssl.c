@@ -138,7 +138,7 @@ globus_openssl_error_handle_get_error_code(
 {
     unsigned long                        error_code;
     static char *                       _function_name_ =
-        "globus_openssl_error_get_filename";
+        "globus_openssl_error_handle_get_error_code";
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
@@ -154,6 +154,82 @@ globus_openssl_error_handle_get_error_code(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error_code;
+}
+/* @} */
+
+/**
+ * Get Error Data
+ * @ingroup globus_openssl_error_object
+ */
+/* @{ */
+/**
+ * Get the openssl error data which contains additional data about the error
+ * from the openssl error handle 
+ *
+ * @param handle
+ *        The openssl error handle
+ * @return
+ *        The error data
+ */
+const char *
+globus_openssl_error_handle_get_data(
+    globus_openssl_error_handle_t       handle)
+{
+    const char *                        data;
+    static char *                       _function_name_ =
+        "globus_openssl_error_handle_get_error_data";
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
+
+    if(handle != NULL)
+    {
+        data = handle->data;
+        goto done;
+    }
+    
+    data = NULL;
+
+ done:
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
+    return data;
+}
+/* @} */
+/**
+ * Get Error Data Flags
+ * @ingroup globus_openssl_error_object
+ */
+/* @{ */
+/**
+ * Get the openssl error data flags from the openssl error handle
+ *
+ * @param handle
+ *        The openssl error handle
+ * @return
+ *        The error data flags
+ */
+int
+globus_openssl_error_handle_get_data_flags(
+    globus_openssl_error_handle_t       handle)
+{
+    int                                 flags;
+    static char *                       _function_name_ =
+        "globus_openssl_error_handle_get_data_flags";
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
+
+    if(handle != NULL)
+    {
+        flags = handle->flags;
+        goto done;
+    }
+    
+    flags = 0;
+
+ done:
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
+    return flags;
 }
 /* @} */
 
@@ -177,7 +253,7 @@ globus_openssl_error_handle_get_filename(
 {
     const char *                        filename;
     static char *                       _function_name_ =
-        "globus_openssl_error_get_filename";
+        "globus_openssl_error_handle_get_filename";
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
@@ -216,7 +292,7 @@ globus_openssl_error_handle_get_linenumber(
 {
     int                                 linenumber;
     static char *                       _function_name_ =
-        "globus_openssl_error_get_linenumber";
+        "globus_openssl_error_handle_get_linenumber";
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
@@ -255,7 +331,7 @@ globus_openssl_error_handle_get_library(
 {
     const char *                        library;
     static char *                       _function_name_ =
-        "globus_openssl_error_get_library";
+        "globus_openssl_error_handle_get_library";
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
@@ -295,7 +371,7 @@ globus_openssl_error_handle_get_function(
 {
     const char *                        function;
     static char *                       _function_name_ =
-        "globus_openssl_error_get_function";
+        "globus_openssl_error_handle_get_function";
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
@@ -334,7 +410,7 @@ globus_openssl_error_handle_get_reason(
 {
     const char *                        reason;
     static char *                       _function_name_ =
-        "globus_openssl_error_get_reason";
+        "globus_openssl_error_handle_get_reason";
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
@@ -405,9 +481,18 @@ globus_error_construct_openssl_error(
     openssl_error_handle = globus_i_openssl_error_handle_init();
 
     openssl_error_handle->error_code =
-        ERR_get_error_line((const char **)&openssl_error_handle->filename, 
-                           &openssl_error_handle->linenumber);
-
+        ERR_get_error_line_data((const char **)&openssl_error_handle->filename, 
+                                &openssl_error_handle->linenumber,
+                                &openssl_error_handle->data,
+                                &openssl_error_handle->flags);
+    
+    if((openssl_error_handle->flags & ERR_TXT_MALLOCED)
+       && (openssl_error_handle->flags & ERR_TXT_STRING))
+    {
+        openssl_error_handle->data = strdup(openssl_error_handle->data);
+        assert(openssl_error_handle->data);
+    }
+    
     error = globus_error_initialize_openssl_error(
         newerror,
         base_source,
@@ -641,7 +726,7 @@ globus_error_openssl_error_get_library(
         goto done;
     }
     
-    library = globus_openssl_error_handle_get_filename(
+    library = globus_openssl_error_handle_get_library(
         (globus_openssl_error_handle_t)
         globus_object_get_local_instance_data(error));
 
@@ -710,7 +795,7 @@ globus_error_openssl_error_get_function(
  */
 /* @{ */
 /**
- * Get the OpenSSL reason where the error occurred 
+ * Get the OpenSSL reason for the error
  *
  * @param error
  *        The globus object that represents the error
@@ -755,6 +840,111 @@ done:
     return reason;
 }
 /* @} */
+
+/**
+ * @name Get OpenSSL Error Data
+ * @ingroup globus_openssl_error_object
+ */
+/* @{ */
+/**
+ * Get the OpenSSL Error Data
+ *
+ * @param error
+ *        The globus object that represents the error
+ *
+ * @return
+ *        The error data for the openssl error
+ */
+const char *
+globus_error_openssl_error_get_data(
+    globus_object_t *                   error)
+{
+    const char *                        data;
+    const globus_object_type_t *        type;
+    static char *                       _function_name_ =
+        "globus_error_openssl_error_get_data";
+    
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
+
+    if(error == NULL)
+    {
+        data = NULL;
+        goto done;
+    }
+
+    type = globus_object_get_type(error);
+    
+    if(globus_object_type_match(
+           type, 
+           GLOBUS_ERROR_TYPE_OPENSSL) != GLOBUS_TRUE)
+    {
+        data = NULL;
+        goto done;
+    }
+    
+    data = globus_openssl_error_handle_get_data(
+        (globus_openssl_error_handle_t)
+        globus_object_get_local_instance_data(error));
+
+done:
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
+    return data;
+}
+/* @} */
+
+/**
+ * @name Get OpenSSL Error Data Flags
+ * @ingroup globus_openssl_error_object
+ */
+/* @{ */
+/**
+ * Get the OpenSSL Error Data Flags
+ *
+ * @param error
+ *        The globus object that represents the error
+ *
+ * @return
+ *        The error data flags for the openssl error
+ */
+int
+globus_error_openssl_error_get_data_flags(
+    globus_object_t *                   error)
+{
+    int                                 flags;
+    const globus_object_type_t *        type;
+    static char *                       _function_name_ =
+        "globus_error_openssl_error_get_data_flags";
+    
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
+
+    if(error == NULL)
+    {
+        flags = 0;
+        goto done;
+    }
+
+    type = globus_object_get_type(error);
+    
+    if(globus_object_type_match(
+           type, 
+           GLOBUS_ERROR_TYPE_OPENSSL) != GLOBUS_TRUE)
+    {
+        flags = 0;
+        goto done;
+    }
+    
+    flags = globus_openssl_error_handle_get_data_flags(
+        (globus_openssl_error_handle_t)
+        globus_object_get_local_instance_data(error));
+
+done:
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
+    return flags;
+}
+/* @} */
+
 
 /**
  * @name OpenSSL Error Match

@@ -166,12 +166,6 @@ globus_gram_job_manager_state_machine(
 	request->globus_id = 
 	    globus_l_gram_job_manager_getenv("GLOBUS_ID", "unknown globusid");
 
-	if(request->tcp_port_range)
-	{
-	    globus_libc_setenv("GLOBUS_TCP_PORT_RANGE",
-		               request->tcp_port_range,
-			       GLOBUS_TRUE);
-	}
 	if(!request->globus_location)
 	{
 	    result = globus_location(&request->globus_location);
@@ -1159,6 +1153,16 @@ globus_gram_job_manager_state_machine(
 		    request->x509_user_proxy);
 		rc = globus_gram_job_manager_gsi_register_proxy_timeout(
 			request);
+		if (rc != GLOBUS_SUCCESS)
+		{
+		    request->jobmanager_state = 
+			GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		    globus_gram_job_manager_request_log( request,
+				   "JM: error setting proxy timeout--"
+                                   "proxy too short-lived\n");
+		    break;
+		}
 	    }
 	}
 
@@ -1421,26 +1425,6 @@ globus_gram_job_manager_state_machine(
 	    request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT;
 	    break;
-	    
-	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT;
-	    if(globus_gram_job_manager_rsl_need_stage_out(request))
-	    {
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT;
-
-
-		rc = globus_gram_job_manager_script_stage_out(request);
-
-		if(rc != GLOBUS_SUCCESS)
-		{
-		    request->failure_code = rc;
-		    request->jobmanager_state =
-			GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-		}
-		else
-		{
-		    event_registered = GLOBUS_TRUE;
-		}
-	    }
 	}
 	else
 	{
@@ -1724,6 +1708,16 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	if(request->remote_io_url)
+	{
+	    query->failure_code =
+                globus_gram_job_manager_script_remote_io_file_create(request);
+
+            if (query->failure_code == GLOBUS_SUCCESS)
+            {
+		event_registered = GLOBUS_TRUE;
+	    }
+        }
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
@@ -2081,6 +2075,14 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
+
+        if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED && request->failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED)
+        {
+            request->jobmanager_state =
+            GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
+            break;
+        }
+
         request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT;
 	if(globus_gram_job_manager_rsl_need_stage_out(request))
 	{

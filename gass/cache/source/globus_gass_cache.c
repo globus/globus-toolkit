@@ -4862,8 +4862,8 @@ globus_gass_cache_open(const char		*cache_directory_path,
 		cache_handle->directory_levels = levels;
 	    }
 	}
+        globus_l_gass_cache_config_destroy(&config);
     }
-    globus_l_gass_cache_config_destroy(&config);
 
     /* Create the global directory name & path.  We're doing this
      * before the below test because we're useing it to detect an

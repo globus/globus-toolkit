@@ -9,7 +9,7 @@ Sources= \
 	ssl_lib.c ssl_err2.c ssl_cert.c ssl_sess.c \
 	ssl_ciph.c ssl_stat.c ssl_rsa.c \
 	ssl_asn1.c ssl_txt.c ssl_algs.c \
-	bio_ssl.c ssl_err.c
+	bio_ssl.c ssl_err.c kssl.c
 
 Test_Sources = \
 	ssltest.c
@@ -19,14 +19,16 @@ opensslinclude_HEADERS= \
 	ssl2.h \
 	ssl3.h \
 	ssl23.h \
-	tls1.h
+	tls1.h \
+	kssl.h
 
 noinst_HEADERS = \
-	ssl_locl.h
+	ssl_locl.h \
+	kssl_lcl.h
 
 lib_LTLIBRARIES = libssl_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libssl___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

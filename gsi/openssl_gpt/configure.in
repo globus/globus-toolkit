@@ -130,4 +130,11 @@ AC_OUTPUT(
     crypto/pkcs12/Makefile
     crypto/comp/Makefile
     crypto/perlasm/Makefile
+    crypto/aes/Makefile
+    crypto/ec/Makefile
+    crypto/engine/Makefile
+    crypto/engine/vendor_defns/Makefile
+    crypto/krb5/Makefile
+    crypto/ocsp/Makefile
+    crypto/ui/Makefile
 )

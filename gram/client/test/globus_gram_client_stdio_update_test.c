@@ -60,9 +60,11 @@ int main(int argc, char *argv[])
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    argv[1],
-	    "&(executable=random_sleeper)(arguments=5)"
+	    "&(executable=/bin/sh)"
+             "(arguments=-c \"/bin/echo $GLOBUS_REMOTE_IO_URL; /bin/cat $GLOBUS_REMOTE_IO_URL; /bin/sleep 30; /bin/cat $GLOBUS_REMOTE_IO_URL\")"
 	    "(stdout=$(GLOBUS_CACHED_STDOUT))"
-	    "(stderr=$(GLOBUS_CACHED_STDERR))",
+	    "(stderr=$(GLOBUS_CACHED_STDERR))"
+            "(remote_io_url = https://remote-io-url:0)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    callback_contact,
 	    &job_contact);
@@ -83,19 +85,21 @@ int main(int argc, char *argv[])
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
 
+    sleep(5);
     if(monitor.state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
     {
 	rc = globus_gram_client_job_signal(
 		job_contact,
 		GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE,
 		"&(stdout=updated_output)"
-		" (stderr=updated_err)",
+		" (stderr=updated_err)"
+                " (remote_io_url=https://remote-io-url:1)",
 		  NULL,
 		  NULL);
 	if(rc != GLOBUS_SUCCESS)
 	{
 	    fprintf(stderr,
-		    "Error cancelling job %s.\n",
+		    "Error signalling job %s.\n",
 		    globus_gram_client_error_string(rc));
 
 	    goto destroy_callback_contact;

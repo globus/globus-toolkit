@@ -106,7 +106,7 @@ globus_gsi_proxy_handle_init(
         result = globus_gsi_proxy_handle_attrs_init(&handle_i->attrs);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
             goto free_handle;
@@ -118,7 +118,7 @@ globus_gsi_proxy_handle_init(
                                                     &handle_i->attrs);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
             goto free_handle;
@@ -343,6 +343,7 @@ globus_gsi_proxy_handle_get_private_key(
 {
     int                                 length;
     unsigned char *                     der_encoded = NULL;
+    unsigned char *                     tmp;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_private_key";
@@ -375,10 +376,48 @@ globus_gsi_proxy_handle_get_private_key(
         goto exit;
     }
 
-    length = i2d_PrivateKey(handle->proxy_key, &der_encoded);
+    *proxy_key = NULL;
 
+    length = i2d_PrivateKey(handle->proxy_key, NULL);
+
+    if(length < 0)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
+            ("Couldn't convert private key from internal"
+             "to DER encoded form"));
+        goto exit;
+        
+    }
+    
+    der_encoded = malloc(length);
+
+    if(!der_encoded)
+    {
+        GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(length);
+        goto exit;
+    }
+
+    tmp = der_encoded;
+
+    length = i2d_PrivateKey(handle->proxy_key, &tmp);
+
+    if(length < 0)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
+            ("Couldn't convert private key from internal"
+             "to DER encoded form"));
+        goto exit;
+        
+    }
+
+    tmp = der_encoded;
+    
     if(!d2i_PrivateKey(handle->proxy_key->type, proxy_key, 
-                       &der_encoded, length))
+                       &tmp, length))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -389,6 +428,11 @@ globus_gsi_proxy_handle_get_private_key(
     
  exit:
 
+    if(der_encoded)
+    {
+        free(der_encoded);
+    }
+    
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -419,6 +463,7 @@ globus_gsi_proxy_handle_set_private_key(
 {
     int                                 length;
     unsigned char *                     der_encoded = NULL;
+    unsigned char *                     tmp;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
         "globus_gsi_proxy_handle_set_private_key";
@@ -442,10 +487,46 @@ globus_gsi_proxy_handle_set_private_key(
     if(proxy_key)
     {
 
-        length = i2d_PrivateKey(proxy_key, &der_encoded);
+        length = i2d_PrivateKey(proxy_key, NULL);
+        
+        if(length < 0)
+        {
+            GLOBUS_GSI_PROXY_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
+                ("Couldn't convert private key from internal"
+                 "to DER encoded form"));
+            goto exit;
+            
+        }
+        
+        der_encoded = malloc(length);
+        
+        if(!der_encoded)
+        {
+            GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(length);
+            goto exit;
+        }
+        
+        tmp = der_encoded;
+        
+        length = i2d_PrivateKey(handle->proxy_key, &tmp);
+        
+        if(length < 0)
+        {
+            GLOBUS_GSI_PROXY_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
+                ("Couldn't convert private key from internal"
+                 "to DER encoded form"));
+            goto exit;
+            
+        }
+
+        tmp = der_encoded;
         
         if(!d2i_PrivateKey(proxy_key->type, &handle->proxy_key, 
-                           &der_encoded, length))
+                           &tmp, length))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -456,6 +537,11 @@ globus_gsi_proxy_handle_set_private_key(
     }
 
  exit:
+
+    if(der_encoded)
+    {
+        free(der_encoded);
+    }
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
@@ -1166,7 +1252,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
         signing_algorithm);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1206,7 +1292,7 @@ globus_gsi_proxy_handle_get_keybits(
                                                        key_bits);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1248,7 +1334,7 @@ globus_gsi_proxy_handle_get_init_prime(
                                                           init_prime);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1292,7 +1378,7 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
         skew);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1333,7 +1419,7 @@ globus_gsi_proxy_handle_get_key_gen_callback(
         callback);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1478,3 +1564,94 @@ globus_gsi_proxy_handle_set_common_name(
 }
 /* globus_gsi_proxy_handle_set_common_name */
 /*@}*/
+
+
+globus_result_t
+globus_gsi_proxy_handle_set_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t                       is_limited)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ = 
+        "globus_gsi_proxy_handle_set_is_limited";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    if(is_limited == GLOBUS_TRUE)
+    {
+        if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
+        }
+        else
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
+        }
+    }
+    else
+    {
+        if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY);
+        }
+        else
+        {
+            result = globus_gsi_proxy_handle_set_type(
+                handle,
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
+        }        
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+
+
+/**
+ * @name Proxy Is Limited
+ */
+/* @{ */
+/**
+ * Check to see if the proxy is a limited proxy 
+ *
+ * @param handle
+ *        the proxy handle to check
+ *
+ * @param is_limited
+ *        boolean value to set depending on the type of proxy 
+ *
+ * @return
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t *                     is_limited)
+{    
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_is_limited";
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    *is_limited = GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(handle->type);
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
+}
+/* @} */
