@@ -59,7 +59,7 @@
         <delete dir="${test-reports.dir}"/>
     </target>
 
-    <target name="deploy" depends="dist">
+    <target name="deploy" depends="initClover,dist">
         <ant antfile="${build.packages}" target="deployGar">
             <property name="gar.id" value="${package.name}"/>
         </ant>
@@ -72,5 +72,14 @@
     </target>
 
     <target name="all" depends="deploy"/>
+
+    <taskdef resource="clovertasks"/>
+
+    <property name="clover.enabled" value="false"/>
+
+    <target name="initClover" >
+        <clover-setup initString="../../../../clover-reports/coverage.db"
+                      enabled="${clover.enabled}"/>
+    </target>
 
 </project>
