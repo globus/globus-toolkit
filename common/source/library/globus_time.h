@@ -114,38 +114,6 @@ typedef struct timeval  globus_reltime_t;
     }                                                     \
 }
 
-#define  GlobusTimeReltimeDiff(Reltime, T1, T2)           \
-{                                                         \
-    int __res = globus_reltime_cmp(&(T1), &(T2));         \
-    if(__res < 0)                                         \
-    {                                                     \
-        (Reltime).tv_sec = (T2).tv_sec - (T1).tv_sec;     \
-        (Reltime).tv_usec =                               \
-                ((T2).tv_usec - (T1).tv_usec);            \
-        if((Reltime).tv_usec < 0)                         \
-        {                                                 \
-            (Reltime).tv_sec--;                           \
-            (Reltime).tv_usec += 1000000;                 \
-        }                                                 \
-    }                                                     \
-    else if(__res > 0)                                    \
-    {                                                     \
-        (Reltime).tv_sec = (T1).tv_sec - (T2).tv_sec;     \
-        (Reltime).tv_usec =                               \
-                ((T1).tv_usec - (T2).tv_usec);            \
-        if((Reltime).tv_usec < 0)                         \
-        {                                                 \
-            (Reltime).tv_sec--;                           \
-            (Reltime).tv_usec += 1000000;                 \
-        }                                                 \
-    }                                                     \
-    else                                                  \
-    {                                                     \
-        (Reltime).tv_sec = 0;                             \
-        (Reltime).tv_usec = 0;                            \
-    }                                                     \
-}
-
 #define  GlobusTimeReltimeToUSec(SlpInt, Reltime)         \
 {                                                         \
     SlpInt = ((Reltime).tv_sec * 1000000) +               \
@@ -161,17 +129,6 @@ typedef struct timeval  globus_reltime_t;
         (Abstime).tv_nsec -= 1000000000;                  \
     }                                                     \
     (Abstime).tv_sec += (Reltime).tv_sec;                 \
-}
-
-#define  GlobusTimeAbstimeDec(Abstime, Reltime)           \
-{                                                         \
-    (Abstime).tv_nsec -= ((Reltime).tv_usec * 1000);      \
-    if((Abstime).tv_nsec < 0)                             \
-    {                                                     \
-        (Abstime).tv_sec--;                               \
-        (Abstime).tv_nsec += 1000000000;                  \
-    }                                                     \
-    (Abstime).tv_sec -= (Reltime).tv_sec;                 \
 }
 
 #define  GlobusTimeAbstimeGetCurrent(Abstime)             \
@@ -220,25 +177,25 @@ extern const globus_reltime_t         globus_i_reltime_zero;
 
 globus_bool_t
 globus_time_has_expired(
-    const globus_abstime_t *                     abstime);
+    globus_abstime_t *                     abstime);
 
 globus_bool_t
 globus_time_abstime_is_infinity(
-    const globus_abstime_t *                     abstime);
+    globus_abstime_t *                     abstime);
 
 globus_bool_t
 globus_time_reltime_is_infinity(
-    const globus_reltime_t *                     reltime);
+    globus_reltime_t *                     reltime);
 
 int
 globus_abstime_cmp(
-    const globus_abstime_t *                     abstime_1,
-    const globus_abstime_t *                     abstime_2);
+    globus_abstime_t *                     abstime_1,
+    globus_abstime_t *                     abstime_2);
 
 int
 globus_reltime_cmp(
-    const globus_reltime_t *                     reltime_1,
-    const globus_reltime_t *                     reltime_2);
+    globus_reltime_t *                     reltime_1,
+    globus_reltime_t *                     reltime_2);
 
 
 EXTERN_C_END

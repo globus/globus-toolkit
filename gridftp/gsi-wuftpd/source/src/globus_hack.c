@@ -251,11 +251,9 @@ data_close_callback(
 static char *
 globus_l_wu_create_range_string(globus_fifo_t * ranges);
 
-static
-void
+static globus_bool_t
 globus_l_wu_perf_update_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *			time_stop,
     void *				user_args);
 
 static globus_bool_t
@@ -607,18 +605,18 @@ wu_monitor_destroy(
     globus_fifo_destroy(&mon->ranges);
 }
 
-static
-void
+static int
 g_timeout_wakeup(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
-    void *                                      user_args)
+    globus_abstime_t *                           time_stop,
+    void *                                       user_args)
 {
     globus_mutex_lock(&g_monitor.mutex);
     {   
         globus_cond_signal(&g_monitor.cond);
     }
     globus_mutex_unlock(&g_monitor.mutex);
+
+    return GLOBUS_TRUE;
 }
 
 void
@@ -713,11 +711,13 @@ G_ENTER();
     globus_fifo_init(&g_restarts);
 
     debug_printf("registering wakeup at %d secs\n", timeout_connect / 2);
-    res = globus_callback_register_periodic(
+    rc = globus_callback_register_periodic(
              GLOBUS_NULL,
              &delay_time,
              &period_time,
              g_timeout_wakeup,
+             GLOBUS_NULL,
+             GLOBUS_NULL,
              GLOBUS_NULL);
     assert(res == GLOBUS_SUCCESS);
 
@@ -1666,7 +1666,9 @@ g_receive_data(
 	    &five_seconds,
 	    &five_seconds,
 	    globus_l_wu_perf_update_callback,
-	    &g_monitor);
+	    &g_monitor,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL);
 
         globus_l_wu_perf_update(&g_monitor);
         g_monitor.callback_count = 0; 
@@ -1675,11 +1677,7 @@ g_receive_data(
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
             {
                 transflag = 0;
-		globus_callback_unregister(
-		    g_monitor.callback_handle,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL,
-            GLOBUS_NULL);
+		globus_callback_unregister(g_monitor.callback_handle);
 
                 G_EXIT();
                 perror_reply(451, "Local resource failure: malloc");
@@ -1732,11 +1730,7 @@ g_receive_data(
         {
             alarm(0);
             g_force_close(cb_count);
-	    globus_callback_unregister(
-		    g_monitor.callback_handle,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL,
-            GLOBUS_NULL);
+	    globus_callback_unregister(g_monitor.callback_handle);
 
             G_EXIT();
 	    goto bail;
@@ -1780,11 +1774,7 @@ g_receive_data(
 
     g_force_close(cb_count);
 
-    globus_callback_unregister(
-        g_monitor.callback_handle,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
+    globus_callback_unregister(g_monitor.callback_handle);
 
     alarm(0);
     transflag = 0;
@@ -1804,11 +1794,7 @@ g_receive_data(
 
 
   file_err:
-    globus_callback_unregister(
-        g_monitor.callback_handle,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
+    globus_callback_unregister(g_monitor.callback_handle);
 
     alarm(0);
     transflag = 0;
@@ -1824,11 +1810,7 @@ g_receive_data(
 
   clean_exit:
     G_File_Close(&g_monitor.io_handle, 0);
-    globus_callback_unregister(
-        g_monitor.callback_handle,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
+    globus_callback_unregister(g_monitor.callback_handle);
 
     G_EXIT();
 
@@ -2186,11 +2168,9 @@ globus_l_wu_create_range_string(
     return buf;
 }
 
-static
-void
+static globus_bool_t
 globus_l_wu_perf_update_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *			time_stop,
     void *				user_args)
 {
     globus_i_wu_monitor_t *		monitor;
@@ -2203,6 +2183,8 @@ globus_l_wu_perf_update_callback(
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_lock(&monitor->mutex);
+
+    return GLOBUS_TRUE;
 }
 
 static globus_bool_t 

@@ -143,7 +143,7 @@ globus_io_register_read(
     }
     
     globus_i_io_debug_printf(3,
-			     (stderr, "globus_io_register_read(): entering, "
+			     ("globus_io_register_read(): entering, "
 			      "fd=%d, max=%lu, min=%lu\n",
 			      handle->fd,
                               (unsigned long) max_nbytes,
@@ -484,8 +484,6 @@ globus_io_read(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-
-    handle->blocking_read = GLOBUS_TRUE;
     
     result = globus_io_register_read(handle,
 				     buf + try_read,
@@ -512,9 +510,7 @@ globus_io_read(
     }
 
     globus_mutex_unlock(&monitor.mutex);
-    
-    handle->blocking_read = GLOBUS_FALSE;
-    
+
     if(nbytes_read)
     {
 	*nbytes_read = monitor.nbytes + try_read;
@@ -554,6 +550,7 @@ globus_i_io_try_read(
     globus_bool_t			done = GLOBUS_FALSE;
     int					save_errno;
     char                                tag_str[256];
+    char                                nbytes_str[64];
     static char *			myname="globus_i_io_try_read";
 
     num_read=0;
@@ -585,7 +582,7 @@ globus_i_io_try_read(
         if(handle->nl_handle != GLOBUS_NULL)
         {
             sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_NBYTES=%d", 
+                "SOCK=%d GLOBUS_IO_NBYTES=%ld", 
                 handle->fd,
                 n_read);
             globus_netlogger_write(
@@ -598,7 +595,7 @@ globus_i_io_try_read(
 	save_errno = errno;
 	globus_i_io_debug_printf(
 	    5,
-	    (stderr, "%s(): read returned n_read=%d\n",
+	    ("%s(): read returned n_read=%d\n",
 	      myname, (int) n_read));
 	
 	/*
@@ -681,27 +678,12 @@ globus_i_io_register_read(
     read_info->nbytes_read = 0;
     read_info->arg = callback_arg;
     read_info->callback = callback;
-    
-    rc = globus_i_io_start_operation(
-        handle,
-        GLOBUS_I_IO_READ_OPERATION);
-    
-    if(rc == GLOBUS_SUCCESS)
-    {
-        rc = globus_i_io_register_operation(
-            handle,
-            globus_l_io_read_callback,
-            read_info,
-            globus_i_io_default_destructor,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_READ_OPERATION);
-        
-        if(rc != GLOBUS_SUCCESS)
-        {
-            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
-        }
-    }
-    
+
+    rc = globus_i_io_register_read_func(handle,
+				        globus_l_io_read_callback,
+				        (void *) read_info,
+				        globus_i_io_default_destructor,
+					GLOBUS_TRUE);
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -784,13 +766,13 @@ globus_l_io_read_callback(
 	goto error_exit;
     }
 
-    globus_i_io_debug_printf(5,(stderr, "%s(): entering\n",myname));
+    globus_i_io_debug_printf(5,("%s(): entering\n",myname));
 
     for (done = GLOBUS_FALSE; !done; )
     {
 	globus_i_io_debug_printf(
 	    5,
-	    (stderr, "%s(): calling read, fd=%i, buf=%p, size=%lu\n",
+	    ("%s(): calling read, fd=%i, buf=%p, size=%lu\n",
 	     myname,
 	     handle->fd,
 	     (read_info->buf + read_info->nbytes_read),
@@ -836,7 +818,7 @@ globus_l_io_read_callback(
 	save_errno = errno;
 	globus_i_io_debug_printf(
 	    5,
-	    (stderr, "%s(): read returned n_read=%li\n",
+	    ("%s(): read returned n_read=%li\n",
 	     myname,
 	     n_read));
 	
@@ -852,10 +834,6 @@ globus_l_io_read_callback(
 	    read_info->nbytes_read += n_read;
 	    if (read_info->nbytes_read >= read_info->wait_for_nbytes)
 	    {
-	        globus_i_io_mutex_lock();
-	        globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
-	        globus_i_io_mutex_unlock();
-	        
 		(*read_info->callback)(read_info->arg,
 				       handle,
 				       GLOBUS_SUCCESS,
@@ -866,25 +844,14 @@ globus_l_io_read_callback(
 	    }
 	    else
 	    {
-            globus_i_io_mutex_lock();
-            
-            result = globus_i_io_register_operation(
-                handle,
-                globus_l_io_read_callback,
-                read_info,
-                globus_i_io_default_destructor,
-                GLOBUS_TRUE,
-                GLOBUS_I_IO_READ_OPERATION);
-            
-            globus_i_io_mutex_unlock();
-            
-            if(result != GLOBUS_SUCCESS)
-            {
-                err = globus_error_get(result);
-                goto error_exit;
-            }
-            
-            done = GLOBUS_TRUE;
+		globus_i_io_mutex_lock();
+		globus_i_io_register_read_func(handle,
+					       globus_l_io_read_callback,
+					       (void *)read_info,
+					       globus_i_io_default_destructor,
+					       GLOBUS_TRUE);
+		globus_i_io_mutex_unlock();
+	        done = GLOBUS_TRUE;
 	    }
 	}
 	else if (n_read == 0)
@@ -902,7 +869,7 @@ globus_l_io_read_callback(
 
 	    globus_i_io_debug_printf(
 		3,
-		(stderr, "%s(): ERROR, errno=%d, fd=%d\n",
+		("%s(): ERROR, errno=%d, fd=%d\n",
 		 myname,
 		 save_errno,
 		 handle->fd));
@@ -915,23 +882,12 @@ globus_l_io_read_callback(
 	    {
 		/* We've read all we can for now.  So repost the read. */
 		globus_i_io_mutex_lock();
-		
-		result = globus_i_io_register_operation(
-                    handle,
-                    globus_l_io_read_callback,
-                    read_info,
-                    globus_i_io_default_destructor,
-                    GLOBUS_TRUE,
-                    GLOBUS_I_IO_READ_OPERATION);
-		
+		globus_i_io_register_read_func(handle,
+					       globus_l_io_read_callback,
+					       (void *) read_info,
+					       globus_i_io_default_destructor,
+					       GLOBUS_TRUE);
 		globus_i_io_mutex_unlock();
-		
-		if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto error_exit;
-        }
-            
 		done = GLOBUS_TRUE;
 	    }
 	    else
@@ -946,15 +902,11 @@ globus_l_io_read_callback(
 	}
     }
 
-    globus_i_io_debug_printf(5, (stderr, "%s(): exiting\n",myname));
+    globus_i_io_debug_printf(5, ("%s(): exiting\n",myname));
 
     return;
     
   error_exit: 
-    globus_i_io_mutex_lock();
-    globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
-    globus_i_io_mutex_unlock();
-	        
     (*read_info->callback)(read_info->arg,
 			   handle,
 			   globus_error_put(err),

@@ -273,26 +273,7 @@ AC_MSG_CHECKING(for pthreads)
                 ])
     fi
 
-    if test "$found_lib" = "no"; then
-        AC_CACHE_CHECK( 
-            [if compiler recognizes -pthread], 
-            [myapp_cv_gcc_pthread], 
-            [
-            ac_save_CFLAGS=$CFLAGS 
-            CFLAGS="$CFLAGS -pthread" 
-            AC_TRY_LINK([#include <pthread.h>], 
-                [void *p = pthread_create;], 
-                [myapp_cv_gcc_pthread=yes], 
-                [myapp_cv_gcc_pthread=no] 
-            ) 
-            CFLAGS=$ac_save_CFLAGS 
-            ]
-        ) 
-        if test $myapp_cv_gcc_pthread = yes ; then 
-           lib_type="bsd_pthread" 
-           found_lib="yes"
-        fi 
-    fi
+
 
     if test "$found_lib" = "no"; then
         AC_MSG_ERROR([posix thread package not found!!])
@@ -383,14 +364,6 @@ AC_MSG_CHECKING(for pthreads)
                 esac
               ;;
             esac
-          ;;
-          bsd_pthread )
-            LAC_THREADS_ADD_DEFINE(_REENTRANT)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-            lac_cv_threads_CFLAGS="-pthread"
           ;;
         esac
     fi

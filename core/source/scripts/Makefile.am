@@ -8,9 +8,9 @@ libexec_SCRIPTS = \
 sbin_SCRIPTS = \
 	globus-build-doxygen-dependencies 
 
-EXTRA_DIST = \
+EXTRA_DIST = 
 	globus-build-env.sh.in \
-	globus-args-parser-header \
+    globus-args-parser-header \
 	globus-bootstrap.sh \
 	globus-sh-tools.sh \
 	globus-build-doxygen-dependencies 

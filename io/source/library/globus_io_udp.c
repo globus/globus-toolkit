@@ -44,7 +44,7 @@ typedef struct globus_i_io_udp_monitor_s
     globus_cond_t                       cond;
     globus_object_t *                   err;
     globus_bool_t                       use_err;
-    globus_bool_t                       done;
+    volatile globus_bool_t              done;
     globus_size_t                       nbytes;
 
     char **                             host;
@@ -104,6 +104,8 @@ globus_l_io_udp_recvfrom_monitor_callback(
 #define MAX_SOCKET_SEND_BUFFER          9000
 #define MAX_SOCKET_RECEIVE_BUFFER       18032
 
+static unsigned short                   globus_l_io_udp_last_port = 0;
+
 static globus_result_t
 globus_l_io_udp_set_socket_size(
     globus_io_handle_t *                        handle)
@@ -112,6 +114,8 @@ globus_l_io_udp_set_socket_size(
     int sock_size;
     GLOBUS_SOCK_SIZE_T sock_opt_len = sizeof(GLOBUS_SOCK_SIZE_T);
     int save_error;
+    int flags;
+    int rc = 0;
 
     size = MAX_SOCKET_SEND_BUFFER;
     if(setsockopt(handle->fd, 
@@ -186,6 +190,10 @@ globus_io_udp_set_attr(
     globus_io_handle_t *		handle,
     globus_io_attr_t *			attr)
 {
+    globus_result_t			rc;
+    globus_object_t *			err;
+    globus_i_io_udpattr_instance_t *	instance;
+    int					save_errno;
     globus_i_io_udpattr_instance_t *    udp_attr;
     static char *			myname="globus_io_udp_set_attr";
     
@@ -237,8 +245,11 @@ globus_io_udp_set_attr(
 			     globus_object_get_local_instance_data(attr->attr);
 
     globus_l_io_setup_udp_socket(handle, udp_attr);
-    
+
     return GLOBUS_SUCCESS;
+
+  error_exit:
+    return globus_error_put(err);
 }
 /* globus_io_udp_set_attr() */
 
@@ -299,7 +310,7 @@ globus_io_udpattr_init(
      *  NETLOGGER
      */
     attr->nl_handle = GLOBUS_NULL;
-    
+
     return GLOBUS_SUCCESS;
 }
 /* globus_udpattr_init() */
@@ -352,6 +363,25 @@ globus_io_udpattr_destroy(
  */
 
 /*
+ * Function:	globus_l_io_udp_handle_destroy()
+ *
+ * Description:	
+ *		
+ * Parameters:	
+ *
+ * Returns:	
+ */ 
+static
+void
+globus_l_io_udp_handle_destroy(
+    globus_io_handle_t *		handle)
+{
+}
+/* globus_l_io_udp_handle_destroy() */
+
+
+
+/*
  * Function:	globus_io_udp_bind()
  *
  * Description:	
@@ -374,6 +404,7 @@ globus_io_udp_bind(
     globus_bool_t                       found_port = GLOBUS_FALSE;
     globus_bool_t                       bind_error = GLOBUS_FALSE;
     GLOBUS_SOCK_SIZE_T                  len;
+    unsigned short                      start_port;
     unsigned short                      end_port;
 
     /* 
@@ -494,7 +525,7 @@ globus_io_udp_bind(
     handle->state = GLOBUS_IO_HANDLE_STATE_UDP_BIND;
 
     globus_i_io_debug_printf(3,
-			    (stderr, "%s(): exiting\n", myname));
+			    ("%s(): exiting\n", myname));
     return rc;
 }
 /* globus_io_udp_bind() */
@@ -523,6 +554,7 @@ globus_io_udp_sendto(
     struct hostent *                    hp;
     int                                 hp_errnop;
     char                                hp_tsdbuffer[500];
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_object_t *			err;
 
     hp = globus_libc_gethostbyname_r(host,
@@ -627,6 +659,11 @@ void globus_l_io_udp_recvfrom_callback(
    GLOBUS_SOCK_SIZE_T              from_len;
    char *                          from_host;
    unsigned short                  from_port;
+   GLOBUS_SOCK_SIZE_T              len;
+   struct hostent                  he;
+   struct hostent *                hp;
+   int                             hp_errnop;
+   char                            hp_tsdbuffer[500];
 
 
    recvfrom_arg = (globus_l_io_udp_recvfrom_t *) arg;
@@ -656,7 +693,7 @@ void globus_l_io_udp_recvfrom_callback(
        else
        {
            from_port = (unsigned short) ntohs(from_addr.sin_port);
-           from_host = globus_libc_strdup((char *)inet_ntoa(from_addr.sin_addr));
+           from_host = strdup((char *)inet_ntoa(from_addr.sin_addr));
        }
    }
 
@@ -709,9 +746,7 @@ globus_io_udp_recvfrom(
     monitor->port = port;
     monitor->host = host;
     monitor->nbytes_received = nbytes_received;
-    
-    handle->blocking_read = GLOBUS_TRUE;
-    
+		     
     result = globus_io_udp_register_recvfrom(
 				    handle,
 				    buf,
@@ -736,9 +771,7 @@ globus_io_udp_recvfrom(
         }
     }
     globus_mutex_unlock(&monitor->mutex);
-    
-    handle->blocking_read = GLOBUS_FALSE;
-    
+
     globus_mutex_destroy(&monitor->mutex);
     globus_cond_destroy(&monitor->cond);
     if(monitor->use_err)
@@ -790,11 +823,12 @@ globus_l_io_udp_create_socket(
     globus_io_handle_t *		handle)
 {
     static char *                       myname="globus_i_io_udp_create_socket";
+    globus_result_t			rc;
     int					save_errno;
     globus_object_t *			err;
 
     globus_i_io_debug_printf(3,
-			     (stderr, "%s(): entering\n",
+			     ("%s(): entering\n",
   			     myname));
 
     globus_assert(handle != GLOBUS_NULL);
@@ -844,6 +878,9 @@ globus_l_io_setup_udp_socket(
     globus_i_io_udpattr_instance_t *    udp_attr)
 {
     globus_result_t                     rc;
+    int                                 save_errno;
+    globus_object_t *                   err;
+    static char *                       myname="globus_l_io_setup_udp_socket";
     struct ip_mreq                      imr;
 
     rc = globus_i_io_setup_securesocket(handle);

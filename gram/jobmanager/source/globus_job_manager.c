@@ -211,10 +211,9 @@ globus_l_gram_getenv_var(char * env_var_name,
 static char *
 globus_l_gram_user_proxy_relocate();
 
-static void
+static globus_bool_t
 globus_l_gram_status_file_cleanup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *                  time_stop,
     void *				callback_arg);
 
 static int
@@ -226,10 +225,9 @@ static void
 globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * conf);
 
 static
-void
+globus_bool_t
 globus_l_gram_jm_check_files(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *         		time_stop,
     void *				callback_arg);
 
 static
@@ -246,10 +244,9 @@ globus_l_jm_http_query_callback(
     globus_size_t			nbytes,
     int					errorcode);
 
-void
+globus_bool_t
 globus_l_jm_http_query_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *                  time_stop,
     void *                              callback_arg);
 
 void
@@ -274,16 +271,14 @@ globus_l_gram_write_state_file(
     char *                              job_id,
     char *                              rsl);
 
-void
+globus_bool_t
 globus_l_gram_proxy_expiration(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg);
 
-void
+globus_bool_t
 globus_l_gram_ttl_update(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg);
 
 int
@@ -1875,7 +1870,9 @@ int main(int argc,
 		globus_callback_register_oneshot(&proxy_expiration_handle,
 						 &delay_time,
 						 globus_l_gram_proxy_expiration,
-						 (void *)request);
+						 (void *)request,
+						 GLOBUS_NULL,
+						 GLOBUS_NULL);
 	    }
 
 /* Freeing this struct seems to screw up other stuff that uses X509
@@ -1918,7 +1915,9 @@ int main(int argc,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_ttl_update,
-					  (void *)GRAM_JOB_MANAGER_TTL_LIMIT);
+					  (void *)GRAM_JOB_MANAGER_TTL_LIMIT,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
     }
 
     if (request->two_phase_commit != 0)
@@ -2271,14 +2270,18 @@ int main(int argc,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_status_file_cleanup,
-					  (void *) job_reporting_dir);
+					  (void *) job_reporting_dir,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
 
         GlobusTimeReltimeSet(period_time, 2, 0);
 	globus_callback_register_periodic(&gass_poll_handle,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_jm_check_files,
-					  (void *) request);
+					  (void *) request,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
         while (!graml_jm_done && !graml_jm_ttl_expired)
         {
 	    /*
@@ -2373,25 +2376,13 @@ int main(int argc,
 	    globus_cond_wait(&graml_api_cond, &graml_api_mutex);
 	}
 
-	globus_callback_unregister(
-           stat_cleanup_poll_handle,
-           GLOBUS_NULL,
-           GLOBUS_NULL,
-           GLOBUS_NULL);
-	globus_callback_unregister(
-           gass_poll_handle,
-           GLOBUS_NULL,
-           GLOBUS_NULL,
-           GLOBUS_NULL);
+	globus_callback_unregister(stat_cleanup_poll_handle);
+	globus_callback_unregister(gass_poll_handle);
     } /* endif */
 
     if (request->save_state == GLOBUS_TRUE)
     {
-       globus_callback_unregister(
-           ttl_update_handle,
-           GLOBUS_NULL,
-           GLOBUS_NULL,
-           GLOBUS_NULL);
+	globus_callback_unregister(ttl_update_handle);
     }
 
     globus_jobmanager_log( request->jobmanager_log_fp,
@@ -2607,7 +2598,7 @@ int main(int argc,
 	 * current time since we're about to exit.
 	 */
 	if ( graml_job_state_file != NULL ) {
-	    globus_l_gram_ttl_update( NULL, NULL, (void *)0 );
+	    globus_l_gram_ttl_update( NULL, (void *)0 );
 	}
 
     }
@@ -4253,10 +4244,9 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static void
+static globus_bool_t
 globus_l_gram_status_file_cleanup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *         		time_stop,
     void *				callback_arg)
 {
     DIR *            status_dir;
@@ -4266,6 +4256,7 @@ globus_l_gram_status_file_cleanup(
     char             stat_file_path[1024];
     struct stat      statbuf;
     unsigned long    now;
+    globus_bool_t    status = GLOBUS_FALSE;
 
     job_reporting_dir = (char *) callback_arg;
 
@@ -4277,7 +4268,7 @@ globus_l_gram_status_file_cleanup(
            globus_jobmanager_log( graml_log_fp,
                "JM: status directory not specified, cleanup cannot proceed.\n");
         }
-        return;
+        return GLOBUS_FALSE;
     }
 
     status_dir = globus_libc_opendir(job_reporting_dir);
@@ -4285,7 +4276,7 @@ globus_l_gram_status_file_cleanup(
     {
         globus_jobmanager_log( graml_log_fp,
             "JM: unable to open status directory, aborting cleanup process.\n");
-        return;
+        return GLOBUS_FALSE;
     }
 
     sprintf(logname_string, "_%s.", graml_env_logname);
@@ -4321,6 +4312,7 @@ globus_l_gram_status_file_cleanup(
                         globus_jobmanager_log( graml_log_fp,
                                "JM: Removed old status file --> %s\n",
                                stat_file_path);
+			status = GLOBUS_TRUE;
                     }
                 }
             }
@@ -4330,6 +4322,8 @@ globus_l_gram_status_file_cleanup(
     if (dir_entry != GLOBUS_NULL) globus_free(dir_entry);
 
     globus_libc_closedir(status_dir);
+
+    return status;
 } /* globus_l_gram_status_file_cleanup() */
 
 
@@ -5044,10 +5038,9 @@ int globus_l_gram_client_contact_list_free(globus_list_t *contact_list)
 } /* globus_l_gram_client_contact_list_free() */
 
 static
-void
+globus_bool_t
 globus_l_gram_jm_check_files(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg)
 {
     globus_gram_jobmanager_request_t *  request;
@@ -5077,6 +5070,8 @@ globus_l_gram_jm_check_files(
 	}
     }
     GRAM_UNLOCK;
+
+    return GLOBUS_FALSE;
 }
 
 void
@@ -5159,13 +5154,14 @@ globus_l_jm_http_query_callback(
     globus_callback_register_oneshot( &query_handle,
 				      &delay_time,
 				      globus_l_jm_http_query_handler,
-				      (void *)query_args);
+				      (void *)query_args,
+				      GLOBUS_NULL,
+				      GLOBUS_NULL );
 }
 
-void
+globus_bool_t
 globus_l_jm_http_query_handler( 
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg)
 {
     globus_gram_jobmanager_request_t *   request;
@@ -5520,6 +5516,8 @@ globus_l_jm_http_query_send_reply:
     graml_jm_can_exit = GLOBUS_TRUE;
     globus_cond_signal(&graml_api_cond);
     GRAM_UNLOCK;
+
+    return GLOBUS_FALSE;
 }
 
 
@@ -5760,10 +5758,9 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
     return rc;
 }
 
-void
+globus_bool_t
 globus_l_gram_proxy_expiration(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg)
 {
     globus_jobmanager_log(graml_log_fp,
@@ -5775,6 +5772,8 @@ globus_l_gram_proxy_expiration(
     graml_jm_done = GLOBUS_TRUE;
     globus_cond_signal(&graml_api_cond);
     GRAM_UNLOCK;
+
+    return GLOBUS_FALSE;
 }
 
 void
@@ -5872,10 +5871,9 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
     return rc;
 }
 
-void
+globus_bool_t
 globus_l_gram_ttl_update(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg)
 {
     long curr_time = time(NULL);
@@ -5900,7 +5898,7 @@ globus_l_gram_ttl_update(
 	{
 	    globus_jobmanager_log(graml_log_fp, "JM: Failed to open state file %s\n",
 			  graml_job_state_file);
-	    return;
+	    return GLOBUS_FAILURE;
 	}
 
 	/* seek past the status and failure_code lines (4 characters plus
@@ -5922,6 +5920,8 @@ globus_l_gram_ttl_update(
 	globus_cond_signal(&graml_api_cond);
 	GRAM_UNLOCK;
     }
+
+    return GLOBUS_FALSE;
 }
 
 int
@@ -6148,7 +6148,7 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
 
         globus_libc_sprintf(buffer,
                             "%sdev/stdout%03d",
-                            graml_gass_cache_tag,
+                            req->jm_restart,
                             idx);
 
 	for ( j = 0; j < cache_size; j++ )
@@ -6192,7 +6192,7 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
 
         globus_libc_sprintf(buffer,
                             "%sdev/stderr%03d",
-                            graml_gass_cache_tag,
+                            req->jm_restart,
                             idx);
 
 	for ( j = 0; j < cache_size; j++ )

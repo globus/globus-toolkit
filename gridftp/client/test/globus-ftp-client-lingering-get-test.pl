@@ -10,9 +10,8 @@ an operation is left in progress.
 use strict;
 use POSIX;
 use Test;
-use FtpTestLib;
 
-my $test_exec = './globus-ftp-client-lingering-get-test';
+my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-lingering-get-test';
 my @tests;
 
 my $gpath = $ENV{GLOBUS_LOCATION};
@@ -30,21 +29,18 @@ Do a get of $test_url. But don't deal with data block before deactivating
 the client library.
 
 =cut
-
-my ($source_host, $source_file, $local_copy) = setup_remote_source();
-
 sub lingering_get
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
-    unlink('core');
-    
-    my $command = "$test_exec -s gsiftp://$source_host$source_file >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    unlink('core', $tmpname);
+
+    $rc = system("$test_exec >$tmpname 2>/dev/null") / 256;
     if($rc != 1)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -57,27 +53,17 @@ sub lingering_get
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
+    unlink($tmpname);
 }
 push(@tests, "lingering_get();");
 
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
+# Now that the tests are defined, set up the Test to deal with them.
+plan tests => scalar(@tests);
 
-    foreach (@ARGV)
-    {
-        eval "&$tests[$_-1]";
-    }
-}
-else
+# And run them all.
+foreach (@tests)
 {
-    plan tests => scalar(@tests);
-
-    foreach (@tests)
-    {
-        eval "&$_";
-    }
+    eval "&$_";
 }

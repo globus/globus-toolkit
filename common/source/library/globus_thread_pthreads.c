@@ -209,10 +209,10 @@ globus_l_thread_activate()
 #endif /* HAVE_NO_PTHREAD_SETKIND */
     
 #ifdef HAVE_NO_CONDATTR_DEFAULT
-    rc = pthread_condattr_create(&(globus_i_thread_all_global_vars.condattr.condattr));
+    rc = pthread_condattr_create(&(globus_i_thread_all_global_vars.condattr));
     globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_condattr_create() failed\n");
 #else  /* HAVE_NO_CONDATTR_DEFAULT */
-    globus_i_thread_all_global_vars.condattr.condattr = pthread_condattr_default;
+    globus_i_thread_all_global_vars.condattr = pthread_condattr_default;
 #endif /* HAVE_NO_CONDATTR_DEFAULT */
     
 #endif /* HAVE_PTHREAD_DRAFT_4 */
@@ -844,39 +844,13 @@ int globus_mutex_unlock(globus_mutex_t *mut)
 
 
 /*
- * globus_condattr_setspace()
- */
-#undef globus_condattr_setspace
-int globus_condattr_setspace(
-    globus_condattr_t *                 attr,
-    int                                 space)
-{
-    int rc;
-    rc = globus_macro_condattr_setspace(attr, space);
-    return (rc);
-}
-
-/*
- * globus_condattr_getspace()
- */
-#undef globus_condattr_getspace
-int globus_condattr_getspace(
-    globus_condattr_t *                 attr,
-    int *                               space)
-{
-    int rc;
-    rc = globus_macro_condattr_getspace(attr, space);
-    return (rc);
-}
-
-/*
  * globus_condattr_init()
  */
 #undef globus_condattr_init
 int globus_condattr_init(globus_condattr_t *attr)
 {
     int rc;
-    rc = globus_macro_condattr_space_init(attr);
+    rc = globus_macro_condattr_init(attr);
     return (rc);
 }
 
@@ -887,7 +861,7 @@ int globus_condattr_init(globus_condattr_t *attr)
 int globus_condattr_destroy(globus_condattr_t *attr)
 {
     int rc;
-    rc = globus_macro_condattr_space_destroy(attr);
+    rc = globus_macro_condattr_destroy(attr);
     return (rc);
 }
 
@@ -898,7 +872,7 @@ int globus_condattr_destroy(globus_condattr_t *attr)
 int globus_cond_init(globus_cond_t *cv, globus_condattr_t *attr)
 {
     int rc;
-    rc = globus_macro_cond_space_init(cv, attr);
+    rc = globus_macro_cond_init(cv, attr);
     globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_init() failed\n" );
     return(rc);
 } /* globus_cond_init() */
@@ -911,7 +885,7 @@ int globus_cond_init(globus_cond_t *cv, globus_condattr_t *attr)
 int globus_cond_destroy(globus_cond_t *cv)
 {
     int rc; 
-    rc = globus_macro_cond_space_destroy(cv);
+    rc = globus_macro_cond_destroy(cv);
     globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_destroy() failed\n" );
     return(rc);
 } /* globus_cond_destroy() */
@@ -925,7 +899,7 @@ int globus_cond_wait(globus_cond_t *cv, globus_mutex_t *mut)
 {
     int rc;
 
-    rc = globus_macro_cond_space_wait(cv, mut);
+    rc = globus_macro_cond_wait(cv, mut);
     globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_wait() failed\n" );
     return(rc);
 } /* globus_cond_wait() */
@@ -941,7 +915,7 @@ globus_cond_timedwait(globus_cond_t *cv,
 {
     int rc;
 
-    rc = globus_macro_cond_space_timedwait(cv, mut, (struct timespec *) abstime);
+    rc = globus_macro_cond_timedwait(cv, mut, (struct timespec *) abstime);
     if(rc != ETIMEDOUT
 #if defined(ETIME)
        && rc != ETIME
@@ -967,7 +941,7 @@ globus_cond_timedwait(globus_cond_t *cv,
 int globus_cond_signal(globus_cond_t *cv)
 {
     int rc; 
-    rc = globus_macro_cond_space_signal(cv); 
+    rc = globus_macro_cond_signal(cv); 
     globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_signal() failed\n" );
     return(rc);
 } /* globus_cond_signal () */
@@ -980,7 +954,7 @@ int globus_cond_signal(globus_cond_t *cv)
 int globus_cond_broadcast(globus_cond_t *cv)
 {
     int rc; 
-    rc = globus_macro_cond_space_broadcast(cv); 
+    rc = globus_macro_cond_broadcast(cv); 
     globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_broadcast() failed\n" );
     return(rc);
 } /* globus_cond_broadcast() */

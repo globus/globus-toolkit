@@ -2265,7 +2265,6 @@ proxy_verify_callback(
             if((tmp_public_key = X509_get_pubkey(ctx->current_cert))
                == NULL)
             {
-                X509_OBJECT_free_contents(&obj);
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
                 ERR_set_continue_needed();
                 ctx->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
@@ -2278,7 +2277,6 @@ proxy_verify_callback(
 
             if (i <= 0)
             {
-                X509_OBJECT_free_contents(&obj);                
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
                 ERR_set_continue_needed();
                 ctx->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
@@ -2290,7 +2288,6 @@ proxy_verify_callback(
             i = X509_cmp_current_time(crl_info->nextUpdate);
             if (i == 0)
             {
-                X509_OBJECT_free_contents(&obj);
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_NEXT_UPDATE_FIELD);
                 ERR_set_continue_needed();                
                 ctx->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
@@ -2300,14 +2297,11 @@ proxy_verify_callback(
 
             if (i < 0)
             {
-                X509_OBJECT_free_contents(&obj);
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_HAS_EXPIRED);
                 ERR_set_continue_needed();
                 ctx->error = X509_V_ERR_CRL_HAS_EXPIRED;
                 goto fail_verify;
             }
-
-            X509_OBJECT_free_contents(&obj);
         }
 
         /* now check if the issuer has a CRL, and we are revoked */
@@ -2351,13 +2345,11 @@ proxy_verify_callback(
                             ASN1_INTEGER_get(revoked->serialNumber));
                                                 
 #endif
-                    X509_OBJECT_free_contents(&obj);
                     free(s);
                     s = NULL;
                     goto fail_verify;
                 }
             }
-            X509_OBJECT_free_contents(&obj);
         }
 #endif /* X509_V_ERR_CERT_REVOKED */
 

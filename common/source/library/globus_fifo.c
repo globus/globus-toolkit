@@ -23,7 +23,6 @@ globus_fifo_init (globus_fifo_t * fifo)
 
   fifo->head = GLOBUS_NULL;
   fifo->tail = GLOBUS_NULL;
-  fifo->size = 0;
 
   return 0;
 }
@@ -35,7 +34,6 @@ globus_fifo_destroy (globus_fifo_t * fifo)
     globus_list_free (fifo->head);
     fifo->head = GLOBUS_NULL;
     fifo->tail = GLOBUS_NULL;
-    fifo->size = 0;
   }
 }
 
@@ -52,7 +50,7 @@ globus_fifo_size (globus_fifo_t * fifo)
 {
   assert (fifo!=GLOBUS_NULL);
 
-  return fifo->size;
+  return globus_list_size (fifo->head);
 }
 
 extern int
@@ -72,11 +70,6 @@ globus_fifo_enqueue (globus_fifo_t * fifo,
     err = globus_list_insert (globus_list_rest_ref (fifo->tail),
 			      datum);
     fifo->tail = globus_list_rest (fifo->tail);
-  }
-  
-  if(!err)
-  {
-    fifo->size++;
   }
 
   return err;
@@ -100,8 +93,7 @@ globus_fifo_copy (globus_fifo_t *fifo)
   while ( ! globus_list_empty (globus_list_rest (copy->tail)) ) {
     copy->tail = globus_list_rest (copy->tail);
   }
-  
-  copy->size = fifo->size;
+
   return copy;
 }
 
@@ -138,9 +130,7 @@ globus_fifo_dequeue (globus_fifo_t *fifo)
   if ( globus_list_empty (fifo->head) ) {
     fifo->tail = fifo->head;
   }
-  
-  fifo->size--;
-  
+
   return datum;
 }
 
@@ -170,8 +160,7 @@ globus_fifo_remove (globus_fifo_t *fifo, void *datum)
       fifo->tail = iter_prev;
     }
     globus_list_remove (&(fifo->head), iter);
-    
-    fifo->size--;
+
     return datum;
   }
   else
@@ -190,11 +179,9 @@ globus_fifo_move(
 
   fifo_dest->head = fifo_src->head;
   fifo_dest->tail = fifo_src->tail;
-  fifo_dest->size = fifo_src->size;
-  
+
   fifo_src->head = GLOBUS_NULL;
   fifo_src->tail = GLOBUS_NULL;
-  fifo_src->size = 0;
 
   return 0;
 }

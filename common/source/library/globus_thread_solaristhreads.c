@@ -477,18 +477,6 @@ globus_thread_key_create(globus_thread_key_t *key,
     return(rc);
 } /* globus_thrad_key_create() */
 
-/*
- * globus_thread_key_delete()
- */
-#undef globus_thread_key_delete
-int
-globus_thread_key_delete(globus_thread_key_t key)
-{
-   int rc=0;
-   while((rc = globus_macro_thread_key_delete(key)) == 4);
-   globus_i_thread_test_rc( rc, "GLOBUS_THREAD: keydelete failed\n" );
-    return(rc);
-} /* globus_thread_key_delete() */
 
 /*
  * globus_thread_setspecific()
@@ -604,10 +592,7 @@ globus_cond_init(globus_cond_t *cv,
 		 globus_condattr_t *attr )
 {
     int rc=0;
-    if((rc = globus_macro_cond_space_init(cv, attr))==4)
-    {
-        while((rc = globus_macro_cond_init(&(cv)->cond, GLOBUS_NULL))==4);
-    }
+    while((rc = globus_macro_cond_init(cv, attr))==4) ;
     globus_i_thread_test_rc(
 	rc,
 	"GLOBUS_THREAD: allocate condition variable failed\n");
@@ -622,11 +607,7 @@ int
 globus_cond_destroy(globus_cond_t *cv)
 {
     int rc=0;
-    
-    if ((rc = globus_macro_cond_space_destroy(cv))==4)
-    {
-        while((rc = globus_macro_cond_destroy(&(cv)->cond))==4);
-    }
+    while ((rc = globus_macro_cond_destroy(cv))==4) ;
     globus_i_thread_test_rc(
 	rc,
 	"GLOBUS_THREAD: free condition variable failed\n");
@@ -680,54 +661,6 @@ globus_mutex_unlock( globus_mutex_t *mut )
 }
 
 /*
- * globus_condattr_init()
- */
-#undef globus_condattr_init
-int globus_condattr_init(globus_condattr_t *attr)
-{
-    int rc;
-    rc = globus_macro_condattr_init(attr);
-    return (rc);
-}
-
-/*
- * globus_condattr_destroy()
- */
-#undef globus_condattr_destroy
-int globus_condattr_destroy(globus_condattr_t *attr)
-{
-    int rc;
-    rc = globus_macro_condattr_destroy(attr);
-    return (rc);
-}
-
-/*
- * globus_condattr_setspace()
- */
-#undef globus_condattr_setspace
-int globus_condattr_setspace(
-    globus_condattr_t *                 attr,
-    int                                 space)
-{
-    int rc;
-    rc = globus_macro_condattr_setspace(attr, space);
-    return (rc);
-}
-
-/*
- * globus_condattr_getspace()
- */
-#undef globus_condattr_getspace
-int globus_condattr_getspace(
-    globus_condattr_t *                 attr,
-    int *                               space)
-{
-    int rc;
-    rc = globus_macro_condattr_getspace(attr, space);
-    return (rc);
-}
-
-/*
  *  globus_cond_wait()
  */
 #undef globus_cond_wait
@@ -737,7 +670,7 @@ globus_cond_wait(globus_cond_t *cv,
 {
     int rc=0;
 
-    rc=globus_macro_cond_space_wait(cv, mut);
+    rc=globus_macro_cond_wait(cv, mut);
     globus_i_thread_test_rc(
 	rc,
 	"GLOBUS_THREAD: condition variable wait failed\n");
@@ -751,11 +684,11 @@ globus_cond_wait(globus_cond_t *cv,
 int
 globus_cond_timedwait(globus_cond_t *cv,
 		      globus_mutex_t *mut,
-		      globus_abstime_t *abstime)
+		      globus_abstime_t *time)
 {
     int rc=0;
 
-    rc=globus_macro_cond_space_timedwait(cv, mut, abstime);
+    rc=globus_macro_cond_timedwait(cv, mut, time);
     if(rc != ETIMEDOUT
 #   if defined(ETIME)
        && rc != ETIME
@@ -782,7 +715,7 @@ int
 globus_cond_signal( globus_cond_t *cv )
 {
     int rc=0;
-    while((rc = globus_macro_cond_space_signal(cv))==4) ;
+    while((rc = globus_macro_cond_signal(cv))==4) ;
     globus_i_thread_test_rc(
 	rc,
 	"GLOBUS_THREAD: condition variable signal failed\n");
@@ -797,7 +730,7 @@ int
 globus_cond_broadcast( globus_cond_t *cv )
 {
     int rc=0;
-    while((rc = globus_macro_cond_space_broadcast(cv))==4) ;
+    while((rc = globus_macro_cond_broadcast(cv))==4) ;
     globus_i_thread_test_rc(
 	rc,
 	"GLOBUS_THREAD: condition variable broadcast failed\n");

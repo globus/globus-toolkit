@@ -126,13 +126,11 @@ static int
 globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
 
 #if defined(BUILD_LITE)
-    static void globus_l_globusrun_signal_wakeup(
-                   const globus_abstime_t *            time_now,
-                   const globus_abstime_t *            time_stop,
-                   void *                              user_args);
+    static int globus_l_globusrun_signal_wakeup(
+                   globus_abstime_t *               time_stop,
+                   void *                           user_args);
 
-#   define globus_l_globusrun_remove_cancel_poll()  \
-    globus_callback_unregister(globus_l_run_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
+#   define globus_l_globusrun_remove_cancel_poll() globus_callback_unregister(globus_l_run_callback_handle);
 #else
 #   define globus_l_globusrun_remove_cancel_poll()
 #endif
@@ -1225,6 +1223,8 @@ globus_l_globusrun_gramrun(char * request_string,
 					      &delay_time,
 					      &period_time,
 	                                      globus_l_globusrun_signal_wakeup,
+					      GLOBUS_NULL,
+					      GLOBUS_NULL,
 					      GLOBUS_NULL);
 	}
 #       endif
@@ -1241,11 +1241,7 @@ globus_l_globusrun_gramrun(char * request_string,
                                   SIG_DFL);
 #       if defined(BUILD_LITE)
 	{
-	    globus_callback_unregister(
-	        globus_l_run_callback_handle,
-	        GLOBUS_NULL,
-	        GLOBUS_NULL, 
-	        GLOBUS_NULL);
+	    globus_callback_unregister(globus_l_run_callback_handle);
 	}
 #       endif
     }
@@ -1415,6 +1411,8 @@ globus_l_globusrun_durocrun(char *request_string,
 					      &delay_time,
 					      &period_time,
 	                                      globus_l_globusrun_signal_wakeup,
+					      GLOBUS_NULL,
+					      GLOBUS_NULL,
 					      GLOBUS_NULL);
     }
 #   endif
@@ -1474,11 +1472,7 @@ globus_l_globusrun_durocrun(char *request_string,
                                   SIG_DFL);
 #       if defined(BUILD_LITE)
 	{
-	    globus_callback_unregister(
-	        globus_l_run_callback_handle,
-	        GLOBUS_NULL,
-	        GLOBUS_NULL,
-	        GLOBUS_NULL);
+	    globus_callback_unregister(globus_l_run_callback_handle);
 	}
 #       endif
     }
@@ -2158,17 +2152,11 @@ Parameters:
 
 Returns:
 ******************************************************************************/
-static
-void
-globus_l_globusrun_signal_wakeup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
-    void *                              user_args)
+static int
+globus_l_globusrun_signal_wakeup(globus_abstime_t *  time_stop,
+				 void *              user_args)
 {
-    if(globus_l_globusrun_ctrlc)
-    {
-        globus_callback_signal_poll();
-    }
+    return globus_l_globusrun_ctrlc;
 } /* globus_l_globusrun_signal_wakeup() */
 #endif
 

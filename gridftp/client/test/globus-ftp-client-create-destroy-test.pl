@@ -7,9 +7,8 @@
 use strict;
 use POSIX;
 use Test;
-use FtpTestLib;
 
-my $test_exec = './globus-ftp-client-create-destroy-test';
+my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-create-destroy-test';
 my @tests;
 
 my $gpath = $ENV{GLOBUS_LOCATION};
@@ -26,12 +25,11 @@ sub create_destroy
     my ($errors,$rc) = ("",0);
 
     unlink('core');
-    
-    my $command = "$test_exec >/dev/null 2>&1";
-    $rc = system($command) / 256;
+
+    $rc = system("$test_exec >/dev/null 2>/dev/null") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -44,27 +42,14 @@ sub create_destroy
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
 }
 push(@tests, "create_destroy");
 
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
+plan tests => scalar(@tests);
 
-    foreach (@ARGV)
-    {
-        eval "&$tests[$_-1]";
-    }
-}
-else
+foreach (@tests)
 {
-    plan tests => scalar(@tests);
-
-    foreach (@tests)
-    {
-        eval "&$_";
-    }
+    eval "&$_";
 }

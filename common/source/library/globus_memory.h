@@ -32,9 +32,18 @@ CVS Information:
 
 EXTERN_C_BEGIN
 
+#define DEFAULT_FREE_PTRS_SIZE 16
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
+/* memory management stuff */
+
+extern globus_mutex_t          globus_i_memory_mutex;
+
+typedef struct globus_l_memory_header_s
+{
+    globus_byte_t *            next;
+} globus_l_memory_header_t;
 
 typedef struct globus_memory_s
 {
@@ -62,19 +71,25 @@ globus_memory_init(
     int                           node_size,
     int                           node_count);
 
-void *
+globus_bool_t
+globus_memory_create_list(
+    globus_memory_t *           mem_info);
+
+globus_byte_t *
 globus_memory_pop_node(
     globus_memory_t *           mem_info);
 
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
-    void *                      buf);
+    globus_byte_t *              buf);
 
 globus_bool_t
 globus_memory_destroy(
     globus_memory_t *          mem_info);
 
+#define GLOBUS_CALLBACK_MODULE (&globus_i_callback_module)
+
 EXTERN_C_END
 
-#endif
+#endif /* GLOBUS_INCLUDE_GLOBUS_CALLBACK */

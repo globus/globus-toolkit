@@ -23,6 +23,7 @@ CVS Information:
 ******************************************************************************/
 #include "globus_common.h"
 
+
 /******************************************************************************
 				 C/C++ macros
 ******************************************************************************/
@@ -93,47 +94,27 @@ typedef int globus_thread_once_t;
     (*(M) ? 1 : globus_macro_mutex_lock(M))
 
 #define globus_macro_cond_init(C,A) \
-    (((A) ? (*(C) = *((int *)(A))) \
-     : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), \
-    (globus_callback_space_reference(*(C)) ? 1 : 0))
+    (*(C) = 0)
     
 #define globus_macro_cond_destroy(C) \
-    (globus_callback_space_destroy(*(C)),(*(C) = GLOBUS_NULL_HANDLE))
+    (*(C) = 0)
     
 #define globus_macro_cond_wait(C,M) \
-    ( ((*(M)) = 0), \
-        globus_thread_blocking_space_will_block(*(C)), \
-        globus_callback_space_poll(&globus_i_abstime_infinity,*(C)), \
-        ((*(M)) = 1), 0 )
+    ( ((*(M)) = 0), globus_thread_blocking_will_block(), globus_poll_blocking(), ((*(M)) = 1), 0 )
    
 #define globus_macro_cond_timedwait(C,M, T) \
     ( ((*(M)) = 0), \
-	globus_thread_blocking_space_will_block(*(C)), \
-	globus_callback_space_poll((T),*(C)), \
+	globus_thread_blocking_will_block(), \
+	globus_callback_poll(T), \
 	((*(M)) = 1), \
 	(time(GLOBUS_NULL) >= (T)->tv_sec) ? ETIMEDOUT : 0 )
 
 #define globus_macro_cond_signal(C) \
-    (globus_callback_signal_poll(), 0)
+    (*(C) = 0)
     
 #define globus_macro_cond_broadcast(C) \
-    (globus_callback_signal_poll(), 0)
-
-#define globus_macro_condattr_init(A) \
-    (globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE), \
-    (*(A) = GLOBUS_CALLBACK_GLOBAL_SPACE), 0)
+    (*(C) = 0)
     
-#define globus_macro_condattr_destroy(A) \
-    (globus_callback_space_destroy(*(A)), (*(A) = 0))
-
-#define globus_macro_condattr_setspace(A, S) \
-    ((globus_callback_space_reference((S)) \
-     ? 1 \
-     : (globus_callback_space_destroy(*(A)), (*(A) = (S)), 0)))
-
-#define globus_macro_condattr_getspace(A, S) \
-    ((*(S) = *(A)), 0)
-
 #define globus_macro_thread_create(T,A,F,U) \
     (-1)
 
@@ -185,10 +166,6 @@ typedef int globus_thread_once_t;
 #define globus_cond_timedwait(C,M,T) globus_macro_cond_timedwait(C,M,T)
 #define globus_cond_signal(C) globus_macro_cond_signal(C)
 #define globus_cond_broadcast(C) globus_macro_cond_broadcast(C)
-#define globus_condattr_init(A) globus_macro_condattr_init(A)
-#define globus_condattr_destroy(A) globus_macro_condattr_destroy(A)
-#define globus_condattr_setspace(A,S) globus_macro_condattr_setspace(A,S)
-#define globus_condattr_getspace(A,S) globus_macro_condattr_getspace(A,S)
 #define globus_thread_create(T,A,F,U) globus_macro_thread_create(T,A,F,U)
 #define globus_thread_yield() globus_macro_thread_yield()
 #define globus_thread_key_create(K,D) globus_macro_thread_key_create(K,D)
@@ -246,24 +223,6 @@ globus_cond_broadcast(
     globus_cond_t *			cond);
 
 extern int
-globus_condattr_init(
-    globus_condattr_t *                 attr);
-
-extern int
-globus_condattr_destroy(
-    globus_condattr_t *                 attr);
-
-extern int
-globus_condattr_setspace(
-    globus_condattr_t *                 attr,
-    int                                 space);
-
-extern int
-globus_condattr_getspace(
-    globus_condattr_t *                 attr,
-    int *                               space);
-
-extern int
 globus_thread_create(
     globus_thread_t *			thread,
     globus_threadattr_t *		attr,
@@ -283,11 +242,6 @@ int
 globus_thread_key_create(
     globus_thread_key_t *               key,
     globus_thread_key_destructor_func_t func);
-    
-int
-globus_thread_key_delete(
-    globus_thread_key_t                 key);
-
 extern void
 globus_thread_yield(void);
 

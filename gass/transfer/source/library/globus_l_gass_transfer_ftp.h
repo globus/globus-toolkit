@@ -548,10 +548,9 @@ globus_l_gass_transfer_ftp_extract_referral(
 #endif
 
 static
-void
+globus_bool_t
 globus_l_gass_transfer_ftp_callback_denied(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *                          time_stop,
     void *					arg);
 
 static

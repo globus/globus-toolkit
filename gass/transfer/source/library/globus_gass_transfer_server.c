@@ -18,10 +18,9 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
-void
+globus_bool_t
 globus_l_gass_transfer_callback_close_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *                          time_stop,
     void *					arg);
 #endif
 
@@ -355,7 +354,7 @@ globus_gass_transfer_register_accept(
 					    callback,
 					    user_arg);
 
-	if(*request == GLOBUS_NULL_HANDLE)
+	if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
 	{
 	    rc = GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
 	    goto error_exit;
@@ -893,10 +892,12 @@ globus_i_gass_transfer_close_listener(
 
         GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
-	    GLOBUS_NULL,
+	    GLOBUS_NULL /* callback handle */,
 	    &delay_time,
 	    globus_l_gass_transfer_callback_close_callback,
-	    (void *) listener);
+	    (void *) listener,
+	    GLOBUS_NULL /* wakeup func */,
+	    GLOBUS_NULL /* wakeup arg */);
 
 	break;
 
@@ -930,10 +931,9 @@ globus_i_gass_transfer_close_listener(
 }
 
 static
-void
+globus_bool_t
 globus_l_gass_transfer_callback_close_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_listener_t 		listener;
@@ -962,6 +962,7 @@ globus_l_gass_transfer_callback_close_callback(
     globus_i_gass_transfer_lock();
     globus_i_gass_transfer_listener_destroy(listener);
     globus_i_gass_transfer_unlock();
+    return GLOBUS_TRUE;
 }
 /* globus_l_gass_transfer_callback_close_callback() */
 

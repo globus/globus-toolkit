@@ -3,11 +3,7 @@
 
 /********************************************************************
  *
- *  This file defines the a priority queue for globus
- *  It is implemented using a binary heap (minheap) and does NOT have
- *  a fifo fallback for like priorities.  If you need fifo fallback,
- *  you should use a compound priority with the primary priority being
- *  the 'real' priority and the secondary being a serial number.
+ *  THis file defines the a time stamped queue for globus
  *
  ********************************************************************/
 
@@ -26,74 +22,75 @@
 
 EXTERN_C_BEGIN
 
-/*
- * if priority_1 comes after priority_2, return > 0
- * else if priority_1 comes before priority_2, return < 0
- * else return 0
- */
- 
-typedef int (*globus_priority_q_cmp_func_t)(
-    void *                                  priority_1,
-    void *                                  priority_2);
+#define __PRIORITY_Q_USE_I_MEM 1
 
-typedef struct globus_priority_q_s
+typedef int (*globus_priority_q_cmp_func_t)(
+    void *                                    priority_1,
+    void *                                    priority_2);
+
+typedef struct globus_priority_q_s 
 {
-    struct globus_l_priority_q_entry_s **   heap;
-    int                                     next_slot;
-    size_t                                  max_len;
-    globus_memory_t                         memory;
-    globus_priority_q_cmp_func_t            cmp_func;
+    globus_list_t * volatile       head;
+    globus_list_t * volatile       tail;
+
+    globus_priority_q_cmp_func_t   cmp_func;
+
+#if defined(__PRIORITY_Q_USE_I_MEM)
+    globus_memory_t                mem;
+    globus_bool_t                  mem_initialized;
+#endif
+
 } globus_priority_q_t;
 
-int
+int 
+globus_priority_q_fifo_cmp_func(
+    void *                                    priority_1,
+    void *                                    priority_2);
+
+extern int
 globus_priority_q_init(
-    globus_priority_q_t *               priority_q,
-    globus_priority_q_cmp_func_t        cmp_func);
+    globus_priority_q_t *                     priority_q,
+    globus_priority_q_cmp_func_t              cmp_func);
 
-int
+extern void
 globus_priority_q_destroy(
-    globus_priority_q_t *               priority_q);
+    globus_priority_q_t *                     priority_q);
 
-globus_bool_t
+extern globus_bool_t 
 globus_priority_q_empty(
-    globus_priority_q_t *               priority_q);
+    globus_priority_q_t *                     priority_q);
 
-int
+extern int 
 globus_priority_q_size(
-    globus_priority_q_t *               priority_q);
+    globus_priority_q_t *                     priority_q);
 
-int
+extern int
 globus_priority_q_enqueue(
-    globus_priority_q_t *               priority_q,
-    void *                              datum,
-    void *                              priority);
+    globus_priority_q_t *                     priority_q,
+    void *                                    datum,
+    void *                                    priority);
 
-void *
+extern void *
 globus_priority_q_remove(
-    globus_priority_q_t *               priority_q,
-    void *                              datum);
+    globus_priority_q_t *                     headp, 
+    void *                                    datum);
 
-/*
- * it is acceptable to modify the priority already stored within the queue
- * before making this call.  The old priority is not looked at
- */
-void *
-globus_priority_q_modify(
-    globus_priority_q_t *               priority_q,
-    void *                              datum,
-    void *                              new_priority);
-
-void *
+extern void *
 globus_priority_q_dequeue(
-    globus_priority_q_t *               priority_q);
+    globus_priority_q_t *                     priority_q);
 
-void *
+extern void *
 globus_priority_q_first(
-    globus_priority_q_t *               priority_q);
+    globus_priority_q_t *                     priority_q);
 
 void *
-globus_priority_q_first_priority(
-    globus_priority_q_t *               priority_q);
+globus_timeq_first_priority(
+    globus_priority_q_t *                     priority_q);
+
+void *
+globus_priority_q_priority_at(
+    globus_priority_q_t *                     priority_q,
+    int                                       element_index);
 
 EXTERN_C_END
 

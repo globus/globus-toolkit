@@ -158,6 +158,7 @@ typedef struct
      * NETLOGGER
      */
     globus_netlogger_handle_t *         nl_handle;
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 } globus_io_attr_t;
 
@@ -664,9 +665,6 @@ typedef struct
     globus_bool_t				oobinline;
     int						sndbuf;
     int						rcvbuf;
-    
-    globus_callback_space_t                     space;
-    
 } globus_i_io_socketattr_instance_t;
 #endif
 
@@ -868,7 +866,7 @@ struct globus_io_handle_s
     globus_i_io_tcpattr_instance_t		tcp_attr;
     globus_i_io_udpattr_instance_t		udp_attr;
     globus_i_io_fileattr_instance_t		file_attr;
-    
+
     /* buffer for reading GSSAPI wrapped data */
     globus_fifo_t 				wrapped_buffers;
     globus_fifo_t 				unwrapped_buffers;
@@ -876,26 +874,15 @@ struct globus_io_handle_s
     globus_io_handle_type_t			type;
 
     /* some handle state information */
-    globus_io_handle_state_t		        state;
+    volatile globus_io_handle_state_t		state;
     void *					user_pointer;
-    
-    /* blocking call indicators, necessary to deliver callbacks to correct
-     * space durring blocking calls
-     */
-    globus_bool_t                               blocking_read;
-    globus_bool_t                               blocking_write;
-    globus_bool_t                               blocking_except;
-    globus_bool_t                               blocking_cancel;
-    
-    struct globus_io_operation_info_s *         read_operation;
-    struct globus_io_operation_info_s *         write_operation;
-    struct globus_io_operation_info_s *         except_operation;
-    
+
     /* 
      *  NETLOGGER
      */
     char *                                      nl_event_id;
     globus_netlogger_handle_t *                 nl_handle;
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 };
 
@@ -1330,16 +1317,6 @@ globus_io_file_posix_convert(
  * The API functions in this section deal with the setting and
  * querying of attribute values.
  */
-
-globus_result_t 
-globus_io_attr_set_callback_space( 
-    globus_io_attr_t *                  attr, 
-    globus_callback_space_t             space);
-
-globus_result_t 
-globus_io_attr_get_callback_space( 
-    globus_io_attr_t *                  attr, 
-    globus_callback_space_t *           space);
 
 /*
  *  NETLOGGER STUFF

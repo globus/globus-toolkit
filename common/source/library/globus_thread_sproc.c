@@ -796,55 +796,6 @@ globus_mutex_unlock(globus_mutex_t *mutex)
     return rc;
 }
 
-
-/*
- * globus_condattr_setspace()
- */
-#undef globus_condattr_setspace
-int globus_condattr_setspace(
-    globus_condattr_t *                 attr,
-    int                                 space)
-{
-    return globus_callback_space_reference(space)
-        ? 1
-        : globus_callback_space_destroy(*attr),
-          *attr = space, 0;
-}
-
-/*
- * globus_condattr_getspace()
- */
-#undef globus_condattr_getspace
-int globus_condattr_getspace(
-    globus_condattr_t *                 attr,
-    int *                               space)
-{
-    *space = *attr;
-    return (0);
-}
-
-/*
- * globus_condattr_init()
- */
-#undef globus_condattr_init
-int globus_condattr_init(globus_condattr_t *attr)
-{
-    globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
-    *attr = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    
-    return 0;
-}
-
-/*
- * globus_condattr_destroy()
- */
-#undef globus_condattr_destroy
-int globus_condattr_destroy(globus_condattr_t *attr)
-{
-    globus_callback_space_destroy(*attr);
-    return (0);
-}
-
 #undef globus_cond_init
 int
 globus_cond_init(globus_cond_t *cond, globus_condattr_t *attr)
@@ -853,11 +804,6 @@ globus_cond_init(globus_cond_t *cond, globus_condattr_t *attr)
 
     globus_mutex_init(&cond->mutex, (globus_mutexattr_t *) GLOBUS_NULL);
     globus_fifo_init(&cond->queue);
-    
-    cond->space = attr ? *attr : GLOBUS_CALLBACK_GLOBAL_SPACE;
-    globus_callback_space_reference(cond->space);
-    
-    cond->poll_space = globus_callback_space_is_single(cond->space);
     
     return (rc);
 }
@@ -870,8 +816,7 @@ globus_cond_destroy(globus_cond_t *cond)
 
     globus_mutex_destroy(&cond->mutex);
     globus_fifo_destroy(&cond->queue);
-    globus_callback_space_destroy(cond->space);
-    
+
     return (rc);
 }
 
@@ -882,14 +827,7 @@ globus_cond_signal(globus_cond_t *cond)
     int						rc = 0;
 
     usema_t *					sema;
-    
-    if(cond->poll_space)
-    {
-        globus_callback_signal_poll();
-        
-        return 0;
-    }
-    
+
     globus_mutex_lock(&cond->mutex);
     {
 	sema = globus_fifo_dequeue(&cond->queue);
@@ -925,14 +863,7 @@ globus_cond_broadcast(globus_cond_t *cond)
 
     globus_fifo_t				queue;
     usema_t *					sema;
-    
-    if(cond->poll_space)
-    {
-        globus_callback_signal_poll();
-        
-        return 0;
-    }
-    
+
     globus_mutex_lock(&cond->mutex);
     {
 	globus_fifo_move(&queue, &cond->queue);
@@ -967,10 +898,8 @@ globus_cond_wait(globus_cond_t *cond,
     globus_i_thread_t *				thread;
 
     /* added by JB */
-    globus_thread_blocking_space_will_block(cond->space);
+    globus_thread_blocking_will_block();
 
-    if(!cond->poll_space)
-    {
     thread = (globus_i_thread_t *) globus_thread_self();
     sema = thread->sema;
 
@@ -1000,13 +929,6 @@ globus_cond_wait(globus_cond_t *cond,
 #	endif
     }
     globus_mutex_lock(mutex);
-    }
-    else
-    {
-        globus_mutex_unlock(mutex);
-        globus_callback_space_poll(&globus_i_abstime_infinity, cond->space);
-        globus_mutex_lock(mutex);
-    }
     
     return (rc);
 }
@@ -1022,11 +944,7 @@ globus_cond_timedwait(globus_cond_t *cond,
     globus_i_thread_t *				thread;
     int						save_errno = 0;
     int						fd;
-    
-    globus_thread_blocking_space_will_block(cond->space);
-    
-    if(!cond->poll_space)
-    {
+
     thread = (globus_i_thread_t *) globus_thread_self();
 
     sema = thread->timed_sema;
@@ -1072,6 +990,8 @@ globus_cond_timedwait(globus_cond_t *cond,
 	    fd_set			semaphore_set;
 	    struct timeval		timeout;
 	    
+            globus_thread_blocking_will_block();
+
 	    errno = 0;
 	    do
 	    {
@@ -1221,18 +1141,8 @@ globus_cond_timedwait(globus_cond_t *cond,
 
     }
     globus_mutex_lock(mutex);
+    
     errno = save_errno;
-    }
-    else
-    {
-        globus_mutex_unlock(mutex);
-        globus_callback_space_poll(abstime, cond->space);
-        globus_mutex_lock(mutex);
-        
-        save_errno = (time(GLOBUS_NULL) >= abstime->tv_sec) ? ETIMEDOUT : 0;
-    }
-    
-    
     return save_errno;
 } /* globus_cond_timedwait() */
 

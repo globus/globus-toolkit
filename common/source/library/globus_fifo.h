@@ -27,7 +27,6 @@ EXTERN_C_BEGIN
 typedef struct globus_fifo_s {
   globus_list_t * volatile head;
   globus_list_t * volatile tail;
-  unsigned long size;
 } globus_fifo_t;
 
 extern int

@@ -67,15 +67,7 @@ $DEBUG_ECHO executing qstat with job id $grami_job_id >> $grami_logfile
 
 	# Obtain job status from PBS qstat command
 
-# This line will cause the job to exit prematurely if the job id happens
-# to be longer than 16 characters.  In this case, the qstat command 
-# truncates the job id causing the grep to fail.  The script then thinks
-# that the job has finished! 
-#status=`${qstat} $grami_job_id | ${grep} $grami_job_id | ${awk} '{print $5}'`
-
-# A better way is to do a full query and then search for the status line.
-# This should work no matter what the length of the job id is.
-status=`${qstat} -f $grami_job_id | ${grep} -i job_state | ${awk} '{print $3}'`
+status=`${qstat} $grami_job_id | ${grep} $grami_job_id | ${awk} '{print $5}'`
 
 case $status in
      "Q") gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;;

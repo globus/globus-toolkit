@@ -11,9 +11,6 @@
 #if !defined(GLOBUS_INCLUDE_GLOBUS_THREAD)
 #define GLOBUS_INCLUDE_GLOBUS_THREAD 1
 
-
-#include "globus_common.h"
-
 #include <thread.h>
 #include <synch.h>
 
@@ -32,18 +29,12 @@ EXTERN_C_BEGIN
 
 typedef struct timespec      globus_abstime_t;
 
-typedef mutex_t		                globus_mutex_t;
-typedef thread_key_t  	                globus_thread_key_t;
-typedef int           	                globus_mutexattr_t;
-typedef int                             globus_condattr_t;
-typedef thread_t	                globus_thread_t;
-
-typedef struct
-{
-    cond_t                              cond;
-    globus_bool_t                       poll_space;
-    int                                 space;
-} globus_cond_t;
+typedef mutex_t		globus_mutex_t;
+typedef cond_t        	globus_cond_t;
+typedef thread_key_t  	globus_thread_key_t;
+typedef int           	globus_mutexattr_t;
+typedef int           	globus_condattr_t;
+typedef thread_t	globus_thread_t;
 
 typedef struct globus_i_threadattr_s
 {
@@ -85,6 +76,8 @@ extern void *globus_thread_getspecific(globus_thread_key_t key);
 
 #define globus_mutexattr_init(attr) 0 /* successful return */
 #define globus_mutexattr_destroy(attr) 0 /* successful return */
+#define globus_condattr_init(attr) 0 /* successful return */
+#define globus_condattr_destroy(attr) 0 /* successful return */
 
 #define globus_macro_threadattr_init(attr) \
 	((attr)->stacksize = globus_thread_all_global_vars.thread_attr.stacksize)
@@ -143,10 +136,10 @@ extern void *globus_thread_getspecific(globus_thread_key_t key);
     mutex_unlock( (mut) )
 
 #define globus_macro_cond_wait( cv, mut ) \
-    ( cond_wait((cv), (mut)) )
+    ( globus_thread_blocking_will_block(), cond_wait((cv), (mut)) )
 
 #define globus_macro_cond_timedwait( cv, mut, time ) \
-    ( cond_timedwait((cv), (mut), (time)) )
+    ( globus_thread_blocking_will_block(), cond_timedwait((cv), (mut), (time)) )
 
 #define globus_macro_cond_signal( cv ) \
     cond_signal( (cv) ) 
@@ -154,68 +147,8 @@ extern void *globus_thread_getspecific(globus_thread_key_t key);
 #define globus_macro_cond_broadcast( cv ) \
     cond_broadcast( (cv) )
 
-/* callback space handling macros */
-#define globus_macro_condattr_init(attr) \
-    (globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE), \
-    *(attr) = GLOBUS_CALLBACK_GLOBAL_SPACE)
-    
-#define globus_macro_condattr_destroy(attr) \
-    (globus_callback_space_destroy(*(attr)))
-
-#define globus_macro_cond_space_init(cv, attr) \
-    (((attr) ? \
-        ((cv)->space = *((int *)(attr))) : \
-        ((cv)->space = GLOBUS_CALLBACK_GLOBAL_SPACE)), \
-        globus_callback_space_reference((cv)->space), \
-        (cv)->poll_space = globus_callback_space_is_single((cv)->space), \
-        globus_macro_cond_init(&(cv)->cond, (attr)))
-
-#define globus_macro_cond_space_destroy(cv) \
-    (globus_callback_space_destroy((cv)->space), \
-    globus_macro_cond_destroy(&(cv)->cond))
-
-#define globus_macro_cond_space_wait(cv, mut) \
-    (globus_thread_blocking_space_will_block((cv)->space), \
-    (!((cv)->poll_space) ? \
-    (globus_macro_cond_wait(&(cv)->cond, (mut))) : \
-    (globus_mutex_unlock((mut)), \
-    globus_callback_space_poll(&globus_i_abstime_infinity, (cv)->space), \
-    globus_mutex_lock((mut)), 0)))
-
-#define globus_macro_cond_space_timedwait(cv, mut, abstime) \
-    (globus_thread_blocking_space_will_block((cv)->space), \
-    (!((cv)->poll_space) ? \
-    (globus_macro_cond_timedwait(&(cv)->cond, (mut), (abstime))) : \
-    (globus_mutex_unlock((mut)), \
-    globus_callback_space_poll((abstime), (cv)->space), \
-    globus_mutex_lock((mut)), \
-    (time(GLOBUS_NULL) >= (abstime)->tv_sec) ? ETIMEDOUT : 0)))
-    
-#define globus_macro_cond_space_signal(cv) \
-    (!((cv)->poll_space) ? \
-    (globus_macro_cond_signal(&(cv)->cond)) : \
-    (globus_callback_signal_poll(), 0))
-
-#define globus_macro_cond_space_broadcast(cv) \
-    (!((cv)->poll_space) ? \
-    (globus_macro_cond_broadcast(&(cv)->cond)) : \
-    (globus_callback_signal_poll(), 0))
-
-#define globus_macro_condattr_setspace(attr, space) \
-    ((globus_callback_space_reference((space)) \
-     ? 1 \
-     : (globus_callback_space_destroy(*(attr)), \
-       (*(attr) = (space)), 0)))
-
-#define globus_macro_condattr_getspace(attr, space) \
-    ((*(space) = *(attr)), 0)
-
 #ifdef USE_MACROS
 
-#define globus_condattr_init(attr) \
-    globus_macro_condattr_init(attr)
-#define globus_condattr_destroy(attr) \
-    globus_macro_condattr_destroy(attr)
 #define globus_threadattr_init(attr) \
     globus_macro_threadattr_init(attr)
 #define globus_threadattr_destroy(attr) \
@@ -255,21 +188,17 @@ extern void *globus_thread_getspecific(globus_thread_key_t key);
     globus_macro_mutex_unlock( mut )
 
 #define globus_cond_init( cv, attr ) \
-    globus_macro_cond_space_init( cv, attr )
+    globus_macro_cond_init( cv, attr )
 #define globus_cond_destroy( cv ) \
-    globus_macro_cond_space_destroy( cv )
+    globus_macro_cond_destroy( cv )
 #define globus_cond_wait( cv, mut ) \
-    globus_macro_cond_space_wait( cv, mut )
+    globus_macro_cond_wait( cv, mut )
 #define globus_cond_timedwait( cv, mut, time ) \
-    globus_macro_cond_space_timedwait( cv, mut, time )
+    globus_macro_cond_timedwait( cv, mut, time )
 #define globus_cond_signal( cv ) \
-    globus_macro_cond_space_signal( cv )
+    globus_macro_cond_signal( cv )
 #define globus_cond_broadcast( cv ) \
-    globus_macro_cond_space_broadcast( cv )
-#define globus_condattr_setspace(A,S) \
-    globus_macro_condattr_setspace(A,S)
-#define globus_condattr_getspace(A,S) \
-    globus_macro_condattr_getspace(A,S)
+    globus_macro_cond_broadcast( cv )
 
 #else  /* USE_MACROS */
 
@@ -312,25 +241,6 @@ extern int	globus_cond_timedwait(globus_cond_t *cond,
 				      globus_abstime_t * abstime);
 extern int	globus_cond_signal(globus_cond_t *cond);
 extern int	globus_cond_broadcast(globus_cond_t *cond);
-
-
-extern int
-globus_condattr_init(
-    globus_condattr_t *                 attr);
-
-extern int
-globus_condattr_destroy(
-    globus_condattr_t *                 attr);
-
-extern int
-globus_condattr_setspace(
-    globus_condattr_t *                 attr,
-    int                                 space);
-
-extern int
-globus_condattr_getspace(
-    globus_condattr_t *                 attr,
-    int *                               space);
 
 #endif /* USE_MACROS */
 

@@ -250,7 +250,7 @@ globus_io_register_write(
     globus_i_io_mutex_lock();
     
     globus_i_io_debug_printf(3,
-			     (stderr, "%s(): entering, "
+			     ("%s(): entering, "
 			      "fd=%d, nbytes=%lu\n",
 			      myname,
 			      handle->fd,
@@ -293,14 +293,6 @@ globus_io_register_write(
 					      nbytes,
 					      &iov,
 					      &iovcnt);
-    
-    if(rc == GLOBUS_SUCCESS)
-    {
-        rc = globus_i_io_start_operation(
-            handle,
-            GLOBUS_I_IO_WRITE_OPERATION);
-    }
-    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -323,30 +315,23 @@ globus_io_register_write(
 	/* No security wrapping was done, so we can send the buffer
 	 * with a single write
 	 */
-        rc = globus_i_io_register_operation(
-            handle,
-            globus_l_io_write_callback,
-            info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
+	rc = globus_i_io_register_write_func(handle,
+					     globus_l_io_write_callback,
+					     (void *) info,
+					     globus_l_io_write_info_destroy);
     }
     else
     {
 	/* Security wrapping was done, so the data may be spread over
 	 * multiple GSSAPI tokens in the iovec array.
 	 */
-        rc = globus_i_io_register_operation(
-            handle,
-            globus_l_io_writev_callback,
-            info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
+	rc = globus_i_io_register_write_func(handle,
+					     globus_l_io_writev_callback,
+					     (void *) info,
+					     globus_l_io_write_info_destroy);
     }
     if(rc != GLOBUS_SUCCESS)
     {
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
 	err = globus_error_get(rc);
 	globus_l_io_write_info_destroy(info);
 
@@ -356,7 +341,7 @@ globus_io_register_write(
     globus_i_io_mutex_unlock();
 
     globus_i_io_debug_printf(3,
-			    (stderr, "globus_io_register_write(): exiting\n"));
+			     ("globus_io_register_write(): exiting\n"));
     return GLOBUS_SUCCESS;
 
   error_exit:
@@ -452,7 +437,7 @@ globus_io_register_send(
     globus_i_io_mutex_lock();
     
     globus_i_io_debug_printf(3,
-			     (stderr, "%s(): entering, "
+			     ("%s(): entering, "
 			      "fd=%d, nbytes=%lu\n",
 			      myname,
 			      handle->fd,
@@ -508,14 +493,6 @@ globus_io_register_send(
 					      nbytes,
 					      &iov,
 					      &iovcnt);
-    
-    if(rc == GLOBUS_SUCCESS)
-    {
-        rc = globus_i_io_start_operation(
-            handle,
-            GLOBUS_I_IO_WRITE_OPERATION);
-    }
-    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -538,30 +515,23 @@ globus_io_register_send(
 	/* No security wrapping was done, so we can send the buffer
 	 * with a single write
 	 */
-	    rc = globus_i_io_register_operation(
-            handle,
-            globus_l_io_send_callback,
-            info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
+	rc = globus_i_io_register_write_func(handle,
+					     globus_l_io_send_callback,
+					     (void *) info,
+					     globus_l_io_write_info_destroy);
     }
     else
     {
 	/* Security wrapping was done, so the data may be spread over
 	 * multiple GSSAPI tokens in the iovec array.
 	 */
-	    rc = globus_i_io_register_operation(
-            handle,
-            globus_l_io_sendmsg_callback,
-            info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
+	rc = globus_i_io_register_write_func(handle,
+					     globus_l_io_sendmsg_callback,
+					     (void *) info,
+					     globus_l_io_write_info_destroy);
     }
     if(rc != GLOBUS_SUCCESS)
     {
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
 	err = globus_error_get(rc);
 	globus_l_io_write_info_destroy(info);
 
@@ -571,7 +541,7 @@ globus_io_register_send(
     globus_i_io_mutex_unlock();
 
     globus_i_io_debug_printf(3,
-			    (stderr, "globus_io_register_write(): exiting\n"));
+			     ("globus_io_register_write(): exiting\n"));
     return GLOBUS_SUCCESS;
 
   error_exit:
@@ -680,7 +650,7 @@ globus_io_register_writev(
     }
 
     globus_i_io_debug_printf(3,
-                          (stderr, "globus_io_register_writev(): entering\n"));
+                             ("globus_io_register_writev(): entering\n"));
 
 
     globus_i_io_mutex_lock();
@@ -730,14 +700,6 @@ globus_io_register_writev(
 					   iovcnt,
 					   &new_iov,
 					   &new_iovcnt);
-    
-    if(rc == GLOBUS_SUCCESS)
-    {
-        rc = globus_i_io_start_operation(
-            handle,
-            GLOBUS_I_IO_WRITE_OPERATION);
-    }
-    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -757,17 +719,12 @@ globus_io_register_writev(
 				    callback, /* iov_callback */
 				    callback_arg); /*argument*/
 
-    rc = globus_i_io_register_operation(
-        handle,
-        globus_l_io_writev_callback,
-        writev_info,
-        globus_l_io_write_info_destroy,
-        GLOBUS_TRUE,
-        GLOBUS_I_IO_WRITE_OPERATION);
-            
+    rc = globus_i_io_register_write_func(handle,
+					 globus_l_io_writev_callback,
+					 (void *) writev_info,
+					 globus_l_io_write_info_destroy);
     if(rc != GLOBUS_SUCCESS)
     {
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
 	err = globus_error_get(rc);
 	
 	globus_l_io_write_info_destroy(writev_info);
@@ -777,8 +734,7 @@ globus_io_register_writev(
 
     globus_i_io_mutex_unlock();
 
-    globus_i_io_debug_printf(3, 
-        (stderr, "nexus_fd_register_for_writev(): exiting\n"));
+    globus_i_io_debug_printf(3, ("nexus_fd_register_for_writev(): exiting\n"));
 
     return GLOBUS_SUCCESS;
 
@@ -1228,9 +1184,7 @@ globus_io_write(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-    
-    handle->blocking_write = GLOBUS_TRUE;
-    
+
     result = globus_io_register_write(handle,
 				     buf + try_wrote,
 				     nbytes - try_wrote,
@@ -1252,9 +1206,7 @@ globus_io_write(
     }
 
     globus_mutex_unlock(&monitor.mutex);
-    
-    handle->blocking_write = GLOBUS_FALSE;
-    
+
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes + try_wrote;
@@ -1337,7 +1289,7 @@ globus_io_send(
     globus_i_io_monitor_t		monitor;
     globus_result_t			result; 
     globus_size_t			try_wrote = 0;
-    
+
     result = globus_io_try_send(handle, 
 				buf, 
 				nbytes, 
@@ -1352,16 +1304,14 @@ globus_io_send(
 	return GLOBUS_SUCCESS;
     }
     try_wrote = *nbytes_written;
-    
+
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-    
-    handle->blocking_write = GLOBUS_TRUE;
-    
+
     result = globus_io_register_send(handle,
 				     buf + try_wrote,
 				     nbytes - try_wrote,
@@ -1384,9 +1334,7 @@ globus_io_send(
     }
 
     globus_mutex_unlock(&monitor.mutex);
-    
-    handle->blocking_write = GLOBUS_FALSE;
-        
+
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes + try_wrote;
@@ -1472,9 +1420,7 @@ globus_io_writev(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-    
-    handle->blocking_write = GLOBUS_TRUE;
-    
+
     result = globus_io_register_writev(handle,
 				       iov,
 				       iovcnt,
@@ -1496,9 +1442,7 @@ globus_io_writev(
     }
 
     globus_mutex_unlock(&monitor.mutex);
-    
-    handle->blocking_write = GLOBUS_FALSE;
-    
+
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes;
@@ -1580,7 +1524,7 @@ globus_i_io_try_write(
         if(handle->nl_handle) 
         {
             sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_NBYTES=%d",
+                "SOCK=%d GLOBUS_IO_NBYTES=%ld",
                 handle->fd,
                 n_written);
             globus_netlogger_write(
@@ -1595,7 +1539,7 @@ globus_i_io_try_write(
 
 	globus_i_io_debug_printf(
 	    5,
-	    (stderr, "globus_i_io_try_write(): write returned n_written=%d\n",
+	    ("globus_i_io_try_write(): write returned n_written=%d\n",
 	      (int) n_written));
 
 	/*
@@ -1623,7 +1567,7 @@ globus_i_io_try_write(
 	{
 	    globus_i_io_debug_printf(
 		5,
-        (stderr, "globus_i_io_try_write(): write returned -1 with errno=%d\n",
+		("globus_i_io_try_write(): write returned -1 with errno=%d\n",
 		 (int) save_errno));
 	    
 	    if (save_errno == EINTR)
@@ -1697,7 +1641,7 @@ globus_l_io_try_send(
 	
 	globus_i_io_debug_printf(
 	    5,
-	    (stderr, "globus_i_io_try_write(): write returned n_written=%d\n",
+	    ("globus_i_io_try_write(): write returned n_written=%d\n",
 	      (int) n_written));
 	
 	/*
@@ -1806,7 +1750,7 @@ globus_i_io_try_writev(
 	    iov,
 	    count_used);
 
-        sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%d",
+        sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%ld",
             handle->fd,
             n_written);
         globus_netlogger_write(
@@ -1820,7 +1764,7 @@ globus_i_io_try_writev(
 	
 	globus_i_io_debug_printf(
 	    5,
-	    (stderr, "globus_i_io_try_writev(): writev returned n_written=%d\n",
+	    ("globus_i_io_try_writev(): writev returned n_written=%d\n",
 	      (int) n_written));
 	
 	/*
@@ -1923,7 +1867,7 @@ globus_i_io_try_sendmsg(
 	
 	globus_i_io_debug_printf(
 	    5,
-	 (stderr, "globus_i_io_try_sendmsg(): sendmsg returned n_written=%d\n",
+	    ("globus_i_io_try_sendmsg(): sendmsg returned n_written=%d\n",
 	      (int) n_written));
 	
 	/*
@@ -2216,10 +2160,6 @@ globus_l_io_write_callback(
     }
     if(write_info->nbytes_written >= write_info->nbytes)
     {
-        globus_i_io_mutex_lock();
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-        globus_i_io_mutex_unlock();
-        
 	/* Write is satisfied, call back to user */
 	(*write_info->buf_callback)(write_info->arg,
 				    handle,
@@ -2231,34 +2171,18 @@ globus_l_io_write_callback(
     }
     else
     {
-        /* write not yet satisfied, so reregister with the event driver */
-        globus_i_io_mutex_lock();
-        
-        result = globus_i_io_register_operation(
-                handle,
-                globus_l_io_write_callback,
-                write_info,
-                globus_l_io_write_info_destroy,
-                GLOBUS_TRUE,
-                GLOBUS_I_IO_WRITE_OPERATION);
-
-        globus_i_io_mutex_unlock();
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto error_exit;
-        }
+	/* write not yet satisfied, so reregister with the event driver */
+	globus_i_io_mutex_lock();
+	globus_i_io_register_write_func(handle,
+					globus_l_io_write_callback,
+					(void *) write_info,
+					globus_l_io_write_info_destroy);
+	globus_i_io_mutex_unlock();
     }
 
     return;
     
   error_exit:
-    
-    globus_i_io_mutex_lock();
-    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-    globus_i_io_mutex_unlock();
-        
     (*write_info->buf_callback)(write_info->arg,
 				handle,
 				globus_error_put(err),
@@ -2337,10 +2261,6 @@ globus_l_io_send_callback(
     }
     if(write_info->nbytes_written >= write_info->nbytes)
     {
-        globus_i_io_mutex_lock();
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-        globus_i_io_mutex_unlock();
-        
 	/* Write is satisfied, call back to user */
 	(*write_info->buf_callback)(write_info->arg,
 				    handle,
@@ -2352,33 +2272,18 @@ globus_l_io_send_callback(
     }
     else
     {
-        /* write not yet satisfied, so reregister with the event driver */
-        globus_i_io_mutex_lock();
-        
-        result = globus_i_io_register_operation(
-            handle,
-            globus_l_io_send_callback,
-            write_info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
-
-        globus_i_io_mutex_unlock();
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto error_exit;
-        }
+	/* write not yet satisfied, so reregister with the event driver */
+	globus_i_io_mutex_lock();
+	globus_i_io_register_write_func(handle,
+					globus_l_io_send_callback,
+					(void *) write_info,
+					globus_l_io_write_info_destroy);
+	globus_i_io_mutex_unlock();
     }
 
     return;
     
   error_exit:
-    globus_i_io_mutex_lock();
-    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-    globus_i_io_mutex_unlock();
-    
     (*write_info->buf_callback)(write_info->arg,
 				handle,
 				globus_error_put(err),
@@ -2482,11 +2387,6 @@ globus_l_io_writev_callback(
 	{
 	    report_amt = writev_info->nbytes;
 	}
-	
-	globus_i_io_mutex_lock();
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-        globus_i_io_mutex_unlock();
-    
 	if(writev_info->iov_callback)
 	{
 	    (*writev_info->iov_callback)(writev_info->arg,
@@ -2509,31 +2409,16 @@ globus_l_io_writev_callback(
     }
     else
     {
-        globus_i_io_mutex_lock();
-        
-        result = globus_i_io_register_operation(
-            handle,
-            globus_l_io_writev_callback,
-            writev_info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
-
-        globus_i_io_mutex_unlock();
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto error_exit;
-        }
+	globus_i_io_mutex_lock();
+	globus_i_io_register_write_func(handle,
+					globus_l_io_writev_callback,
+					(void *) writev_info,
+					globus_l_io_write_info_destroy);
+	globus_i_io_mutex_unlock();
     }
     return;
 
   error_exit:
-    globus_i_io_mutex_lock();
-    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-    globus_i_io_mutex_unlock();
-    
     /* Hmm... we may write more than the original IOVs
      * add up to, if we are using security wrapping,
      * so we will just say we wrote what were expected
@@ -2662,11 +2547,6 @@ globus_l_io_sendmsg_callback(
 	{
 	    report_amt = writev_info->nbytes;
 	}
-	
-	globus_i_io_mutex_lock();
-        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-        globus_i_io_mutex_unlock();
-    
 	if(writev_info->iov_callback)
 	{
 	    (*writev_info->iov_callback)(writev_info->arg,
@@ -2689,31 +2569,16 @@ globus_l_io_sendmsg_callback(
     }
     else
     {
-        globus_i_io_mutex_lock();
-        
-        result = globus_i_io_register_operation(
-            handle,
-            globus_l_io_writev_callback,
-            writev_info,
-            globus_l_io_write_info_destroy,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_WRITE_OPERATION);
-
-        globus_i_io_mutex_unlock();
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto error_exit;
-        }
+	globus_i_io_mutex_lock();
+	globus_i_io_register_write_func(handle,
+					globus_l_io_writev_callback,
+					(void *) writev_info,
+					globus_l_io_write_info_destroy);
+	globus_i_io_mutex_unlock();
     }
     return;
 
   error_exit:
-    globus_i_io_mutex_lock();
-    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-    globus_i_io_mutex_unlock();
-    
     /* Hmm... we may write more than the original IOVs
      * add up to, if we are using security wrapping,
      * so we will just say we wrote what were expected
