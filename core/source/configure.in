@@ -40,7 +40,7 @@ AC_ARG_ENABLE(internal-doc,
 	fi
 ],
 [
-	AUTOMAKE_OPTS=""
+	AUTOMAKE_OPTS="no-dependencies"
 ])
 
 AC_SUBST(AUTOMAKE_OPTS)
