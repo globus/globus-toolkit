@@ -30,6 +30,7 @@
 #include "globus_duct_control.h"
 #include "globus_gass_cache.h"
 #include "globus_io.h"
+#include "globus_gass_transfer.h"
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
@@ -572,6 +573,15 @@ globus_l_gram_job_manager_activate(void)
 	fprintf(stderr, "nexus module activation failed with rc=%d\n", rc);
 	goto nexus_failed;
     }
+
+    rc = globus_module_activate(GLOBUS_GASS_TRANSFER_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass transfer module activation failed with rc=%d\n", rc);
+	goto gass_transfer_failed;
+    }
+
+gass_transfer_failed:
 nexus_failed:
 duct_control_failed:
 gass_cache_failed:

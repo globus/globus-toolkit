@@ -103,7 +103,10 @@ main(int argc, char *argv[])
 	record = globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
-	printf("%s\n", record->attribute);
+	if(record->publishable)
+	{
+	    printf("%s\n", record->attribute);
+	}
     }
 
 validation_init_failed:

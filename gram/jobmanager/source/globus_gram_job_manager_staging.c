@@ -77,6 +77,11 @@ globus_gram_job_manager_staging_create_list(
 		    globus_list_first(list));
 	    list = globus_list_rest(list);
 
+	    if(globus_list_size(pairs) != 2)
+	    {
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED;
+	    }
+
 	    from = globus_list_first(pairs);
 	    to = globus_list_first(globus_list_rest(pairs));
 
@@ -150,8 +155,10 @@ globus_gram_job_manager_staging_remove(
     {
 	item = globus_list_remove(list, node);
 
-	globus_libc_free(item->from);
-	globus_libc_free(item->to);
+	globus_rsl_value_free_recursive(item->from);
+	globus_rsl_value_free_recursive(item->to);
+	globus_libc_free(item->evaled_from);
+	globus_libc_free(item->evaled_to);
 	globus_libc_free(item);
 
 	globus_gram_job_manager_request_log(
@@ -351,6 +358,9 @@ globus_l_gram_job_manager_staging_add_pair(
 	goto info_calloc_failed;
     }
 
+    info->from = globus_rsl_value_copy_recursive(from);
+    info->to = globus_rsl_value_copy_recursive(to);
+
     globus_gram_job_manager_rsl_evaluate_value(
 	    request,
 	    info->from,
@@ -375,23 +385,17 @@ globus_l_gram_job_manager_staging_add_pair(
     if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM) == 0)
     {
 	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN;
-	info->from = globus_rsl_value_copy_recursive(from);
-	info->to = globus_rsl_value_copy_recursive(to);
 	globus_list_insert(&request->stage_in_todo, info);
     }
     else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM)== 0)
     {
 	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED;
-	info->from = globus_rsl_value_copy_recursive(from);
-	info->to = globus_rsl_value_copy_recursive(to);
 	globus_list_insert(&request->stage_in_shared_todo, info);
 
     }
     else if(strcmp(type, GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM) == 0)
     {
 	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
-	info->from = globus_rsl_value_copy_recursive(from);
-	info->to = globus_rsl_value_copy_recursive(to);
 	globus_list_insert(&request->stage_out_todo, info);
     }
     return GLOBUS_SUCCESS;

@@ -64,6 +64,12 @@ typedef struct
      * when, if ever, this RSL parameter is valid.
      */
     int					valid_when;
+
+    /**
+     * Boolean indicating whether this attribute should be published
+     * in the MDS. 
+     */
+    globus_bool_t			publishable;
 }
 globus_gram_job_manager_validation_record_t;
 

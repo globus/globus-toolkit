@@ -611,18 +611,30 @@ globus_gram_job_manager_rsl_request_fill(
     tmp_param = GLOBUS_NULL;
 
     /* Check for files to stage in */
-    globus_gram_job_manager_staging_create_list(request);
+    rc = globus_gram_job_manager_staging_create_list(request);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	goto error_exit;
+    }
 
     /* Initialize a duct control handle and add appropriate environment
      * variables to the job execution environment.
      *
      * (Depends on myjob and count parameters)
      */
-    globus_l_gram_job_manager_setup_duct(request, count, gram_myjob);
+    rc = globus_l_gram_job_manager_setup_duct(request, count, gram_myjob);
 
     globus_libc_free(gram_myjob);
 
+    if(rc != GLOBUS_SUCCESS)
+    {
+	goto error_exit;
+    }
+
     return(GLOBUS_SUCCESS);
+
+error_exit:
+    return rc;
 }
 /* globus_gram_job_manager_rsl_request_fill() */
 
@@ -795,7 +807,15 @@ globus_gram_job_manager_rsl_evaluate_value(
 
     copy = globus_rsl_value_copy_recursive(value);
 
-    globus_rsl_value_eval(copy, &request->symbol_table, value_string, 0);
+    if(globus_rsl_value_is_literal(copy))
+    {
+	*value_string =
+	    globus_libc_strdup(globus_rsl_value_literal_get_string(copy));
+    }
+    else
+    {
+	globus_rsl_value_eval(copy, &request->symbol_table, value_string, 0);
+    }
 
     globus_rsl_value_free_recursive(copy);
 

@@ -1853,8 +1853,11 @@ globus_l_gram_job_manager_script_staged_done(
 	    from,
 	    to);
 
-    globus_gram_job_manager_state_file_write(
-	    request);
+    if(request->save_state)
+    {
+	globus_gram_job_manager_state_file_write(
+		request);
+    }
 
     globus_libc_free(from);
     globus_libc_free(to);

@@ -16,6 +16,7 @@ EOF
 
     foreach(keys %values)
     {
+	next if($values{$_}{Publish} eq "false");
 	print <<EOF;
 
 \@anchor globus_gram_rsl_attribute_$_

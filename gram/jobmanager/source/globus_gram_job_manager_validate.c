@@ -458,6 +458,8 @@ globus_l_gram_job_manager_read_validation_file(
 
 		goto error_exit;
 	    }
+	    /* Default to publishable */
+	    tmp->publishable = GLOBUS_TRUE;
 	}
 	/* Compare token names against known attributes */
 	if(strcasecmp(attribute, "attribute") == 0)
@@ -532,6 +534,19 @@ globus_l_gram_job_manager_read_validation_file(
 	else if(strcasecmp(attribute, "values") == 0)
 	{
 	    tmp->enumerated_values = value;
+	}
+	else if(strcasecmp(attribute, "publish") == 0)
+	{
+	    if(strcasecmp(value, "true") == 0)
+	    {
+		tmp->publishable = GLOBUS_TRUE;
+	    }
+	    else
+	    {
+		tmp->publishable = GLOBUS_FALSE;
+	    }
+	    globus_libc_free(value);
+	    value = GLOBUS_NULL;
 	}
 	else
 	{
@@ -620,8 +635,35 @@ globus_l_gram_job_manager_attribute_match(
 {
     globus_gram_job_manager_validation_record_t *
 					tmp = datum;
+    char *				str1 = tmp->attribute;
+    char *				str2 = args;
 
-    return (strcmp(tmp->attribute, args) == 0);
+    while(str1 && *str1 && str2 && *str2)
+    {
+	if(*str1 == '_')
+	{
+	    str1++;
+	}
+	else if(*str2 == '_')
+	{
+	    str2++;
+	}
+	else if(tolower(*str1) == tolower(*str2))
+	{
+	    str1++;
+	    str2++;
+	}
+	else
+	{
+	    return GLOBUS_FALSE;
+	}
+    }
+    if(str1 && str2 && (*str1 || *str2))
+    {
+	return GLOBUS_FALSE;
+    }
+
+    return GLOBUS_TRUE;
 }
 /* globus_l_gram_job_manager_attribute_match() */
 

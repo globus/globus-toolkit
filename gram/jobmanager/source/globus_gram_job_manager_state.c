@@ -328,6 +328,15 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+	rc = globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
+		request);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    request->failure_code = rc;
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
 	
 	/* Need to do this before unique id is set */
 	rc = globus_gram_job_manager_rsl_eval_one_attribute(
@@ -366,15 +375,6 @@ globus_gram_job_manager_state_machine(
 	    request->scratch_dir_base = globus_libc_strdup(request->home);
 	}
 
-	rc = globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
-		request);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->failure_code = rc;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
-	}
 	rc = globus_gram_job_manager_rsl_eval_one_attribute(
 		request,
 		GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM,
