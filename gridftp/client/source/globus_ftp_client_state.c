@@ -2278,13 +2278,28 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO:
     {
         globus_url_t                    dest_url;
+	globus_bool_t			rfc1738_url;
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-        result = (globus_result_t) globus_url_parse(client_handle->dest_url,
-                                       &dest_url);
+	result = globus_ftp_client_handleattr_get_rfc1738_url(&(client_handle->attr),
+						     &rfc1738_url);
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	
+        if(rfc1738_url==GLOBUS_TRUE)
+	{
+	    result = (globus_result_t) globus_url_parse_rfc1738(client_handle->dest_url,
+                                       		    &dest_url);
+	}
+	else
+	{
+	    result = (globus_result_t) globus_url_parse(client_handle->dest_url,							 &dest_url);
+	}
 
         if(result != GLOBUS_SUCCESS)
 	{

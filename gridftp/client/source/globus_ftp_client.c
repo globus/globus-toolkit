@@ -321,6 +321,7 @@ globus_i_ftp_op_to_string(
     static const char * transfer = "GLOBUS_FTP_CLIENT_TRANSFER";
     static const char * mdtm     = "GLOBUS_FTP_CLIENT_MDTM";
     static const char * size     = "GLOBUS_FTP_CLIENT_SIZE";
+    static const char * cksm     = "GLOBUS_FTP_CLIENT_CKSM";
     static const char * idle     = "GLOBUS_FTP_CLIENT_IDLE";
     static const char * invalid  = "INVALID OPERATION";
 
@@ -338,6 +339,8 @@ globus_i_ftp_op_to_string(
 	return mdtm;
     case GLOBUS_FTP_CLIENT_SIZE:
 	return size;
+    case GLOBUS_FTP_CLIENT_CKSM:
+	return cksm;
     case GLOBUS_FTP_CLIENT_LIST:
 	return list;
     case GLOBUS_FTP_CLIENT_NLST:
@@ -396,6 +399,7 @@ globus_i_ftp_target_state_to_string(
     static const char * mode                    = "MODE";
     static const char * setup_size              = "SETUP_SIZE";
     static const char * size                    = "SIZE";
+    static const char * cksm                    = "CKSM";
     static const char * setup_dcau              = "SETUP_DCAU";
     static const char * dcau                    = "DCAU";
     static const char * setup_pbsz              = "SETUP_PBSZ";
@@ -491,6 +495,9 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SIZE:
             return size;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_CKSM:
+            return cksm;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU:
             return setup_dcau;

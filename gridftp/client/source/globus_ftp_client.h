@@ -468,6 +468,16 @@ globus_ftp_client_handleattr_get_cache_all(
     globus_bool_t *				cache_all);
 
 globus_result_t
+globus_ftp_client_handleattr_set_rfc1738_url(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				rfc1738_url);
+
+globus_result_t
+globus_ftp_client_handleattr_get_rfc1738_url(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				rfc1738_url);
+
+globus_result_t
 globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *		attr,
     globus_netlogger_handle_t *	                nl_handle);
@@ -879,6 +889,15 @@ globus_ftp_client_operationattr_copy(
     globus_ftp_client_operationattr_t *		dst,
     const globus_ftp_client_operationattr_t *	src);
 
+globus_result_t
+globus_ftp_client_operationattr_set_rfc1738_url(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t				rfc1738_url);
+
+globus_result_t
+globus_ftp_client_operationattr_get_rfc1738_url(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *				rfc1738_url);
 #endif
 
 /**

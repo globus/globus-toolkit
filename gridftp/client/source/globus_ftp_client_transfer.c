@@ -1288,8 +1288,10 @@ globus_ftp_client_move(
     globus_object_t *				err;
     int                                         rc;
     globus_bool_t				registered;
+    globus_bool_t  				rfc1738_url;
     globus_url_t                                url;
     globus_i_ftp_client_handle_t *		handle;
+    globus_ftp_client_handleattr_t		handleattr;
     static char * myname = "globus_ftp_client_move";
 
     /* Check arguments for validity */
@@ -1361,9 +1363,20 @@ globus_ftp_client_move(
 	goto free_source_url_exit;
     }
 
+    handleattr=&(handle->attr);
+    globus_ftp_client_handleattr_get_rfc1738_url(&handleattr,
+		    				    &rfc1738_url);
 
-    rc = globus_url_parse(dest_url,
-                          &url);
+    if(rfc1738_url)
+    {
+	 rc = globus_url_parse_rfc1738(dest_url,
+			 	       &url);
+    }
+    else
+    {
+         rc = globus_url_parse(dest_url,
+                               &url);
+    }
     
     if(rc != GLOBUS_SUCCESS)
     {
@@ -3872,8 +3885,7 @@ abort:
 /* globus_ftp_client_size() */
 /*@}*/
 
-/**
- * @name Cksm 
+ /* @name Cksm 
  */
 /*@{*/
 /**
@@ -4126,6 +4138,7 @@ abort:
 /* globus_ftp_client_cksm() */
 /*@}*/
 /**
+ *
  * @name Abort
  */
 /*@{*/

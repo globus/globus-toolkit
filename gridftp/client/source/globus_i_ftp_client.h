@@ -125,6 +125,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               read_all;
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
     void *                                      read_all_intermediate_callback_arg;
+    globus_bool_t				rfc1738_url;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -165,6 +166,12 @@ typedef struct globus_i_ftp_client_handleattr_t
      * ftp operations.
      */
     globus_bool_t                               cache_all;
+
+    /**
+     * parse all URLs for caching with RFC1738 compliant parser
+     */
+
+    globus_bool_t				rfc1738_url;
 
     /** 
      * List of cached URLs.
@@ -803,12 +810,14 @@ globus_i_ftp_client_can_reuse_data_conn(
 globus_result_t
 globus_i_ftp_client_cache_add(
     globus_list_t **				cache,
-    const char *				url);
+    const char *				url,
+    globus_bool_t				rfc1738_url);
 
 globus_result_t
 globus_i_ftp_client_cache_remove(
     globus_list_t **				cache,
-    const char *				url);
+    const char *				url,
+    globus_bool_t                               rfc1738_url);
 
 globus_result_t
 globus_i_ftp_client_cache_destroy(

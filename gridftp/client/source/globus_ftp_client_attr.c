@@ -245,6 +245,62 @@ globus_ftp_client_handleattr_get_cache_all(
 /* globus_ftp_client_handleattr_get_cache_all() */
 /*@}*/
 
+globus_result_t
+globus_ftp_client_handleattr_set_rfc1738_url(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_bool_t				rfc1738_url)
+{
+    globus_object_t *				err = GLOBUS_SUCCESS;
+    globus_i_ftp_client_handleattr_t *		i_attr;
+    static char * myname = "globus_ftp_client_handleattr_set_rfc1738_url";
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
+
+    i_attr->rfc1738_url = rfc1738_url;
+
+    return GLOBUS_SUCCESS;
+
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_set_rfc1738_url() */
+
+globus_result_t
+globus_ftp_client_handleattr_get_rfc1738_url(
+    const globus_ftp_client_handleattr_t *	attr,
+    globus_bool_t *				rfc1738_url)
+{
+    const globus_i_ftp_client_handleattr_t *	i_attr;
+    globus_object_t *				err = GLOBUS_SUCCESS;
+    static char * myname = "globus_ftp_client_handleattr_get_rfc1738_url";
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    if(rfc1738_url == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("rfc1738_url");
+
+	goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_handleattr_t **) attr;
+    (*rfc1738_url) = i_attr->rfc1738_url;
+
+    return GLOBUS_SUCCESS;
+ error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handleattr_get_rfc1738_url() */
+/*@}*/
 /**
  * @name URL Caching
  */
@@ -279,7 +335,9 @@ globus_ftp_client_handleattr_add_cached_url(
 
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
-    return globus_i_ftp_client_cache_add(&i_attr->url_cache, url);
+    return globus_i_ftp_client_cache_add(&i_attr->url_cache, 
+		    			 url,
+					 &i_attr->rfc1738_url);
 }
 /* globus_ftp_client_handleattr_add_cached_url() */
 
@@ -302,7 +360,9 @@ globus_ftp_client_handleattr_remove_cached_url(
 
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
-    return globus_i_ftp_client_cache_remove(&i_attr->url_cache, url);
+    return globus_i_ftp_client_cache_remove(&i_attr->url_cache,
+		   			    url,
+					    &i_attr->rfc1738_url);
 }
 /* globus_ftp_client_handleattr_remove_cached_url() */
 /*@}*/
@@ -2312,6 +2372,7 @@ globus_i_ftp_client_handleattr_copy(
     }
     
     dest->cache_all = src->cache_all;
+    dest->rfc1738_url = src->rfc1738_url;
     dest->nl_handle = src->nl_handle;
     dest->nl_ftp = src->nl_ftp;
     dest->nl_io = src->nl_io;
