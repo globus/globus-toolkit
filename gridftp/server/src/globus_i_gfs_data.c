@@ -988,8 +988,16 @@ globus_i_gfs_data_request_passive(
         }
         else
         {
-            cs = globus_common_create_string(
-                "%s:%d", handle->info.interface, (int) address.port);
+            if(strchr(handle->info.interface, ':')
+            {
+                cs = globus_common_create_string(
+                    "[%s]:%d", handle->info.interface, (int) address.port);
+            }
+            else
+            {
+                cs = globus_common_create_string(
+                    "%s:%d", handle->info.interface, (int) address.port);
+            }
         }
         
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
