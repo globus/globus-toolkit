@@ -3,6 +3,31 @@
 #include "globus_xio_file_driver.h"
 #include "version.h"
 
+GlobusDebugDefine(GLOBUS_XIO_FILE);
+
+#define GlobusXIOFileDebugPrintf(level, message)                            \
+    GlobusDebugPrintf(GLOBUS_XIO_FILE, level, message)
+
+#define GlobusXIOFileDebugEnter()                                           \
+    GlobusXIOFileDebugPrintf(                                               \
+        GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
+        ("[%s] Entering\n", _xio_name))
+        
+#define GlobusXIOFileDebugExit()                                            \
+    GlobusXIOFileDebugPrintf(                                               \
+        GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
+        ("[%s] Exiting\n", _xio_name))
+
+#define GlobusXIOFileDebugExitWithError()                                   \
+    GlobusXIOFileDebugPrintf(                                               \
+        GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
+        ("[%s] Exiting with error\n", _xio_name))
+
+enum globus_l_xio_error_levels
+{
+    GLOBUS_L_XIO_FILE_DEBUG_TRACE       = 1
+};
+
 static
 int
 globus_l_xio_file_activate(void);
@@ -63,9 +88,26 @@ static
 int
 globus_l_xio_file_activate(void)
 {
+    int                                 rc;
+    
     GlobusXIOName(globus_l_xio_file_activate);
     
-    return globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+    GlobusDebugInit(GLOBUS_XIO_FILE, TRACE);
+    
+    GlobusXIOFileDebugEnter();
+    
+    rc = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_activate;
+    }
+    
+    GlobusXIOFileDebugExit();
+    return GLOBUS_SUCCESS;
+
+error_activate:
+    GlobusXIOFileDebugExitWithError();
+    return rc;
 }
 
 static
@@ -74,7 +116,14 @@ globus_l_xio_file_deactivate(void)
 {
     GlobusXIOName(globus_l_xio_file_deactivate);
     
-    return globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+    GlobusXIOFileDebugEnter();
+    
+    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+    
+    GlobusXIOFileDebugExit();
+    GlobusDebugDestroy(GLOBUS_XIO_FILE);
+    
+    return GLOBUS_SUCCESS;
 }
 
 /*
@@ -89,6 +138,7 @@ globus_l_xio_file_attr_init(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_attr_init);
     
+    GlobusXIOFileDebugEnter();
     /*
      *  create a file attr structure and intialize its values
      */
@@ -101,10 +151,12 @@ globus_l_xio_file_attr_init(
     
     memcpy(attr, &globus_l_xio_file_attr_default, sizeof(globus_l_attr_t));
     *out_attr = attr;
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 
 error_attr:
+    GlobusXIOFileDebugExitWithError();
     return result;
 }
 
@@ -122,7 +174,9 @@ globus_l_xio_file_attr_cntl(
     int *                               out_int;
     globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_file_attr_cntl);
-
+    
+    GlobusXIOFileDebugEnter();
+    
     attr = (globus_l_attr_t *) driver_attr;
     switch(cmd)
     {
@@ -160,10 +214,12 @@ globus_l_xio_file_attr_cntl(
         break;
 
       default:
+        GlobusXIOFileDebugExitWithError();
         return GlobusXIOErrorInvalidCommand(cmd);
         break;
     }
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -179,7 +235,9 @@ globus_l_xio_file_attr_copy(
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_attr_copy);
-
+    
+    GlobusXIOFileDebugEnter();
+    
     attr = (globus_l_attr_t *) globus_malloc(sizeof(globus_l_attr_t));
     if(!attr)
     {
@@ -189,10 +247,12 @@ globus_l_xio_file_attr_copy(
     
     memcpy(attr, src, sizeof(globus_l_attr_t));
     *dst = attr;
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 
 error_attr:
+    GlobusXIOFileDebugExitWithError();
     return result;
 }
 
@@ -206,8 +266,11 @@ globus_l_xio_file_attr_destroy(
 {
     GlobusXIOName(globus_l_xio_file_attr_destroy);
     
+    GlobusXIOFileDebugEnter();
+    
     globus_free(driver_attr);
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -225,6 +288,8 @@ globus_l_xio_file_target_init(
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_target_init);
+    
+    GlobusXIOFileDebugEnter();
     
     attr = (globus_l_attr_t *) driver_attr;
     
@@ -255,12 +320,14 @@ globus_l_xio_file_target_init(
     
     *out_target = target;
 
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 
 error_pathname:
     globus_free(target);
     
 error_target:
+    GlobusXIOFileDebugExitWithError();
     return result;
 }
 
@@ -275,6 +342,8 @@ globus_l_xio_file_target_destroy(
     globus_l_target_t *                 target;
     GlobusXIOName(globus_l_xio_file_target_destroy);
     
+    GlobusXIOFileDebugEnter();
+    
     target = (globus_l_target_t *) driver_target;
     
     if(target->pathname)
@@ -282,7 +351,8 @@ globus_l_xio_file_target_destroy(
         globus_free(target->pathname);
     }
     globus_free(target);
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -294,6 +364,8 @@ globus_l_xio_file_handle_init(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_handle_init);
     
+    GlobusXIOFileDebugEnter();
+    
     *handle = (globus_l_handle_t *) globus_malloc(sizeof(globus_l_handle_t));
     if(!*handle)
     {
@@ -301,9 +373,11 @@ globus_l_xio_file_handle_init(
         goto error_handle;
     }
     
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 
 error_handle:
+    GlobusXIOFileDebugExitWithError();
     return result;    
 }
 
@@ -314,7 +388,11 @@ globus_l_xio_file_handle_destroy(
 {
     GlobusXIOName(globus_l_xio_file_handle_destroy);
     
+    GlobusXIOFileDebugEnter();
+    
     globus_free(handle);
+    
+    GlobusXIOFileDebugExit();
 }
 
 typedef struct
@@ -332,6 +410,8 @@ globus_l_xio_file_system_open_cb(
     globus_l_open_info_t *              open_info;
     GlobusXIOName(globus_l_xio_file_system_open_cb);
     
+    GlobusXIOFileDebugEnter();
+    
     open_info = (globus_l_open_info_t *) user_arg;
     
     if(result != GLOBUS_SUCCESS)
@@ -347,6 +427,8 @@ globus_l_xio_file_system_open_cb(
         result);
     
     globus_free(open_info);
+    
+    GlobusXIOFileDebugExit();
 }
 
 /*
@@ -366,6 +448,8 @@ globus_l_xio_file_open(
     globus_result_t                     result;
     globus_l_open_info_t *              open_info;
     GlobusXIOName(globus_l_xio_file_open);
+    
+    GlobusXIOFileDebugEnter();
     
     target = (globus_l_target_t *) driver_target;
     attr = (globus_l_attr_t *) 
@@ -412,7 +496,8 @@ globus_l_xio_file_open(
         handle->handle = target->handle;
         GlobusXIODriverFinishedOpen(context, handle, op, GLOBUS_SUCCESS);
     }
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
     
 error_register:
@@ -422,6 +507,7 @@ error_info:
     globus_l_xio_file_handle_destroy(handle);
 
 error_handle:
+    GlobusXIOFileDebugExitWithError();
     return result;
 }
 
@@ -436,6 +522,8 @@ globus_l_xio_file_system_close_cb(
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_system_close_cb);
     
+    GlobusXIOFileDebugEnter();
+    
     op = (globus_xio_operation_t) user_arg;
     
     context = GlobusXIOOperationGetContext(op);
@@ -444,6 +532,8 @@ globus_l_xio_file_system_close_cb(
     GlobusXIODriverFinishedClose(op, result);
     globus_xio_driver_context_close(context);
     globus_l_xio_file_handle_destroy(handle);
+    
+    GlobusXIOFileDebugExit();
 }
 
 /*
@@ -461,6 +551,8 @@ globus_l_xio_file_close(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_close);
 
+    GlobusXIOFileDebugEnter();
+    
     handle = (globus_l_handle_t *) driver_handle;
         
     result = globus_xio_system_register_close(
@@ -474,13 +566,15 @@ globus_l_xio_file_close(
             "globus_xio_system_register_close", result);
         goto error_register;
     }
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
     
 error_register:
     globus_xio_driver_context_close(context);
     globus_l_xio_file_handle_destroy(handle);
     
+    GlobusXIOFileDebugExitWithError();
     return result;
 }
 
@@ -494,8 +588,12 @@ globus_l_xio_file_system_read_cb(
     globus_xio_operation_t              op;
     GlobusXIOName(globus_l_xio_file_system_read_cb);
     
+    GlobusXIOFileDebugEnter();
+    
     op = (globus_xio_operation_t) user_arg;
     GlobusXIODriverFinishedRead(op, result, nbytes);
+    
+    GlobusXIOFileDebugExit();
 }
 
 /*
@@ -512,6 +610,8 @@ globus_l_xio_file_read(
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_read);
 
+    GlobusXIOFileDebugEnter();
+    
     handle = (globus_l_handle_t *) driver_handle;
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
@@ -539,6 +639,8 @@ globus_l_xio_file_read(
             globus_l_xio_file_system_read_cb,
             op);
     }
+    
+    GlobusXIOFileDebugExit();
 }
 
 static
@@ -551,8 +653,12 @@ globus_l_xio_file_system_write_cb(
     globus_xio_operation_t              op;
     GlobusXIOName(globus_l_xio_file_system_write_cb);
     
+    GlobusXIOFileDebugEnter();
+    
     op = (globus_xio_operation_t) user_arg;
     GlobusXIODriverFinishedWrite(op, result, nbytes);
+    
+    GlobusXIOFileDebugExit();
 }
 
 /*
@@ -568,7 +674,9 @@ globus_l_xio_file_write(
 {
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_write);
-
+    
+    GlobusXIOFileDebugEnter();
+    
     handle = (globus_l_handle_t *) driver_handle;
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
@@ -596,6 +704,8 @@ globus_l_xio_file_write(
             globus_l_xio_file_system_write_cb,
             op);
     }
+    
+    GlobusXIOFileDebugExit();
 }
 
 static
@@ -609,7 +719,9 @@ globus_l_xio_file_cntl(
     globus_off_t *                      offset;
     int                                 whence;
     GlobusXIOName(globus_l_xio_file_cntl);
-
+    
+    GlobusXIOFileDebugEnter();
+    
     handle = (globus_l_handle_t *) driver_handle;
     switch(cmd)
     {
@@ -629,7 +741,8 @@ globus_l_xio_file_cntl(
         return GlobusXIOErrorInvalidCommand(cmd);
         break;
     }
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -642,6 +755,8 @@ globus_l_xio_file_init(
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_init);
+    
+    GlobusXIOFileDebugEnter();
     
     /* I dont support any driver options, so I'll ignore the ap */
     
@@ -675,10 +790,12 @@ globus_l_xio_file_init(
         globus_l_xio_file_attr_destroy);
     
     *out_driver = driver;
-
+    
+    GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 
 error_init:
+    GlobusXIOFileDebugExitWithError();
     return result;
 }
 
@@ -687,7 +804,13 @@ void
 globus_l_xio_file_destroy(
     globus_xio_driver_t                 driver)
 {
+    GlobusXIOName(globus_l_xio_file_destroy);
+    
+    GlobusXIOFileDebugEnter();
+    
     globus_xio_driver_destroy(driver);
+    
+    GlobusXIOFileDebugExit();
 }
 
 GlobusXIODefineDriver(

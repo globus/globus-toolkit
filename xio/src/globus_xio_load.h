@@ -22,6 +22,7 @@ typedef struct
     globus_module_descriptor_t *        module;
     globus_xio_driver_init_t            load;
     globus_xio_driver_destroy_t         unload;
+    int                                 ref_count;
 } globus_xio_driver_hook_t;
 
 globus_result_t
@@ -55,7 +56,8 @@ globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =                \
     #driver_name,                                                           \
     module,                                                                 \
     init_func,                                                              \
-    destroy_func                                                            \
+    destroy_func,                                                           \
+    0                                                                       \
 };
 
 
