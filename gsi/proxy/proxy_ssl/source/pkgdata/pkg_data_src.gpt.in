@@ -21,6 +21,11 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>        
+            <Dependency Name="globus_openssl_module">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>        
         </Source_Dependencies>
 
         <Source_Dependencies Type="lib_link">

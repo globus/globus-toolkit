@@ -5,6 +5,7 @@
 #include <openssl/objects.h>
 
 #include "proxyrestriction.h"
+#include "globus_openssl.h"
 
 /**
  * @name Get a method for ASN1 conversion
@@ -54,7 +55,7 @@ PROXYRESTRICTION * PROXYRESTRICTION_new()
     ret = NULL;
 
     M_ASN1_New_Malloc(ret, PROXYRESTRICTION);
-    ret->policy_language = OBJ_nid2obj(OBJ_sn2nid("IMPERSONATION"));
+    ret->policy_language = OBJ_nid2obj(OBJ_sn2nid(IMPERSONATION_PROXY_SN));
     ret->policy = NULL;
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYRESTRICTION_NEW);
