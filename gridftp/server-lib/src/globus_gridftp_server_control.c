@@ -525,6 +525,7 @@ globus_l_gsc_read_cb(
                             server_handle->outstanding_op->abort_cb(
                                 server_handle->outstanding_op,
                                 server_handle->outstanding_op->abort_user_arg);
+                            server_handle->outstanding_op->abort_cb = NULL;
                         }
                     }
                 }
@@ -639,6 +640,7 @@ globus_i_gsc_terminate(
                     server_handle->outstanding_op->abort_cb(
                         server_handle->outstanding_op,
                         server_handle->outstanding_op->abort_user_arg);
+                    server_handle->outstanding_op->abort_cb = NULL;
                 }
             }
             /* ignore return code, we are stopping so it doesn' matter */
@@ -3877,6 +3879,7 @@ globus_gridftp_server_abort_enable(
         {
             op->aborted = GLOBUS_FALSE;
             abort_cb(op, user_arg);
+            op->abort_cb = NULL;
         }
         else
         {
@@ -3905,8 +3908,8 @@ globus_gridftp_server_abort_disable(
         if(op->aborted && op->abort_cb != NULL)
         {
             op->abort_cb(op, op->abort_user_arg);
+            op->abort_cb = NULL;
         }
-        op->abort_cb = NULL;
         op->abort_user_arg = NULL;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
