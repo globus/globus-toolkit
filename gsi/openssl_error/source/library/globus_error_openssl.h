@@ -34,7 +34,6 @@ EXTERN_C_BEGIN
 #include <string.h>
 #include "globus_common.h"
 #include "globus_error_generic.h"
-#include "globus_error_string.h"
 
 /**
  * @defgroup globus_openssl_error_object Error Construction
@@ -87,16 +86,81 @@ extern
 globus_module_descriptor_t		globus_i_gsi_openssl_error_module;
 
 
-#ifndef DOXYGEN
+/** Error type definition
+ * @ingroup globus_openssl_error_object
+ * @hideinitializer
+ */
+#define GLOBUS_ERROR_TYPE_OPENSSL \
+                                (&GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION)
+
+extern const globus_object_type_t GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION;
+
+typedef struct globus_l_openssl_error_handle_s *
+                                        globus_openssl_error_handle_t;
+
+unsigned long
+globus_openssl_error_handle_get_error_code(
+    globus_openssl_error_handle_t       error_code);
+
+const char *
+globus_openssl_error_handle_get_filename(
+    globus_openssl_error_handle_t       handle);
+
+int
+globus_openssl_error_handle_get_linenumber(
+    globus_openssl_error_handle_t       handle);
+
+const char *
+globus_openssl_error_handle_get_library(
+    globus_openssl_error_handle_t       handle);
+
+const char *
+globus_openssl_error_handle_get_function(
+    globus_openssl_error_handle_t       handle);
+
+const char *
+globus_openssl_error_handle_get_reason(
+    globus_openssl_error_handle_t       handle);
+
+globus_object_t *
+globus_error_construct_openssl_error(
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause);
+
+globus_object_t *
+globus_error_initialize_openssl_error(
+    globus_object_t *                   error,
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause,
+    globus_openssl_error_handle_t       openssl_error_handle);
 
 globus_object_t *
 globus_error_wrap_openssl_error(
     globus_module_descriptor_t *        base_source,
-    char *                              openssl_error_string,
-    int                                 error_type,
-    char *                              error_description);
+    const int                           error_type,
+    const char *                        format,
+    ...);
 
-#endif
+const char *
+globus_error_openssl_error_get_filename(
+    globus_object_t *                   error);
+
+int
+globus_error_openssl_error_get_linenumber(
+    globus_object_t *                   error);
+
+const char *
+globus_error_openssl_error_get_library(
+    globus_object_t *                   error);
+
+const char *
+globus_error_openssl_error_get_function(
+    globus_object_t *                   error);
+
+const char *
+globus_error_openssl_error_get_reason(
+    globus_object_t *                   error);
 
 EXTERN_C_END
+
 #endif /* GLOBUS_INCLUDE_OPENSSL_ERROR_H */

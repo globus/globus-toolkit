@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gss_assist" Format_Version="0.02">
 
-  <Aging_Version Major="2" Minor="1" Age="0"/>
+  <Aging_Version Major="3" Minor="0" Age="0"/>
   <Description >GSSAPI Assist library</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -12,11 +12,13 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_core"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_common"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>      
+      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
  
     <Source_Dependencies Type="lib_link" >
-      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_common"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>      
+      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <With_Flavors build="yes" />

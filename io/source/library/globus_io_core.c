@@ -2667,7 +2667,7 @@ globus_l_io_activate(void)
     {
        return rc;
     }
-    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
        return rc;
@@ -3177,7 +3177,7 @@ globus_l_io_deactivate(void)
     globus_module_deactivate(GLOBUS_ERROR_MODULE);
     globus_mutex_destroy(&globus_i_io_mutex);
     globus_cond_destroy(&globus_i_io_cond);
-    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return GLOBUS_SUCCESS;

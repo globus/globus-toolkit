@@ -566,6 +566,13 @@ globus_l_gram_job_manager_activate(void)
 	goto common_failed;
     }
 
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "gss assist activation failed with rc=%d\n", rc);
+        goto gss_assist_failed;
+    }
+
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -622,6 +629,7 @@ duct_control_failed:
 gass_cache_failed:
 gram_protocol_failed:
 io_failed:
+gss_assist_failed:
     if(rc)
     {
 	globus_module_deactivate_all();

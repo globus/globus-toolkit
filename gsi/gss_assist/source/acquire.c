@@ -1,35 +1,17 @@
-/******************************************************************************
-acquire.c
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file acquire.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-Description:
-	Globus GSSAPI Assist routine for the gss_acquire_cred
-
-
-CVS Information:
-	$Source$
-	$Date$
-	$Revision$
-	$Author$
-******************************************************************************/
-
-/******************************************************************************
-                             Include header files
-******************************************************************************/
-
-#include "globus_gss_assist.h"
+#include "globus_i_gss_assist.h"
 #include <gssapi.h>
 #include <string.h>
-
-/******************************************************************************
-                               Type definitions
-******************************************************************************/
-
-/******************************************************************************
-                          Module specific prototypes
-******************************************************************************/
-/******************************************************************************
-                       Define module specific variables
-******************************************************************************/
 
 static gss_OID_desc oids[] = {
    {10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x01"},
@@ -51,124 +33,150 @@ static char * oid_names[] = {
  "GSS_C_NT_EXPORT_NAME",
   NULL};
 
-
-/*********************************************************************** *******
-Function:   globus_gss_assist_acquire_creds()
-Description:
-	Called once at the start of the process, to 
-	obtain the credentials the process is running under. 
-
-Parameters:
-	minor_status - pointer for return code 
-	cred_usage - GSS_C_INITIATE, GSS_C_ACCEPT, or GSS_C_BOTH
-	output_cred_handle - Pointer to the returned handle. 
-		This needs to be passed to many gss routines. 
-
-Returns:
-	GSS_S_COMPLETE on sucess
-	Other GSS return codes 
-******************************************************************************/
+/**
+ * @name Acquire Credential
+ * @ingroup globus_gsi_gss_assist
+ */
+/* @{ */
+/**
+ * Called once at the start of the process, to 
+ * obtain the credentials the process is running under. 
+ * The 
+ * 
+ * @param minor_status
+ *        pointer for return code 
+ * @param cred_usage
+ *        GSS_C_INITIATE, GSS_C_ACCEPT, or GSS_C_BOTH
+ * @param output_cred_handle
+ *        Pointer to the returned handle. 
+ *        This needs to be passed to many gss routines. 
+ *
+ * @return
+ *        GSS_S_COMPLETE on sucess
+ *        Other GSS return codes 
+ */
 OM_uint32
-globus_gss_assist_acquire_cred
-(OM_uint32 *		minor_status,
- gss_cred_usage_t 	cred_usage,
- gss_cred_id_t * 	output_cred_handle
-)
-
+globus_gss_assist_acquire_cred(
+    OM_uint32 *		                minor_status,
+    gss_cred_usage_t 	                cred_usage,
+    gss_cred_id_t * 	                output_cred_handle)
 {
-
- return( globus_gss_assist_acquire_cred_ext(minor_status,
-					NULL, GSS_C_INDEFINITE, GSS_C_NO_OID_SET,
-                    cred_usage, output_cred_handle,
-                    NULL, NULL));
+    return (globus_gss_assist_acquire_cred_ext(
+        minor_status,
+        NULL, GSS_C_INDEFINITE, GSS_C_NO_OID_SET,
+        cred_usage, output_cred_handle,
+        NULL, NULL));
 }
+/* @} */
 
-/*********************************************************************** *******
-Function:   globus_gss_assist_acquire_cred_ext()
-Description:
-	Called once at the start of the process, to 
-	obtain the credentials the process is running under. 
-
-Parameters:
-	All the parameters of the gss_acquire_cred,
-	except the desired_name is a string of the form:
-    [type:]name. This will be imported with the type
-
-Returns:
-	GSS_S_COMPLETE on sucess
-	Other GSS return codes 
-******************************************************************************/
+/**
+ * @name Acquire Credential Extension
+ * @ingroup globus_gsi_gss_assist
+ */
+/* @{ */
+/**
+ * Called once at the start of the process, to 
+ * obtain the credentials the process is running under. 
+ * All the parameters of the gss_acquire_cred,
+ * except the desired_name is a string of the form:
+ * [type:]name. This will be imported with the type.
+ *
+ * @return 
+ *         GSS_S_COMPLETE on sucess
+ *         Other GSS return codes 
+ *
+ * @see globus_gsi_gss_acquire_cred
+ */
 OM_uint32
-globus_gss_assist_acquire_cred_ext
-(OM_uint32 *		minor_status,
- char *             desired_name_char,
- OM_uint32          time_req,
- const gss_OID_set  desired_mechs,
- gss_cred_usage_t 	cred_usage,
- gss_cred_id_t * 	output_cred_handle,
- gss_OID_set *      actual_mechs,
- OM_uint32 *        time_rec)
-
+globus_gss_assist_acquire_cred_ext(
+    OM_uint32 *		                minor_status,
+    char *                              desired_name_char,
+    OM_uint32                           time_req,
+    const gss_OID_set                   desired_mechs,
+    gss_cred_usage_t 	                cred_usage,
+    gss_cred_id_t * 	                output_cred_handle,
+    gss_OID_set *                       actual_mechs,
+    OM_uint32 *                         time_rec)
 {
-    OM_uint32   major_status;
-    OM_uint32   minor_status2;
-    gss_name_t desired_name = GSS_C_NO_NAME;
-    gss_OID desired_name_type = GSS_C_NO_OID;
-    gss_buffer_desc tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    tmp_buffer      = &tmp_buffer_desc;
-    char *  cp, * qp;
-	int i, j;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status2;
+    gss_name_t                          desired_name = GSS_C_NO_NAME;
+    gss_OID                             desired_name_type = GSS_C_NO_OID;
+    gss_buffer_desc                     tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        tmp_buffer      = &tmp_buffer_desc;
+    char *                              cp, * qp;
+    int                                 i, j;
+    static char *                       _function_name_ =
+        "globus_gss_assist_acquire_cred_ext";
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;    
 
-	*output_cred_handle = GSS_C_NO_CREDENTIAL;
-#ifdef DEBUG
-	fprintf(stderr,
-       "gss_assist_acquire_cred_ext usage=%d desired_name=%s\n",
-		cred_usage, desired_name_char?desired_name_char:"(NULL)");
-#endif
+    *output_cred_handle = GSS_C_NO_CREDENTIAL;
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gss_assist_debug_fstream,
+            "gss_assist_acquire_cred_ext usage=%d desired_name=%s\n",
+            cred_usage, desired_name_char ? desired_name_char : "(NULL)"));
 
     if (desired_name_char) {
         qp = desired_name_char;
         cp = strchr(desired_name_char,':');
         if (cp) {
-			j = cp - qp;
-			for (i=0;oid_names[i];i++) {
-				if ((j == strlen(oid_names[i])) && 
-			 			(!strncmp(desired_name_char,oid_names[i],j))) {
-					desired_name_type = &oids[i];
-                	qp = cp + 1;
-					break;
-				}
-			}
+            j = cp - qp;
+            for (i=0;oid_names[i];i++) {
+                if ((j == strlen(oid_names[i])) && 
+                    (!strncmp(desired_name_char,oid_names[i],j))) {
+                    desired_name_type = &oids[i];
+                    qp = cp + 1;
+                    break;
+                }
+            }
         }
 
         tmp_buffer->value = qp;
         tmp_buffer->length = strlen(qp);
 
         major_status = gss_import_name(minor_status,
-                                  tmp_buffer,
-                                  desired_name_type,
-                                  &desired_name);
-#ifdef DEBUG
-		fprintf(stderr,"Imported name %s type:%p:i%d\n", 
-				tmp_buffer->value,desired_name_type,i);
-#endif
- 
+                                       tmp_buffer,
+                                       desired_name_type,
+                                       &desired_name);
+
+        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(3,
+            (globus_i_gsi_gss_assist_debug_fstream, 
+             "Imported name %s type:%p:i%d\n", 
+             (char *) tmp_buffer->value, 
+             desired_name_type, i));
     }
 
     major_status = gss_acquire_cred(minor_status,
-			desired_name, 
-			time_req,	
-			desired_mechs,
-			cred_usage,
-			output_cred_handle,
-			actual_mechs,
-			time_rec) ;
-#ifdef DEBUG
-	fprintf(stderr,"major=%8.8x minor=%8.8x\n",major_status, *minor_status);
-	globus_gss_assist_display_status(stderr,"acquire", major_status, *minor_status, 0);
-#endif
-	if (desired_name) {
-       gss_release_name(&minor_status2, &desired_name); 
+                                    desired_name, 
+                                    time_req,	
+                                    desired_mechs,
+                                    cred_usage,
+                                    output_cred_handle,
+                                    actual_mechs,
+                                    time_rec);
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(3,
+        (globus_i_gsi_gss_assist_debug_fstream, 
+         "major=%8.8x minor=%8.8x\n", 
+         (unsigned int) major_status, 
+         (unsigned int) *minor_status));
+
+    if(GLOBUS_I_GSI_GSS_ASSIST_DEBUG(3))
+    {
+        globus_gss_assist_display_status(
+            globus_i_gsi_gss_assist_debug_fstream, 
+            "acquire", 
+            major_status, 
+            *minor_status, 
+            0);
     }
-	return (major_status);
+
+    if (desired_name) {
+        gss_release_name(&minor_status2, &desired_name); 
+    }
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
+    return (major_status);
 }
+/* @} */

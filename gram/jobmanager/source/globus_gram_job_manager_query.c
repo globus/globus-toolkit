@@ -11,7 +11,6 @@
  */
 #include "globus_gram_job_manager.h"
 #include <string.h>
-#include <sslutils.h>
 #endif
 
 

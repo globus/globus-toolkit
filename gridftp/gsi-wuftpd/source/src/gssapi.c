@@ -931,7 +931,7 @@ gssapi_handle_auth_data(char *data, int length)
 	if (debug)
 	    syslog(LOG_INFO, "Client identity is: %s", client_name.value);
 
-#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
         stat_maj = gss_get_group(&stat_min, client,
                                  &client_group, &subgroup_types);
 
@@ -1020,37 +1020,35 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
     int code_num;
     
     
-    for (code_num = 0; code_num < 2 ; code_num++) {
-	msg_ctx = 0;
-	while (!msg_ctx) {
-	    gmaj_stat = gss_display_status(&gmin_stat, maj_stat,
-					   codes[code_num],
-					   GSS_C_NULL_OID,
-					   &msg_ctx, &msg);
-	    if ((gmaj_stat == GSS_S_COMPLETE)||
-		(gmaj_stat == GSS_S_CONTINUE_NEEDED))
-		{
-		    /*
-		     * Might return multiple lines in one string
-		     * which the client doesn't handle, so split
-		     * up into multiple replies
-		     */
-		    line = msg.value;
-		    while(line && *line)
-			{
-			    eol = strchr(line, '\n');
-			    if (eol)
-				{	
-				    *eol = '\0';
-				}
-			    lreply(code, "FTPD GSSAPI error: %s", line);
-			    line = eol ? eol + 1 : NULL;
-			}
-		    (void) gss_release_buffer(&gmin_stat, &msg);
-		}
-	    if (gmaj_stat != GSS_S_CONTINUE_NEEDED)
-		break;
-	}
+    for (code_num = 0; code_num < 1 ; code_num++) {
+	msg_ctx = min_stat;
+        gmaj_stat = gss_display_status(&gmin_stat, maj_stat,
+                                       codes[code_num],
+                                       GSS_C_NULL_OID,
+                                       &msg_ctx, &msg);
+        if ((gmaj_stat == GSS_S_COMPLETE)||
+            (gmaj_stat == GSS_S_CONTINUE_NEEDED))
+        {
+            /*
+             * Might return multiple lines in one string
+             * which the client doesn't handle, so split
+             * up into multiple replies
+             */
+            line = msg.value;
+            while(line && *line)
+            {
+                eol = strchr(line, '\n');
+                if (eol)
+                {	
+                    *eol = '\0';
+                }
+                lreply(code, "FTPD GSSAPI error: %s", line);
+                line = eol ? eol + 1 : NULL;
+            }
+            (void) gss_release_buffer(&gmin_stat, &msg);
+        }
+        if (gmaj_stat != GSS_S_CONTINUE_NEEDED)
+            break;
     }
     
     reply(code, "FTPD GSSAPI error: %s", s);

@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 
     gss_release_cred(&maj_stat,&globus_l_gass_server_credential);
 
-    
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
 
     globus_mutex_init(&mutex, NULL);
