@@ -125,84 +125,52 @@ Southern California. All Rights Reserved.
 */
 package org.globus.ogsa.impl.base.streaming;
 
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Vector;
-
 import javax.xml.namespace.QName;
-
-import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.globus.ogsa.GridContext;
+import org.globus.ogsa.FactoryCallback;
+import org.globus.ogsa.GridServiceBase;
 import org.globus.ogsa.GridServiceException;
 import org.globus.ogsa.base.streaming.FileStreamAttributes;
-import org.globus.ogsa.base.streaming.FileStreamFactoryAttributes;
-import org.globus.ogsa.base.streaming.FileStreamPortType;
-import org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl;
-import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.ServiceData;
-import org.globus.ogsa.ServiceDataValueCallback;
-import org.globus.ogsa.ServiceProperties;
-import org.globus.ogsa.ServicePropertiesException;
 import org.globus.ogsa.utils.AnyHelper;
 
 import org.gridforum.ogsi.ExtensibilityType;
+import org.gridforum.ogsi.ServiceDataValuesType;
 
-public class FileStreamFactoryImpl extends GridServiceImpl
-                                   implements ServiceDataValueCallback {
+public class FileStreamFactoryCallbackImpl implements FactoryCallback {
     private static Log logger
-        = LogFactory.getLog(FileStreamFactoryImpl.class);
+        = LogFactory.getLog(FileStreamFactoryCallbackImpl.class);
 
-    static String SOURCE_PATH_SD_NAME = "sourcePath";
+    private String sourcePath = null;
 
-    public FileStreamFactoryImpl() {
-        super ("File Stream Factory Service");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("default constructor called");
-        }
+    public void initialize(GridServiceBase base) throws GridServiceException {
+        this.sourcePath = (String) base.getServiceDataSet().get(
+                FileStreamFactoryImpl.SOURCE_PATH_SD_NAME).getValue();
     }
 
-    public FileStreamFactoryImpl(
-            FileStreamFactoryAttributes fileStreamFactoryAttributes) {
-        super ("File Stream Factory Service");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("parameterized constructor called");
-        }
-
-        String sourcePath = fileStreamFactoryAttributes.getSourcePath();
-        if (logger.isDebugEnabled()) {
-            logger.debug("saving source path as service data: " + sourcePath);
-        }
-
+    public GridServiceBase createServiceObject(
+            ExtensibilityType creationParameters)
+            throws GridServiceException {
+        ServiceDataValuesType fileStreamAttributesWrapper
+            = AnyHelper.getAsServiceDataValues(creationParameters);
+        FileStreamAttributes fileStreamAttributes = null;
         try {
-            ServiceData sourcePathSd = this.serviceData.create("sourcePath");
-            sourcePathSd.setValue(sourcePath);
-            this.serviceData.add(sourcePathSd);
-        } catch (GridServiceException gse) {
-            logger.error("problem creating source path service data", gse);
+            fileStreamAttributes
+                = (FileStreamAttributes) AnyHelper.getAsSingleObject(
+                        fileStreamAttributesWrapper,
+                        FileStreamAttributes.class);
+        } catch (ClassCastException cce) {
+            throw new GridServiceException(
+                "invalid service creation parameters type", cce);
         }
-    }
+        FileStreamImpl fileStream = new FileStreamImpl(
+                this.sourcePath,
+                fileStreamAttributes.getDestinationUrl(),
+                fileStreamAttributes.getOffset());
 
-    //*** ServiceDataValueCallback method ***//
-    public Collection getServiceDataValues(QName qname) {
-        if (qname.getLocalPart().equals(SOURCE_PATH_SD_NAME)) {
-            ArrayList sdList = new ArrayList();
-            Iterator sdIter = this.serviceData.iterator();
-            while (sdIter.hasNext()) {
-                ServiceData serviceData = (ServiceData) sdIter.next();
-                sdList.add(serviceData.getName());
-            }
-
-            return sdList;
-        }
-
-        return new ArrayList();
+        return fileStream;
     }
 }

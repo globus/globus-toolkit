@@ -27,7 +27,7 @@
                     maxOccurs="1"
                     mutability="static"
                     modifiable="false"
-                    nillable="false">
+                    nillable="true">
         <documentation>
             the local file path from which the stream begins
         </documentation>

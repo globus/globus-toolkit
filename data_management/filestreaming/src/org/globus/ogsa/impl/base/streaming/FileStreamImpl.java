@@ -55,23 +55,41 @@ public class FileStreamImpl extends GridServiceImpl {
     private OutputStream outputStream;
     private Vector fileStreamStateListeners = new Vector();
 
-    public FileStreamImpl(FileStreamFactoryAttributes factoryAttributes,
-                          FileStreamAttributes streamAttributes) {
+    public FileStreamImpl() {
         super("FileStreamImpl");
 
-        //equivalent of SecureRPCURIProvider.setExcludedMethods(this, "");
+        if (logger.isDebugEnabled()) {
+            logger.debug("default constructor called");
+        }
+    }
+
+    public FileStreamImpl(String sourcePath,
+                          String destinationUrl,
+                          int offset) {
+        super("FileStreamImpl");
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("parameterized constructor called");
+        }
+
+        this.sourcePath = sourcePath;
+        this.destinationUrl = destinationUrl;
+        this.offset = offset;
+        if (logger.isDebugEnabled()) {
+            logger.debug("source path: " + this.sourcePath);
+            logger.debug("destination URL: " + this.destinationUrl);
+            logger.debug("offset: " + this.offset);
+            System.out.println("source path: " + this.sourcePath);
+            System.out.println("destination URL: " + this.destinationUrl);
+            System.out.println("offset: " + this.offset);
+        }
 
         String name = "FileStream";
         String id = String.valueOf(hashCode());
         if(id != null) {
             name = name + "(" + id + ")";
         }
-
         setProperty (ServiceProperties.NAME, name);
-
-        this.sourcePath = factoryAttributes.getSourcePath();
-        this.offset = streamAttributes.getOffset();
-        this.destinationUrl = streamAttributes.getDestinationUrl();
     }
 
     private void addDestinationUrlServiceData() throws GridServiceException {
@@ -82,6 +100,7 @@ public class FileStreamImpl extends GridServiceImpl {
     }
     
     public void postCreate(GridContext context) throws GridServiceException {
+        super.postCreate(context);
         SecurityManager manager = SecurityManager.getManager();
         manager.setServiceOwnerFromContext(this, context);
     }
@@ -96,7 +115,7 @@ public class FileStreamImpl extends GridServiceImpl {
         try {
             return openUrl(url);
         } catch(Exception e) {
-            logger.debug("Failed to open remote URL", e);
+            logger.error("Failed to open remote URL", e);
             throw new RemoteException("Failed to open remote URL", e);
         }
     }
@@ -139,7 +158,9 @@ public class FileStreamImpl extends GridServiceImpl {
     public void preDestroy() {
         try {
             outputStream.close();
-            logger.debug("File Stream instance is destroyed");
+            if (logger.isDebugEnabled()) {
+                logger.debug("File Stream instance is destroyed");
+            }
         }catch(java.io.IOException ioe) {
             logger.error("Error in destroying the File Stream Instance",ioe);
         }
@@ -173,21 +194,13 @@ public class FileStreamImpl extends GridServiceImpl {
         }
     }
 
-    private void assertSecurity() throws RemoteException {
-        MessageContext messageContext = MessageContext.getCurrentContext();
-        if (messageContext.getProperty(Constants.CONTEXT) == null) {
-            throw new RemoteException("service requires secure access");
-        }
-    }
-
     public void start() throws RemoteException {
-        assertSecurity();
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting stream");
+        }
         GSSCredential credential
             = SecureServicePropertiesHelper.getCredential(this);
-        File outputFile = new File(this.sourcePath);
         this.proxy = credential;
-        outputStream = openUrl(destinationUrl);
 
         if(this.outputFollower == null) {
             this.outputFollower = new Tail();
@@ -195,7 +208,10 @@ public class FileStreamImpl extends GridServiceImpl {
                 Logger.getLogger(FileStreamImpl.class.getName()));
             this.outputFollower.start();
         }
+
         try { 
+            File outputFile = new File(this.sourcePath);
+            outputStream = openUrl(destinationUrl);
             this.outputFollower.addFile(outputFile,outputStream,offset);
         } catch(IOException e) {
             logger.error("Error stream file", e);
@@ -206,9 +222,9 @@ public class FileStreamImpl extends GridServiceImpl {
     }
 
     public void stop() throws RemoteException {
-        assertSecurity();
-
-        logger.debug("stopping stream");
+        if (logger.isDebugEnabled()) {
+            logger.debug("stopping stream");
+        }
         try {
             addDestinationUrlServiceData();
             this.outputFollower.stop();

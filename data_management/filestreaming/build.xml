@@ -98,7 +98,7 @@ Southern California. All Rights Reserved.
   <!-- =================================================================== -->
   <!-- Generate Service and Binding wsdls from port type wsdls             -->
   <!-- =================================================================== -->
-  <target name="generateWSDL" depends="setenv">
+  <target name="generateWSDL" unless="stubs.present" depends="setenv">
    <antcall target="copySchemaDir"/>
    <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
     <property name="build.schema.dir" value="${streaming.schema.dir}"/>

@@ -26,6 +26,7 @@ import junit.textui.TestRunner;
 
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.gsi.gssapi.auth.SelfAuthorization;
+import org.globus.gsi.gssapi.GSSConstants;
 
 import org.globus.ogsa.base.streaming.FileStreamAttributes;
 import org.globus.ogsa.base.streaming.FileStreamAttributesWrapper;
@@ -107,15 +108,11 @@ public class FileStreamTestCase extends TestCase {
             murle.printStackTrace();
         }
 
-        FileStreamFactoryAttributesWrapper factoryAttributesWrapper
-            = new FileStreamFactoryAttributesWrapper();
         FileStreamFactoryAttributes factoryAttributes
             = new FileStreamFactoryAttributes();
         factoryAttributes.setSourcePath(TEST_SOURCE_FILE);
-        factoryAttributesWrapper.setFileStreamFactoryAttributes(
-                    factoryAttributes);
         ExtensibilityType creationParameters
-            = AnyHelper.getExtensibility(factoryAttributesWrapper);
+            = AnyHelper.getExtensibility(factoryAttributes);
 
         this.fileStreamFactoryHandleLocator
             = fileStreamFactoryFactory.createService(
@@ -143,17 +140,23 @@ public class FileStreamTestCase extends TestCase {
         GridServiceFactory fileStreamFactory = new GridServiceFactory(
                 this.gridServiceLocator.getFactoryPort(
                     this.fileStreamFactoryHandleLocator));
+        fileStreamFactory.getStub()._setProperty(
+                Constants.MSG_SEC_TYPE,
+                Constants.SIGNATURE);
+        fileStreamFactory.getStub()._setProperty(
+                GSIConstants.GSI_AUTHORIZATION,
+                SelfAuthorization.getInstance());
+        fileStreamFactory.getStub()._setProperty(
+                GSIConstants.GSI_MODE,
+                GSIConstants.GSI_MODE_LIMITED_DELEG);
 
-        FileStreamAttributesWrapper fileStreamAttributesWrapper
-            = new FileStreamAttributesWrapper();
         FileStreamAttributes fileStreamAttributes = new FileStreamAttributes();
         fileStreamAttributes.setDestinationUrl(TEST_DESTINATION_URL);
         fileStreamAttributes.setOffset(0);
-        fileStreamAttributesWrapper.setFileStreamAttributes(
-                fileStreamAttributes);
         ExtensibilityType creationParameters
-            = AnyHelper.getExtensibility(fileStreamAttributesWrapper);
+            = AnyHelper.getExtensibility(fileStreamAttributes);
 
+        System.out.println("creating file stream...");
         LocatorType fileStreamHandleLocator
             = fileStreamFactory.createService(
                     null, FSS_INSTANCE_ID, creationParameters);

@@ -6,33 +6,53 @@
     <service name="base/streaming/FileStreamFactoryFactoryService"
              provider="Handler"
              style="wrapped">
-        <!--Factory (FS Factory Factory) Parameters-->
+        <!--Factory Factory Parameters-->
         <parameter name="name" value="File Stream Factory Factory"/>
         <parameter name="schemaPath"
                    value="schema/ogsi/ogsi_factory_service.wsdl"/>
         <parameter name="baseClassName"
-                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryFactoryImpl"/>
+                   value="org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl"/>
         <parameter name="className"
                    value="org.gridforum.ogsi.Factory"/>
         <parameter name="operationProviders"
                    value="org.globus.ogsa.impl.ogsi.FactoryProvider"/>
         <parameter name="persistent" value="true"/>
         <parameter name="factoryCallback"
-                   value="org.globus.ogsa.impl.ogsi.DynamicFactoryCallbackImpl"
+                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryFactoryCallbackImpl"
         />
         <parameter name="handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
         <parameter name="allowedMethods" value="*"/>
-        <!--Instance (FS Factory) Parameters-->
+        <!--Factory Parameters-->
         <parameter name="instance-schemaPath"
-                   value="schema/ogsi/ogsi_factory_service.wsdl"/>
+                   value="schema/base/streaming/file_stream_factory_service.wsdl"/>
         <parameter name="instance-baseClassName"
                    value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryImpl"/>
-        <parameter name="className"
-                   value="org.gridforum.ogsi.Factory"/>
-        <parameter name="operationProviders"
+        <parameter name="instance-className"
+                   value="org.globus.ogsa.base.streaming.FileStreamFactoryPortType"/>
+        <parameter name="instance-operationProviders"
                    value="org.globus.ogsa.impl.ogsi.FactoryProvider"/>
+        <parameter name="instance-factoryCallback"
+                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryCallbackImpl"
+        />
         <parameter name="instance-lifecycle" value="persistent"/>
+        <parameter name="instance-handlerClass"
+                   value="org.globus.ogsa.handlers.RPCURIProvider"/>
+        <parameter name="instance-allowedMethods" value="*"/>
+
+        <!--Instance Parameters-->
+        <parameter name="instance-instance-schemaPath"
+                   value="schema/base/streaming/file_stream_service.wsdl"/>
+        <parameter name="instance-instance-baseClassName"
+                   value="org.globus.ogsa.impl.base.streaming.FileStreamImpl"/>
+        <parameter name="instance-instance-className"
+                   value="org.globus.ogsa.base.streaming.FileStreamPortType"/>
+        <parameter name="instance-instance-operationProviders"
+                   value="org.globus.ogsa.impl.security.authentication.SecureNotificationSourceProvider"/>
+        <parameter name="instance-instance-handlerClass"
+                   value="org.globus.ogsa.handlers.RPCURIProvider"/>
+        <parameter name="instance-instance-allowedMethods" value="*"/>
+        <parameter name="instance-instance-security" value="gsi"/>
     </service>
 </deployment>
 
