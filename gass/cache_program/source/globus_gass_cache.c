@@ -235,7 +235,7 @@ main(int argc, char **argv)
     if(resource != GLOBUS_NULL)
     {
 	rm_contact = globus_l_cache_get_rm_contact(resource);
-	if(strlen(rm_contact) == 0)
+	if(rm_contact == GLOBUS_NULL)
 	{
 	    globus_libc_printf("Couldn't find resource %s\n", resource);
 	    exit(1);
@@ -266,22 +266,80 @@ static char *
 globus_l_cache_get_rm_contact(char *resource)
 {
     LDAP *ldap_server;
-    int port          = GLOBUS_MDS_PORT;
-    char *base_dn     = GLOBUS_MDS_ROOT_DN;
-    char *server      = GLOBUS_MDS_HOST;
+    int default_port          = GLOBUS_MDS_PORT;
+    int port		      = 0;
+    char *default_base_dn     = GLOBUS_MDS_ROOT_DN;
+    char *base_dn	      = GLOBUS_NULL;
+    char *default_server      = GLOBUS_MDS_HOST;
+    char *server	      = GLOBUS_NULL;
     char *search_string;
     LDAPMessage *reply;
     LDAPMessage *entry;
     char *attrs[3];
-    
-    attrs[0] = "contact";
-    attrs[1] = GLOBUS_NULL;
+    FILE *mds_conf;
+    char buf[512];
     
     if(strchr(resource, (int) ':') != GLOBUS_NULL)
     {
 	return strdup(resource);
     }
-	
+
+    
+    mds_conf = fopen(GLOBUS_SYSCONFDIR "/globus-mds.conf", "r");
+    if(mds_conf != GLOBUS_NULL)
+    {
+	while(fgets(buf, 512, mds_conf) != GLOBUS_NULL)
+	{
+	    /* break off comments */
+	    strtok(buf, "#");
+	    if(strlen(buf) > 0)
+	    {
+		if(strncmp(buf,
+			   "GLOBUS_MDS_HOST=",
+			   strlen("GLOBUS_MDS_HOST=")) == 0)
+		{
+		    globus_libc_lock();
+		    server=strdup(buf+strlen("GLOBUS_MDS_HOST=\""));
+		    server[strlen(server)-2] = '\0';
+		    globus_libc_unlock();
+		}
+		else if(strncmp(buf,
+				"GLOBUS_MDS_PORT=",
+				strlen("GLOBUS_MDS_PORT=")) == 0)
+		{
+		    port = atoi(buf + strlen("GLOBUS_MDS_PORT=\""));
+		}
+		else if(strncmp(buf,
+				"GLOBUS_MDS_DN=",
+				strlen("GLOBUS_MDS_DN=")) == 0)
+		{
+		    globus_libc_lock();
+		    base_dn = strdup(buf + strlen("GLOBUS_MDS_DN=\""));
+		    base_dn[strlen(base_dn)-2] = '\0';
+		    globus_libc_unlock();
+		}
+	    }
+	}
+	fclose(mds_conf);
+    }
+    /* fall back to defaults if we can't parse the file, or the file
+       can't be opened */
+    if(server == GLOBUS_NULL)
+    {
+	server = default_server;
+    }
+    if(port == 0)
+    {
+	port = default_port;
+    }
+    if(base_dn == GLOBUS_NULL)
+    {
+	base_dn = default_base_dn;
+    }
+    
+    attrs[0] = "contact";
+    attrs[1] = GLOBUS_NULL;
+    
     if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
     {
 	ldap_perror(ldap_server, "ldap_open");
@@ -321,10 +379,31 @@ globus_l_cache_get_rm_contact(char *resource)
 	if(contact != GLOBUS_NULL)
 	{
 	    ldap_unbind(ldap_server);
+
+	    if(server != default_server)
+	    {
+		globus_free(server);
+	    }
+	    if(base_dn != default_base_dn)
+	    {
+		globus_free(base_dn);
+	    }
+	    globus_free(search_string);
 	    return contact;
 	}
     }
+    ldap_msgfree(reply);
     ldap_unbind(ldap_server);
+
+    if(server != default_server)
+    {
+	globus_free(server);
+    }
+    if(base_dn != default_base_dn)
+    {
+	globus_free(base_dn);
+    }
+    globus_free(search_string);
     return GLOBUS_NULL;
 } /* globus_l_cache_get_rm_contact() */
 
