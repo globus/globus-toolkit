@@ -1441,11 +1441,19 @@ for my $bundle ( @bundle_build_list )
 	$flavorstring = "\$FLAVOR";
     }
 
+   if ( $bundle eq "globus-rls-server" )
+   {
+      print INS "if [ x\$GLOBUS_IODBC_PATH = \"x\" ]; then\n";
+      print INS "\techo GLOBUS_IODBC_PATH not set, skipping RLS build.\n";
+      print INS "else\n";
+   }
+
    print INS "\$GPT_BUILD $flags bundles/${bundle}-*-src_bundle.tar.gz $flavorstring\n";
 
    print INS "if [ \$? -ne 0 ]; then\n";
    print INS "    echo Error building $bundle\n";
    print INS "    exit;\n";
+   print INS "fi\n" if ( $bundle eq "globus-rls-server" );
    print INS "fi\n\n";
 }
 
