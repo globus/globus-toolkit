@@ -91,7 +91,10 @@ globus_l_ftp_client_activate(void)
 
     globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
 
-    tmp_string = globus_module_getenv("GLOBUS_FTP_CLIENT_DEBUG_LEVEL");
+	// TESTING!!!
+    //tmp_string = globus_module_getenv("GLOBUS_FTP_CLIENT_DEBUG_LEVEL");
+	// END TESTING
+    tmp_string = globus_libc_getenv("GLOBUS_FTP_CLIENT_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
 	globus_i_ftp_client_debug_level = atoi(tmp_string);
