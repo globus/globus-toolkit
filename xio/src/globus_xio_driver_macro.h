@@ -247,6 +247,59 @@ do                                                                          \
     }                                                                       \
 } while(0)
 
+/*
+ *  Close
+ */
+#define GlobusXIODriverPassClose(out_res, op, cb, user_arg)                 \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+    globus_i_xio_handle_t *                         _handle;                \
+    globus_i_xio_context_t *                        _context;               \
+    globus_i_xio_op_entry_t *                       _next_entry;            \
+    globus_i_xio_op_entry_t *                       _my_entry;              \
+                                                                            \
+    globus_assert(_op->ndx < _op->stack_size);                              \
+    _op = (op);                                                             \
+    _handle = _op->_op_handle;                                              \
+    _context = _handle->contex;                                             \
+    if(_op->canceled)                                                       \
+    {                                                                       \
+        out_res = OperationHasBeenCacneled();                               \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _op->progress = GLOBUS_TRUE;                                        \
+        _my_entry = &_op->entry[_op->ndx];                                  \
+        _my_entry->cb = (cb);                                               \
+        _my_entry->user_arg = (user_arg);                                   \
+        _my_entry->in_register = GLOBUS_TRUE;                               \
+        do                                                                  \
+        {                                                                   \
+            _op->ndx++;                                                     \
+            _next_entry = &_op->entry[_op->ndx];                            \
+        }                                                                   \
+        while(_next_entry->driver->transport_open == NULL &&                \
+              _next_entry->driver->transform_open == NULL)                  \
+                                                                            \
+        /* at time that stack is built this will be varified */             \
+        globus_assert(_op->ndx <= _server->stack_size);                     \
+        out_res = _context->entry[_op->ndx].driver->transport_open(         \
+                    _context->entry[_op->ndx].target,                       \
+                    attr, /* TODO: this in not corrent */                   \
+                    _context,                                               \
+                    _op);                                                   \
+        _my_entry->in_register = GLOBUS_FALSE;                              \
+        out_context = _context;                                             \
+    }                                                                       \
+} while(0)
+
+
+
+
+/*
+ *  write
+ */
 #define                                                                     \
 #define GlobusXIODriverPassWrite(out_res, op, iovec, iovec_count,           \
     cb, wait_for, user_arg)                                                 \
@@ -308,8 +361,10 @@ do                                                                          \
     globus_i_xio_op_entry_t *                       _next_entry;            \
     globus_result_t                                 _res;                   \
     globus_bool_t                                   _fire_cb = GLOBUS_TRUE; \
-    int                                             _my;                    \
-    int                                             _next ;                 \
+    globus_iovec_t *                                _tmp_iovec;             \
+    int                                             _my_ndx;                \
+    int                                             _next_ndx;              \
+    globus_size_t                                   _offset;                \
                                                                             \
     _op = (globus_i_xio_op_t *)(op);                                        \
     globus_assert(_op->ndx > 0);                                            \
@@ -328,44 +383,48 @@ do                                                                          \
     while(_my_entry->_op_ent_data_cb == NULL)                               \
                                                                             \
     _next_entry->_op_ent_nwritten += nwritten;                              \
+    /* if not all bytes were written */                                     \
     if(_next_entry->_op_ent_nwritten < _next_entry->_op_ent_wait_for)       \
     {                                                                       \
-        /* TODO: form the fake iovec */                                     \
-        if(_next_entry->fake_iovec == NULL)                                 \
+        /* if not enough bytes read set the fire_cb deafult to false */     \
+        fire_cb = GLOBUS_FALSE;                                             \
+        /* allocate tmp iovec to the bigest it could ever be */             \
+        if(_next_entry->_op_ent_fake_iovec == NULL)                         \
         {                                                                   \
-            _next_entry->fake_iovec = (globus_iovec_t *)                    \
+            _next_entry->_op_ent_fake_iovec = (globus_iovec_t *)            \
                 globus_malloc(sizeof(globus_iovec_t) *                      \
-                    _next_entry->iovec_count);                              \
+                    _next_entry->_op_ent_iovec_count);                      \
         }                                                                   \
-                                                                            \
-        tmp_iovec = _next_entry->iovec;                                     \
-        offset = 0;                                                         \
-        iovec_ndx = 0;                                                      \
-        while(offset + tmp_iovec.iov_len < _next_entry->_op_ent_nwritten)   \
+        /* find the first partialy empty iovec */                           \
+        _offset = 0;                                                        \
+        _iovec_ndx = 0;                                                     \
+        while(_offset + _next_entry->iovec[_iovec_ndx].iov_len <            \
+                _next_entry->_op_ent_nwritten)                              \
         {                                                                   \
-            offset += tmp_iovec.iov_len;                                    \
-            iovec_ndx++;                                                    \
-            tmp_iovec = &_next_entry->iovec[iovec_ndx];                     \
+            _offset += _next_entry->iovec[_iovec_ndx].iov_len;              \
+            _iovec_ndx++;                                                   \
         }                                                                   \
                                                                             \
-        _iovec_count = _next_entry->iovec_count - iovec_ndx;                \
-        offset = _next_entry->_op_ent_nwritten - offset;                    \
-        _next_entry->fake_iovec[0].iov_base =                               \
-            &_next_entry->iovec[iovec_ndx].iov_bass[offset];                \
-        _next_entry->fake_iovec[0].iov_len =                                \
-            _next_entry->iovec[iovec_ndx].iov_len - offset;                 \
+        _tmp_iovec = &_next_entry->iovec[iovec_ndx];                        \
+        _iovec_count = _next_entry->iovec_count - _iovec_ndx;               \
+        _offset = _next_entry->_op_ent_nwritten - _offset;                  \
+        /* set up first entry */                                            \
+        _next_entry->_op_ent_fake_iovec[0].iov_base =                       \
+            &_next_entry->_op_ent_iovec[_iovec_ndx].iov_bass[offset];       \
+        _next_entry->_op_ent_fake_iovec[0].iov_len =                        \
+            _next_entry->_op_ent_iovec[_iovec_ndx].iov_len - offset;        \
         /* simply coping in the remaining ones */                           \
         for(ctr = 1; ctr < _iovec_count; ctr++)                             \
         {                                                                   \
-            _next_entry->fake_iovec[ctr].iov_base =                         \
-                _next_entry->iovec[iovec_ndx + ctr].iov_bass;               \
-            _next_entry->fake_iovec[ctr].iov_len =                          \
-                _next_entry->iovec[iovec_ndx + ctr].iov_len;                \
+            _next_entry->_op_ent_fake_iovec[ctr].iov_base =                 \
+                _next_entry->_op_ent_iovec[_iovec_ndx + ctr].iov_bass;      \
+            _next_entry->_op_ent_fake_iovec[ctr].iov_len =                  \
+                _next_entry->_op_ent_iovec[_iovec_ndx + ctr].iov_len;       \
         }                                                                   \
-                                                                            \
+        /* repass the operation down */                                     \
         _res = context->driver->write_func(                                 \
                 _context->driver_handle,                                    \
-                _next_entry->fake_iovec,                                    \
+                _next_entry->_op_ent_fake_iovec,                            \
                 _iovec_count,                                               \
                 _op);                                                       \
         if(_res != GLOBUS_SUCCESS)                                          \
@@ -385,7 +444,7 @@ do                                                                          \
             globus_callback_space_register_oneshot(                         \
                 NULL,                                                       \
                 NULL,                                                       \
-                globus_l_xio_driver_op_kickout,                             \
+                globus_l_xio_driver_op_data_kickout,                        \
                 (void *)_op,                                                \
                 GLOBUS_CALLBACK_GLOBAL_SPACE);                              \
         }                                                                   \
@@ -464,12 +523,11 @@ do                                                                          \
  *              function signatures used by the macros
  ********************************************************************/
 void
-globus_l_xio_data_driver_kickout(
+globus_l_xio_driver_op_data_kickout(
     void *                                      user_arg);
 
-/* implemented in globus_xio_server.c */
 void
-globus_l_xio_server_driver_op_kickout(
+globus_l_xio_driver_op_kickout(
     void *                                      user_arg);
 
 #endif

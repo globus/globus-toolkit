@@ -177,10 +177,11 @@ typedef struct globus_i_xio_context_s
 
 /* MACROS for accessing the op_entry structure unin elements */
 #define _op_ent_data_cb             type_u.handle_s.data_cb
-#define _op_ent_waitforbytes        type_u.handle_s.wait_for_bytes
+#define _op_ent_wait_for            type_u.handle_s.wait_for_bytes
 #define _op_ent_nbytes              type_u.handle_s.nbytes
 #define _op_ent_iovec               type_u.handle_s.iovec
 #define _op_ent_iovec_count         type_u.handle_s.iove_count
+#define _op_ent_fake_iovec          type_u.handle_s.fake_iovec
 
 #define _op_ent_target              type_u.target_s.target
 #define _op_ent_accept_attr         type_u.target_s.accept_attr
@@ -203,8 +204,9 @@ typedef struct globus_i_xio_op_entry_s
             globus_xio_driver_data_callback_t   data_cb;
             globus_size_t                       wait_for_bytes;
             globus_size_t                       nbytes;
-            globus_iovec_t                      iovec;
+            globus_iovec_t *                    iovec;
             int                                 iovec_count;
+            globus_iovec_t *                    fake_iovec;
         } handle_s;
         /* target op entries */
         struct
