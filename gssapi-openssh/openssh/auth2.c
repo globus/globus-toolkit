@@ -178,16 +178,8 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		if (authctxt->user) {
 		    xfree(authctxt->user);
 		    authctxt->user = NULL;
+		    authctxt->valid = 0;
 		}
-		if (authctxt->service) {
-		    xfree(authctxt->service);
-		    authctxt->service = NULL;
-		}
-		if (authctxt->style) {
-		    xfree(authctxt->style);
-		    authctxt->style = NULL;
-		}
-		authctxt->valid = 0;
 #ifdef GSSAPI
 		/* If we're going to set the username based on the
 		   GSSAPI context later, then wait until then to
@@ -221,11 +213,14 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 		setproctitle("%s%s", authctxt->valid ? user : "unknown",
 		    use_privsep ? " [net]" : "");
-		authctxt->service = xstrdup(service);
-		authctxt->style = style ? xstrdup(style) : NULL;
+		if (authctxt->service == NULL) /* only set once */
+		    authctxt->service = xstrdup(service);
+		if (authctxt->style == NULL) /* only set once */
+		    authctxt->style = style ? xstrdup(style) : NULL;
 		if (use_privsep && (authctxt->attempt == 1))
 			mm_inform_authserv(service, style);
-	} else if (strcmp(service, authctxt->service) != 0) {
+	}
+	if (strcmp(service, authctxt->service) != 0) {
 		packet_disconnect("Change of service not allowed: "
 		    "(%s,%s) -> (%s,%s)",
 		    authctxt->user, authctxt->service, user, service);
