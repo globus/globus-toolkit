@@ -74,5 +74,19 @@ my_snprintf(const char				*format, ...);
 char *
 my_vsnprintf(const char				*format,
 	     va_list				ap);
+
+/*
+ * copy_file()
+ *
+ * Copy source to destination, creating destination if needed.
+ * Set permissions on destination to given mode.
+ *
+ * Returns 0 on success, -1 on error.
+ */
+int
+copy_file(const char *source,
+          const char *dest,
+          const mode_t mode);
+
 	     
 #endif /* _STRING_FUNCS_H */
