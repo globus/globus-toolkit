@@ -82,7 +82,7 @@ char *strunames[] =
 #define	MODE_E		4	/* extened block */
 #ifdef FTP_NAMES
 char *modenames[] =
-{"0", "Stream", "Block", "Compressed"};
+{"0", "Stream", "Block", "Compressed", "Extended Block"};
 #endif
 
 /*
