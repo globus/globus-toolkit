@@ -1607,7 +1607,6 @@ globus_l_gsc_intermediate_reply(
 {
     globus_size_t                           len;
     globus_result_t                         res;
-    char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_intermediate_reply);
 
     /*TODO: check state */
@@ -1615,7 +1614,7 @@ globus_l_gsc_intermediate_reply(
     len = strlen(message);
     res = globus_xio_register_write(
             server_handle->xio_handle,
-            message,
+            (globus_byte_t *)message,
             len,
             len,
             NULL,
@@ -1929,6 +1928,7 @@ globus_gridftp_server_control_start(
         strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQ");
         server_handle->opts.send_buf = -1; 
         server_handle->opts.perf_frequency = 5;
+        server_handle->opts.restart_frequency = 5;
         server_handle->opts.receive_buf = -1;
         server_handle->opts.parallelism = 1;
         server_handle->opts.packet_size = -1;

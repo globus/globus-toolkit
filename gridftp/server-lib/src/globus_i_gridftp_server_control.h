@@ -222,14 +222,23 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_MLSD
 } globus_i_gsc_op_type_t;
 
+typedef struct globus_i_gsc_restart_ent_s
+{
+    globus_off_t                        offset;
+    globus_off_t                        length;
+    struct globus_i_gsc_restart_ent_s * next;
+} globus_i_gsc_restart_ent_t;
+
 typedef struct globus_i_gsc_event_data_s
 {
     globus_callback_handle_t                periodic_handle;
-    int                                     perf_frequency;
-    int                                     restart_frequency;
     int                                     stripe_count;
     globus_off_t *                          stripe_total_bytes;
     globus_bool_t                           perf_running;
+
+    globus_i_gsc_restart_ent_t *            restart_head;
+    globus_callback_handle_t                restart_handle;
+    globus_bool_t                           restart_running;
 } globus_i_gsc_event_data_t;
 
 typedef struct globus_i_gsc_handle_opts_s
