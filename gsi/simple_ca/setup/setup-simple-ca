@@ -170,7 +170,7 @@ while test -z "${got_subject}" ; do
 	if test -n "${casubject}"; then
 	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/[Cc][Nn]=\([^,]*\),.*/\1/"`
 	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/[Cc][Nn]=[^,]*,\(.*\)/\1/"`
-            HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/.*\([Oo]=[Gg][Ll][Oo][Bb][Uu][Ss],[ ]*[Oo]=[Gg][Rr][Ii][Dd]\)/\1/" 
+            HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/.*\([Oo]=[Gg][Ll][Oo][Bb][Uu][Ss],[ ]*[Oo]=[Gg][Rr][Ii][Dd]\)/\1/"` 
 	    check_for_globus_ns "$GSI_CA_BASE_DN"
 	    if test -z "${GSI_CA_NAME}" || 
                test -z "${GSI_CA_BASE_DN}"; then
