@@ -892,11 +892,13 @@ sub set_cvsroot
 {
     my ($cvsroot) = @_;
 
-    if ( $anonymous )
+    if ( defined $ENV{'CVSROOT'} )
+    {
+	$cvsroot = $ENV{'CVSROOT'};
+    } elsif ( $anonymous )
     {
 	$cvsroot = ":pserver:anonymous\@cvs.globus.org:" . $cvsroot;
-    } 
-    else {
+    } else {
 	if ( not -d "$cvsroot" )
 	{
 	    $cvsroot = "cvs.globus.org:$cvsroot";
