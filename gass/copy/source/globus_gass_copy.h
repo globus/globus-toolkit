@@ -32,6 +32,13 @@
 
 EXTERN_C_BEGIN
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#include "globus_common.h"
+#include "globus_gass_transfer.h"
+#include "globus_ftp.h"
+#include "globus_io.h"
+#endif
+
 /** Module descriptor
  *
  * Globus GASS copy uses standard Globus module activation and deactivation.

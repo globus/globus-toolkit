@@ -51,6 +51,7 @@ typedef struct globus_i_gass_copy_state_s
     globus_i_gass_copy_state_target_t	source;
     globus_i_gass_copy_state_target_t	dest;
     globus_i_gass_copy_state_number_t	number;
+    globus_i_gass_copy_monitor_t        monitor;
 } globus_i_gass_copy_state_t;
 
 enum
@@ -75,7 +76,6 @@ typedef struct
     globus_object_t *                   err;
     globus_bool_t                       use_err;
     volatile globus_bool_t              done;
-    globus_size_t                       nbytes;
 } globus_i_gass_copy_monitor_t;
 #endif
 
