@@ -5,6 +5,8 @@ get rid of macros so we can hide types
 
 make drivers use their own error macros
 
+CLEAN UP DOC
+
 --------------------
 
 make sure test suite deals with close correctly (on failed opens)

@@ -3651,7 +3651,7 @@ globus_io_register_select(
         if(result != GLOBUS_SUCCESS)
         {
             /* XXX if the read callback was registered, I probably need
-             * to panic, as I can't (easily) stop the read from happening
+             * to panic, because I am too lazy to stop the read from happening
              */
             goto error_register;
         }
