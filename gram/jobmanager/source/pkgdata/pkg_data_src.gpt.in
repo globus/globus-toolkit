@@ -155,7 +155,7 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="doc_runtime">
-                <Dependency Name="globus_gram_protocol" Package="doc">
+            <Dependency Name="globus_gram_protocol" Package="doc">
                 <Version>
                     <Simple_Version Major="3"/>
                 </Version>
@@ -163,31 +163,31 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_runtime">
-                <Dependency Name="globus_gass_copy" Package="pgm">
+            <Dependency Name="globus_gass_copy" Package="pgm">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 
-                <Dependency Name="globus_proxy_utils" Package="pgm">
+            <Dependency Name="globus_proxy_utils" Package="pgm">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
-                <Dependency Name="globus_gram_job_manager" Package="data">
+            <Dependency Name="globus_gram_job_manager" Package="data">
                 <Version>
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
 
-                <Dependency Name="globus_gram_protocol" Package="data">
+            <Dependency Name="globus_gram_protocol" Package="data">
                 <Version>
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
     
-                <Dependency Name="globus_gass_cache_program" Package="pgm">
+            <Dependency Name="globus_gass_cache_program" Package="pgm">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>
