@@ -72,5 +72,8 @@ struct timeval {
 int utimes(char *filename, struct timeval *tvp);
 #endif /* HAVE_UTIMES */
 
+#ifndef HAVE_TRUNCATE
+int truncate (const char *path, off_t length);
+#endif /* HAVE_TRUNCATE */
 
 #endif /* _BSD_MISC_H */

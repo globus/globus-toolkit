@@ -1,11 +1,11 @@
 %define use-stable	1
 %if %{use-stable}
-  %define version 	3.1p1
+  %define version 	3.2.3p1
   %define cvs		%{nil}
   %define release 	1
 %else
-  %define version 	3.0p1
-  %define cvs		cvs20011102
+  %define version 	3.2.3
+  %define cvs		cvs20020515
   %define release 	0r1
 %endif
 %define xsa		x11-ssh-askpass		
@@ -93,7 +93,7 @@ mkdir -p $DESTDIR/{etc/pam.d,%{SVIcdir},%{SVIdir}}
 # enabling X11 forwarding on the server is convenient and okay,
 # on the client side we consider it a potential security risk!
 %{fixUP} -vT  $DESTDIR/etc/ssh/sshd_config -e '
-   s/X11Forwarding no/X11Forwarding yes/i'
+   s/#X11Forwarding no/X11Forwarding yes/i'
 
 install -m644 contrib/caldera/sshd.pam $DESTDIR/etc/pam.d/sshd
 # FIXME: disabled, find out why this doesn't work with NIS
@@ -171,7 +171,7 @@ EOF
 if [ -x %{LSBinit}-install ]; then
   %{LSBinit}-install sshd
 else
-  lisa --SysV-init install sshd S55 3:4:5 K45 0:1:2:6
+  lisa --SysV-init install sshd S55 2:3:4:5 K45 0:1:6
 fi
 
 ! %{SVIdir}/sshd status || %{SVIdir}/sshd restart

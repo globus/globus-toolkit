@@ -99,3 +99,22 @@ int utimes(char *filename, struct timeval *tvp)
 	return(utime(filename, &ub));
 }
 #endif 
+
+#ifndef HAVE_TRUNCATE
+int truncate (const char *path, off_t length)
+{
+	int fd, ret, saverrno;
+
+	fd = open(path, O_WRONLY);
+	if (fd < 0)
+		return -1;
+
+	ret = ftruncate(fd, length);
+	saverrno = errno;
+	(void) close (fd);
+	if (ret == -1)
+		errno = saverrno;
+	return(ret);
+}
+#endif /* HAVE_TRUNCATE */
+

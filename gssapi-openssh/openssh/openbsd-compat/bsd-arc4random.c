@@ -48,7 +48,7 @@ unsigned int arc4random(void)
 	static int first_time = 1;
 
 	if (rc4_ready <= 0) {
-		if (!first_time)
+		if (first_time)
 			seed_rng();
 		first_time = 0;
 		arc4random_stir();

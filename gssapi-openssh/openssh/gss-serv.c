@@ -44,6 +44,7 @@
 #include "dispatch.h"
 #include "servconf.h"
 #include "compat.h"
+#include "misc.h"
 
 #include "ssh-gss.h"
 
@@ -602,7 +603,6 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
         	char *user;
         	char *gridmapped_name = NULL;
         	struct passwd *pw = NULL;
-        	gssapi_setup_env();
         	if(globus_gss_assist_gridmap(gssapi_client_name.value,
                            &gridmapped_name) == 0) {
                		user = gridmapped_name;
