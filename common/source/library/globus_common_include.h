@@ -242,7 +242,7 @@ extern const char * _globus_func_name;
 #ifndef TARGET_ARCH_WIN32
 	#include <inttypes.h>
 #else /* assume 32 bit Windows*/
-	//#define uint32_t unsigned __int32 -- this might work?
+	/* #define uint32_t unsigned __int32 -- this might work? */
 	#define uint32_t ULONG32
 #define vsnprintf _vsnprintf
 #endif
