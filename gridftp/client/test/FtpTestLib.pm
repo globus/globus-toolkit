@@ -126,11 +126,11 @@ sub compare_local_files($$)
 
     if(-B $a or -B $b)
     {
-	$diffs = `sed -e 's/\\[restart plugin\\].*\$//' $b | cmp '$a' - | sed -e 's/^/# /'`;
+	$diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | cmp '$a' - | sed -e 's/^/# /'`;
     }
     else
     {
-        $diffs = `sed -e 's/\\[restart plugin\\].*\$//' $b | diff '$a' - | sed -e 's/^/# /'`;
+        $diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | diff '$a' - | sed -e 's/^/# /'`;
     }
 
     if($diffs ne '')
