@@ -29,6 +29,7 @@
 
 #include "config.h"
 
+#define get_progname bsd_get_progname
 char *get_progname(char *argv0);
 
 #ifndef HAVE_SETSID

@@ -201,6 +201,12 @@
 /* Define if compiler implements __func__ */
 #undef HAVE___func__
 
+/* Define this if you're building with GSSAPI MechGlue */
+#undef MECHGLUE
+
+/* Define this is you want GSSAPI support in the version 2 protocol */
+#undef GSSAPI
+
 /* Define if you want Kerberos 5 support */
 #undef KRB5
 
@@ -212,6 +218,9 @@
 
 /* Define if you want AFS support */
 #undef AFS
+
+/* Define if you want GSI/Globus authentication support */
+#undef GSI
 
 /* Define if you want S/Key support */
 #undef SKEY

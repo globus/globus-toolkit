@@ -507,6 +507,163 @@ int main(void){struct dirent d;exit(sizeof(d.d_name)<=sizeof(char));}
 	]
 )
 
+# Check whether the user wants GSSAPI mechglue support
+AC_ARG_WITH(mechglue,
+	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
+	[
+		AC_MSG_CHECKING(for mechglue library)
+
+		if test -e ${withval}/libgssapi.a ; then
+		    mechglue_lib=${withval}/libgssapi.a
+		elif test -e ${withval}/lib/libgssapi.a ; then
+		    mechglue_lib=${withval}/lib/libgssapi.a
+		else
+		    AC_MSG_ERROR("Can't find libgssapi in ${withval}");
+		fi
+		LIBS="$LIBS ${mechglue_lib}"
+		AC_MSG_RESULT(${mechglue_lib})
+
+#		if test -e ${withval}/gssapi.h ; then
+#		    CPPFLAGS="$CPPFLAGS -I${withval}"
+#		elif test -e ${withval}/include/gssapi.h ; then
+#		    CPPFLAGS="$CPPFLAGS -I${withval}/include"
+#		else
+#		    AC_MSG_ERROR("Can't find gssapi.h in ${withval}");
+#		fi
+		
+		AC_CHECK_LIB(dl, dlopen, , )
+		if test $ac_cv_lib_dl_dlopen = yes; then
+		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
+		fi
+
+		AC_DEFINE(GSSAPI)
+		AC_DEFINE(MECHGLUE)
+		GSSAPI="mechglue"
+
+	]
+)
+
+
+# Check whether the user wants GSI (Globus) support
+gsi_path="no"
+AC_ARG_WITH(gsi,
+	[  --with-gsi=PATH         Enable GSI/Globus authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus,
+	[  --with-globus=PATH      Enable GSI/Globus authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+# Check whether the user has a Globus flavor type
+globus_flavor_type="no"
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=TYPE         Describe Globus flavor type (ex: gcc32dbg, etc.)],
+	[
+		globus_flavor_type="$withval"
+	]
+)
+
+if test "x$gsi_path" != "xno" ; then
+	# Globus GSSAPI configuration
+	AC_DEFINE(GSI)
+
+	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus/GSI.])
+	fi
+	if test -z "$GSSAPI"; then
+		AC_DEFINE(GSSAPI)
+		GSSAPI="GSI"
+	fi
+
+	# Find GLOBUS/GSI installation Directory
+	AC_MSG_CHECKING(for Globus/GSI installation directory)
+
+	globus_install_dir=$gsi_path
+
+	if test "x$globus_install_dir" = "xyes" ; then
+                AC_MSG_ERROR(Cannot find Globus/GSI installation directory -- a path must be specified!)
+	fi
+	AC_MSG_RESULT($globus_install_dir)
+
+	# Find GLOBUS/GSI development directory
+	AC_MSG_CHECKING(for Globus/GSI development directory)
+
+	if test -d ${globus_install_dir}/lib ; then
+		# Looks like a flat directory structure from configure/make
+		# and not globus-install or gsi-install
+		globus_dev_dir=$globus_install_dir
+
+	else
+		# Assume a true globus installation with architecture
+		# directories and run globus-development-path to find
+		# the development directory
+
+		# Set GLOBUS_INSTALL_PATH
+		GLOBUS_INSTALL_PATH=$globus_install_dir
+		export GLOBUS_INSTALL_PATH
+
+		dev_path_program=${globus_install_dir}/bin/globus-development-path
+
+		if test ! -x ${dev_path_program} ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
+		fi
+
+		globus_dev_dir=`${dev_path_program}`
+
+		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+		fi
+
+		if test ! -d "$globus_dev_dir" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
+		fi
+	fi
+	AC_MSG_RESULT($globus_dev_dir)
+
+	# Find GLOBUS/GSI flavor Directory
+	AC_MSG_CHECKING(for Globus flavor type)
+
+        if test "x$globus_flavor_type" = "xno" ; then
+		if test "$GSSAPI" = "mechglue"; then
+			GSI_LIBS="-lglobus_gss_assist -lglobus_gaa"
+		else
+			GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+		fi
+		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
+		GSI_CPPFLAGS="-I${globus_dev_dir}/include"
+		AC_MSG_RESULT(none)
+	else
+                GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
+
+		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
+			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
+                fi
+
+		AC_MSG_RESULT($globus_flavor_type)
+		if test "$GSSAPI" = "mechglue"; then
+			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a"
+		else
+			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
+		fi
+		GSI_CPPFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+	fi
+
+	LIBS="$LIBS $GSI_LIBS"
+	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
+	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+	INSTALL_GSISSH="yes"
+else
+	INSTALL_GSISSH=""
+fi
+AC_SUBST(INSTALL_GSISSH)
+# End Globus/GSI section
+
 # Check whether user wants S/Key support
 SKEY_MSG="no" 
 AC_ARG_WITH(skey,
@@ -695,6 +852,7 @@ AC_ARG_WITH(pam,
 			AC_CHECK_LIB(dl, dlopen, , )
 			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
 			AC_CHECK_FUNCS(pam_getenvlist)
+			AC_CHECK_FUNCS(pam_putenv)
 
 			disable_shadow=yes
 			PAM_MSG="yes"
@@ -763,7 +921,79 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
-LIBS="$LIBS -lcrypto"
+
+# Patch up SSL libraries for GSI authentication as needed
+if test "x$globus_flavor_type" != "xno" ; then
+	#
+	# For Globus 2, always link with the static libraries
+	#
+
+	libssl_utils="${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a"
+
+	#
+	# Trouble arrives at GT 2.1.3+ with the reorg of globus_ssl_utils.  Compensating for
+	# the new library linking required here through file tests to see which libraries to 
+	# link against.
+	#
+
+	libgsi_proxy_core="${gsi_path}/lib/libglobus_gsi_proxy_core_${globus_flavor_type}.a"
+	libgsi_credential="${gsi_path}/lib/libglobus_gsi_credential_${globus_flavor_type}.a"
+	libgsi_callback="${gsi_path}/lib/libglobus_gsi_callback_${globus_flavor_type}.a"
+	liboldgaa="${gsi_path}/lib/libglobus_oldgaa_${globus_flavor_type}.a"
+	libgsi_sysconfig="${gsi_path}/lib/libglobus_gsi_sysconfig_${globus_flavor_type}.a"
+	libproxy_ssl="${gsi_path}/lib/libglobus_proxy_ssl_${globus_flavor_type}.a"
+	libgsi_cert_utils="${gsi_path}/lib/libglobus_gsi_cert_utils_${globus_flavor_type}.a"
+	libopenssl_error="${gsi_path}/lib/libglobus_openssl_error_${globus_flavor_type}.a"
+	libopenssl="${gsi_path}/lib/libglobus_openssl_${globus_flavor_type}.a"
+
+	if test -r ${libgsi_proxy_core} \
+	     -a -r ${libgsi_credential} \
+	     -a -r ${libgsi_callback} \
+	     -a -r ${liboldgaa} \
+	     -a -r ${libgsi_sysconfig} \
+	     -a -r ${libproxy_ssl} \
+	     -a -r ${libgsi_cert_utils} \
+	     -a -r ${libopenssl_error} \
+	     -a -r ${libopenssl} ; then
+		LIBS="$LIBS ${libgsi_proxy_core}"
+		LIBS="$LIBS ${libgsi_credential}"
+		LIBS="$LIBS ${libgsi_callback}"
+		LIBS="$LIBS ${liboldgaa}"
+		LIBS="$LIBS ${libgsi_sysconfig}"
+		LIBS="$LIBS ${libproxy_ssl}"
+		LIBS="$LIBS ${libgsi_cert_utils}"
+		LIBS="$LIBS ${libopenssl_error}"
+		LIBS="$LIBS ${libopenssl}"
+	elif test -r ${libssl_utils}; then
+		LIBS="$LIBS ${libssl_utils}"
+	else
+		AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+	fi
+
+	#
+	# Standard openssl libraries.  They need to appear near the end of the link line.
+	#
+
+	LIBS="$LIBS ${gsi_path}/lib/libssl_${globus_flavor_type}.a"
+	LIBS="$LIBS ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
+
+	#
+	# Another "GT 2.1.3+"ism.
+	#
+
+	libcommon_path="${gsi_path}/lib/libglobus_common_${globus_flavor_type}.a"
+	if test -r ${libcommon_path}; then
+		LIBS="$LIBS ${libcommon_path}"
+	fi
+else
+	if test "x$gsi_path" != "xno" ; then
+		# Older GSI needs -lssl too
+		LIBS="$LIBS -lssl -lcrypto"
+	else # if no GSI authentication (i.e., OpenSSL default)
+		LIBS="$LIBS -lcrypto"
+	fi
+fi # globus_flavor_type
+
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
 	[
 		dnl Check default openssl install dir
@@ -1786,6 +2016,47 @@ AC_ARG_WITH(kerberos5,
                                 blibpath="$blibpath:${KRB5ROOT}/lib"
                         fi
                         AC_CHECK_LIB(resolv, dn_expand, , )
+
+			# If we're using some other GSSAPI
+			if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+				AC_MSG_ERROR([$GSSAPI GSSAPI library conflicts with Kerberos support.  Use mechglue instead.])
+			fi
+			AC_CHECK_LIB(gssapi,gss_init_sec_context,
+				[ AC_DEFINE(GSSAPI)
+				  K5LIBS="-lgssapi $K5LIBS" ],
+				[ AC_CHECK_LIB(gssapi_krb5,gss_init_sec_context,
+					[ AC_DEFINE(GSSAPI)
+				  	  K5LIBS="-lgssapi_krb5 $K5LIBS" ],
+					AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]),
+					$K5LIBS)
+				],
+				$K5LIBS)
+		
+			AC_CHECK_HEADER(gssapi.h, ,
+				[ unset ac_cv_header_gssapi_h
+				  CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi" 
+				  AC_CHECK_HEADERS(gssapi.h, ,
+					AC_MSG_WARN([Cannot find any suitable gss-api header - build may fail])
+				  ) 
+				]
+			)
+
+			AC_CHECK_LIB(gssapi, gss_krb5_copy_ccache, /bin/true,
+				[ K5LIBS="-lgssapi_krb5 $K5LIBS"
+				  AC_CHECK_LIB(gssapi_krb5, gss_krb5_copy_ccache, /bin/true,
+					AC_MSG_WARN([Cannot find gss_krb5_copy_ccache -- build may fail]),
+					$K5LIBS)
+				],
+				$K5LIBS)
+
+			oldCPP="$CPPFLAGS"
+			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
+			AC_CHECK_HEADER(gssapi_krb5.h, ,
+					[ CPPFLAGS="$oldCPP" ])
+
+			if test -z "$GSSAPI"; then
+				GSSAPI="KRB5";
+			fi
 
                         KRB5=yes
                 fi
