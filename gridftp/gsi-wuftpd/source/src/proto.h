@@ -102,7 +102,8 @@ int
 g_receive_data(
     globus_ftp_control_handle_t *                   handle,
     FILE *                                          outstr,
-    int                                             offset);
+    int                                             offset,
+    char *                                          fname);
 
 int
 g_connect_write(

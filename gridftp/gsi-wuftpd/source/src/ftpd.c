@@ -4936,7 +4936,7 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = g_receive_data(&g_data_handle, fout, offset);
+        TransferIncomplete = g_receive_data(&g_data_handle, fout, offset, name);
     }
 #   else
     {
