@@ -78,6 +78,7 @@ gp -a \
         gridftp\
         gsi\
         io\
+        libxml2\
         mds\
         mp\
         nexus\
