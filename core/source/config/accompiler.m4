@@ -246,6 +246,30 @@ case ${host}--$1 in
         fi
         CC="$lac_cv_CC"
         ;;
+    *x86_64-*linux* )
+        if test "$lac_cv_build_64bit" = "no"; then
+            AC_MSG_ERROR(32 bits not supported on this platform)
+            exit 1
+        fi
+
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+            else
+                AC_MSG_ERROR(vendorcc not supported on this platform)
+            fi
+        fi
+        CC="$lac_cv_CC"
+	lac_CFLAGS="$lac_CFLAGS -m64"
+        ;;
     alpha*linux* )
         if test "$lac_cv_build_64bit" = "no"; then
             AC_MSG_ERROR(32 bits not supported on this platform)
