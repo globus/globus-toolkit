@@ -152,6 +152,11 @@ struct rsa_st
 #define RSA_FLAG_CACHE_PUBLIC		0x02
 #define RSA_FLAG_CACHE_PRIVATE		0x04
 #define RSA_FLAG_BLINDING		0x08
+#define RSA_FLAG_NO_BLINDING		0x80 /* new with 0.9.6j and 0.9.7b; the built-in
+                                              * RSA implementation now uses blinding by
+                                              * default (ignoring RSA_FLAG_BLINDING),
+                                              * but other engines might not need it
+                                              */
 #define RSA_FLAG_THREAD_SAFE		0x10
 /* This flag means the private key operations will be handled by rsa_mod_exp
  * and that they do not depend on the private key components being present:
@@ -163,6 +168,8 @@ struct rsa_st
 /* This flag in the RSA_METHOD enables the new rsa_sign, rsa_verify functions.
  */
 #define RSA_FLAG_SIGN_VER		0x40
+
+#define RSA_FLAG_NO_BLINDING		0x80
 
 #define RSA_PKCS1_PADDING	1
 #define RSA_SSLV23_PADDING	2
@@ -329,6 +336,7 @@ void ERR_load_RSA_strings(void);
 #define RSA_R_DMP1_NOT_CONGRUENT_TO_D			 124
 #define RSA_R_DMQ1_NOT_CONGRUENT_TO_D			 125
 #define RSA_R_D_E_NOT_CONGRUENT_TO_1			 123
+#define RSA_R_INTERNAL_ERROR				 133
 #define RSA_R_INVALID_MESSAGE_LENGTH			 131
 #define RSA_R_IQMP_NOT_INVERSE_OF_Q			 126
 #define RSA_R_KEY_SIZE_TOO_SMALL			 120
