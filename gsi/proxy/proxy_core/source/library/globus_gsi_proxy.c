@@ -993,13 +993,14 @@ globus_gsi_proxy_sign_req(
             1,
             ku_DER_string);
 
+        ASN1_OCTET_STRING_free(ku_DER_string);
+        
         if(extension == NULL)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
                 ("Couldn't create new keyUsage extension"));
-            ASN1_OCTET_STRING_free(ku_DER_string);
             goto done;
         }
         
