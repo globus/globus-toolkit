@@ -396,6 +396,21 @@ globus_jobmanager_request_rm_scratchdir(
     globus_gram_jobmanager_request_t *	request);
 
 extern
+int 
+globus_jobmanager_request_stage_in(
+    globus_gram_jobmanager_request_t *	request);
+
+extern
+int 
+globus_jobmanager_request_stage_out(
+    globus_gram_jobmanager_request_t *	request);
+
+extern
+int 
+globus_jobmanager_request_file_cleanup(
+    globus_gram_jobmanager_request_t *	request);
+
+extern
 int
 globus_jobmanager_log(
     FILE *				log_fp,

@@ -287,6 +287,11 @@ globus_jobmanager_request(
 	    script_arg_fp,
 	    request->rsl);
 
+    if(request->jobmanager_logfile)
+    {
+	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]\n",
+		request->jobmanager_logfile); 
+    }
     /* Override stdout/stderr rsl values with our local values. */
     if ( request->jm_restart == GLOBUS_NULL )
     {
@@ -686,7 +691,7 @@ globus_l_gram_script_run(
 		"JMI: while return_buf = %s\n",
 		return_buf);
 
-	if(return_var != NULL && return_val != NULL)
+	if(return_var != NULL && return_val != NULL && return_buf[0] != '\0')
 	{
 	    varlen = strlen(return_var);
 
@@ -707,10 +712,12 @@ globus_l_gram_script_run(
 
     pclose(fp);
 
-    return_buf[strlen(return_buf)-1] = '\0';
-    globus_jobmanager_log(request->jobmanager_log_fp,
-          "JMI: return_buf = %s\n", return_buf );
-
+    if(return_buf[0] != '\0')
+    {
+	return_buf[strlen(return_buf)-1] = '\0';
+	globus_jobmanager_log(request->jobmanager_log_fp,
+	      "JMI: return_buf = %s\n", return_buf );
+    }
     if (strncmp(return_buf, "GRAM_SCRIPT_SUCCESS:", 20) == 0)
     {
         if ((script_status = atoi(&return_buf[20])) < 0)
@@ -726,7 +733,10 @@ globus_l_gram_script_run(
 		"JMI: ret value = %d\n",
                        script_status );
 
-        request->status = script_status;
+	if(script_status != 0)
+	{
+	    request->status = script_status;
+	}
     }
     else if (strncmp(return_buf, "GRAM_SCRIPT_ERROR:", 18) == 0)
     {
@@ -858,19 +868,6 @@ globus_l_gram_request_validate(
 	
 	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
 
-	goto free_location_exit;
-    }
-
-    if (!(statbuf.st_mode & 0111))
-    {
-	globus_jobmanager_log(
-		request->jobmanager_log_fp,
-		"JMI: ERROR: Not permitted to execute script %s.\n",
-		script_path);
-	
-	request->failure_code =
-	    GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
-	
 	goto free_location_exit;
     }
 
@@ -1038,13 +1035,8 @@ globus_jobmanager_request_stage_in(
     if (!request)
         return(GLOBUS_FAILURE);
 
-    if (globus_l_gram_request_validate(request) != GLOBUS_SUCCESS)
-        return(GLOBUS_FAILURE);
-
     globus_jobmanager_log(request->jobmanager_log_fp,
-          "JMI: in globus_jobmanager_request()\n" );
-
-    request->poll_frequency = 30;
+          "JMI: in globus_jobmanager_request_stage_in()\n" );
 
     if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
     {
@@ -1061,6 +1053,11 @@ globus_jobmanager_request_stage_in(
     globus_l_gram_job_manager_print_rsl(
 	    script_arg_fp,
 	    request->rsl);
+    if(request->jobmanager_logfile)
+    {
+	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]\n",
+		request->jobmanager_logfile); 
+    }
     fprintf(script_arg_fp, "};\n");
 
     sprintf(script_cmd,
@@ -1090,6 +1087,131 @@ globus_jobmanager_request_stage_in(
 }
 /* globus_jobmanager_request_stage_in() */
 
+int 
+globus_jobmanager_request_stage_out(
+    globus_gram_jobmanager_request_t *	request)
+{
+    char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    FILE * script_arg_fp;
+    int rc;
+
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    globus_jobmanager_log(request->jobmanager_log_fp,
+          "JMI: in globus_jobmanager_request_stage_out()\n" );
+
+    if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: Failed to open gram script argument file. %s\n",
+              graml_script_arg_file );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        request->failure_code = 
+              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    fprintf(script_arg_fp, "\n$rsl = {\n");
+    globus_l_gram_job_manager_print_rsl(
+	    script_arg_fp,
+	    request->rsl);
+    if(request->jobmanager_logfile)
+    {
+	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]\n",
+		request->jobmanager_logfile); 
+    }
+    fprintf(script_arg_fp, "};\n");
+
+    sprintf(script_cmd,
+		"%s/globus-job-manager-script.pl -m %s -f %s -c stage_out\n",
+		request->jobmanager_libexecdir,
+		request->jobmanager_type,
+		graml_script_arg_file);
+    fclose(script_arg_fp);
+
+    rc = globus_l_gram_script_run(
+		script_cmd,
+		request,
+		NULL,
+		NULL);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: returning with error: %d\n", request->failure_code );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    globus_jobmanager_log(request->jobmanager_log_fp,
+	    "JMI: returning with success\n" );
+    return(GLOBUS_SUCCESS);
+}
+/* globus_jobmanager_request_stage_out() */
+
+int 
+globus_jobmanager_request_file_cleanup(
+    globus_gram_jobmanager_request_t *	request)
+{
+    char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    FILE * script_arg_fp;
+    int rc;
+
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    globus_jobmanager_log(request->jobmanager_log_fp,
+          "JMI: in globus_jobmanager_request_file_cleanup()\n" );
+
+    if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: Failed to open gram script argument file. %s\n",
+              graml_script_arg_file );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        request->failure_code = 
+              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    fprintf(script_arg_fp, "\n$rsl = {\n");
+    globus_l_gram_job_manager_print_rsl(
+	    script_arg_fp,
+	    request->rsl);
+    if(request->jobmanager_logfile)
+    {
+	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]\n",
+		request->jobmanager_logfile); 
+    }
+    fprintf(script_arg_fp, "};\n");
+
+    sprintf(script_cmd,
+		"%s/globus-job-manager-script.pl -m %s -f %s -c file_cleanup\n",
+		request->jobmanager_libexecdir,
+		request->jobmanager_type,
+		graml_script_arg_file);
+    fclose(script_arg_fp);
+
+    rc = globus_l_gram_script_run(
+		script_cmd,
+		request,
+		NULL,
+		NULL);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: returning with error: %d\n", request->failure_code );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    globus_jobmanager_log(request->jobmanager_log_fp,
+	    "JMI: returning with success\n" );
+    return(GLOBUS_SUCCESS);
+}
+/* globus_jobmanager_request_file_cleanup() */
 /**
  * Recursively print an RSL value.
  *

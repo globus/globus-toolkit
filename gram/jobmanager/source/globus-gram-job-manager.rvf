@@ -227,3 +227,26 @@ Attribute: stderrposition
 Description: "Specifies where in the file remote standard error streaming
               should be restarted from."
 ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
+
+Attribute: filestagein
+Description: "Specifies a list of (\"remote URL\" \"local file\") pairs which
+              indicate files to be staged to the nodes which will run the
+	      job."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: filestageinshared
+Description: "Specifies a list of (\"remote URL\" \"local file\") pairs which
+              indicate files to be staged into the cache. A symlink from the
+	      cache to the \"local file\" path will be made."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: filestageout
+Description: "Specifies a list of (\"local file\" \"remote URL\") pairs which
+              indicate files to be staged from the job to a GASS-compatible
+	      file server."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: filecleanup
+Description: "Specifies a list of files which will be removed after the job
+              is completed."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

@@ -253,6 +253,16 @@ static
 int
 globus_l_gram_job_manager_activate(void);
 
+static
+globus_bool_t
+globus_l_gram_job_manager_need_stage_in(
+    globus_gram_jobmanager_request_t *	request);
+
+static
+globus_bool_t
+globus_l_gram_job_manager_need_stage_out(
+    globus_gram_jobmanager_request_t *	request);
+
 /*
  * Define variables for external use
  */
@@ -517,14 +527,14 @@ int main(int argc,
         {
             publish_jobs_flag = 1;
         }
-	else if (strcmp(argv[i], "-scratch-dir-base") == 0)
-	{
-	    scratch_dir_base = argv[++i];
-	}
         else if (strcmp(argv[i], "-publish-users") == 0)
         {
             /* NOP */ ;
         }
+	else if (strcmp(argv[i], "-scratch-dir-base") == 0)
+	{
+	    scratch_dir_base = argv[++i];
+	}
         else if ((strcmp(argv[i], "-condor-arch") == 0)
                  && (i + 1 < argc))
         {
@@ -580,15 +590,15 @@ int main(int argc,
         {
             request->host_osname = globus_libc_strdup(argv[++i]);
         }
-        else if ((strcmp(argv[i], "-globus-tcp-port-range") == 0)
-                 && (i + 1 < argc))
-        {
-            tcp_port_range = globus_libc_strdup(argv[++i]);
-        }
         else if ((strcmp(argv[i], "-globus-host-osversion") == 0)
                  && (i + 1 < argc))
         {
             request->host_osversion = globus_libc_strdup(argv[++i]);
+        }
+        else if ((strcmp(argv[i], "-globus-tcp-port-range") == 0)
+                 && (i + 1 < argc))
+        {
+            tcp_port_range = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-machine-type") == 0)
                  && (i + 1 < argc))
@@ -1104,35 +1114,38 @@ int main(int argc,
 		 GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 	}
 
-	if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
+	if(rc == GLOBUS_SUCCESS)
 	{
-	    globus_jobmanager_log( request->jobmanager_log_fp,
-	      "JM: final rsl specification >>>>\n");
-	    globus_jobmanager_log( request->jobmanager_log_fp,
-	      "%s\n", final_rsl_spec);
-	    globus_jobmanager_log( request->jobmanager_log_fp,
-	      "JM: <<<< final rsl specification\n");
-	}
+	    if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
+	    {
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		  "JM: final rsl specification >>>>\n");
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		  "%s\n", final_rsl_spec);
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		  "JM: <<<< final rsl specification\n");
+	    }
 
-	rc = globus_gram_job_manager_validate_rsl(
-		request,
-		GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
-	/*
-	 * Eval again, as some default parameters may have to be
-	 * RSL-substituted
-	 */
-	rc = globus_rsl_eval(rsl_tree, symbol_table);
-	if (rc != GLOBUS_SUCCESS)
-	{
-	    rc = GLOBUS_FAILURE;
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	    request->failure_code =
-		 GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-	}
+	    rc = globus_gram_job_manager_validate_rsl(
+		    request,
+		    GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
+	    /*
+	     * Eval again, as some default parameters may have to be
+	     * RSL-substituted
+	     */
+	    rc = globus_rsl_eval(rsl_tree, symbol_table);
+	    if (rc != GLOBUS_SUCCESS)
+	    {
+		rc = GLOBUS_FAILURE;
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code =
+		     GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	    }
 
-        /* fill the request structure with values from the RSL
-         */
-        rc = globus_l_gram_request_fill(rsl_tree, request);
+	    /* fill the request structure with values from the RSL
+	     */
+	    rc = globus_l_gram_request_fill(rsl_tree, request);
+	}
     }
 
     if (rc == GLOBUS_SUCCESS && request->jm_restart != NULL)
@@ -1210,21 +1223,31 @@ int main(int argc,
 	     * RSL-substituted
 	     */
 	    rc = globus_rsl_eval(request->rsl, symbol_table);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		rc = GLOBUS_FAILURE;
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code =
+		     GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	    }
 
 	    /* Augment the submission RSL with the new validated parameters
 	     * from the restart rsl
 	     */
 
-	    request->rsl = globus_l_gram_job_manager_merge_rsl(
-		    rsl_tree,
-		    restart_rsl_tree);
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		request->rsl = globus_l_gram_job_manager_merge_rsl(
+			rsl_tree,
+			restart_rsl_tree);
 
-	    globus_rsl_free_recursive(rsl_tree);
-	    globus_rsl_free_recursive(restart_rsl_tree);
+		globus_rsl_free_recursive(rsl_tree);
+		globus_rsl_free_recursive(restart_rsl_tree);
 
-	    rsl_tree = request->rsl;
+		rsl_tree = request->rsl;
 
-	    rc = globus_l_gram_request_fill(request->rsl, request);
+		rc = globus_l_gram_request_fill(request->rsl, request);
+	    }
 	}
 
 	if (rc != GLOBUS_SUCCESS && request->failure_code == 0)
@@ -1293,6 +1316,7 @@ int main(int argc,
     /* Open output destinations */
     globus_i_gram_job_manager_output_open(request);
 
+    /* Relocate proxy, or remove it in the case of an error above */
     if ((!krbflag) && (!debugging_without_client))
     {
 	if (rc == GLOBUS_SUCCESS)
@@ -1554,7 +1578,10 @@ int main(int argc,
 		    request->job_id,
 		    final_rsl_spec);
 	}
-	rc = globus_jobmanager_request_stage_in(request);
+	if (globus_l_gram_job_manager_need_stage_in(request))
+	{
+	    rc = globus_jobmanager_request_stage_in(request);
+	}
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    rc = globus_jobmanager_request(request);
@@ -1844,6 +1871,14 @@ int main(int argc,
 	globus_callback_unregister(stat_cleanup_poll_handle);
     } /* endif */
 
+    if (globus_l_gram_job_manager_need_stage_out(request))
+    {
+	globus_jobmanager_log( request->jobmanager_log_fp,
+	      "JM: Staging out files as requested.\n");
+
+	rc = globus_jobmanager_request_stage_out(request);
+    }
+
     if (request->save_state == GLOBUS_TRUE)
     {
 	globus_callback_unregister(ttl_update_handle);
@@ -1948,6 +1983,7 @@ int main(int argc,
     {
 	/* Remove the scratch directory */
 	globus_jobmanager_request_rm_scratchdir(request);
+	globus_jobmanager_request_file_cleanup(request);
 
 	/* clear any other cache entries which contain the gram job id as
 	 * the tag
@@ -2058,15 +2094,15 @@ int main(int argc,
 
     switch(logfile_flag)
     {
-      case GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE:
-        break;
+      case GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS:
+	  break;
       case GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR:
-	if((!graml_jm_request_failed) || request->dry_run)
+	if(graml_jm_request_failed && !request->dry_run)
 	{
 	    break;
 	}
 	/* FALLSTHROUGH */
-      case GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS:
+      case GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE:
 	if (strcmp(request->jobmanager_logfile, "/dev/null") != 0)
 	{
 	    /*
@@ -2720,7 +2756,7 @@ globus_l_gram_setup_duct(
 				  GLOBUS_NULL);
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_jobmanager_log( graml_log_fp,
+	globus_jobmanager_log( request->jobmanager_log_fp,
 		       "JM: duct_control_init_failed: %d\n",
 		       rc);
 	return GLOBUS_GRAM_PROTOCOL_ERROR_DUCT_INIT_FAILED;
@@ -2731,7 +2767,7 @@ globus_l_gram_setup_duct(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_jobmanager_log( graml_log_fp,
+	globus_jobmanager_log( request->jobmanager_log_fp,
 		       "JM: duct_control_contact_url failed: %d\n",
 		       rc);
 
@@ -2893,8 +2929,10 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static char *
-globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * request)
+static
+char *
+globus_l_gram_user_proxy_relocate(
+    globus_gram_jobmanager_request_t *	request)
 {
     int            rc;
     int            proxy_fd, new_proxy_fd;
@@ -3034,7 +3072,8 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * request)
 
     return(cache_user_proxy_filename);
 
-} /* globus_l_gram_user_proxy_relocate() */
+}
+/* globus_l_gram_user_proxy_relocate() */
 
 /******************************************************************************
 Function:       globus_l_gram_tokenize()
@@ -4428,3 +4467,88 @@ common_failed:
     return rc;
 }
 /* globus_l_gram_job_manager_activate() */
+
+static
+globus_bool_t
+globus_l_gram_job_manager_need_stage_in(
+    globus_gram_jobmanager_request_t *	request)
+{
+    globus_list_t *			attributes;
+    globus_list_t *			node;
+    char *				value;
+    globus_url_t			url;
+    int					i;
+    char *				can_stage[] =
+					{ GLOBUS_GRAM_PROTOCOL_STDIN_PARAM,
+					  GLOBUS_GRAM_PROTOCOL_EXECUTABLE_PARAM,
+					  NULL
+					};
+
+    attributes = globus_rsl_boolean_get_operand_list(request->rsl);
+
+    if(globus_list_search_pred(attributes,
+		               globus_l_gram_job_manager_rsl_match,
+			       GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM))
+    {
+	return GLOBUS_TRUE;
+    }
+    else if(globus_list_search_pred(
+		attributes,
+		globus_l_gram_job_manager_rsl_match,
+		GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM))
+    {
+	return GLOBUS_TRUE;
+    }
+    else
+    {
+	for(i = 0; can_stage[i] != NULL; i++)
+	{
+	    node = globus_list_search_pred(attributes,
+					   globus_l_gram_job_manager_rsl_match,
+					   can_stage[i]);
+	    if(node)
+	    {
+		value =
+		    globus_rsl_value_literal_get_string(
+			    globus_list_first(node));
+
+		if(globus_url_parse(value, &url) == 0)
+		{
+		    if(url.scheme_type != GLOBUS_URL_SCHEME_FILE)
+		    {
+			globus_url_destroy(&url);
+			return GLOBUS_TRUE;
+		    }
+		    else
+		    {
+			globus_url_destroy(&url);
+		    }
+		}
+	    }
+	}
+    }
+    return GLOBUS_FALSE;
+}
+/* globus_l_gram_job_manager_need_stage_in() */
+
+static
+globus_bool_t
+globus_l_gram_job_manager_need_stage_out(
+    globus_gram_jobmanager_request_t *	request)
+{
+    globus_list_t *			attributes;
+
+    attributes = globus_rsl_boolean_get_operand_list(request->rsl);
+
+    if(globus_list_search_pred(attributes,
+		               globus_l_gram_job_manager_rsl_match,
+			       GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM))
+    {
+	return GLOBUS_TRUE;
+    }
+    else
+    {
+	return GLOBUS_FALSE;
+    }
+}
+/* globus_l_gram_job_manager_need_stage_out() */

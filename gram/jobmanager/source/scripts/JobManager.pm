@@ -72,7 +72,7 @@ sub log
 
     if(exists($self->{log}))
     {
-	$self->{log}->print(@_, "\n");
+	$self->{log}->print(scalar(localtime(time)), " JM_SCRIPT: ", @_, "\n");
     }
 
     return;
@@ -184,7 +184,7 @@ sub make_scratchdir
     {
         # Files with names comprised of Ascii values 48-122 should be
 	# relatively easy to remove from the shell if things go bad.
-	$tmpname = "gram" .
+	$tmpname = 'gram_scratch_' .
 	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
@@ -221,13 +221,42 @@ sub remove_scratchdir
     my $scratch_directory;
     my $count;
 
-
     $scratch_directory = $description->scratch_directory();
     $self->log(
         "Entering Job Manager default implementation of remove_scratchdir");
     $self->log("Removing $scratch_directory");
     $count = File::Path::rmtree($scratch_directory);
     $self->log("Removed $count files");
+
+    return {};
+}
+
+sub file_cleanup
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $scratch_directory;
+    my $count;
+
+    $self->log(
+        "Entering Job Manager default implementation of file_cleanup");
+    foreach ($description->file_cleanup())
+    {
+	if(!defined($_))
+	{
+	    next;
+	}
+	$self->log("Removing $_");
+
+        if(-d $_)
+	{
+	    $count = File::Path::rmtree($scratch_directory);
+	}
+	else
+	{
+	    unlink($_);
+	}
+    }
 
     return {};
 }
@@ -280,8 +309,12 @@ sub stage_in
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
 	}
     }
-    foreach ($description->stage_in())
+    foreach ($description->file_stage_in())
     {
+	if(!defined($_))
+	{
+	    next;
+	}
 	($remote, $local) = ($_->[0], $_->[1]);
 
 	if($local !~ m|^/|)
@@ -289,13 +322,17 @@ sub stage_in
 	    $local = $description->directory() . '/' . $local;
 	}
 
-	if(system("$url_copy $remote $local >/dev/null 2>&1") != 0)
+	if(system("$url_copy $remote file://$local >/dev/null 2>&1") != 0)
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
 	}
     }
-    foreach($description->stage_in_shared())
+    foreach($description->file_stage_in_shared())
     {
+	if(!defined($_))
+	{
+	    next;
+	}
 	($remote, $local) = ($_->[0], $_->[1]);
 
 	if($local !~ m|^/|)
@@ -305,7 +342,7 @@ sub stage_in
 
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") == 0)
 	{
-	    $cached = `$cache_pgm -query $remote`;
+	    chomp($cached = `$cache_pgm -query $remote`);
 	    symlink($cached, $local);
 	}
 	else
@@ -316,4 +353,33 @@ sub stage_in
     return {0};
 }
 
+sub stage_out
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
+    my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my ($remote, $local, $cached);
+
+    foreach ($description->file_stage_out())
+    {
+	if(!defined($_))
+	{
+	    next;
+	}
+	($local, $remote) = ($_->[0], $_->[1]);
+
+	if($local !~ m|^/|)
+	{
+	    $local = $description->directory() . '/' . $local;
+	}
+
+	if(system("$url_copy file://$local $remote >/dev/null 2>&1") != 0)
+	{
+	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	}
+    }
+    return {0};
+}
 1;
