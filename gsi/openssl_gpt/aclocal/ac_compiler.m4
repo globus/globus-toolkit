@@ -102,25 +102,25 @@ AC_DEFUN(LAC_COMPILER_SET,
         ;;
         *irix64*)
             if test "$GCC" = "yes"; then
-                lac_CFLAGS="$lac_CFLAGS -mabi=64 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W"
+                lac_CFLAGS="$lac_CFLAGS -mabi=64 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN"
             else
-                lac_CFLAGS="$lac_CFLAGS -64 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W"
+                lac_CFLAGS="$lac_CFLAGS -64 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN"
             fi
         ;;   
         *irix6*)
             case ${lac_cv_CPU} in
                 *mips3*)
                     if test "$GCC" = "yes"; then
-                        lac_CFLAGS="$lac_CFLAGS -mabi=n32 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W"
+                        lac_CFLAGS="$lac_CFLAGS -mabi=n32 -mmips-as -O3 -DTERMIOS -DB_ENDIAN"
                     else
-                        lac_CFLAGS="$lac_CFLAGS -n32 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W"
+                        lac_CFLAGS="$lac_CFLAGS -n32 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN"
                     fi
                 ;;
                 *mips4*)
                     if test "$GCC" = "yes"; then
-                        lac_CFLAGS="$lac_CFLAGS -mabi=n32 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W"
+                        lac_CFLAGS="$lac_CFLAGS -mabi=n32 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN"
                     else
-                        lac_CFLAGS="$lac_CFLAGS -n32 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W"
+                        lac_CFLAGS="$lac_CFLAGS -n32 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN"
                     fi
                 ;;
             esac

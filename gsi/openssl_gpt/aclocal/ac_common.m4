@@ -1,7 +1,7 @@
 
 dnl LAC_SUBSTITUTE_VAR
 
-AC_DEFUN(LAC_SUBSTITUTE_VAR,
+AC_DEFUN([LAC_SUBSTITUTE_VAR],
 [
     if test -n "[$]lac_$1"; then
         $1=[$]lac_$1
@@ -12,7 +12,7 @@ AC_DEFUN(LAC_SUBSTITUTE_VAR,
 
 dnl LAC_DEFINE_VAR
 
-AC_DEFUN(LAC_DEFINE_VAR,
+AC_DEFUN([LAC_DEFINE_VAR],
 [
     if test -n "[$]lac_$1"; then
         $1=[$]lac_$1
@@ -21,19 +21,37 @@ AC_DEFUN(LAC_DEFINE_VAR,
 ])
 
 dnl LAC_CHECK_DL_LIB
-AC_DEFUN(LAC_CHECK_DL_LIB,
+AC_DEFUN([LAC_CHECK_DL_LIB],
 [
-    AC_CHECK_LIB(dl,dlopen,
+    AC_CHECK_LIB([dl],[dlopen],
     [
         DL_LIB=-ldl
     ],
     [
-        AC_CHECK_LIB(dld,dlopen,
+        AC_CHECK_LIB([dld],[dlopen],
         [
             DL_LIB=-ldld
         ],
         [
-            AC_MSG_ERROR("Unable to find dynamic linking library")
+            AC_CHECK_FUNC([dlopen],
+            [
+	        DL_LIB=
+            ],
+            [
+                AC_MSG_ERROR("Unable to find dynamic linking library")
+            ])
         ])
     ])
 ])
+
+# Figure out how to run the assembler.
+
+# LAC_PROG_AS
+AC_DEFUN([LAC_PROG_AS],
+[# By default we simply use the C compiler to build assembly code.
+AC_REQUIRE([AC_PROG_CC])
+: ${AS="$CC"}
+# Set ASFLAGS if not already set.
+: ${ASFLAGS="$CFLAGS"}
+AC_SUBST(AS)
+AC_SUBST(ASFLAGS)])
