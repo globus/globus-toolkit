@@ -40,7 +40,7 @@
 	    <external_libs></external_libs>
 	</Build_Environment>
 
-	<Version_Label>1.7</Version_Label>
+	<Version_Label>1.10</Version_Label>
 
 	<Build_Instructions>
 	    <Build_Step>
