@@ -250,6 +250,18 @@ extern int
 globus_jobmanager_request_check(
 	globus_gram_jobmanager_request_t * request);
 
+/*-----------------------------------------------------------------------
+ * ???
+ */
+extern int 
+globus_jobmanager_request_signal(
+	globus_gram_jobmanager_request_t * request);
+
+extern int
+globus_jobmanager_log(
+	FILE *log_fp,
+	const char *format, ...);
+
 /******************************************************************************
  *                    Module Definition
  *****************************************************************************/
