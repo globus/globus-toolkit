@@ -9,6 +9,7 @@
 typedef struct
 {
 	globus_mutex_t                      mutex;
+	globus_thread_key_t                 key;
 	struct globus_i_rw_mutex_waiter_s * waiters;
 	struct globus_i_rw_mutex_waiter_s ** tail;
 	struct globus_i_rw_mutex_waiter_s * idle;
@@ -27,6 +28,11 @@ int
 globus_rw_mutex_readlock(
     globus_rw_mutex_t *                 rw_lock);
 
+/**
+ * The write lock can also be called within a readlock 'section' to promote
+ * the lock to writer status.  In this case, globus_rw_mutex_writeunlock must
+ * be called before globus_rw_mutex_readunlock
+ */
 int
 globus_rw_mutex_writelock(
     globus_rw_mutex_t *                 rw_lock);
@@ -43,6 +49,27 @@ int
 globus_rw_mutex_destroy(
     globus_rw_mutex_t *                 rw_lock);
 
+/**
+ * In order to use the following cond_wait calls safeley, either the call to
+ * one of the wait calls or the call to cond_signal/broadcast or both MUST be
+ * called from within a WRITElock.
+ *
+ * It turns out that you normally only signal/broadcast after making some
+ * modification anyway,  so the simple rule to remember is:
+ *
+ * Always call globus_cond_signal/broadcast from within a WRITElock.
+ */
+int
+globus_rw_cond_wait(
+    globus_cond_t *                     cond,
+    globus_rw_mutex_t *                 rw_lock);
+
+int
+globus_rw_cond_timedwait(
+    globus_cond_t *                     cond,
+    globus_rw_mutex_t *                 rw_lock,
+    globus_abstime_t *                  abstime);
+
 #else
 
 typedef int globus_rw_mutex_t;
@@ -54,6 +81,9 @@ typedef int globus_rw_mutexattr_t;
 #define globus_rw_mutex_readunlock(M) (*(M) = 0, 0)
 #define globus_rw_mutex_writeunlock(M) (*(M) = 0, 0)
 #define globus_rw_mutex_destroy(M) (*(M) = 0, 0)
+
+#define globus_rw_cond_wait(C,M) globus_cond_wait((C),(M))
+#define globus_rw_cond_timedwait(C,M,A) globus_cond_timedwait((C),(M),(A))
 
 #endif
 
