@@ -25,6 +25,7 @@
       <Dependency Name="core" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="filestreaming" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="providers" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="rips" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
