@@ -3,33 +3,68 @@
 
 <gpt_package_metadata Name="globus_gss_assist" Format_Version="0.02">
 
-  <Aging_Version Major="3" Minor="0" Age="0"/>
-  <Description >GSSAPI Assist library</Description>
-  <Functional_Group >Security</Functional_Group>
-  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
+    <Aging_Version Major="3" Minor="0" Age="0"/>
+    <Description >GSSAPI Assist library</Description>
+    <Functional_Group >Security</Functional_Group>
+    <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
-  <src_pkg>
+    <src_pkg>
 
-    <Source_Dependencies Type="compile" >
-      <Dependency Name="globus_core"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_common"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>      
-      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
-    </Source_Dependencies>
+        <Source_Dependencies Type="compile">
+            <Dependency Name="globus_core">
+                <Version>
+                    <Simple_Version Major="2"/>
+            </Dependency>                
+            <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>        
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
  
-    <Source_Dependencies Type="lib_link" >
-      <Dependency Name="globus_common"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>      
-      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
-    </Source_Dependencies>
+        <Source_Dependencies Type="lib_link">
+            <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>        
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
 
-    <With_Flavors build="yes" />
+        <Source_Setup_Dependency PkgType="rtl">
+            <Setup_Dependency Name="trusted_ca_setup"> 
+                <Version> 
+                    <Simple_Version Major="0"/> 
+                </Version> 
+            </Setup_Dependency>
+        </Source_Setup_Dependency>
 
-    <Build_Environment>
-      <cflags>@GPT_PKG_CFLAGS@</cflags>
-      <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
-      <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-      <pkg_libs>-lglobus_gss_assist</pkg_libs>
-    </Build_Environment>
+        <Source_Setup_Dependency PkgType="pgm">
+            <Setup_Dependency Name="trusted_ca_setup"> 
+                <Version> 
+                    <Simple_Version Major="0"/> 
+                </Version> 
+            </Setup_Dependency>
+        </Source_Setup_Dependency>
 
-  </src_pkg>
+        <With_Flavors build="yes"/>
+
+        <Build_Environment>
+            <cflags>@GPT_PKG_CFLAGS@</cflags>
+            <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
+            <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
+            <pkg_libs>-lglobus_gss_assist</pkg_libs>
+        </Build_Environment>
+
+    </src_pkg>
 
 </gpt_package_metadata>
