@@ -145,7 +145,7 @@ typedef struct globus_gridftp_server_control_stat_s
     char                                    symlink_target[MAXPATHLEN];
     uid_t                                   uid;
     gid_t                                   gid;
-    globus_size_t                           size;
+    globus_off_t                            size;
     globus_time_t                           atime;
     globus_time_t                           ctime;
     globus_time_t                           mtime;
@@ -576,7 +576,7 @@ globus_result_t
 globus_gridftp_server_control_get_layout(
     globus_gridftp_server_control_op_t      op,
     globus_gsc_layout_t *                   layout_type,
-    int *                                   block_size);
+    globus_size_t *                         block_size);
 
 globus_result_t
 globus_gridftp_server_control_get_buffer_size(
