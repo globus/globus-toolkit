@@ -138,10 +138,12 @@ sysconf_DATA = myproxy-server.config
 
 pkgdata_DATA = README INSTALL LICENSE VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
+               myproxy.cron \
                etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
 
 EXTRA_DIST = $(Scripts) LICENSE VERSION PROTOCOL myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
+               myproxy.cron \
                etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
 
 dirt.sh:
