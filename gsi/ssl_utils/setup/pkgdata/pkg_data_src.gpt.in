@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
-<gpt_package_metadata Format_Version="0.02" Name="ssl_utils_setup" >
+<gpt_package_metadata Format_Version="0.02" Name="globus_ssl_utils_setup" >
 <Aging_Version Age="0" Major="2" Minor="0" />
 <Description >
   </Description>
@@ -15,7 +15,7 @@
 <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
 </Build_Environment>
 <Post_Install_Message >
- You need to run setup_globus_common
+ You need to run setup_ssl_utils
  </Post_Install_Message>
 <Post_Install_Program >
  globus/setup_ssl_utils

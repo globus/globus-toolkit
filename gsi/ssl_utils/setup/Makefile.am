@@ -32,7 +32,9 @@ EXTRA_DIST = \
 	setup-ssl_utils.pl \
 	grid-cert-request-config.in \
 	grid-security-config.in \
-	grid-security.conf
+	grid-security.conf \
+	42864e48.0 \
+	42864e48.signing_policy
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
