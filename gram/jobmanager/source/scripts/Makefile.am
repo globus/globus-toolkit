@@ -36,7 +36,7 @@ filelist-noinstDATA: filelist-man
 
 filelist-man:
 	@list='$(noinst_DATA)'; for p in $$list; do \
-		echo "$(DESTDIR)$(MAN_DIR)/$$p" >> $(FILELIST_FILE); \
+		echo "$(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$p" >> $(FILELIST_FILE); \
 	done
 
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
