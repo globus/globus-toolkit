@@ -75,11 +75,8 @@
 
     <taskdef resource="clovertasks"/>
 
-    <property name="clover.enabled" value="false"/>
-
-    <target name="initClover" >
-        <clover-setup initString="../../../../clover-reports/coverage.db"
-                      enabled="${clover.enabled}"/>
+    <target name="initClover" if="clover.enabled">
+        <clover-setup initString="../../../../clover-reports/coverage.db"/>
     </target>
 
 </project>
