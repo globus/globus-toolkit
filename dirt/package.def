@@ -32,7 +32,6 @@ globus_gram_client		gram/client/source		dirt.sh
 globus_gram_job_manager		gram/jobmanager/source		dirt.sh
 globus_gram_myjob		gram/myjob/source		dirt.sh
 globus_gram_protocol		gram/protocol/source		dirt.sh
-globus_gsincftp                 gridftp/gsincftp/source         dirt.sh
 globus_gsi_wuftpd		gridftp/gsi-wuftpd/source	dirt.sh
 globus_io			io/source			dirt.sh
 globus_mp			mp/source			dirt.sh
