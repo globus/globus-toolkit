@@ -79,11 +79,6 @@ globus_l_ftp_client_data_delete(
 
 
 static
-void
-globus_l_ftp_client_complete_kickout(
-    void *					user_arg);
-
-static
 globus_size_t
 globus_l_ftp_client_count_lf(const globus_byte_t * buf,
 			     globus_size_t length);
@@ -1351,7 +1346,6 @@ globus_i_ftp_client_data_flush(
 }
 /* globus_i_ftp_client_data_flush() */
 
-static
 void
 globus_l_ftp_client_complete_kickout(
     void *					user_arg)

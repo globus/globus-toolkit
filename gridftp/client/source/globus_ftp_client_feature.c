@@ -34,7 +34,7 @@ globus_i_ftp_client_features_init()
     features = (globus_i_ftp_client_features_t *)
         globus_malloc(sizeof(globus_i_ftp_client_features_t));
       
-    for (i=0; i<GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
+    for (i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
     {
         globus_i_ftp_client_feature_set(
             features, i, GLOBUS_FTP_CLIENT_MAYBE);
@@ -222,30 +222,55 @@ globus_ftp_client_feat(
         goto free_url;
     }
     
-    error = globus_i_ftp_client_target_activate(
-        handle, handle->source, &registered);
-    if(registered == GLOBUS_FALSE)
+    if(handle->source->features)
     {
-        /* 
-         * A restart or abort happened during activation, before any
-         * callbacks were registered. We must deal with them here.
-         */
-        globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-                      handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
-                      error != GLOBUS_SUCCESS);
+        /* already have all the features, do a oneshot */
+        for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
+        {
+            globus_i_ftp_client_feature_set(
+                handle->features_pointer,
+                i,
+                globus_i_ftp_client_feature_get(handle->source->features, i));
+        }
         
-        if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+        result = globus_callback_register_oneshot(
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            globus_l_ftp_client_complete_kickout,
+            handle);
+        if(result != GLOBUS_SUCCESS)
         {
-            error = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
-            goto abort;
-        }
-        else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
-        {
-            goto restart;
-        }
-        else if(error != GLOBUS_SUCCESS)
-        {
+            error = globus_error_get(result);
             goto source_problem_exit;
+        }
+    }
+    else
+    {
+        error = globus_i_ftp_client_target_activate(
+            handle, handle->source, &registered);
+        if(registered == GLOBUS_FALSE)
+        {
+            /* 
+             * A restart or abort happened during activation, before any
+             * callbacks were registered. We must deal with them here.
+             */
+            globus_assert(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+                          handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+                          error != GLOBUS_SUCCESS);
+            
+            if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+            {
+                error = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+                goto abort;
+            }
+            else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+            {
+                goto restart;
+            }
+            else if(error != GLOBUS_SUCCESS)
+            {
+                goto source_problem_exit;
+            }
         }
     }
     

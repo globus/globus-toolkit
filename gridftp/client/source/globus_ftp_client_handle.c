@@ -780,12 +780,8 @@ globus_l_ftp_client_target_new(
 	goto free_url_string;
     }
     
-    /* allocate space for features */
-    target->features = globus_i_ftp_client_features_init();
-    if(!target->features) 
-    {
-        goto free_url;
-    }
+    /* this is initialized the first time we go through site help */
+    target->features = GLOBUS_NULL;
     
     /*
      * Setup default setttings on the control handle values. We'll
@@ -913,8 +909,6 @@ globus_l_ftp_client_target_new(
 
 destroy_attr:
     globus_ftp_client_operationattr_destroy(&target->attr);
-destroy_features:
-    globus_i_ftp_client_features_destroy(target->features);
 free_url:
     globus_url_destroy(&target->url);
 free_url_string:

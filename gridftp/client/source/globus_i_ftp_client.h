@@ -986,6 +986,11 @@ globus_i_ftp_client_response_callback(
     globus_object_t *				error,
     globus_ftp_control_response_t *		response);
 
+/* globus_ftp_client_data.c */
+void
+globus_l_ftp_client_complete_kickout(
+    void *					user_arg);
+
 /* Errors */
 
 #define GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER(param) \

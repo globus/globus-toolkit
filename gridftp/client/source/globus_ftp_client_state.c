@@ -21,7 +21,7 @@
 
 /* Module-specific prototypes */
 static
-void
+globus_object_t *
 globus_l_ftp_client_parse_site_help(
     globus_i_ftp_client_target_t *		target,
     globus_ftp_control_response_t *		response);
@@ -429,8 +429,11 @@ redo:
 	     * Parse the reply to find out what is implemented by this
 	     * server
 	     */
-	    globus_l_ftp_client_parse_site_help(target,
-						response);
+	    error = globus_l_ftp_client_parse_site_help(target, response);
+	    if(error != GLOBUS_SUCCESS)
+            {
+                goto notify_fault;
+            }
 	}
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_FEAT;
@@ -2909,8 +2912,7 @@ redo:
 					   client_handle->size_pointer,
 					   GLOBUS_NULL);
 		}
-		else if(client_handle->op == GLOBUS_FTP_CLIENT_FEAT &&
-			response->code == 211)
+		else if(client_handle->op == GLOBUS_FTP_CLIENT_FEAT)
 		{
 		    for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
                     {
@@ -3099,13 +3101,19 @@ redo:
  *        The response structure returned from the ftp control library.
  */
 static
-void
+globus_object_t *
 globus_l_ftp_client_parse_site_help(
     globus_i_ftp_client_target_t *		target,
     globus_ftp_control_response_t *		response)
 {
     char * p;
-
+    
+    target->features = globus_i_ftp_client_features_init();
+    if(!target->features)
+    {
+        return GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+    }
+    
     if(strstr((char *) response->response_buffer, "RETRBUFSIZE") != 0)
     {
         globus_i_ftp_client_feature_set(
@@ -3158,6 +3166,8 @@ globus_l_ftp_client_parse_site_help(
             GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
             GLOBUS_FTP_CLIENT_TRUE);
     }
+    
+    return GLOBUS_SUCCESS;
 }
 /* globus_l_ftp_client_parse_site_help() */
 
