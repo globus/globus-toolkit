@@ -2,6 +2,7 @@
 #include "globus_common.h"
 #include "globus_xio_system.h"
 #include "globus_i_xio_system.h"
+#include "globus_xio_util.h"
 
 #ifdef HAVE_SYSCONF
 #define GLOBUS_L_OPEN_MAX sysconf(_SC_OPEN_MAX)
@@ -58,17 +59,17 @@ typedef enum
     GLOBUS_L_OPERATION_CANCELED
 } globus_l_operation_state_t;
 
-#define _op_single          op.data.buf.single
-#define _op_iovecCom        op.data.buf.iovec
-#define _op_iovec           op.data.buf.iovec.cont.plain
-#define _op_msg             op.data.buf.iovec.cont.ex
+#define _sop_single          sop.data.buf.single
+#define _sop_iovecCom        sop.data.buf.iovec
+#define _sop_iovec           sop.data.buf.iovec.cont.plain
+#define _sop_msg             sop.data.buf.iovec.cont.ex
 
 typedef struct
 {
     /* common members */
     globus_l_operation_type_t                   type;
     globus_l_operation_state_t                  state;
-    globus_xio_operation_t               op;
+    globus_xio_operation_t                      op;
     int                                         fd;
     globus_result_t                             result;
     void *                                      user_arg;
@@ -131,7 +132,7 @@ typedef struct
                 } iovec;
             } buf;
         } data;
-    } op;
+    } sop;
 } globus_l_operation_info_t;
 
 static globus_cond_t                globus_l_xio_system_cond;
@@ -621,13 +622,13 @@ globus_l_xio_system_kickout(
       case GLOBUS_L_OPERATION_OPEN:
       case GLOBUS_L_OPERATION_CONNECT:
       case GLOBUS_L_OPERATION_ACCEPT:
-        op_info->op.non_data.callback(
+        op_info->sop.non_data.callback(
             op_info->result,
             op_info->user_arg);
         break;
 
       default:
-        op_info->op.data.callback(
+        op_info->sop.data.callback(
             op_info->result,
             op_info->nbytes,
             op_info->user_arg);
@@ -636,23 +637,23 @@ globus_l_xio_system_kickout(
         {
           case GLOBUS_L_OPERATION_RECVMSG:
           case GLOBUS_L_OPERATION_SENDMSG:
-            if(op_info->_op_msg.msghdr.msg_name)
+            if(op_info->_sop_msg.msghdr.msg_name)
             {
-                globus_free(op_info->_op_msg.msghdr.msg_name);
+                globus_free(op_info->_sop_msg.msghdr.msg_name);
             }
-            GlobusIXIOSystemFreeMsghdr(op_info->_op_msg.msghdr);
+            GlobusIXIOSystemFreeMsghdr(op_info->_sop_msg.msghdr);
 
             /* fall through */
           case GLOBUS_L_OPERATION_READV:
           case GLOBUS_L_OPERATION_WRITEV:
             GlobusIXIOSystemFreeIovec(
-                op_info->_op_iovecCom.start_iovc,
-                op_info->_op_iovecCom.start_iov);
+                op_info->_sop_iovecCom.start_iovc,
+                op_info->_sop_iovecCom.start_iov);
             break;
           
           case GLOBUS_L_OPERATION_RECVFROM:
           case GLOBUS_L_OPERATION_SENDTO:
-            globus_free(op_info->_op_single.ex.addr);
+            globus_free(op_info->_sop_single.ex.addr);
             break;
             
           default:
@@ -1147,44 +1148,44 @@ globus_l_xio_system_handle_read(
       case GLOBUS_L_OPERATION_READ:
         result = globus_l_xio_system_try_read(
             fd,
-            read_info->_op_single.buf,
-            read_info->_op_single.buf.bufsize,
+            read_info->_sop_single.buf,
+            read_info->_sop_single.buf.bufsize,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
-            read_info->_op_single.buf = (char *)
-                read_info->_op_single.buf + nbytes;
-            read_info->_op_single.bufsize -= nbytes;
+            read_info->_sop_single.buf = (char *)
+                read_info->_sop_single.buf + nbytes;
+            read_info->_sop_single.bufsize -= nbytes;
             read_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_READV:
         result = globus_l_xio_system_try_readv(
-            fd, read_info->_op_iovec.iov, read_info->_op_iovec.iovc, &nbytes);
+            fd, read_info->_sop_iovec.iov, read_info->_sop_iovec.iovc, &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
             read_info->nbytes += nbytes;
             GlobusIXIOUtilAdjustIovec(
-                read_info->_op_iovec.iov, read_info->_op_iovec.iovc, nbytes);
+                read_info->_sop_iovec.iov, read_info->_sop_iovec.iovc, nbytes);
         }
         break;
 
       case GLOBUS_L_OPERATION_RECV:
         result = globus_l_xio_system_try_recv(
             fd,
-            read_info->_op_single.buf,
-            read_info->_op_single.bufsize,
-            read_info->_op_single.ex.flags,
+            read_info->_sop_single.buf,
+            read_info->_sop_single.bufsize,
+            read_info->_sop_single.ex.flags,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
-            read_info->_op_single.buf = (char *)
-                read_info->_op_single.buf + nbytes;
-            read_info->_op_single.bufsize -= nbytes;
+            read_info->_sop_single.buf = (char *)
+                read_info->_sop_single.buf + nbytes;
+            read_info->_sop_single.bufsize -= nbytes;
             read_info->nbytes += nbytes;
         }
         break;
@@ -1192,31 +1193,31 @@ globus_l_xio_system_handle_read(
       case GLOBUS_L_OPERATION_RECVFROM:
         result = globus_l_xio_system_try_recvfrom(
             fd,
-            read_info->_op_single.buf,
-            read_info->_op_single.bufsize,
-            read_info->_op_single.ex.flags,
-            read_info->_op_single.ex.addr,
+            read_info->_sop_single.buf,
+            read_info->_sop_single.bufsize,
+            read_info->_sop_single.ex.flags,
+            read_info->_sop_single.ex.addr,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
-            read_info->_op_single.buf = (char *)
-                read_info->_op_single.buf + nbytes;
-            read_info->_op_single.bufsize -= nbytes;
+            read_info->_sop_single.buf = (char *)
+                read_info->_sop_single.buf + nbytes;
+            read_info->_sop_single.bufsize -= nbytes;
             read_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_RECVMSG:
         result = globus_l_xio_system_try_recvmsg(
-            fd, read_info->_op_msg.msghdr, read_info->_op_msg.flags, &nbytes);
+            fd, read_info->_sop_msg.msghdr, read_info->_sop_msg.flags, &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
             struct msghdr *             msghdr;
 
             read_info->nbytes += nbytes;
-            msghdr = read_info->_op_msg.msghdr;
+            msghdr = read_info->_sop_msg.msghdr;
             GlobusIXIOUtilAdjustIovec(
                 msghdr->msg_iov, msghdr->msg_iovlen, nbytes);
         }
@@ -1342,7 +1343,7 @@ globus_l_xio_system_handle_write(
                 }
                 else
                 {
-                    *op_info->op.non_data.out_fd = new_fd;
+                    *op_info->sop.non_data.out_fd = new_fd;
                 }
             }
         }
@@ -1351,15 +1352,15 @@ globus_l_xio_system_handle_write(
       case GLOBUS_L_OPERATION_WRITE:
         result = globus_l_xio_system_try_write(
             fd,
-            write_info->_op_single.buf,
-            write_info->_op_single.buf.bufsize,
+            write_info->_sop_single.buf,
+            write_info->_sop_single.buf.bufsize,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
-            write_info->_op_single.buf = (char *)
-                write_info->_op_single.buf + nbytes;
-            write_info->_op_single.bufsize -= nbytes;
+            write_info->_sop_single.buf = (char *)
+                write_info->_sop_single.buf + nbytes;
+            write_info->_sop_single.bufsize -= nbytes;
             write_info->nbytes += nbytes;
         }
         break;
@@ -1367,31 +1368,31 @@ globus_l_xio_system_handle_write(
       case GLOBUS_L_OPERATION_WRITEV:
         result = globus_l_xio_system_try_writev(
             fd,
-            write_info->_op_iovec.iov,
-            write_info->_op_iovec.iovc,
+            write_info->_sop_iovec.iov,
+            write_info->_sop_iovec.iovc,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
             write_info->nbytes += nbytes;
             GlobusIXIOUtilAdjustIovec(
-                write_info->_op_iovec.iov, write_info->_op_iovec.iovc, nbytes);
+                write_info->_sop_iovec.iov, write_info->_sop_iovec.iovc, nbytes);
         }
         break;
 
       case GLOBUS_L_OPERATION_SEND:
         result = globus_l_xio_system_try_send(
             fd,
-            write_info->_op_single.buf,
-            write_info->_op_single.bufsize,
-            write_info->_op_single.ex.flags,
+            write_info->_sop_single.buf,
+            write_info->_sop_single.bufsize,
+            write_info->_sop_single.ex.flags,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
-            write_info->_op_single.buf = (char *)
-                write_info->_op_single.buf + nbytes;
-            write_info->_op_single.bufsize -= nbytes;
+            write_info->_sop_single.buf = (char *)
+                write_info->_sop_single.buf + nbytes;
+            write_info->_sop_single.bufsize -= nbytes;
             write_info->nbytes += nbytes;
         }
         break;
@@ -1399,17 +1400,17 @@ globus_l_xio_system_handle_write(
       case GLOBUS_L_OPERATION_SENDTO:
         result = globus_l_xio_system_try_sendto(
             fd,
-            write_info->_op_single.buf,
-            write_info->_op_single.bufsize,
-            write_info->_op_single.ex.flags,
-            write_info->_op_single.ex.addr,
+            write_info->_sop_single.buf,
+            write_info->_sop_single.bufsize,
+            write_info->_sop_single.ex.flags,
+            write_info->_sop_single.ex.addr,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
         {
-            write_info->_op_single.buf = (char *)
-                write_info->_op_single.buf + nbytes;
-            write_info->_op_single.bufsize -= nbytes;
+            write_info->_sop_single.buf = (char *)
+                write_info->_sop_single.buf + nbytes;
+            write_info->_sop_single.bufsize -= nbytes;
             write_info->nbytes += nbytes;
         }
         break;
@@ -1417,8 +1418,8 @@ globus_l_xio_system_handle_write(
       case GLOBUS_L_OPERATION_SENDMSG:
         result = globus_l_xio_system_try_recvmsg(
             fd,
-            write_info->_op_msg.msghdr,
-            write_info->_op_msg.flags,
+            write_info->_sop_msg.msghdr,
+            write_info->_sop_msg.flags,
             &nbytes);
 
         if(result == GLOBUS_SUCCESS)
@@ -1426,7 +1427,7 @@ globus_l_xio_system_handle_write(
             struct msghdr *             msghdr;
 
             write_info->nbytes += nbytes;
-            msghdr = write_info->_op_msg.msghdr;
+            msghdr = write_info->_sop_msg.msghdr;
             GlobusIXIOUtilAdjustIovec(
                 msghdr->msg_iov, msghdr->msg_iovlen, nbytes);
         }
@@ -1648,7 +1649,7 @@ globus_xio_system_register_open(
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
-    op_info->op.non_data.callback = callback;
+    op_info->sop.non_data.callback = callback;
 
     if(flags & GLOBUS_XIO_SYSTEM_RDONLY)
     {
@@ -1737,7 +1738,7 @@ globus_xio_system_register_connect(
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
-    op_info->op.non_data.callback = callback;
+    op_info->sop.non_data.callback = callback;
 
     result = globus_l_xio_system_register_write(fd, op_info);
 
@@ -1785,8 +1786,8 @@ globus_xio_system_register_accept(
     op_info->op = op;
     op_info->fd = listener_fd;
     op_info->user_arg = user_arg;
-    op_info->op.non_data.callback = callback;
-    op_info->op.non_data.out_fd = out_fd;
+    op_info->sop.non_data.callback = callback;
+    op_info->sop.non_data.out_fd = out_fd;
 
     result = globus_l_xio_system_register_read(listener_fd, op_info);
     
@@ -1831,8 +1832,8 @@ globus_xio_system_register_read(
     if(u_iovc == 1)
     {
         op_info->type = GLOBUS_L_OPERATION_READ;
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
+        op_info->_sop_single.buf = u_iov->iov_base;
+        op_info->_sop_single.bufsize = u_iov->iov_len;
     }
     else
     {
@@ -1846,17 +1847,17 @@ globus_xio_system_register_read(
         GlobusIXIOUtilTransferIovec(iov, u_iov, u_iovc);
 
         op_info->type = GLOBUS_L_OPERATION_READV;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovec.iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_iovec.iovc = u_iovc;
+        op_info->_sop_iovecCom.start_iov = iov;
+        op_info->_sop_iovec.iov = iov;
+        op_info->_sop_iovecCom.start_iovc = u_iovc;
+        op_info->_sop_iovec.iovc = u_iovc;
     }
     
     op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
+    op_info->sop.data.callback = callback;
     op_info->waitforbytes = waitforbytes;
 
     result = globus_l_xio_system_register_read(fd, op_info);
@@ -1934,16 +1935,16 @@ globus_xio_system_register_read_ex(
         if(from)
         {
             op_info->type = GLOBUS_L_OPERATION_RECVFROM;
-            op_info->_op_single.ex.addr = from;
+            op_info->_sop_single.ex.addr = from;
         }
         else
         {
             op_info->type = GLOBUS_L_OPERATION_RECV;
         }
 
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
-        op_info->_op_single.ex.flags = flags;
+        op_info->_sop_single.buf = u_iov->iov_base;
+        op_info->_sop_single.bufsize = u_iov->iov_len;
+        op_info->_sop_single.ex.flags = flags;
     }
     else
     {
@@ -1973,17 +1974,17 @@ globus_xio_system_register_read_ex(
         msghdr->msg_iovlen = u_iovc;
 
         op_info->type = GLOBUS_L_OPERATION_RECVMSG;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_msg.msghdr = msghdr;
-        op_info->_op_msg.flags = flags;
+        op_info->_sop_iovecCom.start_iov = iov;
+        op_info->_sop_iovecCom.start_iovc = u_iovc;
+        op_info->_sop_msg.msghdr = msghdr;
+        op_info->_sop_msg.flags = flags;
     }
     
     op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
+    op_info->sop.data.callback = callback;
     op_info->waitforbytes = waitforbytes;
 
     result = globus_l_xio_system_register_read(fd, op_info);
@@ -2043,8 +2044,8 @@ globus_xio_system_register_write(
     if(u_iovc == 1)
     {
         op_info->type = GLOBUS_L_OPERATION_WRITE;
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
+        op_info->_sop_single.buf = u_iov->iov_base;
+        op_info->_sop_single.bufsize = u_iov->iov_len;
     }
     else
     {
@@ -2058,17 +2059,17 @@ globus_xio_system_register_write(
         GlobusIXIOUtilTransferIovec(iov, u_iov, u_iovc);
 
         op_info->type = GLOBUS_L_OPERATION_WRITEV;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovec.iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_iovec.iovc = u_iovc;
+        op_info->_sop_iovecCom.start_iov = iov;
+        op_info->_sop_iovec.iov = iov;
+        op_info->_sop_iovecCom.start_iovc = u_iovc;
+        op_info->_sop_iovec.iovc = u_iovc;
     }
     
     op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
+    op_info->sop.data.callback = callback;
     op_info->waitforbytes = waitforbytes;
 
     result = globus_l_xio_system_register_write(fd, op_info);
@@ -2146,16 +2147,16 @@ globus_xio_system_register_write_ex(
         if(to)
         {
             op_info->type = GLOBUS_L_OPERATION_SENDTO;
-            op_info->_op_single.ex.addr = to;
+            op_info->_sop_single.ex.addr = to;
         }
         else
         {
             op_info->type = GLOBUS_L_OPERATION_SEND;
         }
 
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
-        op_info->_op_single.ex.flags = flags;
+        op_info->_sop_single.buf = u_iov->iov_base;
+        op_info->_sop_single.bufsize = u_iov->iov_len;
+        op_info->_sop_single.ex.flags = flags;
     }
     else
     {
@@ -2185,17 +2186,17 @@ globus_xio_system_register_write_ex(
         msghdr->msg_iovlen = u_iovc;
 
         op_info->type = GLOBUS_L_OPERATION_SENDMSG;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_msg.msghdr = msghdr;
-        op_info->_op_msg.flags = flags;
+        op_info->_sop_iovecCom.start_iov = iov;
+        op_info->_sop_iovecCom.start_iovc = u_iovc;
+        op_info->_sop_msg.msghdr = msghdr;
+        op_info->_sop_msg.flags = flags;
     }
     
     op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
+    op_info->sop.data.callback = callback;
     op_info->waitforbytes = waitforbytes;
 
     result = globus_l_xio_system_register_write(fd, op_info);
