@@ -36,6 +36,7 @@ globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/s
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
 globus_wsrf_mds_aggregator		    ws-mds/aggregator/source
 globus_wsrf_mds_index                       ws-mds/index/source
+globus_wsrf_mds_trigger                     ws-mds/trigger/source
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
 globus_wsrf_mds_usefulrp                    ws-mds/usefulrp/source
 globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
@@ -51,8 +52,6 @@ globus_java_ws_core_test_unit               wsrf/java/core/test/unit
 globus_java_ws_core_management_sample       wsrf/java/core/samples/management
 globus_java_ws_core_counter_sample          wsrf/java/core/samples/counter
 globus_java_ws_core_registry                wsrf/java/registry/source
-globus_java_ws_core_resolver                wsrf/java/resolver/source
-globus_java_ws_core_resolver_test           wsrf/java/resolver/test
 
 globus_c_wsdl_parser                        wsrf/c/parser/wsdl/source gpt
 globus_c_wsrf_cgen                          wsrf/c/parser/cgen/source gpt
