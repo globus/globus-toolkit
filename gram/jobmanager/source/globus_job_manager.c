@@ -394,32 +394,36 @@ grami_jm_callback(int state, int errorcode)
 {
     int                size;
     int                count;
+    int                rc;
     nexus_startpoint_t sp;
     nexus_buffer_t     reply_buffer;
     
     fprintf(log_fp, "in grami_jm_callback\n");
 
-    nexus_attach(callback_contact, &sp);
+    rc = nexus_attach(callback_contact, &sp);
     
-    size  = nexus_sizeof_int(1);
-    size += nexus_sizeof_char(strlen(job_contact));
-    size += nexus_sizeof_int(1);
-    size += nexus_sizeof_int(1);
+    if (rc == 0)
+    {
+        size  = nexus_sizeof_int(1);
+        size += nexus_sizeof_char(strlen(job_contact));
+        size += nexus_sizeof_int(1);
+        size += nexus_sizeof_int(1);
 
-    nexus_buffer_init(&reply_buffer, size, 0);
-    count= strlen(job_contact);
-    nexus_put_int(&reply_buffer, &count, 1);
-    nexus_put_char(&reply_buffer, job_contact, strlen(job_contact));
-    nexus_put_int(&reply_buffer, &state, 1);
-    nexus_put_int(&reply_buffer, &errorcode, 1);
+        nexus_buffer_init(&reply_buffer, size, 0);
+        count= strlen(job_contact);
+        nexus_put_int(&reply_buffer, &count, 1);
+        nexus_put_char(&reply_buffer, job_contact, strlen(job_contact));
+        nexus_put_int(&reply_buffer, &state, 1);
+        nexus_put_int(&reply_buffer, &errorcode, 1);
 
-    nexus_send_rsr(&reply_buffer,
-			     &sp,
-			     0,
-			     NEXUS_TRUE,
-			     NEXUS_FALSE);
+        nexus_send_rsr(&reply_buffer,
+                       &sp,
+                       0,
+                       NEXUS_TRUE,
+                       NEXUS_FALSE);
 
-    nexus_startpoint_destroy(&sp);
+        nexus_startpoint_destroy(&sp);
+    }
 
 } /* grami_jm_callback() */
 
