@@ -1962,6 +1962,7 @@ globus_ftp_control_data_get_total_data_channels(
     return res;
 }
 
+
 globus_result_t
 globus_ftp_control_data_get_remote_hosts(
     globus_ftp_control_handle_t *		handle,
@@ -2014,6 +2015,15 @@ globus_ftp_control_data_get_remote_hosts(
                   myname);
         return globus_error_put(err);
     }
+    if(*addr_count < 1)
+    {
+        res = globus_error_put(globus_error_construct_string(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "*addr_count is less than 1."));
+        return res; 
+    }
+
 
     dc_handle = &handle->dc_handle;
     GlobusFTPControlDataTestMagic(dc_handle);
@@ -2059,11 +2069,12 @@ globus_ftp_control_data_get_remote_hosts(
             return res;
         }
         ndx = 0;
-        for(ctr = 0; ctr < transfer_handle->stripe_count; ctr++)
+        for(ctr = 0; ctr < transfer_handle->stripe_count &&
+                     ndx < *addr_count; ctr++)
         {
             stripe = &transfer_handle->stripes[ctr];
             for(list = stripe->all_conn_list;
-                !globus_list_empty(list);
+                !globus_list_empty(list) && ndx < *addr_count;
                 list = globus_list_rest(list))
             {
                 data_conn = (globus_ftp_data_connection_t *)
@@ -2080,7 +2091,7 @@ globus_ftp_control_data_get_remote_hosts(
                 ndx++;
             }
         }
-        *addr_count = count;
+        *addr_count = ndx;
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
