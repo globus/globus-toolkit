@@ -61,8 +61,13 @@ proxy_extension_create(
  *        first time this function is called.
  * @param req_flags
  *        Flags that modify the behavior of the function. Currently
- *        only GSS_C_GLOBUS_SSL_COMPATIBLE is checked for. This flag
- *        results in tokens that aren't wrapped.
+ *        only GSS_C_GLOBUS_SSL_COMPATIBLE and
+ *        GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG are checked for. The
+ *        GSS_C_GLOBUS_SSL_COMPATIBLE  flag results in tokens that
+ *        aren't wrapped and GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG
+ *        causes the delegated proxy to be limited (requires that no
+ *        extensions are specified.
+ *        
  * @param time_req
  *        The requested period of validity (seconds) of the delegated
  *        credential. May be NULL.
@@ -175,6 +180,23 @@ GSS_CALLCONV gss_init_delegation(
         *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
+    }
+
+    if(req_flags & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)
+    {
+        if(extension_oids != GSS_C_NO_OID_SET ||
+           proxy_check_proxy_name(cred->pcd->ucert)
+           == GLOBUS_RESTRICTED_PROXY)
+        {
+            GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+            *minor_status = gsi_generate_minor_status();
+            major_status = GSS_S_FAILURE;
+            goto err;
+        }
+        else
+        {
+            proxy_type = GLOBUS_LIMITED_PROXY;        
+        }
     }
     
     if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
