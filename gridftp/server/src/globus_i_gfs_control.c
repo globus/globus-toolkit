@@ -769,11 +769,6 @@ void
 globus_l_gfs_data_transfer_cb(
     globus_gfs_data_reply_t *            reply,
     void *                              user_arg)
-/*
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    void *                              user_arg)
-*/
 {
     globus_gridftp_server_control_op_t  op;
     globus_i_gfs_server_instance_t *    instance;
@@ -793,7 +788,12 @@ globus_l_gfs_data_transfer_cb(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
-    }    
+    }
+    globus_i_gfs_data_request_transfer_event(
+        NULL, 
+        instance->session_id,
+        instance->transfer_id,
+        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE);
 }
 
 static

@@ -1425,6 +1425,7 @@ globus_l_gfs_data_read_cb(
     globus_free(bounce_info);
 }
 
+static
 void
 globus_l_gfs_data_transfer_event_kickout(
     void *                              user_arg)
@@ -1475,6 +1476,10 @@ globus_l_gfs_data_transfer_event_kickout(
             globus_range_list_remove(
                 bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
         }
+        if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+        {
+            /* destroy the transfer op here */
+        }
     }
     globus_mutex_unlock(&bounce_info->op->lock);
         
@@ -1498,6 +1503,10 @@ globus_i_gfs_data_request_transfer_event(
     {
         globus_l_gfs_dsi->trev_func(
             transfer_id, event_type, session_handle->session_arg);
+        if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+        {
+            /* destroy the transfer op here */
+        }
     }
     else
     {    

@@ -2072,6 +2072,10 @@ globus_gfs_ipc_reply_event(
                     (void *)reply->id);
             if(request == NULL)
             {
+                /* 
+                 *  race condition
+                 */
+                res = GLOBUS_SUCCESS;
                 goto err;
             }
             
