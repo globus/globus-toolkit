@@ -92,6 +92,7 @@ BUNDLE gt4-rft
         globus_wsrf_servicegroup_schema
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
+        globus_wsrf_rft_service_java_setup
         globus_wsrf_rft_service_java_usage
 
 BUNDLE gt4-rft-test
