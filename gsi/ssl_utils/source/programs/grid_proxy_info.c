@@ -292,7 +292,9 @@ main(int argc, char* argv[])
 	fprintf(stderr,"ERROR: problem during internal initialization\n");
 	return STATUS_INTERNAL;
     }
-    
+
+    pcd->type=CRED_TYPE_PROXY;
+
     if (proxy_load_user_cert(pcd, proxy_file, NULL, NULL))
     {
 	if (exists_flag)
