@@ -171,7 +171,7 @@ int main(int argc, char **argv)
     globus_gass_transfer_listener_t    listener;
     globus_gass_transfer_listenerattr_t  attr;
     char                              scheme[6]="https";
-    globus_gass_transfer_requestattr_t  reqattr;
+    globus_gass_transfer_requestattr_t  * reqattr      = GLOBUS_NULL;;
 
     
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
 		&listener,
         	&attr,
         	scheme,
-        	&reqattr,
+        	reqattr,
         	options,
         	options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE
         	? client_shutdown_callback
@@ -305,6 +305,7 @@ int main(int argc, char **argv)
 	else
 	{
 	    globus_libc_printf("Error: Failed to initialize gass server library\n");
+	    return -1;
 	}
     }
     if(!silent)
