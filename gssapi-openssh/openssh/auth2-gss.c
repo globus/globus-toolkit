@@ -78,6 +78,9 @@ userauth_gssapi(Authctxt *authctxt)
 	u_int len;
 	char *doid = NULL;
 
+	/* authctxt->valid may be 0 if we haven't yet determined
+	   username from gssapi context. */
+
 	if (authctxt->user == NULL)
 		return (0);
 
@@ -281,7 +284,8 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 
 	packet_check_eom();
 
-	if (authctxt->valid && strcmp(authctxt->user, "") != 0) {
+	/* user should be set if valid but we double-check here */
+	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
 	    authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 	} else {
 	    authenticated = 0;
@@ -337,7 +341,7 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 	gssbuf.length = buffer_len(&b);
 
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
-	    if (authctxt->valid && strcmp(authctxt->user, "") != 0) {
+	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
 		authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 	    } else {
 		authenticated = 0;
