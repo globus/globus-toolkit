@@ -43,7 +43,7 @@ extern struct sockaddr_in ctrl_addr;
 #include <gssapi.h>
 
 #ifdef GSSAPI_GLOBUS
-char* gss_services[] = { "host", 0 };
+char* gss_services[] = { "ftp", "host", 0 };
 extern const gss_OID_desc * const gss_untrusted_group;
 
 /* Compare OIDs */

@@ -1657,8 +1657,6 @@ globus_l_gsi_cred_subject_cmp(
     int                                 cn_index;
     char *                              desired_cn = NULL;
     char *                              actual_cn = NULL;
-    char *                              desired_sub_cn;
-    char *                              actual_sub_cn;
     char *                              desired_service;
     char *                              actual_service;
     char *                              desired_host;
@@ -1753,36 +1751,31 @@ globus_l_gsi_cred_subject_cmp(
             goto exit;
         }
 
-        /* strip /CN= */
-        
-        actual_sub_cn = actual_cn + 4;
-        desired_sub_cn = desired_cn + 4;
-
-        actual_host = strchr(actual_sub_cn,'/');
+        actual_host = strchr(actual_cn,'/');
 
         if(actual_host == NULL)
         {
-            actual_host = actual_sub_cn;
+            actual_host = actual_cn;
             actual_service = NULL;
         }
         else
         {
-            actual_host = '\0';
-            actual_service = actual_sub_cn;
+            *actual_host = '\0';
+            actual_service = actual_cn;
             actual_host++;
         }
         
-        desired_host = strchr(desired_sub_cn,'/');
+        desired_host = strchr(desired_cn,'/');
 
         if(desired_host == NULL)
         {
-            desired_host = desired_sub_cn;
+            desired_host = desired_cn;
             desired_service = NULL;
         }
         else
         {
-            desired_host = '\0';
-            desired_service = desired_sub_cn;
+            *desired_host = '\0';
+            desired_service = desired_cn;
             desired_host++;
         }
         
@@ -1826,7 +1819,7 @@ globus_l_gsi_cred_subject_cmp(
         }
         else if(actual_service == NULL)
         {
-            if(strcmp("host",actual_service))
+            if(strcmp("host",desired_service))
             {
                 actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
                 desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
@@ -1923,7 +1916,6 @@ globus_l_gsi_cred_get_service(
     int                                 cn_index;
     int                                 length;
     char *                              cn = NULL;
-    char *                              sub_cn;
     char *                              host;
     char *                              subject_str = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -1978,10 +1970,8 @@ globus_l_gsi_cred_get_service(
     
     X509_NAME_get_text_by_NID(subject, NID_commonName,
                               cn, length);
-        
-    sub_cn = cn + 4;
     
-    host = strchr(sub_cn,'/');
+    host = strchr(cn,'/');
 
     if(host == NULL)
     {
@@ -1993,11 +1983,11 @@ globus_l_gsi_cred_get_service(
         goto exit;
     }
 
-    host = '\0';
+    *host = '\0';
 
-    if(strcmp("host",sub_cn))
+    if(strcmp("host",cn))
     {
-        *service = strdup(sub_cn);
+        *service = strdup(cn);
     }
     else
     {
