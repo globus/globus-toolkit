@@ -2405,7 +2405,7 @@ globus_l_xio_gsi_write_delegation_token_cb(
             handle->accept_callback(handle->result,
                                     handle->cred,
                                     handle->time_rec,
-                                    user_arg);
+                                    handle->user_arg);
         }
 
         free(handle);
@@ -2440,7 +2440,7 @@ globus_l_xio_gsi_write_delegation_token_cb(
         handle->accept_callback(result,
                                 handle->cred,
                                 handle->time_rec,
-                                user_arg);
+                                handle->user_arg);
     }
 
     free(handle);
@@ -2557,7 +2557,7 @@ globus_l_xio_gsi_read_delegation_token_cb(
                                              0,
                                              handle->time_req,
                                              &handle->time_rec,
-                                             handle->cred,
+                                             &handle->cred,
                                              &mech_type,
                                              &output_token);
         
@@ -2617,7 +2617,7 @@ globus_l_xio_gsi_read_delegation_token_cb(
             handle->accept_callback(result,
                                     handle->cred,
                                     handle->time_rec,
-                                    user_arg);
+                                    handle->user_arg);
         }
 
         free(handle);
@@ -2639,7 +2639,7 @@ globus_l_xio_gsi_read_delegation_token_cb(
         handle->accept_callback(result,
                                 handle->cred,
                                 handle->time_rec,
-                                user_arg);
+                                handle->user_arg);
     }
 
     free(handle);
@@ -2662,6 +2662,8 @@ globus_l_xio_gsi_init_delegation_cb(
 
     monitor->result = result;
     monitor->done = GLOBUS_TRUE;
+
+    globus_cond_signal(&monitor->cond);
     
     globus_mutex_unlock(&monitor->mutex);
 
@@ -2683,9 +2685,20 @@ globus_l_xio_gsi_accept_delegation_cb(
     globus_mutex_lock(&monitor->mutex);
 
     monitor->result = result;
-    *(monitor->cred) = delegated_cred;
-    *(monitor->time_rec) = time_rec;
+
+    if(monitor->cred)
+    { 
+        *(monitor->cred) = delegated_cred;
+    }
+
+    if(monitor->time_rec)
+    { 
+        *(monitor->time_rec) = time_rec;
+    }
+    
     monitor->done = GLOBUS_TRUE;
+
+    globus_cond_signal(&monitor->cond);
     
     globus_mutex_unlock(&monitor->mutex);
 
@@ -2876,6 +2889,7 @@ globus_l_xio_gsi_cntl(
         assert(rc == GLOBUS_SUCCESS);
 
       case GLOBUS_XIO_GSI_REGISTER_ACCEPT_DELEGATION:
+
         delegation_handle = (globus_l_delegation_handle_t *)
             malloc(sizeof(globus_l_delegation_handle_t));
         if(!delegation_handle)
@@ -2893,7 +2907,7 @@ globus_l_xio_gsi_cntl(
         
         if(cmd == GLOBUS_XIO_GSI_ACCEPT_DELEGATION)
         {
-            delegation_handle->init_callback =
+            delegation_handle->accept_callback =
                 globus_l_xio_gsi_accept_delegation_cb;
             delegation_handle->user_arg = &monitor;
             monitor.time_rec = va_arg(ap, OM_uint32 *);
