@@ -12,7 +12,7 @@ mechinfo gss {
 }
 
 cond_eval cond_local_access file {
-   cond_eval libglobus_gaa_simple_@GLOBUS_FLAVOR_NAME@.so gaasimple_check_local_access
+   cond_eval libglobus_gaa_simple_@GLOBUS_FLAVOR_NAME@.so gaa_simple_check_local_access
    idcred no
 }
 
