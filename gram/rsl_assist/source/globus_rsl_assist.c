@@ -643,6 +643,11 @@ globus_i_rsl_assist_get_rm_contact(
 	"(cn=%s))";
     globus_list_t * rm_contact_list=GLOBUS_NULL;
     char * result;
+
+    if(strchr(resource, (int) ':') != GLOBUS_NULL)
+    {
+	return strdup(resource);
+    }
     
     search_string=globus_malloc(strlen(resource)+
 				strlen(search_format)+
