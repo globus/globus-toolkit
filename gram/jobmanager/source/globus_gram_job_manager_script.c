@@ -1524,6 +1524,7 @@ globus_l_gram_job_manager_print_rsl_value(
         case GLOBUS_RSL_VALUE_VARIABLE:
         case GLOBUS_RSL_VALUE_CONCATENATION:
         default:
+            fprintf(fp, "''");
 	    return 1;
             break;
     }
