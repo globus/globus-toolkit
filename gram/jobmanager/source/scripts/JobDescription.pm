@@ -246,7 +246,14 @@ sub AUTOLOAD
 
     if((! ref($self)) ||(! exists($self->{$name})))
     {
-	return undef;
+	if(wantarray)
+	{
+	    return ();
+	}
+	else
+	{
+	    return undef;
+	}
     }
     if(wantarray)
     {
