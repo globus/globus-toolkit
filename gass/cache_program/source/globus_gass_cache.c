@@ -528,7 +528,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     char *                                    callback_contact;
     char *                                    job_contact;
     char                                      spec[1024];
-    char *                                    server_url;
+    char *                                    server_url	= GLOBUS_NULL;
     char *                                    scheme            = GLOBUS_NULL;
     unsigned short                            port              = 0;
     globus_gass_transfer_listener_t           listener;
@@ -602,7 +602,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     }
     globus_mutex_unlock(&globus_l_cache_monitor_mutex);
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
-    globus_gass_server_ez_shutdown(port);
+    globus_gass_server_ez_shutdown(listener);
 } /* globus_l_cache_remote_op() */
 
 /******************************************************************************
