@@ -6,7 +6,11 @@
 /* all macros in this file require each function to 'declare' their name with
  * this
  */
+#ifdef __GNUC__
+#define GlobusXIOName(func) static const char * _xio_name __attribute__((__unused__)) = #func
+#else
 #define GlobusXIOName(func) static const char * _xio_name = #func
+#endif
 
 #define GlobusXIOErrorCanceled()                                            \
     globus_error_put(                                                       \
@@ -152,22 +156,22 @@
             "[%s:%d] Not registered.",                                      \
             _xio_name, __LINE__))                            
                                                                             
-#define GlobusIXIOUtilTransferIovec(iovec, xiovec, iovc)                    \
+#define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \
     do                                                                      \
     {                                                                       \
         globus_size_t                   _i;                                 \
-        globus_xio_iovec_t *            _xiovec;                            \
+        const struct iovec *            _siov;                              \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
                                                                             \
-        _xiovec = (xiovec);                                                 \
-        _iovec = (iovec);                                                   \
+        _siov = (siov);                                                     \
+        _iov = (iov);                                                       \
         _iovc = (iovc);                                                     \
                                                                             \
         for(_i = 0; _i < _iovc; _i++)                                       \
         {                                                                   \
-            _iovec[_i].iov_base = _xiovec[_i].iov_base;                     \
-            _iovec[_i].iov_len = _xiovec[_i].iov_len;                       \
+            _iov[_i].iov_base = _siov[_i].iov_base;                         \
+            _iov[_i].iov_len = _siov[_i].iov_len;                           \
         }                                                                   \
     } while(0)
 
@@ -202,7 +206,7 @@
     do                                                                      \
     {                                                                       \
         globus_size_t                   _n;                                 \
-        struct iovec *                  _iov;                               \
+        const struct iovec *            _iov;                               \
         int                             _iovc;                              \
         struct iovec *                  _new_iov;                           \
         int                             _i;                                 \
