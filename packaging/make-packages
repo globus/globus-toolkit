@@ -223,8 +223,8 @@ install_cdeps() {
 	popd
 
 	mkdir -p package-output
-	cp ogsa-cvs/ogsa-c/build_tools/source_packages/ogsa_cbindings_src_bundle.tar.gz package-output
-	cp ogsa-cvs/ogsa-c/build_tools/bin_packages/ogsa_cbindings_bin_bundle_bin.tar.gz package-output
+	cp ogsa-cvs/ogsa-c/build_tools/ogsa_cbindings_src_bundle.tar.gz package-output
+	cp ogsa-cvs/ogsa-c/build_tools/ogsa_cbindings_bin_bundle_bin.tar.gz package-output
 }
 
 # Tar up the source directory with packaging data and filelist.
@@ -242,9 +242,11 @@ make_source_package() {
 
 	export destdir=`pwd`/${name}-${version}-src/
 
-    	if [ x"$force" != "x" ]; then
-        	echo Rebuild forced, overwriting $destdir
-        	rm -rf $destdir
+    if [ x"$force" != "x" ]; then
+        echo Rebuild forced, overwriting $destdir
+        rm -rf $destdir
+        rm -rf BUILD/$destdir
+        rm -rf BUILD/$destdir.tar.gz
 	fi
 
 	if [ -d $destdir ]; then
@@ -499,13 +501,17 @@ read_args() {
 read_args "$@"
 setup_environment
 
+#Checkout GT3 cvs
+checkout_cvs $tag
+
+install_gpt2
+#install_gpt3
+
+#Build GT2 autotools, as globus_grim needs them
+build_gt2_autotools
+
 #The named packages case.
 if [ x"$package" != "x" ]; then
-	checkout_cvs
-	install_gpt2
-
-	#Build GT2 autotools, as globus_grim needs them
-	build_gt2_autotools
 	
 	if [ x$dir != "x" ]; then
 		export GLOBUS_LOCATION=$dir
@@ -526,15 +532,6 @@ if [ x"$package" != "x" ]; then
 	$GPT_LOCATION/sbin/gpt-postinstall
 	exit
 fi
-
-install_gpt2
-#install_gpt3
-
-#Checkout GT3 cvs
-checkout_cvs $tag
-
-#Build GT2 autotools, as globus_grim needs them
-build_gt2_autotools
 
 # If user has requested installation, go ahead and put GT2 stuff there first.
 if [ x$dir = "x" ]; then
