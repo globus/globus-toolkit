@@ -932,11 +932,6 @@ globus_gram_job_manager_state_machine(
 	 * Append some values from the configuration file to the
 	 * job's environment
 	 */
-        if(request->x509_cert_dir == NULL)
-	{
-	    request->x509_cert_dir = globus_libc_getenv("X509_CERT_DIR");
-	}
-
 	if(request->x509_cert_dir != NULL)
 	{
 	    globus_gram_job_manager_rsl_env_add(
