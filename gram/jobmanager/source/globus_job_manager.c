@@ -1261,6 +1261,21 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
     else
         params->gram_myjob = GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB;
 
+    /********************************** 
+     *  GET DRYRUN PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_GRAM_CLIENT_DRYRUN_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
+    if (tmp_param[0])
+        params->dryrun = tmp_param[0];
+    else
+        params->dryrun = GLOBUS_GRAM_CLIENT_DEFAULT_DRYRUN;
+
     /**********************************
      *  GET QUEUE PARAM
      */
