@@ -25,6 +25,11 @@ AC_DEFUN(LAC_ASM,
     AC_REQUIRE([AC_CANONICAL_HOST])
     AC_REQUIRE([LAC_CPU])
     LAC_ASM_ARGS
+
+    if test "$enable_debug" = "yes"; then
+        lac_asm="no"
+    fi
+
     LAC_ASM_SET
 
     LAC_SUBSTITUTE_VAR(BN_OBJ)
