@@ -2521,6 +2521,7 @@ globus_xio_open(
     op->user_arg = info;
     op->entry[0].prev_ndx = -1; /* for first pass there is no return */
     op->_op_context = context;
+    op->blocking = GLOBUS_TRUE;
 
     /* initialize the handle */
     handle->ref = 2; /* itself, operation */
@@ -3150,7 +3151,8 @@ globus_xio_close(
     {
         goto alloc_error;
     }
-
+    
+    handle->close_op->blocking = GLOBUS_TRUE;
     globus_mutex_lock(&info->mutex);
     {
         if(pass)
