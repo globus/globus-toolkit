@@ -159,15 +159,15 @@ do                                                                      \
     char *                              _str=(char*)_w;                 \
     if(_str == NULL)                                                    \
     {                                                                   \
-        GFSEncodeChar(_start, _len, _buf, '\0');                        \
+        GFSEncodeUInt32(_start, _len, _buf, 0);                         \
     }                                                                   \
     else                                                                \
     {                                                                   \
+        GFSEncodeUInt32(_start, _len, _buf, strlen(_str)+1);            \
         for(_str = (char *)_w; *_str != '\0'; _str++)                   \
         {                                                               \
             GFSEncodeChar(_start, _len, _buf, *_str);                   \
         }                                                               \
-        GFSEncodeChar(_start, _len, _buf, *_str);                       \
     }                                                                   \
 } while(0)
 
@@ -175,23 +175,22 @@ do                                                                      \
 do                                                                      \
 {                                                                       \
     int                                 _ctr;                           \
+    uint32_t                            _sz;                            \
     /* make sure that strip in terminated properly */                   \
-    for(_ctr = 0; _ctr < _len && _buf[_ctr] != '\0'; _ctr++);           \
-    if(_buf[_ctr] != '\0')                                              \
+    GFSDecodeUInt32(_buf, _len, _sz);                                   \
+    if(_sz > 0)                                                         \
     {                                                                   \
-        goto decode_err;                                                \
-    }                                                                   \
-    if(_ctr > 0)                                                        \
-    {                                                                   \
-        _w = strdup(_buf);                                              \
+        _w = malloc(_sz);                                               \
+        for(_ctr = 0; _ctr < _sz - 1; _ctr++)                           \
+        {                                                               \
+            GFSDecodeChar(_buf, _len, _w[_ctr]);                        \
+        }                                                               \
+        _w[_ctr] = '\0';                                                \
     }                                                                   \
     else                                                                \
     {                                                                   \
         _w = NULL;                                                      \
     }                                                                   \
-    _ctr = strlen(_buf) + 1;                                            \
-    _buf += _ctr;                                                       \
-    _len -= _ctr;                                                       \
 } while(0)
 
 typedef globus_gfs_operation_type_t     globus_gfs_ipc_request_type_t;

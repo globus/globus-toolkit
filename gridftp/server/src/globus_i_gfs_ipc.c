@@ -2302,8 +2302,9 @@ globus_l_gfs_ipc_unpack_reply(
                 globus_malloc(sizeof(char *) * reply->info.data.cs_count);
             for(ctr = 0; ctr < reply->info.data.cs_count; ctr++)
             {
-                GFSDecodeString(
-                    buffer, len, reply->info.data.contact_strings[ctr]);
+                char *                  tmp_cs;
+                GFSDecodeString(buffer, len, tmp_cs);
+                reply->info.data.contact_strings[ctr] = tmp_cs;
             }
             GFSDecodeChar(buffer, len, ch);
             reply->info.data.ipv6 = (int)ch;
@@ -2541,7 +2542,9 @@ globus_l_gfs_ipc_unpack_data(
         globus_malloc(sizeof(char *) * data_info->cs_count);
     for(ctr = 0; ctr < data_info->cs_count; ctr++)
     {
-        GFSDecodeString(buffer, len, data_info->contact_strings[ctr]);
+        char *                          tmp_cs;
+        GFSDecodeString(buffer, len, tmp_cs);
+        data_info->contact_strings[ctr] = tmp_cs;
     }
     GFSDecodeString(buffer, len, data_info->pathname);
     GFSDecodeString(buffer, len, data_info->interface);

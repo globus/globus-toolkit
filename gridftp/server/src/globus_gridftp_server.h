@@ -250,7 +250,7 @@ typedef struct globus_gfs_transfer_info_s
     char *                              module_name;
     char *                              module_args;
     /** type of list requested */
-    const char *                        list_type;
+    char *                              list_type;
     
     /** offset of partial transfer */
     globus_off_t                        partial_offset;
