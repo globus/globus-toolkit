@@ -1999,6 +1999,7 @@ globus_l_wu_perf_update(
     lreply(112, "Perf Marker");
     lreply(0, " Timestamp: %ld", (long) t);
     lreply(0, " Stripe Index: 0");
+    lreply(0, " Total Stripe Count: 1");
     lreply(0, " Stripe Bytes Transferred: %" GLOBUS_OFF_T_FORMAT, 
 	    monitor->all_transferred);
     reply(112, "End");
