@@ -5,7 +5,7 @@ use POSIX;
 use Test;
 use Cwd;
 
-my $test_prog = 'gssapi-context-test';
+my $test_prog = 'gssapi-thread-test';
 
 my $diff = 'diff';
 my @tests;
