@@ -772,8 +772,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         (creds->username == NULL) ||
         (creds->passphrase == NULL) ||
         (creds->owner_name == NULL) ||
-        (creds->location == NULL) ||
-        (creds->restrictions != NULL))
+        (creds->location == NULL))
     {
         verror_put_errno(EINVAL);
 	goto error;
@@ -844,7 +843,6 @@ myproxy_creds_fetch_entry(char *username, char *credname, struct myproxy_creds *
 
    creds->username = mystrdup(username);
    creds->location = mystrdup(creds_path);
-   creds->restrictions = NULL;
    return 0;
 }
 
@@ -891,7 +889,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     creds->location = mystrdup(creds_path);
 
     creds->lifetime = retrieved_creds.lifetime;
-    creds->restrictions = NULL;
    
 #if defined (MULTICRED_FEATURE) 
     if ((creds->owner_name == NULL)) 
@@ -1132,7 +1129,6 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
     struct myproxy_creds tmp_creds;
     int index;
     myproxy_info_t *info_ptr;
-    int fileselect();
 
     username = strdup (creds->username);
     count = scandir (storage_dir, &files, file_select, alphasort);
