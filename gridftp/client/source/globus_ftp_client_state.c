@@ -412,13 +412,6 @@ redo:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SITE_HELP;
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
 	
-        target->features = globus_i_ftp_client_features_init(); 
-        if(!target->features) 
-        { 
-         error = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY(); 
-         goto notify_fault; 
-        }
-
         target->features = globus_i_ftp_client_features_init();
         if(!target->features)
         {
