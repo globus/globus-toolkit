@@ -75,7 +75,7 @@ FIXPATHSCMD	= $(PERL) $(srcdir)/fixpaths $(PATHSUBS)
 
 all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 
-gpt-all: $(TARGETS)
+gpt-all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 
 $(LIBSSH_OBJS): config.h
 $(SSHOBJS): config.h
@@ -181,8 +181,8 @@ distprep: catman-do
 install: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files host-key
 install-nokeys: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files
 
-gpt-install: gpt-all gpt-install-files
-gpt-install-nokeys: gpt-all gpt-install-files
+gpt-install: gpt-all install-files
+gpt-install-nokeys: gpt-all install-files
 
 scard-install:
 	(cd scard && $(MAKE) DESTDIR=$(DESTDIR) install)
