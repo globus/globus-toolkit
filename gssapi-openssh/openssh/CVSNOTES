@@ -37,11 +37,16 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
           $ cvs commit
           $ cvs rtag -F -r <newBase> OPENSSH_GSI_GPT_BASE openssh
-          $ cvs tag <tagName>-merged
 
-    6. Add an entry to the History section detailing your merge action, along with
-       noting conflicts that occurred and any interesting changes you had to make to
-       resolve them.
+    6. Add an entry to the History section of this file detailing your merge action,
+       along with noting conflicts that occurred and any interesting changes you had
+       to make to resolve them.
+
+    7. Commit your change to this file to the repository and tag the working directory
+       as merged.
+
+          $ cvs commit
+          $ cvs tag <tagName>-merged
 
   [ History ]
 
