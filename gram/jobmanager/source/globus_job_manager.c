@@ -583,6 +583,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
     char pgm_count[GRAM_PARAM_SIZE];
     char pgm_maxtime[GRAM_PARAM_SIZE];
     char * tmp_dir;
+    int tmp_fd;
     struct stat statbuf;
 
     if (description_tree == NULL)
@@ -661,6 +662,13 @@ grami_jm_request_params(gram_specification_t * description_tree,
     {
        strcpy(params->std_err, GRAM_DEFAULT_STDERR);
     }
+
+/*  create the std files
+ */ 
+    tmp_fd = open(params->std_out, O_WRONLY | O_CREAT | O_TRUNC, 0666 );
+    close(tmp_fd);
+    tmp_fd = open(params->std_err, O_WRONLY | O_CREAT | O_TRUNC, 0666 );
+    close(tmp_fd);
 
     return(0);
 
