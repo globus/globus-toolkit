@@ -26,10 +26,15 @@
 #if defined(HAVE_SYSLOG_H) || (!defined(AUTOCONF) && !defined(HAVE_SYS_SYSLOG_H))
 #include <syslog.h>
 #endif
+#ifdef GSSAPI_KRB5
+#include <netinet/in.h>
+#endif /* GSSAPI_KRB5 */
 
 /* Service names to use for importing credentials */
 #ifdef GSSAPI_KRB5
 char* gss_services[] = { "ftp", "host", 0 };
+extern struct sockaddr_in his_addr;
+extern struct sockaddr_in ctrl_addr;
 #ifndef GSS_C_NT_HOSTBASED_SERVICE
 #define GSS_C_NT_HOSTBASED_SERVICE	gss_nt_service_name
 #endif /* GSS_C_NT_HOSTBASED_SERVICE */
@@ -303,7 +308,7 @@ gssapi_check_authorization(char *gssapi_name, char *account)
 	    goto fail;
 	}
 
-	k5ret = krb5_kuserok(kc, p, name);
+	k5ret = krb5_kuserok(kc, p, account);
 	if (k5ret == TRUE)
 		retval = 0;
 	else 
@@ -660,7 +665,7 @@ gssapi_handle_auth_data(char *data, int length)
     chan.acceptor_address.value = &ctrl_addr.sin_addr.s_addr;
     chan.application_data.length = 0;
     chan.application_data.value = 0;
-    pchan = &chan
+    pchan = &chan;
 #endif /* !GSSAPI_GLOBUS */
 
     in_tok.value = data;
