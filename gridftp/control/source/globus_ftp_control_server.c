@@ -664,7 +664,8 @@ globus_ftp_control_command_copy(
                 "globus_ftp_control_command_copy: strdup failed")
             ); 
     }
-   
+
+    dest->base.string_arg = NULL;
     switch(dest->code)
     {
     case GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN:
