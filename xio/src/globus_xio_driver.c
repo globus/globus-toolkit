@@ -651,7 +651,9 @@ globus_i_xio_driver_start_close(
 
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
+        my_op->in_register = GLOBUS_TRUE;
         globus_xio_driver_finished_close(op, res);
+        my_op->in_register = GLOBUS_FALSE;
     }
 
     globus_mutex_lock(&context->mutex);

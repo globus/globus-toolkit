@@ -728,7 +728,7 @@ globus_l_xio_open_close_callback_kickout(
         switch(handle->state)
         {
             case GLOBUS_XIO_HANDLE_STATE_OPEN:
-                globus_assert(op->type = GLOBUS_XIO_OPERATION_TYPE_OPEN);
+                globus_assert(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN);
                 break;
 
             case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
