@@ -176,7 +176,9 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 157 */     "proxy delegation failed",
 /* 158 */     "the job manager could not lock the state lock file",
 /* 159 */     "an invalid globus_io_clientattr_t was used.",
-/* 160 */     "an null parameter was passed to the gram library"
+/* 160 */     "an null parameter was passed to the gram library",
+/* 161 */     "the authorization system denied the request",
+/* 162 */     "the authorization system reported a failure"
 };
 
 static char *

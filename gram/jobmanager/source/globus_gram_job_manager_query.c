@@ -10,6 +10,10 @@
  * $Author$
  */
 #include "globus_gram_job_manager.h"
+#include "globus_callout.h"
+#include "globus_callout_constants.h"
+#include "globus_gsi_system_config.h"
+#include "globus_gsi_system_config_constants.h"
 #include <string.h>
 #endif
 
@@ -72,6 +76,7 @@ int
 globus_l_gram_job_manager_query_stop_manager(
     globus_gram_jobmanager_request_t *	request);
 
+
 void
 globus_gram_job_manager_query_callback(
     void *				arg,
@@ -89,6 +94,11 @@ globus_gram_job_manager_query_callback(
     int					job_failure_code;
     globus_bool_t			reply		= GLOBUS_TRUE;
     globus_url_t			parsed_uri;
+    globus_callout_handle_t             authz_handle;
+    char *                              filename;
+    globus_object_t *                   error;
+    globus_result_t                     result;
+    gss_ctx_id_t                        context;
 
     globus_mutex_lock(&request->mutex);
 
@@ -140,18 +150,110 @@ globus_gram_job_manager_query_callback(
 
     if (rc != GLOBUS_SUCCESS)
     {
-	goto unpack_failed;
+        goto unpack_failed;
     }
 
     globus_gram_job_manager_request_log(
-	    request,
-	    "JM : in globus_l_gram_job_manager_query_callback, query=%s\n",
-		   query);
-
+        request,
+        "JM : in globus_l_gram_job_manager_query_callback, query=%s\n",
+        query);
+    
     rest = strchr(query,' ');
     if (rest)
 	*rest++ = '\0';
 
+    /* add authz callout here */
+
+    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
+    
+    result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+
+    if(globus_gram_protocol_get_sec_context(handle,
+                                            &context))
+    {
+        goto unpack_failed;
+    }
+        
+    if(result != GLOBUS_SUCCESS)
+    {
+        error = globus_error_get(result);
+        
+        if(globus_error_match(
+               error,
+               GLOBUS_GSI_SYSCONFIG_MODULE,
+               GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
+           == GLOBUS_TRUE)
+        {
+            globus_object_free(error);
+            /* do regular authz here */
+            if(globus_gram_protocol_authorize_self(context)
+               == GLOBUS_FALSE)
+            {
+                goto unpack_failed;
+            }
+        }
+        else
+        {
+            globus_object_free(error);
+            goto unpack_failed;
+        }
+    }
+    else
+    {
+        
+        result = globus_callout_handle_init(&authz_handle);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto unpack_failed;
+        }
+        
+        result = globus_callout_read_config(authz_handle, filename);
+
+        free(filename);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_callout_handle_destroy(authz_handle);
+            goto unpack_failed;
+        }
+        
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
+                                          request->response_context,
+                                          context,
+                                          request->uniq_id,
+                                          request->rsl,
+                                          query);
+        globus_callout_handle_destroy(authz_handle);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+                /* do regular authz here */
+                if(globus_gram_protocol_authorize_self(context)
+                   == GLOBUS_FALSE)
+                {
+                    goto unpack_failed;
+                }
+            }
+            else
+            {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+                globus_object_free(error);
+                goto unpack_failed;
+            }
+        }
+    }
+    
     if (strcmp(query,"cancel")==0)
     {
 	rc = globus_l_gram_job_manager_cancel(request, handle, &reply);
@@ -966,3 +1068,4 @@ globus_gram_job_manager_query_delegation_callback(
     globus_mutex_unlock(&request->mutex);
 }
 /* globus_l_gram_job_manager_delegation_callback() */
+
