@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_OUT *)
-&(executable=/bin/true)
- (file_stage_out = ( ftp://ftp.globus.org (/tmp/ftp)))
