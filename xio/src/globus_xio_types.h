@@ -85,6 +85,12 @@ typedef enum
 
 typedef enum
 {
+    GLOBUS_XIO_DD_SET_OFFSET,
+    GLOBUS_XIO_DD_GET_OFFSET
+} globus_xio_dd_cmd_t;
+
+typedef enum
+{
     GLOBUS_XIO_CANCEL_OPEN = 0x01,
     GLOBUS_XIO_CANCEL_CLOSE = 0x02,
     GLOBUS_XIO_CANCEL_READ = 0x04,

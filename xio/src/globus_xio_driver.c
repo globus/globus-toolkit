@@ -1193,9 +1193,11 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL:
                 attr->no_cancel = va_arg(ap, globus_bool_t);
                 break;
+                
+            default:
+                res = GlobusXIOErrorInvalidCommand(general_cmd);
+                goto err;
         }
-
-        res = GLOBUS_SUCCESS;
     }
 
     GlobusXIODebugExit();
@@ -1294,6 +1296,26 @@ globus_i_xio_driver_dd_cntl(
     }
     else
     {
+        globus_off_t *                  out_offt;
+        
+        /* could end up here with non-dd attr cntls... none supported at driver
+         * level yet, so no biggie
+         */
+        switch(cmd)
+        {
+          case GLOBUS_XIO_DD_SET_OFFSET:
+            op->_op_ent_offset = va_arg(ap, globus_off_t);
+            break;
+            
+          case GLOBUS_XIO_DD_GET_OFFSET:
+            out_offt = va_arg(ap, globus_off_t *);
+            *out_offt = op->_op_ent_offset;
+            break;
+            
+          default:
+            res = GlobusXIOErrorInvalidCommand(cmd);
+            goto err;
+        }
     }
     GlobusXIODebugExit();
 
@@ -1656,16 +1678,76 @@ globus_xio_driver_operation_cancel(
 
 void
 globus_xio_driver_set_eof_received(
-    globus_xio_driver_handle_t          driver_handle)
+    globus_xio_operation_t              op)
 {
+    globus_i_xio_context_entry_t *      my_context;
+    globus_i_xio_context_t *            context;
+    GlobusXIOName(globus_xio_driver_set_eof_received);
+
+    GlobusXIODebugEnter();
     
+    context = op->_op_context;
+    my_context = &context->entry[op->entry[op->ndx - 1].prev_ndx];
+    
+    globus_mutex_lock(&context->mutex);
+    {
+        globus_assert(
+            my_context->read_operations > 0 &&
+            "Must be called on behalf of read operations");
+        globus_assert(
+            my_context->state == GLOBUS_XIO_CONTEXT_STATE_OPEN ||
+            my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+            my_context->state == 
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING);
+                
+        if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_OPEN)
+        {
+            GlobusXIOContextStateChange(my_context,
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED);
+        }
+    }
+    globus_mutex_unlock(&context->mutex);
+    
+    GlobusXIODebugExit();
 }
 
 globus_bool_t
 globus_xio_driver_eof_received(
-    globus_xio_driver_handle_t          driver_handle)
+    globus_xio_operation_t              op)
 {
-    return GLOBUS_FALSE;
+    globus_i_xio_context_entry_t *      my_context;
+    globus_i_xio_context_t *            context;
+    globus_bool_t                       received = GLOBUS_FALSE;
+    GlobusXIOName(globus_xio_driver_eof_received);
+
+    GlobusXIODebugEnter();
+    
+    context = op->_op_context;
+    my_context = &context->entry[op->entry[op->ndx - 1].prev_ndx];
+    
+    globus_mutex_lock(&context->mutex);
+    {
+        globus_assert(
+            my_context->read_operations > 0 &&
+            "Must be called on behalf of read operations");
+        globus_assert(
+            my_context->state == GLOBUS_XIO_CONTEXT_STATE_OPEN ||
+            my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+            my_context->state == 
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING);
+                
+        if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+            my_context->state == 
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING)
+        {
+            received = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&context->mutex);
+    
+    GlobusXIODebugExit();
+    
+    return received;
 }
 
 /***************************************************************************

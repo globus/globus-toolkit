@@ -167,6 +167,7 @@ do                                                                          \
         _X_op->_op_context = _X_c;                                          \
         _X_op->stack_size = _X_c->stack_size;                               \
         _X_op->progress = GLOBUS_TRUE;                                      \
+        _X_op->_op_ent_offset = -1;                                         \
     }                                                                       \
     _out_op = _X_op;                                                        \
 } while(0)
@@ -433,6 +434,7 @@ typedef struct globus_i_xio_context_s
 /* MACROS for accessing the op_entry structure unin elements */
 #define _op_ent_data_cb                 type_u.handle_s.data_cb
 #define _op_ent_wait_for                type_u.handle_s.wait_for_bytes
+#define _op_ent_offset                  type_u.handle_s.offset
 #define _op_ent_nbytes                  type_u.handle_s.nbytes
 #define _op_ent_iovec                   type_u.handle_s.iovec
 #define _op_ent_iovec_count             type_u.handle_s.iovec_count
@@ -537,6 +539,7 @@ typedef struct globus_i_xio_op_s
             globus_i_xio_context_t *    context;
             /* data descriptor */
             globus_size_t               wait_for;
+            globus_off_t                offset;
             globus_xio_timeout_callback_t timeout_cb;
         } handle_s;
         /* server op stuff */

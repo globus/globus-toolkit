@@ -3,9 +3,6 @@ CLEAN UP DOC
 
 --------------------
 
-need globus_xio_driver_set_eof_received() and globus_xio_driver_eof_received()
-need DD_SET_OFFSET and DD_GET_OFFSET
- 
 - driver load func cant use var args. need a special load for that
 - driver init interface needs to have a 'command' which is zero by default
 - need set_accepted() for user api

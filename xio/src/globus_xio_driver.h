@@ -921,6 +921,60 @@ globus_xio_driver_finished_read(
     globus_result_t                     result,
     globus_size_t                       nread);
 
+/**
+ * EOF state manipulation
+ * @ingroup driver_pgm
+ * 
+ * This function is used by drivers that allow multiple outstanding reads at
+ * a time.  It can only be called on behalf of a read operation (while in the
+ * read interface call or the pass_read callback).
+ * 
+ * Typical use for this would be to hold a driver specific lock and call this
+ * when an internal eof has been received.  The read operation this is called
+ * on behalf of must be finished with an eof error or the results are
+ * undefined.
+ * 
+ * In general, you should not have an eof flag in your driver.  Use this call
+ * and globus_xio_driver_eof_received() instead.  This is necessary to support
+ * xio's automatic eof resetting.  If your driver absolutely can not be read
+ * after an eof has been set, then you will need your own eof flag.
+ * 
+ * This call will typically only be used just before a finished_read() call.
+ * 
+ * @param op
+ *      The operation structure representing the requested read
+ *      operation.
+ */
+void
+globus_xio_driver_set_eof_received(
+    globus_xio_operation_t              op);
+
+/**
+ * EOF state checking
+ * @ingroup driver_pgm
+ * 
+ * This function is used by drivers that allow multiple outstanding reads at
+ * a time.  It can only be called on behalf of a read operation (while in the
+ * read interface call or the pass_read callback).
+ * 
+ * Typical use for this would be to hold a driver specific lock (the same one
+ * used when calling globus_xio_driver_set_eof_received()) and call this to
+ * see if an eof has been received. If so, the operation should immediately be
+ * finished with an eof error (do not _return_ an eof error).
+ * 
+ * This call will typically only be used in the read interface call.
+ * 
+ * @param op
+ *      The operation structure representing the requested read
+ *      operation.
+ * 
+ * @return
+ *      GLOBUS_TRUE if eof received, GLOBUS_FALSE otherwise.
+ */
+globus_bool_t
+globus_xio_driver_eof_received(
+    globus_xio_operation_t              op);
+
 /**********************************************************************
  *                          Write
  *********************************************************************/
