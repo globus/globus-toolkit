@@ -44,11 +44,11 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
 	implements FileStreamingPortType,CallBackInterface {
 	
     static Log logger = LogFactory.getLog (FileStreamingImpl.class.getName());
+
     private static final String TOPIC_ID = "FileStreamingStatusGenerator";
     private static final QName TOPIC = new QName(GridConstants.XSD_NS,"anyType");
     private static final String DEST_URL_SDE_NAME = "DestinationURL";
     protected Tail _outputFollower;
-    protected Logger _jobLogger;
     protected boolean appendStdout = true;
     protected GSSCredential _proxy = null;
     private Map notifyProps;
@@ -58,8 +58,9 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
     private int offset;
     private OutputStream out;
     private CallBackInterface managedJobImpl;
+
     public FileStreamingImpl(FileStreamingType fileStreamingAttributes,
-            FileStreamingOptionsType options) {
+			     FileStreamingOptionsType options) {
         super("FileStreamingImpl");
         String name = "FileStreaming";
         String id = String.valueOf (hashCode ());
@@ -69,7 +70,6 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
 
         setProperty (ServiceProperties.NAME, name);
 
-        initJobLogger();
         this.localPath = fileStreamingAttributes.getPath();
         this.callBack = fileStreamingAttributes.getCallBack();
         this.offset = options.getOffset();
@@ -106,7 +106,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         this.serviceData.add(destinationURLServiceData);
     }
 
-    public void startStreaming(GSSCredential credential)
+    private void startStreaming(GSSCredential credential)
             throws RemoteException {
         File outputFile = new File(localPath);
         _proxy = credential;
@@ -114,7 +114,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
 
         if(_outputFollower == null) {
             _outputFollower = new Tail();
-            _outputFollower.setLogger(_jobLogger);
+            _outputFollower.setLogger(Logger.getLogger(FileStreamingImpl.class.getName()));
             _outputFollower.start();
         }
         try { 
@@ -143,6 +143,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
     }
     
     /* Close your eyes now */
+    /*
     public void postCreate(GSSCredential credential, CallBackInterface callback)
             throws GridServiceException {
         setNotifyProps(credential, Constants.SIGNATURE);
@@ -156,13 +157,21 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
             throw new GridServiceException("Error in fake postCreate", e);
         }
     }
+    */
     /* Ok to reopen eyes */
 
     public void postCreate(GridContext context) throws GridServiceException {
         super.postCreate(context);
-        GSSCredential credential = transferCredential(context);
-        setNotifyProps(credential, context.getProperty (org.globus.ogsa.impl.security.authentication.Constants.MSG_SEC_TYPE));
-       
+	MessageContext ctx = (MessageContext)context.getMessageContext();
+	GSSCredential credential = (GSSCredential)ctx.getProperty(GSIConstants.GSI_CREDENTIALS);
+	if (credential == null) {
+	    throw new GridServiceException("No credentials");
+	}
+	setServiceCredential(credential);
+	setServiceOwner(credential);
+
+        setNotifyProps(credential, ctx.getProperty(Constants.MSG_SEC_TYPE));
+	
         try {
             logger.debug("CallBack: " + callBack);
             this.managedJobImpl = (CallBackInterface)ServiceNode.getRootNode().activate(callBack);
@@ -172,7 +181,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         }
  
        try {
-            startStreaming();
+            startStreaming(credential);
         } catch (RemoteException re) {
             throw new GridServiceException("Error starting streaming", re);
         }
@@ -180,12 +189,13 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
     
     public void register(CallBackInterface callBack) {
     }
+
     private void setNotifyProps(GSSCredential credential, Object msgProt) {
         this.notifyProps = new HashMap();
         this.notifyProps.put (GSIConstants.GSI_MODE,
                               GSIConstants.GSI_MODE_NO_DELEG);
-        this.notifyProps.put(org.globus.ogsa.impl.security.authentication.Constants.ESTABLISH_CONTEXT,Boolean.TRUE);
-        this.notifyProps.put(org.globus.ogsa.impl.security.authentication.Constants.MSG_SEC_TYPE,msgProt);
+        this.notifyProps.put(Constants.ESTABLISH_CONTEXT,Boolean.TRUE);
+        this.notifyProps.put(Constants.MSG_SEC_TYPE,msgProt);
         this.notifyProps.put(GSIConstants.GSI_AUTHORIZATION, SelfAuthorization.getInstance());
         this.notifyProps.put(GSIConstants.GSI_CREDENTIALS,credential);
     }
@@ -204,10 +214,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
             throw new RemoteException("Failed to open remote URL");
         }
     }
-    protected void initJobLogger() {
-        _jobLogger = Logger.getLogger(FileStreamingImpl.class.getName());
 
-    }
     protected OutputStream openUrl(GlobusURL url) throws Exception {
         String protocol = url.getProtocol();
         if (protocol.equalsIgnoreCase("https")) {
@@ -242,6 +249,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
             throw new Exception("Protocol not supported: " + protocol);
         }
     }
+
     public void preDestroy() {
         try {
             out.close();
