@@ -1,27 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
 <gpt_package_metadata Format_Version="0.02" Name="globus_core_setup" >
-<Aging_Version Age="0" Major="2" Minor="0" />
-<Description >
-  </Description>
-<Functional_Group ></Functional_Group>
-<Version_Stability Release="experimental" />
-<src_pkg >
-<With_Flavors build="no" />
-<Build_Environment >
-<cflags >@GPT_CFLAGS@</cflags>
-<external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
-<pkg_libs > </pkg_libs>
-<external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
-</Build_Environment>
-<Post_Install_Message >
- You need to run setup_globus_core.
- </Post_Install_Message>
-<Post_Install_Program >
- globus/setup_globus_core
- </Post_Install_Program>
-<Setup Name="core_setup" >
-<Aging_Version Age="0" Major="0" Minor="1" />
-</Setup>
-</src_pkg>
+
+  <Aging_Version Age="0" Major="2" Minor="0" />
+  <Description >Globus Core Setup</Description>
+  <Functional_Group >Core</Functional_Group>
+  <Version_Stability Release="alpha" />
+
+  <src_pkg >
+
+    <With_Flavors build="no" />
+
+    <Build_Environment >
+      <cflags >@GPT_CFLAGS@</cflags>
+      <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
+      <pkg_libs > </pkg_libs>
+      <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
+    </Build_Environment>
+
+    <Post_Install_Message >
+      You need to run setup_globus_core.
+    </Post_Install_Message>
+
+    <Post_Install_Program >
+      globus/setup_globus_core
+    </Post_Install_Program>
+
+    <Setup Name="core_setup" >
+      <Aging_Version Age="0" Major="0" Minor="1" />
+    </Setup>
+
+  </src_pkg>
+
 </gpt_package_metadata>
