@@ -1,0 +1,18 @@
+digraph d
+{
+
+    client [shape=box label="Client\nClient API"];
+
+    gatekeeper [ label="Gatekeeper\n(root)" ];
+    jobmanager [ label="Job Manager (user)\nScheduler Specific Plugin" 
+                 shape=box];
+    job [ label="Job Process(es)" ];
+
+    client -> gatekeeper [ label="Job Request" ];
+    client -> jobmanager [ label="Job Cancel" ];
+
+    jobmanager -> client [ label="State Change Callback" ];
+
+    gatekeeper -> jobmanager [ label="fork/su/exec" ];
+    jobmanager -> job [ label="fork/exec/wait\nspsubmit/spq\ncondor,lsf" ];
+};

@@ -1,0 +1,19 @@
+digraph d 
+{ 
+    Unsubmitted -> StageIn ;
+    Unsubmitted -> Pending;
+    Unsubmitted -> Active;
+    Unsubmitted -> Done;
+    Unsubmitted -> Failed;
+    StageIn -> Pending;
+    StageIn -> Active;
+    StageIn -> Failed;
+    Pending -> Active;
+    Pending -> Failed;
+    Active -> Done;
+    Active -> Suspended;
+    Active -> StageOut;
+    Suspended -> Active;
+    StageOut -> Done;
+    StageOut -> Failed;
+};
