@@ -193,7 +193,11 @@ globus_hashtable_destroy(
     int                                 i;
     struct globus_hashtable_s *         s_table;
 
-    assert (table!=GLOBUS_NULL);
+    if(table == NULL || *table == NULL)
+    {
+        return 0;
+    }
+    
     s_table = *table;
 
     for (i=0; i<s_table->size; i++) 
@@ -221,7 +225,11 @@ globus_hashtable_destroy_all(
     int                                 i;
     struct globus_hashtable_s *         s_table;
 
-    assert (table!=GLOBUS_NULL);
+    if(table == NULL || *table == NULL)
+    {
+        return 0;
+    }
+    
     s_table = *table;
 
     for (i=0; i<s_table->size; i++) 
