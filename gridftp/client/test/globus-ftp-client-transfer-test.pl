@@ -360,11 +360,6 @@ push(@tests, "prot_test('none', 0);");
 push(@tests, "prot_test('safe', 0);");
 push(@tests, "prot_test('private', 0);");
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

@@ -109,11 +109,6 @@ push(@tests, "basic_func(0);");
 push(@tests, "basic_func(100);");
 push(@tests, "basic_func(5000);");
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

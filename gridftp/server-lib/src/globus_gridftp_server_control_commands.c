@@ -573,24 +573,6 @@ globus_l_gsc_cmd_pwd(
     }
 }
 
-static
-globus_bool_t
-globus_l_gsc_check_grp(
-    globus_i_gsc_op_t *                 op,
-    gid_t                               gid)
-{
-    int                                 i;
-
-    for(i = 0; i < op->gid_count; i++)
-    {
-        if(op->gid_array[i] == gid)
-        {
-            return GLOBUS_TRUE;
-        }
-    }
-
-    return GLOBUS_FALSE;
-}
 /*
  *  CWD
  */
@@ -646,9 +628,7 @@ globus_l_gsc_cmd_cwd_cb(
     {
         if(!(S_IXOTH & stat_info->mode && S_IROTH & stat_info->mode) &&
             !(stat_info->uid == uid && 
-                S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode) &&
-            !(globus_l_gsc_check_grp(op, stat_info->gid) && 
-                S_IXGRP & stat_info->mode && S_IRGRP & stat_info->mode))
+                S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode))
         {
             code = 550;
             msg = globus_common_create_string(_FSMSL("%s: Permission denied"), path);
@@ -1030,9 +1010,6 @@ globus_l_gsc_cmd_quit(
     void *                                  user_arg)
 {
     globus_i_gsc_server_handle_t *          server_handle;
-    GlobusGridFTPServerName(globus_l_gsc_cmd_quit);
-
-    GlobusGridFTPServerDebugInternalEnter();
 
     server_handle = op->server_handle;
 
@@ -1042,8 +1019,6 @@ globus_l_gsc_cmd_quit(
     globus_gsc_959_finished_command(op, _FSMSL("221 Goodbye.\r\n"));
 
     globus_i_gsc_terminate(server_handle);
-
-    GlobusGridFTPServerDebugInternalExit();
 }
 
 /*************************************************************************
@@ -1991,7 +1966,7 @@ globus_l_gsc_cmd_pasv_cb(
     /* if we were in delayed passive mode we start transfer now */
     if(wrapper->transfer_flag)
     {
-        globus_i_gsc_cmd_intermediate_reply(op, msg);
+        globus_i_gsc_intermediate_reply(op, msg);
         globus_l_gsc_cmd_transfer(wrapper);
         globus_free(msg);
     }
@@ -2726,16 +2701,6 @@ globus_l_gsc_cmd_stor_retr(
             tmp_ptr += 2;
             mod_parm = globus_libc_strdup(tmp_ptr);
             tmp_ptr = strchr(mod_parm, '\"');
-            /* XXX if mod_parm has a space, it has already been misparsed...
-               need to fix this upstream, but just error out for now */
-            if(tmp_ptr == NULL)
-            {
-                globus_free(mod_name);
-                globus_free(mod_parm);
-                globus_free(wrapper);
-                globus_gsc_959_finished_command(op, _FSMSL("500 command failed: space.\r\n"));
-                return;
-            }            
             *tmp_ptr = '\0';
 
             path = globus_libc_strdup(cmd_a[2]);

@@ -979,9 +979,8 @@ globus_l_xio_udp_open(
             handle, contact_info->host, contact_info->port);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorWrapFailedWithMessage2(result,
-                "Unable to connect to %s:%s",
-                contact_info->host, contact_info->port);
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_udp_connect", result);
             goto error_connect;
         }
     }
@@ -1339,15 +1338,13 @@ globus_l_xio_udp_cntl(
         {
             result = globus_l_xio_udp_connect(
                 handle, contact_info.host, contact_info.port);
+            globus_xio_contact_destroy(&contact_info);
             if(result != GLOBUS_SUCCESS)
             {
-                result = GlobusXIOErrorWrapFailedWithMessage2(result,
-                    "Unable to connect to %s:%s",
-                    contact_info.host, contact_info.port);
-                globus_xio_contact_destroy(&contact_info);
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_udp_connect", result);
                 goto error_connect;
             }
-            globus_xio_contact_destroy(&contact_info);
         }
         else
         {

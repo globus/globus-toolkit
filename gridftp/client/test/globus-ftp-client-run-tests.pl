@@ -34,12 +34,6 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             globus-ftp-client-user-auth-test.pl
             );
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
-
 my $runserver;
 my $runwuserver;
 my $nogsi;

@@ -54,71 +54,14 @@ globus_i_gsc_reverse_restart(
 }
 
 void
-globus_i_gsc_event_start_perf_restart(
-    globus_i_gsc_op_t *                 op)
-{
-    globus_result_t                     res;
-    globus_reltime_t                    delay;
-    globus_i_gsc_event_data_t *         event;
-
-    event = &op->event;
-
-    if(op->type != GLOBUS_L_GSC_OP_TYPE_RECV)
-    {
-        return;
-    }
-
-    /* performance markers */
-    if(op->server_handle->opts.perf_frequency >= 0 &&
-        event->event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF)
-    {
-        event->stripe_count = op->server_handle->stripe_count;
-        event->stripe_total = (globus_off_t *)globus_calloc(
-            sizeof(globus_off_t) * event->stripe_count, 1);
-
-        /* register periodic for events */
-        GlobusTimeReltimeSet(
-            delay, op->server_handle->opts.perf_frequency, 0);
-        event->perf_running = GLOBUS_TRUE;
-        res = globus_callback_register_periodic(
-            &event->periodic_handle,
-            &delay,
-            &delay,
-            globus_l_gsc_send_perf_marker_cb,
-            op);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_panic(&globus_i_gsc_module, res, "one shot failed.");
-        }
-    }
-
-    /* restart markers */
-    if(op->server_handle->opts.restart_frequency >= 0 &&
-        event->event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART)
-    {
-        GlobusTimeReltimeSet(
-            delay, op->server_handle->opts.restart_frequency,0);
-        event->restart_running = GLOBUS_TRUE;
-        res = globus_callback_register_periodic(
-            &event->restart_handle,
-            &delay,
-            &delay,
-            globus_l_gsc_send_restart_marker_cb,
-            op);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_panic(&globus_i_gsc_module, res, "one shot failed.");
-        }
-    }
-}
-
-void
 globus_i_gsc_event_start(
     globus_i_gsc_op_t *                 op,
     int                                 event_mask,
     globus_gridftp_server_control_event_cb_t event_cb,
     void *                              user_arg)
 {
+    globus_result_t                     res;
+    globus_reltime_t                    delay;
     globus_i_gsc_event_data_t *         event;
 
     event = &op->event;
@@ -136,6 +79,60 @@ globus_i_gsc_event_start(
     }
 
     op->ref++;  /* until transfer finsihed event happens */
+    if(op->type == GLOBUS_L_GSC_OP_TYPE_RECV)
+    {
+        /* performance markers */
+        if(op->server_handle->opts.perf_frequency >= 0 &&
+            event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF)
+        {
+            event->stripe_count = op->server_handle->stripe_count;
+            event->stripe_total = (globus_off_t *)globus_calloc(
+                sizeof(globus_off_t) * event->stripe_count, 1);
+
+            /* don't send out the first one, unnessesary and it conflicts
+                with rft */
+            /*
+            for(ctr = 0; ctr < op->event.stripe_count; ctr++)
+            {
+                globus_l_gsc_send_perf(op, ctr, op->event.stripe_count, 0);
+            }
+            */
+            
+            /* register periodic for events */
+            GlobusTimeReltimeSet(
+                delay, op->server_handle->opts.perf_frequency, 0);
+            event->perf_running = GLOBUS_TRUE;
+            res = globus_callback_register_periodic(
+                &event->periodic_handle,
+                &delay,
+                &delay,
+                globus_l_gsc_send_perf_marker_cb,
+                op);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_panic(&globus_i_gsc_module, res, "one shot failed.");
+            }
+        }
+
+        /* restart markers */
+        if(op->server_handle->opts.restart_frequency >= 0 &&
+            event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART)
+        {
+            GlobusTimeReltimeSet(
+                delay, op->server_handle->opts.restart_frequency,0);
+            event->restart_running = GLOBUS_TRUE;
+            res = globus_callback_register_periodic(
+                &event->restart_handle,
+                &delay,
+               &delay,
+                globus_l_gsc_send_restart_marker_cb,
+                op);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_panic(&globus_i_gsc_module, res, "one shot failed.");
+            }
+        }
+    }
 }
 
 static
@@ -227,19 +224,12 @@ globus_l_gsc_unreg_perf_marker(
     op = (globus_i_gsc_op_t *) user_arg;
     event = &op->event;
 
-    if(event->restart_running)
-    {
-        event->restart_running = GLOBUS_FALSE;
-        globus_callback_unregister(
-            op->event.restart_handle,
-            globus_l_gsc_unreg_restart_marker,
-            op,
-            NULL);
-    }
-    else
-    {
-        globus_l_gsc_event_done_cb(op);
-    }
+    event->restart_running = GLOBUS_FALSE;
+    globus_callback_unregister(
+        op->event.restart_handle,
+        globus_l_gsc_unreg_restart_marker,
+        op,
+        NULL);
 }
 
 static void

@@ -2,12 +2,10 @@ globus_wsrf_rft_service_java                ws-transfer/reliable/service/java/so
 globus_wsrf_rft_common_java                 ws-transfer/reliable/common/java/source
 globus_wsrf_rft_common_schema               ws-transfer/reliable/common/schema
 globus_wsrf_rft_client_java                 ws-transfer/reliable/client/java/source
-globus_wsrf_rft_test                        ws-transfer/reliable/service/test/unit
 globus_wsrf_rendezvous_common_schema        ws-rendezvous/common/schema
 globus_wsrf_rendezvous_common_java          ws-rendezvous/common/java/source
 globus_wsrf_rendezvous_service_java         ws-rendezvous/service/java/source
 globus_wsrf_gram_service_java               ws-gram/service/java/source 
-globus_wsrf_gram_throughput_test            ws-gram/service/java/test/throughput
 
 globus_wsrf_gram_service_java_setup_common  ws-gram/service/java/setup/common gpt
 globus_wsrf_gram_service_java_setup_fork    ws-gram/service/java/setup/fork gpt
@@ -38,11 +36,8 @@ globus_scheduler_event_generator_lsf        ws-gram/job_monitoring/lsf/c/source 
 globus_scheduler_event_generator_lsf_setup  ws-gram/job_monitoring/lsf/c/setup gpt
 globus_scheduler_event_generator_lsf_test   ws-gram/job_monitoring/lsf/c/test gpt
 globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/source
-globus_wsrf_gram_service_test_unit          ws-gram/service/java/test/unit
-globus_wsrf_gram_service_test_throughput    ws-gram/service/java/test/throughput
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
 globus_gridmap_and_execute                ws-gram/service/gridmap_and_execute/source  gpt
-globus_gridmap_and_execute_test           ws-gram/service/gridmap_and_execute/test  gpt
 globus_gram_local_proxy_tool                ws-gram/service/proxy-tool/source  gpt
 globus_scheduler_provider_setup_pbs	ws-gram/discovery/providers/setup/pbs gpt
 globus_scheduler_provider_setup_fork	ws-gram/discovery/providers/setup/fork gpt

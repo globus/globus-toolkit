@@ -10,176 +10,41 @@ Optional software:
     * Tomcat (for WSRF container)
     * junit (for java unit tests)
 
-Overview:
-========
-    1.  Installing GT3.9.4 (defaults)
-    2.  Installing optional bundles
-    3.  Installing only a subset of GT3.9.4
-    4.  Platform-specific notes
-
-
-1. Installing GT 3.9.4 (defaults)
-=================================
+Installing GT 3.9.3
+===================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
 java executable on your PATH.  Be sure to set JAVA_HOME to the
 top-level directory of your java installation before installing.
 
-If you want to build RLS, install IODBC.  If you do not, the build of
-RLS will be skipped.  See "Optional Bundles" for more details about
-installing RLS.
+If you want to build RLS, set GLOBUS_IODBC_PATH to point to the
+directory containing the IODBC driver.  If you do not, the build of
+RLS will be skipped.
 
 Create a user named "globus". As the globus user, run
 
-globus$ ./configure --prefix=/path/to/install
-globus$ make
+globus$ export GLOBUS_LOCATION=/usr/local/globus-3.9.3
+globus$ ./install-wsrf $GLOBUS_LOCATION
 
-If you do not specify a prefix, it will try to install into
-/usr/local/globus-3.9.4  The build will only be successful if
-the globus user has write access to the target directory.
+You may replace "/usr/local/globus-3.9.3" with whatever directory you
+wish to install to.
 
-Then see http://www-unix.globus.org/toolkit/docs/development/3.9.4/
+Then see http://www-unix.globus.org/toolkit/docs/development/3.9.3/
 for setup details.
 
 
-2. Installing optional bundles
-==============================
-If you are installing on a machine or cluster that has schedulers
-installed, you can add scheduler packages by adding the following
-option to your configure line:
---enable-wsgram-condor        For Condor
---enable-wsgram-lsf           For LSF
---enable-wsgram-pbs           For PBS
+Installing optional bundles
+===========================
+The schedulers/ and tests/ subdirectories contain optional bundles of
+software.  If you are installing on a machine that has the submission
+software for PBS, LSF, or Condor already installed, you may install the
+corresponding schedulers/gt4-gram-<scheduler>-3.9-src_bundle.tar.gz file.
+To do this, run:
 
-If you installed IODBC for RLS, add the following two items:
---enable-rls --with-iodbc-path=/path/to/iodbc
+$ export GLOBUS_LOCATION=/usr/local/globus-3.9.3
+$ $GLOBUS_LOCATION/sbin/gpt-build schedulers/gt4-gram-<scheduler>-3.9-src_bundle.tar.gz
 
-If you want to enable internationalization, say:
---enable-i18n
-
-There are also Makefile targets for contributed code:
-"make myproxy" to build MyProxy.
-"make gsi_openssh gsi_openssh_setup postinstall" to build GSI-OpenSSH.
-"make gt4-webmds" to build WebMDS.
-
-
-3. Installing only a subset of GT3.9.4
-======================================
-You do not have to build every subcomponent of this release.  The
-makefile specifies subtargets for different functional subpieces.
-See the component map at
-http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/GT4Facts/index.html
-for more details.
-
-Makefile targets:
------------------
-i18n              Internationalization libraries
-prewsgram         Pre-webservices GRAM
-prewsgridftp      GridFTP
-prewsmds          OpenLDAP-based MDS2
-wsjava            Webservices java core
-wsc               Webservices C core
-wsmds             Webservices MDS4
-wsdel             Webservices Delegation Service
-wsrft             Webservices Reliable File Transfer service
-wsgram            Webservices GRAM
-wscas             Webservices CAS
-wstests           Tests for webservices components
-prews-test        Tests for pre-webservices components
-rls               Replica Location Service
-
-Note that all of these targets require the "postinstall" target also.
-So, for instance, to build GridFTP alone, you would run:
-
-$ ./configure --prefix=/path/to/install
-$ make gridftp postinstall
-
-
-4. Platform notes
-=================
-The latest platform notes are at:
-http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/admin/platforms.html
-
-    * Apple MacOS X
-    * Debian
-    * Fedora Core
-    * HP/UX
-    * IBM AIX
-    * Red Hat
-    * Sun Solaris
-    * SuSE Linux
-
-Apple MacOS X
--------------
-Use gcc32dbg or gcc32 as flavor
-
-Debian
-------
-
-Some kernel/libc combinations trigger a threading problem. See
-bug #2194. The workaround is to set LD_ASSUME_KERNEL=2.2.5 in your
-environment.  
-
-Fedora Core
------------
-Fedora Core 2/3 ships with a broken ant. Install your own ant from
-http://ant.apache.org and either remove the ant RPM or edit /etc/ant.conf,
-setting ANT_HOME to your own ant installation.
-
-HP/UX
------
-GPT's MD5.xs needs to be patched at line 52 with 
-./gpt-3.2autotools2004/support/Digest-MD5-2.20/MD5.xs:
-+ #define na PL_na
-+ #define dowarn PL_dowarn
-
-Specify --with-flavor=vendorcc32 on the configure line.  GNU tar
-and GNU make are required on the PATH.
-
-Tested on a PA-RISC box with HPUX 11.11 with IPv6 patches.
-
-    * HP/UX ansiC
-    * Java 1.4.2_06
-    * Apache Ant 1.6.2
-
-IBM AIX
--------
-Supported flavors are vendorcc32dbg/vendorcc32 and
-vendorcc64dbg/vendorcc64 using the Visual Age compilers (xlc). No gcc
-flavors are supported.
-
-It seems like some GPT patch-n-build packages are not able to pick up the
-complete 64 bit environment. If that happens, try setting OBJECT_MODE=64
-in your environment. This has to be done after GPT is built.
-
-GNU tar is required before IBM tar in the PATH.
-
-The toolkit has been tested on AIX 5.2 with:
-
-    * Visual Age C/C++ 6.0
-    * 32 bit version of IBM Java 1.4
-    * Apache Ant 1.5.4
-
-Red Hat
--------
-No issues.
-
-Sun Solaris
------------
-Supported flavors are gcc32, gcc64, vendorcc32 and vendorcc64. The dbg
-flavors should work as well. For gcc64, a gcc built to target 64 bit
-object files is required.
-
-GPT has problems with the Sun provided perl and tar:
-http://www.gridpackagingtools.org/book/latest-stable/ch01s07.html
-
-The toolkit has been tested on Solaris 9 with:
-
-    * Sun Workshop 6 update 2 C 5.3
-    * gcc 3.4.3
-    * Sun Java 1.4.2_02
-    * Apache Ant 1.5.4
-
-SuSE Linux
-----------
-No issues.
+If you want to install the test bundles, you will need to install junit.
+Then you may run:
+$ export GLOBUS_LOCATION=/usr/local/globus-3.9.3
+$ $GLOBUS_LOCATION/sbin/gpt-build tests/*.tar.gz

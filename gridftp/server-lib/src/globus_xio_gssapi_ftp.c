@@ -1179,7 +1179,6 @@ globus_l_xio_gssapi_ftp_server_read_cb(
     char **                             cmd_a = NULL;
     globus_byte_t *                     in_buffer;
     globus_size_t                       in_buffer_len;
-    globus_ssize_t                      finish_len = -1;
     OM_uint32                           maj_stat;
     OM_uint32                           min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_read_cb);
@@ -1236,7 +1235,8 @@ globus_l_xio_gssapi_ftp_server_read_cb(
 
                         handle->read_iov[0].iov_base = in_buffer;
                         handle->read_iov[0].iov_len = in_buffer_len;
-                        finish_len = in_buffer_len;
+                        globus_xio_driver_finished_read(
+                            op, GLOBUS_SUCCESS, in_buffer_len);
                         in_buffer = NULL;
                     }
                     else
@@ -1328,13 +1328,15 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                 handle->read_iov[0].iov_base = out_buf;
                 handle->read_iov[0].iov_len = strlen(out_buf);
 
-                finish_len = handle->read_iov[0].iov_len;
+                globus_xio_driver_finished_read(
+                    op, GLOBUS_SUCCESS, handle->read_iov[0].iov_len);
                 break;
 
             case GSSAPI_FTP_STATE_OPEN_CLEAR:
                 handle->read_iov[0].iov_base = in_buffer;
                 handle->read_iov[0].iov_len = in_buffer_len;
-                finish_len = in_buffer_len;
+                globus_xio_driver_finished_read(
+                    op, GLOBUS_SUCCESS, in_buffer_len);
                 in_buffer = NULL;
                 reply = GLOBUS_FALSE;
                 break;
@@ -1366,11 +1368,6 @@ globus_l_xio_gssapi_ftp_server_read_cb(
         
     }
     globus_mutex_unlock(&handle->mutex);
-
-    if(finish_len >= 0)
-    {
-        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, finish_len);
-    }
 
     if(in_buffer != NULL)
     {
@@ -1526,8 +1523,8 @@ globus_l_xio_gssapi_ftp_client_preauth_client_write_cb(
     return;
 
   err:
-    globus_mutex_unlock(&handle->mutex);
     globus_xio_driver_finished_open(handle, op, res);
+    globus_mutex_unlock(&handle->mutex);
     GlobusXIOGssapiftpDebugExitWithError();
 
     return;
@@ -1579,7 +1576,6 @@ globus_l_xio_gssapi_ftp_client_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_bool_t                       finish = GLOBUS_FALSE;
     globus_result_t                     res;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_open_cb);
@@ -1614,15 +1610,10 @@ globus_l_xio_gssapi_ftp_client_open_cb(
         }
         else
         {
-            finish = GLOBUS_TRUE;
+            globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
         }
     }
     globus_mutex_unlock(&handle->mutex);
-
-    if(finish)
-    {
-        globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
-    }
 
     GlobusXIOGssapiftpDebugExit();
     return;
@@ -1833,7 +1824,6 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     char *                              tmp_buf;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     char **                             cmd_a = NULL;
-    globus_bool_t                       finish = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_gssapi_ftp_preauth_client_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1851,6 +1841,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                 &cmd_a);
         if(res != GLOBUS_SUCCESS || cmd_a == NULL)
         {
+            globus_mutex_unlock(&handle->mutex);
             res = GlobusXIOGssapiFTPAllocError();
             goto err;
         }
@@ -1862,6 +1853,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                     with an error */
                 if(strcmp(cmd_a[0], "220") != 0)
                 {
+                    globus_mutex_unlock(&handle->mutex);
                     res = GlobusXIOGssapiFTPAuthenticationFailure(
                         "Expected 220");
                     goto err;
@@ -1880,6 +1872,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
             case GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH:
                 if(strcmp(cmd_a[0], "334") != 0)
                 {
+                    globus_mutex_unlock(&handle->mutex);
                     res = GlobusXIOGssapiFTPAuthenticationFailure(
                         "Expected 334");
                     goto err;
@@ -1895,10 +1888,12 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                         &complete);
                     if(res != GLOBUS_SUCCESS)
                     {
+                        globus_mutex_unlock(&handle->mutex);
                         goto err;
                     }
                     if(send_buffer == NULL)
                     {
+                        globus_mutex_unlock(&handle->mutex);
                         res = GlobusXIOGssapiFTPAuthenticationFailure(
                             "Client should have adat buffer to send");
                         goto err;
@@ -1926,10 +1921,12 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                             &complete);
                         if(res != GLOBUS_SUCCESS)
                         {
+                            globus_mutex_unlock(&handle->mutex);
                             goto err;
                         }
                         if(!complete || send_buffer != NULL)
                         {
+                            globus_mutex_unlock(&handle->mutex);
                             res = GlobusXIOGssapiFTPAuthenticationFailure(
                                 "Client should have adat buffer to send");
                             goto err;
@@ -1938,7 +1935,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                     GlobusXIOGssapiftpDebugChangeState(handle,
                         GSSAPI_FTP_STATE_OPEN);
                     done = GLOBUS_TRUE;
-                    finish = GLOBUS_TRUE;
+                    globus_xio_driver_finished_open(handle, op, res);
                 }
                 /* if we still need to send more adats, but all is well */
                 else if(*cmd_a[0] == '3')
@@ -1951,10 +1948,12 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                         &complete);
                     if(res != GLOBUS_SUCCESS)
                     {
+                        globus_mutex_unlock(&handle->mutex);
                         goto err;
                     }
                     if(send_buffer == NULL)
                     {
+                        globus_mutex_unlock(&handle->mutex);
                         res = GlobusXIOGssapiFTPAuthenticationFailure(
                             handle->read_iov[0].iov_base);
                         goto err;
@@ -1963,6 +1962,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                 /* if an error occurred */
                 else
                 {
+                    globus_mutex_unlock(&handle->mutex);
                     ((char *)handle->auth_read_iov.iov_base)
                         [handle->auth_read_iov.iov_len-1] = '\0';
                     res = GlobusXIOGssapiFTPAuthenticationFailure(
@@ -1995,18 +1995,12 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
         }
         globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
     }
-    globus_mutex_unlock(&handle->mutex);
-
-    if(finish)
-    {
-        globus_xio_driver_finished_open(handle, op, res);
-    }
+    globus_mutex_lock(&handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
     return;
 
   err:
-    globus_mutex_unlock(&handle->mutex);
     if(cmd_a != NULL)
     {
         globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
@@ -2563,16 +2557,15 @@ globus_l_xio_gssapi_ftp_client_read_cb(
         {
             out_length = nbytes;
         }
+        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, out_length);
     }
     globus_mutex_unlock(&handle->mutex);
-
-    globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, out_length);
 
     return;
 
  err:
-    globus_mutex_unlock(&handle->mutex);
     globus_xio_driver_finished_read(op, res, 0);
+    globus_mutex_unlock(&handle->mutex);
 
     return;
 }
@@ -2584,8 +2577,6 @@ globus_l_xio_gssapi_ftp_read(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
-    globus_size_t                       finished_len = -1;
-    globus_bool_t                       finished = GLOBUS_FALSE;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_gssapi_ftp_read);
@@ -2611,8 +2602,8 @@ globus_l_xio_gssapi_ftp_read(
             {
                 handle->read_iov->iov_base = handle->banner;
                 handle->read_iov->iov_len = handle->banner_length;
-                finished_len = handle->banner_length;
-                finished = GLOBUS_TRUE;
+                globus_xio_driver_finished_read(
+                    op, GLOBUS_SUCCESS, handle->banner_length);
                 handle->banner = NULL;
             }
             else
@@ -2651,10 +2642,6 @@ globus_l_xio_gssapi_ftp_read(
     }	
     globus_mutex_unlock(&handle->mutex);
 
-    if(finished)
-    {
-        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, finished_len);
-    }
     GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 

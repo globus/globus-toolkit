@@ -100,11 +100,6 @@ sub incorrect_auth
 }
 push(@tests, "incorrect_auth") unless $proto ne "gsiftp://";
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

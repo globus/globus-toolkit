@@ -45,26 +45,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
         GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INTERNAL_TRACE,                 \
         ("[%s] I Exiting with error\n", _gridftp_server_name))
 
-#define GlobusGridFTPServerDebugVerboseEnter()                              \
-    GlobusGSDebugPrintf(                                                    \
-        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE,                        \
-        ("[%s] V Entering\n", _gridftp_server_name))
-
-#define GlobusGridFTPServerDebugVerboseExit()                               \
-    GlobusGSDebugPrintf(                                                    \
-        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE,                        \
-        ("[%s] V Exiting\n", _gridftp_server_name))
-    
-#define GlobusGridFTPServerDebugVerboseExitWithError()                      \
-    GlobusGSDebugPrintf(                                                    \
-        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE,                        \
-        ("[%s] V Exiting with error\n", _gridftp_server_name))
-
-#define GlobusGridFTPServerDebugCommand(cmd)                                \
-    GlobusGSDebugPrintf(                                                    \
-        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_COMMANDS,                       \
-        ("### [%s] Received command: %s\n", _gridftp_server_name, cmd))
-
 struct globus_i_gs_attr_s;
 
 typedef enum globus_i_gsc_debug_levels_e
@@ -73,9 +53,8 @@ typedef enum globus_i_gsc_debug_levels_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_WARNING = 2,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_TRACE = 4,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INTERNAL_TRACE = 8,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_COMMANDS = 16,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE = 32,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_STATE = 64
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO = 16,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO_VERBOSE = 32
 } globus_i_gsc_debug_levels_t;
 
 typedef enum globus_i_gsc_error_type_e
@@ -568,14 +547,5 @@ globus_bool_t
 globus_i_guc_data_object_destroy(
     globus_i_gsc_server_handle_t *      server_handle,
     globus_i_gsc_data_t *               data_object);
-
-globus_result_t
-globus_i_gsc_cmd_intermediate_reply(
-    globus_i_gsc_op_t *                 op,
-    char *                              reply_msg);
-
-void
-globus_i_gsc_event_start_perf_restart(
-    globus_i_gsc_op_t *                 op);
 
 #endif

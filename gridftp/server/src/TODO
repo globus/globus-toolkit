@@ -8,6 +8,9 @@ protocol:
 -- verify that dsi api is correct wrt to errors
 -- error out usefully to server and client when cred problem in gssapi driver
 
+signal handling:
+-- SIGINT needs to handle data-node shutdown
+
 striping:
 -- verify eofc handling, should move out of remote into data.c
 -- verify _get_read_range()
@@ -15,9 +18,6 @@ striping:
 
 ipc:
 XX connect backwards!! 0
-XX ipc local mode doesn't work (besides no way to initiate it)
-
-XX commands belong in server-lib
 
 logging:
 -- instrument code
@@ -25,9 +25,12 @@ logging:
 -- specify log format by configuration
 -- syslog module for globus_logging
 
-Pre-Auth Timeout
+general:
+-- instrument any remaining configuration options and limits
 
-GID and MLST need to wotk correctly.
+threads:
+-- quick test that stuff works -- not really looking for 100% right now
+-- walk through locks
 
 cleanup:
 -- verify test suite
@@ -42,20 +45,19 @@ need some spec compliant support for partitioned layout
 
 -----------------------------------------------------------------------
 known bugs:
--- force_close after transfer_complete when an error is passed to 
-   finished_transfer().
+-- ipc local mode doesn't work (besides no way to initiate it)
+-- not calling _finish() in data.c for some request funcs that fail before
+    the dsi call. 
+-- in server_lib globus_gsc_959_finished_command chain the message gets freed
+    in instances that it should not be, everyone that calls into it frees their
+    own messages.
+-- "pasv/port followed by retr/stor /invalidpath (fails) retr/stor /anything"
+    causes an assertion... i think data.c is destroying the data chan on the
+    transfer_finished error, but maybe not sending disconnected? (either way, 
+    data chan should be fine on transfer errors, just not data chan errors).
 -- error out of option parsing properly
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle.
--- need to make sure ints in various places are change to size_t if they
-    need to be, and on passing size_t's over ipc need to do some smarts
-    to treat it as 4 or 8 bytes... possible probs if sizes differ on front
-    and back?  This is specifically a problem with tcp_bs, we treat it as an
-    int on the server side, but server-lib gives it to us as a size_t (as
-    it probably should), which is a different size on most 64 bit platforms.
+-- commands belong in server-lib
     
-
-
-
-ability to send 500 go away to control channel before server-lib has control

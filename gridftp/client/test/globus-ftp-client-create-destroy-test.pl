@@ -39,11 +39,6 @@ sub create_destroy
 }
 push(@tests, "create_destroy");
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

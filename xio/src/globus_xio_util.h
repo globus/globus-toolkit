@@ -259,32 +259,8 @@ globus_xio_contact_info_to_encoded_string(
             _xio_name,                                                      \
             __LINE__,                                                       \
             _XIOSL("%s failed."),                                           \
-            (failed_func)))
-
-#define GlobusXIOErrorWrapFailedWithMessage(result, format, arg)            \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            globus_error_get((result)),                                     \
-            GLOBUS_XIO_ERROR_WRAPPED,                                       \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            (format),                                                       \
-            (arg)))
-
-#define GlobusXIOErrorWrapFailedWithMessage2(result, format, arg1, arg2)    \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            globus_error_get((result)),                                     \
-            GLOBUS_XIO_ERROR_WRAPPED,                                       \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            (format),                                                       \
-            (arg1), (arg2)))
-
+            (failed_func)))                            
+                                                                            
 #define GlobusXIOErrorNotRegistered()                                       \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \

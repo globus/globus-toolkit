@@ -1,6 +1,7 @@
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
+#include "globus_gsi_authz.h"
 #include "version.h"
 
 #include <sys/wait.h>
@@ -47,9 +48,6 @@ void
 globus_l_gfs_bad_signal_handler(
     int                                 signum)
 {
-    GlobusGFSName(globus_l_gfs_bad_signal_handler);
-    GlobusGFSDebugEnter();
-
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, 
         _GSSL("an unexpected signal occured: %d\n"), 
@@ -63,8 +61,6 @@ globus_l_gfs_bad_signal_handler(
     {
         exit(signum);
     }
-    
-    GlobusGFSDebugExit();
 }
 
 
@@ -73,9 +69,6 @@ void
 globus_l_gfs_sigint(
     void *                              user_arg)
 {
-    GlobusGFSName(globus_l_gfs_sigint);
-    GlobusGFSDebugEnter();
-
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, 
         "Server is shutting down...\n");
@@ -99,19 +92,10 @@ globus_l_gfs_sigint(
         }
         else
         {
-            if(globus_i_gfs_config_bool("data_node"))
-            {
-                globus_i_gfs_ipc_stop();
-            }
-            else
-            {
-                globus_i_gfs_control_stop();
-            }
+            globus_i_gfs_control_stop();
         }
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
-
-    GlobusGFSDebugExit();
 }
 
 static
@@ -121,8 +105,6 @@ globus_l_gfs_sighup(
 {
     int                                 argc;
     char **                             argv;
-    GlobusGFSName(globus_l_gfs_sighup);
-    GlobusGFSDebugEnter();
 
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO, 
@@ -135,8 +117,6 @@ globus_l_gfs_sighup(
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO, 
         "Done reloading config.\n");           
-
-    GlobusGFSDebugExit();
 }
 
 static
@@ -147,8 +127,6 @@ globus_l_gfs_sigchld(
     int                                 child_pid;
     int                                 child_status;
     int                                 child_rc;
-    GlobusGFSName(globus_l_gfs_sigchld);
-    GlobusGFSDebugEnter();
 
     while((child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
     {
@@ -180,16 +158,12 @@ globus_l_gfs_sigchld(
         }
         globus_mutex_unlock(&globus_l_gfs_mutex);   
     }
-
-    GlobusGFSDebugExit();
 }
 
 static
 void
 globus_l_gfs_signal_init()
 {
-    GlobusGFSName(globus_l_gfs_signal_init);
-    GlobusGFSDebugEnter();
     
 #   ifdef SIGINT
     globus_callback_register_signal_handler(
@@ -271,8 +245,6 @@ globus_l_gfs_signal_init()
     }
 
 #   endif
-
-    GlobusGFSDebugExit();
 }
 
 /* called locked */
@@ -290,8 +262,6 @@ globus_l_gfs_spawn_child(
     int                                 j;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
-
-    GlobusGFSDebugEnter();
 
     result = globus_xio_handle_cntl(
         handle,
@@ -385,7 +355,6 @@ globus_l_gfs_spawn_child(
         }        
     }    
 
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
 child_close_error:
@@ -394,7 +363,6 @@ child_close_error:
 child_error:
     exit(1);
 error:
-    GlobusGFSDebugExitWithError();
     return result;
 }
 
@@ -403,11 +371,9 @@ void
 globus_i_gfs_connection_closed()
 {
     globus_result_t                     result;
-    GlobusGFSName(globus_i_gfs_connection_closed);
-    GlobusGFSDebugEnter();
 
     globus_l_gfs_open_count--;
-    if(globus_l_gfs_terminated || globus_i_gfs_config_bool("single"))
+    if(globus_l_gfs_terminated || globus_i_gfs_config_bool("inetd"))
     {
         if(globus_l_gfs_open_count == 0)
         {
@@ -437,7 +403,6 @@ globus_i_gfs_connection_closed()
         }
     }
  
-    GlobusGFSDebugExit();
     return;
 
 /* if an accept fails, set terminated to true because we can no longer 
@@ -450,8 +415,6 @@ error_accept:
         globus_cond_signal(&globus_l_gfs_cond);
     }
     globus_i_gfs_log_result("Unable to accept connections", result);
-
-    GlobusGFSDebugExitWithError();
 }
 
 static
@@ -461,53 +424,12 @@ globus_l_gfs_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    GlobusGFSName(globus_l_gfs_close_cb);
-    GlobusGFSDebugEnter();
-
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         globus_i_gfs_connection_closed();
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
-
-    GlobusGFSDebugExit();
 }
-
-static
-void
-globus_l_gfs_ipc_error_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    GlobusGFSName(globus_l_gfs_ipc_error_cb);
-    GlobusGFSDebugEnter();
-
-    globus_i_gfs_log_result("IPC ERROR", result);
-    globus_l_gfs_server_closed(user_arg);
-
-    GlobusGFSDebugExit();
-}
-
-static
-void
-globus_l_gfs_ipc_open_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
-    void *                              user_arg)
-{
-    GlobusGFSName(globus_l_gfs_ipc_open_cb);
-    GlobusGFSDebugEnter();
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_i_gfs_log_result("IPC ERROR", result);
-    }
-
-    GlobusGFSDebugExit();
-}
-
 
 static
 void
@@ -519,8 +441,6 @@ globus_l_gfs_new_server_cb(
     globus_xio_system_handle_t          system_handle;
     char *                              remote_contact;
     char *                              local_contact;
-    GlobusGFSName(globus_l_gfs_new_server_cb);
-    GlobusGFSDebugEnter();
     
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
@@ -583,12 +503,12 @@ globus_l_gfs_new_server_cb(
 
         if(globus_i_gfs_config_bool("data_node"))
         {
-            result = globus_gfs_ipc_handle_create(
-                &globus_gfs_ipc_default_iface,
-                system_handle,
-                globus_l_gfs_ipc_open_cb,
-                NULL,
-                globus_l_gfs_ipc_error_cb,
+            result = globus_i_gfs_data_node_start(
+                handle, 
+                system_handle, 
+                remote_contact, 
+                local_contact, 
+                globus_l_gfs_server_closed, 
                 NULL);
         }
         else
@@ -611,7 +531,6 @@ globus_l_gfs_new_server_cb(
 
     globus_free(local_contact);
     globus_free(remote_contact);
-    GlobusGFSDebugExit();
     return;
 
 error_start:
@@ -630,8 +549,6 @@ error:
     {
         globus_l_gfs_close_cb(handle, result, NULL);
     }
-
-    GlobusGFSDebugExitWithError();
 }
 
 /* begin new server, this is called locked and it is assumed that
@@ -642,8 +559,6 @@ globus_l_gfs_open_new_server(
     globus_xio_handle_t                 handle)
 {
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_open_new_server);
-    GlobusGFSDebugEnter();
     
     /* dont need the handle here, will get it in callback too */
     result = globus_xio_register_open(
@@ -658,11 +573,10 @@ globus_l_gfs_open_new_server(
     }
     globus_l_gfs_open_count++;
     
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
-error_open:    
-    GlobusGFSDebugExitWithError();
+error_open:
+    
     return result;
 }
 
@@ -672,27 +586,20 @@ globus_l_gfs_prepare_stack(
     globus_xio_stack_t *                stack)
 {
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_prepare_stack);
-    GlobusGFSDebugEnter();
     
     result = globus_xio_stack_init(stack, NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        goto error;
+        return result;
     }
 
     result = globus_xio_stack_push_driver(*stack, globus_l_gfs_tcp_driver);
     if(result != GLOBUS_SUCCESS)
     {
-        goto error;
+        return result;
     }
 
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
-    
-error:
-    GlobusGFSDebugExitWithError();
-    return result;
 }
 
 /* begin a server instance from the channel already connected on stdin,
@@ -705,8 +612,6 @@ globus_l_gfs_convert_inetd_handle(void)
     globus_result_t                     result;
     globus_xio_stack_t                  stack;
     globus_xio_handle_t                 handle;
-    GlobusGFSName(globus_l_gfs_convert_inetd_handle);
-    GlobusGFSDebugEnter();
     
     result = globus_l_gfs_prepare_stack(&stack);
     if(result != GLOBUS_SUCCESS)
@@ -736,13 +641,11 @@ globus_l_gfs_convert_inetd_handle(void)
         goto error_stack;
     }
     
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
 error_stack:
     globus_xio_stack_destroy(stack);
 error:
-    GlobusGFSDebugExitWithError();
     return result;
 }
 
@@ -758,9 +661,6 @@ globus_l_gfs_server_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    GlobusGFSName(globus_l_gfs_server_accept_cb);
-    GlobusGFSDebugEnter();
-
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         globus_l_gfs_xio_server_accepting = GLOBUS_FALSE;
@@ -817,7 +717,6 @@ globus_l_gfs_server_accept_cb(
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
     
-    GlobusGFSDebugExit();
     return;
 
 error_register_accept:
@@ -829,22 +728,18 @@ error_accept:
         globus_cond_signal(&globus_l_gfs_cond);
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
-
-    GlobusGFSDebugExitWithError();
 }
 
 /* start up a daemon which will spawn server instances */
 static
 globus_result_t
-globus_l_gfs_be_daemon()
+globus_l_gfs_be_daemon(void)
 {
     char *                              contact_string;
     char *                              interface;
     globus_result_t                     result;
     globus_xio_stack_t                  stack;
     globus_xio_attr_t                   attr;
-    GlobusGFSName(globus_l_gfs_be_daemon);
-    GlobusGFSDebugEnter();
 
     result = globus_callback_register_signal_handler(
         SIGCHLD,
@@ -946,7 +841,6 @@ globus_l_gfs_be_daemon()
     globus_xio_stack_destroy(stack);
     globus_xio_attr_destroy(attr);
 
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
 contact_error:
@@ -958,7 +852,7 @@ attr_error:
 stack_error:
     globus_xio_stack_destroy(stack);
 error:
-    GlobusGFSDebugExitWithError();
+
     return result;
 }
 
@@ -966,9 +860,6 @@ static
 void
 globus_l_gfs_be_clean_up()
 {
-    GlobusGFSName(globus_l_gfs_be_clean_up);
-    GlobusGFSDebugEnter();
-
     if(globus_l_gfs_xio_server)
     {
         globus_xio_server_close(globus_l_gfs_xio_server);
@@ -979,37 +870,6 @@ globus_l_gfs_be_clean_up()
     globus_i_gfs_log_close();
 
     globus_module_deactivate_all();
-
-    GlobusGFSDebugExit();
-}
-
-static
-void
-globus_l_gfs_server_detached()
-{
-    pid_t                               pid;
-    GlobusGFSName(globus_l_gfs_server_detached);
-
-    /* this is where i detach the server into the background
-     * not sure how this will work for win32.  if it involves starting a
-     * new process, need to set server handle to not close on exec
-     */
-    pid = fork();
-    if(pid < 0)
-    {
-    }
-    else if(pid != 0)
-    {
-        exit(0);
-    }
-    else
-    {
-        setsid();
-        freopen("/dev/null", "w+", stdin);
-        freopen("/dev/null", "w+", stdout);
-        freopen("/dev/null", "w+", stderr);
-    }
-
 }
 
 int
@@ -1017,25 +877,19 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    int                                 i;
+    pid_t                               pid;
     int                                 rc = 0;
     char *                              config;
     globus_result_t                     result;
-    GlobusGFSName(main);
-
-    for(i = 0; i < argc; i++)
-    {
-        if(strcmp("-S", argv[i]) == 0)
-        {
-            globus_l_gfs_server_detached();
-        }
-    }
 
     /* activte globus stuff */    
     globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
+    globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
+    globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
 
-    /* init all the server modules */
+
+    /* activate all the server modules */
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
     globus_l_gfs_signal_init();
@@ -1086,19 +940,38 @@ main(
 
     if(globus_i_gfs_config_bool("detach"))
     {
-        if(globus_i_gfs_config_bool("chdir"))
+        /* this is where i detach the server into the background
+         * not sure how this will work for win32.  if it involves starting a
+         * new process, need to set server handle to not close on exec
+         */
+        pid = fork();
+        if(pid < 0)
         {
-            char *                  chdir_to;
-            chdir_to = globus_i_gfs_config_string("chdir_to");
-            if(chdir_to != NULL)
+        }
+        else if(pid != 0)
+        {
+            exit(0);
+        }
+        else
+        {
+            setsid();
+            freopen("/dev/null", "w+", stdin);
+            freopen("/dev/null", "w+", stdout);
+            freopen("/dev/null", "w+", stderr);
+            if(globus_i_gfs_config_bool("chdir"))
             {
-                chdir(chdir_to);
+                char *                  chdir_to;
+                chdir_to = globus_i_gfs_config_string("chdir_to");
+                if(chdir_to != NULL)
+                {
+                    chdir(chdir_to);
+                }
+                else
+                {
+                    chdir("/");
+                }
             }
-            else
-            {
-                chdir("/");
-            }
-       }
+        }
     }
     if(globus_i_gfs_config_bool("cas"))
     {
@@ -1169,16 +1042,13 @@ main(
 
     globus_l_gfs_be_clean_up();
 
-    GlobusGFSDebugExit();
     return 0;
-
 error_lock:
     globus_i_gfs_log_result(_GSSL("Could not start server"), result);
     globus_mutex_unlock(&globus_l_gfs_mutex);
 error_ver:
     globus_l_gfs_be_clean_up();
 
-    GlobusGFSDebugExitWithError();
     return rc;
 }
 
@@ -1187,14 +1057,9 @@ void
 globus_l_gfs_server_closed(
     void *                              user_arg)
 {
-    GlobusGFSName(globus_l_gfs_server_closed);
-    GlobusGFSDebugEnter();
-
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         globus_i_gfs_connection_closed();
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
-
-    GlobusGFSDebugExit();
 }

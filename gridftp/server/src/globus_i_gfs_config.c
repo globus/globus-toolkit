@@ -34,7 +34,6 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"versions", "versions", NULL, "versions", "V", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL,
     "Show version information for all loaded globus libraries and exit."},
 {NULL, "Modes of Operation", NULL, NULL, NULL, 0, 0, NULL, NULL},
- {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, "run 1 instance then end"},
  {"inetd", "inetd", NULL, "inetd", "i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Run under an inetd service."},
  {"daemon", "daemon", NULL, "daemon", "s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
@@ -55,7 +54,7 @@ static const globus_l_gfs_config_option_t option_list[] =
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "0 = No authentication or authorization. 1 = Authentication only.  "
-    "2 = Authentication and authorization.  "
+    "2 = Authorization only. 3 = Authentication and authorization.  "
     "If not set uses level 3 for frontends and level 1 for data nodes."},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
@@ -231,8 +230,6 @@ globus_l_gfs_config_set(
     globus_l_gfs_config_option_t *      option;
     int                                 i;
     int                                 rc; 
-    GlobusGFSName(globus_l_gfs_config_set);
-    GlobusGFSDebugEnter();
 
     option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
             &option_table, option_name);   
@@ -274,12 +271,10 @@ globus_l_gfs_config_set(
         goto error;
     }
 
-    GlobusGFSDebugExit();
     return 0;
 
 error:
     globus_free(option);
-    GlobusGFSDebugExitWithError();
     return 1;             
 }
 
@@ -298,13 +293,10 @@ globus_l_gfs_config_load_config_file(
     int                                 line_num;
     int                                 optlen;
     char *                              p;
-    GlobusGFSName(globus_l_gfs_config_load_config_file);
-    GlobusGFSDebugEnter();
 
     fptr = fopen(filename, "r");
     if(fptr == NULL)
     {
-        GlobusGFSDebugExitWithError();
         return -2; /* XXX construct real error */
     }
     globus_l_gfs_config_set("loaded_config", 0, globus_libc_strdup(filename));  
@@ -419,14 +411,12 @@ globus_l_gfs_config_load_config_file(
 
     fclose(fptr);
     
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
 error_parse:
     fclose(fptr);
     fprintf(stderr, "Problem parsing config file %s: line %d\n", 
         filename, line_num);
-    GlobusGFSDebugExitWithError();
     return -1;
 
 }
@@ -439,8 +429,6 @@ globus_l_gfs_config_load_config_env()
     int                                 rc;
     int                                 i;
     globus_l_gfs_config_option_t *      option;
-    GlobusGFSName(globus_l_gfs_config_load_config_env);
-    GlobusGFSDebugEnter();
     
 
     for(i = 0; i < option_count; i++)
@@ -493,7 +481,6 @@ globus_l_gfs_config_load_config_env()
         }
     }       
 
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -512,8 +499,6 @@ globus_l_gfs_config_load_commandline(
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
-    GlobusGFSName(globus_l_gfs_config_load_commandline);
-    GlobusGFSDebugEnter();
     
     for(arg_num = 1; arg_num < argc; ++arg_num)
     {
@@ -621,7 +606,6 @@ globus_l_gfs_config_load_commandline(
         }
     }
       
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
 }
@@ -634,8 +618,6 @@ globus_l_gfs_config_load_defaults()
     int                                 rc;
     int                                 i;
     globus_l_gfs_config_option_t *      option;
-    GlobusGFSName(globus_l_gfs_config_load_defaults);
-    GlobusGFSDebugEnter();
     
     for(i = 0; i < option_count; i++)
     {        
@@ -657,7 +639,6 @@ globus_l_gfs_config_load_defaults()
         }
     }
 
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS; 
 }
 
@@ -670,8 +651,6 @@ globus_l_config_loadfile(
     FILE *                              file;
     int                                 file_len;
     char *                              out_buf;
-    GlobusGFSName(globus_l_config_loadfile);
-    GlobusGFSDebugEnter();
      
     file = fopen(filename, "r");
     if(!file)
@@ -696,11 +675,9 @@ globus_l_config_loadfile(
 
     *data_out = out_buf;
          
-    GlobusGFSDebugExit();
     return 0;
 
 error:
-    GlobusGFSDebugExitWithError();
     return 1;
 }
 
@@ -710,8 +687,6 @@ globus_l_gfs_config_display_html_usage()
 {
     int                                 i;
     globus_l_gfs_config_option_t *      o;
-    GlobusGFSName(globus_l_gfs_config_display_html_usage);
-    GlobusGFSDebugEnter();
     
     printf("<!-- generated by globus-gridftp-server -help -html -->\n");
     printf("<p>\n"
@@ -805,7 +780,7 @@ globus_l_gfs_config_display_html_usage()
     printf("</table>\n");
     printf("<!-- end generated block -->\n");
 
-    GlobusGFSDebugExit();
+    return; 
 }
 
 void
@@ -813,8 +788,6 @@ globus_i_gfs_config_display_usage()
 {
     int                                 i;
     globus_l_gfs_config_option_t *      o;
-    GlobusGFSName(globus_i_gfs_config_display_usage);
-    GlobusGFSDebugEnter();
     
     if(globus_i_gfs_config_bool("html"))
     {
@@ -853,8 +826,7 @@ globus_i_gfs_config_display_usage()
         printf("Check http://www-unix.globus.org/toolkit/docs/development/3.9.3/data/gridftp/ "
             "for more in-depth documentation.\n\n");
     }
-
-    GlobusGFSDebugExit();
+    return; 
 }
 
 static
@@ -865,8 +837,6 @@ globus_l_gfs_config_misc()
     globus_bool_t                       bool_value;
     char *                              value;
     char *                              data;
-    GlobusGFSName(globus_l_gfs_config_misc);
-    GlobusGFSDebugEnter();
     
     if(globus_i_gfs_config_bool("detach") && 
         !globus_i_gfs_config_bool("daemon"))
@@ -880,7 +850,6 @@ globus_l_gfs_config_misc()
     }
     if(globus_i_gfs_config_bool("inetd"))
     {
-        globus_l_gfs_config_set("single", GLOBUS_TRUE, NULL);
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
     }
@@ -890,9 +859,7 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
-        globus_l_gfs_config_set("bad_signal_exit", GLOBUS_FALSE, NULL);
-        globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
-        globus_l_gfs_config_set("allow_anonymous", GLOBUS_TRUE, NULL);
+        globus_l_gfs_config_set("allow-anonymous", GLOBUS_TRUE, NULL);
         globus_l_gfs_config_set("secure_ipc", GLOBUS_FALSE, NULL);
     }
 
@@ -1035,19 +1002,10 @@ globus_l_gfs_config_misc()
         }
         else
         {
-            globus_l_gfs_config_set("auth_level", 2, NULL);
+            globus_l_gfs_config_set("auth_level", 3, NULL);
         }
     }
-
-    /* make sure root running process that does not fork can only run
-        once */
-    if(!globus_i_gfs_config_bool("daemon") && getuid() == 0)
-    {
-        globus_l_gfs_config_set("connections_max", 1, NULL);
-        globus_l_gfs_config_set("single", 1, NULL);
-    }
     
-    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 }
     
@@ -1070,8 +1028,6 @@ globus_i_gfs_config_init(
     int                                 arg_num;
     char *                              argp;
     int                                 rc;
-    GlobusGFSName(globus_i_gfs_config_init);
-    GlobusGFSDebugEnter();
     
     globus_hashtable_init(
         &option_table,
@@ -1124,8 +1080,6 @@ globus_i_gfs_config_init(
     globus_l_gfs_config_set("argc", argc, NULL);
 
     globus_free(local_config_file);     
-
-    GlobusGFSDebugExit();
     return;
 
 error:
@@ -1139,8 +1093,6 @@ globus_i_gfs_config_int(
 {
     globus_l_gfs_config_option_t *      option;
     int                                 value = 0;    
-    GlobusGFSName(globus_i_gfs_config_int);
-    GlobusGFSDebugEnter();
     
     option = (globus_l_gfs_config_option_t *) 
         globus_hashtable_lookup(&option_table, (void *) option_name);
@@ -1150,7 +1102,6 @@ globus_i_gfs_config_int(
         value = option->int_value;
     }
 
-    GlobusGFSDebugExit();
     return value;
 }
 
@@ -1161,8 +1112,6 @@ globus_i_gfs_config_get(
 {
     globus_l_gfs_config_option_t *      option;
     void *                              value = NULL;    
-    GlobusGFSName(globus_i_gfs_config_get);
-    GlobusGFSDebugEnter();
     
     option = (globus_l_gfs_config_option_t *) 
         globus_hashtable_lookup(&option_table, (void *) option_name);
@@ -1172,7 +1121,6 @@ globus_i_gfs_config_get(
         value = option->value;
     }
 
-    GlobusGFSDebugExit();
     return value;
 }
 
@@ -1180,19 +1128,19 @@ globus_bool_t
 globus_i_gfs_config_is_anonymous(
     const char *                        userid)
 {
-    globus_bool_t                       valid = GLOBUS_FALSE;
-    GlobusGFSName(globus_i_gfs_config_is_anonymous);
-    GlobusGFSDebugEnter();
-
-    if(strcmp(userid, "ftp") == 0 ||
-        strcmp(userid, "anonymous") == 0 ||
-        strcmp(userid, ":globus-mapping:") == 0)
+    if(strcmp(userid, "ftp") == 0)
     {
-        valid = GLOBUS_TRUE;
+        return GLOBUS_TRUE;
     }
-
-    GlobusGFSDebugExit();
-    return valid;
+    if(strcmp(userid, "anonymous") == 0)
+    {
+        return GLOBUS_TRUE;
+    }
+    if(strcmp(userid, ":globus-mapping:") == 0)
+    {
+        return GLOBUS_TRUE;
+    }
+    return GLOBUS_FALSE;
 }
 
 globus_bool_t
@@ -1204,8 +1152,6 @@ globus_i_gfs_config_allow_addr(
     globus_bool_t                       allowed = GLOBUS_FALSE;
     char *                              addr;
     char *                              ptr;
-    GlobusGFSName(globus_i_gfs_config_allow_addr);
-    GlobusGFSDebugEnter();
     
     allow_list = globus_libc_strdup(globus_i_gfs_config_string("allow_from"));
     deny_list = globus_libc_strdup(globus_i_gfs_config_string("deny_from"));
@@ -1257,7 +1203,6 @@ globus_i_gfs_config_allow_addr(
         globus_free(deny_list);
     }
 
-    GlobusGFSDebugExit();
     return allowed;
 }
 
@@ -1269,12 +1214,9 @@ globus_i_gfs_config_get_module_name(
     globus_list_t *                     module_list;
     globus_list_t *                     list;
     const char *                        module;
-    const char *                        out_module = NULL;
     char *                              alias;
     globus_bool_t                       found = GLOBUS_FALSE;
     int                                 size;
-    GlobusGFSName(globus_i_gfs_config_get_module_name);
-    GlobusGFSDebugEnter();
 
     module_list = (globus_list_t *) globus_i_gfs_config_get("module_list");  
     for(list = module_list;
@@ -1301,10 +1243,11 @@ globus_i_gfs_config_get_module_name(
     } 
     if(found)
     {
-        out_module = module;
+        return module;
     }
-
-    GlobusGFSDebugExit();
-    return out_module;
+    else
+    {
+        return NULL;
+    }
 }
 

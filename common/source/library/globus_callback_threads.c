@@ -635,7 +635,7 @@ globus_l_callback_deactivate()
             struct sigaction            ignore;
             int                         limit = 64;
             
-#ifdef NSIG
+#ifdef NSIG;
             limit = NSIG;
 #endif
             /* setting a signal handler to sig_ign discards pending signals */

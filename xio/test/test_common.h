@@ -70,11 +70,6 @@ close_barrier_main(
     char **                                 argv);
 
 int
-close_barrier2_main(
-    int                                     argc,
-    char **                                 argv);
-
-int
 framework_main(
     int                                     argc,
     char **                                 argv);

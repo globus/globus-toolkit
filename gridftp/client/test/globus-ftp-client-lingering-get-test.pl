@@ -53,11 +53,6 @@ sub lingering_get
 }
 push(@tests, "lingering_get();");
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

@@ -960,11 +960,6 @@ globus_l_xio_ordering_read(
     switch (handle->state)
     {
 	case GLOBUS_XIO_ORDERING_IO_PENDING:
-	    /* 
-	     * IO_PENDING implies that either a read or write is pending. 
-	     * Cant have multiple simultaneous reads but a simultaneous read
-	     * and write is allowed.
-	     */ 
 	    if (handle->read_count == 1)
 	    {
 		result = GlobusXIOErrorInvalidState(handle->state);

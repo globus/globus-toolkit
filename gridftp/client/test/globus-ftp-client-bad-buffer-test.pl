@@ -47,11 +47,6 @@ sub bad_buffer
 }
 push(@tests, "bad_buffer");
 
-if(defined($ENV{FTP_TEST_RANDOMIZE}))
-{
-    shuffle(\@tests);
-}
-
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);
