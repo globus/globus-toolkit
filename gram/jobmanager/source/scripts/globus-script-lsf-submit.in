@@ -32,6 +32,8 @@ SH=@SH@
 
 #        File name to be used for temporary job script
 LSF_JOB_SCRIPT="${local_tmpdir}/lsf_job_script."$$
+LSF_JOB_OUT="${LSF_JOB_SCRIPT}.out"
+LSF_JOB_ERR="${LSF_JOB_SCRIPT}.err"
 
 arg_file=$1
 
@@ -312,10 +314,13 @@ $DEBUG_ECHO "JM_SCRIPT: submitting LSF job script" >> $grami_logfile
 
 # Execute bsub command
 
-status=`${bsub} < $LSF_JOB_SCRIPT`
+${bsub} < $LSF_JOB_SCRIPT 1>$LSF_JOB_OUT 2>$LSF_JOB_ERR
+
+#old method
+#status=`${bsub} < $LSF_JOB_SCRIPT`
 
 if (test "$?" -eq "0") then
-   job_id=`echo $status | ${awk} '{sub(/</,"",$2);sub(/>/,"",$2);print $2}'`
+   job_id=`cat $LSF_JOB_OUT | ${awk} '{sub(/</,"",$2);sub(/>/,"",$2);print $2}'`
    echo "grami_job_id=${job_id}" >> $arg_file
    $DEBUG_ECHO "JM_SCRIPT: job submitted successfully!" >> $grami_logfile
    $DEBUG_ECHO "JM_SCRIPT: returning job state: $GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING" >> $grami_logfile
@@ -324,11 +329,18 @@ if (test "$?" -eq "0") then
 else
    $DEBUG_ECHO "JM_SCRIPT: job *NOT* submitted successfully!" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
+
+   echo ""                                                   >> ${grami_stderr}
+   echo "-------- output from scheduler submission --------" >> ${grami_stderr}
+   cat ${LSF_JOB_ERR}                                        >> ${grami_stderr}
+   echo "--------------------------------------------------" >> ${grami_stderr}
+   echo ""                                                   >> ${grami_stderr}
+
 fi
 
 # Remove temporary job script file
 
-${rm} $LSF_JOB_SCRIPT
+${rm} $LSF_JOB_SCRIPT $LSF_JOB_OUT $LSF_JOB_ERR
 
 $DEBUG_ECHO "JM_SCRIPT: exiting gram_script_lsf_submit\n\n" >> $grami_logfile
 

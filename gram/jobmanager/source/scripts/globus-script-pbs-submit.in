@@ -28,8 +28,10 @@ awk=${GLOBUS_SH_AWK-awk}
 mpirun=${GLOBUS_SH_MPIRUN-mpirun}
 rm=${GLOBUS_SH_RM-rm}
 
-	# File name to be used for temporary job script
+# File name to be used for temporary job script
 PBS_JOB_SCRIPT="${local_tmpdir}/pbs_job_script."$$
+PBS_JOB_OUT="${PBS_JOB_SCRIPT}.out"
+PBS_JOB_ERR="${PBS_JOB_SCRIPT}.err"
 
 arg_file=$1
 
@@ -265,9 +267,9 @@ $DEBUG_ECHO submitting PBS job script >> $grami_logfile
 
 	# Execute qsub command
 
-status=`${qsub} < $PBS_JOB_SCRIPT`
+${qsub} < $PBS_JOB_SCRIPT 1>$PBS_JOB_OUT 2>$PBS_JOB_ERR
 if (test "$?" -eq "0") then
-   job_id=`echo $status | awk '{split($0,field,".");print field[1]"."field[2]}'`
+   job_id=`cat $PBS_JOB_OUT | awk '{split($0,field,".");print field[1]"."field[2]}'`
    echo "grami_job_id=$job_id" >> $arg_file
    echo "GRAM_SCRIPT_JOB_ID:$job_id"
    $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
@@ -277,12 +279,20 @@ if (test "$?" -eq "0") then
 else
    $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
+
+   echo ""                                                   >> ${grami_stderr}
+   echo "-------- output from scheduler submission --------" >> ${grami_stderr}
+   cat ${PBS_JOB_ERR}                                        >> ${grami_stderr}
+   echo "--------------------------------------------------" >> ${grami_stderr}
+   echo ""                                                   >> ${grami_stderr}
+
+   ${rm} $PBS_JOB_SCRIPT $PBS_JOB_OUT $PBS_JOB_ERR
    exit 1
 fi
 
 	# Remove temporary job script file
 
-${rm} $PBS_JOB_SCRIPT
+${rm} $PBS_JOB_SCRIPT $PBS_JOB_OUT $PBS_JOB_ERR
 
 $DEBUG_ECHO "exiting gram_script_pbs_submit\n\n" >> $grami_logfile
 

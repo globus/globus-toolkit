@@ -16,6 +16,7 @@
 ################################################
 condor_submit=${GLOBUS_SH_CONDOR_SUBMIT-condor_submit}
 grep=${GLOBUS_SH_GREP-grep}
+cat=${GLOBUS_SH_CAT-cat}
 awk=${GLOBUS_SH_AWK-awk}
 rm=${GLOBUS_SH_RM-rm}
 ################################################
@@ -44,7 +45,7 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 $DEBUG_ECHO ============================================  >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
 if [ "$DEBUG_ECHO" = "echo" ] ; then
-   cat $arg_file                                          >> $grami_logfile
+   $cat $arg_file                                         >> $grami_logfile
 fi
 $DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
 $DEBUG_ECHO ""                                            >> $grami_logfile
@@ -206,7 +207,13 @@ fi
 #  the proc line will look like this "Proc 45.0:"
 #  we want to return "45" from this line.
 #
-status=`${condor_submit} $condor_file | ${grep} "submitted to cluster" | ${awk} '{print $6}' | ${awk} -F. '{print $1; exit;}'`
+out_file=${condor_file}".out"
+${condor_submit} $condor_file 1> ${out_file}
+
+status=`$cat $out_file | ${grep} "submitted to cluster" | ${awk} '{print $6}' | ${awk} -F. '{print $1; exit;}'`
+
+#old method getting status all in one command
+#status=`${condor_submit} $condor_file | ${grep} "submitted to cluster" | ${awk} '{print $6}' | ${awk} -F. '{print $1; exit;}'`
 
 if test -n "${status}"; then
    $DEBUG_ECHO "JM_SCRIPT: returning job state: "\
@@ -221,9 +228,15 @@ else
                >> $grami_logfile
    $DEBUG_ECHO "##############################" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
+   echo ""                                                   >> ${grami_stderr}
+   echo "-------- output from scheduler submission --------" >> ${grami_stderr}
+   cat ${out_file}                                           >> ${grami_stderr}
+   echo "--------------------------------------------------" >> ${grami_stderr}
+   echo ""                                                   >> ${grami_stderr}
+
 fi
 
-${rm} $condor_file
+${rm} ${condor_file} ${out_file}
 
 # write the job_id to the argument file.  This is used by any subsequent
 # grami_jm_shell routines.  I.E. condor poll script -or- condor rm script
