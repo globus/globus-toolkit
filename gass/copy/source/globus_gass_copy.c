@@ -2158,6 +2158,8 @@ globus_l_gass_copy_ftp_transfer_callback(
     globus_ftp_client_handle_t *       handle,
     globus_object_t *		       error)
 {
+    globus_object_t * err = GLOBUS_NULL;
+    
     globus_gass_copy_handle_t * copy_handle
 	= (globus_gass_copy_handle_t *) user_arg;
 
@@ -2173,6 +2175,7 @@ globus_l_gass_copy_ftp_transfer_callback(
         if (copy_handle->status != GLOBUS_GASS_COPY_STATUS_CANCEL)
         {
 	    copy_handle->err = error;
+	    copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
         }
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -2193,11 +2196,15 @@ globus_l_gass_copy_ftp_transfer_callback(
 	fprintf(stderr, "copy_handle->state == GLOBUS_NULL\n");
     fprintf(stderr, "ftp_transfer_callback(): about to call user callback\n");
 #endif
+
+    err = copy_handle->err;
+    copy_handle->err = GLOBUS_NULL;
+	    
     if(copy_handle->user_callback != GLOBUS_NULL)
 	copy_handle->user_callback(
 	    copy_handle->callback_arg,
 	    copy_handle,
-	    copy_handle->err);
+	    err);
     
 } /* globus_l_gass_copy_ftp_transfer_callback() */
 
