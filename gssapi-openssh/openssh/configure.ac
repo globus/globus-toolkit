@@ -599,6 +599,7 @@ if test "x$gsi_path" != "xno" ; then
         elif test "x$globus_flavor_type" = "xyes" ; then
                 AC_MSG_ERROR(No Globus flavor type specified)
 	else
+                AC_DEFINE(HAVE_GSSAPI_EXT)
                 GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
 		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
 			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
