@@ -826,7 +826,9 @@ globus_xio_driver_handle_close(
     GlobusXIOName(globus_xio_driver_context_close);
 
     GlobusXIODebugInternalEnter();
-
+    
+    /* JOE */
+#if 0
     context_entry = driver_handle;
     xio_context = context_entry->whos_my_daddy;
 
@@ -855,6 +857,7 @@ globus_xio_driver_handle_close(
     {
         globus_i_xio_context_destroy(xio_context);
     }
+#endif
 
     GlobusXIODebugInternalExit();
 

@@ -61,7 +61,7 @@ globus_xio_driver_pass_open(
         {
             *out_dh = my_context;
         }
-        context->ref++;
+        /* JOE context->ref++; */
 
         op->entry[prev_ndx].next_ndx = op->ndx;
         op->entry[prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
