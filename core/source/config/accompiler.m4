@@ -214,7 +214,7 @@ case ${host}--$1 in
 
         if test "$CC" = "/usr/ucb/cc" ; then
             AC_MSG_ERROR([The compiler found was /usr/ucb/cc (not supported)])
-            exit 1            
+            exit 1
         fi
 
         LAC_PROG_CC_GNU($lac_cv_CC,
@@ -238,7 +238,18 @@ case ${host}--$1 in
                         ])
 
         if test "$lac_cv_build_64bit" = "yes"; then
-            lac_CFLAGS="$lac_CFLAGS -xcode=pic32 -xarch=v9"
+            LAC_PROG_CC_GNU($lac_cv_CC,
+                            [ lac_CFLAGS="$lac_CFLAGS -m64"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m64" ],
+                            [ lac_CFLAGS="$lac_CFLAGS -xcode=pic32 -xarch=v9"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -xcode=pic32 -xarch=v9" ])
+        else
+            LAC_PROG_CC_GNU($lac_cv_CC,
+                            [ lac_CFLAGS="$lac_CFLAGS -m32"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m32" ],
+                            [ lac_CFLAGS="$lac_CFLAGS -xarch=v8"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v8" ])
+
         fi
 
         ;;
