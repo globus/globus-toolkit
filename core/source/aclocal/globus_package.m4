@@ -38,6 +38,9 @@ fi
 
 . $GLOBUS_INSTALL_PATH/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 
+$GLOBUS_INSTALL_PATH/sbin/gpt_build_config -src ./pkgdata/pkg_data_src.gpt.in
+. ./gpt_build_temp.sh
+
 prefix='$(GLOBUS_INSTALL_PATH)'
 exec_prefix='$(GLOBUS_INSTALL_PATH)'
 
