@@ -1627,7 +1627,7 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
          (strcmp(req->jobmanager_type, "poe") != 0) &&
          (strcmp(req->jobmanager_type, "condor") != 0) &&
          (strcmp(req->jobmanager_type, "easymcs") != 0) &&
-         (strcmp(req->jobmanager_type, "t3e_nqe") != 0) &&
+         (strcmp(req->jobmanager_type, "t3e-nqe") != 0) &&
          (strcmp(req->jobmanager_type, "prun") != 0) &&
          (strcmp(req->jobmanager_type, "loadleveler") != 0) &&
          (strcmp(req->jobmanager_type, "lsf") != 0) &&
