@@ -1,6 +1,12 @@
 #include "globus_gass_copy.h"
+#define TARGET_ARCH_WIN32
+#ifndef TARGET_ARCH_WIN32
+
 #include <glob.h>
 #include <fnmatch.h>
+
+#endif
+
 
 /************************************************************
  * glob support
@@ -9,8 +15,7 @@
 
 /*    
 todo:
-comment and doxygen code
-
+come up with minimal globbing support for windows
 */
 
 
@@ -143,6 +148,7 @@ globus_gass_copy_glob_expand_url(
        
     if(strcspn(info->url, "[]*?") == url_len)
     {        
+#ifndef TARGET_ARCH_WIN32
         if(info->url[url_len - 1] == '/')
         {   
             info->url = (char *) globus_realloc(
@@ -152,6 +158,7 @@ globus_gass_copy_glob_expand_url(
             info->url[url_len] = '\0'; 
         }
         else
+#endif
         {    
             info->entry_cb(
                 info->url,
@@ -166,6 +173,7 @@ globus_gass_copy_glob_expand_url(
 
     if(glob)
     {
+#ifndef TARGET_ARCH_WIN32
         switch (scheme_type)
         {
           case GLOBUS_URL_SCHEME_FTP:
@@ -187,6 +195,15 @@ globus_gass_copy_glob_expand_url(
             goto error;
             break;    
         }
+#else
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Globbing not supported under Windows.",
+                    myname));
+            goto error;
+#endif    
     }        
 
     globus_free(info->url);
@@ -206,7 +223,11 @@ globus_l_gass_copy_glob_expand_file_url(
     globus_l_gass_copy_glob_info_t *    info)
 {
     static char *   myname = "globus_l_gass_copy_glob_expand_file_url";
+
+#ifndef TARGET_ARCH_WIN32
     glob_t                              file_list;
+#endif
+
     globus_result_t                     result;
     int                                 retval;
     int                                 file_len;
@@ -239,6 +260,7 @@ globus_l_gass_copy_glob_expand_file_url(
     base_url = globus_libc_strdup(info->url);
     base_url[base_url_len] = '\0';
     
+#ifndef TARGET_ARCH_WIN32
     retval = glob(
         parsed_url.url_path,
         GLOB_MARK,
@@ -256,6 +278,7 @@ globus_l_gass_copy_glob_expand_file_url(
                 retval));
         goto error_glob;
     }
+
 
     for(i = 0; i < file_list.gl_pathc; i++)
     {
@@ -295,7 +318,8 @@ globus_l_gass_copy_glob_expand_file_url(
             info->entry_user_arg);
     }
         
-    globfree(&file_list);    
+    globfree(&file_list);
+#endif 
     globus_url_destroy(&parsed_url);
 
     globus_free(base_url);
@@ -303,8 +327,10 @@ globus_l_gass_copy_glob_expand_file_url(
     return GLOBUS_SUCCESS;    
    
 error_stat:
+#ifndef TARGET_ARCH_WIN32
     globfree(&file_list);
-    
+#endif 
+   
 error_glob:
     globus_url_destroy(&parsed_url);
     globus_free(base_url);
@@ -619,7 +645,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
               *startline == '\n')
         {
             startline++;
-            continue;
+            
         }
         
         endline = startline;
@@ -728,7 +754,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
         
         *matched_url = '\0'; 
-
+#ifndef TARGET_ARCH_WIN32
         switch(type)
         {
           case GLOBUS_GASS_COPY_GLOB_ENTRY_FILE:
@@ -756,7 +782,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
           default:
             break;
         }
-        
+#endif        
         if(*matched_url)
         {
             info->entry_cb(
@@ -767,6 +793,12 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
                 
         startline = endline + 1;
+        while(startline < info->list_buffer + info->buffer_length && 
+            (*startline == '\r' || *startline == '\n'))
+        {
+            startline++;           
+        }
+
     }
     
     return GLOBUS_SUCCESS;
