@@ -8,7 +8,7 @@ file <code>$GLOBUS_LOCATION/etc/globus-job-manager.conf</code>.
 
 @subsection globus_gram_job_manager_configuration_opts Configuration File Options
 
-@par -save-logfile always|on-error
+@par -save-logfile always|on-error|never
 Create a file to store Job Manager log messages. This file will be created
 in the user's home directory. If the argument to this option is @a on-error ,
 then the file will be removed if the job manager completes successfully. If

@@ -161,7 +161,11 @@ main(
             {
 		request->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS;
             }
-            else
+            else if(strcmp(argv[i+1], "on_error") == 0)
+            {
+		request->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
+            }
+            else if(strcmp(argv[i+1], "on-error") == 0)
             {
 		request->logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
             }
