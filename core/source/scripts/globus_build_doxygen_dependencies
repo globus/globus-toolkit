@@ -9,7 +9,6 @@ packages which the specified package depends upon.
 
 use strict;
 use Getopt::Long;
-use Data::Dumper;
 use Carp;
 
 my $gpath = $ENV{GPT_LOCATION};
@@ -30,8 +29,6 @@ if (!defined($gpath))
 require Grid::GPT::Package;
 
 use Cwd;
-use Data::Dumper;
-
 
 my $prefix = $gpath;
 my $srcfile;
@@ -83,11 +80,11 @@ sub process_package($)
     {
 	my %hash;
 
-	%hash = %{$pkg->$deptype};
+	%hash = %{$pkg->{$deptype}};
 
 	if(exists($hash{$depmap{$deptype}}))
 	{
-	    %doc_dependencies = %{${$pkg->$deptype}{$depmap{$deptype}}};
+	    %doc_dependencies = %{${$pkg->{$deptype}}{$depmap{$deptype}}};
 	}
     }
     foreach (keys %doc_dependencies)
