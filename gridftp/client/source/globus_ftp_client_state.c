@@ -1141,8 +1141,9 @@ redo:
 	    goto skip_dcau;
 	}
 	if(target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT &&
-	    !globus_i_ftp_client_feature_get(
-	        target->features, GLOBUS_FTP_CLIENT_FEATURE_DCAU))
+	   globus_i_ftp_client_feature_get(
+	       target->features, 
+	       GLOBUS_FTP_CLIENT_FEATURE_DCAU) != GLOBUS_FTP_CLIENT_TRUE)
 	{
 	    goto skip_dcau;
 	}
