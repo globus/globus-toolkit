@@ -33,7 +33,7 @@ static char *  LONG_USAGE = \
 "    -help, -usage             Displays usage\n" \
 "    -version                  Displays version\n" \
 "    -debug                    Enables extra debug output\n" \
-"        -q                        Quiet mode, minimal output\n" \
+"    -q                        Quiet mode, minimal output\n" \
 "    -verify                   Verifies certificate to make proxy for\n" \
 "    -pwstdin                  Allows passphrase from stdin\n" \
 "    -limited                  Creates a limited proxy\n" \
@@ -45,7 +45,8 @@ static char *  LONG_USAGE = \
 "    -key      <keyfile>       Non-standard location of user key\n" \
 "    -certdir  <certdir>       Non-standard location of trusted cert dir\n" \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
-"\n" \
+"\n" ;
+/*
 "    -restriction <file>       Insert a restriction extension into the\n" \
 "                              generated proxy.\n" \
 "    -trusted-subgroup <grp>   Insert a trusted group extension into the\n" \
@@ -53,6 +54,7 @@ static char *  LONG_USAGE = \
 "    -untrusted-subgroup <grp> Insert a untrusted group extension into the\n" \
 "                              generated proxy.\n" \
 "\n";
+*/
 
 #   define args_show_version() \
     { \
@@ -873,7 +875,7 @@ main(
     }
 
     result = globus_gsi_cred_get_lifetime(
-        proxy_cred_handle,
+        cred_handle,
         &lifetime);
     if(result != GLOBUS_SUCCESS)
     {
