@@ -26,9 +26,7 @@ while (<FILE>) {
             $createServiceTimings{$thread} = $time;
         } elsif ($tag eq "start") {
             $startTimings{$thread} = $time;
-        } elsif (   ($tag eq "complete")
-                 or ($tag eq "Done")
-                 or ($tag eq "Failed")) {
+        } elsif (($tag eq "complete")) {
             $completeTimings{$thread} = $time;
         }
     }

@@ -285,7 +285,8 @@
           classpathref="classpath" failonerror="true" >
 
       <arg value="http://140.221.36.12:31415/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
-      <arg value="./date.xml"/>
+      <!--<arg value="./date.xml"/>-->
+      <arg value="./sleep.xml"/>
       <arg value="${job.count}"/>
     </java>
   </target>

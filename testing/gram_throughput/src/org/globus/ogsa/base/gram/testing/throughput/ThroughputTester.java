@@ -66,6 +66,11 @@ public class ThroughputTester {
         this.perfLog.stop("createService");
     }
 
+    synchronized void notifyError() {
+        this.count--;
+        notifyAll();
+    }
+
     synchronized void notifyCreated() {
         this.createdCount++;
         notifyAll();
@@ -82,8 +87,10 @@ public class ThroughputTester {
         }
         this.perfLog.start();
 
-        for (int i=0; i<this.count; i++) {
-            this.jobList[i].start();
+        for (int i=0; i<this.jobList.length; i++) {
+            if (this.jobList[i].getIndex() >= 0) {
+                this.jobList[i].start();
+            }
         }
 
         int oldStartedCount = -1;
@@ -137,6 +144,12 @@ public class ThroughputTester {
         }
 
         this.perfLog.stop("complete");
+
+        for (int i=0; i<this.jobList.length; i++) {
+            this.jobList[i].finalize();
+        }
+
+        try { Thread.currentThread().sleep(2000); } catch (Exception e ) { }
     }
 
     synchronized void notifyStarted() {
@@ -145,9 +158,9 @@ public class ThroughputTester {
     }
 
     synchronized void notifyCompleted(int jobIndex) {
+        this.jobList[jobIndex].stop();
         this.completedCount++;
         notifyAll();
-        this.jobList[jobIndex].stop();
     }
 
     public void setFactoryUrl(String factoryUrl) {

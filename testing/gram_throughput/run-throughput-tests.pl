@@ -8,7 +8,7 @@ my $endCount = scalar($ARGV[1]);
 
 STDOUT->autoflush(1);
 
-for (my $index=$startCount; $index<$endCount; $index*=2) {
+for (my $index=$startCount; $index<=$endCount; $index*=2) {
     my $testOutputFile = "throughput-test-" . $index . ".log";
     my $testExec = "ant -Djob.count=" . $index . " runTestApp";
 
@@ -23,7 +23,7 @@ for (my $index=$startCount; $index<$endCount; $index*=2) {
     close TESTLOG;
 
     my $timingsOutputFile = "throughput-timings-" . $index . ".html";
-    my $timingsExec = "parse-timings.pl " . $timingsOutputFile;
+    my $timingsExec = "./parse-timings.pl " . $testOutputFile;
 
     open TIMINGSLOG, ">$timingsOutputFile" or die "Error: unable to open file "
         . $timingsOutputFile . "for writing";
