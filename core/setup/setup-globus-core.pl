@@ -20,9 +20,9 @@ my $setupdir = "$globusdir/setup/globus/";
 my $result = `$setupdir/findshelltools`;
 
 print "creating globus-script-initializer\n";
-print "creating globus-sh-tools.sh\n";
+print "creating globus-sh-tools-vars.sh\n";
 
-for my $setupfile ('globus-script-initializer', 'globus-sh-tools.sh')
+for my $setupfile ('globus-script-initializer', 'globus-sh-tools-vars.sh')
 {
     $result = system("cp $setupdir/$setupfile $globusdir/libexec");
     $result = system("chmod 0755 $globusdir/libexec/$setupfile");
