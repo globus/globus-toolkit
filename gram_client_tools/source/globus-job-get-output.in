@@ -10,9 +10,14 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 #     $Revision$
 #     $Author$
 
-progname=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|^.*/\([^/]*\)|\1|g'`
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_VERSION='@VERSION@'
+PACKAGE='@PACKAGE@'
+VERSION='@VERSION@'
+DIRT_TIMESTAMP='@DIRT_TIMESTAMP@'
+DIRT_BRANCH_ID='@DIRT_BRANCH_ID@'
 
-short_usage="$progname [-help] [-f N] [-tail N] [-r <resource manager>] -out|-err <jobID>"
+short_usage="$PROGRAM_NAME [-help] [-version] [-f N] [-tail N] [-r <resource manager>] -out|-err <jobID>"
 
 long_usage()
 {
@@ -160,8 +165,23 @@ case ${tailopt}:${followopt} in
 	;;
 esac
 
-${bindir}/globusrun -o -r "$resource" \
-    "&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"file=\`\${bindir}/globus-gass-cache -query x-gass-cache://${jobid}${stream}\`; ${command} \$file\")"
+tmpfile=${local_tmpdir}/globus_job_get_output.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
 
-exit $?
+# redirect stderr to file so we can see if error occurs after the fact
+${bindir}/globusrun -o -r "$resource" 2> $tmpfile \
+    "&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"file=\`\${bindir}/globus-gass-cache -query x-gass-cache://${jobid}${stream}\`; if test -r \"\"\$file\"\" ; then ${command} \$file ; else echo Invalid job id. 1>&2; fi\")"
 
+status=$?
+
+if test "$status" != 0; then
+    cat $tmpfile 1>&2
+    rm $tmpfile
+    exit $status
+fi
+if test -s $tmpfile; then
+    cat $tmpfile 1>&2
+    rm $tmpfile
+    exit 1
+fi
+rm $tmpfile
+exit 0
