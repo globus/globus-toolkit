@@ -3051,7 +3051,7 @@ proxy_get_filenames(
         }
     }
 #endif
-    if (!user_proxy || getenv("X509_RUN_AS_SERVER"))
+    if (!user_proxy && !getenv("X509_RUN_AS_SERVER"))
     {
         unsigned long uid;
         uid = getuid();
@@ -3059,8 +3059,6 @@ proxy_get_filenames(
             + strlen(X509_USER_PROXY_FILE) 
             + 64; 
        
-        if (pcd && getenv("X509_RUN_AS_SERVER")) pcd->owner = CRED_OWNER_SERVER;
-
         default_user_proxy = (char *) malloc(len);
         if (!default_user_proxy)
         {
