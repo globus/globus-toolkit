@@ -845,7 +845,7 @@ globus_result_t globus_gsi_cred_read_proxy(
 
 /**
  * Read Credential
- * @ingroup globus_gsi_credential
+ * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
@@ -1418,7 +1418,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
 
 /**
  * Write Credential
- * @ingroup globus_gsi_credential
+ * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
