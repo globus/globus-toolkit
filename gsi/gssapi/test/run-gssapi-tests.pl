@@ -16,7 +16,8 @@ system('chmod go-rw testcred.pem');
             gssapi-delegation-test.pl
             gssapi-limited-delegation-test.pl
             gssapi-delegation-compat-test.pl
-            
+            gssapi-acquire-test.pl
+            gssapi-context-test.pl gssapi-expimp-test.pl gssapi-inquire-sec-ctx-by-oid-test.pl
            );
 
 #            gssapi-group-test.pl
