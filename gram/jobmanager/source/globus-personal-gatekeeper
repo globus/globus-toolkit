@@ -13,6 +13,7 @@ DELIM=
 if [ -n "$LD_LIBRARY_PATH" ]; then
     DELIM=:
 fi
+
 LD_LIBRARY_PATH="$GLOBUS_LOCATION/lib$DELIM$LD_LIBRARY_PATH"
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
@@ -66,7 +67,7 @@ EOF
 }
 
 
-source ${libexecdir}/globus-args-parser-header
+. ${libexecdir}/globus-args-parser-header
 
 debug=:
 
@@ -79,9 +80,10 @@ verify_setup ()
     libexecdir="${GLOBUS_LOCATION}/libexec"
 
     ${bindir}/grid-proxy-info -exists -hours 1
+    
     if [ $? -ne 0 ]; then
-	echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
-	exit 1
+        echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
+        exit 1
     fi
 
     ${debug} "done."
@@ -93,42 +95,45 @@ killem ()
     found=false
     foundit=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-		    -name ${file_prefix}\* -type d 2>/dev/null`
+        -name ${file_prefix}\* -type d 2>/dev/null`
     do
-	if [ -n "${dir}" ]; then
-	    found=true
-	    if [ -r ${dir}/gatekeeper.log ]; then
-		contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
-                        ${GLOBUS_SH_TAIL-tail} -1 |
-		     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
-		${debug} "found contact= [${contact}]"
-	    fi
+        if [ -n "${dir}" ]; then
+            found=true
+            if [ -r ${dir}/gatekeeper.log ]; then
+                contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+                    ${GLOBUS_SH_TAIL-tail} -1 |
+                    ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
+                ${debug} "found contact= [${contact}]"
+            fi
 
-	    dokill=false
-	    if [ -z "$1" ]; then
-		dokill=true
-	    else
-		if [ "$1" = "$contact" ]; then
-		    dokill=true
-		    foundit=true
-		fi
-	    fi
+            dokill=false
+            if [ -z "$1" ]; then
+                dokill=true
+            else
+                if [ "$1" = "$contact" ]; then
+                    dokill=true
+                    foundit=true
+                fi
+            fi
 
-	    if [ $dokill = true ]; then
-		echo "killing gatekeeper: \"${contact}\""
-		if [ -r ${dir}/gatekeeper.pid ]; then
-		    pid=`${GLOBUS_SH_CAT-cat} ${dir}/gatekeeper.pid`
-		    ${GLOBUS_SH_KILL-kill} -9 $pid &
-		fi
-		${GLOBUS_SH_RM-rm} -rf ${dir} &
-	    fi
-	fi
+            if [ $dokill = true ]; then
+                echo "killing gatekeeper: \"${contact}\""
+                if [ -r ${dir}/gatekeeper.pid ]; then
+                    pid=`${GLOBUS_SH_CAT-cat} ${dir}/gatekeeper.pid`
+                    ${GLOBUS_SH_KILL-kill} -9 $pid &
+                fi
+                cd
+                ${GLOBUS_SH_RM-rm} -rf ${dir} &
+            fi
+        fi
     done
+
     if [ $found = false ]; then
-	echo "No personal gatekeepers found on this host."
+        echo "No personal gatekeepers found on this host."
     fi
+
     if [ -n "$1" -a ${foundit} = false ]; then
-	echo "Could not find the personal gatekeeper you specified."
+        echo "Could not find the personal gatekeeper you specified."
     fi
 }
 
@@ -137,25 +142,25 @@ findit ()
 {
     foundit=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-		    -name ${file_prefix}\* -type d 2>/dev/null`
+        -name ${file_prefix}\* -type d 2>/dev/null`
     do
-	if [ -n "${dir}" ]; then
-	    found=true
-	    if [ -r ${dir}/gatekeeper.log ]; then
-		contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
-		     ${GLOBUS_SH_TAIL-tail} -1 |
-		     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
+        if [ -n "${dir}" ]; then
+            found=true
+            if [ -r ${dir}/gatekeeper.log ]; then
+                contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+                    ${GLOBUS_SH_TAIL-tail} -1 |
+                    ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
 
-		if [ "$1" = "$contact" ]; then
-		    foundit=true
-		    echo "${dir}"
-		fi
-	    fi
-	fi
+                if [ "$1" = "$contact" ]; then
+                    foundit=true
+                    echo "${dir}"
+                fi
+            fi
+        fi
     done
 
     if [ ${foundit} = false ]; then
-	echo "Could not find the personal gatekeeper you specified."
+        echo "Could not find the personal gatekeeper you specified."
     fi
 }
 
@@ -165,33 +170,35 @@ listem ()
     found=false
     foundold=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-		    -name ${file_prefix}\* -type d 2>/dev/null`
+        -name ${file_prefix}\* -type d 2>/dev/null`
     do
-	if [ -n "${dir}" ]; then
-	    found=true
-	    if [ -r ${dir}/gatekeeper.log ]; then
-		contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
-		     ${GLOBUS_SH_TAIL-tail} -1 |
-		     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
-		${debug} "found contact= [${contact}]"
-		${bindir}/globusrun -a -r "${contact}" 1>/dev/null 2>/dev/null
-		if [ $? -eq 0 ]; then
-		    echo "${contact}"
-		else
-		    ${debug} "could not authenticate to the contact -- old"
-		    foundold=true
-		fi
-	    fi
-	fi
+        if [ -n "${dir}" ]; then
+            found=true
+            if [ -r ${dir}/gatekeeper.log ]; then
+                contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+                    ${GLOBUS_SH_TAIL-tail} -1 |
+                    ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
+                ${debug} "found contact= [${contact}]"
+                ${bindir}/globusrun -a -r "${contact}" 1>/dev/null 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    echo "${contact}"
+                else
+                    ${debug} "could not authenticate to the contact -- old"
+                    foundold=true
+                fi
+            fi
+        fi
     done
+
     if [ $found = false ]; then
-	echo ""
-	echo "no personal gatekeepers found on this host"
+        echo ""
+        echo "no personal gatekeepers found on this host"
     fi
+
     if [ $foundold = true ]; then
-	echo ""
-	echo "Found old non-functioning personal gatekeeper(s). Please use"
-	echo "this command with the -killall option to clean them up."
+        echo ""
+        echo "Found old non-functioning personal gatekeeper(s). Please use"
+        echo "this command with the -killall option to clean them up."
     fi
 }
 
@@ -200,7 +207,7 @@ cleanup ()
 {
     if [ ${docleanup} = true ]; then
         ${GLOBUS_SH_RM-rm} -rf ${scratch}
-	docleanup=false
+        docleanup=false
     fi
 }
 
