@@ -302,7 +302,8 @@ globus_xio_attr_copy(
         res = GlobusXIOErrorMemory("xio_attr_dst");
         goto err;
     }
-
+    
+    memset(xio_attr_dst, 0, sizeof(globus_i_xio_attr_t));
     xio_attr_dst->entry = (globus_i_xio_attr_ent_t *)
         globus_malloc(sizeof(globus_i_xio_attr_ent_t) *
             GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
@@ -313,7 +314,6 @@ globus_xio_attr_copy(
         goto err;
     }
 
-    memset(xio_attr_dst, 0, sizeof(globus_i_xio_attr_t));
     memset(xio_attr_dst->entry, 0, 
         sizeof(globus_i_xio_attr_ent_t) * GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
 
