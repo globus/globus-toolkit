@@ -323,6 +323,8 @@ globus_xio_server_init(
 
 /**
  *  This is used to get the contact string 
+ *
+ *  TODO: define all possible values for cmd
  */
 globus_result_t
 globus_xio_server_cntl(
@@ -332,25 +334,47 @@ globus_xio_server_cntl(
     ...);
 
 /**
- *  target is destroyed when passed to open.  If not passed to
- *  open the use should call destroy
+ * in tcp driver case this is an accept
  */
 globus_result_t
-globus_xio_server_target_aquire(
+globus_xio_server_accept(
     globus_xio_target_t *                       out_target,
     globus_xio_attr_t                           target_attr,
     globus_xio_server_t                         server);
 
 globus_result_t
+globus_xio_server_register_accept(
+    globus_xio_target_t *                       out_target,
+    globus_xio_attr_t                           target_attr,
+    globus_xio_server_t                         server,
+    globus_xio_callback_t                       cb,
+    void *                                      user_arg);
+
+globus_result_t
 globus_xio_server_destroy(
     globus_xio_server_t                         server);
 
+/**
+ *  client init
+ */
 globus_result_t
 globus_xio_target_init(
     globus_xio_target_t *                       target,
     globus_xio_attr_t                           target_attr,
     const char *                                contact_string,
     globus_xio_stack_t                          stack);
+
+/**
+ *  Query the target for info/
+ *
+ *  TODO: list all the values for cmd
+ */
+globus_result_t
+globus_xio_target_cntl(
+    globus_xio_target_t                         target,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
 
 /**
  *  This only needs to be called if the target object is not passed
@@ -487,6 +511,23 @@ typedef void (*globus_xio_data_callback_t)(
     globus_ssize_t                              nbytes, 
     globus_xio_data_descriptor_t                data_desc,
     void *                                      user_arg);
+
+/**
+ *  Query/set information related to a handle.
+ *  @ingroup GLOBUS_XIO_API
+ *
+ *  This function allows the user to query information from on set information
+ *  on a handle.  The operation performed depends on the value of cmd.
+ *  Possible values are:
+ *
+ *  TODO: list possible values.
+ */
+globus_result_t
+globus_xio_handle_cntl(
+    globus_xio_handle_t                         handle,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
 
 /**
  * Open a handle

@@ -44,7 +44,7 @@ main(
             sizeof(buf));
         globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
         
-        res = globus_xio_server_target_aquire(
+        res = globus_xio_server_accept(
                 &target,
                 NULL,
                 server);

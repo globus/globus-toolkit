@@ -123,9 +123,11 @@ the target would be setup with the following code:
     char                            buf[256];
 
     globus_xio_server_init(&server, stack);
-    globus_xio_server_get_contact_string(server, &buf, sizeof(buf));
+    globus_xio_server_cntl(server, NULL, 
+        GLOBUS_XIO_CNTL_GET_CONTACT_STRING,
+        &buf, sizeof(buf));
     globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
-    globus_xio_server_listen(server, &target);
+    globus_xio_server_accept(server, &target);
 </PRE>
 <P>
 So the little program <A HREF="globus_xio_example.c">globus_xio_example.c</A>

@@ -213,21 +213,25 @@ typedef globus_result_t
  * like create_listener
  */
 typedef globus_result_t
-(*globus_xio_driver_server_init)(
+(*globus_xio_driver_server_init_t)(
     void **                                     out_server,
     void *                                      server_attr,
     globus_xio_driver_stack_t                   stack);
 
+/**
+ *  acts like register accept
+ */
 typedef globus_result_t
-(*globus_xio_driver_server_target_aquire)(
+(*globus_xio_driver_server_accept)(
     void **                                     out_target,
     void *                                      target_attr,
-    void *                                      server);
-                                          
+    void *                                      server,
+    globus_xio_driver_operation_t               op);
 
 typedef globus_result_t
-(*globus_xio_driver_client_init)(
-    void **                                     out_client,
+(*globus_xio_driver_target_init)(
+    void **                                     out_target,
+    void *                                      target_attr,
     const char *                                contact_string,
     globus_xio_driver_stack_t                   stack);
 
@@ -235,9 +239,6 @@ typedef globus_result_t
 (*globus_xio_driver_server_destroy)(
     void *                                      server);
 
-typedef globus_result_t
-(*globus_xio_driver_server_target_aquire)(
-    );
 
 /**********************************************************************
  *                          Open
@@ -419,6 +420,21 @@ globus_bool_t
 globus_xio_driver_context_compatable_operation(
     globus_xio_driver_context_t                 context,
     globus_xio_driver_operation_t               operation);
+
+
+/*
+ * getting general xio parameters from within driver
+ */
+globus_result_t
+globus_xio_driver_get_handle(
+    globus_xio_handle_t *                       handle,
+    globus_xio_driver_operation_t               operation);
+
+globus_result_t
+globus_xio_driver_get_handle_attr(
+    globus_xio_attr_t *                         handle,
+    globus_xio_driver_operation_t               operation);
+
 
 /**********************************************************************
  *                          Close
@@ -871,43 +887,36 @@ typedef struct globus_xio_driver_s
     /*
      *  main io interface functions
      */
-    globus_xio_driver_open_t                client_open_func;
-    globus_xio_driver_open_t                server_open_func;
-    globus_xio_driver_close_t               close_func;
-    globus_xio_driver_read_t                read_func;
-    globus_xio_driver_write_t               write_func;
+    globus_xio_driver_open_t                            open_func;
+    globus_xio_driver_close_t                           close_func;
+    globus_xio_driver_read_t                            read_func;
+    globus_xio_driver_write_t                           write_func;
+    globus_xio_driver_handle_cntl_t                     handle_cntl_func;
 
 
     /*
      * target init functions.  Must have client or server
      */
-    globus_xio_driver_target_server_init    target_server_init_func;
-    globus_xio_driver_target_client_init    target_client_init_func;
+    globus_xio_driver_server_accept    target_server_init_func;
+    globus_xio_driver_target_init    target_client_init_func;
+    globus_xio_driver_target_cntl_t         target_cntl;
     globus_xio_driver_target_destroy        target_client_destroy_func;
 
     /*
      *  driver attr functions.  All or none may be NULL
      */
-    globus_xio_driver_attr_init_t           driver_attr_init_func;
-    globus_xio_driver_attr_copy_t           driver_attr_copy_func;
-    globus_xio_driver_attr_cntl_t           driver_attr_cntl_func;
-    globus_xio_driver_attr_destroy_t        driver_attr_destroy_func;
+    globus_xio_driver_attr_init_t                       attr_init_func;
+    globus_xio_driver_attr_copy_t                       attr_copy_func;
+    globus_xio_driver_attr_cntl_t                       attr_cntl_func;
+    globus_xio_driver_attr_destroy_t                    attr_destroy_func;
 
     /*
      *  data descriptor functiosn.  All or none
      */
-    globus_xio_driver_data_descriptor_init_t
-    globus_xio_driver_driver_data_descriptor_copy_t
-    globus_xio_driver_driver_data_descriptor_destroy_t
-    globus_xio_driver_driver_data_descriptor_cntl_t
-
-    /*
-     *  target attr functions, all or none
-     */
-    globus_xio_driver_target_attr_init_t    target_attr_init_func;
-    globus_xio_driver_target_attr_cntl_t    target_attr_cntl_func;
-    globus_xio_driver_target_attr_destroy_t target_attr_destroy_func;
-    globus_xio_driver_target_attr_copy_t    target_attr_copy_func;
+    globus_xio_driver_data_descriptor_init_t            dd_init;  
+    globus_xio_driver_driver_data_descriptor_copy_t     dd_copy;
+    globus_xio_driver_driver_data_descriptor_destroy_t  dd_destroy;
+    globus_xio_driver_driver_data_descriptor_cntl_t     dd_cntl;
 };
 /*******************************************************************
  *                        signal stuff
