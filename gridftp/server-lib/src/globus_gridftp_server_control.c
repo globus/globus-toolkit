@@ -60,11 +60,30 @@ do                                                                      \
     if(_res != GLOBUS_SUCCESS)                                          \
     {                                                                   \
         globus_panic(                                                   \
-            &globus_i_gridftp_server_control_module,                    \
+            &globus_i_gsc_module,                                       \
             res,                                                        \
             "one shot failed.");                                        \
     }                                                                   \
 } while(0)
+
+
+typedef struct globus_l_gsc_cmd_ent_s
+{
+    int                                     cmd;
+    char                                    cmd_name[16]; /* only 5 needed */
+    globus_gsc_command_cb_t                 cmd_cb;
+    globus_gsc_command_desc_t               desc;
+    char *                                  help;
+    void *                                  user_arg;
+    int                                     argc;
+} globus_l_gsc_cmd_ent_t;
+
+typedef struct globus_l_gsc_reply_ent_s
+{
+    char *                                  msg;
+    globus_bool_t                           final;
+    globus_i_gsc_op_t *                     op;
+} globus_l_gsc_reply_ent_t;
 
 /*************************************************************************
  *              functions prototypes
@@ -150,7 +169,7 @@ globus_l_gsc_deactivate()
 /*
  *  module
  */
-globus_module_descriptor_t      globus_i_gridftp_server_control_module =
+globus_module_descriptor_t                  globus_i_gsc_module =
 {
     "globus_gridftp_server_control",
     globus_l_gsc_activate,
@@ -187,7 +206,7 @@ globus_l_gsc_op_destroy(
  *  since the xio stack gaurentees 1 command per callback
  */
 static void
-globus_l_gsc_read_callback(
+globus_l_gsc_read_cb(
     globus_xio_handle_t                     xio_handle,
     globus_result_t                         result,
     globus_byte_t *                         buffer,
@@ -204,7 +223,7 @@ globus_l_gsc_read_callback(
     char *                                  command_name;
     int                                     sc;
     int                                     ctr;
-    GlobusGridFTPServerName(globus_l_gsc_read_callback);
+    GlobusGridFTPServerName(globus_l_gsc_read_cb);
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
@@ -266,7 +285,7 @@ globus_l_gsc_read_callback(
                             globus_l_gsc_fake_buffer_len,
                             globus_l_gsc_fake_buffer_len,
                             NULL,
-                            globus_l_gsc_read_callback,
+                            globus_l_gsc_read_cb,
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
@@ -313,9 +332,9 @@ globus_l_gsc_read_callback(
                          *  is simply a way to allow *them* to cancel what 
                          *  they are doing 
                          */
-                        if(server_handle->abort_func != NULL)
+                        if(server_handle->abort_cb != NULL)
                         {
-                            server_handle->abort_func(
+                            server_handle->abort_cb(
                                 server_handle->outstanding_op,
                                 server_handle->abort_arg);
                         }
@@ -397,7 +416,7 @@ globus_l_gsc_220_write_cb(
                 globus_l_gsc_fake_buffer_len,
                 globus_l_gsc_fake_buffer_len,
                 NULL,
-                globus_l_gsc_read_callback,
+                globus_l_gsc_read_cb,
                 (void *) server_handle);
         if(res != GLOBUS_SUCCESS)
         {
@@ -467,7 +486,7 @@ globus_l_gsc_final_reply_cb(
                             globus_l_gsc_fake_buffer_len,
                             1,
                             NULL,
-                            globus_l_gsc_read_callback,
+                            globus_l_gsc_read_cb,
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
@@ -585,9 +604,9 @@ globus_l_gsc_user_close_kickout(
         server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
 
     /* set state to stopped */
-    if(server_handle->done_func != NULL)
+    if(server_handle->done_cb != NULL)
     {
-        server_handle->done_func(
+        server_handle->done_cb(
             server_handle,
             server_handle->cached_res,
             server_handle->user_arg);
@@ -892,7 +911,7 @@ globus_l_gsc_command_callout(
                 /*
                  *  call out to the users command
                  */
-                cmd_ent->cmd_func(
+                cmd_ent->cmd_cb(
                     op,
                     op->command,
                     cmd_array,
@@ -1222,7 +1241,7 @@ globus_gridftp_server_control_start(
     globus_gridftp_server_control_t         server,
     globus_gridftp_server_control_attr_t    attr,
     globus_xio_handle_t                     xio_handle,
-    globus_gridftp_server_control_callback_t done_cb,
+    globus_gridftp_server_control_cb_t      done_cb,
     void *                                  user_arg)
 {
     globus_result_t                         res;
@@ -1263,17 +1282,17 @@ globus_gridftp_server_control_start(
 
         server_handle->xio_handle = xio_handle;
         globus_hashtable_copy(
-            &server_handle->send_table, &i_attr->send_func_table, NULL);
+            &server_handle->send_cb_table, &i_attr->send_cb_table, NULL);
         globus_hashtable_copy(
-            &server_handle->recv_table, &i_attr->recv_func_table, NULL);
-        server_handle->resource_func = i_attr->resource_func;
-        server_handle->auth_func = i_attr->auth_func;
-        server_handle->done_func = i_attr->done_func;
-        server_handle->passive_func = i_attr->passive_func;
-        server_handle->active_func = i_attr->active_func;
-        server_handle->data_destroy_func = i_attr->data_destroy_func;
-        server_handle->default_stor_cb = i_attr->default_stor;
-        server_handle->default_retr_cb = i_attr->default_retr;
+            &server_handle->recv_cb_table, &i_attr->recv_cb_table, NULL);
+        server_handle->resource_cb = i_attr->resource_cb;
+        server_handle->auth_cb = i_attr->auth_cb;
+        server_handle->done_cb = done_cb;
+        server_handle->passive_cb = i_attr->passive_cb;
+        server_handle->active_cb = i_attr->active_cb;
+        server_handle->data_destroy_cb = i_attr->data_destroy_cb;
+        server_handle->default_stor_cb = i_attr->default_stor_cb;
+        server_handle->default_retr_cb = i_attr->default_retr_cb;
 
         if(server_handle->modes != NULL)
         {
@@ -1394,9 +1413,9 @@ globus_i_gsc_terminate(
              */
             globus_assert(server_handle->outstanding_op != NULL);
 
-            if(server_handle->abort_func != NULL)
+            if(server_handle->abort_cb != NULL)
             {
-                server_handle->abort_func(
+                server_handle->abort_cb(
                     server_handle->outstanding_op,
                     server_handle->abort_arg);
             }
@@ -1550,7 +1569,7 @@ globus_result_t
 globus_i_gsc_command_add(
     globus_i_gsc_server_handle_t *          server_handle,
     const char *                            command_name,
-    globus_gsc_command_func_t               command_func,
+    globus_gsc_command_cb_t                 command_cb,
     globus_gsc_command_desc_t               desc,
     int                                     argc,
     const char *                            help,
@@ -1570,7 +1589,7 @@ globus_i_gsc_command_add(
     }
 
     strcpy(cmd_ent->cmd_name, command_name);
-    cmd_ent->cmd_func = command_func;
+    cmd_ent->cmd_cb = command_cb;
     cmd_ent->desc = desc;
     cmd_ent->user_arg = user_arg;
     cmd_ent->help = globus_libc_strdup(help);
@@ -1677,7 +1696,7 @@ globus_i_gsc_resource_query(
     globus_i_gsc_op_t *                     op,
     const char *                            path,
     int                                     mask,
-    globus_i_gsc_resource_callback_t        cb,
+    globus_i_gsc_resource_cb_t              cb,
     void *                                  user_arg)
 {
     return GLOBUS_SUCCESS;
@@ -1690,7 +1709,7 @@ globus_i_gsc_authenticate(
     const char *                            pass,
     gss_cred_id_t                           cred,
     gss_cred_id_t                           del_cred,
-    globus_i_gsc_auth_callback_t            cb,
+    globus_i_gsc_auth_cb_t                  cb,
     void *                                  user_arg)
 {
     globus_result_t                         res;
@@ -1713,7 +1732,7 @@ globus_i_gsc_authenticate(
     op->del_cred = del_cred;
 
     /* call out to user */
-    op->server_handle->auth_func(
+    op->server_handle->auth_cb(
         op,
         op->username,
         op->password,
@@ -1729,7 +1748,7 @@ globus_i_gsc_port(
     const char **                           contact_strings,
     int                                     stripe_count,
     int                                     prt,
-    globus_i_gsc_port_callback_t            cb,
+    globus_i_gsc_port_cb_t                  cb,
     void *                                  user_arg)
 {
     return GLOBUS_SUCCESS;
@@ -1741,7 +1760,7 @@ globus_i_gsc_passive(
     globus_i_gsc_op_t *                     op,
     int                                     max,
     int                                     net_prt,
-    globus_i_gsc_passive_callback_t         cb,
+    globus_i_gsc_passive_cb_t               cb,
     void *                                  user_arg)
 {
     return GLOBUS_SUCCESS;
@@ -1798,7 +1817,7 @@ globus_gridftp_server_control_finished_auth(
     if(res != GLOBUS_SUCCESS)
     {
         globus_panic(
-            &globus_i_gridftp_server_control_module,
+            &globus_i_gsc_module,
             res,
             "one shot failed.");
     }
