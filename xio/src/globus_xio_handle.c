@@ -226,7 +226,8 @@ globus_i_xio_open_close_callback(
                  * unregister the cancel
                  */
                 /* if the unregister fails we will get the callback */
-                if(globus_i_xio_timer_unregister_timeout(op))
+                if(globus_i_xio_timer_unregister_timeout(
+                    &globus_l_xio_timeout_timer, op))
                 {
                     /* at this point we know timeout won't happen */
                     op->ref--;
@@ -356,7 +357,8 @@ globus_i_xio_read_write_callback(
                  * unregister the cancel
                  */
                 /* if the unregister fails we will get the callback */
-                if(globus_i_xio_timer_unregister_timeout(op))
+                if(globus_i_xio_timer_unregister_timeout(
+                    &globus_l_xio_timeout_timer, op))
                 {
                     /* at this point we know timeout won't happen */
                     op->ref--;
@@ -474,7 +476,8 @@ globus_l_xio_operation_cancel(
      * if the user oks the cancel then remove the timeout from 
      * the poller
      */
-    tmp_rc = globus_i_xio_timer_unregister_timeout(op);
+    tmp_rc = globus_i_xio_timer_unregister_timeout(
+                &globus_l_xio_timeout_timer, op);
     /* since in callback this will always be true */
     globus_assert(tmp_rc);
 
@@ -721,7 +724,8 @@ globus_l_xio_register_writev(
         if(handle->write_timeout_cb != NULL)
         {
             /* if unregister works remove its reference count */
-            if(globus_i_xio_timer_unregister_timeout(op))
+            if(globus_i_xio_timer_unregister_timeout(
+                &globus_l_xio_timeout_timer, op))
             {
                 op->ref--;
                 globus_assert(op->ref > 0);
@@ -803,7 +807,8 @@ globus_l_xio_register_readv(
         if(handle->read_timeout_cb != NULL)
         {
             /* if unregister works remove its reference count */
-            if(globus_i_xio_timer_unregister_timeout(op))
+            if(globus_i_xio_timer_unregister_timeout(
+                &globus_l_xio_timeout_timer, op))
             {
                 op->ref--;
                 globus_assert(op->ref > 0);
@@ -869,7 +874,7 @@ globus_l_xio_register_open(
      */
   err:
 
-    if(globus_i_xio_timer_unregister_timeout(op))
+    if(globus_i_xio_timer_unregister_timeout(&globus_l_xio_timeout_timer, op))
     {
         op->ref--;
     }
@@ -959,7 +964,8 @@ globus_l_xio_register_close(
 
     globus_mutex_lock(&handle->mutex);
     {
-        if(globus_i_xio_timer_unregister_timeout(op))
+        if(globus_i_xio_timer_unregister_timeout(
+            &globus_l_xio_timeout_timer, op))
         {
             op->ref--;
         }

@@ -466,6 +466,12 @@ typedef globus_result_t
     void *                                      driver_attr,
     const char *                                contact_string);
 
+typedef globus_result_t
+(*globus_xio_driver_target_cntl_t)(
+    void *                                      driver_attr,
+    int                                         cmd,
+    va_list                                     ap);
+
 /**
  *  @ingroup driver_interface_grp
  *  destroy a target
@@ -1174,6 +1180,7 @@ struct globus_i_xio_driver_s
     globus_xio_driver_handle_cntl_t                     handle_cntl_func;
 
     globus_xio_driver_target_init_t                     target_init_func;
+    globus_xio_driver_target_cntl_t                     target_cntl_func;
     globus_xio_driver_target_destroy_t                  target_destroy_func;
 
     /*
