@@ -518,7 +518,7 @@ sub stage_in
                 'GT3_FAILURE_SOURCE' => $description->executable()
             });
 
-            return GLOBUS::GRAM::Error::STAGING_EXECUTABLE;
+            return Globus::GRAM::Error::STAGING_EXECUTABLE;
         }
         $local = $self->pipe_out_cmd($cache_pgm, '-q', '-t', $tag,
                 $description->executable());
@@ -529,7 +529,7 @@ sub stage_in
                 'GT3_FAILURE_SOURCE' => $description->executable()
             });
 
-            return GLOBUS::GRAM::Error::STAGING_EXECUTABLE;
+            return Globus::GRAM::Error::STAGING_EXECUTABLE;
         }
         $self->nfssync($local, 0);
     }
@@ -558,7 +558,7 @@ sub stage_in
                 'GT3_FAILURE_SOURCE' => $description->stdin()
             });
 
-            return GLOBUS::GRAM::Error::STAGING_STDIN;
+            return Globus::GRAM::Error::STAGING_STDIN;
         }
         $self->nfssync($local, 0);
     }
