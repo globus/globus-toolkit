@@ -3,6 +3,7 @@
 #include "globus_gridftp_server.h"
 
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
+static globus_xio_driver_t              globus_l_gfs_queue_driver = GLOBUS_NULL;
 
 /*
  *  header:
@@ -208,6 +209,7 @@ globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface =
     NULL,
     globus_i_gfs_data_resource_request,
     globus_i_gfs_data_list_request,
+    globus_i_gfs_data_transfer_event,
     NULL,
     NULL
 };
@@ -252,13 +254,12 @@ typedef struct globus_gfs_ipc_request_s
     globus_gfs_ipc_request_type_t       type;
     int                                 id;
     globus_gfs_ipc_callback_t           cb;
-    globus_gfs_ipc_callback_t           event_cb;
+    globus_gfs_ipc_event_callback_t     event_cb;
     void *                              user_arg;
     globus_gfs_ipc_reply_t *            reply;
+    globus_gfs_ipc_event_reply_t *      event_reply;
     void *                              state_struct;
 } globus_gfs_ipc_request_t;
-
-static globus_xio_stack_t               globus_l_gfs_ipc_stack;
 
 static void
 globus_l_gfs_ipc_read_header_cb(
@@ -273,7 +274,12 @@ globus_l_gfs_ipc_read_header_cb(
 static void
 globus_l_gfs_ipc_finished_reply_kickout(
     void *                              user_arg);
-
+    
+static void
+globus_l_gfs_ipc_event_reply_kickout(
+    void *                              user_arg);
+    
+    
 static void
 globus_l_gfs_ipc_request_destroy(
     globus_gfs_ipc_request_t *          request)
@@ -301,6 +307,7 @@ globus_l_gfs_ipc_request_destroy(
             case GLOBUS_GFS_IPC_TYPE_LIST:
             case GLOBUS_GFS_IPC_TYPE_DESTROY:
             case GLOBUS_GFS_IPC_TYPE_ACTIVE:
+            case GLOBUS_GFS_IPC_TYPE_TRANSFER:
                 break;
 
             case GLOBUS_GFS_IPC_TYPE_RESOURCE:
@@ -516,6 +523,7 @@ globus_gfs_ipc_open(
 {
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
     globus_result_t                     res;
+    globus_xio_stack_t                  xio_stack;
     GlobusGFSName(globus_gfs_ipc_open);
     
     if(ipc_handle == NULL)
@@ -567,15 +575,34 @@ globus_gfs_ipc_open(
         ipc->local = GLOBUS_FALSE;
 
         res = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_driver_load("queue", &globus_l_gfs_queue_driver);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
         
-        res = globus_xio_stack_init(
-            &globus_l_gfs_ipc_stack, GLOBUS_NULL);
-    
-        res = globus_xio_stack_push_driver(
-            globus_l_gfs_ipc_stack, globus_l_gfs_tcp_driver);
+        res = globus_xio_stack_init(&xio_stack, GLOBUS_NULL);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        
+        res = globus_xio_stack_push_driver(xio_stack, globus_l_gfs_tcp_driver);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_stack_push_driver(xio_stack, globus_l_gfs_queue_driver);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
 
-        res = globus_xio_handle_create(
-            &ipc->xio_handle, globus_l_gfs_ipc_stack);
+        res = globus_xio_handle_create(&ipc->xio_handle, xio_stack);
         if(res != GLOBUS_SUCCESS)
         {
             goto err;
@@ -590,6 +617,9 @@ globus_gfs_ipc_open(
         {
             goto err;
         }
+        
+        globus_xio_stack_destroy(xio_stack);
+
     }
 
     *ipc_handle = ipc;
@@ -614,13 +644,17 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_iface_t *            iface,
-    globus_xio_handle_t                 xio_handle,
+    globus_xio_system_handle_t          system_handle,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
     globus_result_t                     res;
     globus_byte_t *                     read_buf;
+    
+    globus_xio_handle_t                 xio_handle;
+    globus_xio_stack_t                  xio_stack;
+    globus_xio_attr_t                   xio_attr;
     
     GlobusGFSName(globus_gfs_ipc_handle_create);
 
@@ -635,6 +669,58 @@ globus_gfs_ipc_handle_create(
         goto err;
     }
 
+    res = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_driver_load("queue", &globus_l_gfs_queue_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_stack_init(&xio_stack, GLOBUS_NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_stack_push_driver(xio_stack, globus_l_gfs_tcp_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_stack_push_driver(xio_stack, globus_l_gfs_queue_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_attr_init(&xio_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_attr_cntl(xio_attr, globus_l_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_handle_create(&xio_handle, xio_stack);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_open(
+        xio_handle, 
+        NULL, 
+        xio_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    globus_xio_attr_destroy(xio_attr);
+    globus_xio_stack_destroy(xio_stack);
+
     ipc = (globus_i_gfs_ipc_handle_t *)
         globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
     if(ipc == NULL)
@@ -642,6 +728,7 @@ globus_gfs_ipc_handle_create(
         res = GlobusGFSErrorMemory("ipc");
         goto err;
     }
+    
     ipc->iface = iface;
     ipc->error_cb = error_cb;
     ipc->error_arg = error_arg;
@@ -738,7 +825,8 @@ globus_l_gfs_ipc_close_cb(
  *  decode functions
  */
 
-static globus_gfs_ipc_reply_t *
+static 
+globus_gfs_ipc_reply_t *
 globus_l_gfs_ipc_unpack_reply(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
@@ -750,7 +838,7 @@ globus_l_gfs_ipc_unpack_reply(
     globus_gfs_ipc_reply_t *            reply;
 
     reply = (globus_gfs_ipc_reply_t *)
-        globus_calloc(sizeof(globus_gfs_ipc_reply_t), 1);
+        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
     if(reply == NULL)
     {
         return NULL;
@@ -845,9 +933,15 @@ globus_l_gfs_ipc_unpack_reply(
             }
             GFSDecodeChar(buffer, len, ch);
             reply->info.data.net_prt = (int)ch;
+            GFSDecodeChar(buffer, len, ch);
+            reply->info.data.bi_directional = (int)ch;
             break;
 
         case GLOBUS_GFS_IPC_TYPE_ACTIVE:
+            GFSDecodeUInt32(
+                buffer, len, reply->info.data.data_handle_id);
+            GFSDecodeChar(buffer, len, ch);
+            reply->info.data.bi_directional = (int)ch;
             break;
 
         case GLOBUS_GFS_IPC_TYPE_DESTROY:
@@ -866,6 +960,69 @@ globus_l_gfs_ipc_unpack_reply(
         {
             globus_free(reply->info.resource.stat_info);
         }
+        globus_free(reply);
+    }
+                                                                                
+    return NULL;
+}
+
+static 
+globus_gfs_ipc_event_reply_t *
+globus_l_gfs_ipc_unpack_event_reply(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    int                                 ctr;
+    int                                 range_size;
+    globus_gfs_ipc_event_reply_t *      reply;
+    globus_off_t                        offset;
+    globus_off_t                        length;
+    
+    reply = (globus_gfs_ipc_event_reply_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+    if(reply == NULL)
+    {
+        return NULL;
+    }
+
+    GFSDecodeChar(buffer, len, reply->type);
+    GFSDecodeUInt32(buffer, len, reply->stripe_ndx);
+
+    /* encode the specific types */
+    switch(reply->type)
+    {
+        case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
+            GFSDecodeUInt32(buffer, len, reply->transfer_id);
+            break;
+            
+        case GLOBUS_I_GFS_EVENT_DISCONNECTED:
+            break;
+            
+        case GLOBUS_I_GFS_EVENT_BYTES_RECVD:
+            GFSDecodeUInt64(buffer, len, reply->recvd_bytes);
+            break;
+            
+        case GLOBUS_I_GFS_EVENT_RANGES_RECVD:
+            globus_range_list_init(&reply->recvd_ranges);
+            GFSDecodeUInt32(buffer, len, range_size);
+            for(ctr = 0; ctr < range_size; ctr++)
+            {
+                GFSDecodeUInt64(buffer, len, offset);
+                GFSDecodeUInt64(buffer, len, length);
+                globus_range_list_insert(reply->recvd_ranges, offset, length);
+            }
+            break;
+            
+        default:
+            break;
+    }
+
+    return reply;
+
+  decode_err:  /* label used in macros */
+    if(reply != NULL)
+    {
         globus_free(reply);
     }
                                                                                 
@@ -1047,6 +1204,28 @@ globus_l_gfs_ipc_unpack_data_destroy(
     return -1;
 }
 
+
+static int
+globus_l_gfs_ipc_unpack_event_request(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    int *                               transfer_id,
+    int *                               event_type)
+{
+    char                                id;
+
+    GFSDecodeUInt32(buffer, len, *transfer_id);
+    GFSDecodeChar(buffer, len, id);
+    *event_type = (int) id;
+
+    return 0;
+
+  decode_err:
+
+    return -1;
+}
+
 static char *
 globus_l_gfs_ipc_unpack_user(
     globus_i_gfs_ipc_handle_t *         ipc,
@@ -1104,11 +1283,14 @@ globus_l_gfs_ipc_read_body_cb(
     globus_gfs_data_state_t *           data_state;
     globus_gfs_resource_state_t *       resource_state;
     globus_gfs_ipc_reply_t *            reply;
+    globus_gfs_ipc_event_reply_t *      event_reply;
     int                                 rc;
     int                                 data_connection_id;
     gss_buffer_desc                     gsi_buffer;
     gss_cred_id_t                       cred;
     char *                              user_dn;
+    int                                 event_type;
+    int                                 transfer_id;
     GlobusGFSName(globus_l_gfs_ipc_read_body_cb);
 
     request = (globus_gfs_ipc_request_t *) user_arg;
@@ -1140,7 +1322,21 @@ globus_l_gfs_ipc_read_body_cb(
             globus_l_gfs_ipc_finished_reply_kickout(request);
             break;
 
-        case GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY:
+        case GLOBUS_GFS_IPC_TYPE_EVENT_REPLY:
+            event_reply = 
+                globus_l_gfs_ipc_unpack_event_reply(ipc, buffer, len);
+            if(event_reply == NULL)
+            {
+                res = GlobusGFSErrorIPC();
+                goto err;
+            }
+            event_reply->id = request->id;
+            if(request == NULL)
+            {
+                goto err;
+            }
+            request->event_reply = event_reply;
+            globus_l_gfs_ipc_event_reply_kickout(request);
             break;
 
         case GLOBUS_GFS_IPC_TYPE_AUTH:
@@ -1312,7 +1508,19 @@ globus_l_gfs_ipc_read_body_cb(
             }
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->data_destroy_func(data_connection_id);
-
+            break;
+            
+        case GLOBUS_GFS_IPC_TYPE_EVENT:
+            rc = globus_l_gfs_ipc_unpack_event_request(
+                ipc, buffer, len, &transfer_id, &event_type);
+            if(rc != 0)
+            {
+                res = GlobusGFSErrorIPC();
+                goto err;
+            }
+            ipc->iface->transfer_event_func(ipc, transfer_id, event_type);
+            break;
+            
         default:
             break;
     }
@@ -1402,8 +1610,10 @@ globus_l_gfs_ipc_read_header_cb(
                     res = GlobusGFSErrorIPC();
                     goto lock_err;
                 }
+                request->type = type;
                 break;
-            case GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY:
+                
+            case GLOBUS_GFS_IPC_TYPE_EVENT_REPLY:
                 request = (globus_gfs_ipc_request_t *)
                     globus_hashtable_lookup(&ipc->call_table, (void *)id);
                 if(request == NULL)
@@ -1411,7 +1621,10 @@ globus_l_gfs_ipc_read_header_cb(
                     res = GlobusGFSErrorIPC();
                     goto lock_err;
                 }
+                request->type = type;                
                 break;
+                
+            case GLOBUS_GFS_IPC_TYPE_EVENT:
             case GLOBUS_GFS_IPC_TYPE_RECV:
             case GLOBUS_GFS_IPC_TYPE_SEND:
             case GLOBUS_GFS_IPC_TYPE_LIST:
@@ -1431,7 +1644,6 @@ globus_l_gfs_ipc_read_header_cb(
                 request->type = type;
                 request->ipc = ipc;
                 break;
-
             default:
                 res = GlobusGFSErrorIPC();
                 goto lock_err;
@@ -1491,7 +1703,7 @@ static void
 globus_l_gfs_ipc_finished_reply_kickout(
     void *                              user_arg)
 {
-    globus_gfs_ipc_request_t *       request;
+    globus_gfs_ipc_request_t *          request;
 
     request = (globus_gfs_ipc_request_t *) user_arg;
 
@@ -1508,7 +1720,7 @@ static void
 globus_l_gfs_ipc_event_reply_kickout(
     void *                              user_arg)
 {
-    globus_gfs_ipc_request_t *       request;
+    globus_gfs_ipc_request_t *          request;
 
     request = (globus_gfs_ipc_request_t *) user_arg;
 
@@ -1516,7 +1728,7 @@ globus_l_gfs_ipc_event_reply_kickout(
     request->event_cb(
         request->ipc,
         GLOBUS_SUCCESS,
-        request->reply,
+        request->event_reply,
         request->user_arg);
 }
 
@@ -1565,7 +1777,7 @@ globus_gfs_ipc_reply_finished(
     globus_result_t                     res;
     GlobusGFSName(globus_gfs_ipc_reply_finished);
 
-    ipc = ipc_handle;
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc_handle->mutex);
     {
         /* if local register one shot to get out of recurisve call stack
@@ -1694,9 +1906,16 @@ globus_gfs_ipc_reply_finished(
                     }
                     ch = (char) reply->info.data.net_prt;
                     GFSEncodeChar(buffer, ipc->buffer_size, ptr, ch);
+                    ch = (char) reply->info.data.bi_directional;
+                    GFSEncodeChar(buffer, ipc->buffer_size, ptr, ch);
                     break;
 
                 case GLOBUS_GFS_IPC_TYPE_ACTIVE:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.data.data_handle_id);
+                    ch = (char) reply->info.data.bi_directional;
+                    GFSEncodeChar(buffer, ipc->buffer_size, ptr, ch);
                     break;
 
                 case GLOBUS_GFS_IPC_TYPE_DESTROY:
@@ -1740,13 +1959,18 @@ globus_gfs_ipc_reply_finished(
 globus_result_t
 globus_gfs_ipc_reply_event(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_reply_t *            reply)
+    globus_gfs_ipc_event_reply_t *      reply)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_gfs_ipc_request_t *          request;
     globus_byte_t *                     buffer;
     globus_byte_t *                     ptr;
     globus_result_t                     res;
+    globus_off_t                        offset;
+    globus_off_t                        length;
+    int                                 range_size;
+    int                                 ctr;
+    int                                 msg_size;
     GlobusGFSName(globus_gfs_ipc_reply_event);
 
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
@@ -1765,8 +1989,8 @@ globus_gfs_ipc_reply_event(
                 goto err;
             }
             
-            request->reply = reply;
-            request->type = reply->type;
+            request->event_reply = reply;
+            request->reply = NULL;
             
             globus_callback_register_oneshot(
                 NULL,
@@ -1777,11 +2001,74 @@ globus_gfs_ipc_reply_event(
         /* if on wire pack up reply and send it */
         else
         {
-            /* serialize the reply */
+            /* pack the header */
             buffer = globus_malloc(ipc->buffer_size);
             ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_EVENT_REPLY);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->id);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+
+            /* pack the body--this part is like a reply header */
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, reply->type);
+            GFSEncodeUInt32(
+                buffer, ipc->buffer_size, ptr, reply->stripe_ndx);
+
+            /* encode the specific types */
+            switch(reply->type)
+            {
+                case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, reply->transfer_id);
+                    break;
+                    
+                case GLOBUS_I_GFS_EVENT_DISCONNECTED:
+                    break;
+                    
+                case GLOBUS_I_GFS_EVENT_BYTES_RECVD:
+                    GFSEncodeUInt64(
+                        buffer, ipc->buffer_size, ptr, reply->recvd_bytes);
+                    break;
+                    
+                case GLOBUS_I_GFS_EVENT_RANGES_RECVD:
+                    range_size = globus_range_list_size(reply->recvd_ranges);
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, range_size);
+                    for(ctr = 0; ctr < range_size; ctr++)
+                    {
+                        globus_range_list_at(
+                            reply->recvd_ranges, ctr, &offset, &length);
+                        GFSEncodeUInt64(
+                            buffer, ipc->buffer_size, ptr, offset);
+                        GFSEncodeUInt64(
+                            buffer, ipc->buffer_size, ptr, length);
+                    }
+                    break;
+                    
+                default:
+                    break;
+            }
+
+            msg_size = ptr - buffer;
+            ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
+            GFSEncodeUInt32(
+                buffer, ipc->buffer_size, ptr, msg_size);
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                buffer,
+                msg_size,
+                msg_size,
+                NULL,
+                globus_l_gfs_ipc_reply_cb,
+                ipc);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
         }
     }
+
     globus_mutex_unlock(&ipc_handle->mutex);
 
     return GLOBUS_SUCCESS;
@@ -1830,13 +2117,13 @@ globus_l_gfs_ipc_write_cb(
         globus_mutex_lock(&ipc->mutex);
         {
             globus_hashtable_remove(&ipc->call_table, (void *)request->id);
-            error_cb = request->ipc->error_cb;
+            error_cb = ipc->error_cb;
         }
         globus_mutex_unlock(&ipc->mutex);
 
         if(error_cb)
         {
-            error_cb(request->ipc, result, request->user_arg);
+            error_cb(ipc, result, ipc->error_arg);
             globus_free(request);
         }
     }
@@ -1873,6 +2160,7 @@ globus_gfs_ipc_set_user(
         request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
+        request->ipc = ipc_handle;
 
         if(!ipc->local)
         {
@@ -1969,6 +2257,7 @@ globus_gfs_ipc_set_cred(
         request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
+        request->ipc = ipc_handle;
 
         if(!ipc->local)
         {
@@ -2100,7 +2389,7 @@ globus_gfs_ipc_request_recv(
     int *                               id,
     globus_gfs_transfer_state_t *       recv_state,
     globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_callback_t           event_cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -2117,7 +2406,8 @@ globus_gfs_ipc_request_recv(
         request->cb = cb;
         request->event_cb = event_cb;
         request->user_arg = user_arg;
-
+        request->ipc = ipc_handle;
+        
         if(!ipc->local)
         {
             res = globus_l_gfs_ipc_transfer_pack(
@@ -2162,7 +2452,7 @@ globus_gfs_ipc_request_send(
     int *                               id,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_callback_t           event_cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -2179,6 +2469,7 @@ globus_gfs_ipc_request_send(
         request->cb = cb;
         request->event_cb = event_cb;
         request->user_arg = user_arg;
+        request->ipc = ipc_handle;
 
         if(!ipc->local)
         {
@@ -2217,7 +2508,7 @@ globus_gfs_ipc_request_list(
     int *                               id,
     globus_gfs_transfer_state_t *       data_state,
     globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_callback_t           event_cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -2232,6 +2523,7 @@ globus_gfs_ipc_request_list(
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
         request->id = (int) request;
         request->cb = cb;
+        request->ipc = ipc_handle;
         request->event_cb = event_cb;
         request->user_arg = user_arg;
 
@@ -2377,7 +2669,90 @@ globus_gfs_ipc_request_command(
     return res;
 }
 
-static globus_result_t
+
+globus_result_t
+globus_gfs_ipc_request_transfer_event(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 transfer_id,
+    int                                 event_type)
+{
+    globus_size_t                       msg_size;
+    globus_result_t                     res;
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_byte_t *                     buffer = NULL;
+    globus_byte_t *                     ptr;
+    globus_gfs_ipc_request_t *          request;
+    GlobusGFSName(globus_gfs_ipc_request_transfer_event);
+
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
+
+    request = (globus_gfs_ipc_request_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
+    if(request == NULL)
+    {
+        goto err;
+    }
+    request->ipc = ipc_handle;
+
+    /* XXX parameter checking */
+    globus_mutex_lock(&ipc->mutex);
+    {
+        if(!ipc->local)
+        {
+            /* pack the header */
+            buffer = globus_malloc(ipc->buffer_size);
+            ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_EVENT);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1); //no reply, no id
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+
+            /* pack body */
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, transfer_id);
+            GFSEncodeChar(buffer, ipc->buffer_size, ptr, event_type);
+
+            msg_size = ptr - buffer;
+            /* now that we know size, add it in */
+            ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
+
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                buffer,
+                msg_size,
+                msg_size,
+                NULL,
+                globus_l_gfs_ipc_write_cb,
+                request);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+    }
+    globus_mutex_unlock(&ipc->mutex);
+
+    if(ipc->local)
+    {
+        ipc->iface->transfer_event_func(ipc, transfer_id, event_type);
+    }
+    
+    return GLOBUS_SUCCESS;
+
+  err:
+    globus_mutex_unlock(&ipc->mutex);
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
+
+    return res;
+}
+    
+     
+
+static
+globus_result_t
 globus_l_gfs_ipc_pack_data(
     globus_i_gfs_ipc_handle_t *         ipc,
     char                                type,

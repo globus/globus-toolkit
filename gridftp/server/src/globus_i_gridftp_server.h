@@ -12,8 +12,8 @@ typedef struct
     char *                          remote_contact;
     char *                          rnfr_pathname;
     globus_gfs_ipc_handle_t         ipc_handle;
-    
-    globus_gridftp_server_operation_t op;
+    int                             transfer_id;
+    globus_gridftp_server_control_op_t op;
     
     union
     {
@@ -110,7 +110,8 @@ typedef union
 typedef enum
 {
     GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN,
-    GLOBUS_I_GFS_EVENT_UPDATE_BYTES,
+    GLOBUS_I_GFS_EVENT_BYTES_RECVD,
+    GLOBUS_I_GFS_EVENT_RANGES_RECVD,
     GLOBUS_I_GFS_EVENT_DISCONNECTED
 } globus_i_gfs_event_t;
 

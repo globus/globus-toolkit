@@ -101,9 +101,10 @@ globus_i_gfs_data_handle_destroy(
 
 void
 globus_i_gfs_data_transfer_event(
-    globus_i_gfs_server_instance_t *    instance,
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 transfer_id,
     int                                 event_type);
-
+    
 globus_result_t
 globus_i_gfs_data_node_start(
     globus_xio_handle_t                 handle,

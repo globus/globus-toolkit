@@ -18,7 +18,7 @@ typedef enum
 typedef enum
 {
     GLOBUS_GFS_IPC_TYPE_FINAL_REPLY,
-    GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY,
+    GLOBUS_GFS_IPC_TYPE_EVENT_REPLY,
     GLOBUS_GFS_IPC_TYPE_EVENT,    
     GLOBUS_GFS_IPC_TYPE_AUTH,
     GLOBUS_GFS_IPC_TYPE_USER,
@@ -90,6 +90,17 @@ typedef struct globus_i_gfs_ipc_reply_s
 
 } globus_gfs_ipc_reply_t;
 
+typedef struct globus_i_gfs_ipc_event_reply_s
+{
+    /* what event is this */
+    int                                 type;
+    int                                 stripe_ndx;
+    int                                 id;
+    int                                 transfer_id;
+    globus_off_t                        recvd_bytes;
+    globus_range_list_t                 recvd_ranges;
+} globus_gfs_ipc_event_reply_t;
+
 
 
 /*
@@ -114,7 +125,7 @@ typedef void
 (*globus_gfs_ipc_event_callback_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_ipc_event_reply_t *      reply,
     void *                              user_arg);
 
 typedef void
@@ -137,7 +148,7 @@ globus_gfs_ipc_reply_finished(
 globus_result_t
 globus_gfs_ipc_reply_event(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_reply_t *            reply);
+    globus_gfs_ipc_event_reply_t *      reply);
 
 /*
  *  sending
@@ -252,7 +263,7 @@ globus_gfs_ipc_request_recv(
     int *                               id,
     globus_gfs_transfer_state_t *       recv_state,
     globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_callback_t           event_cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg);
 
 /*
@@ -272,7 +283,7 @@ globus_gfs_ipc_request_send(
     int *                               id,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_callback_t           event_cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg);
 
 
@@ -288,7 +299,7 @@ globus_gfs_ipc_request_list(
     int *                               id,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_callback_t           event_cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg);
 
 
@@ -366,6 +377,24 @@ globus_gfs_ipc_request_resource(
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 
+
+/*
+ * poke transfer event request
+ */
+typedef void
+(*globus_gfs_ipc_iface_transfer_event_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 transfer_id,
+    int                                 event_type);
+
+
+globus_result_t
+globus_gfs_ipc_request_transfer_event(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 transfer_id,
+    int                                 event_type);
+
+
 /*
  *  destroy a data connection associated with the given ID
  */
@@ -388,6 +417,7 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_data_destroy_t data_destroy_func;
     globus_gfs_ipc_iface_resource_t     resource_func;
     globus_gfs_ipc_iface_list_t         list_func;
+    globus_gfs_ipc_iface_transfer_event_t transfer_event_func;
     globus_gfs_ipc_iface_set_cred_t     set_cred;
     globus_gfs_ipc_iface_set_user_t     set_user;
 } globus_gfs_ipc_iface_t;
@@ -406,7 +436,7 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_iface_t *            iface,
-    globus_xio_handle_t                 xio_handle,
+    globus_xio_system_handle_t          system_handle,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg);
 

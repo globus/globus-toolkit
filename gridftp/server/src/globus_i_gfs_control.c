@@ -145,6 +145,9 @@ globus_l_gfs_done_cb(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     globus_gridftp_server_control_destroy(instance->u.control.server);
+
+//    globus_gfs_ipc_close(instance->ipc_handle, NULL, NULL);
+
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -172,8 +175,7 @@ globus_l_gfs_control_ipc_error_cb(
 
     globus_i_gfs_log_result(
         "IPC ERROR", result);
-    globus_gfs_ipc_close(ipc_handle, NULL, NULL);
-    globus_l_gfs_done_cb(instance->u.control.server, result, instance);
+    globus_gridftp_server_control_stop(instance->u.control.server);
     
     return;
 }
@@ -411,8 +413,9 @@ globus_l_gfs_ipc_resource_cb(
 */
 {
     globus_gridftp_server_control_op_t  op;
-
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
     
     if(reply->result != GLOBUS_SUCCESS)
     {
@@ -451,6 +454,7 @@ globus_l_gfs_request_resource(
     GlobusGFSName(globus_l_gfs_request_resource);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    instance->op = op;
 
     globus_l_gfs_get_full_path(instance, path, &fullpath);
     
@@ -471,7 +475,7 @@ globus_l_gfs_request_resource(
         &request_id,
         resource_state,
         globus_l_gfs_ipc_resource_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_resource(
@@ -517,8 +521,9 @@ globus_l_gfs_ipc_command_cb(
 {
     globus_gridftp_server_control_op_t  op;
     char *                              msg;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
 
     switch(reply->info.command.command)
     {
@@ -568,6 +573,7 @@ globus_l_gfs_request_command(
     GlobusGFSName(globus_l_gfs_request_command);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    instance->op = op;
 
     memset(&cmd_attr, 0, sizeof(globus_i_gfs_cmd_attr_t));
     
@@ -682,7 +688,7 @@ globus_l_gfs_request_command(
         &request_id,
         command_state,
         globus_l_gfs_ipc_command_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_command(
@@ -717,7 +723,8 @@ globus_l_gfs_request_transfer_event(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-//    globus_i_gfs_ipc_transfer_event(instance, event_type);
+    globus_gfs_ipc_request_transfer_event(
+        instance->ipc_handle, instance->transfer_id, event_type);
     
     return;
 }
@@ -728,7 +735,7 @@ void
 globus_l_gfs_ipc_event_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_ipc_event_reply_t *      reply,
     void *                              user_arg)
 /*
     globus_i_gfs_server_instance_t *    instance,
@@ -742,12 +749,12 @@ globus_l_gfs_ipc_event_cb(
 
     /* XXX */
     globus_i_gfs_server_instance_t *    instance;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
-    
-    switch(reply->event)
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
+    switch(reply->type)
     {
       case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
+        instance->transfer_id = reply->transfer_id;
         globus_gridftp_server_control_begin_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
@@ -765,7 +772,17 @@ globus_l_gfs_ipc_event_cb(
 */
         }
         break;
-        
+
+      case GLOBUS_I_GFS_EVENT_BYTES_RECVD:
+        globus_gridftp_server_control_event_send_perf(
+            op, reply->stripe_ndx, reply->recvd_bytes);
+        break;
+            
+      case GLOBUS_I_GFS_EVENT_RANGES_RECVD:
+        globus_gridftp_server_control_event_send_restart(
+           op, reply->recvd_ranges);  
+       break;
+
       default:
         globus_assert(0 && "Unexpected event type");
         break;
@@ -786,8 +803,9 @@ globus_l_gfs_ipc_transfer_cb(
 */
 {
     globus_gridftp_server_control_op_t  op;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
     
     if(reply->result != GLOBUS_SUCCESS)
     {
@@ -871,16 +889,16 @@ globus_l_gfs_request_send(
     send_state->partial_offset = op_attr->partial_offset;
     send_state->partial_length = op_attr->partial_length;
     send_state->range_list = range_list;
-    send_state->control_op = op;
     send_state->data_handle_id = (int) data_handle;
-
+    instance->op = op;
+    
     result = globus_gfs_ipc_request_send(
         instance->ipc_handle,
         &request_id,
         send_state,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_send(
@@ -978,6 +996,7 @@ globus_l_gfs_request_recv(
     recv_state->range_list = range_list;
     recv_state->control_op = op;
     recv_state->data_handle_id = (int) data_handle;
+    instance->op = op;
 
     result = globus_gfs_ipc_request_recv(
         instance->ipc_handle,
@@ -985,7 +1004,7 @@ globus_l_gfs_request_recv(
         recv_state,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_recv(
@@ -1056,14 +1075,15 @@ globus_l_gfs_request_list(
     list_state->pathname = fullpath;
     list_state->list_type = globus_libc_strdup(list_type);
     list_state->data_handle_id = (int) data_handle;
-
+    instance->op = op;
+    
     result = globus_gfs_ipc_request_list(
         instance->ipc_handle,
         &request_id,
         list_state,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_list(
@@ -1107,8 +1127,9 @@ globus_l_gfs_ipc_passive_data_cb(
 */
 {
     globus_gridftp_server_control_op_t  op;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
 
     if(reply->result != GLOBUS_SUCCESS)
     {
@@ -1208,6 +1229,7 @@ globus_l_gfs_request_passive_data(
      */
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    instance->op = op;
 
     {
     globus_gfs_data_state_t *               data_state;
@@ -1230,7 +1252,7 @@ globus_l_gfs_request_passive_data(
         &request_id,
         data_state,
         globus_l_gfs_ipc_passive_data_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_passive_data(
@@ -1274,8 +1296,9 @@ globus_l_gfs_ipc_active_data_cb(
 */    
 {
     globus_gridftp_server_control_op_t  op;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
     
     if(reply->result != GLOBUS_SUCCESS)
     {
@@ -1322,6 +1345,8 @@ globus_l_gfs_request_active_data(
     {
     globus_gfs_data_state_t *               data_state;
     
+    instance->op = op;
+   
     data_state = (globus_gfs_data_state_t *) 
         globus_calloc(1, sizeof(globus_gfs_data_state_t));
     
@@ -1342,7 +1367,7 @@ globus_l_gfs_request_active_data(
         &request_id,
         data_state,
         globus_l_gfs_ipc_active_data_cb,
-        op);
+        instance);
     }
     /*
     result = globus_i_gfs_ipc_request_active_data(

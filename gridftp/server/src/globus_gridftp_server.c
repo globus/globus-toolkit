@@ -282,7 +282,6 @@ globus_l_gfs_prepare_stack(
     
     result = globus_xio_stack_push_driver(*stack, globus_l_gfs_tcp_driver);
     globus_l_gfs_check_log_and_die(result);
-
 }
 
 /* begin a server instance from the channel already connected on stdin */

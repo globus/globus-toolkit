@@ -1443,13 +1443,13 @@ globus_gridftp_server_begin_transfer(
     }
 
     {
-    globus_gfs_ipc_reply_t *            event_reply;   
-    event_reply = (globus_gfs_ipc_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    globus_gfs_ipc_event_reply_t *            event_reply;   
+    event_reply = (globus_gfs_ipc_event_reply_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
 
-    event_reply->type = GLOBUS_GFS_IPC_TYPE_EVENT;
+    event_reply->type = GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN;
     event_reply->id = op->id;
-    event_reply->event = GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN;
+    event_reply->transfer_id = (int) op;
 
     globus_gfs_ipc_reply_event(
         op->ipc_handle,
@@ -1488,18 +1488,18 @@ globus_l_gfs_data_write_eof_cb(
     /* XXX mode s only */
     /* racey shit here */
     globus_gfs_ipc_reply_t *            reply;   
+    globus_gfs_ipc_event_reply_t *            event_reply;   
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    event_reply = (globus_gfs_ipc_event_reply_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
 
-    reply->type = GLOBUS_GFS_IPC_TYPE_TRANSFER;
-    reply->id = op->id;
-    reply->result = error ? 
-        globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS;
-    reply->event = GLOBUS_I_GFS_EVENT_DISCONNECTED;
+    event_reply->type = GLOBUS_I_GFS_EVENT_DISCONNECTED;
+    event_reply->id = op->id;
 
     globus_gfs_ipc_reply_event(
-        op->ipc_handle,
-        reply);
+       op->ipc_handle,
+       event_reply);
 
     /*
     op->event_callback(
@@ -1508,6 +1508,10 @@ globus_l_gfs_data_write_eof_cb(
         op->data_handle,
         op->user_arg);
     */
+    reply->type = GLOBUS_GFS_IPC_TYPE_TRANSFER;
+    reply->id = op->id;
+    reply->result = error ? 
+        globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS;
              
     globus_gfs_ipc_reply_finished(
         op->ipc_handle,
@@ -1549,6 +1553,27 @@ globus_gridftp_server_finished_transfer(
         
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
+            globus_gfs_ipc_event_reply_t *      event_reply;   
+            globus_gfs_ipc_reply_t *            reply;   
+            reply = (globus_gfs_ipc_reply_t *) 
+                globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+            event_reply = (globus_gfs_ipc_event_reply_t *) 
+                globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+         
+            event_reply->id = op->id;
+            event_reply->recvd_bytes = op->recvd_bytes[0];
+            event_reply->recvd_ranges = op->recvd_ranges;
+            
+            event_reply->type = GLOBUS_I_GFS_EVENT_BYTES_RECVD;
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                event_reply);
+
+            event_reply->type = GLOBUS_I_GFS_EVENT_RANGES_RECVD;
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                event_reply);
+
 /*            globus_gridftp_server_control_event_send_perf(
                op->control_op,
                0,
@@ -1559,18 +1584,12 @@ globus_gridftp_server_finished_transfer(
 */           
             /* XXX mode s only */
             /* racey shit here */
-            globus_gfs_ipc_reply_t *            reply;   
-            reply = (globus_gfs_ipc_reply_t *) 
-                globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-
-            reply->type = GLOBUS_GFS_IPC_TYPE_TRANSFER;
-            reply->id = op->id;
-            reply->result = result;
-            reply->event = GLOBUS_I_GFS_EVENT_DISCONNECTED;
-        
+         
+            event_reply->type = GLOBUS_I_GFS_EVENT_DISCONNECTED;        
             globus_gfs_ipc_reply_event(
                 op->ipc_handle,
-                reply);
+                event_reply);
+        
             /*
             op->event_callback(
                 op->instance,
@@ -1578,6 +1597,10 @@ globus_gridftp_server_finished_transfer(
                 op->data_handle,
                 op->user_arg);
             */
+            reply->type = GLOBUS_GFS_IPC_TYPE_TRANSFER;
+            reply->id = op->id;
+            reply->result = result;
+            reply->event = GLOBUS_I_GFS_EVENT_DISCONNECTED;
                      
             globus_gfs_ipc_reply_finished(
                 op->ipc_handle,
@@ -1604,18 +1627,19 @@ globus_gridftp_server_finished_transfer(
         globus_i_gfs_data_handle_close(op->data_handle);
         /* racey shit here */
         globus_gfs_ipc_reply_t *            reply;   
+        globus_gfs_ipc_event_reply_t *            event_reply;   
         reply = (globus_gfs_ipc_reply_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-     
-        reply->type = GLOBUS_GFS_IPC_TYPE_TRANSFER;
-        reply->id = op->id;
-        reply->result = result;
-        reply->event = GLOBUS_I_GFS_EVENT_DISCONNECTED;
+        event_reply = (globus_gfs_ipc_event_reply_t *) 
+            globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+    
+        event_reply->type = GLOBUS_I_GFS_EVENT_DISCONNECTED;
+        event_reply->id = op->id;
     
         globus_gfs_ipc_reply_event(
             op->ipc_handle,
-            reply);
-       
+            event_reply);
+    
         /*
         op->event_callback(
             op->instance,
@@ -1623,6 +1647,10 @@ globus_gridftp_server_finished_transfer(
             op->data_handle,
             op->user_arg);
         */
+        reply->type = GLOBUS_GFS_IPC_TYPE_TRANSFER;
+        reply->id = op->id;
+        reply->result = result;
+        reply->event = GLOBUS_I_GFS_EVENT_DISCONNECTED;
                  
         globus_gfs_ipc_reply_finished(
             op->ipc_handle,
@@ -1801,14 +1829,13 @@ globus_gridftp_server_flush_queue(
     GlobusGFSName(globus_gridftp_server_flush_queue);
     
     globus_i_gfs_data_handle_close(op->data_handle);
-    {  /* racey shit here */
-    globus_gfs_ipc_reply_t *            event_reply;   
-    event_reply = (globus_gfs_ipc_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    {  
+    globus_gfs_ipc_event_reply_t *      event_reply;   
+    event_reply = (globus_gfs_ipc_event_reply_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
  
-    event_reply->type = GLOBUS_GFS_IPC_TYPE_EVENT;
+    event_reply->type = GLOBUS_I_GFS_EVENT_DISCONNECTED;
     event_reply->id = op->id;
-    event_reply->event = GLOBUS_I_GFS_EVENT_DISCONNECTED;
 
     globus_gfs_ipc_reply_event(
         op->ipc_handle,
@@ -1992,35 +2019,42 @@ void
 globus_l_gfs_data_transfer_event_kickout(
     void *                              user_arg)
 {
-    GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
-    
+    globus_gfs_ipc_event_reply_t *      event_reply;   
+    GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
+
     bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
-    
+    event_reply = (globus_gfs_ipc_event_reply_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+         
+    event_reply->id = bounce_info->op->id;
+    event_reply->recvd_bytes = bounce_info->op->recvd_bytes[0];
+    event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
+                
     switch(bounce_info->event_type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
-        globus_gridftp_server_control_event_send_perf(
-           bounce_info->op->control_op,
-           0,
-           bounce_info->op->recvd_bytes[0]);
+            event_reply->type = GLOBUS_I_GFS_EVENT_BYTES_RECVD;
         break;
+        
       case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
-        globus_gridftp_server_control_event_send_restart(
-           bounce_info->op->control_op,
-           bounce_info->op->recvd_ranges);
+            event_reply->type = GLOBUS_I_GFS_EVENT_RANGES_RECVD;
         break;
         
       default:
         break;
     } 
-
+    globus_gfs_ipc_reply_event(
+        bounce_info->op->ipc_handle,
+        event_reply);
+        
     globus_free(bounce_info);       
 }
 
 void
 globus_i_gfs_data_transfer_event(
-    globus_i_gfs_server_instance_t *    instance,
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 transfer_id,
     int                                 event_type)
 {
     GlobusGFSName(globus_i_gfs_data_kickoff_event);
@@ -2035,8 +2069,8 @@ globus_i_gfs_data_transfer_event(
         goto error_alloc;
     }
     
-    bounce_info->op = instance->op;
     bounce_info->event_type = event_type;
+    bounce_info->op = (globus_l_gfs_data_operation_t *) transfer_id;
     
     result = globus_callback_register_oneshot(
         GLOBUS_NULL,
@@ -2083,10 +2117,9 @@ globus_i_gfs_data_node_start(
     res = globus_gfs_ipc_handle_create(
         &ipc_handle,
         &globus_gfs_ipc_default_iface,
-        handle,
+        system_handle,
         globus_l_gfs_data_ipc_error_cb,
         NULL);
-
     
     return res;
 }
