@@ -14,6 +14,7 @@ use Globus::Core::Paths;
 
 use Config;
 
+# NOTE: This package name must match the name of the .pm file!!
 package Globus::GRAM::JobManager::condor;
 
 @ISA = qw(Globus::GRAM::JobManager);
