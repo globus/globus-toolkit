@@ -17,7 +17,7 @@ AM_CONFIG_HEADER(config.h)
 # On solaris openssl needs the socket library
 case "$GLOBUS_HOST" in
   *sunos4* | *solaris* )
-        GPT_SET_LIBS("-lsocket")
+        GPT_SET_LIBS(["-lsocket"])
   ;;
   *)
   ;;

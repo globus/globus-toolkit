@@ -4,7 +4,6 @@ include $(top_srcdir)/globus_automake_targets
 Scripts= \
 	grid-cert-info \
 	grid-cert-renew \
-	grid-cert-request-config \
 	grid-change-pass-phrase \
 	grid-cert-request
 
