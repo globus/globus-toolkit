@@ -26,12 +26,13 @@ sub run_test
     unlink("core");
     unlink("$output_dir/$test_str.out");
     unlink("$output_dir/$test_str.err");
-#    unlink("$output_dir/$test_str.dbg");
+    unlink("$output_dir/$test_str.dbg");
     unlink("$output_dir/$test_str.fail");
 
     $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
 #    $ENV{"GLOBUS_XIO_DEBUG"} = "127,#$output_dir/$test_str.dbg,1";
-    $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "6";
+    $ENV{"GLOBUS_XIO_DEBUG"} = "72,#$output_dir/$test_str.dbg,1";
+    $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "3";
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
     $rc = system($command);

@@ -36,6 +36,8 @@ typedef enum  test_next_op_e
 
 typedef struct bounce_handle_s
 {
+    globus_mutex_t                      mutex;
+    globus_bool_t                       closed;
     globus_xio_driver_handle_t          dh;
 } bounce_handle_t;
 
@@ -67,6 +69,13 @@ bounce_data_cb(
     globus_size_t                       nbytes,
     void *                              user_arg);
 
+static void
+bounce_handle_destroy(
+    bounce_handle_t *                   handle)
+{
+    globus_mutex_destroy(&handle->mutex);
+    globus_free(handle);
+}
 
 static void
 test_bounce_finish_op(
@@ -169,8 +178,12 @@ test_bounce_next_op(
 
         case TEST_CLOSE:
             info->next_op = TEST_FINISH;
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_STATE,
+            ("[%s] : pre pass_close\n", _xio_name));
             res = globus_xio_driver_pass_close(op,
                 bounce_cb, (void*)info);
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_STATE,
+            ("[%s] : post pass_close\n", _xio_name));
             break;
 
         case TEST_FINISH:
@@ -216,6 +229,8 @@ bounce_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_STATE,
+            ("[%s] : result != Success\n", _xio_name));
         info->next_op = TEST_FINISH;
     }
 
@@ -246,6 +261,8 @@ bounce_data_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_STATE,
+            ("[%s] : result != Success\n", _xio_name));
         info->next_op = TEST_FINISH;
     }
 
@@ -276,13 +293,15 @@ globus_l_xio_bounce_open(
     info->bounce_count = 0;
     info->max_count = MAX_COUNT;
     info->start_op = TEST_OPEN;
-    info->handle = (bounce_handle_t *) globus_malloc(sizeof(bounce_handle_t));
+    info->handle = (bounce_handle_t *) globus_malloc(sizeof(bounce_handle_t));  
+    globus_mutex_init(&info->handle->mutex, NULL);
+    info->handle->closed = GLOBUS_FALSE;
 
     res = globus_xio_driver_pass_open(&info->handle->dh, op, 
                 bounce_cb, (void*)info);
     if(res != GLOBUS_SUCCESS)
     {
-        globus_free(info->handle);
+        bounce_handle_destroy(info->handle);
         globus_free(info);
         goto err;
     }

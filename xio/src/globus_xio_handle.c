@@ -112,8 +112,8 @@ static globus_bool_t                        globus_l_xio_active = GLOBUS_FALSE;
 
 GlobusDebugDefine(GLOBUS_XIO);
 
-globus_result_t
-static globus_l_xio_register_close(
+static globus_result_t
+globus_l_xio_register_close(
     globus_i_xio_op_t *                     op);
 
 static globus_result_t
@@ -183,6 +183,7 @@ globus_l_xio_hande_pre_close(
     globus_xio_callback_t                   cb,
     void *                                  user_arg)
 {
+    void *                                  driver_attr;
     int                                     ctr;
     globus_bool_t                           destroy_handle;
     globus_i_xio_op_t *                     op;
@@ -281,14 +282,18 @@ globus_l_xio_hande_pre_close(
     /* set up op */
     for(ctr = 0; ctr < handle->context->stack_size; ctr++)
     {
+        op->entry[ctr].attr = NULL;
         if(attr != NULL)
         {
-            GlobusIXIOAttrGetDS(op->entry[ctr].attr, attr,
+            driver_attr = NULL;
+            GlobusIXIOAttrGetDS(driver_attr, attr,
                 handle->context->entry[ctr].driver);
-        }
-        else
-        {
-            op->entry[ctr].attr = NULL;
+
+            if(driver_attr != NULL)
+            {
+                handle->context->entry[ctr].driver->attr_copy_func(
+                    &op->entry[ctr].attr, driver_attr);
+            }
         }
     }
     handle->close_op = op;
@@ -1057,7 +1062,6 @@ globus_l_xio_timeout_callback(
                 /* it is up to the timeout callback to set this to true */
                 rc = GLOBUS_FALSE;
                 /* cancel the sucker */
-                globus_assert(!op->progress);
                 globus_assert(op->_op_handle_timeout_cb != NULL);
 
                 /* if the driver has blocked the timeout don't call it */
@@ -1672,6 +1676,7 @@ globus_xio_register_open(
     globus_xio_callback_t                   cb,
     void *                                  user_arg)
 {
+    void *                                  driver_attr;
     globus_i_xio_op_t *                     op = NULL;
     globus_i_xio_handle_t *                 handle = NULL;
     globus_i_xio_target_t *                 target;
@@ -1760,14 +1765,17 @@ globus_xio_register_open(
     {
         context->entry[ctr].driver = target->entry[ctr].driver;
 
+        op->entry[ctr].attr = NULL;
         if(user_attr != NULL)
         {
-            GlobusIXIOAttrGetDS(op->entry[ctr].attr, user_attr, 
+            GlobusIXIOAttrGetDS(driver_attr, user_attr,
                 target->entry[ctr].driver);
-        }
-        else
-        {
-            op->entry[ctr].attr = NULL;
+
+            if(driver_attr != NULL)
+            {
+                context->entry[ctr].driver->attr_copy_func(
+                    &op->entry[ctr].attr, driver_attr);
+            }
         }
     }
 
@@ -2410,6 +2418,7 @@ globus_xio_open(
     globus_xio_attr_t                       user_attr,
     globus_xio_target_t                     user_target)
 {
+    void *                                  driver_attr = NULL;
     globus_i_xio_op_t *                     op = NULL;
     globus_i_xio_handle_t *                 handle = NULL;
     globus_i_xio_target_t *                 target;
@@ -2509,14 +2518,17 @@ globus_xio_open(
     {
         context->entry[ctr].driver = target->entry[ctr].driver;
 
+        op->entry[ctr].attr = NULL;
         if(user_attr != NULL)
         {
-            GlobusIXIOAttrGetDS(op->entry[ctr].attr,
-                user_attr, target->entry[ctr].driver);
-        }
-        else
-        {
-            op->entry[ctr].attr = NULL;
+            GlobusIXIOAttrGetDS(driver_attr, user_attr,
+                target->entry[ctr].driver);
+
+            if(driver_attr != NULL)
+            {
+                context->entry[ctr].driver->attr_copy_func(
+                    &op->entry[ctr].attr, driver_attr);
+            }
         }
     }
 

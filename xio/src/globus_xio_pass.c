@@ -92,6 +92,12 @@ globus_xio_driver_pass_open(
                         my_op->attr,
                         op);
         }
+
+        if(driver->attr_destroy_func != NULL && my_op->attr != NULL)
+        {
+            driver->attr_destroy_func(my_op->attr);
+        }
+
         my_op->in_register = GLOBUS_FALSE;
         globus_mutex_lock(&context->mutex);
         {
@@ -165,9 +171,9 @@ globus_xio_driver_finished_open(
             break;
 
         /* if user has already called close */
-        case GLOBUS_XIO_CONTEXT_STATE_CLOSING:
+        case GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING:
                 GlobusXIOContextStateChange(my_context,
-                    GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING);
+                    GLOBUS_XIO_CONTEXT_STATE_CLOSING);
             break;
 
         default:
@@ -380,7 +386,6 @@ globus_xio_driver_pass_close(
             switch(my_context->state)
             {
                 case GLOBUS_XIO_CONTEXT_STATE_OPEN:
-                case GLOBUS_XIO_CONTEXT_STATE_OPENING:
                     GlobusXIOContextStateChange(my_context,
                         GLOBUS_XIO_CONTEXT_STATE_CLOSING);
                     break;
@@ -396,6 +401,7 @@ globus_xio_driver_pass_close(
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED:
+                case GLOBUS_XIO_CONTEXT_STATE_OPENING:
                     GlobusXIOContextStateChange(my_context,
                         GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING);
                     break;

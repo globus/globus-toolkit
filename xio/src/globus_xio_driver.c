@@ -632,6 +632,11 @@ globus_i_xio_driver_start_close(
                     op);
     my_op->in_register = GLOBUS_FALSE;
 
+    if(my_context->driver->attr_destroy_func != NULL && my_op->attr != NULL)
+    {
+        my_context->driver->attr_destroy_func(my_op->attr);
+    }
+
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
         globus_xio_driver_finished_close(op, res);
@@ -1244,6 +1249,54 @@ globus_i_xio_driver_dd_cntl(
 }
 
 globus_result_t
+globus_xio_driver_attr_cntl(
+    globus_xio_operation_t                  op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...)
+{
+    globus_result_t                         res;
+    va_list                                 ap;
+    GlobusXIOName(globus_xio_driver_data_descriptor_cntl);
+
+    GlobusXIODebugEnter();
+
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorParameter("op");
+        goto err;
+    }
+
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    res = globus_i_xio_driver_dd_cntl(op, driver, cmd, ap);
+
+    va_end(ap);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
 globus_xio_driver_data_descriptor_cntl(
     globus_xio_operation_t                  op,
     globus_xio_driver_t                     driver,
@@ -1627,10 +1680,29 @@ globus_xio_driver_set_attr(
     GlobusXIOName(globus_xio_driver_set_attr);
 
     GlobusXIODebugEnter();
+
+    if(driver == NULL)
+    {
+        return GlobusXIOErrorParameter("driver");
+    }
+    if(attr_init_func == NULL)
+    {
+        return GlobusXIOErrorParameter("attr_init_func");
+    }
+    if(attr_copy_func == NULL)
+    {
+        return GlobusXIOErrorParameter("attr_copy_func");
+    }
+    if(attr_destroy_func == NULL)
+    {
+        return GlobusXIOErrorParameter("attr_destroy_func");
+    }
+
     driver->attr_init_func = attr_init_func;
     driver->attr_copy_func = attr_copy_func;
     driver->attr_cntl_func = attr_cntl_func;
     driver->attr_destroy_func = attr_destroy_func;
+
     GlobusXIODebugExit();
 
     return GLOBUS_SUCCESS;

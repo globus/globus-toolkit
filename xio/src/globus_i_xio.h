@@ -171,6 +171,7 @@ extern char * globus_i_xio_context_state_name_table[];
 
 typedef enum globus_i_xio_context_state_e
 {
+    GLOBUS_XIO_CONTEXT_STATE_NONE,
     GLOBUS_XIO_CONTEXT_STATE_OPENING,
     GLOBUS_XIO_CONTEXT_STATE_OPEN,
     GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED,
