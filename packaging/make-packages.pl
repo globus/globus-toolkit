@@ -774,7 +774,7 @@ sub package_sources()
 
 	if ( $faster )
 	{
-	    if ( -e "$package_output/${package}-.*" )
+	    if ( -e <$package_output/${package}-.*> )
 	    {
 		print "-faster set.  ${package} exists, skipping.\n";
 		next;
@@ -957,7 +957,7 @@ sub package_source_tar()
 		       "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
 	} else {
-	    log_system("mkdir $destdir/pkgdata/", "$pkglog/$package");
+	    log_system("mkdir -p $destdir/pkgdata/", "$pkglog/$package");
 	    paranoia "mkdir failed during $package.";
 	    log_system("cp $top_dir/package-list/$package/pkg_data_src.gpt  $destdir/pkgdata/pkg_data_src.gpt.in",
 		   "$pkglog/$package");
