@@ -41,6 +41,7 @@ extern struct sockaddr_in ctrl_addr;
 #endif /* GSSAPI_KRB5 */
 #ifdef GSSAPI_GLOBUS
 char* gss_services[] = { "host", 0 };
+extern const gss_OID_desc * const gss_untrusted_group;
 #endif /* GSSAPI_GLOBUS */
 
 #include <gssapi.h>
