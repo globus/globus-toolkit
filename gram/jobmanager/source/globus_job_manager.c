@@ -136,7 +136,18 @@ globus_l_gram_getenv_var(
     char *				default_name);
 
 static char *
-globus_l_gram_user_proxy_relocate();
+globus_l_gram_user_proxy_relocate(
+    globus_gram_jobmanager_request_t *	request);
+
+static
+globus_bool_t
+globus_l_gram_job_manager_using_gsi(
+    globus_gram_jobmanager_request_t *	request);
+
+static
+int
+globus_l_gram_job_manager_register_proxy_timout(
+    globus_gram_jobmanager_request_t *	request);
 
 static globus_bool_t
 globus_l_gram_status_file_cleanup(
@@ -342,7 +353,6 @@ int main(int argc,
     globus_result_t                     error;
     globus_callback_handle_t		stat_cleanup_poll_handle;
     globus_callback_handle_t            ttl_update_handle;
-    globus_callback_handle_t            proxy_expiration_handle;
     char *                              sleeptime_str;
     long                                sleeptime;
     int	                                debugging_without_client = 0;
@@ -1334,55 +1344,13 @@ int main(int argc,
     {
 	if (rc == GLOBUS_SUCCESS)
 	{
-	    /*
-	     * define the Globus object ids
-	     * This is regestered as a private enterprise
-	     * via IANA
-	     * http://www.isi.edu/in-notes/iana/assignments/enterprise-numbers
-	     *
-	     * iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
-	     * globus 3536
-	     * security 1
-	     * gssapi_ssleay 1
-	     */
-	    gss_OID_desc 			gsi_mech=
-		{9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
-	    gss_OID_set				mechs;
-	    int					present = 0;
-
-	    /*
-	     * relocate the user proxy to the gass cache and
-	     * return the local file name.
-	     */
-	    globus_jobmanager_log( request->jobmanager_log_fp,
-			   "JM: user proxy relocation\n");
-
-	    /*
-	     * Figure out if we're using GSI
-	     */
-	    major_status = gss_indicate_mechs(&minor_status,
-					      &mechs);
-	    if(major_status == GSS_S_COMPLETE)
+	    if(globus_l_gram_job_manager_using_gsi(request))
 	    {
-		major_status = gss_test_oid_set_member(
-			&minor_status,
-			&gsi_mech,
-			mechs,
-			&present);
-		if(major_status != GSS_S_COMPLETE)
-		{
-		    present = 0;
-		}
-		gss_release_oid_set(&minor_status, &mechs);
-	    }
-
-	    /* If so, relocate our delegated proxy */
-	    if (present)
-	    {
-		graml_env_x509_user_proxy =
-		    globus_l_gram_user_proxy_relocate(request);
 		globus_jobmanager_log( request->jobmanager_log_fp,
 		      "JM: GSSAPI type is GSI\n");
+
+		graml_env_x509_user_proxy =
+		    globus_l_gram_user_proxy_relocate(request);
 
 		if ((!graml_env_x509_user_proxy))
 		{
@@ -1393,6 +1361,15 @@ int main(int argc,
 		}
 		else
 		{
+		    globus_jobmanager_log(
+			request->jobmanager_log_fp,
+			"JM: set JM env X509_USER_PROXY to point to %s\n",
+			graml_env_x509_user_proxy);
+
+		    globus_libc_setenv( "X509_USER_PROXY",
+			    graml_env_x509_user_proxy,
+			    GLOBUS_TRUE );
+
 		    globus_l_gram_rsl_env_add(
 			    request->rsl,
 			    "X509_USER_PROXY",
@@ -1423,69 +1400,14 @@ int main(int argc,
 
     if (graml_env_x509_user_proxy)
     {
-	gss_cred_id_t			cred;
-	OM_uint32			lifetime;
-	globus_reltime_t		delay_time;
+	/* The proxy timeout callback is registered to happen shortly
+	 * (5 minutes) before the job manager's proxy will expire. We
+	 * do this to save state and exit the job manager so another
+	 * can be restarted in it's place.
+	 */
+	rc = globus_l_gram_job_manager_register_proxy_timout(
+		request);
 
-	globus_libc_setenv( "X509_USER_PROXY",
-			    graml_env_x509_user_proxy,
-			    GLOBUS_TRUE );
-
-	globus_jobmanager_log( request->jobmanager_log_fp,
-		       "JM: set JM env X509_USER_PROXY to point to %s\n",
-		       graml_env_x509_user_proxy);
-
-	major_status = globus_gss_assist_acquire_cred(
-		&minor_status,
-		GSS_C_BOTH,
-		&cred);
-
-	if(major_status != GSS_S_COMPLETE)
-	{
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			  "JM: problem reading user proxy\n");
-	}
-	else
-	{
-	    major_status = gss_inquire_cred(
-		    &minor_status,
-		    cred,
-		    NULL,
-		    &lifetime,
-		    NULL,
-		    NULL);
-
-	    if(major_status == GSS_S_COMPLETE)
-	    {
-		if (lifetime - 300 <= 0)
-		{
-		    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-		    request->failure_code =
-			GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-		    rc = GLOBUS_FAILURE;
-		    globus_jobmanager_log(
-			    request->jobmanager_log_fp,
-			    "JM: user proxy lifetime is less than minimum (5 minutes)\n");
-		}
-		else
-		{
-		    /* set timer */
-		    GlobusTimeReltimeSet(delay_time, lifetime - 300, 0);
-		    globus_callback_register_oneshot(&proxy_expiration_handle,
-						     &delay_time,
-						     globus_l_gram_proxy_expiration,
-						     (void *)request,
-						     GLOBUS_NULL,
-						     GLOBUS_NULL);
-		}
-
-	    }
-	    else
-	    {
-		globus_jobmanager_log(request->jobmanager_log_fp,
-			      "JM: problem reading user proxy\n");
-	    }
-	}
     }
 
     if (rc == GLOBUS_SUCCESS && request->save_state == GLOBUS_TRUE)
@@ -3331,14 +3253,6 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-
-#define my_malloc(type,count) (type *) globus_libc_malloc(count*sizeof(type))
-
-/*
- * I'm not sure why this callback doesn't process the query directly
- * here--it's been like this for a long time.
- * -joe
- */
 void
 globus_l_jm_http_query_callback(
     void *				arg,
@@ -3591,7 +3505,8 @@ globus_l_jm_http_query_handler(
 	        rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	    else
 	    {
-	        callback = my_malloc(globus_l_gram_client_contact_t,1);
+	        callback =
+		    globus_libc_malloc(sizeof(globus_l_gram_client_contact_t));
 	        callback->contact = globus_libc_strdup(url);
 	        callback->job_state_mask = mask;
 	        callback->failed_count   = 0;
@@ -3735,8 +3650,9 @@ globus_l_gram_proxy_expiration(
     globus_cond_signal(&request->cond);
     globus_mutex_unlock(&request->mutex);
 
-    return GLOBUS_FALSE;
+    return GLOBUS_TRUE;
 }
+/* globus_l_gram_proxy_expiration() */
 
 void
 globus_l_gram_set_state_file(char *uniq_id)
@@ -4365,3 +4281,147 @@ error_exit:
     return GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_REMOTE_IO_URL;
 }
 /* globus_l_gram_job_manager_create_remote_io_file() */
+
+/**
+ * Check to see if we are using GSI.
+ *
+ * Checks the GSSAPI implementation mechanisms to decide if we
+ * are using the GSI implementation of the GSSAPI specification.
+ * If so, we can do some nice tricks like relocation of a user proxy
+ * into the user's GASS cache.
+ *
+ * @param request
+ *        The request we are processing. Used for logging.
+ *
+ * @return This function returns GLOBUS_TRUE if the job manager is
+ * using GSI, GLOBUS_FALSE otherwise.
+ */
+static
+globus_bool_t
+globus_l_gram_job_manager_using_gsi(
+    globus_gram_jobmanager_request_t *	request)
+{
+    OM_uint32				major_status;
+    OM_uint32				minor_status;
+    /*
+     * define the Globus object ids
+     * This is regestered as a private enterprise
+     * via IANA
+     * http://www.isi.edu/in-notes/iana/assignments/enterprise-numbers
+     *
+     * iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+     * globus 3536
+     * security 1
+     * gssapi_ssleay 1
+     */
+    gss_OID_desc 			gsi_mech=
+	    {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
+    gss_OID_set				mechs;
+    int					present = 0;
+
+    /*
+     * relocate the user proxy to the gass cache and
+     * return the local file name.
+     */
+    globus_jobmanager_log(
+	    request->jobmanager_log_fp,
+	    "JM: user proxy relocation\n");
+
+    /*
+     * Figure out if we're using GSI
+     */
+    major_status = gss_indicate_mechs(&minor_status,
+				      &mechs);
+    if(major_status == GSS_S_COMPLETE)
+    {
+	major_status = gss_test_oid_set_member(
+		&minor_status,
+		&gsi_mech,
+		mechs,
+		&present);
+	if(major_status != GSS_S_COMPLETE)
+	{
+	    present = 0;
+	}
+	gss_release_oid_set(&minor_status, &mechs);
+    }
+
+    return (present ? GLOBUS_TRUE : GLOBUS_FALSE);
+}
+/* globus_l_gram_job_manager_using_gsi() */
+
+/**
+ * Register function to be called before proxy expires
+ *
+ * @param request
+ */
+static
+int
+globus_l_gram_job_manager_register_proxy_timout(
+    globus_gram_jobmanager_request_t *	request)
+{
+    int					rc;
+    gss_cred_id_t			cred;
+    OM_uint32				lifetime;
+    OM_uint32				major_status;
+    OM_uint32				minor_status;
+    globus_reltime_t			delay_time;
+
+    /*
+     * According to RFC 2743, this shouldn't be necessary, but GSI
+     * doesn't support inquire_cred with the default credential
+     */
+    major_status = globus_gss_assist_acquire_cred(
+	    &minor_status,
+	    GSS_C_BOTH,
+	    &cred);
+
+    if(major_status != GSS_S_COMPLETE)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+		      "JM: problem reading user proxy\n");
+    }
+    else
+    {
+	major_status = gss_inquire_cred(
+		&minor_status,
+		cred,
+		NULL,
+		&lifetime,
+		NULL,
+		NULL);
+
+	if(major_status == GSS_S_COMPLETE)
+	{
+	    if (lifetime - 300 <= 0)
+	    {
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+		rc = GLOBUS_FAILURE;
+		globus_jobmanager_log(
+			request->jobmanager_log_fp,
+			"JM: user proxy lifetime is less than minimum (5 minutes)\n");
+	    }
+	    else
+	    {
+		/* set timer */
+		GlobusTimeReltimeSet(delay_time, lifetime - 300, 0);
+		globus_callback_register_oneshot(GLOBUS_NULL,
+						 &delay_time,
+						 globus_l_gram_proxy_expiration,
+						 (void *)request,
+						 GLOBUS_NULL,
+						 GLOBUS_NULL);
+	    }
+	    gss_release_cred(&minor_status, &cred);
+	}
+	else
+	{
+	    globus_jobmanager_log(request->jobmanager_log_fp,
+			  "JM: problem reading user proxy\n");
+	}
+    }
+    return rc;
+}
+/* globus_l_gram_job_manager_register_proxy_timout() */

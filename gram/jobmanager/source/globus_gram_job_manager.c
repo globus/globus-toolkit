@@ -1,19 +1,18 @@
-/******************************************************************************
-globus_gram_job_manager.c 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gram_job_manager.c Globus Job Management API
+ *
+ * CVS Information:
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
+ */
+#endif
 
-Description:
-    Globus Job Management API
-
-CVS Information:
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-
-/******************************************************************************
-                             Include header files
-******************************************************************************/
+/*
+ * Include header files
+ */
 #include "globus_common.h"
 #include "globus_gram_protocol.h"
 #include "globus_gram_job_manager.h"
@@ -26,7 +25,6 @@ CVS Information:
 #include <sys/stat.h>
 #include <string.h>
 #include <strings.h>
-#include <ctype.h>
 
 /*
  * Module specific prototypes
