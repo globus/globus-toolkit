@@ -1,6 +1,80 @@
 #if !defined(GLOBUS_GRIM_DEVEL_H)
 #define GLOBUS_GRIM_DEVEL_H 1
 
+/**
+ *  @anchor globus_grim_devel_api
+ *  @mainpage Globus GRIM development api.
+ *
+ *  <b>The GRIM Assertion</b>
+ *
+ *  Scheme for grim assertion format:
+ *
+ *  <element name="GRIMAssertion">
+ *      <!-- A version since one always regrets leaving out a version -->
+ *      <element name="Version" type="integer">
+ *      <!-- The Grid Id (e.g. DN) of the service -->
+ *      <element name="ServiceGridId" type="saml:NameIdentifierType"/>
+ *      <!-- The Local Id (e.g. unix username) of the service -->
+ *      <element name="ServiceLocalId" type="saml:NameIdentifierType"/>
+ *      <!-- Client(s) authorized to connect -->
+ *      <element name="AuthorizedClientId" type="saml:NameIdentifierType"
+ *            maxOccurs="unbounded"/>
+ *      <!-- PortType(s) the unix account is authorized to run -->
+ *      <element name="AuthorizedPortType" type="QName"
+ *            maxOccurs="unbounded"/>
+ *  </element>
+ *
+ *  <b>The GRIM configuration file:</b>
+ * 
+ *  The GRIM configuration is an xml file that contains information usedd
+ *  in configuring grim.  The grim is run with the effective userid of 
+ *  root, then this file will be found at /etc/grid-security/grim-conf.xml.
+ *  If the euid is not root then it will be found at 
+ *  $HOME/.globus/grim-conf.xml.  If no configuration file is found
+ *  all default values are used. The default values follow:
+ *
+ *      gridmap file:           /etc/grid-security/grid-mapfile
+ *      ca_cert_directory       /etc/grid-security/certificates/
+ *      certficate file         /etc/grid-security/hostcert.pem
+ *      key file                /etc/grid-security/hostkey.pem
+ *      port type file          /etc/grid-security/port_type.xml
+ *      max time                14400 [10 days in minutes]
+ *      default time            1440  [1 day in minutes]
+ *      key bits                512
+ *
+ *  example config file:
+ *      <?xml version="1.0" encoding="UTF-8"?>
+ *      <grim_conf>
+ *          <conf max_time="240"/>
+ *          <conf default_time="24"/>
+ *          <conf key_bits="512"/>
+ *          <conf cert_filename="/homes/bresnaha/.globus/usercert.pem"/>
+ *          <conf key_filename="/tmp/x509up_u589"/>
+ *          <conf gridmap_filename="/etc/grid-security/grid-mapfile"/>
+ *          <conf port_type_filename="/etc/grid-security/port_type.xml"/>
+ *      </grim_conf>
+ *
+ *
+ *  <b>Port type file:</b>
+ *
+ *  The port type file contains mapping of port types to what users and
+ *  groups are allowed acces to these port types.
+ *
+ *  example port type file:
+ *
+ *      <?xml version="1.0" encoding="UTF-8"?>
+ *      <authorized_port_types>
+ *          <port_type username="bresnaha">port type.html</port_type>
+ *          <port_type username="bresnaha">port type</port_type>
+ *          <port_type group="xraycmt">xray group</port_type>
+ *          <port_type group="mcsz">mcsz group</port_type>
+ *          <port_type group="bad">bad group</port_type>
+ *          <port_type username="bresnaha">port type again</port_type>
+ *          <port_type username="bresnaha">port type.html last</port_type>
+ *      </authorized_port_types>
+ *
+ *  
+ */
 #include "globus_gss_assist.h"
 #include "globus_common.h"
 #include "globus_error.h"
@@ -20,6 +94,11 @@
 #define GLOBUS_GRIM_DEFAULT_TIME          12*60
 #define GLOBUS_GRIM_DEFAULT_KEY_BITS      512
 
+/**
+ *  GlobusGrimFreeNullArray
+ *
+ *  A macro used to free null terminated arrays.
+ */
 #define GlobusGrimFreeNullArray(a)                          \
 {                                                           \
     int __ctr = 0;                                          \

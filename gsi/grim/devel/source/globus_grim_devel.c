@@ -38,10 +38,25 @@ struct globus_l_grim_conf_info_s
 
 struct globus_l_grim_assertion_s
 {
+    char *                                  version;
     char *                                  subject;
     char *                                  username;
     char **                                 dna;
     char **                                 port_types;
+
+    int                                     parse_state;
+    globus_list_t *                         dna_list;
+    globus_list_t *                         pt_list;
+};
+
+enum globus_l_grim_assertion_parse_state_e
+{
+    GLOBUS_L_GRIM_PARSE_NONE,
+    GLOBUS_L_GRIM_PARSE_USERNAME,
+    GLOBUS_L_GRIM_PARSE_GRID_ID,
+    GLOBUS_L_GRIM_PARSE_VERSION,
+    GLOBUS_L_GRIM_PARSE_PORT_TYPE,
+    GLOBUS_L_GRIM_PARSE_CLIENT_ID
 };
 
 /*************************************************************************
@@ -52,6 +67,11 @@ globus_l_grim_parse_conf_file(
     struct globus_l_grim_conf_info_s *      info,
     FILE *                                  fptr);
  
+globus_result_t
+globus_l_grim_parse_assertion(
+    struct globus_l_grim_assertion_s *      info,
+    char *                                  out_string);
+
 globus_result_t
 globus_l_grim_build_assertion(
     struct globus_l_grim_assertion_s *      info,
@@ -189,6 +209,44 @@ globus_grim_assertion_init_from_buffer(
     char *                                  buffer,
     int                                     buffer_length)
 {
+    struct globus_l_grim_assertion_s *      ass;
+    
+    if(assertion == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: assertion parameter NULL."));
+    }
+    if(buffer == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: buffer parameter NULL."));
+    }
+    if(buffer_length <= 0)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: invalid buffer_length."));
+    }
+
+    ass = (struct globus_l_grim_assertion_s *)
+                globus_malloc(sizeof(struct globus_l_grim_assertion_s));
+    if(ass == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: malloc failed."));
+    }
+
     return GLOBUS_SUCCESS;
 }
     
@@ -1359,6 +1417,9 @@ globus_l_grim_parse_conf_file(
     offset += strlen(new);                              \
 }
 
+/*
+ *  creating an assertion string
+ */
 globus_result_t
 globus_l_grim_build_assertion(
     struct globus_l_grim_assertion_s *      info,
@@ -1425,3 +1486,186 @@ globus_l_grim_build_assertion(
     return GLOBUS_SUCCESS;
 }
 
+/*
+ *  parsing an assertion string
+ */
+static void
+globus_l_grim_assertion_end(
+    void *                                  data,
+    const char *                            el)
+{
+    struct globus_l_grim_assertion_s *      info;
+
+    info = (struct globus_l_grim_assertion_s *) data;
+
+    info->parse_state = GLOBUS_L_GRIM_PARSE_NONE;
+}
+
+static void
+globus_l_grim_assertion_start(
+    void *                                  data,
+    const char *                            el,
+    const char **                           attr)
+{
+    struct globus_l_grim_assertion_s *      info;
+
+    info = (struct globus_l_grim_assertion_s *) data;
+
+    info->parse_state = GLOBUS_L_GRIM_PARSE_NONE;
+    if(strcmp(el, "ServerGridId") == 0)
+    {
+        info->parse_state = GLOBUS_L_GRIM_PARSE_GRID_ID;
+    }
+    else if(strcmp(el, "ServiceLocalId") == 0)
+    {
+        /* for now hostname is not stored
+        for(ctr = 0; attr[ctr] != NULL; ctr += 2)
+        {
+            if(strcmp(attr[ctr], "NameQualifier") == 0)
+            {
+            }
+        }
+        */
+        info->parse_state = GLOBUS_L_GRIM_PARSE_USERNAME;
+    }
+    else if(strcmp(el, "Version") == 0)
+    {
+        info->parse_state = GLOBUS_L_GRIM_PARSE_VERSION;
+    }
+    else if(strcmp(el, "authorizedClientId") == 0)
+    {
+        info->parse_state = GLOBUS_L_GRIM_PARSE_CLIENT_ID;
+    }
+    else if(strcmp(el, "authorizedPortType") == 0)
+    {
+        info->parse_state = GLOBUS_L_GRIM_PARSE_PORT_TYPE;
+    }
+}
+
+static void
+globus_l_grim_assertion_cdata(
+    void *                                  data,
+    const XML_Char *                        s,
+    int                                     len)
+{
+    char *                                  tmp_s;
+    struct globus_l_grim_assertion_s *      info;
+
+    info = (struct globus_l_grim_assertion_s *) data;
+
+    switch(info->parse_state)
+    {
+        case GLOBUS_L_GRIM_PARSE_USERNAME:
+            tmp_s = malloc(sizeof(char) * (len + 1));
+            strncpy(tmp_s, s, len);
+            info->username = tmp_s;
+
+            break;
+    
+        case GLOBUS_L_GRIM_PARSE_GRID_ID:
+            tmp_s = malloc(sizeof(char) * (len + 1));
+            strncpy(tmp_s, s, len);
+            info->subject = tmp_s;
+
+            break;
+
+        case GLOBUS_L_GRIM_PARSE_VERSION:
+            tmp_s = malloc(sizeof(char) * (len + 1));
+            strncpy(tmp_s, s, len);
+            info->version = tmp_s;
+
+            break;
+
+        case GLOBUS_L_GRIM_PARSE_CLIENT_ID:
+            tmp_s = malloc(sizeof(char) * (len + 1));
+            strncpy(tmp_s, s, len);
+            globus_list_insert(&info->dna_list, tmp_s);
+
+            break;
+
+        case GLOBUS_L_GRIM_PARSE_PORT_TYPE:
+            tmp_s = malloc(sizeof(char) * (len + 1));
+            strncpy(tmp_s, s, len);
+            globus_list_insert(&info->pt_list, tmp_s);
+
+            break;
+    }
+}
+
+globus_result_t
+globus_l_grim_parse_assertion(
+    struct globus_l_grim_assertion_s *      info,
+    char *                                  assertion)
+{
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_list_t *                         list;
+    int                                     ctr;
+    XML_Parser                              p = NULL;
+
+    info->dna_list = NULL;
+    info->pt_list = NULL;
+    
+    p = XML_ParserCreate(NULL);
+    if(p == NULL)
+    {
+        res = globus_error_put(
+                  globus_error_construct_string(
+                      GLOBUS_GRIM_DEVEL_MODULE,
+                      GLOBUS_NULL,
+                      "[globus_grim_devel]:: could not create parser."));
+        goto exit;
+    }
+
+    XML_SetElementHandler(p, globus_l_grim_assertion_start, 
+        globus_l_grim_assertion_end);
+    XML_SetCharacterDataHandler(p, globus_l_grim_assertion_cdata);
+    XML_SetUserData(p, info);
+    
+    if(XML_Parse(p, assertion, strlen(assertion), 0) == XML_STATUS_ERROR)
+    {
+        res = globus_error_put( 
+                  globus_error_construct_string(
+                    GLOBUS_GRIM_DEVEL_MODULE,
+                    GLOBUS_NULL,
+                    "[globus_grim_devel]:: xml parse failed."));
+        goto exit;
+    }
+
+    info->dna = (char **) globus_malloc(
+                            (globus_list_size(info->dna_list) + 1)
+                                 * sizeof(char *));
+
+    ctr = 0;
+    for(list = info->dna_list; 
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        info->dna[ctr] = globus_list_first(list);
+        ctr++;
+    }
+    info->dna[ctr] = NULL;
+    globus_list_free(info->dna_list);
+
+    info->port_types = (char **) globus_malloc(
+                                    (globus_list_size(info->pt_list) + 1)
+                                        * sizeof(char *));
+    ctr = 0;
+    for(list = info->pt_list; 
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        info->port_types[ctr] = globus_list_first(list);
+        ctr++;
+    }
+    info->port_types[ctr] = NULL;
+    globus_list_free(info->pt_list);
+
+  exit:
+
+    if(p != NULL)
+    {
+        XML_ParserFree(p);
+    }
+
+    return res;
+}
