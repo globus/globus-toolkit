@@ -91,8 +91,11 @@ sub setup_state_dir
 	        die "Can't set permissions on $built_path\n";
 	}
     }
-
-    chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
+    
+    if(!((stat($state_dir))[2] & oct(01777)))
+    {
+        chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
+    }
 
     print "Done.\n";
 }
