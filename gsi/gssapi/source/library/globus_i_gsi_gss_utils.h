@@ -117,7 +117,7 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_)
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_)
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(_LEVEL_, _MESSAGE_)
-#define GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT_OBJECT(_TYPE_, _OBJ_)
+#define GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT_OBJECT(_LEVEL,_TYPE_, _OBJ_)
 
 #endif
 
