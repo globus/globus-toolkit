@@ -13,9 +13,11 @@ LAC_DOXYGEN(["../library"])
 
 AC_OUTPUT(
         Makefile
+        library/Makefile
         pkgdata/Makefile
         pkgdata/pkg_data_src.gpt
 	doxygen/Makefile
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal
+        version.h
 )
