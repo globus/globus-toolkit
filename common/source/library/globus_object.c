@@ -1,8 +1,6 @@
 
-#include "config.h"
-#include "globus_common.h"
-
-#include <assert.h>
+#include "globus_object.h"
+#include "globus_libc.h"
 
 
 globus_bool_t
@@ -419,4 +417,6 @@ globus_object_printable_to_string (globus_object_t * printable)
   }
   else return NULL;
 }
+
+
 

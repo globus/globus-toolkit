@@ -14,66 +14,132 @@ CVS Information:
 #ifndef GLOBUS_INCLUDE_HANDLE_TABLE_H
 #define GLOBUS_INCLUDE_HANDLE_TABLE_H
 
-#include "globus_common.h"
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#include "globus_common_include.h"
+#include "globus_hashtable.h"
+#include GLOBUS_THREAD_INCLUDE
  
 EXTERN_C_BEGIN
 
+enum 
+{ 
+    GLOBUS_HANDLE_TABLE_NO_HANDLE = 0 
+};
+
+struct globus_handle_table_s;
+
+typedef struct globus_handle_table_s *                      globus_handle_table_t;
 typedef int globus_handle_t;
 
-enum { GLOBUS_HANDLE_TABLE_NO_HANDLE = 0 };
-
-typedef struct
-{
-    globus_handle_t				last_handle;
-    globus_hashtable_t				table;
-    globus_mutex_t				lock;
-} globus_handle_table_t;
-
+/**
+ *  Initialize a table of unique reference counted handles.
+ * 
+ *  @param  handle_table
+ *          the table of unique handles we want to use.
+ *
+ */
 void
 globus_handle_table_init(
-    globus_handle_table_t *			handle_table);
+    globus_handle_table_t *			                        handle_table);
 
+/**
+ *  Destroy a handle table
+ */
 void
 globus_handle_table_destroy(
-    globus_handle_table_t *			handle_table);
+    globus_handle_table_t *			                        handle_table);
 
+/**
+ *  insert a piece of memory into the table for reference counting
+ * 
+ *  @param  handle_table
+ *          the table of unique handles we want to use.
+ *          
+ *  @param  value
+ *          the piece of memory to reference count
+ * 
+ *  @param  initial_refs
+ *          the intial reference count of this piece of memory.
+ */
 globus_handle_t
 globus_handle_table_insert(
-    globus_handle_table_t *			handle_table,
-    void *					value,
-    int						initial_refs);
+    globus_handle_table_t *			                        handle_table,
+    void *					                                value,
+    int						                                initial_refs);
 
+/**
+ * add a reference to a handle table entry.
+ * 
+ *  @param  handle_table
+ *          the table of unique handles we want to use.
+ *          
+ *  @param  handle       
+ *          the handle that we want to increment
+ * 
+ * Returns:  GLOBUS_TRUE if the handle is still referenced.
+ *
+ */
 globus_bool_t
 globus_handle_table_increment_reference(
-    globus_handle_table_t *			handle_table,
-    globus_handle_t				handle);
+    globus_handle_table_t *			                        handle_table,
+    globus_handle_t				                            handle);
 
+/**
+ *  increment the reference count by inc
+ * 
+ *  @param  handle_table
+ *          the table of unique handles we want to use.
+ *          
+ *  @param  handle       
+ *          the handle that we want to increment
+ * 
+ * Returns:  GLOBUS_TRUE if the handle is still referenced.
+ *
+ */
 globus_bool_t
 globus_handle_table_increment_reference_by(
-    globus_handle_table_t *			handle_table,
-    globus_handle_t				handle,
-    unsigned int                                inc);
+    globus_handle_table_t *			                        handle_table,
+    globus_handle_t				                            handle,
+    unsigned int                                            inc);
 
+/**
+ *  Remove a reference to a handle table entry,
+ *              deleting the entry if no more references
+ *              exist.
+ * 
+ *  @param  handle_table
+ *          the table of unique handles we want to use.
+ *          
+ *  @param  handle       
+ *          the handle that we want to decrement
+ * 
+ *  Returns  GLOBUS_TRUE if the handle is still referenced.
+ *
+ */
 globus_bool_t
 globus_handle_table_decrement_reference(
-    globus_handle_table_t *			handle_table,
-    globus_handle_t				handle);
+    globus_handle_table_t *			                        handle_table,
+    globus_handle_t				                            handle);
 
+/**
+ * Find the void * corresponding to a unique
+ *              handle. Does not update the reference count.
+ * 
+ *  @param  handle_table
+ *          the table of unique handles we want to use
+ *                  
+ *  @param  handle
+ *          the handle that we want to look up
+ * 
+ * Returns:  the data value associated with the handle
+ *
+ */
 void *
 globus_handle_table_lookup(
-    globus_handle_table_t *			handle_table,
-    globus_handle_t				handle);
+    globus_handle_table_t *			                        handle_table,
+    globus_handle_t				                            handle);
 
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_HANDLE_TABLE_H */
+
+

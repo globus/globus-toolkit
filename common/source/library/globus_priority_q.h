@@ -7,18 +7,9 @@
  *
  ********************************************************************/
 
-#include "globus_common.h"
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
+#include "globus_common_include.h"
+#include "globus_memory.h"
+#include "globus_list.h"
 
 EXTERN_C_BEGIN
 
@@ -95,3 +86,5 @@ globus_priority_q_priority_at(
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_PRIORITY_Q_H */
+
+

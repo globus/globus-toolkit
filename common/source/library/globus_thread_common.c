@@ -12,21 +12,15 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-
-#if HAVE_SIGNAL_H
-#include <signal.h>
-#endif
+#include "globus_libc.h"
+#include "globus_callback.h"
+#include "globus_libc.h"
+#include "globus_print.h"
 
 #define THREAD_STACK_INIT_SIZE 32
-
 
 typedef struct globus_l_thread_stack_node_s
 {
@@ -379,35 +373,10 @@ globus_l_thread_blocking_callback_destroy(void* p)
                                  (void *)GLOBUS_NULL);
 }
 
-void thread_print(char * s, ...)
-{
-    char tmp[1023];
-    int x;
-    va_list ap;
-    pid_t   pid = getpid();
-    
-#ifdef HAVE_STDARG_H
-        va_start(ap, s);
-#else
-	va_start(ap);
-#endif
-
-#if !defined(BUILD_LITE)
-    sprintf(tmp, "p#%dt#%ld::", pid, (long)globus_thread_self());
-    x = strlen(tmp);
-    vsprintf(&tmp[x], s, ap);
-
-    globus_libc_printf(tmp);
-    globus_thread_yield();
-#else
-    sprintf(tmp, "p#%dt#main::", pid);
-    x = strlen(tmp);
-    vsprintf(&tmp[x], s, ap);
-    printf(tmp);
-#endif
-   
-    fflush(stdin);
-}
+/*
+ *  not found in win32
+ */
+#ifndef TARGET_ARCH_WIN32
 
 int
 globus_i_thread_ignore_sigpipe(void)
@@ -444,3 +413,7 @@ globus_i_thread_ignore_sigpipe(void)
     }
 }
 /* globus_i_thread_ignore_sigpipe() */
+
+#endif
+
+

@@ -1,7 +1,7 @@
-
 #ifndef GLOBUS_COMMON_LIST_H
 #define GLOBUS_COMMON_LIST_H
 
+#include "globus_common_include.h"
 /********************************************************************
  *
  * This file defines the list_t type
@@ -9,16 +9,7 @@
  *
  ********************************************************************/
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
- 
+
 EXTERN_C_BEGIN
 
 typedef struct globus_list 
@@ -109,3 +100,5 @@ globus_list_free (globus_list_t *head);
 EXTERN_C_END
 
 #endif /* GLOBUS_LIST_H */
+
+

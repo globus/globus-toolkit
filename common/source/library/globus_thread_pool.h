@@ -1,8 +1,8 @@
 #if !defined(GLOBUS_THREAD_POOL_H)
 #define GLOBUS_THREAD_POOL_H 1
 
-#include "globus_common.h"
-
+#include "globus_common_include.h"
+#include GLOBUS_THREAD_INCLUDE
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
@@ -41,3 +41,5 @@ extern globus_module_descriptor_t       globus_i_thread_pool_module;
 EXTERN_C_END
 
 #endif
+
+

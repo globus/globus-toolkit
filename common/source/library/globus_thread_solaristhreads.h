@@ -258,3 +258,5 @@ extern globus_module_descriptor_t	globus_i_thread_module;
 EXTERN_C_END
 
 #endif /* ! defined(GLOBUS_INCLUDE_GLOBUS_THREAD) */
+
+

@@ -1,0 +1,5 @@
+no configure so:
+
+copy config.h.win to config.h and
+copy globus_common_config.h.win globus_common_config.h
+

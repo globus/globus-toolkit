@@ -18,17 +18,8 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common.h"
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#include "globus_common_include.h"
+#include GLOBUS_THREAD_INCLUDE
 
 EXTERN_C_BEGIN
 
@@ -38,58 +29,70 @@ EXTERN_C_BEGIN
 ******************************************************************************/
 /* memory management stuff */
 
-extern globus_mutex_t          globus_i_memory_mutex;
+extern globus_mutex_t                           globus_i_memory_mutex;
 
-typedef struct globus_l_memory_header_s
-{
-    globus_byte_t *            next;
-} globus_l_memory_header_t;
-
-typedef struct globus_memory_s
-{
-    int                        total_size;
-    int                        node_size;
-    int                        nodes_used;
-    int                        node_count;
-    int                        node_count_per_malloc;
-
-    globus_bool_t              destroyed;
-    globus_mutex_t             lock;
-
-    globus_byte_t *            first;
-    globus_byte_t **           free_ptrs;
-    int                        free_ptrs_size;
-    int                        free_ptrs_offset;
-} globus_memory_t;
+struct globus_memory_s;
+typedef struct globus_memory_s *                globus_memory_t;
 
 globus_bool_t
 globus_i_memory_pre_activate();
 
+/**
+ *  Initialize the globus memory management structure.
+ *
+ *  Before using any functions associate with a memory structure
+ *  this function must be called.
+ *
+ *  @param mem_info
+ *          The memory management datatype
+ *
+ *  @param node_size
+ *          The size of the memory to allocated with each pop.
+ *
+ *  @param node_count
+ *          The initial number of nodes allocated with the memory
+ *          management structure.  If it is exceded more will be 
+ *          allocated.
+ */
 globus_bool_t
 globus_memory_init(
-    globus_memory_t *             mem_info,
-    int                           node_size,
-    int                           node_count);
+    globus_memory_t *                           mem_info,
+    int                                         node_size,
+    int                                         node_count);
 
-globus_bool_t
-globus_memory_create_list(
-    globus_memory_t *           mem_info);
-
+/**
+ *  pop a chunk of memory out of the memory management structure.
+ *  Equalent of a malloc.
+ */
 globus_byte_t *
 globus_memory_pop_node(
-    globus_memory_t *           mem_info);
+    globus_memory_t *                           mem_info);
 
+/**
+ *  push a chunk of memory back into the meory managemnt structure.
+ *  equalvalent to a free.
+ */
 globus_bool_t
 globus_memory_push_node(
-    globus_memory_t *          mem_info,
-    globus_byte_t *              buf);
+    globus_memory_t *                           mem_info,
+    globus_byte_t *                             buf);
 
+/**
+ *  Free all the mmory associated with the memory management structure.
+ *  For every call to globus_memory_init() there should be a call to
+ *  globus_memory_destroy() or else memory will leak.
+ */
 globus_bool_t
 globus_memory_destroy(
-    globus_memory_t *          mem_info);
+    globus_memory_t *                           mem_info);
 
+/*
+ * module macro
+ */
 #define GLOBUS_CALLBACK_MODULE (&globus_i_callback_module)
 
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_CALLBACK */
+
+

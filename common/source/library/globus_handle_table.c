@@ -11,22 +11,33 @@ CVS Information:
     $Revision$
     $Author$
 ******************************************************************************/
-#include "config.h"
 #include "globus_handle_table.h"
+#include GLOBUS_THREAD_INCLUDE
+#include "globus_libc.h"
+
+/*
+ * internal data structure hidden from user
+ */
+struct globus_handle_table_s
+{
+    globus_handle_t				                    last_handle;
+    globus_hashtable_t		                        table;
+    globus_mutex_t				                    lock;
+};
 
 /******************************************************************************
 		             Type definitions
 ******************************************************************************/
-#define GLOBUS_L_HASH_TABLE_SIZE            42
+#define GLOBUS_L_HASH_TABLE_SIZE                    42
 
 /******************************************************************************
                            local data structures
 ******************************************************************************/
 typedef struct
 {
-    int					ref;
-    globus_handle_t			handle;
-    void *				value;
+    int					                            ref;
+    globus_handle_t			                        handle;
+    void *				                            value;
 } globus_l_handle_entry_t;
 
 /*
@@ -41,17 +52,22 @@ typedef struct
  */
 void
 globus_handle_table_init(
-    globus_handle_table_t *		handle_table)
+    globus_handle_table_t *		                    handle_table)
 {
-    globus_mutex_init(&handle_table->lock,
+    struct globus_handle_table_s *                  s_handle_table;
+    
+    s_handle_table = (struct globus_handle_table_s *)globus_malloc(sizeof(struct globus_handle_table_s));
+    *handle_table = s_handle_table;
+    
+    globus_mutex_init(&s_handle_table->lock,
 		      (globus_mutexattr_t *) GLOBUS_NULL);
 
-    globus_hashtable_init(&handle_table->table,
+    globus_hashtable_init(&s_handle_table->table,
 			  GLOBUS_L_HASH_TABLE_SIZE,
 			  globus_hashtable_int_hash,
 			  globus_hashtable_int_keyeq);
 
-    handle_table->last_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+    s_handle_table->last_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 }
 /* globus_l_callback_handle_init() */
 
@@ -66,10 +82,15 @@ globus_handle_table_init(
  */
 void
 globus_handle_table_destroy(
-    globus_handle_table_t *		handle_table)
+    globus_handle_table_t *		                    handle_table)
 {
-    globus_mutex_destroy(&handle_table->lock);
-    globus_hashtable_destroy(&handle_table->table);
+    struct globus_handle_table_s *                  s_handle_table;
+    
+    s_handle_table = *handle_table;
+    globus_mutex_destroy(&s_handle_table->lock);
+    globus_hashtable_destroy(&s_handle_table->table);
+    
+    globus_free(s_handle_table);
 }
 /* globus_l_callback_handle_destroy() */
 
@@ -91,45 +112,47 @@ globus_handle_table_destroy(
  */
 globus_handle_t
 globus_handle_table_insert(
-    globus_handle_table_t *		handle_table,
-    void *				value,
-    int					initial_refs)
+    globus_handle_table_t *		                    handle_table,
+    void *				                            value,
+    int					                            initial_refs)
 {
-    globus_bool_t			done = GLOBUS_FALSE;
-    void *				tmp_found;
-    globus_l_handle_entry_t *		entry;
+    struct globus_handle_table_s *                  s_handle_table;
+    globus_bool_t			                        done = GLOBUS_FALSE;
+    void *				                            tmp_found;
+    globus_l_handle_entry_t *		                entry;
 
-    globus_mutex_lock(&handle_table->lock);
+    s_handle_table = *handle_table;
+    globus_mutex_lock(&s_handle_table->lock);
 
     /* Search for new handle number */
     while(!done)
     {
-        handle_table->last_handle++;
-	if(handle_table->last_handle == GLOBUS_HANDLE_TABLE_NO_HANDLE)
+        s_handle_table->last_handle++;
+    	if(s_handle_table->last_handle == GLOBUS_HANDLE_TABLE_NO_HANDLE)
         {
-	    handle_table->last_handle++;
-	}
+	        s_handle_table->last_handle++;
+	    }
         
-        tmp_found = globus_hashtable_lookup(&handle_table->table, 
-				            (void *)handle_table->last_handle);
+        tmp_found = globus_hashtable_lookup(&s_handle_table->table, 
+                				            (void *)s_handle_table->last_handle);
         if(tmp_found == GLOBUS_NULL)
-	{
+	    {
             done = GLOBUS_TRUE;
-	}
+	    }
     }
 
     /* Create a new handle table entry */
     entry = (globus_l_handle_entry_t *)
 	       globus_malloc(sizeof(globus_l_handle_entry_t));
-    entry->handle = handle_table->last_handle;
+    entry->handle = s_handle_table->last_handle;
     entry->value = value;
     entry->ref = initial_refs;
 
     /* Insert it into the handle table */
-    globus_hashtable_insert(&handle_table->table, 
+    globus_hashtable_insert(&s_handle_table->table, 
 			    (void *) entry->handle,
 			    (void *) entry);
-    globus_mutex_unlock(&handle_table->lock);
+    globus_mutex_unlock(&s_handle_table->lock);
 
     /* Return our new, unique handle */
     return entry->handle;
@@ -138,31 +161,34 @@ globus_handle_table_insert(
 
 globus_bool_t
 globus_handle_table_increment_reference_by(
-    globus_handle_table_t *                     handle_table,
-    globus_handle_t                             handle,
-    unsigned int                                inc)
+    globus_handle_table_t *                         handle_table,
+    globus_handle_t                                 handle,
+    unsigned int                                    inc)
 {
-    globus_l_handle_entry_t *		entry;
-    globus_bool_t			still_in_table;
+    globus_l_handle_entry_t *		                entry;
+    globus_bool_t			                        still_in_table;
+    struct globus_handle_table_s *                  s_handle_table;
 
-    globus_mutex_lock(&handle_table->lock);
+    s_handle_table = *handle_table;
+    globus_mutex_lock(&s_handle_table->lock);
 
-    entry = globus_hashtable_lookup(&handle_table->table,
+    entry = globus_hashtable_lookup(&s_handle_table->table,
 				    (void *) handle);
 
     if(entry == GLOBUS_NULL)
     {
-	still_in_table = GLOBUS_FALSE;
+	    still_in_table = GLOBUS_FALSE;
     }
     else
     {
-	still_in_table = GLOBUS_TRUE;
-	entry->ref += inc;
+	    still_in_table = GLOBUS_TRUE;
+	    entry->ref += inc;
     }
-    globus_mutex_unlock(&handle_table->lock);
+    globus_mutex_unlock(&s_handle_table->lock);
 
     return still_in_table;
 }
+
 /*
  * Function: globus_handle_table_decrement_reference()
  * 
@@ -179,40 +205,42 @@ globus_handle_table_increment_reference_by(
  */
 globus_bool_t
 globus_handle_table_decrement_reference(
-    globus_handle_table_t *		handle_table,
-    globus_handle_t			handle)
+    globus_handle_table_t *		                    handle_table,
+    globus_handle_t			                        handle)
 {
-    globus_l_handle_entry_t *		entry;
-    globus_bool_t			still_in_table;
-    void *				rc;
+    globus_l_handle_entry_t *		                entry;
+    globus_bool_t			                        still_in_table;
+    void *				                            rc;
+    struct globus_handle_table_s *                  s_handle_table;
 
-    globus_mutex_lock(&handle_table->lock);
+    s_handle_table = *handle_table;
+    globus_mutex_lock(&s_handle_table->lock);
 
-    entry = globus_hashtable_lookup(&handle_table->table,
+    entry = globus_hashtable_lookup(&s_handle_table->table,
 				    (void *) handle);
 
     if(entry == GLOBUS_NULL)
     {
-	rc =  GLOBUS_NULL;
-	still_in_table = GLOBUS_FALSE;
+	    rc =  GLOBUS_NULL;
+	    still_in_table = GLOBUS_FALSE;
     }
     else
     {
-	entry->ref--;
-	rc = entry->value;
-	if(entry->ref == 0)
-	{
-	    globus_hashtable_remove(&handle_table->table,
+	    entry->ref--;
+	    rc = entry->value;
+	    if(entry->ref == 0)
+	    {
+	        globus_hashtable_remove(&s_handle_table->table,
 				    (void *)handle);
-	    globus_free(entry);
-	    still_in_table = GLOBUS_FALSE;
-	}
-	else
-	{
-	    still_in_table = GLOBUS_TRUE;
-	}
+	        globus_free(entry);
+	        still_in_table = GLOBUS_FALSE;
+	    }
+	    else
+	    {
+	        still_in_table = GLOBUS_TRUE;
+	    }
     }
-    globus_mutex_unlock(&handle_table->lock);
+    globus_mutex_unlock(&s_handle_table->lock);
 
     return still_in_table;
 }
@@ -232,27 +260,30 @@ globus_handle_table_decrement_reference(
  */
 globus_bool_t
 globus_handle_table_increment_reference(
-    globus_handle_table_t *		handle_table,
-    globus_handle_t			handle)
+    globus_handle_table_t *		                    handle_table,
+    globus_handle_t			                        handle)
 {
-    globus_l_handle_entry_t *		entry;
-    globus_bool_t			still_in_table;
+    globus_l_handle_entry_t *		                entry;
+    globus_bool_t			                        still_in_table;
+    struct globus_handle_table_s *                  s_handle_table;
 
-    globus_mutex_lock(&handle_table->lock);
+    s_handle_table = *handle_table;
 
-    entry = globus_hashtable_lookup(&handle_table->table,
+    globus_mutex_lock(&s_handle_table->lock);
+
+    entry = globus_hashtable_lookup(&s_handle_table->table,
 				    (void *) handle);
 
     if(entry == GLOBUS_NULL)
     {
-	still_in_table = GLOBUS_FALSE;
+	    still_in_table = GLOBUS_FALSE;
     }
     else
     {
-	still_in_table = GLOBUS_TRUE;
-	entry->ref++;
+	    still_in_table = GLOBUS_TRUE;
+	    entry->ref++;
     }
-    globus_mutex_unlock(&handle_table->lock);
+    globus_mutex_unlock(&s_handle_table->lock);
 
     return still_in_table;
 }
@@ -273,27 +304,31 @@ globus_handle_table_increment_reference(
  */
 void *
 globus_handle_table_lookup(
-    globus_handle_table_t *		handle_table,
-    globus_handle_t			handle)
+    globus_handle_table_t *		                    handle_table,
+    globus_handle_t			                        handle)
 {
-    globus_l_handle_entry_t *		entry;
-    void *				rc;
+    globus_l_handle_entry_t *		                entry;
+    void *				                            rc;
+    struct globus_handle_table_s *                  s_handle_table;
 
-    globus_mutex_lock(&handle_table->lock);
+    s_handle_table = *handle_table;
 
-    entry = globus_hashtable_lookup(&handle_table->table,
+    globus_mutex_lock(&s_handle_table->lock);
+
+    entry = globus_hashtable_lookup(&s_handle_table->table,
 				    (void *) handle);
 
     if(entry == GLOBUS_NULL)
     {
-	rc =  GLOBUS_NULL;
+	    rc =  GLOBUS_NULL;
     }
     else
     {
-	rc = entry->value;
+	    rc = entry->value;
     }
-    globus_mutex_unlock(&handle_table->lock);
+    globus_mutex_unlock(&s_handle_table->lock);
 
     return rc;
 }
 /* globus_handle_table_lookup() */
+
