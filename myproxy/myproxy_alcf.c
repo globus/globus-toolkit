@@ -111,29 +111,17 @@ int main(int argc, char *argv[])
 
 	if (ssl_certificate_load_from_file(creds, certfile) == SSL_SUCCESS)
 	{
-		char passphrase[MAX_PASS_LEN+1];
-
-
-		/* Read credential passphrase */
-		fprintf (stdout, "Credential Passphrase:\n");
-		if (myproxy_read_passphrase(passphrase,
-				            sizeof(passphrase)) == -1)
-	        {
-		     fprintf (stderr, "Error reading passphrase\n");
-		     goto cleanup;
-		}
-
 		/* Read private key */
-		if (ssl_private_key_load_from_file (creds, keyfile, passphrase) == SSL_ERROR)
+		if (ssl_private_key_load_from_file(creds, keyfile, NULL,
+						   "Enter GRID pass phrase")
+		    == SSL_ERROR)
 		{
-			fprintf (stderr, "Error reading private key: %s\n",verror_get_string());
+			fprintf (stderr, "Error reading private key: %s\n",
+				 verror_get_string());
 			goto cleanup;
 		}
 
 		/* Read new credential passphrase */
-
-		fprintf (stdout, "New Credential Passphrase:\n");
-		/* Allow user to provide a passphrase */
 
 		my_creds->passphrase = NULL;
 		if (!use_empty_passwd) {
