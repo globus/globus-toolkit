@@ -36,7 +36,13 @@ AC_DEFUN([CHECK_NEED_LDL],
                 EXTERNAL_LIBS="$EXTERNAL_LIBS -ldld"
             ],
             [
-                AC_MSG_ERROR("Unable to find dynamic linking library")
+                AC_CHECK_LIB([dyld],[dlopen],
+                [
+                        EXTERNAL_LIBS="$EXTERNAL_LIBS -ldyld"
+                ],
+                [
+                        AC_MSG_ERROR("Unable to find dynamic linking library")
+                ]
             ])
         ])
     ])
