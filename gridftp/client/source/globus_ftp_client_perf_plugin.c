@@ -514,7 +514,7 @@ globus_ftp_client_perf_plugin_init(
     result = globus_ftp_client_plugin_init(
               plugin,
               GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME,
-              GLOBUS_FTP_CLIENT_CMD_MASK_ALL,
+              GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS,
               ps);
 
     if(result != GLOBUS_SUCCESS)
