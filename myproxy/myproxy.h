@@ -39,6 +39,9 @@
 #define MYPROXY_RESPONSE_STRING     "RESPONSE="
 #define MYPROXY_ERROR_STRING        "ERROR="
 
+/* number of last error */
+extern int errno;
+
 /* Protocol commands */
 typedef enum
 {
@@ -86,7 +89,7 @@ typedef struct
 /*
  * myproxy_init_client()
  *
- * Create a generic client by craeting a GSI socket and connecting to a a host 
+ * Create a generic client by creating a GSI socket and connecting to a a host 
  *
  * returns the file descriptor of the connected socket or -1 if an error occurred  
  */
