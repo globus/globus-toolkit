@@ -942,8 +942,23 @@ exec_prefix='$(GLOBUS_LOCATION)'
 
 
 
+
 FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
+
+
+if test -f $srcdir/dirt.sh ; then
+    . $srcdir/dirt.sh
+else
+    DIRT_TIMESTAMP=`perl -e 'print time'`
+    DIRT_BRANCH_ID=99999
+fi
+
+
+
+
+
+
 
 
 
@@ -985,7 +1000,7 @@ ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:989: checking for a BSD compatible install" >&5
+echo "configure:1004: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1038,7 +1053,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 echo $ac_n "checking whether build environment is sane""... $ac_c" 1>&6
-echo "configure:1042: checking whether build environment is sane" >&5
+echo "configure:1057: checking whether build environment is sane" >&5
 # Just in case
 sleep 1
 echo timestamp > conftestfile
@@ -1095,7 +1110,7 @@ test "$program_suffix" != NONE &&
 test "$program_transform_name" = "" && program_transform_name="s,x,x,"
 
 echo $ac_n "checking whether ${MAKE-make} sets \${MAKE}""... $ac_c" 1>&6
-echo "configure:1099: checking whether ${MAKE-make} sets \${MAKE}" >&5
+echo "configure:1114: checking whether ${MAKE-make} sets \${MAKE}" >&5
 set dummy ${MAKE-make}; ac_make=`echo "$2" | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_prog_make_${ac_make}_set'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1141,7 +1156,7 @@ EOF
 
 missing_dir=`cd $ac_aux_dir && pwd`
 echo $ac_n "checking for working aclocal""... $ac_c" 1>&6
-echo "configure:1145: checking for working aclocal" >&5
+echo "configure:1160: checking for working aclocal" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1154,7 +1169,7 @@ else
 fi
 
 echo $ac_n "checking for working autoconf""... $ac_c" 1>&6
-echo "configure:1158: checking for working autoconf" >&5
+echo "configure:1173: checking for working autoconf" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1167,7 +1182,7 @@ else
 fi
 
 echo $ac_n "checking for working automake""... $ac_c" 1>&6
-echo "configure:1171: checking for working automake" >&5
+echo "configure:1186: checking for working automake" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1180,7 +1195,7 @@ else
 fi
 
 echo $ac_n "checking for working autoheader""... $ac_c" 1>&6
-echo "configure:1184: checking for working autoheader" >&5
+echo "configure:1199: checking for working autoheader" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1193,7 +1208,7 @@ else
 fi
 
 echo $ac_n "checking for working makeinfo""... $ac_c" 1>&6
-echo "configure:1197: checking for working makeinfo" >&5
+echo "configure:1212: checking for working makeinfo" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1392,11 +1407,16 @@ s%@F90FLAGS@%$F90FLAGS%g
 s%@AR@%$AR%g
 s%@ARFLAGS@%$ARFLAGS%g
 s%@RANLIB@%$RANLIB%g
+s%@PERL@%$PERL%g
 s%@CROSS@%$CROSS%g
 s%@cross_compiling@%$cross_compiling%g
 s%@OBJEXT@%$OBJEXT%g
 s%@EXEEXT@%$EXEEXT%g
 s%@FILELIST_FILE@%$FILELIST_FILE%g
+s%@GPT_MAJOR_VERSION@%$GPT_MAJOR_VERSION%g
+s%@GPT_MINOR_VERSION@%$GPT_MINOR_VERSION%g
+s%@DIRT_TIMESTAMP@%$DIRT_TIMESTAMP%g
+s%@DIRT_BRANCH_ID@%$DIRT_BRANCH_ID%g
 s%@LIBTOOL@%$LIBTOOL%g
 s%@LN_S@%$LN_S%g
 s%@INSTALL_PROGRAM@%$INSTALL_PROGRAM%g
