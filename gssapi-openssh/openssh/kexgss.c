@@ -189,18 +189,20 @@ kexgss_client(Kex *kex)
 				debug("Received GSSAPI_CONTINUE");
 				if (maj_status == GSS_S_COMPLETE) 
 					fatal("GSSAPI Continue received from server when complete");
-				recv_tok.value=packet_get_string(&recv_tok.length);
+				recv_tok.value=packet_get_string(&slen);
+				recv_tok.length=slen; /* int vs. size_t */
 				break;
 			case SSH2_MSG_KEXGSS_COMPLETE:
 				debug("Received GSSAPI_COMPLETE");
 			        packet_get_bignum2(dh_server_pub);
-			    	msg_tok.value=
-			    	    packet_get_string(&msg_tok.length);
+			    	msg_tok.value=packet_get_string(&slen);
+				msg_tok.length=slen; /* int vs. size_t */
 
 				/* Is there a token included? */
 				if (packet_get_char()) {
 					recv_tok.value=
-					    packet_get_string(&recv_tok.length);
+					    packet_get_string(&slen);
+					recv_tok.length=slen; /* int/size_t */
 					/* If we're already complete - protocol error */
 					if (maj_status == GSS_S_COMPLETE)
 						packet_disconnect("Protocol error: received token when complete");
@@ -239,6 +241,7 @@ kexgss_client(Kex *kex)
         memset(kbuf, 0, klen);
         xfree(kbuf);
         
+	slen=0;
         hash = kex_gssapi_hash(
  	    kex->client_version_string,
             kex->server_version_string,
@@ -302,6 +305,7 @@ kexgss_server(Kex *kex)
         BIGNUM *dh_client_pub = NULL;
 	int type =0;
 	gss_OID oid;
+	u_int slen;
 	
 	/* Initialise GSSAPI */
 
@@ -323,7 +327,8 @@ kexgss_server(Kex *kex)
 		case SSH2_MSG_KEXGSS_INIT:
 			if (dh_client_pub!=NULL) 
 				packet_disconnect("Received KEXGSS_INIT after initialising");
-			recv_tok.value=packet_get_string(&recv_tok.length);
+			recv_tok.value=packet_get_string(&slen);
+			recv_tok.length=slen; /* int vs. size_t */
 
 		        dh_client_pub = BN_new();
 		        
@@ -336,7 +341,8 @@ kexgss_server(Kex *kex)
 		case SSH2_MSG_KEXGSS_CONTINUE:
 			if (dh_client_pub == NULL)
 				packet_disconnect("Received KEXGSS_CONTINUE without initialising");
-			recv_tok.value=packet_get_string(&recv_tok.length);
+			recv_tok.value=packet_get_string(&slen);
+			recv_tok.length=slen; /* int vs. size_t */
 			break;
 		default:
 			packet_disconnect("Protocol error: didn't expect packet type %d",

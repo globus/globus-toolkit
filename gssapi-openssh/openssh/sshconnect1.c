@@ -1087,6 +1087,7 @@ int try_gssapi_authentication(char *host, Options *options)
   char *gssapi_auth_type = NULL;
   struct hostent *hostinfo;
   char *addr;
+  unsigned int slen;
 
   /*
    * host is not guarenteed to be a FQDN, so we need to make sure it is.
@@ -1190,7 +1191,7 @@ int try_gssapi_authentication(char *host, Options *options)
 
 #endif /* GSSAPI */
 
-  debug("req_flags = %lu", req_flags);
+  debug("req_flags = %u", req_flags);
 
   name_tok.value = service_name;
   name_tok.length = strlen(service_name) + 1;
@@ -1249,7 +1250,8 @@ int try_gssapi_authentication(char *host, Options *options)
   }
 
   /* Read the mechanism the server returned */
-  mech_oid.elements = packet_get_string((unsigned int *) &(mech_oid.length));
+  mech_oid.elements = packet_get_string(&slen);
+  mech_oid.length = slen;	/* safe typecast */
   packet_get_all();
 
   /*
@@ -1335,7 +1337,8 @@ int try_gssapi_authentication(char *host, Options *options)
         /* Does not return */
       }
 
-      recv_tok.value = packet_get_string((unsigned int *) &recv_tok.length);
+      recv_tok.value = packet_get_string(&slen);
+      recv_tok.length=slen;	/* safe typecast */
       packet_get_all();
       token_ptr = &recv_tok;
     }
@@ -1366,7 +1369,8 @@ int try_gssapi_authentication(char *host, Options *options)
     gss_qop_t qop_state;
 
 
-    wrapped_buf.value = packet_get_string(&(wrapped_buf.length));
+    wrapped_buf.value = packet_get_string(&slen);
+    wrapped_buf.length=slen;	/* safe typecast */
     packet_get_all();
 
     maj_stat = gss_unwrap(&min_stat,
@@ -1386,7 +1390,8 @@ int try_gssapi_authentication(char *host, Options *options)
     if (unwrapped_buf.length != sizeof(ssh_key_digest)) {
       packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
                         "Size of key hashes do not match (%d != %d)!",
-                        unwrapped_buf.length, sizeof(ssh_key_digest));
+                        (int)unwrapped_buf.length,
+			(int)sizeof(ssh_key_digest));
     }
 
     if (memcmp(ssh_key_digest, unwrapped_buf.value, sizeof(ssh_key_digest)) != 0) {

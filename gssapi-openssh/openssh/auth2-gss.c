@@ -129,12 +129,14 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
         Gssctxt *gssctxt;
         gss_buffer_desc send_tok,recv_tok;
         OM_uint32 maj_status, min_status;
+	int len;
         
         if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
                 fatal("No authentication or GSSAPI context");
                 
         gssctxt=authctxt->methoddata;
-        recv_tok.value=packet_get_string(&recv_tok.length);
+        recv_tok.value=packet_get_string(&len);
+	recv_tok.length=len; /* int vs. size_t */
         
         maj_status=PRIVSEP(ssh_gssapi_accept_ctx(gssctxt, &recv_tok, 
         					 &send_tok, NULL));
