@@ -535,11 +535,10 @@ err:
 			file,
 			line);
 	    else
-		fprintf(stderr,
-			"%s:%s",
-			ERR_func_error_string(l),
-			ERR_reason_error_string(l));
-
+                fprintf(stderr,
+                        "%s: %s",
+                        ERR_reason_error_string(l),
+                        ERR_func_error_string(l));
 	    fprintf(stderr,"%s",data);
 	    fprintf(stderr,"\n");
 	}
