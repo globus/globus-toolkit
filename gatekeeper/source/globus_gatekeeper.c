@@ -943,9 +943,8 @@ main(int xargc,
                   contact_string,
                   1);
      
-          if (!run_from_inetd)
-              notice3(LOG_INFO, "GRAM contact: %.*s\n",
-                   strlen(tmpbuf)-15, contact_string);
+          if (!run_from_inetd && strlen(contact_string)<sizeof(tmpbuf)-15)
+              notice2(LOG_INFO, "GRAM contact: %s\n", contact_string);
 
           free(contact_string);
 
