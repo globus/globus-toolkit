@@ -174,3 +174,25 @@ globus_xio_driver_error_match(
     GlobusXIODebugExit();
     return match;
 }
+
+globus_bool_t
+globus_xio_driver_error_match_with_cb(
+    globus_xio_driver_t                 driver,
+    globus_object_t *                   error,
+    globus_extension_error_match_cb_t   callback,
+    void *                              type)
+{
+    globus_bool_t                       match = GLOBUS_FALSE;
+    GlobusXIOName(globus_xio_driver_error_match);
+    
+    GlobusXIODebugEnter();
+    
+    if(driver && driver->extension_handle)
+    {
+        match = globus_extension_error_match_with_cb(
+            driver->extension_handle, error, callback, type);
+    }
+
+    GlobusXIODebugExit();
+    return match;
+}

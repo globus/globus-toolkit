@@ -121,6 +121,20 @@ globus_extension_error_match(
     globus_object_t *                   error,
     int                                 type);
 
+typedef
+globus_bool_t
+(*globus_extension_error_match_cb_t)(
+    globus_object_t *                   error,
+    globus_module_descriptor_t *        module,
+    void *                              type);
+
+globus_bool_t
+globus_extension_error_match_with_cb(
+    globus_extension_handle_t           handle,
+    globus_object_t *                   error,
+    globus_extension_error_match_cb_t   callback,
+    void *                              type);
+
 /**
  * hopefully in the future, these functions will only be needed by generated
  * code

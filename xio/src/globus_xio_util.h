@@ -19,6 +19,13 @@ globus_xio_driver_error_match(
     globus_object_t *                   error,
     int                                 type);
 
+globus_bool_t
+globus_xio_driver_error_match_with_cb(
+    globus_xio_driver_t                 driver,
+    globus_object_t *                   error,
+    globus_extension_error_match_cb_t   callback,
+    void *                              type);
+
 void
 globus_xio_contact_destroy(
     globus_xio_contact_t *              contact_info);

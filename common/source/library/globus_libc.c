@@ -183,7 +183,7 @@ int
 globus_libc_setuid(
     uid_t                                   uid)
 {
-
+    return -1;
 }
 
 
@@ -929,10 +929,9 @@ globus_libc_gethostname(char *name, int len)
     #endif
     if (hostname_length == 0U)
     {
-        struct hostent *                hp_ptr = GLOBUS_NULL;
-        struct hostent                  hp2;
-        char                            hp_tsdbuffer[500];
-        int                             hp_errnop;
+        globus_addrinfo_t               hints;
+        globus_addrinfo_t *             addrinfo;
+        globus_result_t                 result;
 
         if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
         {
@@ -953,59 +952,22 @@ globus_libc_gethostname(char *name, int len)
             return 0;
         }
         
-        hp_ptr = globus_libc_gethostbyname_r(hostname,
-                                             &hp2,
-                                             hp_tsdbuffer,
-                                             500,
-                                             &hp_errnop);
-        if (hp_ptr != NULL)
+        memset(&hints, 0, sizeof(globus_addrinfo_t));
+        hints.ai_flags = GLOBUS_AI_CANONNAME;
+        hints.ai_family = PF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = 0;
+        
+        result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
+        if(result == GLOBUS_SUCCESS)
         {
-            struct in_addr              addr;
-            struct hostent              hostent_by_addr;
-            char                        buf[500];
-            int                         errno_by_addr;
+            if(addrinfo && addrinfo->ai_canonname)
+            {
+                strncpy(hostname, addrinfo->ai_canonname, sizeof(hostname));
+                hostname[sizeof(hostname) - 1] = 0;
+            }
             
-#           if defined (TARGET_ARCH_CRAYT3E) \
-                        || defined (TARGET_ARCH_CRAYT90)
-            {
-                memcpy(&(addr.s_da),
-                       hp_ptr->h_addr,
-                       hp_ptr->h_length);
-            }
-#           else
-            {
-                memcpy(&(addr.s_addr), hp_ptr->h_addr, hp_ptr->h_length);
-            }
-#           endif
-            hp_ptr = globus_libc_gethostbyaddr_r((void *) &addr,
-                                                 sizeof(addr),
-                                                 AF_INET,
-                                                 &hostent_by_addr,
-                                                 buf,
-                                                 500,
-                                                 &errno_by_addr);
-
-            if (hp_ptr != NULL && strcmp(hp_ptr->h_name, hostname) != 0)
-            {
-                strcpy(hostname, hp_ptr->h_name);
-            }
-            else
-            {
-                if(strchr(hostname, '.') == GLOBUS_NULL &&
-                   hp_ptr != GLOBUS_NULL)
-                {
-                    int                 i;
-                    for(i = 0; hp_ptr->h_aliases[i] != GLOBUS_NULL; i++)
-                    {
-                        if(strchr(hp_ptr->h_aliases[i], '.') != GLOBUS_NULL)
-                        {
-                            strcpy(hostname, hp_ptr->h_aliases[i]);
-                            hp_ptr = NULL;
-                            break;
-                        }
-                    }
-                }
-            }
+            globus_libc_freeaddrinfo(addrinfo);
         }
     }
 
@@ -3403,7 +3365,7 @@ globus_libc_addr_to_contact_string(
         goto error_nameinfo;
     }
     
-    cs = globus_malloc(strlen(host) + strlen(port) + 2);
+    cs = globus_malloc(strlen(host) + strlen(port) + 4);
     if(!cs)
     {
         result = globus_error_put(

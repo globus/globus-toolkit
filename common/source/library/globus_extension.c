@@ -726,6 +726,33 @@ error_param:
     return GLOBUS_FALSE;
 }
 
+globus_bool_t
+globus_extension_error_match_with_cb(
+    globus_extension_handle_t           handle,
+    globus_object_t *                   error,
+    globus_extension_error_match_cb_t   callback,
+    void *                              type)
+{
+    globus_bool_t                       match = GLOBUS_FALSE;
+    GlobusFuncName(globus_extension_error_match);
+    
+    GlobusExtensionDebugEnter();
+    
+    if(!handle || !error)
+    {
+        goto error_param;
+    }
+    
+    match = callback(error, handle->module, type);
+    
+    GlobusExtensionDebugExit();
+    return match;
+
+error_param:
+    GlobusExtensionDebugExitWithError();
+    return GLOBUS_FALSE;
+}
+
 int
 globus_extension_register_builtin(
     const char *                        extension_name,
