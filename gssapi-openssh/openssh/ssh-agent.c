@@ -825,6 +825,7 @@ main(int ac, char **av)
 	SSLeay_add_all_algorithms();
 
 	__progname = get_progname(av[0]);
+	init_pathnames();
 	init_rng();
 	seed_rng();
 

@@ -266,6 +266,7 @@ main(int argc, char **argv)
 	int i, ch, deleting = 0, ret = 0;
 
 	__progname = get_progname(argv[0]);
+	init_pathnames();
 	init_rng();
 	seed_rng();
 
