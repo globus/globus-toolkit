@@ -87,8 +87,6 @@ typedef struct
     char                         passphrase[MAX_PASS_LEN+1];
     myproxy_proto_request_type_t command_type;
     int                          proxy_lifetime;
-    char                         **authorized_service_dns;
-    char                         **authorized_client_dns;
     char                         *retrievers;
     char                         *renewers;
 } myproxy_request_t;
