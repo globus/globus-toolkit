@@ -61,25 +61,26 @@ CVS Information:
 /* #define EQACT           62      /* Account file/inode quota limit reached */
 /* #define EOFQUOTA        363     /* File offline, retrieval would 
                                     exceed disk space quota */
-
 #ifdef EDQUOT
 #define IS_QUOTA_ERROR(err) ((err) == EDQUOT)
+#elif defined(EQUSR) && defined(EQGRP) && defined(EQACT) && defined(EOFQUOTA)
+#define IS_QUOTA_ERROR(err) ((err) == EQUSR || \
+                             (err) == EQGRP || \
+                             (err) == EQACT || \
+                             (err) == EOFQUOTA)
+#else
+#define IS_QUOTA_ERROR(err) (GLOBUS_FALSE)
+#endif
+
 static globus_bool_t globus_l_gass_cache_link_works = GLOBUS_TRUE;
 
 static int
 globus_l_gass_cache_module_activate(void);
 
-#else
-#define IS_QUOTA_ERROR(err) ((err) == EQUSR || \
-                             (err) == EQGRP || \
-    globus_l_gass_cache_module_activate,
-                             (err) == EQACT || \
-                             (err) == EOFQUOTA)
-#endif
-
 globus_module_descriptor_t globus_i_gass_cache_module =
 {
     "globus_gass_cache",
+    globus_l_gass_cache_module_activate,
     GLOBUS_NULL,
     GLOBUS_NULL,
     GLOBUS_NULL
