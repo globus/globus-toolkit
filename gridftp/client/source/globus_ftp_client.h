@@ -540,6 +540,14 @@ globus_ftp_client_verbose_list(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_client_machine_list(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_client_move(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
@@ -848,7 +856,8 @@ globus_ftp_client_operationattr_copy(
  * for reading or writing data to an FTP server. These operations are
  * globus_ftp_client_get(), globus_ftp_client_partial_get(),
  * globus_ftp_client_put(), globus_ftp_client_partial_put(),
- * globus_ftp_client_list(), and globus_ftp_client_verbose_list().
+ * globus_ftp_client_list(), globus_ftp_client_machine_list(), 
+ * and globus_ftp_client_verbose_list().
  *
  * When doing these operations, the user must pass data buffers
  * to the FTP Client library. Data is read or written directly from
@@ -878,8 +887,67 @@ globus_ftp_client_register_write(
     globus_bool_t				eof,
     globus_ftp_client_data_callback_t		callback,
     void *					callback_arg);
-#endif
 
+
+typedef enum
+{
+    GLOBUS_FTP_CLIENT_FALSE = GLOBUS_FALSE,
+    GLOBUS_FTP_CLIENT_TRUE  = GLOBUS_TRUE,
+    GLOBUS_FTP_CLIENT_MAYBE
+}
+globus_ftp_client_tristate_t;
+
+typedef enum
+{
+    /* Buffer-size setting commands; keep these at the beginning of
+     * the enum
+     */
+    GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE = 0,
+    GLOBUS_FTP_CLIENT_FEATURE_RBUFSZ,
+    GLOBUS_FTP_CLIENT_FEATURE_RBUFSIZ,
+    GLOBUS_FTP_CLIENT_FEATURE_STORBUFSIZE,
+    GLOBUS_FTP_CLIENT_FEATURE_SBUSSZ,
+    GLOBUS_FTP_CLIENT_FEATURE_SBUFSIZ,
+    GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
+    GLOBUS_FTP_CLIENT_FEATURE_SBUF,
+    GLOBUS_FTP_CLIENT_FEATURE_ABUF,
+
+    GLOBUS_FTP_CLIENT_FEATURE_REST_STREAM,
+    GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM,
+    GLOBUS_FTP_CLIENT_FEATURE_DCAU,
+    GLOBUS_FTP_CLIENT_FEATURE_ESTO,
+    GLOBUS_FTP_CLIENT_FEATURE_ERET,
+    GLOBUS_FTP_CLIENT_FEATURE_SIZE,
+    GLOBUS_FTP_CLIENT_FEATURE_MLST,
+    GLOBUS_FTP_CLIENT_FEATURE_MAX,
+    GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
+    GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF
+}
+globus_ftp_client_probed_feature_t;
+
+typedef struct globus_i_ftp_client_features_s * globus_ftp_client_features_t;
+
+globus_result_t
+globus_ftp_client_feat(
+    globus_ftp_client_handle_t *                 u_handle, 
+    char *                                       url,
+    globus_ftp_client_operationattr_t *          attr,
+    globus_ftp_client_features_t *               u_features,
+    globus_ftp_client_complete_callback_t        complete_callback,
+    void *                                       callback_arg);
+
+globus_result_t
+globus_ftp_client_is_feature_supported(
+    const globus_ftp_client_features_t *           u_features,
+    globus_ftp_client_tristate_t *                 answer,
+    const globus_ftp_client_probed_feature_t       feature);
+
+globus_result_t globus_ftp_client_features_init(
+    globus_ftp_client_features_t *);
+globus_result_t globus_ftp_client_features_destroy(
+    globus_ftp_client_features_t *);
+
+#endif
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_H */

@@ -597,6 +597,7 @@ error:
     return globus_error_put(err);
 }
 /* globus_ftp_client_handle_add_plugin() */
+ 
 
 /**
  * Remove a plugin to an FTP client handle.
@@ -752,6 +753,11 @@ globus_l_ftp_client_target_new(
 	goto free_target;
     }
     result = globus_ftp_control_handle_init(target->control_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto free_control_handle;
+    }
+    
     if(handle->attr.nl_handle)
     {
         globus_ftp_control_set_netlogger(
@@ -760,13 +766,8 @@ globus_l_ftp_client_target_new(
             handle->attr.nl_ftp,
             handle->attr.nl_io);
     }
-
-    if(result)
-    {
-	goto free_control_handle;
-    }
+    
     target->url_string = globus_libc_strdup(url);
-
     if(!target->url_string)
     {
 	goto destroy_control_handle;
@@ -778,11 +779,10 @@ globus_l_ftp_client_target_new(
 	globus_object_free(err);
 	goto free_url_string;
     }
-    /* Be noncommittal for now for SITE HELP and FEAT options. */
-    for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
-    {
-	target->features[i] = GLOBUS_FTP_CLIENT_MAYBE;
-    }
+    
+    /* this is initialized the first time we go through site help */
+    target->features = GLOBUS_NULL;
+    
     /*
      * Setup default setttings on the control handle values. We'll
      * adjust these to match the desired attributes after we've made
@@ -988,6 +988,14 @@ globus_l_ftp_client_target_delete(
     if(target->auth_info.account)
     {
 	globus_libc_free(target->auth_info.account);
+    }
+    if(target->auth_info.auth_gssapi_subject)
+    {
+        globus_libc_free(target->auth_info.auth_gssapi_subject);
+    }
+    if(target->features)
+    {
+        globus_i_ftp_client_features_destroy(target->features);
     }
     if((!connected) || result != GLOBUS_SUCCESS)
     {

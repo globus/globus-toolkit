@@ -111,6 +111,37 @@ globus_l_ftp_client_restart_plugin_delete(
 
 static
 void
+globus_l_ftp_client_restart_plugin_modification_time(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
+globus_l_ftp_client_restart_plugin_size(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+
+static
+void
+globus_l_ftp_client_restart_plugin_feat(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
 globus_l_ftp_client_restart_plugin_mkdir(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
@@ -142,6 +173,16 @@ globus_l_ftp_client_restart_plugin_list(
 static
 void
 globus_l_ftp_client_restart_plugin_verbose_list(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
+globus_l_ftp_client_restart_plugin_machine_list(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -325,6 +366,73 @@ globus_l_ftp_client_restart_plugin_delete(
 
 static
 void
+globus_l_ftp_client_restart_plugin_modification_time(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_MDTM;
+    d->source_url = globus_libc_strdup(url);
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+
+}
+/* globus_l_ftp_client_restart_plugin_modification_time() */
+
+static
+void
+globus_l_ftp_client_restart_plugin_size(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_SIZE;
+    d->source_url = globus_libc_strdup(url);
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+
+}
+/* globus_l_ftp_client_restart_plugin_size() */
+
+
+static
+void
+globus_l_ftp_client_restart_plugin_feat(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_FEAT;
+    d->source_url = globus_libc_strdup(url);
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+
+}
+/* globus_l_ftp_client_restart_plugin_feat() */
+
+static
+void
 globus_l_ftp_client_restart_plugin_mkdir(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
@@ -406,7 +514,28 @@ globus_l_ftp_client_restart_plugin_verbose_list(
     d->source_url = globus_libc_strdup(url);
     globus_ftp_client_operationattr_copy(&d->source_attr,attr);
 }
-/* globus_l_ftp_client_restart_plugin_vlist() */
+/* globus_l_ftp_client_restart_plugin_verbose_list() */
+
+static
+void
+globus_l_ftp_client_restart_plugin_machine_list(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_MLSD;
+    d->source_url = globus_libc_strdup(url);
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+}
+/* globus_l_ftp_client_restart_plugin_machine_list() */
 
 static
 void
@@ -558,7 +687,15 @@ globus_l_ftp_client_restart_plugin_fault(
 		    &when);
 	    break;
 
-	case GLOBUS_FTP_CLIENT_MKDIR:
+	case GLOBUS_FTP_CLIENT_FEAT:
+	    globus_ftp_client_plugin_restart_feat(
+		    handle,
+		    d->source_url,
+		    &d->source_attr,
+		    &when);
+	    break;
+
+        case GLOBUS_FTP_CLIENT_MKDIR:
 	    globus_ftp_client_plugin_restart_mkdir(
 		    handle,
 		    d->source_url,
@@ -589,6 +726,13 @@ globus_l_ftp_client_restart_plugin_fault(
 	    break;
 	case GLOBUS_FTP_CLIENT_NLST:
 	    globus_ftp_client_plugin_restart_list(
+		    handle,
+		    d->source_url,
+		    &d->source_attr,
+		    &when);
+	    break;
+	case GLOBUS_FTP_CLIENT_MLSD:
+	    globus_ftp_client_plugin_restart_machine_list(
 		    handle,
 		    d->source_url,
 		    &d->source_attr,
@@ -752,10 +896,14 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, modification_time);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, size);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, feat);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mkdir);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, rmdir);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, move);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, verbose_list);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, machine_list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, get);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, put);

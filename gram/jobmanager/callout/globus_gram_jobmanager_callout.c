@@ -1,7 +1,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file globus_gram_jobmanager.c
+ * @file globus_gram_jobmanager_callout.c
  * Globus GRAM Jobmanager Callout Example
  * @author Sam Meder
  *

@@ -987,8 +987,7 @@ globus_ftp_control_server_accept(
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {
         if(handle->cc_handle.auth_cb == GLOBUS_NULL &&
-           handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_UNCONNECTED &&
-           handle->cc_handle.signal_deactivate == GLOBUS_FALSE)
+           handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_UNCONNECTED)
         {
             handle->cc_handle.accept_cb=callback;
             handle->cc_handle.accept_cb_arg=callback_arg;
@@ -1190,8 +1189,7 @@ globus_ftp_control_server_authenticate(
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {
         if(handle->cc_handle.auth_cb == GLOBUS_NULL &&
-           handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTED &&
-           handle->cc_handle.signal_deactivate == GLOBUS_FALSE)
+           handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTED)
         {
             handle->cc_handle.auth_cb=callback;
             handle->cc_handle.auth_cb_arg=callback_arg;

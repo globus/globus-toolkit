@@ -53,6 +53,8 @@ int main(int argc, char **argv)
     char hostaddress[32];
 #endif
 
+    gsi_wuftp_get_version();
+
     if (argc > 1) {
 	while ((c = getopt(argc, argv, "V")) != EOF) {
 	    switch (c) {

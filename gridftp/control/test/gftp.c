@@ -1,3 +1,4 @@
+
 #include <globus_ftp_control.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -110,6 +111,14 @@ list_command(
     char *                                command_str);
 
 globus_result_t
+mlsd_command(
+    char *                                command_str);
+
+globus_result_t
+mlst_command(
+    char *                                command_str);
+
+globus_result_t
 cd_command(
     char *                                command_str);
 
@@ -123,6 +132,10 @@ rmdir_command(
 
 globus_result_t
 delete_command(
+    char *                                command_str);
+
+globus_result_t
+opts_command(
     char *                                command_str);
 
 globus_result_t
@@ -217,7 +230,7 @@ generic_response_callback(
     globus_ftp_control_response_t *             ftp_response);
 
 typedef struct command_entry_s 
-{
+{    
     char *                             command;
     char *                             description;
     command_func_t                     func;
@@ -250,9 +263,12 @@ command_entry_t                        g_command_table[] =
     {"ls", "list files", list_command},
     {"mget", "get multiple files", mget_command},
     {"mkdir", "make directory", mkdir_command},
+    {"mlsd", "list files", mlsd_command},
+    {"mlst", "list file", mlst_command},
     {"mput", "send multiple files", mput_command},
     {"nlist", "nlist files", list_command},
     {"open", "open a new url", connect_command},
+    {"opts", "send options", opts_command},
     {"parallel", "set parallelism level for eb mode", parallel_command},
     {"passive", "", passive_command},
     {"prompt", "", prompt_command},
@@ -274,7 +290,7 @@ command_entry_t                        g_command_table[] =
     {"user", "", user_command},
 };
 
-#define COMMAND_TABLE_SIZE             43
+#define COMMAND_TABLE_SIZE             47
 
 long                                   g_bytes_tranfsered = 0; 
 int                                    g_size = -1;
@@ -1106,6 +1122,23 @@ bang_command(
 }
 
 globus_result_t
+rhelp_command(
+    char *                                command_str)
+{
+    globus_result_t                       res;
+    char *                                cmd;
+
+    cmd = globus_malloc(strlen(command_str));
+    strcpy(cmd, &command_str[1]);
+
+    res = generic_command(cmd, GLOBUS_NULL);
+  
+    globus_free(cmd);
+
+    return res;
+}
+
+globus_result_t
 lcd_command(
     char *                                command_str)
 {
@@ -1143,22 +1176,6 @@ lcd_command(
     return GLOBUS_SUCCESS;
 }
 
-globus_result_t
-rhelp_command(
-    char *                                command_str)
-{
-    globus_result_t                       res;
-    char *                                cmd;
-
-    cmd = globus_malloc(strlen(command_str));
-    strcpy(cmd, &command_str[1]);
-
-    res = generic_command(cmd, GLOBUS_NULL);
-  
-    globus_free(cmd);
-
-    return res;
-}
 
 globus_result_t
 quote_command(
@@ -1173,6 +1190,38 @@ site_command(
     char *                                command_str)
 {
     return generic_command(command_str, GLOBUS_NULL);
+}
+
+globus_result_t
+opts_command(
+    char *                                command_str)
+{
+    globus_result_t                        res;
+    char *                                arg[3];
+    int                                   argc;
+    int                                   ctr;
+
+    for(ctr = 0; ctr < 2; ctr++)
+    {
+        arg[ctr] = globus_malloc(strlen(command_str) + 4);
+    }
+    argc = parse_list_args(command_str, arg, 2);
+
+    if(argc < 2)
+    {
+        printf("Please specify the feature and options\n");
+        return GLOBUS_SUCCESS;
+    }
+
+    sprintf(arg[0], "OPTS %s %s", arg[1], arg[2]);
+    res = generic_command(arg[0], GLOBUS_NULL);
+
+    for(ctr = 0; ctr < 2; ctr++)
+    {
+        globus_free(arg[ctr]);
+    }
+
+    return res;
 }
 
 globus_result_t
@@ -1293,6 +1342,41 @@ cd_command(
     }
 
     sprintf(arg[0], "CWD %s", arg[1]);
+
+    res = generic_command(arg[0], GLOBUS_NULL);
+
+    for(ctr = 0; ctr < 2; ctr++)
+    {
+        globus_free(arg[ctr]);
+    }
+
+    return res;
+}
+
+globus_result_t
+mlst_command(
+    char *                                command_str)
+{
+    globus_result_t                       res;
+    char *                                arg[2];
+    int                                   argc;
+    int                                   ctr;
+
+    for(ctr = 0; ctr < 2; ctr++)
+    {
+        arg[ctr] = globus_malloc(strlen(command_str) + 4);
+    }
+    argc = parse_list_args(command_str, arg, 2);
+
+    if(argc < 2)
+    {
+        sprintf(arg[0], "mlst");
+    }
+    else
+    {
+        sprintf(arg[0], "mlst %s", arg[1]);
+    }
+    
 
     res = generic_command(arg[0], GLOBUS_NULL);
 
@@ -2631,6 +2715,101 @@ list_command(
     {
         sprintf(cmd, "LIST");
     }
+
+    gftp_monitor_reset(&g_monitor);
+    g_monitor.count++;
+    if(argc > 1)
+    {
+        res = globus_ftp_control_send_command(
+                  &g_control_handle, 
+                  "%s %s\r\n",
+                  list_callback,
+                  GLOBUS_NULL,
+                  cmd,
+                  arg[1]);
+    }
+    else
+    {
+        res = globus_ftp_control_send_command(
+                  &g_control_handle, 
+                  "%s\r\n",
+                  list_callback,
+                  GLOBUS_NULL,
+                  cmd);
+    }
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+    res = globus_ftp_control_data_connect_read(
+              &g_control_handle, GLOBUS_NULL, GLOBUS_NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
+    globus_mutex_lock(&g_monitor.mutex);
+    {
+        while(g_monitor.count != 0)
+        {
+            globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
+        }
+        res = g_monitor.res;
+    }
+    globus_mutex_unlock(&g_monitor.mutex);
+
+  exit:
+    for(ctr = 0; ctr < 2; ctr++)
+    {
+        globus_free(arg[ctr]);
+    }
+    return res;
+}
+
+globus_result_t
+mlsd_command(
+    char *                                command_str)
+{
+    globus_result_t                       res;
+    int                                   ctr;
+    int                                   argc;
+    char *                                arg[2];
+    char                                  cmd[5];
+
+    if(!g_connected)
+    {
+        printf("Not connected.\n");
+        return GLOBUS_SUCCESS;
+    }
+
+    for(ctr = 0; ctr < 2; ctr++)
+    {
+        arg[ctr] = globus_malloc(strlen(command_str) + 2);
+    }
+    argc = parse_list_args(command_str, arg, 2);
+
+    if(g_mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+    {
+        /* set layout buffer and parallelism info */ 
+        res = port_mode();
+    }
+    else
+    {
+        if(g_passive)
+        {
+            res = pasv_mode();
+        }
+        else
+        {
+            res = port_mode();
+        }
+    }
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
+    sprintf(cmd, "MLSD");
 
     gftp_monitor_reset(&g_monitor);
     g_monitor.count++;

@@ -7,7 +7,7 @@ configuration file for the GRAM callout example package. The script
 setup-globus-job-manager-callout must be run to add the example
 callout to the callout configuration file.
 
-@section setup_usage Options to setup-globus-gram-job-manager-callout
+@section setup_usage Options to setup-globus-job-manager-callout
 
 @par -nonroot|-d[=PATH]
 This option modifies the location of the configuration file

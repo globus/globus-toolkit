@@ -643,7 +643,7 @@ main(
             }
         }
 
-        if(temp_dir);
+        if(temp_dir)
         {
             free(temp_dir);
             temp_dir = NULL;

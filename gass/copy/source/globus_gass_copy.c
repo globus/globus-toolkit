@@ -273,12 +273,12 @@ globus_gass_copy_handle_init(
 
 	ftp_attr = (attr && attr->ftp_attr) ? attr->ftp_attr : GLOBUS_NULL;
 
-        result = globus_ftp_client_handle_init(&handle->ftp_source_handle,
+        result = globus_ftp_client_handle_init(&handle->ftp_handle_2,
                                                ftp_attr);
         if (result != GLOBUS_SUCCESS)
             return result;
 
-        result = globus_ftp_client_handle_init(&handle->ftp_dest_handle,
+        result = globus_ftp_client_handle_init(&handle->ftp_handle,
                                                ftp_attr);
         if (result != GLOBUS_SUCCESS)
             return result;
@@ -334,11 +334,11 @@ globus_gass_copy_handle_destroy(
 
     if(handle != GLOBUS_NULL)
     {
-        result = globus_ftp_client_handle_destroy(&handle->ftp_source_handle);
+        result = globus_ftp_client_handle_destroy(&handle->ftp_handle_2);
         if (result != GLOBUS_SUCCESS)
             return result;
 
-        result = globus_ftp_client_handle_destroy(&handle->ftp_dest_handle);
+        result = globus_ftp_client_handle_destroy(&handle->ftp_handle);
 
 	if(handle->err != GLOBUS_NULL)
              globus_object_free(handle->err);
@@ -1128,7 +1128,7 @@ globus_l_gass_copy_perf_setup_ftp_callback(
     globus_gass_copy_perf_info_t *          perf_info)
 {
     globus_ftp_client_handle_add_plugin(
-        &perf_info->copy_handle->ftp_dest_handle,
+        &perf_info->copy_handle->ftp_handle,
         &perf_info->ftp_perf_plugin);
 }
 
@@ -1147,7 +1147,7 @@ globus_l_gass_copy_perf_cancel_ftp_callback(
     globus_gass_copy_perf_info_t *          perf_info)
 {
     globus_ftp_client_handle_remove_plugin(
-        &perf_info->copy_handle->ftp_dest_handle,
+        &perf_info->copy_handle->ftp_handle,
         &perf_info->ftp_perf_plugin);
 
     if(perf_info->saved_dest_attr)
@@ -1921,7 +1921,16 @@ globus_l_gass_copy_transfer_start(
 
 	state->source.data.ftp.n_channels = 0;
 	state->source.data.ftp.n_reads_posted = 0;
-        state->source.data.ftp.handle = &(handle->ftp_source_handle);
+	
+	if(state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+	{
+	    /* doing a third party transfer, dest side is using main handle */
+            state->source.data.ftp.handle = &handle->ftp_handle_2;
+        }
+        else
+        {
+            state->source.data.ftp.handle = &handle->ftp_handle;
+        }
 
         result = globus_l_gass_copy_ftp_setup_get(handle);
 
@@ -2019,7 +2028,7 @@ globus_l_gass_copy_transfer_start(
 	state->dest.data.ftp.n_channels = 0;
 	state->dest.data.ftp.n_reads_posted = 0;
 
-        state->dest.data.ftp.handle = &(handle->ftp_dest_handle);
+        state->dest.data.ftp.handle = &handle->ftp_handle;
 	result = globus_l_gass_copy_ftp_setup_put(handle);
 	break;
 
@@ -2281,7 +2290,7 @@ globus_l_gass_copy_register_read(
 	globus_libc_fprintf(stderr, "register_read():  calling globus_ftp_client_register_read()\n");
 #endif
  	result = globus_ftp_client_register_read(
-	    &(handle->ftp_source_handle),
+	    state->source.data.ftp.handle,
 	    buffer,
 	    handle->buffer_length,
 	    globus_l_gass_copy_ftp_read_callback,
@@ -2713,7 +2722,7 @@ globus_l_gass_copy_ftp_setup_get(
     globus_result_t result;
 
     result = globus_ftp_client_get(
-		   &(handle->ftp_source_handle),
+		   state->source.data.ftp.handle,
 		   state->source.url,
 		   state->source.attr->ftp_attr,
                    GLOBUS_NULL,
@@ -2748,7 +2757,7 @@ globus_l_gass_copy_ftp_setup_put(
     globus_result_t result;
 
     result = globus_ftp_client_put(
-		   &(handle->ftp_dest_handle),
+		   state->dest.data.ftp.handle,
 		   state->dest.url,
 		   state->dest.attr->ftp_attr,
                    GLOBUS_NULL,
@@ -3667,7 +3676,7 @@ globus_l_gass_copy_register_write(
 		buffer_entry->last_data);
 #endif
 	result = globus_ftp_client_register_write(
-	    &(handle->ftp_dest_handle),
+	    state->dest.data.ftp.handle,
 	    buffer_entry->bytes,
 	    buffer_entry->nbytes,
 	    buffer_entry->offset,
@@ -4700,7 +4709,7 @@ globus_gass_copy_register_url_to_url(
 
         handle->external_third_party = GLOBUS_TRUE;
         result = globus_ftp_client_third_party_transfer(
-	    &(handle->ftp_dest_handle),
+	    &handle->ftp_handle,
 	    source_url,
 	    state->source.attr->ftp_attr,
 	    dest_url,
@@ -5115,12 +5124,12 @@ globus_gass_copy_cache_url_state(
 	       || (strcmp(url_info.scheme, "gsiftp") == 0)    )
 	{
 	    result = globus_ftp_client_handle_cache_url_state(
-		&handle->ftp_source_handle,
+		&handle->ftp_handle_2,
 		url);
             if (result == GLOBUS_SUCCESS)
             {
 	        result = globus_ftp_client_handle_cache_url_state(
-                           &handle->ftp_dest_handle,
+                           &handle->ftp_handle,
                            url);
 	    }
 	}
@@ -5184,12 +5193,12 @@ globus_gass_copy_flush_url_state(
 	       || (strcmp(url_info.scheme, "gsiftp") == 0)    )
 	{
 	    result = globus_ftp_client_handle_flush_url_state(
-	                &handle->ftp_source_handle,
+	                &handle->ftp_handle_2,
 	                url);
             if (result == GLOBUS_SUCCESS)
             {
                 result = globus_ftp_client_handle_flush_url_state(
-                               &handle->ftp_dest_handle,
+                               &handle->ftp_handle,
                                url);
             }
 	}
@@ -5373,7 +5382,7 @@ globus_gass_copy_cancel(
 
     if (handle->external_third_party)
     {
-        result = globus_ftp_client_abort(&handle->ftp_dest_handle);
+        result = globus_ftp_client_abort(&handle->ftp_handle);
     }
     else
     {

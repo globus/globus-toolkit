@@ -14,7 +14,7 @@ libglobus_gram_job_manager_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 libglobus_gram_job_manager_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_jobmanager_callout.c
 libglobus_gram_job_manager_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@
+	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
