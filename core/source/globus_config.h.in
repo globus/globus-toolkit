@@ -72,6 +72,7 @@
 
 #undef HAVE_SYS_UIO_H
 #undef HAVE_STRUCT_IOVEC
+#undef HAVE_MEMMOVE
 #undef IOV_MAX
 #undef RETSIGTYPE
 #undef HAVE_ATEXIT

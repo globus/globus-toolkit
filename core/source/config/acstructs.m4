@@ -152,6 +152,17 @@ AC_MSG_RESULT($ac_max_iov_result)
 
 ])
 
+AC_DEFUN(CHECK_FOR_MEMMOVE, [
+dnl check for availablility of atexit or on_exit
+AC_MSG_CHECKING(checking for memmove)
+lac_cv_memmove="no"
+AC_TRY_LINK([#include <string.h>
+    char b[10];],
+    [memmove(b, &b[1], 1)
+    ], AC_DEFINE(HAVE_MEMMOVE) lac_cv_memmove="memmove")
+AC_MSG_RESULT($lac_cv_memmove)
+])
+
 AC_DEFUN(CHECK_FOR_ATEXIT, [
 dnl check for availablility of atexit or on_exit
 AC_MSG_CHECKING(how to execute a function on program exit)
