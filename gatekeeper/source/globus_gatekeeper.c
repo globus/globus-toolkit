@@ -191,6 +191,7 @@ static char *   globuskmap = "globuskmap";
 static char *   globuspwd = NULL;
 static char *   globuscertdir = "cert";
 static char *   globuskeydir = "key";
+static char *   globusnologin ="globus-nologin";
 static char *   x509_cert_dir = NULL;
 static char *   x509_cert_file = NULL;
 static char *   x509_user_proxy = NULL;
