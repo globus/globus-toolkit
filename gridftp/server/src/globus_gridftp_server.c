@@ -304,7 +304,7 @@ globus_l_gfs_spawn_child(
         for(i = 0; prog_argv[i] != NULL; i++)
         {
         }
-        new_argv = (char **) globus_calloc(sizeof(char *) * i, 1);
+        new_argv = (char **) globus_calloc(1, sizeof(char *) * (i + 1));
         if(new_argv == NULL)
         {
             goto child_close_error;
