@@ -123,7 +123,7 @@ while(defined($_ = <STDIN>) && !m/^Log Message:$/)
 }
 
 # consume rest of input
-@_ = <STDIN>;
+while(defined(<STDIN>));
 
 # now check to see what tags are actually defined AND NOT dead in
 # rcsfile.  Those that are dead or not defined dont get updates
