@@ -19,7 +19,6 @@ static char *rcsid = "$Header$";
  * Include header files
  */
 #include "globus_l_io.h"
-
 /*
  * Module Specific Type Definitions
  */
@@ -550,48 +549,45 @@ globus_i_io_try_read(
     globus_size_t			num_read;
     globus_bool_t			done = GLOBUS_FALSE;
     int					save_errno;
+    char                                tag_str[256];
+    char                                nbytes_str[64];
     static char *			myname="globus_i_io_try_read";
 
     num_read=0;
     *nbytes_read = 0;
     for (done = GLOBUS_FALSE; !done; )
     {
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger && 
-           handle->nl_handle != GLOBUS_NULL)
+        /*
+         *  NETLOGGER information
+         */ 
+        if(handle->nl_handle != GLOBUS_NULL)
         {
-            NetLoggerWrite(handle->nl_handle, 
-                GLOBUS_IO_NL_EVENT_START_READ, 
-                "GLOBUS_IO_TAG=TRY_READ "
-                "SOCK=%d %s",
-                handle->fd,
-                handle->nl_event_id == NULL ? 
-                        "" : 
-                        handle->nl_event_id);
-        }        
-#       endif
-
+            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=TRY_READ", handle->fd);
+            globus_netlogger_write(
+                handle->nl_handle, 
+                GLOBUS_IO_NL_EVENT_START_READ,
+                tag_str);
+        }
 	n_read =
 	    globus_libc_read(
 		handle->fd,
 		buf + num_read,
 		max_nbytes - num_read);
 
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger &&
-           handle->nl_handle != GLOBUS_NULL)
+        /*
+         *  NETLOGGER write
+         */
+        if(handle->nl_handle != GLOBUS_NULL)
         {
-            NetLoggerWrite(handle->nl_handle, 
+            sprintf(tag_str, 
+                "SOCK=%d GLOBUS_IO_TAG=TRY_READ GLOBUS_IO_NBYTES=%ld", 
+                handle->fd,
+                n_read);
+            globus_netlogger_write(
+                handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_END_READ,
-                "GLOBUS_IO_TAG=TRY_READ "
-                "SOCK=%d %s",
-                handle->fd, 
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
+                tag_str);
         }
-#       endif
-
 	save_errno = errno;
 	globus_i_io_debug_printf(
 	    5,
@@ -754,6 +750,7 @@ globus_l_io_read_callback(
     int					save_errno;
     globus_bool_t			done;
     globus_object_t *			err;
+    char                                tag_str[64];
     static char *			myname="globus_l_io_read_callback";
 
     read_info = (globus_io_read_info_t *) arg;
@@ -778,42 +775,38 @@ globus_l_io_read_callback(
 	     (unsigned long)
                   (read_info->max_nbytes - read_info->nbytes_read)));
 
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger &&
-           handle->nl_handle != GLOBUS_NULL)
+        /*
+         *  NETLOGGER information
+         */
+        if(handle->nl_handle != GLOBUS_NULL)
         {
-            NetLoggerWrite(handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_START_READ, 
-                "GLOBUS_IO_TAG=READ "
-                "SOCK=%d %s",
-                handle->fd,
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
+            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=READ", 
+                handle->fd);
+            globus_netlogger_write(
+                handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_START_READ,
+                tag_str);
         }
-#       endif
-	
 	n_read =
 	    globus_libc_read(
 		handle->fd,
 		(read_info->buf + read_info->nbytes_read),
 		(read_info->max_nbytes - read_info->nbytes_read));
 
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger && 
-           handle->nl_handle != GLOBUS_NULL)
+        /*
+         *  NETLOGGER information
+         */
+        if(handle->nl_handle != GLOBUS_NULL)
         {
-            NetLoggerWrite(handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_END_READ, 
-                "GLOBUS_IO_TAG=READ "
-                "SOCK=%d %s",
+            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=READ GLOBUS_IO_NBYTES=%ld", 
                 handle->fd,
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
-        }
-#       endif
-	
+                n_read);
+            globus_netlogger_write(
+                handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_END_READ,
+                tag_str);
+	}
+ 
 	save_errno = errno;
 	globus_i_io_debug_printf(
 	    5,

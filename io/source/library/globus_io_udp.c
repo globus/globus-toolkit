@@ -307,13 +307,9 @@ globus_io_udpattr_init(
     attr->attr = globus_i_io_udpattr_construct();
 
     /*
-     *  Net Logger stuff
+     *  NETLOGGER
      */
-#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    {
-        attr->nl_handle = GLOBUS_NULL;
-    }
-#   endif
+    attr->nl_handle = GLOBUS_NULL;
 
     return GLOBUS_SUCCESS;
 }

@@ -48,24 +48,27 @@
 
 #include "globus_io.h"
 
-/*
- *  If we are building with netlogger define the following internal 
- *  macros
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
 
-#define GLOBUS_IO_NL_EVENT_START_READ     "GLOBUS_IO_NL_EVENT_READ_START"
-#define GLOBUS_IO_NL_EVENT_END_READ       "GLOBUS_IO_NL_EVENT_READ_END"
-#define GLOBUS_IO_NL_EVENT_START_WRITE    "GLOBUS_IO_NL_EVENT_WRITE_START"
-#define GLOBUS_IO_NL_EVENT_END_WRITE      "GLOBUS_IO_NL_EVENT_WRITE_END"
+/*
+ *  NETLOGGER
+ */
+
+#define GLOBUS_IO_NL_EVENT_START_READ     "GIO_READ_START"
+#define GLOBUS_IO_NL_EVENT_END_READ       "GIO_READ_END"
+#define GLOBUS_IO_NL_EVENT_START_WRITE    "GIO_WRITE_START"
+#define GLOBUS_IO_NL_EVENT_END_WRITE      "GIO_WRITE_END"
+
+struct globus_netlogger_handle_s
+{   
+    char *                                nl_event_str;
+    NLhandle *                            nl_handle;
+};
 
 /*
  * provides a mechanism to turn netlogger on and off in a netlogger 
  * aware build.
  */
 extern globus_bool_t                      g_globus_i_io_use_netlogger;
-
-#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
 
 /*
  *			  Module specific prototypes

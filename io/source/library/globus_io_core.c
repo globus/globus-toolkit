@@ -41,11 +41,9 @@ static char *rcsid = "$Header$";
 #endif
 
 /*
- *  Net logger stuff
+ *  NETLOGGER
  */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
 globus_bool_t                      g_globus_i_io_use_netlogger = GLOBUS_FALSE;
-#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
 
 /*
  * Type definitions
@@ -2143,6 +2141,10 @@ globus_l_io_activate(void)
         {
             g_globus_i_io_use_netlogger = GLOBUS_TRUE;
         }
+    }
+#   else
+    {
+        g_globus_i_io_use_netlogger = GLOBUS_FALSE;
     }
 #   endif
 

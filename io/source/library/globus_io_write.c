@@ -1493,45 +1493,43 @@ globus_i_io_try_write(
     globus_bool_t			done;
     ssize_t				n_written;
     int					save_errno;
+    char                                tag_str[256];
 
     num_written=0;
     *nbytes_written = 0;
     for (done = GLOBUS_FALSE; !done; )
     {
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger &&
-           handle->nl_handle != GLOBUS_NULL)
+        /*
+         *  NETLOGGER information
+         */
+        if(handle->nl_handle) 
         {
-            NetLoggerWrite(handle->nl_handle,
+            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=TRY_WRITE",
+                handle->fd);
+            globus_netlogger_write(
+                handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_START_WRITE,
-                "GLOBUS_IO_TAG=TRY_WRITE "
-                "SOCK=%d %s",
-                handle->fd,
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
+                tag_str);
         }
-#       endif
-
 	n_written = globus_libc_write(
 	    handle->fd,
 	    buf+num_written,
 	    max_nbytes-num_written);
 
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger &&
-           handle->nl_handle != GLOBUS_NULL)
+        /*
+         *  NETLOGGER information
+         */
+        if(handle->nl_handle) 
         {
-            NetLoggerWrite(handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_END_WRITE,
-                "GLOBUS_IO_TAG=TRY_WRITE "
-                "SOCK=%d %s",
+            sprintf(tag_str, 
+                "SOCK=%d GLOBUS_IO_TAG=TRY_WRITE GLOBUS_IO_NBYTES=%ld",
                 handle->fd,
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
+                n_written);
+            globus_netlogger_write(
+                handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_END_WRITE,
+                tag_str);
         }
-#       endif
 
 	save_errno = errno;
 
@@ -1721,6 +1719,7 @@ globus_i_io_try_writev(
     globus_bool_t			done;
     ssize_t				n_written;
     int					save_errno;
+    char                                tag_str[256];
 
     num_written=0;
     *nbytes_written = 0;
@@ -1730,40 +1729,28 @@ globus_i_io_try_writev(
 
 	count_used = (int) (iovcnt > IOV_MAX) ? IOV_MAX : iovcnt;
 
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger &&
-           handle->nl_handle != GLOBUS_NULL)
-        {
-            NetLoggerWrite(handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_START_WRITE,
-                "GLOBUS_IO_TAG=WRITE "
-                "SOCK=%d, %s",
-                handle->fd,
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
-        }
-#       endif
+        /*
+         *  NETLOGGER information
+         */
+        sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=WRITEV",
+            handle->fd);
+        globus_netlogger_write(
+            handle->nl_handle,
+            GLOBUS_IO_NL_EVENT_START_WRITE,
+            tag_str);
 
 	n_written = globus_libc_writev(
 	    handle->fd,
 	    iov,
 	    count_used);
 
-#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(g_globus_i_io_use_netlogger &&
-           handle->nl_handle != GLOBUS_NULL)
-        {
-            NetLoggerWrite(handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_END_WRITE,
-                "GLOBUS_IO_TAG=WRITE "
-                "SOCK=%d %s",
-                handle->fd,
-                handle->nl_event_id == NULL ?
-                        "" : 
-                        handle->nl_event_id);
-        }
-#       endif
+        sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=WRITEV GLOBUS_IO_NBYTES=%ld",
+            handle->fd,
+            n_written);
+        globus_netlogger_write(
+            handle->nl_handle,
+            GLOBUS_IO_NL_EVENT_END_WRITE,
+            tag_str);
 
 	save_errno = errno;
 	

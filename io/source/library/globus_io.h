@@ -47,12 +47,18 @@ EXTERN_C_BEGIN
 /*
 #define GLOBUS_BUILD_WITH_NETLOGGER 1
 */
+
 /*
  *  If this is a Netlogger aware build, include the logging headers
  */
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-#include "logging.h"
+#include "NetLogger.h"
+#else
+typedef void NLhandle;
 #endif
+
+struct globus_netlogger_handle_s;
+typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;
 
 /**
  * @defgroup globus_io_activation Activation
@@ -156,12 +162,11 @@ typedef struct
 {
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
     globus_object_t *			attr;
-/*
- *  Net Logger stuff.
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    NLhandle *                          nl_handle;
-#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
+
+    /*
+     * NETLOGGER
+     */
+    globus_netlogger_handle_t *         nl_handle;
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 } globus_io_attr_t;
@@ -877,12 +882,10 @@ struct globus_io_handle_s
     void *					user_pointer;
 
     /* 
-     *  net logger addtions 
+     *  NETLOGGER
      */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     char *                                      nl_event_id;
-    NLhandle *                                  nl_handle;
-#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
+    globus_netlogger_handle_t *                 nl_handle;
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 };
@@ -1320,32 +1323,50 @@ globus_io_file_posix_convert(
  */
 
 /*
- *  NET LOGGER STUFF
+ *  NETLOGGER STUFF
  */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-
 globus_result_t
 globus_io_attr_netlogger_set_handle(
     globus_io_attr_t *                  attr,
-    NLhandle *                          nl_handle);
+    globus_netlogger_handle_t *         nl_handle);
 
 globus_result_t
-globus_io_netlogger_add_attribute_string(
-    globus_io_handle_t *              handle,
+globus_netlogger_add_attribute_string(
+    globus_netlogger_handle_t *       nl_handle,
     const char *                      attribute_name,
     const char *                      attribute_value);
 
 globus_result_t
-globus_io_netlogger_set_attribute_string(
-    globus_io_handle_t *              handle,
+globus_netlogger_set_attribute_string(
+    globus_netlogger_handle_t *       nl_handle,
     const char *                      attr_str);
 
 globus_result_t
-globus_io_netlogger_get_attribute_string(
-    globus_io_handle_t *              handle,
+globus_netlogger_get_attribute_string(
+    globus_netlogger_handle_t *       nl_handle,
     const char **                     attr_str);
 
-#endif  /* GLOBUS_BUILD_WITH_NETLOGGER */
+globus_result_t
+globus_netlogger_write(
+    globus_netlogger_handle_t *       nl_handle,
+    const char *                      event,
+    const char *                      tag);
+
+globus_result_t
+globus_netlogger_handle_init(
+    globus_netlogger_handle_t *       nl_handle,
+    NLhandle *                        handle);
+
+globus_result_t
+globus_netlogger_handle_destroy(
+    globus_netlogger_handle_t *       nl_handle);
+
+globus_result_t
+globus_netlogger_get_nlhandle(
+    globus_netlogger_handle_t *       nl_handle,
+    NLhandle **                       handle);
+
+/* NETLOGGER handle */
 
 #ifndef DOXYGEN
 globus_result_t
