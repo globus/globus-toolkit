@@ -3365,7 +3365,7 @@ globus_l_gfs_data_write_eof_cb(
                         globus_i_gfs_log_result(
                             "ERROR", result);
                         op->cached_res = result;
-                        globus_l_gfs_data_end_transfer_kickout(op);
+                        end = GLOBUS_TRUE;
                     }
                 }
                 else
