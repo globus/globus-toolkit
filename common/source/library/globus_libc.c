@@ -2281,37 +2281,23 @@ globus_libc_strdup(const char * string)
 char *
 globus_libc_strndup(const char * string, globus_size_t length)
 {
-    static globus_mutex_t   strdup_mutex;
-    static int              initialized = GLOBUS_FALSE;
     char *                  ns;
     int                     i;
 
-    globus_libc_lock();
-    if (!initialized)
-    {
-        globus_mutex_init(&strdup_mutex, (globus_mutexattr_t *) GLOBUS_NULL);
-        initialized = GLOBUS_TRUE;
-    }
-    globus_libc_unlock();
-
-    globus_mutex_lock(&strdup_mutex);
-
     ns = GLOBUS_NULL;
 
-    if (string)
+    if(string)
     {
-        ns = globus_malloc (sizeof(char *) * (length + 1));
-
-        if (ns)
+        ns = globus_malloc(sizeof(char *) * (length + 1));
+        if(ns)
         {
-            for (i=0; i<length; i++)
+            for(i = 0; i < length && string[i] != '\0'; i++)
                 ns[i] = string[i];
                                                                                 
-            ns[length] = '\0';
+            ns[i] = '\0';
         }
     }
 
-    globus_mutex_unlock(&strdup_mutex);
     return ns;
 }
 /* globus_libc_strndup */

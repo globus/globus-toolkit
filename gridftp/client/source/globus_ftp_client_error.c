@@ -58,7 +58,7 @@ globus_l_error_ftp_printable(
 {
     globus_l_error_ftp_data_t *         data;
     char *                              error_string;
-    char                                buf[3];
+    char                                buf[4];
     char *                              message;
     int                                 message_len;
     
@@ -139,11 +139,11 @@ globus_i_ftp_client_wrap_ftp_error(
     ...)
 {
     va_list                             ap;
-    globus_object_t *                   causal_error;
     globus_object_t *                   error;
+    globus_object_t *                   causal_error;
     globus_l_error_ftp_data_t *         data;
 
-    error = globus_object_construct(GLOBUS_ERROR_TYPE_FTP);
+    causal_error = globus_object_construct(GLOBUS_ERROR_TYPE_FTP);
     if(!causal_error)
     {
         goto error_object;
@@ -158,12 +158,8 @@ globus_i_ftp_client_wrap_ftp_error(
     
     data->code = code;
     data->message = globus_libc_strdup(message);
-    globus_object_set_local_instance_data(error, data);
-    causal_error = globus_error_initialize_base(error, base_source, NULL);
-    if(!causal_error)
-    {
-        goto error_causal;
-    }
+    globus_object_set_local_instance_data(causal_error, data);
+    globus_error_initialize_base(causal_error, base_source, NULL);
 
     va_start(ap, format);
 
@@ -187,12 +183,8 @@ globus_i_ftp_client_wrap_ftp_error(
     return error;
 
 error_construct:
-    globus_object_free(causal_error);
-    return NULL;
-    
-error_causal:
 error_data:
-    globus_object_free(error);
+    globus_object_free(causal_error);
 
 error_object:
     return NULL;
