@@ -9,37 +9,37 @@
 typedef struct
 {
 	globus_mutex_t                      mutex;
+	struct globus_i_rw_mutex_waiter_s * waiters;
+	struct globus_i_rw_mutex_waiter_s ** tail;
+	struct globus_i_rw_mutex_waiter_s * idle;
 	globus_bool_t                       writing;
 	int                                 readers;
-	int                                 write_waiting;
-	globus_cond_t                       writeable;
-	globus_cond_t                       readable;
 } globus_rw_mutex_t;
 
 typedef int globus_rw_mutexattr_t;
 
-void
+int
 globus_rw_mutex_init(
     globus_rw_mutex_t *                 rw_lock,
     globus_rw_mutexattr_t *             attr);
 
-void
+int
 globus_rw_mutex_readlock(
     globus_rw_mutex_t *                 rw_lock);
 
-void
+int
 globus_rw_mutex_writelock(
     globus_rw_mutex_t *                 rw_lock);
 
-void
+int
 globus_rw_mutex_readunlock(
     globus_rw_mutex_t *                 rw_lock);
 
-void
+int
 globus_rw_mutex_writeunlock(
     globus_rw_mutex_t *                 rw_lock);
 
-void
+int
 globus_rw_mutex_destroy(
     globus_rw_mutex_t *                 rw_lock);
 
@@ -48,12 +48,12 @@ globus_rw_mutex_destroy(
 typedef int globus_rw_mutex_t;
 typedef int globus_rw_mutexattr_t;
 
-#define globus_rw_mutex_init(M,A) (*(M) = 0)
-#define globus_rw_mutex_readlock(M) (*(M) = 1)
-#define globus_rw_mutex_writelock(M) (*(M) = 1)
-#define globus_rw_mutex_readunlock(M) (*(M) = 0)
-#define globus_rw_mutex_writeunlock(M) (*(M) = 0)
-#define globus_rw_mutex_destroy(M) (*(M) = 0)
+#define globus_rw_mutex_init(M,A) (*(M) = 0, 0)
+#define globus_rw_mutex_readlock(M) (*(M) = 1, 0)
+#define globus_rw_mutex_writelock(M) (*(M) = 1, 0)
+#define globus_rw_mutex_readunlock(M) (*(M) = 0, 0)
+#define globus_rw_mutex_writeunlock(M) (*(M) = 0, 0)
+#define globus_rw_mutex_destroy(M) (*(M) = 0, 0)
 
 #endif
 
