@@ -3,6 +3,9 @@
 #include "gaa_core.h"
 #include "gaa_test_utils.h"
 #include "gaa_debug.h"
+#ifdef notdef
+#include <libxml/parser.h>
+#endif /* notdef */
 
 char *
 process_msg(gaa_ptr gaa, gaa_sc_ptr *sc, char *inbuf, char *outbuf, int outbsize, char **users, gaa_policy_ptr *policy)
@@ -27,6 +30,10 @@ process_msg(gaa_ptr gaa, gaa_sc_ptr *sc, char *inbuf, char *outbuf, int outbsize
 	    process_clear(sc);
 	else if (strcasecmp(what, "pull") == 0)
 	    process_pull(gaa, *sc, outbuf, outbsize);
+#ifdef notdef
+	else if (strcasecmp(what, "verify_xml_sig") == 0)
+	    process_saml_verify_xml_sig(inbuf, outbuf, outbsize);
+#endif /* notdef */
 	else
 	    snprintf(outbuf, outbsize, "huh?\n");
     }
@@ -276,3 +283,28 @@ init_sc(gaa_ptr gaa, gaa_sc_ptr *sc, void *context)
     return(0);
 }
 
+#ifdef notdef
+gaa_status
+process_saml_verify_xml_sig(filename, outbuf, outbsize)
+{
+    char *str;
+    int len;
+    xmlDocPtr doc;
+
+    if (filename == 0) {
+	snprintf(outbuf, outbsize, "(null filename)\n");
+	return(GAA_S_SUCCESS);
+    }
+    xmlInitParser();
+    xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+    xmlSubstituteEntitiesDefault(1);
+
+    doc = xmlParseFile(filename);
+
+    if (gaa_simple_i_xml_sig_ok(doc, outbuf, outbsize)) {
+	printf("signature is okay\n");
+    } else {
+	printf("signature is bad\n");
+    }
+}
+#endif /* notdef */
