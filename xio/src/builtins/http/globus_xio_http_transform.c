@@ -316,6 +316,7 @@ globus_l_xio_http_find_cached_handle(
         {
             iter = globus_list_rest(iter);
         }
+        http_handle = NULL;
     }
     globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
 
