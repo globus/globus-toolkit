@@ -81,6 +81,7 @@ if ( ! -f "$ldif_conf" )
 }
 
 my $hostname = `${bindir}/globus-hostname`;
+chomp($hostname);
 
 system("grep \"BEGIN $manager_type\" $ldif_conf >/dev/null");
 if ( ! $? )
