@@ -505,39 +505,8 @@ gram_job_request(char * gatekeeper_url,
 
     if (rc != 0)
     {
-      char * reason;
-      switch (rc) {
-        case 0x000d0002:
-         reason = "Globusids of gatekeeper and contact do not match.";
-         break;
-        case 0x000d0003:
-          reason="Globusid of gatekeeper not found in .globushost.";
-          break;
-        case 0x000d0004:
-          reason="Gatekeeper sent DENIED message.";
-          break;
-        case 0x000d0005:
-          reason="Problem creating security context.";
-          break;
-        case 0x000d0006:
-          reason="wrong password.";
-          break;
-        case 0x000d0007:
-          reason="Globusid of user not found in globusmap.";
-          break;
-        case 0x000d0101:
-          reason="Failed to write token, communication problem.";
-          break;
-        case 0x000d0102:
-          reason="Failed to read token, communication problem.";
-          break;
-        default:
-          reason="Other failure";
-          break;
-      }
       fprintf(stderr, 
-	      "GSS authentication failed. rc = %8.8x\n Reason : %s\n",
-	      rc, reason);
+	      "GSS authentication failed. rc = %8.8x\n", rc);
       nexus_fd_close(gatekeeper_fd);
       GRAML_UNLOCK;
       return (GRAM_ERROR_AUTHORIZATION);
