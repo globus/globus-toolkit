@@ -282,7 +282,7 @@ my $timestring = gmtime($timestamp);
 while((my $tag, my $tag_id) = each(%tags))
 {
     system("rm -f $parsed_file");
-    system("rcs -q -u -M $rcsfile");
+    system("rcs -q -u -M $rcsfile 2> /dev/null");
     system("co -q -l$tag_version{$tag} $parsed_file $rcsfile 2> /dev/null");
 
     system("cat $template_file | "
