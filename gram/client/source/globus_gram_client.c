@@ -29,6 +29,7 @@ CVS Information:
 #include <sys/param.h>
 #include <sys/time.h>
 #include <globus_nexus.h>
+#include "globus_i_gram_version.h"
 #include "globus_gram_client.h"
 #include "grami_fprintf.h"
 #include "globus_rsl.h"
@@ -336,6 +337,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
                                   int * gatekeeper_fd)
 {
     int                          rc;
+    int                          tmp_version;
     char *                       gatekeeper_host;
     char *                       gatekeeper_princ;
     unsigned short               gatekeeper_port = 0;
@@ -479,6 +481,14 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 	    return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
         }
     }
+    else
+    {
+        tmp_version = atoi(auth_msg_buf);
+        if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+        {
+            return (GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
+        }
+    }
 
     grami_fprintf(globus_l_print_fp,
 		  "Authentication/authorization complete\n");
@@ -510,7 +520,8 @@ globus_gram_client_ping(char * gatekeeper_url)
                                                 GSS_C_MUTUAL_FLAG,
                                                 &gatekeeper_fd)) != 0)
     {
-        return(rc);
+        if (rc != GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
+            return(rc);
     }
 
     globus_nexus_fd_close(gatekeeper_fd);
@@ -586,6 +597,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
     size  = globus_nexus_sizeof_byte(1);
     size += globus_nexus_sizeof_int(1);
     size += globus_nexus_sizeof_int(1);
+    size += globus_nexus_sizeof_int(1);
     size += globus_nexus_sizeof_char(strlen(description));
     size += globus_nexus_sizeof_int(1);
     size += globus_nexus_sizeof_int(1);
@@ -611,8 +623,8 @@ globus_gram_client_job_request(char * gatekeeper_url,
     contact_msg_buffer = tmp_buffer;
     
     /*
-     * Put 4-byte big-endian unsigned integer into front of message, to be
-     * peeled off by the gram_gatekeeper
+     * Put 4-byte big-endian unsigned integer into front of message,
+     * this is the size of the message to be peeled off by the gatekeeper
      */
     *tmp_buffer++ = (globus_byte_t) (((size) & 0xFF000000) >> 24);
     *tmp_buffer++ = (globus_byte_t) (((size) & 0xFF0000) >> 16);
@@ -623,6 +635,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
      * Pack the rest of the message that goes to the gram_job_manager
      */
     *tmp_buffer++ = (globus_byte_t) type;
+    globus_nexus_user_put_int(&tmp_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
     globus_nexus_user_put_int(&tmp_buffer, &size, 1);
     count= strlen(description);
     globus_nexus_user_put_int(&tmp_buffer, &count, 1);
@@ -744,6 +757,7 @@ globus_l_job_request_reply_handler(globus_nexus_endpoint_t * endpoint,
     int               size;
     int               count = 0;
     int               format;
+    int               gram_version;
     globus_byte_t     bformat;
     globus_byte_t *   ptr;
     globus_l_job_request_monitor_t * job_request_monitor;
@@ -756,14 +770,24 @@ globus_l_job_request_reply_handler(globus_nexus_endpoint_t * endpoint,
 
     globus_mutex_lock(&job_request_monitor->mutex);
 
-    globus_nexus_get_int(buffer, &(job_request_monitor->job_status), 1);
-
-    if (job_request_monitor->job_status == 0)
+    globus_nexus_get_int(buffer, &gram_version, 1);
+    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-        globus_nexus_get_int(buffer, &count, 1);
-        globus_nexus_get_char(buffer,
-			      job_request_monitor->job_contact_str,
-			      count);
+       job_request_monitor->job_status = 
+             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }
+    else
+    {
+
+        globus_nexus_get_int(buffer, &(job_request_monitor->job_status), 1);
+
+        if (job_request_monitor->job_status == 0)
+        {
+            globus_nexus_get_int(buffer, &count, 1);
+            globus_nexus_get_char(buffer,
+                                  job_request_monitor->job_contact_str,
+                                  count);
+        }
     }
 
     *(job_request_monitor->job_contact_str+count)= '\0';
@@ -838,8 +862,10 @@ globus_gram_client_job_cancel(char * job_contact)
         return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
 
-    size = globus_nexus_sizeof_startpoint(&sp, 1);
+    size =  globus_nexus_sizeof_int(1);
+    size += globus_nexus_sizeof_startpoint(&sp, 1);
     globus_nexus_buffer_init(&buffer, size, 0);
+    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
     globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
 
     rc = globus_nexus_send_rsr(&buffer,
@@ -884,6 +910,7 @@ globus_l_cancel_callback_handler(globus_nexus_endpoint_t * endpoint,
                               globus_nexus_buffer_t * buffer,
                               globus_bool_t is_non_threaded)
 {
+    int gram_version;
     globus_l_cancel_monitor_t * cancel_monitor;
 
     cancel_monitor = 
@@ -894,7 +921,16 @@ globus_l_cancel_callback_handler(globus_nexus_endpoint_t * endpoint,
 		  "in globus_l_cancel_callback_handler()\n");
 
     globus_mutex_lock(&cancel_monitor->mutex);
-    globus_nexus_get_int(buffer, &cancel_monitor->cancel_status, 1);
+    globus_nexus_get_int(buffer, &gram_version, 1);
+    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        cancel_monitor->cancel_status = 
+             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }
+    else
+    {
+        globus_nexus_get_int(buffer, &cancel_monitor->cancel_status, 1);
+    }
     
     cancel_monitor->done = GLOBUS_TRUE;
     globus_cond_signal(&cancel_monitor->cond);
@@ -997,6 +1033,7 @@ globus_l_callback_handler(globus_nexus_endpoint_t * endpoint,
                        globus_nexus_buffer_t * buffer,
                        globus_bool_t is_non_threaded)
 {
+    int gram_version;
     int count;
     int state;
     int errorcode;
@@ -1008,11 +1045,21 @@ globus_l_callback_handler(globus_nexus_endpoint_t * endpoint,
     callback = (globus_l_callback_t *)
 	globus_nexus_endpoint_get_user_pointer(endpoint);
     
-    globus_nexus_get_int(buffer, &count, 1);
-    globus_nexus_get_char(buffer, job_contact, count);
-    *(job_contact+count)= '\0';
-    globus_nexus_get_int(buffer, &state, 1);
-    globus_nexus_get_int(buffer, &errorcode, 1);
+    globus_nexus_get_int(buffer, &gram_version, 1);
+    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        strcpy(job_contact, "ERROR: globus gram version mismatch");
+        state = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+        errorcode = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+    }
+    else
+    {
+        globus_nexus_get_int(buffer, &count, 1);
+        globus_nexus_get_char(buffer, job_contact, count);
+        *(job_contact+count)= '\0';
+        globus_nexus_get_int(buffer, &state, 1);
+        globus_nexus_get_int(buffer, &errorcode, 1);
+    }
     
     (*callback->callback_func)(callback->user_callback_arg, 
 			       job_contact, 
@@ -1103,10 +1150,12 @@ globus_gram_client_job_start_time(char * job_contact,
 	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
 
-    size  = globus_nexus_sizeof_float(1);
+    size  = globus_nexus_sizeof_int(1);
+    size += globus_nexus_sizeof_float(1);
     size += globus_nexus_sizeof_startpoint(&sp, 1);
 
     globus_nexus_buffer_init(&buffer, size, 0);
+    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
     globus_nexus_put_float(&buffer, &required_confidence, 1);
     globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
 
@@ -1157,6 +1206,7 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
                                   globus_nexus_buffer_t * buffer,
                                   globus_bool_t is_non_threaded)
 {
+    int gram_version;
     globus_l_start_time_monitor_t * start_time_monitor;
 
     start_time_monitor = (globus_l_start_time_monitor_t *)
@@ -1167,10 +1217,23 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
 
     globus_mutex_lock(&start_time_monitor->mutex);
 
-    globus_nexus_get_int(buffer, &start_time_monitor->start_time_status, 1);
-    globus_nexus_get_int(buffer, &start_time_monitor->start_time_estimate, 1);
-    globus_nexus_get_int(buffer,
-			 &start_time_monitor->start_time_interval_size, 1);
+    globus_nexus_get_int(buffer, &gram_version, 1);
+    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        start_time_monitor->start_time_status = 
+            GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+        start_time_monitor->start_time_estimate = 0;
+        start_time_monitor->start_time_interval_size = 0;
+    }
+    else
+    {
+        globus_nexus_get_int(buffer,
+                             &start_time_monitor->start_time_status, 1);
+        globus_nexus_get_int(buffer, 
+                             &start_time_monitor->start_time_estimate, 1);
+        globus_nexus_get_int(buffer,
+			     &start_time_monitor->start_time_interval_size, 1);
+    }
     
     start_time_monitor->done = GLOBUS_TRUE;
     globus_cond_signal(&start_time_monitor->cond);
