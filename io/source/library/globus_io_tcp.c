@@ -1050,6 +1050,7 @@ globus_io_tcp_register_accept(
 	
 	    globus_io_tcpattr_destroy(&listener_attr);
 
+            globus_libc_close(new_handle->fd);
 	    goto error_exit;
 	}
     }
@@ -1150,6 +1151,7 @@ globus_io_tcp_register_accept(
     if(rc != GLOBUS_SUCCESS)
     {
         err = globus_error_get(rc);
+	globus_libc_close(new_handle->fd);
         goto error_exit;
     }
     
