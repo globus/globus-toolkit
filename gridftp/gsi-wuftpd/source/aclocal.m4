@@ -27,33 +27,44 @@ AC_DEFUN([GSSAPI_CONFIG],
 AC_MSG_CHECKING(for type of gssapi support)
 
 AC_ARG_WITH(gssapi,
-[  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.],
+[  --with-gssapi=<type>    Obsolete. Use --enable-gssapi instead.],
 [gssapi_type=$withval],
 [if test -z "$gssapi_type"; then
      gssapi_type="none"
 fi])
 
 AC_ARG_ENABLE(gssapi,
-[  --enable-gssapi=<type>     Specify type of GSSAPI
-                              Options are: none, krb5, globus, gsi],
+[  --enable-gssapi=<type>  Specify type of GSSAPI
+                          Options are: none, krb5, globus, gsi],
 [gssapi_type=$enableval], [gssapi_type="none"])
 
 AC_ARG_ENABLE(authorization,
-[  --enable-authorization=<type>  Type of authorization : krb5 or gridmap
-                              gridmap always used with globus or gsi
-                              and can be used with krb5],
+[  --enable-authorization=<type>
+                          Type of authorization : krb5 or gridmap
+			  gridmap always used with globus or gsi
+			  and can be used with krb5],
 [authorization_type=$enableval], [authorization_type="krb5"])
 
+AC_ARG_WITH(globus-paths,
+[  --with-globus-paths     Use ftp configuration files in \$GLOBUS_LOCATION],
+[globus_paths=$withval], [globus_paths="no"])
 
+if test "X$globus_paths" = "Xyes"; then
+    AC_DEFINE(USE_GLOBUS_PATHS)
+fi
+
+AC_ARG_WITH(flavor,
+[  --with-flavor=FLAVOR    Choose globus flavor],
+                    globus_cv_flavor=$withval)
 AC_ARG_WITH(krb5-dir,
-[  --with-krb5-dir=<DIR> Location of krb5],
+[  --with-krb5-dir=<DIR>   Location of krb5],
 [krb5_dir=$withval], 
 [if test -z "$krb5_dir"; then
 	krb5_dir="no"
 fi])
 
 AC_ARG_WITH(globus-dir,
-	[  --with-globus-dir=<DIR>  Location of globus or gsi],
+	[  --with-globus-dir=<DIR> Location of globus or gsi],
 	globus_dir=$withval,
 	globus_dir="none"
 )
@@ -207,10 +218,10 @@ dnl
 AC_DEFUN([AFS_CONFIG],
 [
 dnl
-dnl --with-afs		Use transarc AFS libraries
+dnl --with-afs		  Use transarc AFS libraries
 AC_MSG_CHECKING(whether to use Transarc AFS libraries)
 AC_ARG_WITH([afs],
-[  --with-afs=<PATH>	Use transarc AFS libraries],
+[  --with-afs=<PATH>	  Use transarc AFS libraries],
 ,with_afs=no)dnl
 AC_MSG_RESULT($with_afs)
 case "$with_afs" in
@@ -242,11 +253,11 @@ if test $with_afs != no; then
 fi
 
 dnl
-dnl --with-krbafs	Use krbafs libraries
+dnl --with-krbafs	  Use krbafs libraries
 dnl
 AC_MSG_CHECKING(whether to use libkrbafs)
 AC_ARG_WITH(krbafs,
-[  --with-krbafs=<PATH>  Use libkrbafs libraries],,with_krbafs=no)
+[  --with-krbafs=<PATH>    Use libkrbafs libraries],,with_krbafs=no)
 AC_MSG_RESULT($with_krbafs)
 case "$with_krbafs" in
   no)   ;;
@@ -306,11 +317,12 @@ AC_DEFUN(CHECK_SETJMP,[
 ])dnl CHECK_SETJMP
 
 AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
-        AC_ARG_WITH(globus-flavor,
-[  --with-globus-flavor=FLAVOR  Choose globus flavor],
-                    globus_cv_flavor=$withval,
-                    AC_MSG_ERROR(must specify flavor))
+
 	GLOBUS_FLAVOR_NAME=$globus_cv_flavor
+
+	if test -z "$GLOBUS_FLAVOR_NAME" -o "$GLOBUS_FLAVOR_NAME" = "no"; then
+            AC_MSG_ERROR(must specify globus flavor)
+	fi
 
     if test -z "$globus_cv_development_path"; then
 
@@ -345,13 +357,12 @@ AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
 	    AC_MSG_ERROR(missing)
 	fi
         GLOBUS_LIBTOOL=${GPT_LOCATION}/sbin/libtool-${GLOBUS_FLAVOR_NAME}
-	AC_SUBST(GLOBUS_LIBTOOL)
 	globus_cv_development_path=${GLOBUS_LOCATION}
     fi
 ])dnl CHECK_GLOBUS_DEVELOPMENT_PATH
 
 AC_DEFUN(GLOBUS_DATA_CONFIG,[
-AC_ARG_ENABLE(globus-data, [  --disable-globus-data    don't use globus data code],
+AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code],
 	[ globus_data=$enableval ], [ globus_data=yes ])
 
     if test $globus_data = yes; then
@@ -495,3 +506,5 @@ AC_DEFUN(CHECK_STAT_WORKS,[dnl
      fi
      AC_MSG_RESULT($broken_stat)
      ])
+
+AC_SUBST(GLOBUS_LIBTOOL)

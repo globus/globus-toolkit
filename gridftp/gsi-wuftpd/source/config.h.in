@@ -198,6 +198,12 @@
 #undef GRIDMAP_WITH_KRB5
  
 /*
+ * Use GLOBUS_LOCATION to find ftp configuration files
+ *
+ */
+#undef USE_GLOBUS_PATHS
+
+/*
  * THROUGHPUT
  * Keep track of total throughput for the user and limit if required.
  */

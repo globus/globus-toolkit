@@ -39,6 +39,10 @@
 
 #include "pathnames.h"
 
+#if USE_GLOBUS_PATHS
+#include "globus_common.h"
+#endif
+
 #ifdef  VIRTUAL
 
 #include <sys/types.h>
@@ -129,11 +133,33 @@ void setup_paths(void)
     struct sockaddr_in *virtual_ptr;
 #endif
 
+#if defined(USE_GLOBUS_PATHS)
+    /* For Globus packages, we put all configuration in the GLOBUS_LOCATION */
+    char * globus_loc;
+
+    globus_location(&globus_loc);
+
+    strcpy(_path_ftpaccess, globus_loc);
+    strcat(_path_ftpaccess, _PATH_FTPACCESS);
+
+    strcpy(_path_ftpusers, globus_loc);
+    strcat(_path_ftpusers, _PATH_FTPUSERS);
+
+    strcpy(_path_private, globus_loc);
+    strcpy(_path_private, _PATH_PRIVATE);
+
+    strcpy(_path_cvt, globus_loc);
+    strcpy(_path_cvt, _PATH_CVT);
+
+    strcpy(logfile, globus_loc);
+    strcpy(logfile, _PATH_XFERLOG);
+#else
     strcpy(_path_ftpaccess, _PATH_FTPACCESS);
     strcpy(_path_ftpusers, _PATH_FTPUSERS);
     strcpy(_path_private, _PATH_PRIVATE);
     strcpy(_path_cvt, _PATH_CVT);
     strcpy(logfile, _PATH_XFERLOG);
+#endif
 
 #ifdef  HOST_ACCESS
     strcpy(_path_ftphosts, _PATH_FTPHOSTS);

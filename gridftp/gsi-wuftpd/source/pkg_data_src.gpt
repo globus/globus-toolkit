@@ -40,7 +40,7 @@
 	    </Build_Step>
 	    <Build_Step>
 		. $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
-		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-globus-flavor=FLAVOR_GPTMACRO --with-etc-dir=INSTALLDIR_GPTMACRO/etc --with-pid-dir=INSTALLDIR_GPTMACRO/var --with-log-dir=INSTALLDIR_GPTMACRO/var
+		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO --with-globus-paths
 	    </Build_Step>
 
 	    <Build_Step>
