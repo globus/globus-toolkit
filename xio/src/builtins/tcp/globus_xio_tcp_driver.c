@@ -927,11 +927,6 @@ globus_l_xio_tcp_contact_string(
             result = GlobusXIOErrorSystemError("getsockname", errno);
             goto error_sockopt;
         }
-        
-        if(globus_libc_addr_is_wildcard(&sock_name))
-        {
-            flags |= GLOBUS_LIBC_ADDR_LOCAL;
-        }
         break;
         
       case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
