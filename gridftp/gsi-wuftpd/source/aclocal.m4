@@ -48,7 +48,6 @@ AC_ARG_ENABLE(static-only,
 		  ;;
 		yes)
 		  GPT_LINKTYPE="static"
-		  GPT_LDFLAGS=" -all-static $GPT_LDFLAGS"
 		  ;;
 		*)
 		  AC_MSG_ERROR(--enable-static-only has no arguments)
@@ -116,7 +115,7 @@ if test "$gssapi_type" = "globus" ; then
 	if test -z "$GPT_LOCATION" ; then
 	    GPT_LOCATION=$GLOBUS_LOCATION
 	fi
-	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src-gssapi.gpt \
+	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src.gssapi \
 	                 -flavor=${globus_flavor} \
 			 -link $GPT_LINKTYPE > /dev/null
 	if test "$?" = "0"; then
@@ -398,7 +397,7 @@ AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code
 
 	inc="${GLOBUS_LOCATION}/include"
 	GLOBUS_DATA_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
-	GLOBUS_DATA_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
+	GLOBUS_DATA_LDFLAGS=" -L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
 	GLOBUS_DATA_LIBS="${GPT_CONFIG_PGM_LINKS}"
     
 	AC_SUBST(GLOBUS_DATA_CFLAGS)
@@ -653,3 +652,25 @@ AC_DEFUN(LAC_DOXYGEN,dnl
     fi
 ]
 )
+
+AC_DEFUN(LAC_STATIC_FLAGS,dnl
+[
+case $GPT_LINKTYPE in
+	static)
+
+		case ${host}--$1 in
+    		*solaris2*)
+		    STATIC_FLAGS="-Bstatic -Bdynamic $LIBS  -Bstatic -z nodefs"
+		    LIBS=""
+		    AC_SUBST(STATIC_FLAGS)
+		    AC_SUBST(LIBS)
+		    ;;
+    		*)
+		    STATIC_FLAGS="-all-static"
+		    AC_SUBST(STATIC_FLAGS)
+		    ;;
+		esac
+	;;
+esac
+])
+

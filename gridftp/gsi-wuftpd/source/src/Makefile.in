@@ -45,11 +45,11 @@ CFLAGS=$(WARNINGS)                          \
        @GSSAPI_CFLAGS@                      \
        @AFS_CFLAGS@                         \
        $(GLOBUS_DATA_CFLAGS)
-LDFLAGS=@LDFLAGS@                           \
+LDFLAGS=@STATIC_FLAGS@		            \
+	@LDFLAGS@                           \
         @GPT_LDFLAGS@			    \
         @GSSAPI_LDFLAGS@                    \
-        @AFS_LDFLAGS@                       \
-        $(GLOBUS_DATA_LDFLAGS)
+        @AFS_LDFLAGS@                       
 
 YACC=@YACC@
 LIBS=@LIBS@                                 \
