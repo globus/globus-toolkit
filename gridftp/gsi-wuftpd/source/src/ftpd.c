@@ -8173,6 +8173,7 @@ void do_daemon(int argc, char **argv, char **envp)
     if(daemon_port == 0)
     {
         fprintf(stdout, "Accepting connections on port %i\n", port);
+        fflush(stdout);
     }
 
     daemon_port = port;
