@@ -1,4 +1,4 @@
-/******************************************************************************
+/*
 gram_client.h
 
 Description:
@@ -11,15 +11,12 @@ CVS Information:
     $Date$
     $Revision$
     $Author$
-******************************************************************************/
+*/
 
 #ifndef GLOBUS_I_GRAM_CLIENT_INCLUDE
 #define GLOBUS_I_GRAM_CLIENT_INCLUDE
 
-/******************************************************************************
-                             Include header files
-******************************************************************************/
-
+/* Include header files */
 #include "globus_common.h"
 #include "globus_gram_protocol_constants.h"
 
@@ -35,24 +32,60 @@ CVS Information:
  
 EXTERN_C_BEGIN
 
+
+/** 
+ * @mainpage Resource Management Client API
+ * 
+ * The resource management API provides functions for requesting
+ * that a job be started or terminated, as well as for requesting
+ * information about the status of a job.
+ */
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
 
 
+/**
+ * @defgroup globus_gram_client_callback Job state callbacks
+ */
+
+/**
+ * GRAM state callback type.
+ * @ingroup globus_gram_client_callback
+ *
+ * Type of a GRAM Client state callback function. A pointer to a function
+ * of this type is passed to the globus_gram_client_callback_allow() function
+ * to create a callback contact. This contact can be passed to
+ * globus_gram_client_job_request() or
+ * globus_gram_client_job_callback_register() to let the job manager
+ * know to send information on GRAM job state changes to the user's function.
+ *
+ * @param user_callback_arg
+ *        A pointer to arbitrary user data.
+ * @param job_contact
+ *        A string containing the job contact. This string will contain
+ *        the same value as the return job_contact parameter from
+ *        globus_gram_client_job_request().
+ * @param state
+ *        The new state (one of the #globus_gram_protocol_job_state_t values)
+ *        of the job.
+ * @param errorcode
+ *        The error code if the @a state parameter is equal to
+ *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ */
 typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
 						    char * job_contact,
 						    int state,
 						    int errorcode);
-typedef struct
-{
-    int dumb_time;
-} globus_gram_client_time_t;
 
 /******************************************************************************
                                Global variables
 ******************************************************************************/
 
+/**
+ * @defgroup globus_gram_client_job_functions GRAM Job Functions
+ */
 
 /******************************************************************************
                               Function prototypes
@@ -112,11 +145,11 @@ extern int
 globus_gram_client_callback_disallow(char * callback_contact);
 
 extern int 
-globus_gram_client_callback_check();
-
-extern int 
 globus_gram_client_job_contact_free(char * job_contact);
 
+/**
+ * @defgroup globus_gram_client Other GRAM Client Functions
+ */
 extern const char *
 globus_gram_client_error_string(int error_code);
 
@@ -129,30 +162,9 @@ globus_gram_client_ping(char * resource_manager_contact);
 extern void
 globus_gram_client_debug(void);
 
-/*** unimplemented ***
-extern int 
-globus_gram_client_job_check(char * resource_manager_contact,
-			     const char * description,
-			     float required_confidence,
-			     globus_gram_client_time_t * estimate,
-			     globus_gram_client_time_t * interval_size);
-
-extern int 
-globus_gram_client_job_start_time(char * job_contact,
-				  float required_confidence,
-				  globus_gram_client_time_t * estimate,
-				  globus_gram_client_time_t * interval_size);
-*** unimplemented ***/
-
 /******************************************************************************
  *			       Module definition
  *****************************************************************************/
-
-extern int
-globus_i_gram_client_activate(void);
-
-extern int
-globus_i_gram_client_deactivate(void);
 
 #define GLOBUS_GRAM_CLIENT_MODULE (&globus_gram_client_module)
 
