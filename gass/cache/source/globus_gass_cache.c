@@ -100,6 +100,8 @@ globus_module_descriptor_t globus_i_gass_cache_module =
    before using it. A list of handlers could be used...*/
 static char globus_l_gass_cache_is_init;
 static char globus_l_gass_cache_is_not_init;
+static int globus_l_gass_cache_pid;
+static int globus_l_gass_cache_fn_fudge;
 
 /* it is fine to declare those macro here, together with the var. they uses  */
 #define CHECK_CACHE_IS_INIT() if (cache_handle->init != &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED)
@@ -274,6 +276,8 @@ globus_l_gass_cache_module_activate(void)
     remove(file1);
  real_exit:
 #endif
+    globus_l_gass_cache_pid = globus_libc_getpid();
+    globus_l_gass_cache_fn_fudge = 0;
     return GLOBUS_SUCCESS;
 }
 
