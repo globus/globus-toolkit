@@ -1,0 +1,23 @@
+#! /usr/bin/perl
+
+use POSIX;
+
+my $hostname = (POSIX::uname())[1];
+my $now = time;
+
+#generate a fake job ID
+my $jobId = sprintf("%010d%010d.$hostname\n",$now,$$);
+
+my $username = $ENV{"USER"};
+my $home = $ENV{"HOME"};
+my $dataFile = "$home/.globus/uhe-$hostname/fake_qsub_data";
+
+#write the job ID to our fake queue list file
+open(DATAFILE, ">>$dataFile")
+    or die "ERROR: couldn't open $dataFile for writing";
+print DATAFILE $jobId;
+close(DATAFILE);
+
+#print the job ID for consumption by the jobmanager
+print $jobId;
+
