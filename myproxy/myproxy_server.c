@@ -606,7 +606,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	}
 	failure("Error in bind()");
     }
-    if (listen(listen_sock, 5) < 0) {
+    if (listen(listen_sock, INT_MAX) < 0) {
 	    failure("Error in listen()");
     }
     return listen_sock;
