@@ -227,6 +227,9 @@ const char * long_usage =
 "       Print the version of this program\n"
 "  -versions\n"
 "       Print the versions of all modules that this program uses\n"
+"  -c | -continue-on-error\n"
+"       Do not die after any errors.  By default, program will exit after\n"
+"       most errors.\n"
 "  -a | -ascii\n"
 "       Convert the file to/from ASCII format to/from local file format\n"
 "  -b | -binary\n"
@@ -239,8 +242,10 @@ const char * long_usage =
 "  -r | -recurse\n" 
 "       Copy files in subdirectories\n"
    
-"  -dml | -list-uses-data-mode\n" 
-"       Use MODE E for list data connections when -p is used.\n"
+"  -fast\n" 
+"       Recommended when using GridFTP servers. Use MODE E for all data\n"
+"       transfers, including reusing data channels between list and transfer\n"
+"       operations.\n"
    
 "  -q | -quiet \n"
 "       Suppress all output for successful operation\n"
@@ -265,9 +270,9 @@ const char * long_usage =
    
 "  -rp | -relative-paths\n"
 "      The path portion of ftp urls will be interpereted as relative to the\n"
-"      user's starting directory.  By default, all paths are root-relative.\n"
-"      When this flag is set, the path portion of the ftp url must start \n"
-"      with %%2F if it designates a root-relative path.\n"
+"      user's starting directory on the server.  By default, all paths are\n"
+"      root-relative.  When this flag is set, the path portion of the ftp url\n"
+"      must start with %%2F if it designates a root-relative path.\n"
    
 "  -s  <subject> | -subject <subject>\n"
 "       Use this subject to match with both the source and dest servers\n"
@@ -297,7 +302,7 @@ const char * long_usage =
 "       offset for partial ftp file transfers\n"
 "  -len | -partial-length\n"
 "       length for partial ftp file transfers, used only for the source url,\n"
-"       defaults to the size of file - offset.\n"
+"       defaults the full file.\n"
 "\n";
 
 /***********
@@ -349,6 +354,7 @@ enum
 { 
     arg_a = 1, 
     arg_b, 
+    arg_c, 
     arg_s, 
     arg_p, 
     arg_f, 
@@ -371,7 +377,7 @@ enum
     arg_partial_offset,
     arg_partial_length,
     arg_rfc1738,
-    arg_dml,
+    arg_fast,
     arg_striped,
     arg_num = arg_striped
 };
@@ -396,6 +402,7 @@ globus_args_option_descriptor_t defname(id) = \
 
 flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
+flagdef(arg_c, "-c", "-continue-on-error");
 flagdef(arg_q, "-q", "-quiet");
 flagdef(arg_vb, "-vb", "-verbose");
 flagdef(arg_debugftp, "-dbg", "-debugftp");
@@ -407,7 +414,7 @@ flagdef(arg_data_private, "-dcpriv", "-data-channel-private");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
-flagdef(arg_dml, "-dml", "-list-uses-data-mode");
+flagdef(arg_fast, "-fast", "-fast-data-channels");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -430,6 +437,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
 #define globus_url_copy_i_args_init()   \
     setupopt(arg_a);                    \
     setupopt(arg_f);                    \
+    setupopt(arg_c);                    \
     setupopt(arg_b);                    \
     setupopt(arg_s);                    \
     setupopt(arg_q);                    \
@@ -452,7 +460,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_partial_offset);	\
     setupopt(arg_partial_length);	\
     setupopt(arg_rfc1738);	\
-    setupopt(arg_dml);	\
+    setupopt(arg_fast);	\
     setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
@@ -461,6 +469,7 @@ static globus_bool_t g_verbose_flag = GLOBUS_FALSE;
 static globus_bool_t g_quiet_flag = GLOBUS_FALSE;
 static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
+static globus_bool_t g_continue = GLOBUS_FALSE;
 
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     globus_netlogger_handle_t                       gnl_handle;
@@ -1178,6 +1187,10 @@ globus_l_guc_transfer_files(
                     globus_error_print_friendly(globus_error_get(result)));
             monitor.done = GLOBUS_TRUE;
             ret_val=1;
+            if(!g_continue)
+            {
+                goto error_transfer;
+            }
         }
 
         globus_mutex_lock(&monitor.mutex);
@@ -1215,6 +1228,11 @@ globus_l_guc_transfer_files(
                 dst_url);
             globus_object_free(monitor.err);
             ret_val = 1;
+            if(!g_continue)
+            {
+                goto error_transfer;
+            }
+
         }
 	
 	
@@ -1249,6 +1267,7 @@ globus_l_guc_transfer_files(
 
     return ret_val;
 
+error_transfer:
 error_dirlist:
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
@@ -1338,6 +1357,9 @@ globus_l_guc_parse_arguments(
         case arg_b:
             guc_info->options |= GLOBUS_URL_COPY_ARG_BINARY;
             break;
+        case arg_c:
+            g_continue = GLOBUS_TRUE;
+            break;
         case arg_q:
             g_quiet_flag = GLOBUS_TRUE;
             break;
@@ -1364,6 +1386,10 @@ globus_l_guc_parse_arguments(
             break;
         case arg_p:
             guc_info->num_streams = atoi(instance->values[0]);
+            if(guc_info->list_uses_data_mode && guc_info->num_streams < 1)
+            {
+                guc_info->num_streams = 1;
+            }
             break;
         case arg_notpt:
             guc_info->no_3pt = GLOBUS_TRUE;
@@ -1413,8 +1439,13 @@ globus_l_guc_parse_arguments(
                 &guc_info->partial_length,
                 GLOBUS_NULL);
 	    break;
-	case arg_dml:
+	case arg_fast:
 	    guc_info->list_uses_data_mode = GLOBUS_TRUE;
+	    if(guc_info->num_streams < 1)
+	    {
+                guc_info->num_streams = 1;
+            }
+
 	    break;
 
         default:

@@ -1860,7 +1860,7 @@ globus_ftp_client_get(
  * @param partial_offset
  *        Starting offset for a partial file get.
  * @param partial_end_offset
- *        Ending offset for a partial file get.
+ *        Ending offset for a partial file get. Use -1 for EOF.
  * @param complete_callback
  *        Callback to be invoked once the "get" is completed.
  * @param callback_arg
@@ -1889,38 +1889,91 @@ globus_ftp_client_partial_get(
 {
     char                                        alg_str_buf[128];
     globus_result_t                             result;
+    globus_ftp_client_restart_marker_t          tmp_restart;
+    globus_object_t *                            err;
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_ftp_client_partial_get() entering\n"));
 
     if(partial_offset < 0)
     {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("partial_offset");
+        goto error_param;
     }
 
-    if(partial_end_offset < partial_offset)
+    if(partial_end_offset != -1 && partial_end_offset < partial_offset)
     {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("partial_end_offset");
+        goto error_param;
     }
 
-    sprintf(
-        alg_str_buf, GLOBUS_L_DATA_ERET_FORMAT_STRING,
-        partial_offset, 
-        partial_end_offset - partial_offset);
 
-    result = globus_l_ftp_client_extended_get(
-               handle,
-               url,
-               attr,
-               restart,
-               alg_str_buf,
-               partial_offset,
-               partial_end_offset,
-               complete_callback,
-               callback_arg);
+    if(partial_end_offset != -1)
+    { 
+        sprintf(
+            alg_str_buf, GLOBUS_L_DATA_ERET_FORMAT_STRING,
+            partial_offset, 
+            partial_end_offset - partial_offset);
+        
+        result = globus_l_ftp_client_extended_get(
+            handle,
+            url,
+            attr,
+            restart,
+            alg_str_buf,
+            partial_offset,
+            partial_end_offset,
+            complete_callback,
+            callback_arg);
+    }
+    /* if partial_end_offset == -1 use a restart at offset to get the full
+        transfer starting at offset */
+    else
+    {
+        if(restart)
+        {
+            globus_ftp_client_restart_marker_copy(restart, &tmp_restart);
+        }
+        else
+        {
+            result = globus_ftp_client_restart_marker_init(&tmp_restart);
+        }
+        
+        if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK)
+        {
+            globus_ftp_client_restart_marker_insert_range(
+                &tmp_restart,
+                0,
+                partial_offset);
+        }
+        else if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_NONE ||
+            (tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_STREAM && 
+            tmp_restart.stream.offset < partial_offset))
+        {
+            result = globus_ftp_client_restart_marker_set_offset(
+                &tmp_restart,
+                partial_offset);
+        }
+        
+        result = globus_ftp_client_get(
+            handle,
+            url,
+            attr,
+            &tmp_restart,
+            complete_callback,
+            callback_arg);
+            
+        globus_ftp_client_restart_marker_destroy(&tmp_restart);
+    }
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_ftp_client_partial_get() exiting\n"));
         
     return result;
+
+error_param:
+    return globus_error_put(err);
+        
 }
 /* globus_ftp_client_partial_get() */
 
@@ -2876,7 +2929,7 @@ globus_ftp_client_third_party_transfer(
  * @param partial_offset
  *        Starting offset for a partial file get.
  * @param partial_end_offset
- *        Ending offset for a partial file get.
+ *        Ending offset for a partial file get. Use -1 for EOF.
  * @param complete_callback
  *        Callback to be invoked once the "put" is completed.
  * @param callback_arg
@@ -2902,34 +2955,98 @@ globus_ftp_client_partial_third_party_transfer(
     char                                        eret_alg_buf[128]; 
     char                                        esto_alg_buf[128]; 
     globus_result_t                             result;
+    globus_ftp_client_restart_marker_t          tmp_restart;
+    globus_object_t *                            err;
     
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_ftp_client_partial_third_party_transfer() entering\n"));
     
-    sprintf(
-        eret_alg_buf, GLOBUS_L_DATA_ERET_FORMAT_STRING,
-        partial_offset, 
-        partial_end_offset - partial_offset);
-    sprintf(esto_alg_buf, GLOBUS_L_DATA_ESTO_FORMAT_STRING, partial_offset);
+    if(partial_offset < 0)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("partial_offset");
+        goto error_param;
+    }
 
-    result = globus_l_ftp_client_extended_third_party_transfer(
-               handle, 
-               source_url,
-               source_attr,
-               eret_alg_buf,
-               dest_url,
-               dest_attr,
-               esto_alg_buf,
-               restart,
-               partial_offset,
-               partial_end_offset,
-               complete_callback,
-               callback_arg);
+    if(partial_end_offset != -1 && partial_end_offset < partial_offset)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("partial_end_offset");
+        goto error_param;
+    }
+
+    if(partial_end_offset != -1)
+    { 
+        sprintf(
+            eret_alg_buf, GLOBUS_L_DATA_ERET_FORMAT_STRING,
+            partial_offset, 
+            partial_end_offset - partial_offset);
+        sprintf(esto_alg_buf, GLOBUS_L_DATA_ESTO_FORMAT_STRING, partial_offset);
+    
+        result = globus_l_ftp_client_extended_third_party_transfer(
+            handle, 
+            source_url,
+            source_attr,
+            eret_alg_buf,
+            dest_url,
+            dest_attr,
+            esto_alg_buf,
+            restart,
+            partial_offset,
+            partial_end_offset,
+            complete_callback,
+            callback_arg);
+
+    }
+    /* if partial_end_offset == -1 use a restart at offset to get the full
+        transfer starting at offset */
+    else
+    {
+        if(restart)
+        {
+            globus_ftp_client_restart_marker_copy(restart, &tmp_restart);
+        }
+        else
+        {
+            result = globus_ftp_client_restart_marker_init(&tmp_restart);
+        }
+        
+        if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK)
+        {
+            globus_ftp_client_restart_marker_insert_range(
+                &tmp_restart,
+                0,
+                partial_offset);
+        }
+        else if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_NONE ||
+            (tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_STREAM && 
+            tmp_restart.stream.offset < partial_offset))
+        {
+            result = globus_ftp_client_restart_marker_set_offset(
+                &tmp_restart,
+                partial_offset);
+        }
+        
+        result = globus_ftp_client_third_party_transfer(
+            handle, 
+            source_url,
+            source_attr,
+            dest_url,
+            dest_attr,
+            &tmp_restart,
+            complete_callback,
+            callback_arg);
+           
+        globus_ftp_client_restart_marker_destroy(&tmp_restart);
+    }
+
     
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_ftp_client_partial_third_party_transfer() exiting\n"));
     
     return result;
+    
+error_param:
+    return globus_error_put(err);
+
 }
 /* globus_ftp_client_partial_third_party_transfer() */
 

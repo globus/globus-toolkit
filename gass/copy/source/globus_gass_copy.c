@@ -2448,8 +2448,6 @@ globus_l_gass_copy_register_read(
 
     case GLOBUS_GASS_COPY_URL_MODE_IO:
 
-        if(handle->partial_offset == -1 || handle->partial_end_offset == -1)
-        {            
 	result = globus_io_register_read(
 	    state->source.data.io.handle,
 	    buffer,
@@ -2457,17 +2455,6 @@ globus_l_gass_copy_register_read(
 	    handle->buffer_length,
 	    globus_l_gass_copy_io_read_callback,
 	    (void *) handle);
-        }
-        else
-        {
-	result = globus_io_register_read(
-	    state->source.data.io.handle,
-	    buffer,
-	    handle->buffer_length,
-	    handle->buffer_length,
-	    globus_l_gass_copy_io_read_callback,
-	    (void *) handle);
-        }            
 
 	break;
     }
@@ -2888,56 +2875,6 @@ globus_l_gass_copy_ftp_setup_get(
             globus_l_gass_copy_ftp_get_done_callback,
             (void *) handle);
     }    
-    else if(handle->partial_end_offset == -1)
-    {
-        globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-        globus_cond_init(&monitor.cond, GLOBUS_NULL);
-        monitor.done = GLOBUS_FALSE;
-        monitor.err = GLOBUS_NULL;
-        monitor.use_err = GLOBUS_FALSE;
-
-        result = globus_ftp_client_size(
-            state->source.data.ftp.handle,
-            state->source.url,
-            state->source.attr->ftp_attr,
-            &handle->partial_end_offset,
-            globus_l_gass_copy_ftp_op_done_callback,
-            (void *) &monitor);
-    
-        if (result != GLOBUS_SUCCESS)
-        {
-            goto error_monitor_exit;
-        }
-        
-        globus_mutex_lock(&monitor.mutex);
-        
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
-        }
-        if(monitor.use_err)
-        {
-            result = globus_error_put(monitor.err);
-            globus_mutex_unlock(&monitor.mutex);
-            goto error_monitor_exit;
-        }
-        
-        globus_mutex_unlock(&monitor.mutex);
-        globus_mutex_destroy(&monitor.mutex);
-        globus_cond_destroy(&monitor.cond);
-        
-        result = globus_ftp_client_partial_get(
-            state->source.data.ftp.handle,
-            state->source.url,
-            state->source.attr->ftp_attr,
-            GLOBUS_NULL,
-            handle->partial_offset,
-            handle->partial_end_offset,                   
-            globus_l_gass_copy_ftp_get_done_callback,
-            (void *) handle);
-            
-        handle->partial_end_offset = -1;
-    }
     else
     {
         result = globus_ftp_client_partial_get(
@@ -3904,7 +3841,7 @@ globus_l_gass_copy_register_write(
     int rc;
     globus_object_t * err;
     static char * myname="globus_l_gass_copy_register_write";
-
+    globus_off_t tmp_offset;
     switch (state->dest.mode)
     {
     case GLOBUS_GASS_COPY_URL_MODE_FTP:
@@ -3918,15 +3855,25 @@ globus_l_gass_copy_register_write(
 		buffer_entry->offset,
 		buffer_entry->last_data);
 #endif
-	result = globus_ftp_client_register_write(
-	    state->dest.data.ftp.handle,
-	    buffer_entry->bytes,
-	    buffer_entry->nbytes,
-	    buffer_entry->offset,
-	    buffer_entry->last_data,
-	    globus_l_gass_copy_ftp_write_callback,
-	    (void *) handle);
 
+        if(handle->partial_offset != -1 && 
+            state->source.mode != GLOBUS_GASS_COPY_URL_MODE_FTP)
+        {
+            tmp_offset = buffer_entry->offset + handle->partial_offset;
+        }
+        else
+        {
+            tmp_offset = buffer_entry->offset;
+        }
+        result = globus_ftp_client_register_write(
+            state->dest.data.ftp.handle,
+            buffer_entry->bytes,
+            buffer_entry->nbytes,
+            tmp_offset,
+            buffer_entry->last_data,
+            globus_l_gass_copy_ftp_write_callback,
+            (void *) handle);
+                           
 	break;
 
     case GLOBUS_GASS_COPY_URL_MODE_GASS:
@@ -4964,58 +4911,6 @@ globus_gass_copy_register_url_to_url(
                 GLOBUS_NULL,
                 globus_l_gass_copy_ftp_transfer_callback,
                 (void *) handle);
-        }
-        else if(handle->partial_end_offset == -1)
-        {
-            globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-            globus_cond_init(&monitor.cond, GLOBUS_NULL);
-            monitor.done = GLOBUS_FALSE;
-            monitor.err = GLOBUS_NULL;
-            monitor.use_err = GLOBUS_FALSE;
-
-            result = globus_ftp_client_size(
-                &handle->ftp_handle,
-                source_url,
-                state->source.attr->ftp_attr,
-                &handle->partial_end_offset,
-                globus_l_gass_copy_ftp_op_done_callback,
-                (void *) &monitor);
-        
-            if (result != GLOBUS_SUCCESS)
-            {
-                goto error_monitor_exit;
-            }
-            
-            globus_mutex_lock(&monitor.mutex);
-            
-            while(!monitor.done)
-            {
-                globus_cond_wait(&monitor.cond, &monitor.mutex);
-            }
-            if(monitor.use_err)
-            {
-                result = globus_error_put(monitor.err);
-                globus_mutex_unlock(&monitor.mutex);
-                goto error_monitor_exit;
-            }
-            
-            globus_mutex_unlock(&monitor.mutex);
-            globus_mutex_destroy(&monitor.mutex);
-            globus_cond_destroy(&monitor.cond);
-
-            result = globus_ftp_client_partial_third_party_transfer(
-                &handle->ftp_handle,
-                source_url,
-                state->source.attr->ftp_attr,
-                dest_url,
-                state->dest.attr->ftp_attr,
-                GLOBUS_NULL,
-                handle->partial_offset,
-                handle->partial_end_offset,
-                globus_l_gass_copy_ftp_transfer_callback,
-                (void *) handle);
-                
-            handle->partial_end_offset = -1;
         }
         else 
         {

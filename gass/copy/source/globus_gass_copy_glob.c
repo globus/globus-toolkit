@@ -717,7 +717,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
                     globus_error_construct_string(
                         GLOBUS_GASS_COPY_MODULE,
                         GLOBUS_NULL,
-                        "[%s]: Bad MLSD output",
+                        "[%s]: Bad MLSD response",
                         myname));
                           
                 goto error_invalid_mlsd;
@@ -731,14 +731,46 @@ globus_l_gass_copy_glob_parse_ftp_list(
                   filetype == GLOBUS_GASS_COPY_FTP_LIST_ENTRY_ASSUMED_FILE) */
             {
                 endfact = strchr(startfact, ';');
-                *endfact = '\0';
+                if(endfact)
+                {             
+                    *endfact = '\0';
+                }
+                else
+                {
+                    endfact = space - 1;   
+                                     
+/*               older MLST-draft spec says ending fact can be missing
+                 the final semicolon... not a problem to support this,
+                 no need to die.   
+                    
+                    result = globus_error_put(
+                        globus_error_construct_string(
+                            GLOBUS_GASS_COPY_MODULE,
+                            GLOBUS_NULL,
+                            "[%s]: Bad MLSD response",
+                            myname));
+                          
+                    goto error_invalid_mlsd;
+*/
+                }
                 
                 for(i = 0; startfact[i] != '\0'; i++)
                 {
                     startfact[i] = tolower(startfact[i]);
                 }
-    
+
                 factval = strchr(startfact, '=');
+                if(!factval)
+                {             
+                    result = globus_error_put(
+                        globus_error_construct_string(
+                            GLOBUS_GASS_COPY_MODULE,
+                            GLOBUS_NULL,
+                            "[%s]: Bad MLSD response",
+                            myname));
+                          
+                    goto error_invalid_mlsd;
+                }
                 *(factval++) = '\0';
             
                 if(strcmp(startfact, "type") == 0)
