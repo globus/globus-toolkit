@@ -54,17 +54,17 @@ globus_error_initialize_string(
     const char *			fmt,
     va_list				ap)
 {
-    char * instance_data;
-    static FILE * f = NULL;
-    int len;
+    char *                              instance_data;
+    int                                 len;
+    va_list				ap_copy;
+
+    globus_libc_va_copy(ap_copy,ap);
+    len = globus_libc_vprintf_length(fmt,ap_copy) + 1;
+    va_end(ap_copy);
+    
+    len = vfprintf(f, fmt, ap) + 1;
 
     globus_libc_lock();
-    if(f == NULL)
-    {
-	f = fopen("/dev/null", "w");
-    }
-
-    len = vfprintf(f, fmt, ap) + 1;
 
     instance_data = malloc(len);
 
