@@ -26,6 +26,7 @@ int main( int argc, char * argv[] )
 	int newFifoSize;
 	globus_fifo_t currentFifo;
 	globus_fifo_t * newFifoPtr;
+	globus_fifo_t relocatedFifo;
 	int rc;
 	char errorString[256];
 	int numOfItems;
@@ -213,6 +214,12 @@ int main( int argc, char * argv[] )
 			the original data is freed */
 		free( data );
 	}
+
+	printOut( "Relocating contents of original FIFO..." );
+
+	/* move the original FIFO to another FIFO */
+	if ( globus_fifo_move( &relocatedFifo, &currentFifo ) )
+		printError( "globus_fifo_move() failed", 0, 0 );
 
 	/* destroy both FIFO's */
 	globus_fifo_destroy( &currentFifo );

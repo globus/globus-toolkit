@@ -5,7 +5,7 @@ rem CallbackTest
 rem CallbackTest -verbose 3
 rem ErrorStringTest
 rem ErrorTest
-rem FifoTest 10000
+FifoTest 6
 rem HandleTable
 rem HashtableTest
 rem LibcSetenvTest
@@ -15,5 +15,5 @@ rem ModuleTest
 rem StrptimeTest
 rem ThreadTest 10 5 10
 rem TimedWaitTest
-UrlTest
+rem UrlTest
 pause

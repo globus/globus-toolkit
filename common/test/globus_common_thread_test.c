@@ -514,8 +514,6 @@ main(
     }
     globus_stdio_unlock();
     
-	// TESTING!!!
-	// END TESTING
     globus_cond_destroy(&common_cond);
     globus_mutex_destroy(&common_mutex);
     
