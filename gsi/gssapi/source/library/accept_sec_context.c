@@ -89,7 +89,7 @@ GSS_CALLCONV gss_accept_sec_context(
     
     globus_thread_once(
         &once_control,
-        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
+        globus_l_gsi_gssapi_activate_once);
     
     if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))

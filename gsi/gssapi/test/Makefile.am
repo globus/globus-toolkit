@@ -52,7 +52,8 @@ test_PROGRAMS= \
 	gssapi-context-test \
 	gssapi-expimp-test \
 	gssapi-inquire-sec-ctx-by-oid-test \
-	gssapi-acquire-test 
+	gssapi-acquire-test \
+	gssapi-module-test
 #	gssapi-group-test \
 
 gssapi_anonymous_test_SOURCES = gssapi_anonymous_test.c
@@ -139,6 +140,13 @@ gssapi_inquire_sec_ctx_by_oid_test_SOURCES = \
 gssapi_inquire_sec_ctx_by_oid_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_inquire_sec_ctx_by_oid_test_LDADD = $(GPT_PGM_LINKS)
+
+gssapi_module_test_SOURCES = gssapi_module_test.c
+
+gssapi_module_test_LDFLAGS = $(GPT_LDFLAGS)
+
+gssapi_module_test_LDADD = $(GPT_PGM_LINKS)
+
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

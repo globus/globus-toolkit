@@ -151,4 +151,7 @@ const gss_OID_desc * const              gss_proxycertinfo_extension;
 extern
 globus_thread_once_t                    once_control;
 
+void
+globus_l_gsi_gssapi_activate_once(void);
+
 #endif /* _GSSAPI_OPENSSL_H */

@@ -141,4 +141,11 @@ globus_l_gsi_gssapi_deactivate(void)
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gsi_gssapi_deactivate() */
+
+void
+globus_l_gsi_gssapi_activate_once(void)
+{
+    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+}
+
 #endif

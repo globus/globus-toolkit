@@ -64,7 +64,7 @@ GSS_CALLCONV gss_init_sec_context(
     
     globus_thread_once(
         &once_control,
-        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
+        globus_l_gsi_gssapi_activate_once);
 
     if(req_flags & GSS_C_ANON_FLAG &&
        req_flags & GSS_C_DELEG_FLAG)
