@@ -1,5 +1,3 @@
-/* OPENBSD ORIGINAL: lib/libc/string/strlcat.c */
-
 /*	$OpenBSD: strlcat.c,v 1.11 2003/06/17 21:56:24 millert Exp $	*/
 
 /*

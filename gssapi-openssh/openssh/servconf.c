@@ -10,7 +10,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: servconf.c,v 1.130 2003/12/23 16:12:10 jakob Exp $");
+RCSID("$OpenBSD: servconf.c,v 1.127 2003/09/01 18:15:50 markus Exp $");
 
 #include "ssh.h"
 #include "log.h"
@@ -61,7 +61,7 @@ initialize_server_options(ServerOptions *options)
 	options->x11_use_localhost = -1;
 	options->xauth_location = NULL;
 	options->strict_modes = -1;
-	options->tcp_keep_alive = -1;
+	options->keepalives = -1;
 	options->log_facility = SYSLOG_FACILITY_NOT_SET;
 	options->log_level = SYSLOG_LEVEL_NOT_SET;
 	options->rhosts_rsa_authentication = -1;
@@ -72,7 +72,6 @@ initialize_server_options(ServerOptions *options)
 	options->kerberos_authentication = -1;
 	options->kerberos_or_local_passwd = -1;
 	options->kerberos_ticket_cleanup = -1;
-	options->kerberos_get_afs_token = -1;
 	options->gss_authentication=-1;
 	options->gss_cleanup_creds = -1;
 	options->password_authentication = -1;
@@ -160,8 +159,8 @@ fill_default_server_options(ServerOptions *options)
 		options->xauth_location = _PATH_XAUTH;
 	if (options->strict_modes == -1)
 		options->strict_modes = 1;
-	if (options->tcp_keep_alive == -1)
-		options->tcp_keep_alive = 1;
+	if (options->keepalives == -1)
+		options->keepalives = 1;
 	if (options->log_facility == SYSLOG_FACILITY_NOT_SET)
 		options->log_facility = SYSLOG_FACILITY_AUTH;
 	if (options->log_level == SYSLOG_LEVEL_NOT_SET)
@@ -182,8 +181,6 @@ fill_default_server_options(ServerOptions *options)
 		options->kerberos_or_local_passwd = 1;
 	if (options->kerberos_ticket_cleanup == -1)
 		options->kerberos_ticket_cleanup = 1;
-	if (options->kerberos_get_afs_token == -1)
-		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)
 		options->gss_authentication = 0;
 	if (options->gss_cleanup_creds == -1)
@@ -253,12 +250,11 @@ typedef enum {
 	sPermitRootLogin, sLogFacility, sLogLevel,
 	sRhostsRSAAuthentication, sRSAAuthentication,
 	sKerberosAuthentication, sKerberosOrLocalPasswd, sKerberosTicketCleanup,
-	sKerberosGetAFSToken,
 	sKerberosTgtPassing, sChallengeResponseAuthentication,
 	sPasswordAuthentication, sKbdInteractiveAuthentication, sListenAddress,
 	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
 	sX11Forwarding, sX11DisplayOffset, sX11UseLocalhost,
-	sStrictModes, sEmptyPasswd, sTCPKeepAlive,
+	sStrictModes, sEmptyPasswd, sKeepAlives,
 	sPermitUserEnvironment, sUseLogin, sAllowTcpForwarding, sCompression,
 	sAllowUsers, sDenyUsers, sAllowGroups, sDenyGroups,
 	sIgnoreUserKnownHosts, sCiphers, sMacs, sProtocol, sPidFile,
@@ -305,21 +301,19 @@ static struct {
 	{ "kerberosauthentication", sKerberosAuthentication },
 	{ "kerberosorlocalpasswd", sKerberosOrLocalPasswd },
 	{ "kerberosticketcleanup", sKerberosTicketCleanup },
-	{ "kerberosgetafstoken", sKerberosGetAFSToken },
 #else
 	{ "kerberosauthentication", sUnsupported },
 	{ "kerberosorlocalpasswd", sUnsupported },
 	{ "kerberosticketcleanup", sUnsupported },
-	{ "kerberosgetafstoken", sUnsupported },
 #endif
 	{ "kerberostgtpassing", sUnsupported },
 	{ "afstokenpassing", sUnsupported },
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication },
-	{ "gssapicleanupcredentials", sGssCleanupCreds },
+	{ "gssapicleanupcreds", sGssCleanupCreds },
 #else
 	{ "gssapiauthentication", sUnsupported },
-	{ "gssapicleanupcredentials", sUnsupported },
+	{ "gssapicleanupcreds", sUnsupported },
 #endif
 	{ "passwordauthentication", sPasswordAuthentication },
 	{ "kbdinteractiveauthentication", sKbdInteractiveAuthentication },
@@ -340,8 +334,7 @@ static struct {
 	{ "permituserenvironment", sPermitUserEnvironment },
 	{ "uselogin", sUseLogin },
 	{ "compression", sCompression },
-	{ "tcpkeepalive", sTCPKeepAlive },
-	{ "keepalive", sTCPKeepAlive },				/* obsolete alias */
+	{ "keepalive", sKeepAlives },
 	{ "allowtcpforwarding", sAllowTcpForwarding },
 	{ "allowusers", sAllowUsers },
 	{ "denyusers", sDenyUsers },
@@ -636,10 +629,6 @@ parse_flag:
 		intptr = &options->kerberos_ticket_cleanup;
 		goto parse_flag;
 
-	case sKerberosGetAFSToken:
-		intptr = &options->kerberos_get_afs_token;
-		goto parse_flag;
-
 	case sGssAuthentication:
 		intptr = &options->gss_authentication;
 		goto parse_flag;
@@ -688,8 +677,8 @@ parse_flag:
 		intptr = &options->strict_modes;
 		goto parse_flag;
 
-	case sTCPKeepAlive:
-		intptr = &options->tcp_keep_alive;
+	case sKeepAlives:
+		intptr = &options->keepalives;
 		goto parse_flag;
 
 	case sEmptyPasswd:

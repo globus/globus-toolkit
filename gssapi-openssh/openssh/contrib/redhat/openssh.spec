@@ -34,11 +34,6 @@
 %{?skip_x11_askpass:%define no_x11_askpass 1}
 %{?skip_gnome_askpass:%define no_gnome_askpass 1}
 
-# Add option to build without GTK2 for older platforms with only GTK+.
-# RedHat <= 7.2 and Red Hat Advanced Server 2.1 are examples.
-# rpm -ba|--rebuild --define 'no_gtk2 1'
-%{?no_gtk2:%define gtk2 0}
-
 # Is this a build for RHL 6.x or earlier?
 %{?build_6x:%define build6x 1}
 
@@ -190,17 +185,16 @@ CFLAGS="$RPM_OPT_FLAGS -Os"; export CFLAGS
 	--with-default-path=/usr/local/bin:/bin:/usr/bin \
 	--with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
 	--with-privsep-path=%{_var}/empty/sshd \
-	--with-md5-passwords \
 %if %{scard}
 	--with-smartcard \
 %endif
 %if %{rescue}
-	--without-pam \
+	--without-pam --with-md5-passwords \
 %else
 	--with-pam \
 %endif
 %if %{kerberos5}
-	 --with-kerberos5=/usr/kerberos \
+         --with-kerberos5=/usr/kerberos \
 %endif
 
 
@@ -398,7 +392,7 @@ fi
 
 %changelog
 * Mon Jun 2 2003 Damien Miller <djm@mindrot.org>
-- Remove noip6 option. This may be controlled at run-time in client config
+- Remove noip6 option. This may be controlled at run-time in client config 
   file using new AddressFamily directive
 
 * Mon May 12 2003 Damien Miller <djm@mindrot.org>
@@ -558,7 +552,7 @@ fi
 
 * Sun Apr  8 2001 Preston Brown <pbrown@redhat.com>
 - remove explicit openssl requirement, fixes builddistro issue
-- make initscript stop() function wait until sshd really dead to avoid
+- make initscript stop() function wait until sshd really dead to avoid 
   races in condrestart
 
 * Mon Apr  2 2001 Nalin Dahyabhai <nalin@redhat.com>

@@ -32,7 +32,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "includes.h"
-RCSID("$OpenBSD: key.c,v 1.55 2003/11/10 16:23:41 jakob Exp $");
+RCSID("$OpenBSD: key.c,v 1.54 2003/07/09 13:58:19 avsm Exp $");
 
 #include <openssl/evp.h>
 
@@ -143,9 +143,8 @@ key_free(Key *k)
 	}
 	xfree(k);
 }
-
 int
-key_equal(const Key *a, const Key *b)
+key_equal(Key *a, Key *b)
 {
 	if (a == NULL || b == NULL || a->type != b->type)
 		return 0;
@@ -171,8 +170,7 @@ key_equal(const Key *a, const Key *b)
 }
 
 u_char*
-key_fingerprint_raw(const Key *k, enum fp_type dgst_type,
-    u_int *dgst_raw_length)
+key_fingerprint_raw(Key *k, enum fp_type dgst_type, u_int *dgst_raw_length)
 {
 	const EVP_MD *md = NULL;
 	EVP_MD_CTX ctx;
@@ -294,7 +292,7 @@ key_fingerprint_bubblebabble(u_char *dgst_raw, u_int dgst_raw_len)
 }
 
 char *
-key_fingerprint(const Key *k, enum fp_type dgst_type, enum fp_rep dgst_rep)
+key_fingerprint(Key *k, enum fp_type dgst_type, enum fp_rep dgst_rep)
 {
 	char *retval = NULL;
 	u_char *dgst_raw;
@@ -492,7 +490,7 @@ key_read(Key *ret, char **cpp)
 }
 
 int
-key_write(const Key *key, FILE *f)
+key_write(Key *key, FILE *f)
 {
 	int n, success = 0;
 	u_int len, bits = 0;
@@ -524,8 +522,8 @@ key_write(const Key *key, FILE *f)
 	return success;
 }
 
-const char *
-key_type(const Key *k)
+char *
+key_type(Key *k)
 {
 	switch (k->type) {
 	case KEY_RSA1:
@@ -541,8 +539,8 @@ key_type(const Key *k)
 	return "unknown";
 }
 
-const char *
-key_ssh_name(const Key *k)
+char *
+key_ssh_name(Key *k)
 {
 	switch (k->type) {
 	case KEY_RSA:
@@ -556,7 +554,7 @@ key_ssh_name(const Key *k)
 }
 
 u_int
-key_size(const Key *k)
+key_size(Key *k)
 {
 	switch (k->type) {
 	case KEY_RSA1:
@@ -613,7 +611,7 @@ key_generate(int type, u_int bits)
 }
 
 Key *
-key_from_private(const Key *k)
+key_from_private(Key *k)
 {
 	Key *n = NULL;
 	switch (k->type) {
@@ -678,7 +676,7 @@ key_names_valid2(const char *names)
 }
 
 Key *
-key_from_blob(const u_char *blob, u_int blen)
+key_from_blob(u_char *blob, u_int blen)
 {
 	Buffer b;
 	char *ktype;
@@ -728,7 +726,7 @@ key_from_blob(const u_char *blob, u_int blen)
 }
 
 int
-key_to_blob(const Key *key, u_char **blobp, u_int *lenp)
+key_to_blob(Key *key, u_char **blobp, u_int *lenp)
 {
 	Buffer b;
 	int len;
@@ -770,9 +768,9 @@ key_to_blob(const Key *key, u_char **blobp, u_int *lenp)
 
 int
 key_sign(
-    const Key *key,
+    Key *key,
     u_char **sigp, u_int *lenp,
-    const u_char *data, u_int datalen)
+    u_char *data, u_int datalen)
 {
 	switch (key->type) {
 	case KEY_DSA:
@@ -794,9 +792,9 @@ key_sign(
  */
 int
 key_verify(
-    const Key *key,
-    const u_char *signature, u_int signaturelen,
-    const u_char *data, u_int datalen)
+    Key *key,
+    u_char *signature, u_int signaturelen,
+    u_char *data, u_int datalen)
 {
 	if (signaturelen == 0)
 		return -1;
@@ -817,7 +815,7 @@ key_verify(
 
 /* Converts a private to a public key */
 Key *
-key_demote(const Key *k)
+key_demote(Key *k)
 {
 	Key *pk;
 

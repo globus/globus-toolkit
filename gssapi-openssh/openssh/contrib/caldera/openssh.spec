@@ -180,6 +180,7 @@ CFLAGS="$RPM_OPT_FLAGS" \
 %configure \
             --with-pam \
             --with-tcp-wrappers \
+            --with-ipv4-default \
 	    --with-privsep-path=%{_var}/empty/sshd \
 	    #leave this line for easy edits.
 

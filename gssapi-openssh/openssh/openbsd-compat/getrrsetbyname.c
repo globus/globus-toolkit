@@ -1,5 +1,3 @@
-/* OPENBSD ORIGINAL: lib/libc/net/getrrsetbyname.c */
-
 /* $OpenBSD: getrrsetbyname.c,v 1.7 2003/03/07 07:34:14 itojun Exp $ */
 
 /*
@@ -47,7 +45,7 @@
 
 #include "includes.h"
 
-#ifndef HAVE_GETRRSETBYNAME
+#if defined(DNS) && !defined(HAVE_GETRRSETBYNAME)
 
 #include "getrrsetbyname.h"
 
@@ -577,4 +575,4 @@ count_dns_rr(struct dns_rr *p, u_int16_t class, u_int16_t type)
 	return (n);
 }
 
-#endif /* !defined(HAVE_GETRRSETBYNAME) */
+#endif /* defined(DNS) && !defined(HAVE_GETRRSETBYNAME) */

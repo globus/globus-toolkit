@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: progressmeter.c,v 1.18 2003/12/02 12:15:10 markus Exp $");
+RCSID("$OpenBSD: progressmeter.c,v 1.15 2003/08/31 12:14:22 markus Exp $");
 
 #include "progressmeter.h"
 #include "atomicio.h"
@@ -80,7 +80,7 @@ format_rate(char *buf, int size, off_t bytes)
 		bytes = (bytes + 512) / 1024;
 	}
 	snprintf(buf, size, "%3lld.%1lld%c%s",
-	    (int64_t) (bytes + 5) / 100,
+	    (int64_t) bytes / 100,
 	    (int64_t) (bytes + 5) / 10 % 10,
 	    unit[i],
 	    i ? "B" : " ");
@@ -120,18 +120,14 @@ refresh_progress_meter(void)
 
 	if (bytes_left > 0)
 		elapsed = now - last_update;
-	else {
+	else
 		elapsed = now - start;
-		/* Calculate true total speed when done */
-		transferred = end_pos;
-		bytes_per_second = 0;
-	}
 
 	/* calculate speed */
 	if (elapsed != 0)
 		cur_speed = (transferred / elapsed);
 	else
-		cur_speed = transferred;
+		cur_speed = 0;
 
 #define AGE_FACTOR 0.9
 	if (bytes_per_second != 0) {
@@ -204,7 +200,7 @@ refresh_progress_meter(void)
 			strlcat(buf, "    ", win_size);
 	}
 
-	atomicio(vwrite, STDOUT_FILENO, buf, win_size - 1);
+	atomicio(vwrite, STDOUT_FILENO, buf, win_size);
 	last_update = now;
 }
 

@@ -1,5 +1,3 @@
-/* OPENBSD ORIGINAL: lib/libc/string/strlcpy.c */
-
 /*	$OpenBSD: strlcpy.c,v 1.8 2003/06/17 21:56:24 millert Exp $	*/
 
 /*
