@@ -32,8 +32,7 @@ INCLUDES += $(GPT_INCLUDES)
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
-	globus_ftp_control.h \
-	globus_i_ftp_control.h
+	globus_ftp_control.h
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
