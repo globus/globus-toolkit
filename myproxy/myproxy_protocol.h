@@ -220,6 +220,18 @@ int myproxy_recv_response(myproxy_socket_attrs_t *attrs,
 			  myproxy_response_t *response); 
 
 /*
+ * myproxy_recv_response_ex()
+ *
+ * Helper function that combines myproxy_recv(),
+ * myproxy_deserialize_response(), and myproxy_handle_authorization()
+ * with some error checking.
+ *
+ */
+int myproxy_recv_response_ex(myproxy_socket_attrs_t *attrs,
+			     myproxy_response_t *response,
+			     myproxy_request_t *client_request);
+
+/*
  * myproxy_handle_authorization()
  *
  * If MYPROXY_AUTHORIZATION_RESPONSE is received, pass it to this
