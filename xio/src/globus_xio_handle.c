@@ -814,18 +814,16 @@ globus_l_xio_register_readv(
     {
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
-            globus_mutex_unlock(&handle->context->mutex);
             res = GlobusXIOErrorInvalidState(handle->state);
-            goto err;
+            goto bad_state_err;
         }
         /* this is a bit ugly */
         if(handle->context->entry[0].state != GLOBUS_XIO_HANDLE_STATE_OPEN &&
            handle->context->entry[0].state != 
             GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)
         {
-            globus_mutex_unlock(&handle->context->mutex);
             res = GlobusXIOErrorInvalidState(handle->state);
-            goto err;
+            goto bad_state_err;
         }
 
         /* register timeout */
@@ -854,14 +852,12 @@ globus_l_xio_register_readv(
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
-        op->ref--;
-        globus_assert(op->ref > 0);
-        goto err;
+        goto register_err;
     }
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--; 
+        op->ref--; /* remove the pass reference */
         if(op->ref == 0)
         {
             GlobusXIOOperationDestroy(op);
@@ -877,10 +873,12 @@ globus_l_xio_register_readv(
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 
-  err:
+  register_err:
 
     globus_mutex_lock(&handle->context->mutex);
     {
+        op->ref--;  /* unregister the pass */
+        globus_assert(op->ref > 0);
         /* in case timeout unregister fails */
         op->type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
         /* if we had a timeout, we need to unregister it */
@@ -905,6 +903,7 @@ globus_l_xio_register_readv(
             globus_assert(!destroy_handle);
         }
     }
+  bad_state_err:
     globus_mutex_unlock(&handle->context->mutex);
 
     GlobusXIODebugInternalExitWithError();
