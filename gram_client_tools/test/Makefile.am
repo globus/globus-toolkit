@@ -22,6 +22,8 @@ Data = \
 
 test_SCRIPTS = $(Scripts)
 
+testdir = $(GLOBUS_LOCATION)/test/gram_client_tools
+
 test_DATA=$(Data)
 
 # EXTRA_DIST is used to include files in 
