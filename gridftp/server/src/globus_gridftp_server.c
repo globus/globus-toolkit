@@ -440,9 +440,6 @@ globus_l_gfs_new_server_cb(
         {
             goto error;
         }
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "New connection from: %s\n", remote_contact);
     
         result = globus_xio_handle_cntl(
             handle,
@@ -453,6 +450,9 @@ globus_l_gfs_new_server_cb(
         {
             goto error;
         }
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "New connection from: %s\n", remote_contact);
 
         result = globus_xio_handle_cntl(
             handle,
