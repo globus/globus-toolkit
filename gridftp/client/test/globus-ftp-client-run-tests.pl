@@ -45,6 +45,12 @@ if(defined($runserver))
     $server_pid = setup_server();
 }
 
+if(0 != system("grid-proxy-info -exists -hours 2") / 256)
+{
+    print "Security proxy required to run the tests.\n";
+    exit 1;
+}
+
 print "Running sanity check\n";
 my ($source_host, $source_file, $local_copy1) = setup_remote_source();
 my ($local_copy2) = setup_local_source();
@@ -68,15 +74,15 @@ print "Server appears sane, running tests\n";
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 
-runtests(@tests);
+eval runtests(@tests);
 
 if($server_pid)
 {
-    kill(9,$server_pid) if defined($server_pid);
+    kill(9,$server_pid);
+    $server_pid=0;
 }
 
 exit 0;
-
 
 sub setup_server()
 {
@@ -91,13 +97,7 @@ sub setup_server()
     $ENV{X509_USER_PROXY} = "testcred.pem";
     
     system('chmod go-rw testcred.pem');
-    
-    if(0 != system("grid-proxy-info -exists -hours 2") / 256)
-    {
-        print "Security proxy required to run the tests.\n";
-        exit 1;
-    }
-    
+     
     $subject = `grid-proxy-info -subject`;
     chomp($subject);
     
@@ -120,7 +120,7 @@ sub setup_server()
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
-
+    
     return $server_pid;
 }
 
