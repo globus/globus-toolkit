@@ -1,3 +1,4 @@
+/* library/gssapi.h.  Generated automatically by configure.  */
 #ifndef GSSAPI_H_
 #define GSSAPI_H_
 
@@ -36,21 +37,7 @@
  * Include stddef.h to get size_t defined.
  */
 #include <stddef.h>
-
-/*
- * Configure sets the following
- */
-
-#ifndef SIZEOF_LONG
-#undef SIZEOF_LONG 
-#endif
-#ifndef SIZEOF_SHORT
-#undef SIZEOF_SHORT
-#endif
-/* Endian not needed by gssapi, but included here for now */
-#ifndef WORDS_BIGENDIAN
-#undef WORDS_BIGENDIAN
-#endif
+#include <inttypes.h>
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -125,13 +112,7 @@ typedef void * gss_cred_id_t;
  * 32 bits of precision.
  */
 
-#if SIZEOF_LONG == 4
-typedef unsigned long gss_uint32;
-#elif SIZEOF_SHORT == 4
-typedef unsigned short gss_uint32;
-#else
-typedef unsigned int gss_uint32;
-#endif
+typedef uint32_t gss_uint32;
 
 #ifdef OM_STRING
 /*
@@ -203,7 +184,7 @@ typedef struct gss_channel_bindings_struct
 #define GSS_C_TRANS_FLAG 256
 
 /* 
- * For the Globus gssapi_ssleay we add three
+ * For the Globus gssapi_openssl we add three
  * flags. These may have to be changed in the
  * future, if they are defined in the RFCs. 
  * GSS_C_GLOBUS_SSL_COMPATIBLE
@@ -227,10 +208,87 @@ typedef struct gss_channel_bindings_struct
  *  
  */
 
+/**
+ * @defgroup globus_gsi_gss_requested_context_flags
+ *
+ * These macros set the REQUESTED type of context - these should
+ * be set (or not) in the context's req_flags (or
+ * in the context's ret_flags if accept_sec_context is
+ * being called)
+ */
+
+/**
+ * @ingroup globus_gsi_gss_requested_context_flags
+ */
+/* @{ */
+/**
+ * Set if you don't want a context to accept a limited proxy.
+ * If this flag is set, and a limited proxy is received, 
+ * the call will not be successful
+ * and the context will not be set up
+ */
+#define GSS_C_GLOBUS_DONT_ACCEPT_LIMITED_PROXY_FLAG 8192
+/* @} */
+
+/**
+ * @ingroup globus_gsi_gss_requested_context_flags
+ */
+/* @{ */
+/**
+ * Set if you wan the delegated proxy to be a limited proxy
+ */
+#define GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG    4096
+/* @} */
+
+/**
+ * @ingroup globus_gsi_gss_requested_context_flags
+ */
+/* @{ */
+/**
+ * Set if you want to accept proxies signed by limited proxies
+ */
+/* @{ */
+#define GSS_C_GLOBUS_ACCEPT_PROXY_SIGNED_BY_LIMITED_PROXY_FLAG 32768
+/* @} */
+ 
+/**
+ * @defgroup globus_gsi_gss_returned_context_flags
+ *
+ * These macros set the RETURNED context type - these will be
+ * be set (or not) in the context's ret_flags
+ */
+
+/**
+ * @ingroup globus_gsi_gss_returned_context_flags
+ */
+/* @{ */
+/**
+ * If the proxy received is a limited proxy, this flag will be
+ * set in the returned context flags (ret_flags)
+ */
+#define GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG    8192
+/* @} */
+
+/**
+ * @ingroup globus_gsi_gss_returned_context_flags
+ */
+/* @{ */
+/**
+ * If the proxy received is a limited proxy received during
+ * delegation, this flag is set in the returned flags
+ */
+#define GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_DURING_DELEGATION_FLAG 4096
+/* @} */
+
+
+/* The following are deprecated and should no longer be used.
+ * Please use the above defines for setting request and return flags. */ 
+
 #define GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG  4096
 #define GSS_C_GLOBUS_LIMITED_PROXY_FLAG        8192
 #define GSS_C_GLOBUS_SSL_COMPATIBLE           16384
 #define GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG  32768
+
 /*
  * Credential usage options
  */

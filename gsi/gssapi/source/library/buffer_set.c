@@ -1,31 +1,34 @@
-/**********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file buffer_ste.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-release_buffer_set.c:
-
-Description:
-    GSSAPI routine to release the contents of a buffer set
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
+static char *rcsid = "$Id$";
 
 
-#include "gssapi_ssleay.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
+/* Only build if we have the extended GSSAPI */
+#ifdef _HAVE_GSI_EXTENDED_GSSAPI
+
 /**
- * @defgroup buffer_set Functions for manipulating a buffer set
- *
- * @{
+ * @defgroup globus_gsi_gssapi_buffer_set 
+ * Functions for manipulating a buffer set
  */
 
+/**
+ * @name Create Empty Buffer Set
+ * @ingroup globus_gsi_gssapi_buffer_set
+ */
+/* @{ */
 /**
  * Create a empty buffer set.
  *
@@ -46,42 +49,57 @@ static char *rcsid = "$Header$";
  * @see gss_add_buffer_set_member
  * @see gss_release_buffer_set
  */
-
 OM_uint32 
 GSS_CALLCONV gss_create_empty_buffer_set(
     OM_uint32 *                         minor_status,
     gss_buffer_set_t *                  buffer_set)
 {
-    *minor_status = 0;
+    OM_uint32                           major_status;
+    static char *                       _function_name_ =
+        "gss_create_empty_buffer_set";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* Sanity check */
-    if ((buffer_set == NULL) ||
-        (minor_status == NULL))
+    if ((buffer_set == NULL) || (minor_status == NULL))
     {
-        GSSerr(GSSERR_F_CREATE_EMPTY_BUFFER_SET,
-               GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, 
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("NULL parameters passed to function: %s",
+             _function_name_));
+        goto exit;
     }
+
+    *minor_status = GLOBUS_SUCCESS;
 
     *buffer_set = (gss_buffer_set_desc *) malloc(
         sizeof(gss_buffer_set_desc));
 
     if (!*buffer_set)
     {
-        GSSerr(GSSERR_F_CREATE_EMPTY_BUFFER_SET,
-               GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
-	
+
     (*buffer_set)->count = 0;
     (*buffer_set)->elements = NULL;
-	
+
+ exit:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return GSS_S_COMPLETE;
-} /* gss_create_empty_buffer_set */
+} 
+/* gss_create_empty_buffer_set */
+/* @} */
 
-
+/**
+ * @name Add Buffer
+ * @ingroup globus_gsi_gssapi_buffer_set
+ */
+/* @{ */
 /**
  * Add a buffer to a buffer set.
  *
@@ -104,7 +122,6 @@ GSS_CALLCONV gss_create_empty_buffer_set(
  * @see gss_create_empty_buffer_set
  * @see gss_release_buffer_set
  */
-
 OM_uint32
 GSS_CALLCONV gss_add_buffer_set_member(
     OM_uint32 *                         minor_status,
@@ -114,17 +131,22 @@ GSS_CALLCONV gss_add_buffer_set_member(
     int                                 new_count;
     gss_buffer_t                        new_elements;
     gss_buffer_set_t                    set;
+    OM_uint32                           major_status;
+    static char *                       _function_name_ =
+        "gss_add_buffer_set_member";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
         
     /* Sanity check */
-    if ((minor_status == NULL) ||
-        (member_buffer == NULL) ||
-        (buffer_set == NULL) ||
-        (*buffer_set == GSS_C_NO_BUFFER_SET))
+    if ((minor_status == NULL) || (member_buffer == NULL) ||
+        (buffer_set == NULL) || (*buffer_set == GSS_C_NO_BUFFER_SET))
     {
-        GSSerr(GSSERR_F_ADD_BUFFER_SET_MEMBER,
-               GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Invalid buffer_set passed to function"));
+        goto exit;
     }
         
     set = *buffer_set;
@@ -134,10 +156,9 @@ GSS_CALLCONV gss_add_buffer_set_member(
         
     if (new_elements == NULL)
     {
-        GSSerr(GSSERR_F_ADD_BUFFER_SET_MEMBER,
-               GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
         
     if (set->count > 0)
@@ -153,10 +174,9 @@ GSS_CALLCONV gss_add_buffer_set_member(
     if(new_elements[set->count].value == NULL)
     {
         free(new_elements);
-        GSSerr(GSSERR_F_ADD_BUFFER_SET_MEMBER,
-               GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
 
     memcpy(new_elements[set->count].value,
@@ -164,17 +184,23 @@ GSS_CALLCONV gss_add_buffer_set_member(
            member_buffer->length);
 
     new_elements[set->count].length = member_buffer->length;
-    
+            
+    set->count = new_count;
+    set->elements = new_elements;
+
+
+ exit:
+
     if (set->elements != NULL)
     {
         free(set->elements);
     }
-        
-    set->count = new_count;
-    set->elements = new_elements;
-        
-    return GSS_S_COMPLETE;
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
 }
+/* @} */
+
 
 /**
  * Free all memory associated with a buffer set.
@@ -197,26 +223,44 @@ GSS_CALLCONV gss_add_buffer_set_member(
  * @see gss_create_empty_buffer_set
  * @see gss_add_buffer_set_member
  */
-
 OM_uint32 
 GSS_CALLCONV gss_release_buffer_set(
     OM_uint32 *                         minor_status,
     gss_buffer_set_t *                  buffer_set)
 {
-    int                                 i;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
+    int                                 index;
+    static char *                       _function_name_ =
+        "gss_release_buffer_set";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
-    *minor_status = 0;
+    *minor_status = GLOBUS_SUCCESS;
         
-    if (buffer_set == NULL ||
-        *buffer_set == GSS_C_NO_BUFFER_SET)
+    if (buffer_set == NULL || *buffer_set == GSS_C_NO_BUFFER_SET)
     {
-        return GSS_S_COMPLETE ;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, 
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("NULL parameters passed to function: %s",
+             _function_name_));
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
 
-    for(i=0;i<(*buffer_set)->count;i++)
+    for(index = 0; index < (*buffer_set)->count; index++)
     {
-        gss_release_buffer(minor_status,
-                           &(*buffer_set)->elements[i]);
+        major_status = gss_release_buffer(&local_minor_status,
+                                          &(*buffer_set)->elements[index]);
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
 
     free((*buffer_set)->elements);
@@ -225,13 +269,12 @@ GSS_CALLCONV gss_release_buffer_set(
 
     *buffer_set = NULL;
     
-    return GSS_S_COMPLETE ;
+ exit:
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
 
-} /* gss_release_buffer_set */
+} 
+/* gss_release_buffer_set */
+/* @} */
 
-/**
- * @}
- */
-
-
-
+#endif /* _HAVE_GSI_EXTENDED_GSSAPI */

@@ -1,53 +1,35 @@
-/**********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file delete_sec_context.c
+ * @author Sam Lang, Sam Meder
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-delete_sec_context.c:
+static char *rcsid = "$Id$";
 
-Description:
-    GSSAPI routine to delete a security context
-        See: <draft-ietf-cat-gssv2-cbind-04.txt>
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
-
-#include "gssapi.h"
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
-
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
-Function:   gss_delete_sec_context()
-
-Description:
-        delete the security context
-
-Parameters:
-
-Returns:
-**********************************************************************/
-
+/**
+ * @name GSS Delete Security Context
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * Delete the GSS Security Context
+ *
+ * @param minor_status
+ *        The minor status result - this is a globus_result_t
+ *        cast to a OM_uint32.  The 
+ * @param context_handle_P
+ *        The context handle to be deleted
+ * @param output_token
+ *        The 
+ */
 OM_uint32 
 GSS_CALLCONV gss_delete_sec_context(
     OM_uint32 *                         minor_status,
@@ -55,14 +37,17 @@ GSS_CALLCONV gss_delete_sec_context(
     gss_buffer_t                        output_token)
 {
     gss_ctx_id_desc **                  context_handle = 
-        (gss_ctx_id_desc**) context_handle_P ;
-    OM_uint32                           inv_minor_status = 0;
-    OM_uint32                           inv_major_status = 0;
+        (gss_ctx_id_desc**) context_handle_P;
+    OM_uint32                           local_minor_status;
+    OM_uint32                           local_major_status;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    globus_result_t                     local_result;
+    static char *                       _function_name_ =
+        "gss_delete_sec_context";
 
-    *minor_status = 0;
-#ifdef DEBUG
-    fprintf(stderr,"delete_sec_context:\n");
-#endif
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
     if (output_token != GSS_C_NO_BUFFER)
     {
@@ -73,121 +58,130 @@ GSS_CALLCONV gss_delete_sec_context(
     if (*context_handle == NULL ||
         *context_handle == GSS_C_NO_CONTEXT)
     {
-        return GSS_S_COMPLETE ;
+        goto exit;
     }
 
     /* lock the context mutex */
     
     globus_mutex_lock(&(*context_handle)->mutex);
 
-    /*
-     * we might want to send a ssl shutdown 
-     * Usefull if talking to a Java SSL application which 
-     * is using real SSL
-     * DEE - may need to fix unwrap to look for these.
-     */
-
-    if ((*context_handle)->gs_state == GS_CON_ST_DONE
-        && (*context_handle)->gs_ssl 
+    if ((*context_handle)->gss_state == GSS_CON_ST_DONE
+        && (*context_handle)->gss_ssl 
         && output_token != GSS_C_NO_BUFFER)
     {
-        SSL_shutdown((*context_handle)->gs_ssl);
+        SSL_shutdown((*context_handle)->gss_ssl);
         
-        gs_get_token(*context_handle,
-                     NULL,
-                     output_token);
+        local_major_status = globus_i_gsi_gss_get_token(
+            &local_minor_status,
+            *context_handle,
+            NULL,
+            output_token);
 
-#ifdef DEBUG
-        fprintf(stderr,"delete_sec_context:output_token->length=%d\n",
-                output_token->length);
-#endif
+        if(GSS_ERROR(local_major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+            goto exit;
+        }
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (globus_i_gsi_gssapi_debug_fstream,
+                "delete_sec_context: output_token->length=%d\n",
+                output_token->length));
     }
 
     /* ignore errors to allow for incomplete context handles */
 
-    if ((*context_handle)->source_name != NULL)
+    local_result = globus_gsi_callback_data_destroy(
+        (*context_handle)->callback_data);
+    if(local_result != GLOBUS_SUCCESS)
     {
-        inv_major_status = gss_release_name(
-            &inv_minor_status,
-            (gss_name_t*) &((*context_handle)->source_name)) ;
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_result,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
-
-#ifndef __CYGWIN__
-    if ((*context_handle)->target_name != NULL)
+    (*context_handle)->callback_data = NULL;
+    
+    local_major_status = gss_release_cred(
+        &local_minor_status,
+        (gss_cred_id_t *)&(*context_handle)->peer_cred_handle);
+    if(GSS_ERROR(local_major_status))
     {
-        inv_major_status = gss_release_name(
-            &inv_minor_status,
-            (gss_name_t*) &((*context_handle)->target_name)) ;
-    }
-#endif
-        
-    if ((*context_handle)->dpkey)
-    {
-        EVP_PKEY_free((*context_handle)->dpkey);
-    }
-
-    if ((*context_handle)->dcert)
-    {
-        X509_free((*context_handle)->dcert);
-    }
-
-    proxy_verify_release(&((*context_handle)->pvd));
-    proxy_verify_ctx_release(&((*context_handle)->pvxd));
-
-    if((*context_handle)->pvd.extension_oids != NULL)
-    {
-        free(((gss_OID_set_desc *) (*context_handle)->pvd.extension_oids)->elements);
-        free((*context_handle)->pvd.extension_oids);
-    }
-        
-    if ((*context_handle)->gs_ssl)
-    {
-        SSL_clear((*context_handle)->gs_ssl);
-    }
-        
-    if ((*context_handle)->gs_sslbio)
-    {
-        BIO_free_all((*context_handle)->gs_sslbio);
-    }
-
-    if ((*context_handle)->gs_rbio)
-    {
-        BIO_free_all((*context_handle)->gs_rbio);
-        (*context_handle)->gs_rbio = NULL;
-    }
-
-    if ((*context_handle)->gs_wbio)
-    {
-        BIO_free_all((*context_handle)->gs_wbio);
-        (*context_handle)->gs_wbio = NULL;
-    }
-
-    if ((*context_handle)->gs_ssl)
-    {
-        (*context_handle)->gs_ssl->rbio = NULL;
-        (*context_handle)->gs_ssl->wbio = NULL;
-        SSL_free((*context_handle)->gs_ssl);
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     } 
 
-    if ((*context_handle)->cred_obtained)
+    if((*context_handle)->cred_obtained)
     {
-        inv_major_status = gss_release_cred(
-            &inv_minor_status,
-            (gss_ctx_id_t*) &((*context_handle)-> cred_handle)) ;
+        local_major_status = gss_release_cred(
+            &local_minor_status,
+            (gss_cred_id_t *) &(*context_handle)->cred_handle);
+        if(GSS_ERROR(local_major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
+
+    local_result = globus_gsi_proxy_handle_destroy(
+        (*context_handle)->proxy_handle);
+    if(local_result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_result,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+        major_status = GSS_S_FAILURE;
+        goto exit;
+    }
+
+    if ((*context_handle)->gss_sslbio)
+    {
+        BIO_free_all((*context_handle)->gss_sslbio);
+        (*context_handle)->gss_sslbio = NULL;
+    }
+
+    if ((*context_handle)->gss_rbio)
+    {
+        BIO_free_all((*context_handle)->gss_rbio);
+        (*context_handle)->gss_rbio = NULL;
+    }
+
+    if ((*context_handle)->gss_wbio)
+    {
+        BIO_free_all((*context_handle)->gss_wbio);
+        (*context_handle)->gss_wbio = NULL;
+    }
+
+    if ((*context_handle)->gss_ssl)
+    {
+        (*context_handle)->gss_ssl->rbio = NULL;
+        (*context_handle)->gss_ssl->wbio = NULL;
+        SSL_free((*context_handle)->gss_ssl);
+        (*context_handle)->gss_ssl = NULL;
+    } 
 
     globus_mutex_unlock(&(*context_handle)->mutex);
 
     globus_mutex_destroy(&(*context_handle)->mutex);
     
-    free(*context_handle) ;
+    globus_libc_free(*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
 
-#ifdef DEBUG
-    fprintf(stderr,"delete_sec_context: done\n");
-#endif
-    
-    return GSS_S_COMPLETE ;
+    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "delete_sec_context: done\n");
 
-} /* gss_delete_sec_context */
+ exit:
 
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return GSS_S_COMPLETE;
+} 
+/* gss_delete_sec_context */
+/* @} */
