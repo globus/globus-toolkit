@@ -111,20 +111,16 @@ typedef enum
     GLOBUS_XIO_TCP_GET_SEND_FLAGS,
     
     /**
-     * handle/target cntls
-     */
-    /* globus_sockaddr_t *              sock_name_out */
-    GLOBUS_XIO_TCP_GET_LOCAL_ADDRESS,
-    /* globus_sockaddr_t *              peer_name_out */
-    GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS,
-    
-    /**
-     * server cntls
+     * handle/server/target cntls
      */
     /* char **                          contact_string_out */
-    GLOBUS_XIO_TCP_GET_CONTACT,
+    GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
     /* char **                          contact_string_out */
-    GLOBUS_XIO_TCP_GET_NUMERIC_CONTACT
+    GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
+    /* char **                          contact_string_out */
+    GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
+    /* char **                          contact_string_out */
+    GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT
     
 } globus_xio_tcp_cmd_t;
 

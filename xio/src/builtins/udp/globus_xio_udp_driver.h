@@ -67,15 +67,18 @@ typedef enum
     GLOBUS_XIO_UDP_GET_RCVBUF,
     
     /**
-     * handle cntls
+     * handle/dd cntls
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_UDP_GET_CONTACT,
     /* char **                          contact_string_out */
     GLOBUS_XIO_UDP_GET_NUMERIC_CONTACT,
-
-    /* globus_sockaddr_t *              sock_name_out */
-    GLOBUS_XIO_UDP_GET_LOCAL_ADDRESS
+    
+    /**
+     * dd cntls
+     */
+    /* char *                           contact_string */
+    GLOBUS_XIO_UDP_SET_CONTACT
     
 } globus_xio_udp_cmd_t;
 

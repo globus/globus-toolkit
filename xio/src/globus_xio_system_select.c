@@ -905,7 +905,6 @@ globus_l_xio_system_kickout(
                 op_info->_sop_iovecCom.start_iov);
             break;
 
-          case GLOBUS_L_OPERATION_RECVFROM:
           case GLOBUS_L_OPERATION_SENDTO:
             globus_free(op_info->_sop_single.ex.addr);
             break;
@@ -1160,7 +1159,7 @@ globus_l_xio_system_try_recvfrom(
             buf,
             buflen,
             flags,
-            (struct sockaddr *) &from,
+            (struct sockaddr *) from,
             &len);
     } while(rc < 0 && errno == EINTR);
 
@@ -2548,7 +2547,7 @@ globus_xio_system_register_write_ex(
 
     GlobusXIOSystemDebugEnterFD(fd);
 
-    if(!flags && !to)
+    if(!flags && !u_to)
     {
         return globus_xio_system_register_write(
             op, fd, u_iov, u_iovc, waitforbytes, callback, user_arg);

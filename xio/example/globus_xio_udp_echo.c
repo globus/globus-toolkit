@@ -126,12 +126,15 @@ main(
         
     if(be_server)
     {
+        globus_xio_data_descriptor_t        dd;
+        
+        test_res(globus_xio_data_descriptor_init(&dd, xio_handle));
+
         /* be server */
         while(1)
         {
             char                            buffer[LINE_LEN];
             int                             nbytes;
-            globus_xio_data_descriptor_t    dd = GLOBUS_NULL;
             
             res = globus_xio_read(
                 xio_handle,
@@ -156,6 +159,8 @@ main(
                 break;
             }
         }
+        
+        test_res(globus_xio_data_descriptor_destroy(dd));
     }
     else
     {
@@ -195,7 +200,7 @@ main(
     res = globus_xio_driver_unload(udp_driver);
     test_res(res);
 
-    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
 
     return 0;

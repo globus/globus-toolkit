@@ -266,6 +266,11 @@ globus_l_xio_tcp_attr_cntl(
        */
       /* char *                         service_name */
       case GLOBUS_XIO_TCP_SET_SERVICE:
+        if(attr->listener_serv)
+        {
+            globus_free(attr->listener_serv);
+        }
+        
         attr->listener_serv = va_arg(ap, char *);
         if(attr->listener_serv)
         {
@@ -339,6 +344,11 @@ globus_l_xio_tcp_attr_cntl(
        */
       /* char *                         interface */
       case GLOBUS_XIO_TCP_SET_INTERFACE:
+        if(attr->bind_address)
+        {
+            globus_free(attr->bind_address);
+        }
+        
         attr->bind_address = va_arg(ap, char *);
         if(attr->bind_address)
         {
@@ -725,6 +735,72 @@ error_bind_attrs:
     return result;
 }
 
+static
+globus_result_t
+globus_l_xio_tcp_contact_string(
+    globus_xio_system_handle_t          handle,
+    int                                 cmd,
+    char **                             contact_string)
+{
+    globus_result_t                     result;
+    globus_sockaddr_t                   sock_name;
+    globus_size_t                       sock_len;
+    int                                 flags;
+    GlobusXIOName(globus_l_xio_tcp_contact_string);
+    
+    sock_len = sizeof(sock_name);
+    flags = 0;
+    
+    switch(cmd)
+    {
+      case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
+        flags |= GLOBUS_LIBC_ADDR_NUMERIC;
+        /* fall through */
+        
+      case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
+        flags |= GLOBUS_LIBC_ADDR_LOCAL;
+        if(getsockname(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
+        {
+            result = GlobusXIOErrorSystemError("getsockname", errno);
+            goto error_sockopt;
+        }
+        break;
+        
+      case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
+        flags |= GLOBUS_LIBC_ADDR_NUMERIC;
+        /* fall through */
+        
+      case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+        if(getpeername(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
+        {
+            result = GlobusXIOErrorSystemError("getpeername", errno);
+            goto error_sockopt;
+        }
+        break;
+      
+      default:
+        globus_assert(0 && "Unexpected command");
+        return GlobusXIOErrorInvalidCommand(cmd);
+    }
+
+    result = globus_libc_addr_to_contact_string(
+        &sock_name,
+        flags,
+        contact_string);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_libc_addr_to_contact_string", result);
+        goto error_contact;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_contact:
+error_sockopt:
+    return result;
+}
+
 /*
  *  initialize target structure
  */
@@ -787,32 +863,25 @@ globus_l_xio_tcp_target_cntl(
 {
     globus_l_target_t *                 target;
     globus_result_t                     result;
-    globus_sockaddr_t *                 out_sock;
-    globus_size_t                       sock_len = sizeof(globus_sockaddr_t);
+    char **                             out_string;
     GlobusXIOName(globus_l_xio_tcp_target_cntl);
 
     target = (globus_l_target_t *) driver_target;
     switch(cmd)
     {
-      /* globus_sockaddr_t *            sock_name_out */
-      case GLOBUS_XIO_TCP_GET_LOCAL_ADDRESS:
-        out_sock = va_arg(ap, globus_sockaddr_t *);
-        if(getsockname(
-            target->handle, (struct sockaddr *) out_sock, &sock_len) < 0)
+      /* char **                        contact_string_out */
+      case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+        out_string = va_arg(ap, char **);
+        result = globus_l_xio_tcp_contact_string(
+            target->handle, cmd, out_string);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("getsockname", errno);
-            goto error_sockopt;
-        }
-        break;
-        
-      /* globus_sockaddr_t *            peer_name_out */
-      case GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS:
-        out_sock = va_arg(ap, globus_sockaddr_t *);
-        if(getpeername(
-            target->handle, (struct sockaddr *) out_sock, &sock_len) < 0)
-        {
-            result = GlobusXIOErrorSystemError("getpeername", errno);
-            goto error_sockopt;
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_contact_string", result);
+            goto error_contact;
         }
         break;
         
@@ -825,7 +894,7 @@ globus_l_xio_tcp_target_cntl(
     return GLOBUS_SUCCESS;
 
 error_invalid:
-error_sockopt:
+error_contact:
     return result;
 }
 
@@ -1212,58 +1281,28 @@ globus_l_xio_tcp_server_cntl(
     va_list                             ap)
 {
     globus_l_server_t *                 server;
-    globus_sockaddr_t                   sock_name;
-    globus_size_t                       sock_len;
     globus_result_t                     result;
-    char                                host[GLOBUS_NI_MAXHOST];
-    char                                port[10];
-    int                                 ni_flags;
     char **                             out_string;
-    char *                              cs;
     GlobusXIOName(globus_l_xio_tcp_server_cntl);
     
     server = (globus_l_server_t *) driver_server;
-    sock_len = sizeof(sock_name);
-    ni_flags = GLOBUS_NI_NUMERICSERV;
     
     switch(cmd)
     {
       /* char **                        contact_string_out */
-      case GLOBUS_XIO_TCP_GET_NUMERIC_CONTACT:
-        ni_flags |= GLOBUS_NI_NUMERICHOST;
-        /* fall through */
-      
-      /* char **                        contact_string_out */
-      case GLOBUS_XIO_TCP_GET_CONTACT:
-        if(getsockname(
-            server->listener_handle,
-            (struct sockaddr *) &sock_name,
-            &sock_len) < 0)
-        {
-            result = GlobusXIOErrorSystemError("getsockname", errno);
-            goto error_sockopt;
-        }
-        
-        /* XXX should probably be makeing use of globus_libc_hostname here */
-        result = globus_libc_getnameinfo(
-            &sock_name, host, sizeof(host), port, sizeof(port), ni_flags);
+      case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+        out_string = va_arg(ap, char **);
+        result = globus_l_xio_tcp_contact_string(
+            server->listener_handle, cmd, out_string);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
-                "globus_libc_getnameinfo", result);
-            goto error_nameinfo;
+                "globus_l_xio_tcp_contact_string", result);
+            goto error_contact;
         }
-        
-        cs = globus_malloc(strlen(host) + strlen(port) + 2);
-        if(!cs)
-        {
-            result = GlobusXIOErrorMemory("contact_string");
-            goto error_memory;
-        }
-        
-        sprintf(cs, "%s:%s", host, port);
-        out_string = va_arg(ap, char **);
-        *out_string = cs;
         break;
     
       default:
@@ -1275,9 +1314,7 @@ globus_l_xio_tcp_server_cntl(
     return GLOBUS_SUCCESS;
 
 error_invalid:
-error_memory:
-error_nameinfo:
-error_sockopt:
+error_contact:
     return result;
 }
 
@@ -1969,9 +2006,9 @@ globus_l_xio_tcp_cntl(
     globus_bool_t                       in_bool;
     globus_bool_t *                     out_bool;
     int                                 in_int;
-    globus_sockaddr_t *                 out_sock;
     int                                 fd;
     globus_size_t                       len;
+    char **                             out_string;
     GlobusXIOName(globus_l_xio_tcp_cntl);
 
     handle = (globus_l_handle_t *) driver_handle;
@@ -2125,27 +2162,18 @@ globus_l_xio_tcp_cntl(
         }
         break;
       
-      /* globus_sockaddr_t *            sock_name_out */
-      case GLOBUS_XIO_TCP_GET_LOCAL_ADDRESS:
-        out_sock = va_arg(ap, globus_sockaddr_t *);
-        len = sizeof(globus_sockaddr_t);
-        if(getsockname(
-            handle->handle, (struct sockaddr *) out_sock, &len) < 0)
+      /* char **                        contact_string_out */
+      case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+        out_string = va_arg(ap, char **);
+        result = globus_l_xio_tcp_contact_string(fd, cmd, out_string);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("getsockname", errno);
-            goto error_sockopt;
-        }
-        break;
-        
-      /* globus_sockaddr_t *            peer_name_out */
-      case GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS:
-        out_sock = va_arg(ap, globus_sockaddr_t *);
-        len = sizeof(globus_sockaddr_t);
-        if(getpeername(
-            handle->handle, (struct sockaddr *) out_sock, &len) < 0)
-        {
-            result = GlobusXIOErrorSystemError("getpeername", errno);
-            goto error_sockopt;
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_contact_string", result);
+            goto error_contact;
         }
         break;
         
@@ -2158,6 +2186,7 @@ globus_l_xio_tcp_cntl(
     return GLOBUS_SUCCESS;
 
 error_invalid:
+error_contact:
 error_sockopt:
     return result;
 }
