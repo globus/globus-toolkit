@@ -346,7 +346,8 @@ public class FileStreamImpl extends GridServiceImpl {
         }
     }
 
-    public void preDestroy() {
+    public void preDestroy(GridContext context) 
+    throws GridServiceException {
         try {
             outputStream.close();
             if (logger.isDebugEnabled()) {
@@ -355,6 +356,7 @@ public class FileStreamImpl extends GridServiceImpl {
         }catch(java.io.IOException ioe) {
             logger.error("Error in destroying the File Stream Instance",ioe);
         }
+        super.preDestroy(context);
     }
 
     public void addFileStreamStateListener(
