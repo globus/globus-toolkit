@@ -186,7 +186,7 @@ read_token(const int sock,
 	fd_set rfds;
 	struct timeval tv = { 0 };
 
-	if (read_all(sock, header, sizeof(header)) < 0) {
+	if (read_all(sock, (char *)header, sizeof(header)) < 0) {
 	    if (errno == EPIPE && tot_buffer_len > 0) goto done;
 	    return -1;
 	}
@@ -693,7 +693,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	self->error_number = errno;
 	goto error;
     }
-    if ((fp = fdopen(sock, "r+")) < 0) {
+    if ((fp = fdopen(sock, "r+")) == NULL) {
 	self->error_string = strdup("fdopen() of socket failed");
 	self->error_number = errno;
 	goto error;
@@ -855,7 +855,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	self->error_number = errno;
 	goto error;
     }
-    if ((fp = fdopen(sock, "r+")) < 0) {
+    if ((fp = fdopen(sock, "r+")) == NULL) {
 	self->error_string = strdup("fdopen() of socket failed");
 	self->error_number = errno;
 	goto error;
@@ -1146,7 +1146,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     unsigned char		*input_buffer = NULL;
     size_t			input_buffer_length;
     unsigned char		*output_buffer = NULL;
-    size_t			output_buffer_length;
+    int				output_buffer_length;
     
 
     if (self == NULL)
@@ -1224,7 +1224,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
      * Write the proxy certificate back to user
      */
     if (GSI_SOCKET_write_buffer(self,
-				output_buffer,
+				(const char *)output_buffer,
 				output_buffer_length) == GSI_SOCKET_ERROR)
     {
 	goto error;
@@ -1269,7 +1269,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     unsigned char	*output_buffer = NULL;
     int			output_buffer_len;
     unsigned char	*input_buffer = NULL;
-    int			input_buffer_len;
+    size_t		input_buffer_len;
     char		filename[L_tmpnam];
     unsigned char	*fmsg;
     int                 i;
@@ -1301,7 +1301,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	goto error;
     }
     
-    if (GSI_SOCKET_write_buffer(self, output_buffer,
+    if (GSI_SOCKET_write_buffer(self, (const char *)output_buffer,
 				output_buffer_len) == GSI_SOCKET_ERROR)
     {
 	goto error;
@@ -1320,7 +1320,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
        the final protocol message, so just discard it. */
     fmsg = input_buffer;
     for (i=0; i < input_buffer_len-strlen("VERSION"); i++, fmsg++) {
-	if (strncmp(fmsg, "VERSION", strlen("VERSION")) == 0) {
+	if (strncmp((const char *)fmsg, "VERSION", strlen("VERSION")) == 0) {
 	    input_buffer_len = fmsg-input_buffer;
 	    break;
 	}
