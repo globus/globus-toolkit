@@ -8,6 +8,7 @@ setup_SCRIPTS = \
 
 setup_DATA = \
 	globus-script-initializer \
+	Paths.pm \
 	globus-sh-tools.sh.in \
 	globus-makefile-header.in
 
@@ -18,6 +19,7 @@ EXTRA_DIST = findshelltools \
 	setup-globus-core \
 	setup-globus-core.pl \
 	globus-script-initializer \
+	Paths.in \
 	globus-sh-tools.sh.in \
 	globus-makefile-header.in
 
