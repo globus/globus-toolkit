@@ -4,6 +4,8 @@
 
 #include "globus_common_include.h"
 
+EXTERN_C_BEGIN
+
 #ifdef BUILD_DEBUG
 
 void
