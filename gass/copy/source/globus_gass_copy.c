@@ -3077,8 +3077,10 @@ globus_l_gass_copy_ftp_get_done_callback(
             globus_l_gass_copy_generic_cancel(cancel_info);
             globus_libc_free(cancel_info);
         }
-        
-        globus_l_gass_copy_write_from_queue(copy_handle);
+        if(copy_handle->state)
+        {
+            globus_l_gass_copy_write_from_queue(copy_handle);
+        }
     }
 
 } /* globus_l_gass_copy_ftp_get_done_callback() */
@@ -3131,8 +3133,10 @@ globus_l_gass_copy_ftp_put_done_callback(
             globus_l_gass_copy_generic_cancel(cancel_info);
             globus_libc_free(cancel_info);
         }
-        
-	globus_l_gass_copy_write_from_queue(copy_handle);
+        if(copy_handle->state)
+        {
+            globus_l_gass_copy_write_from_queue(copy_handle);
+        }
     }
 
 } /* globus_l_gass_copy_ftp_put_done_callback() */

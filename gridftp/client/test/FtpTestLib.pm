@@ -13,7 +13,9 @@ require Exporter;
               clean_remote_file 
               get_remote_file 
               run_command
-              compare_local_files );            # symbols to export by default
+              compare_local_files 
+              shuffle
+            );            # symbols to export by default
 
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
@@ -21,7 +23,7 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 my $self = {};
 use strict;
 
-use POSIX;
+use POSIX ();
 use Carp;
 use Sys::Hostname;
 use Data::Dumper;
@@ -328,6 +330,19 @@ sub get_remote_file($$;$)
     }
 
     return $dest;
+}
+
+# The Fisher-Yates Shuffle 
+sub shuffle
+{
+    my $array = shift;
+    my $i;
+    for ($i = @$array; --$i; )
+    {
+        my $j = int rand ($i+1);
+        next if $i == $j;
+        @$array[$i,$j] = @$array[$j,$i];
+    }
 }
 
 sub ftp_commands()

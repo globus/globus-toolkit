@@ -77,6 +77,12 @@ foreach('/etc/group', '/bin/sh', '/adsfadsfa')
 
     push(@tests, "check_size('$proto$source_host$_', $size);");
 }
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
+
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

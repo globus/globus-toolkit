@@ -217,6 +217,11 @@ sub throughput_test
 
 push(@tests, "throughput_test();");
 
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
+
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

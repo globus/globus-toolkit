@@ -2,9 +2,6 @@
  *  user functions.  used by control.c or DSI implementation if it choses.
  */
 #include "globus_i_gridftp_server.h"
-#include "globus_gsi_authz.h"
-#include "globus_i_gfs_acl.h"
-
 
 static void
 globus_gfs_acl_cas_cb(
@@ -13,9 +10,13 @@ globus_gfs_acl_cas_cb(
     globus_result_t                     result)
 {
     globus_i_gfs_acl_handle_t *         acl_handle;
+    GlobusGFSName(globus_gfs_acl_cas_cb);
+    GlobusGFSDebugEnter();
 
     acl_handle = (globus_i_gfs_acl_handle_t *) callback_arg;
     globus_gfs_acl_authorized_finished(acl_handle, result);
+
+    GlobusGFSDebugExit();
 }
 
 static
@@ -29,6 +30,8 @@ globus_gfs_acl_cas_init(
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
+    GlobusGFSName(globus_gfs_acl_cas_init);
+    GlobusGFSDebugEnter();
 
     if(acl_handle->context == NULL)
     {
@@ -45,9 +48,11 @@ globus_gfs_acl_cas_init(
         goto err;
     }
     *out_handle = cas_handle;
+    GlobusGFSDebugExit();
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
 
   err:
+    GlobusGFSDebugExitWithError();
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 
@@ -62,6 +67,8 @@ globus_gfs_acl_cas_authorize(
 {
     globus_gsi_authz_handle_t           cas_handle;
     char *                              full_object;
+    GlobusGFSName(globus_gfs_acl_cas_authorize);
+    GlobusGFSDebugEnter();
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
     if(acl_handle->context == NULL)
@@ -84,9 +91,11 @@ globus_gfs_acl_cas_authorize(
         goto err;
     }
 
+    GlobusGFSDebugExit();
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
 
   err:
+    GlobusGFSDebugExitWithError();
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 
@@ -96,10 +105,14 @@ globus_gfs_acl_cas_destroy(
     void *                              out_handle)
 {
     globus_gsi_authz_handle_t           cas_handle;
+    GlobusGFSName(globus_gfs_acl_cas_destroy);
+    GlobusGFSDebugEnter();
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
 
 /* XXX //    globus_gsi_authz_handle_destroy(cas_handle, NULL, NULL); */
+
+    GlobusGFSDebugExit();
 }
 
 globus_gfs_acl_module_t                 globus_gfs_acl_cas_module = 

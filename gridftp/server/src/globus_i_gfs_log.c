@@ -19,6 +19,8 @@ globus_l_gfs_log_matchlevel(
     char *                              tag)
 {
     int                                 out;
+    GlobusGFSName(globus_l_gfs_log_matchlevel);
+    GlobusGFSDebugEnter();
 
     if(strcasecmp(tag, "ERROR") == 0)
     {   
@@ -41,12 +43,12 @@ globus_l_gfs_log_matchlevel(
         out = GLOBUS_I_GFS_LOG_ALL;
     } 
     
+    GlobusGFSDebugExit();
     return out;
-}            
-
+}
 
 void
-globus_i_gfs_log_open(void)
+globus_i_gfs_log_open()
 {
     char *                              module;
     globus_logging_module_t *           log_mod;
@@ -60,6 +62,8 @@ globus_i_gfs_log_open(void)
     int                                 len;
     int                                 ctr;
     char *                              tag;
+    GlobusGFSName(globus_i_gfs_log_open);
+    GlobusGFSDebugEnter();
         
     /* parse user supplied log level string */
     log_level = globus_libc_strdup(globus_i_gfs_config_string("log_level"));
@@ -161,12 +165,16 @@ globus_i_gfs_log_open(void)
         }
         globus_free(logfilename);
     }
-        
+
+    GlobusGFSDebugExit();        
 }
 
 void
 globus_i_gfs_log_close(void)
 {
+    GlobusGFSName(globus_i_gfs_log_close);
+    GlobusGFSDebugEnter();
+
     globus_logging_flush(globus_l_gfs_log_handle);
     globus_logging_destroy(globus_l_gfs_log_handle);
     if(globus_l_gfs_log_file != stderr && globus_l_gfs_log_file != NULL)
@@ -179,6 +187,8 @@ globus_i_gfs_log_close(void)
         fclose(globus_l_gfs_transfer_log_file);
         globus_l_gfs_transfer_log_file = NULL;
     }    
+
+    GlobusGFSDebugExit();
 }
 
 void
@@ -188,10 +198,37 @@ globus_i_gfs_log_message(
     ...)
 {
     va_list                             ap;
+    GlobusGFSName(globus_i_gfs_log_message);
+    GlobusGFSDebugEnter();
     
     va_start(ap, format);
     globus_logging_vwrite(globus_l_gfs_log_handle, type, format, ap);
     va_end(ap);
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_i_gfs_log_result_warn(
+    const char *                        lead,
+    globus_result_t                     result)
+{
+    char *                              message;
+    GlobusGFSName(globus_i_gfs_log_result_warn);
+    GlobusGFSDebugEnter();
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        message = globus_error_print_friendly(globus_error_peek(result));
+    }
+    else
+    {
+        message = globus_libc_strdup("(no error)");
+    }
+    globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_WARN, "%s:\n%s\n", lead, message);
+    globus_free(message);
+
+    GlobusGFSDebugExit();
 }
 
 void
@@ -200,6 +237,8 @@ globus_i_gfs_log_result(
     globus_result_t                     result)
 {
     char *                              message;
+    GlobusGFSName(globus_i_gfs_log_result);
+    GlobusGFSDebugEnter();
     
     if(result != GLOBUS_SUCCESS)
     {
@@ -211,6 +250,8 @@ globus_i_gfs_log_result(
     }
     globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, "%s:\n%s\n", lead, message);
     globus_free(message);
+
+    GlobusGFSDebugExit();
 }
 
 void
@@ -236,17 +277,19 @@ globus_i_gfs_log_transfer(
     struct tm                           end_tm_time;
     char                                out_buf[4096];
     long                                win_size;
+    GlobusGFSName(globus_i_gfs_log_transfer);
+    GlobusGFSDebugEnter();
 
     if(globus_l_gfs_transfer_log_file == NULL)
     {
-        return;
+        goto err;
     }
 
     start_time_time = (time_t)start_gtd_time->tv_sec;
     tmp_tm_time = gmtime(&start_time_time);
     if(tmp_tm_time == NULL)
     {
-        return;
+        goto err;
     }
     start_tm_time = *tmp_tm_time;
 
@@ -254,7 +297,7 @@ globus_i_gfs_log_transfer(
     tmp_tm_time = gmtime(&end_time_time);
     if(tmp_tm_time == NULL)
     {
-        return;
+        goto err;
     }
     end_tm_time = *tmp_tm_time;
 
@@ -333,4 +376,10 @@ globus_i_gfs_log_transfer(
         code);
         
     fwrite(out_buf, 1, strlen(out_buf), globus_l_gfs_transfer_log_file);
+
+    GlobusGFSDebugExit();
+    return;
+    
+err:
+    GlobusGFSDebugExitWithError();
 }

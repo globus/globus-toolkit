@@ -29,6 +29,11 @@ globus_i_gfs_log_result(
     globus_result_t                     result);
 
 void
+globus_i_gfs_log_result_warn(
+    const char *                        lead,
+    globus_result_t                     result);
+
+void
 globus_i_gfs_log_transfer(
     int                                 stripe_count,
     int                                 stream_count, 

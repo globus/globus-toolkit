@@ -183,6 +183,11 @@ for(my $i = 1; $i <= 41; $i++)
     push(@tests, "restart_test($i);");
 }
 
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
+
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

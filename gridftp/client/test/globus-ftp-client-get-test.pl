@@ -422,6 +422,11 @@ push(@tests, "restart_plugin_test('PROT', '-c self -t safe')");
 push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')");
 push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')");
 
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
+
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);
