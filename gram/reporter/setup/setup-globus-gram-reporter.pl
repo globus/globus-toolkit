@@ -1,3 +1,45 @@
+use Getopt::Long;
+
+my $selected_jm_type;
+my @all_jm_types = ('condor', 'easymcs', 'fork', 'glunix', 'grd', 'loadleveler', 'lsf',
+                    'nqe', 'nswc', 'pbs', 'pexec', 'prun');
+
+
+GetOptions( 'type=s' => \$selected_jm_type,
+            'help' => \$help)
+  or pod2usage(1);
+
+pod2usage(0) if $help;
+
+sub pod2usage {
+  my $ex = shift;
+  print "setup-globus-gram-job-manager [ \\
+               -help \\
+               -type=[ @all_jm_types ]\\
+                     (fork is default)\\
+              ]\n";
+  exit $ex;
+}
+
+if ( $selected_jm_type eq "" )
+{
+   $selected_jm_type='fork';
+}
+
+if ( ! grep {$_ eq $selected_jm_type} @all_jm_types)
+{
+   die "Invalid Job Manager Type, valid types are: @all_jm_types"
+}
+
+if ($selected_jm_type eq "fork")
+{
+   $rdn="jobmanager";
+}
+else
+{
+   $rdn="jobmanager-$selected_jm_type";
+}
+
 my $gpath = $ENV{GPT_LOCATION};
 
 if (!defined($gpath))
@@ -41,10 +83,14 @@ if ( ! -f "$ldif_conf" )
    exit(1);
 }
 
+print "Setting up $selected_jm_type gram reporter\n";
+print "--------------------------------\n";
+
+
 system("grep grid-info-gram-reporter.schema $slapd_conf >/dev/null");
 if ( ! $? )
 {
-   print "gram reporter entry already been inserted in $slapd_conf\n";
+   print "gram reporter entry found in $slapd_conf.  skipping...\n";
 }
 else
 {
@@ -87,26 +133,26 @@ else
    system("mv $tmp_slapd_conf $slapd_conf");
 }
 
-system("grep \"The following lines for fork entry added by setup-globus-gram-reporter\" $ldif_conf >/dev/null");
+system("grep \"The following lines for $selected_jm_type entry added by setup-globus-gram-reporter\" $ldif_conf >/dev/null");
 if ( ! $? )
 {
-   print "gram reporter entry already added to $ldif_conf\n";
+   print "gram reporter entry for $selected_jm_type already added to $ldif_conf\n";
 }
 else
 {
-   print "appending gram reporter entry to $ldif_conf\n";
+   print "appending gram reporter $selected_jm_type entry to $ldif_conf\n";
    open(LDIFFILE, ">>$ldif_conf");
 
-   print LDIFFILE "\n# The following lines for fork entry added by setup-globus-gram-reporter\n";
-   print LDIFFILE "# generate gram reporter fork info every 30 seconds\n";
-   print LDIFFILE "dn: Mds-Software-deployment=jobmanager, Mds-Host-hn=${hostname}, Mds-Vo-name=local, o=grid\n";
+   print LDIFFILE "\n# The following lines for $selected_jm_type entry added by setup-globus-gram-reporter\n";
+   print LDIFFILE "# generate gram reporter $selected_jm_type info every 30 seconds\n";
+   print LDIFFILE "dn: Mds-Software-deployment=$rdn, Mds-Host-hn=${hostname}, Mds-Vo-name=local, o=grid\n";
    print LDIFFILE "objectclass: GlobusTop\n";
    print LDIFFILE "objectclass: GlobusActiveObject\n";
    print LDIFFILE "objectclass: GlobusActiveSearch\n";
    print LDIFFILE "type: exec\n";
    print LDIFFILE "path: $globusdir/libexec\n";
    print LDIFFILE "base: globus-gram-reporter\n";
-   print LDIFFILE "args: -conf $globusdir/etc/globus-job-manager.conf -type fork -rdn jobmanager -dmdn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
+   print LDIFFILE "args: -conf $globusdir/etc/globus-job-manager.conf -type $selected_jm_type -rdn $rdn -dmdn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
    print LDIFFILE "cachetime: 30\n";
    print LDIFFILE "timelimit: 20\n";
    print LDIFFILE "sizelimit: 20\n";
