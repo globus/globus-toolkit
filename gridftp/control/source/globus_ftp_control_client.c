@@ -481,28 +481,31 @@ globus_ftp_control_connect(
             goto unlock_exit;
         }
 
-        memcpy(tmp_hostname, handle->cc_handle.server.h_addr_list[0], 4);
+        if(handle->cc_handle.server.h_addr_list[0] != NULL)
+        { 
+            memcpy(tmp_hostname, handle->cc_handle.server.h_addr_list[0], 4);
         
-        hp = globus_libc_gethostbyaddr_r(
-            tmp_hostname,
-            4,
-            AF_INET,
-            &(handle->cc_handle.server),
-            handle->cc_handle.server_buffer,
-            GLOBUS_FTP_CONTROL_HOSTENT_BUFFER_SIZE,
-            &errno);
+            hp = globus_libc_gethostbyaddr_r(
+                tmp_hostname,
+                4,
+                AF_INET,
+                &(handle->cc_handle.server),
+                handle->cc_handle.server_buffer,
+                GLOBUS_FTP_CONTROL_HOSTENT_BUFFER_SIZE,
+                &errno);
 
-        if(hp == GLOBUS_NULL)
-        {
-            rc = globus_error_put(
-                globus_error_construct_string(
-                    GLOBUS_FTP_CONTROL_MODULE,
-                    GLOBUS_NULL,
-                    "globus_ftp_control_connect: globus_libc_gethostbyaddr_r failed")
+            if(hp == GLOBUS_NULL)
+            {
+                rc = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+                        "globus_ftp_control_connect: globus_libc_gethostbyaddr_r failed")
                 ); 
             
-            globus_libc_free(element);
-            goto unlock_exit;
+                globus_libc_free(element);
+                goto unlock_exit;
+            }
         }
      
         hp=globus_libc_gethostbyname_r(
