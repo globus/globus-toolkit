@@ -56,7 +56,6 @@ known bugs:
 
 ability to send 500 go away to control channel before server-lib has control
 
-M K G b input
 add interface changes for cmdline/config options we want
 add -mkbasedir to globus-url-copy
 
@@ -64,3 +63,4 @@ set default ipc auth mode (host?)
 perf logging output/usage cleanup
 striping bugs
 error messages
+

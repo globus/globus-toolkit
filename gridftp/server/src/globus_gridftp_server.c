@@ -494,7 +494,7 @@ void
 globus_l_gfs_ipc_open_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *        reply,
     void *                              user_arg)
 {
     GlobusGFSName(globus_l_gfs_ipc_open_cb);

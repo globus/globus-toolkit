@@ -131,7 +131,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"stripe_layout_locked", "stripe_layout_locked", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Do not allow client to override stripe layout with the OPTS RETR command"},
  {"stripe_mode", "stripe_mode", NULL, "stripe-mode", NULL, GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
-    "Mode 1 is a 1-1 stripe configuration. Mode 2 is ALL-ALL."},
+    NULL /* "Mode 1 is a 1-1 stripe configuration. Mode 2 is ALL-ALL."  */},
 {NULL, "Disk Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"blocksize", "blocksize", NULL, "blocksize", "bs", GLOBUS_L_GFS_CONFIG_INT, (256 * 1024), NULL,
     "Size in bytes of data blocks to read from disk before posting to the network."},
@@ -523,6 +523,7 @@ globus_l_gfs_config_load_commandline(
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
+    globus_off_t                        tmp_num;
     GlobusGFSName(globus_l_gfs_config_load_commandline);
     GlobusGFSDebugEnter();
     
@@ -597,7 +598,13 @@ globus_l_gfs_config_load_commandline(
                     fprintf(stderr, "Option %s is missing a value\n", argp);
                     return -1;
                 }
-                option->int_value = strtol(argv[arg_num], NULL, 0);
+                rc = globus_args_bytestr_to_num(argv[arg_num], &tmp_num);
+                if(rc != 0)
+                {
+                    fprintf(stderr, "Invalid value for %s\n", argp);
+                    return -1;
+                }                  
+                option->int_value = (int) tmp_num;
                 break;
                 
               case GLOBUS_L_GFS_CONFIG_STRING:

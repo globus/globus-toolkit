@@ -1107,13 +1107,13 @@ globus_l_gfs_data_stat_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_finished_info_t              reply;
     GlobusGFSName(globus_l_gfs_data_stat_kickout);
     GlobusGFSDebugEnter();
 
     bounce_info = (globus_l_gfs_data_stat_bounce_t *) user_arg;
 
-    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
+    memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
 
     reply.type = GLOBUS_GFS_OP_STAT;
     reply.id = bounce_info->op->id;
@@ -1843,13 +1843,13 @@ globus_l_gfs_data_passive_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_passive_bounce_t * bounce_info;
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_finished_info_t              reply;
     GlobusGFSName(globus_l_gfs_data_passive_kickout);
     GlobusGFSDebugEnter();
 
     bounce_info = (globus_l_gfs_data_passive_bounce_t *) user_arg;
 
-    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
+    memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
     reply.type = GLOBUS_GFS_OP_PASSIVE;
     reply.id = bounce_info->id;
     reply.result = bounce_info->result;
@@ -2106,13 +2106,13 @@ globus_l_gfs_data_active_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_active_bounce_t * bounce_info;
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_finished_info_t              reply;
     GlobusGFSName(globus_l_gfs_data_active_kickout);
     GlobusGFSDebugEnter();
 
     bounce_info = (globus_l_gfs_data_active_bounce_t *) user_arg;
 
-    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
+    memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
     reply.type = GLOBUS_GFS_OP_ACTIVE;
     reply.id = bounce_info->id;
     reply.result = bounce_info->result;
@@ -2814,7 +2814,7 @@ globus_l_gfs_data_begin_cb(
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       connect_event = GLOBUS_FALSE;
     globus_bool_t                       finish = GLOBUS_FALSE;
-    globus_gfs_ipc_event_reply_t        event_reply;
+    globus_gfs_event_info_t        event_reply;
     globus_gfs_event_info_t             event_info;
     globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_data_begin_cb);
@@ -2907,7 +2907,7 @@ globus_l_gfs_data_begin_cb(
             remote_addr.host[0], remote_addr.host[1],
             remote_addr.host[2], remote_addr.host[3]);
 
-        memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
+        memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
         event_reply.type = GLOBUS_GFS_EVENT_TRANSFER_CONNECTED;
         event_reply.id = op->id;
         event_reply.event_arg = op;
@@ -2996,8 +2996,8 @@ globus_l_gfs_data_end_transfer_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_operation_t *     op;
-    globus_gfs_ipc_event_reply_t        event_reply;
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_event_info_t        event_reply;
+    globus_gfs_finished_info_t              reply;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       disconnect = GLOBUS_FALSE;
     globus_gfs_event_info_t             event_info;
@@ -3006,7 +3006,7 @@ globus_l_gfs_data_end_transfer_kickout(
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
+    memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
 
     /* deal with the data handle */
     globus_mutex_lock(&op->session_handle->mutex);
@@ -3034,7 +3034,7 @@ globus_l_gfs_data_end_transfer_kickout(
 
     if(disconnect && op->data_handle->is_mine)
     {
-        memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
+        memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
         event_reply.id = op->id;
         event_reply.data_arg = op->data_arg;
 
@@ -3208,8 +3208,8 @@ globus_l_gfs_data_end_read_kickout(
 
     if(op->data_handle->info.mode == 'E')
     {
-        globus_gfs_ipc_event_reply_t        event_reply;
-        memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
+        globus_gfs_event_info_t        event_reply;
+        memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
         event_reply.id = op->id;
         event_reply.recvd_bytes = op->recvd_bytes;
         event_reply.recvd_ranges = op->recvd_ranges;
@@ -3396,9 +3396,9 @@ globus_l_gfs_data_write_eof_cb(
                         though we may have an error here since someone is
                         expecting it.  The transfer should still error out
                         normally */
-                        globus_gfs_ipc_event_reply_t        event_reply;
+                        globus_gfs_event_info_t        event_reply;
                         memset(&event_reply, '\0',
-                            sizeof(globus_gfs_ipc_event_reply_t));
+                            sizeof(globus_gfs_event_info_t));
                         event_reply.id = op->id;
                         event_reply.eof_count = op->eof_count;
                         event_reply.type = GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT;
@@ -3572,7 +3572,7 @@ globus_l_gfs_data_trev_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
-    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_gfs_event_info_t *      event_reply;
     globus_bool_t                       pass;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_gfs_event_info_t             event_info;
@@ -3580,8 +3580,8 @@ globus_l_gfs_data_trev_kickout(
     GlobusGFSDebugEnter();
 
     bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
-    event_reply = (globus_gfs_ipc_event_reply_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+    event_reply = (globus_gfs_event_info_t *)
+        globus_calloc(1, sizeof(globus_gfs_event_info_t));
 
     event_reply->id = bounce_info->op->id;
     event_reply->node_ndx = bounce_info->op->node_ndx;
@@ -4149,7 +4149,7 @@ globus_gridftp_server_finished_command(
     globus_result_t                     result,
     char *                              command_data)
 {
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_finished_info_t              reply;
     GlobusGFSName(globus_gridftp_server_finished_command);
     GlobusGFSDebugEnter();
 
@@ -4168,7 +4168,7 @@ globus_gridftp_server_finished_command(
         break;
     }
 
-    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
+    memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
     reply.type = GLOBUS_GFS_OP_COMMAND;
     reply.id = op->id;
     reply.result = result;
@@ -4274,7 +4274,7 @@ globus_gridftp_server_begin_transfer(
     globus_bool_t                       pass_abort = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_result_t                     result;
-    globus_gfs_ipc_event_reply_t        event_reply;
+    globus_gfs_event_info_t        event_reply;
     globus_gfs_event_info_t             event_info;
     GlobusGFSName(globus_gridftp_server_begin_transfer);
     GlobusGFSDebugEnter();
@@ -4294,7 +4294,7 @@ globus_gridftp_server_begin_transfer(
         be no memory at op->mutex. we get around this with an extra
         reference count */
     op->ref += 2;
-    memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
+    memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
     event_reply.type = GLOBUS_GFS_EVENT_TRANSFER_BEGIN;
     event_reply.id = op->id;
     event_reply.event_mask =
@@ -4374,7 +4374,7 @@ globus_gridftp_server_begin_transfer(
                     {
                         op->ref++;
                         op->stripe_connections_pending =
-                            op->stripe_count;
+                            op->data_handle->info.cs_count;
                     }
                     else
                     {

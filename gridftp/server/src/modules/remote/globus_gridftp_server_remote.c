@@ -1,5 +1,5 @@
+
 #include "globus_gridftp_server.h"
-#include "globus_i_gfs_ipc.h"
 #include "version.h"
 
 
@@ -133,8 +133,8 @@ globus_l_gfs_remote_ipc_error_cb(
     GlobusGFSName(globus_l_gfs_remote_ipc_error_cb);
     GlobusGFSRemoteDebugEnter();
     
-    globus_i_gfs_log_result(
-        "IPC ERROR", result);
+    globus_gfs_log_result(
+        GLOBUS_GFS_LOG_ERR, "IPC ERROR", result);
             
     GlobusGFSRemoteDebugExit();
 }
@@ -187,7 +187,7 @@ void
 globus_l_gfs_remote_node_request_kickout(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *            reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_request_t *     bounce_info;
@@ -302,7 +302,7 @@ void
 globus_l_gfs_ipc_finished_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *            reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -344,7 +344,7 @@ void
 globus_l_gfs_ipc_passive_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *            reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -427,7 +427,7 @@ void
 globus_l_gfs_ipc_active_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *            reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -504,7 +504,7 @@ void
 globus_l_gfs_ipc_transfer_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *            reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -573,7 +573,7 @@ void
 globus_l_gfs_ipc_event_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_event_reply_t *      reply,
+    globus_gfs_event_info_t *      reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -1303,7 +1303,9 @@ globus_l_gfs_remote_data_destroy(
             node_info->data_arg); 
         if(result != GLOBUS_SUCCESS)
         {
-           globus_i_gfs_log_result("IPC ERROR: remote_data_destroy: ipc call", result);
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_ERR, 
+                "IPC ERROR: remote_data_destroy: ipc call", result);
         }
         if(node_info->cs != NULL)
         {
@@ -1345,7 +1347,7 @@ globus_l_gfs_remote_trev(
     {
         /* will have to do some ref counting on the node_handle if server-lib
         can't prevent this */
-        globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, 
+        globus_gfs_log_message(GLOBUS_GFS_LOG_ERR, 
             "data_destroy before transfer_complete\n");
     }
     for(list = bounce_info->node_handle->node_list;
@@ -1491,7 +1493,7 @@ globus_l_gfs_remote_session_start(
     }
     my_handle->session_info.map_user = session_info->map_user;
     my_handle->session_info.del_cred = session_info->del_cred;
-    my_handle->striped_mode = globus_i_gfs_config_int("stripe_mode");
+    my_handle->striped_mode = 1;
     
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, &my_handle->session_info, my_handle);
@@ -1539,7 +1541,8 @@ globus_l_gfs_remote_session_end(
         result = globus_gfs_ipc_handle_release(node_info->ipc_handle);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gfs_log_result(
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_ERR, 
                 "ERROR: remote_data_destroy: handle_release", result);
         }
         if(node_info->info && node_info->info_needs_free)
