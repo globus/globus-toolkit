@@ -97,9 +97,6 @@ sub usage
 {
     print "Usage: $0 [options]\n".
           "Options:  [--service-name|-s service_name]\n".
-	  "          [--non-cluster]\n".
-	  "          [--cpu-per-node=COUNT]\n".
-	  "          [--remote-shell=rsh|ssh]\n".
 	  "          [--validate-queues=yes|no]\n".
 	  "          [--help|-h]\n";
     exit 1;

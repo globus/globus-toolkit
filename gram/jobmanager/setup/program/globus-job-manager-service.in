@@ -72,7 +72,6 @@ my $method = 'fork';
 my $add = 0;
 my $remove = 0;
 my $help = 0;
-my $force = 0;
 my $gpath;
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
@@ -158,7 +157,6 @@ sub usage
           "          [-extra-config EXTRA]\n".
           "          [-add]\n".
           "          [-remove]\n".
-          "          [-force]\n".
           "          [-help]\n";
     exit 1;
 }

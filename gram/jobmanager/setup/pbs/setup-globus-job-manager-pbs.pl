@@ -17,7 +17,6 @@ use Getopt::Long;
 
 my $name		= 'jobmanager-pbs';
 my $manager_type	= 'pbs';
-my $force		= 0;
 my $cmd;
 my $non_cluster		= 0;
 my $cpu_per_node	= 1;
@@ -30,7 +29,6 @@ GetOptions('service-name|s=s' => \$name,
            'cpu-per-node=i' => \$cpu_per_node,
 	   'remote-shell=s' => \$remote_shell,
 	   'validate-queues=s' => \$validate_queues,
-	   'force|f' => \$force,
 	   'help|h' => \$help);
 
 &usage if $help;
@@ -40,15 +38,6 @@ my $metadata =
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
-
-if($force != 0)
-{
-    $force = '-f';
-}
-else
-{
-    $force = '';
-}
 
 if($validate_queues ne 'no')
 {
@@ -79,7 +68,7 @@ if($? != 0)
 }
 
 # Create service
-$cmd = "$libexecdir/globus-job-manager-service -add -m pbs -s \"$name\" $force";
+$cmd = "$libexecdir/globus-job-manager-service -add -m pbs -s \"$name\"";
 system("$cmd >/dev/null 2>/dev/null");
 if($? != 0)
 {
@@ -155,7 +144,6 @@ sub usage
 	  "          [--cpu-per-node=COUNT]\n".
 	  "          [--remote-shell=rsh|ssh]\n".
 	  "          [--validate-queues=yes|no]\n".
-          "          [--force|-f]\n".
 	  "          [--help|-h]\n";
     exit 1;
 }

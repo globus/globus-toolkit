@@ -3,7 +3,6 @@ use Getopt::Long;
 
 my $name		= 'jobmanager-fork';
 my $manager_type	= 'fork';
-my $force		= 0;
 my $cmd;
 
 GetOptions('service-name|s=s' => \$name,
@@ -37,7 +36,6 @@ sub usage
 {
     print "Usage: $0 [options]\n".
           "Options:  [--service-name|-s service_name]\n".
-          "          [--force|-f]\n".
 	  "          [--help|-h]\n";
     exit 1;
 }
