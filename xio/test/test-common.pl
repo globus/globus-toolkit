@@ -34,6 +34,8 @@ sub run_test
     if($errors eq "")
     {
         ok('success', 'success');
+        unlink("$output_dir/$test_str.out");
+        unlink("$output_dir/$test_str.err");
     }
     else
     {
