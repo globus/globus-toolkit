@@ -1145,7 +1145,7 @@ static void doit()
     gram_k5_path = genfilename( gatekeeperhome, libexecdir, GRAM_K5_EXE);
 
     /* need k5 jm -h x -e x (jmargs) null == 7+ jmargc */
-    args = (char **) malloc((7 + jmargc) * sizeof(char *));
+    args = (char **) malloc((9 + jmargc) * sizeof(char *));
     if (args == NULL)
 	failure("Cannot get storage for args"); 
 
