@@ -81,7 +81,7 @@ GSS_CALLCONV gss_init_sec_context(
 #endif /* DEBUG */
 
     *minor_status = 0;
-    output_token->length = 0 ;
+    output_token->length = 0;
 
     context = *context_handle_P;
 
@@ -298,6 +298,8 @@ GSS_CALLCONV gss_init_sec_context(
             BIO_read(context->gs_sslbio,cbuf,1);
         }
 
+        /* send D if we want delegation, 0 otherwise */
+        
         if (context->req_flags & GSS_C_DELEG_FLAG)
         {
             BIO_write(context->gs_sslbio,"D",1); 
@@ -312,6 +314,7 @@ GSS_CALLCONV gss_init_sec_context(
 			
     case(GS_CON_ST_REQ):
         /* DEE? needs error processing here */
+        /* Get the cert req */
         reqp = d2i_X509_REQ_bio(context->gs_sslbio,NULL);
 
         if (reqp == NULL)

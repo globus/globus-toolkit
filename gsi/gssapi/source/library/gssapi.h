@@ -843,6 +843,35 @@ GSS_CALLCONV GSS_FUNC(gss_duplicate_name)
                gss_buffer_t        /* output buffer */
               );
 
+
+
+   GSS_MAKE_TYPEDEF
+   OM_uint32
+   GSS_CALLCONV GSS_FUNC(gss_init_delegation)
+              (OM_uint32 *,
+               const gss_ctx_id_t,
+               const gss_cred_id_t,
+               const gss_OID,
+               const gss_OID_set,
+               const gss_buffer_set_t,
+               const gss_buffer_t,
+               gss_buffer_t
+              );
+
+
+   GSS_MAKE_TYPEDEF
+   OM_uint32
+   GSS_CALLCONV GSS_FUNC(gss_accept_delegation)
+              (OM_uint32 *,
+               const gss_ctx_id_t,
+               gss_cred_id_t *,
+               gss_OID *, 
+               const gss_OID_set,
+               const gss_buffer_set_t,
+               const gss_buffer_t,
+               gss_buffer_t
+              );
+
 #endif /* GSI_EXTENDED_GSSAPI */
 
 EXTERN_C_END

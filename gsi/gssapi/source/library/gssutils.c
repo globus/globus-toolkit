@@ -124,6 +124,7 @@ gss_create_and_fill_context(
 	context->gs_wbio = NULL;
 	context->gs_sslbio = NULL;
 	context->gs_state = GS_CON_ST_HANDSHAKE;
+	context->delegation_state = GS_DELEGATION_START;
 	context->dpkey = NULL;
 	context->dcert = NULL;
 	context->locally_initiated = (cred_usage == GSS_C_INITIATE);

@@ -1,16 +1,16 @@
-/**********************************************************************
+ /**********************************************************************
 gssapi_ssleay.h:
 
 Description:
-	This header file used internally by the gssapi_ssleay
-	routines
+        This header file used internally by the gssapi_ssleay
+        routines
 
 CVS Information:
 
-	$Source$
-	$Date$
-	$Revision$
-	$Author$
+        $Source$
+        $Date$
+        $Revision$
+        $Author$
 
 **********************************************************************/
 
@@ -29,9 +29,11 @@ CVS Information:
 #include "openssl/bio.h"
 #include "openssl/pem.h"
 #include "openssl/x509.h"
+
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #include "openssl/x509v3.h"
 #endif
+
 #include "openssl/stack.h"
 
 /**********************************************************************
@@ -61,7 +63,7 @@ CVS Information:
 #define GSSERR_F_RELEASE_BUFFER        108
 #define GSSERR_F_RELEASE_CRED          109
 #define GSSERR_F_RELEASE_NAME          110
- /* In gssutil.c: */
+/* In gssutil.c: */
 #define GSSERR_F_NAME_TO_NAME          111
 #define GSSERR_F_CREATE_FILL           112
 #define GSSERR_F_GS_HANDSHAKE          113
@@ -130,7 +132,7 @@ CVS Information:
  *  byte  data[*]          = the data being wrapped. 
  */
 
-#define SSL3_RT_GSSAPI_SSLEAY			26
+#define SSL3_RT_GSSAPI_SSLEAY                   26
 
 
 
@@ -147,7 +149,7 @@ CVS Information:
                     l|=((unsigned long)(*((c)++))))
 
 #define n2s(c,s)    (s =((unsigned int)(*((c)++)))<< 8, \
-   			         s|=((unsigned int)(*((c)++))))
+                                 s|=((unsigned int)(*((c)++))))
 
 #define s2n(s,c)    (*((c)++)=(unsigned char)(((s)>> 8)&0xff), \
                      *((c)++)=(unsigned char)(((s)    )&0xff))
@@ -178,10 +180,10 @@ CVS Information:
 /* Compare OIDs */
 
 #define g_OID_equal(o1,o2) \
-	(((o1) == (o2)) || \
-	 ((o1) && (o2) && \
-	 ((o1)->length == (o2)->length) && \
-	 (memcmp((o1)->elements,(o2)->elements,(int) (o1)->length) == 0)))
+        (((o1) == (o2)) || \
+         ((o1) && (o2) && \
+         ((o1)->length == (o2)->length) && \
+         (memcmp((o1)->elements,(o2)->elements,(int) (o1)->length) == 0)))
 
 /**********************************************************************
                                Type definitions
@@ -197,62 +199,75 @@ CVS Information:
 
 #ifndef HEADER_SSL_LOCL_H
 typedef struct ssl3_enc_method
-    {
-    int (*enc)();
-    int (*mac)();
-    int (*setup_key_block)();
-    int (*generate_master_secret)();
-    int (*change_cipher_state)();
-    int (*final_finish_mac)();
-    int finish_mac_length;
-    int (*cert_verify_mac)();
-    unsigned char client_finished[20];
-    int client_finished_len;
-    unsigned char server_finished[20];
-    int server_finished_len;
-    int (*alert_value)();
-    } SSL3_ENC_METHOD;
+{
+    int                                 (*enc)();
+    int                                 (*mac)();
+    int                                 (*setup_key_block)();
+    int                                 (*generate_master_secret)();
+    int                                 (*change_cipher_state)();
+    int                                 (*final_finish_mac)();
+    int                                 finish_mac_length;
+    int                                 (*cert_verify_mac)();
+    unsigned char                       client_finished[20];
+    int                                 client_finished_len;
+    unsigned char                       server_finished[20];
+    int                                 server_finished_len;
+    int                                 (*alert_value)();
+} SSL3_ENC_METHOD;
 #endif
 
 typedef enum {
-	GS_CON_ST_HANDSHAKE=0,
-	GS_CON_ST_FLAGS,
-	GS_CON_ST_REQ,
-	GS_CON_ST_CERT,
-	GS_CON_ST_DONE
+    GS_CON_ST_HANDSHAKE = 0,
+    GS_CON_ST_FLAGS,
+    GS_CON_ST_REQ,
+    GS_CON_ST_CERT,
+    GS_CON_ST_DONE
 } gs_con_st_t;
 
+typedef enum
+{
+    GS_DELEGATION_START,
+    GS_DELEGATION_DONE,
+    
+} gs_delegation_state_t;
+
 typedef struct gss_name_desc_struct {
-  /* gss_buffer_desc  name_buffer ; */
-  gss_OID		 name_oid;
-  X509_NAME      * x509n ;
+    /* gss_buffer_desc  name_buffer ; */
+    gss_OID                             name_oid;
+    X509_NAME *                         x509n;
 } gss_name_desc ;
 
 typedef struct gss_cred_id_desc_struct {
-  proxy_cred_desc		   *pcd;
-  gss_name_desc			   *globusid ;
-  gss_cred_usage_t         cred_usage ;
-  BIO                      *gs_bio_err ;
+    proxy_cred_desc *                   pcd;
+    gss_name_desc *                     globusid;
+    gss_cred_usage_t                    cred_usage;
+    BIO *                               gs_bio_err;
 } gss_cred_id_desc ;
 
 typedef struct gss_ctx_id_desc_struct{
-  proxy_verify_desc pvd; /* used for verify_callback */
-  proxy_verify_ctx_desc pvxd;
-  gss_name_desc     *source_name ;                 
-  gss_name_desc     *target_name ;                 
-  gss_cred_id_desc  *cred_handle ;
-  OM_uint32			ret_flags ;
-  OM_uint32			req_flags ;
-  int				cred_obtained ;
-  SSL               *gs_ssl ; 
-  BIO               *gs_rbio ;
-  BIO               *gs_wbio ;
-  BIO               *gs_sslbio ;
-  gs_con_st_t		gs_state;
-  int				locally_initiated ;
-	/* following used during delegation */
-  EVP_PKEY			*dpkey;    /* new key for delegated proxy */
-  X509				*dcert;	   /* delegated cert */
+    proxy_verify_desc                   pvd; /* used for verify_callback */
+    proxy_verify_ctx_desc               pvxd;
+    gss_name_desc *                     source_name;                 
+    gss_name_desc *                     target_name;                 
+    gss_cred_id_desc *                  cred_handle;
+    OM_uint32                           ret_flags;
+    OM_uint32                           req_flags;
+    int                                 cred_obtained;
+    SSL *                               gs_ssl; 
+    BIO *                               gs_rbio;
+    BIO *                               gs_wbio;
+    BIO *                               gs_sslbio;
+    gs_con_st_t                         gs_state;
+    gs_delegation_state_t               delegation_state; 
+    int                                 locally_initiated;
+    /* following used during delegation */
+
+    /* new key for delegated proxy - do we need this now that we have
+     * init/accept-delegation
+     */
+    EVP_PKEY *                          dpkey;
+    /* delegated cert */
+    X509 *                              dcert;    
 } gss_ctx_id_desc ;
 
 /**********************************************************************
