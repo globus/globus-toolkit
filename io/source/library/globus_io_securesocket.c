@@ -2058,8 +2058,11 @@ globus_l_io_write_auth_token(
 	if(init_info->output_offset == init_info->output_buflen)
 	{
 	    /* sent entire token, so free token length and token */
-	    globus_free(init_info->output_buffer_header);
-	    init_info->output_buffer_header = GLOBUS_NULL;
+            if(init_info->output_buffer_header)
+            {
+                globus_free(init_info->output_buffer_header);
+	        init_info->output_buffer_header = GLOBUS_NULL;
+            }
 	    init_info->output_header_len = 0;
 	    init_info->output_header_offset = 0;
 
