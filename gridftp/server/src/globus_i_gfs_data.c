@@ -1625,7 +1625,6 @@ globus_l_gfs_data_begin_cb(
 {
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       connect_event = GLOBUS_FALSE;
-    globus_result_t                     res;
     globus_gfs_ipc_event_reply_t *      event_reply;
     globus_l_gfs_data_operation_t *     op;
 
@@ -1639,7 +1638,8 @@ globus_l_gfs_data_begin_cb(
                 if(error != NULL)
                 {
                     /* something wrong, start the abort process */
-                    res = globus_error_put(error);
+                    op->cached_res = 
+                        globus_error_put(globus_object_copy(error));
                     goto err_lock;
                 }
                 /* everything is well, send the begin event */
@@ -1970,7 +1970,7 @@ globus_l_gfs_data_send_eof_cb(
     {
         /* XXX this should be thread safe see not in write_eof cb */
         globus_l_gfs_data_cb_error(op->data_handle);
-        op->cached_res = globus_error_put(error);
+        op->cached_res = globus_error_put(globus_object_copy(error));
     }
     globus_l_gfs_data_end_transfer_kickout(op);
 }
@@ -2002,7 +2002,7 @@ globus_l_gfs_data_write_eof_cb(
             could still get events or disconnects, but the abort process
             does not touch the data_handle->state */    
         globus_l_gfs_data_cb_error(op->data_handle);
-        op->cached_res = globus_error_put(error);
+        op->cached_res = globus_error_put(globus_object_copy(error));
         end = GLOBUS_TRUE;
     }
     else
