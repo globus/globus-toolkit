@@ -1,4 +1,7 @@
-#! /bin/sh
+#! @SH@
+
+# This is inserted by configure.
+@globus_script_initializer@
 
 #  CVS Information:
 #     $Source$
