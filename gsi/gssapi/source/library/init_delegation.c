@@ -171,13 +171,21 @@ GSS_CALLCONV gss_init_delegation(
     
     /* pass the input to the read BIO in the context */
     
-    if(input_token != GSS_C_NO_BUFFER)
+    if(context->delegation_state != GS_DELEGATION_START)
     {
         /*
          * first time there is no input token, but after that
          * there will always be one
          */
 
+        if(input_token == GSS_C_NO_BUFFER)
+        {
+            GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+            *minor_status = gsi_generate_minor_status();
+            major_status = GSS_S_FAILURE;
+            goto err;
+        }
+        
     	major_status = gs_put_token(context, input_token);
 
     	if (major_status != GSS_S_COMPLETE)
@@ -185,13 +193,6 @@ GSS_CALLCONV gss_init_delegation(
             *minor_status = gsi_generate_minor_status();
             return major_status;
     	}
-    }
-    else if(context->delegation_state != GS_DELEGATION_START)
-    {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_FAILURE;
-        goto err;
     }
 
     /* delegation state machine */

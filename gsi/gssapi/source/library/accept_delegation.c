@@ -230,9 +230,11 @@ GSS_CALLCONV gss_accept_delegation(
         {
             X509_free(dcert);
             EVP_PKEY_free(context->dpkey);
+            context->dpkey = NULL;
             goto err;
         }
 
+        context->dpkey = NULL;
 
         if (time_rec != NULL)
         {
