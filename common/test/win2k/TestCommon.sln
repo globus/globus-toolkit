@@ -1,0 +1,42 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CallbackTest", "CallbackTest.vcproj", "{CBC08A9F-1EE5-4FCD-9C73-BEFCEEF58578}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+	ProjectSection(SolutionConfiguration) = postProject
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
+		Debug.ActiveCfg = Debug|Win32
+		Debug.Build.0 = Debug|Win32
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HashtableTest", "HashtableTest.vcproj", "{4EB137F8-50BE-49B3-AEFE-63DF2BF9CB1E}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+	ProjectSection(SolutionConfiguration) = postProject
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
+		Debug.ActiveCfg = Debug|Win32
+		Debug.Build.0 = Debug|Win32
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemoryTest", "MemoryTest.vcproj", "{ACB58C23-C94D-4411-A28F-439846A2CF3A}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+	ProjectSection(SolutionConfiguration) = postProject
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
+		Debug.ActiveCfg = Debug|Win32
+		Debug.Build.0 = Debug|Win32
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = Release
+		DoSign = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

@@ -1,9 +1,9 @@
 #include "globus_common.h"
-#include "globus_thread_common.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <assert.h>
 
+#define GlobusTimeReltimePrintf(time_left) \
+{ \
+    printf("sec->%ld usec->%ld\n", (time_left).tv_sec, (time_left).tv_usec); \
+}
 globus_bool_t                         test_failed;
 int                                   basic_test_count;
 
@@ -125,11 +125,9 @@ generic_wakeup(
 
 void
 generic_requeue_callback(
-    globus_reltime_t *                  period,
+    globus_reltime_t * const            period,
     void *                              user_args)
 {
-    globus_reltime_t                    dummy_period;
-
     verbose_printf(3, "generic_requeue_callback()\n");
 }
 
@@ -145,12 +143,12 @@ cpu_hog_restart_test(globus_wakeup_func_t wakeup);
 
 globus_bool_t
 cpu_hog_restart_block_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 
 globus_bool_t
 cpu_hog_restart_time_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 /* END CPU HOG TEST */
 
@@ -175,27 +173,27 @@ random_stress_test(globus_wakeup_func_t wakeup);
 
 globus_bool_t
 random_stress_own_thread_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 
 globus_bool_t
 random_stress_queued_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 
 globus_bool_t
 random_stress_whatever_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 
 globus_bool_t
 random_stress_restarting_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 
 globus_bool_t
 random_stress_count_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg);
 
 void
@@ -219,12 +217,12 @@ adjust_period_test(
 
 globus_bool_t
 adjust_period_requeue_callback(
-    globus_abstime_t *                stop_time,
+    globus_abstime_t * const          stop_time,
     void *                            user_args);
 
 globus_bool_t
 adjust_period_set_infinity_callback(
-    globus_abstime_t *                stop_time,
+    globus_abstime_t * const          stop_time,
     void *                            user_args);
 
 /* END ADJUST PERIOD TEST */
@@ -471,6 +469,8 @@ basic_periodic_handler(
    verbose_printf(2, "basic_periodic_handler() : called");
 
    basic_periodic_test_ctr++;
+
+   return GLOBUS_TRUE;
 }
 
 globus_bool_t
@@ -655,14 +655,14 @@ time_starve_test(globus_wakeup_func_t wakeup)
    globus_abstime_t             wait_time;
    globus_mutex_t               mutex;
    globus_cond_t                cond;
-   float                        rate1;
-   float                        rate2;
-   float                        rate3;
-   float                        rate4;
-   float                        accuracy1;
-   float                        accuracy2;
-   float                        accuracy3;
-   float                        accuracy4;
+   double                      rate1;
+   double                       rate2;
+   double                       rate3;
+   double                       rate4;
+   double                       accuracy1;
+   double                       accuracy2;
+   double                       accuracy3;
+   double                       accuracy4;
    globus_reltime_t             start_time;
    
    GlobusTimeReltimeSet(start_time, 0, 0);
@@ -1045,7 +1045,7 @@ cpu_hog_restart_test(
 }
 
 cpu_hog_restart_block_handler(
-   globus_abstime_t *                    timeout, 
+   globus_abstime_t * const              timeout, 
    void *                                user_arg)
 {
     globus_reltime_t                      ok_time;
@@ -1084,7 +1084,7 @@ cpu_hog_restart_block_handler(
 
 globus_bool_t
 cpu_hog_restart_time_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg)
 {
     return GLOBUS_FALSE;
@@ -1102,8 +1102,6 @@ random_stress_test(globus_wakeup_func_t wakeup)
     int                               count = 0;
     globus_reltime_t                  delay;
     globus_reltime_t                  period;
-    globus_reltime_t                  delay1;
-    globus_reltime_t                  period3;
     globus_callback_handle_t          callback_handle;
 
     globus_module_activate(GLOBUS_CALLBACK_MODULE);
@@ -1200,7 +1198,7 @@ random_stress_test(globus_wakeup_func_t wakeup)
 
 globus_bool_t
 random_stress_own_thread_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg)
 {
     globus_bool_t                     rc = GLOBUS_FALSE;
@@ -1229,7 +1227,7 @@ random_stress_own_thread_handler(
 
 globus_bool_t
 random_stress_queued_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg)
 {
     globus_libc_usleep(50);
@@ -1239,7 +1237,7 @@ random_stress_queued_handler(
 
 globus_bool_t
 random_stress_count_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg)
 {
     int *             x;
@@ -1276,7 +1274,7 @@ random_stress_count_handler(
 
 globus_bool_t
 random_stress_whatever_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg)
 {
     globus_libc_usleep(20);
@@ -1286,7 +1284,7 @@ random_stress_whatever_handler(
 
 globus_bool_t
 random_stress_restarting_handler(
-   globus_abstime_t *                 timeout, 
+   globus_abstime_t * const           timeout, 
    void *                             user_arg)
 {
     globus_thread_blocking_will_block();
@@ -1370,7 +1368,7 @@ adjust_period_test(globus_wakeup_func_t wakeup)
 
 globus_bool_t
 adjust_period_requeue_callback(
-    globus_abstime_t *                  stop_time,
+    globus_abstime_t * const            stop_time,
     void *                              user_args)
 {
     int *                               count;
@@ -1435,7 +1433,7 @@ adjust_period_requeue_callback(
 
 globus_bool_t
 adjust_period_set_infinity_callback(
-    globus_abstime_t *                stop_time,
+    globus_abstime_t * const          stop_time,
     void *                            user_args)
 {
     int *                             count;
