@@ -1,3 +1,76 @@
+20030923
+ - (dtucker) OpenBSD CVS Sync
+   - markus@cvs.openbsd.org 2003/09/18 07:52:54
+     [sshconnect.c]
+     missing {}; bug #656; jclonguet at free.fr
+   - markus@cvs.openbsd.org 2003/09/18 07:54:48
+     [buffer.c]
+     protect against double free; #660;  zardoz at users.sf.net
+   - markus@cvs.openbsd.org 2003/09/18 08:49:45
+     [deattack.c misc.c session.c ssh-agent.c]
+     more buffer allocation fixes; from Solar Designer; CAN-2003-0682;
+     ok millert@
+   - markus@cvs.openbsd.org 2003/09/19 09:02:02
+     [packet.c]
+     buffer_dump only if PACKET_DEBUG is defined; Jedi/Sector One; pr 3471
+ - (djm) Fix SSH1 challenge kludge
+ - (djm) Bug #671: Fix builds on OpenBSD
+ - (djm) Bug #676: Fix PAM stack corruption
+ - (djm) Fix bad free() in PAM code
+ - (djm) Don't call pam_end before pam_init
+ - (djm) Enable build with old OpenSSL again
+ - (djm) Trim deprecated options from INSTALL. Mention UsePAM
+ - (djm) Fix quote handling in sftp; Patch from admorten AT umich.edu
+ - (djm) Crank version.h and spec version numbers
+ - (djm) Release 3.7.1p2
+
+20030922
+ - (dtucker) [Makefile.in] Bug #644: Fix "make clean" for out-of-tree
+   builds.  Portability corrections from tim@.
+ - (dtucker) [configure.ac] Bug #665: uid swapping issues on Mac OS X.
+   Patch from max at quendi.de.
+ - (dtucker) [configure.ac] Bug #657: uid swapping issues on BSDi.
+ - (dtucker) [configure.ac] Bug #653: uid swapping issues on Tru64.
+ - (dtucker) [configure.ac] Bug #693: uid swapping issues on NCR MP-RAS.
+   Patch from david.haughton at ncr.com
+ - (dtucker) [configure.ac] Bug #659: uid swapping issues on IRIX 6.
+   Part of patch supplied by bugzilla-openssh at thewrittenword.com
+ - (dtucker) [configure.ac openbsd-compat/fake-rfc2553.c
+   openbsd-compat/fake-rfc2553.h] Bug #659: Test for and handle systems with
+   where gai_strerror is defined as "const char *".  Part of patch supplied
+   by bugzilla-openssh at thewrittenword.com
+ - (dtucker) [contrib/cygwin/README contrib/cygwin/ssh-host-config] Update
+   ssh-host-config to match current defaults, bump README version.  Patch from
+   vinschen at redhat.com.
+ - (dtucker) [uidswap.c] Don't test restoration of uid on Cygwin since the
+   OS does not support permanently dropping privileges.  Patch from
+   vinschen at redhat.com.
+ - (dtucker) [openbsd-compat/port-aix.c] Use correct include for xmalloc.h,
+   add canohost.h to stop warning.  Based on patch from openssh-unix-dev at
+   thewrittenword.com
+ - (dtucker) [INSTALL] Bug #686: Document requirement for zlib 1.1.4 or
+   higher.
+ - (tim) Fix typo. s/SETEIUD_BREAKS_SETUID/SETEUID_BREAKS_SETUID/
+ - (tim) [configure.ac] Bug 665: move 3 new AC_DEFINES outside of AC_TRY_RUN.
+   Report by distler AT golem ph utexas edu.
+ - (dtucker) [contrib/aix/pam.conf] Include example pam.conf for AIX from
+   article by genty at austin.ibm.com, included with the author's permission.
+ - (tim) [configure.ac] add --disable-etc-default-login option. ok djm
+
+20030919
+ - (djm) Bug #683: Remove reference to --with-ipv4-default from INSTALL;
+   djast AT cs.toronto.edu
+ - (djm) Bug #680: Remove missing inet_ntoa.h header reference
+ - (djm) Bug #646: Fix location of x11-ssh-askpass; Jim
+ - (dtucker) [openbsd-compat/port-aix.h] Bug #640: Don't include audit.h
+   unless required.  Reorder to reduce warnings.
+ - (dtucker) [session.c] Bug #643: Fix size_t -> u_int and fix null deref
+   when /etc/default/login doesn't exist or isn't readable.  Fixes from
+   jparsons-lists at saffron.net and georg.oppenberg at deu mci com.
+
+20030918
+ - (djm) Bug #652: Fix empty password auth
+
 20030917
  - (djm) OpenBSD Sync
    - markus@cvs.openbsd.org 2003/09/16 21:02:40

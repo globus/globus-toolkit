@@ -77,7 +77,11 @@ int getnameinfo(const struct sockaddr *sa, size_t salen, char *host,
 #endif /* !HAVE_GETNAMEINFO */
 
 #ifndef HAVE_GAI_STRERROR
+#ifdef HAVE_CONST_GAI_STRERROR_PROTO
+const char *
+#else
 char *
+#endif
 gai_strerror(int err)
 {
 	switch (err) {
