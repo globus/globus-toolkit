@@ -38,6 +38,7 @@ typedef struct globus_l_xio_test_handle_s
 
 typedef struct globus_l_xio_test_op_wrapper_s
 {
+    globus_xio_operation_type_t         type;
     globus_xio_operation_t              op;
     globus_l_xio_test_handle_t *        dh;
     globus_result_t                     res;
@@ -192,8 +193,7 @@ globus_l_xio_operation_kickout(
 
     ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
-    /* this is kindof cheating */
-    switch(ow->op->type)
+    switch(ow->type)
     {
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:
             GlobusXIODriverFinishedOpen(ow->dh->context, ow->dh, ow->op, \
@@ -277,7 +277,7 @@ globus_l_xio_test_accept(
         globus_l_xio_test_op_wrapper_t *    ow;
 
         XIOTestCreateOpWraper(ow, server, accept_op, res, 0);
-
+        ow->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
         globus_callback_space_register_oneshot(
             NULL,
             &server->delay,
@@ -352,6 +352,7 @@ globus_l_xio_test_open(
         globus_l_xio_test_op_wrapper_t *    ow;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
+        ow->type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
 
         globus_callback_space_register_oneshot(
             NULL,
@@ -400,6 +401,7 @@ globus_l_xio_test_close(
         globus_l_xio_test_op_wrapper_t *    ow;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
+        ow->type = GLOBUS_XIO_OPERATION_TYPE_CLOSE;
         globus_callback_space_register_oneshot(
             NULL,
             &dh->delay,
@@ -471,6 +473,7 @@ globus_l_xio_test_read(
         globus_l_xio_test_op_wrapper_t *    ow;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
+        ow->type = GLOBUS_XIO_OPERATION_TYPE_READ;
         globus_callback_space_register_oneshot(
             NULL,
             &dh->delay,
@@ -536,6 +539,7 @@ globus_l_xio_test_write(
         globus_l_xio_test_op_wrapper_t *    ow;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
+        ow->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
         globus_callback_space_register_oneshot(
             NULL,
             &dh->delay,
