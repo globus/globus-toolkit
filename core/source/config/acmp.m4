@@ -78,7 +78,6 @@ AC_DEFUN(LAC_MP_MPI,
                 case "$poepackage" in
                     *1 )
                         lac_cv_mpi="yes"
-			mpi_ldflags="-lmpi"
                     ;;
                     * )
                         lac_cv_mpi="no"
@@ -88,7 +87,6 @@ AC_DEFUN(LAC_MP_MPI,
             mips-sgi-irix* )
                 if versions -I -b mpi | grep mpi >/dev/null 2>&1 ; then
                     lac_cv_mpi="yes"
-		    mpi_ldflags="-lmpi"
                 elif which mpirun > /dev/null 2>&1 ; then
                     mpi_basedir=`which mpirun | sed "s/\/usr\/bin\/mpirun//"`
                     versions_stdout=`versions -r $mpi_basedir -I -b mpi 2>/dev/null | grep " mpi "`
@@ -96,7 +94,6 @@ AC_DEFUN(LAC_MP_MPI,
                         lac_cv_mpi="no"
                     else
                         lac_cv_mpi="yes"
-			mpi_ldflags="-lmpi"
                     fi
                 else
                      lac_cv_mpi="no"
@@ -104,15 +101,12 @@ AC_DEFUN(LAC_MP_MPI,
             ;;
             alpha-cray-unicosmk* )
                 lac_cv_mpi="yes"
-		mpi_ldflags="-lmpi"
             ;;
             *-hp-hpux10* | *-hp-hpux11* )
                 lac_cv_mpi="yes"
-		mpi_ldflags="-lmpi"
             ;;
             i860-intel-osf* )
                 lac_cv_mpi="yes"
-		mpi_ldflags="-lmpi"
             ;;
             * )
                 lac_cv_mpi="no"
@@ -123,6 +117,8 @@ AC_DEFUN(LAC_MP_MPI,
     if test "$lac_cv_mpi" != "yes" ; then
         AC_MSG_ERROR([This system does not support MPI])
         exit 1
+    else
+        mpi_ldflags="-lmpi"
     fi
 
     if test $GLOBUS_THREADS != "none" ; then
