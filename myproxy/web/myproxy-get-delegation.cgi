@@ -6,7 +6,7 @@ use CGI qw/:standard/;
 use Expect;
 
 # Edit this line to reflect location of myproxy-get-delegation
-my $program  = "/home/novotny/bin/myproxy-get-delegation"; 
+my $program  = "/usr/local/myproxy/bin/myproxy-get-delegation"; 
 
 my $username    = param(USERNAME);
 my $password    = param(PASSWORD);
