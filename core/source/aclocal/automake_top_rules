@@ -6,3 +6,6 @@ EXTRA_DIST += bootstrap \
 
 dist-hook:
 	$(GPT_LOCATION)/sbin/gpt_create_automake_rules --excludes=doxygen -srcdir=$(top_distdir)
+
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_automake_pre_top $(top_srcdir)/globus_automake_post $(top_srcdir)/globus_automake_post_top
+	cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile && $(GPT_LOCATION)/sbin/gpt_create_automake_rules --exclude=doxygen
