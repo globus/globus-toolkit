@@ -671,6 +671,9 @@ case ${host}--$1 in
                 exit 1
         fi
         
+        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include"
+        lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
+
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
@@ -679,6 +682,8 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        	lac_CFLAGS="$lac_CFLAGS -fno-common"
+        	lac_CPPFLAGS="$lac_CPPFLAGS -traditional-cpp"
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
             fi
@@ -693,7 +698,7 @@ case ${host}--$1 in
 
         lac_CFLAGS="$lac_CFLAGS -I/sw/include"
         lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
-        lac_CPPFLAGS="$lac_CPPFLAGS -traditional-cpp"
+        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include -traditional-cpp"
         lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
       ;;
     * )

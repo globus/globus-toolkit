@@ -218,7 +218,7 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
             lac_CFLAGS="$lac_CFLAGS -DAIX -DB_ENDIAN"
         ;;
         *-darwin*)
-            lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DB_ENDIAN -fno-common"
+            lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DB_ENDIAN"
         ;;
     esac
 ])
