@@ -143,7 +143,7 @@ globus_io_register_read(
     }
     
     globus_i_io_debug_printf(3,
-			     ("globus_io_register_read(): entering, "
+			     (stderr, "globus_io_register_read(): entering, "
 			      "fd=%d, max=%lu, min=%lu\n",
 			      handle->fd,
                               (unsigned long) max_nbytes,
@@ -467,6 +467,7 @@ globus_io_read(
     globus_i_io_monitor_t		monitor;
     globus_result_t			result; 
     globus_size_t			try_read;
+    globus_callback_space_t             saved_space;
 
     result = globus_io_try_read(handle, buf, max_nbytes, nbytes_read);
     if(result != GLOBUS_SUCCESS)
@@ -484,6 +485,10 @@ globus_io_read(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
+
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     result = globus_io_register_read(handle,
 				     buf + try_read,
@@ -510,6 +515,8 @@ globus_io_read(
     }
 
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     if(nbytes_read)
     {
@@ -550,7 +557,6 @@ globus_i_io_try_read(
     globus_bool_t			done = GLOBUS_FALSE;
     int					save_errno;
     char                                tag_str[256];
-    char                                nbytes_str[64];
     static char *			myname="globus_i_io_try_read";
 
     num_read=0;
@@ -582,7 +588,7 @@ globus_i_io_try_read(
         if(handle->nl_handle != GLOBUS_NULL)
         {
             sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_NBYTES=%ld", 
+                "SOCK=%d GLOBUS_IO_NBYTES=%d", 
                 handle->fd,
                 n_read);
             globus_netlogger_write(
@@ -595,7 +601,7 @@ globus_i_io_try_read(
 	save_errno = errno;
 	globus_i_io_debug_printf(
 	    5,
-	    ("%s(): read returned n_read=%d\n",
+	    (stderr, "%s(): read returned n_read=%d\n",
 	      myname, (int) n_read));
 	
 	/*
@@ -766,13 +772,13 @@ globus_l_io_read_callback(
 	goto error_exit;
     }
 
-    globus_i_io_debug_printf(5,("%s(): entering\n",myname));
+    globus_i_io_debug_printf(5,(stderr, "%s(): entering\n",myname));
 
     for (done = GLOBUS_FALSE; !done; )
     {
 	globus_i_io_debug_printf(
 	    5,
-	    ("%s(): calling read, fd=%i, buf=%p, size=%lu\n",
+	    (stderr, "%s(): calling read, fd=%i, buf=%p, size=%lu\n",
 	     myname,
 	     handle->fd,
 	     (read_info->buf + read_info->nbytes_read),
@@ -818,7 +824,7 @@ globus_l_io_read_callback(
 	save_errno = errno;
 	globus_i_io_debug_printf(
 	    5,
-	    ("%s(): read returned n_read=%li\n",
+	    (stderr, "%s(): read returned n_read=%li\n",
 	     myname,
 	     n_read));
 	
@@ -869,7 +875,7 @@ globus_l_io_read_callback(
 
 	    globus_i_io_debug_printf(
 		3,
-		("%s(): ERROR, errno=%d, fd=%d\n",
+		(stderr, "%s(): ERROR, errno=%d, fd=%d\n",
 		 myname,
 		 save_errno,
 		 handle->fd));
@@ -902,7 +908,7 @@ globus_l_io_read_callback(
 	}
     }
 
-    globus_i_io_debug_printf(5, ("%s(): exiting\n",myname));
+    globus_i_io_debug_printf(5, (stderr, "%s(): exiting\n",myname));
 
     return;
     
