@@ -248,15 +248,15 @@ init_arguments(int argc,
 	case 'r':   /* retrievers list */
 	    if (my_creds->renewers) {
 		fprintf(stderr, "-r is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (my_creds->retrievers) {
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (use_empty_passwd) {
 		fprintf(stderr, "-r is incompatible with -n.  A passphrase is required for credential retrieval.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
 	      my_creds->retrievers = strdup (gnu_optarg);
@@ -272,11 +272,11 @@ init_arguments(int argc,
 	case 'R':   /* renewers list */
 	    if (my_creds->retrievers) {
 		fprintf(stderr, "-R is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (my_creds->renewers) {
 		fprintf(stderr, "Only one -A or -R option may be specified.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
 	      my_creds->renewers = strdup (gnu_optarg);
@@ -294,7 +294,7 @@ init_arguments(int argc,
 		       authorization while getting the creds */
 	    if (my_creds->retrievers) {
 		fprintf(stderr, "-n is incompatible with -r and -a.\nA passphrase is required for credential retrieval.\n");
-		goto end;
+		exit(1);
 	    }
 	    use_empty_passwd = 1;
 	    break;
@@ -313,15 +313,15 @@ init_arguments(int argc,
 	case 'a':  /*allow anonymous retrievers*/
 	    if (my_creds->renewers) {
 		fprintf(stderr, "-a is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (my_creds->retrievers) {
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (use_empty_passwd) {
 		fprintf(stderr, "-a is incompatible with -n.  A passphrase is required for credential retrieval.\n");
-		goto end;
+		exit(1);
 	    }
 	    my_creds->retrievers = strdup ("*");
 	    myproxy_debug("anonymous retrievers allowed");
@@ -329,7 +329,7 @@ init_arguments(int argc,
 	case 'A':  /*allow anonymous renewers*/
 	    if (my_creds->retrievers) {
 		fprintf(stderr, "-A is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		goto end;
+		exit(1);
 	    }
 	    if (my_creds->renewers) {
 		fprintf(stderr, "Only one -A or -R option may be specified.\n");
@@ -354,11 +354,5 @@ init_arguments(int argc,
             break;	
         }
     }
-
-    return;
-
-    end:
-     exit(1);
-
 }
 
