@@ -371,7 +371,8 @@ int main(int argc, char **argv)
 
     pcd->type = CRED_TYPE_PERMANENT;
 
-    if ( proxy_get_filenames(0,
+    if ( proxy_get_filenames(pcd,
+                 0,
 			     &certcafile,
 			     &certdir,
 			     &outfile,
@@ -538,10 +539,10 @@ err:
 			line);
 	    else
                 fprintf(stderr,
-                        "%s: %s",
+                        "%s:  %s",
                         ERR_reason_error_string(l),
                         ERR_func_error_string(l));
-	    fprintf(stderr,"%s",data);
+	    fprintf(stderr," %s",data);
 	    fprintf(stderr,"\n");
 	}
     }
