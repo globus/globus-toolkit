@@ -3,9 +3,14 @@
 
 #include "config.h"
 #include "globus_gridftp_server.h"
-#include "globus_ftp_control.h"
+#include "globus_gridftp_server_control.h"
 #include "globus_i_gfs_acl.h"
-
+#include "globus_xio.h"
+#include "globus_xio_system.h"
+#include "globus_xio_tcp_driver.h"
+#include "globus_xio_gsi.h"
+#include "globus_ftp_control.h"
+#include "globus_gsi_authz.h"
 
 typedef void
 (*globus_i_gfs_server_close_cb_t)(

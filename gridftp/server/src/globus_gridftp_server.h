@@ -16,10 +16,15 @@
 		    "globus_gridftp_server", \
 		    s)
 
+extern globus_module_descriptor_t      globus_i_gfs_module;
+#define GLOBUS_GRIDFTP_SERVER_MODULE (&globus_i_gfs_module)
+
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
 
 #define GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE " ** Development Release **"
+
+
 
 /*
  *  globus_gfs_error_type_t
@@ -837,12 +842,37 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
 
 
 /** Error and result object helper macros */   
+enum
+{
+    GLOBUS_GFS_DEBUG_TRACE = 8
+};
 
 #ifdef __GNUC__
 #define GlobusGFSName(func) static const char * _gfs_name __attribute__((__unused__)) = #func
 #else
 #define GlobusGFSName(func) static const char * _gfs_name = #func
 #endif
+
+GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
+
+#define GlobusGFSDebugPrintf(level, message)                                \
+    GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER, level, message)
+
+#define GlobusGFSDebugEnter()                                               \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Entering\n", _gfs_name))
+        
+#define GlobusGFSDebugExit()                                                \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Exiting\n", _gfs_name))
+
+#define GlobusGFSDebugExitWithError()                                       \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Exiting with error\n", _gfs_name))
+
 
 #define GlobusGFSErrorMemory(mem_name)                                      \
     globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               

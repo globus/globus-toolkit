@@ -2,9 +2,6 @@
  *  user functions.  used by control.c or DSI implementation if it choses.
  */
 #include "globus_i_gridftp_server.h"
-#include "globus_gsi_authz.h"
-#include "globus_i_gfs_acl.h"
-
 
 static void
 globus_gfs_acl_cas_cb(

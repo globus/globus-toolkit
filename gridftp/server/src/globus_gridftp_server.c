@@ -1,7 +1,6 @@
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
-#include "globus_gsi_authz.h"
 #include "version.h"
 
 #include <sys/wait.h>
@@ -917,12 +916,9 @@ main(
 
     /* activte globus stuff */    
     globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
-    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
-    globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
+    globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
 
-
-    /* activate all the server modules */
+    /* init all the server modules */
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
     globus_l_gfs_signal_init();
