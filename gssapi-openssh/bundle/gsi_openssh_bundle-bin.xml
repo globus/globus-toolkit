@@ -14,10 +14,10 @@
 </BundleReleaseInfo>
 <PackageList >
 <IncludedPackages >
-<Package PackageFlavor="gcc32" PackageName="globus_gsi_cert_utils" PackageType="pgm_static" PackageVersion="0.5" />
-<Package PackageFlavor="gcc32" PackageName="globus_proxy_utils" PackageType="pgm_static" PackageVersion="0.6" />
+<Package PackageFlavor="gcc32" PackageName="globus_gsi_cert_utils" PackageType="pgm" PackageVersion="0.5" />
+<Package PackageFlavor="gcc32" PackageName="globus_proxy_utils" PackageType="pgm" PackageVersion="0.6" />
 <Package PackageFlavor="noflavor" PackageName="globus_user_env" PackageType="data" PackageVersion="2.2" />
-<Package PackageFlavor="gcc32" PackageName="gsi_openssh" PackageType="pgm_static" PackageVersion="2.1" />
+<Package PackageFlavor="gcc32" PackageName="gsi_openssh" PackageType="pgm" PackageVersion="2.1" />
 </IncludedPackages>
 <ExcludedPackages >
 </ExcludedPackages>
