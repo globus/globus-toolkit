@@ -1582,10 +1582,11 @@ globus_i_gsi_gss_create_cred(
     {
         int                             proxy_depth = 1;
         STACK_OF(X509) *                cert_chain;
+        int                             i;
         
         /* figure out how many entries to strip */
     
-        local_result = globus_gsi_cred_cert_chain(
+        local_result = globus_gsi_cred_get_cert_chain(
             newcred->cred_handle, 
             &cert_chain);
         if (local_result != GLOBUS_SUCCESS)
