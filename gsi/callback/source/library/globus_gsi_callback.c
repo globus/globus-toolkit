@@ -1208,11 +1208,6 @@ globus_i_gsi_callback_check_critical_extensions(
         PROXYCERTINFO_free(proxycertinfo);
     }
 
-    if(ext_data != NULL)
-    {
-        ASN1_OCTET_STRING_free(ext_data);
-    }
-    
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
