@@ -1088,18 +1088,17 @@ g_receive_data(
                   !g_monitor.timed_out)
             {
                 globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
+		if(g_send_perf_update)
+		{
+		    g_send_perf_update = GLOBUS_FALSE;
+		    globus_l_wu_perf_update(&g_monitor);
+		}
+		    if(g_send_range)
+		{
+		    g_send_range = GLOBUS_FALSE;
+		    send_range(&g_monitor);
+		}
             }
-            if(g_send_perf_update)
-            {
-                g_send_perf_update = GLOBUS_FALSE;
-                globus_l_wu_perf_update(&g_monitor);
-            }
-            if(g_send_range)
-            {
-                g_send_range = GLOBUS_FALSE;
-                send_range(&g_monitor);
-            }
-
             l_timed_out = g_monitor.timed_out;
             l_error = g_monitor.done;
             aborted = g_monitor.abort;
