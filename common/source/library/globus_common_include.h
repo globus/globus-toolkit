@@ -127,10 +127,6 @@ extern const char * _globus_func_name;
 #include <limits.h>
 #include <assert.h>
 
-#include "unicode/ures.h"
-#include "unicode/ustring.h"
-#include "unicode/udata.h" 
-
 /******************************************************************************
 				 Define macros
 ******************************************************************************/
