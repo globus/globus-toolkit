@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h> 
 #include <netinet/in.h>
+#include <unistd.h>
 #include <netdb.h> 
 #include <errno.h>
 #include <assert.h>
@@ -70,18 +71,22 @@ int init_arguments(int argc,
                    myproxy_socket_attrs_t *server_attrs, 
                    myproxy_server_context_t *server_context);
 
-int myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number);
+int myproxy_init_server(myproxy_socket_attrs_t *server_attrs, int port_number);
 
 int handle_client(myproxy_socket_attrs_t *server_attrs, 
                   myproxy_server_context_t *server_context);
 
-int get_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
+void get_proxy(myproxy_socket_attrs_t *server_attrs, 
+	      myproxy_creds_t *creds, 
+	      myproxy_response_t *response);
 
-int put_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
+void put_proxy(myproxy_socket_attrs_t *server_attrs, 
+	      myproxy_creds_t *creds, 
+	      myproxy_response_t *response);
 
-int info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
+void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
-int destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
+void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
 static void failure(const char *failure_message); 
 
@@ -89,9 +94,11 @@ static void my_failure(const char *failure_message);
 
 static char *timestamp(void);
 
-static void become_daemon(myproxy_server_context_t *server_context);
+static int become_daemon(myproxy_server_context_t *server_context);
 
 static int debug = 0;
+
+static int numclients = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -125,7 +132,10 @@ main(int argc, char *argv[])
 
     if (server_context->run_as_daemon)
     {
-	become_daemon(server_context);
+	if (become_daemon(server_context) < 0) {
+	    fprintf(stderr, "Error starting daemon\n");
+	    exit(1);
+	}
     }
 
     /* Initialize Logging */
@@ -138,7 +148,7 @@ main(int argc, char *argv[])
 	myproxy_log_use_syslog(LOG_DAEMON, server_context->my_name);
     }
 
-    myproxy_log("%s pid=%d starting at %s", server_context->my_name,
+    myproxy_log("%s: pid=%d starting at %s", server_context->my_name,
 		getpid(), timestamp());
 
     /* Set up signal handling to deal with zombie processes left over  */
@@ -158,15 +168,15 @@ main(int argc, char *argv[])
             if (errno == EINTR) {
                 continue; 
             } else {
-                failure("Error in accept()\n");
+                perror("Error in accept()\n");
             }
         }
         childpid = fork();
         
         if (childpid < 0) {              /* check for error */
-            failure("Error in fork\n");
+            perror("Error in fork\n");
+	    close(socket_attrs->socket_fd);
         } else if (childpid == 0) {      /* child process */
-            setsid();
             fd = open("/dev/tty",O_RDWR);
             if (fd >= 0) {
                 ioctl(fd, TIOCNOTTY, 0);
@@ -175,11 +185,12 @@ main(int argc, char *argv[])
             fclose(stdin);
             close(0);
             close(listenfd);
-          
+	    numclients++;
+	    myproxy_log("Client has connected, total clients=%d", numclients);
             if (handle_client(socket_attrs, server_context) < 0) {
                 my_failure("error in handle_client()\n");
             } 
-            exit(0);
+            _exit(0);
         }
         close(socket_attrs->socket_fd);  /* parent closes connected socket */
     }
@@ -189,25 +200,28 @@ main(int argc, char *argv[])
 int
 handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context) 
 {
-    int   rc, is_err;
     char  error_string[1024];
     char  client_name[1024];
     char  client_buffer[1024], server_buffer[1024];
     int   requestlen, responselen;
-    char  delegfile[64];
 
     myproxy_creds_t *client_creds;          
     myproxy_request_t *client_request;
     myproxy_response_t *server_response;
 
     client_creds    = malloc(sizeof(*client_creds));
+    memset(client_creds, 0, sizeof(*client_creds));
+
     client_request  = malloc(sizeof(*client_request));
+    memset(client_request, 0, sizeof(*client_request));
+
     server_response = malloc(sizeof(*server_response));
+    memset(server_response, 0, sizeof(*server_response));
 
     /* Set version in response message */
     server_response->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(server_response->version, MYPROXY_VERSION);   
-
+    
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
@@ -217,15 +231,13 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
+        myproxy_log("Unable to authenticate client %s", client_name);
         fprintf(stderr, "error in myproxy_authenticate_accept()\n");
         exit(1);
     }
 
-    /* Accept delegated credentials from client */
-    if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
-        fprintf(stderr, "error in myproxy_accept_delegation()\n");
-        exit(1);
-    }
+    /* Log client name */
+    myproxy_log("Authenticated client %s", client_name); 
     
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
@@ -234,6 +246,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         exit(1);
     }
 
+    /* Log client request */
+    myproxy_log("Received client %s buffer %s", client_name, client_buffer); 
+   
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
@@ -243,8 +258,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
-        strcat(error_string, "Invalid version number received.\n");
-        is_err = 1;
+        server_response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        strcat(server_response->error_string, "Invalid version number received.\n");
+	myproxy_log("client %s Invalid version number received", client_name);
     }
 
     /* Fill in credential structure = owner, user, passphrase, proxy location */
@@ -254,41 +270,31 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     strcpy(client_creds->user_name, client_request->username);
     client_creds->pass_phrase = malloc(strlen(client_request->passphrase) + 1);
     strcpy(client_creds->pass_phrase, client_request->passphrase);
-    client_creds->location = malloc(strlen(delegfile) + 1);
-    strcpy(client_creds->location, delegfile);
+    
     
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY:
         /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
         client_creds->lifetime = 60*60*client_request->hours; 
-        rc = get_proxy(client_creds, server_response);
-        if (rc < 0) 
-            is_err = 1;
+        get_proxy(attrs, client_creds, server_response);
         break;
     case MYPROXY_PUT_PROXY:
         /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
         client_creds->lifetime = 60*60*client_request->hours; 
-        rc = put_proxy(client_creds, server_response);
-        if (rc < 0)
-            is_err = 1;
+        put_proxy(attrs, client_creds, server_response);
         break;
     case MYPROXY_INFO_PROXY:
-        rc = info_proxy(client_creds, server_response);
-        if (rc < 0)
-            is_err = 1;
+        info_proxy(client_creds, server_response);
         break;
     case MYPROXY_DESTROY_PROXY:
-        rc = destroy_proxy(client_creds, server_response);
-        if (rc < 0)
-            is_err = 1;
+        destroy_proxy(client_creds, server_response);
         break;
     default:
-        strcat(error_string, "Invalid client request command.\n");
-        is_err = 1;
+        strcat(server_response->error_string, "Invalid client request command.\n");
         break;
     }
-    
+
     /* Set version */
     server_response->version = malloc(strlen(MYPROXY_VERSION) + 1);
     sprintf(server_response->version, "%s", MYPROXY_VERSION);
@@ -297,17 +303,23 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
                                              server_buffer, sizeof(server_buffer));
     
     if (responselen < 0) {
-	    fprintf(stderr, "error in myproxy_serialize_response()\n");
+        fprintf(stderr, "\nerror in myproxy_serialize_response()\n");
         return -1;
     }
 
+    /* Log request */
+    myproxy_log("Send client %s server response %s", client_name, server_buffer);
+ 
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
-	    fprintf(stderr, "error in myproxy_send()\n");
-        return -1;
+        fprintf(stderr, "error in myproxy_send()\n");
+	return -1;
     } 
   
     myproxy_destroy(attrs, client_request, server_response);
 
+    /* Log request */
+    numclients--;
+    myproxy_log("Client %s disconnected total clients=%d", client_name, numclients);
     if (context->config_file != NULL) {
         free(context->config_file);
         context->config_file = NULL;
@@ -343,6 +355,9 @@ init_arguments(int argc, char *argv[],
     {
 	context->my_name = strdup(last_directory_seperator + 1);
     }
+    
+    context->my_name = strdup("myproxy-server.log");
+    printf("logfile: %s\n", context->my_name);
     
     while((arg = gnu_getopt_long(argc, argv, short_options, 
 			     long_options, NULL)) != EOF) 
@@ -417,48 +432,67 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number)
     if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
 	    failure("Error in bind()\n");
     }
-
     if (listen(listen_sock, 5) < 0) {
 	    failure("Error in listen()\n");
     }
-
     return listen_sock;
-
 }
 
-int get_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
+void get_proxy(myproxy_socket_attrs_t *attrs, 
+	       myproxy_creds_t *creds, 
+	       myproxy_response_t *response) 
+{
+    /* Retrieve credentials */
     if (myproxy_creds_retrieve(creds) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to retrieve credentials\n"); 
+        strcat(response->error_string, "Unable to retrieve credentials.\n");
+	return;
     }
-/*
-    if (myproxy_init_delegation(attrs, creds->location) < 0) {
+ 
+    /* Delegate credentials to client */
+    if (myproxy_init_delegation(attrs, creds->location, creds->lifetime) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to retrieve credentials\n"); 
+	strcat(response->error_string, "Unable to delegate credentials.\n");
+	myproxy_log("Unable to delegate credentials for %s\n", creds->owner_name);
+    } else {
+        myproxy_log("Delegating credentials to: %s\n", creds->owner_name);
+	response->response_type = MYPROXY_OK_RESPONSE;
     }
-*/
-    response->response_type = MYPROXY_OK_RESPONSE;
-    return 0;
+  
 }
 
-int put_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
+void put_proxy(myproxy_socket_attrs_t *attrs, 
+	      myproxy_creds_t *creds, 
+	      myproxy_response_t *response) 
+{
+    char delegfile[64];
+
+    /* Accept delegated credentials from client */
+    if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
+        fprintf(stderr, "\nerror in myproxy_accept_delegation()\n");
+        exit(1);
+    }
+    myproxy_log("Accepted delegation: %s\n", delegfile);
+ 
+    creds->location = malloc(strlen(delegfile) + 1);
+    strcpy(creds->location, delegfile);
+
     if (myproxy_creds_store(creds) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to store credentials\n"); 
+        strcat(response->error_string, "Unable to store credentials.\n"); 
+    } else {
+	response->response_type = MYPROXY_OK_RESPONSE;
     }
     response->response_type = MYPROXY_OK_RESPONSE;
-    return 0;
 }
 
-int info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
+void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     response->response_type = MYPROXY_OK_RESPONSE;
-    return 0;
 }
 
-int destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
+void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     myproxy_creds_delete(creds);  
     response->response_type = MYPROXY_OK_RESPONSE;
-    return 0;
 }
 
 /*
@@ -541,25 +575,30 @@ timestamp(void)
     return (char *)asctime(tmp);
 }
 
-static void
+static int
 become_daemon(myproxy_server_context_t *context)
 {
     pid_t childpid;
-    int fd;
+    int fd, fdlimit;
     
     /* Steps taken from UNIX Programming FAQ */
     
     /* 1. Fork off a child so the new process is not a process group leader */
-    childpid = fork();    
-    if (childpid < 0) {              /* check for error */
-        failure("Error in fork()\n");       
-    } else if (childpid > 0) {       /* goodbye parent */
-        exit(0);
+    childpid = fork();
+    switch (childpid) {
+    case 0:         /* child */
+      break;
+    case -1:        /* error */
+      perror("Error in fork()\n");
+      return -1;
+    default:        /* exit the original process */
+      _exit(0);
     }
 
     /* 2. Set session id to become a process group and session group leader */
     if (setsid() < 0) { 
-        failure("Error in setsid()\n");       
+        perror("Error in setsid()\n"); 
+	return -1;
     } 
 
     /* 3. Fork again so the parent, (the session group leader), can exit.
@@ -567,12 +606,18 @@ become_daemon(myproxy_server_context_t *context)
           regain a controlling terminal. 
     */
     signal(SIGHUP, SIG_IGN);
-    childpid = fork();    
-    if (childpid < 0) {              /* check for error */
-        failure("Error in fork()\n");       
-    } else if (childpid > 0) {       /* goodbye parent */
-        exit(0);
+    childpid = fork();
+    switch (childpid) {
+    case 0:             /* child */
+	break;
+    case -1:            /* error */
+	perror("Error in fork()\n");
+	return -1;
+    default:            /* exit the original process */
+	_exit(0);
     }
+	
+   
     
     /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
     chdir("/");
@@ -582,17 +627,21 @@ become_daemon(myproxy_server_context_t *context)
     */
     umask(0);
 
-    /* 6. Close standard file descriptors */
-    (void)close(2);     /* close stderr  */
-    (void)close(0);   /* close stdin */
-    (void)close(1);   /* close stdout */
+    /* 6. Close all file descriptors */
+    fdlimit = sysconf(_SC_OPEN_MAX);
+    while (fd < fdlimit)
+      close(fd++);
 
     /* 7.Establish new open descriptors for stdin, stdout and stderr */    
-    (void)open("/dev/null", O_RDONLY);
-    (void) dup2(2, 1); /* point stdout to stderr */
+    (void)open("/dev/null", O_RDWR);
+    dup(0); 
+    dup(0);
+    /*
     fd = open("/dev/tty", O_RDWR);
     if (fd >= 0) {
       ioctl(fd, TIOCNOTTY, 0);
       (void)close(fd);
     } 
+    */
+    return 0;
 }
