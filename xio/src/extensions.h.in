@@ -1,0 +1,7 @@
+
+@BUILTIN_EXTENSIONS_DEC@
+
+static globus_extension_builtin_t       local_extensions[] = 
+{
+    @BUILTIN_EXTENSIONS_DEF@ {NULL, NULL}
+};
