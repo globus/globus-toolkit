@@ -101,7 +101,8 @@ my_memccmp(unsigned char *              s1,
  *       0 if it wasn't
  */
  
-static int gss_l_compare_group(
+static int
+gss_l_compare_group(
     const gss_name_desc *               name1,
     const gss_name_desc *               name2)
 {
@@ -272,7 +273,7 @@ GSS_CALLCONV gss_compare_name(
         *name_equal = 0;
         return GSS_S_COMPLETE;
     }
-    
+
     if(name1->x509n == NULL && name2->x509n == NULL &&
        g_OID_equal(name1->name_oid,GSS_C_NT_ANONYMOUS) &&
        g_OID_equal(name2->name_oid,GSS_C_NT_ANONYMOUS))

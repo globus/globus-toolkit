@@ -153,7 +153,8 @@ gss_create_and_fill_context(
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
     context->goodtill = 0;
-    
+    globus_mutex_init(&context->mutex, NULL);
+
     proxy_verify_ctx_init(&(context->pvxd));
     proxy_verify_init(&(context->pvd), &(context->pvxd));
 

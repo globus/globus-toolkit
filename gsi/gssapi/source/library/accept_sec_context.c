@@ -83,6 +83,14 @@ GSS_CALLCONV gss_accept_sec_context(
 
     context = *context_handle_P;
 
+    /* module activation if not already done by calling
+     * globus_module_activate
+     */
+    
+    globus_thread_once(
+        &once_control,
+        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
+    
     if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
@@ -92,13 +100,6 @@ GSS_CALLCONV gss_accept_sec_context(
                 getuid(), getpid()) ;
 #endif /* DEBUG */
 
-        /* 
-         * We are going to use the SSL error routines, get them
-         * initilized early. They may be called more then once. 
-         */
-
-        ERR_load_gsserr_strings(0); 
-                
         /* accept does not have req_flags, so we will use ret_flags */
         if (ret_flags)
         {

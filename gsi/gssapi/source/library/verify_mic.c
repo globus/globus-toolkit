@@ -63,7 +63,6 @@ GSS_CALLCONV gss_verify_mic(
     const gss_buffer_t                  token_buffer,
     gss_qop_t *                         qop_state)
 {
-
     gss_ctx_id_desc *                   context = context_handle;
     unsigned char *                     mac_sec;
     unsigned char *                     seq;
@@ -76,6 +75,7 @@ GSS_CALLCONV gss_verify_mic(
     int                                 i;
     int                                 seqtest;
     unsigned char                       md[EVP_MAX_MD_SIZE];
+    OM_uint32                           major_status = GSS_S_COMPLETE;
 
     *minor_status = 0;
 
@@ -83,19 +83,7 @@ GSS_CALLCONV gss_verify_mic(
     {
         return GSS_S_NO_CONTEXT;
     }
-        
-    if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
-    {
-        time_t                          current_time;
-        
-        current_time = time(NULL);
-        
-        if(current_time > context->goodtill)
-        {
-            return GSS_S_CONTEXT_EXPIRED;
-        }
-    }
-        
+
     if (token_buffer == NULL)
     {
         return GSS_S_DEFECTIVE_TOKEN;
@@ -105,6 +93,25 @@ GSS_CALLCONV gss_verify_mic(
     {
         return GSS_S_DEFECTIVE_TOKEN;
     }
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+
+    
+    if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
+    {
+        time_t                          current_time;
+        
+        current_time = time(NULL);
+        
+        if(current_time > context->goodtill)
+        {
+            major_status = GSS_S_CONTEXT_EXPIRED;
+            goto err;
+        }
+    }
+        
 
 #ifdef DEBUG
     {
@@ -126,7 +133,8 @@ GSS_CALLCONV gss_verify_mic(
     md_size=EVP_MD_size(hash);
     if (token_buffer->length != (md_size + 12))
     {
-        return GSS_S_DEFECTIVE_TOKEN;
+        major_status = GSS_S_DEFECTIVE_TOKEN;
+        goto err;
     }
     
     p = ((unsigned char *) token_buffer->value) + 8;
@@ -134,7 +142,8 @@ GSS_CALLCONV gss_verify_mic(
     n2l(p,len);
     if (message_buffer->length != len)
     {
-        return GSS_S_DEFECTIVE_TOKEN;
+        major_status = GSS_S_DEFECTIVE_TOKEN;
+        goto err;
     }
 
     npad=(48/md_size)*md_size;
@@ -151,7 +160,8 @@ GSS_CALLCONV gss_verify_mic(
     {
         GSSerr(GSSERR_F_VERIFY_MIC,GSSERR_R_BAD_DATE);
         *minor_status = gsi_generate_minor_status();
-        return GSS_S_BAD_SIG;
+        major_status = GSS_S_BAD_SIG;
+        goto err;
     }
 
 #ifdef DEBUG
@@ -180,7 +190,8 @@ GSS_CALLCONV gss_verify_mic(
         {
             seq[i] = *p++;
         }
-        return GSS_S_GAP_TOKEN;
+        major_status = GSS_S_GAP_TOKEN;
+        goto err;
     }
     
     if (seqtest < 0)
@@ -195,8 +206,12 @@ GSS_CALLCONV gss_verify_mic(
     {
         if (++seq[i]) break;
     }
-        
-    return GSS_S_COMPLETE ;
+err:
+    /* unlock the context mutex */
+    
+    globus_mutex_unlock(&context->mutex);
+
+    return major_status;
 } 
 
 /**********************************************************************

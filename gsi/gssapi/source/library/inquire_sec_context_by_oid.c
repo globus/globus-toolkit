@@ -82,12 +82,16 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     }
 
     *data_set = NULL;
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
     
     cert_count = context->pvd.cert_depth;
 
     if(cert_count == 0)
     {
-        return major_status;
+        goto err;
     }
     
     major_status = gss_create_empty_buffer_set(minor_status, data_set);
@@ -142,9 +146,12 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     } 
 
 err:
-    return major_status;
 
+    /* unlock the context mutex */
     
+    globus_mutex_unlock(&context->mutex);
+    
+    return major_status;
 }
 
 

@@ -74,6 +74,11 @@ GSS_CALLCONV gss_inquire_context(
         goto err;
     }
 
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+
+    
     if (src_name_P)
     {
         if (context->source_name)
@@ -169,6 +174,9 @@ GSS_CALLCONV gss_inquire_context(
     }
 
 err:
+
+    globus_mutex_unlock(&context->mutex);
+    
     return major_status;
 }
 

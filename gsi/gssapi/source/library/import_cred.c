@@ -83,12 +83,13 @@ GSS_CALLCONV gss_import_cred(
     fprintf(stderr,"import_cred:\n");
 #endif /* DEBUG */
 
-    /*
-     * We are going to use the SSL error routines, get them
-     * initilized early. They may be called more then once.
+    /* module activation if not already done by calling
+     * globus_module_activate
      */
-
-    ERR_load_gsserr_strings(0);  /* load our gss ones as well */
+    
+    globus_thread_once(
+        &once_control,
+        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
 
     *minor_status = 0;
 
