@@ -1,0 +1,248 @@
+use Globus::GRAM::Error;
+use Globus::GRAM::JobState;
+use Globus::GRAM::JobManager;
+use Globus::Core::Paths;
+
+package Globus::GRAM::JobManager::pbs;
+
+@ISA = qw(Globus::GRAM::JobManager);
+
+my ($mpirun, $qsub, $qstat);
+
+BEGIN
+{
+    $mpirun = '@MPIRUN@';
+    $qsub =   '@QSUB@';
+    $qstat =  '@QSTAT@';
+}
+
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = $class->SUPER::new(@_);
+    
+    bless $self, $class;
+    return $self;
+}
+
+sub submit
+{
+    my $self = shift;
+    my $description = self->{JobDescription};
+    my $status;
+    my $pbs_job_script;
+    my $pbs_job_script_name;
+
+    $self->log("Entering pbs submit");
+
+    # verify existence of queue
+    if(defined($description->queue()))
+    {
+	system("$qstat -Q " . $description->queue() '>/dev/null 2>/dev/null');
+	if($? != 0)
+	{
+	    $self->log('Queue ' . $description->queue() . ' not found.');
+	    return Globus::GRAM::Error::INVALID_QUEUE;
+	}
+    }
+    # check jobtype
+    if(defined($description->jobtype())
+    {
+	if($description->jobtype !~ /^(mpi|single|multiple)$/)
+	{
+	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
+	}
+    }
+
+    $self->log("Determining job max time cpu from job description");
+    if(defined($description->max_cpu_time())) 
+    {
+	$cpu_time = $description->max_cpu_time();
+	$self->log("   using maxcputime of $cpu_time");
+    }
+    elsif(defined($description->max_time()))
+    {
+	$cpu_time = $description->max_time();
+	$self->log("   using maxtime of $cpu_time");
+    }
+    else
+    {
+	$cpu_time = 0;
+	$self->log('   using queue default');
+    }
+
+    $self->log("Determining job max wall time limit from job description");
+    if(defined($description->max_wall_time()))
+    {
+	$wall_time = $description->max_wall_time();
+	$self->log("   using maxwalltime of $wall_time");
+    }
+    else
+    {
+	$wall_time = 0;
+	$self->log('   using queue default');
+    }
+
+    $self->log('Building job script');
+
+    $pbs_job_script_name = "$local_tmpdir/pbs_job_script.$$";
+    $pbs_job_script = new IO::File($pbs_job_script_name, '>');
+
+    $pbs_job_script->print(
+        "# PBS batch job script built by Globus job manager\n");
+
+    if(defined($description->queue())
+    {
+	$pbs_job_script->print("#PBS -q " . $description->queue() . "\n");
+    }
+    if(defined($description->project())
+    {
+	$pbs_job_script->print("#PBS -A " . $description->project() . "\n");
+    }
+
+    if($cpu_time != 0)
+    {
+	if($description->jobtype() eq 'multiple')
+	{
+	    $total_cpu_time = $cpu_time * $description->count();
+	}
+	else
+	{
+	    $total_cpu_time = $cpu_time;
+	}
+	$pbs_job_script->print("#PBS -l pcput=${cpu_time}:00\n");
+	$pbs_job_script->print("#PBS -l cput=${total_cpu_time}:00\n");
+    }
+
+    if($wall_time != 0)
+    {
+	$pbs_job_script->print("#PBS -l walltime=${wall_time}:00\n");
+    }
+
+    if($description->max_memory() != 0)
+    {
+	if($description->jobtype() eq 'multiple')
+	{
+	    $max_memory = $description->max_memory() * $description->count;
+	}
+	else
+	{
+	    $max_memory = $description->max_memory();
+	}
+	$pbs_job_script->print("#PBS -l mem=${max_memory}mb\n");
+    }
+    $pbs_job_script->print("#PBS -o " . $description->stdout() . "\n");
+    $pbs_job_script->print("#PBS -e " . $description->stderr() . "\n");
+    $pbs_job_script->print("#PBS -l ncpus=" . $description->count() . "\n");
+
+    if($description->host_count() != 0)
+    {
+	$pbs_job_script->print("#PBS -l nodes=" .
+	                       $description->host_count().
+			       "\n");
+    }
+    foreach my $tuple ($description->environment())
+    {
+	push(@new_env, @{$tuple}[0] . "=" . @{$tuple}[1]);
+    }
+    $pbs_job_script->print("#PBS -v " .  join(',', @new_env);
+
+    $psb_job_script->print("\n#Change to directory requested by user\n");
+    $pbs_job_script->print('cd ' . $description->directory());
+
+    if($description->arguments())
+    {
+	$args = join(' ', $description->arguments());
+    }
+    else
+    {
+	$args = "";
+    }
+    if($description->jobtype() eq "mpi")
+    {
+	if($self->{is_cluster})
+	{
+	    $pbs_job_script->print("$mpirun -np " . $description->count() . 
+	                           " -machinefile \$PBS_NODEFILE " .
+				   $description->executable() .
+				   " $args < " . $description->stdin() . "\n");
+	}
+	else
+	{
+	    $pbs_job_script->print("$mpirun -np " . $description->count() .
+	                           " " . $description->executable() .
+				   " $args <". $description->stdin() . "\n");
+	}
+    }
+    elsif($description->jobtype() eq 'multiple')
+    {
+	for(my $i = 0; $i < $description->count(); $i++)
+	{
+	    $pbs_job_script->print($description->executable() . " $args <" .
+	                           $description->stdin() . "&\n");
+	}
+	$pbs_job_script->print("wait\n");
+    }
+    else
+    {
+	$pbs_job_script->print($description->executable() . " $args <" .
+	                       $description->stdin() . "\n");
+    }
+    if($self->{is_cluster})
+    {
+	$pbs_job_script->print("#ctrans nfs_in " .
+	                       $description->directory() . "\n");
+	$pbs_job_script->print("#ctrans nfs_out " .
+	                       $description->directory() . "\n");
+    }
+    $pbs_job_script->close();
+
+    system("$qsub < $pbs_job_script_name >$PBS_JOB_OUT 2>$PBS_JOB_ERR");
+}
+
+sub poll
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $job_id = $description->jobid();
+    my $state;
+
+    $self->log("polling job $job_id");
+
+    $_ = (split(/\s+/, grep(/$job_id/, `$qstat $job_id`)))[4];
+
+    if(/Q|W|T/)
+    {
+	$state = Globus::GRAM::JobState::PENDING;
+    }
+    elsif(/S|H/)
+    {
+	$state = Globus::GRAM::JobState::SUSPENDED
+    }
+    elsif(/R|E/)
+    {
+	$state = Globus::GRAM::JobState::ACTIVE;
+    }
+    else
+    {
+	$state = Globus::GRAM::JobState::DONE;
+    }
+
+    return {(job_state => $state)};
+}
+
+sub cancel
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $job_id = $description->jobid();
+
+    $self->log("cancel job $job_id");
+
+    system("$qdel $job_id >/dev/null 2>/dev/null");
+
+    return 0;
+}
+
+1;

@@ -1,0 +1,34 @@
+AC_REVISION($Revision$)
+AC_INIT(pbs.in)
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+AC_PATH_PROG(MPIRUN, mpirun, no)
+if test "$MPIRUN" = "no" ; then
+    AC_MSG_ERROR("Cannot locate mpirun")
+fi
+AC_PATH_PROG(QDEL, qdel, no)
+if test "$QDEL" = "no" ; then
+    AC_MSG_ERROR("Cannot locate qdel")
+fi
+AC_PATH_PROG(QSTAT, qstat, no)
+if test "$QSTAT" = "no" ; then
+    AC_MSG_ERROR("Cannot locate qstat")
+fi
+AC_PATH_PROG(QSUB, qsub, no)
+if test "$QSUB" = "no" ; then
+    AC_MSG_ERROR("Cannot locate qsub")
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+libexecdir=${prefix}/libexec
+
+AC_OUTPUT(
+  $GLOBUS_LOCATION/lib/perl/Globus/GRAM/JobManager/pbs.pm:pbs.in
+)
