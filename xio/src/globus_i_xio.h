@@ -127,9 +127,31 @@ struct globus_i_xio_driver_target_stack_s
 
 struct globus_i_xio_target_s
 {
+    globus_xio_target_type_t                    type;
     int                                         stack_size;
-    globus_i_xio_driver_target_stack_t          target_stack[1];
+    globus_i_xio_driver_target_stack_t          entry[1];
 };
+
+struct globus_i_xio_server_entry_s
+{
+    globus_xio_driver_t                         driver;
+    void *                                      server_attr;
+    void *                                      server_handle;
+} globus_i_xio_server_entry_t;
+
+struct globus_xio_server_s
+{
+    int                                         ndx;
+    globus_bool_t                               canceled;
+    globus_xio_server_state_t                   state;
+    globus_xio_driver_cancel_callback_t         cancel_cb;
+
+    globus_xio_callback_t                       cb;
+    void *                                      user_arg;
+
+    globus_i_xio_server_entry_t                 driver_entry[1];
+
+} globus_xio_server_t;
 
 
 typedef struct globus_i_xio_handle_s
