@@ -12,6 +12,7 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobSignal;
 use Globus::Core::Paths;
 
+use POSIX;
 use IO::File;
 use File::Path;
 
@@ -36,6 +37,8 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  $hashref = $manager->rewrite_urls();
  $hashref = $manager->stage_in();
  $hashref = $manager->stage_out();
+ $hashref = $manager->cache_cleanup();
+ $hashref = $manager->remote_io_file_create();
 
 =head1 DESCRIPTION
 
@@ -523,6 +526,66 @@ sub stage_out
     }
     return {};
 }
+
+=item $manager->cache_cleanup()
+
+Clean up cache references in the GASS which match this job's cache tag .
+
+=cut
+
+sub cache_cleanup
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+
+    system("$cache_pgm -cleanup-tag -t $tag > /dev/null 2>/dev/null");
+
+    return {};
+}
+
+=item $manager->remote_io_file_create()
+
+Create the remote I/O file in the GASS cache which will contain the
+remote_io_url RSL attribute's value.
+
+=cut
+
+sub remote_io_file_create
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $filename = "${tag}dev/remote_io_url";
+    my $tmpname = POSIX::tmpnam();
+    my $tmpfile = new IO::File(">$tmpname");
+    my $fh;
+    my $result;
+
+    $tmpfile->print($description->remote_io_url() . "\n");
+    $tmpfile->close();
+
+    system("$cache_pgm -add -t $tag -n $filename file:$tmpname >/dev/null");
+
+    unlink($tmpname);
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
+    }
+
+    chomp($result = `$cache_pgm -query $filename`);
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
+    }
+
+    return { REMOTE_IO_FILE => $result };
+}
+
 1;
 
 =back
