@@ -266,9 +266,7 @@ get_storage_locations(const char *username,
         goto error;
     }
     
-    /* The length LOGNAME can be max. 8 chars. If the string is longer suppose 
-       it is a DN from X.509 certificate and hash it. */
-    if (strlen(username) > 8) {
+    if (strchr(username, '/')) {
        sterile_username = strmd5(username, NULL);
        if (sterile_username == NULL)
 	  goto error;
