@@ -505,9 +505,6 @@ globus_l_io_table_add(
 {
     globus_io_select_info_t *		select_info;
 
-    globus_i_io_debug_printf(3,
-        (stderr, "globus_l_io_table_add(): entering, fd=%d\n", handle->fd));
-
     /*    GlobusAssert2((globus_l_io_mutex_acquired()),
      *			("globus_l_io_table_add()\n"));
      */
@@ -536,8 +533,6 @@ globus_l_io_table_add(
     }
 
   fn_exit:
-    globus_i_io_debug_printf(3,
-        (stderr, "globus_l_io_table_add(): exiting\n"));
 }
 /* globus_l_io_table_add() */
 
@@ -2107,6 +2102,8 @@ globus_l_io_handle_events(
 	            GLOBUS_NULL,
 	            &globus_l_io_wakeup_pipe_handle,
 	            GLOBUS_SUCCESS);
+	        
+	        n_ready--;
 	    }
 	    
 	    /*
