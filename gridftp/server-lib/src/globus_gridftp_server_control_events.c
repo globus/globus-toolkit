@@ -96,6 +96,8 @@ globus_i_gsc_event_start(
         event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF)
     {
         event->stripe_count = op->server_handle->stripe_count;
+        event->stripe_total = (globus_off_t *)globus_calloc(
+            sizeof(globus_off_t) * event->stripe_count, 1);
 
         /* send out the first one */
         for(ctr = 0; ctr < op->event.stripe_count; ctr++)
@@ -180,6 +182,7 @@ globus_l_gsc_unreg_perf_marker(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        globus_free(event->stripe_total);
         globus_i_gsc_op_destroy(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -374,10 +377,14 @@ globus_gridftp_server_control_event_send_perf(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        op->event.stripe_total[stripe_ndx] += nbytes;
         if(op->event.perf_running)
         {
             globus_l_gsc_send_perf(
-                op, stripe_ndx, op->event.stripe_count, nbytes);
+                op, 
+                stripe_ndx, 
+                op->event.stripe_count, 
+                op->event.stripe_total[stripe_ndx]);
         }
     }
     globus_mutex_unlock(&op->server_handle->mutex);

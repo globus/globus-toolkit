@@ -153,6 +153,8 @@ typedef struct globus_i_gsc_event_data_s
 
     globus_gridftp_server_control_event_cb_t user_cb;
     void *                                  user_arg;
+
+    globus_off_t *                          stripe_total;
 } globus_i_gsc_event_data_t;
 
 typedef struct globus_i_gsc_handle_opts_s
