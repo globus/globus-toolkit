@@ -1656,6 +1656,14 @@ globus_l_gfs_data_destroy_cb(
         {
             globus_free(session_handle->username);
         }
+        if(session_handle->gid_array != NULL)
+        {
+            globus_free(session_handle->gid_array);
+        }
+        if(session_handle->home_dir)
+        {
+            globus_free(session_handle->home_dir);
+        }
         globus_handle_table_destroy(&session_handle->handle_table);
         globus_i_gfs_acl_destroy(&session_handle->acl_handle);
         globus_free(session_handle);

@@ -413,6 +413,11 @@ globus_i_gsc_op_destroy(
             globus_free(op->response_msg);
         }
 
+        if(op->gid_array)
+        {
+            globus_free(op->gid_array);
+        }
+
         op->server_handle->ref--;
         globus_l_gsc_server_ref_check(op->server_handle);
         globus_range_list_destroy(op->perf_range_list);
