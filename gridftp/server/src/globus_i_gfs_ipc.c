@@ -153,11 +153,16 @@ typedef struct globus_i_gfs_ipc_handle_s
                                                                                 
 } globus_i_gfs_ipc_handle_t;
 
-/**********************************************************************
- *  IPC communication functions
- *
- *********************************************************************/
 
+/************************************************************************
+ *   open
+ *
+ *  in connectioncase of ipc the user calls open.  when the connection
+ *  is esstablished the open callback is called.  if no error occurs
+ *  the handle is set to the open state and the user open cb is called.
+ *  If and error does occur the error callback is called and the user
+ *  is expected to close. 
+ ***********************************************************************/
 static void
 globus_l_gfs_ipc_open_cb(
     globus_xio_handle_t                 handle,
@@ -178,13 +183,26 @@ globus_l_gfs_ipc_open_cb(
     }
     globus_mutex_unlock(&ipc->mutex);
 
-    globus_assert(ipc->open_cb != NULL);
+    globus_assert(ipc->cb != NULL && ipc->error_cb != NULL);
 
-    ipc->open_cb(ipc, result, ipc->open_user_arg);
+    if(result == GLOBUS_SUCCESS)
+    {
+        ipc->open_cb(ipc, ipc->open_user_arg);
+    }
+    else
+    {
+        ipc->error_cb(ipc, result, ipc->user_arg);
+    }
 }
 
-/* xio gaurentees this will be called after all other callbacks, anything
-   still in the hashtable will not be registered and can be kicked out here */
+/************************************************************************
+ *  close
+ *  
+ *  the user may call close at anytime.  XIO gaurentees that all
+ *  out standing callbacks are called before the close callback.  this
+ *  code leverages this by calling all callbacks in the hashtable that
+ *  are waiting for a read before calling the user close callback.
+ ***********************************************************************/
 static void
 globus_l_gfs_ipc_close_cb(
     globus_xio_handle_t                 handle,
@@ -196,7 +214,10 @@ globus_l_gfs_ipc_close_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
+    /* should not need to lock since xio will call this after all callbacks
+        have returned from user */
     globus_hashtable_to_list(&ipc->call_table, &list);
+
     while(!globus_list_empty(list))
     {
         call_entry = (globus_i_gfs_ipc_handle_t *)
@@ -207,57 +228,15 @@ globus_l_gfs_ipc_close_cb(
             call_entry->user_arg);
     }
 
+    /* ignore result t, not much to care about at this point */
     if(ipc->close_cb)
     {
-        ipc->close_cb(ipc, result, ipc->user_arg);
+        ipc->close_cb(ipc, ipc->close_user_arg);
     }
     /* clean it up */
     globus_hashtable_destroy(&ipc->call_table);
     globus_mutex_destroy(&ipc->mutex);
     globus_free(ipc);
-}
-
-/*
- *  write logic
- *
- *  write logic depends on queueing buffer.  everytime a write is posted
- *  it is sent to xio buffer so multiple callbacks can be outstanding.
- */
-static void
-globus_l_gfs_ipc_write_cb(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
-{
-    globus_gfs_ipc_call_entry_t *       call_entry;
-    globus_i_gfs_ipc_handle_t *         ipc;
-    globus_gfs_ipc_callback_t           cb = NULL;
-
-    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
-
-    globus_free(buffer);
-    /* on error remoe from the hashtable.  we could just wait for the
-       close for this but we may as well have this callback do something */
-    if(result != GLOBUS_SUCESS)
-    {
-        globus_mutex_lock(&ipc->mutex);
-        {
-            globus_hashtable_remove(&ipc->call_table, call_entry->id);
-            cb = call_entry->cb;
-        }
-        globus_mutex_unlock(&ipc->mutex);
-
-        if(cb)
-        {
-            cb(call_entry->ipc, 
-                &call_entry->reply, result, call_entry->user_arg);
-            globus_free(call_entry);
-        }
-    }
 }
 
 /**********************************************************************
@@ -289,6 +268,8 @@ globus_l_gfs_ipc_read_body_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        res = result;
+        goto err;
     }
 
     /* parse based on type
@@ -327,8 +308,7 @@ globus_l_gfs_ipc_read_body_cb(
         default:
     }
 
-    globus_free(buffer);
-    new_buf = globus(GFS_IPC_HEADER_SIZE);
+    new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
 
     res = globus_xio_register_read(
         handle,
@@ -340,8 +320,18 @@ globus_l_gfs_ipc_read_body_cb(
         ipc);
     if(res != GLOBUS_SUCCESS)
     {
-
+        goto err;
     }
+    globus_free(buffer);
+
+    return;
+
+  err:
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
+    ipc->error_cb(ipc, res, ipc->user_arg);
 }
 
 static void
@@ -366,6 +356,8 @@ globus_l_gfs_ipc_read_header_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        res = result;
+        goto err;
     }
 
     ptr = buffer;
@@ -401,6 +393,8 @@ globus_l_gfs_ipc_read_header_cb(
                     globus_calloc(sizeof(globus_gfs_ipc_call_entry_t), 1);
                 if(call_entry == NULL)
                 {
+                    res = memoryError;
+                    goto err;
                 }
                 call_entry->id = id;
                 call_entry->type = type;
@@ -423,9 +417,29 @@ globus_l_gfs_ipc_read_header_cb(
         call_entry);
     if(res != GLOBUS_SUCCESS)
     {
+        goto err;
     }
+
+    return;
+
+  err:
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
+    ipc->error_cb(ipc, res, ipc->user_arg);
 }
 
+/************************************************************************
+ *  reply
+ *  -----
+ *  easy.  queuing driver is used with xio so any number of writes can
+ *  be pushed in.  On sucess the callback is ignored, on error the 
+ *  user error callback is called notifing them that the ipc channel 
+ *  is broken.  The user still needs to close
+ *
+ *  for local a one shot back to the original callback is arranged
+ ***********************************************************************/
 static void
 globus_l_gfs_ipc_reply_kickout(
     void *                              user_arg)
@@ -444,34 +458,157 @@ globus_l_gfs_ipc_reply_kickout(
 }
 
 /*
+ *  only interesting if it failed
+ */
+static void
+globus_l_gfs_ipc_reply_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    globus_free(buffer);
+    if(result != GLOBUS_SUCCESS)
+    {
+        if(ipc->error_cb)
+        {
+            ipc->error_cb(ipc, result, ipc->error_user_arg);
+        }
+    }
+}
+
+/*
  *  register callback in oneshot to avoid reenter woes.
  */
 globus_result_t
 globus_gfs_ipc_reply(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
     globus_gfs_ipc_reply_t *            reply)
 {
     globus_gfs_ipc_call_entry_t *       call_entry;
 
     globus_mutex_lock(&ipc_handle->mutex);
     {
-        call_entry = (globus_gfs_ipc_call_entry_t *) globus_hashtable_remove(
-            &ipc_handle->call_table,
-            reply->id);
-        call_entry->result = result;
+        /* if local register one shot to get out of recurisve call stack
+            troubles */
+        if(ipc->local)
+        {
+            call_entry = (globus_gfs_ipc_call_entry_t *) 
+                globus_hashtable_remove(
+                    &ipc_handle->call_table,
+                    reply->id);
+            if(call_entry == NULL)
+            {
+                goto err;
+            }
 
-        /* TODO: copy reply buffer */
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_reply_kickout,
+                call_entry);
+        }
+        /* if on wire pack up reply and send it */
+        else
+        {
+            /* serialize the reply */
+            buffer = globus_malloc(ipc_handle->reply_size);
+            ptr = buffer;
+            GFSEncodeChar(buffer, ipc_handle->reply_size, ptr, _REPLY);
+            GFSEncodeUInt32(buffer, ipc_handle->reply_size, ptr, reply->id);
+            GFSEncodeUInt32(buffer, ipc_handle->reply_size, ptr, reply->code);
+            GFSEncodeUInt32(
+                buffer, ipc_handle->reply_size, ptr, strlen(reply->msg));
+            GFSEncodeString(
+                buffer, ipc_handle->reply_size, ptr, reply->msg);
 
-        globus_callback_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_gfs_ipc_reply_kickout,
-            call_entry);
+            /* encode the specific types */
+            switch(reply->type)
+            {
+                case:
+            }
+
+            buffer_len = ptr - buffer;
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                buffer,
+                buffer_len,
+                buffer_len,
+                globus_l_gfs_ipc_reply_cb,
+                ipc);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
     }
     globus_mutex_unlock(&ipc_handle->mutex);
 
     return GLOBUS_SUCCESS;
+
+  err:
+    globus_mutex_unlock(&ipc_handle->mutex);
+
+    return res;
+}
+
+/************************************************************************
+ *   remote function calls
+ *
+ *   local: call directly to iface function
+ *
+ *   remote: serialize all needed information into a buffer and
+ *   send it.  any number can be sent at once due to the queung 
+ *   buffer.  Callback is ignored unless it fails, in which case 
+ *   the user error callback is called and the user is expected to 
+ *   close
+ ***********************************************************************/
+/*
+ *  write callback
+ */
+static void
+globus_l_gfs_ipc_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_gfs_ipc_call_entry_t *       call_entry;
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_gfs_ipc_callback_t           error_cb = NULL;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) user_arg;
+    ipc = call_entry->ipc;
+
+    globus_free(buffer);
+    /* on error remoe from the hashtable.  we could just wait for the
+       close for this but we may as well have this callback do something */
+    if(result != GLOBUS_SUCESS)
+    {
+        globus_mutex_lock(&ipc->mutex);
+        {
+            globus_hashtable_remove(&ipc->call_table, call_entry->id);
+            error_cb = call_entry->error_cb;
+        }
+        globus_mutex_unlock(&ipc->mutex);
+
+        if(error_cb)
+        {
+            error_cb(call_entry->ipc, 
+                &call_entry->reply, result, call_entry->user_arg);
+            globus_free(call_entry);
+        }
+    }
 }
 
 /*
@@ -1092,7 +1229,8 @@ globus_gfs_ipc_open(
     char *                              user_name,
     char *                              contact_string,
     globus_bool_t                       passive,
-    cb,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_error_callback_t     error_cb,
     void *                              user_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -1129,6 +1267,9 @@ globus_gfs_ipc_open(
                 goto err;
             }
 
+            ipc->cb = cb;
+            ipc->user_arg = user_arg;
+            ipc->error_cb = error_cb;
             ipc->state = GLOBUS_GFS_IPC_STATE_OPENNING;
             res = globus_xio_register_open(
                 &ipc->xio_handle,
@@ -1170,6 +1311,15 @@ globus_gfs_ipc_close(
     {
         if(ipc->local)
         {
+            /* it is illegal to register a callback in local mode.
+               further, in local mode the user must be aware that all
+               their callbacks have returned before calling close.
+               since there will only be 1 ipc handle for local that is
+               detroyed at shutdown, i suspect this will not be a problem */
+            if(cb != NULL)
+            {
+                
+            }
             globus_hashtable_destroy(&ipc->call_table);
             globus_mutex_destroy(&ipc->mutex);
             globus_free(ipc);
@@ -1183,6 +1333,8 @@ globus_gfs_ipc_close(
             {
                 case GLOBUS_GFS_IPC_STATE_OPENNING:
                 case GLOBUS_GFS_IPC_STATE_OPEN:
+
+                ipc->state = GLOBUS_GFS_IPC_STATE_CLOSING;
                 res = globus_xio_register_close(
                     ipc->handle,
                     NULL,

@@ -16,6 +16,18 @@ typedef void
     globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg);
 
+typedef void
+(*globus_gfs_ipc_open_close_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_error_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+
 /*
  *  replying
  *
@@ -315,8 +327,20 @@ typedef struct globus_gfs_ipc_iface_s
 } globus_gfs_ipc_iface_t;
 
 globus_result_t
+globus_gfs_ipc_open(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    char *                              user_name,
+    char *                              contact_string,
+    globus_bool_t                       passive,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              user_arg);
+
+globus_result_t
 globus_gfs_ipc_init(
     globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_error_callback_t
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_handle_t                 xio_handle);
 
