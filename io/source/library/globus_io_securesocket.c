@@ -839,154 +839,53 @@ globus_i_io_securesocket_set_attr(
         globus_object_get_local_instance_data(securesocket_attr);
 
     globus_assert(instance);
-    
-    if(instance->authentication_mode !=
-       handle->securesocket_attr.authentication_mode)
+
+    if(handle->state == GLOBUS_IO_HANDLE_STATE_LISTENING)
     {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "authentication_mode");
-
-        goto error_exit;
-    }
-
-    if(instance->authorization_mode !=
-       handle->securesocket_attr.authorization_mode)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "authorization_mode");
-
-        goto error_exit;
-    }
-
-    if(instance->channel_mode !=
-       handle->securesocket_attr.channel_mode)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "channel_mode");
-
-        goto error_exit;
-    }
-
-    if(instance->delegation_mode !=
-       handle->securesocket_attr.delegation_mode)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "delegation_mode");
-
-        goto error_exit;
-    }
-
-    
-    if(instance->proxy_mode !=
-       handle->securesocket_attr.proxy_mode)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "proxy_mode");
-
-        goto error_exit;
-    }
-
-    
-    if(instance->credential !=
-       handle->securesocket_attr.credential)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "credential");
-
-        goto error_exit;
-    }
-
-    if(instance->authorized_identity != NULL &&
-       handle->securesocket_attr.authorized_identity != NULL &&
-       handle->securesocket_attr.authorization_mode == GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY &&
-       strcmp(instance->authorized_identity,
-              handle->securesocket_attr.authorized_identity) != 0)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "authorized_identity");
-
-        goto error_exit;
-    }
-
-    if(instance->auth_callback !=
-       handle->securesocket_attr.auth_callback)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "authorization_callback");
-
-        goto error_exit;
-    }
-
-    if(instance->auth_callback_arg !=
-       handle->securesocket_attr.auth_callback_arg)
-    {
-        err = globus_io_error_construct_immutable_attribute(
-            GLOBUS_IO_MODULE,
-            GLOBUS_NULL,
-            "attr",
-            2,
-            myname,
-            "authorization_callback_arg");
-
-        goto error_exit;
-    }
-
-    if(handle->securesocket_attr.extension_oids == GSS_C_NO_OID_SET)
-    {
-        if(instance->extension_oids != GSS_C_NO_OID_SET)
+        /* If handler is a a listener we can change any sec attributes we want
+         * For now I'm not touching attributes where mem mgmt is unclear
+         */ 
+        
+        handle->securesocket_attr.authentication_mode =
+            instance->authentication_mode;
+        handle->securesocket_attr.authorization_mode =
+            instance->authorization_mode;
+        handle->securesocket_attr.channel_mode =
+            instance->channel_mode;
+        handle->securesocket_attr.delegation_mode =
+            instance->delegation_mode;
+        handle->securesocket_attr.proxy_mode =
+            instance->proxy_mode;
+        /*
+          handle->securesocket_attr.credential =
+          instance->credential;
+        */
+        if(handle->securesocket_attr.authorized_identity)
         {
-            err = globus_io_error_construct_immutable_attribute(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attr",
-                2,
-                myname,
-                "extension_oids");  
+            free(handle->securesocket_attr.authorized_identity);
+            handle->securesocket_attr.authorized_identity = NULL;
         }
+
+        if(instance->authorized_identity)
+        { 
+            handle->securesocket_attr.authorized_identity =
+                strdup(instance->authorized_identity);
+        }
+
+        handle->securesocket_attr.auth_callback =
+            instance->auth_callback;
+        handle->securesocket_attr.auth_callback_arg =
+            instance->auth_callback_arg;
+        /*
+        handle->securesocket_attr.extension_oids =
+            instance->extension_oids;
+        */
     }
     else
-    {
-        if(instance->extension_oids == GSS_C_NO_OID_SET)
+    { 
+    
+        if(instance->authentication_mode !=
+           handle->securesocket_attr.authentication_mode)
         {
             err = globus_io_error_construct_immutable_attribute(
                 GLOBUS_IO_MODULE,
@@ -994,24 +893,131 @@ globus_i_io_securesocket_set_attr(
                 "attr",
                 2,
                 myname,
-                "extension_oids");  
+                "authentication_mode");
+            
+            goto error_exit;
         }
-        else
-        {
-            gss_OID_set_desc *          handle_ext_oids;
-            gss_OID_set_desc *          instance_ext_oids;
-            OM_uint32                   maj_stat;
-            OM_uint32                   min_stat;
-            int                         i;
-            int                         present;
-            
-            handle_ext_oids = (gss_OID_set_desc *)
-                handle->securesocket_attr.extension_oids;
 
-            instance_ext_oids = (gss_OID_set_desc *)
-                instance->extension_oids;
+        if(instance->authorization_mode !=
+           handle->securesocket_attr.authorization_mode)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "authorization_mode");
+
+            goto error_exit;
+        }
+
+        if(instance->channel_mode !=
+           handle->securesocket_attr.channel_mode)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "channel_mode");
+
+            goto error_exit;
+        }
+
+        if(instance->delegation_mode !=
+           handle->securesocket_attr.delegation_mode)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "delegation_mode");
             
-            if(handle_ext_oids->count != instance_ext_oids->count)
+            goto error_exit;
+        }
+
+    
+        if(instance->proxy_mode !=
+           handle->securesocket_attr.proxy_mode)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "proxy_mode");
+            
+            goto error_exit;
+        }
+
+    
+        if(instance->credential !=
+           handle->securesocket_attr.credential)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "credential");
+
+            goto error_exit;
+        }
+
+        if(instance->authorized_identity != NULL &&
+           handle->securesocket_attr.authorized_identity != NULL &&
+           handle->securesocket_attr.authorization_mode == GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY &&
+           strcmp(instance->authorized_identity,
+                  handle->securesocket_attr.authorized_identity) != 0)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "authorized_identity");
+            
+            goto error_exit;
+        }
+
+        if(instance->auth_callback !=
+           handle->securesocket_attr.auth_callback)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "authorization_callback");
+            
+            goto error_exit;
+        }
+
+        if(instance->auth_callback_arg !=
+           handle->securesocket_attr.auth_callback_arg)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "authorization_callback_arg");
+            
+            goto error_exit;
+        }
+
+        if(handle->securesocket_attr.extension_oids == GSS_C_NO_OID_SET)
+        {
+            if(instance->extension_oids != GSS_C_NO_OID_SET)
             {
                 err = globus_io_error_construct_immutable_attribute(
                     GLOBUS_IO_MODULE,
@@ -1019,27 +1025,66 @@ globus_i_io_securesocket_set_attr(
                     "attr",
                     2,
                     myname,
-                    "extension_oids");    
+                    "extension_oids");  
+            }
+        }
+        else
+        {
+            if(instance->extension_oids == GSS_C_NO_OID_SET)
+            {
+                err = globus_io_error_construct_immutable_attribute(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    "attr",
+                    2,
+                    myname,
+                    "extension_oids");  
             }
             else
             {
-                for(i=0;i<handle_ext_oids->count;i++)
+                gss_OID_set_desc *          handle_ext_oids;
+                gss_OID_set_desc *          instance_ext_oids;
+                OM_uint32                   maj_stat;
+                OM_uint32                   min_stat;
+                int                         i;
+                int                         present;
+                
+                handle_ext_oids = (gss_OID_set_desc *)
+                    handle->securesocket_attr.extension_oids;
+
+                instance_ext_oids = (gss_OID_set_desc *)
+                    instance->extension_oids;
+            
+                if(handle_ext_oids->count != instance_ext_oids->count)
                 {
-                    maj_stat = gss_test_oid_set_member(
-                        &min_stat,
-                        (gss_OID) &instance_ext_oids->elements[i],
-                        handle->securesocket_attr.extension_oids,
-                        &present);
-                    if(maj_stat != GSS_S_COMPLETE ||
-                       !present)
+                    err = globus_io_error_construct_immutable_attribute(
+                        GLOBUS_IO_MODULE,
+                        GLOBUS_NULL,
+                        "attr",
+                        2,
+                        myname,
+                        "extension_oids");    
+                }
+                else
+                {
+                    for(i=0;i<handle_ext_oids->count;i++)
                     {
-                        err = globus_io_error_construct_immutable_attribute(
-                            GLOBUS_IO_MODULE,
-                            GLOBUS_NULL,
-                            "attr",
-                            2,
-                            myname,
-                            "extension_oids");  
+                        maj_stat = gss_test_oid_set_member(
+                            &min_stat,
+                            (gss_OID) &instance_ext_oids->elements[i],
+                            handle->securesocket_attr.extension_oids,
+                            &present);
+                        if(maj_stat != GSS_S_COMPLETE ||
+                           !present)
+                        {
+                            err = globus_io_error_construct_immutable_attribute(
+                                GLOBUS_IO_MODULE,
+                                GLOBUS_NULL,
+                                "attr",
+                                2,
+                                myname,
+                                "extension_oids");  
+                        }
                     }
                 }
             }
