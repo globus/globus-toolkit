@@ -1135,7 +1135,7 @@ globus_l_xio_register_close(
 globus_result_t
 globus_l_xio_handle_cancel_operations(
     globus_i_xio_handle_t *                 xio_handle,
-    globus_i_xio_attr_t *                   attr)
+    int                                     mask)
 {
     globus_list_t *                         list;
     globus_i_xio_op_t *                     tmp_op;
@@ -1146,7 +1146,7 @@ globus_l_xio_handle_cancel_operations(
 
     globus_mutex_lock(&xio_handle->cancel_mutex);
     {
-        if(attr->cancel_open)
+        if(mask | GLOBUS_XIO_ATTR_SET_CANCEL_OPEN)
         {
             if(xio_handle->open_op == NULL)
             {
@@ -1157,7 +1157,7 @@ globus_l_xio_handle_cancel_operations(
                 res = globus_l_xio_operation_cancel(xio_handle->open_op);
             }
         }
-        if(attr->cancel_close)
+        if(maks | GLOBUS_XIO_ATTR_SET_CANCEL_CLOSE)
         {
             if(xio_handle->close_op == NULL)
             {
@@ -1168,7 +1168,7 @@ globus_l_xio_handle_cancel_operations(
                 res = globus_l_xio_operation_cancel(xio_handle->close_op);
             }
         }
-        if(attr->cancel_read)
+        if(mask | GLOBUS_XIO_ATTR_SET_CANCEL_READ)
         {
             if(globus_list_empty(xio_handle->read_op_list))
             {
@@ -1187,7 +1187,7 @@ globus_l_xio_handle_cancel_operations(
                 }
             }
         }
-        if(attr->cancel_write)
+        if(mask | GLOBUS_XIO_ATTR_SET_CANCEL_WRITE)
         {
             if(globus_list_empty(xio_handle->write_op_list))
             {
@@ -1793,7 +1793,7 @@ globus_xio_register_close(
 globus_result_t
 globus_xio_handle_cancel_operations(
     globus_xio_handle_t                     handle,
-    globus_xio_attr_t                       attr)
+    int                                     mask)
 {
     globus_i_xio_handle_t *                 xio_handle;
     globus_result_t                         res;
@@ -1820,7 +1820,7 @@ globus_xio_handle_cancel_operations(
         {
             res = globus_l_xio_handle_cancel_operations(
                     xio_handle,
-                    attr);
+                    mask);
         }
     }
     globus_mutex_unlock(&xio_handle->context->mutex);
@@ -1913,7 +1913,9 @@ typedef struct globus_l_xio_blocking_s
     globus_mutex_t                          mutex;
     globus_cond_t                           cond;
     globus_bool_t                           done;
+    globus_size_t                           nbytes;
     globus_i_xio_op_t *                     op;
+    globus_xio_data_descriptor_t            data_desc;
 } globus_l_xio_blocking_t;
 
 
@@ -1946,6 +1948,16 @@ globus_l_xio_blocking_cb(
     globus_result_t                             result,
     void *                                      user_arg)
 {
+    globus_l_xio_blocking_t *               info;
+
+    info = (globus_l_xio_blocking_t *) user_arg;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        info->done = GLOBUS_TRUE;
+        globus_cond_signal(&info->signal);
+    }
+    globus_mutex_unlock(&info->mutex);
 }
 
 void
@@ -1964,6 +1976,8 @@ globus_l_xio_blocking_data_cb(
 
     globus_mutex_lock(&info->mutex);
     {
+        info->data_desc = data_desc;
+        info->nbytes = nbytes;
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->signal);
     }
@@ -1994,40 +2008,202 @@ globus_l_xio_blocking_iov_cb(
 
 globus_result_t
 globus_xio_open(
-    globus_xio_handle_t *                   handle,
-    globus_xio_attr_t                       attr,
-    globus_xio_target_t                     target)
+    globus_xio_handle_t *                   user_handle,
+    globus_xio_attr_t                       user_attr,
+    globus_xio_target_t                     user_target)
 {
+    globus_i_xio_op_t *                     op = NULL;
+    globus_i_xio_handle_t *                 handle = NULL;
+    globus_i_xio_target_t *                 target;
+    globus_i_xio_context_t *                context = NULL;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    int                                     ctr;
+    globus_l_xio_blocking_t *               info;
+    globus_callback_space_t                 space = 
+            GLOBUS_CALLBACK_GLOBAL_SPACE;
+    GlobusXIOName(globus_xio_register_open);
+
+    GlobusXIODebugEnter();
+
+    if(user_handle == NULL)
+    {
+        res = GlobusXIOErrorParameter("handle");
+        goto param_err;
+    }
+    if(user_target == NULL)
+    {
+        res = GlobusXIOErrorParameter("target");
+        goto param_err;
+    }
+
+    *user_handle = NULL; /* initialze to be nice to user */
+    target = (globus_i_xio_target_t *) user_target;
+
+    /* this is gaurenteed to be greater than zero */
+    globus_assert(target->stack_size > 0);
+
+    /* allocate and initialize context */
+    context = globus_i_xio_context_create(target);
+    if(context == NULL)
+    {
+        res = GlobusXIOErrorMemory("context");
+        goto param_err;
+    }
+
+    /* allocate and intialize the handle structure */
+    GlobusXIOHandleCreate(handle, target->stack_size, user_attr);
+    if(handle == NULL)
+    {
+        res = GlobusXIOErrorMemory("handle");
+        goto handle_alloc_err;
+    }
+
+    GlobusXIOOperationCreate(op, context);
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorMemory("operation");
+        goto op_alloc_err;
+    }
+
+    info = globus_l_xio_blocking_alloc();
+    if(info == NULL)
+    {
+        res = GlobusXIOErrorMemory("internal strucature");
+        goto info_alloc_error;
+    }
+    info->op = op;
+
+    /* all memory has been allocated, now set up the different structures */
+
+    /*
+     *  set up the operation
+     */
+
+    op->type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
+    op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+    op->_op_handle = handle;
+    op->ref = 1;
+    op->_op_cb = globus_l_xio_blocking_cb;
+    op->user_arg = info;
+    op->entry[0].caller_ndx = -1; /* for first pass there is no return */
+    op->_op_context = context;
+
+    /* initialize the handle */
+    handle->ref = 2; /* itself, operation */
+    handle->context = context;
+    /* this is set for the cancel */
+    handle->open_op = op;
+    handle->outstanding_operations = 1; /* open operation */
+
+    if(user_attr != NULL)
+    {
+        space =  user_attr->space;
+    }
+    /* initialize the context */
+    context->ref = 1; /* for the refrence the handle has */
+    handle->space = space;
+    globus_callback_space_reference(space);
+
+
+    handle->target = target;
+    /* set entries in structures */
+    for(ctr = 0; ctr < handle->stack_size; ctr++)
+    {
+        context->entry[ctr].driver = target->entry[ctr].driver;
+
+        if(user_attr != NULL)
+        {
+            GlobusIXIOAttrGetDS(op->entry[ctr].attr,                    \
+                user_attr, target->entry[ctr].driver);
+        }
+        else
+        {
+            op->entry[ctr].attr = NULL;
+        }
+    }
+
+    globus_mutex_lock(&info->mutex);
+    {
+        res = globus_l_xio_register_open(op);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto register_err;
+        }
+
+        while(!info->done)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+    }
+    globus_mutex_unlock(&info->mutex);
+
+    *user_handle = handle;
+
+    GlobusXIODebugExit();
+
     return GLOBUS_SUCCESS;
+
+    /*
+     * error handling 
+     */
+  register_err:
+    globus_l_xio_blocking_destroy(info);
+
+  info_alloc_error:
+    GlobusXIOOperationDestroy(op);
+
+  op_alloc_err:
+    handle->context = NULL;
+    GlobusXIOHandleDestroy(handle);
+
+  handle_alloc_err:
+    globus_i_xio_context_destroy(context);
+    *user_handle = NULL;
+
+  param_err:
+    GlobusXIODebugExitWithError();
+
+    return res;
 }
 
-/*
+/* 
+ *  read
+ */
 globus_result_t
 globus_xio_read(
-    globus_xio_handle_t                     handle,
+    globus_xio_handle_t                     user_handle,
     globus_byte_t *                         buffer,
     globus_size_t                           buffer_length,
     globus_size_t                           waitforbytes,
+    globus_size_t *                         nbytes,
     globus_xio_data_descriptor_t            data_desc)
 {
     globus_i_xio_op_t *                     op;
     globus_result_t                         res;
+    globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
-    GlobusXIOName(globus_xio_register_read);
-    
+    globus_l_xio_blocking_t *               info;
+    GlobusXIOName(globus_xio_writev);
+
     GlobusXIODebugEnter();
 
+    handle = user_handle;
+
+    /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorParameter("handle");
+        res = GlobusXIOErrorParameter("handle");
+        goto param_error;
     }
     if(buffer == NULL)
     {
-        return GlobusXIOErrorParameter("buffer");
+        res = GlobusXIOErrorParameter("buffer");
+        goto param_error;
     }
     if(buffer_length <= 0)
     {
-        return GlobusXIOErrorParameter("buffer_length");
+        res = GlobusXIOErrorParameter("buffer_length");
+        goto param_error;
     }
 
     op = data_desc;
@@ -2037,58 +2213,202 @@ globus_xio_read(
         if(op == NULL)
         {
             res = GlobusXIOErrorMemory("operation");
-            goto exit;
+            goto param_error;
         }
         ref = 1;
     }
+
+    info = globus_l_xio_blocking_alloc();
+    if(info == NULL)
+    {
+        res = GlobusXIOErrorMemory("internal strucature");
+        goto alloc_error;
+    }
+    /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->_op_handle = handle;
     op->ref = 1;
+    op->entry[0].caller_ndx = -1;
+
+    op->_op_handle = handle;
     op->_op_context = handle->context;
-    op->_op_data_cb = cb;
+    op->_op_data_cb = globus_l_xio_blocking_data_cb;
     op->_op_iovec_cb = NULL;
     op->_op_mem_iovec.iov_base = buffer;
     op->_op_mem_iovec.iov_len = buffer_length;
     op->_op_iovec_count = 1;
     op->_op_iovec = &op->_op_mem_iovec;
     op->_op_wait_for = waitforbytes;
-    op->user_arg = user_arg;
-    op->entry[0].caller_ndx = -1;
+    op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
 
-    res = globus_l_xio_register_readv(op, ref);
-    if(res != GLOBUS_SUCCESS)
+    info->op = op;
+
+    globus_mutex_lock(&info->mutex);
     {
-        goto exit;
+        res = globus_l_xio_register_readv(op, ref);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto register_error;
+        }
+
+        while(!info->done)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
     }
+    globus_mutex_unlock(&info->mutex);
+
+    if(nbytes != NULL)
+    {
+        *nbytes = info->nbytes;
+    }
+
+    globus_l_xio_blocking_destroy(info);
+
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
-  exit:
+  register_error:
+    globus_mutex_unlock(&info->mutex);
+  alloc_error:
+    /* desroy op */
+
+  param_error:
+    GlobusXIODebugExitWithError();
+
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
+
+    return res;
+}
+
+globus_result_t
+globus_xio_readv(
+    globus_xio_handle_t                     user_handle,
+    globus_xio_iovec_t *                    iovec,
+    int                                     iovec_count,
+    globus_size_t                           waitforbytes,
+    globus_size_t *                         nbytes,
+    globus_xio_data_descriptor_t            data_desc)
+{
+    globus_i_xio_op_t *                     op;
+    globus_result_t                         res;
+    globus_i_xio_handle_t *                 handle;
+    int                                     ref = 0;
+    globus_l_xio_blocking_t *               info;
+    GlobusXIOName(globus_xio_writev);
+
+    GlobusXIODebugEnter();
+
+    handle = user_handle;
+
+    /* error echecking */
+    if(handle == NULL)
+    {
+        res = GlobusXIOErrorParameter("handle");
+        goto param_error;
+    }
+    if(iovec == NULL)
+    {
+        res = GlobusXIOErrorParameter("buffer");
+        goto param_error;
+    }
+    if(iovec_count <= 0)
+    {
+        res = GlobusXIOErrorParameter("buffer_length");
+        goto param_error;
+    }
+
+    op = data_desc;
+    if(op == NULL)
+    {
+        GlobusXIOOperationCreate(op, handle->context);
+        if(op == NULL)
+        {
+            res = GlobusXIOErrorMemory("operation");
+            goto param_error;
+        }
+        ref = 1;
+    }
+
+    info = globus_l_xio_blocking_alloc();
+    if(info == NULL)
+    {
+        res = GlobusXIOErrorMemory("internal strucature");
+        goto alloc_error;
+    }
+    /* set up the operation */
+    op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
+    op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+    op->ref = 1;
+    op->entry[0].caller_ndx = -1;
+
+    op->_op_handle = handle;
+    op->_op_context = handle->context;
+    op->_op_data_cb = NULL;
+    op->_op_iovec_cb = globus_l_xio_blocking_iov_cb;
+    op->_op_iovec = iovec;
+    op->_op_iovec_count = iovec_count;
+    op->_op_wait_for = waitforbytes;
+    op->user_arg = info;
+    op->blocking = GLOBUS_TRUE;
+
+    info->op = op;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        res = globus_l_xio_register_readv(op, ref);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto register_error;
+        }
+
+        while(!info->done)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+    }
+    globus_mutex_unlock(&info->mutex);
+
+    if(nbytes != NULL)
+    {
+        *nbytes = info->nbytes;
+    }
+
+    globus_l_xio_blocking_destroy(info);
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  register_error:
+    globus_mutex_unlock(&info->mutex);
+  alloc_error:
+    /* desroy op */
+
+  param_error:
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
 
     GlobusXIODebugExitWithError();
     return res;
 }
-*/
-globus_result_t
-globus_xio_readv(
-    globus_xio_handle_t                         handle,
-    globus_xio_iovec_t *                        iovec,
-    int                                         iovec_count,
-    globus_size_t                               waitforbytes,
-    globus_xio_data_descriptor_t                data_desc)
-{
-    return GLOBUS_SUCCESS;
-}
 
+/*
+ *  writes
+ */
 globus_result_t
 globus_xio_write(
     globus_xio_handle_t                     user_handle,
-    globus_byte_t *                             buffer,
-    globus_size_t                               buffer_length,
-    globus_size_t                               waitforbytes,
-    globus_xio_data_descriptor_t                data_desc)
+    globus_byte_t *                         buffer,
+    globus_size_t                           buffer_length,
+    globus_size_t                           waitforbytes,
+    globus_size_t *                         nbytes,
+    globus_xio_data_descriptor_t            data_desc)
 {
     globus_i_xio_op_t *                     op;
     globus_result_t                         res;
@@ -2171,6 +2491,11 @@ globus_xio_write(
     }
     globus_mutex_unlock(&info->mutex);
 
+    if(nbytes != NULL)
+    {
+        *nbytes = info->nbytes;
+    }
+
     globus_l_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
@@ -2182,6 +2507,11 @@ globus_xio_write(
     /* desroy op */
 
   param_error:
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
+
     GlobusXIODebugExitWithError();
     return res;
 }
@@ -2192,6 +2522,7 @@ globus_xio_writev(
     globus_xio_iovec_t *                    iovec,
     int                                     iovec_count,
     globus_size_t                           waitforbytes,
+    globus_size_t *                         nbytes,
     globus_xio_data_descriptor_t            data_desc)
 {
     globus_i_xio_op_t *                     op;
@@ -2273,7 +2604,124 @@ globus_xio_writev(
     }
     globus_mutex_unlock(&info->mutex);
 
+    if(nbytes != NULL)
+    {
+        *nbytes = info->nbytes;
+    }
+
     globus_l_xio_blocking_destroy(info);
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  register_error:
+    globus_mutex_unlock(&info->mutex);
+  alloc_error:
+    /* desroy op */
+
+  param_error:
+
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_xio_close(
+    globus_xio_handle_t                     handle,
+    globus_xio_attr_t                       attr)
+{
+    globus_result_t                         res;
+    int                                     ctr;
+    globus_i_xio_op_t *                     op;
+    globus_l_xio_blocking_t *               info;
+    GlobusXIOName(globus_xio_register_close);
+
+    GlobusXIODebugEnter();
+
+    /* error echecking */
+    if(handle == NULL)
+    {
+        res = GlobusXIOErrorParameter("handle");
+        goto param_error;
+    }
+
+    globus_mutex_lock(&handle->context->mutex);
+    {
+        if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
+        {
+            globus_mutex_unlock(&handle->context->mutex);
+            res = GlobusXIOErrorInvalidState(handle->state);
+            goto param_error;
+        }
+        else
+        {
+            handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSING;
+            /* this is set for the cancel */
+        }
+    }
+    globus_mutex_unlock(&handle->context->mutex);
+
+    GlobusXIOOperationCreate(op, handle->context);
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorMemory("operation");
+        goto param_error;
+    }
+
+    info = globus_l_xio_blocking_alloc();
+    if(info == NULL)
+    {
+        res = GlobusXIOErrorMemory("internal strucature");
+        goto alloc_error;
+    }
+
+    /*
+     *  set up the operation
+     */
+    handle->close_op = op;
+    op->type = GLOBUS_XIO_OPERATION_TYPE_CLOSE;
+    op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+    op->_op_handle = handle;
+    op->ref = 1;
+    op->_op_cb = globus_l_xio_blocking_cb;
+    op->user_arg = info;
+    op->entry[0].caller_ndx = -1;/*for first pass there is no return*/
+
+    info->op = op;
+
+    /* set up op */
+    for(ctr = 0; ctr < handle->stack_size; ctr++)
+    {
+        if(attr != NULL)
+        {
+            GlobusIXIOAttrGetDS(op->entry[ctr].attr, attr,
+                handle->context->entry[ctr].driver);
+        }
+        else
+        {
+            op->entry[ctr].attr = NULL;
+        }
+    }
+
+    globus_mutex_lock(&info->mutex);
+    {
+        res = globus_l_xio_register_close(op);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto register_error;
+        }
+
+        while(!info->done)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+    }
+    globus_mutex_unlock(&info->mutex);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
@@ -2287,14 +2735,3 @@ globus_xio_writev(
     GlobusXIODebugExitWithError();
     return res;
 }
-
-globus_result_t
-globus_xio_close(
-    globus_xio_handle_t                         handle,
-    globus_xio_attr_t                           attr,
-    globus_xio_callback_t                       cb)
-{
-    return GLOBUS_SUCCESS;
-}
-
-

@@ -86,6 +86,37 @@ globus_l_xio_smtp_target_destroy(
     return GLOBUS_SUCCESS;
 }
 
+static globus_result_t
+globus_l_xio_smtp_attr_init(
+    void **                             out_attr)
+{
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_smtp_attr_cntl(
+    void *                              driver_attr,
+    int                                 cmd,
+    va_list                             ap)
+{
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_smtp_attr_copy(
+    void **                             dst,
+    void *                              src)
+{
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_smtp_attr_destroy(
+    void *                              driver_attr)
+{
+    return GLOBUS_SUCCESS;
+}
+
 void
 next_state(
     l_smtp_info_t *                         info,
@@ -403,6 +434,13 @@ globus_l_xio_smtp_load(
         globus_l_xio_smtp_read,
         globus_l_xio_smtp_write,
         NULL);
+
+    globus_xio_driver_set_attr(
+        driver,
+        globus_l_xio_smtp_init,
+        globus_l_xio_smtp_copy,
+        globus_l_xio_smtp_cntl,
+        globus_l_xio_smtp_destroy);
 
     *out_driver = driver;
 
