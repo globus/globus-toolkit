@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2002-11-15" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2003-2-26" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -105,7 +105,7 @@ Specifies the lifetime of the credential stored on the
 in hours.  Default: 1 week (168 hours)
 .TP
 .BI -t " hours, " --proxy_lifetime " hours"
-Specifies the lifetime of credentials retrieved from the
+Specifies the maximum lifetime of credentials retrieved from the
 .BR myproxy-server (8)
 using the stored credential.  Default: 2 hours
 .TP
@@ -213,6 +213,7 @@ Specifies the hostname where the
 is running.  This environment variable can be used in place of the 
 .B -s
 option.
+.TP
 .B MYPROXY_SERVER_DN
 Specifies the distinguished name (DN) of the 
 .BR myproxy-server (8).
@@ -232,13 +233,20 @@ proxy credential is created.
 Specifies a non-standard location for the private key from which the
 proxy credential is created.
 .SH AUTHORS
+Jim Basney,
+Shiva Shankar Chetan,
+Jarek Gawor,
+Daniel Kouril,
 Jason Novotny,
-Von Welch, and
-Jim Basney
+Miroslav Ruda,
+Benjamin Temko,
+and Von Welch
 .SH "SEE ALSO"
 .BR myproxy-change-pass-phrase (1),
 .BR myproxy-destroy (1),
 .BR myproxy-get-delegation (1),
 .BR myproxy-info (1),
-.BR myproxy-server (8),
-.BR myproxy-server.config (5)
+.BR myproxy-server.config (5),
+.BR myproxy-admin-load-credential (8),
+.BR myproxy-admin-query (8),
+.BR myproxy-server (8)
