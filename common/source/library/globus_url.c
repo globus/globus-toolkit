@@ -40,7 +40,10 @@ static int globusl_url_get_host_port(const char **stringp,
 				    char **host,
 				    unsigned short *port);
 static int globusl_url_get_path(const char **stringp,
-			       char **url_path);
+			       char **url_path,
+			       globus_url_scheme_t scheme_type);
+
+
 static int globusl_url_get_ldap_specific(const char **stringp,
 					char **dn,
 					char **attributes,
@@ -179,7 +182,8 @@ globus_url_parse(const char *url_string,
 	}
 
 	rc=globusl_url_get_path(&substring,
-			       &(url->url_path));
+			       &(url->url_path),
+			       url->scheme_type);
 	if(rc != GLOBUS_SUCCESS)
 	{
 	    goto parse_error;
@@ -260,7 +264,8 @@ globus_url_parse(const char *url_string,
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    rc = globusl_url_get_path(&substring,
-				     &(url->url_path));
+				     &(url->url_path),
+				     url->scheme_type);
 	    if(rc == GLOBUS_URL_ERROR_INTERNAL_ERROR)
 	    {
 		goto parse_error;
@@ -992,7 +997,8 @@ globusl_url_get_file_specific(const char **stringp,
     else
     {
         rc = globusl_url_get_path(stringp,
-			          path);
+			          path,
+				  GLOBUS_URL_SCHEME_FILE);
     }
     return rc;
 }
@@ -1008,7 +1014,8 @@ Returns: GLOBUS_TRUE if in the character class, GLOBUS_FALSE otherwise
 ******************************************************************************/
 static int
 globusl_url_get_path(const char **stringp,
-		    char **url_path)
+		    char **url_path,
+		    globus_url_scheme_t scheme_type)
 {
     int rc;
     size_t pos = 0;
@@ -1059,9 +1066,11 @@ globusl_url_get_path(const char **stringp,
 	return GLOBUS_URL_ERROR_BAD_PATH;
     }
 
-    /* reduce /~ to ~ */
+    /* reduce /~ to ~ if FTP */
 
-    if(pos > 1 && **stringp == '/' && *(*stringp + 1) == '~')
+    if((scheme_type == GLOBUS_URL_SCHEME_FTP ||
+	scheme_type == GLOBUS_URL_SCHEME_GSIFTP) &&
+	pos > 1 && **stringp == '/' && *(*stringp + 1) == '~')
     {
 	*stringp = *stringp + 1;
     }
