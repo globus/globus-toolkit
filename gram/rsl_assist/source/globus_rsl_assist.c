@@ -836,7 +836,7 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
     return GLOBUS_SUCCESS;
     
 globus_i_rsl_assist_get_ldap_param_ERR:
-	globus_libc_free(*port_str);
+	globus_libc_free(port_str);
 	globus_libc_free(*server);
 	globus_libc_free(*base_dn);
 	globus_libc_free(mds_conf_path);
