@@ -17,10 +17,8 @@ INSTALL		myproxy installation directions
 
 In order to build the myproxy software you will need a special
 version of the Grid Security Infrastructure (GSI) that has been
-modified to support encrypted user sessions. This GSI package
-is possibly restricted under US export control law and hence
-not publically available. Please contact the myproxy authors
-if you want access to the GSI package.
+modified to support encrypted user sessions, available from
+<ftp://ftp.globus.org/pub/gsi/gsi-041701.tar.gz>.
 
 You can build the encryption-enabled GSI package using the
 directions for building standard GSI package:
@@ -94,7 +92,7 @@ limited user access, limited services, well monitored and
 maintained in terms of security patches.
 
 The host on which the myproxy-server is running will need
-to have /etc/security created and a host certificate installed.
+to have /etc/grid-security created and a host certificate installed.
 Directions for doing so can be found at:
 
 http://www.globus.org/security/v1.1/etc_grid_security.html
