@@ -806,9 +806,9 @@ grami_jm_request_params(gram_specification_t * description_tree,
 	{
             return (GRAM_ERROR_INVALID_PARADYN);
 	}
-    }
 
-    graml_stage_file(params->pgm, 0700);
+        graml_stage_file(params->pgm, 0700);
+    }
 
     if (strlen(params->jobtype) == 0)
     {
