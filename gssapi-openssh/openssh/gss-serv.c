@@ -235,7 +235,7 @@ ssh_gssapi_krb5_storecreds() {
 		log("gss_krb5_copy_ccache() failed");
 		ssh_gssapi_error(maj_status,min_status);
 		krb5_cc_destroy(krb_context,ccache);
-		return;
+		return GSS_S_FAILURE;
 	}
 	
 	krb5_cc_close(krb_context,ccache);
@@ -360,7 +360,8 @@ ssh_gssapi_gsi_storecreds()
 			log("Failed to export delegated credentials (error %ld)",
 			    major_status);
 		}
-	}	
+	}
+	return 0;
 }
 #endif /* HAVE_GSSAPI_EXT */
 
