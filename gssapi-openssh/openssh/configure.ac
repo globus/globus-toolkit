@@ -615,6 +615,7 @@ if test "x$gsi_path" != "xno" ; then
 	else
 		AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
 	fi
+	AC_MSG_RESULT(yes)
 
 	#
 	# Build Globus linkline
