@@ -9,6 +9,12 @@
 #include <string.h>
 #include <sys/uio.h>
 
+/*
+ *  logging messages 
+ */
+#define GFTP_NL_EVENT_RECEIVED_DATA       "GFTPC_DATA_IN_END"
+#define GFTP_NL_EVENT_SENT_DATA           "GFTPC_DATA_SENT_END"
+
 #define GLOBUS_FTP_CONTROL_DATA_MAGIC               "FTPControlData-1.0"
 
 #define GlobusFTPControlSetMagic(dc_handle)                           \
@@ -567,7 +573,9 @@ static globus_hashtable_t           globus_l_ftp_control_data_layout_table;
 globus_result_t
 globus_i_ftp_control_data_set_netlogger(
     globus_ftp_control_handle_t *               handle,
-    globus_netlogger_handle_t *                 nl_handle)
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               nl_ftp_control,
+    globus_bool_t                               nl_globus_io)
 {
     globus_i_ftp_dc_handle_t *                  dc_handle;
     globus_object_t *                           err;
@@ -603,16 +611,24 @@ globus_i_ftp_control_data_set_netlogger(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        globus_io_attr_netlogger_copy_handle(nl_handle, &dc_handle->nl_handle);
-
-        globus_io_attr_netlogger_set_handle(
-            &dc_handle->io_attr,
-            &dc_handle->nl_handle);
-        globus_netlogger_set_desc(
-            &dc_handle->nl_handle,
-            "FTP_DATA");
-        
-        dc_handle->nl_handle_set = GLOBUS_TRUE;
+        if(nl_ftp_control)
+        {
+            globus_io_attr_netlogger_copy_handle(nl_handle, 
+                &dc_handle->nl_ftp_handle);
+            dc_handle->nl_ftp_handle_set = GLOBUS_TRUE;
+        }
+        if(nl_globus_io)
+        {
+            globus_io_attr_netlogger_copy_handle(nl_handle, 
+                &dc_handle->nl_io_handle);
+            globus_io_attr_netlogger_set_handle(
+                &dc_handle->io_attr,
+                &dc_handle->nl_io_handle);
+            globus_netlogger_set_desc(
+                &dc_handle->nl_io_handle,
+                "FTP_DATA");
+            dc_handle->nl_io_handle_set = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -6528,12 +6544,12 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->initialized = GLOBUS_TRUE;
             dc_handle->state = GLOBUS_FTP_DATA_STATE_NONE;
             dc_handle->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
-	    dc_handle->pbsz = 0UL;
-	    dc_handle->protection = GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
+            dc_handle->pbsz = 0UL;
+            dc_handle->protection = GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
             dc_handle->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
             dc_handle->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
             dc_handle->structure = GLOBUS_FTP_CONTROL_STRUCTURE_FILE;
-	    dc_handle->tcp_buffer_size = 0;
+            dc_handle->tcp_buffer_size = 0;
             dc_handle->form_code = 0;
             dc_handle->send_eof = GLOBUS_TRUE;
             dc_handle->transfer_handle = GLOBUS_NULL;
@@ -6542,10 +6558,11 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->close_callback = GLOBUS_NULL;
             dc_handle->close_callback_arg = GLOBUS_NULL;
 
-            dc_handle->nl_handle_set = GLOBUS_FALSE;
+            dc_handle->nl_io_handle_set = GLOBUS_FALSE;
+            dc_handle->nl_ftp_handle_set = GLOBUS_FALSE;
 
-	    globus_io_tcpattr_init(&dc_handle->io_attr);
-	    globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr, 
+            globus_io_tcpattr_init(&dc_handle->io_attr);
+            globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr, 
 					   GLOBUS_TRUE);
 
             dc_handle->layout_func = GLOBUS_NULL;
@@ -6715,10 +6732,14 @@ globus_i_ftp_control_data_cc_destroy(
             dc_handle->initialized = GLOBUS_FALSE;
             destroy_it = GLOBUS_TRUE;
             res = GLOBUS_SUCCESS;
-	    globus_io_tcpattr_destroy(&dc_handle->io_attr);
-            if(dc_handle->nl_handle_set)
+	        globus_io_tcpattr_destroy(&dc_handle->io_attr);
+            if(dc_handle->nl_io_handle_set)
             {
-                globus_netlogger_handle_destroy(&dc_handle->nl_handle);
+                globus_netlogger_handle_destroy(&dc_handle->nl_io_handle);
+            }
+            if(dc_handle->nl_ftp_handle_set)
+            {
+                globus_netlogger_handle_destroy(&dc_handle->nl_ftp_handle);
             }
         }
         else
@@ -7525,6 +7546,9 @@ globus_l_ftp_stream_write_callback(
     globus_bool_t                               fire_callback = GLOBUS_TRUE;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_object_t *                           err;
+    globus_size_t                               nl_nbytes;
+
+    nl_nbytes = nbytes;
 
     entry = (globus_l_ftp_handle_table_entry_t *) arg;
 
@@ -7582,6 +7606,17 @@ globus_l_ftp_stream_write_callback(
         else
         {
             globus_fifo_enqueue(&stripe->free_conn_q, data_conn);
+        }
+        if(dc_handle->nl_ftp_handle_set)
+        {
+            /* faking memory allocation */
+            char * tag_str = "MODE=S TYPE=A NBYTES=0123456789012345678901234556789";
+            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d", dc_handle->type, nl_nbytes);
+
+            globus_netlogger_write(
+                &dc_handle->nl_ftp_handle,
+                GFTP_NL_EVENT_SENT_DATA,
+                tag_str);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
@@ -7658,7 +7693,9 @@ globus_l_ftp_stream_read_callback(
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_bool_t                               fire_callback = GLOBUS_TRUE;
     globus_object_t *                           err;
+    globus_size_t                               nl_nbytes;
 
+    nl_nbytes = nbyte;
     entry = (globus_l_ftp_handle_table_entry_t *) arg;
 
     dc_handle = entry->dc_handle;
@@ -7769,6 +7806,17 @@ globus_l_ftp_stream_read_callback(
             else
             {
                 globus_fifo_enqueue(&stripe->free_conn_q, data_conn);
+            }
+            if(dc_handle->nl_ftp_handle_set)
+            {
+                char * tag_str = 
+                        "MODE=S TYPE=A NBYTES=0123456789012345678901234556789";
+                sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d",
+                        dc_handle->type, nl_nbytes);
+                globus_netlogger_write(
+                    &dc_handle->nl_ftp_handle,
+                    GFTP_NL_EVENT_RECEIVED_DATA,
+                    tag_str);
             }
         }
 
@@ -8402,7 +8450,9 @@ globus_l_ftp_eb_read_callback(
     globus_byte_t *                             buffer = GLOBUS_NULL;
     const globus_object_type_t *                type;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
+    globus_size_t                               nl_bytes;
 
+    nl_bytes = nbyte;
     entry = (globus_l_ftp_handle_table_entry_t *)arg;
 
     dc_handle = entry->dc_handle;
@@ -8516,6 +8566,17 @@ globus_l_ftp_eb_read_callback(
             else
             {
                 globus_fifo_enqueue(&stripe->free_conn_q, (void *)data_conn);
+            }
+            if(dc_handle->nl_ftp_handle_set)
+            {
+                char * tag_str = 
+                         "MODE=E TYPE=E NBYTES=0123456789012345678901234556789";
+                sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d", 
+                         dc_handle->type, nl_bytes);
+                globus_netlogger_write(
+                    &dc_handle->nl_ftp_handle,
+                    GFTP_NL_EVENT_RECEIVED_DATA,
+                    tag_str);
             }
         }
     }
@@ -8785,6 +8846,9 @@ globus_l_ftp_eb_write_callback(
     globus_bool_t                               eof = GLOBUS_FALSE;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_l_ftp_send_eof_entry_t *             send_eof_ent = GLOBUS_NULL;
+    globus_size_t                               nl_bytes;
+
+    nl_bytes = nbytes;
 
     entry = (globus_l_ftp_handle_table_entry_t *)arg;
     eb_header = (globus_l_ftp_eb_header_t *)iov[0].iov_base;
@@ -8956,6 +9020,17 @@ globus_l_ftp_eb_write_callback(
         if(entry->ascii_buffer != GLOBUS_NULL)
         {
             globus_free(entry->ascii_buffer);
+        }
+        if(dc_handle->nl_ftp_handle_set)
+        {
+            /* faking memory allocation */
+            char * tag_str = "MODE=E TYPE=A NBYTES=0123456789012345678901234556789";
+            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d", dc_handle->type, nl_bytes);
+
+            globus_netlogger_write(
+                &dc_handle->nl_ftp_handle,
+                GFTP_NL_EVENT_SENT_DATA,
+                tag_str);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);

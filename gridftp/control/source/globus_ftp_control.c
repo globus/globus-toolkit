@@ -133,7 +133,9 @@ globus_i_ftp_parallelism_copy(
 globus_result_t
 globus_ftp_control_set_netlogger(
     globus_ftp_control_handle_t *               handle,
-    globus_netlogger_handle_t *                 nl_handle)
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               nl_ftp_control,
+    globus_bool_t                               nl_globus_io)
 {
     globus_result_t                             res;
 
@@ -142,7 +144,8 @@ globus_ftp_control_set_netlogger(
     {
         return res;
     }
-    res = globus_i_ftp_control_data_set_netlogger(handle, nl_handle);
+    res = globus_i_ftp_control_data_set_netlogger(
+              handle, nl_handle, nl_ftp_control, nl_globus_io);
 
     return res;
 }
