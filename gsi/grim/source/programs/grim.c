@@ -161,7 +161,6 @@ main(
     int                                         argc,
     char **                                     argv)
 {
-    int                                         ctr;
     int                                         rc;
     int                                         valid;
     globus_result_t                             res;
@@ -268,7 +267,7 @@ main(
      */
     user_id = getuid();
     seteuid(user_id);
-    /***** END PRIVLEDGES *****?
+    /***** END PRIVLEDGES *****/
 
     /*
      *  at this point we no loner have special privledges
@@ -618,7 +617,7 @@ grim_privedged_code(
     globus_gsi_cred_handle_t *                  cred_handle,
     char *                                      ca_cert_dir,
     char *                                      user_cert_filename,
-    char *                                      user_key_filename
+    char *                                      user_key_filename,
     char *                                      dns[],
     int                                         dn_count)
 {
@@ -858,8 +857,6 @@ grim_parse_port_type_file(
     int *                                   port_type_count)
 {
     FILE *                                  fptr;
-    char *                                  quote_start;
-    char *                                  quote_end;
     char                                    line[1024];
 
     fptr = fopen(port_type_filename, "r");
@@ -868,7 +865,7 @@ grim_parse_port_type_file(
         return 1;
     }
 
-    while(fget(line, sizeof(line), fptr) != NULL)
+    while(fgets(line, sizeof(line), fptr) != NULL)
     {
         
     }
