@@ -19,7 +19,7 @@
 
     <With_Flavors build="no" />
 
-    <Version_Label>0.0.2</Version_Label>
+    <Version_Label>0.0.4</Version_Label>
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="core" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
