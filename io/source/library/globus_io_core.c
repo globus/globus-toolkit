@@ -651,7 +651,8 @@ globus_i_io_register_read_func(
     select_info->read_arg = callback_arg;
     select_info->read_destructor = arg_destructor;
     select_info->read_select = register_select;
-    
+    select_info->read_callback_handle = GLOBUS_NULL_HANDLE;
+
     FD_SET(handle->fd, globus_l_io_read_fds);
     globus_l_io_fd_num_set++;
 
@@ -788,7 +789,8 @@ globus_i_io_register_write_func(
     select_info->write_callback = callback_func;
     select_info->write_arg = callback_arg;
     select_info->write_destructor = write_destructor;
-    
+    select_info->write_callback_handle = GLOBUS_NULL_HANDLE;
+
     globus_l_io_fd_num_set++;
 
     if (globus_l_io_select_active)
@@ -912,6 +914,7 @@ globus_i_io_register_except_func(
     
     select_info->except_callback = callback_func;
     select_info->except_arg = callback_arg;
+    select_info->except_callback_handle = GLOBUS_NULL_HANDLE;
 
     FD_SET(handle->fd, globus_l_io_except_fds);
     globus_l_io_fd_num_set++;
@@ -2680,15 +2683,18 @@ globus_l_io_deactivate(void)
         {
             if(select_info->read_callback)
             {
-                /* cancel pending callback */
-                result = globus_callback_unregister(
-                    select_info->read_callback_handle,
-                    GLOBUS_NULL,
-                    GLOBUS_NULL);
-                
-                if(result == GLOBUS_SUCCESS)
+                if(select_info->read_callback_handle != GLOBUS_NULL_HANDLE)
                 {
-                    globus_l_io_pending_count--;
+                    /* cancel pending callback */
+                    result = globus_callback_unregister(
+                        select_info->read_callback_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL);
+                    
+                    if(result == GLOBUS_SUCCESS)
+                    {
+                        globus_l_io_pending_count--;
+                    }
                 }
                 
                 if(select_info->read_destructor && select_info->read_arg)
@@ -2698,15 +2704,18 @@ globus_l_io_deactivate(void)
             }
             if(select_info->write_callback)
             {
-                /* cancel pending callback */
-                result = globus_callback_unregister(
-                    select_info->write_callback_handle,
-                    GLOBUS_NULL,
-                    GLOBUS_NULL);
-                
-                if(result == GLOBUS_SUCCESS)
+                if(select_info->write_callback_handle != GLOBUS_NULL_HANDLE)
                 {
-                    globus_l_io_pending_count--;
+                    /* cancel pending callback */
+                    result = globus_callback_unregister(
+                        select_info->write_callback_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL);
+                    
+                    if(result == GLOBUS_SUCCESS)
+                    {
+                        globus_l_io_pending_count--;
+                    }
                 }
                 
                 if(select_info->write_destructor && select_info->write_arg)
@@ -2716,15 +2725,18 @@ globus_l_io_deactivate(void)
             }
             if(select_info->except_callback)
             {
-                /* cancel pending callback */
-                result = globus_callback_unregister(
-                    select_info->except_callback_handle,
-                    GLOBUS_NULL,
-                    GLOBUS_NULL);
-                
-                if(result == GLOBUS_SUCCESS)
+                if(select_info->except_callback_handle != GLOBUS_NULL_HANDLE)
                 {
-                    globus_l_io_pending_count--;
+                    /* cancel pending callback */
+                    result = globus_callback_unregister(
+                        select_info->except_callback_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL);
+                    
+                    if(result == GLOBUS_SUCCESS)
+                    {
+                        globus_l_io_pending_count--;
+                    }
                 }
             }
         }
