@@ -14,10 +14,19 @@
  *
  *  test suite
  *  ----------
- *  should be called w/ and w/o -i 
- *  called with -r (1..8)
- *  called with -c < -b and with numbers that do not end in nice math
- *
+ *  - should be called w/ and w/o -i    :  * 2
+ *  - called with -r (1,2,4,8)          :  * 2
+ *  - called with -c < -b and with      :  * 3  ( / 2; / 2.3; / 1)
+ *    numbers that do not end in nice   
+ *    math
+ *  - different drivers                 :  * 6
+ *    1) transport
+ *    2) transport simple
+ *    3) transport bounce
+ *    4) transport simple bounce
+ *    5) transport simple bounce simple
+ *    6) transport bounce simple bounce
+ *                                         72
  */
 
 #include "globus_xio.h"
@@ -25,7 +34,7 @@
 #include "test_common.h"
 #include "globus_xio_test_transport.h"
 
-#define SLEEP_TIME 1
+#define SLEEP_TIME 10000
 
 static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
@@ -35,7 +44,7 @@ static globus_bool_t                    globus_l_eof_hit = GLOBUS_FALSE;
 static globus_size_t                    globus_l_nbytes= 0;
 static globus_size_t                    globus_l_total_read_post;
 
-void
+static void
 close_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -49,7 +58,7 @@ close_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
-void
+static void
 read_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -112,7 +121,7 @@ read_cb(
     globus_mutex_unlock(&globus_l_mutex);
 
     globus_thread_blocking_will_block();
-    sleep(SLEEP_TIME);
+    globus_libc_usleep(SLEEP_TIME);
 
     globus_mutex_lock(&globus_l_mutex);
     {
@@ -125,7 +134,7 @@ read_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
-void
+static void
 open_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -159,20 +168,20 @@ open_cb(
 }
 
 int
-main(
+read_barrier_main(
     int                                     argc,
     char **                                 argv)
 {
-    int                                     rc;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
     globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_abstime_t                        end_time;
     globus_xio_attr_t                       attr;
+    int                                     rc;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_assert(rc == 0);
+    globus_assert(rc == GLOBUS_SUCCESS);
 
     res = globus_xio_attr_init(&attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
@@ -202,13 +211,13 @@ main(
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
-        GlobusTimeAbstimeSet(end_time, SLEEP_TIME, 0);
+        GlobusTimeAbstimeSet(end_time, 0, SLEEP_TIME);
         globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &end_time);
     }
     globus_mutex_unlock(&globus_l_mutex);
     
-    rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
-    globus_assert(rc == 0);
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
 
     fprintf(stdout, "Success.\n");
 

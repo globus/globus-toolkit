@@ -49,7 +49,7 @@ static globus_l_xio_test_handle_t       globus_l_default_attr;
 
 #include "version.h"
 
-static globus_module_descriptor_t       globus_i_xio_test_module =
+globus_module_descriptor_t       globus_i_xio_test_module =
 {
     "globus_xio_test",
     globus_l_xio_test_activate,

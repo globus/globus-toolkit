@@ -1,3 +1,39 @@
+/*
+ *  close barrier test
+ *  -----------------
+ *
+ *  verifies that all successful callback are devilvered before
+ *  any eof callbacks.
+ *
+ *  working options
+ *  -i          call finish inline
+ *  -r <int>    number of outstanding reads that can be out at oncea
+ *  -R <int>    total number of bytes to "read"
+ *  -w <int>    number of outstanding writes that can be out at oncea
+ *  -W <int>    total number of bytes to "write"
+ *  -c <int>    chuck size to finish at once
+ *  -b <int>    buffer size to post
+ *
+ *  test suite
+ *  ----------
+ *  - should be called w/ and w/o -i    :  * 2
+ *  - different amounts of reads and
+ *    writes.  
+ *    (0,1,2,4,8) * (0,1,2,4,8) - 1     :  * 24
+ *    [not doing 0x0]
+ *  - called with -c < -b and with      :  * 3  ( / 2; / 2.3; / 1)
+ *    numbers that do not end in nice   
+ *    math
+ *  - different drivers                 :  * 6
+ *    1) transport
+ *    2) transport simple
+ *    3) transport bounce
+ *    4) transport simple bounce
+ *    5) transport simple bounce simple
+ *    6) transport bounce simple bounce
+ *                                         864
+ */
+
 #include "globus_xio.h"
 #include "globus_common.h"
 #include "test_common.h"
@@ -9,9 +45,9 @@ static globus_bool_t                    globus_l_close_called = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
 #define OP_COUNT                            8
-#define SLEEP_TIME                          3
+#define SLEEP_TIME                          10000
 
-void
+static void
 close_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -25,7 +61,7 @@ close_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
-void
+static void
 data_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -53,7 +89,7 @@ data_cb(
     globus_mutex_unlock(&globus_l_mutex);
 
     globus_thread_blocking_will_block();
-    sleep(SLEEP_TIME);
+    globus_libc_usleep(SLEEP_TIME);
 
     globus_mutex_lock(&globus_l_mutex);
     {
@@ -66,7 +102,7 @@ data_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
-void
+static void
 open_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -106,7 +142,7 @@ open_cb(
 }
 
 int
-main(
+close_barrier_main(
     int                                     argc,
     char **                                 argv)
 {
@@ -149,7 +185,7 @@ main(
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
-        GlobusTimeAbstimeSet(end_time, SLEEP_TIME, 0);
+        GlobusTimeAbstimeSet(end_time, 0, SLEEP_TIME);
         globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &end_time);
     }
     globus_mutex_unlock(&globus_l_mutex);

@@ -50,4 +50,20 @@ parse_parameters(
     globus_xio_stack_t                      stack,
     globus_xio_attr_t                       attr);
 
+int
+read_barrier_main(
+    int                                     argc,
+    char **                                 argv);
+
+int
+close_barrier_main(
+    int                                     argc,
+    char **                                 argv);
+
+int
+framework_main(
+    int                                     argc,
+    char **                                 argv);
+
+
 #endif

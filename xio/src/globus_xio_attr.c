@@ -505,10 +505,9 @@ globus_xio_stack_push_driver(
 
     globus_mutex_lock(&xio_stack->mutex);
     {
-        if(xio_stack->size == 1)
+        if(xio_stack->size == 0)
         {
-            if(driver->transport_open_func == NULL ||
-                driver->transform_open_func != NULL)
+            if(driver->transport_open_func == NULL)
             {
                 res = GlobusXIOErrorInvalidDriver(
                     "open function not defined");
@@ -517,6 +516,11 @@ globus_xio_stack_push_driver(
             {
                 xio_stack->transport_driver = driver;
             }
+        }
+        else if(driver->transport_open_func != NULL)
+        {
+                res = GlobusXIOErrorInvalidDriver(
+                    "transport can only be at bottom of stack");
         }
        
         if(res == GLOBUS_SUCCESS)

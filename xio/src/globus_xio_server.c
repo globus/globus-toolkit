@@ -928,29 +928,31 @@ globus_xio_target_init(
         xio_target->entry[ndx].driver = (globus_xio_driver_t) 
                                         globus_list_first(list);
 
-        /* pull driver specific info out of target attr */
-
-        if(target_attr != NULL)
+        if(xio_target->entry[ndx].driver->target_init_func != NULL)
         {
-            GlobusIXIOAttrGetDS(driver_attr, target_attr,                   \
-                xio_target->entry[ndx].driver);
-        }
-
-        res = xio_target->entry[ndx].driver->target_init_func(
-            &xio_target->entry[ndx].target,
-            driver_attr,
-            contact_string);
-        if(res != GLOBUS_SUCCESS)
-        {
-            /* loop back through and destroy all inited targets */
-            for(ctr = 0; ctr < ndx; ctr++)
+            /* pull driver specific info out of target attr */
+            if(target_attr != NULL)
             {
-                /* ignore the result, but it must be passed */
-                xio_target->entry[ndx].driver->target_destroy_func(
-                    xio_target->entry[ndx].target);
+                GlobusIXIOAttrGetDS(driver_attr, target_attr,               \
+                    xio_target->entry[ndx].driver);
             }
-            globus_free(xio_target);
-            return res;
+
+            res = xio_target->entry[ndx].driver->target_init_func(
+                    &xio_target->entry[ndx].target,
+                    driver_attr,
+                    contact_string);
+            if(res != GLOBUS_SUCCESS)
+            {
+                /* loop back through and destroy all inited targets */
+                for(ctr = 0; ctr < ndx; ctr++)
+                {
+                    /* ignore the result, but it must be passed */
+                    xio_target->entry[ndx].driver->target_destroy_func(
+                        xio_target->entry[ndx].target);
+                }
+                globus_free(xio_target);
+                return res;
+            }
         }
 
         ndx++;

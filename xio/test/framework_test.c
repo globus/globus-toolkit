@@ -22,7 +22,7 @@ print_help()
     exit(1);
 }
 
-void
+static void
 accept_cb(
     globus_xio_target_t                         target,
     globus_xio_operation_t                      op,
@@ -44,7 +44,7 @@ accept_cb(
 }
 
 
-void
+static void
 close_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -62,7 +62,7 @@ close_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
-void
+static void
 read_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -125,7 +125,7 @@ read_cb(
     globus_mutex_unlock(&info->mutex);
 }
 
-void
+static void
 write_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -185,7 +185,7 @@ write_cb(
     globus_mutex_unlock(&info->mutex);
 }
 
-void
+static void
 open_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -228,7 +228,7 @@ open_cb(
 }
 
 int
-main(
+framework_main(
     int                                     argc,
     char **                                 argv)
 {
