@@ -14,7 +14,7 @@ fi
 # Should this go into the initializer:
 #
 
-secconfdir="/etc/grid-security"
+secconfdir=${GRID_SECURITY_DIR-/etc/grid-security}
 
 trap '${GLOBUS_SH_RM-rm} -f ${TEMP_FILE1} ' 0
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`

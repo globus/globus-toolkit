@@ -11,12 +11,8 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
-require Grid::GPT::Setup;
-
-my $metadata = new Grid::GPT::Setup(package_name => "globus_ssl_utils_setup");
-
 my $globusdir = $ENV{GLOBUS_LOCATION};
-my $setupdir = "$globusdir/setup/globus/";
+my $setupdir = "$globusdir/setup/globus";
 
 my $target_dir = "/etc/grid-security";
 my $trusted_certs_dir = $target_dir . "/certificates";
@@ -46,8 +42,6 @@ $result = system("chmod 755 $setupdir/grid-cert-request-config");
 if ($result != 0) {
   die "Failed to set permissions on $setupdir/grid-cert-request-config";
 }
-
-$metadata->finish();
 
 
 print "
