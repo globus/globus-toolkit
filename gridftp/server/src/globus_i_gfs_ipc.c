@@ -52,7 +52,7 @@ globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface =
     globus_i_gfs_data_request_command,
     globus_i_gfs_data_request_active,
     globus_i_gfs_data_request_passive,
-    NULL,
+    globus_i_gfs_data_destroy_handle,
     globus_i_gfs_data_request_stat,
     globus_i_gfs_data_request_list,
     globus_i_gfs_data_request_transfer_event,

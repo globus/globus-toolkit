@@ -1309,10 +1309,13 @@ globus_l_gfs_request_data_destroy(
     void *                              user_data_handle,
     void *                              user_arg)
 {
-    globus_i_gfs_data_handle_t *        data_handle;
-
-    data_handle = (globus_i_gfs_data_handle_t *) user_data_handle;
-    globus_i_gfs_data_destroy_handle(data_handle);
+    globus_i_gfs_server_instance_t *    instance;
+    GlobusGFSName(globus_l_gfs_request_data_destroy);
+    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    
+    globus_i_gfs_data_destroy_handle(
+        NULL, instance->session_id, (int) user_data_handle);
 }
 
 static

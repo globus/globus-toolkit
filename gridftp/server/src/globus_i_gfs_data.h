@@ -90,7 +90,9 @@ globus_i_gfs_data_request_active(
 
 void
 globus_i_gfs_data_destroy_handle(
-    globus_i_gfs_data_handle_t *        data_handle);
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 session_id,
+    int                                 data_connection_id);
 
 void
 globus_i_gfs_data_request_transfer_event(

@@ -736,24 +736,35 @@ globus_l_gfs_data_close_cb(
 
 void
 globus_i_gfs_data_destroy_handle(
-    globus_i_gfs_data_handle_t *        handle)
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 session_id,
+    int                                 data_connection_id)
 {
     globus_result_t                     result;
+    globus_i_gfs_data_handle_t *        handle;
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
     
-    if(handle == GLOBUS_NULL)
+    if(dsi->data_destroy_func != NULL)
     {
-        goto error;
+        dsi->data_destroy_func(data_connection_id, session_id);
+    }
+    else
+    {
+        handle = (globus_i_gfs_data_handle_t *) data_connection_id;
+        if(handle == GLOBUS_NULL)
+        {
+            goto error;
+        }
+        result = globus_ftp_control_data_force_close(
+            &handle->data_channel, globus_l_gfs_data_close_cb, handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_mutex_destroy(&handle->lock);
+            globus_ftp_control_handle_destroy(&handle->data_channel);
+            globus_free(handle);
+        }
     }
 
-    result = globus_ftp_control_data_force_close(
-        &handle->data_channel, globus_l_gfs_data_close_cb, handle);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_mutex_destroy(&handle->lock);
-        globus_ftp_control_handle_destroy(&handle->data_channel);
-        globus_free(handle);
-    }
 error:
     return;    
 }
@@ -928,7 +939,7 @@ error_alloc:
     globus_free(cs);
     
 error_control:
-    globus_i_gfs_data_destroy_handle(handle);
+    //globus_i_gfs_data_destroy_handle(handle);
     
 error_handle:
 error_op:
@@ -1134,7 +1145,7 @@ error_format:
     globus_free(addresses);
     
 error_addresses:
-    globus_i_gfs_data_destroy_handle(handle);
+   // globus_i_gfs_data_destroy_handle(handle);
 error_handle:
 error_op:
     return result;
@@ -1668,7 +1679,7 @@ globus_gridftp_server_finished_transfer(
                 globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
          
             event_reply->id = op->id;
-            event_reply->recvd_bytes = op->recvd_bytes;
+/*            event_reply->recvd_bytes = op->recvd_bytes;
             event_reply->recvd_ranges = op->recvd_ranges;
             
             event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
@@ -1698,7 +1709,7 @@ globus_gridftp_server_finished_transfer(
                     op->ipc_handle,
                     event_reply);
             }
-           
+*/           
             /* XXX mode s only */
             /* racey shit here */
          

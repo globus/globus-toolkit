@@ -916,27 +916,39 @@ globus_l_gfs_remote_data_destroy(
     int                                 data_handle_id,
     void *                              user_arg)
 {
-    globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
-    int                                 num_stripes;
+    globus_l_gfs_remote_stripe_info_t * stripe_info;
+    globus_list_t *                     stripe_list;
+    int                                 request_id;
+    globus_list_t *                     list;
+    int                                 stripe_count;
     GlobusGFSName(globus_l_gfs_remote_data_destroy);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
-    result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, NULL, (void *) data_handle_id, my_handle);
-/* release handle here */            
-    num_stripes = 1;            
-    result = globus_gfs_ipc_handle_get(
-        &num_stripes,
-        my_handle->user_id,
-        NULL,
-        &globus_gfs_ipc_default_iface,
-        globus_l_gfs_remote_data_destroy_kickout,
-        bounce_info,
-        globus_l_gfs_remote_ipc_error_cb,
-        bounce_info);        
+       
+    stripe_list = (globus_list_t *) data_handle_id;
+
+    stripe_count = globus_list_size(stripe_list);
+
+    for(list = stripe_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        stripe_info = (globus_l_gfs_remote_stripe_info_t *) 
+            globus_list_first(list);
+                
+        globus_gfs_ipc_request_data_destroy(
+            stripe_info->ipc_handle,
+            0,
+            stripe_info->data_handle_id); 
+        result = globus_gfs_ipc_handle_release(stripe_info->ipc_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+           globus_i_gfs_log_result("IPC ERROR", result);
+        }
+    }
                     
     return;
 }
