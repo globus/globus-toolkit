@@ -24,12 +24,14 @@ struct globus_l_xio_attr_s
  ******************************************************************/
 void *
 globus_l_xio_attr_find_driver(
-    struct globus_l_xio_attr_ds_s *             array,
+    struct globus_l_xio_attr_s *                l_attr,
     void *                                      driver)
 {
     int                                         ctr;
+    struct globus_l_xio_attr_ds_s *             array;
 
-    for(ctr = 0; array[ctr].driver != NULL; ctr++)
+    array = l_attr->ds_array;
+    for(ctr = 0; ctr < l_attr->ndx; ctr++)
     {
         if(array[ctr].driver == driver)
         {
@@ -55,11 +57,7 @@ globus_xio_attr_init(
 
     if(attr == NULL)
     {
-        return globus_error_put(globus_error_wrap_errno_error(
-                            GLOBUS_XIO_MODULE,
-                            EINVAL,
-                            GLOBUS_XIO_INVALID_PARAMETER,
-                            "NULL Parameter"));
+        return GlobusXIOErrorBadParameter("globus_xio_attr_init");
     }
     
     l_attr = (struct globus_l_xio_attr_s *)
@@ -68,11 +66,7 @@ globus_xio_attr_init(
     /* check for memory alloc failure */
     if(l_attr == NULL)
     {
-        return globus_error_put(globus_error_wrap_errno_error(
-                            GLOBUS_XIO_MODULE,
-                            ENOMEM,
-                            GLOBUS_XIO_MALLOC_FAILURE,
-                            "globus_malloc() failed."));
+        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_init");
     }
 
     /* intialize the attr structure */
@@ -81,6 +75,11 @@ globus_xio_attr_init(
                     GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE;
     l_attr->driver_attr = (struct globus_l_xio_attr_ds_s *)
             globus_malloc(tmp_size);
+    if(l_attr->driver_attr == NULL)
+    {
+        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_init");
+    }
+    
     memset(l_attr->driver_attr, 0, tmp_size);
     l_attr->max = GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE;
     l_attr->ndx = 0;
@@ -103,15 +102,11 @@ globus_xio_attr_cntl(
     struct globus_l_xio_attr_s *                l_attr;
     va_list                                     ap;
     globus_result_t                             res;
-    void *                                      ds_ptr;
+    void *                                      ds;
 
     if(attr == NULL)
     {
-        return globus_error_put(globus_error_wrap_errno_error(
-                            GLOBUS_XIO_MODULE,
-                            EINVAL,
-                            GLOBUS_XIO_INVALID_PARAMETER,
-                            "NULL Parameter"));
+        return GlobusXIOErrorBadParameter("globus_xio_attr_cntl");
     }
 
     l_attr = (struct globus_l_xio_attr_s *) attr;
@@ -134,12 +129,11 @@ globus_xio_attr_cntl(
             GlobusXIODriverAttrInit(
                 res,
                 driver, 
-                &ds_ptr);
+                &ds);
             if(res != GLOBUS_SUCCESS)
             {
                 return res;
             }
-            l_attr->ndx++;
             if(l_attr->ndx >= l_attr->max)
             {
                 l_attr->max *= 2;
@@ -148,13 +142,13 @@ globus_xio_attr_cntl(
                             sizeof(struct globus_l_xio_attr_ds_s));
             }
             l_attr->ds_array[l_attr->ndx].driver = driver;
-            l_attr->ds_array[l_attr->ndx].driver_attr = ds_ptr;
-            l_attr->ds_array[l_attr->ndx + 1].driver = NULL;
+            l_attr->ds_array[l_attr->ndx].driver_attr = ds;
+            l_attr->ndx++;
         }
         GlobusXIODriverAttrCntl(
             res,
-            l_attr->ds_array[l_attr->ndx].driver, 
-            l_attr->ds_array[l_attr->ndx].driver_attr,
+            driver, 
+            ds,
             cmd, 
             ap);
         if(res != GLOBUS_SUCCESS)
@@ -183,16 +177,12 @@ globus_xio_attr_destroy(
 
     if(attr == NULL)
     {
-        return globus_error_put(globus_error_wrap_errno_error(
-                            GLOBUS_XIO_MODULE,
-                            EINVAL,
-                            GLOBUS_XIO_INVALID_PARAMETER,
-                            "NULL Parameter"));
+        return GlobusXIOErrorBadParameter("globus_xio_attr_destroy");
     }
     
     l_attr = (struct globus_l_xio_attr_s *) attr;
     array = l_attr->ds_array;
-    for(ctr = 0; array[ctr].driver != NULL; ctr++)
+    for(ctr = 0; ctr < l_attr->ndx; ctr++)
     {
         GlobusXIODriverAttrDestroy(
             res, 
@@ -223,10 +213,12 @@ globus_xio_attr_copy(
 
     if(dst == NULL)
     {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
     }
 
     if(src == NULL)
     {
+        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
     }
 
     l_attr_dst = (struct globus_l_xio_attr_s *)
@@ -235,11 +227,7 @@ globus_xio_attr_copy(
     /* check for memory alloc failure */
     if(l_attr_dst == NULL)
     {
-        return globus_error_put(globus_error_wrap_errno_error(
-                            GLOBUS_XIO_MODULE,
-                            ENOMEM,
-                            GLOBUS_XIO_MALLOC_FAILURE,
-                            "globus_malloc() failed."));
+        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
     }
 
     l_attr_src = (struct globus_l_xio_attr_s *) src;
@@ -253,36 +241,29 @@ globus_xio_attr_copy(
     l_attr_dst->max = l_attr_src->max;
     l_attr_dst->ndx = l_attr_src->ndx;
     
-    for(ctr = 0; ctr < l_attr_dst->max; ctr++)
+    for(ctr = 0; ctr < l_attr_dst->ndx; ctr++)
     {
-        if(l_attr_src->ds_array[ctr].driver != NULL)
+        GlobusXIODriverAttrCopy(
+            res, 
+            l_attr_src->ds_array[ctr].driver,
+            &l_attr_dst->ds_array[ctr].driver_attr,
+            l_attr_src->ds_array[ctr].driver_attr);
+        if(res != GLOBUS_SUCCESS)
         {
-            GlobusXIODriverAttrCopy(
-                res, 
-                l_attr_src->ds_array[ctr].driver,
-                &l_attr_dst->ds_array[ctr].driver_attr,
-                l_attr_src->ds_array[ctr].driver_attr);
-            if(res != GLOBUS_SUCCESS)
+            globus_result_t                     res2;
+
+            for(ctr2 = 0; ctr2 < ctr; ctr2++)
             {
-                globus_result_t                     res2;
-
-                for(ctr2 = 0; ctr2 < ctr; ctr2++)
-                {
-                    /* ignore result here */
-                    GlobusXIODriverAttrDestroy(
-                        res2,
-                        l_attr_dst->ds_array[ctr2].driver,
-                        l_attr_dst->ds_array[ctr2].driver_attr);
-                }
-                globus_free(l_attr_dst->ds_array);
-                globus_free(l_attr_dst);
-
-                return res;
+                /* ignore result here */
+                GlobusXIODriverAttrDestroy(
+                    res2,
+                    l_attr_dst->ds_array[ctr2].driver,
+                    l_attr_dst->ds_array[ctr2].driver_attr);
             }
-        }
-        else
-        {
-            l_attr_dst->ds_array[ctr].driver = NULL;
+            globus_free(l_attr_dst->ds_array);
+            globus_free(l_attr_dst);
+
+            return res;
         }
     }
 
