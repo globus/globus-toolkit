@@ -246,8 +246,8 @@ main(
 
     globus_mutex_init(&globus_l_mutex, NULL);    
     globus_cond_init(&globus_l_cond, NULL);    
-
-    driver = globus_xio_driver_test_transport_get_driver();
+    
+    globus_xio_driver_load("test", &driver);
 
     res = globus_xio_attr_init(&attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
@@ -305,7 +305,9 @@ main(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
-
+    
+    globus_xio_driver_unload("test", &driver);
+    
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 
