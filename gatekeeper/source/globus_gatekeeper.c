@@ -74,6 +74,10 @@ CVS Information:
 #include <string.h>
 #endif
 
+#if !defined(MAXPATHLEN) 
+#   define MAXPATHLEN PATH_MAX
+#endif
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
