@@ -2,6 +2,27 @@ AC_DEFUN(CHECK_SIZES, [
 
 AC_CHECK_SIZEOF(off_t, 4)
 
+if test "$ac_cv_sizeof_off_t" = "0"; then
+        AC_MSG_CHECKING(if off_t is defined in sys/types.h)
+        AC_TRY_RUN([#include <stdio.h>
+#include <sys/types.h>
+main()
+{
+  FILE *f=fopen("conftestval", "w");
+  if (!f) exit(1);
+  fprintf(f, "%d\n", sizeof(off_t));
+  exit(0);
+}], NAME=`cat conftestval`, NAME=0, 4)
+
+if test "$NAME" = "0"; then
+        AC_MSG_ERROR(Could not determine size of off_t)
+        exit 1
+fi
+
+AC_MSG_RESULT(yes)
+ac_cv_sizeof_off_t="$NAME"
+fi
+
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(long, 4)

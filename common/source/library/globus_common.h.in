@@ -110,6 +110,9 @@ EXTERN_C_END
 #undef MAXPATHLEN
 #endif
 
+#ifndef IOV_MAX
+#undef IOV_MAX
+#endif
 
 #ifndef TIME_WITH_SYS_TIME
 #undef TIME_WITH_SYS_TIME
