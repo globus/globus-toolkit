@@ -27,6 +27,10 @@ static char *rcsid = "$Header$";
  * @param input_token
  *        The token that was produced by a prior call to
  *        gss_init_delegation. 
+ * @param req_flags
+ *        Flags that modify the behavior of the function. Currently
+ *        only GSS_C_GLOBUS_SSL_COMPATIBLE is checked for. This flag
+ *        results in tokens that aren't wrapped.
  * @param time_req
  *        The requested period of validity (seconds) of the delegated
  *        credential. May be NULL.
