@@ -801,6 +801,7 @@ globus_gram_client_callback_allow(
 			    host,
 			    port);
     }
+    globus_libc_free(host);
 
     return rc;
 } /* globus_gram_client_callback_allow() */
