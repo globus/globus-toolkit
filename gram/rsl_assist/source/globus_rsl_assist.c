@@ -731,7 +731,6 @@ globus_l_rsl_assist_simple_query_ldap(
         }
         match += retrieve_attr_values(ldap_server,reply, attrs[0],
                                  maximum, search_string, value_list);
-        ldap_msgfree( reply );
         if(match) break; /* this is to follow the old globusrun code to return just 1 set */
     }
 
