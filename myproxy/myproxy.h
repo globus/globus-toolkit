@@ -33,8 +33,6 @@
 #define MYPROXY_CRED_DESC_STRING   "DESC="
 #define MYPROXY_FORCE_CREDENTIAL_OVERWRITE "FORCE_CREDENTIAL_OVERWRITE="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
-#define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
-#define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
 #define MYPROXY_ADDITIONAL_CREDS_STRING "ADDL_CREDS="
 
 #define MYPROXY_CRED_PREFIX	    "CRED"
@@ -95,8 +93,6 @@ typedef struct
     char                         passphrase[MAX_PASS_LEN+1];
     myproxy_proto_request_type_t command_type;
     int                          proxy_lifetime;
-    char			 **authorized_service_dns;
-    char			 **authorized_client_dns;
     char                         *retrievers;
     char                         *renewers;
     char			 *credname;
