@@ -464,14 +464,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
    
     /* free stuff up */
     if (client_creds != NULL) {
-	if (client_creds->owner_name != NULL)
-	    free(client_creds->owner_name);
-	if (client_creds->username != NULL)
-	    free(client_creds->username);
-	if (client_creds->passphrase != NULL)
-	    free(client_creds->passphrase);
-	if (client_creds->location != NULL)
-	    free(client_creds->location);
+	myproxy_creds_free_contents(client_creds);
 	free(client_creds);
     }
     myproxy_free(attrs, client_request, server_response);
@@ -729,12 +722,13 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    if (myproxy_creds_info(creds, response) < 0) {
+    if (myproxy_creds_retrieve_all(creds) < 0) {
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
        response->error_str = strdup(verror_get_string());
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
+       response->info_creds = creds;
     }
 }
 
@@ -945,7 +939,9 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        }
 
        /* get information about credential */
-       if (myproxy_creds_fetch_entry(client_request->username, client_request->credname, &creds) < 0) {
+       creds.username = strdup(client_request->username);
+       creds.credname = strdup(client_request->credname);
+       if (myproxy_creds_retrieve(&creds) < 0) {
 	   verror_put_string("Unable to retrieve credential information");
 	   goto end;
        }
