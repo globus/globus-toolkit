@@ -454,9 +454,9 @@ diff -u -r openssl-0.9.6c/crypto/asn1/a_bitstr.c openssl-0.9.6c-patched/crypto/a
 -	a->data[w]=((a->data[w])&iv)|v;
 +        
 +        if(value)
-+                a->data[w]=((a->data[w])&iv)|v;
++                a->data[w] |= v;
 +        else
-+                a->data[w]=(a->data[w])&iv;
++                a->data[w] &= iv;
 +        
  	while ((a->length > 0) && (a->data[a->length-1] == 0))
  		a->length--;
