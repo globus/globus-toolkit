@@ -380,11 +380,11 @@ gpt-install-files: gpt-install-docs
 	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/sftp.1; \
 	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
 	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
-	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
-	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
 	ln -s ./scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1;
 	# end man
 	# start cat
@@ -402,11 +402,11 @@ gpt-install-files: gpt-install-docs
 	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/sftp.1; \
 	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
 	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
-	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
-	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
 	ln -s ./scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1;
 	# end cat
 
