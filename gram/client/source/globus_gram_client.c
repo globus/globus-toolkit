@@ -216,7 +216,14 @@ Returns:
 int 
 gram_init()
 {
-  return 0;
+	int rc;
+
+	/* get the initial security credential for the client */ 
+	/* Do it once up front incase it prompts or fails     */
+
+	rc = grami_ggg_init_first();
+	return (rc);
+
 } /* gram_init() */
 
 /******************************************************************************
