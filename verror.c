@@ -64,7 +64,7 @@ my_vsnprintf(const char *format, va_list ap)
 	return NULL;
     }
     
-#ifndef HAVE_VSNPRINTF
+#ifdef HAVE_VSNPRINTF
 
     while (string_len == -1)
     {
