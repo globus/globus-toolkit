@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: auth2.c,v 1.96 2003/02/06 21:22:43 markus Exp $");
+RCSID("$OpenBSD: auth2.c,v 1.102 2003/08/26 09:58:43 markus Exp $");
 
 #include "ssh2.h"
 #include "ssh1.h"
@@ -44,7 +44,7 @@ RCSID("$OpenBSD: auth2.c,v 1.96 2003/02/06 21:22:43 markus Exp $");
 /* import */
 extern ServerOptions options;
 extern u_char *session_id2;
-extern int session_id2_len;
+extern u_int session_id2_len;
 
 Authctxt *x_authctxt = NULL;
 
@@ -67,6 +67,9 @@ Authmethod *authmethods[] = {
 	&method_gssapi,
 #endif
 	&method_pubkey,
+#ifdef GSSAPI
+	&method_gssapi,
+#endif
 	&method_passwd,
 	&method_kbdint,
 	&method_hostbased,
@@ -98,10 +101,6 @@ do_authentication2(void)
 	/* challenge-response is implemented via keyboard interactive */
 	if (options.challenge_response_authentication)
 		options.kbd_interactive_authentication = 1;
-	if (options.pam_authentication_via_kbd_int)
-		options.kbd_interactive_authentication = 1;
-	if (use_privsep)
-		options.pam_authentication_via_kbd_int = 0;
 
 	dispatch_init(&dispatch_protocol_error);
 	dispatch_set(SSH2_MSG_SERVICE_REQUEST, &input_service_request);
@@ -213,13 +212,15 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 			authctxt->valid = 1;
 			debug2("input_userauth_request: setting up authctxt for %s", user);
 #ifdef USE_PAM
-			PRIVSEP(start_pam(authctxt->pw->pw_name));
+			if (options.use_pam)
+				PRIVSEP(start_pam(authctxt->pw->pw_name));
 #endif
 		} else {
-			authctxt->valid = 0;
-			log("input_userauth_request: illegal user %s", user);
+			logit("input_userauth_request: illegal user %s", user);
+			authctxt->pw = fakepw();
 #ifdef USE_PAM
-			PRIVSEP(start_pam("NOUSER"));
+			if (options.use_pam)
+				PRIVSEP(start_pam(user));
 #endif
 		}
 #ifdef GSSAPI
@@ -275,10 +276,9 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		authenticated = 0;
 
 #ifdef USE_PAM
-	if (!use_privsep && authenticated && authctxt->user && 
-	    !do_pam_account(authctxt->user, NULL))
+	if (options.use_pam && authenticated && !PRIVSEP(do_pam_account()))
 		authenticated = 0;
-#endif /* USE_PAM */
+#endif
 
 #ifdef _UNICOS
 	if (authenticated && cray_access_denied(authctxt->user)) {
@@ -308,9 +308,8 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		/* now we can break out */
 		authctxt->success = 1;
 	} else {
-		if (authctxt->failures++ > AUTH_FAIL_MAX) {
+		if (authctxt->failures++ > AUTH_FAIL_MAX)
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
-		}
 		if (!compat20) {
 		/*
 		 * Break out of the dispatch loop now and go back to
@@ -321,10 +320,6 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		*/
 		authctxt->success = authctxt->postponed = 1;
 		} else {
-#ifdef _UNICOS
-		if (strcmp(method, "password") == 0)
-			cray_login_failure(authctxt->user, IA_UDBERR);
-#endif /* _UNICOS */
 		methods = authmethods_get();
 		packet_start(SSH2_MSG_USERAUTH_FAILURE);
 		packet_put_cstring(methods);

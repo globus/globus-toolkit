@@ -40,8 +40,7 @@ Compression will be disabled on systems without a working mmap MAP_ANON.
 
 PAM-enabled OpenSSH is known to function with privsep on Linux.  
 It does not function on HP-UX with a trusted system
-configuration.  PAMAuthenticationViaKbdInt does not function with
-privsep.
+configuration. 
 
 On Compaq Tru64 Unix, only the pre-authentication part of privsep is
 supported.  Post-authentication privsep is disabled automatically (so

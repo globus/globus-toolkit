@@ -294,7 +294,7 @@ choose_kex(Kex *k, char *client, char *server)
 {
 	k->name = match_list(client, server, NULL);
 	if (k->name == NULL)
-		fatal("No key exchange algorithm");
+		fatal("no kex alg");
 	if (strcmp(k->name, KEX_DH1) == 0) {
 		k->kex_type = KEX_DH_GRP1_SHA1;
 	} else if (strcmp(k->name, KEX_DHGEX) == 0) {
