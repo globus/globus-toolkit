@@ -479,35 +479,37 @@ int main(void){struct dirent d;return(sizeof(d.d_name)<=sizeof(char));}
 
 # Check whether the user wants GSSAPI mechglue support
 AC_ARG_WITH(mechglue,
-	[  --with-mechglue=PATH    Enable GSI/Globus authentication support],
+	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
 	[
 		AC_MSG_CHECKING(for mechglue library)
-		mechglue_path=${withval}
-		CPPFLAGS="$CPPFLAGS -I${mechglue_path}"
-		LDFLAGS="$LDFLAGS -L${mechglue_path}"
-		if test ! -z "$need_dash_r" ; then
-		    LDFLAGS="$LDFLAGS -R${KRB5ROOT}"
+
+		if test -e ${withval}/libgssapi.a ; then
+		    mechglue_lib=${withval}/libgssapi.a
+		elif test -e ${withval}/lib/libgssapi.a ; then
+		    mechglue_lib=${withval}/lib/libgssapi.a
+		else
+		    AC_MSG_ERROR("Can't find libgssapi in ${withval}");
 		fi
+		LIBS="$LIBS ${mechglue_lib}"
+		AC_MSG_RESULT(${mechglue_lib})
+
+#		if test -e ${withval}/gssapi.h ; then
+#		    CPPFLAGS="$CPPFLAGS -I${withval}"
+#		elif test -e ${withval}/include/gssapi.h ; then
+#		    CPPFLAGS="$CPPFLAGS -I${withval}/include"
+#		else
+#		    AC_MSG_ERROR("Can't find gssapi.h in ${withval}");
+#		fi
+		
 		AC_CHECK_LIB(dl, dlopen, , )
 		if test $ac_cv_lib_dl_dlopen = yes; then
-		   LDFLAGS="$LDFLAGS -ldl"
+		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
 		fi
-		if test ! -z "$blibpath" ; then
-		    blibpath="$blibpath:${KRB5ROOT}"
-		fi
+
 		AC_DEFINE(GSSAPI)
 		AC_DEFINE(MECHGLUE)
-		LIBS="$LIBS -lgssapi"
 		GSSAPI="mechglue"
 
-		AC_CHECK_LIB(gssapi,gss_init_sec_context)
-		if test "$ac_cv_lib_gssapi_gss_init_sec_context" != yes; then
-		    AC_MSG_ERROR("Can't find libgssapi")
-		fi
-		AC_CHECK_HEADER(gssapi.h)
-		if test "$ac_cv_header_gssapi_h" != yes; then
-		    AC_MSG_ERROR(Can't find gssapi.h)
-		fi
 	]
 )
 
@@ -1922,9 +1924,9 @@ AC_ARG_WITH(kerberos5,
 				]
 			)
 
-			AC_CHECK_LIB(gssapi, gss_krb5_copy_ccache, ,
+			AC_CHECK_LIB(gssapi, gss_krb5_copy_ccache, /bin/true,
 				[ K5LIBS="-lgssapi_krb5 $K5LIBS"
-				  AC_CHECK_LIB(gssapi_krb5, gss_krb5_copy_ccache, ,
+				  AC_CHECK_LIB(gssapi_krb5, gss_krb5_copy_ccache, /bin/true,
 					AC_MSG_WARN([Cannot find gss_krb5_copy_ccache -- build may fail]),
 					$K5LIBS)
 				],
