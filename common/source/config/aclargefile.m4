@@ -47,7 +47,7 @@ changequote([, ])dnl
       ])
    if test "[$]$2" != no; then
 dnl     AC_DEFINE_UNQUOTED([$1], [$]$2, [$3])
-     GPT_SET_CFLAGS("[$1]=[$]$2")
+     GPT_SET_CFLAGS("-D[$1]=[$]$2")
    fi])
 
 AC_DEFUN(AC_SYS_LARGEFILE,
