@@ -33,6 +33,9 @@
 #   ifndef DES_UNROLL
 #       undef DES_UNROLL
 #   endif
+#endif
+
+#ifdef HEADER_DES_H
 #   ifndef DES_LONG
 #       undef DES_LONG
 #   endif
