@@ -846,6 +846,8 @@ globus_l_gass_server_ez_deactivate(void)
     
     globus_mutex_destroy(&globus_l_gass_server_ez_mutex);
 
+    globus_gass_server_wait_for_requests();
+    
     rc = globus_module_deactivate(GLOBUS_GASS_SERVER_MODULE);
 
     return rc;
