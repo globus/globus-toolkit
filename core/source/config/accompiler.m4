@@ -68,7 +68,7 @@ dnl
 dnl
 
 dnl LAC_COMPILERS_ARGS()
-AC_DEFUN(LAC_COMPILERS_ARGS,
+AC_DEFUN([LAC_COMPILERS_ARGS],
 [
 AC_ARG_WITH(threads,
         [  --with-threads=TYPE          build target with threads],
@@ -103,7 +103,7 @@ AC_ARG_ENABLE(insure,
         ])
 ])
 
-AC_DEFUN(LAC_COMPILERS,
+AC_DEFUN([LAC_COMPILERS],
 [
 AC_CANONICAL_HOST
 LAC_COMPILERS_ARGS
@@ -136,7 +136,7 @@ LAC_SUBSTITUTE_COMPILER_VAR(NM)
 ])
 
 dnl LAC_SUBSTITUTE_COMPILER_VAR
-AC_DEFUN(LAC_SUBSTITUTE_COMPILER_VAR,
+AC_DEFUN([LAC_SUBSTITUTE_COMPILER_VAR],
 [
     if test -n "[$]lac_cv_$1"; then
         $1=[$]lac_cv_$1
@@ -145,7 +145,7 @@ AC_DEFUN(LAC_SUBSTITUTE_COMPILER_VAR,
 ])
 
 dnl LAC_COMPILERS_SET(THREAD-TYPE)
-AC_DEFUN(LAC_COMPILERS_SET,
+AC_DEFUN([LAC_COMPILERS_SET],
 [
 echo "checking for compilers..."
 LAC_COMPILERS_SET_ALL_VARS($1)
@@ -153,7 +153,7 @@ LAC_COMPILERS_SET_ALL_VARS($1)
 
 
 dnl LAC_COMPILERS_SET_ALL_VARS(THREAD-TYPE)
-AC_DEFUN(LAC_COMPILERS_SET_ALL_VARS,
+AC_DEFUN([LAC_COMPILERS_SET_ALL_VARS],
 [
 lac_CFLAGS="$CFLAGS "
 lac_CPPFLAGS="$CPPFLAGS -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/$globus_cv_flavor"
@@ -939,15 +939,15 @@ OBJECT_MODE="$lac_OBJECT_MODE"
 ])
 
 dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
-AC_DEFUN(LAC_PROG_CC_GNU,
+AC_DEFUN([LAC_PROG_CC_GNU],
 [
 if test "X$1" != "X" ; then
 	_SAVED_CC="$CC"
 	CC="$1"
-	AC_PROG_CC_GNU
+	_AC_LANG_COMPILER_GNU
 	CC="$_SAVED_CC"
 else
-	AC_PROG_CC_GNU
+	_AC_LANG_COMPILER_GNU
 fi
 
 if test "$ac_cv_prog_gcc" = "yes" ; then
@@ -961,7 +961,7 @@ fi])
 
 dnl LAC_CHECK_CC_PROTOTYPES(true-action, false-action)
 dnl Check that the compiler accepts ANSI prototypes.
-AC_DEFUN(LAC_CHECK_CC_PROTOTYPES,[
+AC_DEFUN([LAC_CHECK_CC_PROTOTYPES],[
 AC_MSG_CHECKING(that the compiler $CC accepts ANSI prototypes)
 AC_TRY_COMPILE([int f(double a){return 0;}],,
   eval "ac_cv_ccworks=yes",
@@ -978,7 +978,7 @@ fi
 dnl
 dnl LAC_CHECK_CFLAGS(compiler,flags,true-action,false-action)
 dnl
-AC_DEFUN(LAC_CHECK_CFLAGS,[
+AC_DEFUN([LAC_CHECK_CFLAGS],[
 AC_MSG_CHECKING(that the compiler $1 accepts arguments $2)
 cat > conftest.c <<EOF
 #include "confdefs.h"
@@ -999,7 +999,7 @@ fi
 dnl
 dnl LAC_CHECK_LDFLAGS(compiler,cflags,ldflags,true-action,false-action)
 dnl
-AC_DEFUN(LAC_CHECK_LDFLAGS,[
+AC_DEFUN([LAC_CHECK_LDFLAGS],[
 AC_MSG_CHECKING(that the compiler accepts compiler/link flags $2 $3)
 cat > conftest.c <<EOF
 #include "confdefs.h"

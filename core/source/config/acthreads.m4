@@ -16,7 +16,7 @@ dnl     Also setup lac_threads_* variables that mirror the lac_cv_threads_*
 dnl     variables.
 
 dnl LAC_THREADS_ARGS()
-AC_DEFUN(LAC_THREADS_ARGS,
+AC_DEFUN([LAC_THREADS_ARGS],
 [
 AC_BEFORE([$0], [LAC_THREADS])
 
@@ -32,7 +32,7 @@ AC_ARG_WITH(thread-includes,
 
 
 dnl LAC_THREADS()
-AC_DEFUN(LAC_THREADS,
+AC_DEFUN([LAC_THREADS],
 [
 
 if test "$lac_cv_threads_vars_set" != "yes" ; then
@@ -78,7 +78,7 @@ LAC_THREADS_DEFINE
 ])
 
 
-AC_DEFUN(LAC_THREADS_NONE,
+AC_DEFUN([LAC_THREADS_NONE],
 [
 lac_threads_type="no"
 lac_threads_defines=""
@@ -91,7 +91,7 @@ LAC_THREADS_ADD_DEFINE(BUILD_LITE)
 
 
 dnl LAC_THREADS_SOLARISTHREADS
-AC_DEFUN(LAC_THREADS_SOLARISTHREADS,
+AC_DEFUN([LAC_THREADS_SOLARISTHREADS],
 [
 if test "$lac_cv_threads_type" = "solaristhreads" -o "$lac_cv_threads_type" = "yes" ; then
 
@@ -135,7 +135,7 @@ fi
 ])
 
 dnl LAC_THREADS_EXTERNAL
-AC_DEFUN(LAC_THREADS_EXTERNAL,
+AC_DEFUN([LAC_THREADS_EXTERNAL],
 [
 if test "$lac_cv_threads_type" = "external"; then
 dnl These are forced to yes, relying on the user to set the
@@ -182,7 +182,7 @@ fi
 
 
 dnl LAC_THREADS_SPROC
-AC_DEFUN(LAC_THREADS_SPROC,
+AC_DEFUN([LAC_THREADS_SPROC],
 [
 if test "$lac_cv_threads_type" = "sproc" -o "$lac_cv_threads_type" = "yes" ; then
 
@@ -219,7 +219,7 @@ fi
 ])
 
 dnl LAC_THREADS_PTHREADS
-AC_DEFUN(LAC_THREADS_PTHREADS,
+AC_DEFUN([LAC_THREADS_PTHREADS],
 [
 if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; then
 
@@ -403,13 +403,13 @@ AC_MSG_RESULT($found_lib)
 dnl LAC_THREADS_ADD_DEFINE(SYMBOL)
 dnl If you add a define for a new SYMBOL, you need to add that symbol
 dnl to LAC_THREADS_DEFINE.
-AC_DEFUN(LAC_THREADS_ADD_DEFINE,
+AC_DEFUN([LAC_THREADS_ADD_DEFINE],
 [
     lac_cv_threads_defines="$lac_cv_threads_defines $1"
 ])
 
 dnl LAC_THREADS_DEFINE()
-AC_DEFUN(LAC_THREADS_DEFINE,
+AC_DEFUN([LAC_THREADS_DEFINE],
 [
 for lac_def in $lac_cv_threads_defines
 do
@@ -439,10 +439,10 @@ do
 done
 ])
 
-AC_DEFUN(LAC_THREADS_DEFINE_ONE, [$1 ) AC_DEFINE($1) ;;])
+AC_DEFUN([LAC_THREADS_DEFINE_ONE], [$1 ) AC_DEFINE($1) ;;])
 
 dnl include_file, path
-AC_DEFUN(LAC_FIND_USER_INCLUDE,[
+AC_DEFUN([LAC_FIND_USER_INCLUDE],[
 AC_MSG_CHECKING([for include directory for $1])
 ac_find_inc_dir=""
 for dir in $2 \
@@ -479,7 +479,7 @@ else
 fi
 ])
 
-AC_DEFUN(LAC_FIND_USER_LIB,[
+AC_DEFUN([LAC_FIND_USER_LIB],[
 AC_MSG_CHECKING([for library $1])
 ac_find_lib_file=""
 for dir in $2 \

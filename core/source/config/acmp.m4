@@ -1,5 +1,5 @@
 
-AC_DEFUN(LAC_MP,
+AC_DEFUN([LAC_MP],
 [
     MP=
     LAC_MP_ARGS
@@ -28,7 +28,7 @@ AC_DEFUN(LAC_MP,
     AC_SUBST(MP_LIBS)
 ])
 
-AC_DEFUN(LAC_MP_INC_ARGS,
+AC_DEFUN([LAC_MP_INC_ARGS],
 [
 AC_ARG_WITH(mpi-includes,
     [  --with-mpi-includes     Specify include flags for MPI
@@ -61,7 +61,7 @@ AC_ARG_WITH(mpi-libs,
     ])
 ])
 
-AC_DEFUN(LAC_MP_ARGS,
+AC_DEFUN([LAC_MP_ARGS],
 [
 AC_ARG_WITH(mpi,
     [  --with-mpi              include the MPI protocols],
