@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh 
 
 # catch the kill signal (ctrl-c) and do cleanup
 trap do_trap 1 2 3 6 9 13 15
@@ -810,16 +810,16 @@ fi
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.17
+CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.18
 CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 
 #./bootstrap
 
 if test -n "$verbose"; then
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};./configure $outlog
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};./configure $outlog
     RES=$?
 else
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};./configure $outlog > configure.log 2>&1
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};./configure $outlog > configure.log 2>&1
     RES=$?
 fi
 
@@ -831,10 +831,10 @@ if test $RES -ne 0; then
 fi
 
 if test -n "$verbose"; then
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};make distdir
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};make distdir
     RES=$?
 else
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};make distdir > make.log 2>&1
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};make distdir > make.log 2>&1
     RES=$?
 fi
 
@@ -845,7 +845,22 @@ if test $RES -ne 0; then
     exit 1
 fi
 
+cd ${tmp_ca_setup_dir}
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Failed to change working directory to: ${tmp_ca_setup_dir}"
+    echo ""
+    exit 1
+fi
+
 ${GLOBUS_SH_CHMOD-chmod} -R a+r ${CA_UTILS_PACKAGE_DIR}
+RES=$?
+if test $RES -ne 0; then
+    echo ""
+    echo "ERROR: Unable to chmod ${CA_UTILS_PACKAGE_DIR}"
+    echo ""
+    exit 1
+fi
 
 if test -n "$verbose"; then
     ${GLOBUS_SH_TAR-tar} cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR

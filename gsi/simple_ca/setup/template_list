@@ -27,7 +27,6 @@ globus_automake_pre_top
 pkgdata/pkg_data_src.gpt.in.tmpl
 pkgdata/Makefile.am
 pkgdata/Makefile.in
-pkgdata/pkg_data_src.gpt.tmpl
 setup-ssl-utils.tmpl
 setup-ssl-utils.pl.tmpl
 setup-gsi.tmpl
