@@ -1060,6 +1060,10 @@ main(int ac, char **av)
 	ssh_gssapi_clean_env();
 #endif /* GSSAPI */
 
+#ifdef MECHGLUE
+	gss_initialize();
+#endif /* MECHGLUE */
+
 	/*
 	 * Clear out any supplemental groups we may have inherited.  This
 	 * prevents inadvertent creation of files with bad modes (in the
