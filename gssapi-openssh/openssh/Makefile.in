@@ -295,6 +295,7 @@ install-files: scard-install
 #    copying the configuration files
 #    copying the configuration file man pages
 #    the scard-install target
+#    creating and chmod'ing PRIVSEP_PATH
 #
 
 gpt-install-files:
@@ -306,8 +307,6 @@ gpt-install-files:
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)5
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)8
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(PRIVSEP_PATH)
-	chmod 0700 $(DESTDIR)$(PRIVSEP_PATH)
 	$(INSTALL) -m 0755 -s ssh $(DESTDIR)$(bindir)/ssh
 	$(INSTALL) -m 0755 -s scp $(DESTDIR)$(bindir)/scp
 	$(INSTALL) -m 0755 -s ssh-add $(DESTDIR)$(bindir)/ssh-add
