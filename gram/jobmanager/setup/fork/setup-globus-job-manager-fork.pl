@@ -13,7 +13,7 @@ GetOptions('service-name|s=s' => \$name,
 &usage if $help;
 
 my $metadata =
-    new Grid::GPT::Setup(package_name => "globus_job_manager_setup_fork");
+    new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup_fork");
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
