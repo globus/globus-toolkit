@@ -102,6 +102,9 @@ graml_start_time_callback_handler(nexus_endpoint_t * endpoint,
                                   nexus_buffer_t * buffer,
                                   nexus_bool_t is_non_threaded);
 
+static void
+notice(char *s);
+
 #ifdef GSS_AUTHENTICATION
 static int
 grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep);
@@ -130,6 +133,13 @@ static nexus_handler_t gram_start_time_handler_table[] =
      graml_start_time_callback_handler},
 };
 
+static char     tmpbuf[1024];
+#define notice2(a,b) {sprintf(tmpbuf, a,b); notice(tmpbuf);}
+#define notice3(a,b,c) {sprintf(tmpbuf, a,b,c); notice(tmpbuf);}
+#define notice4(a,b,c,d) {sprintf(tmpbuf, a,b,c,d); notice(tmpbuf);}
+
+int print_flag;
+
 /******************************************************************************
 Function:	grami_ggg_get_token_nexus()
 Description:
@@ -157,9 +167,8 @@ grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
 			| ( ((unsigned int) int_buf[2]) << 8)
 			|   ((unsigned int) int_buf[3]) );
 
-#ifdef DEBUG   
-     fprintf(stderr, "READ token size %d %8.8x\n", size, size);
-#endif
+     notice3("READ token size %d %8.8x\n", size, size);
+
   if (size > 1<<24 || size < 0) 
 	{
        size = 80;
@@ -214,9 +223,8 @@ grami_ggg_send_token_nexus( void *arg,  void *buf, int size)
 			"grami_ggg_send_token_nexus(): sending token length");
 		return -1;
 	}
-#ifdef DEBUG
-    fprintf(stderr,"WRITE token %d\n", size);
-#endif
+
+    notice2("WRITE token %d", size);
 
 	if (_nx_write_blocking(*fd, (char *) buf, size))
 	{
@@ -234,17 +242,45 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-gram_init()
+gram_init(int argc, char ** argv)
 {
-	int rc;
+    int rc;
+    int i;
 
-	/* get the initial security credential for the client */ 
-	/* Do it once up front incase it prompts or fails     */
+    /*
+     * Parse the command line arguments
+     */
+    for (i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-debug") == 0)
+        {
+            print_flag = 1;
+            notice("debug messages will be printed.");
+        }
+        else
+        {
+            print_flag = 0;
+        }
+    }
 
-	rc = grami_ggg_init_first();
-	return (rc);
+    /* get the initial security credential for the client */ 
+    /* Do it once up front incase it prompts or fails     */
+
+    rc = grami_ggg_init_first();
+    return (rc);
 
 } /* gram_init() */
+
+/******************************************************************************
+Function:	gram_shutdown()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+gram_shutdown()
+{
+    return (0);
+}
 
 /******************************************************************************
 Function:	gram_job_request()
@@ -265,10 +301,10 @@ gram_job_request(char * gatekeeper_url,
     int                          rc;
     int                          gatekeeper_fd;
     char *                       gatekeeper_host;
-	char *                       gatekeeper_princ;
+    char *                       gatekeeper_princ;
     unsigned short               gatekeeper_port = 0;
-	char * 						 auth_msg_buf;
-	int 						 auth_msg_buf_size;
+    char *                       auth_msg_buf;
+    int                          auth_msg_buf_size;
     nexus_byte_t                 type;
     nexus_byte_t *               contact_msg_buffer;
     nexus_byte_t *               tmp_buffer;
@@ -277,7 +313,7 @@ gram_job_request(char * gatekeeper_url,
     nexus_startpoint_t           reply_sp;
     graml_job_request_monitor_s  job_request_monitor;
 
-    printf("in gram_job_request()\n");
+    notice("in gram_job_request()");
 
     nexus_mutex_init(&job_request_monitor.mutex, (nexus_mutexattr_t *) NULL);
     nexus_cond_init(&job_request_monitor.cond, (nexus_condattr_t *) NULL);
@@ -387,7 +423,7 @@ gram_job_request(char * gatekeeper_url,
     /* Connecting to the gatekeeper.
      */
 
-    printf("Connecting to %s:%d:%s\n",
+    notice4("Connecting to %s:%d:%s",
 	   gatekeeper_host, gatekeeper_port, gatekeeper_princ);
 
     rc = nexus_fd_connect(gatekeeper_host, gatekeeper_port, &gatekeeper_fd);
@@ -405,7 +441,7 @@ gram_job_request(char * gatekeeper_url,
      * DEE 8/11/97
      */
 
-	printf("Starting authentication to %s\n", gatekeeper_host);
+    notice2("Starting authentication to %s", gatekeeper_host);
 
     rc =  grami_ggg_init(gatekeeper_princ,
                    grami_ggg_get_token_nexus,
@@ -431,9 +467,9 @@ gram_job_request(char * gatekeeper_url,
 		return (GRAM_ERROR_AUTHORIZATION);
 	}
 
-    printf("Authentication/authorization complete\n");
+    notice("Authentication/authorization complete");
 #else
-    printf("WARNING: No authentication being performed\n");
+    notice("WARNING: No authentication performed");
 #endif /* GSS_AUTHENTICATION */
 
     rc = nexus_fd_register_for_write(gatekeeper_fd,
@@ -510,7 +546,7 @@ graml_write_callback(void * arg,
                      char * buf,
                      size_t nbytes)
 {
-    printf("in graml_write_callback()\n");
+    notice("in graml_write_callback()");
 } /* graml_write_callback() */
 
 /******************************************************************************
@@ -533,7 +569,7 @@ graml_job_request_reply_handler(nexus_endpoint_t * endpoint,
 
     job_request_monitor = (graml_job_request_monitor_s * )nexus_endpoint_get_user_pointer(endpoint);
 
-    printf("in graml_job_request_reply_handler()\n");
+    notice("in graml_job_request_reply_handler()");
 
     nexus_get_int(buffer, &(job_request_monitor->job_status), 1);
 
@@ -581,7 +617,7 @@ gram_job_cancel(char * job_contact)
     nexus_buffer_t     buffer;
     nexus_startpoint_t sp_to_job_manager;
 
-    printf("in gram_job_cancel()\n");
+    notice("in gram_job_cancel()");
 
     rc = nexus_attach(job_contact, &sp_to_job_manager);
     if (rc != 0)
@@ -626,7 +662,7 @@ gram_callback_allow(gram_callback_func_t callback_func,
     callback_s *	  callback;
     nexus_endpointattr_t  epattr;
 
-    printf("in gram_callback_allow()\n");
+    notice("in gram_callback_allow()");
 
     callback = (callback_s *) malloc(sizeof(callback_s));
     callback->callback_func = (gram_callback_func_t) callback_func;
@@ -670,7 +706,7 @@ graml_callback_attach_approval(void * user_arg,
 {
     callback_s * callback = (callback_s *) user_arg;
 
-    printf("in graml_callback_attach_approval()\n");
+    notice("in graml_callback_attach_approval()");
 
     nexus_startpoint_bind(sp, &(callback->endpoint));
 
@@ -694,7 +730,7 @@ graml_callback_handler(nexus_endpoint_t * endpoint,
     callback_s * callback;
     char job_contact[GRAM_MAX_MSG_SIZE];
 
-    printf("in graml_callback_handler()\n");
+    notice("in graml_callback_handler()");
 
     callback = (callback_s *) nexus_endpoint_get_user_pointer(endpoint);
     
@@ -720,7 +756,7 @@ gram_callback_disallow(char * callback_contact)
     unsigned short 	  port = 0;
     char * 		  host;
 
-    printf("in gram_callback_disallow()\n");
+    notice("in gram_callback_disallow()");
 
     if (nexus_split_url(callback_contact,
                         &host,
@@ -758,7 +794,7 @@ gram_job_start_time(char * job_contact,
     nexus_endpointattr_t       epattr;
     graml_start_time_monitor_s  start_time_monitor;
 
-    printf("in gram_job_start_time()\n");
+    notice("in gram_job_start_time()");
 
     nexus_mutex_init(&start_time_monitor.mutex, (nexus_mutexattr_t *) NULL);
     nexus_cond_init(&start_time_monitor.cond, (nexus_condattr_t *) NULL);
@@ -835,7 +871,7 @@ graml_start_time_callback_handler(nexus_endpoint_t * endpoint,
 
     start_time_monitor = (graml_start_time_monitor_s *)nexus_endpoint_get_user_pointer(endpoint);
 
-    printf("in graml_start_time_callback_handler()\n");
+    notice("in graml_start_time_callback_handler()");
 
     nexus_get_int(buffer, &start_time_monitor->start_time_estimate, 1);
     nexus_get_int(buffer, &start_time_monitor->start_time_interval_size, 1);
@@ -856,7 +892,7 @@ Returns:
 int 
 gram_callback_check()
 {
-    printf("in gram_callback_check()\n");
+    notice("in gram_callback_check()");
 
     nexus_poll();
 
@@ -873,9 +909,24 @@ Returns:
 int 
 gram_job_contact_free(char * job_contact)
 {
-    printf("in gram_job_contact_free()\n");
+    notice("in gram_job_contact_free()");
 
     free(job_contact);
 
     return (0);
 } /* gram_job_contact_free() */
+
+/******************************************************************************
+Function:       notice()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void
+notice(char * s)
+{
+    if (print_flag)
+    {
+        printf("%s\n", s);
+    }
+}
