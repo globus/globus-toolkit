@@ -58,6 +58,17 @@
 #include "pathnames.h"
 #include "proto.h"
 
+#ifdef FTP_SECURITY_EXTENSIONS
+
+#include "secure_ext.h"
+ 
+#else /* !FTP_SECURITY_EXTENSIONS */
+
+#define LARGE_BUFSIZE		BUFSIZ
+
+#endif /* !FTP_SECURITY_EXTENSIONS */
+
+
 extern int dolreplies;
 #ifndef INTERNAL_LS
 extern char ls_long[50];
@@ -99,6 +110,9 @@ extern char *modenames[];
 extern char *formnames[];
 extern int restricted_user;	/* global flag indicating if user is restricted to home directory */
 
+/* TCP window size to use for data transferrs */
+extern int TCPwindowsize;
+ 
 #ifdef TRANSFER_COUNT
 extern int data_count_total;
 extern int data_count_in;
@@ -131,7 +145,16 @@ static struct in_addr cliaddr;
 static int cmd_type;
 static int cmd_form;
 static int cmd_bytesz;
-char cbuf[512];
+
+#ifndef FTP_BUFSIZE
+#define FTP_BUFSIZE	512
+#endif /* FTP_BUFSIZE */
+
+#ifdef FTP_SECURITY_EXTENSIONS
+char cbuf[LARGE_BUFSIZE];	/* Needed for ADAT commands */
+#else /* !FTP_SECURITY_EXTENSIONS */
+char cbuf[FTP_BUFSIZE];
+#endif /* !FTP_SECURITY_EXTENSIONS */
 char *fromname;
 
 /* Debian linux bison fix: moved this up, added forward decls */
@@ -173,9 +196,11 @@ extern int port_allowed(const char *remoteaddr);
     STAT    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
 
+    AUTH    ADAT    PROT    PBSZ    CCC
+
     UMASK   IDLE    CHMOD   GROUP   GPASS   NEWER
     MINFO   INDEX   EXEC    ALIAS   CDPATH  GROUPS
-    CHECKMETHOD     CHECKSUM
+    CHECKMETHOD     CHECKSUM        BUFSIZE
 
     LEXERR
 
@@ -187,6 +212,7 @@ extern int port_allowed(const char *remoteaddr);
 %type <String>  STRING password pathname pathstring username method
 %type <Number>  NUMBER byte_size check_login form_code 
 %type <Number>  struct_code mode_code octal_number
+%type <Number>  prot_code bufsize
 
 %start  cmd_list
 
@@ -263,6 +289,24 @@ cmd: USER SP username CRLF
 #else
 		reply(425, "Cannot open passive connection");
 #endif
+	}
+    | PROT SP prot_code CRLF
+        =       {
+#ifdef FTP_SECURITY_EXTENSIONS
+	    set_prot_level($3);
+#endif /* FTP_SECURITY_EXTENSIONS */
+	}
+	|	CCC CRLF
+	=   	{
+#ifdef FTP_SECURITY_EXTENSIONS
+	    clear_cmd_channel();
+#endif /* FTP_SECURITY_EXTENSIONS */
+	}
+	|	PBSZ SP STRING CRLF
+	=	{
+#ifdef FTP_SECURITY_EXTENSIONS
+	    (void) pbsz($3);
+#endif /* FTP_SECURITY_EXTENSIONS */
 	}
     | TYPE check_login SP type_code CRLF
 	=	{
@@ -870,6 +914,19 @@ cmd: USER SP username CRLF
 	    if ($4 != NULL)
 		free($4);
 	}
+    |	AUTH SP STRING CRLF
+    =	{
+#ifdef FTP_SECURITY_EXTENSIONS
+	auth((char *) $3);
+#endif /* FTP_SECURITY_EXTENSIONS */
+    }
+    |	ADAT SP STRING CRLF
+    =	{
+#ifdef FTP_SECURITY_EXTENSIONS 
+	auth_data((char *) $3);
+#endif /* FTP_SECURITY_EXTENSIONS */
+	free((char *) $3);
+    }
     | QUIT CRLF
 	=	{
 	    if (log_commands)
@@ -977,6 +1034,18 @@ rcmd: RNFR check_login SP pathname CRLF
 	    if ($2)
 		CheckSumLastFile();
 	}
+    | SITE check_login SP BUFSIZE CRLF   
+	=	{
+	    if (log_commands) syslog(LOG_INFO, "SITE BUFSIZE");
+	    print_bufsize ();
+ 	}
+    | SITE check_login SP BUFSIZE SP bufsize CRLF
+	=	{	
+	    int size = $6;
+ 
+	    if (log_commands) syslog(LOG_INFO, "SITE BUFSIZE %d", size);
+	    set_bufsize (size);
+	}
     ;
         
 username: STRING
@@ -1021,6 +1090,32 @@ form_code: N
 	    $$ = FORM_C;
 	}
     ;
+
+prot_code:	C
+	= {
+#ifdef FTP_SECURITY_EXTENSIONS
+		$$ = PROT_C;
+#endif /* FTP_SECURITY_EXTENSIONS */
+	}
+	|	S
+	= {
+#ifdef FTP_SECURITY_EXTENSIONS
+		$$ = PROT_S;
+#endif /* FTP_SECURITY_EXTENSIONS */
+	}
+	|	P
+	= {
+#ifdef FTP_SECURITY_EXTENSIONS
+		$$ = PROT_P;
+#endif /* FTP_SECURITY_EXTENSIONS */
+	}
+	|	E
+	= {
+#ifdef FTP_SECURITY_EXTENSIONS
+		$$ = PROT_E;
+#endif /* FTP_SECURITY_EXTENSIONS */
+	}
+	;
 
 type_code: A
 	=	{
@@ -1215,6 +1310,9 @@ check_login: /* empty */
 	}
     ;
 
+bufsize: NUMBER
+    ;
+
 %%
 
 extern jmp_buf errcatch;
@@ -1278,6 +1376,13 @@ struct tab cmdtab[] =
     {"XCUP", CDUP, ARGS, 1, "(change to parent directory)"},
     {"STOU", STOU, STR1, 1, "<sp> file-name"},
     {"SIZE", SIZE, OSTR, 1, "<sp> path-name"},
+#ifdef FTP_SECURITY_EXTENSIONS
+    { "AUTH", AUTH, STR1, 1,	"<sp> auth-type" },
+    { "ADAT", ADAT, STR1, 1,	"<sp> auth-data" },
+    { "PROT", PROT, ARGS, 1,	"<sp> protection-level" },
+    { "PBSZ", PBSZ, STR1, 1,	"<sp> buffer-size" },
+    { "CCC",  CCC,  ARGS, 1,	"(clear command channel)" },
+#endif /* FTP_SECURITY_EXTENSIONS */
     {"MDTM", MDTM, OSTR, 1, "<sp> path-name"},
     {NULL, 0, 0, 0, 0}
 };
@@ -1299,6 +1404,7 @@ struct tab sitetab[] =
     {"GROUPS", GROUPS, OSTR, 1, "[ <sp> ] "},
     {"CHECKMETHOD", CHECKMETHOD, OSTR, 1, "[ <sp> method ]"},
     {"CHECKSUM", CHECKSUM, OSTR, 1, "[ <sp> file-name ]"},
+    {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <socket buffer size in bytes> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
@@ -1320,6 +1426,9 @@ char *wu_getline(char *s, int n, register FILE *iop)
     register int c;
     register char *cs;
     char *passtxt = "PASS password\r\n";
+#ifdef FTP_SECURITY_EXTENSIONS
+    int buffer_len = n;
+#endif /* FTP_SECURITY_EXTENSIONS */    
 
     cs = s;
 /* tmpline may contain saved command from urgent mode interruption */
@@ -1393,12 +1502,33 @@ char *wu_getline(char *s, int n, register FILE *iop)
     }
 
     *cs++ = '\0';
+
     if (debug) {
 	if (strncasecmp(passtxt, s, 5) == 0)
 	    syslog(LOG_DEBUG, "command: %s", passtxt);
+#ifdef FTP_SECURITY_EXTENSIONS
+	/* Don't dump ADAT buffers as they can overflow syslogd */
+	else if (strncmp(s, "ADAT", 4) == 0)
+	    syslog(LOG_DEBUG, "command: ADAT (%d bytes)", strlen(s));
+
+	/* Also don't dump MIC, ENC or COMP buffers as they are encoded */
+	else if (strncmp(s, "MIC", 3) == 0)
+	    syslog(LOG_DEBUG, "command: MIC (%d bytes)", strlen(s));
+	else if (strncmp(s, "ENC", 3) == 0)
+	    syslog(LOG_DEBUG, "command: ENC (%d bytes)", strlen(s));
+	else if (strncmp(s, "COMP", 3) == 0)
+	    syslog(LOG_DEBUG, "command: COMP (%d bytes)", strlen(s));
+#endif /* FTP_SECURITY_EXTENSIONS */
 	else
 	    syslog(LOG_DEBUG, "command: %s", s);
     }
+
+#ifdef FTP_SECURITY_EXTENSIONS
+    if (decode_secure_message(s, s, buffer_len) < 0)
+	return NULL;
+    
+#endif /* FTP_SECURITY_EXTENSIONS */
+
     return (s);
 }
 
@@ -1764,7 +1894,8 @@ void help(struct tab *ctab, char *s)
 	    columns = 1;
 	lines = (NCMDS + columns - 1) / columns;
 	for (i = 0; i < lines; i++) {
-	    char line[BUFSIZ], *ptr = line;
+	    char line[LARGE_BUFSIZE];
+	    char *ptr = line;
 	    strcpy(ptr, "   ");
 	    ptr += 3;
 	    for (j = 0; j < columns; j++) {
@@ -1926,13 +2057,13 @@ void site_exec(char *cmd)
 	}
 	if (!maxfound)
 	    maxlines = defmaxlines;
-	lreply(200, cmd);
+	lreply(200, "%s", cmd);
 	while (fgets(buf, sizeof buf, cmdf)) {
 	    size_t len = strlen(buf);
 
 	    if (len > 0 && buf[len - 1] == '\n')
 		buf[--len] = '\0';
-	    lreply(200, buf);
+	    lreply(200, "%s", buf);
 	    if (maxlines <= 0)
 		++lines;
 	    else if (++lines >= maxlines) {
@@ -1999,4 +2130,24 @@ void print_groups(void)
 
     (void) fflush(stdout);
     reply(214, "");
+}
+
+/*
+ * Functions to display and manipulate the TCP window size
+ */
+set_bufsize(int size)
+{
+    TCPwindowsize = size;
+    
+    reply(214, "TCP window size set to %d kilobytes.",
+	 TCPwindowsize);
+}
+ 
+print_bufsize()
+{
+    if (TCPwindowsize > 0)
+	reply(214, "TCP window size is %d kilobytes.",
+	      TCPwindowsize);
+    else
+	reply(214, "TCP window size is the system default.");
 }

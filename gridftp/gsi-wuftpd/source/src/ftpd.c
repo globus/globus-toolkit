@@ -190,6 +190,26 @@
 #define  FALSE  !TRUE
 #endif
 
+#ifdef GSSAPI
+
+#include "gssapi-local.h"
+
+/* User has passed all GSSAPI authentication and authorization checks */
+int gssapi_user_is_good = 0;
+
+#endif /* GSSAPI */
+
+#ifdef FTP_SECURITY_EXTENSIONS
+
+#include "secure_ext.h"
+
+#else /* !FTP_SECURITY_EXTENSIONS */
+
+#define LARGE_BUFSIZE		BUFSIZ
+
+#endif /* !FTP_SECURITY_EXTENSIONS */
+
+
 #ifdef MAIL_ADMIN
 #define MAILSERVERS 10
 #define INCMAILS 10
@@ -943,6 +963,11 @@ int main(int argc, char **argv, char **envp)
     virtual_banner[0] = '\0';
 #endif
 
+#ifdef GSSAPI
+    gssapi_setup_environment();
+#endif /* GSSAPI */
+
+
     setup_paths();
     access_init();
 
@@ -1691,6 +1716,30 @@ void user(char *name)
     DenyLoginAfterPassword = 0;
     DelayedMessageFile[0] = '\0';
 #endif
+
+#ifdef GSSAPI_GLOBUS
+    /*
+     * Use mapping file to determine local user name?
+     */
+    if (strcmp(name, ":globus-mapping:") == 0) {
+	char *identity;
+	
+	identity = gssapi_identity();
+	
+	if (identity == NULL) {
+	    reply(530, "Must authenticate first");
+	    return;
+	}
+	name = globus_local_name(identity);
+	if (name == NULL) {
+	    reply(530, "No local mapping for Globus ID");
+	    return;
+	}
+	if (debug)
+	    syslog(LOG_INFO, "Globus user maps to local user %s", name);
+    }	
+#endif /* GSSAPI_GLOBUS */
+
 #ifdef	BSD_AUTH
     if ((auth = strchr(name, ':')))
 	*auth++ = 0;
@@ -1983,7 +2032,43 @@ void user(char *name)
 	    if (guest && acl_realgroup(pw))
 		guest = 0;
 	}
+#ifdef FTP_SECURITY_EXTENSIONS
+	if (auth_type) {
+#ifdef GSSAPI	
+	    if (strcmp(auth_type, "GSSAPI") == 0) {
+		char *gssapi_name = gssapi_identity();
+	    
+		/* Check authorization of already authenticated user */
+		gssapi_user_is_good = (gssapi_check_authorization(gssapi_name,
+								  name) == 0);
+	
+		syslog((gssapi_user_is_good ? LOG_INFO : LOG_ERR),
+		       "GSSAPI user %s is%s authorized as %s",
+		       gssapi_name,
+		       (gssapi_user_is_good ? "" : " not"),
+		       name);
+
+		/*
+		 * We always needs the PASS command for our state machine
+		 * so we always send back 331, even though we may just
+		 * need a dummy password.
+		 */
+		reply(331, "GSSAPI user %s is%s authorized as %s%s",
+		      gssapi_name,
+		      (gssapi_user_is_good ? "" : " not"),
+		      name,
+		      (gssapi_user_is_good ? "" : "; Password required."));
+
+		if (!gssapi_user_is_good)
+		    pw = (struct passwd *) NULL;
+	    
+		return;
+	    }	    
+#endif /* GSSAPI */
+	}
+#endif /* FTP_SECURITY_EXTENSIONS */
     }
+
     if (access_ok(530) < 1) {
 #ifndef HELP_CRACKERS
 	DenyLoginAfterPassword = 1;
@@ -2292,14 +2377,18 @@ int allowedgid(gid_t gid)
 
 void end_login(void)
 {
+#ifdef GSSAPI
+	gssapi_remove_delegation();
+#endif /* GSSAPI */
+
     delay_signaling();		/* we can't allow any signals while euid==0: kinch */
     (void) seteuid((uid_t) 0);
     if (logged_in)
 	if (wtmp_logging)
 	    wu_logwtmp(ttyline, pw->pw_name, remotehost, 0);
     pw = NULL;
-#ifdef AFS_AUTH
-    ktc_ForgetAllTokens();
+#if defined(AFS)
+    afs_logout();
 #endif
     logged_in = 0;
     anonymous = 0;
@@ -2550,6 +2639,16 @@ void pass(char *passwd)
 		rval = 0;
 	    xpasswd = crypt(passwd, pw->pw_passwd);
 #endif /* OPIE */
+#ifdef GSSAPI
+	    if (gssapi_user_is_good) {
+		/*
+		 * User has alreay been authenticated (in auth_data()) and
+		 * authorized (in user())
+		 */
+		rval = 0;
+	    }
+	    else
+#endif /* GSSAPI */
 #ifdef ULTRIX_AUTH
 	    if ((numfails = ultrix_check_pass(passwd, xpasswd)) >= 0) {
 #else
@@ -2789,6 +2888,17 @@ void pass(char *passwd)
     }
     logged_in = 1;
 
+#ifdef GSSAPI
+    /* Fix our GSSAPI environment and credentials */
+    gssapi_fix_env();
+    gssapi_chown_delegation(pw->pw_uid, pw->pw_gid);
+#endif /* GSSAPI */
+
+#ifdef AFS
+	/* Create pagesh for AFS */
+	afs_pagsh();
+#endif /* AFS */
+	
     expand_id();
 
 #ifdef QUOTA
@@ -3087,6 +3197,9 @@ void pass(char *passwd)
     }
 #endif
     if (!anonymous && !guest) {
+#ifdef POST_AUTH_PROCESS
+	run_post_auth_process(pw);
+#endif /* POST_AUTH_PROCESS */	
 	if (chdir(pw->pw_dir) < 0) {
 #ifdef PARANOID
 #ifdef VERBOSE_ERROR_LOGING
@@ -3156,7 +3269,7 @@ void pass(char *passwd)
 	reply(230, "User %s logged in.%s", pw->pw_name, guest ?
 	      "  Access restrictions apply." : "");
 	sprintf(proctitle, "%s: %s", remotehost, pw->pw_name);
-	setproctitle(proctitle);
+	setproctitle("%s", proctitle);
 	if (logging)
 	    syslog(LOG_INFO, "FTP LOGIN FROM %s, %s", remoteident, pw->pw_name);
 /* H* mod: if non-anonymous user, copy it to "authuser" so everyone can
@@ -5215,8 +5328,18 @@ void statcmd(void)
     }
     else if (askpasswd)
 	lreply(0, "     Waiting for password");
+#ifdef FTP_SECURITY_EXTENSIONS
+    else if ( attempting_auth_type ) {
+	lreply(0, "     Waiting for authentication data");
+    }
+#endif /* FTP_SECURITY_EXTENSIONS */
     else
 	lreply(0, "     Waiting for user name");
+
+#ifdef FTP_SECURITY_EXTENSIONS
+    reply(0, "     PROTection level: %s",
+	  protection_levelnames[protection_level]);
+#endif /* FTP_SECURITY_EXTENSIONS */
 
     if (type == TYPE_L)
 #ifdef NBBY
@@ -5274,7 +5397,7 @@ void fatal(char *s)
 
 void vreply(long flags, int n, char *fmt, va_list ap)
 {
-    char buf[BUFSIZ];
+    char buf[LARGE_BUFSIZE];
 
     flags &= USE_REPLY_NOTFMT | USE_REPLY_LONG;
 
@@ -5289,13 +5412,24 @@ void vreply(long flags, int n, char *fmt, va_list ap)
     else
 	vsnprintf(buf + (n ? 4 : 0), n ? sizeof(buf) - 4 : sizeof(buf), fmt, ap);
 
-    if (debug)			/* debugging output :) */
+    if (debug) {		/* debugging output :) */
+#ifdef FTP_SECURITY_EXTENSIONS
+	/* Don't print whole ADAT buffers as they are huge */
+	if (strncmp(&buf[4], "ADAT", 4) == 0) {
+	    syslog(LOG_DEBUG, "<--- ADAT (%d bytes)", strlen(buf));
+	} else
+#endif /* FTP_SECURITY_EXTENSIONS */
 	syslog(LOG_DEBUG, "<--- %s", buf);
-
+    }
+    
     /* Yes, you want the debugging output before the client output; wrapping
      * stuff goes here, you see, and you want to log the cleartext and send
      * the wrapped text to the client.
      */
+
+#ifdef FTP_SECURITY_EXTENSIONS
+    encode_secure_message(buf, buf, sizeof(buf));
+#endif /* FTP_SECURITY_EXTENSIONS */
 
     printf("%s\r\n", buf);	/* and send it to the client */
 #ifdef TRANSFER_COUNT
@@ -5888,7 +6022,7 @@ void dolog(struct sockaddr_in *sin)
 
     remotehost[sizeof(remotehost) - 1] = '\0';
     sprintf(proctitle, "%s: connected", remotehost);
-    setproctitle(proctitle);
+    setproctitle("%s", proctitle);
 
     wu_authenticate();
 /* Create a composite source identification string, to improve the logging
@@ -5949,9 +6083,12 @@ void dologout(int status)
     acl_remove();
     close(data);		/* H* fix: clean up a little better */
     close(pdata);
-#ifdef AFS_AUTH
-    ktc_ForgetAllTokens();
+#ifdef AFS
+    afs_logout();
 #endif
+#ifdef GSSAPI
+	gssapi_remove_delegation();
+#endif /* GSSAPI */
     /* beware of flushing buffers after a SIGPIPE */
     _exit(status);
 }
@@ -7290,3 +7427,77 @@ void fixpath(char *path)
     }
     *out = '\0';
 }
+
+
+#ifdef POST_AUTH_PROCESS
+/*
+ * Run the post authentication process on the user's behalf.
+ * pw should be the user's passwd information.	
+ */
+int
+run_post_auth_process(struct passwd *pw)
+{
+    struct stat st;
+    char *program = POST_AUTH_PROCESS;
+
+
+    /* XXX Need to add some sanity checks here on the process */
+    if (stat(program, &st) == 0) {
+	int pid;
+	int testpid;
+
+
+	if (debug)
+	    syslog(LOG_DEBUG,
+		   "Running post authentication process \"%s\"",
+		   program);
+
+	/*
+	 * Run the process under the user's actual ID. This is because many
+	 * programs we want to run here (aklog, sslk5) need to be run
+	 * under the real ID of the user.
+	 */
+	pid = fork();
+
+	if (pid == 0) {			/* CHILD */
+	    int rc;
+	    
+	    seteuid(0);
+	    setuid(pw->pw_uid);
+	    if (pw->pw_dir) {
+		/*
+		 * Don't use setenv() here as not all systems (e.g. solaris)
+		 * have it.
+		 */
+		char *envstr;
+		
+		envstr = malloc(strlen(pw->pw_dir) + 6 /* 'HOME=' + NUL */);
+		
+		if (envstr) {
+		    sprintf(envstr, "HOME=%s", pw->pw_dir);
+		    putenv(envstr);
+		} else {
+		    syslog(LOG_ERR, "malloc() failed");
+		}
+	    }
+	    rc = system(program);
+	    if (debug)
+		syslog(LOG_DEBUG, "PostAuthProcess returned %d", rc);
+	    
+	    exit(0);
+	}
+
+	/* PARENT */
+	while ((testpid = wait(NULL)) != pid &&
+	       testpid != -1)
+	    { /* EMPTY LOOP */ }
+
+
+    } else {
+	syslog(LOG_ERR,
+	       "Error accessing post authentication program \"%s\" (errno=%d)",
+	       program, errno);
+    }
+    return(0);
+}
+#endif /* POST_AUTH_PROCESS */
