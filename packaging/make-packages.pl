@@ -122,6 +122,7 @@ if ( not $noupdates )
     if ($cvs_build_hash{'gt2'} eq 1 or $cvs_build_hash{'gt3'} eq 1)
     {
 	$cvs_build_hash{'autotools'} = 1;
+	push @cvs_build_list, 'autotools';
     }
     get_sources();
 } else {
