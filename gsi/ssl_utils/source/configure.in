@@ -13,7 +13,7 @@ dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE(globus_ssl_utils, 2.0.0)
 
 
-GPT_SET_LIBS("-lglobus_gaa_$GLOBUS_FLAVOR_NAME -lssl -lcrypto")
+GPT_SET_LIBS("-lglobus_gaa_$GLOBUS_FLAVOR_NAME -lssl_$GLOBUS_FLAVOR_NAME -lcrypto_$GLOBUS_FLAVOR_NAME")
 
 AC_OUTPUT(
 	Makefile
@@ -27,8 +27,8 @@ AC_OUTPUT(
 	programs/grid-change-pass-phrase
 	programs/grid-cert-request
 	,
-	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkgdata/pkg_data_src.gpt" \
-	--flavor=$GLOBUS_FLAVOR_NAME
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data \
+	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
 )

@@ -27,7 +27,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "crypto.h"
+#include "openssl/crypto.h"
 
 
 #if SSLEAY_VERSION_NUMBER < 0x0090581fL
@@ -77,12 +77,12 @@ extern "C" {
 
 #endif
 
-#include "ssl.h"
-#include "err.h"
-#include "bio.h"
-#include "pem.h"
-#include "x509.h"
-#include "stack.h"
+#include "openssl/ssl.h"
+#include "openssl/err.h"
+#include "openssl/bio.h"
+#include "openssl/pem.h"
+#include "openssl/x509.h"
+#include "openssl/stack.h"
 
 /**********************************************************************
                                Define constants

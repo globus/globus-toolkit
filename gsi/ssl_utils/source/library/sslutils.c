@@ -59,16 +59,16 @@ static char *rcsid = "$Header$";
 #include <sys/stat.h>
 #include <string.h>
 
-#include "buffer.h"
-#include "crypto.h"
+#include "openssl/buffer.h"
+#include "openssl/crypto.h"
 
-#include "objects.h"
-#include "asn1.h"
-#include "evp.h"
-#include "rsa.h"
-#include "rand.h"
+#include "openssl/objects.h"
+#include "openssl/asn1.h"
+#include "openssl/evp.h"
+#include "openssl/rsa.h"
+#include "openssl/rand.h"
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-#include "x509v3.h"
+#include "openssl/x509v3.h"
 #endif
 
 #ifndef X509_V_ERR_INVALID_PURPOSE
