@@ -4,9 +4,6 @@ use strict;
 use POSIX;
 use Test;
 
-# set default
-my $output_dir="test_output";
-
 sub run_test
 {
     my $f;
@@ -14,24 +11,15 @@ sub run_test
     my $cmd=(shift);
     my $test_str=(shift);
     my ($errors,$rc) = ("",0);
+    my $pid=$$;
+    my $output_dir="test_output/$pid";
 
-    @lst=`ls core* 2> /dev/null`;
-    foreach(@lst)
-    {
-        $f = $_;
-        chomp($f);
-        unlink($f);
-    }
-
-    unlink("core");
-    unlink("$output_dir/$test_str.out");
-    unlink("$output_dir/$test_str.err");
-    unlink("$output_dir/$test_str.dbg");
-    unlink("$output_dir/$test_str.fail");
+    # delete the output dir if it exists
+    `rm -rf $output_dir`
+    `mkdir -p $output_dir`
 
     $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
     $ENV{"GLOBUS_XIO_DEBUG"} = "127,#$output_dir/$test_str.dbg,1";
-#    $ENV{"GLOBUS_XIO_DEBUG"} = "8,#$output_dir/$test_str.dbg,1";
     $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "4";
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
