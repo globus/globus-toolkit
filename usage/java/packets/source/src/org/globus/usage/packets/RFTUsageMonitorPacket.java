@@ -100,7 +100,18 @@ public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
     }
 
     public String toSQL() {
-        StringBuffer buffer = new StringBuffer(5000);
+        StringBuffer buffer = new StringBuffer("(");
+        buffer.append("request_type,number_of_files,");
+        buffer.append("number_of_bytes,number_of_resources,");
+        buffer.append("creation_time,factory_start_time)");
+        buffer.append(" VALUES ('");
+        buffer.append(this.requestType).append("','");
+        buffer.append(this.numberOfFiles).append("','");
+        buffer.append(this.numberOfBytes).append("','");
+        buffer.append(this.numberOfResources).append("','");
+        buffer.append(this.resourceCreationTime).append("','");
+        buffer.append(this.factoryStartTime).append("')");
+        // Is everything string ?
         return buffer.toString();
     }
 } 
