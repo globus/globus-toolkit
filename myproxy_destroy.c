@@ -87,7 +87,7 @@ main(int argc, char *argv[])
 	strcpy(socket_attrs->pshost, pshost);
     }
 
-    client_request->lifetime_seconds = 0;
+    client_request->portal_lifetime = 0;
     
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 

@@ -14,36 +14,38 @@
 #include <stdlib.h>
 #include <assert.h>
 
-/* specify maximum delegation lifetime allowed on myproxy-server */
-#define MYPROXY_DEFAULT_HOURS  168
+/* Location of default proxy */
+#define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-init [-h hours] [-l username] ...\n"\
+"Syntax: myproxy-init [-h hours] [-t hours] [-l username] ...\n"\
 "        myproxy-init [--usage|--help] [-v|--version]\n"\
 "\n"\
 "    Options\n"\
-"    --help | --usage            Displays usage\n"\
-"    -v | -version             Displays version\n"\
-"    -l | -username <username> Specifies the username for the delegated proxy\n"\
-"    -h | -hours    <hours>    Specifies the lifetime of the delegated proxy\n"\
-"    -s | -pshost   <hostname> Specifies the hostname of the myproxy-server\n"\
-"    -p | -psport   #          Specifies the port of the myproxy-server\n"\
+"    --help | --usage                     Displays usage\n"\
+"    -v | -version                        Displays version\n"\
+"    -l | -username            <username> Specifies the username for the delegated proxy\n"\
+"    -h | -cred_lifetime       <hours>    Specifies the lifetime of the delegated proxy (default 1 week)\n"\
+"    -t | -portal_lifetime     <hours>    Specifies the lifetime of the delegated proxy on the portal (default 2 hours)\n"\
+"    -s | -pshost              <hostname> Specifies the hostname of the myproxy-server\n"\
+"    -p | -psport              <port #>   Specifies the port of the myproxy-server\n"\
 "\n";
 
 struct option long_options[] =
 {
-  {"help",             no_argument, NULL, 'u'},
-  {"pshost",   	 required_argument, NULL, 's'},
-  {"psport",     required_argument, NULL, 'p'},
-  {"hours",      required_argument, NULL, 'h'},
-  {"usage",            no_argument, NULL, 'u'},
-  {"username",   required_argument, NULL, 'l'},
-  {"version",          no_argument, NULL, 'v'},
+  {"help",                  no_argument, NULL, 'u'},
+  {"pshost",   	      required_argument, NULL, 's'},
+  {"psport",          required_argument, NULL, 'p'},
+  {"cred_lifetime",   required_argument, NULL, 'h'},
+  {"portal_lifetime", required_argument, NULL, 't'},
+  {"usage",                 no_argument, NULL, 'u'},
+  {"username",        required_argument, NULL, 'l'},
+  {"version",               no_argument, NULL, 'v'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "us:p:t:h:v";
+static char short_options[] = "us:p:t:h:t:v";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -51,7 +53,7 @@ static char version[] =
 
 /* Function declarations */
 void init_arguments(int argc, char *argv[], 
-		    myproxy_socket_attrs_t *attrs, myproxy_request_t *request);
+		    myproxy_socket_attrs_t *attrs, myproxy_request_t *request, int *cred_lifetime);
 
 int  grid_proxy_init(int hours, const char *proxyfile);
 
@@ -65,7 +67,8 @@ void receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
 int
 main(int argc, char *argv[]) 
 {    
-    int hours;
+    int cred_lifetime, hours;
+    float days;
     char *username, *pshost; 
     char proxyfile[64];
     char request_buffer[1024]; 
@@ -101,19 +104,22 @@ main(int argc, char *argv[])
 	strcpy(socket_attrs->pshost, pshost);
     }
 
-    client_request->lifetime_seconds = 60*60*MYPROXY_DEFAULT_HOURS;
+    /* client_request stores the portal lifetime */
+    client_request->portal_lifetime = 60*60*MYPROXY_DEFAULT_PORTAL_HOURS;
+
+    /* the lifetime of the proxy */
+    cred_lifetime                   = 60*60*MYPROXY_DEFAULT_HOURS;
  
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 
     /* Initialize client arguments and create client request object */
-    init_arguments(argc, argv, socket_attrs, client_request);
+    init_arguments(argc, argv, socket_attrs, client_request, (int *)cred_lifetime);
 
     /* Create a proxy by running [grid-proxy-init] */
     sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
 
     /* Run grid-proxy-init to create a proxy */
-    hours = (int)(client_request->lifetime_seconds/3600);
-    if (grid_proxy_init(hours, proxyfile) != 0) {
+    if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
         fprintf(stderr, "Program grid_proxy_init failed\n");
         exit(1);
     }
@@ -158,7 +164,7 @@ main(int argc, char *argv[])
     receive_response(socket_attrs, server_response);
     
     /* Delegate credentials to server using the default lifetime of the cert. */
-    if (myproxy_init_delegation(socket_attrs, proxyfile, 0) < 0) {
+    if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime) < 0) {
 	fprintf(stderr, "error in myproxy_init_delegation(): %s\n", 
 		verror_get_string());
 	exit(1);
@@ -173,8 +179,10 @@ main(int argc, char *argv[])
     /* Get final response from server */
     receive_response(socket_attrs, server_response);
 
-    printf("A proxy valid for %d hours for user %s now exists on %s.\n", 
-	   hours, client_request->username, socket_attrs->pshost); 
+    hours = (int)(cred_lifetime/3600);
+    days = (float)(hours/24.0);
+    printf("A proxy valid for %d hours (%5.1f days  ) for user %s now exists on %s.\n", 
+	   hours, days, client_request->username, socket_attrs->pshost); 
     
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
@@ -186,7 +194,8 @@ void
 init_arguments(int argc, 
 	       char *argv[], 
 	       myproxy_socket_attrs_t *attrs,
-	       myproxy_request_t *request) 
+	       myproxy_request_t *request,
+	       int *cred_lifetime) 
 {   
     extern char *gnu_optarg;
 
@@ -198,9 +207,12 @@ init_arguments(int argc,
 	switch(arg) 
 	{
 	    
-	case 'h': 	/* Specify lifetime in seconds */
-	    request->lifetime_seconds = 60*60*atoi(gnu_optarg);
-	    break;      
+	case 'h': 	/* Specify cred lifetime in seconds */
+	    *cred_lifetime  = 60*60*atoi(gnu_optarg);
+	    break;    
+	case 't': 	/* Specify portal lifetime in seconds */
+	    request->portal_lifetime = 60*60*atoi(gnu_optarg);
+	    break;        
 	case 's': 	/* pshost name */
 	    attrs->pshost = malloc(strlen(gnu_optarg) + 1);
 	    strcpy(attrs->pshost, gnu_optarg); 

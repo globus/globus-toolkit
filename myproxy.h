@@ -14,11 +14,12 @@
 #define MAX_PASS_LEN  10
 #define MIN_PASS_LEN  5
 
-/* Location of default proxy */
-#define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
-
 /* Define default myproxy-server -- should probably be put in config file */
 #define MYPROXY_SERVER_PORT            7512
+
+/* specify maximum delegation lifetime allowed on myproxy-server */
+#define MYPROXY_DEFAULT_HOURS          168     /* 1 week */
+#define MYPROXY_DEFAULT_PORTAL_HOURS    2     
 
 /* myproxy client protocol information */
 #define MYPROXY_VERSION_STRING      "VERSION="
@@ -67,7 +68,7 @@ typedef struct
     char                         *username;
     char                         passphrase[MAX_PASS_LEN+1];
     myproxy_proto_request_type_t command_type;
-    int                          lifetime_seconds;
+    int                          portal_lifetime;    
 } myproxy_request_t;
 
 /* A server response object */
