@@ -137,34 +137,19 @@ globus_ftp_client_mkdir(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -172,12 +157,7 @@ globus_ftp_client_mkdir(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -188,13 +168,7 @@ globus_ftp_client_mkdir(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -207,12 +181,7 @@ globus_ftp_client_mkdir(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -237,12 +206,7 @@ globus_ftp_client_mkdir(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -266,12 +230,7 @@ globus_ftp_client_mkdir(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -407,34 +366,19 @@ globus_ftp_client_rmdir(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -442,12 +386,7 @@ globus_ftp_client_rmdir(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -458,13 +397,7 @@ globus_ftp_client_rmdir(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -477,12 +410,7 @@ globus_ftp_client_rmdir(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -507,12 +435,7 @@ globus_ftp_client_rmdir(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -536,12 +459,7 @@ globus_ftp_client_rmdir(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -678,34 +596,19 @@ globus_ftp_client_delete(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -713,12 +616,7 @@ globus_ftp_client_delete(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -728,13 +626,7 @@ globus_ftp_client_delete(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -747,12 +639,7 @@ globus_ftp_client_delete(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -777,12 +664,7 @@ globus_ftp_client_delete(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -806,12 +688,7 @@ globus_ftp_client_delete(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -955,34 +832,19 @@ globus_ftp_client_list(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -990,12 +852,7 @@ globus_ftp_client_list(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -1006,13 +863,7 @@ globus_ftp_client_list(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -1025,12 +876,7 @@ globus_ftp_client_list(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -1108,12 +954,7 @@ globus_ftp_client_list(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -1137,12 +978,7 @@ globus_ftp_client_list(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -1287,34 +1123,19 @@ globus_ftp_client_verbose_list(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -1322,12 +1143,7 @@ globus_ftp_client_verbose_list(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -1338,13 +1154,7 @@ globus_ftp_client_verbose_list(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -1357,12 +1167,7 @@ globus_ftp_client_verbose_list(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -1440,12 +1245,7 @@ globus_ftp_client_verbose_list(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -1469,12 +1269,7 @@ globus_ftp_client_verbose_list(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -1623,45 +1418,25 @@ globus_ftp_client_move(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL source URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
 
 	goto error_exit;
     }
     else if(dest_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL dest URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest_url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -1669,12 +1444,7 @@ globus_ftp_client_move(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -1685,13 +1455,7 @@ globus_ftp_client_move(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -1704,12 +1468,7 @@ globus_ftp_client_move(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -1718,12 +1477,7 @@ globus_ftp_client_move(
 
     if(handle->dest_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto free_source_url_exit;
     }
@@ -1734,25 +1488,15 @@ globus_ftp_client_move(
     
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] URL parser returned %d while parsing %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    rc,
-	    dest_url,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dest_url");
+
 	goto free_urls_exit;
     }
 
     if(url.url_path == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] Destination URL does not contain a path compenent at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dest_url");
+
         globus_url_destroy(&url);
 	goto free_urls_exit;
     }
@@ -1781,12 +1525,7 @@ globus_ftp_client_move(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -1810,12 +1549,7 @@ globus_ftp_client_move(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -2137,34 +1871,19 @@ globus_l_ftp_client_extended_get(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -2172,12 +1891,7 @@ globus_l_ftp_client_extended_get(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -2188,13 +1902,7 @@ globus_l_ftp_client_extended_get(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -2265,12 +1973,7 @@ globus_l_ftp_client_extended_get(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -2296,12 +1999,7 @@ globus_l_ftp_client_extended_get(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -2325,12 +2023,7 @@ globus_l_ftp_client_extended_get(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -2622,34 +2315,19 @@ globus_l_ftp_client_extended_put(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -2657,12 +2335,7 @@ globus_l_ftp_client_extended_put(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -2673,13 +2346,7 @@ globus_l_ftp_client_extended_put(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -2748,12 +2415,7 @@ globus_l_ftp_client_extended_put(
     handle->dest_url = globus_libc_strdup(url);
     if(handle->dest_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -2778,12 +2440,7 @@ globus_l_ftp_client_extended_put(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -2807,12 +2464,7 @@ globus_l_ftp_client_extended_put(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -3144,45 +2796,25 @@ globus_l_ftp_client_extended_third_party_transfer(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL source_url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
 
 	goto error_exit;
     }
     else if(dest_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL dest_url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest_url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
@@ -3190,12 +2822,7 @@ globus_l_ftp_client_extended_third_party_transfer(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -3206,13 +2833,7 @@ globus_l_ftp_client_extended_third_party_transfer(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -3275,24 +2896,14 @@ globus_l_ftp_client_extended_third_party_transfer(
     handle->source_url = globus_libc_strdup(source_url);
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
     handle->dest_url = globus_libc_strdup(dest_url);
     if(handle->dest_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto free_source_url_exit;
     }
@@ -3353,12 +2964,7 @@ globus_l_ftp_client_extended_third_party_transfer(
 
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -3390,12 +2996,7 @@ globus_l_ftp_client_extended_third_party_transfer(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 	    
 	    goto abort;
 	}
@@ -3580,45 +3181,25 @@ globus_ftp_client_modification_time(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
     else if(modification_time == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL modification_time at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("modification_time");
 
 	goto error_exit;
     }
@@ -3626,12 +3207,7 @@ globus_ftp_client_modification_time(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -3642,13 +3218,7 @@ globus_ftp_client_modification_time(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -3662,12 +3232,7 @@ globus_ftp_client_modification_time(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -3692,12 +3257,7 @@ globus_ftp_client_modification_time(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -3721,12 +3281,7 @@ globus_ftp_client_modification_time(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -3876,45 +3431,25 @@ globus_ftp_client_size(
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     else if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error_exit;
     }
     else if(complete_callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL complete_callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("complete_callback");
 
 	goto error_exit;
     }
     else if(size == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL size at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("size");
 
 	goto error_exit;
     }
@@ -3922,12 +3457,7 @@ globus_ftp_client_size(
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -3938,13 +3468,7 @@ globus_ftp_client_size(
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle already busy with %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
 
 	goto unlock_exit;
     }
@@ -3958,12 +3482,7 @@ globus_ftp_client_size(
 
     if(handle->source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto reset_handle_exit;
     }
@@ -3988,12 +3507,7 @@ globus_ftp_client_size(
      */
     if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Operation on handle aborted at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	goto abort;
     }
@@ -4017,12 +3531,7 @@ globus_ftp_client_size(
 
 	if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Operation on handle aborted at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    goto abort;
 	}
@@ -4130,24 +3639,14 @@ globus_ftp_client_abort(
 
     if(u_handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(u_handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error;
     }
@@ -4157,12 +3656,7 @@ globus_ftp_client_abort(
     
     if(handle->op == GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot abort inactive handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE("handle");
 
 	goto unlock_error;
     }
@@ -4171,12 +3665,7 @@ globus_ftp_client_abort(
     {
     case GLOBUS_FTP_CLIENT_HANDLE_START:
 	handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
-	handle->err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    handle->err,
-	    "[%s] Operation aborted %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 	
 	globus_i_ftp_client_plugin_notify_abort(handle);
 	break;
@@ -4197,12 +3686,7 @@ globus_ftp_client_abort(
 
 	    globus_i_ftp_client_plugin_notify_abort(handle);
 	    
-	    handle->err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		handle->err,
-		"[%s] Operation aborted %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 	}
 	else
 	{
@@ -4232,12 +3716,7 @@ globus_ftp_client_abort(
 	    if(result == GLOBUS_SUCCESS)
 	    {
 		handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
-		handle->err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    handle->err,
-		    "[%s] Operation aborted %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+		handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 		handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 		
 		globus_i_ftp_client_plugin_notify_abort(handle);
@@ -4269,12 +3748,7 @@ globus_ftp_client_abort(
 		    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 		    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
 
-		    handle->err = globus_error_construct_string(
-			GLOBUS_FTP_CLIENT_MODULE,
-			handle->err,
-			"[%s] Operation aborted %s\n",
-			GLOBUS_FTP_CLIENT_MODULE->module_name,
-			myname);
+		    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 		    globus_i_ftp_client_plugin_notify_abort(handle);
 		}
@@ -4284,12 +3758,7 @@ globus_ftp_client_abort(
 		    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
 		    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
 
-		    handle->err = globus_error_construct_string(
-			GLOBUS_FTP_CLIENT_MODULE,
-			handle->err,
-			"[%s] Operation aborted %s\n",
-			GLOBUS_FTP_CLIENT_MODULE->module_name,
-			myname);
+		    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 		}
 	    }
 	    else
@@ -4303,12 +3772,7 @@ globus_ftp_client_abort(
     case GLOBUS_FTP_CLIENT_HANDLE_FINALIZE:
     case GLOBUS_FTP_CLIENT_HANDLE_ABORT:
     case GLOBUS_FTP_CLIENT_HANDLE_FAILURE:
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    handle->err,
-	    "[%s] Cannot abort because operation has already completed at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE("handle");
 	goto unlock_error;
 
     case GLOBUS_FTP_CLIENT_HANDLE_RESTART:
@@ -4329,12 +3793,7 @@ globus_ftp_client_abort(
 	    {
 		globus_object_free(handle->err);
 	    }
-	    handle->err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		handle->err,
-		"[%s] Operation aborted %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 	}
 	else
 	{
@@ -4347,12 +3806,7 @@ globus_ftp_client_abort(
 	    {
 		globus_object_free(handle->err);
 	    }
-	    handle->err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		handle->err,
-		"[%s] Operation aborted %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 	    rc = globus_callback_register_oneshot(
 		GLOBUS_NULL,
@@ -4388,12 +3842,7 @@ globus_ftp_client_abort(
 		handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 		handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
 
-		handle->err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    handle->err,
-		    "[%s] Operation aborted %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+		handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 		globus_i_ftp_client_plugin_notify_abort(handle);
 	    }
@@ -4417,12 +3866,7 @@ globus_ftp_client_abort(
 		handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 		handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
 
-		handle->err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    handle->err,
-		    "[%s] Operation aborted %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+		handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
 		globus_i_ftp_client_plugin_notify_abort(handle);
 	    }
@@ -4912,12 +4356,9 @@ globus_l_ftp_client_transfer_normalize_attrs(
 	if((*normalized_source_attr)->mode !=
 	   (*normalized_dest_attr)->mode)
 	{
-		err = globus_error_construct_string(
-			GLOBUS_FTP_CLIENT_MODULE,
-			GLOBUS_NULL,
-			"Incompatible mode attributes for 3rd party transfer.");
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("attr");
 
-		goto destroy_dest_attr;
+	    goto destroy_dest_attr;
 	}
     }
 

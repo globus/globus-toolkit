@@ -237,12 +237,7 @@ redo:
 	     */
 	    if(!error && response && response->response_buffer)
 	    {
-		error =
-		    globus_error_construct_string(
-			GLOBUS_FTP_CLIENT_MODULE,
-			GLOBUS_NULL,
-			"Error connecting to server: %s\n",
-			response->response_buffer);
+		error = GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
 	    }
 	    goto notify_fault;
 	}
@@ -648,13 +643,7 @@ redo:
 	{
 	    if(client_handle->op == GLOBUS_FTP_CLIENT_SIZE)
 	    {
-		error = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] FTP server does not support SIZE\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    response->response_buffer,
-		    myname);
+		error = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("SIZE");
 
 		goto notify_fault;
 
@@ -783,13 +772,7 @@ redo:
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
 	    if((!client_handle->err) && (!error))
 	    {
-		client_handle->err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] FTP server: %s at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    response->response_buffer,
-		    myname);
+		error = GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
 	    }
 	    goto connection_error;
 	}
@@ -814,11 +797,7 @@ redo:
 							      target);
 	if(buffer_cmd == GLOBUS_NULL)
 	{
-	    error = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Cannot set requested tcp buffer\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name);
+	    error = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("SBUF");
 
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
 
@@ -835,11 +814,7 @@ redo:
 	case GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED:
 	    break;
 	case GLOBUS_FTP_CONTROL_TCPBUFFER_AUTOMATIC:
-	    error = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Cannot set requested tcp buffer\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name);
+	    error = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("ABUF");
 
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
 
@@ -1170,14 +1145,7 @@ redo:
 		    globus_libc_strdup(target->attr->dcau.subject.subject);
 		if(! target->dcau.subject.subject)
 		{
-		    error =
-			globus_error_construct_string(
-			    GLOBUS_FTP_CLIENT_MODULE,
-			    GLOBUS_NULL,
-			    "[%s] Could not allocate internal data "
-			    "structure at %s\n",
-			    GLOBUS_FTP_CLIENT_MODULE->module_name,
-			    myname);
+		    error = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 		    target->dcau.subject.subject = tmp_subj;
 
 		    goto notify_fault;
@@ -2678,13 +2646,8 @@ redo:
 	{
 	    if((!client_handle->err) && (!error))
 	    {
-		client_handle->err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] FTP server: %s at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    response->response_buffer,
-		    myname);
+		client_handle->err = 
+		    GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
 
 		globus_ftp_control_data_force_close(
 		    target->control_handle,
@@ -2792,15 +2755,8 @@ redo:
 		{
 		    if(client_handle->err == GLOBUS_SUCCESS)
 		    {
-			client_handle->err = globus_error_construct_string(
-			    GLOBUS_FTP_CLIENT_MODULE,
-			    GLOBUS_NULL,
-			    "[%s] Unexpected response from the FTP server "
-			    "%d %s at %s\n",
-			    GLOBUS_FTP_CLIENT_MODULE->module_name,
-			    response->code,
-			    response->response_buffer,
-			    myname);
+			client_handle->err =
+			    GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
 		    }
 		    if(client_handle->op != GLOBUS_FTP_CLIENT_MDTM &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_SIZE)
@@ -3409,21 +3365,11 @@ globus_l_ftp_client_connection_error(
 	}
 	else if(response && response->response_buffer)
 	{
-	    client_handle->err = globus_error_construct_string(
-	        GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] FTP server: %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		response->response_buffer);
+	    client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
 	}
 	else
 	{
-	    client_handle->err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Control connection error at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR();
 	}
     }
 
@@ -3753,15 +3699,12 @@ globus_l_ftp_client_parse_mdtm(
     globus_i_ftp_client_handle_t *		client_handle,
     globus_ftp_control_response_t *		response)
 {
-    globus_off_t				offset, end;
     char *					p;
-    globus_result_t 				res;
     struct tm					tm;
     time_t					t;
     float					fraction;
     unsigned long				nsec = 0UL;
     int 					rc;
-    globus_object_t *				err;
     int						i;
     static char * myname = "globus_l_ftp_client_parse_mdtm";
 
@@ -3850,12 +3793,7 @@ globus_l_ftp_client_parse_mdtm(
 error_exit:
     if(client_handle->err == GLOBUS_SUCCESS)
     {
-	client_handle->err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Invalid modification time response from server at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR();
     }
 }
 

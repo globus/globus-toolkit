@@ -87,12 +87,7 @@ globus_ftp_client_handle_init(
     if(handle == GLOBUS_NULL)
     {
 	return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot initialize NULL handle at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle"));
 
     }
 
@@ -101,12 +96,7 @@ globus_ftp_client_handle_init(
     if(i_handle == GLOBUS_NULL)
     {
 	return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Out of memory at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY());
     }
     *handle = i_handle;
     i_handle->handle = handle;
@@ -202,13 +192,7 @@ globus_ftp_client_handle_destroy(
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
  	return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot destroy NULL handle at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
-
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle"));
     }
 
     i_handle = *(globus_i_ftp_client_handle_t **) handle;
@@ -218,12 +202,7 @@ globus_ftp_client_handle_destroy(
     {
 	globus_i_ftp_client_handle_unlock(i_handle);
  	return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot destroy active handle at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle"));
     }
     memset(i_handle->magic, '\0', sizeof(i_handle->magic));
 
@@ -303,23 +282,14 @@ globus_ftp_client_handle_cache_url_state(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot cache URL in NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot cache URL in uninitialized handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
 	goto error;
     }
     i_handle = *(globus_i_ftp_client_handle_t **) handle;
@@ -360,23 +330,13 @@ globus_ftp_client_handle_flush_url_state(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot flush URL from NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot flush URL from uninitialized handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error;
     }
@@ -428,23 +388,13 @@ globus_ftp_client_handle_set_user_pointer(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set user pointer on a NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set user pointer on an uninitialized handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error;
     }
@@ -470,34 +420,19 @@ globus_ftp_client_handle_get_user_pointer(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot get user pointer from a NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     else if(user_pointer == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Null user_pointer argument to %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("user_pointer");
 
 	goto error;
     }
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot get user pointer from an uninitialized handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error;
     }
@@ -555,56 +490,34 @@ globus_ftp_client_handle_add_plugin(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add plugin to a NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add NULL plugin to a handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
 
 	goto error;
     }
     if(*plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add invalid plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto error;
     }
     if((*plugin)->plugin_name == GLOBUS_NULL ||
        (*plugin)->copy_func == GLOBUS_NULL ||
        (*plugin)->destroy_func == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add invali plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto error;
     }
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add plugin to an uninitialized handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
 	goto error;
     }
     i_handle = *(globus_i_ftp_client_handle_t **) handle;
@@ -612,12 +525,8 @@ globus_ftp_client_handle_add_plugin(
 
     if(i_handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s} Cannot add plugin to a handle actively processing an operation at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
+
 	goto unlock_error;
     }
 
@@ -626,13 +535,8 @@ globus_ftp_client_handle_add_plugin(
 				   (*plugin)->plugin_name);
     if(node)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Plugin %s already associated with attribute set at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		(*plugin)->plugin_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE();
+
 	goto unlock_error;
     }
     else
@@ -655,13 +559,8 @@ globus_ftp_client_handle_add_plugin(
 	}
 	else
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Out of memory at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		(*plugin)->plugin_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
 	    goto unlock_error;
 	}
     }
@@ -706,7 +605,6 @@ globus_ftp_client_handle_remove_plugin(
     globus_ftp_client_plugin_t *		plugin)
 {
     globus_object_t *				err;
-    globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
     globus_list_t *				node;
     globus_i_ftp_client_plugin_t *		tmp;
@@ -714,56 +612,34 @@ globus_ftp_client_handle_remove_plugin(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add plugin to a NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add NULL plugin to a handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
 
 	goto error;
     }
     if(*plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add invalid plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto error;
     }
     if((*plugin)->plugin_name == GLOBUS_NULL ||
        (*plugin)->copy_func == GLOBUS_NULL ||
        (*plugin)->destroy_func == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add invali plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto error;
     }
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add plugin to an uninitialized handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
+
 	goto error;
     }
     i_handle = *(globus_i_ftp_client_handle_t **) handle;
@@ -771,12 +647,8 @@ globus_ftp_client_handle_remove_plugin(
 
     if(i_handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s} Cannot add plugin to a handle actively processing an operation at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE("handle");
+
 	goto unlock_error;
     }
 
@@ -785,13 +657,8 @@ globus_ftp_client_handle_remove_plugin(
 				   (*plugin)->plugin_name);
     if(! node)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Plugin %s not associated with handle at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		(*plugin)->plugin_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE();
+
 	goto unlock_error;
     }
     else
@@ -1193,7 +1060,6 @@ globus_i_ftp_client_target_find(
     globus_object_t *				err;
     globus_list_t *				node;
     globus_i_ftp_client_cache_entry_t *		cache_entry;
-    int						rc;
     globus_l_ftp_client_target_search_t         searcher;
     static char * myname = "globus_i_ftp_client_target_find";
 
@@ -1205,12 +1071,7 @@ globus_i_ftp_client_target_find(
 					&parsed_url);
     if(err != GLOBUS_SUCCESS)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] Cannot construct target for invalid URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("url");
 
 	goto error_exit;
     }
@@ -1279,12 +1140,7 @@ globus_i_ftp_client_target_find(
 	(*target)->url_string = globus_libc_strdup(url);
 	if(!(*target)->url_string)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Out of memory at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	    goto free_target;
 	}
@@ -1300,12 +1156,8 @@ globus_i_ftp_client_target_find(
 
     if((*target) == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] Cannot construct target at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
 	goto free_url;
     }
     globus_url_destroy(&parsed_url);
@@ -1358,14 +1210,8 @@ globus_l_ftp_client_url_parse(
 			  url);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] URL parser returned %d while parsing %s at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    rc,
-	    url_string,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("url");
+
 	return err;
     }
 
@@ -1390,13 +1236,8 @@ globus_l_ftp_client_url_parse(
     else
     {
 	/* Unsupported URL scheme */
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] The URL scheme %s is not supported at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    url->scheme,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("url");
+
 	globus_url_destroy(url);
 
 	return err;
@@ -1651,24 +1492,16 @@ globus_i_ftp_client_cache_add(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot cache NULL URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
 	goto error;
     }
     err = globus_l_ftp_client_url_parse(url,
 					&parsed_url);
     if(err != GLOBUS_SUCCESS)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] Cannot cache invalid URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("url");
+
 	goto error;
     }
 
@@ -1683,12 +1516,8 @@ globus_i_ftp_client_cache_add(
     if(list_node)
     {
 	/* Already in cache */
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] Cannot cache already-cached URL at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE();
+
 	goto free_error;
     }
     cache_entry =
@@ -1738,12 +1567,7 @@ globus_i_ftp_client_cache_remove(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot flush NULL URL from handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	goto error;
     }
@@ -1751,12 +1575,7 @@ globus_i_ftp_client_cache_remove(
 					&parsed_url);
     if(err != GLOBUS_SUCCESS)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    err,
-	    "[%s] Cannot flush invalid URL from handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("url");
 
 	goto error;
     }
