@@ -110,7 +110,6 @@ typedef struct {
 
 extern ssh_gssapi_mech *supported_mechs[];
 
-char *ssh_gssapi_mechanisms(char *host);
 char *ssh_gssapi_client_mechanisms(char *host);
 gss_OID ssh_gssapi_client_id_kex(Gssctxt *ctx, char *name);
 int  ssh_gssapi_check_oid(Gssctxt *ctx, void *data, size_t len);
