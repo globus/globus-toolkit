@@ -8,6 +8,7 @@ README       - this file
 INSTALL      - install instructions
 install-wsrf - the install script
 bundles/     - the GPT bundles of this release
+source_packages/ - the GPT source packages for the bundles
 schedulers/  - optional scheduler bundles
 tests/       - optional test bundles
 gpt-3.2autotools2004-src.tar.gz - the packaging software

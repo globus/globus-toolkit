@@ -1,7 +1,7 @@
 Required software
     * JDK 1.4.2+
-    * Ant 1.5+
-    * C compiler. If gcc, version 3.2.1 or higher.
+    * Ant 1.5+ (do not use the ant in Fedora Core 2)
+    * C compiler. If gcc, avoid version 3.2.  3.2.1 and 2.95.x are okay.
     * GNU tar
     * JDBC compliant database. For instance, postgres 7.1+
 
@@ -29,7 +29,7 @@ globus$ ./install-wsrf $GLOBUS_LOCATION
 You may replace "/usr/local/globus-3.9.3" with whatever directory you
 wish to install to.
 
-Then see http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/
+Then see http://www-unix.globus.org/toolkit/docs/development/3.9.3/
 for setup details.
 
 
