@@ -2061,7 +2061,7 @@ stripd_server_size(
     {
         case TYPE_L:
         case TYPE_I:
-            reply(213, "%qu", size);
+            reply(213, "%llu", size);
             break;
 
         case TYPE_A:
