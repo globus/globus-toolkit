@@ -979,6 +979,7 @@ main(int argc,
       return(GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
     }
 
+/*  TODO:
     if ( globus_i_gram_unpack_http_job_request_fb(
 			   buffer,
 			   &request_size,
@@ -991,6 +992,7 @@ main(int argc,
 		     "JM: ERROR: globus gram protocol failure!\n");
       return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
+    */
 
     if (client_contact_str!=NULL)
     {
@@ -1426,12 +1428,13 @@ main(int argc,
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request was successful, sending message to client\n");
-	
+
+/* TODO:
 	rc = globus_i_gram_pack_http_job_request_result_fb(
 	    &reply,
-	    &reply_size,
 	    GLOBUS_SUCCESS,
 	    graml_job_contact);
+*/
 
 	if (rc == GLOBUS_SUCCESS)
 	{
@@ -1497,13 +1500,13 @@ main(int argc,
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request failed, sending message to client\n");
-                            
+
+/* TODO:                            
 	rc = globus_i_gram_pack_http_job_request_result(
 	    &reply,
-	    &reply_size,
 	    request->failure_code,
 	    NULL);
-
+*/
 	if (rc == GLOBUS_SUCCESS)
 	{
 	    /* send this reply back down the socket to the client */
@@ -1863,12 +1866,14 @@ globus_l_gram_client_callback(int status, int failure_code)
 
     if (tmp_list)
     {
+/*  TODO:
 	rc = globus_i_gram_http_pack_status_message_fb(
 	    &message,
 	    &msgsize,
 	    graml_job_contact,
 	    status,
 	    failure_code);
+*/
 
 	if (rc != GLOBUS_SUCCESS)
 	{
@@ -3881,6 +3886,8 @@ globus_l_jm_http_query_callback( void *               arg,
     char                                 url[1024];
     int                                  mask;
     int                                  query;
+    int                                  status;
+    int                                  job_status;
     int                                  rc;
 
 
@@ -3905,7 +3912,7 @@ globus_l_jm_http_query_callback( void *               arg,
     
     switch(query)
     {
-    case GLOBUS_GRAM_HTTP_QUERY_TYPE_CANCEL:
+    case GLOBUS_GRAM_HTTP_QUERY_JOB_CANCEL:
 	GRAM_LOCK;
 	rc = globus_jobmanager_request_cancel(request);
 	request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
@@ -3914,14 +3921,14 @@ globus_l_jm_http_query_callback( void *               arg,
 	globus_libc_sprintf(reply, "%d", rc);
 	break;
 	
-    case GLOBUS_GRAM_HTTP_QUERY_TYPE_STATUS:
+    case GLOBUS_GRAM_HTTP_QUERY_JOB_STATUS:
 	GRAM_LOCK;
 	rc = request->status;
 	GRAM_UNLOCK;
 	globus_libc_sprintf(reply, "%d", rc);
 	break;
 	
-    case GLOBUS_GRAM_HTTP_QUERY_TYPE_REGISTER:
+    case GLOBUS_GRAM_HTTP_QUERY_JOB_REGISTER:
 	if (3!=sscanf((char *)buf,"%d %s %d", &query, url, &mask))
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 	
@@ -3945,7 +3952,7 @@ globus_l_jm_http_query_callback( void *               arg,
 	}
 	break;
 
-    case GLOBUS_GRAM_HTTP_QUERY_TYPE_UNREGISTER:
+    case GLOBUS_GRAM_HTTP_QUERY_JOB_UNREGISTER:
 	if (2!=sscanf((char *)buf,"%d %s %d", &query, url))
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 	
@@ -3966,8 +3973,8 @@ globus_l_jm_http_query_callback( void *               arg,
 		    callback  = (globus_l_gram_client_contact_t *)
 			globus_list_remove( &globus_l_gram_client_contacts,
 					    tmp_list);
-		    globus_libc_free (client_contact_node->contact);
-		    globus_libc_free (client_contact_node);
+		    globus_libc_free (callback->contact);
+		    globus_libc_free (callback);
 		    status = GLOBUS_SUCCESS;
 		}
 		    
@@ -3975,7 +3982,6 @@ globus_l_jm_http_query_callback( void *               arg,
 	    }
 	    job_status = request->status;
 	    GRAM_UNLOCK;
-	    
 	    globus_libc_sprintf( reply, "%d %d", job_status, status );
 	}
 	break;
@@ -3996,14 +4002,12 @@ globus_l_jm_http_query_send_reply:
 				     &httpbuf,
 				     &bufsize );
     }
-    
     if (rc!=GLOBUS_SUCCESS)
     {
 	globus_gram_http_frame_error( rc,
 				      &httpbuf,
 				      &bufsize );
     }
-    
     if (GLOBUS_SUCCESS != globus_io_register_write(
 	                         handle,     
 				 httpbuf,
