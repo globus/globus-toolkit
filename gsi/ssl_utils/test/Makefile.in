@@ -1,0 +1,50 @@
+
+# Support obj directories
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+@makefile_default_rules@
+@makefile_header@
+
+THIS_DIR = Security/tests
+
+@makefile_common_vars@
+
+EXECS = @BUILD_TARGETS@
+CLEAN_FILES = @BUILD_TARGETS@ server.log
+DISTCLEAN_FILES = Makefile config.status config.log config.cache \
+		run_security_tests.sh
+
+MY_CFLAGS = -DUSE_AUTOCONF_H -DGSSAPI_V2 -I$(BUILD_DIR_INC)
+MY_LDFLAGS = -L$(BUILD_DIR_LIB)
+
+@makefile_common_rules@
+@makefile_link@
+
+
+gss-server$(EXECFILE): gss-server.$(OFILE) gss-misc.$(OFILE) $(DEPLIBS)
+	$(PURIFY) $(LD) $(MY_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+	-o gss-server gss-server.$(OFILE) gss-misc.$(OFILE) \
+	$(GLOBUS_GSSAPI_LIBS) $(LIBS)
+
+gss-client$(EXECFILE): gss-client.$(OFILE) gss-misc.$(OFILE) $(DEPLIBS)
+	$(PURIFY) $(LD) $(MY_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+	-o gss-client gss-client.$(OFILE) gss-misc.$(OFILE) \
+	$(GLOBUS_GSSAPI_LIBS) $(LIBS)
+
+gss-assist-client$(EXECFILE): gss-assist-client.$(OFILE) gss-misc.$(OFILE) $(DEPLIBS)
+	$(PURIFY) $(LD) $(MY_LDFLAGS) $(GLOBUS_NEXUS_LDFLAGS) \
+	-o gss-assist-client gss-assist-client.$(OFILE) gss-misc.$(OFILE) \
+	$(GLOBUS_GSSAPI_LIBS) $(GLOBUS_NEXUS_LIBS) $(LIBS)
+
+gss-client.$(OFILE):	$(SRC_DIR_THIS)/gss-client.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-client.c
+
+gss-assist-client.$(OFILE):	$(SRC_DIR_THIS)/gss-assist-client.c
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-assist-client.c
+
+gss-misc.$(OFILE):	$(SRC_DIR_THIS)/gss-misc.c
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-misc.c
+
+gss-server.$(OFILE):	$(SRC_DIR_THIS)/gss-server.c
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-server.c
