@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	
     /* Read private key */
     if (ssl_private_key_load_from_file(creds, keyfile, NULL,
-				       "Enter GRID pass phrase")
+				       "Enter GRID pass phrase: ")
 	== SSL_ERROR) {
 	fprintf (stderr, "Error reading private key: %s\n",
 		 verror_get_string());

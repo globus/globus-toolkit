@@ -700,7 +700,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     }
 
     if (PEM_read_PrivateKey(key_file, &(key), (pass_phrase_prompt) ? 
-			    my_pass_phrase_callback : NULL, NULL) == NULL)
+			    NULL : my_pass_phrase_callback, NULL) == NULL)
     {
 	unsigned long error;
 	
