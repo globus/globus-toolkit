@@ -114,9 +114,18 @@ public class URLExpander extends Thread {
 						this.sourceUrlsEx.add(newSourcePath);
 					} else if (f.get(f.TYPE).equals(f.TYPE_FILE)) {
 						logger.debug("This is a file : " + f.getFileName());
-						String newSourceUrl = "gsiftp://" + this.sourceGlobusUrl.getHost() + currentUrl +File.separator+ f.getFileName();
-						String newDestinationUrl = "gsiftp://" + this.destinationGlobusUrl.getHost() + this.destinationPath + File.separator+ f.getFileName();
-						logger.debug("Adding these to db : " + newSourceUrl + "  " + newDestinationUrl);
+						String newSourceUrl = "gsiftp://" 
+                        + this.sourceGlobusUrl.getHost() 
+                        + currentUrl + File.separator
+                        + f.getFileName();
+                        String mkdir = currentUrl.substring(currentUrl.lastIndexOf("//")+2);
+						String newDestinationUrl = "gsiftp://" 
+                                + this.destinationGlobusUrl.getHost()
+                                + this.destinationPath  
+                                + File.separator + mkdir 
+                                + File.separator+ f.getFileName();
+						logger.debug("Adding these to db : " 
+                        + newSourceUrl + "  " + newDestinationUrl);
 						TransferType transferType = new TransferType();
 						transferType.setSourceUrl(newSourceUrl);
 						transferType.setDestinationUrl(newDestinationUrl);
