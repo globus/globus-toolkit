@@ -594,8 +594,8 @@ globus_l_fork_parse_events(
     char *                              jobid;
     int                                 job_state;
     int                                 exit_code;
-    size_t                              jobid_start;
-    size_t                              jobid_end;
+    int                                 jobid_start;
+    int                                 jobid_end;
     enum {
         EXIT_CODE_UNASSIGNED = -1492
 
