@@ -750,6 +750,9 @@ globus_i_gsi_gss_get_token(
     output_token->length = BIO_pending(write_bio);
     if (output_token->length > 0)
     {
+        int                             len = 0;
+        int                             rc;
+
         output_token->value = (char *) malloc(output_token->length);
         if (output_token->value == NULL)
         {
@@ -761,11 +764,10 @@ globus_i_gsi_gss_get_token(
 
         while(len < output_token->length)
         { 
-            int                         len, rc;
             
             rc = BIO_read(write_bio,
-                          output_token->value,
-                          output_token->length);
+                          ((char *) output_token->value) + len,
+                          output_token->length - len);
             if(rc > 0)
             {
                 len += rc;
