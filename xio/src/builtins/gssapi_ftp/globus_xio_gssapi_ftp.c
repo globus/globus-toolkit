@@ -1049,8 +1049,6 @@ globus_l_xio_gssapi_ftp_server_read_cb(
 
     GlobusXIOGssapiftpDebugEnter();
 
-    GlobusXIOGssapiftpDebugEnter();
-
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
     globus_mutex_lock(&handle->mutex);
@@ -1205,8 +1203,6 @@ globus_l_xio_gssapi_ftp_auth_server_write_cb(
 
     GlobusXIOGssapiftpDebugEnter();
 
-    GlobusXIOGssapiftpDebugEnter();
-
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
     globus_mutex_lock(&handle->mutex);
@@ -1268,6 +1264,7 @@ globus_l_xio_gssapi_ftp_auth_server_write_cb(
     return;
 
   err:
+    globus_assert(0);
     /* XXX TODO odds are this did not come from a write */
     GlobusXIOGssapiftpDebugFinishWrite();
     globus_xio_driver_finished_write(op, res, nbytes);
@@ -1289,8 +1286,6 @@ globus_l_xio_gssapi_ftp_client_preauth_client_write_cb(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_preauth_client_write_cb);
-
-    GlobusXIOGssapiftpDebugEnter();
 
     GlobusXIOGssapiftpDebugEnter();
 
@@ -1379,6 +1374,7 @@ globus_l_xio_gssapi_ftp_client_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_result_t                     res;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_open_cb);
 
@@ -1389,29 +1385,40 @@ globus_l_xio_gssapi_ftp_client_open_cb(
     globus_mutex_lock(&handle->mutex);
     {
         globus_assert(handle->client);
+        if(result != GLOBUS_SUCCESS)
+        {
+            res = result;
+            goto err;
+        }
 
-        if(handle->state != GSSAPI_FTP_STATE_OPEN && result == GLOBUS_SUCCESS)
+        if(handle->state != GSSAPI_FTP_STATE_OPEN)
         {
             GlobusXIOGssapiftpDebugPassRead();
-            result = globus_xio_driver_pass_read(
+            res = globus_xio_driver_pass_read(
                 op,
                 &handle->auth_read_iov,
                 1,
                 1,
                 globus_l_xio_gssapi_ftp_preauth_client_read_cb,
                 handle);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
         }
-        /* if error occured on the way in or due to read, finish the open
-            with an error, or we started in the open state, then finish
-            with success */
-        if(result != GLOBUS_SUCCESS || handle->state == GSSAPI_FTP_STATE_OPEN)
+        else
         {
-            globus_xio_driver_finished_open(handle, op, result);
+            globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
         }
     }
     globus_mutex_unlock(&handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
+    return;
+
+  err:
+    globus_mutex_unlock(&handle->mutex);
+    globus_xio_driver_finished_open(handle, op, res);
 }
 
 static void
@@ -2319,7 +2326,6 @@ globus_l_xio_gssapi_ftp_read(
 {
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res;
-    globus_l_xio_gssapi_read_req_t *    req;
     GlobusXIOName(globus_l_xio_gssapi_ftp_read);
 
     GlobusXIOGssapiftpDebugEnter();

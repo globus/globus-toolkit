@@ -1288,8 +1288,6 @@ globus_xio_driver_read_delivered(
             }
         }
 
-        globus_assert(my_context->outstanding_operations > 0);
-
         my_context->outstanding_operations--;
         if(purge)
         {
@@ -1301,6 +1299,7 @@ globus_xio_driver_read_delivered(
             _xio_name, my_context, my_context->state,
             my_context->outstanding_operations,
             my_context->close_started));
+        globus_assert(my_context->outstanding_operations >= 0);
 
         if((my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
             my_context->state ==
