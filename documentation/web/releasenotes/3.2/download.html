@@ -1,0 +1,84 @@
+
+<html>
+<head>
+<title>Globus Toolkit 3.2 Downloads</title>
+
+<link href="../../../../CSS/style.css" rel="stylesheet" type="text/css">
+</head>
+<?php include( "http://www-unix.globus.org/include/globus_header.inc" ); ?>
+
+
+
+<a href="file://///Tnt/cristina/public_html/mockdocs/3.2betadocs/devel"></a><h1>Globus
+  Toolkit 3.2 Download</h1>
+
+<p>GT3 implements services with a combination of C and Java. The C components
+  only run on Unix platforms, including Linux. As a result, the downloads are
+separated by the number of services they offer. </p>
+<p>The "all services" bundles will install all 2.x and 3.x programs. The "base
+  services" bundle will only install services new with 3.x. The "GARs" bundle
+  will only install Java-only services. The "Core" packages will only install
+  GT3 core, which is Java-only.
+<ul>
+  <li><a href="#all">All Services</a> (installs all 2.x and 3.x programs, 
+  including core)</li>
+  <li><a href="#core">Core</a> (contains only the GT3 core which is
+    pure Java)</li>
+  <li><a href="#build-tree">Building 3.2 from a CVS tree</a></li>
+</ul>
+<h2><a name="all">All services</a></h2>
+<blockquote>
+  <p><a href="http://www-unix.globus.org/ftppub/gt3/3.2/alpha/gt3.2alpha-source-installer.tar.gz">GPT Source Installation Package</a></p>
+  <p>For information about the contents,
+    please see the <a href="file://///Tnt/cristina/public_html/mockdocs/3.2betadocs/release-notes.html">Release
+    Notes</a>.</p>
+  <p>To install the GPT source, run:</p>
+  <pre class="command">  ./install-gt3
+  ./install-gt3-mmjfs</pre>
+  <p>  For installation instructions, please see the <a
+href="file://///Tnt/cristina/public_html/mockdocs/3.0/ogsa/docs/admin">Core Admin Guide</a>.
+        
+</p>
+</blockquote>
+<h2><a name="core">Core only</a></h2>
+
+<blockquote>
+  <p><a
+href="http://www-unix.globus.org/ftppub/gt3/3.2/alpha/core-0.5.tar.gz">Core
+      Source</a>
+  </p>
+  <p> This package is the OGSI portion of the release. It
+      is pure Java, in source code or compiled.  For installation instructions,
+     please see the <a
+href="file://///Tnt/cristina/public_html/mockdocs/3.0/ogsa/docs/users_guide.html">Core User's Guide</a>.</p>
+  <p>Additional information is available in the <a
+href="file://///Tnt/cristina/public_html/mockdocs/3.0/ogsa/docs/gt3_core.pdf">GT3 Core</a> white paper.</p>
+</blockquote>   
+
+<h2><a name="build-tree">Building 3.2  from a CVS tree</a></h2>
+<blockquote>
+  <p>The following procedure allows you to check out the code from the CVS tree so that you can have access to 
+    the latest updates.</p>
+  <p><b>Note:</b> This procedure is recommended for <b>expert developers</b> only. For 
+    more information, click
+    <a href="http://www.globus.org/developer/howto/remote-cvs.html">here</a>.</p>
+  <ol>
+    <li>Set your <font face="Courier New">CVSROOT</font> to: </li>
+  </ol>
+  <blockquote>
+    <pre class="command">cvs.globus.org:/home/globdev/CVS/gridservices</pre>
+  </blockquote>
+  <ol>
+    <li>Check out packaging:
+      <pre class="command">cvs co packaging</pre>
+    </li>
+    <li>Run <font face="Courier New">make-packages.pl</font>:</li>
+  </ol>
+  <blockquote>
+    <pre class="command">./make-packages.pl --install=/<i>directory</i>/<i>name</i></pre>
+  </blockquote>
+  <p>The 3.2  CVS tag is <font face="Courier New" size="2">globus_3_2_pre5</font>.</p>
+</blockquote>
+<p>
+  <?php include("http://www-unix.globus.org/include/globus_footer.inc"); ?>
+</p>

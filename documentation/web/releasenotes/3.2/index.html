@@ -1,0 +1,331 @@
+<?php include( "http://www-unix.globus.org/include/globus_header.inc" ); ?>
+<link href="../../../../CSS/style.css" rel="stylesheet" type="text/css">
+<title>GT 3.2 Release Notes</title>
+
+      <h1><a name="top">Globus Toolkit® 3.2  Release
+      Notes</a></h1>
+      <p>      The following topics contain high level descriptions of what's new in 
+      the following technology areas:      </p>
+      <UL>
+        <LI><A 
+        href="#Core">Grid 
+        Services Core</A> 
+        <LI><A 
+        href="#Security">Security (GSI)</A> 
+        <LI><A 
+        href="#GridFTP">GridFTP</A> 
+        <LI><A 
+        href="#XIO">XIO</A> 
+        <LI><A 
+        href="#GRAM">Resource 
+        Management (GRAM)</A> 
+        <LI><A 
+        href="#CAS">Community 
+        Authorization Server (CAS)</A> 
+        <LI><A 
+        href="#Information_Services">Information 
+        Services (MDS)</A> 
+        <LI><A 
+        href="#RFT">Reliable 
+        File Transfer (RFT)</A> 
+        <LI><A 
+        href="#RLS">Replica 
+        Location Service (RLS)</A> 
+        <LI><A 
+        href="#CB">C 
+        Bindings</A> 
+        <LI><A 
+        href="#TP">OGSA-DAI (Tech Preview)</A><LI><A 
+        href="#Issues">Known 
+        Issues</A> </LI></UL>For more information please see resources specified 
+      in each of the technology sections.<BR>
+      <h2><A name=Core>Grid Services Core</A></h2>
+      The Globus Toolkit Grid 
+      Services Core component released in the 3.2  release contains 
+      important bug fixes and improvements on existing functionality. Changes
+      include better deactivate semantics, a change in the persistent grid service
+      programming model, changes to the security descriptor format, updated third
+      party jars and more.<br>
+		<br>
+		Further information can be found in the 
+      <A href="http://www-unix.globus.org/toolkit/3.2beta/core_notes.html">Core 
+      release notes</A>. &nbsp;
+
+      <h2><A name=Security>Security (GSI)</A></h2>
+      The Globus Toolkit 
+		Security component shipped in 3.2  contains a slew of bug fixes and 
+		various improvements. Improvements of note are updated third party 
+		libraries, Certificate Revocation List (CRL) support in Java, support
+      for pluggable authorization in the GridFTP and GT2 GRAM components, SimpleCA
+      and improved documentation. Also, the security component will no longer
+      ship with the Globus CA certificate. Users requiring certificates for testing
+      should take a look at the 
+		<a href="http://gcs.globus.org:8080/gcs/index.html">Globus Certificate 
+		Service</a> or <a href="http://www.globus.org/security/simple-ca.html">Simple CA</a>. <br>
+		<br>
+		Further information can be found in the 
+		<a href="http://www-unix.globus.org/toolkit/3.2beta/sec_notes.html">Security release notes</a>.<p>
+		
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>      <h2><A name=GridFTP>GridFTP</A></h2>
+      The Globus Toolkit wuftpd-based 
+      GridFTP server, its associated tools, and libraries in the 3.2  
+      release contain important bug fixes and improvements on existing 
+      functionality.&nbsp;
+      <p>Improvements include support for platform 
+      independent, machine parseable, file info (MLST and MLSD commands), a new 
+      checksum command (<font face="Courier New" size="2">cksm</font>), support for the Unix 
+		<font face="Courier New" size="2">chmod</font> command, and support 
+      for file globbing and directory moves, i.e. 
+		<font face="Courier New" size="2">globus-url-copy</font> is no longer 
+      restricted to a single file. <font face="Courier New" size="2">globus-url-copy</font> also now has command line 
+      options for all the equivalent client library functionality. <br>
+		<BR>
+		There is 
+      also a new, non-wuftpd based implementation of the GridFTP server 
+      available. It is in the early stages of development and lacks 
+      many of the features, but it will give people a first look at the new 
+      server and its architecture.<br>
+&nbsp;<BR>Further information can be found in the 
+       <A 
+      href="http://www-unix.globus.org/toolkit/3.2beta/gridftp_notes.html">GridFTP 
+      release notes</A>. <BR></p>      <p align="right"><a href="#top">Top</a><BR>
+      </p>  
+      <h2><A name=XIO>XIO</A></h2>
+      Globus XIO is an extensible input/output 
+      library for the Globus Toolkit®. For this and future releases of the 
+      Globus Toolkit the <font face="Courier New" size="2">globus_xio</font> library will provide all input and output 
+      functionality for the C code. <br>
+		<BR>Globus XIO will replace the <font face="Courier New" size="2">globus_io</font> 
+      library.&nbsp; A portability layer is included with the release so legacy 
+      applications written to <font face="Courier New" size="2">globus_io</font> will be supported; however it is 
+      recommended that future applications code straight to the 
+		<font face="Courier New" size="2">globus_xio</font> API. 
+      <BR><br>
+		For more information on the <font face="Courier New" size="2">globus_xio</font> see:<BR>
+		<A 
+      href="http://www-unix.globus.org/developer/xio">http://www-unix.globus.org/developer/xioo</A><BR><BR>
+		<b>Features:</b><BR>
+      <UL>
+        <LI>Simple intuitive open/close/read/write API <br>
+		<BR>
+        <LI>Swappable IO implementations <br>
+&nbsp;<LI>Simple API to many different types of IO<BR></LI></UL><b>Current 
+      driver implementations:</b><BR>
+      <UL>
+        <LI>Transport drivers: 
+        <UL>
+          <LI>tcp 
+          <LI>udp 
+          <LI>file<BR></LI></UL></LI></UL>
+      <UL>
+        <LI>Transform drivers: 
+        <UL>
+          <LI>gsi 
+          <LI>gssapi_ftp 
+          <LI>ftp_cmd 
+          <LI>http<BR></LI></UL></LI></UL>
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=GRAM>GRAM</A></h2>
+		
+			<p>The Globus Toolkit Grid Services GRAM component in the GT 3.2  release
+			   contains many important bug fixes and improvements on existing
+		functionality.</p>
+			<p><b>Improvements:</b></p>
+		<ul>
+			<li>For the GT3 Managed Job Service (<b>MJS</b>), we improved the following:<br>
+			</li>
+			&nbsp;<ul><li>Faults are more easily
+		internationalized.<br>
+&nbsp;</li>
+			<li>The local scheduler scripts provide better error messages.<br>
+&nbsp;</li>
+			<li>Instances are deactivated during periods of
+		inactivity in order to increase scalability by reducing memory
+		consumption caching delays and increase scalability by reducing memory 
+		consumption.</li></ul>
+			
+					
+
+		
+</ul>
+		<ul>
+			<li>For the GT2 JobManager, we applied a patch for bug 
+			<a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=802">802</a> which enables an 
+		alternate method for job status detection for a user (this is used in 
+			Condor-G).<br>
+&nbsp;</li>
+			<li>For both GT3 MJS and GT2 JobManager, the local scheduler scripts
+			<br>
+			have been improved to reduce the chance of errors due to NFS.<br>
+&nbsp;<li>For the GT3 GRAM component, service is now IPV6 compliant.<br>
+&nbsp;</li>
+			<li>For the GT3 <font face="Courier New" size="2">managed-job-globusrun</font> program, we added these 
+			options:</li>
+			<br>
+&nbsp;<ul><li>The <font face="Courier New" size="2">-deleg [full | limited]</font> option 
+			indicates limited or
+		full proxy delegation.<br>&nbsp;</li>
+			<li>The&nbsp; <font face="Courier New" size="2">-proxy [ &lt;file path&gt;]</font> option selects credentials to
+		use for authentication.</li></ul>
+		</ul>
+		<p><b>Important bug fixes:</b></p>
+		<ul>
+			<li>For the GT3 MJS, we fixed:</li>
+		<br>
+&nbsp;<ul><li>UHE GRIM credential lifetime to obey user configuration.<br>
+&nbsp;</li>
+		<li>job recovery problems.<br>
+&nbsp;</li></ul>
+		
+		<li>For the GT3 GRAM, we fixed UHE recovery and automatic shutdown (due 
+		to inactivity)</li>
+		</ul><p>
+		Further information can be found in the 
+			<A 
+      href="http://www-unix.globus.org/toolkit/3.2beta/gram_notes.html">GRAM 
+		release notes</A>. </p>
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=CAS>CAS</A></h2>
+      Included in the GT 3.2  release is the 
+		second 
+      production release of the Community Authorization Service (<b>CAS</b>).
+      CAS is an authorization system that allows for fine-grain (e.g. per file)
+      access control of Grid Resources. GT 3.2 includes the CAS Grid Service,
+      which allows for creating and administering rights, client tools and libraries
+      for using CAS, and a CAS-enabled GridFTP service (other CAS-enabled services
+      are expected in the 3.4 release). More information on CAS can be found <A 
+      href="http://www.globus.org/Security/CAS/GT3/">here</A>. <BR>
+      <br>
+				This version 
+      of CAS uses the OASIS Security Assertion Markup Language (SAML) standard. 
+      Users should be aware that RSA Security has identified four patents it 
+      believes could be relevant to implementing certain operational modes of the 
+      SAML specifications. The Globus Alliance has established a license 
+      agreement with RSA covering usage of SAML in the Globus Toolkit, however 
+      users who redistribute SAML-enabled portions of the Globus Toolkit or use 
+      SAML-enabled portions in their own applications should understand the 
+      issue and may want to obtain a royalty-free license from RSA. <br>
+		<br>
+		For 
+      information regarding the patent claims and a royalty-free reciprocal 
+      license to the patents, see:<BR><A 
+      href="http://www.rsasecurity.com/solutions/standards/saml/">http://www.rsasecurity.com/solutions/standards/saml/</A><BR>
+		<br>
+		For 
+      sublicense rights to the RSA patents under the Globus Toolkit Public 
+      License, see: <BR><A 
+      href="http://www.globus.org/Security/CAS/GT3/rsa-sublicense.html">http://www.globus.org/Security/CAS/GT3/rsa-sublicense.html</A> 
+      <BR>
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=Information_Services>Information Services (MDS)</A></h2>
+      <p>The GT 3.2  release of the Information Services components contains
+        bug fixes, performance and stability improvements, and a few new features.
+        There has also been considerable reworking of Service Data Aggregation
+        concepts into a component-based API to allow for a more flexible model
+        handling multiple data aggregation strategies. As a result of these changes,
+        the Index Service (and other services that incorporate the Aggregator
+        components) can now aggregate service data from other services by using
+      the ServiceGroup registration interfaces.</p>
+		<p>Further information can be found in the 
+       	<A 
+      href="http://www-unix.globus.org/toolkit/3.2beta/infosvc_notes.html">Information Services 
+      release notes</A>.</p> 
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=RFT>RFT</A></h2>
+      The Reliable File Transfer Service 
+      component in the GT 3.2  release contains bug fixes and extended 
+      functionality. In particular, this version of Reliable File Transfer 
+      Service supports recursive directory copy between GridFTP servers that
+       support MLSD/MLST features. <br>
+		<br>
+				The schemas of the service have been reworked 
+      which increased the scalability of service significantly. <br>
+		<br>
+				A new service 
+      instance level option has been added that turns on data channel reuse if 
+      your request consists of multiple transfers between same hosts which will 
+      further enhance performance. <br>
+		<br>
+				A new command line client has been added, 
+      which in addition to being able to submit transfer requests to service, 
+      can also serve as notification sink. This allows one to display number of 
+      transfers done/failed etc. <br>
+		<br>
+		More information can be found in the
+		<A 
+      href="http://www-unix.globus.org/toolkit/3.2beta/rft_notes.html">RFT release notes</A>. 
+      <BR>
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=RLS>RLS</A></h2>
+      The Replica Location Service (<b>RLS</b>) component in 
+      the GT 3.2  release contains bug fixes and extended functionality.
+				In 
+      particular, this version of RLS supports the 
+      deployment of a hierarchy of Replica Location Index (<b>RLI</b>) nodes. 
+		<br>
+		<br>In past RLS versions, RLIs summarized mapping information from one or more Local 
+      Replica Catalog (<b>LRC</b>) nodes.
+				In the new version, an RLS can be configured 
+      with an arbitrary hierarchy of RLI nodes, where each RLI summarizes state 
+      information for one or more lower-level LRC and/or RLI nodes. <br><br>
+		In addition, the following have been fixed:<ul>
+		<li>Memory leak when LRC or RLI is updating RLIs that have been down for 
+		extended periods</li>
+		<li>Args reversed when limiting results when not using MySQL</li>
+		<li>Typo in SQL that retrieves attribute values</li>
+		<li>Bug 
+		<a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1495">1495</a> (typos in the code)</li>
+		<li>Inconsistencies with <font face="Courier New" size="2">pkgdata</font>
+		</li>
+		<li>RLS hang when started up as RLI only</li>
+		<li>Java API inconsistency (<font face="Courier New" size="2">RLSClient.RLI.rliList</font> 
+		has been added)</li>
+		<li>Packaging metadata</li>
+		</ul>
+		<p>Further 
+      information can be found in the 
+		<A 
+      href="http://www-unix.globus.org/toolkit/3.2beta/rls_notes.html">RLS 
+      release notes</A>. <br>
+		<BR></p>
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=CB>C Bindings</A></h2>
+      The C Bindings component of the 
+      GT 3.2  release contains a number of bug fixes. No new 
+      functionality was included in this release. Important bug fixes include
+      fixes for the <font face="Courier New" size="2">gt3_gram_client</font> library for multiple job submission, as well as 
+      a number of fixes to memory handling in that library. Also, support for 
+      Tru64 native compiler was improved. 
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>        <h2><A name=TP>OGSA-DAI (Tech Preview)</A></h2>
+      <p> Included in the GT 3.2 
+		 release is a tech preview of the Open Grid Services Architecture - Data
+        Access and Integration (<b>OGSA-DAI</b>) software. OGSA-DAI aims to provide uniform methods for discovering, accessing and integrating heterogeneous data resources, primarily databases, on the Grid. An extensible activity framework allows developers to build project specific functionality in addition to the standard querying, database management, data delivery, transformation and compression activities provided.
+</p>
+
+<p>
+Officially supported databases are:
+</p>
+<ul>
+<li> MySQL 3.2.x / 4.0.x
+<li> DB2 8
+<li> Oracle 9
+<li> Xindice 1.0
+</ul>
+
+<p>
+Additionally - though not officially supported - most databases with JDBC, ODBC or XML:DB interfaces which support the SQL or XPath query languages can be published using OGSA-DAI. Supported data delivery methods include SOAP, GridFTP and HTTP(S) streams.
+</p>
+
+<p>
+New features for this release of OGSA-DAI (r3.1.1) include full message level security support, a technical preview of the Java Client Toolkit API (to aid development of applications using OGSA-DAI), and prototypes of CSV and BinX file access functionality.
+<br>
+<br>
+Further information can be found on the <a href="http://www.ogsadai.org.uk">OGSA-DAI website</a> and in the <a href="http://www-unix.globus.org/toolkit/3.2beta/OGSA-DAI-USER-RELEASE-NOTES.pdf">Release Notes</a> </p>
+
+      <p align="right"><a href="#top">Top</a><BR>
+      </p>
+      <p align="left">
+        <?php include("http://www-unix.globus.org/include/globus_footer.inc"); ?>
+</p>
