@@ -33,6 +33,7 @@ EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_error_generic.h"
+#include "openssl/err.h"
 #include <string.h>
 
 /**
@@ -134,12 +135,29 @@ globus_error_initialize_openssl_error(
     globus_object_t *                   base_cause,
     globus_openssl_error_handle_t       openssl_error_handle);
 
+/**
+ * @defgroup globus_openssl_error_utility Error Helper Functions
+ * @ingroup globus_openssl_error_api
+ *
+ * Utility functions that deal with Globus OpenSSL Error objects
+ *
+ * This section defines utility function for Globus
+ * OpenSSL Error objects.
+ */
+
 globus_object_t *
 globus_error_wrap_openssl_error(
     globus_module_descriptor_t *        base_source,
     const int                           error_type,
     const char *                        format,
     ...);
+
+globus_bool_t
+globus_error_match_openssl_error(
+    globus_object_t *                   error,
+    unsigned long                       library,
+    unsigned long                       function,
+    unsigned long                       reason);
 
 const char *
 globus_error_openssl_error_get_filename(

@@ -762,13 +762,86 @@ done:
 /* @} */
 
 /**
+ * @name OpenSSL Error Match
+ */
+/*@{*/
+/**
+ * Check whether the error originated from a specific library, from a specific
+ * function and is of a specific type.
+ * @ingroup globus_openssl_error_utility  
+ *
+ * This function checks whether the error or any of it's causative
+ * errors originated from a specific library, specific function and is of a
+ * specific type. 
+ *
+ * @param error
+ *        The error object for which to perform the check
+ * @param library
+ *        The library to check for
+ * @param function
+ *        The function to check for
+ * @param reason
+ *        The type to check for
+ * @return
+ *        GLOBUS_TRUE - the error matched 
+ *        GLOBUS_FALSE - the error failed to match 
+ */
+globus_bool_t
+globus_error_match_openssl_error(
+    globus_object_t *                   error,
+    unsigned long                       library,
+    unsigned long                       function,
+    unsigned long                       reason)
+{
+    globus_openssl_error_handle_t       instance_data;
+
+    if(error == NULL)
+    {
+        return GLOBUS_FALSE;
+    }
+
+    if(globus_object_get_type(error) != GLOBUS_ERROR_TYPE_OPENSSL)
+    {
+        /* not our type, skip it */
+        return globus_error_match_openssl_error(
+            globus_error_get_cause(error),
+            library,
+            function,
+            reason);
+    }
+
+    instance_data = (globus_openssl_error_handle_t)
+        globus_object_get_local_instance_data(error);
+        
+    
+    if(library == ERR_GET_LIB(instance_data->error_code) &&
+       function == ERR_GET_FUNC(instance_data->error_code) &&
+       reason == ERR_GET_REASON(instance_data->error_code))
+    {
+        return GLOBUS_TRUE;
+    }
+    else
+    {
+        return globus_error_match_openssl_error(
+            globus_error_get_cause(error),
+            library,
+            function,
+            reason);
+    }
+}
+/* globus_error_match_openssl_error */
+/*@}*/
+
+/**
  * @name Wrap OpenSSL Error
  */
 /* @{ */
 /**
- * Wrap the OpenSSL error and create a
- * wrapped globus error object from
- * the error.  This function gets all the openssl errors
+ * Wrap the OpenSSL error and create a wrapped globus error object from the
+ * error. 
+ * @ingroup globus_openssl_error_utility
+ *
+ * This function gets all the openssl errors
  * from the error list, and chains them using the globus
  * error string object.  The resulting globus error object
  * is a wrapper to the openssl error at the end of the chain.
