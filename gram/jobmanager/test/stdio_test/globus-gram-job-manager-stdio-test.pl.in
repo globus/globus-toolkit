@@ -91,7 +91,6 @@ foreach(@test_cases)
 	. "   (TEST_FTP_PREFIX \\\"gsiftp://". hostname . "/%2F\\\")"
 	. ")";
     push(@tests, "test_rsl(\"$_\", \"$testtmprsl\")");
-    push(@todo, scalar(@tests));
 }
 if(@ARGV)
 {
