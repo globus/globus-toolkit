@@ -151,7 +151,7 @@ main(
                 xio_handle,
                 buffer,
                 sizeof(buffer) - 1,
-                sizeof(buffer) - 1,
+		1,
                 &nbytes,
                 NULL);
             fputs(buffer, fp);
@@ -159,7 +159,6 @@ main(
 		break;
 	}
         fclose(fp);  
-        
     }
     else
     {
@@ -188,15 +187,15 @@ main(
                 NULL);
             test_res(res); 
         } 
+	test_res(globus_xio_attr_init(&attr));
+	test_res(globus_xio_attr_cntl(
+	    attr,
+	    mode_e_driver,
+	    GLOBUS_XIO_MODE_E_SET_EOF,
+	    GLOBUS_TRUE,
+	    num_streams));
         fclose(fp);
     }
-    test_res(globus_xio_attr_init(&attr));
-    test_res(globus_xio_attr_cntl(
-	attr,
-	mode_e_driver,
-	GLOBUS_XIO_MODE_E_SET_EOF,
-	GLOBUS_TRUE,
-	num_streams));
     res = globus_xio_close(xio_handle, attr);
     test_res(res);
 
