@@ -548,4 +548,9 @@ globus_i_guc_data_object_destroy(
     globus_i_gsc_server_handle_t *      server_handle,
     globus_i_gsc_data_t *               data_object);
 
+globus_result_t
+globus_i_gsc_cmd_intermediate_reply(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg);
+
 #endif

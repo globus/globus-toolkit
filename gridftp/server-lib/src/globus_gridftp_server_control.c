@@ -147,6 +147,11 @@ globus_l_gsc_command_callout(
 static void 
 globus_l_gsc_free_command_array(
     char **                             cmd_a);
+
+static
+void
+globus_l_gsc_terminate(
+    globus_i_gsc_server_handle_t *      server_handle);
 /*************************************************************************
  *              globals
  *
@@ -612,7 +617,7 @@ err_alloc_unlock:
     }
     server_handle->cached_res = res;
     server_handle->ref--;
-    globus_i_gsc_terminate(server_handle);
+    globus_l_gsc_terminate(server_handle);
     globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -655,11 +660,12 @@ err_alloc_unlock:
  *      which can happen due to a user calling _stop() then a callback
  *      returning with an error.
  */
+static
 void
-globus_i_gsc_terminate(
+globus_l_gsc_terminate(
     globus_i_gsc_server_handle_t *      server_handle)
 {
-    GlobusGridFTPServerName(globus_i_gsc_terminate);
+    GlobusGridFTPServerName(globus_l_gsc_terminate);
 
     if(server_handle->data_object)
     {
@@ -758,6 +764,17 @@ globus_i_gsc_terminate(
             globus_assert(0);
             break;
     }
+}
+
+void
+globus_i_gsc_terminate(
+    globus_i_gsc_server_handle_t *      server_handle)
+{
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        globus_l_gsc_terminate(server_handle);
+    }
+    globus_mutex_unlock(&server_handle->mutex);
 }
 
 /*
@@ -890,7 +907,7 @@ globus_l_gsc_finished_op(
 
   err:
     globus_free(reply_msg);
-    globus_i_gsc_terminate(server_handle);
+    globus_l_gsc_terminate(server_handle);
     server_handle->ref--;
     globus_l_gsc_server_ref_check(server_handle);
 }
@@ -1074,7 +1091,7 @@ globus_l_gsc_final_reply_cb(
                     if(res != GLOBUS_SUCCESS)
                     {
                         server_handle->ref--;
-                        globus_i_gsc_terminate(server_handle);
+                        globus_l_gsc_terminate(server_handle);
                     }
                     server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
                 }
@@ -1103,7 +1120,7 @@ globus_l_gsc_final_reply_cb(
 
   err:
 
-    globus_i_gsc_terminate(server_handle);
+    globus_l_gsc_terminate(server_handle);
     globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
     return;
@@ -1133,7 +1150,7 @@ globus_l_gsc_intermediate_reply_cb(
         server_handle->ref--;
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_terminate(server_handle);
+            globus_l_gsc_terminate(server_handle);
             /* dec again here for the op because the final_reply_cb
                won't come */
             server_handle->ref--;
@@ -1159,7 +1176,7 @@ globus_l_gsc_intermediate_reply_cb(
                 if(res != GLOBUS_SUCCESS)
                 {
                     server_handle->reply_outstanding = GLOBUS_FALSE;
-                    globus_i_gsc_terminate(server_handle);
+                    globus_l_gsc_terminate(server_handle);
                     globus_free(reply_ent->msg);
                 }
             }
@@ -1268,6 +1285,8 @@ globus_l_gsc_close_cb(
  *                         -----------------
  *
  ***********************************************************************/
+
+/* called locked */
 globus_bool_t
 globus_i_guc_data_object_destroy(
     globus_i_gsc_server_handle_t *      server_handle,
@@ -1310,7 +1329,6 @@ void
 globus_i_guc_command_data_destroy(
     globus_i_gsc_server_handle_t *      server_handle)
 {
-
     globus_mutex_lock(&server_handle->mutex);
     {
         globus_i_guc_data_object_destroy(
@@ -1511,55 +1529,64 @@ globus_i_gsc_concat_path(
     char *                              tmp_ptr;
     char *                              tmp_ptr2;
 
-    if(in_path[0] == '/')
+    globus_mutex_lock(&i_server->mutex);
     {
-        tmp_path = globus_libc_strdup(in_path);
-    }
-    else
-    {
-        tmp_path = globus_common_create_string("%s/%s",
-            i_server->cwd,
-            in_path);
-    }
+ 
+        if(in_path[0] == '/')
+        {
+            tmp_path = globus_libc_strdup(in_path);
+        }
+        else
+        {
+            tmp_path = globus_common_create_string("%s/%s",
+                i_server->cwd,
+                in_path);
+        }
 
-    /* remove all double slashes */
-    tmp_ptr = strstr(tmp_path, "//");
-    while(tmp_ptr != NULL)
-    {
-        memmove(tmp_ptr, &tmp_ptr[1], strlen(&tmp_ptr[1])+1);
+        /* remove all double slashes */
         tmp_ptr = strstr(tmp_path, "//");
-    }
+        while(tmp_ptr != NULL)
+        {
+            memmove(tmp_ptr, &tmp_ptr[1], strlen(&tmp_ptr[1])+1);
+            tmp_ptr = strstr(tmp_path, "//");
+        }
 
-    tmp_ptr = strstr(tmp_path, "/..");
-    while(tmp_ptr != NULL)
-    {
-        /* if they try to trick past top return NULL */
-        if(tmp_ptr == tmp_path)
-        {
-            return NULL;
-        }
-        tmp_ptr2 = tmp_ptr - 1;
-        while(tmp_ptr2 != tmp_path && *tmp_ptr2 != '/')
-        {
-            tmp_ptr2--;
-        }
-        if(tmp_ptr2 == tmp_path)
-        {
-            return NULL;
-        }
-        memmove(tmp_ptr2, &tmp_ptr[3], strlen(&tmp_ptr[3])+1);
         tmp_ptr = strstr(tmp_path, "/..");
-    }
+        while(tmp_ptr != NULL)
+        {
+            /* if they try to trick past top return NULL */
+            if(tmp_ptr == tmp_path)
+            {
+                goto error;
+            }
+            tmp_ptr2 = tmp_ptr - 1;
+            while(tmp_ptr2 != tmp_path && *tmp_ptr2 != '/')
+            {
+                tmp_ptr2--;
+            }
+            if(tmp_ptr2 == tmp_path)
+            {
+                goto error;
+            }
+            memmove(tmp_ptr2, &tmp_ptr[3], strlen(&tmp_ptr[3])+1);
+            tmp_ptr = strstr(tmp_path, "/..");
+        }
 
-    /* remove all dot slashes */
-    tmp_ptr = strstr(tmp_path, "./");
-    while(tmp_ptr != NULL)
-    {
-        memmove(tmp_ptr, &tmp_ptr[1], strlen(&tmp_ptr[1])+1);
+        /* remove all dot slashes */
         tmp_ptr = strstr(tmp_path, "./");
+        while(tmp_ptr != NULL)
+        {
+            memmove(tmp_ptr, &tmp_ptr[1], strlen(&tmp_ptr[1])+1);
+            tmp_ptr = strstr(tmp_path, "./");
+        }
     }
+    globus_mutex_unlock(&i_server->mutex);
 
     return tmp_path;
+
+error:
+    globus_mutex_unlock(&i_server->mutex);
+    return NULL;
 }
 
 globus_bool_t
@@ -2385,7 +2412,7 @@ globus_gridftp_server_control_stop(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        globus_i_gsc_terminate(server_handle);
+        globus_l_gsc_terminate(server_handle);
     }
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -2512,11 +2539,43 @@ globus_i_gsc_intermediate_reply(
         if(res != GLOBUS_SUCCESS)
         {
             server_handle->reply_outstanding = GLOBUS_FALSE;
-            globus_i_gsc_terminate(server_handle);
+            globus_l_gsc_terminate(server_handle);
         }
     }
 
     return res;
+}
+
+globus_result_t
+globus_i_gsc_cmd_intermediate_reply(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        switch(op->server_handle->state)
+        {
+            case GLOBUS_L_GSC_STATE_PROCESSING:
+                result = globus_i_gsc_intermediate_reply(op, reply_msg);
+                break;
+
+            case GLOBUS_L_GSC_STATE_OPEN:
+            case GLOBUS_L_GSC_STATE_NONE:
+            case GLOBUS_L_GSC_STATE_OPENING:
+            case GLOBUS_L_GSC_STATE_ABORTING:
+            case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+            case GLOBUS_L_GSC_STATE_STOPPING:
+            case GLOBUS_L_GSC_STATE_STOPPED:
+
+            default:
+                break;
+        }
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return result;
 }
 
 globus_result_t
@@ -3295,6 +3354,9 @@ globus_i_gsc_resource_query(
     return res;
 }
 
+/*
+ *   XXX TODO this doesn't lock, is that ok?
+ */
 globus_result_t
 globus_i_gsc_authenticate(
     globus_i_gsc_op_t *                 op,

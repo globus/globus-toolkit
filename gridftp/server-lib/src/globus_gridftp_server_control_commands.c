@@ -1966,7 +1966,7 @@ globus_l_gsc_cmd_pasv_cb(
     /* if we were in delayed passive mode we start transfer now */
     if(wrapper->transfer_flag)
     {
-        globus_i_gsc_intermediate_reply(op, msg);
+        globus_i_gsc_cmd_intermediate_reply(op, msg);
         globus_l_gsc_cmd_transfer(wrapper);
         globus_free(msg);
     }
