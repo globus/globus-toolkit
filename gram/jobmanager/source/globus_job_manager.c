@@ -956,7 +956,7 @@ main(int argc,
 	    if (request->my_stdout_tag != GLOBUS_NULL)
 	    {
 		char * filename;
-		ulong timestamp;
+		unsigned long timestamp;
 		/* try to add the specific tag to the cache entry */
 		/* will prevent automatic deletion of the stdout  */
 		/* when the job finish; usefull for "batch jobs"  */
@@ -1030,7 +1030,7 @@ main(int argc,
 	    if (request->my_stderr_tag != GLOBUS_NULL)
 	    {
 		char * filename;
-		ulong timestamp;
+		unsigned long timestamp;
 		/* try to add the specific tag to the cache entry */
 		/* will prevent automatic deletion of the stderr  */
 		/* when the job finish; usefull for "batch jobs"  */
