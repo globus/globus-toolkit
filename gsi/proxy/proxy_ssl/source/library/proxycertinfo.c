@@ -72,7 +72,7 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     ret->pC = (ASN1_BOOLEAN *)OPENSSL_malloc(sizeof(ASN1_BOOLEAN));
     *(ret->pC) = 1;
     ret->version          = ASN1_INTEGER_new();
-    ASN1_INTEGER_set(ret->version, 1);  // current first version of protocol
+    ASN1_INTEGER_set(ret->version, 1);  /* current first version of protocol */
     ret->path_length      = NULL;
     ret->restriction      = NULL;
     ret->group            = NULL;
