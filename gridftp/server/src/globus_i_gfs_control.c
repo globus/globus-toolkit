@@ -290,7 +290,6 @@ globus_l_gfs_request_auth(
             if(anon_usr)
             {   
                 pwent = getpwnam(anon_usr);
-                globus_free(anon_usr);
                 if(pwent == NULL)
                 {
                     err_msg = globus_common_create_string(
@@ -307,7 +306,6 @@ globus_l_gfs_request_auth(
             if(anon_grp)
             {
                 group = getgrnam(anon_grp);
-                globus_free(anon_grp);
                 if(group == NULL)
                 {
                     err_msg = globus_common_create_string(
@@ -1460,7 +1458,6 @@ globus_i_gfs_control_start(
         {
             goto error_attr_setup;
         }
-        globus_free(banner);
     }
 
     login_msg = globus_i_gfs_config_string("login_msg");
@@ -1472,7 +1469,6 @@ globus_i_gfs_control_start(
         {
             goto error_attr_setup;
         }
-        globus_free(login_msg);
     }
 
     result = globus_gridftp_server_control_attr_set_auth(
