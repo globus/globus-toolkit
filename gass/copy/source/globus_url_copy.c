@@ -213,7 +213,7 @@ const char * long_usage =
 "<sourceURL> may contain wildcard characters * ? and [ ] character ranges.\n"
 "If <sourceURL> is a directory, all files within that directory will be copied.\n"
 "<destURL> must be a directory if multiple files are being copied.\n"
-"Any url specifying a directory must end with '/'\n\n"
+"Any url specifying a directory must end with a /\n\n"
 
 "OPTIONS\n"
 "\t -help | -usage\n"
@@ -227,9 +227,10 @@ const char * long_usage =
 "\t -b | -binary\n"
 "\t      Do not apply any conversion to the files. *default*\n"
 "\t -f <filename>\n" 
-"\t      Read a list of url pairs from filename.  each line should contain\n"
+"\t      Read a list of url pairs from filename.  Each line should contain\n"
 "\t      <sourceURL> <destURL>\n"
-"\t      blank lines and lines beginning with # will be ignored.\n"
+"\t      Enclose URLs with spaces in double qoutes (\").\n"
+"\t      Blank lines and lines beginning with # will be ignored.\n"
 "\t -r | -recurse\n" 
 "\t      Copy files in subdirectories\n"
 
@@ -241,8 +242,7 @@ const char * long_usage =
 "\t -dbg | -debugftp \n"
 "\t      Debug ftp connections.  Prints control channel communication\n"
 "\t      to stderr\n"
-"\t -rst | -restart \n"
-"\t      Restart failed ftp operations.\n"
+
 "\t -rst | -restart \n"
 "\t      Restart failed ftp operations.\n"
 "\t -rst-retries <retries>\n"
@@ -274,6 +274,8 @@ const char * long_usage =
 "\t      turn third-party transfers off (on by default)\n"
 "\t -nodcau | -no-data-channel-authentication\n"
 "\t      turn off data channel authentication for ftp transfers\n"
+"\t -dcenc | -data-channel-encryption\n"
+"\t      turn on data channel encryption for ftp transfers\n"
 "\n";
 
 /***********
@@ -373,7 +375,7 @@ flagdef(arg_debugftp, "-dbg", "-debugftp");
 flagdef(arg_restart, "-rst", "-restart");
 flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
 flagdef(arg_nodcau, "-nodcau", "-no-data-channel-authentication");
-flagdef(arg_encrypt_data, "-edc", "-encrypt-data-channel");
+flagdef(arg_encrypt_data, "-dcenc", "-data-channel-encryption");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 
@@ -524,7 +526,6 @@ main(int argc, char **argv)
            argv,
            &guc_info) != 0)
     {
-        fprintf(stderr, "Error parsing parameters.\n");
         return 1;
     }
 
@@ -774,10 +775,9 @@ globus_l_guc_parse_file(
     char                                            dst_url[512];
     globus_l_guc_src_dst_pair_t *                   ent;
     char *                                          p;
-    char *                                          src_p;
-    char *                                          dst_p;
-    int                                             line_len;
+    int                                             url_len;
     int                                             line_num = 0;
+    int                                             rc;
     globus_bool_t                                   stdin_used = GLOBUS_FALSE;
 
     fptr = fopen(file_name, "r");
@@ -789,99 +789,75 @@ globus_l_guc_parse_file(
     while(fgets(line, sizeof(line), fptr) != NULL)
     {
         line_num++;
-        src_p = line;
-        while(*src_p && isspace(*src_p))
+        p = line;
+        url_len = 0;
+                
+        while(*p && isspace(*p))
         {
-            src_p++;
+            p++;
         }
-        if(*src_p == '\0')
+        if(*p == '\0')
         {
             continue;
         }
 
-        if(*src_p == '#')
+        if(*p == '#')
         {
             continue;
         }
         
-        line_len = strlen(src_p);
-
-        while(isspace(src_p[line_len - 1]) && line_len > 0)
+        if(*p == '"')
         {
-            src_p[line_len - 1] = '\0';
-            line_len--;
-        }
-        
-        if(*src_p == '-')
-        {
-            p = src_p + 1;
-            while(*p && isspace(*p))
-            {
-                *p++ = '\0';
-            }
-            if(*p == '\0')
-            {
-                goto error_parse;
-            }
-            dst_p = p;
-
-        }
-        else if(src_p[line_len - 1] == '-')
-        {
-            p = src_p + line_len - 1;
-            
-            while(p > src_p && isspace(*p))
-            {
-                p--;
-            }
-            if(p == src_p)
-            {
-                goto error_parse;
-            }
-            *p = '\0';
-            
-            dst_p = src_p + line_len - 1;
+            rc = sscanf(p, "\"%[^\"]\"", src_url);
+            url_len = 2;
         }
         else
         {
-            p = strstr(src_p, "://");
-            
-            if(p == NULL)
-            {
-                goto error_parse;
-            }
-            
-            p += 3;
-            
-            p = strstr(p, "://");
+            rc = sscanf(p, "%s", src_url);
+        } 
         
-            if(p == NULL)
-            {
-                goto error_parse;
-            }
-        
-            while(p > src_p && !isspace(*p))
-            {
-                p--;
-            }
-            dst_p = p + 1;
-            
-            while(p > src_p && isspace(*p))
-            {
-                p--;
-            }
-            if(p == src_p)
-            {
-                goto error_parse;
-            }
-            *(++p) = '\0';              
+        if(rc != 1)
+        {   
+            goto error_parse;
         }
+        
+        url_len += strlen(src_url);
+        p = p + url_len;
+       
+        url_len = 0;
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
+
+        if(*p == '"')
+        {
+            rc = sscanf(p, "\"%[^\"]\"", dst_url);
+            url_len = 2;
+        }
+        else
+        {
+            rc = sscanf(p, "%s", dst_url);
+        }        
+
+        if(rc != 1)
+        {   
+            goto error_parse;
+        }
+        
+        url_len += strlen(dst_url);
+        p = p + url_len;
+        
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
+        if(*p && !isspace(*p))
+        {
+            goto error_parse;
+        }
+        
                 
-        strcpy(src_url, src_p);
-        strcpy(dst_url, dst_p);
-        
-        /* remove starting and ending " if needed */
-        
         if(strcmp(src_url, "-") == 0 && strcmp(dst_url, "-") == 0)
         {
             fprintf(stderr, "stdin and stdout cannot be used together.\n");
@@ -1131,7 +1107,7 @@ globus_l_guc_transfer_files(
                     
                 if(result != GLOBUS_SUCCESS)
                 {
-                  result = GLOBUS_SUCCESS;
+                    result = GLOBUS_SUCCESS;
                 }
      
                 monitor.done = GLOBUS_TRUE;
@@ -1229,7 +1205,6 @@ globus_l_guc_transfer_files(
     return ret_val;
 
 
-error_register:
 error_mkdir:
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
