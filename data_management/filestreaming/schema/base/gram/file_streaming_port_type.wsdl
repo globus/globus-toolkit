@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="FileStreaming"
+             targetNamespace="http://www.globus.org/namespaces/filestreaming/file_streaming_port_type"
+             xmlns:tns="http://www.globus.org/namespaces/filestreaming/file_streaming_port_type"
+             xmlns:fs-types="http://www.globus.org/namespaces/filestreaming/file_streaming_types"
+             xmlns:gsdl="http://www.gridforum.org/namespaces/2002/07/gridServices"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+<import location="../../base/gram/file_streaming_types.wsdl"
+        namespace="http://www.globus.org/namespaces/filestreaming/file_streaming_types"/>
+
+<import location="../../core/types/service_data.xsd"
+        namespace="http://www.gridforum.org/namespaces/2002/10/gridServices"/>
+
+<types>
+    <xsd:schema targetNamespace="http://www.globus.org/namespaces/filestreaming/file_streaming_port_type"
+                xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                xmlns:file-streaming-types="http://www.globus.org/namespaces/filestreaming/file_streaming_types">
+                
+        <xsd:element name="startStreaming">
+            <xsd:complexType/>
+            </xsd:element>
+        <xsd:element name="startStreamingResponse">
+            <xsd:complexType/>
+        </xsd:element>
+    </xsd:schema>
+</types>
+<message name="startStreamingInputMessage">
+ <part name="parameters" element="tns:startStreaming"/>
+</message>
+<message name="startStreamingOutputMessage">
+ <part name="parameters" element="tns:startStreamingResponse"/>
+</message>
+
+<gsdl:serviceDataDescription name="DestinationURL"
+                             element="fs-types:DestinationURL"
+                             minOccurs="1"
+                             maxOccurs="1"
+                             mutability="mutable">
+    <documentation>
+        The URL of the stream destination.
+    </documentation>
+</gsdl:serviceDataDescription>
+
+<portType name="FileStreamingPortType">
+ <operation name="startStreaming">
+  <input message="tns:startStreamingInputMessage"/>
+  <output message="tns:startStreamingOutputMessage"/>
+ </operation>
+
+ </portType>
+
+</definitions>
+
+
+  
