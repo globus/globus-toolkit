@@ -6,6 +6,18 @@ dnl and copy things into the user buffers as neccessary.
 
 AC_DEFUN(CHECK_REENTRANT_FUNCS,[
 if test $GLOBUS_THREADS != "none"; then
+
+	AC_MSG_CHECKING(checking if the compiler returns error on too many args)
+	AC_TRY_COMPILE([
+#	     include <stdlib.h>],
+	[
+	     void * rc;
+	     rc = malloc(1, 2);
+	], 
+	[GLOBUS_CC_IGNORES_EXTRA_ARGS=yes], 
+	[GLOBUS_CC_IGNORES_EXTRA_ARGS=no])
+	AC_MSG_RESULT($GLOBUS_CC_IGNORES_EXTRA_ARGS)
+
 AC_CHECK_FUNCS(gethostbyaddr_r, [
 	AC_MSG_CHECKING(number of arguments to gethostbyaddr_r)
 	globus_gethostbyaddr_args=no
@@ -272,8 +284,9 @@ AC_CHECK_FUNCS(readdir_r,
     [
         AC_MSG_CHECKING(number of arguments to readdir_r)
         globus_readdir_args=no;
-        AC_TRY_COMPILE(
-        [
+	if test GLOBUS_CC_IGNORES_EXTRA_ARGS=yes; then
+        	AC_TRY_COMPILE(
+        	[
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -290,19 +303,19 @@ AC_CHECK_FUNCS(readdir_r,
 #       include <ndir.h>
 #   endif
 #endif
-        ],
-        [
-	    struct dirent dir, *dirp;
-	    DIR *mydir;
-	    int rc;
-	    rc = readdir_r(mydir, &dir, &dirp);
-        ],
-        AC_DEFINE(GLOBUS_HAVE_READDIR_R_3) globus_readdir_args=3)
+        	],
+        	[
+	    	   struct dirent dir, *dirp;
+	    	   DIR *mydir;
+	    	   int rc;
+	    	   rc = readdir_r(mydir, &dir, &dirp);
+        	],
+        	AC_DEFINE(GLOBUS_HAVE_READDIR_R_3) globus_readdir_args=3)
 
 
-        if test $globus_readdir_args = no; then
-            AC_TRY_COMPILE(
-            [
+        	if test $globus_readdir_args = no; then
+            		AC_TRY_COMPILE(
+            		[
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -319,14 +332,70 @@ AC_CHECK_FUNCS(readdir_r,
 #       include <ndir.h>
 #   endif
 #endif
-            ],
-            [
-	    	struct dirent dir, *dirp;
-	    	DIR *mydir;
-	    	dirp = readdir_r(mydir, &dir);
-            ],
-	    AC_DEFINE(GLOBUS_HAVE_READDIR_R_2) globus_readdir_args=2)
-        fi
+	            	],
+        	    	[
+	    		   struct dirent dir, *dirp;
+	    		   DIR *mydir;
+	    		   dirp = readdir_r(mydir, &dir);
+            	    	],
+	    		AC_DEFINE(GLOBUS_HAVE_READDIR_R_2) globus_readdir_args=2)
+        	fi
+	else
+        	AC_TRY_COMPILE(
+        	[
+#if defined(HAVE_DIRENT_H)
+#   include <dirent.h>
+#   define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+#   if defined(HAVE_SYS_NDIR_H)
+#       include <sys/ndir.h>
+#   endif
+#   if defined(HAVE_SYS_DIR_H)
+#       include <sys/dir.h>
+#   endif
+#   if defined(HAVE_NDIR_H)
+#       include <ndir.h>
+#   endif
+#endif
+		],
+        	[
+	    	   struct dirent dir, *dirp;
+	    	   DIR *mydir;
+	    	   dirp = readdir_r(mydir, &dir);
+            	],
+	    	AC_DEFINE(GLOBUS_HAVE_READDIR_R_2) globus_readdir_args=2)
+
+        	if test $globus_readdir_args = no; then
+            		AC_TRY_COMPILE(
+            		[
+#if defined(HAVE_DIRENT_H)
+#   include <dirent.h>
+#   define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+#   if defined(HAVE_SYS_NDIR_H)
+#       include <sys/ndir.h>
+#   endif
+#   if defined(HAVE_SYS_DIR_H)
+#       include <sys/dir.h>
+#   endif
+#   if defined(HAVE_NDIR_H)
+#       include <ndir.h>
+#   endif
+#endif
+        		],
+        		[
+	    		   struct dirent dir, *dirp;
+	    		   DIR *mydir;
+	    		   int rc;
+	    		   rc = readdir_r(mydir, &dir, &dirp);
+        		],
+        		AC_DEFINE(GLOBUS_HAVE_READDIR_R_3) globus_readdir_args=3)
+		fi
+	fi
         AC_MSG_RESULT($globus_readdir_args)
     ])
 fi
