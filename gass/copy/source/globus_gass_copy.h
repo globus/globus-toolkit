@@ -108,6 +108,7 @@ typedef enum
     GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS,
     GLOBUS_GASS_COPY_STATUS_READ_COMPLETE,
     GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE,
+    GLOBUS_GASS_COPY_STATUS_CANCEL,
     GLOBUS_GASS_COPY_STATUS_DONE,
 } globus_gass_copy_status_t;
 
@@ -131,6 +132,7 @@ struct globus_gass_copy_handle_s
    * the status of the current transfer
    */
   globus_gass_copy_status_t  status;
+
   /*
    * pointer to the state structure which contains internal info related to a transfer
    */
@@ -140,14 +142,32 @@ struct globus_gass_copy_handle_s
    * pointer to user data
    */
   void *		     user_pointer;
+
+  /*
+   * indicates if the 3rd party transfer is done by this library or externally
+   * to this library.
+   */
+  globus_bool_t         external_third_party;
+
   /*
    * pointer to user callback function
    */
   globus_gass_copy_callback_t         user_callback;
+
   /*
    * pointer to user argument to user callback function
    */
   void *                              callback_arg;
+
+  /*
+   * pointer to user cancel callback function
+   */
+  globus_gass_copy_callback_t         user_cancel_callback;
+
+  /*
+   * pointer to user argument to user cancel callback function
+   */
+  void *                              cancel_callback_arg;
 
   /*
    * Error object to pass to the callback function
@@ -159,8 +179,8 @@ struct globus_gass_copy_handle_s
    */
   int                                 buffer_length;
 
- 
-  globus_ftp_client_handle_t	      ftp_handle;
+  globus_ftp_client_handle_t	      ftp_source_handle;
+  globus_ftp_client_handle_t	      ftp_dest_handle;
   
 };
 

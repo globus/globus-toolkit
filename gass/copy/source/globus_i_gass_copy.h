@@ -23,18 +23,6 @@ EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-/** FIXX - 
- * valid URL schemes
- * which are no longer needed.  delete these once i'm convinced of that.
- typedef enum
- {
- GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED,
- GLOBUS_I_GASS_COPY_URL_SCHEME_FTP,
- GLOBUS_I_GASS_COPY_URL_SCHEME_HTTP,
- GLOBUS_I_GASS_COPY_URL_SCHEME_FILE,
-} globus_i_gass_copy_url_scheme_t;
-*/
-
 /**
  * target status
  */
@@ -76,6 +64,24 @@ typedef struct
   globus_bool_t                       use_err;
   globus_object_t *                   err;
 } globus_i_gass_copy_monitor_t;
+
+/**
+ * gass copy cancel struct
+ */
+typedef struct globus_i_gass_copy_cancel_s
+{
+  /*
+   * the gass copy handle
+   */
+  globus_gass_copy_handle_t * handle;
+
+  /*
+   * Indicates which side of the transfer to cancel
+   * If TRUE then cancelling the source otherwise the destination.
+   */
+  globus_bool_t              canceling_source;
+
+} globus_i_gass_copy_cancel_t;
 
 /**
  * GASS copy target (e.g. source, destination) transfer information.
@@ -184,8 +190,6 @@ typedef struct globus_i_gass_copy_state_target_s
 	    globus_bool_t			seekable;
 	} io;
     } data;
-
-    globus_i_gass_copy_cancel_status_t cancel;
 } globus_i_gass_copy_target_t;
 
 
@@ -223,6 +227,11 @@ struct globus_gass_copy_state_s
      * coordinates the modifying of the state,  aside from the target structures
      */
     globus_mutex_t                      mutex;
+
+    /**
+     * indicates the status of the cancel operation.
+     */
+    globus_i_gass_copy_cancel_status_t cancel;
     
 };
 
