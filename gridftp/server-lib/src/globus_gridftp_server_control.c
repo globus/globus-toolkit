@@ -3212,6 +3212,8 @@ globus_i_gsc_send(
     void *                              user_arg)
 {
     globus_gridftp_server_control_transfer_cb_t user_cb;
+    globus_i_gsc_module_func_t *        mod_func;
+    void *                              mod_arg;
     GlobusGridFTPServerName(globus_i_gsc_send);
 
     if(op == NULL)
@@ -3231,10 +3233,11 @@ globus_i_gsc_send(
         if(mod_name == NULL)
         {
             user_cb = op->server_handle->funcs.default_send_cb;
+            mod_arg = op->server_handle->funcs.default_send_arg;
         }
         else
         {
-            user_cb = (globus_gridftp_server_control_transfer_cb_t)
+            mod_func = (globus_i_gsc_module_func_t *)
                 globus_hashtable_lookup(
                     &op->server_handle->funcs.send_cb_table, (char *)mod_name);
             if(user_cb == NULL)
@@ -3242,6 +3245,8 @@ globus_i_gsc_send(
                 globus_mutex_unlock(&op->server_handle->mutex);
                 return GlobusGridFTPServerErrorParameter("op");
             }
+            user_cb = mod_func->func;
+            mod_arg = mod_func->user_arg;
         }
         globus_range_list_init(&op->range_list);
         if(op->server_handle->range_list == NULL)
@@ -3273,13 +3278,13 @@ globus_i_gsc_send(
     if(user_cb != NULL)
     {
         user_cb(
-            op, 
+            op,
             op->server_handle->data_object->user_handle,
             op->path,
             op->mod_name,
             op->mod_parms,
             op->range_list,
-            op->server_handle->funcs.data_destroy_arg);
+            mod_arg);
     }
     else
     {

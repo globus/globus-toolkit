@@ -1067,7 +1067,7 @@ globus_l_gfs_file_recv(
     open_flags = GLOBUS_XIO_FILE_BINARY | 
         GLOBUS_XIO_FILE_CREAT | 
         GLOBUS_XIO_FILE_WRONLY;
-    if(offset == 0 && length == -1)
+    if(arguments == NULL)
     {
         open_flags |= GLOBUS_XIO_FILE_TRUNC;
     }
