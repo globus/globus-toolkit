@@ -54,6 +54,7 @@ awk=${GLOBUS_SH_AWK-awk}
 wc=${GLOBUS_SH_WC-wc}
 ########
 
+tmp_file="${local_tmpdir}/globus_tmp_file.$$"
 
 
 ############################################################
@@ -216,7 +217,7 @@ GetNodeCount
 
 
 # Collect job information into file for later processing
-${qstat} -r > "${tmp_file}"
+${qstat} -a > "${tmp_file}"
 
 
 # Collect queue information 
@@ -334,6 +335,9 @@ ${qstat} -q | while read entry ; do
          status=$9
          if [ $status = "R" ]; then
              status="running"
+         fi
+         if [ $status = "Q" ]; then
+             status="queued"
          fi
          shift
          elapsedtime=`echo "$9" | awk -F: '{print 60 * $1 + $2}'`
