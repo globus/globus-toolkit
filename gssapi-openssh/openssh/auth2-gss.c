@@ -144,7 +144,7 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
         
         if (GSS_ERROR(maj_status)) {
                 /* Failure <sniff> */
-		ssh_gssapi_send_error(maj_status,min_status);
+		ssh_gssapi_send_error(gssctxt->oid,maj_status,min_status);
                 authctxt->postponed = 0;
 		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
                 dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);

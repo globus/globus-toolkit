@@ -959,72 +959,8 @@ try_password_authentication(char *prompt)
 }
 
 #ifdef GSSAPI
-/*
- * This code stolen from the gss-client.c sample program from MIT's
- * kerberos 5 distribution.
- */
-
-gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
-
-static void display_status_1(m, code, type)
- char *m;
- OM_uint32 code;
- int type;
-{
-  OM_uint32 maj_stat, min_stat;
-  gss_buffer_desc msg;
-  OM_uint32 msg_ctx;
-
-  msg_ctx = 0;
-  while (1) {
-    maj_stat = gss_display_status(&min_stat, code,
-                                  type, GSS_C_NULL_OID,
-                                  &msg_ctx, &msg);
-    debug("GSS-API error %s: %s", m, (char *)msg.value);
-    (void) gss_release_buffer(&min_stat, &msg);
-
-    if (!msg_ctx)
-      break;
-  }
-}
-
-static void display_gssapi_status(msg, maj_stat, min_stat)
-  char *msg;
-  OM_uint32 maj_stat;
-  OM_uint32 min_stat;
-{
-  display_status_1(msg, maj_stat, GSS_C_GSS_CODE);
-  display_status_1(msg, min_stat, GSS_C_MECH_CODE);
-}
-
 #ifdef GSI
-int get_gssapi_cred()
-{
-  OM_uint32 maj_stat;
-  OM_uint32 min_stat;
-
-
-  debug("calling gss_acquire_cred");
-  maj_stat = gss_acquire_cred(&min_stat,
-                              GSS_C_NO_NAME,
-                              GSS_C_INDEFINITE,
-                              GSS_C_NO_OID_SET,
-                              GSS_C_INITIATE,
-                              &gss_cred,
-                              NULL,
-                              NULL);
-
-  if (maj_stat != GSS_S_COMPLETE) {
-    display_gssapi_status("Failuring acquiring GSSAPI credentials",
-                          maj_stat, min_stat);
-    gss_cred = GSS_C_NO_CREDENTIAL; /* should not be needed */
-    return 0;
-  }
-
-  return 1;     /* Success */
-}
-
-char * get_gss_our_name()
+char * get_gsi_name()
 {
   OM_uint32 maj_stat;
   OM_uint32 min_stat;
@@ -1032,6 +968,23 @@ char * get_gss_our_name()
   gss_buffer_desc tmpname;
   gss_buffer_t tmpnamed = &tmpname;
   char *retname;
+  gss_OID_set oidset;
+  gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
+
+  gss_create_empty_oid_set(&min_stat,&oidset);
+  gss_add_oid_set_member(&min_stat,&supported_mechs[GSS_GSI].oid,&oidset);
+  maj_stat = gss_acquire_cred(&min_stat,
+                              GSS_C_NO_NAME,
+                              GSS_C_INDEFINITE,
+                              oidset,
+                              GSS_C_INITIATE,
+                              &gss_cred,
+                              NULL,
+                              NULL);
+
+  if (maj_stat != GSS_S_COMPLETE) {
+      goto error;
+  }
 
   debug("calling gss_inquire_cred");
   maj_stat = gss_inquire_cred(&min_stat,
@@ -1041,7 +994,7 @@ char * get_gss_our_name()
                               NULL,
                               NULL);
   if (maj_stat != GSS_S_COMPLETE) {
-    return NULL;
+      goto error;
   }
 
   maj_stat = gss_display_name(&min_stat,
@@ -1049,12 +1002,12 @@ char * get_gss_our_name()
 			      tmpnamed,
 			      NULL);
   if (maj_stat != GSS_S_COMPLETE) {
-     return NULL;
+      goto error;
   }
   debug("gss_display_name finsished");
   retname = (char *)malloc(tmpname.length + 1);
   if (!retname) {
-    return NULL;
+      goto error;
   }
   memcpy(retname, tmpname.value, tmpname.length);
   retname[tmpname.length] = '\0';
@@ -1063,6 +1016,11 @@ char * get_gss_our_name()
   gss_release_buffer(&min_stat, tmpnamed);
 
   return retname;
+
+ error:
+  debug("Failed to set GSI username from credentials");
+  ssh_gssapi_error(&supported_mechs[GSS_GSI].oid, maj_stat, min_stat);
+  return NULL;
 }
 #endif /* GSI */
 
@@ -1077,17 +1035,17 @@ int try_gssapi_authentication(char *host, Options *options)
   gss_ctx_id_t gss_context;
   gss_OID_desc mech_oid;
   gss_OID name_type;
-  gss_OID_set my_mechs;
-  int my_mech_num;
+  gss_OID_set gss_mechs, my_mechs;
+  int my_mech_num, i, present;
   OM_uint32 maj_stat;
   OM_uint32 min_stat;
   int ret_stat = 0;                             /* 1 == success */
   OM_uint32 req_flags = 0;
   OM_uint32 ret_flags;
   int type;
-  char *gssapi_auth_type = NULL;
   char *xhost;
   unsigned int slen;
+  Gssctxt *ctx = NULL;
 
   /* Make a copy of the host name, in case it was returned by a
    * previous call to gethostbyname(). */	
@@ -1109,25 +1067,6 @@ int try_gssapi_authentication(char *host, Options *options)
   /* Do mutual authentication */
   req_flags |= GSS_C_MUTUAL_FLAG;
 
-#ifdef KRB5
-
-  gssapi_auth_type = "GSSAPI/Kerberos 5";
-
-#endif
-
-#ifdef GSI
-
-  gssapi_auth_type = "GSSAPI/GLOBUS";
-
-#endif /* GSI */
-
-  if (gssapi_auth_type == NULL) {
-      debug("No GSSAPI type defined during compile");
-      goto cleanup;
-  }
-
-  debug("Attempting %s authentication", gssapi_auth_type);
-
   service_name = (char *) xmalloc(strlen("host") +
 				  strlen(xhost) +
 				  2 /* 1 for '@', 1 for NUL */);
@@ -1143,26 +1082,11 @@ int try_gssapi_authentication(char *host, Options *options)
 
   /* Forward credentials? */
 
-#ifdef KRB5
-  if (options->kerberos_tgt_passing) {
-      debug("Forwarding Kerberos credentials");
-      req_flags |= GSS_C_DELEG_FLAG;
-  }
-#endif /* KRB5 */
-
 #ifdef GSSAPI
   if(options->gss_deleg_creds) {
-    debug("Forwarding X509 proxy certificate");
+    debug("Delegating GSSAPI credentials");
     req_flags |= GSS_C_DELEG_FLAG;
   }
-#ifdef GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG
-  /* Forward limited credentials, overrides gss_deleg_creds */
-  if(options->gss_globus_deleg_limited_proxy) {
-    debug("Forwarding limited X509 proxy certificate");
-    req_flags |= (GSS_C_DELEG_FLAG | GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
-  }
-#endif /* GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG */
-
 #endif /* GSSAPI */
 
   debug("req_flags = %u", (unsigned int)req_flags);
@@ -1176,27 +1100,71 @@ int try_gssapi_authentication(char *host, Options *options)
   service_name = NULL;
 
   if (maj_stat != GSS_S_COMPLETE) {
-    display_gssapi_status("importing service name", maj_stat, min_stat);
+    ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
     goto cleanup;
   }
 
-  maj_stat = gss_indicate_mechs(&min_stat, &my_mechs);
+  maj_stat = gss_indicate_mechs(&min_stat, &gss_mechs);
 
   if (maj_stat != GSS_S_COMPLETE) {
-    display_gssapi_status("indicating mechs", maj_stat, min_stat);
+    ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
     goto cleanup;
+  }
+
+  /* The GSSAPI supports the mechs in gss_mechs, but which ones do
+     we have credentials for?  We only get one try, so we don't want
+     to propose a mechanism we know is going to fail. */
+  maj_stat = gss_create_empty_oid_set(&min_stat, &my_mechs);
+  for (i=0; supported_mechs[i].name != NULL; i++) {
+      maj_stat = gss_test_oid_set_member(&min_stat, &supported_mechs[i].oid,
+					 gss_mechs, &present);
+      if (present) {
+	  if (!GSS_ERROR(ssh_gssapi_client_ctx(&ctx, &supported_mechs[i].oid,
+					       host))) {
+	      maj_stat = gss_add_oid_set_member(&min_stat,
+						&supported_mechs[i].oid,
+						&my_mechs);
+	      debug("GSSAPI mechanism %s supported", supported_mechs[i].name);
+	  } else {
+	      debug("no credentials for GSSAPI mechanism %s",
+		    supported_mechs[i].name);
+	  }
+      } else {
+	  debug("GSSAPI mechanism %s not supported", supported_mechs[i].name);
+      }
   }
 
   /*
    * Send over a packet to the daemon, letting it know we're doing
    * GSSAPI and our mech_oid(s).
    */
-  debug("Sending mech oid to server");
+  debug("Sending mech oid(s) to server");
   packet_start(SSH_CMSG_AUTH_GSSAPI);
   packet_put_int(my_mechs->count); /* Number of mechs we're sending */
-  for (my_mech_num = 0; my_mech_num < my_mechs->count; my_mech_num++)
+#ifdef GSI
+  /* Send GSI before Kerberos, because if GSI fails, we can always fall
+     back and try regular Kerberos authentication with our Kerberos cred. */
+  maj_stat = gss_test_oid_set_member(&min_stat, &supported_mechs[GSS_GSI].oid,
+				     my_mechs, &present);
+  if (present) {
+      packet_put_string(supported_mechs[GSS_GSI].oid.elements,
+                        supported_mechs[GSS_GSI].oid.length);
+  }
+#endif
+  for (my_mech_num = 0; my_mech_num < my_mechs->count; my_mech_num++) {
+#ifdef GSI
+      /* Skip GSI.  We already sent it above. */
+      if ((my_mechs->elements[my_mech_num].length ==
+	   supported_mechs[GSS_GSI].oid.length) &&
+	  memcmp(my_mechs->elements[my_mech_num].elements,
+		 supported_mechs[GSS_GSI].oid.elements,
+		 my_mechs->elements[my_mech_num].length) == 0) {
+	  continue;
+      }
+#endif
       packet_put_string(my_mechs->elements[my_mech_num].elements,
                         my_mechs->elements[my_mech_num].length);
+  }
   packet_send();
   packet_write_wait();
 
@@ -1250,7 +1218,7 @@ int try_gssapi_authentication(char *host, Options *options)
   do {
     maj_stat =
       gss_init_sec_context(&min_stat,
-                           gss_cred,
+                           GSS_C_NO_CREDENTIAL,
                            &gss_context,
                            target_name,
                            &mech_oid,
@@ -1267,7 +1235,7 @@ int try_gssapi_authentication(char *host, Options *options)
       (void) gss_release_buffer(&min_stat, &recv_tok);
 
     if (maj_stat != GSS_S_COMPLETE && maj_stat != GSS_S_CONTINUE_NEEDED) {
-      display_gssapi_status("initializing context", maj_stat, min_stat);
+      ssh_gssapi_error(&mech_oid, maj_stat, min_stat);
 
       /* Send an abort message */
       packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
@@ -1321,7 +1289,7 @@ int try_gssapi_authentication(char *host, Options *options)
   /* Success */
   ret_stat = 1;
 
-  debug("%s authentication successful", gssapi_auth_type);
+  debug("GSSAPI authentication successful");
 
   /*
    * Read hash of host and server keys and make sure it
@@ -1355,8 +1323,7 @@ int try_gssapi_authentication(char *host, Options *options)
                           &qop_state);
 
     if (maj_stat != GSS_S_COMPLETE) {
-      display_gssapi_status("unwraping SSHD key hash",
-                            maj_stat, min_stat);
+      ssh_gssapi_error(&mech_oid, maj_stat, min_stat);
       packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
                         "Unwrapping of hash failed.");
     }
@@ -1649,14 +1616,13 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
    */
   if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
       options.gss_authentication) {
-    if (get_gssapi_cred()) {
       char * retname;
       char * newname;
 
 
       save_server_user = server_user;
 
-      retname = get_gss_our_name();
+      retname = get_gsi_name();
 
       if (retname) {
         debug("passing gssapi name '%s'", retname);
@@ -1675,14 +1641,7 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
           }
         }
       }
-    } else {
-      /*
-       * If we couldn't successfully get our GSSAPI credentials then
-       * turn off gssapi authentication
-       */
-      options.gss_authentication = 0;
-    }
-    debug("server_user %s", server_user);
+      debug("server_user %s", server_user);
   }
 #endif /* GSI */
 #endif /* GSSAPI */

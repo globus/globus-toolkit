@@ -250,7 +250,8 @@ gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
 
 /* All this effort to report an error ... */
 static void
-ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
+ssh_gssapi_error_ex(gss_OID mech, OM_uint32 major_status,
+		    OM_uint32 minor_status,
 		    int send_packet) {
 	OM_uint32 lmaj, lmin;
         gss_buffer_desc msg = {0,NULL};
@@ -261,7 +262,7 @@ ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
         do {
         	lmaj = gss_display_status(&lmin, major_status,
         				  GSS_C_GSS_CODE,
-        				  GSS_C_NULL_OID,
+        				  mech,
         				  &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
@@ -274,7 +275,7 @@ ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
         do {
         	lmaj = gss_display_status(&lmin, minor_status,
         				  GSS_C_MECH_CODE,
-        				  GSS_C_NULL_OID,
+        				  mech,
         				  &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
@@ -285,13 +286,14 @@ ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
 }
 
 void
-ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
-    ssh_gssapi_error_ex(major_status, minor_status, 0);
+ssh_gssapi_error(gss_OID mech,OM_uint32 major_status,OM_uint32 minor_status) {
+    ssh_gssapi_error_ex(mech, major_status, minor_status, 0);
 }
 
 void
-ssh_gssapi_send_error(OM_uint32 major_status,OM_uint32 minor_status) {
-    ssh_gssapi_error_ex(major_status, minor_status, 1);
+ssh_gssapi_send_error(gss_OID mech,
+		      OM_uint32 major_status,OM_uint32 minor_status) {
+    ssh_gssapi_error_ex(mech, major_status, minor_status, 1);
 }
 
 
@@ -380,7 +382,7 @@ ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
       					NULL);
 	ctx->status=maj_status;
       	if (GSS_ERROR(maj_status)) {
-      		ssh_gssapi_error(maj_status,min_status);
+      		ssh_gssapi_error(ctx->oid,maj_status,min_status);
       	}
       	return(maj_status);
 }
@@ -394,7 +396,6 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 				gss_buffer_desc *send_tok, OM_uint32 *flags) 
 {
 	OM_uint32 maj_status, min_status;
-	gss_OID mech;
 	
 	maj_status=gss_accept_sec_context(&min_status,
 					  &ctx->context,
@@ -402,13 +403,13 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 					  recv_tok,
 					  GSS_C_NO_CHANNEL_BINDINGS,
 					  &ctx->client,
-					  &mech,
+					  &ctx->oid,
 					  send_tok,
 					  flags,
 					  NULL,
 					  &ctx->client_creds);
 	if (GSS_ERROR(maj_status)) {
-		ssh_gssapi_send_error(maj_status,min_status);
+		ssh_gssapi_send_error(ctx->oid,maj_status,min_status);
 	}
 	
 	if (ctx->client_creds) {
@@ -469,7 +470,7 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
                                    	&gssbuf,
                                         GSS_C_NT_HOSTBASED_SERVICE,
                                         &ctx->name))) {
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_error(ctx->oid, maj_status,min_status);
 	}
 	
 	xfree(xhost);
@@ -506,7 +507,7 @@ ssh_gssapi_acquire_cred(Gssctxt *ctx) {
 				    &ctx->creds,
 				    NULL,
 				    NULL))) {
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_error(GSS_C_NO_OID,maj_status,min_status);
 	}
 				
 	gss_release_oid_set(&min_status, &oidset);
@@ -524,7 +525,7 @@ ssh_gssapi_getclient(Gssctxt *ctx, enum ssh_gss_id *type,
 	
 	*type=ssh_gssapi_get_ctype(ctx);
 	if ((maj_status=gss_display_name(&min_status,ctx->client,name,NULL))) {
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_error(GSS_C_NO_OID,maj_status,min_status);
 	}
 	
 	/* This is icky. There appears to be no way to copy this structure,
@@ -549,13 +550,13 @@ ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, gss_buffer_desc *hash) {
 					buffer,
 					NULL,
 					hash)))
-			ssh_gssapi_error(maj_status,min_status);
+			ssh_gssapi_error(ctx->oid,maj_status,min_status);
 	}
 	else
 
 	if ((maj_status=gss_get_mic(&min_status,ctx->context,
 				    GSS_C_QOP_DEFAULT, buffer, hash))) {
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_error(ctx->oid,maj_status,min_status);
 	}
 	
 	return(maj_status);

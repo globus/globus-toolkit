@@ -244,7 +244,8 @@ ssh_gssapi_krb5_storecreds(gss_buffer_t export_buffer) {
 					       krb5_cred_handle, 
 					       ccache))) {
 		log("gss_krb5_copy_ccache() failed");
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_error(&supported_mechs[GSS_KERBEROS].oid,
+				 maj_status,min_status);
 		krb5_cc_destroy(krb_context,ccache);
 		return GSS_S_FAILURE;
 	}
@@ -438,7 +439,7 @@ ssh_gssapi_storecreds()
 	maj_stat = gss_export_cred(&min_stat, gssapi_client_creds,
 				   GSS_C_NO_OID, 1, &export_cred);
 	if (GSS_ERROR(maj_stat) && maj_stat != GSS_S_UNAVAILABLE) {
-		ssh_gssapi_error(maj_stat, min_stat);
+		ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
 		return;
 	}
 #endif
@@ -448,7 +449,7 @@ ssh_gssapi_storecreds()
 	    ssh_gssapi_export_cred(&min_stat, gssapi_client_creds,
 				   GSS_C_NO_OID, 1, &export_cred);
 	    if (GSS_ERROR(maj_stat)) {
-		ssh_gssapi_error(maj_stat, min_stat);
+		ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
 	    }
 	}
 
@@ -460,6 +461,11 @@ ssh_gssapi_storecreds()
 		return;
 	}
 	*p++ = '\0';
+#ifdef GSI
+	if (strcmp((char *)export_cred.value,"X509_USER_DELEG_PROXY") == 0)
+	    gssapi_cred_store.envvar = strdup("X509_USER_PROXY");
+	else
+#endif
 	gssapi_cred_store.envvar = strdup((char *)export_cred.value);
 	gssapi_cred_store.envval = strdup(p);
 #ifdef USE_PAM
