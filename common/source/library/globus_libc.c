@@ -3430,8 +3430,9 @@ globus_libc_contact_string_to_ints(
     int                                 i;
     char                                buf[256];
     struct in_addr                      addr4;
-    struct in_addr                      addr6;
+    struct in6_addr                     addr6;
     unsigned char *                     paddr;
+    
     memset(host, 0, sizeof(int) * 16);
     strncpy(buf, contact_string, sizeof(buf));
     buf[255] = 0;
