@@ -1,8 +1,10 @@
 #include "globus_i_xio_http.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @defgroup globus_i_xio_http_handle Internal Handle Implementation
  */
+#endif
 
 static
 void

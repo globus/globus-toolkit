@@ -1,9 +1,12 @@
 #include "globus_i_xio_http.h"
 #include "globus_i_xio.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @defgroup globus_i_xio_http_server Internal Server Implementation
  */
+#endif
+
 static
 void
 globus_l_xio_http_accept_callback(

@@ -2,9 +2,11 @@
 #include "globus_i_xio.h"
 #include <limits.h>
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @defgroup globus_i_xio_http_transform Internal Transform Implementation
  */
+#endif
 
 static
 void
