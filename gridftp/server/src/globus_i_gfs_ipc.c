@@ -1457,7 +1457,7 @@ globus_gfs_ipc_request_passive_data(
  */
 
 globus_result_t
-globus_gfs_ipc_request_resource_query(
+globus_gfs_ipc_request_resource(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
     globus_gfs_resource_state_t *       resource_state,
@@ -1468,7 +1468,7 @@ globus_gfs_ipc_request_resource_query(
     globus_gfs_ipc_request_t *          request = NULL;
     globus_byte_t *                     buffer = NULL;
     globus_i_gfs_ipc_handle_t *         ipc;
-    GlobusGFSName(globus_gfs_ipc_request_resource_query);
+    GlobusGFSName(globus_gfs_ipc_request_resource);
 
     ipc = ipc_handle;
     globus_mutex_lock(&ipc->mutex);

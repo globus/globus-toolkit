@@ -382,7 +382,7 @@ globus_l_gfs_request_resource(
             GLOBUS_TRUE : GLOBUS_FALSE;
 
 
-    globus_gfs_ipc_request_resource_query(
+    globus_gfs_ipc_request_resource(
         instance->ipc_handle,
         &request_id,
         resource_state,

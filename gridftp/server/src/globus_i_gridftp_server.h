@@ -120,6 +120,5 @@ typedef enum
 #include "globus_i_gfs_data.h"
 #include "globus_i_gfs_acl.h"
 #include "globus_i_gfs_config.h"
-#include "globus_i_gfs_ipc.h"
 
 #endif
