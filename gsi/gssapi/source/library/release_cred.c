@@ -48,38 +48,47 @@ Returns:
 **********************************************************************/
 
 OM_uint32 
-GSS_CALLCONV gss_release_cred
-(OM_uint32 *          minor_status,
- gss_cred_id_t *      cred_handle_P
-)
+GSS_CALLCONV gss_release_cred(
+    OM_uint32 *                         minor_status,
+    gss_cred_id_t *                     cred_handle_P)
 {
-	gss_cred_id_desc** cred_handle = 
-			(gss_cred_id_desc**) cred_handle_P ;
-	OM_uint32 inv_minor_status = 0 , inv_major_status = 0 ;
+    gss_cred_id_desc**                  cred_handle =
+        (gss_cred_id_desc**) cred_handle_P;
+    OM_uint32                           inv_minor_status = 0;
+    OM_uint32                           inv_major_status = 0;
 
-	*minor_status = 0;
+    *minor_status = 0;
 #ifdef DEBUG
-	fprintf(stderr,"release_cred:\n");
+    fprintf(stderr,"release_cred:\n");
 #endif
 
-	if (*cred_handle == NULL || *cred_handle == GSS_C_NO_CREDENTIAL ) {
-		return GSS_S_COMPLETE ;
-	}
+    if (*cred_handle == NULL || *cred_handle == GSS_C_NO_CREDENTIAL )
+    {
+        return GSS_S_COMPLETE ;
+    }
 
-	if ((*cred_handle)->globusid != NULL) {
-		inv_major_status = gss_release_name(&inv_minor_status,
-		(void*) &((*cred_handle)->globusid)) ;
-	}
+    if ((*cred_handle)->globusid != NULL)
+    {
+        inv_major_status = gss_release_name(
+            &inv_minor_status,
+            (void*) &((*cred_handle)->globusid)) ;
+    }
 
-	proxy_cred_desc_free((*cred_handle)->pcd);
+    proxy_cred_desc_free((*cred_handle)->pcd);
 
-	if ((*cred_handle)->gs_bio_err) {
-		BIO_free((*cred_handle)->gs_bio_err);
-	}
+    if ((*cred_handle)->gs_bio_err)
+    {
+        BIO_free((*cred_handle)->gs_bio_err);
+    }
 
-	free(*cred_handle) ;
-	*cred_handle = GSS_C_NO_CREDENTIAL;
+    free(*cred_handle) ;
+    *cred_handle = GSS_C_NO_CREDENTIAL;
 
-	return GSS_S_COMPLETE ;
+    return GSS_S_COMPLETE ;
 
 } /* gss_release_cred */
+
+
+
+
+

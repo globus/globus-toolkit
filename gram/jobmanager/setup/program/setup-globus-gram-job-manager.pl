@@ -51,7 +51,6 @@ my $metadata = new Grid::GPT::Setup(package_name => "globus_gram_job_manager_set
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
-my $jm_tmp = "$globusdir/tmp";
 my $gk_conf = "$globusdir/etc/globus-gatekeeper.conf";
 my $jm_conf = "$globusdir/etc/globus-job-manager.conf";
 my $port;
@@ -156,30 +155,10 @@ print CONF "-globus-host-manufacturer $manuf\n";
 print CONF "-globus-host-osname $os_name\n";
 print CONF "-globus-host-osversion $os_version\n";
 print CONF "-save-logfile on_errors\n";
-print CONF "-job-reporting-dir $jm_tmp\n";
 print CONF "-machine-type unknown\n";
 close(CONF);
 
-
 print "Done\n";
-
-if ( ! -d "$jm_tmp" )
-{
-   print "Creating directory for job reporting...\n";
-   $result = system("mkdir -p $jm_tmp");
-   if ($result != 0)
-   {
-      die "Failed to create job reporting directory - $jm_tmp";
-   }
-
-   $result = system("chmod 777 $jm_tmp");
-   if ($result != 0)
-   {
-      die "Failed to set permissions on $jm_tmp";
-   }
-
-   print "Done\n";
-}
 
 
 if ( ! -d "$globusdir/etc/grid-services" )
@@ -199,7 +178,8 @@ print SERVICE "stderr_log,local_cred - ".
               "$globusdir/libexec/globus-job-manager ".
               "globus-job-manager ".
               "-conf $globusdir/etc/globus-job-manager.conf ".
-              "-type $selected_jm_type -rdn $rdn -machine-type unknown ";
+              "-type $selected_jm_type -rdn $rdn -machine-type unknown ".
+              "-publish-jobs\n";
 
 close(SERVICE);
 print "Done\n";

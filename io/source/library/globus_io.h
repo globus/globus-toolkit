@@ -44,6 +44,9 @@ EXTERN_C_BEGIN
 #include "globus_gss_assist.h"
 #endif
 
+#ifndef _HAVE_GSI_EXTENDED_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
 
 struct globus_netlogger_handle_s;
 typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;
@@ -155,6 +158,7 @@ typedef struct
      * NETLOGGER
      */
     globus_netlogger_handle_t *         nl_handle;
+    globus_callback_space_t             space;
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 } globus_io_attr_t;
@@ -360,8 +364,13 @@ typedef enum
 {
     /** Don't do authentication */
     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE = 0,
-    /** Authenticate with the GSSAPI library  */
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI
+    /** Authenticate with the GSSAPI library using mutual
+     *  authenitcation.
+     */
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI = 1,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL = 1,
+    /** Authenticate without a client cert */
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS = 2
 } globus_io_secure_authentication_mode_t;
 
 /** 
@@ -672,9 +681,9 @@ typedef struct
     gss_cred_id_t				credential;
     globus_bool_t				internal_credential;
     char *					authorized_identity;
-    globus_io_secure_authorization_callback_t
-						auth_callback;
+    globus_io_secure_authorization_callback_t   auth_callback;
     void *					auth_callback_arg;
+    gss_OID_set                                 extension_oids;
 } globus_i_io_securesocketattr_instance_t;
 #endif
 
@@ -866,7 +875,7 @@ struct globus_io_handle_s
     globus_io_handle_type_t			type;
 
     /* some handle state information */
-    volatile globus_io_handle_state_t		state;
+    globus_io_handle_state_t		        state;
     void *					user_pointer;
 
     /* 
@@ -874,6 +883,8 @@ struct globus_io_handle_s
      */
     char *                                      nl_event_id;
     globus_netlogger_handle_t *                 nl_handle;
+    
+    globus_callback_space_t                     space;
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 };
@@ -1310,6 +1321,16 @@ globus_io_file_posix_convert(
  * querying of attribute values.
  */
 
+globus_result_t 
+globus_io_attr_set_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t             space);
+
+globus_result_t 
+globus_io_attr_get_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t *           space);
+
 /*
  *  NETLOGGER STUFF
  */
@@ -1486,6 +1507,15 @@ globus_io_attr_get_secure_authorization_mode(
 					mode,
     globus_io_secure_authorization_data_t *
 					data);
+globus_result_t
+globus_io_attr_set_secure_extension_oids(
+    globus_io_attr_t *			attr,
+    gss_OID_set                         extension_oids);
+
+globus_result_t
+globus_io_attr_get_secure_extension_oids(
+    globus_io_attr_t *			attr,
+    gss_OID_set *                       extension_oids);
 
 globus_result_t
 globus_io_secure_authorization_data_initialize(

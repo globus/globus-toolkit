@@ -20,22 +20,20 @@ AC_DEFUN([LAC_DEFINE_VAR],
     fi
 ])
 
-dnl LAC_CHECK_DL_LIB
-AC_DEFUN([LAC_CHECK_DL_LIB],
+dnl CHECK_NEED_LDL
+AC_DEFUN([CHECK_NEED_LDL],
 [
-    AC_CHECK_LIB([dl],[dlopen],
+    AC_CHECK_FUNC([dlopen],
+    [],
     [
-        DL_LIB=-ldl
-    ],
-    [
-        AC_CHECK_LIB([dld],[dlopen],
+        AC_CHECK_LIB([dl],[dlopen],
         [
-            DL_LIB=-ldld
+            EXTERNAL_LIBS="$EXTERNAL_LIBS -ldl"
         ],
         [
-            AC_CHECK_FUNC([dlopen],
+            AC_CHECK_LIB([dld],[dlopen],
             [
-	        DL_LIB=
+                EXTERNAL_LIBS="$EXTERNAL_LIBS -ldld"
             ],
             [
                 AC_MSG_ERROR("Unable to find dynamic linking library")

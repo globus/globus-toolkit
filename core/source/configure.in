@@ -87,8 +87,6 @@ fi
 
 AC_SUBST(GLOBUS_THREADS)
 
-LAC_MP
-
 dnl Automake is using these for executables somehow
 AC_OBJEXT
 AC_EXEEXT
@@ -111,6 +109,13 @@ AC_OUTPUT(Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters
 	)
+
+
+
+
+
+
+
 
 
 

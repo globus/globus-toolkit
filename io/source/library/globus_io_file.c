@@ -64,7 +64,7 @@ globus_io_file_open(
 
     char *				myname = "globus_io_file_open";
     
-    globus_i_io_debug_printf(3, ("%s(): entering\n", myname));
+    globus_i_io_debug_printf(3, (stderr, "%s(): entering\n", myname));
 
     rc = GLOBUS_SUCCESS;
 
@@ -139,7 +139,7 @@ globus_io_file_open(
     }
     globus_i_io_mutex_unlock();
 
-    globus_i_io_debug_printf(3, ("%s(): exiting\n", myname));
+    globus_i_io_debug_printf(3, (stderr, "%s(): exiting\n", myname));
 
     return(rc);
 }
@@ -343,7 +343,8 @@ globus_io_fileattr_init(
      *  NETLOGGER
      */
     attr->nl_handle = GLOBUS_NULL;
-
+    attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
     return GLOBUS_SUCCESS;
 }
 

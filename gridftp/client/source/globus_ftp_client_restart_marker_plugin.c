@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include "version.h"
 
 #define GLOBUS_L_FTP_CLIENT_RESTART_MARKER_PLUGIN_NAME "globus_ftp_client_restart_marker_plugin"
 
@@ -25,9 +24,7 @@ globus_module_descriptor_t globus_i_ftp_client_restart_marker_plugin_module =
     GLOBUS_L_FTP_CLIENT_RESTART_MARKER_PLUGIN_NAME,
     globus_l_ftp_client_restart_marker_plugin_activate,
     globus_l_ftp_client_restart_marker_plugin_deactivate,
-    GLOBUS_NULL,
-    GLOBUS_NULL,
-    &local_version
+    GLOBUS_NULL
 };
 
 static

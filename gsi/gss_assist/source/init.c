@@ -63,45 +63,46 @@ Returns:
 
 ******************************************************************************/
 OM_uint32
-globus_gss_assist_init_sec_context
-(OM_uint32 *                            minor_status,
- const gss_cred_id_t                    cred_handle,
- gss_ctx_id_t *                         context_handle,
- char *                                 target_name_char,
- OM_uint32                              req_flags,
- OM_uint32 *                            ret_flags,
- int *                                  token_status,
- int                                    (*gss_assist_get_token)(void *, void **, size_t *), 
- void *                                 gss_assist_get_context,
- int                                    (*gss_assist_send_token)(void *, void *, size_t),
- void *                                 gss_assist_send_context)
+globus_gss_assist_init_sec_context(
+    OM_uint32 *                         minor_status,
+    const gss_cred_id_t                 cred_handle,
+    gss_ctx_id_t *                      context_handle,
+    char *                              target_name_char,
+    OM_uint32                           req_flags,
+    OM_uint32 *                         ret_flags,
+    int *                               token_status,
+    int                                 (*gss_assist_get_token)(void *, void **, size_t *), 
+    void *                              gss_assist_get_context,
+    int                                 (*gss_assist_send_token)(void *, void *, size_t),
+    void *                              gss_assist_send_context)
 {
-
-    int context_established = 0;
-
-    OM_uint32 major_status = GSS_S_COMPLETE;
-    OM_uint32 minor_status1 = 0;
-    OM_uint32 minor_status2 = 0;
-
-    gss_buffer_desc input_token_desc  = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    input_token       = &input_token_desc;
-    gss_buffer_desc output_token_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    output_token      = &output_token_desc;
-
-    gss_name_t target_name = GSS_C_NO_NAME;
-    gss_OID target_name_type = GSS_C_NO_OID;
-    gss_OID mech_type = GSS_C_NO_OID;
-    OM_uint32  time_req = 0;
-    OM_uint32  time_rec = 0;
-    gss_channel_bindings_t input_chan_bindings = 
+    int                                 context_established = 0;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           minor_status1 = 0;
+    OM_uint32                           minor_status2 = 0;
+    gss_buffer_desc                     input_token_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        input_token = &input_token_desc;
+    gss_buffer_desc                     output_token_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        output_token = &output_token_desc;
+    gss_name_t                          target_name = GSS_C_NO_NAME;
+    gss_OID                             target_name_type = GSS_C_NO_OID;
+    gss_OID                             mech_type = GSS_C_NO_OID;
+    OM_uint32                           time_req = 0;
+    OM_uint32                           time_rec = 0;
+    gss_channel_bindings_t              input_chan_bindings = 
         GSS_C_NO_CHANNEL_BINDINGS;
-    gss_OID * actual_mech_type = NULL;
+    gss_OID *                           actual_mech_type = NULL;
+    gss_buffer_desc                     tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        tmp_buffer = &tmp_buffer_desc;
 
-    gss_buffer_desc tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    tmp_buffer      = &tmp_buffer_desc;
-
-    *context_handle = GSS_C_NO_CONTEXT;
-    if(ret_flags) {
+/*
+  should not set context_handle to NULL since it may have been
+  allocated by a call to set_sec_context_option
+*/
+    
+/*    *context_handle = GSS_C_NO_CONTEXT; */
+    if(ret_flags)
+    {
         *ret_flags = 0;
     }
 
@@ -110,7 +111,8 @@ globus_gss_assist_init_sec_context
      * so get it from the cred
      */
 
-    if (target_name_char) {
+    if (target_name_char)
+    {
         if(!strncmp("GSI-NO-TARGET",target_name_char,13))
         {
             target_name = GSS_C_NO_NAME;
@@ -139,10 +141,10 @@ globus_gss_assist_init_sec_context
                                            tmp_buffer,
                                            target_name_type,
                                            &target_name);
-        }
-        
-    } else {
-
+        }        
+    }
+    else
+    {
         major_status = gss_inquire_cred(&minor_status1,
                                         cred_handle,
                                         &target_name,
@@ -152,13 +154,15 @@ globus_gss_assist_init_sec_context
     }
 
     if (major_status == GSS_S_COMPLETE)
-        while (!context_established) {
+    {
+        while (!context_established)
+        {
 #ifdef DEBUG
             fprintf(stderr,"gss_assist_init_sec_context(1)req:%8.8x:inlen:%d\n",
                     req_flags,
                     input_token->length);
 #endif
-
+            
             major_status = gss_init_sec_context(&minor_status1,
                                                 cred_handle,
                                                 context_handle,
@@ -179,49 +183,67 @@ globus_gss_assist_init_sec_context
                     output_token->length,*context_handle);
 #endif
 
-            if (input_token->length > 0) {
+            if (input_token->length > 0)
+            {
                 free(input_token->value);
                 input_token->length = 0;
             }
 
-            if (output_token->length != 0) {
-                if ((*token_status = gss_assist_send_token(gss_assist_send_context, 
-                                                           output_token->value,
-                                                           output_token->length)) != 0) {
+            if (output_token->length != 0)
+            {
+                if ((*token_status = gss_assist_send_token(
+                         gss_assist_send_context, 
+                         output_token->value,
+                         output_token->length)) != 0)
+                {
                     major_status = 
                         GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_WRITE;
                 }
+
                 gss_release_buffer(&minor_status2,
                                    output_token);
             }
-            if (GSS_ERROR(major_status)) {
+
+            if (GSS_ERROR(major_status))
+            {
                 if (*context_handle != GSS_C_NO_CONTEXT)
+                {
                     gss_delete_sec_context(&minor_status2,
                                            context_handle,
                                            GSS_C_NO_BUFFER);
+                }
                 break;
             }
-            if (major_status & GSS_S_CONTINUE_NEEDED) {
-                if ((*token_status =  gss_assist_get_token(gss_assist_get_context,
-                                                           &input_token->value,
-                                                           &input_token->length)) != 0) {
+            
+            if (major_status & GSS_S_CONTINUE_NEEDED)
+            {
+                if ((*token_status =  gss_assist_get_token(
+                         gss_assist_get_context,
+                         &input_token->value,
+                         &input_token->length)) != 0)
+                {
                     major_status = 
                         GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
                     break;
                 }
 
-            } else {
+            }
+            else
+            {
                 context_established = 1;
             }
         } /* end of GSS loop */
+    }
 
-    if (input_token->length > 0) {
+    if (input_token->length > 0)
+    {
         free(input_token->value); /* alloc done by g_get_token */
         input_token->value = NULL;
         input_token->length = 0;
     }
 
-    if (target_name != GSS_C_NO_NAME) {
+    if (target_name != GSS_C_NO_NAME)
+    {
         gss_release_name(&minor_status2,&target_name);
     }
 
@@ -285,52 +307,35 @@ Returns:
 
 ******************************************************************************/
 OM_uint32
-globus_gss_assist_init_sec_context_async
-(OM_uint32 *                            minor_status,
- const gss_cred_id_t                    cred_handle,
- gss_ctx_id_t *                         context_handle,
- char *                                 target_name_char,
- OM_uint32                              req_flags,
- OM_uint32 *                            ret_flags,
- void *                                 input_buffer,
- size_t                                 input_buffer_len,
- void **                                output_bufferp,
- size_t *                               output_buffer_lenp)
+globus_gss_assist_init_sec_context_async(
+    OM_uint32 *                         minor_status,
+    const gss_cred_id_t                 cred_handle,
+    gss_ctx_id_t *                      context_handle,
+    char *                              target_name_char,
+    OM_uint32                           req_flags,
+    OM_uint32 *                         ret_flags,
+    void *                              input_buffer,
+    size_t                              input_buffer_len,
+    void **                             output_bufferp,
+    size_t *                            output_buffer_lenp)
 {
-    OM_uint32 major_status = GSS_S_COMPLETE;
-    OM_uint32 minor_status1 = 0;
-    OM_uint32 minor_status2 = 0;
-
-    gss_buffer_desc input_token_desc  = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    input_token       = &input_token_desc;
-    gss_buffer_desc output_token_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    output_token      = &output_token_desc;
-
-    gss_name_t target_name = GSS_C_NO_NAME;
-    gss_OID target_name_type = GSS_C_NO_OID;
-    gss_OID mech_type = GSS_C_NO_OID;
-    OM_uint32  time_req = 0;
-    OM_uint32  time_rec = 0;
-#ifdef CLASS_ADD
-    struct gss_channel_bindings_struct class_add_test_channel_bindings
-        = {0, {0,NULL},
-           0, {0,NULL},
-           {60,
-            "Test class add data added by globus_gss_assist_init_sec_context_async"
-           }
-        };
-#endif
-    gss_channel_bindings_t input_chan_bindings = 
-#ifndef CLASS_ADD
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           minor_status1 = 0;
+    OM_uint32                           minor_status2 = 0;
+    gss_buffer_desc                     input_token_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        input_token = &input_token_desc;
+    gss_buffer_desc                     output_token_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        output_token = &output_token_desc;
+    gss_name_t                          target_name = GSS_C_NO_NAME;
+    gss_OID                             target_name_type = GSS_C_NO_OID;
+    gss_OID                             mech_type = GSS_C_NO_OID;
+    OM_uint32                           time_req = 0;
+    OM_uint32                           time_rec = 0;
+    gss_channel_bindings_t              input_chan_bindings = 
         GSS_C_NO_CHANNEL_BINDINGS;
-#else
-    &class_add_test_channel_bindings;
-#endif
-    gss_OID * actual_mech_type = NULL;
-
-    gss_buffer_desc tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t    tmp_buffer      = &tmp_buffer_desc;
-
+    gss_OID *                           actual_mech_type = NULL;
+    gss_buffer_desc                     tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        tmp_buffer      = &tmp_buffer_desc;
 
     /* Set up our input token from passed buffer */
     if ((input_buffer != NULL) && (input_buffer_len != 0))
@@ -340,9 +345,15 @@ globus_gss_assist_init_sec_context_async
     }
 
     /* Do initialization first time through the loop */
+
+    /* This will not work if the context handle has been initialized
+       before the first call. Don't know how to fix it since I can't
+       access fields in the handle outside the GSS API. - Sam
+    */
     if (*context_handle == GSS_C_NO_CONTEXT)
     {
-        if(ret_flags) {
+        if(ret_flags)
+        {
             *ret_flags = 0;
         }
     }
@@ -373,7 +384,8 @@ globus_gss_assist_init_sec_context_async
              */
           
             if (!strncmp("host@",target_name_char,5) || 
-                !strncmp("ftp@",target_name_char,4)) { 
+                !strncmp("ftp@",target_name_char,4))
+            { 
                 target_name_type = gss_nt_service_name;
             }
           
@@ -382,7 +394,9 @@ globus_gss_assist_init_sec_context_async
                                            target_name_type,
                                            &target_name);
         }
-    } else {
+    }
+    else
+    {
 
         major_status = gss_inquire_cred(&minor_status1,
                                         cred_handle,
@@ -449,3 +463,12 @@ globus_gss_assist_init_sec_context_async
     *minor_status = minor_status1;
     return major_status;
 }
+
+
+
+
+
+
+
+
+

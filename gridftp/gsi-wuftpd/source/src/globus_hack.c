@@ -1,12 +1,17 @@
 #include "config.h"
 #if defined(USE_GLOBUS_DATA_CODE)
 #include  <globus_common.h>
+#include  <globus_io.h>
 #include "proto.h"
 #include "../support/ftp.h"
 #include <syslog.h>
 #include <sys/file.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#ifdef GLOBUS_AUTHORIZATION
+#include "globus_auth.h"
+#endif /* GLOBUS_AUTHORIZATION */
 
 #define TIME_DELAY_112  5
 
@@ -29,6 +34,12 @@ extern globus_ftp_control_dcau_t                g_dcau;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
+static int                                      g_window_size;
+
+#ifdef GLOBUS_AUTHORIZATION
+static globus_authorization_handle_t globus_auth_handle;
+extern char chroot_path[];   /* From ftpd.c */
+#endif /* GLOBUS_AUTHORIZATION */
 
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
 
@@ -654,6 +665,18 @@ G_ENTER();
     g_monitor.handle = &g_data_handle;
 
     globus_ftp_control_handle_init(&g_data_handle);
+
+#if defined(NETLOGGER_ON)
+    g_globus_nl_handle = NetLoggerOpen(g_perf_progname, NULL, NL_ENV);
+    globus_netlogger_handle_init(
+        &g_nl_handle,
+        g_globus_nl_handle);
+    globus_ftp_control_set_netlogger(
+        &g_data_handle,
+        &g_nl_handle,
+        GLOBUS_TRUE,
+        GLOBUS_FALSE);
+#endif
 
     g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
     res = globus_ftp_control_local_dcau(
@@ -2514,3 +2537,169 @@ g_write_to_log_file(
 }
 
 #endif /* USE_GLOBUS_DATA_CODE */
+
+#ifdef GLOBUS_AUTHORIZATION
+
+/*
+ * ftp_check_authorization()
+ *
+ * calls globus_authorization routines to evaluate requests
+ *
+ * Parameters:  object - The full path to the file or directory which will be
+ *                       accessed.
+ *
+ *              action - ftp protocol command which describes the requested
+ *                       action on the file
+ * returns:    1 if authorization is ok
+ *             0 otherwise
+ */
+ 
+int ftp_check_authorization(char * object,
+                            char * action)
+{
+    char                realname[MAXPATHLEN];
+    
+    
+    if (object[0] != '\0')
+    {
+        /*
+         * I believe this function basically just appends object to
+         * chroot and returns the result in realname.
+         * It will return NULL on error (buffer overflow).
+         */
+        if (wu_realpath(object, realname, chroot_path) == NULL)
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        strcpy(realname, object);
+    }
+
+    if (globus_authorization_eval(globus_auth_handle,
+                                  realname,
+                                  "file",
+                                  action) != GLOBUS_SUCCESS)
+    {
+        return 0;
+    }
+    
+    return 1;
+}
+
+char **
+ftp_i_list_possible_actions()
+{
+    static char *actions[] =
+    {
+	"create",
+	"read",
+	"lookup",
+	"write",
+	"delete",
+	"chdir",
+	0
+    };
+    return(actions);
+}
+
+/*
+ * ftp_authorization_initialize()
+ *
+ * Initializes the globus authorization handle
+ *
+ * Parameters: cffile      -globus authorization config file  
+ *             errstr      -Buffer for returning an error message
+ *             errstr_len  -length of errstr buffer
+ * 
+ * returns:    1  success
+ *             0  failure
+ */
+
+int ftp_authorization_initialize(char *         cffile,
+                                 char *         errstr,
+                                 int            errstr_len)
+{
+    globus_auth_result_t                result;
+    char *                              service_type = "file";
+    char                                urlbase[262];
+
+    strcpy(urlbase,"ftp://");
+
+    if(globus_libc_gethostname(&urlbase[6],256) == -1)
+    {
+        strncpy(errstr,"Unable to resolve ftp server hostname",errstr_len);
+        return 0;
+    }
+
+    urlbase[261]='\0';
+    result = globus_authorization_handle_init(&globus_auth_handle,
+                                              cffile,
+                                              ftp_i_list_possible_actions(),
+                                              urlbase,
+                                              service_type);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        globus_result_get_error_string(result, errstr, errstr_len);
+        
+        globus_result_destroy(result);
+        
+        return 0;
+    }
+    
+    return 1;
+}
+
+/*
+ * ftp_authorization_initialize_sc()
+ *
+ * Initializes the globus authorization handle with the security context
+ * of the most recent gss authenticated client
+ *
+ * Parameters: ctx - a gss security context 
+ *             errstr - buffer for returning an error message
+ *             errstr_len - length of errstr buffer
+ *
+ * returns:    1  success
+ *             0  failure
+ */ 
+
+int ftp_authorization_initialize_sc(gss_ctx_id_t        ctx,
+                                    char *              errstr,
+                                    int                 errstr_len)
+{
+    globus_auth_result_t            result;
+    
+    result = globus_authorization_handle_set_gss_ctx(globus_auth_handle,
+                                                     ctx);
+    if (result != GLOBUS_SUCCESS)
+    {
+        globus_result_get_error_string(result, errstr, errstr_len);
+        
+        globus_result_destroy(result);
+        
+        return 0;
+    }
+    
+    return 1;
+}
+
+/*
+ * ftp_authorization_clean_up()
+ *
+ * de-allocates the internal globus_auth structure  
+ *
+ * parameters: none
+ *
+ * returns: nothing 
+ *
+ */ 
+
+void ftp_authorization_cleanup(void)
+{
+    globus_authorization_handle_destroy(&globus_auth_handle);
+}
+
+#endif /* GLOBUS_AUTHORIZATION */

@@ -1,33 +1,60 @@
-/**********************************************************************
-
-accept_delegation.c:
-
-Description:
-    GSSAPI routine to accept the delegation of a credential
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-
 static char *rcsid = "$Header$";
 
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
 
-
+/**
+ * Accept a delegated credential.
+ *
+ * This functions drives the accepting side of the credential
+ * delegation process. It is expected to be called in tandem with the
+ * gss_init_delegation function.
+ *
+ * @param minor_status
+ *        The minor status returned by this function. This paramter
+ *        will be 0 upon success.
+ * @param context_handle
+ *        The security context over which the credential is
+ *        delegated. 
+ * @param extension_oids
+ *        A set of extension oids corresponding to buffers in the
+ *        extension_buffers paramter below. May be
+ *        GSS_C_NO_BUFFER_SET. Currently not used.
+ * @param extension_buffers
+ *        A set of extension buffers corresponding to oids in the
+ *        extension_oids paramter above. May be
+ *        GSS_C_NO_BUFFER_SET. Currently not used. 
+ * @param input_token
+ *        The token that was produced by a prior call to
+ *        gss_init_delegation. 
+ * @param time_req
+ *        The requested period of validity (seconds) of the delegated
+ *        credential. May be NULL.
+ * @param time_rec
+ *        This parameter will contain the received period of validity
+ *        of the delegated credential upon success. May be NULL.
+ * @param delegated_cred_handle
+ *        This parameter will contain the delegated credential upon
+ *        success. 
+ * @param mech_type
+ *        Returns the security mechanism upon success. Currently not
+ *        implemented. May be NULL.
+ * @param output_token
+ *        A token that should be passed to gss_init_delegation if the
+ *        return value is GSS_S_CONTINUE_NEEDED.
+ * @return
+ *        GSS_S_COMPLETE upon successful completion
+ *        GSS_S_CONTINUE_NEEDED if the function needs to be called
+ *                              again.
+ *        GSS_S_FAILURE upon failure
+ */
 
 OM_uint32
 GSS_CALLCONV gss_accept_delegation(
     OM_uint32 *                         minor_status,
     const gss_ctx_id_t                  context_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
+    const gss_OID_set                   extension_oids,
+    const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec,
@@ -35,11 +62,6 @@ GSS_CALLCONV gss_accept_delegation(
     gss_OID *                           mech_type, 
     gss_buffer_t                        output_token)
 {
-
-    return GSS_S_COMPLETE;
-    
-#if 0
-    
     OM_uint32 		                major_status = 0;
     gss_ctx_id_desc *                   context;
     X509_REQ *                          reqp = NULL;
@@ -84,17 +106,9 @@ GSS_CALLCONV gss_accept_delegation(
         goto err;
     }
 
-    if(mech_type == NULL)
-    {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-
-    if(restriction_oids != GSS_C_NO_OID_SET &&
-       (restriction_buffers == GSS_C_NO_BUFFER_SET ||
-        restriction_oids->count != restriction_buffers->count))
+    if(extension_oids != GSS_C_NO_OID_SET &&
+       (extension_buffers == GSS_C_NO_BUFFER_SET ||
+        extension_oids->count != extension_buffers->count))
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();
@@ -178,6 +192,14 @@ GSS_CALLCONV gss_accept_delegation(
          */
 
         dcert = d2i_X509_bio(context->gs_sslbio, NULL);
+
+        if(dcert == NULL)
+        {
+            major_status = GSS_S_FAILURE;
+            *minor_status = gsi_generate_minor_status();
+            goto err;
+        }
+        
 #ifdef DEBUG
         X509_print_fp(stderr,dcert);
 #endif
@@ -185,13 +207,11 @@ GSS_CALLCONV gss_accept_delegation(
 
         cert_chain = sk_X509_new_null();
 
-        /* probably messing up the cert chain */
-        
         for(i=0;i<cert_chain_length;i++)
         {
             sk_X509_insert(cert_chain,
                            d2i_X509_bio(context->gs_sslbio, NULL),
-                           sk_X509_num(cert_chain));
+                           i);
         }
 
         major_status = gss_create_and_fill_cred(delegated_cred_handle,
@@ -201,6 +221,8 @@ GSS_CALLCONV gss_accept_delegation(
                                                 cert_chain,
                                                 NULL);
         sk_X509_pop_free(cert_chain, X509_free);
+
+        context->dpkey = NULL;
         
         /* reset state machine */
         
@@ -208,10 +230,9 @@ GSS_CALLCONV gss_accept_delegation(
 
         if(major_status != GSS_S_COMPLETE)
         {
-            X509_free(dcert);
-            EVP_PKEY_free(context->dpkey);
             goto err;
         }
+
 
 
         if (time_rec != NULL)
@@ -247,15 +268,4 @@ err:
 
     return major_status;
 
-#endif
 }
-
-
-
-
-
-
-
-
-
-

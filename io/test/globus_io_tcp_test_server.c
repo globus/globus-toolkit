@@ -137,7 +137,7 @@ test1(int argc, char **argv)
 
     globus_io_attr_set_secure_authentication_mode(
 	&attr,
-	GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+	GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 	GSS_C_NO_CREDENTIAL);
 
     globus_io_secure_authorization_data_initialize(&auth_data);

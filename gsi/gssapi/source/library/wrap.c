@@ -23,6 +23,7 @@ static char *rcsid = "$Header$";
                              Include header files
 **********************************************************************/
 
+#include "globus_gssapi_config.h"
 #include "gssapi.h"
 #include "gssutils.h"
 #include "gssapi_ssleay.h"

@@ -21,8 +21,6 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_nl_plugin_module =
     "globus_ftp_client_throughput_nl_plugin",
     globus_l_ftp_client_throughput_nl_plugin_activate,
     globus_l_ftp_client_throughput_nl_plugin_deactivate,
-    GLOBUS_NULL,
-    GLOBUS_NULL,
     GLOBUS_NULL
 };
 

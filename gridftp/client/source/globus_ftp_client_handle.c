@@ -14,10 +14,34 @@
 
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * Target cache search predicate closure.
+ * @internal
+ *
+ * A structure of this type is passed to the target
+ * cache search to determine if a cached target matches
+ * the desired URL, attributes, and use.
+ */
 typedef struct
 {
+    /**
+     * URL to search for. Matching is done on the protocol,
+     * host, and port
+     */
     globus_url_t *				url;
+
+    /**
+     * Attributes to filter on. Only matching security attributes
+     * are considered matches.
+     */
     globus_i_ftp_client_operationattr_t *	attr;
+
+    /**
+     * True if we looking for a target cache entry with a matching URL
+     * but no target associated with it (to insert into cache).
+     * False if are we looking whether an existing target is already cached
+     * (to re-use from cache).
+     */
     globus_bool_t				want_empty;
 }
 globus_l_ftp_client_target_search_t;
@@ -446,7 +470,6 @@ error:
 }
 /* globus_ftp_client_handle_get_user_pointer() */
 /*@}*/
-
 
 /**
  * @name Plugins

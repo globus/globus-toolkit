@@ -65,7 +65,7 @@ oldgaa_find_matching_entry(uint32             *minor_status,
  /* do exact match */
  if(oldgaa_compare_principals(ptr, entry))  return entry;
 
- #ifdef PRINCIPALS_REGEX_MATCH
+#ifdef PRINCIPALS_REGEX_MATCH
 {
   char    **subject_regexes = NULL; /* NULL terminated list of regexes */
   int i;
@@ -117,14 +117,14 @@ Returns:
 
 
 oldgaa_error_code
-oldgaa_check_access_rights(oldgaa_sec_context_ptr sc,
+oldgaa_check_access_right(oldgaa_sec_context_ptr sc,
                     oldgaa_rights_ptr      requested_rights,
                     oldgaa_rights_ptr      rights,
                     oldgaa_answer_ptr      detailed_answer,
                     oldgaa_options_ptr     options)
 {
  oldgaa_error_code oldgaa_status;
- int            was_no = FALSE, was_maybe = FALSE; 
+ int            was_no = FALSE, was_maybe = FALSE;
 
 #ifdef DEBUG
 fprintf(stderr, "\noldgaa_check_access_rights:\n");
@@ -166,6 +166,22 @@ fprintf(stderr, "there are some conditions\n");
                      or all conditions are met */
 }
 
+oldgaa_error_code
+oldgaa_check_access_rights(oldgaa_sec_context_ptr sc,
+                    oldgaa_rights_ptr      requested_rights,
+                    oldgaa_rights_ptr      rights,
+                    oldgaa_answer_ptr      detailed_answer,
+                    oldgaa_options_ptr     options)
+{
+    /*** this does not do the right thing for negative rights */
+    oldgaa_rights_ptr right;
+    oldgaa_error_code status = OLDGAA_NO;
+
+    for (right = rights; right; right = right->next)
+	if ((status = oldgaa_check_access_right(sc, requested_rights, right, detailed_answer, options)) == OLDGAA_YES)
+	    break;
+    return(status);
+}
 /*****************************************************************************/
 
 oldgaa_error_code

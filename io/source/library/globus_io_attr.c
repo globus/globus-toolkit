@@ -12,7 +12,9 @@
 /**
  * RCS Identification of this source file
  */
+
 static char *rcsid = "$Header$";
+
 #endif
 
 /*
@@ -171,7 +173,9 @@ globus_i_io_attr_activate(void)
     globus_l_io_securesocketattr_default.auth_callback =
 	GLOBUS_NULL;
     globus_l_io_securesocketattr_default.auth_callback_arg =
-	GLOBUS_NULL;    
+	GLOBUS_NULL;
+    globus_l_io_securesocketattr_default.extension_oids =
+	GSS_C_NO_OID_SET;    
 
     /* tcp options */
     globus_l_io_tcpattr_default.nodelay = GLOBUS_FALSE;
@@ -190,6 +194,114 @@ globus_i_io_attr_activate(void)
 
     /* file options */
     globus_l_io_fileattr_default.file_type = GLOBUS_IO_FILE_TYPE_BINARY;
+}
+
+
+/**
+ * globus_io_attr_set_callback_space
+ *
+ * Use this to associate a callback space with a globus_io_handle_t.  When
+ * a space is associated with a globus io handle, all callbacks that are 
+ * delivered on that handle are only delivered to the supplied callback space;
+ *
+ * The defualt is for callbacks to go to the 'global' space, 
+ * GLOBUS_CALLBACK_GLOBAL_SPACE
+ *
+ * @param attr
+ *        attr to associate space with
+ *
+ * @param space
+ *        a callback space handle, previously initialized with
+ *        globus_callback_space_init
+ *
+ * @return
+ *        - Error on invalid space or null attr
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t 
+globus_io_attr_set_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t             space)
+{
+    static char *                            myname =
+        "globus_io_attr_set_callback_space";
+    
+    if(!attr)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    if(!globus_callback_space_is_valid(space)) 
+    {
+        return globus_error_put(
+           globus_error_construct_string(
+               GLOBUS_IO_MODULE,
+               GLOBUS_NULL,
+               "[%s] Callback space is not valid.",
+               myname));
+    }
+    
+    attr->space = space;
+    
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * globus_io_attr_get_callback_space
+ *
+ * Use this to get the callback space associated with a globus_io_attr_t. 
+ *
+ * @param attr
+ *        attr to associate space with
+ *
+ * @param space
+ *        storage for a callback space handle, result will be stored here
+ *
+ * @return
+ *        - Error on null attrs
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t 
+globus_io_attr_get_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t *           space)
+{
+    static char *                            myname =
+        "globus_io_attr_get_callback_space";
+
+    if(!attr)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    if(!space)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "space",
+                2,
+                myname));
+    }
+    
+    *space = attr->space;
+    
+    return GLOBUS_SUCCESS;
 }
 
 /****************************************************************
@@ -256,11 +368,8 @@ globus_netlogger_write(
     const char *                             tag)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
-    char *                                   outstr;
-    int                                      outstr_len;
-    int                                      rc;
     static char *                            myname=
-                                                  "globus_netlogger_write";
+        "globus_netlogger_write";
 
     if(nl_handle == GLOBUS_NULL)
     {
@@ -272,6 +381,7 @@ globus_netlogger_write(
                 1,
                 myname));
     }
+
     if(event == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -282,6 +392,7 @@ globus_netlogger_write(
                 2,
                 myname));
     }
+
     if(!g_globus_i_io_use_netlogger)
     {
         return globus_error_put(
@@ -386,9 +497,8 @@ globus_netlogger_handle_init(
     struct globus_netlogger_handle_s *       s_gnl_handle;
     char *                                   main_str;
     int                                      ms_len = 0;
-    NLhandle *                               nl_handle;
     static char *                            myname=
-                                                "globus_netlogger_handle_init";
+        "globus_netlogger_handle_init";
 
     if(gnl_handle == GLOBUS_NULL)
     {
@@ -400,6 +510,7 @@ globus_netlogger_handle_init(
                 1,
                 myname));
     }
+
     if(hostname == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -410,6 +521,7 @@ globus_netlogger_handle_init(
                 3,
                 myname));
     }
+
     if(progname == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -466,7 +578,7 @@ globus_netlogger_handle_init(
     if(pid != GLOBUS_NULL)
     {
         ms_len += strlen("PID=") + strlen(pid) + 1;
-        s_gnl_handle->pid = strdup(pid);
+        s_gnl_handle->pid = globus_libc_strdup(pid);
     }
     main_str = (char *)globus_malloc(ms_len);
     main_str[0] = '\0';
@@ -475,8 +587,8 @@ globus_netlogger_handle_init(
         strcat(main_str, " PID=");
         strcat(main_str, pid);
     }
-    s_gnl_handle->hostname = strdup(hostname);
-    s_gnl_handle->progname = strdup(progname);
+    s_gnl_handle->hostname = globus_libc_strdup(hostname);
+    s_gnl_handle->progname = globus_libc_strdup(progname);
     s_gnl_handle->main_str = main_str;
     s_gnl_handle->desc = GLOBUS_NULL;
 
@@ -486,13 +598,14 @@ globus_netlogger_handle_init(
 /*
  *  netlogger handle destroy
  */
+
 globus_result_t
 globus_netlogger_handle_destroy(
     globus_netlogger_handle_t *              gnl_handle)
 {
     struct globus_netlogger_handle_s *       s_gnl_handle;
     static char *                            myname=
-                                        "globus_netlogger_handle_destroy";
+        "globus_netlogger_handle_destroy";
 
     if(gnl_handle == GLOBUS_NULL)
     {
@@ -508,6 +621,7 @@ globus_netlogger_handle_destroy(
     /*
      *  make sure netlogger is active
      */
+
     if(!g_globus_i_io_use_netlogger)
     {
         return globus_error_put(
@@ -573,7 +687,7 @@ globus_io_attr_netlogger_copy_handle(
     struct globus_netlogger_handle_s *       d_gnl_handle;
 
     static char *                            myname=
-                               "globus_io_attr_netlogger_copy_handle";
+        "globus_io_attr_netlogger_copy_handle";
 
     if(src == GLOBUS_NULL)
     {
@@ -585,6 +699,7 @@ globus_io_attr_netlogger_copy_handle(
                 1,
                 myname));
     }
+
     if(dst == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -614,23 +729,23 @@ globus_io_attr_netlogger_copy_handle(
     d_gnl_handle->nl_handle = s_gnl_handle->nl_handle;
     if(s_gnl_handle->hostname != GLOBUS_NULL)
     {
-        d_gnl_handle->hostname = strdup(s_gnl_handle->hostname);
+        d_gnl_handle->hostname = globus_libc_strdup(s_gnl_handle->hostname);
     }
     if(s_gnl_handle->progname != GLOBUS_NULL)
     {
-        d_gnl_handle->progname = strdup(s_gnl_handle->progname);
+        d_gnl_handle->progname = globus_libc_strdup(s_gnl_handle->progname);
     }
     if(s_gnl_handle->main_str != GLOBUS_NULL)
     {
-        d_gnl_handle->main_str = strdup(s_gnl_handle->main_str);
+        d_gnl_handle->main_str = globus_libc_strdup(s_gnl_handle->main_str);
     }
     if(s_gnl_handle->pid != GLOBUS_NULL)
     {
-        d_gnl_handle->pid = strdup(s_gnl_handle->pid);
+        d_gnl_handle->pid = globus_libc_strdup(s_gnl_handle->pid);
     }
     if(s_gnl_handle->desc != GLOBUS_NULL)
     {
-        d_gnl_handle->desc = strdup(s_gnl_handle->desc);
+        d_gnl_handle->desc = globus_libc_strdup(s_gnl_handle->desc);
     }
 
     return GLOBUS_SUCCESS;
@@ -684,7 +799,7 @@ globus_netlogger_set_desc(
     {
         free(s_nl_handle->desc);
     }
-    s_nl_handle->desc = strdup(desc);
+    s_nl_handle->desc = globus_libc_strdup(desc);
 
     return GLOBUS_SUCCESS;
 }
@@ -2952,8 +3067,6 @@ globus_io_attr_set_tcp_interface(
     globus_object_t *			tcpattr;
     globus_i_io_tcpattr_instance_t *	instance;
     unsigned int			address[4];
-    struct in_addr			addr;
-    int					rc;
     static char *			myname=
 	                                "globus_io_attr_set_tcp_interface";
 
@@ -3017,7 +3130,7 @@ globus_io_attr_set_tcp_interface(
 		myname));
     }
 
-    sprintf(instance->interface, "%u.%u.%u.%u",
+    sprintf((char *)instance->interface, "%u.%u.%u.%u",
             address[0], address[1], address[2], address[3]);
 
     return GLOBUS_SUCCESS;
@@ -3234,6 +3347,14 @@ globus_io_attr_set_secure_authentication_mode(
 	{
 	    instance->internal_credential = GLOBUS_FALSE;
 	}
+        
+        if(mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS)
+        {
+            instance->authorization_mode =
+                GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY;
+            instance->authorized_identity =
+                globus_libc_strdup("<anonymous>");
+        }
     }
     
     
@@ -3437,8 +3558,11 @@ globus_io_attr_set_secure_authorization_mode(
 		myname));
     }
 
-    if(instance->authentication_mode ==
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    if((instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE) ||
+       (instance->authentication_mode ==
+        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS &&
+        mode == GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF))
     {
 	    return globus_error_put(
 		globus_io_error_construct_attribute_mismatch(
@@ -4535,8 +4659,11 @@ globus_io_attr_set_secure_delegation_mode(
 		myname));
     }
     
-    if(instance->authentication_mode ==
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    if((instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE) ||
+        (instance->authentication_mode ==
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS &&
+         mode != GLOBUS_IO_SECURE_DELEGATION_MODE_NONE))
     {
 	return globus_error_put(
 	    globus_io_error_construct_attribute_mismatch(
@@ -4844,7 +4971,300 @@ globus_io_attr_get_secure_proxy_mode(
     
     return GLOBUS_SUCCESS;
 }
-/* globus_io_attr_get_security_proxy_mode() */
+/* globus_io_attr_get_secure_proxy_mode() */
+/* @} */
+
+/**
+ * @name X509 Extensions
+ */
+/* @{ */
+/** 
+ * Set/Query of the extension OIDs attribute in the specified
+ * socket attribute set.
+ * @ingroup attr
+ *
+ * This attribute is used to determine which critical extensions the
+ * application is willing to deal with.
+ *
+ * @param attr
+ *        The attribute to modify. The attr parameter must be 
+ *        initialized by globus_io_tcpattr_init().
+ * @param extension_oids
+ *        The new value of the extension OIDs attribute.
+ *
+ * @return 
+ * This function returns GLOBUS_SUCCESS if successful, or a globus_result_t
+ * indicating the error that occurred. 
+ * @retval GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER
+ *         The @a attr or mode parameter was GLOBUS_NULL.
+ * @retval GLOBUS_IO_ERROR_TYPE_NOT_INITIALIZED
+ *         The @a attr structure was not initialized for use.
+ * @retval GLOBUS_IO_ERROR_TYPE_INVALID_TYPE
+ *         The @a attr structure was not a Globus I/O TCP attribute structure.
+ *
+ * @see globus_io_tcpattr_init()
+ */
+globus_result_t
+globus_io_attr_set_secure_extension_oids(
+    globus_io_attr_t *			attr,
+    gss_OID_set                         extension_oids) 
+{
+    globus_object_t *			securesocketattr;
+    globus_i_io_securesocketattr_instance_t *
+					instance;
+    int                                 i;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+    static char *			myname=
+	                                "globus_io_attr_set_secure_extension_oids";
+    
+    if(attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    
+    if(attr->attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_not_initialized(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    
+    securesocketattr = globus_object_upcast(
+	attr->attr,
+	GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR);
+    
+    if(securesocketattr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_invalid_type(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname,
+		"GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR"));
+    }
+
+    instance = (globus_i_io_securesocketattr_instance_t *)
+	globus_object_get_local_instance_data(securesocketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_bad_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+
+    if(extension_oids == GSS_C_NO_OID_SET)
+    {
+        return globus_error_put(
+	    globus_io_error_construct_bad_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    
+    if(instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_attribute_mismatch(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname,
+		"authentication_mode",
+		"extension OIDs"));
+    }
+    
+    if(instance->extension_oids != GSS_C_NO_OID_SET)
+    {
+        globus_libc_free(instance->extension_oids->elements);
+        instance->extension_oids->count = 0;
+    }
+    else
+    {
+        maj_stat = gss_create_empty_oid_set(
+            &min_stat,
+            &instance->extension_oids);
+
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            return globus_error_put(
+                globus_io_error_construct_security_failed(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    maj_stat,
+                    min_stat,
+                    0));
+        }
+    }
+
+    for(i=0;i<extension_oids->count;i++)
+    {
+        maj_stat = gss_add_oid_set_member(
+            &min_stat,
+            (gss_OID) &extension_oids->elements[i],
+            (gss_OID_set *) &instance->extension_oids);
+
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            return globus_error_put(
+                globus_io_error_construct_security_failed(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    maj_stat,
+                    min_stat,
+                    0));
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+}
+/* globus_io_attr_set_secure_extension_oids() */
+
+globus_result_t
+globus_io_attr_get_secure_extension_oids(
+    globus_io_attr_t *			attr,
+    gss_OID_set *                       extension_oids) 
+{
+    globus_object_t *			securesocketattr;
+    globus_i_io_securesocketattr_instance_t *
+					instance;
+    int                                 i;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+
+    static char *			myname=
+	                                "globus_io_attr_get_secure_extension_oids";
+    
+    if(attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    if(attr->attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_not_initialized(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    if(extension_oids == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"extension_oids",
+		2,
+		myname));
+    }
+    
+    securesocketattr = globus_object_upcast(
+	attr->attr,
+	GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR);
+    
+    if(securesocketattr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_invalid_type(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname,
+		"GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR"));
+    }
+
+    instance = (globus_i_io_securesocketattr_instance_t *)
+	globus_object_get_local_instance_data(securesocketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_bad_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+
+    if(instance->extension_oids == GSS_C_NO_OID_SET)
+    {
+        *extension_oids = GSS_C_NO_OID_SET;
+    }
+    else
+    {
+        maj_stat = gss_create_empty_oid_set(
+            &min_stat,
+            extension_oids);
+
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            return globus_error_put(
+                globus_io_error_construct_security_failed(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    maj_stat,
+                    min_stat,
+                    0));
+        }
+    }
+
+    for(i=0;i<instance->extension_oids->count;i++)
+    {
+        maj_stat = gss_add_oid_set_member(
+            &min_stat,
+            (gss_OID) &instance->extension_oids->elements[i],
+            (gss_OID_set *) extension_oids);
+
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            return globus_error_put(
+                globus_io_error_construct_security_failed(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    maj_stat,
+                    min_stat,
+                    0));
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+}
+/* globus_io_attr_get_secure_extension_oids() */
 /* @} */
 
 
@@ -4888,10 +5308,30 @@ globus_i_io_securesocket_copy_attr(
     memcpy(dst,
 	   src,
 	   sizeof(globus_i_io_securesocketattr_instance_t));
+
     if(src->authorized_identity != GLOBUS_NULL)
     {
 	dst->authorized_identity =
 	    globus_libc_strdup(src->authorized_identity);	
+    }
+
+    if(src->extension_oids != GSS_C_NO_OID_SET)
+    {
+        OM_uint32                       maj_stat;
+        OM_uint32                       min_stat;
+        int                             i;
+        
+        maj_stat = gss_create_empty_oid_set(
+            &min_stat,
+            &dst->extension_oids);
+
+        for(i=0;i<src->extension_oids->count;i++)
+        {
+            maj_stat = gss_add_oid_set_member(
+                &min_stat,
+                (gss_OID) &src->extension_oids->elements[i],
+                (gss_OID_set *) &dst->extension_oids);
+        }
     }
 }
 /* globus_i_io_securesocket_copy_attr() */
@@ -4990,6 +5430,8 @@ globus_i_io_copy_socketattr_to_handle(
 	       &handle->socket_attr,
 	       instance);
 	
+	handle->space = attr->space;
+	
 	return GLOBUS_SUCCESS;
     }
     else
@@ -5062,7 +5504,8 @@ globus_i_io_copy_securesocketattr_to_handle(
 	    globus_i_io_securesocket_copy_attr(
 		&handle->securesocket_attr,
 		instance);
-
+            handle->space = attr->space;
+            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5146,6 +5589,8 @@ globus_i_io_copy_tcpattr_to_handle(
             memcpy(&handle->tcp_attr.interface[0],
                    &instance->interface[0],
                    16);
+	    
+	    handle->space = attr->space;
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5232,7 +5677,9 @@ globus_i_io_copy_udpattr_to_handle(
 	    handle->udp_attr.address = instance->address;
 	    handle->udp_attr.interface = instance->interface;
 	    handle->udp_attr.restrict_port = instance->restrict_port;
-
+            
+            handle->space = attr->space;
+            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5302,6 +5749,8 @@ globus_i_io_copy_fileattr_to_handle(
 		globus_object_get_local_instance_data(attr->attr);
 
 	    handle->file_attr.file_type = instance->file_type;
+	    handle->space = attr->space;
+	    
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5341,6 +5790,8 @@ globus_i_io_securesocket_get_attr(
     globus_i_io_securesocket_copy_attr(
 	instance,
 	&handle->securesocket_attr);
+    
+    attr->space = handle->space;
     
     return GLOBUS_SUCCESS;
 }

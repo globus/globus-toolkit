@@ -9,3 +9,10 @@
 
 /* The number of bytes in a short.  */
 #undef SIZEOF_SHORT
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+

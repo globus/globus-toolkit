@@ -18,6 +18,11 @@ int gssapi_handle_auth_data();
 
 #ifdef GSSAPI_GLOBUS
 char *globus_local_name();
+
+#ifdef GLOBUS_AUTHORIZATION
+gss_ctx_id_t gssapi_get_gss_ctx_id_t(void);
+#endif /* GLOBUS_AUTHORIZATION */
+
 #endif /* GSSAPI_GLOBUS */
 
 #endif /* ! __GSSAPI_LOCAL_H */

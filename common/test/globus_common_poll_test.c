@@ -455,7 +455,7 @@ basic_handler(
     }
     globus_mutex_unlock(&basic_test_mutex);
 
-    return GLOBUS_FALSE;
+    return GLOBUS_TRUE;
 }
 
 /* END BASIC TEST */
@@ -471,6 +471,8 @@ basic_periodic_handler(
    verbose_printf(2, "basic_periodic_handler() : called");
 
    basic_periodic_test_ctr++;
+   
+   return GLOBUS_FALSE;
 }
 
 globus_bool_t
@@ -1405,10 +1407,10 @@ adjust_period_requeue_callback(
         GlobusTimeReltimeSet(new_period, 0, 50000);
         globus_thread_blocking_will_block();
         rc = GLOBUS_TRUE;
-        if(globus_callback_adjust_period(&adjust_callback_handle_1, 
+        if(!globus_callback_adjust_period(adjust_callback_handle_1, 
            &new_period))
         {
-            verbose_printf(0, "**ERROR** adjust_period_requeue_callback() : adjusted in a restarted thread\n");
+            verbose_printf(0, "**ERROR** adjust_period_requeue_callback() : couldnt adjust in a restarted thread\n");
             adjust_test_success = GLOBUS_FALSE;
             rc = GLOBUS_FALSE; 
         } 
@@ -1419,7 +1421,7 @@ adjust_period_requeue_callback(
                   getting changed to legit value */
         GlobusTimeReltimeSet(new_period, 0, 40000);
         rc = GLOBUS_TRUE;
-        if(!globus_callback_adjust_period(&adjust_callback_handle_1, 
+        if(!globus_callback_adjust_period(adjust_callback_handle_1, 
            &new_period))
         {
             verbose_printf(0, "**ERROR** adjust_period_requeue_callback() : adjustment not made\n");
@@ -1447,7 +1449,7 @@ adjust_period_set_infinity_callback(
 
     (*count)++;
     GlobusTimeReltimeCopy(new_period, globus_i_reltime_infinity);
-    if(!globus_callback_adjust_period(&adjust_callback_handle_2, &new_period))
+    if(!globus_callback_adjust_period(adjust_callback_handle_2, &new_period))
     {
         verbose_printf(0, "**ERROR** adjust_period_set_infinity_callback() : adjust failed\n");
         adjust_test_success = GLOBUS_FALSE;

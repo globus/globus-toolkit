@@ -1,6 +1,7 @@
 dnl
 
 AC_REVISION($Revision$)
+
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT

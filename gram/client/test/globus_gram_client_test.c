@@ -169,7 +169,7 @@ int main(int argc, char ** argv)
         printf("TEST: gram error: %d - %s\n", 
                 rc, 
                 /* translate the error into english */
-                globus_gram_protocol_error_string(rc));
+                globus_gram_client_error_string(rc));
         return(1);
     }
 
@@ -187,7 +187,7 @@ int main(int argc, char ** argv)
        printf("\tTEST: Failed to cancel job.\n");
        printf("\tTEST: gram error: %d - %s\n", 
                rc,
-               globus_gram_protocol_error_string(rc));
+               globus_gram_client_error_string(rc));
        return(1);
     }
     else
@@ -205,7 +205,7 @@ int main(int argc, char ** argv)
        printf("\tTEST: Failed to cancel job.\n");
        printf("\tTEST: gram error: %d - %s\n", 
                rc,
-               globus_gram_protocol_error_string(rc));
+               globus_gram_client_error_string(rc));
        return(1);
     }
     else

@@ -29,7 +29,6 @@ GLOBUS_GRAM_JOB_MANAGER_SETUP
 
 AC_OUTPUT(
 	Makefile
-	config/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 )

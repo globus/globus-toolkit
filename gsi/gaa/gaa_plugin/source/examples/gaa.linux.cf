@@ -1,0 +1,103 @@
+libdir /sandbox/gsi-gaa/development/i686-pc-linux-gnu_nothreads_standard_debug/lib 
+mechinfo assertion {
+   cred_pull libgaa_simple.so gaasimple_assert_cred_pull
+   cred_eval libgaa_simple.so gaasimple_assert_cred_eval
+   cred_verify libgaa_simple.so gaasimple_assert_cred_verify
+   sym_params SELF users
+}
+
+mechinfo gss {
+   cred_pull libgaa_gss_generic.so gaa_gss_generic_cred_pull
+   cred_eval libgaa_gss_generic.so gaa_gss_generic_cred_eval
+   cred_verify libgaa_gss_generic.so gaa_gss_generic_cred_verify
+   params X509
+}
+
+#mechinfo globus-map {
+#   cred_pull libglobus_gss_assist.so globus_gss_assist_gaa_map_cred_pull
+#   cred_eval libglobus_gss_assist.so globus_gss_assist_gaa_map_cred_eval
+#   cred_verify libglobus_gss_assist.so globus_gss_assist_gaa_map_cred_verify
+#   params X509
+#}
+
+cond_eval cond_access_id assertion {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_id X509 {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_id globus-map {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_id_anyone DEFAULT {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_group simple {
+   cond_eval libgaa_simple.so gaasimple_check_group_cond
+   idcred yes
+   params /homes/raghunat/gaa/globus/Authorization/test/groups
+}
+
+#cond_eval cond_notBefore asn1_utctime {
+#   cond_eval libglobus_gss.so gssapi_gaa_utctime_eval
+#   idcred no
+#   sym_params libglobus_gss.so notbefore
+#}
+
+#cond_eval cond_notAfter asn1_utctime {
+#   cond_eval libglobus_gss.so gssapi_gaa_utctime_eval
+#   idcred no
+#   sym_params libglobus_gss.so notafter
+#}
+
+cond_eval cond_proxy_ok X509 {
+   cond_eval libgaa_simple.so gaasimple_check_trivial_cond
+   idcred no
+   sym_params libgaa_simple.so trivial_yes
+}
+
+
+cond_eval cond_constant trivial {
+   cond_eval libgaa_simple.so gaasimple_check_trivial_cond
+   idcred no
+}
+
+cond_eval cond_local_access file {
+   cond_eval libgaa_simple.so gaasimple_check_local_access
+   idcred no
+}
+
+#getpolicy {
+#    getpolicy libgaa_simple.so gaasimple_read_eacl
+#    params /nfs/asd/laura/test/gsi/globus/Authorization/test/eacls
+#    freeparam /lib/libc.so.6 free
+#}
+
+# Note: the code that loads shared libraries relies on mutexes for
+# thread safety.  So it's important to either (a) call gaa_init before
+# spawning any threads, or (b) link the application with the libraries
+# that include the mutex callbacks, and call gaacore_set_mutex_callback
+# before calling gaa_init (and don't list the mutex callbacks in this
+# config file).
+
+# mutex {
+#    create libgaa_pthread.so gaa_pthread_mutex_create
+#    destroy libgaa_pthread.so gaa_pthread_mutex_destroy
+#    lock libgaa_pthread.so gaa_pthread_mutex_lock
+#    unlock libgaa_pthread.so gaa_pthread_mutex_unlock
+#    tscreate libgaa_pthread.so gaa_pthread_tsdata_create
+#    tsset libgaa_pthread.so gaa_pthread_tsdata_setspecific
+#    tsget libgaa_pthread.so gaa_pthread_tsdata_getspecific
+# }

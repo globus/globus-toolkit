@@ -14,7 +14,8 @@
 #include <string.h>
 #include "version.h"
 
-
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/* Module specific macros */
 #define GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_NAME "globus_ftp_client_debug_plugin"
 
 #define GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_RETURN(plugin) \
@@ -31,13 +32,23 @@
     result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_debug_plugin_##func); \
     if(result != GLOBUS_SUCCESS) goto result_exit;
 
+/* Module specific data structures */
+
+/**
+ * Plugin specific data for the debugging plugin.
+ * @internal
+ */
 typedef struct
 {
+    /** file stream to log information to */
     FILE *					stream;
+    /** user-supplied text prefix to logging information. */
     char *					text;
 }
 globus_l_ftp_client_debug_plugin_t;
 
+
+/* Module specific prototypes */
 static
 globus_ftp_client_plugin_t *
 globus_l_ftp_client_debug_plugin_copy(
@@ -855,6 +866,7 @@ globus_l_ftp_client_debug_plugin_complete(
 	    d->text ? ": " : "");
 }
 /* globus_l_ftp_client_debug_plugin_complete() */
+#endif
 
 /**
  * Initialize an instance of the GridFTP debugging plugin

@@ -15,6 +15,13 @@
 #define GLOBUS_L_FTP_CLIENT_EXIST_BUFFER_LENGTH 256
 
 /* Module specific data types */
+/**
+ * Existence check state enumeration.
+ * @internal
+ * 
+ * Existence checking may require a few commands on the FTP control
+ * channel. This enumeration shows which state we are currently processing.
+ */
 typedef enum
 {
     GLOBUS_FTP_CLIENT_EXIST_MDTM,
@@ -25,19 +32,59 @@ typedef enum
 }
 globus_l_ftp_client_existence_state_t;
 
+/**
+ * Existence check status structure.
+ * @internal
+ *
+ * All information needed for a file or directory existence check
+ * is contained here. This state is used to track the progress of
+ * the existence check operation.
+ *
+ * @see globus_l_ftp_client_existence_info_init(),
+ *      globus_l_ftp_client_existence_info_destroy()
+ */
 typedef struct
 {
+    /** The URL we are checking for existence */
     char *					url_string;
+
+    /** Parsed representation of url_string */
     globus_url_t				parsed_url;
+
+    /** Data channel buffer */
     globus_byte_t *				buffer;
-    globus_ftp_client_operationattr_t 		attr;
+
+    /** Length of our data channel buffer */
     globus_size_t				buffer_length;
+
+    /** Copy of attributes we will use for the FTP operations needed to
+     * implement the existence check.
+     */
+    globus_ftp_client_operationattr_t 		attr;
+
+    /** True once we've determined that the file exists. */
     globus_bool_t				exists;
+
+    /** Modification time of the file, used for one of the existence checks */
     globus_abstime_t				modification_time;
+
+    /** Size of the file, used for one of the existence checks */
     globus_off_t				size;
+    
+    /** Error object containing the reason for why the existence check
+     * failed, or GLOBUS_SUCCESS.
+     */
     globus_object_t *				error;
+
+    /** User-supplied completion callback for when we've determined
+     * if the file exists or not
+     */
     globus_ftp_client_complete_callback_t	callback;
+
+    /** User-supplied callback argument */
     void *					callback_arg;
+
+    /** Current state of the existence check machine. */
     globus_l_ftp_client_existence_state_t	state;
 }
 globus_l_ftp_client_existence_info_t;
@@ -155,6 +202,29 @@ globus_ftp_client_exists(
 
 /* Local/internal functions */
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * Initialize an existence info structure.
+ *
+ * This function allocates and initializes an existence information
+ * structure.
+ *
+ * @param existence_info
+ *        Pointer to be set to point to the address of a freshly allocated and
+ *        initialized existence information structure.
+ * @param url
+ *        The URL which this existence info structure will be used to
+ *        check the existence of.
+ * @param attr
+ *        FTP operation attributes which will be used to process this
+ *        existence check.
+ * @param complete_callback
+ *        User callback to be invoked once the existence check is complete.
+ * @param callback_arg
+ *        User argument to above.
+ *
+ * @see globus_l_ftp_client_existence_info_t,
+ *      globus_l_ftp_client_existence_info_destroy()
+ */
 static
 globus_result_t
 globus_l_ftp_client_existence_info_init(
@@ -238,6 +308,20 @@ error_exit:
 }
 /* globus_l_ftp_client_existence_info_init() */
 
+/**
+ * Destroy an existence info structure.
+ *
+ * This function frees all memory allocated by
+ * globus_l_ftp_client_existence_info_init().
+ *
+ * @param existence_info
+ *        Pointer to the pointer returned from the
+ *        globus_l_ftp_client_existence_info_init() function in the
+ *        existence_info parameter.
+ *
+ * @see globus_l_ftp_client_existence_info_t,
+ *      globus_l_ftp_client_existence_info_init()
+ */
 static
 globus_result_t
 globus_l_ftp_client_existence_info_destroy(
@@ -260,6 +344,24 @@ globus_l_ftp_client_existence_info_destroy(
 }
 /* globus_l_ftp_client_existence_info_destroy() */
 
+/**
+ * Existence check state machine.
+ * @internal
+ *
+ * This function contains the logic for proceding through the existence
+ * check state machine. It is a globus_ftp_client_complete_callback_t
+ * which is passed to various ftp client operations to process the 
+ * existence check.
+ *
+ * @param user_arg
+ *        A void * pointing to the globus_l_ftp_client_existence_info_t
+ *        structure with the existence check state.
+ * @param handle
+ *        The FTP client handle that this existence check is being
+ *        processed on.
+ * @param error
+ *        Error status from the FTP client operations.
+ */
 static
 void
 globus_l_ftp_client_exist_callback(
@@ -369,6 +471,31 @@ globus_l_ftp_client_exist_callback(
 }
 /* globus_l_ftp_client_exist_callback() */
 
+/**
+ * Existence check state machine data callback.
+ * @internal
+ *
+ * This function handles the data which arrives as part of the NLST
+ * check of the existence check state machine. It just discards the
+ * data which arrives until EOF.
+ *
+ * @param user_arg
+ *        A void * pointing to the globus_l_ftp_client_existence_info_t
+ *        structure with the existence check state.
+ * @param handle
+ *        The FTP client handle that this existence check is being
+ *        processed on.
+ * @param error
+ *        Error status from the FTP client operations.
+ * @param buffer
+ *        A pointer to the existence state structure's buffer member.
+ * @param length
+ *        The amount of date read on the data channel (ignored).
+ * @param offset
+ *        The offset of the data in the list (ignored).
+ * @param eof
+ *        End-of-file flag.
+ */
 static
 void
 globus_l_ftp_client_exist_data_callback(

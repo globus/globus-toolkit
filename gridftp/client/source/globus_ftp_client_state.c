@@ -94,14 +94,41 @@ globus_l_ftp_client_parse_mdtm(
     globus_i_ftp_client_handle_t *		client_handle,
     globus_ftp_control_response_t *		response);
 
-typedef struct
+/**
+ * Buffer size command applicability information.
+ * @internal
+ * 
+ * This structure is associated with each of the TCP buffer
+ * setting commands to help the client library decide whether
+ * a command is compatible with the operation being done.
+ * For example, some like <b>SITE RETRBUFSIZE</b> will not affect the
+ * functioning of a <b>STOR</b> command.
+ * @see globus_l_ftp_client_buffer_cmd_info,
+ *      globus_l_ftp_client_guess_buffer_command()
+ */
+typedef struct 
 {
+    /**
+     * The command string. It should match the server's HELP response if
+     * applicable.
+     */
     char *					string;
+    /** True if this command is usable for STOR */
     globus_bool_t				stor_ok;
+    /** True if this command is usable for RETR */
     globus_bool_t				retr_ok;
 }
 globus_l_ftp_client_buffer_cmd_info_t;
 
+/**
+ * Table of buffer size commands.
+ * @internal
+ *
+ * All known buffer size commands have an entry in this table, indicating
+ * in which situations they can be used.
+ *
+ * @see globus_l_ftp_client_guess_buffer_command()
+ */
 static
 globus_l_ftp_client_buffer_cmd_info_t globus_l_ftp_client_buffer_cmd_info[] =
 {
@@ -3524,7 +3551,6 @@ globus_l_ftp_client_connection_error(
 	    if(other_target->state == GLOBUS_FTP_CLIENT_TARGET_START ||
 	       other_target->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION)
 	    {
-
 		/*
 		 * Kill the current target---the other one is idle
 		 */
@@ -3614,7 +3640,6 @@ globus_l_ftp_client_connection_error(
 	if(client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
-            
 	    globus_i_ftp_client_transfer_complete(client_handle);
             
             globus_i_ftp_client_debug_printf(1, 

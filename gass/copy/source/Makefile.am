@@ -89,8 +89,8 @@ globus_url_copy_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_url_copy_LDADD = $(GPT_PGM_LINKS) \
-	./libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).la
+globus_url_copy_LDADD = ./libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).la \
+			$(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

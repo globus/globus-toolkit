@@ -334,14 +334,50 @@ typedef enum
 }
 globus_i_ftp_client_probed_feature_t;
 
+/**
+ * Data connection caching information.
+ * @ingroup globus_ftp_client_handle
+ * @internal
+ *
+ * This structure contains the information about which FTP client targets
+ * and control handles (or the ftp client library itself) are connected
+ * together in extended block mode. The
+ * client library uses this information to decide whether to re-use data
+ * channels associated for subsequent operations.
+ *
+ * @see globus_i_ftp_client_can_reuse_data_conn()
+ */
 typedef struct
 {
+    /**
+     * A pointer to the source of whatever FTP operation this
+     * data channel was last used on.
+     */
     struct globus_i_ftp_client_target_s *	source;
+    /**
+     * A pointer to the source of whatever FTP operation this
+     * data channel was last used on.
+     */
     struct globus_i_ftp_client_target_s *	dest;
+    /**
+     * The type of operation which this data channel was used for.
+     */
     globus_i_ftp_client_operation_t		operation;
 }
 globus_i_ftp_client_data_target_t;
 
+/**
+ * FTP Client handle implementation
+ * @ingroup globus_ftp_client_handle
+ * @internal
+ *
+ * This structure contains all of the state associated with an FTP
+ * handle. This state includes operations in progress, cached connections,
+ * plugins, user callbacks, and other state needed to implement the GridFTP
+ * protocol.
+ *
+ * @see globus_ftp_client_handle_init(), globus_ftp_client_handle_destroy()
+ */
 typedef struct globus_i_ftp_client_handle_t
 {
     /** client handle magic number */
@@ -376,6 +412,7 @@ typedef struct globus_i_ftp_client_handle_t
     /** User-supplied parameter to this callback */
     void *                                      callback_arg;
 
+    /** Current state of the operation we are processing */
     globus_ftp_client_handle_state_t            state;
 
     /** 
@@ -394,10 +431,12 @@ typedef struct globus_i_ftp_client_handle_t
      * Number of blocks in the active_blocks hash.
      */
     int                                         num_active_blocks;
+
     /**
      * Address of PASV side of a transfer.
      */
     globus_ftp_control_host_port_t *            pasv_address;
+
     /**
      * Number of passive addresses we know about.
      */
@@ -426,18 +465,28 @@ typedef struct globus_i_ftp_client_handle_t
 
     /** Partial file transfer starting offset. */
     globus_off_t                                partial_offset;
+
     /** Partial file transfer ending offset. */
     globus_off_t                                partial_end_offset;
 
-        /*** added by bresnaha ***/
+    /**
+     * User-supplied algorithm choosing string for an ERET.
+     */
     char *                                      eret_alg_str;
+    /**
+     * User-supplied algorithm choosing string for an ESTO.
+     */
     char *                                      esto_alg_str;
     /*** end add by bresnaha ***/
  
-    /** Base offset for a transfer, to be added to all offsets in
+    /**
+     * Base offset for a transfer, to be added to all offsets in
      * stream mode
      */
     globus_off_t                                base_offset;
+    /** Offset used to determine what length to return in a read callback
+     * in when the read_all attribute is set.
+     */
     globus_off_t                                read_all_biggest_offset;
 
     /** Pointer to user's modification time buffer */
@@ -446,8 +495,13 @@ typedef struct globus_i_ftp_client_handle_t
     /** Pointer to user's size buffer */
     globus_off_t *				size_pointer;
 
+    /** Thread safety */
     globus_mutex_t                              mutex;
 
+    /** User pointer
+     * @see globus_ftp_client_handle_set_user_pointer(),
+     *      globus_ftp_client_handle_get_user_pointer()
+     */
     void *                                      user_pointer;
 }
 globus_i_ftp_client_handle_t;
@@ -546,8 +600,7 @@ typedef struct globus_i_ftp_client_restart_s
 globus_i_ftp_client_restart_t;
 
 /**
- * @struct globus_ftp_client_plugin_t
- * Plugin.
+ * FTP Client Plugin.
  * @ingroup globus_ftp_client_plugins
  *
  * Each plugin implementation should define a method for initializing

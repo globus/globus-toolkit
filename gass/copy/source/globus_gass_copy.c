@@ -1005,7 +1005,7 @@ globus_gass_copy_register_performance_cb(
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static
-int
+globus_bool_t
 globus_l_gass_copy_perf_local_cb(
     globus_abstime_t *                      time_stop,
     void *                                  user_arg)
@@ -1060,7 +1060,8 @@ globus_l_gass_copy_perf_local_cb(
         instantaneous_throughput,
         avg_throughput);
 
-    return 0;
+    /* user may have changed something */
+    return GLOBUS_TRUE;
 }
 
 static
@@ -1671,6 +1672,7 @@ globus_l_gass_copy_io_target_populate(
     target->data.io.handle = io_handle;
 
     target->n_pending = 0;
+    target->n_complete = 0;
     target->status = GLOBUS_I_GASS_COPY_TARGET_INITIAL;
 
     target->mode = GLOBUS_GASS_COPY_URL_MODE_IO;
@@ -5297,6 +5299,8 @@ globus_gass_copy_cancel(
      globus_i_gass_copy_cancel_t * source_cancel_info = GLOBUS_NULL;
      globus_i_gass_copy_cancel_t * dest_cancel_info = GLOBUS_NULL;
      globus_result_t result;
+     globus_result_t source_result = GLOBUS_SUCCESS;
+     globus_result_t dest_result = GLOBUS_SUCCESS;
      globus_object_t * err;
      static char * myname="globus_gass_copy_cancel";
 
@@ -5384,16 +5388,29 @@ globus_gass_copy_cancel(
 
 	if(handle->state->source.status != GLOBUS_I_GASS_COPY_TARGET_DONE &&
 	   handle->state->source.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)
-	    result = globus_l_gass_copy_target_cancel(source_cancel_info);
+	    source_result = globus_l_gass_copy_target_cancel(source_cancel_info);
 
         if (handle->state != GLOBUS_NULL)
         {
             if(handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_DONE &&
                handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)
             {
-	        result = globus_l_gass_copy_target_cancel(dest_cancel_info);
+	        dest_result = globus_l_gass_copy_target_cancel(dest_cancel_info);
             }
         }
+
+	if(source_result != GLOBUS_SUCCESS)
+	{
+	    result = source_result;
+	}
+	else if(dest_result != GLOBUS_SUCCESS)
+	{
+	    result = dest_result;
+	}
+	else
+	{
+	    result = GLOBUS_SUCCESS;
+	}
 /*
         globus_libc_free(dest_cancel_info);
         globus_libc_free(source_cancel_info);
@@ -5419,7 +5436,7 @@ globus_l_gass_copy_target_cancel(
     globus_i_gass_copy_target_t * target;
     globus_object_t * err;
     static char * myname="globus_l_gass_copy_target_cancel";
-    int rc;
+    int rc = 0;
     int req_status;
 
 /* should check for these errors
@@ -5487,26 +5504,28 @@ globus_l_gass_copy_target_cancel(
                       target->data.gass.request,
                       globus_l_gass_copy_gass_transfer_cancel_callback,
                       cancel_info);
+		if (rc != GLOBUS_SUCCESS)
+		{
+		     err = globus_error_construct_string(
+		     GLOBUS_GASS_COPY_MODULE,
+		     GLOBUS_NULL,
+		     "[%s]: %s globus_gass_transfer_request_fail returned an error code of: %d",
+		     myname,
+		     target->url,
+		     rc);
+		     globus_i_gass_copy_set_error(cancel_info->handle, err);
+
+		     result = globus_error_put(cancel_info->handle->err);
+		}
+		else
+		{
+		    globus_l_gass_copy_generic_cancel(cancel_info);
+		}
 	    }
 	    else
 	    {
 		globus_gass_transfer_request_destroy(target->data.gass.request);
 		globus_l_gass_copy_generic_cancel(cancel_info);
-	    }
-
-	    if (rc != GLOBUS_SUCCESS)
-	    {
-                 err = globus_error_construct_string(
-		 GLOBUS_GASS_COPY_MODULE,
-		 GLOBUS_NULL,
-		 "[%s]: %s globus_gass_transfer_request_fail returned an error code of: %d",
-		 myname,
-		 target->url,
-		 rc);
-	         globus_i_gass_copy_set_error(cancel_info->handle, err);
-
-	         result = globus_error_put(cancel_info->handle->err);
-	         globus_l_gass_copy_generic_cancel(cancel_info);
 	    }
 
              break;

@@ -53,7 +53,7 @@ static ERR_STRING_DATA gsserr_str_functs[]=
  {ERR_PACK(0,GSSERR_F_NAME_TO_NAME,0),"gss_copy_name_to_name"},
  {ERR_PACK(0,GSSERR_F_CREATE_FILL,0),"gss_create_and_fill_context"},
  {ERR_PACK(0,GSSERR_F_GS_HANDSHAKE,0),"gs_handshake"},
- {ERR_PACK(0,GSSERR_F_GS_RETRIVE_PEER,0),"gs_retrieve_peer"},
+ {ERR_PACK(0,GSSERR_F_GS_RETRIEVE_PEER,0),"gs_retrieve_peer"},
  {ERR_PACK(0,GSSERR_F_WRAP,0),"gss_warp"},
  {ERR_PACK(0,GSSERR_F_UNWRAP,0),"gss_unwrap"},
  {ERR_PACK(0,GSSERR_F_GET_MIC,0),"gss_get_mic"},
@@ -71,7 +71,14 @@ static ERR_STRING_DATA gsserr_str_functs[]=
  {ERR_PACK(0,GSSERR_F_TEST_OID_SET_MEMBER,0),"gss_test_oid_set_member"},
  {ERR_PACK(0,GSSERR_F_READ,0),"gs_read"},
  {ERR_PACK(0,GSSERR_F_WRITE,0),"gs_write"},
- {0,NULL},
+ {ERR_PACK(0,GSSERR_F_SET_SEC_CONTEXT_OPT,0),"gss_set_sec_context_option"},
+ {ERR_PACK(0,GSSERR_F_SET_SEC_CONTEXT_OPT,0),"gss_set_sec_context_option"},
+ {ERR_PACK(0,GSSERR_F_CREATE_EMPTY_BUFFER_SET,0),"gss_create_empty_buffer_set"},
+ {ERR_PACK(0,GSSERR_F_ADD_BUFFER_SET_MEMBER,0),"gss_add_buffer_set_member"},
+ {ERR_PACK(0,GSSERR_F_RELEASE_BUFFER_SET,0),"gss_release_buffer_set"},
+ {ERR_PACK(0,GSSERR_F_SET_GROUP,0),"gss_set_group"},
+ {ERR_PACK(0,GSSERR_F_GET_GROUP,0),"gss_get_group"},
+ {0,NULL}
 };
 
 static ERR_STRING_DATA gsserr_str_reasons[]= 
@@ -84,10 +91,10 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_PROXY_VIOLATION, "Peer is using (limited) proxy"},
  {GSSERR_R_PROXY_NOT_RECEIVED, "Failed to receive proxy request"},
  {GSSERR_R_BAD_ARGUMENT, "Bad argument"},
+ {GSSERR_R_BAD_NAME, "Bad GSS name"},
  {GSSERR_R_IMPEXP_BIO_SSL, "Internal SSL problem"},
  {GSSERR_R_IMPEXP_NO_CIPHER, "Cipher not available"},
  {GSSERR_R_IMPEXP_BAD_LEN, "Token is wrong length"},
- {GSSERR_R_CLASS_ADD_EXT, "Unable to add Class Add extension"},
  {GSSERR_R_ADD_EXT, "Unable to add extension"},
  {GSSERR_R_EXPORT_FAIL, "Unable to marshal credential for export"},
  {GSSERR_R_IMPORT_FAIL, "Unable to read credential for import"},
@@ -99,7 +106,8 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_REMOTE_CERT_VERIFY_FAILED, "remote side did not "
   "like my creds for unknown reason\n     check server logs for details"},
  {GSSERR_R_OUT_OF_MEMORY, "Out of memory"},
- {0,NULL},
+ {GSSERR_R_UNORDERED_CHAIN, "Cert chain not in signing order"},
+ {0,NULL}
 };
 
 

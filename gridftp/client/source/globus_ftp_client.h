@@ -93,6 +93,14 @@ EXTERN_C_BEGIN
 
 extern globus_module_descriptor_t globus_i_ftp_client_module;
 
+/**
+ * Restart marker types.
+ * @ingroup globus_ftp_client_restart_markers
+ * @internal
+ *
+ * This enum defines the different types of restart markers which may be used
+ * with the client library.
+ */
 typedef enum
 {
     GLOBUS_FTP_CLIENT_RESTART_NONE,
@@ -101,17 +109,59 @@ typedef enum
 }
 globus_ftp_client_restart_type_t;
 
+/**
+ * Stream mode restart marker
+ * @ingroup globus_ftp_client_restart_markers
+ * @internal
+ *
+ * This structure contains all restart marker information from a
+ * stream mode transfer. Markers should be accessed and modified
+ * using the functions described in the
+ * @ref globus_ftp_client_restart_marker "restart marker"
+ * section of this manual.
+ */
 typedef struct
 {
+    /**
+     * @internal
+     * Must be GLOBUS_FTP_CLIENT_STREAM
+     */ 
     globus_ftp_client_restart_type_t		type;
+    /**
+     * @internal
+     * The offset of a binary file transfer.
+     */
     globus_off_t				offset;
+    /**
+     * @internal
+     * The offset of an ASCII file transfer.
+     */
     globus_off_t				ascii_offset;
 }
 globus_ftp_client_restart_stream_t;
 
+/**
+ * Extended block mode restart marker
+ * @ingroup globus_ftp_client_restart_markers
+ * @internal
+ *
+ * This structure contains all restart marker information from an
+ * extended block mode transfer. Markers should be accessed and modified
+ * using the functions described in the
+ * @ref globus_ftp_client_restart_marker "restart marker"
+ * section of this manual.
+ */
 typedef struct
 {
+    /**
+     * @internal
+     * Must be GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK
+     */ 
     globus_ftp_client_restart_type_t		type;
+    /**
+     * @internal
+     * A fifo of globus_i_ftp_client_range_t byte range entries
+     */
     globus_fifo_t				ranges;
 }
 globus_ftp_client_restart_extended_block_t;

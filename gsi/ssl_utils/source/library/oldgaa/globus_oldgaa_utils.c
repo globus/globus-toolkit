@@ -29,7 +29,67 @@ static  int     end_of_file;
 static  char   *parse_error  = NULL;
 static  uint32  m_status     = 0;
 
+static oldgaa_error_code
+oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
+			       oldgaa_policy_ptr          *policy,
+			       char                    *tmp_str /* IN&OUT */,
+			       oldgaa_principals_ptr      *start,
+			       oldgaa_principals_ptr    *added_principal);
+static void
+oldgaa_bind_rights_to_condition(oldgaa_rights_ptr        right,
+				oldgaa_cond_bindings_ptr cond_bind)
+{
+    right->cond_bindings = cond_bind;
+    cond_bind->reference_count++;
+#ifdef DEBUG
+    fprintf(stderr,"oldgaa_bind_rights_to_conditions:rights:%p->cond_bind:%p\n",
+	    right, cond_bind);
+#endif
+}  
 
+static void
+oldgaa_bind_rights_to_principal(oldgaa_principals_ptr principal, 
+                          oldgaa_rights_ptr     rights)
+{
+    if (principal->rights)
+	oldgaa_add_rights(&(principal->rights), rights);
+    else {
+	principal->rights = rights;
+	rights->reference_count++;
+    }
+}
+
+#ifdef LDEBUG
+#define NN(s) ((s) ? (s) : "")
+static void
+print_condition_binding(oldgaa_cond_bindings_ptr cb)
+{
+    oldgaa_conditions_ptr c;
+    for (; cb; cb = cb->next) {
+	fprintf(stderr, "        condition binding %x\n", cb);
+	for (c = cb->condition; c; c = c->next) {
+	    fprintf(stderr, "            condition (%s, %s, %s)\n",
+		    NN(c->type), NN(c->authority), NN(c->value));
+	}
+    }
+}
+static void
+print_oldgaa_principal_ptr(oldgaa_principals_ptr pr)
+{
+    oldgaa_rights_ptr r;
+    
+    for (; pr; pr = pr->next) {
+	fprintf(stderr, "principal (%s, %s, %s): %x\n",
+		NN(pr->type), NN(pr->authority), NN(pr->value),
+		pr->rights);
+	for (r = pr->rights; r; r = r->next) {
+	    fprintf(stderr, "    right (%s, %s, %s)\n",
+		    NN(r->type), NN(r->authority), NN(r->value));
+	    print_condition_binding(r->cond_bindings);
+	}
+    }
+}
+#endif /* LDEBUG */
 /**********************************************************************
   OLDGAA Cleanup Functions 
  **********************************************************************/
@@ -653,6 +713,7 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
  * duplicate conditions.
  */
   oldgaa_principals_ptr    start_principals = NULL;
+  oldgaa_principals_ptr    added_principal = NULL;
   oldgaa_rights_ptr        start_rights     = NULL;
   oldgaa_cond_bindings_ptr cond_bind        = NULL;
   oldgaa_error_code        oldgaa_error;
@@ -661,10 +722,12 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
   int                   cond_present     = FALSE;
   int                   new_entry        = TRUE; 
   int                   line_number;
+
+  oldgaa_rights_ptr old_rights = 0;
  
   end_of_file    = 0;
   *policy_handle = NULL;
-	 
+
 #ifdef DEBUG
 fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
 #endif /* DEBUG */
@@ -681,7 +744,8 @@ fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
     if(oldgaa_globus_parse_principals(pcontext,
                         policy_handle,
                         str,
-                        &start_principals) != OLDGAA_SUCCESS)
+                        &start_principals,
+		        &added_principal) != OLDGAA_SUCCESS)
      { 
       oldgaa_handle_error(&(pcontext->parse_error),
 		 "oldgaa_globus_parse_policy: error while parsing principal: ");
@@ -696,6 +760,7 @@ fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
 
      /* get rights */
 
+       old_rights = start_rights;
        oldgaa_error = oldgaa_globus_parse_rights(pcontext,                              
                                            str,
                                           &start_rights,         
@@ -712,8 +777,7 @@ fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
 
     /* bind paresed rights for this entry to the paresed principals 
       from this entry */
-
-    oldgaa_bind_rights_to_principals(start_principals, start_rights);
+    oldgaa_bind_rights_to_principal(added_principal, start_rights);
  
    /* get conditions, if any */
   
@@ -724,6 +788,15 @@ fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
                                  str,
                                 &cond_bind,
                                 &new_entry);
+
+#ifdef LDEBUG
+    if (oldgaa_error == OLDGAA_SUCCESS) {
+	fprintf(stderr, "parsed condition_binding\n");
+	if (cond_bind)
+	    print_condition_binding(cond_bind);
+    } else
+	fprintf(stderr, "didn't parse condition binding\n");
+#endif /* LDEBUG */
    
    if (oldgaa_error != OLDGAA_SUCCESS)               
    {
@@ -738,10 +811,15 @@ fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
   /* bind paresed conditions for this entry to the paresed rights 
     from this entry */
 
-  else  oldgaa_bind_rights_to_conditions(start_rights, cond_bind);   
+  else  oldgaa_bind_rights_to_condition(start_rights, cond_bind);   
    
  } /* if(cond_present == TRUE) */
   
+#ifdef LDEBUG
+   printf("start_principals:\n");
+   if (start_principals)
+       print_oldgaa_principal_ptr(start_principals);
+#endif  /* LDEBUG */
  
  }/* end of while */
 
@@ -765,6 +843,12 @@ fprintf(stderr, "\noldgaa_globus_parse_policy:\n");
   }
 	
   if (pcontext) oldgaa_globus_policy_file_close(pcontext);
+
+#ifdef LDEBUG
+   printf("policy_handle:\n");
+   if (*policy_handle)
+       print_oldgaa_principal_ptr(*policy_handle);
+#endif  /* LDEBUG */
 
   return OLDGAA_SUCCESS;
 
@@ -798,11 +882,12 @@ Returns:
 **********************************************************************/
 
 
-oldgaa_error_code
+static oldgaa_error_code
 oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
                             oldgaa_policy_ptr          *policy,
                             char                    *tmp_str /* IN&OUT */,
-                            oldgaa_principals_ptr      *start)
+                            oldgaa_principals_ptr      *start,
+			    oldgaa_principals_ptr    *added_principal)
 {
   char               str[MAX_STRING_SIZE],*type;
   int                first     = TRUE, ret_val;
@@ -879,7 +964,7 @@ do
 
     if(first == TRUE){ *start = principal;  first = FALSE; } 
 
-   oldgaa_add_principal(policy, principal); /* add new principal to the list */
+   *added_principal = oldgaa_add_principal(policy, principal); /* add new principal to the list */
 
     if (oldgaa_globus_help_read_string(pcontext, str,
                          "parse_principals: Missing rights"))

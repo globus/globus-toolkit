@@ -213,6 +213,27 @@ int gssapi_authentication_required = 1;
 
 #endif /* GSSAPI */
 
+#ifdef GLOBUS_AUTHORIZATION
+
+/*
+ * Code to use in reply messages if permission is denied due to
+ * authorization failure.
+ */
+#define GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE       553
+
+/*
+ * Syslog level to use for logging messages due to authorization failure.
+ */
+#define GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL     LOG_NOTICE
+
+/*
+ * Buffer for returning error strings from ftp_authorization routines.
+ * The number 256 is arbitraty.
+ */
+char ftp_authorization_error_buffer[256];
+
+#endif /* GLOBUS_AUTHORIZATION */
+
 #ifdef FTP_SECURITY_EXTENSIONS
 
 #include "secure_ext.h"
@@ -643,6 +664,10 @@ int i = 0;
     struct servent *serv;
 #endif
 
+#ifdef GLOBUS_AUTHORIZATION
+    char *globus_authorization_config_file = NULL /* Use Default */;
+#endif /* GLOBUS_AUTHORIZATION */
+
 #ifdef AUX
     setcompat(COMPAT_POSIX | COMPAT_BSDSETUGID);
 #endif
@@ -695,9 +720,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:c:")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:c:")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -831,6 +856,18 @@ int i = 0;
 	    debug_no_fork = 1;
 	    break;
 
+        case 'c':
+#ifdef GLOBUS_AUTHORIZATION
+ 	    if ((optarg != NULL) && (optarg[0] != '\0'))
+            {
+ 		globus_authorization_config_file =
+                    strdup(optarg);
+ 	    }
+#else /* !GLOBUS_AUTHORIZATION */
+            syslog(LOG_ERR, "Not build with Globus authorization libraries: -c option ignored");
+#endif /* !GLOBUS_AUTHORIZATION */
+ 	    break;
+            
 	case 'G':
 	    globus_libc_setenv("GLOBUS_LOCATION", optarg, 1);
 	    break;
@@ -1033,6 +1070,18 @@ int i = 0;
 
 #ifdef GSSAPI
     gssapi_setup_environment();
+
+#ifdef GLOBUS_AUTHORIZATION
+    if (!ftp_authorization_initialize(globus_authorization_config_file,
+                                      ftp_authorization_error_buffer,
+                                      sizeof(ftp_authorization_error_buffer)))
+    {
+        syslog(LOG_ERR,
+               "Could not initialize ftp authorization code: %s",
+               ftp_authorization_error_buffer);
+        exit(1);
+    } 
+#endif /* GLOBUS_AUTHORIZATION */
 #endif /* GSSAPI */
 
     setup_paths();
@@ -1881,6 +1930,26 @@ void user(char *name)
 	if (debug)
 	    syslog(LOG_INFO, "Globus user maps to local user %s", name);
     }	
+
+#ifdef GLOBUS_AUTHORIZATION
+    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t(),
+                                         ftp_authorization_error_buffer,
+                                         sizeof(ftp_authorization_error_buffer)))
+    {
+        syslog(LOG_NOTICE,
+               "Error initializing gss security context for authorization: %s",
+               ftp_authorization_error_buffer);
+
+        /*
+         * Could probably reply with something better here, but what
+         * escapes me at the moment.
+         */
+        reply(530,
+              "Error initializing gss security context for authorization: %s",
+              ftp_authorization_error_buffer);
+        return;
+    }
+#endif /* GLOBUS_AUTHORIZATION */
 #endif /* GSSAPI_GLOBUS */
 
 #ifdef	BSD_AUTH
@@ -4548,6 +4617,39 @@ retrieve(
         tmp_restart = 0;
     }
 
+#ifdef GSSAPI_GLOBUS 
+#ifdef GLOBUS_AUTHORIZATION
+     
+    if (retrieve_is_data)
+    {
+        /* An actual get of a file (e.g. a "get") */
+        if (!ftp_check_authorization(realname, "read"))
+        {
+            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                  "%s: Permission denied by proxy credential ('read')",
+                  name);   
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                   "%s of %s tried to download %s (noretrieve)",
+                   pw->pw_name, remoteident, realname); 
+            return;
+        }
+    }
+    else
+    {
+        /* Just getting information about a file (e.g. an "ls") */
+        if (!ftp_check_authorization(realname, "lookup"))
+        {
+            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                  "%s: Permission denied by proxy credential ('lookup')",
+                  name);   
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                   "%s of %s tried to lookup %s (noretrieve)",
+                   pw->pw_name, remoteident, realname); 
+            return;
+        }
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
@@ -4842,6 +4944,25 @@ store(
 	    exists = 1;
         }
 
+#ifdef GSSAPI_GLOBUS 
+#ifdef GLOBUS_AUTHORIZATION
+        if (exists)
+        {
+            /* put overwritting a current file */
+            if (!ftp_check_authorization(realname, "write"))
+            {
+                reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                     "%s: Permission denied by proxy credential. ('write')",
+                     name);
+                syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                       "%s of %s tried to upload %s",
+                      pw->pw_name, remoteident, realname);
+                return;
+            }      
+        }
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+
         if (!overwrite && exists) 
         {
   	    if (log_security)
@@ -4886,7 +5007,27 @@ store(
 	    return;
         }
 
-        /* do not truncate the file if we are restarting */
+#ifdef GSSAPI_GLOBUS 
+#ifdef GLOBUS_AUTHORIZATION
+        if (!exists)
+        {
+            /* put uploading new file */
+            if (!ftp_check_authorization(realname, "create"))
+            {
+             reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                   "%s: Permission denied by proxy credential. ('create')",
+                   name); 
+             syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL, 
+                    "%s of %s tried to upload %s (upload denied)",
+                    pw->pw_name, remoteident, realname);
+              
+             return;
+            }
+        }
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+  
+    /* do not truncate the file if we are restarting */
         if (restart_point)
         {
     	    open_flags &= ~O_TRUNC;
@@ -5059,7 +5200,9 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = g_receive_data(&g_data_handle, fout, tmp_restart, name);
+        TransferIncomplete = g_receive_data(
+                                 &g_data_handle, fout, 
+                                 tmp_restart, name);
     }
 #   else
     {
@@ -6160,6 +6303,22 @@ void delete(char *name)
 	    return;
 	}
 
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+        if (!ftp_check_authorization(name, "delete"))  /* DELE */
+        {
+            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                  "%s: Permission denied by proxy credential ('delete')",
+                  name);       
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                   "%s of %s tried to delete directory %s",
+                   pw->pw_name, remoteident, realname);        
+            return;
+        } 
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+
+
 	if (rmdir(name) < 0) {
 	    if (log_security)
 		if (anonymous)
@@ -6216,7 +6375,33 @@ void cwd(char *path)
 {
     struct aclmember *entry = NULL;
     char cdpath[MAXPATHLEN + 1];
+#ifdef GLOBUS_AUTHORIZATION
+    char **actions;
+    int ok = 0;
+    char realname[MAXPATHLEN];
+#endif /* GLOBUS_AUTHORIZATION */
 
+#ifdef GLOBUS_AUTHORIZATION
+    wu_realpath(path, realname, chroot_path);
+
+    for (actions = ftp_i_list_possible_actions(); *actions && ! ok; actions++)
+    {
+       if (ftp_check_authorization(realname, *actions))
+	   ok = 1;
+    }
+
+    if (! ok)
+    {
+	reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+	      "\"%s\": Permission denied by proxy credential (no permission on directory)",
+	      realname);
+	syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+	       "%s of %s tried to cd to directory %s",
+	       pw->pw_name, remoteident, realname);
+	return;
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+    
     if (chdir(path) < 0) {
 	/* alias checking */
 	while (getaclentry("alias", &entry) && ARG0 && ARG1 != NULL) {
@@ -6296,6 +6481,21 @@ void makedir(char *name)
 	d_mode = 0777;
 	umask(oldumask);
     }
+
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+       if (!ftp_check_authorization(name, "create"))  /* MKD */
+       {
+             reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                   "\"%s\": Permission denied by proxy credential ('create')",
+                   path);
+             syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                    "%s of %s tried to create directory %s",
+                    pw->pw_name, remoteident, realname);
+             return;
+       }
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */ 
 
     if (mkdir(name, d_mode) < 0) {
 	if (errno == EEXIST) {
@@ -6391,6 +6591,21 @@ void removedir(char *name)
 	return;
     }
 
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+     
+    if (!ftp_check_authorization(name, "delete"))  /* rmdir */
+    {
+        reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+              "%s: Permission denied by proxy credential ('delete')",name);
+        syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+               "%s of %s tried to delete directory %s",
+               pw->pw_name, remoteident, realname);
+        return;
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+
     if (rmdir(name) < 0) {
 	if (errno == EBUSY)
 	    perror_reply(450, name);
@@ -6478,6 +6693,13 @@ void renamecmd(char *from, char *to)
     char realfrom[MAXPATHLEN];
     char realto[MAXPATHLEN];
     struct aclmember *entry = NULL;
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+     int exists = 0;
+     struct stat chk;
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+ 
 #ifdef PARANOID
     struct stat st;
 #endif
@@ -6539,6 +6761,73 @@ void renamecmd(char *from, char *to)
 	return;
     }
 #endif
+
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATOIN
+    /*
+     * Check permissions for file we are renaming to.
+     */
+    exists = stat(to, &chk);
+
+    if (exists)
+    {
+        /* Creating new file */
+        if (!ftp_check_authorization(to, "create"))
+        {
+            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                  "Permission denied by proxy credential: \"%s\"  rename denied ('create')",
+                  to);
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                   "%s of %s tried to rename %s to %s",
+                   pw->pw_name, remoteident, realfrom, realto);
+            return;
+        }
+    }
+    else
+    {
+        /* Overwriting existing file */
+        if  (!ftp_check_authorization(to, "write"))
+        {
+            reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+                  "Permission denied by proxy credential: \"%s\"  rename denied ('write')",
+                  to);
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+                   "%s of %s tried to rename %s to %s",
+                   pw->pw_name, remoteident, realfrom, realto);
+            return;
+        }
+    }
+    
+    /*
+     * Check permissions for file we are renaming from.
+     * Need both read and delete permissions.
+     */
+    if  (!ftp_check_authorization(from, "read") || !ftp_check_authorization(from, "delete"))
+    if  (!ftp_check_authorization(from, "read"))
+    {
+        reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+              "Permission denied by proxy credential: \"%s\"  rename denied ('read')",
+              from);
+        syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+               "%s of %s tried to rename %s to %s",
+               pw->pw_name, remoteident, realfrom, realto);
+        return;
+    }
+
+    if  (!ftp_check_authorization(from, "delete"))
+    {
+        reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+              "Permission denied by proxy credential: \"%s\"  rename denied ('delete')",
+              from);
+        syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+               "%s of %s tried to rename %s to %s",
+               pw->pw_name, remoteident, realfrom, realto);
+        return;
+    }
+
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */ 
+
     if (rename(from, to) < 0) {
 	if (log_security)
 	    if (anonymous)

@@ -152,12 +152,6 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
                          oldgaa_policy_ptr          *policy_handle);
 
 oldgaa_error_code
-oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
-                 oldgaa_policy_ptr          *policy,
-                 char                    *tmp_str,
-                 oldgaa_principals_ptr      *start);
-
-oldgaa_error_code
 oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
              char                    *tmp_str,
              oldgaa_rights_ptr          *start,

@@ -45,6 +45,7 @@ EXTERN_C_BEGIN
                                Type definitions
 ******************************************************************************/
 
+
 /**
  * @defgroup globus_gram_client_callback Job state callbacks
  */
@@ -94,6 +95,16 @@ globus_gram_client_callback_allow(
                           globus_gram_client_callback_func_t callback_func,
 			  void * user_callback_arg,
 			  char ** callback_contact);
+
+extern
+int
+globus_gram_client_register_job_request(
+    const char *			resource_manager_contact,
+    const char *			description,
+    int					job_state_mask,
+    const char *			callback_contact,
+    globus_gram_client_callback_func_t	register_callback,
+    void *				register_callback_arg);
 
 extern int 
 globus_gram_client_job_request(char * resource_manager_contact,
