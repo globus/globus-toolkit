@@ -231,7 +231,7 @@ diff -r -u openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 -	    $(SHAREDCMD) $(SHAREDFLAG) -o lib$$i.so lib$$i.o \
 +	  ld -r -o lib$${i}.o $(ALLSYMSFLAG) lib$${i}.a && \
 +	  ( nm -Pg lib$${i}.o | grep ' [BD] ' | cut -f1 -d' ' > lib$${i}.exp; \
-+	    $(SHAREDCMD) $(SHAREDFLAGS) -o lib$${i}.so lib$${i}.o \
++	    $(SHAREDCMD) $(SHAREDFLAGS) -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} lib$${i}.o \
  		$$libs ${EX_LIBS} ) ) \
  	|| exit 1; \
  	libs="$$libs -l$$i"; \
