@@ -2473,19 +2473,33 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
       return -1;
    }
 
-   if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL) {
-      fclose(cert_file);
-      verror_put_string("Failed reading proxy");
-      ssl_error_to_verror();
-      return -1;
+   if (not_before)
+       *not_before = 0;
+   if (not_after)
+       *not_after = 0;
+
+   while (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) != NULL) {
+       if (not_before) {
+	   time_t new_not_before;
+	   globus_gsi_cert_utils_make_time(X509_get_notBefore(cert),
+					   &new_not_before);
+	   if (*not_before == 0 || *not_before < new_not_before) {
+	       *not_before = new_not_before;
+	   }
+       }
+       if (not_after) {
+	   time_t new_not_after;
+	   globus_gsi_cert_utils_make_time(X509_get_notAfter(cert),
+					   &new_not_after);
+	   if (*not_after == 0 || *not_after > new_not_after) {
+	       *not_after = new_not_after;
+	   }
+       }
+       
+       X509_free(cert);
+       cert = NULL;
    }
 
-   if (not_before)
-      globus_gsi_cert_utils_make_time(X509_get_notBefore(cert), not_before);
-   if (not_after)
-      globus_gsi_cert_utils_make_time(X509_get_notAfter(cert), not_after);
-
-   X509_free(cert);
    fclose(cert_file);
 
    return 0;
