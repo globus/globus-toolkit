@@ -1,10 +1,68 @@
 #!/usr/bin/env perl
 
-$cvsroot = $ENV{'CVSROOT'};
-$webroot = "/mcs/www-unix.globus.org/toolkit/web";
-@args = split(/ /, $ARGV[0]);
+# What directory am I watching for commits?
+$cvsmodule = "documentation/web";
+# What is my CVSROOT?
+$cvsroot = "/home/globdev/CVS/globus-packages";
+# Where am I putting the commited files?
+$webroot = "/mcs/www-unix.globus.org/toolkit/";
+# What group ownership do they want?
+$cvsgrp = "globdev";
+# Shall I be chatty?
+$verbose = 1;
 
-for my $filename ( @args )
+if ( $verbose )
 {
-    print "I would copy $filename to $webroot/$filename.\n";
+   print "Entirety of arguments:\n";
+   print "@ARGV\n";
 }
+
+if ( ! -d $webroot )
+{
+   print "$webroot does not exist on the machine you're using as CVSROOT\n";
+   print "These document changes will not be automatically propagated\n";
+   exit;
+}
+
+($subdir, @files) = split(/ /,$ARGV[0]);
+
+print "subdir is \"$subdir\"\n" if $verbose;
+# Make sure loginfo is setup correctly
+if ( $subdir =~ m#^($cvsmodule)(.*)# )
+{
+   $subdir = $2;
+} else {
+   print "I am not configured for cvs module $subdir.  Exiting.\n";
+   exit;
+}
+$fulldir = "$webroot/$subdir";
+
+# CVS dirs want to be group-writeable
+umask 002;
+
+# If the directory does not exist on the filesystem, this is probably
+# a cvs add.  Check out the directory.
+# If the directory does exist, this is probably a commit/add of files
+# within that subdir.  Check them out/update them.
+# In all cases, change group ownership, in case the user doesn't
+# have the CVS group as a default
+if ( ! -d $fulldir )
+{
+   chdir $webroot;
+   print "Adding new subdirectory $subdir\n" if $verbose;
+   system("echo cvs co -dP ./$subdir") if $verbose;
+   system("cvs co -dP ./$subdir");
+   system("echo chgrp -R $cvsgrp $subdir") if $verbose;
+   system("chgrp -R $cvsgrp $subdir");
+} else {
+   chdir $fulldir;
+   foreach my $f (@files) {
+      print "Updating file $f in $fulldir\n" if $verbose;
+      system("echo cvs up -dP $f") if $verbose;
+      system("cvs up -dP $f");
+      system("echo chgrp $cvsgrp $f") if $verbose;
+      system("chgrp $cvsgrp $f");
+   }
+}
+
+exit;
