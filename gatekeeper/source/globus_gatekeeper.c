@@ -1141,7 +1141,8 @@ static void doit()
      * then the client will continue and send the additional data destined
      * for the job manager.
      */
-    sprintf(tmp_version, "%d", GLOBUS_GRAM_PROTOCOL_VERSION);
+    *tmp_version = GLOBUS_GRAM_PROTOCOL_VERSION;
+
     if (ok_to_send_errmsg)
         globus_gss_assist_token_send_fd(fdout,tmp_version,1);
     ok_to_send_errmsg = 0;
