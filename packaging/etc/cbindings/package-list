@@ -45,3 +45,4 @@ globus_axiscpp_client                   chosting/tools/axiscpp/client
 globus_client_CounterService            chosting/tools/axiscpp/test/CounterC/client
 globus_service_CounterService           chosting/tools/axiscpp/test/CounterC/service
 globus_client_CounterService_test       chosting/tools/axiscpp/test/CounterC/client_test
+globus_service_container                chosting/server/container/source/programs
