@@ -1,7 +1,14 @@
+include $(top_srcdir)/globus_automake_pre_top
+include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_xmlsec_pre
+
+SUBDIRS = include src pkgdata
+
+
 NULL =
 
 SAFE_VERSION	= @XMLSEC_VERSION_SAFE@
-SUBDIRS 	= include src apps man docs
+#SUBDIRS 	= include src apps man docs
 TEST_APP 	= apps/xmlsec1
 DEFAULT_CRYPTO	= @XMLSEC_CRYPTO@
 
@@ -130,8 +137,8 @@ memcheck: $(TEST_APP)
 perfcheck: $(TEST_APP)
 	@(export PERF_TEST=10 && $(MAKE) check)
 
-dist-hook:
-	@(rm -rf `find $(distdir) -name CVS`)
+##dist-hook:
+##	@(rm -rf `find $(distdir) -name CVS`)
 
 cleantar:
 	@(rm -f xmlsec*.tar.gz COPYING.LIB)
@@ -145,3 +152,6 @@ tag-release:
 rpm-release: clean cleantar rpm tag-release
 	
 
+include $(top_srcdir)/globus_automake_post_top
+include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_xmlsec_post

@@ -10,9 +10,9 @@ Packager: Aleksey Sanin <aleksey@aleksey.com>
 Source: ftp://ftp.aleksey.com/pub/xmlsec/releases/xmlsec1-%{version}.tar.gz
 BuildRoot: %{_tmppath}/xmlsec1-%{version}-root
 URL: http://www.aleksey.com/xmlsec
-Requires: libxml2 >= 2.4.24
+Requires: libxml2 >= @LIBXML_MIN_VERSION@
 Requires: libxslt >= 1.0.20
-BuildRequires: libxml2-devel >= 2.4.24
+BuildRequires: libxml2-devel >= @LIBXML_MIN_VERSION@
 BuildRequires: libxslt-devel >= 1.0.20
 Prefix: %{_prefix}
 Docdir: %{_docdir}
@@ -26,7 +26,7 @@ standards "XML Digital Signature" and "XML Encryption".
 Summary: Libraries, includes, etc. to develop applications with XML Digital Signatures and XML Encryption support.
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
-Requires: libxml2-devel >= 2.4.24
+Requires: libxml2-devel >= @LIBXML_MIN_VERSION@
 Requires: libxslt-devel >= 1.0.20
 Requires: openssl-devel >= 0.9.6
 Requires: zlib-devel 
@@ -39,7 +39,7 @@ Signatures and XML Encryption support.
 Summary: OpenSSL crypto plugin for XML Security Library
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
-Requires: libxml2 >= 2.4.24
+Requires: libxml2 >= @LIBXML_MIN_VERSION@
 Requires: libxslt >= 1.0.20
 Requires: openssl >= 0.9.6
 BuildRequires: openssl-devel >= 0.9.6
@@ -54,7 +54,7 @@ Group: Development/Libraries
 Requires: xmlsec1 = %{version}
 Requires: xmlsec1-devel = %{version}
 Requires: xmlsec1-openssl = %{version}
-Requires: libxml2-devel >= 2.4.24
+Requires: libxml2-devel >= @LIBXML_MIN_VERSION@
 Requires: libxslt-devel >= 1.0.20
 Requires: openssl >= 0.9.6
 Requires: openssl-devel >= 0.9.6
@@ -66,7 +66,7 @@ Libraries, includes, etc. for developing XML Security applications with OpenSSL
 Summary: NSS crypto plugin for XML Security Library
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
-Requires: libxml2 >= 2.4.24
+Requires: libxml2 >= @LIBXML_MIN_VERSION@
 Requires: libxslt >= 1.0.20
 Requires: mozilla-nss >= 1.4
 BuildRequires: mozilla-nss-devel >= 1.4
@@ -81,7 +81,7 @@ Group: Development/Libraries
 Requires: xmlsec1 = %{version}
 Requires: xmlsec1-devel = %{version}
 Requires: xmlsec1-nss = %{version}
-Requires: libxml2-devel >= 2.4.24
+Requires: libxml2-devel >= @LIBXML_MIN_VERSION@
 Requires: libxslt-devel >= 1.0.20
 Requires: mozilla-nss-devel >= 1.4
 
