@@ -70,8 +70,7 @@ DEF_CERT_FILE="${DEF_GLOBUS_DIR}/usercert.pem"
 
 
 if [ $# -eq 0 ]; then
-    globus_args_short_usage
-    exit 1
+    toprint="$toprint -text"
 fi
 
 # set default location of certificate (may be overridden by --file)
