@@ -38,7 +38,8 @@ typedef struct globus_l_handle_entry_s
  */
 int
 globus_handle_table_init(
-    globus_handle_table_t *             handle_table)
+    globus_handle_table_t *             handle_table,
+    globus_handle_destructor_t          destructor)
 {
     if(!handle_table)
     {
@@ -56,7 +57,8 @@ globus_handle_table_init(
     handle_table->next_slot = 0;
     handle_table->table_size = GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE;
     handle_table->inactive = GLOBUS_NULL;
-
+    handle_table->destructor = destructor;
+    
     return GLOBUS_SUCCESS;
 }
 /* globus_handle_table_init() */
@@ -78,6 +80,7 @@ globus_handle_table_destroy(
     globus_l_handle_entry_t **          table;
     globus_l_handle_entry_t *           inactive;
     globus_l_handle_entry_t *           save;
+    globus_handle_destructor_t          destructor;
 
     if(!handle_table)
     {
@@ -86,11 +89,17 @@ globus_handle_table_destroy(
 
     /* first free all active handles */
     table = handle_table->table;
+    destructor = handle_table->destructor;
     i = handle_table->next_slot;
     while(i--)
     {
         if(table[i])
         {
+            if(destructor)
+            {
+                destructor(table[i]->value);
+            }
+            
             globus_libc_free(table[i]);
         }
     }
@@ -260,6 +269,11 @@ globus_handle_table_decrement_reference(
         entry->ref--;
         if(entry->ref == 0)
         {
+            if(handle_table->destructor)
+            {
+                handle_table->destructor(entry->value);
+            }
+            
             /* NULL out slot and push this on the inactive list */
             handle_table->table[handle] = GLOBUS_NULL;
             entry->pnext = handle_table->inactive;

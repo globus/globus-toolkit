@@ -30,20 +30,26 @@ EXTERN_C_BEGIN
 
 typedef int globus_handle_t;
 
+typedef 
+void 
+(*globus_handle_destructor_t)(
+    void *                              datum);
+
 typedef struct
 {
     struct globus_l_handle_entry_s **   table;
     int                                 next_slot;
     int                                 table_size;
     struct globus_l_handle_entry_s *    inactive;
+    globus_handle_destructor_t          destructor;
 } globus_handle_table_t;
-
 
 #define GLOBUS_HANDLE_TABLE_NO_HANDLE -1
 
 int
 globus_handle_table_init(
-    globus_handle_table_t *             handle_table);
+    globus_handle_table_t *             handle_table,
+    globus_handle_destructor_t          destructor);
 
 int
 globus_handle_table_destroy(
@@ -52,7 +58,7 @@ globus_handle_table_destroy(
 globus_handle_t
 globus_handle_table_insert(
     globus_handle_table_t *             handle_table,
-    void *                              value,
+    void *                              datum,
     int                                 initial_refs);
 
 globus_bool_t

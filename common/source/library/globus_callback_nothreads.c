@@ -212,6 +212,74 @@ globus_l_callback_blocked_cb(
     }
 }
 
+/**
+ * globus_l_callback_space_dec_ref
+ *
+ * -- the functionality of globus_l_callback_space_inc_ref is contained in
+ *    globus_l_callback_register()
+ * -- All callbacks within a space have refs on that space.
+ */
+
+static
+void
+globus_l_callback_space_dec_ref(
+    globus_l_callback_space_t *          space)
+{
+    globus_handle_table_decrement_reference(
+        &globus_l_callback_space_table, space->handle);
+}
+
+/**
+ * globus_l_callback_info_dec_ref
+ *
+ * -- the functionality of globus_l_callback_info_inc_ref is contained in
+ *    globus_l_callback_register()
+ * -- there can only be two refs max: me and the user
+ */
+
+static
+void
+globus_l_callback_info_dec_ref(
+    globus_l_callback_info_t *          callback_info)
+{
+    globus_handle_table_decrement_reference(
+        &globus_l_callback_handle_table, callback_info->handle);
+}
+
+static
+void
+globus_l_callback_info_destructor(
+    void *                              datum)
+{
+    globus_l_callback_info_t *          callback_info;
+    
+    callback_info = (globus_l_callback_info_t *) datum;
+    
+    /* global space is local storage, is not managed */
+    if(callback_info->my_space->handle != GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        globus_l_callback_space_dec_ref(callback_info->my_space);
+    }
+
+    globus_memory_push_node(
+        &globus_l_callback_callback_info_memory, callback_info);
+}
+
+static
+void
+globus_l_callback_space_destructor(
+    void *                              datum)
+{
+    globus_l_callback_space_t *         space;
+    
+    space = (globus_l_callback_space_t *) datum;
+    
+    globus_priority_q_destroy(&space->queue);
+    
+    globus_memory_push_node(
+        &globus_l_callback_callback_space_memory, space);
+}
+
 static
 int
 globus_l_callback_activate()
@@ -224,8 +292,13 @@ globus_l_callback_activate()
         return rc;
     }
 
-    globus_handle_table_init(&globus_l_callback_handle_table);
-    globus_handle_table_init(&globus_l_callback_space_table);
+    globus_handle_table_init(
+        &globus_l_callback_handle_table,
+        globus_l_callback_info_destructor);
+    
+    globus_handle_table_init(
+        &globus_l_callback_space_table,
+        globus_l_callback_space_destructor);
 
     /* init global 'space' */
     globus_l_callback_global_space.handle = GLOBUS_CALLBACK_GLOBAL_SPACE;
@@ -272,73 +345,16 @@ globus_l_callback_deactivate()
     }
 
     globus_thread_blocking_callback_pop(GLOBUS_NULL);
+    
+    globus_handle_table_destroy(&globus_l_callback_space_table);
+    globus_handle_table_destroy(&globus_l_callback_handle_table);
 
     globus_memory_destroy(&globus_l_callback_callback_space_memory);
     globus_memory_destroy(&globus_l_callback_callback_info_memory);
     globus_priority_q_destroy(queue);
-    globus_handle_table_destroy(&globus_l_callback_space_table);
-    globus_handle_table_destroy(&globus_l_callback_handle_table);
-
+    
     return globus_module_deactivate(GLOBUS_THREAD_MODULE);
 }
-
-/**
- * globus_l_callback_space_dec_ref
- *
- * -- the functionality of globus_l_callback_space_inc_ref is contained in
- *    globus_l_callback_register()
- * -- All callbacks within a space have refs on that space.
- */
-
-static
-void
-globus_l_callback_space_dec_ref(
-    globus_l_callback_space_t *          space)
-{
-    globus_bool_t                       still_referenced;
-
-    still_referenced = globus_handle_table_decrement_reference(
-        &globus_l_callback_space_table, space->handle);
-
-    if(!still_referenced)
-    {
-        globus_priority_q_destroy(&space->queue);
-        globus_memory_push_node(
-            &globus_l_callback_callback_space_memory, space);
-    }
-}
-
-/**
- * globus_l_callback_info_dec_ref
- *
- * -- the functionality of globus_l_callback_info_inc_ref is contained in
- *    globus_l_callback_register()
- * -- there can only be two refs max: me and the user
- */
-
-static
-void
-globus_l_callback_info_dec_ref(
-    globus_l_callback_info_t *          callback_info)
-{
-    globus_bool_t                       still_referenced;
-
-    still_referenced = globus_handle_table_decrement_reference(
-        &globus_l_callback_handle_table, callback_info->handle);
-
-    if(!still_referenced)
-    {
-        /* global space is local storage, is not managed */
-        if(callback_info->my_space->handle != GLOBUS_CALLBACK_GLOBAL_SPACE)
-        {
-            globus_l_callback_space_dec_ref(callback_info->my_space);
-        }
-
-        globus_memory_push_node(
-            &globus_l_callback_callback_info_memory, callback_info);
-    }
-}
-
 
 /**
  * globus_l_callback_register

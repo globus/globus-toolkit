@@ -6098,7 +6098,9 @@ globus_l_ftp_control_stripes_create(
 
     globus_list_insert(&dc_handle->transfer_list, transfer_handle);
 
-    globus_handle_table_init(&transfer_handle->handle_table);
+    globus_handle_table_init(
+        &transfer_handle->handle_table,
+        GLOBUS_NULL);
 
     /*
      *  Add new structure to list for destruction in case

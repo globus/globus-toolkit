@@ -112,7 +112,7 @@ typedef int                             globus_callback_handle_t;
  * This is allows a user to initialize a space handle to this value and know
  * that it cant be a valid space (this value is NOT zero)
  */
-#define GLOBUS_CALLBACK_NULL_SPACE -2
+#define GLOBUS_CALLBACK_NULL_SPACE -1
 
 /**
  * @hideinitializer
@@ -507,8 +507,8 @@ globus_callback_space_register_periodic(
  * there are no running instances of the callback. 
  *
  * If the callback is currently running (or unstoppably about to be run), then
- * the unregister is prevented from being requeued, but, the 'official' cancel
- * is defferred until the last running instance of the callback returns  In 
+ * the callback is prevented from being requeued, but, the 'official' cancel
+ * is defferred until the last running instance of the callback returns.  In 
  * this case, GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING is returned.  (This is an 
  * informative error) If you need to know when the callback is guaranteed to 
  * have been canceled, pass an unregister callback.
@@ -746,7 +746,7 @@ globus_callback_was_restarted();
  * This is the default space handle implied if no spaces are 
  * explicitly created.
  */
-#define GLOBUS_CALLBACK_GLOBAL_SPACE -1
+#define GLOBUS_CALLBACK_GLOBAL_SPACE -2
 
 /**
  * Callback space behaviors describe how a space behaves.
