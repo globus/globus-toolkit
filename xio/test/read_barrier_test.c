@@ -120,9 +120,6 @@ read_cb(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
-    globus_thread_blocking_will_block();
-    globus_libc_usleep(SLEEP_TIME);
-
     globus_mutex_lock(&globus_l_mutex);
     {
         if(globus_l_closed)
@@ -132,6 +129,9 @@ read_cb(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
+
+    globus_thread_blocking_will_block();
+    globus_libc_usleep(SLEEP_TIME);
 }
 
 static void
