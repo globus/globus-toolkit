@@ -302,7 +302,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     if (len < 0)
       return -1;
 
-    if (encode_lifetime(request->portal_lifetime,
+    if (encode_lifetime(request->proxy_lifetime,
 			lifetime_string,
 			sizeof(lifetime_string)) == -1)
     {
@@ -431,7 +431,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
     
-    if (parse_lifetime(buf, &request->portal_lifetime) == -1)
+    if (parse_lifetime(buf, &request->proxy_lifetime) == -1)
     {
 	return -1;
     }

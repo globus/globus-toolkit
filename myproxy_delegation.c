@@ -55,7 +55,7 @@ int myproxy_set_delegation_defaults(
         socket_attrs->pshost = strdup(pshost);
     }
 
-    client_request->portal_lifetime = 60*60*MYPROXY_DEFAULT_PORTAL_HOURS;
+    client_request->proxy_lifetime = 60*60*MYPROXY_DEFAULT_DELEG_HOURS;
 
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 }

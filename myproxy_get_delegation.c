@@ -33,8 +33,8 @@ static char usage[] = \
 "                                                      \n"
 "       -v | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
-"       -t | --portal_lifetime <hours>    Lifetime of delegated proxy on\n" 
-"                                         the portal (default 2 hours)\n"
+"       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
+"                                         the server (default 2 hours)\n"
 "       -o | --out             <path>     Location of delegated proxy\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
@@ -47,7 +47,7 @@ struct option long_options[] =
     {"help",                   no_argument, NULL, 'h'},
     {"pshost",           required_argument, NULL, 's'},
     {"psport",           required_argument, NULL, 'p'},
-    {"portal_lifetime",  required_argument, NULL, 't'},
+    {"proxy_lifetime",   required_argument, NULL, 't'},
     {"out",              required_argument, NULL, 'o'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
@@ -144,8 +144,8 @@ init_arguments(int argc,
     {
         switch(arg) 
         {
-	case 't':       /* Specify portal lifetime in seconds */
-	  request->portal_lifetime = 60*60*atoi(gnu_optarg);
+	case 't':       /* Specify proxy lifetime in seconds */
+	  request->proxy_lifetime = 60*60*atoi(gnu_optarg);
 	  break;
         case 's': 	/* pshost name */
 	    attrs->pshost = strdup(gnu_optarg);
