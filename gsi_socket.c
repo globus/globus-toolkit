@@ -980,13 +980,12 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	}
 
 	if (strcmp(cn, server_name)) {
-	   self->error_string = strdup("Server authorization failed");
-	   self->error_string = strcat(self->error_string, "\n Expected target subject name=\"");
-	   self->error_string = strcat(self->error_string, server_name);
-	   self->error_string = strcat(self->error_string, "\"\n Target returned subject name=\"");
-	   self->error_string = strcat(self->error_string, cn);
-	   self->error_string = strcat(self->error_string, "\"");
-	   return GSI_SOCKET_ERROR;
+	    self->error_string =
+		my_snprintf("Server authentication failed.\n"
+			    "Expected target subject name=\"%s\"\n"
+			    "Target returned subject name=\"%s\"",
+			    server_name, cn);
+	    return GSI_SOCKET_ERROR;
 	}
 
     } else {
