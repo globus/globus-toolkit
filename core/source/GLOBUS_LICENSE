@@ -1,141 +1,97 @@
- The Globus Project's Commitment to Open Source
+Globus Toolkit Public License
+Version 2, July 31, 2003
 
-The Globus Project is a collaboration between Argonne National Laboratory, the
-University of Chicago, and the University of Southern California's Information
-Sciences Institute.
+Copyright 1999-2003 University of Chicago and The University of Southern
+California.  All rights reserved.
 
-All software developed by the Globus Project is made available under a liberal
-open source license.  This license allows the software to be used by anyone and
-for any purpose, without restriction. We are committed to maintaining the same
-open source distribution policy into the future.   We believe that this is the
-best way to ensure that Grid technologies gain wide acceptance and benefit from
-a large developer community.
+This software referred to as the Globus Toolkit software
+("Software") includes voluntary contributions made to the Globus
+Project collaboration.  Persons and entities that have made voluntary
+contributions are hereinafter referred to as "Contributors." This Globus
+Toolkit Public License is referred to herein as "the GTPL."  For more
+information on the Globus Project, please see http://www.globus.org/.
 
-The Globus Toolkit Public License wording is as follows.
-Globus Toolkit Public License (GTPL)
+Permission is granted for the installation, use, reproduction,
+modification, display, performance and redistribution of this Software,
+with or without modification, in source and binary forms.  Permission is
+granted for the installation, use, reproduction, modification, display,
+performance and redistribution of user files, manuals, and training and
+demonstration slides ("Documentation") distributed with or specifically
+designated as distributed under the GTPL.  Any exercise of rights under
+the GTPL is subject to the following conditions:
 
-Copyright (c) 1999 University of Chicago and The University of 
-Southern California. All Rights Reserved.
+1.  Redistributions of this Software, with or without modification,
+    must reproduce the GTPL in: (1) the Software, or (2) the Documentation
+    or some other similar material which is provided with the Software
+    (if any).
 
- 1) The "Software", below, refers to the Globus Toolkit (in either
-    source-code, or binary form and accompanying documentation) and a
-    "work based on the Software" means a work based on either the
-    Software, on part of the Software, or on any derivative work of
-    the Software under copyright law: that is, a work containing all
-    or a portion of the Software either verbatim or with
-    modifications.  Each licensee is addressed as "you" or "Licensee."
+2.  The Documentation, alone or if included with a redistribution of
+    the Software, must include the following notice: "This
+    product includes material developed by the Globus Project
+    (http://www.globus.org/)."
 
- 2) The University of Southern California and the University of
-    Chicago as Operator of Argonne National Laboratory are copyright
-    holders in the Software.  The copyright holders and their third
-    party licensors hereby grant Licensee a royalty-free nonexclusive
-    license, subject to the limitations stated herein and
-    U.S. Government license rights.
+    Alternatively, if that is where third-party acknowledgments normally
+    appear, this acknowledgment must be reproduced in the Software itself.
 
- 3) A copy or copies of the Software may be given to others, if you
-    meet the following conditions:
+3.  Globus Toolkit and Globus Project are trademarks of the
+    University of Chicago.  Any trademarks of the University of
+    Chicago or the University of Southern California may not be used
+    to endorse or promote software, or products derived therefrom, and
+    except as expressly provided herein may not be affixed to modified
+    redistributions of this Software or Documentation except with prior
+    written approval, obtainable at the discretion of the trademark
+    owner from info@globus.org.
 
-    a) Copies in source code must include the copyright notice and
-       this license.
+4.  To the extent that patent claims licensable by the University of
+    Southern California and/or by the University of Chicago (as Operator
+    of Argonne National Laboratory) are necessarily infringed by the
+    use or sale of the Software, you and your transferees are granted
+    a non-exclusive, worldwide, royalty-free license under such patent
+    claims, with the rights to make, use, sell, offer to sell, import and
+    otherwise transfer the Software in source code and object code form.
+    This patent license shall not apply to Documentation or to any other
+    software combinations which include the Software.  No hardware per
+    se is licensed hereunder.
 
-    b) Copies in binary form must include the copyright notice and
-       this license in the documentation and/or other materials
-       provided with the copy.
+    If you or any subsequent transferee (a "Recipient") institutes patent
+    litigation against any entity (including a cross-claim or counterclaim
+    in a lawsuit) alleging that the Software infringes such Recipient's
+    patent(s), then such Recipient's rights granted under the patent
+    license above shall terminate as of the date such litigation is filed.
 
- 4) All advertising materials, journal articles and documentation
-    mentioning features derived from or use of the Software must
-    display the following acknowledgement:
+5.  DISCLAIMER 
 
-    "This product includes software developed by and/or derived from
-    the Globus project (http://www.globus.org/)."
+    SOFTWARE AND DOCUMENTATION ARE PROVIDED BY THE COPYRIGHT HOLDERS AND
+    CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+    BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+    OF SATISFACTORY QUALITY, AND FITNESS FOR A PARTICULAR PURPOSE OR
+    USE ARE DISCLAIMED.  THE COPYRIGHT HOLDERS AND CONTRIBUTORS MAKE
+    NO REPRESENTATION THAT THE SOFTWARE, DOCUMENTATION, MODIFICATIONS,
+    ENHANCEMENTS OR DERIVATIVE WORKS THEREOF, WILL NOT INFRINGE ANY
+    PATENT, COPYRIGHT, TRADEMARK, TRADE SECRET OR OTHER PROPRIETARY RIGHT.
 
-    In the event that the product being advertised includes an intact
-    Globus distribution (with copyright and license included) then
-    this clause is waived.
+6.  LIMITATION OF LIABILITY
 
- 5) You are encouraged to package modifications to the Software
-    separately, as patches to the Software.
+    THE COPYRIGHT HOLDERS AND CONTRIBUTORS SHALL HAVE NO LIABILITY TO
+    LICENSEE OR OTHER PERSONS FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL,
+    CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES OF ANY CHARACTER
+    INCLUDING, WITHOUT LIMITATION, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES, LOSS OF USE, DATA OR PROFITS, OR BUSINESS INTERRUPTION,
+    HOWEVER CAUSED AND ON ANY THEORY OF CONTRACT, WARRANTY, TORT
+    (INCLUDING NEGLIGENCE), PRODUCT LIABILITY OR OTHERWISE, ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE OR DOCUMENTATION, EVEN IF
+    ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
- 6) You may make modifications to the Software, however, if you
-    modify a copy or copies of the Software or any portion of it,
-    thus forming a work based on the Software, and give a copy or
-    copies of such work to others, either in source code or binary
-    form, you must meet the following conditions:
+7.  The Globus Project may publish revised and/or new versions of
+    the GTPL from time to time.  Each version will be given a
+    distinguishing version number.  Once Software or Documentation
+    has been published under a particular version of the GTPL, you may
+    always continue to use it under the terms of that version. You may
+    also choose to use such Software or Documentation under the terms of
+    any subsequent version of the GTPL published by the Globus Project.
+    No one other than the Globus Project has the right to modify the
+    terms of the GTPL.
 
-    a) The Software must carry prominent notices stating that you
-       changed specified portions of the Software.
+Globus Toolkit Public License 7-31-03
 
-    b) The Software must display the following acknowledgement:
-
-       "This product includes software developed by and/or derived
-        from the Globus Project (http://www.globus.org/) to which the
-        U.S. Government retains certain rights."
-
- 7) You may incorporate the Software or a modified version of the
-    Software into a commercial product, if you meet the following
-    conditions:
-
-    a) The commercial product or accompanying documentation must
-       display the following acknowledgment:
-
-       "This product includes software developed by and/or derived
-        from the Globus Project (http://www.globus.org/) to which the
-        U.S. Government retains a paid-up, nonexclusive, irrevocable
-        worldwide license to reproduce, prepare derivative works, and
-        perform publicly and display publicly."
-
-    b) The user of the commercial product must be given the following
-       notice:
-
-       "[Commercial product] was prepared, in part, as an account of
-        work sponsored by an agency of the United States Government.
-        Neither the United States, nor the University of Chicago, nor
-        University of Southern California, nor any contributors to
-        the Globus Project or Globus Toolkit nor any of their employees,
-        makes any warranty express or implied, or assumes any legal
-        liability or responsibility for the accuracy, completeness, or
-        usefulness of any information, apparatus, product, or process
-        disclosed, or represents that its use would not infringe
-        privately owned rights.
-
-        IN NO EVENT WILL THE UNITED STATES, THE UNIVERSITY OF CHICAGO
-        OR THE UNIVERSITY OF SOUTHERN CALIFORNIA OR ANY CONTRIBUTORS
-        TO THE GLOBUS PROJECT OR GLOBUS TOOLKIT BE LIABLE FOR ANY
-        DAMAGES, INCLUDING DIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL
-        DAMAGES RESULTING FROM EXERCISE OF THIS LICENSE AGREEMENT OR
-        THE USE OF THE [COMMERCIAL PRODUCT]."
-
- 8) LICENSEE AGREES THAT THE EXPORT OF GOODS AND/OR TECHNICAL DATA
-    FROM THE UNITED STATES MAY REQUIRE SOME FORM OF EXPORT CONTROL
-    LICENSE FROM THE U.S. GOVERNMENT AND THAT FAILURE TO OBTAIN SUCH
-    EXPORT CONTROL LICENSE MAY RESULT IN CRIMINAL LIABILITY UNDER U.S.
-    LAWS.
-
- 9) Portions of the Software resulted from work developed under a
-    U.S. Government contract and are subject to the following license:
-    the Government is granted for itself and others acting on its
-    behalf a paid-up, nonexclusive, irrevocable worldwide license in
-    this computer software to reproduce, prepare derivative works, and
-    perform publicly and display publicly.
-
-10) The Software was prepared, in part, as an account of work
-    sponsored by an agency of the United States Government.  Neither
-    the United States, nor the University of Chicago, nor The
-    University of Southern California, nor any contributors to the
-    Globus Project or Globus Toolkit, nor any of their employees,
-    makes any warranty express or implied, or assumes any legal
-    liability or responsibility for the accuracy, completeness, or
-    usefulness of any information, apparatus, product, or process
-    disclosed, or represents that its use would not infringe privately
-    owned rights.
-
-11) IN NO EVENT WILL THE UNITED STATES, THE UNIVERSITY OF CHICAGO OR
-    THE UNIVERSITY OF SOUTHERN CALIFORNIA OR ANY CONTRIBUTORS TO THE
-    GLOBUS PROJECT OR GLOBUS TOOLKIT BE LIABLE FOR ANY DAMAGES,
-    INCLUDING DIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES
-    RESULTING FROM EXERCISE OF THIS LICENSE AGREEMENT OR THE USE OF
-    THE SOFTWARE.
-
-                              END OF LICENSE    
-
- 
+	
