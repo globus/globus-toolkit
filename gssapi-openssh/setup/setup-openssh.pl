@@ -997,6 +997,7 @@ sub copyFile
 sub copySXXScript
 {
     my($in, $out) = @_;
+    my($tmpgpath);
 
     if ( !isReadable($in) )
     {
@@ -1009,8 +1010,20 @@ sub copySXXScript
         return;
     }
 
+    #
+    # clean up any junk in the globus path variable
+    #
+
+    $tmpgpath = $gpath;
+    $tmpgpath =~ s:/+:/:g;
+    $tmpgpath =~ s:([^/]+)/$:\1:g;
+
+    #
+    # read in the script, substitute globus location, then write it back out
+    #
+
     $data = readFile($in);
-    $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
+    $data =~ s|\@GLOBUS_LOCATION\@|$tmpgpath|g;
     writeFile($out, $data);
     action("chmod 755 $out");
 }
