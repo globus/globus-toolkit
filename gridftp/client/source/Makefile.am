@@ -36,7 +36,8 @@ Sources= \
 	globus_ftp_client_restart.c \
 	globus_ftp_client_restart_marker.c \
 	globus_ftp_client_state.c \
-	globus_ftp_client_transfer.c
+	globus_ftp_client_transfer.c \
+	globus_ftp_client_feature.c
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.

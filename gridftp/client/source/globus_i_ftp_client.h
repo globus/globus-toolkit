@@ -5,7 +5,7 @@
  *
  * $RCSfile$
  * $Revision$
- * $Date $
+ * $Date$
  */
 
 #include "globus_common.h"
@@ -202,7 +202,6 @@ typedef enum
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT,
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION,
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST,
-    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST,
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET,
     GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT,
     GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION,
@@ -232,21 +231,15 @@ typedef enum
     GLOBUS_FTP_CLIENT_MOVE,
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
+    GLOBUS_FTP_CLIENT_MLSD,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER,
     GLOBUS_FTP_CLIENT_MDTM,
-    GLOBUS_FTP_CLIENT_SIZE
+    GLOBUS_FTP_CLIENT_SIZE,
+    GLOBUS_FTP_CLIENT_FEAT
 }
 globus_i_ftp_client_operation_t;
-
-typedef enum
-{
-    GLOBUS_FTP_CLIENT_FALSE = GLOBUS_FALSE,
-    GLOBUS_FTP_CLIENT_TRUE  = GLOBUS_TRUE,
-    GLOBUS_FTP_CLIENT_MAYBE
-}
-globus_ftp_client_tristate_t;
 
 typedef enum
 {
@@ -286,7 +279,6 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_REST,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST,
-    GLOBUS_FTP_CLIENT_TARGET_SETUP_NLST,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_GET,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PUT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE,
@@ -298,7 +290,6 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM,
     GLOBUS_FTP_CLIENT_TARGET_LIST,
-    GLOBUS_FTP_CLIENT_TARGET_NLST,
     GLOBUS_FTP_CLIENT_TARGET_RETR,
     GLOBUS_FTP_CLIENT_TARGET_STOR,
     GLOBUS_FTP_CLIENT_TARGET_MDTM,
@@ -323,32 +314,55 @@ globus_ftp_client_target_state_t;
  * supports it.
  *
  */
-typedef enum
-{
-    /* Buffer-size setting commands; keep these at the beginning of
-     * the enum
-     */
-    GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE = 0,
-    GLOBUS_FTP_CLIENT_FEATURE_RBUFSZ,
-    GLOBUS_FTP_CLIENT_FEATURE_RBUFSIZ,
-    GLOBUS_FTP_CLIENT_FEATURE_STORBUFSIZE,
-    GLOBUS_FTP_CLIENT_FEATURE_SBUSSZ,
-    GLOBUS_FTP_CLIENT_FEATURE_SBUFSIZ,
-    GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
-    GLOBUS_FTP_CLIENT_FEATURE_SBUF,
-    GLOBUS_FTP_CLIENT_FEATURE_ABUF,
 
-    GLOBUS_FTP_CLIENT_FEATURE_REST_STREAM,
-    GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM,
-    GLOBUS_FTP_CLIENT_FEATURE_DCAU,
-    GLOBUS_FTP_CLIENT_FEATURE_ESTO,
-    GLOBUS_FTP_CLIENT_FEATURE_ERET,
-    GLOBUS_FTP_CLIENT_FEATURE_SIZE,
-    GLOBUS_FTP_CLIENT_FEATURE_MAX,
-    GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
-    GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF
-}
-globus_i_ftp_client_probed_feature_t;
+
+
+/* Do not access members of the feature 
+   structures below. Instead, use interface functions:
+   globus_i_ftp_client_feature_get()
+   globus_i_ftp_client_feature_set()
+   globus_i_ftp_client_features_init()
+   globus_i_ftp_client_features_destroy()
+   This will facilitate future changes in the structures.
+*/
+typedef struct globus_i_ftp_client_features_s
+{
+  globus_ftp_client_tristate_t list[GLOBUS_FTP_CLIENT_FEATURE_MAX];
+} globus_i_ftp_client_features_t;
+
+
+/* Should it be needed to store feature parameters 
+   beside feature names, these are the proposed structures:
+
+typedef struct globus_i_ftp_client_feature_s{
+  globus_ftp_client_tristate_t                   supported;
+  char **                                        attrs;
+} globus_i_ftp_client_feature_t;
+
+typedef struct globus_i_ftp_client_features_s
+{
+  globus_ftp_client_feature_t list[GLOBUS_FTP_CLIENT_FEATURE_MAX];
+} globus_i_ftp_client_features_t;
+
+*/
+
+globus_i_ftp_client_features_t *
+globus_i_ftp_client_features_init();
+
+globus_result_t 
+globus_i_ftp_client_features_destroy(
+    globus_i_ftp_client_features_t *             features);
+    
+globus_ftp_client_tristate_t 
+globus_i_ftp_client_feature_get(
+    globus_i_ftp_client_features_t *             features,
+    globus_ftp_client_probed_feature_t           feature);
+
+void 
+globus_i_ftp_client_feature_set(
+    globus_i_ftp_client_features_t *             features,
+    globus_ftp_client_probed_feature_t           feature,
+    globus_ftp_client_tristate_t                 value);
 
 /**
  * Data connection caching information.
@@ -510,6 +524,9 @@ typedef struct globus_i_ftp_client_handle_t
 
     /** Pointer to user's size buffer */
     globus_off_t *				size_pointer;
+    
+    /** Pointer to user's features buffer */
+    globus_i_ftp_client_features_t *		features_pointer;
 
     /** Thread safety */
     globus_mutex_t                              mutex;
@@ -545,8 +562,7 @@ typedef struct globus_i_ftp_client_target_s
     globus_ftp_control_auth_info_t		auth_info;
 
     /** Features we've discovered about this target so far. */
-    globus_ftp_client_tristate_t		
-					features[GLOBUS_FTP_CLIENT_FEATURE_MAX];
+    globus_i_ftp_client_features_t *       	features;
     /** Current settings */
     globus_ftp_control_dcau_t			dcau;
     globus_ftp_control_protection_t		data_prot;
@@ -590,7 +606,7 @@ typedef struct globus_i_ftp_client_target_s
  * globus_i_ftp_client_target_release().
  */
 typedef struct
-{
+{ 
     /** URL which the user has requested to be cached. */
     globus_url_t				url;
     /** 
@@ -662,7 +678,9 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_mkdir_t		mkdir_func;
     globus_ftp_client_plugin_rmdir_t		rmdir_func;
     globus_ftp_client_plugin_move_t		move_func;
+    globus_ftp_client_plugin_feat_t		feat_func;
     globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
+    globus_ftp_client_plugin_machine_list_t     machine_list_func;
     globus_ftp_client_plugin_list_t		list_func;
     globus_ftp_client_plugin_get_t		get_func;
     globus_ftp_client_plugin_put_t		put_func;
@@ -696,6 +714,7 @@ typedef struct globus_i_ftp_client_plugin_t
     /** This pointer is reserved for plugin-specific data */
     void *					plugin_specific;
 } globus_i_ftp_client_plugin_t;
+
 
 #ifndef DOXYGEN
 /* globus_ftp_client_attr.c */
@@ -813,7 +832,19 @@ globus_i_ftp_client_plugin_notify_verbose_list(
     globus_i_ftp_client_operationattr_t *	attr);
 
 void
+globus_i_ftp_client_plugin_notify_machine_list(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
 globus_i_ftp_client_plugin_notify_delete(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_feat(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr);
@@ -946,6 +977,8 @@ globus_i_ftp_client_restart_register_oneshot(
     globus_i_ftp_client_handle_t *		handle);
 
 /* globus_ftp_client_transfer.c */
+
+
 void
 globus_i_ftp_client_force_close_callback(
     void *					user_arg,
@@ -966,6 +999,11 @@ globus_i_ftp_client_response_callback(
     globus_ftp_control_handle_t *		handle,
     globus_object_t *				error,
     globus_ftp_control_response_t *		response);
+
+/* globus_ftp_client_data.c */
+void
+globus_l_ftp_client_complete_kickout(
+    void *					user_arg);
 
 /* Errors */
 

@@ -66,6 +66,7 @@ libglobus_ftp_client_test___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 test_PROGRAMS= \
 	globus-ftp-client-ascii-list-test \
 	globus-ftp-client-ascii-verbose-list-test \
+	globus-ftp-client-ascii-machine-list-test \
 	globus-ftp-client-bad-buffer-test \
 	globus-ftp-client-cache-all-test \
 	globus-ftp-client-create-destroy-test \
@@ -75,6 +76,7 @@ test_PROGRAMS= \
 	globus-ftp-client-extended-get-caching-test \
 	globus-ftp-client-extended-put-test \
 	globus-ftp-client-extended-transfer-test \
+	globus-ftp-client-feat-test \
 	globus-ftp-client-lingering-get-test \
 	globus-ftp-client-mkdir-test \
 	globus-ftp-client-modification-time-test \
@@ -182,11 +184,17 @@ globus_ftp_client_move_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_ftp_client_ascii_verbose_list_test_SOURCES = globus_ftp_client_ascii_verbose_list_test.c $(LibHeaders)
 globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_LDFLAGS)
 
+globus_ftp_client_ascii_machine_list_test_SOURCES = globus_ftp_client_ascii_machine_list_test.c $(LibHeaders)
+globus_ftp_client_ascii_machine_list_test_LDFLAGS = $(GPT_LDFLAGS)
+
 globus_ftp_client_cache_all_test_SOURCES = globus_ftp_client_cache_all_test.c $(LibHeaders)
 globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_exist_test_SOURCES = globus_ftp_client_exist_test.c $(LibHeaders)
 globus_ftp_client_exist_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_feat_test_SOURCES = globus_ftp_client_feat_test.c $(LibHeaders)
+globus_ftp_client_feat_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_modification_time_test_SOURCES = globus_ftp_client_modification_time_test.c $(LibHeaders)
 globus_ftp_client_modification_time_test_LDFLAGS = $(GPT_LDFLAGS)

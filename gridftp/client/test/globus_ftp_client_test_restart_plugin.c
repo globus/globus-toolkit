@@ -12,6 +12,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_MOVE,
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
+    GLOBUS_FTP_CLIENT_MLSD,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER
@@ -293,6 +294,33 @@ globus_l_ftp_client_test_restart_plugin_verbose_list(
 
 static
 void
+globus_l_ftp_client_test_restart_plugin_machine_list(
+    globus_ftp_client_plugin_t *			plugin,
+    void *						plugin_specific,
+    globus_ftp_client_handle_t *			handle,
+    const char *					url,
+    const globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t					restart)
+{
+    globus_l_ftp_restart_plugin_specific_t *		d;
+    
+    if(!restart)
+    {
+	d = plugin_specific;
+	d->op = GLOBUS_FTP_CLIENT_MLSD;
+	d->source_url = globus_libc_strdup(url);
+	
+	globus_ftp_client_operationattr_copy(&d->source_attr,
+					     attr);
+    }
+    else
+    {
+	fprintf(stderr,"[restart plugin]: We've been restarted\n");
+    }
+}
+
+static
+void
 globus_l_ftp_client_test_restart_plugin_move(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
@@ -468,6 +496,15 @@ globus_l_ftp_client_test_restart_plugin_command(
 	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
 	}
 	d->next = FTP_RESTART_AT_NLST_RESPONSE;
+    }
+    else if(strncmp(command_name, "MLSD", strlen("MLSD")) == 0)
+    {
+	if(d->when == FTP_RESTART_AT_MLSD)
+	{
+	    fprintf(stderr,"[restart plugin]: About to restart during MLSD\n");
+	    globus_l_ftp_client_test_restart_plugin_do_restart(handle, d);
+	}
+	d->next = FTP_RESTART_AT_MLSD_RESPONSE;
     }
     else if(strncmp(command_name, "MKD", strlen("MKD")) == 0)
     {
@@ -774,6 +811,7 @@ globus_ftp_client_test_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, verbose_list);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, machine_list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mkdir);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, rmdir);
@@ -864,6 +902,7 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
 
     globus_assert(d->op == GLOBUS_FTP_CLIENT_LIST   ||
 		  d->op == GLOBUS_FTP_CLIENT_NLST   ||
+		  d->op == GLOBUS_FTP_CLIENT_MLSD   ||
 		  d->op == GLOBUS_FTP_CLIENT_MOVE   ||
 		  d->op == GLOBUS_FTP_CLIENT_DELETE ||
 		  d->op == GLOBUS_FTP_CLIENT_MKDIR  ||
@@ -882,6 +921,13 @@ globus_l_ftp_client_test_restart_plugin_do_restart(
     else if(d->op == GLOBUS_FTP_CLIENT_NLST)
     {
 	globus_ftp_client_plugin_restart_list(handle,
+					      d->source_url,
+					      &d->source_attr,
+					      &delay);
+    }
+    else if(d->op == GLOBUS_FTP_CLIENT_MLSD)
+    {
+	globus_ftp_client_plugin_restart_machine_list(handle,
 					      d->source_url,
 					      &d->source_attr,
 					      &delay);
