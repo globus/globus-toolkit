@@ -1,7 +1,7 @@
 /*
  * myproxy-server
  *
- * program to store user's delegated credentials for use in a portal
+ * program to store user's delegated credentials for later retrieval
  */
 
 #include "myproxy.h"
@@ -404,7 +404,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Location is %s", client_creds->location);
-	myproxy_debug("  Lifetime is %d seconds", client_request->portal_lifetime);
+	myproxy_debug("  Lifetime is %d seconds", client_request->proxy_lifetime);
 
 	/* return server response */
 	send_response(attrs, server_response, client_name);
@@ -415,10 +415,10 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	/* log request type */
         myproxy_log("Received PUT request from %s", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
-	myproxy_debug("  Lifetime is %d seconds", client_request->portal_lifetime);
+	myproxy_debug("  Lifetime is %d seconds", client_request->proxy_lifetime);
 
-	/* Set lifetime of credentials on myproxy-server */ 
-	client_creds->lifetime = client_request->portal_lifetime;
+	/* Set lifetime of credentials delegated by server */ 
+	client_creds->lifetime = client_request->proxy_lifetime;
 
 	/* return server response */
 	send_response(attrs, server_response, client_name);
@@ -658,7 +658,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     int min_lifetime;
   
     /* Delegate credentials to client */
-    min_lifetime = MIN(creds->lifetime, request->portal_lifetime);
+    min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
 
     if (myproxy_init_delegation(attrs, creds->location, min_lifetime) < 0) {
         myproxy_log_verror();

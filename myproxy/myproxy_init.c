@@ -29,10 +29,10 @@ static char usage[] = \
 "                                                      \n"
 "       -v | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
-"       -c | --cred_lifetime   <hours>    Lifetime of delegated proxy\n" 
-"                                         (default 1 week)\n"
-"       -t | --portal_lifetime <hours>    Lifetime of delegated proxy on\n" 
-"                                         the portal (default 2 hours)\n"
+"       -c | --cred_lifetime   <hours>    Lifetime of delegated proxy on\n" 
+"                                         server (default 1 week)\n"
+"       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
+"                                         server (default 2 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
@@ -45,7 +45,7 @@ struct option long_options[] =
   {"pshost",   	      required_argument, NULL, 's'},
   {"psport",          required_argument, NULL, 'p'},
   {"cred_lifetime",   required_argument, NULL, 'c'},
-  {"portal_lifetime", required_argument, NULL, 't'},
+  {"proxy_lifetime",  required_argument, NULL, 't'},
   {"usage",                 no_argument, NULL, 'u'},
   {"username",        required_argument, NULL, 'l'},
   {"version",               no_argument, NULL, 'v'},
@@ -109,8 +109,8 @@ main(int argc, char *argv[])
       socket_attrs->pshost = strdup(pshost);
     }
 
-    /* client_request stores the portal lifetime */
-    client_request->portal_lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_PORTAL_HOURS;
+    /* client_request stores the lifetime of proxies delegated by the server */
+    client_request->proxy_lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
 
     /* the lifetime of the proxy */
     cred_lifetime                   = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
@@ -249,8 +249,8 @@ init_arguments(int argc,
 	case 'c': 	/* Specify cred lifetime in hours */
 	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(gnu_optarg);
 	    break;    
-	case 't': 	/* Specify portal lifetime in hours */
-	    request->portal_lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	case 't': 	/* Specify proxy lifetime in hours */
+	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
 	    break;        
 	case 's': 	/* pshost name */
 	    attrs->pshost = strdup(gnu_optarg);
