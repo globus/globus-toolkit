@@ -35,11 +35,6 @@
           <Simple_Version Major="3" />
         </Version>
       </Dependency>
-      <Dependency Name="globus_authz_callout_error" >
-        <Version >
-          <Simple_Version Major="0" />
-        </Version>
-      </Dependency>
     </Source_Dependencies>
     <Source_Dependencies Type="pgm_link" >
       <Dependency Name="globus_callout" >
@@ -47,7 +42,9 @@
           <Simple_Version Major="0" />
         </Version>
       </Dependency>
-      <Dependency Name="globus_authz_callout_error" >
+    </Source_Dependencies>
+    <Source_Dependencies Type="lib_runtime" >
+      <Dependency Name="globus_authz_callout_error" Package="rtl" >
         <Version >
           <Simple_Version Major="0" />
         </Version>

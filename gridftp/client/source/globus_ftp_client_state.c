@@ -222,12 +222,15 @@ globus_i_ftp_client_response_callback(
    
     globus_i_ftp_client_handle_lock(client_handle);
     
-    globus_i_ftp_client_plugin_notify_response(
-	client_handle,
-	target->url_string,
-	target->mask,
-	error,
-	response);
+    if(response)
+    {
+        globus_i_ftp_client_plugin_notify_response(
+            client_handle,
+            target->url_string,
+            target->mask,
+            error,
+            response);
+    }
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
         client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
@@ -743,15 +746,12 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_SIZE:
 	/*
 	 * Doing a SIZE isn't necessary but is nice for
-	 * - plugins doing progress bars based on the size
 	 * - resuming  stream mode 3rd party transfers
 	 *
 	 * Skip if
 	 * - server doesn't do SIZE
 	 * - not interesting
 	 *   where interesting is
-	 *   - size unknown for get
-	 *   - size unknown for 3rd party transfer source
 	 *   - destination of stream mode 3rd party transfer w/ resume
 	 *     attr set to true
 	 */
@@ -761,11 +761,6 @@ redo:
 	   ||
 	   (!
 	       (
-		   (client_handle->source_size == 0 &&
-		    (client_handle->op == GLOBUS_FTP_CLIENT_GET ||
-		    (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
-		     target == client_handle->source)))
-		   ||
 		   (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
 		    target == client_handle->dest &&
 		    target->attr->resume_third_party &&
@@ -2918,10 +2913,6 @@ redo:
 		response->response_class
 		== GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    globus_assert(client_handle->state ==
-			  GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER ||
-			  client_handle->state ==
-			  GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER_ONE_COMPLETE);
 	    if(client_handle->state ==
 	       GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER)
 	    {
@@ -2936,6 +2927,19 @@ redo:
 		globus_i_ftp_client_transfer_complete(client_handle);
 		
 		goto do_return;
+	    }
+	    else
+	    {
+	        /* this shouldnt really be possible, but handle it */
+	        target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+	        globus_i_ftp_client_data_flush(client_handle);
+	        memset(&target->cached_data_conn,
+                    '\0', sizeof(globus_i_ftp_client_data_target_t));
+                globus_ftp_control_data_force_close(
+		    target->control_handle,
+		    globus_l_ftp_client_data_force_close_callback,
+		    GLOBUS_NULL);
+	        goto redo;
 	    }
 	}
 	else
@@ -3145,9 +3149,10 @@ redo:
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
-
-	if((!error) &&
-	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+        
+        /* response will be NULL if the NOOP was faked */
+	if((!error) && (!response ||
+	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY))
 	{
 	    /* NOOP successful, we can re-use this target */
 	    target->state =

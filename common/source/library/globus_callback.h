@@ -413,6 +413,36 @@ globus_callback_unregister(
     globus_bool_t *                     active);
 
 /**
+ * Adjust the delay of a oneshot callback.
+ *
+ * This function allows a user to adjust the delay of a previously
+ * registered callback.  It is safe to call this within or outside of
+ * the callback that is being modified.
+ *
+ * Note if the oneshot has already been fired, this function will still return
+ * GLOBUS_SUCCESS, but won't affect anything.
+ *
+ * @param callback_handle
+ *        the handle received from a globus_callback_space_register_oneshot()
+ *        call
+ *
+ * @param new_delay
+ *        The new delay from now.  If NULL, then callback will be fired as
+ *        soon as possible.
+ *
+ * @return
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE
+ *        - GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED
+ *        - GLOBUS_SUCCESS
+ * 
+ * @see globus_callback_space_register_periodic()
+ */
+globus_result_t
+globus_callback_adjust_oneshot(
+    globus_callback_handle_t            callback_handle,
+    const globus_reltime_t *            new_delay);
+
+/**
  * Adjust the period of a periodic callback.
  *
  * This function allows a user to adjust the period of a previously

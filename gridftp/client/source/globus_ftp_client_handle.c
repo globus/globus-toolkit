@@ -810,6 +810,7 @@ globus_l_ftp_client_target_new(
     target->parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
     target->data_prot = GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
     target->pbsz = 0;
+    GlobusTimeAbstimeSet(target->last_access, 0, 0);
 
     target->cached_data_conn.source = GLOBUS_NULL;
     target->cached_data_conn.dest = GLOBUS_NULL;
@@ -1081,10 +1082,11 @@ globus_i_ftp_client_target_release(
 	    if(cache_entry->target == GLOBUS_NULL)
 	    {
 		cache_entry->target = target;
+		GlobusTimeAbstimeGetCurrent(target->last_access);
 	    }
 	    
-	        globus_i_ftp_client_debug_printf(1, 
-                    (stderr, "globus_i_ftp_client_target_release() exiting\n"));
+            globus_i_ftp_client_debug_printf(1, 
+                (stderr, "globus_i_ftp_client_target_release() exiting\n"));
 
 	    return;
 	}

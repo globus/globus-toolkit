@@ -1285,6 +1285,7 @@ globus_ftp_client_debug_plugin_destroy(
     {
 	globus_libc_free(d->text);
     }
+    globus_libc_free(d);
 
     return globus_ftp_client_plugin_destroy(plugin);
 }

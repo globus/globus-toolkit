@@ -195,7 +195,7 @@ main(
     }
     else
     {
-        char                            buffer[CHUNK_SIZE];
+        char                            buffer[CHUNK_SIZE + 1];
         int                             nbytes;
         int                             i, j = 0;
         fp = fopen(filename, "w");
@@ -206,12 +206,12 @@ main(
         }
         while(1)
         {
-            for (i=0; i<CHUNK_SIZE; i++)
+            for (i=0; i<CHUNK_SIZE + 1; i++)
                 buffer[i] = '\0';
             res = globus_xio_read(
                 xio_handle,
                 buffer,
-                sizeof(buffer),
+                sizeof(buffer) - 1,
                 1,
                 &nbytes,
                 NULL);

@@ -8,7 +8,7 @@ SUBDIRS = \
 flavorinclude_HEADERS = \
     globus_xio_gridftp_driver.h
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 lib_LTLIBRARIES = libglobus_xio_gridftp_driver_$(GLOBUS_FLAVOR_NAME).la
 
@@ -18,6 +18,8 @@ libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_gridftp_driver.c
 libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)
+
+EXTRA_DIST = version.h.in
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -105,13 +105,21 @@ AC_ARG_ENABLE(insure,
 
 AC_DEFUN([LAC_COMPILERS],
 [
-
-dnl this is to prevent AC_PROG_CC being called
-dnl automatically from autoconf dependencies
-AC_PROVIDE([AC_PROG_CC])
+AC_BEFORE([$0], [AC_PROG_CC])
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+
+dnl Restore and reset the flags from AC_PROG_CC so we can do our
+dnl own compiler config. Saved flags are from ../configure.in
+CC="$SAVED_CC"
+CFLAGS="$SAVED_CFLAGS"
+unset ac_cv_c_compiler_gnu
+unset ac_cv_prog_ac_ct_CC
+unset ac_cv_prog_cc_g
+unset ac_cv_prog_cc_stdc
+unset am_cv_CC_dependencies_compiler_type
+
 LAC_COMPILERS_ARGS
 LAC_THREADS
 LAC_MP
@@ -193,14 +201,14 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 g77)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
 
@@ -902,11 +910,6 @@ fi
 GLOBUS_DEBUG="$lac_cv_debug"
 AC_SUBST(GLOBUS_DEBUG)
 
-dnl we have to run AC_PROG_CC to get the all the other
-dnl autoconf macros to work correctly
-CC=$lac_cv_CC
-AC_PROG_CC()
-
 LAC_PROG_CC_GNU([$lac_cv_CC $lac_CFLAGS],
 [
     lac_CFLAGS="$lac_CFLAGS -Wall"
@@ -949,12 +952,17 @@ NM="$lac_NM"
 OBJECT_MODE="$lac_OBJECT_MODE"
 ])
 
+dnl Need to get macro dependencies right
+AC_DEFUN([LAC_PROG_CC], [AC_PROG_CC])
+
+
 dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
 AC_DEFUN([LAC_PROG_CC_GNU],
 [
 if test "X$1" != "X" ; then
     _SAVED_CC="$CC"
     CC="$1"
+    AC_REQUIRE([LAC_PROG_CC])
     AC_TRY_COMPILE([],
                    [#ifndef __GNUC__
     choke me
@@ -964,6 +972,7 @@ if test "X$1" != "X" ; then
     [lac_compiler_gnu=no])
     CC="$_SAVED_CC"
 else
+    AC_REQUIRE([LAC_PROG_CC])
     AC_TRY_COMPILE([],
                    [#ifndef __GNUC__
     choke me

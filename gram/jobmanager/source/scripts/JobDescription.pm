@@ -109,6 +109,19 @@ sub new
             }
         }
     }
+    
+    if ($self->expand_globus_location()) {
+        my $home = $ENV{GLOBUS_LOCATION};
+        foreach my $key (keys %{$self}) {
+            if ($key =~ m/^[^_]/) {
+                my $arrayref = $self->{$key};
+
+                for ($i = 0; $i < scalar(@{$arrayref}); $i++) {
+                    $arrayref->[$i] =~ s/\${GLOBUS_LOCATION}/$home/g;
+                }
+            }
+        }
+    }      
 
     return $self;
 }
