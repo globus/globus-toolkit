@@ -139,6 +139,12 @@ typedef enum
     GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
     /* an error occured parsing the policy */
     GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+    /* an error occured during authorization of subject */
+    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_SUBJECT,
+    /* an error occured during authorization of port type */
+    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_PORT_TYPE,
+    /* an error occured during authorization of user name */
+    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_USER_NAME
 } globus_grim_devel_error_type_t;
 
 
@@ -853,6 +859,40 @@ globus_result_t
 globus_grim_devel_port_type_file_parse_uid(
     FILE *                                  fptr,
     char ***                                port_types);
+
+
+/** 
+ *  @defgroup globus_grim_authorization Grim Port Authorization Functions
+ *  
+ *  These function provide a way to check the GRIM policy in the peer cred
+ *  against local requirements.
+ */
+
+/**
+ *  @ingroup globus_grim_authorization
+ *
+ *  Check the grim policy against local requirements
+ *
+ * This function extracts the grim policy from the peer credential in the
+ * credential, make sure that the subject name of the local credential is
+ * listed in the grim policy, that the desired port types are authorized and
+ * that the remote service is running as username (optional).
+ *
+ *  @param context
+ *         A security context established with a peer using a grim credential.
+ *
+ *  @param port_types
+ *         A NULL terminated array of desired port types.
+ *
+ *  @param username
+ *         A optional username the remote service is running as.
+ *
+ */
+globus_result_t
+globus_grim_check_authorization(
+    gss_ctx_id_t                        context,
+    char **                             port_types,
+    char *                              username);
 
 
 #endif /* GLOBUS_GRIM_DEVEL_H */

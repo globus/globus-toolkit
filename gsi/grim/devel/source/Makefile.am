@@ -9,7 +9,7 @@ Sources= \
 	globus_grim_devel.c                 \
 	globus_grim_devel.h
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 flavorinclude_HEADERS= \
 	globus_grim_devel.h

@@ -2,12 +2,16 @@
 #include "globus_common.h"
 #include "globus_error_string.h"
 #include "globus_error.h"
+#include "globus_error_gssapi.h"
+#include "globus_openssl.h"
+#include "globus_error_openssl.h"
 #include "globus_gsi_cert_utils.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
 #include "globus_grim_devel.h"
 #include "globus_error.h"
+#include "proxycertinfo.h"
 #include <expat.h>
 #include <grp.h>
 #include <pwd.h>
@@ -1206,6 +1210,24 @@ globus_l_grim_devel_activate()
     {
         return rc;
     }
+    
+    rc = globus_module_activate(GLOBUS_OPENSSL_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+    
+    rc = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
 
     globus_l_grim_activated = GLOBUS_TRUE;
     globus_l_grim_NID = OBJ_create(GRIM_OID, GRIM_SN, GRIM_LN);
@@ -1219,6 +1241,9 @@ globus_l_grim_devel_deactivate()
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
     globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
 
     globus_l_grim_activated = GLOBUS_FALSE;
 
@@ -1883,4 +1908,392 @@ globus_l_grim_parse_assertion(
     }
 
     return res;
+}
+
+
+globus_result_t
+globus_grim_check_authorization(
+    gss_ctx_id_t                        context,
+    char **                             port_types,
+    char *                              username)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_OID_desc                        pci_OID_desc =
+        {10, (void *) "\x2b\x6\x1\x4\x1\x9b\x50\x1\x81\x5e"};
+    gss_OID                             pci_OID = &pci_OID_desc;
+    gss_buffer_set_t                    extension_data = NULL;
+    gss_buffer_desc                     name_buffer_desc;
+    gss_buffer_t                        name_buffer = &name_buffer_desc;
+    gss_name_t                          local_dn = GSS_C_NO_NAME;
+    PROXYCERTINFO *                     pci = NULL;
+    PROXYPOLICY *                       policy;
+    ASN1_OBJECT *                       policy_language;
+    int                                 GRIM_nid;
+    globus_result_t                     result;
+    unsigned char *                     policy_string = NULL;
+    globus_grim_assertion_t             grim_assertion = NULL;
+    char *                              buffer = NULL;
+    int                                 policy_length;
+    char **                             dn_array;
+    char **                             grim_port_types;
+    char *                              grim_username;
+    int                                 i;
+    int                                 j;
+    int                                 initiator;
+    
+    major_status = gss_inquire_sec_context_by_oid(&minor_status,
+                                                  context,
+                                                  pci_OID,
+                                                  &extension_data);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = globus_error_put(
+            globus_error_construct_gssapi_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                major_status,
+                minor_status));
+        goto exit;
+    }
+    
+    if(extension_data->count != 1)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: found more than one ProxyCertInfo "
+                "extension in certificate chain\n"));
+        goto exit;
+    }
+
+    pci = d2i_PROXYCERTINFO(
+        NULL,
+        (unsigned char **) &(extension_data->elements[0].value),
+        extension_data->elements[0].length);
+
+    if(pci == NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_openssl_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL));
+        goto exit;
+    }
+
+    policy = PROXYCERTINFO_get_policy(pci);
+
+    if(policy == NULL)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to obtain policy from "
+                "ProxyCertInfo extension\n"));
+        goto exit;
+    }
+
+    policy_language = PROXYPOLICY_get_policy_language(policy);
+
+    if(policy_language == NULL)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to determine policy language "
+                "from ProxyCertInfo extension\n"));
+        goto exit;
+    }
+
+    result = globus_grim_devel_get_NID(&GRIM_nid);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                globus_error_get(result),
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to obtain NID for "
+                "the GRIM policy language\n"));
+        goto exit;
+    }
+
+    if(OBJ_obj2nid(policy_language) != GRIM_nid)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Not a GRIM policy\n"));
+        goto exit;
+    }
+
+    policy_string = PROXYPOLICY_get_policy(policy, &policy_length);
+
+    if(policy_string == NULL || policy_length == 0)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to obtain policy data from "
+                "ProxyCertInfo extension\n"));
+        goto exit;
+    }
+
+    buffer = realloc(policy_string, policy_length + 1);
+
+    if(buffer == NULL)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_ALLOC,
+                "[globus_grim_devel]:: Unable to allocate memory for "
+                "policy data\n"));
+        goto exit;
+    }
+
+    policy_string = NULL;
+
+    buffer[policy_length] = '\0';
+
+    result = globus_grim_assertion_init_from_buffer(
+        &grim_assertion,
+        buffer);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                globus_error_get(result),
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to parse GRIM policy\n"));
+        goto exit;
+    }
+
+    result = globus_grim_assertion_get_dn_array(grim_assertion,
+                                                &dn_array);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                globus_error_get(result),
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to get DN array from "
+                "GRIM policy\n"));
+        goto exit;
+    }
+
+    major_status = gss_inquire_context(&minor_status,
+                                       context,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       &initiator,
+                                       NULL);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = globus_error_put(
+            globus_error_construct_gssapi_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                major_status,
+                minor_status));
+        goto exit;
+    }
+
+    major_status = gss_inquire_context(&minor_status,
+                                       context,
+                                       initiator ? local_dn : NULL,
+                                       initiator ? NULL : local_dn,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       NULL);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = globus_error_put(
+            globus_error_construct_gssapi_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                major_status,
+                minor_status));
+        goto exit;
+    }
+
+    major_status = gss_display_name(&minor_status,
+                                    local_dn,
+                                    name_buffer,
+                                    NULL);
+    
+    if(GSS_ERROR(major_status))
+    {
+        result = globus_error_put(
+            globus_error_construct_gssapi_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                major_status,
+                minor_status));
+        goto exit;
+    }
+    
+    for(i=0; dn_array[i] != NULL && strncmp(dn_array[i],
+                                            name_buffer->value,
+                                            name_buffer->length); i++);
+
+    major_status = gss_release_buffer(&minor_status,
+                                      name_buffer);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = globus_error_put(
+            globus_error_construct_gssapi_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                major_status,
+                minor_status));
+        goto exit;
+    }
+
+    if(dn_array[i] == NULL)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_SUBJECT,
+                "[globus_grim_devel]:: Could not find local DN in GRIM "
+                "policy\n"));
+        goto exit;
+    }
+
+    result = globus_grim_assertion_get_port_types_array(grim_assertion,
+                                                        &grim_port_types);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = globus_error_put( 
+            globus_error_construct_error(
+                GLOBUS_GRIM_DEVEL_MODULE,
+                globus_error_get(result),
+                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                "[globus_grim_devel]:: Unable to get port type array from "
+                "GRIM policy\n"));
+        goto exit;
+    }
+
+    for(i=0; port_types[i] != NULL; i++)
+    {
+        for(j=0; grim_port_types[j] != NULL &&
+                strcmp(port_types[i],
+                       grim_port_types[j]); j++);
+
+        if(grim_port_types[j] == NULL)
+        {
+            result = globus_error_put( 
+                globus_error_construct_error(
+                    GLOBUS_GRIM_DEVEL_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_PORT_TYPE,
+                    "[globus_grim_devel]:: Could not find port type in GRIM "
+                    "policy\n"));
+            goto exit;
+        }
+    }
+    
+    if(username != NULL)
+    {
+        result = globus_grim_assertion_get_username(grim_assertion,
+                                                    &grim_username);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = globus_error_put( 
+                globus_error_construct_error(
+                    GLOBUS_GRIM_DEVEL_MODULE,
+                    globus_error_get(result),
+                    GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                    "[globus_grim_devel]:: Unable to get user name from "
+                    "GRIM policy\n"));
+            goto exit;
+        }
+
+        if(grim_username == NULL)
+        {
+            result = globus_error_put( 
+                globus_error_construct_error(
+                    GLOBUS_GRIM_DEVEL_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_USER_NAME,
+                    "[globus_grim_devel]:: Could not find user name in GRIM "
+                    "policy\n"));
+            goto exit;
+        }
+
+        if(strcmp(grim_username, username))
+        {
+            result = globus_error_put( 
+                globus_error_construct_error(
+                    GLOBUS_GRIM_DEVEL_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_USER_NAME,
+                    "[globus_grim_devel]:: Could not find user name in GRIM "
+                    "policy\n"));
+            goto exit;
+        }
+    }
+
+ exit:
+
+    if(extension_data)
+    {
+        gss_release_buffer_set(&minor_status, &extension_data);
+    }
+
+    if(pci)
+    {
+        PROXYCERTINFO_free(pci);
+    }
+
+    if(policy_string)
+    {
+        free(policy_string);
+    }
+
+    if(buffer)
+    {
+        free(buffer);
+    }
+
+    if(grim_assertion)
+    {
+        globus_grim_assertion_destroy(grim_assertion);
+    }
+
+    if(local_dn != GSS_C_NO_NAME)
+    {
+        gss_release_name(&minor_status, local_dn);
+    }
+    
+    return result;
 }
