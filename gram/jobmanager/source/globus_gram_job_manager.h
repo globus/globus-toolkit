@@ -359,6 +359,8 @@ typedef struct
     char *				job_contact;
     gss_ctx_id_t			response_context;
     globus_fifo_t			pending_queries;
+    globus_bool_t			publish_jobs;
+    char *				job_status_file;
 }
 globus_gram_jobmanager_request_t;
 

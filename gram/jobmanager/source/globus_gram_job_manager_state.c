@@ -868,7 +868,7 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
 	if(request->unsent_status_change && request->save_state)
 	{
-	    globus_gram_job_manager_state_file_update(request);
+	    globus_gram_job_manager_state_file_write(request);
 	}
 	if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
 	{
@@ -1110,7 +1110,7 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
 	if(request->unsent_status_change && request->save_state)
 	{
-	    globus_gram_job_manager_state_file_update(request);
+	    globus_gram_job_manager_state_file_write(request);
 	}
 	if(request->jobmanager_state ==
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT)
@@ -1711,8 +1711,8 @@ globus_l_gram_job_manager_getenv(
  *
  * @note This case statement MUST cover all cases where the
  *        state file can be written (where
- *        globus_gram_job_manager_state_file_write() or
- *        globus_gram_job_manager_state_file_update() is called).
+ *        globus_gram_job_manager_state_file_write()
+ *        is called).
  */
 static
 globus_bool_t

@@ -60,8 +60,6 @@ main(
     int					i;
     int					rc;
     int					length;
-    int					publish_jobs_flag = 0;
-    char				job_status_file_path[512];
     FILE *				fp;
     struct stat				statbuf;
     globus_gram_jobmanager_request_t *  request;
@@ -87,7 +85,7 @@ main(
         globus_l_jobmanager_fault_callback,
         GLOBUS_NULL);
 
-    *job_status_file_path = '\0';
+    request->job_status_file_path[0] = '\0';
 
     /* if -conf is passed then get the arguments from the file
      * specified
@@ -200,7 +198,7 @@ main(
         }
         else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
-            publish_jobs_flag = 1;
+            request->publish_jobs_flag = GLOBUS_TRUE;
         }
         else if (strcmp(argv[i], "-publish-users") == 0)
         {
