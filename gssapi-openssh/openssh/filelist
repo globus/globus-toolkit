@@ -5,9 +5,6 @@ bin/ssh-add
 bin/ssh-agent
 bin/ssh-keygen
 bin/ssh-keyscan
-etc/ssh/moduli
-etc/ssh/ssh_config
-etc/ssh/sshd_config
 libexec/sftp-server
 man/man1/scp.1
 man/man1/sftp.1
