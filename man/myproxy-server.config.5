@@ -8,11 +8,15 @@ file sets the policy for the
 .BR myproxy-server (8),
 specifying what credentials may be stored in the server's
 repository and who is authorized to retrieve credentials.
-The default location for the file is
-.I $GLOBUS_LOCATION/etc/myproxy-server.config
-but this default can be overridden by the 
+By default, the
+.BR myproxy-server (8)
+looks for this file in
+.I /etc/myproxy-server.config
+and if it is not found there, it looks in
+.IR $GLOBUS_LOCATION/etc/myproxy-server.config .
+The
 .B myproxy-server -c
-option.
+option can be used to specify an alternative location.
 The file installed by default does not allow any requests.
 .PP
 Lines in the configuration file use limited regular expressions
@@ -115,9 +119,12 @@ check.  (The client must still pass the
 check.)
 .SH FILES
 .TP
+.I /etc/myproxy-server.config
+Default location for the server configuration file.
+.TP
 .I $GLOBUS_LOCATION/etc/myproxy-server.config
-Default location of the server configuration file.
-An alternate location can be specified by using the
+Alternate location for the server configuration file.
+A different location can be specified by using the
 .BR myproxy-server (8)
 .B -c
 option.
