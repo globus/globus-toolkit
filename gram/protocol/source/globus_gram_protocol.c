@@ -131,10 +131,17 @@
 
 #include <globus_io.h>
 #include <stdlib.h>
+#include <ctype.h>		/* isxdigit(), tog */
 
-#ifdef HAVE_STRING_H
+/* HAVE_STRING_H is somehow not getting set by configure running on
+   VANUATU.ISI.EDU, running Solaris 2.6.  Yet we need <string.h> for the
+   prototypes it contains; moreover, <string.h> is a mandatory part of
+   ANSI C (See section 4.11 of the ANSI C standard, XC.159-1989), so I
+   feel comfortable depending upon it. 
+   --Steve A */
+/* #ifdef HAVE_STRING_H  */
 #include <string.h>
-#endif
+/* #endif */
 
 static
 char *
@@ -207,7 +214,7 @@ typedef struct
     globus_gram_http_callback_t    callback_func;
     void *                         callback_arg;
     void *                         user_pointer;
-    globus_byte_t *                reply_buf;
+    globus_byte_t **                reply_bufp;
     globus_size_t *                reply_size;
     globus_gram_http_monitor_t *   monitor;
 } globus_gram_http_read_t;
@@ -244,7 +251,7 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
 				    void *                        arg,
 				    void *                        userptr,
 				    globus_gram_http_monitor_t *  monitor,
-				    globus_byte_t **              buf, 
+				    globus_byte_t **              bufp, 
 				    globus_size_t *               bufsize) 
 { 
     *read_t = my_malloc(globus_gram_http_read_t,1);
@@ -257,7 +264,7 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
     (*read_t)->callback_arg   = arg; 
     (*read_t)->user_pointer   = userptr; 
     (*read_t)->monitor        = monitor; 
-    (*read_t)->reply_buf      = buf; 
+    (*read_t)->reply_bufp      = bufp; 
     (*read_t)->reply_size     = bufsize;
 }
 
@@ -746,7 +753,7 @@ globus_l_gram_http_get_callback( void *                read_t,
     if ((errorcode == GLOBUS_SUCCESS) &&
 	(res == GLOBUS_SUCCESS)  )
     {
-	*status->reply_buf = buf;
+	*status->reply_bufp = buf;
 	*status->reply_size = nbytes;
     }
     else
@@ -1301,13 +1308,16 @@ globus_l_gram_http_field_value_quote_string(
 static
 int
 globus_l_gram_http_field_value_unquote_string(
-    const globus_byte_t *in	/* Incremented to point past the end */,
-    globus_size_t insize /* Ignored; we check for null termination instead. */,
+    const globus_byte_t *in	/* Will be incremented to point past
+				   the end */, 
+    globus_size_t insize,
     globus_byte_t **out_startp,
     globus_size_t *outsizep)
 {
     int in_quote = GLOBUS_FALSE;
-    char *out = *out_startp = init;
+    /* Unquoting shrinks, so allocating enough for the existing quoted
+       message is fine.   Plus one for null termination. */
+    globus_byte_t *out = *out_startp = my_malloc(globus_byte_t, insize + 1);
 
     if (*in == '"') {
 	in_quote = GLOBUS_TRUE;
@@ -1317,27 +1327,50 @@ globus_l_gram_http_field_value_unquote_string(
 	if (in_quote) {
 	    if(*in == '"') {
 		++in;
-		*outsizep = out - out_start;
+		*outsizep = out - *out_startp;
+		/* Skip to the start of the next line, if any. */
+		if (strstr(in, "\r\n")) {
+		    in = strstr(in, "\r\n") + 2;
+		} else {
+		    while (*in)
+			++in;
+		}
 		return GLOBUS_SUCCESS;
 	    } else if (*in == '\\') {
 		*out++ = *++in;
 	    } else if (!*in) {
 		/* Ended early! */
-		return GLOBUS_FAILURE; /* No closing quote.  TODO:
-					  Choose a Better error return
-					  code. --Steve A*/
+		/* No closing quote. */
+		return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED; 
 	    } else {
 		*out++ = *(in++);
 	    }
 	} else {		/* not in a quote */
-	    if (*in
+
+	    if (*in == '%') {
+		/* Handle % HEX HEX */
+
+#		define ch(x) ((unsigned char) (x))
+#		define hexdigit2uchar(x) \
+			((unsigned char) (isdigit(ch(x)) ? ((ch(x)) - '0') \
+				: (tolower(ch(x)) - 'a')))
+#		define hexbyte(x1,x2) \
+			((hexdigit2uchar(x1) << 4) + hexdigit2uchar(x2))
+
+		/* This tests against a short string too (null bytes) */
+		if (!isxdigit(ch(in[1])) || !isxdigit(ch(in[2])))
+		    return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+		*out = (globus_byte_t) hexbyte(in[1], in[2]);
+		in += 2;	/* Skip over the digits. */
+#		undef hexdigit2uchar
+#		undef hexbyte
+	    }
 	    if (*in == '\r')	/* this is the end of the line. */ {
 	        if (*++in != '\n') {
 		    /* Malformed line; pick a better error message. */
 		    return GLOBUS_FAILURE;
 		}
 	    }
-	    /* TODO: Recognize % HEX HEX here. --Steve A*/
 	    *out++ = *(in++);
 	}
     }
@@ -1391,13 +1424,13 @@ globus_i_gram_pack_http_job_request(
 }
 
 
-#define advance_q() do					\
-{							\
-    /* Look for \r\n */					\
-    if ((q = strstr(q,"\r\n")) == NULL)			\
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;	\
-    /* Pass over the \r\n */				\
-    q += 2;						\
+#define advance_q() do						\
+{								\
+    /* Look for \r\n */						\
+    if ((q = strstr(q,"\r\n")) == NULL)				\
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	\
+    /* Pass over the \r\n */					\
+    q += 2;							\
 } while(0)   
 
 
@@ -1407,8 +1440,10 @@ int
 globus_l_gram_http_parse_and_check_protocol_version( char **qp /* IN/OUT */)
 {
     char *q = *qp;
+    int protocol_version;
+
     if(sscanf(q, "protocol-version: %d", &protocol_version) != 1)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     advance_q();
     *qp = q;
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
@@ -1427,33 +1462,36 @@ globus_i_gram_unpack_http_job_request(
     globus_byte_t **rslp,	/* OUT */
     globus_size_t *rslsizep) /* OUT, optional */
 {
-    int     protocol_version;
     int     rc;
     char *  q = (char *) query;
 
-    if (rc = globus_l_gram_http_parse_and_check_protocol_version(&q))
+    /* TODO --Steve A XXX */
+    globus_assert(" Must fix client_contact_strp allocation."); 
+    if ((rc = globus_l_gram_http_parse_and_check_protocol_version(&q)))
 	return rc;
     if (sscanf(q, "job-state-mask: %d", job_state_maskp) != 1)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     advance_q();
     /* Figure out buffer size. */
     if (!strchr(q, '\r'))
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;
-    *client_contact_strp = strchr(q, '\r') - q + 1; /* +1 for null
-						       termination */
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+    *client_contact_strp 
+	/* +1 for null termination */
+	= my_malloc(globus_byte_t, (strchr(q, '\r') - q + 1)); 
+
     /* Parse the results. */
-    if (sscanf(q, "callback-url: %s", client_contact_strp) != 1)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;
+    if (sscanf(q, "callback-url: %s", *client_contact_strp) != 1)
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     if (client_contact_strsizep)
-	*client_contact_strsize = strlen(*client_contact_strp);
+	*client_contact_strsizep = strlen(*client_contact_strp);
 
     advance_q();
     if (strncmp(q, "rsl: ", 5) != 0)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;	/* TODO: Parse_error error code */
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	/* TODO: Parse_error error code */
     q += 5;
     rc = globus_l_gram_http_field_value_unquote_string(
 	          q, strlen(q),
-		  rsl, rslsizep);
+		  rslp, rslsizep);
     return rc;
 }
 
@@ -1486,7 +1524,7 @@ globus_i_gram_pack_http_job_request_result(
 	advance_o();
     }
     if (reply_sizep)
-	*reply_sizep = (globus_size_t)(o - (char *)reply_start);
+	*reply_sizep = (globus_size_t) (o - (char *)*reply_startp);
 
     return GLOBUS_SUCCESS;
 }
@@ -1506,15 +1544,15 @@ globus_i_gram_unpack_http_job_request_result(
     char *  q = (char *) query;
 
     if(sscanf(q, "protocol-version: %d", &protocol_version) != 1)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;	/* TODO: Better parse error code. */
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	/* TODO: Better parse error code. */
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
 	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
     advance_q();
     if (sscanf(q, "status: %d", result_statusp) != 1)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     advance_q();
     if (sscanf(q, "job-manager-url: %s", *result_contactp) != 1)
-	return GLOBUS_GRAM_CLIENT_HTTP_UNPACK_FAILED;
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     return GLOBUS_SUCCESS;	
 } 
 
@@ -1629,7 +1667,7 @@ globus_gram_http_post_and_get( char *                         url,
     return globus_l_gram_http_post( url,
 				    attr,
 				    request_message,
-				    *request_size,
+				    request_size,
 				    status,
 				    globus_l_gram_http_post_callback );
 
