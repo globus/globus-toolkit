@@ -694,7 +694,10 @@ globus_l_xio_udp_bind(
         GlobusLibcSockaddrCopy(myaddr, *addr, addr_len);
         GlobusLibcSockaddrSetPort(myaddr, port);
         
-        if(bind(fd, (struct sockaddr *) &myaddr, sizeof(myaddr)) < 0)
+        if(bind(
+            fd,
+            (struct sockaddr *) &myaddr,
+            GlobusLibcSockaddrLen(&myaddr)) < 0)
         {
             if(++port > max_port)
             {

@@ -396,6 +396,7 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GlobusLibcSockaddrCopy(dest_addr, source_addr, source_len)          \
     (memcpy(&(dest_addr), &(source_addr), (source_len)))
 
+#if 0
 #define GlobusLibcSockaddrLen(addr, len)                                    \
     do                                                                      \
     {                                                                       \
@@ -418,6 +419,13 @@ typedef struct addrinfo                 globus_addrinfo_t;
             break;                                                          \
         }                                                                   \
     } while(0)
+#endif
+
+#define GlobusLibcSockaddrLen(addr)                                         \
+    (((struct sockaddr *) (addr))->sa_family == AF_INET                     \
+        ? sizeof(struct sockaddr_in) :                                      \
+            (((struct sockaddr *) (addr))->sa_family == AF_INET6            \
+        ? sizeof(struct sockaddr_in6) : -1))
 
 #define GLOBUS_AI_PASSIVE               AI_PASSIVE
 #define GLOBUS_AI_NUMERICHOST           AI_NUMERICHOST

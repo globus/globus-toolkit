@@ -1441,7 +1441,7 @@ globus_l_xio_system_try_sendto(
             buflen,
             flags,
             (const struct sockaddr *) to,
-            sizeof(globus_sockaddr_t));
+            GlobusLibcSockaddrLen(to));
     } while(rc < 0 && errno == EINTR);
 
     if(rc < 0)
@@ -2236,7 +2236,7 @@ globus_xio_system_register_connect(
 
     done = GLOBUS_FALSE;
     while(!done && connect(
-        fd, (const struct sockaddr *) addr, sizeof(globus_sockaddr_t)) < 0)
+        fd, (const struct sockaddr *) addr, GlobusLibcSockaddrLen(addr)) < 0)
     {
         switch(errno)
         {
@@ -2731,7 +2731,7 @@ globus_xio_system_register_write_ex(
         if(to)
         {
             msghdr->msg_name = to;
-            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+            msghdr->msg_namelen = GlobusLibcSockaddrLen(to);
         }
 
         msghdr->msg_iov = iov;
@@ -2986,7 +2986,7 @@ globus_xio_system_try_write_ex(
         if(to)
         {
             msghdr.msg_name = (struct sockaddr *) to;
-            msghdr.msg_namelen = sizeof(globus_sockaddr_t);
+            msghdr.msg_namelen = GlobusLibcSockaddrLen(to);
         }
 
         return globus_l_xio_system_try_sendmsg(handle, &msghdr, flags, nbytes);
