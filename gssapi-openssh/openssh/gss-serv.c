@@ -342,7 +342,7 @@ ssh_gssapi_gsi_storecreds()
 #ifdef USE_PAM
 				do_pam_putenv("X509_USER_PROXY",value);
 #endif
-			 	gssapi_cred_store.filename=NULL;
+			 	gssapi_cred_store.filename=strdup(value);
 				gssapi_cred_store.envvar="X509_USER_PROXY";
 				gssapi_cred_store.envval=strdup(value);
 
