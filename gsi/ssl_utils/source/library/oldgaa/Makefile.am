@@ -13,8 +13,6 @@ Sources= \
 	globus_oldgaa.h \
 	globus_oldgaa_utils.c \
 	globus_oldgaa_utils.h \
-	gnu_regex.c \
-	gnu_regex.h \
 	rfc1779.c
 
 noinst_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
