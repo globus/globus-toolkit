@@ -17,6 +17,15 @@ EXTERN_C_BEGIN
 /*
  * Reentrant lock
  */
+#if !defined HAVE_DIR_PTR
+
+typedef struct _DIR_S 
+{
+    char              d_name[128];
+} DIR;
+
+#endif
+
 #ifdef BUILD_LITE
 
 #define globus_macro_libc_lock() (0)
@@ -68,38 +77,53 @@ extern int globus_libc_unlock(void);
  */
 #if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
 
-extern int globus_libc_open(char *path, int flags, ... /*int mode*/);
-extern int globus_libc_close(int fd);
-extern int globus_libc_read(int fd, char *buf, int nbytes);
-extern int globus_libc_write(int fd, char *buf, int nbytes);
-extern int globus_libc_writev(int fd, struct iovec *iov, int iovcnt);
-extern int globus_libc_fstat(int fd, struct stat *buf);
+    extern int globus_libc_open(char *path, int flags, ... /*int mode*/);
+    extern int globus_libc_close(int fd);
+    extern int globus_libc_read(int fd, char *buf, int nbytes);
+    extern int globus_libc_write(int fd, char *buf, int nbytes);
+    extern int globus_libc_writev(int fd, struct iovec *iov, int iovcnt);
+    extern int globus_libc_fstat(int fd, struct stat *buf);
 
-extern DIR *globus_libc_opendir(char *filename);
-extern long globus_libc_telldir(DIR *dirp);
-extern void globus_libc_seekdir(DIR *dirp, long loc);
-extern void globus_libc_rewinddir(DIR *dirp);
-extern void globus_libc_closedir(DIR *dirp);
+    extern DIR *globus_libc_opendir(char *filename);
+    extern long globus_libc_telldir(DIR *dirp);
+    extern void globus_libc_seekdir(DIR *dirp, long loc);
+    extern void globus_libc_rewinddir(DIR *dirp);
+    extern void globus_libc_closedir(DIR *dirp);
 
 #else  /* HAVE_THREAD_SAFE_SELECT */
+#   if defined(TARGET_ARCH_WIN32)
+#       define globus_libc_open _open
+#       define globus_libc_close _close
+#       define globus_libc_read _read
+#       define globus_libc_write _write
+#       define globus_libc_writev(fd,iov,iovcnt) \
+	            _write(fd,iov[0].iov_base,iov[0].iov_len)
+#       define globus_libc_fstat _fstat
 
-#define globus_libc_open open
-#define globus_libc_close close
-#define globus_libc_read read
-#define globus_libc_write write
-#if defined(HAVE_WRITEV)
-#define globus_libc_writev writev
-#else
-#define globus_libc_writev(fd,iov,iovcnt) \
-	    write(fd,iov[0].iov_base,iov[0].iov_len)
-#endif
-#define globus_libc_fstat fstat
+        extern DIR *globus_libc_opendir(char *filename);
+        extern long globus_libc_telldir(DIR *dirp);
+        extern void globus_libc_seekdir(DIR *dirp, long loc);
+        extern void globus_libc_rewinddir(DIR *dirp);
+        extern void globus_libc_closedir(DIR *dirp);
+#   else
+#       define globus_libc_open open
+#       define globus_libc_close close
+#       define globus_libc_read read
+#       define globus_libc_write write
+#       if defined(HAVE_WRITEV)
+#           define globus_libc_writev writev
+#       else
+#           define globus_libc_writev(fd,iov,iovcnt) \
+	            write(fd,iov[0].iov_base,iov[0].iov_len)
+#       endif
+#       define globus_libc_fstat fstat
+#       define globus_libc_opendir opendir
+#       define globus_libc_telldir telldir
+#       define globus_libc_seekdir seekdir
+#       define globus_libc_rewinddir rewinddir
+#       define globus_libc_closedir closedir
+#    endif
 
-#define globus_libc_opendir opendir
-#define globus_libc_telldir telldir
-#define globus_libc_seekdir seekdir
-#define globus_libc_rewinddir rewinddir
-#define globus_libc_closedir closedir
 
 #endif /* HAVE_THREAD_SAFE_SELECT */
 
@@ -204,22 +228,17 @@ int globus_libc_gethomedir(char *result, int bufsize);
 #  define HAVE_MEMMOVE
 #endif
 
-
-#if !defined(TARGET_ARCH_WIN32)
 int 
 globus_libc_getpwuid_r(
     uid_t                                                     uid,
     struct passwd *                                           pwd,
-			   char *buffer,
-			   int bufsize,
-			   struct passwd **result);
+	char *buffer,
+	int bufsize,
+	struct passwd **result);
 
 int globus_libc_readdir_r(DIR *dirp,
 			  struct dirent **result);
 
-
-
-#endif /* WIN32 */
 
 EXTERN_C_END
 

@@ -430,10 +430,10 @@ globus_callback_poll(
     }
 #   else
     {
-	globus_abstime_t                         time_now;
-	globus_abstime_t *                       tmp_time;
-	globus_abstime_t *                       time_stop;
-	globus_abstime_t                         time_next;
+		globus_abstime_t                         time_now;
+		globus_abstime_t *                       tmp_time;
+		globus_abstime_t *                       time_stop;
+		globus_abstime_t                         time_next;
         globus_bool_t                            done = GLOBUS_FALSE;
         globus_bool_t                            rc;
         globus_bool_t                            first_call = GLOBUS_TRUE;
@@ -454,120 +454,119 @@ globus_callback_poll(
 
         while(!done &&
 	      !globus_timeq_empty(&globus_l_callback_q))
-	{
+		{
             GlobusTimeAbstimeGetCurrent(time_now);
 
             if(globus_abstime_cmp(&time_now, (globus_abstime_t *)timeout) > 0 &&
                !first_call) 
-	    {
+			{
                 done = GLOBUS_TRUE;
-	    }
-	    else
-	    {
-		first_call = GLOBUS_FALSE;
+			}
+			else
+			{
+				first_call = GLOBUS_FALSE;
                 globus_l_callback_queue_get_next(
                                 &callback_info,
                                 &time_next);
-	        if(callback_info != GLOBUS_NULL) 
-	        {
+				if(callback_info != GLOBUS_NULL) 
+				{
                     time_stop = timeout;
-		    if(globus_timeq_size(&globus_l_callback_q) > 0)
-		    {
-			tmp_time = globus_timeq_first_time(
-				       &globus_l_callback_q);
-			if(globus_abstime_cmp(
-			       tmp_time, 
-                               (globus_abstime_t *)time_stop) < 0)
-			{
+					if(globus_timeq_size(&globus_l_callback_q) > 0)
+					{
+						tmp_time = globus_timeq_first_time(
+							&globus_l_callback_q);
+						if(globus_abstime_cmp(
+							tmp_time, 
+                            (globus_abstime_t *)time_stop) < 0)
+						{
                             time_stop = tmp_time;
-			}
-		    }
+						}
+					}
 
-	            restart_info->callback_info = callback_info;
-	            restart_info->callback_index = globus_l_callback_index;
+					restart_info->callback_info = callback_info;
+					restart_info->callback_index = globus_l_callback_index;
 
-		    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
-		    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
+					GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
+					GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
                     
                     restart_info->restarted = GLOBUS_FALSE;
 
                     globus_thread_blocking_callback_enable(&(globus_l_callback_index)); 
 
-		    /*
-		     * call the users function
-		     */
-	            globus_thread_setspecific(
-			globus_l_restart_thread_key,
-		        (void *) restart_info);
-		    callback_info->call_depth++;
+					/*
+					 * call the users function
+					 */
+					globus_thread_setspecific(
+						globus_l_restart_thread_key,
+						(void *) restart_info);
+						callback_info->call_depth++;
 
                     callback_info->handler_thread_id = globus_thread_self();
                     rc = callback_info->callback_func(time_stop,
 				             callback_info->callback_args);
 
 
-		    callback_info->call_depth--;
-	            globus_thread_setspecific(
-			globus_l_restart_thread_key,
-		        (void *) last_restart_info);
+				    callback_info->call_depth--;
+				    globus_thread_setspecific(
+					    globus_l_restart_thread_key,
+					    (void *) last_restart_info);
 
-		    /* rest global structures to current call stack values */
-		    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
-		    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
-	            restart_info->callback_info = callback_info;
+				    /* rest global structures to current call stack values */
+				    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
+				    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
+					    restart_info->callback_info = callback_info;
 
-		    /* 
-		     *  if one shot or canceled free it 
-		     *  else put it back in the queue  
-		     */
-		    if(globus_time_reltime_is_infinity(&callback_info->period) &&
-		       callback_info->call_depth == 0)
-		    {
-			if(callback_info->unregister_callback != GLOBUS_NULL)
-			{
-			    callback_info->unregister_callback(
+				    /* 
+				     *  if one shot or canceled free it 
+				     *  else put it back in the queue  
+				     */
+				    if(globus_time_reltime_is_infinity(&callback_info->period) &&
+					   callback_info->call_depth == 0)
+				    {
+				        if(callback_info->unregister_callback != GLOBUS_NULL)
+				        {
+			                callback_info->unregister_callback(
                                 callback_info->unreg_args);
-			}
-			globus_l_callback_free(callback_info);
-		    }
-		    else if(!globus_time_reltime_is_infinity(
-                                 &callback_info->period) &&
-                           !restart_info->restarted)
-		    {
-			globus_l_callback_requeue(callback_info);
-		    }
+			            }
+			            globus_l_callback_free(callback_info);
+		            }
+		            else if(!globus_time_reltime_is_infinity(
+                            &callback_info->period) &&
+                            !restart_info->restarted)
+		            {
+			            globus_l_callback_requeue(callback_info);
+		            }
 
-		    /* end loop if callback changed something */
-		    if(rc)
-		    {
+		            /* end loop if callback changed something */
+		            if(rc)
+		            {
                         done = GLOBUS_TRUE;
-		    }
-	        }
-		/* sleep until next one is ready or timeout expires */
-	        else if(globus_abstime_cmp(timeout, 
-                                           &time_next) > 0)
-	        {
+		            }
+	            }
+		        /* sleep until next one is ready or timeout expires */
+	            else if(globus_abstime_cmp(timeout, 
+                        &time_next) > 0)
+	            {
                     globus_reltime_t    sleep_time;
-                    long tm;
+                    long                tm;
 
                     GlobusTimeAbstimeDiff(sleep_time, time_next, time_now);
                     GlobusTimeReltimeToUSec(tm, sleep_time);
 
-		    if(tm > 0)
-		    {
+		            if(tm > 0)
+		            {
                         globus_libc_usleep(tm);
-		    }
-	        }
-		else if(!globus_time_abstime_is_infinity(
+		            }
+	            }
+		        else if(!globus_time_abstime_is_infinity(
                              (globus_abstime_t *)timeout))
-		{
+		        {
                     done = GLOBUS_TRUE;
-		}
+		        }
             }
-	}
-	FREE_RESTART_T(restart_info);
+	    }
+	    FREE_RESTART_T(restart_info);
     }
-
 #   endif
 }
 
@@ -638,7 +637,7 @@ globus_l_callback_register(
 
 #   if  defined(BUILD_LITE)
     {
-	/* if not threaded wakeup function is illegal */
+	    /* if not threaded wakeup function is illegal */
         if(wakeup_func != GLOBUS_NULL)
 	    {
 	        wakeup_func = GLOBUS_NULL;
@@ -695,11 +694,11 @@ globus_l_callback_register(
 #   if !defined(BUILD_LITE)
     {
         globus_mutex_lock(&globus_l_thread_create_lock);
-	{
+	    {
             if(!globus_l_callback_shutting_down)
             {
                 globus_cond_signal(&globus_l_callback_run_cond);
-	    }
+	        }
         }
         globus_mutex_unlock(&globus_l_thread_create_lock);
     }

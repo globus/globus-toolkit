@@ -1,9 +1,6 @@
 /* globus_args.c : implements the Globus command-line parsing utility.
                    check globus_args.h for more detailed information.
 */
-
-open
-
 #include "globus_common_include.h"
 #include "globus_args.h"
 #include "globus_libc.h"
@@ -600,4 +597,3 @@ globus_validate_filename( char *    value,
 
     return GLOBUS_SUCCESS;
 }
-

@@ -1,11 +1,158 @@
+Need an understanding how windows fits with signals and all of this.
 
-are these correct (inglobus_common_include.h.win)
+
+in globus_common_include.h.win
+--are these correct:
   #define MAXPATHLEN                  128
   #define MAXHOSTNAMELEN              128
 
   #define SIZEOF_INT 4
   #define SIZEOF_LONG 4
-
-
+  
+---------------------------------------------------------
 globus_thread_diagnostics_vprintf (globus_print.c)
   what is it and where did it come form
+---------------------------------------------------------  
+  libc.h is ugly inregard to open/close/read/write/opendir/etc..
+---------------------------------------------------------
+
+---------------------------------------------------------
+int globus_libc_usleep(long usec) is really millisecs on windows
+may be a problem
+---------------------------------------------------------
+
+---------------------------------------------------------
+Current warnings
+
+globus_libc_setenv.c
+c:\cygwin\home\bresnaha\Dev\common\source\library\globus_libc_setenv.c(72) : warning C4018: '>=' : signed/unsigned mismatch
+globus_libc.c
+c:\cygwin\home\bresnaha\Dev\common\source\library\globus_libc.c(797) : warning C4018: '<' : signed/unsigned mismatch
+---------------------------------------------------------
+
+---------------------------------------------------------
+if a function has a '_' in front of of it, what does that mean to us.
+
+So far I have treated then as though they were regular function calls
+In the help there was a brief blip about how MS can change them
+at will.  I recomend we use then and deal with it if they change.
+---------------------------------------------------------
+
+---------------------------------------------------------
+open/close/read/write/writev
+
+I have simply made these macros to _open, _close, etc.
+I think this is the right thing to do.  We should document
+them telling user to use globus_io for real portability.
+---------------------------------------------------------
+
+functions to take care of:
+==========================
+int
+globus_tilde_expand(
+    unsigned long options,
+    globus_bool_t url_form,
+    char *inpath,
+    char **outpath);
+
+GetUserName
+
+int
+globus_libc_fork(void)
+
+int
+globus_libc_getpwnam_r(char *name,
+		       struct passwd *pwd,
+		       char *buffer,
+		       int buflen,
+		       struct passwd **result)
+
+int
+globus_libc_getpwuid_r(uid_t uid,
+		       struct passwd *pwd,
+		       char *buffer,
+		       int buflen,
+		       struct passwd **result)
+
+static void
+globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
+				      char *buffer,
+				      size_t buflen)
+
+int
+globus_libc_gethomedir(char *result, int bufsize)
+
+int
+globus_libc_lseek(int fd,
+		  globus_off_t offset,
+		  int whence);
+		  
+DIR *
+globus_libc_opendir(char *filename);
+
+long
+globus_libc_telldir(DIR *dirp);
+
+void
+globus_libc_seekdir(DIR *dirp,
+		    long loc);
+
+void
+globus_libc_rewinddir(DIR *dirp);
+
+void
+globus_libc_closedir(DIR *dirp);
+
+int
+globus_libc_readdir_r(DIR *dirp,
+		      struct dirent **result);
+		      
+int 
+globus_libc_getpwuid_r(
+    uid_t                                                     uid,
+    struct passwd *                                           pwd,
+	char *buffer,
+	int bufsize,
+	struct passwd **result);
+
+int 
+globus_libc_readdir_r(DIR *dirp,
+			  struct dirent **result);
+			  
+			  
+---------------------------------------------------------------			  
+Preprocessor #ifs
+
+globus_callback
+-- all based on threaded or non threaded build.  Realtively clean 
+   I think we should leave it alone
+
+globus_list.c
+-- memory management issues.  Originally intended for backward compatablity
+   we should still leave them, clean enough and not everyone loves the memory
+   management stuff yet.
+   
+globus_module.c
+-- some based on HAVE_EXIT.  should be reviewed.
+
+globus_print.c
+-- many ugly ones based on HAVE_STDARGS.  May be ok but should be reviewed.
+
+globus_thread_common.c
+-- WIN32 one.  has to do with ignore sigpipe problem addressed above.
+
+globus_tilde_expand.c
+-- a big one docing out eveything.  This will be resolved when we figure 
+   out how to do this in windows.
+   
+globus_timeq.c
+-- memory management issues, should stay
+
+globus_priority_q.c
+-- memory management issues, should stay
+
+globus_libc.c
+-- this is where most of them are.  I do think they are largely ok, and necceary.  There 
+   are some that I am going to try to remove.
+
+---------------------------------------------------------------

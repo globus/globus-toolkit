@@ -5,9 +5,6 @@
 #if !defined(GLOBUS_COMMON_INCLUDE_H)
 #define GLOBUS_COMMON_INCLUDE_H 1
 
-/* for now !!!!!!!!!!! if you read this delete iy and fix it*/
-#define HAVE_PWD_H 1
-
 #include "config.h"
 
 
@@ -44,7 +41,7 @@
 
 #define HAVE_NETINET_TCP_H 1
 
-#define GLOBUS_OFF_T long long
+#define GLOBUS_OFF_T long
 #define GLOBUS_OFF_T_FORMAT "qd"
 #define SIZEOF_OFF_T 8
 

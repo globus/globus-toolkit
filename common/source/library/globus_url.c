@@ -1072,28 +1072,6 @@ globusl_url_get_path(const char **stringp,
 
     rc = globusl_url_get_substring(*stringp, url_path, pos);
 
-    #if defined(TARGET_ARCH_CYGWIN)
-    {
-	/* Problem arises for a path //home/larsson/foo, which is interpreted
-	   as file /larsson/foo on host home. This will reportedly go away in
-	   future Cygwin releases (current is B20.1). The problem is only for
-	   a starting // -- the path /home//larsson/foo works fine -- so it
-	   is enough to just fix the first instance of //
-	*/
-	
-        char *  q = *url_path;
-        char *  p = strstr(q,"//");
-	int     pos2, i;
-	int     len = strlen(q);
-	if (p)
-	{ 
-	    pos2 = (int)(p - q);
-	    for (i=pos2+1; i<len; i++)
-		q[i] = q[i+1];
-	}
-    }
-    #endif /* defined(TARGET_ARCH_CYGWIN) */
-
     return rc;
 }
 

@@ -135,4 +135,3 @@ int globus_symboltable_destroy (globus_symboltable_t *table)
 
   return 0;
 }
-

@@ -12,8 +12,8 @@ CVS Information:
   $Author$
 ******************************************************************************/
 
-#if !defined(GLOBUS_INCLUDE_GLOBUS_CALLBACK)
-#define GLOBUS_INCLUDE_GLOBUS_CALLBACK
+#if !defined(GLOBUS_INCLUDE_GLOBUS_CALLBACK_H)
+#define GLOBUS_INCLUDE_GLOBUS_CALLBACK_H
 
 /******************************************************************************
 			             Include header files
@@ -70,7 +70,7 @@ typedef int                                 globus_callback_handle_t;
 typedef
 globus_bool_t
 (*globus_callback_func_t)(
-    globus_abstime_t *                      time_stop,
+    globus_abstime_t * const                time_stop,
     void *                                  user_args);
 
 /**

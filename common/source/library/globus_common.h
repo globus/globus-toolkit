@@ -13,35 +13,13 @@ CVS Information:
 ******************************************************************************/
 
 #if !defined(GLOBUS_INCLUDE_GLOBUS_COMMON_H)
-
 #define GLOBUS_INCLUDE_GLOBUS_COMMON_H 1
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
 
-/*
- * include externally visible system headers
- */
-#include "globus_common_include.h"
-
-EXTERN_C_BEGIN
-
-/******************************************************************************
-			       Define External Type definitions
-******************************************************************************/
-
-
-EXTERN_C_END
 /******************************************************************************
 		      Include globus_common header files
 ******************************************************************************/
+#include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_url.h"
 #include "globus_list.h"
@@ -141,5 +119,3 @@ globus_common_get_attribute_from_config_file(
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_COMMON_H */
-
-/* byte */

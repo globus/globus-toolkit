@@ -206,11 +206,11 @@ globus_libc_open(char *path,
 #       ifdef HAVE_STDARG_H
         {
             va_start(ap, flags);
-	}
+	    }
 #       else
-	{
+	    {
             va_start(ap);
-	}
+	    }
 #       endif
         mode = va_arg(ap, int);
         va_end(ap);
@@ -891,6 +891,31 @@ globus_libc_gethostname(char *name, int len)
 
 #if defined(TARGET_ARCH_WIN32)
 
+int
+globus_libc_usleep(long usec)
+{
+	globus_libc_lock();
+	Sleep(usec/1000);
+	globus_libc_unlock();
+
+	return 0;
+}
+
+int
+globus_libc_getpid(void)
+{
+    int pid;
+    
+    globus_libc_lock();
+
+    pid = (int) _getpid();
+
+    globus_libc_unlock();
+
+    return(pid);
+} /* globus_libc_getpid() */
+
+
 #else
 /******************************************************************************
 Function: globus_libc_getpid()
@@ -946,7 +971,6 @@ globus_libc_fork(void)
     return child;
 } /* globus_libc_fork() */
 
-#endif /* TARGET_ARCH_WIN32 */
 /******************************************************************************
 Function: globus_libc_usleep()
 
@@ -966,20 +990,22 @@ globus_libc_usleep(long usec)
 
 #   if !defined(HAVE_THREAD_SAFE_SELECT)
     {
-	globus_libc_lock();
+	    globus_libc_lock();
     }
 #   endif
     
+	sleep
     select(0, NULL, NULL, NULL, &timeout);
     
 #   if !defined(HAVE_THREAD_SAFE_SELECT)
     {
-	globus_libc_unlock();
+	     globus_libc_unlock();
     }
 #   endif
 	
     return GLOBUS_SUCCESS;
 } /* globus_libc_usleep() */
+#endif /* TARGET_ARCH_WIN32 */
 
 /******************************************************************************
 Function: globus_libc_wallclock()
@@ -1457,6 +1483,24 @@ globus_libc_getpwuid_r(uid_t uid,
     return rc;
 } /* globus_libc_getpwuid_r */
 
+#else /* TARGET_ARCH_WIN32 */
+
+int
+globus_libc_getpwnam_r(char *name,
+		       struct passwd *pwd,
+		       char *buffer,
+		       int buflen,
+		       struct passwd **result)
+{
+	BOOL							rc;
+
+
+	rc =  GetUserName(
+  LPTSTR lpBuffer,  // name buffer
+  LPDWORD nSize     // size of name buffer
+);
+}
+
 #endif /* TARGET_ARCH_WIN32 */
 
 /******************************************************************************
@@ -1663,9 +1707,6 @@ globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
     }
 #   endif
 
-    /* CYGWIN B20.1 has pw_comment defined, but it is not initialized
-       (not even set to NULL) nor used. /Olle */
-#   if !defined(TARGET_ARCH_CYGWIN)
 #   if defined(GLOBUS_HAVE_PW_COMMENT)
     {
 	/* pw_comment */
@@ -1684,7 +1725,6 @@ globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
 	}
     }
 #   endif
-#   endif	
 
     /* pw_gecos */
     if (pwd->pw_gecos)

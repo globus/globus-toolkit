@@ -159,3 +159,5 @@ globus_reltime_cmp(
 
     return rc;
 }
+
+/**/

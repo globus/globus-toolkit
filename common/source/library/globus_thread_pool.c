@@ -18,7 +18,7 @@
  * on the task queue condition variable when there's nothing for them to do.
  */
 globus_mutex_t                            globus_l_thread_pool_q_mutex;
-globus_cond_t				  globus_l_thread_pool_q_cond;
+globus_cond_t				              globus_l_thread_pool_q_cond;
 globus_fifo_t                             globus_l_thread_pool_q;
 volatile int                              globus_l_thread_pool_pending_tasks;
 
