@@ -1969,7 +1969,8 @@ globus_l_io_kickout_cancel_cb(
              */
             if(!clean_up)
             {
-                globus_callback_space_reference(handle->socket_attr.space);
+                space = handle->socket_attr.space;
+                globus_callback_space_reference(space);
             }
         }
         else
@@ -2096,7 +2097,7 @@ globus_l_io_kickout_cancel_cb(
         /* destroy the extra reference now */
         if(!clean_up)
         {
-            globus_callback_space_destroy(handle->socket_attr.space);
+            globus_callback_space_destroy(space);
         }
         
         globus_i_io_debug_printf(6, (stderr, 
