@@ -80,6 +80,17 @@ globus_l_ftp_client_debug_plugin_authenticate(
 
 static
 void
+globus_l_ftp_client_debug_plugin_chmod(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
 globus_l_ftp_client_debug_plugin_delete(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
@@ -418,6 +429,34 @@ globus_l_ftp_client_debug_plugin_authenticate(
 	    url);
 }
 /* globus_l_ftp_client_debug_plugin_authenticate() */
+
+static
+void
+globus_l_ftp_client_debug_plugin_chmod(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_debug_plugin_t *	d;
+
+    d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
+
+    if(!d->stream)
+    {
+	return;
+    }
+
+    fprintf(d->stream, "%s%sstarting chmod %04o %s\n",
+	    d->text ? d->text : "",
+	    d->text ? ": " : "",
+	    mode,
+	    url);
+}
+/* globus_l_ftp_client_debug_plugin_chmod() */
 
 static
 void
@@ -1119,6 +1158,7 @@ globus_ftp_client_debug_plugin_init(
 
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, destroy);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, chmod);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, feat);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, modification_time);

@@ -82,6 +82,9 @@ typedef struct
      * Operation we are processing.
      */
     globus_i_ftp_client_operation_t		operation;
+    
+    /** file mode for chmod calls **/
+    int                                         chmod_file_mode;
 
     globus_bool_t                               abort_pending;
 }
@@ -98,6 +101,17 @@ void
 globus_l_ftp_client_restart_plugin_destroy(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific);
+
+static
+void
+globus_l_ftp_client_restart_plugin_chmod(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
 
 static
 void
@@ -373,6 +387,30 @@ globus_l_ftp_client_restart_plugin_delete(
 
 }
 /* globus_l_ftp_client_restart_plugin_delete() */
+
+static
+void
+globus_l_ftp_client_restart_plugin_chmod(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_CHMOD;
+    d->source_url = globus_libc_strdup(url);
+    d->chmod_file_mode = mode;
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+
+}
+/* globus_l_ftp_client_restart_plugin_chmod() */
 
 static
 void
@@ -712,6 +750,15 @@ globus_l_ftp_client_restart_plugin_fault(
 
     switch(d->operation)
     {
+	case GLOBUS_FTP_CLIENT_CHMOD:
+	    globus_ftp_client_plugin_restart_chmod(
+		    handle,
+		    d->source_url,
+		    d->chmod_file_mode,
+		    &d->source_attr,
+		    &when);
+	    break;
+
 	case GLOBUS_FTP_CLIENT_DELETE:
 	    globus_ftp_client_plugin_restart_delete(
 		    handle,
@@ -940,6 +987,7 @@ globus_ftp_client_restart_plugin_init(
 
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, destroy);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, chmod);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, modification_time);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, size);

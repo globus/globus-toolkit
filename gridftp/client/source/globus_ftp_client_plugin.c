@@ -22,6 +22,7 @@
     || ((op) == GLOBUS_FTP_CLIENT_LIST && (plugin)->verbose_list_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MLSD && (plugin)->machine_list_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MLST && (plugin)->mlst_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_CHMOD && (plugin)->chmod_func) \
     || ((op) == GLOBUS_FTP_CLIENT_DELETE && (plugin)->delete_func) \
     || ((op) == GLOBUS_FTP_CLIENT_MKDIR && (plugin)->mkdir_func) \
     || ((op) == GLOBUS_FTP_CLIENT_RMDIR && (plugin)->rmdir_func) \
@@ -294,6 +295,78 @@ globus_ftp_client_plugin_restart_mlst(
 							when);
 }
 /* globus_ftp_client_plugin_restart_mlst() */
+
+/**
+ * Restart an existing chmod.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing chmod operation
+ * to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and
+ * attributes. Any data buffers which are
+ * currently queued will be cleared and reused once the connection is
+ * re-established.
+ *
+ * The user will not receive any notification that a restart has
+ * happened. Each plugin which is interested in chmod events will
+ * receive a chmod callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the delete.
+ * @param source_url
+ *        The destination URL of the transfer. This may be different than
+ *        the original delete's URL, if the plugin decides to redirect to
+ *        another FTP server due to performance or reliability
+ *        problems with the original URL.
+ * @param mode
+ *        The file mode that will be applied. Must be an octal number repre-
+ *        senting the bit pattern for the new permissions.
+ * @param source_attr
+ *        The attributes to use for the new transfer. This may be a
+ *        modified version of the original delete's attribute set.
+ * @param when
+ *        Absolute time for when to restart the delete. The current
+ *        control and data connections will be stopped
+ *        immediately. If this completes before <b>when</b>, then the
+ *	  restart will be delayed until that time. Otherwise, it will
+ *        be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_chmod(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char * myname = "globus_ftp_client_plugin_restart_chmod";
+
+    if(url == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
+
+	return globus_error_put(err);
+    }
+    if(mode == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mode");
+
+	return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+							url,
+							attr,
+							GLOBUS_NULL,
+							GLOBUS_NULL,
+							GLOBUS_NULL,
+							when);
+}
+/* globus_ftp_client_plugin_restart_chmod() */
 
 /**
  * Restart an existing delete.
@@ -1391,6 +1464,7 @@ error_exit: \
 
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(copy)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(destroy)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(chmod)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(delete)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(feat)
 GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(mkdir)
@@ -1690,6 +1764,71 @@ globus_i_ftp_client_plugin_notify_delete(
 				  plugin->plugin_specific,
 				  handle->handle,
 				  url,
+				  &attr,
+				  GLOBUS_FALSE);
+	}
+    }
+    if(unlocked)
+    {
+	globus_i_ftp_client_handle_lock(handle);
+    }
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+	handle->notify_restart = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+	handle->notify_abort = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+/*@{*/
+/**
+ * Plugin notification functions
+ * @ingroup globus_ftp_client_plugins
+ *
+ * These function notify all interested plugins that an event related
+ * to the current transfer for the handle is happening. Event
+ * notification is delivered to a plugin only if the command_mask
+ * associated with the plugin indicates that the plugin is interested
+ * in the event, and the plugin supports the operation.
+ */
+void
+globus_i_ftp_client_plugin_notify_chmod(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    globus_i_ftp_client_operationattr_t *	attr)
+{
+    globus_i_ftp_client_plugin_t *		plugin;
+    globus_list_t *				tmp;
+    globus_bool_t				unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+	tmp = globus_list_rest(tmp);
+
+	if(plugin->chmod_func)
+	{
+	    if(!unlocked)
+	    {
+		globus_i_ftp_client_handle_unlock(handle);
+		unlocked = GLOBUS_TRUE;
+	    }
+	    (plugin->chmod_func)(plugin->plugin,
+				  plugin->plugin_specific,
+				  handle->handle,
+				  url,
+				  mode,
 				  &attr,
 				  GLOBUS_FALSE);
 	}
@@ -3115,6 +3254,16 @@ globus_i_ftp_client_plugin_notify_restart(
 				    handle->restart_info->source_url,
 				    &handle->restart_info->source_attr,
 				    GLOBUS_TRUE);
+	    }
+	    else if(handle->op == GLOBUS_FTP_CLIENT_CHMOD)
+	    {
+		(plugin->chmod_func)(plugin->plugin,
+				      plugin->plugin_specific,
+				      handle->handle,
+				      handle->restart_info->source_url,
+				      handle->chmod_file_mode,
+				      &handle->restart_info->source_attr,
+				      GLOBUS_TRUE);
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_DELETE)
 	    {

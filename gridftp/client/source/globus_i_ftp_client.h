@@ -225,6 +225,7 @@ globus_ftp_client_handle_state_t;
 typedef enum
 {
     GLOBUS_FTP_CLIENT_IDLE,
+    GLOBUS_FTP_CLIENT_CHMOD,
     GLOBUS_FTP_CLIENT_DELETE,
     GLOBUS_FTP_CLIENT_MKDIR,
     GLOBUS_FTP_CLIENT_RMDIR,
@@ -287,6 +288,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PUT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_DEST,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR,
@@ -538,6 +540,9 @@ typedef struct globus_i_ftp_client_handle_t
     globus_byte_t **		                mlst_buffer_pointer;
     globus_size_t *                             mlst_buffer_length_pointer;
 
+    /** file mode for CHMOD **/
+    int                                         chmod_file_mode;
+    
     /** Thread safety */
     globus_mutex_t                              mutex;
 
@@ -687,6 +692,7 @@ typedef struct globus_i_ftp_client_plugin_t
      */
     globus_ftp_client_plugin_destroy_t		destroy_func; 
 
+    globus_ftp_client_plugin_chmod_t	        chmod_func;
     globus_ftp_client_plugin_delete_t		delete_func;
     globus_ftp_client_plugin_mkdir_t		mkdir_func;
     globus_ftp_client_plugin_rmdir_t		rmdir_func;
@@ -856,6 +862,13 @@ void
 globus_i_ftp_client_plugin_notify_mlst(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_chmod(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
     globus_i_ftp_client_operationattr_t *	attr);
 
 void

@@ -499,6 +499,16 @@ globus_ftp_client_handleattr_add_plugin(
  * get, put, third-party transfer, or other FTP file operation.
  */
 #ifndef DOXYGEN
+
+globus_result_t
+globus_ftp_client_chmod(
+    globus_ftp_client_handle_t *		u_handle,
+    const char *				url,
+    int         				mode,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
 globus_result_t
 globus_ftp_client_delete(
     globus_ftp_client_handle_t *		handle,
@@ -933,7 +943,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
     GLOBUS_FTP_CLIENT_FEATURE_SBUF,
     GLOBUS_FTP_CLIENT_FEATURE_ABUF,
-
+    
     GLOBUS_FTP_CLIENT_FEATURE_REST_STREAM,
     GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM,
     GLOBUS_FTP_CLIENT_FEATURE_DCAU,
@@ -942,6 +952,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_SIZE,
     GLOBUS_FTP_CLIENT_FEATURE_CKSM,
     GLOBUS_FTP_CLIENT_FEATURE_MLST,
+    GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,
     GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
     GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF

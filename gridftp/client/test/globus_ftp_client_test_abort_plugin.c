@@ -141,7 +141,7 @@ globus_l_ftp_client_test_abort_plugin_machine_list(
     globus_bool_t					restart)
 {
 }
-
+     
 static
 void
 globus_l_ftp_client_test_abort_plugin_delete(

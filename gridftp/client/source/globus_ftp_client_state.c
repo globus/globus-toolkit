@@ -1523,7 +1523,11 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION:
 	/* for operations which don't use a data connection,
 	 * skip PASV/PORT */
-	if(client_handle->op == GLOBUS_FTP_CLIENT_DELETE)
+	if(client_handle->op == GLOBUS_FTP_CLIENT_CHMOD)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD;
+	}
+	else if(client_handle->op == GLOBUS_FTP_CLIENT_DELETE)
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE;
 	}
@@ -2158,6 +2162,45 @@ redo:
 	}
 	break;
 
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD:
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+	    target->url_string,
+	    target->mask,
+	    "SITE CHMOD %04o %s" CRLF,
+	    client_handle->chmod_file_mode,
+	    pathname);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+	{
+	    break;
+	}
+
+	globus_assert(client_handle->state ==
+		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+
+	result =
+	    globus_ftp_control_send_command(
+		handle,
+		"SITE CHMOD %04o %s" CRLF,
+		globus_i_ftp_client_response_callback,
+		user_arg,
+		client_handle->chmod_file_mode,
+		pathname);
+
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	break;
+	
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
@@ -3236,6 +3279,15 @@ globus_l_ftp_client_parse_site_help(
             GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
             GLOBUS_FTP_CLIENT_TRUE);
     }
+    if(((p = strstr((char *) response->response_buffer, "CHMOD")) != 0) &&
+	!isupper(*(p-1)))
+    {
+        globus_i_ftp_client_feature_set(
+            target->features,
+            GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
+            GLOBUS_FTP_CLIENT_TRUE);
+    }
+    
     
     return GLOBUS_SUCCESS;
 }
