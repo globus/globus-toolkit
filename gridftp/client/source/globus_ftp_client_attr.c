@@ -1904,11 +1904,11 @@ globus_ftp_client_operationattr_get_control_protection(
 
     if(i_attr->auth_info.encrypt)
     {
-	*protection = GLOBUS_FTP_CONTROL_PROTECTION_SAFE;
+	*protection = GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE;
     }
     else
     {
-	*protection = GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE;
+	*protection = GLOBUS_FTP_CONTROL_PROTECTION_SAFE;
     }
     
     return GLOBUS_SUCCESS;
