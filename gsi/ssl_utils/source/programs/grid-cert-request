@@ -193,7 +193,7 @@ readCommandLine () {
 
      -gatekeeper)
          SERVICE="gatekeeper"
-	 COMMON_NAME="$2"
+         COMMON_NAME="$2"
          NO_DES="-nodes"
          shift ; shift
          ;;
@@ -201,37 +201,31 @@ readCommandLine () {
 
      -host)
          SERVICE="host"
-	 SERVICE_HOST="$2"
+         SERVICE_HOST="$2"
          NO_DES="-nodes"
 
          shift ; shift
          ;;
-
      -dir)
          DEF_GLOBUS_DIR="$2"
          shift ; shift
          ;;
-
      -cert|-certificate)
          DEF_CERT_FILE="$2"
          shift ; shift
-        ;;
-
+         ;;
      -key)
-	 DEF_KEY_FILE="$2"
-	 shift ; shift
-	 ;;
-
+         DEF_KEY_FILE="$2"
+	     shift ; shift
+	     ;;
      -req|-request)
-	 DEF_REQUEST_FILE="$2"
-	 shift ; shift
-	 ;;
-
+	     DEF_REQUEST_FILE="$2"
+	     shift ; shift
+	     ;;
      -nopw|-nodes|-nopassphrase)
          NO_DES="-nodes"
          shift
          ;;
-
      -int|-interactive)
          INTERACTIVE="TRUE"
          shift
@@ -241,22 +235,22 @@ readCommandLine () {
          shift
          ;;
      -ca)
-	 if [ ! -z "$2" ] && [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e "s|[^-]*||g"`" ]; then
-	    nondefaultca=$2
-	    shift
-	 else
-	    echo "nondefaultca=true"
-	    nondefaultca="true"
-	 fi
-	 set_nondefaultca
-	 shift
-	 ;;
+	     if [ ! -z "$2" ] && \
+            [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e "s|[^-]*||g"`" ]; then
+            nondefaultca=$2
+            shift
+         else
+            echo "nondefaultca=true"
+            nondefaultca="true"
+         fi
+	     set_nondefaultca
+	     shift
+         ;;
      *)
-	 globus_args_unrecognized_option "$1"
+         globus_args_unrecognized_option "$1"
          ;;
     esac
   done
-
 }
 
 
@@ -743,11 +737,11 @@ if [ -z "$security_conf" ]; then
     security_conf=${secconfdir}/grid-security.conf
 fi
 
-# See if we can proceed
-. ${security_conf}
-
 readCommandLine "$@"
 
+
+# See if we can proceed
+. ${security_conf}
 
 # Set the actual file names
 
