@@ -181,10 +181,10 @@ main(int argc, char *argv[])
 	return 1;
     case MYPROXY_OK_RESPONSE:
 	if (client_request->credname) {
-	    printf("MyProxy credential '%s' for user %s was succesfully removed.\n",
+	    printf("MyProxy credential '%s' for user %s was successfully removed.\n",
 		   client_request->credname, client_request->username); 
 	} else {
-	    printf("Default MyProxy credential for user %s was succesfully removed.\n",
+	    printf("Default MyProxy credential for user %s was successfully removed.\n",
 		   client_request->username); 
 	}
         break;
