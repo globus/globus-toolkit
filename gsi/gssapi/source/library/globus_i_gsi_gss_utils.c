@@ -2106,7 +2106,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
-    cred_handle->ssl_context = SSL_CTX_new(SSLv3_method());
+    cred_handle->ssl_context = SSL_CTX_new(SSLv23_method());
     if(cred_handle->ssl_context == NULL)
     {
         major_status = GSS_S_FAILURE;
@@ -2116,6 +2116,8 @@ globus_i_gsi_gssapi_init_ssl_context(
             ("Can't initialize the SSL_CTX"));
         goto exit;
     }
+
+    SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2);
             
     SSL_CTX_set_cert_verify_callback(cred_handle->ssl_context,
                                      globus_gsi_callback_X509_verify_cert,
