@@ -40,7 +40,7 @@ MyProxy Online Credential Repository
 <Source_Dependencies Type="pgm_runtime" >
 <Dependency Name="globus_proxy_utils" Package="pgm">
 <Version>
-<Simple_Version Major="0"></Simple_Version>
+<Version_Range Lower_Minor="2" Upper_Minor="42" Upper_Major="0" Lower_Major="0" />
 </Version>
 </Dependency>
 </Source_Dependencies>
