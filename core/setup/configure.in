@@ -2,6 +2,18 @@
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+    export GPT_LOCATION
+fi
+
+
 GPT_INIT
 
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
@@ -38,16 +50,6 @@ AC_ARG_WITH(flavor,
 AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-    export GPT_LOCATION
-fi
 
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
