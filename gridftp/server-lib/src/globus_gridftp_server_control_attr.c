@@ -465,3 +465,75 @@ globus_gridftp_server_control_attr_data_functions(
 
     return res;
 }
+
+globus_result_t
+globus_gridftp_server_control_attr_set_delete(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     delete_cb)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_delete);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+    attr->delete_func = delete_cb;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_set_mkdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     mkdir_cb)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_mkdir);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+    attr->mkdir_func = mkdir_cb;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_set_rmdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     rmdir_cb)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_rmdir);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+    attr->rmdir_func = rmdir_cb;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}

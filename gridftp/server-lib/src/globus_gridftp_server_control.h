@@ -247,6 +247,27 @@ typedef void
     const char *                                    mod_name,
     const char *                                    mod_parms);
 
+/*
+ *  action callbacks
+ */
+
+/* 
+ *  used for DELE, MKD, RMD
+ */
+typedef void
+(*globus_gridftp_server_control_action_func_t)(
+    globus_gridftp_server_control_operation_t       op,
+    const char *                                    path);
+
+/* 
+ *  RNFR & RNTO
+ */
+typedef void
+(*globus_gridftp_server_control_move_func_t)(
+    globus_gridftp_server_control_operation_t       op,
+    const char *                                    from_path,
+    const char *                                    to_path);
+
 /**
  *  data connection interface functions
  *
@@ -347,6 +368,26 @@ globus_result_t
 globus_gridftp_server_control_attr_set_done(
     globus_gridftp_server_control_attr_t            server_attr,
     globus_gridftp_server_control_callback_t        done_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_move(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_move_func_t       move_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_delete(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     delete_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_mkdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     mkdir_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_rmdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     rmdir_cb);
 
 /*
  *  if module name is NULL then it is the default handler

@@ -212,6 +212,14 @@ typedef struct globus_i_gsc_server_s
     globus_gridftp_server_control_transfer_func_t   default_stor;
     globus_gridftp_server_control_transfer_func_t   default_retr;
 
+    /*
+     *  action functions
+     */
+    globus_gridftp_server_control_action_func_t     delete_func;
+    globus_gridftp_server_control_action_func_t     mkdir_func;
+    globus_gridftp_server_control_action_func_t     rmdir_func;
+    globus_gridftp_server_control_move_func_t       move_func;
+
     globus_result_t                                 cached_res;
 
     /*
@@ -247,7 +255,10 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PORT,
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
-    GLOBUS_L_GSC_OP_TYPE_DATA
+    GLOBUS_L_GSC_OP_TYPE_MOVE,
+    GLOBUS_L_GSC_OP_TYPE_DELETE,
+    GLOBUS_L_GSC_OP_TYPE_MKDIR,
+    GLOBUS_L_GSC_OP_TYPE_RMDIR
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -304,6 +315,11 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_active_connect_t  active_func;
     globus_gridftp_server_control_data_destroy_t    data_destroy_func;
 
+    globus_gridftp_server_control_action_func_t     delete_func;
+    globus_gridftp_server_control_action_func_t     mkdir_func;
+    globus_gridftp_server_control_action_func_t     rmdir_func;
+    globus_gridftp_server_control_move_func_t       move_func;
+
     globus_gridftp_server_control_transfer_func_t   default_stor;
     globus_gridftp_server_control_transfer_func_t   default_retr;
 } globus_i_gsc_attr_t;
@@ -344,6 +360,65 @@ globus_i_gridftp_server_control_finished_cmd(
     void **                                         argv,
     int                                             argc,
     globus_bool_t                                   complete);
+
+/*
+ *   959 Stuff
+ */
+
+typedef enum globus_l_gsc_959_state_e
+{
+    GLOBUS_L_GSP_959_STATE_OPEN,
+    GLOBUS_L_GSP_959_STATE_PROCESSING,
+    GLOBUS_L_GSP_959_STATE_PROCESSING_STOPPING,
+    GLOBUS_L_GSP_959_STATE_ABORTING,
+    GLOBUS_L_GSP_959_STATE_ABORTING_STOPPING,
+    GLOBUS_L_GSP_959_STATE_STOPPING,
+    GLOBUS_L_GSP_959_STATE_STOPPED,
+    GLOBUS_L_GSP_959_STATE_PANIC,
+    GLOBUS_L_GSP_959_STATE_PANIC_STOPPING
+} globus_l_gsc_state_t;
+
+typedef struct globus_l_gsc_959_handle_s
+{
+    globus_bool_t                           reply_outstanding;
+    globus_i_gsc_server_t *                 server;
+    globus_xio_handle_t                     xio_handle;
+    globus_l_gsc_state_t                    state;
+    int                                     ref;
+    globus_fifo_t                           read_q;
+    globus_fifo_t                           reply_q;
+    int                                     abort_cnt;
+    globus_gridftp_server_control_stopped_cb_t stop_cb;
+    globus_hashtable_t                      cmd_table;
+    globus_gsc_959_abort_func_t             abort_func;
+    void *                                  abort_arg;
+    struct globus_gsc_op_959_s *            outstanding_op;
+} globus_l_gsc_959_handle_t;
+
+typedef struct globus_l_gsc_959_cmd_ent_s
+{
+    int                                     cmd;
+    char                                    cmd_name[16]; /* only 5 needed */
+    globus_gsc_pmod_959_command_func_t      cmd_func;
+    globus_gsc_959_command_desc_t           desc;
+    char *                                  help;
+    void *                                  user_arg;
+} globus_l_gsc_959_cmd_ent_t;
+
+typedef struct globus_l_gsc_959_reply_ent_s
+{
+    char *                                  msg;
+    globus_bool_t                           final;
+    globus_gsc_op_959_t                     op;
+} globus_l_gsc_959_reply_ent_t;
+
+typedef struct globus_gsc_op_959_s
+{
+    globus_l_gsc_959_handle_t *             handle;
+    globus_list_t *                         cmd_list;
+    char *                                  command;
+    globus_i_gsc_server_t *                 server;
+} globus_gsc_op_959_t;
 
 
 #endif
