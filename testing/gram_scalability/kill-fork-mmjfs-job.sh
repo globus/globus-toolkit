@@ -11,6 +11,6 @@ if [ -z $port ]; then
     port=8080
 fi
 
-factory="$host:$port/ogsa/services/base/gram/MasterForkManagedJobFactoryService"
+factory="http://$host:$port/ogsa/services/base/gram/ForkManagedJobFactoryService"
 
 ./kill-job.sh $factory $job_id

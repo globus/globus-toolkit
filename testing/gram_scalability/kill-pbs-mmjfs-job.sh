@@ -11,6 +11,6 @@ if [ -z $port ]; then
     port=8080
 fi
 
-factory="$host:$port/ogsa/services/base/gram/MasterPbsManagedJobFactoryService"
+factory="http://$host:$port/ogsa/services/base/gram/PbsManagedJobFactoryService"
 
 ./kill-job.sh $factory $job_id
