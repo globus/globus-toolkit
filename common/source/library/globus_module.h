@@ -22,7 +22,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common.h"
-#include "globus_libc.h"
+#include <stdio.h>
  
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -52,7 +52,7 @@ typedef struct
     int                                 major;
     int                                 minor;
     /* these two members are reserved for internal Globus components */    
-    time_t                              timestamp;
+    unsigned long                       timestamp;
     int                                 branch_id;
 } globus_version_t;
 
