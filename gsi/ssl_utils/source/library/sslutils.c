@@ -428,6 +428,9 @@ ERR_load_prxyerr_strings(
         }
         
         OBJ_create("1.3.6.1.4.1.3536.1.1.1.1","CLASSADD","ClassAdd");
+        OBJ_create("1.3.6.1.4.1.3536.1.1.1.2","DELEGATE","Delegate");
+        OBJ_create("1.3.6.1.4.1.3536.1.1.1.3","RESTRICTEDRIGHTS",
+                   "RestrictedRights");
         OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
 
         ERR_load_strings(ERR_LIB_USER+i,prxyerr_str_functs);
@@ -4210,69 +4213,6 @@ err:
 }
 
 
-/**********************************************************************
-Function: proxy_extension_restrictions_create()
-
-Description:
-            create a X509_EXTENSION for the restrictions info. 
-        
-Parameters:
-                A buffer and length. The date is added as
-                ANS1_OCTET_STRING to an extension with the 
-                class_add  OID.
-
-Returns:
-
-**********************************************************************/
-
-X509_EXTENSION *
-proxy_extension_restrictions_create(
-    void *                              buffer,
-    size_t                              length)
-
-{
-    X509_EXTENSION *                    ex = NULL;
-    ASN1_OBJECT *                       asn1_obj = NULL;
-    ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
-    int                                 crit = 0;
-
-    if(!(asn1_obj = OBJ_nid2obj(OBJ_txt2nid("RESTRICTIONS"))))
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_OID);
-        goto err;
-    }
-
-    if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
-        goto err;
-    }
-
-    asn1_oct_string->data = buffer;
-    asn1_oct_string->length = length;
-
-    if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
-                                            crit, asn1_oct_string)))
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
-        goto err;
-    }
-    asn1_oct_string = NULL;
-
-    return ex;
-
-err:
-    if (asn1_oct_string)
-    {
-        ASN1_OCTET_STRING_free(asn1_oct_string);
-    }
-    
-    if (asn1_obj)
-    {
-        ASN1_OBJECT_free(asn1_obj);
-    }
-    return NULL;
-}
 
 
 int
