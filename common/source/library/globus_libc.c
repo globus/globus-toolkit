@@ -2324,15 +2324,31 @@ int
 globus_libc_vprintf_length(const char * fmt, va_list ap)
 {
     static FILE *			devnull = GLOBUS_NULL;
+    int save_errno;
 
     globus_libc_lock();
     if(devnull == GLOBUS_NULL)
     {
 #ifndef TARGET_ARCH_WIN32
 	devnull = fopen("/dev/null", "w");
+
+        if(devnull == GLOBUS_NULL)
+        {
+            save_errno = errno;
+            globus_libc_unlock();
+            errno = save_errno;
+            return -1;
+        }
         fcntl(fileno(devnull), F_SETFD, FD_CLOEXEC);
 #else
 	devnull = fopen("NUL", "w");
+        if(devnull == GLOBUS_NULL)
+        {
+            save_errno = errno;
+            globus_libc_unlock();
+            errno = save_errno;
+            return -1;
+        }
 #endif
     }
     globus_libc_unlock();
