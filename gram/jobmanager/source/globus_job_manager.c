@@ -4360,7 +4360,7 @@ int
 globus_l_gram_job_manager_register_proxy_timout(
     globus_gram_jobmanager_request_t *	request)
 {
-    int					rc;
+    int					rc = GLOBUS_SUCCESS;
     gss_cred_id_t			cred;
     OM_uint32				lifetime;
     OM_uint32				major_status;
