@@ -46,7 +46,7 @@ auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
 {
   Authctxt *authctxt = ctxt;
   /* Other side told us to abort, dont need to tell him */ 
-  /* maybe we can us some other method. */
+  /* maybe we can use some other method. */
   if (type == SSH_MSG_AUTH_GSSAPI_ABORT) {
       log("auth1: GSSAPI aborting");
       dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
@@ -324,6 +324,11 @@ do_authloop(Authctxt *authctxt)
 			}
 			dispatch_init(&auth1_gss_protocol_error);
 			method_gssapi.userauth(authctxt);
+			if (!authctxt->postponed) { /* failed before starting dispatch */
+				authctxt->success = 0;
+				authctxt->postponed = 0;
+				break;
+			}
 			dispatch_run(DISPATCH_BLOCK, &authctxt->success, authctxt);
 			if (authctxt->postponed) { /* failed, try other methods */
 				authctxt->success = 0;
