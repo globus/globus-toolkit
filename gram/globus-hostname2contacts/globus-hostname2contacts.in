@@ -15,6 +15,9 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 #        	   a specific job manager. "-t X -t Y" and "-t X Y" are
 #                  equivalent, and will first search X, then Y.
 #
+#    -anonymous (-x)
+#               Use anonymous binding instead of GSSAPI.
+#
 #    -s or -service: narrow search to a particular service name.
 #
 #    -mdshost    H  : set non-default hostname of MDS server
@@ -77,6 +80,7 @@ Options:
     -help,-usage              Show help
     -version	              Show version
     -debug                    Show extra output
+    -anonymous         (-x)   Use anonymous binding instead of GSSAPI
     -dryrun            (-d)   Don't search: print the MDS search commands
     -mdshost H         (-h)   Set non-default hostname of MDS server
     -mdsport P         (-p)   Set non-default port number of MDS server
@@ -118,6 +122,7 @@ user_mdshost=flase
 default_arg=""
 servicetypes=""
 schedulertypes=""
+anonymous_option=""
 execute=eval
 filter="${GLOBUS_SH_SED-sed} -n -e /^Mds-Service-url:/s/^Mds-Service-url://p"
 user="`${GLOBUS_SH_WHOAMI}`"
@@ -171,6 +176,9 @@ for arg in "$@"; do
 	    extra_options="${extra_options} -mdstimeout"
 	    parser_state=optionarg
 	    ;;
+        -anonymous | -x)
+            anonymous_option="-x"
+            ;;
 	-t | -type)
 	    if [ ${doservices} = true ]; then
 		globus_args_option_error "${arg}" \
@@ -281,7 +289,7 @@ if [ ${special_search} = true ]; then
 	echo "DEBUG:   search for all schedulers" >&2
     fi
 
-    ${execute} "${mds_search_exec} ${default_arg} ${extra_options} \
+    ${execute} "${mds_search_exec} ${anonymous_option} ${default_arg} ${extra_options} \
                \"(${search_string})\" Mds-Service-Gram-schedulertype Mds-Service-url"\
                2> /dev/null > ${cache}
 
@@ -328,7 +336,7 @@ else
             searchtype="${schedulertype}"
         fi
 
-	${execute} "${mds_search_exec} ${default_arg} ${extra_options} \
+	${execute} "${mds_search_exec} ${anonymous_option} ${default_arg} ${extra_options} \
             	\"(${search_string}(${attr}=${searchtype}))\" Mds-Service-url" \
         2> /dev/null | ${filter}
     done
