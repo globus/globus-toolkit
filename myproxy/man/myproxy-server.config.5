@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2003-5-29" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2003-5-30" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -126,16 +126,16 @@ check.  (The client must still pass the
 check.)
 .TP
 .BI passphrase_policy_program " full-path-to-script"
-This line specifies a script to run whenever a passphrase is set or
+This line specifies a program to run whenever a passphrase is set or
 changed for implementing a local password policy.
-The script is passed the new passphrase via stdin and is passed the
+The program is passed the new passphrase via stdin and is passed the
 following arguments: username, distinguished name, credential name (if
 any), per-credential retriever policy (if any), and per-credential
 renewal policy (if any).
-If the passphrase is acceptable, the script should exit with status 0.
+If the passphrase is acceptable, the program should exit with status 0.
 Otherwise, it should exit with non-zero status, causing the operation
 in progress (credential load, passphrase change) to fail with the error
-message provided by the script's stdout.
+message provided by the program's stdout.
 .SH FILES
 .TP
 .I /etc/myproxy-server.config
