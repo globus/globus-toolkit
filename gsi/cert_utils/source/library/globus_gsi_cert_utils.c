@@ -809,3 +809,91 @@ globus_gsi_cert_utils_get_base_name(
     return GLOBUS_SUCCESS;
 }
 /* @} */
+
+
+static char *
+globus_l_gsi_cert_utils_normalize_dn(
+    const char *                        dn)
+{
+    char *                              result;
+    int                                 i = 0;
+    int                                 j = 0;
+
+    result = malloc(strlen(dn) + 15);
+
+    if(result == NULL)
+    {
+        return NULL;
+    }
+
+    while(i < strlen(dn))
+    {
+        result[j] = dn[i];
+        i++;
+        j++;
+
+        if(dn[i - 1] == '/')
+        {
+            if(strncasecmp(&dn[i], "UID=", 4) == 0)
+            {
+                memcpy(&result[j], "USERID=", 7);
+                j += 7;
+                i += 4;
+            }
+            else if(strncasecmp(&dn[i], "E=", 2) == 0)
+            {
+                memcpy(&result[j], "emailAddress=", 13);
+                j += 13;
+                i += 2;
+            }
+            else if(strncasecmp(&dn[i], "Email=", 6) == 0)
+            {
+                memcpy(&result[j], "emailAddress=", 13);
+                j += 13;
+                i += 6;
+            }
+        }
+    }
+    result[j] = '\0';
+    return result;
+}
+
+int
+globus_i_gsi_cert_utils_dn_cmp(
+    const char *                        dn1,
+    const char *                        dn2)
+{
+    if(strcasecmp(dn1, dn2) == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        char * tmp_dn1;
+        char * tmp_dn2;
+        int result;
+
+        tmp_dn1 = globus_l_gsi_cert_utils_normalize_dn(dn1);
+
+        if(tmp_dn1 == NULL)
+        {
+            return -1;
+        }
+        
+        tmp_dn2 = globus_l_gsi_cert_utils_normalize_dn(dn2);
+
+        if(tmp_dn2 == NULL)
+        {
+            free(tmp_dn1);
+            return -1;
+        }
+        
+        result = strcasecmp(tmp_dn1, tmp_dn2);
+
+        free(tmp_dn1);
+        free(tmp_dn2);
+        
+        return result;
+    }
+}
+

@@ -11,6 +11,7 @@
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"
+#include "globus_gsi_cert_utils.h"
 #include "globus_callout.h"
 #include <stdio.h>
 #include <string.h>
@@ -568,7 +569,8 @@ globus_i_gss_assist_gridmap_find_dn(
             continue;		/* Parse error */
         }
 
-	if ((gline_tmp != NULL) && (strcmp(dn, gline_tmp->dn) == 0))
+	if ((gline_tmp != NULL) &&
+            (globus_i_gsi_cert_utils_dn_cmp(dn, gline_tmp->dn) == 0))
 	{
             found = 1;
 	}

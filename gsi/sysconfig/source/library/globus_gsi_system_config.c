@@ -1420,7 +1420,7 @@ globus_gsi_sysconfig_get_username_win32(
         else 
         {
             result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-         }
+        }
     }
         
     /* getenv failed */
