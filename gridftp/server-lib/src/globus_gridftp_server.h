@@ -172,6 +172,10 @@ globus_gridftp_server_attr_set_done(
     globus_gridftp_server_attr_t            server_attr,
     globus_gridftp_server_callback_t        done_cb);
 
+globus_result_t
+globus_gridftp_server_ping(
+    globus_gridftp_server_t                 server);
+
 /*
  *  globus_gridftp_server_init
  *

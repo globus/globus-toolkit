@@ -146,11 +146,14 @@ globus_l_gsp_959_reply(
     int                                     code,
     const char *                            message);
 
+void
+globus_i_gs_pmod_959_add_commands(
+    globus_gs_pmod_959_handle_t             handle);
+
 /*************************************************************************
  *              globals
  *
  ************************************************************************/
-static globus_hashtable_t                   globus_l_gsp_959_command_table;
 static globus_byte_t *                      globus_l_gsp_959_fake_buffer 
     = (globus_byte_t *) 0x1;
 static globus_size_t                        globus_l_gsp_959_fake_buffer_len 
@@ -176,6 +179,13 @@ globus_l_gsp_959_handle_create()
     handle->ref = 1; /* i for start call and 1 for read about to post */
     handle->state = GLOBUS_L_GSP_959_STATE_OPEN;
     globus_fifo_init(&handle->read_q);
+
+    globus_hashtable_init(
+        &handle->cmd_table,
+        128,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    globus_i_gs_pmod_959_add_commands(handle);
 
     return handle;
 }
@@ -466,7 +476,7 @@ globus_l_gsp_959_read_callback(
                     post, the next read will be posted there. */
                 cmd_ent = (globus_l_gsp_959_cmd_ent_t *) 
                             globus_hashtable_lookup(
-                                &globus_l_gsp_959_command_table,
+                                &handle->cmd_table,
                                 command_name);
 
                 /*
@@ -1046,7 +1056,7 @@ globus_gs_pmod_959_command_add(
     cmd_ent->cmd_func = command_func;
     cmd_ent->user_arg = user_arg;
 
-    globus_hashtable_insert(&handle->cmd_table, command_name, cmd_ent);
+    globus_hashtable_insert(&handle->cmd_table, (char *)command_name, cmd_ent);
 
     return GLOBUS_SUCCESS;
 
@@ -1055,6 +1065,33 @@ globus_gs_pmod_959_command_add(
     return res;
 }
 
+globus_result_t
+globus_gs_pmod_959_get_server(
+    globus_gridftp_server_t *               out_server,
+    globus_gs_pmod_959_handle_t             handle)
+{
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_gs_pmod_959_get_server);
+
+    if(out_server == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("out_server");
+        return res;
+    }
+    if(handle == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("handle");
+        return res;
+    }
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        *out_server = handle->server;
+    }
+    globus_mutex_unlock(&handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
 
 /* 
  *  set up the command table.
@@ -1062,12 +1099,6 @@ globus_gs_pmod_959_command_add(
 globus_result_t
 globus_l_gsp_959_init()
 {
-    globus_hashtable_init(
-        &globus_l_gsp_959_command_table,
-        256,
-        globus_hashtable_string_hash,
-        globus_hashtable_string_keyeq);
-
     return GLOBUS_SUCCESS;
 };
 

@@ -40,12 +40,18 @@ globus_gridftp_server_attr_init(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
-    globus_i_gs_cmd_add_builtins(attr);
+    globus_hashtable_init(
+        &attr->command_func_table,
+        GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
 
     attr->resource_func = NULL;
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
     attr->pmod = &globus_i_gsp_959_proto_mod;
     attr->start_state = GLOBUS_L_GS_STATE_AUTH;
+
+    globus_i_gs_cmd_add_builtins(attr);
 
     *in_attr = attr;
 
@@ -320,7 +326,7 @@ globus_gridftp_server_attr_command_add(
         res = GlobusGridFTPServerErrorParameter("server_attr");
         goto err;
     }
-                                                                                
+
     cmd_ent = (globus_i_gs_cmd_ent_t *) globus_malloc(
         sizeof(globus_i_gs_cmd_ent_t));
     if(cmd_ent == NULL)
@@ -331,6 +337,7 @@ globus_gridftp_server_attr_command_add(
     cmd_ent->name = globus_libc_strdup(command_name);
     cmd_ent->refresh = refresh;
     cmd_ent->user_arg = user_arg;
+    cmd_ent->func = func;
     cmd_ent->auth_required = auth_required;
 
     list = (globus_list_t *)globus_hashtable_lookup(

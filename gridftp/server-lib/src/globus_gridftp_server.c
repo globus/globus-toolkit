@@ -178,6 +178,12 @@ globus_gridftp_server_init(
     globus_mutex_init(&i_server->mutex, NULL);
     i_server->state = GLOBUS_L_GS_STATE_STOPPED;
 
+    globus_hashtable_init(
+        &i_server->command_table,
+        64,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+
     *server = i_server;
 
     return GLOBUS_SUCCESS;
@@ -873,6 +879,23 @@ globus_gridftp_server_get_auth_cb(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_gridftp_server_ping(
+    globus_gridftp_server_t                 server)
+{
+    globus_i_gs_server_t *                  i_server;
+    GlobusGridFTPServerName(globus_gridftp_server_ping);
+
+    i_server = (globus_i_gs_server_t *) server;
+    globus_mutex_lock(&i_server->mutex);
+    {
+        i_server->refresh = GLOBUS_TRUE;
+    }
+    globus_mutex_unlock(&i_server->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
 /*************************************************************************
  *                      internal commands
  *
@@ -1036,7 +1059,6 @@ globus_gridftp_server_pmod_command(
                 i_op->cmd_list = (globus_list_t *) globus_hashtable_lookup(
                     &i_server->command_table, (char *) command_name);
                 globus_l_gs_next_command(i_op);
-                i_server->refresh = i_op->cmd_ent->refresh;
                 break;
 
             /*

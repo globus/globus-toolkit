@@ -286,11 +286,38 @@ globus_gridftp_server_finished_resource(
 }
 
 globus_result_t
+globus_l_gs_noop_cmd(
+    globus_gridftp_server_t                 server,
+    const char *                            command_name,
+    globus_gridftp_server_operation_t       op,
+    va_list                                 ap)
+{
+    globus_result_t                         res;
+
+    res = globus_gridftp_server_ping(server);
+
+    globus_gridftp_server_finished_cmd(op, res, GLOBUS_TRUE);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_i_gs_cmd_add_builtins(
     globus_gridftp_server_attr_t            attr)
 {
     globus_result_t                         res;
 
+    res = globus_gridftp_server_attr_command_add(
+            attr,
+            "NOOP",
+            globus_l_gs_noop_cmd,
+            NULL,
+            GLOBUS_FALSE,
+            GLOBUS_TRUE);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
     res = globus_gridftp_server_attr_command_add(
             attr,
             "MODE",

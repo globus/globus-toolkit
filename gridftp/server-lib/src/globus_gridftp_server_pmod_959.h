@@ -34,6 +34,11 @@ globus_gs_pmod_959_command_add(
     globus_gs_pmod_959_command_func_t       command_func,
     void *                                  user_arg);
 
+globus_result_t
+globus_gs_pmod_959_get_server(
+    globus_gridftp_server_t *               out_server,
+    globus_gs_pmod_959_handle_t             handle);
+
 extern globus_i_gridftp_server_pmod_t       globus_i_gsp_959_proto_mod;
 
 #endif

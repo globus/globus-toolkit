@@ -213,8 +213,6 @@ typedef struct globus_i_gs_command_entry_s
     globus_bool_t                           auth_required;
 
     globus_gridftp_server_cmd_func_t        func;
-
-    globus_gridftp_server_cmd_func_t        parse_cmd;
 } globus_i_gs_cmd_ent_t;
 
 typedef struct globus_i_gs_op_s
