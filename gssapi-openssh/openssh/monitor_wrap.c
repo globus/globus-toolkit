@@ -1059,8 +1059,8 @@ OM_uint32
 mm_gss_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
 {
         Buffer m;
-	OM_uint32 major;
-	int i=0;
+	OM_uint32 major, lmajor, lminor;
+	int i=0, count;
 
 	buffer_init(&m);
 
@@ -1070,13 +1070,14 @@ mm_gss_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
         mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSMECHS,
 				  &m);
         major=buffer_get_int(&m);
-	*mech_set = xmalloc(sizeof(gss_OID_set_desc));
-        (*mech_set)->count=buffer_get_int(&m);
-	(*mech_set)->elements=xmalloc(sizeof(gss_OID_desc)*(*mech_set)->count);
-	for (i=0; i < (*mech_set)->count; i++) {
+	lmajor=gss_create_empty_oid_set(&lminor, mech_set);
+	count=buffer_get_int(&m);
+	for (i=0; i < count; i++) {
+	    gss_OID_desc member_oid;
 	    u_int length;
-	    (*mech_set)->elements[i].elements=buffer_get_string(&m, &length);
-	    (*mech_set)->elements[i].length = length;
+	    member_oid.elements=buffer_get_string(&m, &length);
+	    member_oid.length=length;
+	    lmajor=gss_add_oid_set_member(&lminor, &member_oid, mech_set);
 	}
 
         return(major);
