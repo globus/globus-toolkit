@@ -49,7 +49,7 @@
           static_option=--enable-static-only
         fi
 
-        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh --without-default-path $static_option OPENSSH_GPTMACRO</Build_Step>
+        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh --without-default-path $static_option OPENSSH_GPTMACRO
       </Build_Step>
 
       <Build_Step>
