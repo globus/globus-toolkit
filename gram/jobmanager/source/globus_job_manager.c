@@ -29,6 +29,9 @@ CVS Information:
 #include <fcntl.h>
 #include <stdlib.h>
 
+#include <gssapi.h>
+#include <globus_gss_assist.h>
+
 #include "globus_nexus.h"
 #include "globus_gram_client.h"
 #include "globus_gram_job_manager.h"
@@ -314,12 +317,9 @@ main(int argc,
     char *                 jm_home_dir = NULL;
     char *                 jm_type = NULL;
     char *                 arg_libexecdir = NULL;
-    char *                 tmp_ptr;
     char *                 client_contact_str;
     char *                 my_host;
     unsigned short         my_port;
-    FILE *                 args_fp;
-    globus_byte_t          type;
     globus_byte_t *        ptr;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     globus_nexus_buffer_t               reply_buffer;
@@ -340,6 +340,24 @@ main(int argc,
     globus_l_gram_client_contact_t *    client_contact_node;
 
     globus_result_t                     error;
+	
+	/* gssapi */
+
+	OM_uint32			major_status = 0;
+	OM_uint32			minor_status = 0;
+	int					token_status = 0;
+	gss_ctx_id_t		context_handle = GSS_C_NO_CONTEXT;
+	char				tmp_version[1];
+	
+	char *				jrbuf;
+	size_t				jrbuf_size;
+
+	/* 
+	 * Stdin and stdout point at socket to client
+	 * Make sure no buffering. 
+	 * stderr may also, depending on the option in the grid-services
+	 */
+	setbuf(stdout,NULL);
 
     /* Initialize modules that I use */
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
@@ -597,6 +615,7 @@ main(int argc,
             }
         }
         graml_log_fp = request->jobmanager_log_fp;
+		setbuf(request->jobmanager_log_fp,NULL);
     }
     else
     {
@@ -745,44 +764,127 @@ main(int argc,
     /*
      *  if a test_dat_file has been defined, read data from the file 
      *  instead of from stdin.
+	 *  This is just the data, no length field.
+	 *  DEE We could change this if needed. 
+	 *  In this case, there is not client, and no security
+	 *  context to import.  
      */
+
     if (strlen(test_dat_file) > 0)
     {
-        if ((args_fp = fopen(test_dat_file, "r")) == NULL)
+		int args_fd;
+
+        if ((args_fd = open(test_dat_file, O_RDONLY)) == -1)
         {
             GRAM_UNLOCK;
             grami_fprintf( request->jobmanager_log_fp,
                   "JM: Cannot open test file %s.\n", test_dat_file);
             exit(1);
         }
+		jrbuf_size = lseek(args_fd, 0, SEEK_END);
+		lseek(args_fd, 0, SEEK_SET);
+		if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE) 
+		{
+			grami_fprintf( request->jobmanager_log_fp,
+				"JM: test file to big\n");
+			exit (1);
+		}
+		if (read(args_fd, buffer, jrbuf_size) != jrbuf_size)
+		{
+			grami_fprintf( request->jobmanager_log_fp,
+				"JM: Error reading the test file\n");
+			exit (1);
+		}
+		(void *) close(args_fd);
     }
     else
     {
-         args_fp = stdin;
-    }
+		/*
+		 * Stdin and stdout point at the client socket.
+		 * Gatekeeper has done authentication and authorization
+		 * we will now import security context,
+		 * send version number, then get the job
+	 	 * request buffer using gssapi wrap and unwrap
+		 */
+
+		
+		if (globus_gss_assist_import_sec_context(&minor_status,
+						&context_handle,
+						&token_status,
+						-1,
+						request->jobmanager_log_fp) != GSS_S_COMPLETE)
+		{
+			grami_fprintf( request->jobmanager_log_fp,
+				"JM:Failed to load security context\n");
+			return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+		}
+
+		grami_fprintf(request->jobmanager_log_fp,
+				"JM: context loaded\n");
+
+		/* context loaded */
+		/* Send the version number */
+
+		*tmp_version = GLOBUS_GRAM_PROTOCOL_VERSION;
+        if (globus_gss_assist_wrap_send( &minor_status,
+                                context_handle,
+                                tmp_version,
+                                1,
+                                &token_status,
+                                globus_gss_assist_token_send_fd,
+                                stdout,
+                                request->jobmanager_log_fp)
+						 != GSS_S_COMPLETE)
+		{
+			return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+		}
+
+		grami_fprintf(request->jobmanager_log_fp,"JM: version sent\n");
+
+		/* Get the job request from client as wrapped message */
+
+	    major_status = globus_gss_assist_get_unwrap(&minor_status,
+                        context_handle,
+                        &jrbuf,
+                        &jrbuf_size,
+                        &token_status,
+                        globus_gss_assist_token_get_fd,
+                        stdin,
+                        request->jobmanager_log_fp);
+
+	    if (major_status != GSS_S_COMPLETE)
+		{
+			grami_fprintf(request->jobmanager_log_fp,
+					"JM: get_unwraped failed\n");
+			return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+		}
+
+		grami_fprintf(request->jobmanager_log_fp,
+					"JM: Got wrap size=%ld\n",
+					jrbuf_size);
+
+		if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE)
+		{
+			grami_fprintf( request->jobmanager_log_fp,
+					"JM: Job request to big\n");
+			return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+		}
+
+		/* copy request to buffer so rest of code is not changed much */
+
+		memcpy(buffer, jrbuf, jrbuf_size);
+		free(jrbuf);
+		jrbuf = NULL;
+	}
+
+	ptr = buffer;
 
     /*
      * Read the format incoming message.
      */
-    if (fread(buffer, 1, 1, args_fp) <= 0)
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: failed to read format of message buffer.\n");
-    }
-    format = (int)buffer[0];
+    format = (int)*ptr;
+	ptr++;
 
-    /*
-     * Read the globus gram protocol version number.
-     */
-    if (fread(buffer,
-              1,
-              nexus_dc_sizeof_remote_int(1, format),
-              args_fp) <= 0)
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: failed to read gram protocol version number.\n");
-    }
-    ptr = buffer;
     globus_nexus_user_get_int(&ptr, &gram_version, 1, format);
 
     if (GLOBUS_GRAM_PROTOCOL_VERSION != gram_version)
@@ -804,30 +906,8 @@ main(int argc,
     /*
      * Read the size incoming message.
      */
-    if (fread(buffer,
-              1,
-              nexus_dc_sizeof_remote_int(1, format),
-              args_fp) <= 0)
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: failed to read size of message buffer.\n");
-    }
-    ptr = buffer;
     globus_nexus_user_get_int(&ptr, &count, 1, format);
 
-    /*
-     * Read the remainder of the incoming message.
-     */
-    if (fread(buffer,
-              1,
-              count - nexus_dc_sizeof_remote_int(1, format) + 1,
-              args_fp) <= 0)
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: failed to read the message buffer.\n");
-    }
-
-    ptr = buffer;
     globus_nexus_user_get_int(&ptr, &len, 1, format);
     globus_nexus_user_get_char(&ptr, rsl_spec, len, format);
     *(rsl_spec+len)= '\0';

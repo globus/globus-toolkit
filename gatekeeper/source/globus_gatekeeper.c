@@ -182,7 +182,6 @@ static int      connection_fd;
 
 static FILE *   usrlog_fp;
 static char *   logfile = LOGFILE;
-static FILE *   test_fp;
 static char     test_dat_file[1024];
 static int      gatekeeper_test;
 static int      gatekeeper_uid;
@@ -194,7 +193,6 @@ static int      foreground;
 static int      krb5flag;
 static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
-static char *   gatekeeperlibexec = NULL;
 static char *	job_manager_exe = NULL;
 static char *   jm_conf_path = NULL;
 static char *   libexecdir = GLOBUS_LIBEXECDIR;
@@ -211,8 +209,6 @@ static char *   x509_cert_file = NULL;
 static char *   x509_user_proxy = NULL;
 static char *   x509_user_cert = NULL;
 static char *   x509_user_key = NULL;
-static char **  jmargp;
-static int      jmargc;
 static int      ok_to_send_errmsg = 0;
 static FILE *   fdout;
 
@@ -360,7 +356,6 @@ main(int xargc,
     netlen_t   namelen;
     int    listener_fd;
     struct sockaddr_in name;
-    char fname[256];
 	struct stat         statbuf;
 
     /* GSSAPI status vaiables */
@@ -869,6 +864,9 @@ main(int xargc,
                 defined(CRAY) || \
                 defined(TARGET_ARCH_CYGWIN))
 	    {
+		
+    	char fname[256];
+
 		/* mod here (variable "fname") no longer in use. --milne */
 		sprintf(fname, "/dev/console"); 
 		fd = open (fname, O_RDWR);
@@ -972,7 +970,6 @@ Returns:
 static void doit()
 {
     int                 p1[2];
-    int                 p2[2];
     int                 pid;
     int                 n;
     int                 i;
@@ -980,12 +977,9 @@ static void doit()
     int                 service_gid;
     int                 close_on_exec_read_fd;
     int                 close_on_exec_write_fd;
-    int                 message_read_fd;
-    int                 message_write_fd;
     char                buf[1024];
     char *              s;
     char **             args;
-    char **             argp;
     char *              argnp;
     char *              execp;
 	char **				argi;
@@ -995,8 +989,6 @@ static void doit()
 	char *				service_options[SERVICE_OPTIONS_MAX];
 	int					service_option_local_cred = 0;
 	int					service_option_stderr_log = 0;
-    char *              msg = NULL;
-    size_t              msg_size;
     unsigned char       int_buf[4];
     char                tmp_version[1];
     struct stat         statbuf;
@@ -1154,19 +1146,6 @@ static void doit()
 
 	/* now OK to send wrapped error message */
     ok_to_send_errmsg = 1;
-#if NODEE
-    /* We still have the GSSAPI context setup and could use
-     * some of the other routines, such as get_mic, verify_mic
-     * at this point. But in the gatekeeper we don't.
-     * But we need to do the gss_delete_sec_context
-     * sometime before returning from this module.
-     */
-
-     gss_delete_sec_context(&minor_status,
-            &context_handle,
-            GSS_C_NO_BUFFER);
-
-#endif
 
     /* client_name is the globusID of the client, we need to check 
      * the globusmap file to see which local ID this is and if the
@@ -1426,83 +1405,6 @@ static void doit()
         failure("ERROR: gatekeeper misconfigured");
     }
 
-	/* DEE for compatability today, if this is a jobmanager,
-	 * do what we have always done
-	 * Other wise, leave it up to service to send
-	 * hello or version number 
-	 * This should be part of the job_manager service. 
-	 */
-
-	if (!strcmp(service_name,"jobmanager"))
-	{
-
-	if (jm_conf_path)
-	{
-		grami_setenv("JM_CONF_PATH",jm_conf_path,1);
-	} 
-    /* client will check version # sent here with it's own.  If they match
-     * then the client will continue and send the additional data destined
-     * for the job manager.
-     */
-
-    *tmp_version = GLOBUS_GRAM_PROTOCOL_VERSION;
-
-    major_status = globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
-					tmp_version,
-					1,
-					&token_status,
-        			globus_gss_assist_token_send_fd,
-					fdout,
-					logging_usrlog?usrlog_fp:NULL);
-
-   	if (major_status != GSS_S_COMPLETE)
-   	{
-		failure4("Sending second Version:GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-					major_status,minor_status,token_status);
-	}
-
-	 /* Client will now not be expecting messages */
-    ok_to_send_errmsg = 0;
-
-	/*DEE This should be moved to job manager*/
-
-
-	major_status = globus_gss_assist_get_unwrap(&minor_status,
-				 		context_handle,
-						&msg,
-						&msg_size,
-						&token_status,
-						globus_gss_assist_token_get_fd,
-						stdin,
-						logging_usrlog?usrlog_fp:NULL);
-
-   	if (major_status != GSS_S_COMPLETE)
-   	{
-		failure("Reading jobmanager data\n");
-	}
-
-    if (strlen(test_dat_file) > 0)
-    {
-        /*
-         * Open the testing logfile
-         */
-        if ((test_fp = fopen(test_dat_file, "w")) == NULL)
-        {
-            failure("Cannot open test data file\n");
-        }
-        setbuf(test_fp, NULL);
-
-        /*
-         * Pass the message data on to the test data file
-         */
-        fwrite(msg, 1, msg_size, test_fp);
-        fclose(test_fp);
-
-        return;
-	}
-	} /* if jobmanager for compatability */
-
     /*
      * Start building the arg list. If the -k flag is set, we want
      * to exec GRAM_K5_EXE first, passing it the path and
@@ -1560,13 +1462,6 @@ static void doit()
     }
     close_on_exec_read_fd = p1[0];
     close_on_exec_write_fd = p1[1];
-
-    if (pipe(p2) != 0)
-    {
-	failure2("Cannot create pipe: %s", sys_errlist[errno]);
-    }
-    message_read_fd = p2[0];
-    message_write_fd = p2[1];
 
     if (fcntl(close_on_exec_write_fd, F_SETFD, 1) != 0)
     {
@@ -1652,7 +1547,7 @@ static void doit()
 
 	/* 
 	 * export the security context which will destroy it. 
-	 * This will also destroy the abilitu to wrap any error
+	 * This will also destroy the ability to wrap any error
 	 * messages, so we do this very late. 
 	 * First we get an temp file, open it, and delete it. 
 	 */
@@ -1717,14 +1612,6 @@ static void doit()
     if (pid == 0)
     {
 		close(close_on_exec_read_fd);
-		close(message_write_fd);
-	
-		close(0);
-		dup2(message_read_fd, 0);
-		close(message_read_fd);
-	
-		close(1);
-		open("/dev/null", O_WRONLY);
 	
 		/* stderr is still set to logfile, user's stderr or /dev/null */
 
@@ -1765,7 +1652,6 @@ static void doit()
     }
 
     close(close_on_exec_write_fd);
-    close(message_read_fd);
     
     /*
      * If the read_fd is closed without any data, then the
@@ -1791,20 +1677,7 @@ static void doit()
 
     notice2(0, "Child %d started", pid);
 
-    /*
-     * Pass the message data on to the job manager
-     */
-    if (write(message_write_fd, msg, msg_size) <= 0)
-    {
-	failure("failed to write message to child");
-    }
-    close(message_write_fd);
-    if (ok_to_send_errmsg)
-    {
-	globus_gss_assist_token_send_fd(fdout,"\0",1); /* send ok*/
-    }
     ok_to_send_errmsg = 0;
-
 } /* doit() */  
 
 /******************************************************************************
@@ -1854,7 +1727,6 @@ net_setup_listener(int backlog,
 {
     netlen_t        sinlen;
     struct sockaddr_in sin;
-    struct sockaddr_in from;
 
     *skt = socket(AF_INET, SOCK_STREAM, 0);
     error_check(*skt,"net_setup_anon_listener socket");
@@ -1968,7 +1840,6 @@ static void
 failure(char * s)
 {
 
-	OM_uint32 major_status = 0;
 	OM_uint32 minor_status = 0;
 	int		   token_status = 0;
 
