@@ -2462,7 +2462,7 @@ globus_gass_cache_close(
  * If the URL is not in the cache, and create==GLOBUS_TRUE, then create a new
  * unique empty local cache file, add it to the cache with the specified tag,
  * return the filename in *local_filename, return *timestamp set to
- * GLOBUS_GASS_TIMESTAMP_UNKNOWN, lock the cache entry, and
+ * GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN, lock the cache entry, and
  * return GLOBUS_GASS_CACHE_ADD_NEW.
  *
  * If the URL is not in the cache, and create==GLOBUS_FALSE, then do not
@@ -2674,8 +2674,8 @@ globus_gass_cache_add(
 	   
 	   /* timestamp */
 	   /* for the time being */
-	   new_entry_pt->timestamp = GLOBUS_GASS_TIMESTAMP_UNKNOWN;
-	   *timestamp = GLOBUS_GASS_TIMESTAMP_UNKNOWN;
+	   new_entry_pt->timestamp = GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN;
+	   *timestamp = GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN;
 	   
 	   /* tags */
 	   /* allocate an array of 2 tags (one real, and one "end" indicator */

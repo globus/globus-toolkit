@@ -28,7 +28,6 @@ Description:
 #include <sys/param.h>
 
 #include "globus_common.h"
-#include "globus_gass_common.h"
 
 EXTERN_C_BEGIN
 
@@ -66,6 +65,7 @@ EXTERN_C_BEGIN
 #define GLOBUS_GASS_CACHE_ERROR_NO_SPACE	       -21
 #define GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED         -22
 
+#define GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN 0UL
 
 #if !defined(PATH_MAX) && defined(MAXPATHLEN)
 #   define PATH_MAX MAXPATHLEN
