@@ -273,16 +273,14 @@ sub cancel
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $status;
     my $job_id = $description->jobid();
     my $count = 0;
 
     $self->log("cancel job " . $description->jobid());
 
-    $status = new IO::File("$condor_rm $job_id 2> /dev/null|");
-    $result = (split(/\./, <$status>))[0];
+    $self->log(`$condor_rm $job_id 2>&1`);
 
-    if($result eq 'Deleted ' . $description->jobid())
+    if($? == 0)
     {
 	return { JOB_STATE => Globus::GRAM::JobState::FAILED };
     }
