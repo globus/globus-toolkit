@@ -898,3 +898,88 @@ globus_i_io_initialize_handle(
     
     return GLOBUS_SUCCESS;
 }
+
+
+#ifndef TARGET_ARCH_WIN32
+/**
+ * Set or clear the close-on-exec flag for a handle.
+ *
+ * This function is used to modify the close-on-exec flag for an
+ * I/O handle.
+ *
+ * @param handle
+ *	  the handle passed to the blocking call
+ * @param value
+ *        The new value of the close-on-exec flag.
+ */
+globus_result_t
+globus_io_set_close_on_exec(
+    globus_io_handle_t *                handle,
+    globus_bool_t                       value)
+{
+    int                                 rc;
+    int                                 save_errno;
+    globus_object_t *                   err;
+    static char *                       myname="globus_io_set_close_on_exec";
+
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            "handle",
+            1,
+            myname);
+        
+        return globus_error_put(err);
+    }
+    
+    globus_i_io_mutex_lock();
+    
+    switch(handle->state)
+    {
+      case GLOBUS_IO_HANDLE_STATE_CLOSING:
+        err = globus_io_error_construct_close_already_registered(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            handle);
+        
+        goto error_exit;
+      case GLOBUS_IO_HANDLE_STATE_INVALID:
+      default:
+        err = globus_io_error_construct_not_initialized(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            "handle",
+            1,
+            myname);
+
+        goto error_exit;
+    }
+
+    while ((rc = fcntl(handle->fd, F_SETFD, (value ? FD_CLOEXEC : 0))) < 0)
+    {
+        save_errno = errno;
+
+        if (errno != EINTR)
+        {
+            err = globus_io_error_construct_system_failure(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle,
+                    save_errno);
+
+            goto error_exit;
+        }
+    }
+
+    globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    globus_i_io_mutex_unlock();
+    return globus_error_put(err);
+}
+#endif /* TARGET_ARCH_WIN32 */
+/* globus_io_set_close_on_exec() */

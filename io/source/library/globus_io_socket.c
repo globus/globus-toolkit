@@ -42,7 +42,7 @@ globus_i_io_setup_socket(
     globus_object_t *			err = GLOBUS_NULL;
     int					one = 1;
     int					save_errno;
-    
+
     if(handle->socket_attr.reuseaddr != GLOBUS_FALSE)
     {
 #ifndef TARGET_ARCH_WIN32

@@ -3247,6 +3247,8 @@ globus_l_io_activate(void)
 #ifdef TARGET_ARCH_WIN32
 	WORD wVersionRequested;
 	WSADATA wsaData;
+#else
+    int                                 save_errno;
 #endif
 
     /* In the pre-activation of the thread module, we
@@ -3448,6 +3450,25 @@ globus_l_io_activate(void)
         rc = -1;
         goto unlock_and_abort;
     }
+
+    while ((rc = fcntl(globus_l_io_wakeup_pipe[0], F_SETFD, FD_CLOEXEC)) < 0)
+    {
+	save_errno = errno;
+	if(save_errno != EINTR)
+	{
+	    goto unlock_and_abort;
+	}
+    }
+    while ((rc = fcntl(globus_l_io_wakeup_pipe[1], F_SETFD, FD_CLOEXEC)) < 0)
+    {
+	save_errno = errno;
+	if(save_errno != EINTR)
+	{
+            rc = -1;
+	    goto unlock_and_abort;
+	}
+    }
+
     rc = globus_l_io_internal_handle_create(globus_l_io_wakeup_pipe[0],
 					    &globus_l_io_wakeup_pipe_handle);
     if(rc != 0)
@@ -3847,6 +3868,17 @@ globus_i_io_setup_nonblocking(
 	}
 	return GLOBUS_SUCCESS;
 #else
+
+    while ((flags = fcntl(handle->fd,
+		       F_SETFD,
+		       FD_CLOEXEC)) < 0)
+    {
+	save_errno = errno;
+	if(save_errno != EINTR)
+	{
+	    goto error_exit;
+	}
+    }
 
     while ((flags = fcntl(handle->fd,
 		       F_GETFL,

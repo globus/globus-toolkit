@@ -1640,6 +1640,14 @@ globus_io_attr_get_secure_proxy_mode(
 globus_bool_t
 globus_io_eof(
     globus_object_t *			eof);
+
+#ifndef TARGET_ARCH_WIN32
+globus_result_t
+globus_io_set_close_on_exec(
+    globus_io_handle_t *                handle,
+    globus_bool_t                       value);
+#endif
+
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL

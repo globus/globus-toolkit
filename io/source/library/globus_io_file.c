@@ -142,8 +142,26 @@ globus_io_file_open(
 			errno));
 	    handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
 	}
-	else
+        else
 	{
+            while ((flags = fcntl(fd, F_SETFD, FD_CLOEXEC)) < 0)
+            {
+                int save_errno = errno;
+                if(save_errno != EINTR)
+                {
+                    rc = globus_error_put(
+                            globus_io_error_construct_system_failure(
+                                GLOBUS_IO_MODULE,
+                                GLOBUS_NULL,
+                                handle,
+                                errno));
+                    handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
+                    close(fd);
+                    goto error_exit;
+
+                }
+            }
+
 	    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
 	}
 	handle->fd = fd;
@@ -179,6 +197,7 @@ globus_io_file_open(
 	}
 #endif /* TARGET_ARCH_WIN32 */
     }
+error_exit:
     globus_i_io_mutex_unlock();
 
     globus_i_io_debug_printf(3, (stderr, "%s(): exiting\n", myname));
