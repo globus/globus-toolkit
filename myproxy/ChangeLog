@@ -1,4 +1,8 @@
 2000-10-03  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* ssl_utils.c: Fixes for openssl build with PEM callback
+	differences (openssl has a user data parameter while ssleay does
+	not).
+
 	* ChangeLog: Created after 0.2alpha1 release
 
