@@ -79,8 +79,11 @@ main(
         }
         else
         {
+            int                         len;
+            
+            len = strlen(line);
             res = globus_xio_write(
-                xio_handle, line, LINE_LEN, LINE_LEN, &nbytes, NULL);
+                xio_handle, line, len, len, &nbytes, NULL);
             test_res(res);
         }
     }
