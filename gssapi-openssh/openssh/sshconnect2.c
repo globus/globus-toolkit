@@ -496,16 +496,15 @@ input_userauth_pk_ok(int type, u_int32_t seq, void *ctxt)
 int 
 userauth_gssapi(Authctxt *authctxt)
 {
-	int i;
 	Gssctxt *gssctxt;
-	static int tries=0;
-
-	/* For now, we only make one attempt at this. We could try offering
-	 * the server different GSSAPI OIDs until we get bored, I suppose.
-	 */	
-	if (tries++>0) return 0;
+	static int mech=0;
 
 	if (datafellows & SSH_OLD_GSSAPI) return 0;
+	
+	/* Try each mechanism in turn.  Give up if we've tried all
+	   supported mechanisms.
+	 */
+	if (mech==GSS_LAST_ENTRY) return 0;
 	
 	/* Initialise as much of our context as we can, so failures can be
 	 * trapped before sending any packets.
@@ -536,17 +535,19 @@ userauth_gssapi(Authctxt *authctxt)
 	 * This may not be the case - we should use something along
 	 * the lines of the code in gss_genr to remove the ones that
 	 * aren't supported */
-	packet_put_int(GSS_LAST_ENTRY);
-	for (i=0;i<GSS_LAST_ENTRY;i++) {
-		packet_put_string(supported_mechs[i].oid.elements,
-			  	  supported_mechs[i].oid.length);
-	}
+
+	/* Try one GSSAPI mechanism at a time. */
+	packet_put_int(1);
+	packet_put_string(supported_mechs[mech].oid.elements,
+			  supported_mechs[mech].oid.length);
         packet_send();
         packet_write_wait();
 
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE,&input_gssapi_response);
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,&input_gssapi_token);
 	
+	mech++;			/* Move to next mechanism for next time. */
+
         return 1;
 }
 
@@ -598,7 +599,7 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 	u_int slen;
 	
 	if (authctxt == NULL)
-		fatal("input_gssapi_response: no authentication context");
+		fatal("input_gssapi_token: no authentication context");
 	gssctxt = authctxt->methoddata;
 	
 	recv_tok.value=packet_get_string(&slen);
