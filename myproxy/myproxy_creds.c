@@ -564,13 +564,14 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
     int dst_flags = O_WRONLY | O_CREAT | O_TRUNC;
     mode_t data_file_mode = FILE_MODE;
     char creds_path[MAXPATHLEN];
-    char data_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN]; //+4 to add a suffix 
     SQLHENV    henv;
     SQLHDBC    hdbc;
     SQLHSTMT   hstmt;
     SQLRETURN   rc;
     int cred_length;
     int return_code = -1;
+    char *tmp_data_file;
 
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
@@ -618,8 +619,9 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
  
    /* Copy credential to file */
 
+    printf ("opening %s for writing ..", data_path);
     dst_fd = open(data_path, dst_flags, data_file_mode);
-    
+   
     if (dst_fd == -1)
     {
         verror_put_errno(errno);
@@ -1211,7 +1213,6 @@ int write_to_database()
     if (myconnect(&henv,&hdbc,&hstmt) < 0)
 	return retcode;
 
-    mydsn = strdup (dbase_name); //set dsn to actual database
     /* 
      * initialize table
     */
@@ -1553,9 +1554,76 @@ myproxy_creds_is_owner(const char		*username,
     return return_code;
 }
 
+int my_delete (SQLHDBC hdbc, SQLHSTMT hstmt)
+{
+  SQLRETURN   rc;
+
+  rc = SQLPrepare(hstmt,"DELETE FROM main where cred_name = ?", SQL_NTS);
+  mystmt(hstmt,rc);
+
+  rc = SQLBindParameter (hstmt,1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.credname, \
+  			 strlen (mydbase.credname), NULL);
+  mystmt (hstmt, rc);
+
+  rc = SQLExecute (hstmt);
+  mystmt (hstmt, rc);
+
+  /* Free statement param resorces */
+  rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+  mystmt(hstmt,rc);
+
+  /* Free statement cursor resorces */
+  rc = SQLFreeStmt(hstmt, SQL_CLOSE);
+  mystmt(hstmt,rc);
+
+  /* commit the transaction */
+  rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+  mycon(hdbc,rc);
+
+  return 0;
+}
+   
+/*
+	Delete credential
+*/
 int
 myproxy_creds_delete(const struct myproxy_creds *creds)
 {
+  SQLHENV    henv;
+  SQLHDBC    hdbc;
+  SQLHSTMT   hstmt;
+  SQLINTEGER narg;
+  int retcode = -1;
+
+  mydsn = strdup (dbase_name); // connect to default database
+  myuid = strdup ("root");
+  mypwd = strdup ("");
+
+  mydbase.credname = strdup (creds->credname); 
+   /*
+    * connect to MySQL server
+    */ 
+    if (myconnect(&henv,&hdbc,&hstmt) < 0)
+	return retcode;
+
+    /*
+     * delete credential
+    */
+    if (my_delete(hdbc, hstmt) < 0)
+	goto error;
+
+	retcode = 0;
+    /*
+     * disconnect from the server, by freeing all resources
+    */
+    error:
+    mydisconnect(&henv,&hdbc,&hstmt);
+
+   return retcode;
+
+}
+
+#ifdef TO_BE_REMOVED
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
     struct myproxy_creds tmp_creds;
@@ -1601,6 +1669,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
   error:
     return return_code;
 }
+#endif
 
 int
 myproxy_creds_info(struct myproxy_creds *creds, char **records)

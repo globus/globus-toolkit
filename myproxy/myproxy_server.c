@@ -242,6 +242,7 @@ main(int argc, char *argv[])
     if (!server_context->run_as_daemon) 
     {
        myproxy_log(DBG_IN, debug_level, "Connection from %s", inet_ntoa(client_addr.sin_addr));
+	printf ("Connected:\n");
        socket_attrs->socket_fd = fileno(stdin);
        if (handle_client(socket_attrs, server_context) < 0) {
 	  my_failure("error in handle_client()");
@@ -317,6 +318,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     myproxy_request_t *client_request;
     myproxy_response_t *server_response;
 
+    printf ("Entered handle_client:");
     client_creds    = malloc(sizeof(*client_creds));
     memset(client_creds, 0, sizeof(*client_creds));
 
@@ -944,7 +946,7 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
         strcat(response->error_string, "Unable to delete credential.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	response->response_string = strdup ("OK");
+	response->response_string = strdup ("Credential successfully deleted");
     }
  
 }
