@@ -3571,9 +3571,6 @@ globus_l_gass_copy_write_from_queue(
                 }
             }
 
-	    globus_l_gass_copy_state_free(handle->state);
-	    handle->state = GLOBUS_NULL;
-
     #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    if(handle->state == GLOBUS_NULL)
 		globus_libc_fprintf(stderr, "  handle->state == GLOBUS_NULL\n");
@@ -3599,8 +3596,11 @@ globus_l_gass_copy_write_from_queue(
             
             callback = handle->user_callback;
             handle->user_callback = GLOBUS_NULL;
-
+            handle->state = GLOBUS_NULL;
+            
             globus_mutex_unlock(&state->mutex);
+            
+            globus_l_gass_copy_state_free(state);
             
             if(callback != GLOBUS_NULL)
             {
