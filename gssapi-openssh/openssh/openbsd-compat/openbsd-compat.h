@@ -138,8 +138,9 @@ unsigned int arc4random(void);
 void arc4random_stir(void);
 #endif /* !HAVE_ARC4RANDOM */
 
-
-
+#ifndef HAVE_OPENPTY
+int openpty(int *, int *, char *, struct termios *, struct winsize *);
+#endif /* HAVE_OPENPTY */
 
 /* #include <sys/types.h> XXX needed? For size_t */
 
