@@ -5122,6 +5122,14 @@ globus_ftp_control_data_write_stripe(
                   myname);
         return globus_error_put(err);
     }
+    if(dc_handle->transfer_handle == GLOBUS_NULL)
+    {
+        err = globus_error_construct_string(
+                      GLOBUS_FTP_CONTROL_MODULE,
+                      GLOBUS_NULL,
+                "Handle not in the proper state");
+        return globus_error_put(err);
+    }
 
     globus_mutex_lock(&dc_handle->mutex);
     {
