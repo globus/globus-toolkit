@@ -1050,7 +1050,7 @@ globus_l_gsc_cmd_opts(
         {
             opts->pasv_max = tmp_i;
         }
-        else if(sscanf(cmd_a[2], "ParsingAlgrythm=%d", &tmp_i) == 1)
+        else if(sscanf(cmd_a[2], "ParsingAlgorithm=%d", &tmp_i) == 1)
         {
             if(tmp_i == 0 || tmp_i == 1)
             {

@@ -185,7 +185,7 @@ globus_l_gsc_activate()
     {
         return GLOBUS_FAILURE;
     }
-    res = globus_xio_driver_load("ftp_cmd", &globus_l_gsc_ftp_cmd_driver);
+    res = globus_xio_driver_load("telnet", &globus_l_gsc_ftp_cmd_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -752,8 +752,6 @@ globus_l_gsc_finished_op(
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             globus_i_gsc_op_destroy(op);
             server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
-            server_handle->ref--;
-            globus_l_gsc_server_ref_check(server_handle);
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
@@ -2176,10 +2174,16 @@ globus_i_gsc_intermediate_reply(
 {
     globus_l_gsc_reply_ent_t *          reply_ent;
     globus_i_gsc_server_handle_t *      server_handle;
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     char *                              msg_cpy;
+    GlobusGridFTPServerName(globus_i_gsc_intermediate_reply);
 
     server_handle = op->server_handle;
+
+    if(server_handle->state != GLOBUS_L_GSC_STATE_PROCESSING)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
 
     if(server_handle->reply_outstanding)
     {
@@ -3462,6 +3466,7 @@ globus_gridftp_server_control_finished_passive_connect(
         op->cs[ctr] = globus_libc_strdup(cs[ctr]);
     }
     op->cs[ctr] = NULL;
+    op->max_cs = cs_count;
     op->res = res;
 
     globus_mutex_lock(&op->server_handle->mutex);
