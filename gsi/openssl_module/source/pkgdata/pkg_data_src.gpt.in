@@ -16,7 +16,7 @@
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
-      <Dependency Name="globus_common" Package="pgm"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_common"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
@@ -26,7 +26,7 @@
       <cflags>@GPT_CFLAGS@</cflags>
       <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-      <pkg_libs>-lglobus_openssl_module</pkg_libs>
+      <pkg_libs>-lglobus_openssl</pkg_libs>
     </Build_Environment>
 
   </src_pkg>
