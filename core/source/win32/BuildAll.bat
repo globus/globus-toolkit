@@ -48,29 +48,29 @@ echo .
 echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtdthr)
 echo .
 WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 14.2
-call WinCVSBuildLibs
-call WinCVSBuildExes
+call WinCVSBuildLibs-win32dbgmtdthr.bat
+call WinCVSBuildExes-win32dbgmtdthr.bat
 
 echo .
 echo . Create And Execute Build For Static Release Threaded Libraries (win32relmtthr)
 echo .
 WinCVSBuild.pl %GlobusLocation% win32relmtthr 14.2
-call WinCVSBuildLibs
-call WinCVSBuildExes
+call WinCVSBuildLibs-win32relmtthr.bat
+call WinCVSBuildExes-win32relmtthr.bat
 
 echo .
 echo . Create And Execute Build For Dynamic Debug Threaded Libraries (win32dbgmddthr)
 echo .
 WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 14.2
-call WinCVSBuildLibs
-call WinCVSBuildExes
+call WinCVSBuildLibs-win32dbgmddthr.bat
+call WinCVSBuildExes-win32dbgmddthr.bat
 
 echo .
 echo . Create And Execute Build For Dynamic Release Threaded Libraries (win32relmdthr)
 echo .
 WinCVSBuild.pl %GlobusLocation% win32relmdthr 14.2
-call WinCVSBuildLibs
-call WinCVSBuildExes
+call WinCVSBuildLibs-win32relmdthr.bat
+call WinCVSBuildExes-win32relmdthr.bat
 
 echo .
 echo . Put A Closing Time Stamp In BuildResults.log
