@@ -1,0 +1,143 @@
+#! /usr/bin/env perl
+
+BEGIN
+{
+    push(@INC, $ENV{GLOBUS_LOCATION}. '/lib/perl');
+}
+
+use Globus::GRAM::Error;
+use IO::File;
+use Test;
+use File::Path;
+use File::Compare;
+
+my (@tests, @todo) = ();
+my $contact = $ENV{CONTACT_STRING};
+my $testtmp = &make_tmpdir();
+my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $verbose = 0;
+
+die if $contact eq '';
+
+my @test_cases=qw(
+    tiny small medium large huge
+);
+
+my @todo_cases=qw(
+);
+
+sub test_rsl
+{
+    my $testname = shift;
+    my $testrsl = "$testdatadir/$testname.rsl";
+    my $testrc  = "$testdatadir/$testname.rc";
+    my $testout = "$testtmp/$testname.out";
+    my $testerr = "$testtmp/$testname.err";
+    my $testrcfile = new IO::File("<$testrc");
+    my $expectedrc = <$testrcfile>;
+
+    $testrcfile->close();
+
+    if($verbose)
+    {
+	print "# Submitting job $testdatadir/$testname.rsl\n";
+    }
+
+    system("globusrun -s -r \"$contact\" -f \"$testdatadir/$testname.rsl\" >$testout 2>$testerr");
+
+    $rc = (($? >> 8) != $expectedrc) ||
+          File::Compare::compare("$testdatadir/$testname.out", $testout) ||
+	  File::Compare::compare("$testdatadir/$testname.err", $testerr);
+
+    ok("$testname:$rc", "$testname:0");
+}
+
+foreach(@test_cases)
+{
+    push(@tests, "test_rsl(\"$_\");");
+}
+
+
+if(@ARGV)
+{
+    my @doit;
+
+    $verbose = 1;
+
+
+    foreach(@ARGV)
+    {
+        if(/^(\d+)-(\d+)$/)
+        {
+            foreach($1 .. $2)
+            {
+               push(@doit, $_);
+            }
+        }
+        elsif(/^(\d+)$/)
+        {
+            push(@doit, $1);
+        }
+    }
+    plan tests => scalar(@doit);
+
+    foreach (@doit)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+	eval "&$_";
+    }
+}
+
+sub make_tmpdir
+{
+    my $root;
+    my $suffix = '/gram_jobmanager_test_';
+    my $created = 0;
+    my $tmpname;
+    my @acceptable = split(//, "abcdefghijklmnopqrstuvwxyz".
+			       "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
+			       "0123456789");
+    if(exists($ENV{TMPDIR}))
+    {
+	$root = $ENV{TMPDIR};
+    }
+    else
+    {
+	$root = '/tmp';
+    }
+    while($created == 0)
+    {
+	$tmpname = $root . $suffix .
+	           $acceptable[rand() * $#acceptable] .
+	           $acceptable[rand() * $#acceptable] .
+	           $acceptable[rand() * $#acceptable] .
+	           $acceptable[rand() * $#acceptable] .
+	           $acceptable[rand() * $#acceptable] .
+	           $acceptable[rand() * $#acceptable];
+	$created = mkdir($tmpname, 0700);
+	if($created)
+	{
+	    if(-l $tmpname or ! -d $tmpname or ! -o $tmpname)
+	    {
+		$created = 0;
+	    }
+	}
+    }
+    return $tmpname;
+}
+
+END
+{
+    if(-d $testtmp and -o $testtmp)
+    {
+	File::Path::rmtree($testtmp);
+    }
+}
