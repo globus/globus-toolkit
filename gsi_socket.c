@@ -25,7 +25,6 @@
 struct _gsi_socket 
 {
     int				sock;
-    int				encryption;	/* Boolean */
     int				allow_anonymous; /* Boolean */
     /* All these variables together indicate the last error we saw */
     char			*error_string;
@@ -576,21 +575,6 @@ GSI_SOCKET_clear_error(GSI_SOCKET *self)
 
 
 int
-GSI_SOCKET_set_encryption(GSI_SOCKET *self,
-			  const int value)
-{
-    if (self == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    self->encryption = value;
-
-    return GSI_SOCKET_SUCCESS;
-}
-
-
-int
 GSI_SOCKET_allow_anonymous(GSI_SOCKET *self, const int value)
 {
     if (self == NULL)
@@ -744,9 +728,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	
     req_flags |= GSS_C_REPLAY_FLAG;
     req_flags |= GSS_C_MUTUAL_FLAG;
-    if (self->encryption) {
-      req_flags |= GSS_C_CONF_FLAG;
-    }
+    req_flags |= GSS_C_CONF_FLAG;
     req_flags |= GSS_C_INTEG_FLAG;
 
     self->major_status =
@@ -942,7 +924,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	
 	self->major_status = gss_wrap(&self->minor_status,
 				      self->gss_context,
-				      self->encryption,
+				      1 /* encrypt */,
 				      GSS_C_QOP_DEFAULT,
 				      &unwrapped_buffer,
 				      &conf_state,
@@ -953,7 +935,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	    goto error;
 	}
 	
-	if (self->encryption && !conf_state) {
+	if (!conf_state) {
 	  self->error_string = strdup("GSI_SOCKET failed to encrypt");
 	  goto error;
 	}
