@@ -16,6 +16,7 @@ my $contact;
     globus-gram-client-register-test.pl
     globus-gram-client-register-callback-test.pl
     globus-gram-client-ping-test.pl
+    globus-gram-client-status-test.pl
 );
 if(0 != system("grid-proxy-info -exists -hours 2") / 255)
 {

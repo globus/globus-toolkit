@@ -53,7 +53,7 @@ sub register_callback_test
     }
 }
 push(@tests, "register_callback_test('$ENV{CONTACT_STRING}', 1, 0);");
-push(@tests, "register_callback_test('$ENV{CONTACT_STRING}X', 1, 10);");
+push(@tests, "register_callback_test('$ENV{CONTACT_STRING}X', 1, 7);");
 push(@tests, "register_callback_test('$ENV{CONTACT_STRING}', 2, 0);");
 push(@tests, "register_callback_test('$ENV{CONTACT_STRING}', 3, 0);");
 
