@@ -11,9 +11,6 @@
 #if !defined(SSLUTILS_H)
 #define SSLUTILS_H
 
-#include <stdio.h>		/* ssl.h seems to require it: yuk! */
-#include <ssl.h>
-
 #if SSLEAY_VERSION_NUMBER <0x00904100L
 #define STACK_OF(A) STACK
 #endif
@@ -41,8 +38,16 @@
 #if GSI_NEW > 1
     /* Globus v. 2.0 */
 #  include <sslutils.h>
+#  include <openssl/x509.h>
+#  include <openssl/x509v3.h>
 #else
    /* not Globus 2.0 */
+
+#  include <ssl.h>
+#  include <x509.h>
+#  if SSLEAY_VERSION_NUMBER >= 0x0090581fL
+#    include <x509v3.h>
+#  endif
 
 #  ifdef GSI_NEW
    /* Standalone GSI version 1.1.3a (beta) */
