@@ -774,6 +774,9 @@ AC_CHECK_FUNCS(\
 
 AC_SEARCH_LIBS(nanosleep, rt posix4, AC_DEFINE(HAVE_NANOSLEEP))
 
+dnl IRIX has basename() in libgen
+AC_SEARCH_LIBS(basename, gen, AC_DEFINE(HAVE_BASENAME))
+
 dnl Make sure strsep prototype is defined before defining HAVE_STRSEP
 AC_CHECK_DECL(strsep, [AC_CHECK_FUNCS(strsep)])
 
