@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.42 $)
+AC_REVISION($Revision: 1.43 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -122,7 +122,6 @@ LAC_DOXYGEN([" ../ "])
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
-	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	Makefile
