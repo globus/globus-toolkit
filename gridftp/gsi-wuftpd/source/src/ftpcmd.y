@@ -292,9 +292,9 @@ cmd: USER SP username CRLF
                     {
                         globus_result_t                   res = GLOBUS_SUCCESS;
                         globus_ftp_control_host_port_t    host_port;
-                        char *                            a;
+                        unsigned char *                   a;
 
-                        a = (char *)&cliaddr;
+                        a = (unsigned char *)&cliaddr;
                         host_port.host[0] = (int)a[0];
                         host_port.host[1] = (int)a[1];
                         host_port.host[2] = (int)a[2];
