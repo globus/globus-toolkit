@@ -852,6 +852,8 @@ globus_gass_copy_get_performance(
 
     perf_info->bytes_transfered=0;
     perf_info->transfer_rate=0;
+    perf_info->source_url[0]='\0';
+    perf_info->dest_url[0]='\0';
 
     switch(handle->status)
     {
@@ -878,12 +880,7 @@ globus_gass_copy_get_performance(
             break;
     }
 
-    if(handle->state == GLOBUS_NULL)
-    {
-        perf_info->bytes_transfered=0;
-        perf_info->transfer_rate=0;
-    }
-    else
+    if(handle->state != GLOBUS_NULL)
     {
         double current_timestamp;
         current_timestamp = globus_libc_wallclock();
@@ -895,6 +892,15 @@ globus_gass_copy_get_performance(
         {
             perf_info->bytes_transfered=handle->state->dest.n_bytes_transfered;
             perf_info->transfer_rate=handle->state->transfer_rate;
+        }
+
+        if(handle->state->source.url != GLOBUS_NULL)
+        {
+            strcpy(perf_info->source_url, handle->state->source.url);
+        }
+        if(handle->state->dest.url != GLOBUS_NULL)
+        {
+            strcpy(perf_info->dest_url, handle->state->dest.url);
         }
     }
 
