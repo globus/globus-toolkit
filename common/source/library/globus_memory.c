@@ -77,7 +77,7 @@ globus_memory_init(
     int                                         pad;
     struct globus_memory_s *                    s_mem_info;
 
-    pad = I_ALIGN_SIZE - (node_size % I_ALIGN_SIZE);
+    pad = (I_ALIGN_SIZE - (node_size % I_ALIGN_SIZE)) % I_ALIGN_SIZE;
 
     assert(mem_info != GLOBUS_NULL);
     s_mem_info = (struct globus_memory_s *)globus_malloc(sizeof(struct globus_memory_s));
@@ -246,7 +246,8 @@ globus_memory_destroy(
         }
     }
     globus_mutex_unlock(&s_mem_info->lock);
-
+    
+    globus_free(s_mem_info->free_ptrs);
     globus_mutex_destroy(&s_mem_info->lock);
     globus_free(s_mem_info);
     *mem_info = GLOBUS_NULL;
