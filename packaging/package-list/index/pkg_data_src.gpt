@@ -23,6 +23,7 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="aggregator"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="mds-db"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
