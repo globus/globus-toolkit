@@ -382,6 +382,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_creds->user_name   = strdup(client_request->username);
     client_creds->pass_phrase = strdup(client_request->passphrase);
 
+    /* All authorization checking happens here. */
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
        myproxy_log("authorization failed");
@@ -397,10 +398,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	/* log request type */
         myproxy_log("Received GET request from %s", client_name);
 
-	/* Check that passphrase matches and that creds. can be retrieved */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
-	    myproxy_log_verror();
-	    respond_with_error_and_die(attrs, "Unable to retrieve credentials.\n");
+	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
 	myproxy_debug("  Username is \"%s\"", client_request->username);
@@ -878,6 +877,24 @@ become_daemon(myproxy_server_context_t *context)
     return 0;
 }
 
+/* Check authorization for all incoming requests.  The authorization
+ * rules are as follows.
+ * GET:
+ *   Only allowed_services can GET a proxy.
+ *   The client must pass a second authorization check:
+ *     In get_client_authdata(), if the client didn't supply a passphrase,
+ *     the server requests a second X509 authentication from the client.
+ *     Then, authorization for the credentials is checked, using the
+ *     passphrase or second X509 identity, in authorization_check() in
+ *     myproxy_authorization.c.  Either the passphrase must match or
+ *     the X509 subjects must match.
+ * PUT:
+ *   Only allowed_clients can PUT a proxy.
+ *   If credentials already exist for the username, the client must own them.
+ * DESTROY:
+ *   Only allowed_clients can DESTROY a proxy.
+ *   The client must own the credentials to destroy them.
+ */
 static int
 myproxy_authorize_accept(myproxy_server_context_t *context,
                          myproxy_socket_attrs_t *attrs,
