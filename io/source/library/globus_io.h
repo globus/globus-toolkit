@@ -684,9 +684,9 @@ typedef struct
     gss_cred_id_t				credential;
     globus_bool_t				internal_credential;
     char *					authorized_identity;
-    globus_io_secure_authorization_callback_t
-						auth_callback;
+    globus_io_secure_authorization_callback_t   auth_callback;
     void *					auth_callback_arg;
+    gss_OID_set                                 extension_oids;
 } globus_i_io_securesocketattr_instance_t;
 #endif
 
@@ -1510,6 +1510,15 @@ globus_io_attr_get_secure_authorization_mode(
 					mode,
     globus_io_secure_authorization_data_t *
 					data);
+globus_result_t
+globus_io_attr_set_secure_extension_oids(
+    globus_io_attr_t *			attr,
+    gss_OID_set                         extension_oids);
+
+globus_result_t
+globus_io_attr_get_secure_extension_oids(
+    globus_io_attr_t *			attr,
+    gss_OID_set *                       extension_oids);
 
 globus_result_t
 globus_io_secure_authorization_data_initialize(

@@ -292,6 +292,10 @@ globus_i_io_securesocket_register_accept(
 {
     globus_i_io_callback_info_t *	info;
     globus_io_authentication_info_t *	accept_info;
+    OM_uint32			        maj_stat;
+    OM_uint32			        min_stat;
+    globus_object_t *		        err;
+    globus_reltime_t                    delay_time;
     
     info = (globus_i_io_callback_info_t *)
 	globus_malloc(sizeof(globus_i_io_callback_info_t));
@@ -301,11 +305,6 @@ globus_i_io_securesocket_register_accept(
 
     if(handle->securesocket_attr.credential == GSS_C_NO_CREDENTIAL)
     {
-	OM_uint32			maj_stat;
-	OM_uint32			min_stat;
-	globus_object_t *		err;
-        globus_reltime_t                delay_time;
-	
 	maj_stat = globus_gss_assist_acquire_cred(
 	    &min_stat,
 	    GSS_C_ACCEPT,
@@ -333,6 +332,44 @@ globus_i_io_securesocket_register_accept(
 	}
     }
 
+    /* if we're willing to accept extensions set the correct option */
+
+    if(handle->securesocket_attr.extension_oids != GSS_C_NO_OID_SET)
+    {
+        gss_buffer_desc                 oid_buffer;
+        
+        oid_buffer.value = (void *) handle->securesocket_attr.extension_oids;
+        oid_buffer.length = 1;
+        
+        maj_stat = gss_set_sec_context_option(
+            &min_stat,
+            &handle->context,
+            (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
+            &oid_buffer);
+
+        if(maj_stat != GSS_S_COMPLETE)
+	{
+	    err = globus_io_error_construct_authentication_failed(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		handle,
+		(int) maj_stat,
+		(int) min_stat,
+		0);
+
+	    info->err = err;
+            GlobusTimeReltimeSet(delay_time, 0, 0);
+            globus_callback_register_oneshot(
+		GLOBUS_NULL /* callback handle */,
+		&delay_time,
+		globus_l_io_oneshot_auth_callback,
+		(void *) info,
+		GLOBUS_NULL /* wakeup func */,
+		GLOBUS_NULL /* wakeup arg */);
+	    return GLOBUS_SUCCESS;
+	}
+    }
+    
     accept_info = (globus_io_authentication_info_t *)
 	globus_malloc(sizeof(globus_io_authentication_info_t));
 
@@ -497,144 +534,169 @@ globus_i_io_securesocket_register_connect_callback(
         flags |= GSS_C_CONF_FLAG;
         break;
     }
+
+    if(handle->securesocket_attr.credential == GSS_C_NO_CREDENTIAL)
+    {
+        maj_stat = globus_gss_assist_acquire_cred(
+            &min_stat,
+            GSS_C_INITIATE,
+            &handle->securesocket_attr.credential);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            
+            err = globus_io_error_construct_no_credentials(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                (int) maj_stat,
+                (int) min_stat,
+                0);
+            goto error_exit;
+        }
+    }
     
     switch(handle->securesocket_attr.authorization_mode)
     {
-      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST:
+    case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST:
+    {
+        struct sockaddr_in         addr;
+        struct hostent             host;
+        struct hostent *           hp;
+        char                       buf[4096];
+        globus_netlen_t            namelen = sizeof(addr);
+        int                        rc;
+        int                        save_errno;
+        int                        herror;
+        
+        rc = getpeername(handle->fd,
+                         (struct sockaddr *) &addr,
+                         &namelen);
+        if(rc != 0)
         {
-            struct sockaddr_in         addr;
-            struct hostent             host;
-            struct hostent *           hp;
-            char                       buf[4096];
-            globus_netlen_t            namelen = sizeof(addr);
-            int                        rc;
-	    int                        save_errno;
-	    int                        herror;
-
-            rc = getpeername(handle->fd,
-				(struct sockaddr *) &addr,
-				&namelen);
+            save_errno = errno;
+            err = globus_io_error_construct_system_failure(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                save_errno);
+            goto error_exit;
+        }
+        
+        if(ntohl(addr.sin_addr.s_addr) == INADDR_LOOPBACK)
+        {
+            rc = globus_libc_gethostname(buf, 4096);
+            
             if(rc != 0)
             {
                 save_errno = errno;
-		err = globus_io_error_construct_system_failure(
-		            GLOBUS_IO_MODULE,
-			    GLOBUS_NULL,
-			    handle,
-			    save_errno);
+                err = globus_io_error_construct_system_failure(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle,
+                    save_errno);
                 goto error_exit;
             }
-
-            if(ntohl(addr.sin_addr.s_addr) == INADDR_LOOPBACK)
+        }
+        else
+        {
+            hp = globus_libc_gethostbyaddr_r((char *) &addr.sin_addr,
+                                             (int)sizeof(addr.sin_addr),
+                                             AF_INET,
+                                             &host,
+                                             buf,
+                                             4096, 
+                                             &herror);
+            if(hp == GLOBUS_NULL)
             {
-                rc = globus_libc_gethostname(buf, 4096);
-
-                if(rc != 0)
+                save_errno = errno;
+                err = globus_io_error_construct_system_failure(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle,
+                    save_errno);
+                goto error_exit;
+            }
+            
+            if(strchr(hp->h_name, '.') == GLOBUS_NULL)
+            {
+                int i;
+                int found_alias = 0;
+                
+                for(i = 0; hp->h_aliases[i] != GLOBUS_NULL; i++)
                 {
-                    save_errno = errno;
-		    err = globus_io_error_construct_system_failure(
-		                GLOBUS_IO_MODULE,
-			        GLOBUS_NULL,
-			        handle,
-			        save_errno);
-                    goto error_exit;
+                    if(strchr(hp->h_aliases[i], '.') != GLOBUS_NULL)
+                    {
+                        memmove(buf,
+                                hp->h_aliases[i],
+                                strlen(hp->h_aliases[i])+1);
+                        found_alias = 1;
+                        break;
+                    }
+                }
+                
+                if(!found_alias)
+                {
+                    memmove(buf, hp->h_name, strlen(hp->h_name)+1);   
                 }
             }
             else
             {
-                hp = globus_libc_gethostbyaddr_r((char *) &addr.sin_addr,
-                                                 (int)sizeof(addr.sin_addr),
-                                                 AF_INET,
-                                                 &host,
-                                                 buf,
-                                                 4096, 
-                                                 &herror);
-                if(hp == GLOBUS_NULL)
-                {
-                    save_errno = errno;
-		    err = globus_io_error_construct_system_failure(
-		                GLOBUS_IO_MODULE,
-			        GLOBUS_NULL,
-			        handle,
-			        save_errno);
-                    goto error_exit;
-                }
-
-		if(strchr(hp->h_name, '.') == GLOBUS_NULL)
-                {
-                    int i;
-		    int found_alias = 0;
-		    
-                    for(i = 0; hp->h_aliases[i] != GLOBUS_NULL; i++)
-                    {
-                        if(strchr(hp->h_aliases[i], '.') != GLOBUS_NULL)
-                        {
-                            memmove(buf,
-				    hp->h_aliases[i],
-				    strlen(hp->h_aliases[i])+1);
-			    found_alias = 1;
-			    break;
-			}
-                    }
-		    
-		    if(!found_alias)
-		    {
-			memmove(buf, hp->h_name, strlen(hp->h_name)+1);   
-		    }
-		}
-		else
-		{
-		    memmove(buf, hp->h_name, strlen(hp->h_name)+1);   
-		}
+                memmove(buf, hp->h_name, strlen(hp->h_name)+1);   
             }
-	    if(handle->securesocket_attr.authorized_identity != GLOBUS_NULL)
-	    {
-	        globus_libc_free(handle->securesocket_attr.authorized_identity);
-	    }
-	    handle->securesocket_attr.authorized_identity =
-	        globus_libc_malloc(strlen("host@") + strlen(buf) + 1);
-	    sprintf(handle->securesocket_attr.authorized_identity, "host@%s", buf);
         }
-	flags |= GSS_C_MUTUAL_FLAG;
-	break;
-      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF:
-	if(handle->securesocket_attr.credential == GSS_C_NO_CREDENTIAL)
-	{
-	    maj_stat = globus_gss_assist_acquire_cred(
-		&min_stat,
-		GSS_C_INITIATE,
-		&handle->securesocket_attr.credential);
-	    if(maj_stat != GSS_S_COMPLETE)
-	    {
-		
-		err = globus_io_error_construct_no_credentials(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle,
-		    (int) maj_stat,
-		    (int) min_stat,
-		    0);
-		goto error_exit;
-	    }
-	}
-	flags |= GSS_C_MUTUAL_FLAG;
-	break;
-      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY:
-	flags |= GSS_C_MUTUAL_FLAG;
-        break;     
-      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK:
-	flags |= GSS_C_MUTUAL_FLAG;
-	if(handle->securesocket_attr.authorized_identity != GLOBUS_NULL)
-	{
-	    globus_libc_free(handle->securesocket_attr.authorized_identity);
-	}
-	handle->securesocket_attr.authorized_identity =
-	    globus_libc_strdup("GSI-NO-TARGET");
-	break;
-      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE:
-	globus_assert(GLOBUS_FALSE ||
-		      "unsupported authorization mode");
-	goto error_exit;
+        if(handle->securesocket_attr.authorized_identity != GLOBUS_NULL)
+        {
+            globus_libc_free(handle->securesocket_attr.authorized_identity);
+        }
+        handle->securesocket_attr.authorized_identity =
+            globus_libc_malloc(strlen("host@") + strlen(buf) + 1);
+        sprintf(handle->securesocket_attr.authorized_identity, "host@%s", buf);
+    }
+    flags |= GSS_C_MUTUAL_FLAG;
+    break;
+    case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF:
+    case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY:
+        flags |= GSS_C_MUTUAL_FLAG;
+        break;
+    case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK:
+        flags |= GSS_C_MUTUAL_FLAG;
+        if(handle->securesocket_attr.authorized_identity != GLOBUS_NULL)
+        {
+            globus_libc_free(handle->securesocket_attr.authorized_identity);
+        }
+        handle->securesocket_attr.authorized_identity =
+            globus_libc_strdup("GSI-NO-TARGET");
+        break;
+    case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE:
+        globus_assert(GLOBUS_FALSE ||
+                      "unsupported authorization mode");
+        goto error_exit;
+    }
+
+    if(handle->securesocket_attr.extension_oids != GSS_C_NO_OID_SET)
+    {
+        gss_buffer_desc                 oid_buffer;
+        
+        oid_buffer.value = (void *) handle->securesocket_attr.extension_oids;
+        oid_buffer.length = 1;
+        
+        maj_stat = gss_set_sec_context_option(
+            &min_stat,
+            &handle->context,
+            (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
+            &oid_buffer);
+
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            err = globus_io_error_construct_authentication_failed(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                (int) maj_stat,
+                (int) min_stat,
+                0);
+            goto error_exit;
+        }
     }
     
     init_info = (globus_io_authentication_info_t *)
@@ -848,10 +910,85 @@ globus_i_io_securesocket_set_attr(
 
 	goto error_exit;
     }
-    
+
+    if(handle->securesocket_attr.extension_oids == GSS_C_NO_OID_SET)
+    {
+        if(instance->extension_oids != GSS_C_NO_OID_SET)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "extension_oids");  
+        }
+    }
+    else
+    {
+        if(instance->extension_oids == GSS_C_NO_OID_SET)
+        {
+            err = globus_io_error_construct_immutable_attribute(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                2,
+                myname,
+                "extension_oids");  
+        }
+        else
+        {
+            gss_OID_set_desc *          handle_ext_oids;
+            gss_OID_set_desc *          instance_ext_oids;
+            OM_uint32                   maj_stat;
+            OM_uint32                   min_stat;
+            int                         i;
+            int                         present;
+            
+            handle_ext_oids = (gss_OID_set_desc *)
+                handle->securesocket_attr.extension_oids;
+
+            instance_ext_oids = (gss_OID_set_desc *)
+                instance->extension_oids;
+            
+            if(handle_ext_oids->count != instance_ext_oids->count)
+            {
+                err = globus_io_error_construct_immutable_attribute(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    "attr",
+                    2,
+                    myname,
+                    "extension_oids");    
+            }
+            else
+            {
+                for(i=0;i<handle_ext_oids->count;i++)
+                {
+                    maj_stat = gss_test_oid_set_member(
+                        &min_stat,
+                        (gss_OID) &instance_ext_oids->elements[i],
+                        handle->securesocket_attr.extension_oids,
+                        &present);
+                    if(maj_stat != GSS_S_COMPLETE ||
+                       !present)
+                    {
+                        err = globus_io_error_construct_immutable_attribute(
+                            GLOBUS_IO_MODULE,
+                            GLOBUS_NULL,
+                            "attr",
+                            2,
+                            myname,
+                            "extension_oids");  
+                    }
+                }
+            }
+        }
+    }
+
     return globus_i_io_socket_set_attr(handle,
 				       attr);
-  error_exit:
+error_exit:
     return globus_error_put(err);
 }
 /* globus_i_io_securesocket_set_attr() */
