@@ -34,15 +34,17 @@
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-server [-d|--debug] [-p|--port #] [-c config-file] ...\n"\
-"        myproxy-server [-h|--help] [-v|--version]\n"\
+"Syntax: myproxy-server [-d|-debug] [-p|-port #] [-c config-file] ...\n"\
+"        myproxy-server [-h|-help] [-v|-version]\n"\
 "\n"\
-"    Options\n"\
-"    -h | --help                Displays usage\n"\
-"    -v | --version             Displays version\n"\
-"    -d | --debug               Turns on debugging\n"\
-"    -c | --config              Specifies configuration file to use\n"\
-"    -p | --port <portnumber>   Specifies the port to run on\n"\
+"   Options\n"\
+"       -h | -help                Displays usage\n"\
+"       -u | -usage                             \n"\
+"                                               \n"\
+"       -v | -version             Displays version\n"\
+"       -d | -debug               Turns on debugging\n"\
+"       -c | -config              Specifies configuration file to use\n"\
+"       -p | -port <portnumber>   Specifies the port to run on\n"\
 "\n";
 
 struct option long_options[] =

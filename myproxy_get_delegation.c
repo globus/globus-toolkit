@@ -17,30 +17,33 @@
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-get-delegation [-t hours] [-l username] ...\n"\
-"        myproxy-get-delegation [--usage|--help] [-v|--version]\n"\
+"        myproxy-get-delegation [-usage|-help] [-v|--version]\n"\
 "\n"\
-"    Options\n"\
-"    --help | --usage                  Displays usage\n"\
-"    -v | -version                     Displays version\n"\
-"    -l | -username         <username> Specifies the username for the delegated proxy\n"\
-"    -t | -portal_lifetime  <hours>    Specifies the lifetime of the delegated proxy\n"\
-"    -s | -pshost           <hostname> Specifies the hostname of the myproxy-server\n"\
-"    -p | -psport           <port #>   Specifies the port of the myproxy-server\n"\
+"   Options\n"\
+"       -h | -help                       Displays usage\n"\
+"       -u | -usage                                    \n"\
+"                                                      \n"\
+"       -v | -version                    Displays version\n"\
+"       -l | -username        <username> Username for the delegated proxy\n"\
+"       -t | -portal_lifetime <hours>    Lifetime of delegated proxy on 
+                                         the portal (default 2 hours)\n"\
+"       -s | -pshost          <hostname> Hostname of the myproxy-server\n"\
+"       -p | -psport          <port #>   Port of the myproxy-server\n"\
 "\n";
 
 struct option long_options[] =
 {
-    {"help",                   no_argument, NULL, 'u'},
+    {"help",                   no_argument, NULL, 'h'},
     {"pshost",           required_argument, NULL, 's'},
     {"psport",           required_argument, NULL, 'p'},
-    {"portal_lifetime",  required_argument, NULL, 'h'},
+    {"portal_lifetime",  required_argument, NULL, 't'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"version",                no_argument, NULL, 'v'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "us:p:l:t:v";
+static char short_options[] = "hus:p:l:t:v";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -173,6 +176,10 @@ init_arguments(int argc,
             break;
         case 'p': 	/* psport */
             attrs->psport = atoi(gnu_optarg);
+            break;
+	case 'h': 	/* print help and exit */
+            fprintf(stderr, usage);
+            exit(1);
             break;
         case 'u': 	/* print help and exit */
             fprintf(stderr, usage);
