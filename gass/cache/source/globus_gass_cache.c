@@ -351,7 +351,7 @@ globus_l_gass_cache_read_one_str(char** buff_pt,
 	CACHE_TRACE("Error reading state file");
 	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
     }
-    *buff_pt=globus_malloc(size);
+    *buff_pt=(char *) globus_malloc(size);
     if (*buff_pt == NULL)
     {
     	CACHE_TRACE("No more memory");
@@ -658,7 +658,7 @@ globus_l_gass_cache_read_one_entry(int fd,
     if (*entry == NULL)
     {
 	/* allocate the memory for one entry */
-	*entry = globus_malloc(sizeof(globus_gass_cache_entry_t));
+	*entry = (globus_gass_cache_entry_t *)globus_malloc(sizeof(globus_gass_cache_entry_t));
 	if (entry == NULL)
 	{
 	    CACHE_TRACE("No more memory");
@@ -737,7 +737,8 @@ globus_l_gass_cache_read_one_entry(int fd,
     size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
     (**entry).num_tags= atoi(size_s);
     /* allocate 2 too much : one spare for add  and one for the last (NULL) */
-    (**entry).tags=globus_malloc(((**entry).num_tags+2)* sizeof(globus_gass_cache_tag_t)); 
+    (**entry).tags=(globus_gass_cache_tag_t *)
+	globus_malloc(((**entry).num_tags+2)* sizeof(globus_gass_cache_tag_t)); 
     if ((**entry).tags == GLOBUS_NULL)
     {
     	CACHE_TRACE("No more memory");
@@ -1890,7 +1891,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   cache_handle->nb_entries++;
 	   
 	   /* create a new file name */
-	   *local_filename=globus_malloc(FILENAME_MAX+1);
+	   *local_filename=(char *) globus_malloc(FILENAME_MAX+1);
 	   GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
 	   globus_libc_lock();
 	   while (stat(*local_filename,&file_stat) != -1)
@@ -1925,7 +1926,8 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
            close(tmp_fd);
 	   
 	   /* create a new stat entry and initialise it */
-	   new_entry_pt = globus_malloc(sizeof(globus_gass_cache_entry_t));
+	   new_entry_pt = (globus_gass_cache_entry_t *)
+	       globus_malloc(sizeof(globus_gass_cache_entry_t));
 	   
 	   if (new_entry_pt == GLOBUS_NULL)
 	   {
@@ -1936,7 +1938,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   }
 	   
 	   /* url */
-	   new_entry_pt->url=globus_malloc(strlen(url)+1);
+	   new_entry_pt->url = (char *) globus_malloc(strlen(url)+1);
 	   if (new_entry_pt->url == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
@@ -1947,7 +1949,8 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   strcpy(new_entry_pt->url,url);
 	   
 	   /* file name */
-	   new_entry_pt->filename=globus_malloc(strlen(*local_filename)+1);
+	   new_entry_pt->filename=(char *)
+	       globus_malloc(strlen(*local_filename)+1);
 	   if (new_entry_pt->filename == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
@@ -1964,7 +1967,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   
 	   /* status */
 	   /* lets lock the file on the new tag */
-	   new_entry_pt->lock_tag= globus_malloc(strlen(tag)+1);
+	   new_entry_pt->lock_tag = (char *) globus_malloc(strlen(tag)+1);
 	   
 	   if ( new_entry_pt->lock_tag == GLOBUS_NULL)
 	   {
@@ -1985,7 +1988,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   
 	   /* tags */
 	   /* allocate an array of 2 tags (one real, and one "end" indicator */
-	   new_entry_pt->tags =
+	   new_entry_pt->tags = (globus_gass_cache_tag_t *)
 	       globus_malloc(2*sizeof(globus_gass_cache_tag_t));
 	   
 	   if (new_entry_pt->tags == GLOBUS_NULL)
@@ -1998,7 +2001,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   
-	   (*(new_entry_pt->tags)).tag= globus_malloc(strlen(tag)+1);
+	   (*(new_entry_pt->tags)).tag= (char *) globus_malloc(strlen(tag)+1);
 	   if ( (*(new_entry_pt->tags)).tag == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
@@ -2096,7 +2099,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   
 	       /* return the file name and the timestamp */
 	       /* create a new file name */
-	       *local_filename=globus_malloc(FILENAME_MAX+1);
+	       *local_filename = (char *) globus_malloc(FILENAME_MAX+1);
 	       strcpy(*local_filename,
 		      entry_found_pt->filename);
 	       *timestamp = entry_found_pt->timestamp;
@@ -2121,7 +2124,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 		   /* the tag was not found. Now, we are pointing one
 		   the first empty tag entry allocated for tag
 		   creation. Lets create it */
-		   tag_pt->tag = globus_malloc(strlen(tag) +1);
+		   tag_pt->tag = (char *) globus_malloc(strlen(tag) +1);
 		   if (tag_pt->tag == GLOBUS_NULL)
 		   {
 		       CACHE_TRACE("No more memory");
@@ -2138,7 +2141,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	       } /* tag not found */
 	       
 	       /* tag added; now lock the cache entry */
-	       entry_found_pt->lock_tag= globus_malloc(strlen(tag)+1);
+	       entry_found_pt->lock_tag= (char *) globus_malloc(strlen(tag)+1);
 	       if ( entry_found_pt->lock_tag == GLOBUS_NULL)
 	       {
 		   CACHE_TRACE("No more memory");
@@ -2483,7 +2486,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	       } /* tag not found */
 	       
 	       /* tag found; now lock the cache entry */
-	       entry_found_pt->lock_tag= globus_malloc(strlen(tag)+1);
+	       entry_found_pt->lock_tag= (char *) globus_malloc(strlen(tag)+1);
 	       if ( entry_found_pt->lock_tag == GLOBUS_NULL)
 	       {
 		   CACHE_TRACE("No more memory");
@@ -3120,7 +3123,8 @@ globus_gass_cache_list(globus_gass_cache_t        *cache_handle,
 						GLOBUS_L_GASS_CACHE_ABORT));
     }
     
-    *entries = globus_malloc( (*size) *  sizeof(globus_gass_cache_entry_t));
+    *entries = (globus_gass_cache_entry_t *)
+	globus_malloc( (*size) *  sizeof(globus_gass_cache_entry_t));
     if (*entries == GLOBUS_NULL)
     {
 	CACHE_TRACE("No more memory");
