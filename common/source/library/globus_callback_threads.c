@@ -1619,7 +1619,7 @@ globus_l_callback_thread_callback(
                         
                     } while(!globus_l_callback_shutting_down &&
                         globus_abstime_cmp(
-                            &time_now, &callback_info->start_time) < 0)
+                            &time_now, &callback_info->start_time) < 0);
                 }
                 else
                 {
