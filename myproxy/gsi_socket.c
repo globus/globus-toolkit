@@ -201,7 +201,9 @@ read_token(const int sock,
 	(header[major_version] != 3) ||
 	((header[minor_version] != 0) && (header[minor_version] != 1)))
     {
+#if defined(EBADMSG)
 	errno = EBADMSG;
+#endif
 	return -1;
     }
     
@@ -1096,7 +1098,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 {
     int			bytes_read;
     unsigned char	*buffer;
-    int			buffer_len;
+    size_t		buffer_len;
     int			return_status = GSI_SOCKET_ERROR;
     
     bytes_read = read_token(self->sock,
@@ -1163,9 +1165,9 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     SSL_CREDENTIALS		*creds = NULL;
     SSL_PROXY_RESTRICTIONS	*proxy_restrictions = NULL;
     unsigned char		*input_buffer = NULL;
-    int				input_buffer_length;
+    size_t			input_buffer_length;
     unsigned char		*output_buffer = NULL;
-    int				output_buffer_length;
+    size_t			output_buffer_length;
     
 
     if (self == NULL)
