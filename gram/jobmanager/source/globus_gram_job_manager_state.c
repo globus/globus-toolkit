@@ -1734,6 +1734,16 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	if(request->remote_io_url)
+	{
+	    query->failure_code =
+                globus_gram_job_manager_script_remote_io_file_create(request);
+
+            if (query->failure_code == GLOBUS_SUCCESS)
+            {
+		event_registered = GLOBUS_TRUE;
+	    }
+        }
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
