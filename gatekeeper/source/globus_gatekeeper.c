@@ -187,6 +187,55 @@ static int 		jmargc;
 static int 		ok_to_send_errmsg;
 static FILE *   fdout;
 
+/******************************************************************************
+Function:       get_globusid()
+Description:    Get the globusid from gssapi or environment if possible.
+Parameters:
+Returns:
+******************************************************************************/
+static char * 
+get_globusid()
+{
+	char *globusid;
+	char *globusid_tmp;
+	gss_name_t server_name = GSS_C_NO_NAME;
+	gss_buffer_desc server_buffer_desc = GSS_C_EMPTY_BUFFER;
+	gss_buffer_t server_buffer = &server_buffer_desc; 
+	OM_uint32 major_status = 0;
+	OM_uint32 minor_status = 0;
+	OM_uint32 minor_status2 = 0;
+	if (major_status = gss_inquire_cred(&minor_status,
+					 					credential_handle,
+					 					&server_name,
+					 					NULL,
+					 					NULL,
+					 					NULL) == GSS_S_COMPLETE) 					{
+		major_status = gss_export_name(&minor_status,
+										server_name,
+										server_buffer);
+		gss_release_name(&minor_status2, &server_name);
+	}
+	/*
+	 * The gssapi_cleartext does not implement gss_inquire_cred,
+	 * so fall back to using environment variable.
+	 */
+	if (major_status == GSS_S_COMPLETE) 
+	{
+		globusid = server_buffer_desc.value;
+	}
+	else 
+	{
+    	globusid = getenv("GLOBUSID");
+    	globusid = (globusid ? globusid : "GLOBUSID");
+	}
+	globusid_tmp = strdup(globusid);
+
+	if (server_buffer_desc.value)
+	{
+		gss_release_buffer(&minor_status2, server_buffer);
+	}
+	return globusid_tmp;
+}
 
 /******************************************************************************
 Function:       reaper()
@@ -697,6 +746,7 @@ main(int xargc,
 
 	if (gatekeeper_test) 
 	{
+		fprintf(stderr,"Globusid=%s\n",get_globusid());
 		fprintf(stderr,"Gatekeeper test complete\n");
 		exit(0);
 	}
@@ -726,12 +776,12 @@ main(int xargc,
         {
             fqdn = (hostname ? hostname : "HOSTNAME");
         }
-	    globusid = getenv("GLOBUSID");
-	    globusid = (globusid ? globusid : "GLOBUSID");
+	   	globusid = get_globusid();
 	    printf("GRAM contact: %s:%d:%s\n",
 		    fqdn, daemon_port, globusid);
 	    notice4(LOG_INFO, "GRAM contact: %s:%d:%s\n",
 		    fqdn, daemon_port, globusid);
+		free(globusid);
 	}
 
 	if (!foreground)
