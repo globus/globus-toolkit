@@ -1794,7 +1794,7 @@ AC_ARG_WITH(rsh,
 
 PRIVSEP_PATH=/var/empty
 AC_ARG_WITH(privsep-path,
-	[  --with-privsep-path=xxx Path for privilege seperation chroot ],
+	[  --with-privsep-path=xxx Path for privilege separation chroot ],
 	[
 		if test "x$withval" != "$no" ; then
 			PRIVSEP_PATH=$withval
@@ -2023,7 +2023,6 @@ if test "$USES_LOGIN_CONF" != "yes" ; then
 fi
 
 # Set superuser path separately to user path
-MD5_MSG="no" 
 AC_ARG_WITH(superuser-path,
 	[  --with-superuser-path=  Specify different path for super-user],
 	[
