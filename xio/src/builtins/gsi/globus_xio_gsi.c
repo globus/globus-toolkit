@@ -1492,7 +1492,7 @@ globus_l_xio_gsi_open_cb(
 
             if(output_token.length == 0)
             {
-                goto error_destroy_handle;
+                goto error_pass_close;
             }
             else
             {
@@ -1523,7 +1523,7 @@ globus_l_xio_gsi_open_cb(
                 {
                     gss_release_buffer(&minor_status, &output_token);
                 }
-                goto error_destroy_handle;
+                goto error_pass_close;
             }
 
             major_status = gss_inquire_context(&minor_status,
@@ -1545,7 +1545,7 @@ globus_l_xio_gsi_open_cb(
                 {
                     gss_release_buffer(&minor_status, &output_token);
                 }
-                goto error_destroy_handle;
+                goto error_pass_close;
             }
         }
         
