@@ -65,8 +65,6 @@ Sources= \
 	globus_error_string.c \
 	globus_error_string.h
 
-if WITHOUT_FLAVORS
-
 include_HEADERS = \
 	globus_release.h \
 	globus_module.h \
@@ -94,8 +92,6 @@ include_HEADERS = \
 	globus_strptime.h \
 	globus_thread_common.h
 
-else
-
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)
@@ -106,8 +102,6 @@ libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 flavorinclude_HEADERS = \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h
-
-endif
 
 EXTRA_DIST = \
 	globus_thread_none.c \
