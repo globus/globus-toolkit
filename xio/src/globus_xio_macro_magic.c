@@ -19,7 +19,7 @@ globus_xio_driver_pass_open_DEBUG(
     globus_i_xio_context_t *                _context;
     globus_i_xio_context_entry_t *          _my_context;
     globus_i_xio_op_entry_t *               _my_op;
-    int                                     _caller_ndx;
+    int                                     _prev_ndx;
     globus_result_t                         _res;
     globus_bool_t                           _destroy_handle = GLOBUS_FALSE;
     globus_bool_t                           _destroy_context = GLOBUS_FALSE;
@@ -43,7 +43,7 @@ globus_xio_driver_pass_open_DEBUG(
         _my_context = &_context->entry[_op->ndx];
         _my_context->state = GLOBUS_XIO_CONTEXT_STATE_OPENING;
         _my_context->outstanding_operations++;
-        _caller_ndx = _op->ndx;
+        _prev_ndx = _op->ndx;
 
         do
         {
@@ -56,11 +56,14 @@ globus_xio_driver_pass_open_DEBUG(
         /* hold a ref for this driver */
         _context->ref++;
 
+        _op->entry[_prev_ndx].next_ndx = _op->ndx;
+        _op->entry[_prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
         _my_op = &_op->entry[_op->ndx - 1];
+
         _my_op->cb = (_in_cb);
         _my_op->user_arg = (_in_user_arg);
         _my_op->in_register = GLOBUS_TRUE;
-        _my_op->caller_ndx = _caller_ndx;
+        _my_op->prev_ndx = _prev_ndx;
         /* at time that stack is built this will be varified */
         globus_assert(_op->ndx <= _context->stack_size);
 
@@ -139,7 +142,7 @@ globus_xio_driver_finished_open_DEBUG(
     _context = _op->_op_context;
     _context->entry[_op->ndx - 1].driver_handle = (_in_dh);
     _my_op = &_op->entry[_op->ndx - 1];
-    _my_context = &_context->entry[_my_op->caller_ndx];
+    _my_context = &_context->entry[_my_op->prev_ndx];
     /* no operation can happen while in OPENING state so no need to lock */
 
     switch(_my_context->state)
@@ -165,7 +168,7 @@ globus_xio_driver_finished_open_DEBUG(
             globus_assert(0);
     }
 
-    if(_my_op->caller_ndx == 0 && !_op->blocking)
+    if(_my_op->prev_ndx == 0 && !_op->blocking)
     {
         _space = _op->_op_handle->space;
     }
@@ -274,7 +277,7 @@ globus_xio_driver_open_deliver_DEBUG(
         else
         {
             _close_op->cached_res = GLOBUS_SUCCESS;
-            if(_close_op->entry[_close_op->ndx - 1].caller_ndx == 0 &&
+            if(_close_op->entry[_close_op->ndx - 1].prev_ndx == 0 &&
                     !_close_op->blocking)
             {
                 _space = _close_op->_op_handle->space;
@@ -308,7 +311,7 @@ globus_xio_driver_pass_close_DEBUG(
     globus_i_xio_context_entry_t *          _my_context;
     globus_bool_t                           _pass;
     globus_i_xio_op_entry_t *               _my_op;
-    int                                     _caller_ndx;
+    int                                     _prev_ndx;
     globus_result_t                         _res = GLOBUS_SUCCESS;
     globus_xio_driver_t                     _driver;
     GlobusXIOName(GlobusXIODriverPassClose);
@@ -326,7 +329,7 @@ globus_xio_driver_pass_close_DEBUG(
     }
     else
     {
-        _caller_ndx = _op->ndx;
+        _prev_ndx = _op->ndx;
         _my_context = &_context->entry[_op->ndx];
 
         do
@@ -336,6 +339,7 @@ globus_xio_driver_pass_close_DEBUG(
         }
         while(_driver->close_func == NULL);
         _my_op = &_op->entry[_op->ndx - 1];
+        _my_op->type = GLOBUS_XIO_OPERATION_TYPE_CLOSE;
 
 
         /* deal with context state */
@@ -385,7 +389,7 @@ globus_xio_driver_pass_close_DEBUG(
 
         _my_op->cb = (_in_cb);
         _my_op->user_arg = (_in_ua);
-        _my_op->caller_ndx = _caller_ndx;
+        _my_op->prev_ndx = _prev_ndx;
         /* op can be checked outside of lock */
         if(_pass)
         {
@@ -421,14 +425,14 @@ globus_xio_driver_finished_close_DEBUG(
 
     _context = _op->_op_context;
     _my_op = &_op->entry[_op->ndx - 1];
-    _my_context = &_context->entry[_my_op->caller_ndx];
+    _my_context = &_context->entry[_my_op->prev_ndx];
 
     /* don't need to lock because barrier makes contntion not possible */
     _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSED;
 
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */
     _op->cached_res = _res;
-    if(_my_op->caller_ndx == 0 && !_op->blocking)
+    if(_my_op->prev_ndx == 0 && !_op->blocking)
     {
         _space = _op->_op_handle->space;
     }
@@ -445,7 +449,7 @@ globus_xio_driver_finished_close_DEBUG(
     }
     else
     {
-        _op->ndx = _my_op->caller_ndx;
+        _op->ndx = _my_op->prev_ndx;
         _my_op->cb(_op, _op->cached_res, _my_op->user_arg);
     }
 }
@@ -472,7 +476,7 @@ globus_xio_driver_pass_write_DEBUG(
     globus_i_xio_context_entry_t *          _next_context;
     globus_i_xio_context_t *                _context;
     globus_bool_t                           _close = GLOBUS_FALSE;
-    int                                     _caller_ndx;
+    int                                     _prev_ndx;
     globus_result_t                         _res = GLOBUS_SUCCESS;
     globus_xio_driver_t                     _driver;
     globus_bool_t                           _destroy_handle = GLOBUS_FALSE;
@@ -484,7 +488,7 @@ globus_xio_driver_pass_write_DEBUG(
     _my_context = &_context->entry[_op->ndx];
     _op->progress = GLOBUS_TRUE;
     _op->block_timeout = GLOBUS_FALSE;
-    _caller_ndx = _op->ndx;
+    _prev_ndx = _op->ndx;
 
     globus_assert(_op->ndx < _op->stack_size);
 
@@ -499,7 +503,7 @@ globus_xio_driver_pass_write_DEBUG(
     else
     {
         /* set up the entry */
-        _caller_ndx = _op->ndx;
+        _prev_ndx = _op->ndx;
         do
         {
             _next_context = &_context->entry[_op->ndx];
@@ -508,8 +512,10 @@ globus_xio_driver_pass_write_DEBUG(
         }
         while(_driver->write_func == NULL);
 
+        _op->entry[_prev_ndx].next_ndx = _op->ndx;
+        _op->entry[_prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_READ;
         _my_op = &_op->entry[_op->ndx - 1];
-        _my_op->caller_ndx = _caller_ndx;
+        _my_op->prev_ndx = _prev_ndx;
         _my_op->_op_ent_data_cb = (_in_cb);
         _my_op->user_arg = (_in_user_arg);
         _my_op->_op_ent_iovec = (_in_iovec);
@@ -586,7 +592,7 @@ globus_xio_driver_finished_write_DEBUG(
 
     _context = _op->_op_context;
     _my_op = &_op->entry[_op->ndx - 1];
-    _my_context = &_context->entry[_my_op->caller_ndx];
+    _my_context = &_context->entry[_my_op->prev_ndx];
 
     _op->cached_res = _res;
 
@@ -614,7 +620,7 @@ globus_xio_driver_finished_write_DEBUG(
             globus_free(_my_op->_op_ent_fake_iovec);
             _my_op->_op_ent_fake_iovec = NULL;
         }
-        if(_my_op->caller_ndx == 0 && !_op->blocking)
+        if(_my_op->prev_ndx == 0 && !_op->blocking)
         {
             _space = _op->_op_handle->space;
         }
@@ -714,7 +720,7 @@ globus_xio_driver_pass_read_DEBUG(
     globus_i_xio_context_entry_t *          _next_context;
     globus_i_xio_context_entry_t *          _my_context;
     globus_i_xio_context_t *                _context;
-    int                                     _caller_ndx;
+    int                                     _prev_ndx;
     globus_result_t                         _res;
     globus_bool_t                           _close = GLOBUS_FALSE;
     globus_xio_driver_t                     _driver;
@@ -727,7 +733,7 @@ globus_xio_driver_pass_read_DEBUG(
     _my_context = &_context->entry[_op->ndx];
     _op->progress = GLOBUS_TRUE;
     _op->block_timeout = GLOBUS_FALSE;
-    _caller_ndx = _op->ndx;
+    _prev_ndx = _op->ndx;
 
     globus_assert(_op->ndx < _op->stack_size);
 
@@ -758,8 +764,10 @@ globus_xio_driver_pass_read_DEBUG(
         }
         while(_driver->read_func == NULL);
 
+        _op->entry[_prev_ndx].next_ndx = _op->ndx;
+        _op->entry[_prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_READ;
         _my_op = &_op->entry[_op->ndx - 1];
-        _my_op->caller_ndx = _caller_ndx;
+        _my_op->prev_ndx = _prev_ndx;
         _my_op->_op_ent_data_cb = (_in_cb);
         _my_op->user_arg = (_in_user_arg);
         _my_op->_op_ent_iovec = (_in_iovec);
@@ -839,7 +847,7 @@ globus_xio_driver_finished_read_DEBUG(
 
     _context = _op->_op_context;
     _my_op = &_op->entry[_op->ndx - 1];
-    _my_context = &_context->entry[_my_op->caller_ndx];
+    _my_context = &_context->entry[_my_op->prev_ndx];
     _op->cached_res = _res;
 
     globus_assert(_op->ndx > 0);
@@ -908,7 +916,7 @@ globus_xio_driver_finished_read_DEBUG(
             _my_op->_op_ent_fake_iovec = NULL;
         }
 
-        if(_my_op->caller_ndx == 0 && !_op->blocking)
+        if(_my_op->prev_ndx == 0 && !_op->blocking)
         {
             _space = _op->_op_handle->space;
         }
@@ -1056,7 +1064,7 @@ globus_xio_driver_pass_accept_DEBUG(
     globus_i_xio_server_t *                         _server;
     globus_i_xio_server_entry_t *                   _my_server;
     globus_i_xio_op_entry_t *                       _my_op;
-    int                                             _caller_ndx;
+    int                                             _prev_ndx;
     globus_result_t                                 _res;
     globus_xio_driver_t                             _driver;
     GlobusXIOName(GlobusXIODriverPassServerAccept);
@@ -1073,7 +1081,7 @@ globus_xio_driver_pass_accept_DEBUG(
     }
     else
     {
-        _caller_ndx = _op->ndx;
+        _prev_ndx = _op->ndx;
         do
         {
             _my_op = &_op->entry[_op->ndx];
@@ -1083,9 +1091,10 @@ globus_xio_driver_pass_accept_DEBUG(
         }
         while(_driver->server_accept_func == NULL);
 
+        _my_op->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
         _my_op->cb = (_in_cb);
         _my_op->user_arg = (_in_user_arg);
-        _my_op->caller_ndx = (_caller_ndx);
+        _my_op->prev_ndx = (_prev_ndx);
         _my_op->in_register = GLOBUS_TRUE;
 
         _res = _driver->server_accept_func(
@@ -1120,7 +1129,7 @@ globus_xio_driver_finished_accept_DEBUG(
 
     _my_op->target = (_in_target);
 
-    if(_my_op->caller_ndx == 0 && !_op->blocking)
+    if(_my_op->prev_ndx == 0 && !_op->blocking)
     {
         _space = _op->_op_server->space;
     }
@@ -1137,7 +1146,7 @@ globus_xio_driver_finished_accept_DEBUG(
     }
     else
     {
-        _op->ndx = _my_op->caller_ndx;
+        _op->ndx = _my_op->prev_ndx;
         _my_op->cb(_op, _op->cached_res, _my_op->user_arg);
     }
 }

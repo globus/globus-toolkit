@@ -32,9 +32,10 @@ push(@drivers, "");
 push(@drivers, "-D debug");
 push(@drivers, "-D bounce");
 push(@drivers, "-D debug -D bounce");
+push(@drivers, "-D null -D null");
 push(@drivers, "-D bounce -D debug");
-push(@drivers, "-D debug -D bounce -D debug");
-push(@drivers, "-D bounce -D debug -D bounce");
+push(@drivers, "-D null -D bounce -D debug");
+push(@drivers, "-D bounce -D null -D bounce");
 
 sub basic_tests
 {

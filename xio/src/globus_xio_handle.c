@@ -1397,7 +1397,7 @@ globus_xio_register_open(
     op->ref = 1;
     op->_op_cb = cb;
     op->user_arg = user_arg;
-    op->entry[0].caller_ndx = -1; /* for first pass there is no return */
+    op->entry[0].prev_ndx = -1; /* for first pass there is no return */
     op->_op_context = context;
 
     /* initialize the handle */
@@ -1535,7 +1535,7 @@ globus_xio_register_read(
     op->_op_iovec = &op->_op_mem_iovec;
     op->_op_wait_for = waitforbytes;
     op->user_arg = user_arg;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     res = globus_l_xio_register_readv(op, ref);
     if(res != GLOBUS_SUCCESS)
@@ -1612,7 +1612,7 @@ globus_xio_register_readv(
     op->_op_iovec_count = iovec_count;
     op->_op_wait_for = waitforbytes;
     op->user_arg = user_arg;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     res = globus_l_xio_register_readv(op, ref);
     if(res != GLOBUS_SUCCESS)
@@ -1685,7 +1685,7 @@ globus_xio_register_write(
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->ref = 1;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
     op->_op_context = handle->context;
@@ -1766,7 +1766,7 @@ globus_xio_register_writev(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     op->ref = 1;
     op->_op_handle = handle;
@@ -1851,7 +1851,7 @@ globus_xio_register_close(
     op->ref = 1;
     op->_op_cb = cb;
     op->user_arg = user_arg;
-    op->entry[0].caller_ndx = -1;/*for first pass there is no return*/
+    op->entry[0].prev_ndx = -1;/*for first pass there is no return*/
 
     /* set up op */
     for(ctr = 0; ctr < handle->stack_size; ctr++)
@@ -2170,7 +2170,7 @@ globus_xio_open(
     op->ref = 1;
     op->_op_cb = globus_l_xio_blocking_cb;
     op->user_arg = info;
-    op->entry[0].caller_ndx = -1; /* for first pass there is no return */
+    op->entry[0].prev_ndx = -1; /* for first pass there is no return */
     op->_op_context = context;
 
     /* initialize the handle */
@@ -2323,7 +2323,7 @@ globus_xio_read(
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->ref = 1;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
     op->_op_context = handle->context;
@@ -2445,7 +2445,7 @@ globus_xio_readv(
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->ref = 1;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
     op->_op_context = handle->context;
@@ -2567,7 +2567,7 @@ globus_xio_write(
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->ref = 1;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
     op->_op_context = handle->context;
@@ -2688,7 +2688,7 @@ globus_xio_writev(
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->ref = 1;
-    op->entry[0].caller_ndx = -1;
+    op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
     op->_op_context = handle->context;
@@ -2809,7 +2809,7 @@ globus_xio_close(
     op->ref = 1;
     op->_op_cb = globus_l_xio_blocking_cb;
     op->user_arg = info;
-    op->entry[0].caller_ndx = -1;/*for first pass there is no return*/
+    op->entry[0].prev_ndx = -1;/*for first pass there is no return*/
 
     info->op = op;
 

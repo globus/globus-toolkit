@@ -27,6 +27,7 @@ unlink("test_results.txt");
             attr-test.pl
             space-test.pl
             server2-test.pl
+            block-barrier-test.pl
             );
 
 my $runserver;

@@ -297,6 +297,7 @@ typedef struct globus_i_xio_context_s
 typedef struct globus_i_xio_op_entry_s
 {
     /* callback info arrays */
+    globus_xio_operation_type_t             type;
     globus_xio_driver_callback_t            cb;
     void *                                  user_arg;
 
@@ -324,7 +325,8 @@ typedef struct globus_i_xio_op_entry_s
     void *                                  dd;
     void *                                  target;
     void *                                  attr;
-    int                                     caller_ndx;
+    int                                     prev_ndx;
+    int                                     next_ndx;
 } globus_i_xio_op_entry_t;
 
 
