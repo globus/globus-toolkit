@@ -309,7 +309,7 @@ Only in openssl-0.9.6b-patched/: Makefile.ssl~
 Only in openssl-0.9.6b-patched/: Makefile~
 diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
 --- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
-+++ openssl-0.9.6b-patched/config	Fri Oct 12 11:45:01 2001
++++ openssl-0.9.6b-patched/config	Fri Oct 12 19:10:00 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -333,7 +333,15 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  # figure out if gcc is available and if so we use it otherwise
  # we fallback to whatever cc does on the system
  GCCVER=`(gcc --version) 2>/dev/null`
-@@ -380,6 +386,34 @@
+@@ -344,6 +350,7 @@
+   GCCVER=`echo $GCCVER | sed 's/\([0-9]\)\.\([0-9]\).*/\1\2/'`
+ else
+   CC=cc
++  GCCVER=
+ fi
+ 
+ if [ "$SYSTEM" = "SunOS" ]; then
+@@ -380,6 +387,37 @@
  GCCVER=${GCCVER:-0}
  CCVER=${CCVER:-0}
  
@@ -356,6 +364,9 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
 +    else
 +        CC=$CCNAME
 +    fi
++
++GCCVER=${GCCVER:-0}
++
 +fi
 +
 +CCVER=${CCVER:-0}
@@ -368,7 +379,7 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  # read the output of the embedded GuessOS 
  read GUESSOS
  
-@@ -419,7 +453,11 @@
+@@ -419,7 +457,11 @@
          else
                  options="$options -mips3"
          fi
@@ -381,7 +392,7 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	;;
    alpha-*-linux2)
          ISA=`awk '/cpu model/{print$4}' /proc/cpuinfo`
-@@ -463,10 +501,9 @@
+@@ -463,10 +505,9 @@
    sun4u*-*-solaris2)
  	ISA64=`(isalist) 2>/dev/null | grep sparcv9`
  	if [ "$ISA64" != "" -a "$CC" = "cc" -a $CCVER -ge 50 ]; then
