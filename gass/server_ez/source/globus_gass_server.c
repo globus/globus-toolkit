@@ -16,6 +16,7 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include "globus_gass_server_ez.h"
+#include "globus_gss_assist.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,7 +172,39 @@ int main(int argc, char **argv)
     globus_gass_transfer_listener_t    listener;
     globus_gass_transfer_listenerattr_t  attr;
     char                              scheme[6]="https";
-    globus_gass_transfer_requestattr_t  * reqattr      = GLOBUS_NULL;;
+    globus_gass_transfer_requestattr_t  * reqattr      = GLOBUS_NULL;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+    static gss_cred_id_t                globus_l_gass_server_credential;
+    char *				env;
+
+
+    /*
+     *    Check for GLOBUS_INSTALL_PATH
+     *    if it is not set, the credential check won't work.
+     */
+
+    if ((env=globus_libc_getenv("GLOBUS_INSTALL_PATH"))==GLOBUS_NULL)
+    {
+	fprintf(stderr, "GLOBUS_INSTALL_PATH must be set for the server to run\n");
+	return GLOBUS_FAILURE;
+    }
+
+    /*
+     *    Check for credentials, if not there, give warning.
+     */
+
+    globus_l_gass_server_credential=GSS_C_NO_CREDENTIAL;
+
+    maj_stat = globus_gss_assist_acquire_cred(
+        &min_stat,
+        GSS_C_INITIATE,
+        &globus_l_gass_server_credential);
+
+    if (maj_stat != GSS_S_COMPLETE)
+    {
+	fprintf(stderr, "Warning:  You do not have valid credentials at this time\n");
+    }
 
     
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
