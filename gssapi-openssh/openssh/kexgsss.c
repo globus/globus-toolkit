@@ -112,12 +112,6 @@ kexgss_server(Kex *kex)
 
 		gss_release_buffer(&min_status,&recv_tok);
 		
-#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-                if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
-                        packet_disconnect("Limited proxy is not allowed in gssapi key exchange.");
-                }
-#endif
-
 		if (maj_status!=GSS_S_COMPLETE && send_tok.length==0) {
 			fatal("Zero length token output when incomplete");
 		}
