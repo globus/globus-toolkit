@@ -132,7 +132,7 @@ $DEBUG_ECHO testing for queue attribute specification >> $grami_logfile
 
 if [ ! -z "${grami_queue}" ]; then
     $DEBUG_ECHO testing for existance of PBS queue [$grami_queue] >> $grami_logfile
-    status=`qstat -Q $grami_queue`
+    status=`${qstat} -Q $grami_queue`
     if (test "$?" -eq "0") then
         $DEBUG_ECHO PBS queue [$grami_queue] found >> $grami_logfile
     else
