@@ -74,7 +74,7 @@ typedef enum
     GLOBUS_I_IO_FILE_DRIVER_ATTR = 1,
     GLOBUS_I_IO_TCP_DRIVER_ATTR  = 2,
     GLOBUS_I_IO_UDP_DRIVER_ATTR  = 4
-} globus_i_io_driver_attr_type_t;
+} globus_i_io_attr_type_t;
 
 typedef enum
 {
@@ -85,13 +85,11 @@ typedef enum
 
 typedef struct globus_i_io_attr_s
 {
-    globus_xio_handle_attr_t            xio_attr;
+    globus_i_io_attr_type_t             type;
+    globus_xio_attr_t                   attr;
 
-    globus_i_io_driver_attr_type_t      type;
-    globus_xio_driver_handle_attr_t     driver_attr;
-
-    globus_bool_t                       gsi_attr_used;
-    globus_xio_driver_handle_attr_t     gsi_attr;
+    globus_xio_driver_t                 driver;
+    globus_xio_driver_t                 gsi_driver;
 } globus_i_io_attr_t;
 
 typedef struct
@@ -106,8 +104,16 @@ typedef struct globus_i_io_handle_s
     globus_i_io_handle_type_t           type;
     globus_io_handle_t *                io_handle;
     globus_xio_handle_t                 xio_handle;
-    globus_l_gsi_authorization_callback_info_t * gsi_auth_callback_info;
+    /* XXX */globus_l_gsi_authorization_callback_info_t * gsi_auth_callback_info;
 } globus_i_io_handle_t;
+
+typedef struct globus_i_io_secure_authorization_data_s
+{
+    char *				identity;
+    globus_io_secure_authorization_callback_t
+					callback;
+    void *				callback_arg;
+} globus_i_io_secure_authorization_data_t;
 
 static
 globus_result_t
@@ -143,20 +149,9 @@ globus_l_io_attr_check(
                 func_name));
     }
     
-    if(need_gsi && !iattr->gsi_attr_used && 
-        (types & GLOBUS_I_IO_TCP_DRIVER_ATTR))
+    if(need_gsi && !iattr->gsi_driver && (types & GLOBUS_I_IO_TCP_DRIVER_ATTR))
     {
-        globus_result_t                 result;
-        
-        result = globus_xio_gsi_attr_init(&iattr->gsi_attr);
-        if(result == GLOBUS_SUCCESS)
-        {
-            iattr->gsi_attr_used = GLOBUS_TRUE;
-        }
-        else
-        {
-            return result;
-        }
+        return globus_xio_load_driver(&iattr->gsi_driver, "gsi");
     }
     
     return GLOBUS_SUCCESS;
@@ -182,66 +177,13 @@ globus_l_io_iattr_copy(
     }
     
     dest_iattr->type = source_iattr->type;
-    dest_iattr->gsi_attr_used = source_iattr->gsi_attr_used;
-    result = globus_xio_handle_attr_copy(
-        &dest_iattr->xio_attr, source_iattr->xio_attr);
+    dest_iattr->driver = source_iattr->driver;
+    dest_iattr->gsi_driver = source_iattr->gsi_driver;
+    result = globus_xio_attr_copy(&dest_iattr->attr, source_iattr->attr);
     if(result != GLOBUS_SUCCESS)
     {
-        goto free_dest;
+        globus_free(dest_iattr);
     }
-    
-    if(source_iattr->gsi_attr_used)
-    {
-        result = globus_xio_gsi_attr_copy(
-            &dest_iattr->gsi_attr, source_iattr->gsi_attr);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto destroy_dest_xio_attr;
-        }
-    }
-    
-    switch(source_iattr->type)
-    {
-      case GLOBUS_I_IO_FILE_DRIVER_ATTR:
-        result = globus_xio_file_attr_copy(
-            &dest_iattr->driver_attr, source_iattr->driver_attr);
-        break;
-        
-      case GLOBUS_I_IO_TCP_DRIVER_ATTR:
-        result = globus_xio_tcp_attr_copy(
-            &dest_iattr->driver_attr, source_iattr->driver_attr);
-        break;
-        
-      case GLOBUS_I_IO_UDP_DRIVER_ATTR:
-        result = globus_xio_udp_attr_copy(
-            &dest_iattr->driver_attr, source_iattr->driver_attr);
-        break;
-      
-      default:
-        globus_assert(0 && "invalid type");
-        break;
-    }
-    
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto destroy_dest_gsi_attr;
-    }
-    
-    *dest = dest_iattr;
-    
-    return GLOBUS_SUCCESS;
-
-destroy_dest_gsi_attr:
-    if(source_iattr->gsi_attr_used)
-    {
-        globus_xio_gsi_attr_destroy(dest_iattr->gsi_attr);
-    }
-    
-destroy_dest_xio_attr:
-    globus_xio_handle_attr_destroy(dest_iattr->xio_attr);
-    
-free_dest:
-    globus_free(dest_iattr);
     
     return result;
 }
@@ -265,31 +207,22 @@ globus_io_fileattr_init(
     }
     
     iattr->type = GLOBUS_I_IO_FILE_DRIVER_ATTR;
-    iattr->gsi_attr_used = GLOBUS_FALSE;
+    iattr->gsi_driver = GLOBUS_NULL;
     
-    result = globus_xio_file_attr_init(&iattr->driver_attr);
-    if(result != GLOBUS_SUCCESS)
+    result = globus_xio_load_driver(&iattr->driver, "file");
+    if(result == GLOBUS_SUCCESS)
     {
-        goto exit_free;
+        result = globus_xio_attr_init(&iattr->attr);
     }
     
-    result = globus_xio_handle_attr_init(&iattr->xio_attr);
-    if(result != GLOBUS_SUCCESS)
+    if(result == GLOBUS_SUCCESS)
     {
-        goto exit_destroy;
+        *attr = iattr;
     }
-    
-    *attr = iattr;
-    
-    return GLOBUS_SUCCESS;
-    
-exit_destroy:
-    
-    globus_xio_file_attr_destroy(iattr->driver_attr);
-    
-exit_free:
-
-    globus_free(iattr);
+    else
+    {
+        globus_free(iattr);
+    }
     
     return result;
 }
@@ -305,9 +238,7 @@ globus_io_fileattr_destroy(
     
     iattr = (globus_i_io_attr_t *) *attr;
     
-    globus_xio_file_attr_destroy(iattr->driver_attr);
-    globus_xio_handle_attr_destroy(iattr->xio_attr);
-    
+    globus_xio_attr_destroy(iattr->attr);
     globus_free(iattr);
     
     return GLOBUS_SUCCESS;
@@ -322,7 +253,8 @@ globus_io_attr_set_file_type(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_FILE_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_file_attr_set_type((*attr)->driver_attr, file_type);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, (*attr)->driver, GLOBUS_XIO_FILE_SET_TYPE, file_type);
 }
 
 globus_result_t
@@ -334,7 +266,8 @@ globus_io_attr_get_file_type(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_FILE_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_file_attr_get_type((*attr)->driver_attr, file_type);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, (*attr)->driver, GLOBUS_XIO_FILE_GET_TYPE, file_type);
 }
 
 /* udp attrs */
@@ -356,31 +289,22 @@ globus_io_udpattr_init(
     }
     
     iattr->type = GLOBUS_I_IO_UDP_DRIVER_ATTR;
-    iattr->gsi_attr_used = GLOBUS_FALSE;
+    iattr->gsi_driver = GLOBUS_NULL;
     
-    result = globus_xio_udp_attr_init(&iattr->driver_attr);
-    if(result != GLOBUS_SUCCESS)
+    result = globus_xio_load_driver(&iattr->driver, "udp");
+    if(result == GLOBUS_SUCCESS)
     {
-        goto exit_free;
+        result = globus_xio_attr_init(&iattr->attr);
     }
     
-    result = globus_xio_handle_attr_init(&iattr->xio_attr);
-    if(result != GLOBUS_SUCCESS)
+    if(result == GLOBUS_SUCCESS)
     {
-        goto exit_destroy;
+        *attr = iattr;
     }
-    
-    *attr = iattr;
-    
-    return GLOBUS_SUCCESS;
-    
-exit_destroy:
-    
-    globus_xio_udp_attr_destroy(iattr->driver_attr);
-    
-exit_free:
-
-    globus_free(iattr);
+    else
+    {
+        globus_free(iattr);
+    }
     
     return result;
 }
@@ -396,9 +320,7 @@ globus_io_udpattr_destroy(
     
     iattr = (globus_i_io_attr_t *) *attr;
     
-    globus_xio_udp_attr_destroy(iattr->driver_attr);
-    globus_xio_handle_attr_destroy(iattr->xio_attr);
-    
+    globus_xio_attr_destroy(iattr->attr);
     globus_free(iattr);
     
     return GLOBUS_SUCCESS;
@@ -413,8 +335,11 @@ globus_io_attr_set_udp_restrict_port(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_set_restrict_port(
-        (*attr)->driver_attr, restrict_port);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->driver,
+        GLOBUS_XIO_UDP_SET_RESTRICT_PORT,
+        restrict_port);
 }
 
 globus_result_t
@@ -426,8 +351,11 @@ globus_io_attr_get_udp_restrict_port(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_get_restrict_port(
-        (*attr)->driver_attr, restrict_port);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->driver,
+        GLOBUS_XIO_UDP_GET_RESTRICT_PORT,
+        restrict_port);
 }
 
 globus_result_t
@@ -439,8 +367,11 @@ globus_io_attr_set_udp_multicast_loop(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_set_multicast_loop(
-        (*attr)->driver_attr, enable_loopback);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->driver,
+        GLOBUS_XIO_UDP_SET_MULTICAST_LOOP, 
+        enable_loopback);
 }
 
 globus_result_t
@@ -452,8 +383,11 @@ globus_io_attr_get_udp_multicast_loop(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_get_multicast_loop(
-        (*attr)->driver_attr, enable_loopback);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_GET_MULTICAST_LOOP, 
+        enable_loopback);
 }
 
 globus_result_t
@@ -466,8 +400,12 @@ globus_io_attr_set_udp_multicast_membership(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_set_multicast_membership(
-        (*attr)->driver_attr, address, interface_addr);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_SET_MULTICAST_MEMBERSHIP, 
+        address, 
+        interface_addr);
 }
 
 globus_result_t
@@ -480,8 +418,12 @@ globus_io_attr_get_udp_multicast_membership(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_get_multicast_membership(
-        (*attr)->driver_attr, address, interface_addr);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_GET_MULTICAST_MEMBERSHIP, 
+        address, 
+        interface_addr);
 }
 
 globus_result_t
@@ -493,7 +435,11 @@ globus_io_attr_set_udp_multicast_ttl(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_set_multicast_ttl((*attr)->driver_attr, ttl);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_SET_MULTICAST_TTL, 
+        ttl);
 }
 
 globus_result_t
@@ -505,7 +451,11 @@ globus_io_attr_get_udp_multicast_ttl(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_get_multicast_ttl((*attr)->driver_attr, ttl);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_GET_MULTICAST_TTL, 
+        ttl);
 }
 
 globus_result_t
@@ -517,8 +467,11 @@ globus_io_attr_set_udp_multicast_interface(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_set_multicast_interface(
-        (*attr)->driver_attr, interface_addr);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_SET_MULTICAST_INTERFACE, 
+        interface_addr);
 }
 
 globus_result_t
@@ -530,8 +483,11 @@ globus_io_attr_get_udp_multicast_interface(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_UDP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_udp_attr_get_multicast_interface(
-        (*attr)->driver_attr, interface_addr);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_UDP_GET_MULTICAST_INTERFACE, 
+        interface_addr);
 }
 
 /* tcp attrs */
@@ -552,31 +508,22 @@ globus_io_tcpattr_init(
     }
     
     iattr->type = GLOBUS_I_IO_TCP_DRIVER_ATTR;
-    iattr->gsi_attr_used = GLOBUS_FALSE;
+    iattr->gsi_driver = GLOBUS_NULL;
     
-    result = globus_xio_tcp_attr_init(&iattr->driver_attr);
-    if(result != GLOBUS_SUCCESS)
+    result = globus_xio_load_driver(&iattr->driver, "tcp");
+    if(result == GLOBUS_SUCCESS)
     {
-        goto exit_free;
+        result = globus_xio_attr_init(&iattr->attr);
     }
-    
-    result = globus_xio_handle_attr_init(&iattr->xio_attr);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto exit_destroy;
-    }
-    
-    *attr = iattr;
-    
-    return GLOBUS_SUCCESS;
-    
-exit_destroy:
-    
-    globus_xio_tcp_attr_destroy(iattr->driver_attr);
-    
-exit_free:
 
-    globus_free(iattr);
+    if(result == GLOBUS_SUCCESS)
+    {
+        *attr = iattr;
+    }
+    else
+    {
+        globus_free(iattr);
+    }
     
     return result;
 }
@@ -592,14 +539,7 @@ globus_io_tcpattr_destroy(
     
     iattr = (globus_i_io_attr_t *) *attr;
     
-    if(iattr->gsi_attr_used)
-    {
-        globus_xio_gsi_attr_destroy(iattr->gsi_attr);
-    }
-    
-    globus_xio_tcp_attr_destroy(iattr->driver_attr);
-    globus_xio_handle_attr_destroy(iattr->xio_attr);
-    
+    globus_xio_attr_destroy(iattr->attr);
     globus_free(iattr);
     
     return GLOBUS_SUCCESS;
@@ -614,8 +554,11 @@ globus_io_attr_set_tcp_restrict_port(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_set_restrict_port(
-        (*attr)->driver_attr, restrict_port);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_SET_RESTRICT_PORT, 
+        restrict_port);
 }
 
 globus_result_t
@@ -627,8 +570,11 @@ globus_io_attr_get_tcp_restrict_port(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_get_restrict_port(
-        (*attr)->driver_attr, restrict_port);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_GET_RESTRICT_PORT, 
+        restrict_port);
 }
 
 globus_result_t
@@ -640,7 +586,11 @@ globus_io_attr_set_tcp_nodelay(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_set_nodelay((*attr)->driver_attr, nodelay);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_SET_NODELAY, 
+        nodelay);
 }
 
 globus_result_t
@@ -652,7 +602,11 @@ globus_io_attr_get_tcp_nodelay(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_get_nodelay((*attr)->driver_attr, nodelay);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_GET_NODELAY, 
+        nodelay);
 }
 
 globus_result_t
@@ -664,8 +618,11 @@ globus_io_attr_set_tcp_interface(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_set_interface(
-        (*attr)->driver_attr, interface_addr);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_SET_INTERFACE, 
+        interface_addr);
 }
 
 globus_result_t
@@ -677,8 +634,11 @@ globus_io_attr_get_tcp_interface(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_get_interface(
-        (*attr)->driver_attr, interface_addr);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_GET_INTERFACE, 
+        interface_addr);
 }
 
 /* socket attrs */
@@ -699,13 +659,19 @@ globus_io_attr_set_socket_reuseaddr(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_set_reuseaddr(
-            iattr->driver_attr, reuseaddr);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_SET_REUSEADDR,
+            reuseaddr);
     }
     else
     {
-        return globus_xio_udp_attr_set_reuseaddr(
-            iattr->driver_attr, reuseaddr);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_SET_REUSEADDR,
+            reuseaddr);
     }
 }
 
@@ -726,13 +692,19 @@ globus_io_attr_get_socket_reuseaddr(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_get_reuseaddr(
-            iattr->driver_attr, reuseaddr);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_GET_REUSEADDR,
+            reuseaddr);
     }
     else
     {
-        return globus_xio_udp_attr_get_reuseaddr(
-            iattr->driver_attr, reuseaddr);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_GET_REUSEADDR,
+            reuseaddr);
     }
 }
 
@@ -745,7 +717,11 @@ globus_io_attr_set_socket_keepalive(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_set_keepalive((*attr)->driver_attr, keepalive);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_SET_KEEPALIVE, 
+        keepalive);
 }
 
 globus_result_t
@@ -757,7 +733,11 @@ globus_io_attr_get_socket_keepalive(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_get_keepalive((*attr)->driver_attr, keepalive);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_GET_KEEPALIVE, 
+        keepalive);
 }
 
 globus_result_t
@@ -778,13 +758,21 @@ globus_io_attr_set_socket_linger(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_set_linger(
-            iattr->driver_attr, linger, linger_time);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_SET_LINGER,
+            linger,
+            linger_time);
     }
     else
     {
-        return globus_xio_udp_attr_set_linger(
-            iattr->driver_attr, linger, linger_time);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_SET_LINGER,
+            linger,
+            linger_time);
     }
 }
 
@@ -806,13 +794,21 @@ globus_io_attr_get_socket_linger(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_get_linger(
-            iattr->driver_attr, linger, linger_time);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_GET_LINGER,
+            linger,
+            linger_time);
     }
     else
     {
-        return globus_xio_udp_attr_get_linger(
-            iattr->driver_attr, linger, linger_time);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_GET_LINGER,
+            linger,
+            linger_time);
     }
 }
 
@@ -825,7 +821,11 @@ globus_io_attr_set_socket_oobinline(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_set_oobinline((*attr)->driver_attr, oobinline);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_SET_OOBINLINE,
+        oobinline);
 }
 
 globus_result_t
@@ -837,7 +837,11 @@ globus_io_attr_get_socket_oobinline(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_FALSE);
     
-    return globus_xio_tcp_attr_get_oobinline((*attr)->driver_attr, oobinline);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        (*attr)->driver, 
+        GLOBUS_XIO_TCP_SET_OOBINLINE, 
+        oobinline);
 }
 
 globus_result_t
@@ -857,11 +861,19 @@ globus_io_attr_set_socket_sndbuf(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_set_sndbuf(iattr->driver_attr, sndbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_SET_SNDBUF,
+            sndbuf);
     }
     else
     {
-        return globus_xio_udp_attr_set_sndbuf(iattr->driver_attr, sndbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_SET_SNDBUF,
+            sndbuf);
     }
 }
 
@@ -882,11 +894,19 @@ globus_io_attr_get_socket_sndbuf(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_get_sndbuf(iattr->driver_attr, sndbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_GET_SNDBUF,
+            sndbuf);
     }
     else
     {
-        return globus_xio_udp_attr_get_sndbuf(iattr->driver_attr, sndbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_GET_SNDBUF,
+            sndbuf);
     }
 }
 
@@ -907,11 +927,19 @@ globus_io_attr_set_socket_rcvbuf(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_set_rcvbuf(iattr->driver_attr, rcvbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_SET_RCVBUF,
+            rcvbuf);
     }
     else
     {
-        return globus_xio_udp_attr_set_rcvbuf(iattr->driver_attr, rcvbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_SET_RCVBUF,
+            rcvbuf);
     }
 }
 
@@ -932,11 +960,19 @@ globus_io_attr_get_socket_rcvbuf(
     
     if(iattr->type == GLOBUS_I_IO_TCP_DRIVER_ATTR)
     {
-        return globus_xio_tcp_attr_get_rcvbuf(iattr->driver_attr, rcvbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_TCP_GET_RCVBUF,
+            rcvbuf);
     }
     else
     {
-        return globus_xio_udp_attr_get_rcvbuf(iattr->driver_attr, rcvbuf);
+        return globus_xio_attr_cntl(
+            iattr->attr,
+            iattr->driver,
+            GLOBUS_XIO_UDP_GET_RCVBUF,
+            rcvbuf);
     }
 }
 
@@ -952,8 +988,12 @@ globus_io_attr_set_secure_authentication_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_authentication_mode(
-        (*attr)->gsi_attr, mode, credential);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_AUTHENTICATION_MODE,
+        mode,
+        credential);
 }
 
 globus_result_t
@@ -967,10 +1007,15 @@ globus_io_attr_get_secure_authentication_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_authentication_mode(
-        (*attr)->gsi_attr, mode, credential);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_AUTHENTICATION_MODE,
+        mode,
+        credential);
 }
 
+/* XXX */
 globus_result_t
 globus_io_attr_set_secure_authorization_mode(
     globus_io_attr_t *                  attr,
@@ -983,10 +1028,15 @@ globus_io_attr_set_secure_authorization_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_authorization_mode(
-        (*attr)->gsi_attr, mode, *data);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+        mode, 
+        *data);
 }
 
+/* XXX */
 globus_result_t
 globus_io_attr_get_secure_authorization_mode(
     globus_io_attr_t *                  attr,
@@ -999,8 +1049,12 @@ globus_io_attr_get_secure_authorization_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_authorization_mode(
-        (*attr)->gsi_attr, mode, data);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_AUTHORIZATION_MODE,
+        mode, 
+        *data);
 }
 
 globus_result_t
@@ -1012,8 +1066,11 @@ globus_io_attr_set_secure_extension_oids(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_extension_oids(
-        (*attr)->gsi_attr, extension_oids);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_EXTENSION_OIDS,
+        extension_oids);
 }
 
 globus_result_t
@@ -1025,8 +1082,11 @@ globus_io_attr_get_secure_extension_oids(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_extension_oids(
-        (*attr)->gsi_attr, extension_oids);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_EXTENSION_OIDS,
+        extension_oids);
 }
 
 globus_result_t
@@ -1038,7 +1098,11 @@ globus_io_attr_set_secure_channel_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_channel_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_CHANNEL_MODE,
+        mode);
 }
 
 globus_result_t
@@ -1050,7 +1114,11 @@ globus_io_attr_get_secure_channel_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_channel_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_CHANNEL_MODE,
+        mode);
 }
 
 globus_result_t
@@ -1062,7 +1130,11 @@ globus_io_attr_set_secure_protection_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_protection_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_PROTECTION_MODE,
+        mode);
 }
 
 globus_result_t
@@ -1074,7 +1146,11 @@ globus_io_attr_get_secure_protection_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_protection_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_PROTECTION_MODE,
+        mode);
 }
 
 globus_result_t
@@ -1086,7 +1162,11 @@ globus_io_attr_set_secure_delegation_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_delegation_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_DELEGATION_MODE,
+        mode);
 }
 
 globus_result_t
@@ -1099,7 +1179,11 @@ globus_io_attr_get_secure_delegation_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_delegation_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_DELEGATION_MODE,
+        mode);
 }
 globus_result_t
 globus_io_attr_set_secure_proxy_mode(
@@ -1110,7 +1194,11 @@ globus_io_attr_set_secure_proxy_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_set_proxy_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_SET_PROXY_MODE,
+        mode);
 }
 
 globus_result_t
@@ -1122,7 +1210,11 @@ globus_io_attr_get_secure_proxy_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_DRIVER_ATTR, GLOBUS_TRUE);
     
-    return globus_xio_gsi_attr_get_proxy_mode((*attr)->gsi_attr, mode);
+    return globus_xio_attr_cntl(
+        (*attr)->attr,
+        (*attr)->gsi_driver,
+        GLOBUS_XIO_GSI_GET_PROXY_MODE,
+        mode);
 }
 
 /* callback space attrs */
@@ -1140,7 +1232,11 @@ globus_io_attr_set_callback_space(
             GLOBUS_I_IO_FILE_DRIVER_ATTR,
         GLOBUS_FALSE);
     
-    return globus_xio_handle_attr_set_callback_space((*attr)->xio_attr, space);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        GLOBUS_NULL,
+        GLOBUS_XIO_SET_CALLBACK_SPACE,
+        space);
 }
 
 globus_result_t
@@ -1157,10 +1253,48 @@ globus_io_attr_get_callback_space(
             GLOBUS_I_IO_FILE_DRIVER_ATTR,
         GLOBUS_FALSE);
 
-    return globus_xio_handle_attr_get_callback_space((*attr)->xio_attr, space);
+    return globus_xio_attr_cntl(
+        (*attr)->attr, 
+        GLOBUS_NULL,
+        GLOBUS_XIO_GET_CALLBACK_SPACE,
+        space);
 }
 
-/* secure data handling */
+/* XXX secure data handling */
+
+globus_result_t
+globus_io_secure_authorization_data_initialize(
+    globus_io_secure_authorization_data_t *
+                                        data)
+{
+    
+}
+
+globus_result_t
+globus_io_secure_authorization_data_destroy(
+    globus_io_secure_authorization_data_t *
+                                        data)
+{
+    
+}
+
+globus_result_t
+globus_io_secure_authorization_data_set_identity(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    char *                              identity)
+{
+    
+}
+
+globus_result_t
+globus_io_secure_authorization_data_get_identity(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    char **                             identity)
+{
+    
+}
 
 globus_result_t
 globus_io_secure_authorization_data_set_callback(
@@ -1227,7 +1361,7 @@ globus_result_t
 globus_l_io_file_open(
     globus_io_handle_t *                handle,
     globus_i_io_attr_t *                iattr,
-    globus_xio_factory_attr_t           factory_attr)
+    const char *                        path)
 {
     globus_xio_handle_t                 xio_handle;
     globus_i_io_handle_t *              ihandle;
@@ -1235,8 +1369,37 @@ globus_l_io_file_open(
     globus_result_t                     result;
     MyName(globus_l_io_file_open);
     
-    result = globus_xio_handle_attr_add_driver_attr(
-        iattr->xio_attr, iattr->driver_attr);
+    
+    
+    result = globus_xio_stack_init(&stack, GLOBUS_NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto destroy_myattr;
+    }
+    
+    result = globus_xio_stack_push_driver(stack, iattr->driver, GLOBUS_NULL);
+    if(result == GLOBUS_SUCCESS)
+    {
+        result = globus_xio_target_init(&target, GLOBUS_NULL, path, stack);
+    }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto destroy_stack;
+    }
+    
+    
+    res = globus_xio_open(
+            &handle,
+            NULL,
+            target);
+    
+    
+    
+    
+    
+    result = globus_xio_handle_attr_add_attr(
+        iattr->xio_attr, iattr->attr);
     if(result == GLOBUS_SUCCESS)
     {
         result = globus_xio_factory_push_driver(
@@ -1284,10 +1447,11 @@ globus_io_file_open(
     globus_io_attr_t *                  attr,
     globus_io_handle_t *                handle)
 {
-    globus_xio_factory_attr_t           factory_attr;
+    globus_xio_stack_t                  stack;
     globus_result_t                     result;
     globus_io_attr_t                    myattr;
     globus_i_io_attr_t *                iattr;
+    globus_xio_target_t                 target;
     MyName(globus_io_file_open);
     
     GlobusLIOCheckNullParam(handle);
@@ -1309,32 +1473,19 @@ globus_io_file_open(
     }
     
     iattr = (globus_i_io_attr_t *) myattr;
-
-    result = globus_xio_file_attr_set_path(iattr->driver_attr, path);
+    
+    result = globus_xio_attr_cntl(
+        iattr->attr, iattr->driver, GLOBUS_XIO_FILE_SET_MODE, mode);
     if(result == GLOBUS_SUCCESS)
     {
-        result = globus_xio_file_attr_set_mode(iattr->driver_attr, mode);
+        result = globus_xio_attr_cntl(
+            iattr->attr, iattr->driver, GLOBUS_XIO_FILE_SET_FLAGS, flags);
         if(result == GLOBUS_SUCCESS)
         {
-            result = globus_xio_file_attr_set_flags(iattr->driver_attr, flags);
-            if(result == GLOBUS_SUCCESS)
-            {
-                result = globus_xio_factory_attr_init(&factory_attr);
-            }
+            result = globus_l_io_file_open(handle, iattr, path);
         }
     }
     
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto destroy_myattr;
-    }
-    
-    result = globus_l_io_file_open(handle, iattr, factory_attr);
-
-destroy_factory_attr:
-    globus_xio_factory_attr_destroy(factory_attr);
-    
-destroy_myattr:
     globus_io_fileattr_destroy(&myattr);
     
     return result;
@@ -1395,7 +1546,7 @@ globus_io_file_posix_convert(
     
     iattr = (globus_i_io_attr_t *) myattr;
 
-    result = globus_xio_file_attr_set_fd(iattr->driver_attr, fd);
+    result = globus_xio_file_attr_set_fd(iattr->attr, fd);
     if(result == GLOBUS_SUCCESS)
     {
         result = globus_xio_factory_attr_init(&factory_attr);
@@ -1448,8 +1599,8 @@ globus_io_udp_bind(
         
         iattr = (globus_i_io_attr_t *) myattr;
         
-        result = globus_xio_handle_attr_add_driver_attr(
-            iattr->xio_attr, iattr->driver_attr);
+        result = globus_xio_handle_attr_add_attr(
+            iattr->xio_attr, iattr->attr);
         if(result != GLOBUS_SUCCESS)
         {
             goto destroy_myattr;

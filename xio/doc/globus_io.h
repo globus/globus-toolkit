@@ -30,7 +30,7 @@ globus_module_descriptor_t              globus_i_io_module;
 
 typedef struct globus_i_io_handle_s *   globus_io_handle_t;
 typedef struct globus_i_io_attr_s *     globus_io_attr_t;
-typedef globus_xio_gsi_authorization_data_t 
+typedef globus_i_io_secure_authorization_data_s * 
     globus_io_secure_authorization_data_t;
 
 typedef void
@@ -758,17 +758,25 @@ globus_io_attr_get_secure_extension_oids(
     globus_io_attr_t *                  attr,
     gss_OID_set *                       extension_oids);
 
-#define globus_io_secure_authorization_data_initialize(data)                  \
-    globus_xio_gsi_authorization_data_init((data))
+globus_result_t
+globus_io_secure_authorization_data_initialize(
+    globus_io_secure_authorization_data_t *
+                                        data);
+globus_result_t
+globus_io_secure_authorization_data_destroy(
+    globus_io_secure_authorization_data_t *
+                                        data);
+globus_result_t
+globus_io_secure_authorization_data_set_identity(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    char *                              identity);
 
-#define  globus_io_secure_authorization_data_destroy(data)                    \
-    globus_xio_gsi_authorization_data_destroy(*(data))
-
-#define globus_io_secure_authorization_data_set_identity(data, identity)      \
-    globus_xio_gsi_authorization_data_set_identity(*(data), (identity))
-
-#define globus_io_secure_authorization_data_get_identity(data, identity)      \
-    globus_xio_gsi_authorization_data_get_identity(*(data), (identity))
+globus_result_t
+globus_io_secure_authorization_data_get_identity(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    char **                             identity);
 
 globus_result_t
 globus_io_secure_authorization_data_set_callback(
