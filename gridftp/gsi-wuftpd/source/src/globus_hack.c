@@ -10,6 +10,7 @@ extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
 extern int mode;
+extern globus_size_t                            g_striped_file_size;
 
 extern SIGNAL_TYPE         
 lostconn(int sig);
@@ -435,6 +436,8 @@ G_ENTER();
                   &g_data_handle,
                   GLOBUS_FALSE);
         assert(res == GLOBUS_SUCCESS);
+
+        g_striped_file_size = -1;
     }
 #   endif
 
@@ -723,9 +726,6 @@ g_send_data(
          sprintf(error_buf, "file_open failed");
          goto data_err;
      }
-
-
-
            
     if(offset == -1)
     {
@@ -745,10 +745,18 @@ g_send_data(
 	    {
 		struct stat s;
 
-		fstat(fileno(instr), &s);
+#if defined (STRIPED_SERVER_BACKEND)
+                if(g_striped_file_size > 0)
+                {
+                     g_layout.partitioned.size = g_striped_file_size;
+                }
+                else
+#endif
+                {
+		    fstat(fileno(instr), &s);
 		
-		g_layout.partitioned.size = s.st_size;
-
+		    g_layout.partitioned.size = s.st_size;
+                }
 		globus_ftp_control_local_layout(handle, &g_layout, 0);
 	    }
 	}

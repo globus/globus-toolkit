@@ -75,6 +75,7 @@
 extern globus_ftp_control_handle_t              g_data_handle;
 globus_list_t *					host_port_list = NULL;
 globus_ftp_control_layout_t			g_layout;
+globus_size_t                                   g_striped_file_size;
 globus_ftp_control_parallelism_t		g_parallelism;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
@@ -216,7 +217,7 @@ extern int port_allowed(const char *remoteaddr);
 
     UMASK   IDLE    CHMOD   GROUP   GPASS   NEWER
     MINFO   INDEX   EXEC    ALIAS   CDPATH  GROUPS
-    CHECKMETHOD     CHECKSUM        BUFSIZE
+    CHECKMETHOD     CHECKSUM        BUFSIZE PSIZE
 
     STRIPELAYOUT    PARTITIONED BLOCKED BLOCKSIZE
     PARALLELISM
@@ -855,7 +856,15 @@ cmd: USER SP username CRLF
 		else
 		    ack("CWD");
 	}
-
+    | SITE check_login SP PSIZE SP bufsize CRLF
+	=	{
+#if defined(STRIPED_SERVER_BACKEND)
+            g_striped_file_size = $6;
+            reply(200, "PSIZE command received.");
+#else
+            reply(200, "PSIZE command not understood.");
+#endif
+	}
     | SITE check_login SP HELP CRLF
 	=	{
 	    if (log_commands)
@@ -1871,6 +1880,7 @@ struct tab sitetab[] =
     {"CHECKMETHOD", CHECKMETHOD, OSTR, 1, "[ <sp> method ]"},
     {"CHECKSUM", CHECKSUM, OSTR, 1, "[ <sp> file-name ]"},
     {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <socket buffer size in bytes> ]"},
+    {"PSIZE", PSIZE, ARGS, 1, "[ <sp> <set file size for partitioned file> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
