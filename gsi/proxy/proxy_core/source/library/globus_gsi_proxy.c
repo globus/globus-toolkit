@@ -196,6 +196,7 @@ globus_gsi_proxy_create_req(
     X509_NAME_ENTRY *                   req_name_entry = NULL;
     RSA *                               rsa_key = NULL;
     globus_result_t                     result;
+    int                                 pci_NID = NID_undef;
 
     static char *                       _function_name_ =
         "globus_gsi_proxy_create_req";
@@ -330,8 +331,17 @@ globus_gsi_proxy_create_req(
     X509_REQ_set_subject_name(handle->req, req_name);
     X509_NAME_free(req_name);
     req_name = NULL;
-
+    
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+    {
+        pci_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    }
+    else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+    {
+        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    }
+
+    if(pci_NID != NID_undef)
     {
         ASN1_OCTET_STRING *             ext_data;
         int                             length;
@@ -339,9 +349,11 @@ globus_gsi_proxy_create_req(
         unsigned char *                 der_data;
         X509_EXTENSION *                pci_ext;
         STACK_OF(X509_EXTENSION) *      extensions;
+        X509V3_EXT_METHOD *             ext_method;
+
+        ext_method = X509V3_EXT_get_nid(pci_NID);
         
-        length = i2d_PROXYCERTINFO(handle->proxy_cert_info, 
-                                   NULL);
+        length = ext_method->i2d(handle->proxy_cert_info, NULL);
         if(length < 0)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -362,7 +374,7 @@ globus_gsi_proxy_create_req(
 
         der_data = data;
         
-        length = i2d_PROXYCERTINFO(handle->proxy_cert_info, &der_data);
+        length = ext_method->i2d(handle->proxy_cert_info, &der_data);
         
         if(length < 0)
         {
@@ -392,7 +404,7 @@ globus_gsi_proxy_create_req(
         free(data);
         
         pci_ext = X509_EXTENSION_create_by_NID(NULL,
-                                               OBJ_sn2nid(PROXYCERTINFO_SN),
+                                               pci_NID,
                                                1,
                                                ext_data);
         if(pci_ext == NULL)
@@ -606,22 +618,52 @@ globus_gsi_proxy_inquire_req(
         }
         
         policy_nid = OBJ_obj2nid(policy_lang);
-        
-        if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
-        {
-            handle->type= GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
-        }
-        else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
-        {
-            handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
-        }
-        else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
-        {
-            handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+
+        if(nid == pci_old_NID)
+        { 
+            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            {
+                handle->type=
+                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            {
+                handle->type =
+                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            {
+                handle->type =
+                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+            }
+            else
+            {
+                handle->type =
+                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+            }
         }
         else
         {
-            handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            {
+                handle->type=
+                    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            {
+                handle->type =
+                    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            {
+                handle->type =
+                    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
+            }
+            else
+            {
+                handle->type =
+                    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY;
+            }
         }
     }
     else
@@ -992,6 +1034,7 @@ globus_l_gsi_proxy_sign_key(
     EVP_PKEY *                          issuer_pkey = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     ASN1_INTEGER *                      serial_number = NULL;
+    globus_gsi_cert_utils_cert_type_t   issuer_type;
     
     static char *                       _function_name_ =
         "globus_l_gsi_proxy_sign_key";
@@ -1054,14 +1097,26 @@ globus_l_gsi_proxy_sign_key(
             (_PCSL("Couldn't initialize new X509")));
         goto done;
     }
-    
+
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+    {
+        pci_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    }
+    else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+    {
+        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    }
+    
+    if(pci_NID != NID_undef)
     {
         EVP_MD *                        sha1 = EVP_sha1();
         unsigned char                   md[SHA_DIGEST_LENGTH];
         long                            sub_hash;
         unsigned int                    len;
-        
+        X509V3_EXT_METHOD *             ext_method;
+
+        ext_method = X509V3_EXT_get_nid(pci_NID);
+
         ASN1_digest(i2d_PUBKEY,sha1,(char *) public_key,md,&len);
 
         sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
@@ -1087,22 +1142,9 @@ globus_l_gsi_proxy_sign_key(
         serial_number = ASN1_INTEGER_new();
 
         ASN1_INTEGER_set(serial_number, sub_hash);
-
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-
-        /* create the X509 extension from the PROXYCERTINFO */
-
-        if(pci_NID == NID_undef)
-        {
-            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                (_PCSL("No valid PROXYCERTINFO numeric identifier found")));
-            goto done;
-        }
         
-        pci_DER_length = i2d_PROXYCERTINFO(handle->proxy_cert_info, 
-                                           NULL);
+        pci_DER_length = ext_method->i2d(handle->proxy_cert_info, 
+                                         NULL);
         if(pci_DER_length < 0)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -1122,8 +1164,8 @@ globus_l_gsi_proxy_sign_key(
         }
         
         mod_pci_DER = pci_DER;
-        pci_DER_length = i2d_PROXYCERTINFO(handle->proxy_cert_info,
-                                           (unsigned char **) &mod_pci_DER);
+        pci_DER_length = ext_method->i2d(handle->proxy_cert_info,
+                                         (unsigned char **) &mod_pci_DER);
         if(pci_DER_length < 0)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -1451,7 +1493,7 @@ globus_l_gsi_proxy_sign_key(
         X509_free(*signed_cert); 
     }
     
-    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+    if(pci_NID != NID_undef)
     {
         if(pci_ext)
         {

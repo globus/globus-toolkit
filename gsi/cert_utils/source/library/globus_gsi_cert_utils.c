@@ -261,7 +261,6 @@ globus_gsi_cert_utils_get_cert_type(
     X509_NAME_ENTRY *                   ne = NULL;
     X509_NAME_ENTRY *                   new_ne = NULL;
     X509_EXTENSION *                    pci_ext = NULL;
-    ASN1_OCTET_STRING *                 ext_data = NULL;
     ASN1_STRING *                       data = NULL;
     PROXYCERTINFO *                     pci = NULL;
     PROXYPOLICY *                       policy = NULL;
@@ -271,7 +270,6 @@ globus_gsi_cert_utils_get_cert_type(
     int                                 index;
     int                                 critical;
     BASIC_CONSTRAINTS *                 x509v3_bc = NULL;
-    unsigned char *                     tmp_data;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_cert_type";
     
@@ -314,12 +312,75 @@ globus_gsi_cert_utils_get_cert_type(
         {
             *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
-        else if(((index = X509_get_ext_by_NID(cert,
-                                              OBJ_sn2nid(PROXYCERTINFO_SN),
-                                              -1)) != -1 ||
-                 (index = X509_get_ext_by_NID(cert,
-                                              OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
-                                              -1)) != -1) &&
+        else if((index = X509_get_ext_by_NID(cert,
+                                             OBJ_sn2nid(PROXYCERTINFO_SN),
+                                             -1)) != -1  &&
+                (pci_ext = X509_get_ext(cert,index)) &&
+                X509_EXTENSION_get_critical(pci_ext))
+        {
+            if((pci = X509V3_EXT_d2i(pci_ext)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form")));
+                goto exit;
+            }
+            
+            if((policy = PROXYCERTINFO_get_policy(pci)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Can't get policy from PROXYCERTINFO extension")));
+                goto exit;
+            }
+
+            if((policy_lang = PROXYPOLICY_get_policy_language(policy))
+               == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Can't get policy language from"
+                     " PROXYCERTINFO extension")));
+                goto exit;
+            }
+
+            policy_nid = OBJ_obj2nid(policy_lang);
+            
+            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
+            }
+            else
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY;
+            }
+            
+            if(X509_get_ext_by_NID(cert,
+                                   OBJ_sn2nid(PROXYCERTINFO_SN),
+                                   index) != -1)
+            { 
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Found more than one PCI extension")));
+                goto exit;
+            }
+        }
+        else if((index = X509_get_ext_by_NID(cert,
+                                             OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                             -1)) != -1 &&
                 (pci_ext = X509_get_ext(cert,index)) &&
                 X509_EXTENSION_get_critical(pci_ext))
         {
@@ -373,9 +434,6 @@ globus_gsi_cert_utils_get_cert_type(
             }
             
             if(X509_get_ext_by_NID(cert,
-                                   OBJ_sn2nid(PROXYCERTINFO_SN),
-                                   index) != -1 ||
-               X509_get_ext_by_NID(cert,
                                    OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
                                    index) != -1)
             { 
