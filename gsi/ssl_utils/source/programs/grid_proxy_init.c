@@ -90,7 +90,7 @@ static char *  LONG_USAGE = \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
 "\n" \
 "    -restriction <file>       Insert a restriction extension into the\n" \
-"                              generated proxy.\n" \  
+"                              generated proxy.\n" \
 "\n";
 
 
