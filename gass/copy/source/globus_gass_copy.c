@@ -2698,7 +2698,9 @@ globus_l_gass_copy_io_setup_put(
         result = globus_io_file_open(
 	    parsed_url.url_path,
 	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC),
-	    (GLOBUS_IO_FILE_IRWXU|GLOBUS_IO_FILE_IRWXG|GLOBUS_IO_FILE_IRWXO),
+	    (GLOBUS_IO_FILE_IRUSR|GLOBUS_IO_FILE_IWUSR|
+	        GLOBUS_IO_FILE_IRGRP|GLOBUS_IO_FILE_IWGRP|
+	        GLOBUS_IO_FILE_IROTH|GLOBUS_IO_FILE_IWOTH),
 	    state->dest.attr->io,
 	    state->dest.data.io.handle);
 
