@@ -93,6 +93,7 @@ typedef struct globus_i_wu_monitor_s
     globus_bool_t              abort;
     int                        count;
     int                        fd;
+    int                        code;
 
     off_t	               offset; 
     int                        callback_count;
@@ -159,6 +160,7 @@ connect_callback(
     void *                                      callback_arg,
     struct globus_ftp_control_handle_s *        handle,
     unsigned int                                stripe_ndx,
+    globus_bool_t                               reuse,
     globus_object_t *                           error);
 
 void
@@ -802,8 +804,16 @@ g_send_data(
     }
 
     G_EXIT();
-    reply(150, "Opening %s mode data connection.",
-          type == TYPE_A ? "ASCII" : "BINARY");
+    if(g_monitor.code == 150)
+    {
+       reply(150, "Opening %s mode data connection.",
+              type == TYPE_A ? "ASCII" : "BINARY");
+    }
+    else
+    {
+       reply(125, "Reusing %s mode data connection.",
+              type == TYPE_A ? "ASCII" : "BINARY");
+    }
     G_ENTER();
 
     transflag++;
@@ -858,6 +868,7 @@ g_send_data(
             count_a = 1;
         }
 
+        wu_monitor_reset(&g_monitor);
         for(ctr = 0; ctr < count_a && !eof; ctr++)
         {
             g_seek(instr, offset_a[ctr]);
@@ -1389,8 +1400,16 @@ g_receive_data(
     }
 
     G_EXIT();
-    reply(150, "Opening %s mode data connection.",
-          type == TYPE_A ? "ASCII" : "BINARY");
+    if(g_monitor.code == 150)
+    {
+       reply(150, "Opening %s mode data connection.",
+              type == TYPE_A ? "ASCII" : "BINARY");
+    }
+    else
+    {
+       reply(125, "Reusing %s mode data connection.",
+              type == TYPE_A ? "ASCII" : "BINARY");
+    }
     G_ENTER();
     
     transflag++;
@@ -1600,6 +1619,7 @@ connect_callback(
     void *                                      callback_arg,
     struct globus_ftp_control_handle_s *        handle,
     unsigned int                                stripe_ndx,
+    globus_bool_t                               reuse,
     globus_object_t *                           error)
 {
     globus_i_wu_monitor_t *                      monitor;
@@ -1608,9 +1628,24 @@ connect_callback(
 
     globus_mutex_lock(&monitor->mutex);
     {
-         monitor->error = globus_object_copy(error);
+         if(error != GLOBUS_NULL)
+         {
+             monitor->error = globus_object_copy(error);
+         }
+         else
+         {
+             monitor->error = GLOBUS_NULL;
+         }
 
-         monitor->done = GLOBUS_TRUE;
+         monitor->done = GLOBUS_TRUE; 
+         if(reuse) 
+         {
+             monitor->code = 150;
+         }
+         else
+         {
+             monitor->code = 125;
+         }
          globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
