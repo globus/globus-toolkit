@@ -993,15 +993,15 @@ globus_l_gfs_remote_session_start(
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
 
-    if(session_info->username == NULL)
+    if(session_info->username != NULL)
     {
         my_handle->session_info.username = strdup(session_info->username);
     }
-    if(session_info->password == NULL)
+    if(session_info->password != NULL)
     {
         my_handle->session_info.password = strdup(session_info->password);
     }
-    if(session_info->subject == NULL)
+    if(session_info->subject != NULL)
     {
         my_handle->session_info.subject = strdup(session_info->subject);
     }

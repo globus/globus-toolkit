@@ -1266,7 +1266,7 @@ globus_gfs_ipc_handle_create(
         xio_attr,
         globus_l_gfs_ipc_server_open_cb,
         ipc);
-    if(result == GLOBUS_SUCCESS)
+    if(result != GLOBUS_SUCCESS)
     {
         goto handle_error;
     }
@@ -1359,6 +1359,7 @@ globus_l_gfs_ipc_client_open_cb(
         ptr = buffer;
 
         GFSEncodeChar(buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_HANDSHAKE);
+        GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, 0);
         GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.version);
@@ -1370,8 +1371,8 @@ globus_l_gfs_ipc_client_open_cb(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.subject);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.host_id);
-        ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
         msg_size = ptr - buffer;
+        ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
         GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
 
         res = globus_xio_register_write(
@@ -1575,7 +1576,7 @@ globus_gfs_ipc_handle_obtain_by_path(
             /* if unused add to list for connection */
             else
             {
-                globus_list_insert(&reserved_list, &community->cs[i]);
+                globus_list_insert(&reserved_list, community->cs[i]);
             }
         }
 
