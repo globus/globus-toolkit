@@ -680,7 +680,6 @@ public class RftImpl
                                 transferJob.getSourceUrl(),
                                 transferJob.getDestinationUrl(),
                                 proxyLocation,
-                                dbOptions,
                                 transferProgress,
                                 serviceData,
                                 transferProgressData,
@@ -731,9 +730,11 @@ public class RftImpl
                 }
 
                 String restartMarker = dbAdapter.getRestartMarker( tempId );
+                boolean useExtended = false;
 
                 if ( restartMarker != null ) {
                     transferClient.setRestartMarker( restartMarker );
+                    useExtended = true;
 
                 }
                 if ( transferClient != null ) {
@@ -745,7 +746,7 @@ public class RftImpl
                         transferClient.setParallelStreams( rftOptions.getParallelStreams() );
                         transferClient.setTcpBufferSize( rftOptions.getTcpBufferSize() );
                         transferClient.setRFTOptions( rftOptions );
-                        transferClient.transfer();
+                        transferClient.transfer(useExtended);
                         transferJob.setStatus( TransferJob.STATUS_ACTIVE );
                         dbAdapter.update( transferJob );
                         transferJob.setStatus( transferClient.getStatus() );

@@ -358,7 +358,6 @@ public class TransferClient {
      *@param  sourceURL                    Description of the Parameter
      *@param  destinationURL               Description of the Parameter
      *@param  proxyPath                    Description of the Parameter
-     *@param  dbOptions                    Description of the Parameter
      *@param  transferProgress             Description of the Parameter
      *@param  serviceData                  Description of the Parameter
      *@param  transferProgressData         Description of the Parameter
@@ -373,7 +372,6 @@ public class TransferClient {
      */
     public TransferClient( int transferid, String sourceURL,
             String destinationURL, String proxyPath,
-            TransferDbOptions dbOptions,
             FileTransferProgressType transferProgress,
             ServiceDataSet serviceData,
             ServiceData transferProgressData,
@@ -731,16 +729,77 @@ public class TransferClient {
     /**
      *  DOCUMENT ME!
      */
-    public void transfer() {
-
-        if ( rftOptions.isNotpt() ) {
-            noTptTransfer();
+    public void transfer(boolean useExtended) {
+        if (useExtended) {
+            if ( rftOptions.isNotpt() ) {
+                noTptTransfer();
+            } else {
+                tptTransfer();
+            }
         } else {
-            tptTransfer();
+            if ( rftOptions.isNotpt() ) {
+                noTptNonExtendedTransfer();
+            } else {
+                tptNonExtendedTransfer();
+            }
         }
     }
 
 
+    private void tptNonExtendedTransfer() {
+
+        try {
+            logger.debug( "In NonExtended transfer" );
+            sourceHost.setOptions( new RetrieveOptions( parallelism ) );
+            sourceHost.setTCPBufferSize( this.tcpBufferSize );
+            destinationHost.setTCPBufferSize( this.tcpBufferSize );
+            sourceHost.transfer(this.sourcePath,
+            this.destinationHost,this.destinationPath,false,null);
+            logger.debug( "Transfer done" );
+            this.markerListener = null;
+            status = 0;
+        } catch ( Exception e ) {
+            logger.debug( "Exception in transfer", e );
+
+            if ( status != 2 ) {
+                status = 1;
+            }
+        }
+    }
+    
+   private void noTptNonExtendedTransfer() {
+
+        try {
+
+            String fullLocalFile = "/tmp/TempGridFTP_" + transferid;
+            sourceHost.setOptions( new RetrieveOptions( parallelism ) );
+            sourceHost.setTCPBufferSize( this.tcpBufferSize );
+
+            DataSink sink = null;
+            sink = new FileRandomIO( new java.io.RandomAccessFile( fullLocalFile,
+                    "rw" ) );
+            sourceHost.get( sourcePath, sink, markerListener );
+            sourceHost.close();
+            destinationHost.setOptions( new RetrieveOptions( parallelism ) );
+            destinationHost.setTCPBufferSize( this.tcpBufferSize );
+
+            DataSource source = null;
+            source = new FileRandomIO( new java.io.RandomAccessFile(
+                    fullLocalFile, "r" ) );
+            destinationHost.put( destinationPath, source,
+                    markerListener );
+            destinationHost.close();
+            status = 0;
+        } catch ( FTPException e ) {
+            logger.debug( "Exception in noTpt", e );
+
+            if ( status != 2 ) {
+                status = 1;
+            }
+        } catch ( IOException ioe ) {
+            logger.debug( "IOException in noTpt", ioe );
+        }
+    } 
     /**
      *  DOCUMENT ME!
      */
@@ -751,8 +810,10 @@ public class TransferClient {
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
-            sourceHost.extendedTransfer( this.sourcePath, this.destinationHost,
-                    this.destinationPath, markerListener );
+         /*   sourceHost.extendedTransfer( this.sourcePath, this.destinationHost,
+                    this.destinationPath, markerListener );*/
+            sourceHost.transfer(this.sourcePath,
+            this.destinationHost,this.destinationPath,false,null);
             logger.debug( "Transfer done" );
             this.markerListener = null;
             status = 0;
