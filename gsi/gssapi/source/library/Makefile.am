@@ -41,6 +41,7 @@ Sources_GSS_EXTENSIONS = \
 	buffer_set.c \
 	policy_sign.c \
 	policy_verify.c \
+	create_proxy.c \
 	set_sec_context_option.c \
 	set_group.c \
 	get_group.c

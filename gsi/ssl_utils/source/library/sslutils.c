@@ -483,6 +483,8 @@ ERR_load_prxyerr_strings(
                    "UntrustedGroup");
         OBJ_create("1.3.6.1.4.1.3536.1.1.1.3","RESTRICTEDRIGHTS",
                    "RestrictedRights");
+        OBJ_create("1.3.6.1.4.1.3536.1.1.1.6","CASRIGHTS",
+                   "CASRights");
         OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
 
         ERR_load_strings(ERR_USER_LIB_PRXYERR_NUMBER,prxyerr_str_functs);

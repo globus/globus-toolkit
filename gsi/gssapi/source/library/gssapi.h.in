@@ -978,6 +978,14 @@ GSS_CALLCONV GSS_FUNC(gss_policy_verify)
     gss_buffer_t,                       /* output_token */
     gss_name_t *);                      /* signing_identity */
 
+GSS_MAKE_TYPEDEF
+OM_uint32
+GSS_CALLCONV GSS_FUNC(gss_create_cas_proxy)
+   (OM_uint32 *,                        /* minor_status */
+    gss_cred_id_t,                      /* credential */
+    gss_buffer_t,                       /* policy */
+    char *);                            /* proxy_tag */
+
 
 extern const gss_OID_desc * const GSS_DISALLOW_ENCRYPTION;
 extern const gss_OID_desc * const GSS_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION;
