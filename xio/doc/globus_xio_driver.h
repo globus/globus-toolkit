@@ -191,7 +191,7 @@ typedef globus_result_t
 (*globus_xio_driver_attr_cntl_t)(
     void *                                      attr,
     int                                         cmd,
-    ...);
+    va_list                                     ap);
 
 /**
  *
@@ -863,7 +863,7 @@ typedef globus_result_t
 (*globus_xio_driver_driver_data_descriptor_cntl_t)(
     void *                                      dd,
     int                                         cmd,
-    ...);
+    va_list                                     ap);
  
 
 typedef struct globus_xio_driver_s 
@@ -938,7 +938,7 @@ globus_result_t
 globus_xio_driver_context_cntl(
      globus_xio_driver_context_t                context,
      int                                        cmd,
-     ...);
+     va_list                                    ap);
 
 /**
  *  @ingroup driver_api_grp

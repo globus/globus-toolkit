@@ -42,12 +42,13 @@ main(
             GLOBUS_XIO_CNTL_GET_CONTACT_STRING,
             &buf, 
             sizeof(buf));
+        globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
+        
         res = globus_xio_server_target_aquire(
                 &target,
                 NULL,
                 server);
         assert(res != GLOBUS_SUCCESS);
-        globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
     }
     else
     {

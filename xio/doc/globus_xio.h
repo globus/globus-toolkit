@@ -121,20 +121,17 @@
  *  block.
  *
  *  When time expires the outistanding operation is canceled.  If the
- *  callback for the given operation is not NULL it is called to
- *  notify the user that the operation timed out and thus has been 
- *  canceled.  The user will get the callback they registered for 
- *  the operation as well, but it will come with an error indicating
- *  that it has been canceled.
+ *  timeout callback for the given operation is not NULL it is called first to
+ *  notify the user that the operation timed out and give the user a chance to
+ *  ignore that timeout.  If canceled, the user will get the callback they 
+ *  registered for the operation as well, but it will come with an error
+ *  indicating that it has been canceled.
  *
  *  It is possiblie that part of an io operation will complete before
- *  the timeout expires.  In this case the opperation will still be 
+ *  the timeout expires.  In this case the opperation can still be 
  *  canceled.  The user will receive there IO callback with and 
  *  error set and the length value appropriately set to indicate how
  *  much of the operation completed.
- *
- *  There is no implied order in regard to the timeout callback and the
- *  io operation callback.
  */
 /**
  *  @page dd_user Data Desciptor

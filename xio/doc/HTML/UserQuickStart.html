@@ -38,16 +38,14 @@ in which you are interested.  The function globus_xio_load_driver() is
 used to load a driver.  In order to successfully call this function you must
 know the name of all the drivers you wish to load.  For this example we only 
 want to load the file io driver.  The prepackaged file io drivers name is:
-"globus_xio_file_driver".  This driver would be loaded with the following
+"file".  This driver would be loaded with the following
 code:
 
 <PRE>
     globus_result_t                     res;
     globus_xio_driver_t                 driver;
 
-    res = globus_xio_load_driver(
-              &driver,
-              "globus_xio_file_driver");
+    res = globus_xio_load_driver(&driver, "file");
 </PRE>
 
 If upon completion of the above function call res == GLOBUS_SUCCESS then
@@ -55,7 +53,7 @@ the driver was successfully loaded and can be referenced with the variable
 "driver".  
 <BR>
 <I>Note:</I>The string identiafing the driver follows a naming convention.
-With the above string the file globus_xio_file_driver.so should be in the
+With the above string the file globus_xio_file_driver&lt;flavor&gt;.so should be in the
 users LD_LIBRARY_PATH at runtime.
 <BR>
     <h3><a name="CreateStack">Create Stack</a></h3>
