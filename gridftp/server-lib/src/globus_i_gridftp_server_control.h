@@ -182,6 +182,8 @@ typedef struct globus_i_gsc_handle_opts_s
     globus_bool_t                           passive_only;
     int                                     perf_frequency;
     int                                     restart_frequency;
+    globus_gsc_layout_t                     layout;
+    int                                     block_size;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s

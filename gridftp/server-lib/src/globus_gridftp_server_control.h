@@ -122,6 +122,13 @@ typedef enum globus_gsc_security_type_e
     GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI = 0x02
 } globus_gridftp_server_control_security_type_t;
 
+typedef enum globus_gsc_layout_e
+{
+    GLOBUS_GSC_LAYOUT_TYPE_NONE = 0,
+    GLOBUS_GSC_LAYOUT_TYPE_PARTITIONED,
+    GLOBUS_GSC_LAYOUT_TYPE_BLOCKED
+} globus_gsc_layout_t;
+
 /**
  *  stat structure
  *  --------------
@@ -561,6 +568,13 @@ globus_gridftp_server_control_stop(
 /*
  *  setters and getters
  */
+
+globus_result_t
+globus_gridftp_server_control_get_layout(
+    globus_gridftp_server_control_op_t      op,
+    globus_gsc_layout_t *                   layout_type,
+    int *                                   block_size);
+
 globus_result_t
 globus_gridftp_server_control_get_buffer_size(
     globus_gridftp_server_control_op_t      op,
@@ -586,6 +600,11 @@ globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string);
+
+globus_result_t
+globus_gridftp_server_control_set_cwd(
+    globus_gridftp_server_control_t         server,
+    const char *                            cwd_string);
 
 globus_result_t
 globus_gridftp_server_control_get_data_auth(
