@@ -531,6 +531,11 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     char *           server_url;
     unsigned short   port                = 0;
     int              rc;
+    globus_gass_transfer_listener_t * listener;
+    globus_gass_transfer_listenerattr_t * attr;
+    char * scheme;
+    globus_gass_transfer_requestattr_t * reqattr;
+    
     
 
     rc = globus_gram_client_callback_allow(globus_l_cache_callback_func,
@@ -544,13 +549,15 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 	exit(1);
     }
     
-    rc = globus_gass_server_ez_init(&port,
-			            &server_url,
-			            GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE|
-			            GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE|
-			            GLOBUS_GASS_SERVER_EZ_LINE_BUFFER,
-			            (globus_gass_server_ez_client_shutdown_t)
-				        GLOBUS_NULL);
+    rc = globus_gass_server_ez_init(&listener,
+                                    attr,
+                                    scheme,
+                                    reqattr,
+                                    GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE|
+                                    GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE|
+                                    GLOBUS_GASS_SERVER_EZ_LINE_BUFFER,
+                                    (globus_gass_server_ez_client_shutdown_t)
+                                        GLOBUS_NULL);
 
     if ( rc != GLOBUS_SUCCESS )
     {
