@@ -290,12 +290,11 @@ globus_error_gssapi_match(
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
  *        local to the originating module.
- * @param short_desc
- *        Short context sensitive string giving a succinct description
+ * @param short_desc_format
+ *        Short format string giving a succinct description
  *        of the error. To be passed on to the user.
- * @param long_desc
- *        Longer context sensitive string giving a more detailed
- *        explanation of the error.
+ * @param ...
+ *        Arguments for the format string.
  * @return
  *        The resulting error object. It is the user's responsibility
  *        to eventually free this object using globus_object_free(). A
@@ -308,11 +307,13 @@ globus_error_wrap_gssapi_error(
     const OM_uint32                     major_status,
     const OM_uint32                     minor_status,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc)
+    const char *                        short_desc_format,
+    ...)
 {
     globus_object_t *                   causal_error;
-
+    globus_object_t *                   error;
+    va_list                             ap;
+    
     causal_error = globus_error_construct_gssapi_error(
         base_source,
         NULL,
@@ -324,12 +325,23 @@ globus_error_wrap_gssapi_error(
         return GLOBUS_NULL;
     }
 
-    return globus_error_construct_error(
+    va_start(ap, short_desc_format);
+    
+    error = globus_error_v_construct_error(
         base_source,
         causal_error,
         type,
-        short_desc,
-        long_desc);
+        short_desc_format,
+        ap);
+
+    va_end(ap);
+
+    if(error == GLOBUS_NULL)
+    {
+        globus_object_free(causal_error);
+    }
+    
+    return error;
     
 }/* globus_error_wrap_gssapi_error */
 /*@}*/

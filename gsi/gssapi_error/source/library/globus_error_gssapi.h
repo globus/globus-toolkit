@@ -133,8 +133,8 @@ globus_error_wrap_gssapi_error(
     const OM_uint32                     major_status,
     const OM_uint32                     minor_status,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc);
+    const char *                        short_desc_format,
+    ...);
 
 #endif
 
