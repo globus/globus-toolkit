@@ -28,12 +28,17 @@ EXTERN_C_BEGIN
 
 typedef struct
 {
-    globus_mutex_t           mutex;
-    globus_cond_t            cond;
-    volatile globus_bool_t   done;
-    volatile int             errorcode;
-    volatile void *          buf;
+    globus_mutex_t             mutex;
+    globus_cond_t              cond;
+    volatile globus_bool_t     done;
+    volatile int               errorcode;
 } globus_gram_http_monitor_t;
+
+typedef void (*globus_gram_http_callback_t)( void  *               arg,
+					     globus_io_handle_t *  handle,
+					     globus_byte_t *       message,
+					     globus_size_t         msgsize,
+					     int                   errorcode);
 
 
 /*
@@ -72,12 +77,11 @@ globus_gram_http_attach( char *                https_url,
  * must contain the read callback to be used. 
  */
 int
-globus_gram_http_allow_attach( unsigned short *           port,
-			       char **                    host,
-			       void *                     user_ptr,
-			       globus_io_read_callback_t  user_callback,
-			       void *                     user_callback_arg);
-
+globus_gram_http_allow_attach( unsigned short *             port,
+			       char **                      host,
+			       void *                       user_ptr,
+			       globus_gram_http_callback_t  user_callback,
+			       void *                       user_callback_arg);
 
 /*
  * kills the listener at the specified URL.
@@ -87,19 +91,22 @@ globus_gram_http_callback_disallow( char *  url );
 
 
 /*
- * two callbacks that frees the handle struct after close
+ * callback that frees the handle after close
  */
 void
 globus_gram_http_close_callback( void *                arg,
 				 globus_io_handle_t *  handle,
 				 globus_result_t       result);
 
+/*
+ * callback that frees the handle and sendbuf after write
+ */
 void
-globus_gram_http_close_after_read_or_write( void * arg,
-					    globus_io_handle_t * handle,
-					    globus_result_t result,
-					    globus_byte_t * buf,
-					    globus_size_t nbytes);
+globus_gram_http_close_after_write_callback( void *                arg,
+					     globus_io_handle_t *  handle,
+					     globus_result_t       result,
+					     globus_byte_t *       buf,
+					     globus_size_t         nbytes);
 
 /*
  * callback to bridge between globus_io_read_callback_t and
@@ -107,12 +114,11 @@ globus_gram_http_close_after_read_or_write( void * arg,
  */
 
 void
-globus_gram_http_client_callback( void * arg,
-				  globus_io_handle_t * handle,
-				  globus_result_t result,
-				  globus_byte_t * buf,
-				  globus_size_t nbytes);
-
+globus_gram_http_client_callback( void *                arg,
+				  globus_io_handle_t *  handle,
+				  globus_byte_t *       buf,
+				  globus_size_t         nbytes,
+				  int                   errorcode );
 
 int
 globus_gram_http_post( char *                         url,
@@ -131,19 +137,21 @@ globus_gram_http_post_and_get( char *                         url,
 int
 globus_gram_http_frame(globus_byte_t *    msg,
 		       globus_size_t      msgsize,
-		       globus_byte_t *    httpmsg,
+		       globus_byte_t **   httpmsg,        /* gets allocated */
 		       globus_size_t *    httpsize);
 
 /* create HTTP error message */
 int
-globus_gram_http_frame_error(globus_byte_t * msg);
+globus_gram_http_frame_error(int                errortype,
+                             globus_byte_t **   httpmsg,  /* gets allocated */
+			     globus_size_t *    httpsize);
 
 
 /* unframe HTTP message */
 int
 globus_gram_http_unframe(globus_byte_t *    httpmsg,
 			 globus_size_t      httpsize,
-			 globus_byte_t *    message,
+			 globus_byte_t **   message,      /* gets allocated */
 			 globus_size_t *    msgsize);
 
 EXTERN_C_END
