@@ -3,6 +3,7 @@
 
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
+#include "globus_i_gfs_ipc.h"
 
 typedef struct
 {
@@ -89,18 +90,13 @@ typedef struct
     int                                 ref;
 } globus_i_gfs_data_handle_t;
 
-typedef struct
-{
-    void * nothing;    
-} globus_i_gfs_ipc_handle_t;
-
 /* !! if this changes, code will have to corrected as all 3 types here are
  * upcasted/downcasted at will
  */
 typedef union
 {
     globus_i_gfs_data_handle_t          data;
-    globus_i_gfs_ipc_handle_t           ipc;
+    globus_gfs_ipc_handle_t             ipc;
 } globus_i_gfs_ipc_data_handle_t;
 
 typedef enum
@@ -112,7 +108,6 @@ typedef enum
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
-#include "globus_i_gfs_ipc.h"
 #include "globus_i_gfs_data.h"
 #include "globus_i_gfs_acl.h"
 #include "globus_i_gfs_config.h"

@@ -1,19 +1,20 @@
 #ifndef GLOBUS_I_GFS_IPC_H
 #define GLOBUS_I_GFS_IPC_H
 
-typedef struct globus_gfs_ipc_handle_s
-{
-    globus_xio_handle_t                 xio_handle;
+typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
+typedef struct globus_i_gfs_ipc_reply_s    globus_gfs_ipc_reply_t;
 
-    globus_hashtable_t                  call_table;
-    globus_gfs_ipc_iface_t              iface;
-    
-    globus_bool_t                       writing;
-    globus_fifo_t                       write_q;
-    
-    globus_mutex_t                      mutex;
-
-} globus_gfs_ipc_handle_t;
+/*
+ *  callbacks
+ *
+ *  all functions have the same callback, they examine the
+ *  globus_gfs_ipc_reply_t() structure for their specific info
+ */
+typedef void
+(*globus_gfs_ipc_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_ipc_reply_t *            reply,
+    void *                              user_arg);
 
 /*
  *  replying
@@ -33,9 +34,6 @@ typedef struct globus_gfs_ipc_passive_reply_s
     int                                 cs_count;
     globus_bool_t                       bi_directional;
     globus_gridftp_server_control_network_protocol_t net_prt; /* gag */
-    
-    /* this don't belong in the koolade */
-    globus_i_gfs_ipc_data_handle_t      data_handle;
 } globus_gfs_ipc_passive_reply_t;
 
 typedef struct globus_gfs_ipc_command_reply_s
@@ -51,11 +49,10 @@ typedef struct globus_gfs_ipc_resource_reply_s
     int                                 stat_count;
 } globus_gfs_ipc_resource_reply_t;
 
-typedef struct globus_gfs_ipc_reply_s
+struct globus_i_gfs_ipc_reply_s
 {
     /* what command is being replied to */
     int                                 id;
-    int                                 errno;
     int                                 reply_code;
     char *                              reply_msg;
 
@@ -66,7 +63,7 @@ typedef struct globus_gfs_ipc_reply_s
         globus_gfs_ipc_resource_reply_t resource_reply;
     } reply_type;
 
-} globus_gfs_ipc_reply_t;
+};
 
 /* callback and id relation */
 typedef struct globus_gfs_ipc_call_entry_s
@@ -81,18 +78,6 @@ globus_result_t
 globus_gfs_ipc_reply(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_reply_t *            reply);
-
-/*
- *  callbacks
- *
- *  all functions have the same callback, they examine the
- *  globus_gfs_ipc_reply_t() structure for their specific info
- */
-typedef void
-(*globus_gfs_ipc_callback_t)(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_reply_t              reply,
-    void *                              user_arg);
 
 /*
  *  sending
@@ -134,7 +119,7 @@ typedef struct globus_gfs_transfer_state_s
 
 typedef struct globus_gfs_command_state_s
 {
-    globus_i_gfs_command_t              command;
+    /*globus_i_gfs_command_t              command;*/
     char *                              pathname;
 
     globus_off_t                        cksm_offset;
@@ -338,7 +323,6 @@ globus_gfs_ipc_init(
 globus_result_t
 globus_gfs_ipc_destroy(
     globus_gfs_ipc_handle_t             ipc_handle);
-
 
 #endif
 

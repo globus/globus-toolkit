@@ -23,6 +23,11 @@ void
 globus_l_gfs_terminate_server(
     globus_bool_t                       immediately);
         
+static
+globus_result_t
+globus_l_gfs_open_new_server(
+    globus_xio_handle_t                 handle);
+
 /* now have an open channel (when we get here, we hand off to the
  * control or data server code)
  * XXX all thats left for process management is to setuid iff this is an inetd
@@ -34,7 +39,6 @@ void
 globus_l_gfs_sigchld(
     int                                 signal) 
 {
-    int                                 child_rc;
     int                                 child_pid;
     int                                 child_status;
 
@@ -74,11 +78,9 @@ globus_result_t
 globus_l_gfs_spawn_child(
     globus_xio_handle_t                 handle)
 {
-    GlobusGFSName(globus_l_gfs_spawn_child);
-    globus_xio_system_handle_t          socket_handle;
     globus_result_t                     result;
-    int                                 rc;
-    pid_t child_pid;
+    pid_t                               child_pid;
+    GlobusGFSName(globus_l_gfs_spawn_child);
 
     struct sigaction                act;
     struct sigaction                oldact;
