@@ -3848,14 +3848,14 @@ globus_gridftp_server_control_list_buffer_free(
 }
 
 globus_result_t
-globus_gridftp_server_events_enable(
+globus_gridftp_server_control_events_enable(
     globus_gridftp_server_control_op_t  op,
     int                                 event_mask,
     globus_gridftp_server_control_event_cb_t event_cb,
     void *                              user_arg)
 {
     globus_result_t                     res;
-    GlobusGridFTPServerName(globus_gridftp_server_events_enable);
+    GlobusGridFTPServerName(globus_gridftp_server_control_events_enable);
 
     if(op == NULL)
     {
@@ -3887,11 +3887,11 @@ globus_gridftp_server_events_enable(
 }
 
 globus_result_t
-globus_gridftp_server_events_disable(
+globus_gridftp_server_control_events_disable(
     globus_gridftp_server_control_op_t  op)
 {
     globus_result_t                     res;
-    GlobusGridFTPServerName(globus_gridftp_server_events_disable);
+    GlobusGridFTPServerName(globus_gridftp_server_control_events_disable);
 
     if(op == NULL)
     {
