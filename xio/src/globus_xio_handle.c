@@ -819,6 +819,15 @@ globus_l_xio_register_readv(
             res = GlobusXIOErrorInvalidState(handle->state);
             goto err;
         }
+        /* this is a bit ugly */
+        if(handle->context->entry[0].state != GLOBUS_XIO_HANDLE_STATE_OPEN &&
+           handle->context->entry[0].state != 
+            GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)
+        {
+            globus_mutex_unlock(&handle->context->mutex);
+            res = GlobusXIOErrorInvalidState(handle->state);
+            goto err;
+        }
 
         /* register timeout */
         if(handle->read_timeout_cb != NULL)
