@@ -107,6 +107,7 @@ gs -a \
 
 ws -a \
 	ws-gram\
+	ws-rendezvous\
 	ws-mds\
 	ws-transfer\
 	wsrf
