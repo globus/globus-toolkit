@@ -123,12 +123,24 @@
 #include "globus_i_gram_version.h"    /* GRAM version     */
 #include "globus_gram_client.h"       /* GRAM error codes */
 
-#include <globus_io.h>
+#include "globus_io.h"
 #include <stdlib.h>
 
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+
+gss_cred_id_t globus_i_gram_http_credential;
+static int globus_l_gram_http_activate(void);
+static int globus_l_gram_http_deactivate(void);
+
+globus_module_descriptor_t globus_i_gram_http_module = 
+{
+    "globus_gram_http",
+    globus_l_gram_http_activate,
+    globus_l_gram_http_deactivate,
+    GLOBUS_NULL
+};
 
 static
 char *
@@ -356,15 +368,41 @@ globus_l_gram_http_get_callback( void *                arg,
  * activation/deactivation.
  */
 
-int
-globus_gram_http_activate()
+static int
+globus_l_gram_http_activate()
 {
+    OM_uint32			major_status;
+    OM_uint32			minor_status;
     globus_i_gram_http_listeners = GLOBUS_NULL;
+    /*
+     * Get the GSSAPI security credential for this process.
+     * we save it in static storage, since it is only
+     * done once and can be shared by many threads.
+     * with some GSSAPI implementations a prompt to the user
+     * may be done from this routine.
+     *
+     * we will use the assist version of acquire_cred
+     */
+
+    major_status = globus_gss_assist_acquire_cred(&minor_status,
+                        GSS_C_BOTH,
+                        &globus_i_gram_http_credential);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status(stderr,
+                "gram_init failure:",
+                major_status,
+                minor_status,
+                0);
+
+        return GRAM_ERROR_AUTHORIZATION; /* need better return code */
+    }
     return GLOBUS_SUCCESS;
 }
 
-int
-globus_gram_http_deactivate()
+static int
+globus_l_gram_http_deactivate()
 {
     globus_i_gram_http_listener_t *  listener;
 
@@ -392,6 +430,18 @@ globus_gram_http_deactivate()
 				 GLOBUS_NULL);
 
 	my_free(listener);
+    }
+    /*
+     * GSSAPI - cleanup of the credential
+     * don't really care about returned status
+     */
+
+    if (globus_i_gram_http_credential != GSS_C_NO_CREDENTIAL)
+    {
+        OM_uint32 minor_status;
+        gss_release_cred(&minor_status,
+                         &globus_i_gram_http_credential);
+	globus_i_gram_http_credential = GSS_C_NO_CREDENTIAL;
     }
 
     globus_i_gram_http_listeners = GLOBUS_NULL;
@@ -904,7 +954,7 @@ globus_gram_http_setup_attr(globus_io_attr_t *  attr)
 	 || (res = globus_io_attr_set_secure_authentication_mode(
 	                attr,
 			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-			GSS_C_NO_CREDENTIAL))
+			globus_i_gram_http_credential))
 	 || (res = globus_io_attr_set_secure_authorization_mode(
 	                attr,
 			GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,

@@ -33,18 +33,11 @@ typedef void (*globus_gram_http_callback_t)( void  *               arg,
 					     globus_size_t         msgsize,
 					     int                   errorcode);
 
-/*
- * part of GRAM_CLIENT activation
- */
-int
-globus_gram_http_activate();
+#define GLOBUS_GRAM_HTTP_MODULE (&globus_i_gram_http_module)
 
-/*
- * part of GRAM_CLIENT deactivation 
- */
-int
-globus_gram_http_deactivate();
+extern globus_module_descriptor_t	globus_i_gram_http_module;
 
+extern gss_cred_id_t globus_i_gram_http_credential;
 
 /*
  * creates a default set of TCP attributes (authentication with self, SSL
