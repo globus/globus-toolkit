@@ -315,15 +315,15 @@ main(int argc,
                    grami_jm_libexecdir);
 
     if ((grami_user_proxy_path = 
-        (char *) getenv("X509_USER_DELEG_PROXY")) == NULL)
+        (char *) getenv("X509_USER_PROXY")) == NULL)
     {
         grami_fprintf( grami_log_fp, 
-            "JM: X509_USER_DELEG_PROXY not defined.\n");
+            "JM: X509_USER_PROXY not defined.\n");
     }
     else
     {
         grami_fprintf( grami_log_fp, 
-                       "JM: X509_USER_DELEG_PROXY = %s\n",
+                       "JM: X509_USER_PROXY = %s\n",
                        grami_user_proxy_path);
     }
  

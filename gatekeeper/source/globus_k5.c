@@ -1,13 +1,16 @@
 /******************************************************************************
 
-grami_ggg_k5_simple.c
+globus_gram_k5.c
 
 Description:
 	globus to Kerberos simple authentication module. 
 
 	When exec-ed by the gram_gatekeeper after 
 	authentiicating the globus user, this routine 
-	will attempt to issue a K5 kinit for the user. 
+	will attempt to issue a command for the user. 
+	This may be as simple as a kinit with a password,
+	or can use the NCSA krb525 command, or the
+	sslk5 command to use the X509 user proxy.
 
 	The args passed to this routine will not be used,
 	but will be passed onto the job manager. The first parameter
@@ -27,12 +30,13 @@ Description:
 	.globuskmap file. 
 
 	Format of the .globuskmap file:
-		 globus_user kinit command line ... including k5 principal
-         This looks a lot like the inetd.conf. 
+		 "globus_user" <kinit command line >... including k5 principal
+	The globus_user may be in "" if it has blanks, such as 
+	a X509 name.
 	This is designed to be a simple interface, and no attempt
 	to parse or use the command info is made. 
 	This allows for other commands to be used instead
-	of kinit. 
+	of kinit. Such as krb525 or sslk5
 
 	This will only be attempted if the gatekeeper
 	is run as root, as if the user has started 
@@ -58,7 +62,7 @@ Include header files
 #include <malloc.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include "grami_ggg.h"
+/* #include "grami_ggg.h" */
 
 /******************************************************************************
                                Type definitions
@@ -90,19 +94,19 @@ FILE *stderrX;
                           Module specific prototypes
 ******************************************************************************/
 static int
-grami_ggg_k5_globuskmap( char * globusid, char ** params);
+globus_gram_k5_globuskmap( char * globusid, char ** params);
 
 static int
-grami_ggg_k5_tokenize(char * command, char ** args, int n);
+globus_gram_k5_tokenize(char * command, char ** args, int n);
 
 static int
-grami_ggg_k5_exec(char *args[]);
+globus_gram_k5_exec(char *args[]);
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
 
 /******************************************************************************
-Function:   grami_ggg_k5_globuskmap()
+Function:   globus_gram_k5_globuskmap()
 Description:
 	Given a globusID, find the command to be issued.
 
@@ -112,7 +116,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static int
-grami_ggg_k5_globuskmap( char * globusid, char ** command)
+globus_gram_k5_globuskmap( char * globusid, char ** command)
 {
 
 	FILE * fd;
@@ -166,9 +170,15 @@ grami_ggg_k5_globuskmap( char * globusid, char ** command)
     while(fgets(line, sizeof(line), fd)) {
       i = strlen(line);
 	  if (line[0] != '#') {   /* comment line */
-	    if (line[i - 1] == '\n')
-		  line[i - 1] = '\0';
-        rc = sscanf(line, "%s%n %n", f_globusid, &offset, &offset);
+	    if (line[i - 1] == '\n') {
+			line[i - 1] = '\0';
+		}
+		rc = sscanf(line, " \"%255[^\"]%*c%n %n", 
+						f_globusid, &offset, &offset);
+		if (rc != 1) {
+        	rc = sscanf(line, "%255s%n %n",
+					 f_globusid, &offset, &offset);
+		}
         if (rc == 1) {
 	      if (!strcmp(globusid, f_globusid)) {
 		    *command = strdup(&line[offset]);
@@ -186,14 +196,14 @@ grami_ggg_k5_globuskmap( char * globusid, char ** command)
   return(-2);   /* open failed */
 }
 /******************************************************************************
-Function:   grami_ggg_k5_tokenize()
+Function:   globus_gram_k5_tokenize()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 
 static int
-grami_ggg_k5_tokenize(char * command, char ** args, int n)
+globus_gram_k5_tokenize(char * command, char ** args, int n)
 {
   int i,j,k;
   char * cp;
@@ -216,13 +226,13 @@ grami_ggg_k5_tokenize(char * command, char ** args, int n)
 }
 
 /******************************************************************************
-Function:   grami_ggg_k5_exec()
+Function:   globus_gram_k5_exec()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 static int
-grami_ggg_k5_exec(char *args[])
+globus_gram_k5_exec(char *args[])
 {
 
   int i,j;
@@ -274,13 +284,13 @@ grami_ggg_k5_exec(char *args[])
 }
 
 /******************************************************************************
-Function:   grami_ggg_k5_kinit()
+Function:   globus_gram_k5_kinit()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 int
-grami_ggg_k5_kinit(char * globus_client)
+globus_gram_k5_kinit(char * globus_client)
 {
 
   int rc;
@@ -291,13 +301,13 @@ grami_ggg_k5_kinit(char * globus_client)
   struct passwd *pw;
   struct stat stx;
 
-  if ((rc = grami_ggg_k5_globuskmap(globus_client, &command)))
+  if ((rc = globus_gram_k5_globuskmap(globus_client, &command)))
     return(rc); /* not found, or nothing to do */
  
   if (!command)
     return(0); /* no command */
   
-  if ((rc = grami_ggg_k5_tokenize( command, args, 100)))
+  if ((rc = globus_gram_k5_tokenize( command, args, 100)))
 	return(rc);
 
   i = 0;
@@ -308,7 +318,7 @@ grami_ggg_k5_kinit(char * globus_client)
 
   grami_setenv("KRB5CCNAME", ccname, 1);
 
-  rc = grami_ggg_k5_exec(args);
+  rc = globus_gram_k5_exec(args);
 
   /*
    * Make sure the creds cache is owned by the user. 
@@ -321,7 +331,7 @@ grami_ggg_k5_kinit(char * globus_client)
     }
   }
 
-  DEEDEBUG2("ggg_k5_exec rc = %d\n", rc);
+  DEEDEBUG2("globus_gram_k5_exec rc = %d\n", rc);
   return(rc);
 }
 
@@ -400,7 +410,7 @@ main(int argc, char *argv[])
 	    goto done; 
       DEEDEBUG2("USER = %s\n",user);
 
-	  if (grami_ggg_k5_kinit(globusid) == 0) {
+	  if (globus_gram_k5_kinit(globusid) == 0) {
 	   ccname = getenv("KRB5CCNAME");
 	  }
 
