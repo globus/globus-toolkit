@@ -48,7 +48,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -56,16 +56,16 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
 
-    if(desired_object != GSS_C_NO_OID)
+    if(desired_object == GSS_C_NO_OID)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -89,7 +89,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(data_set->elements == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,ERR_R_MALLOC_FAILURE);
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,ERR_R_MALLOC_FAILURE);
         /* what is the the correct minor status ?*/
         major_status = GSS_S_FAILURE;
         goto err;
@@ -131,7 +131,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     }
                     
                     free(data_set->elements);
-                    GSSerr(GSSERR_F_INIT_DELEGATION,ERR_R_MALLOC_FAILURE);
+                    GSSerr(GSSERR_F_INQUIRE_BY_OID,ERR_R_MALLOC_FAILURE);
                     /* what is the the correct minor status ?*/
                     major_status = GSS_S_FAILURE;
                     goto err;
