@@ -76,6 +76,10 @@ int myproxy_init_server(myproxy_socket_attrs_t *server_attrs, int port_number);
 int handle_client(myproxy_socket_attrs_t *server_attrs, 
                   myproxy_server_context_t *server_context);
 
+void send_response(myproxy_socket_attrs_t *server_attrs, 
+		   myproxy_response_t *response, 
+		   char *client_name);
+
 void get_proxy(myproxy_socket_attrs_t *server_attrs, 
 	      myproxy_creds_t *creds, 
 	      myproxy_response_t *response);
@@ -204,9 +208,8 @@ main(int argc, char *argv[])
 	    fclose(stdin);
 	    close(0);
 	    close(listenfd);
-	    numclients++;
 	}
-	
+	numclients++;
 	myproxy_log("Client has connected, total clients=%d", numclients);
 	if (handle_client(socket_attrs, server_context) < 0) {
 	    my_failure("error in handle_client()");
@@ -238,11 +241,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
-
-    /* Set version in response message */
-    server_response->version = malloc(strlen(MYPROXY_VERSION) + 1);
-    strcpy(server_response->version, MYPROXY_VERSION);   
-    
+    /* Set response OK unless error... */
+    server_response->response_type =  MYPROXY_OK_RESPONSE;
+ 
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
@@ -262,6 +263,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
         my_failure("Error authenticating client");
+	server_response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        strcat(server_response->error_string, "Error authenticating client\n");
     }
 
     /* Log client name */
@@ -280,6 +283,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
         my_failure("error in myproxy_deserialize_request()");
+	server_response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        strcat(server_response->error_string, "Unable to decipher client request\n");
     }
 
     /* Check client version */
@@ -338,11 +343,22 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY:
+	/* return server response */
+	send_response(attrs, server_response, client_name);
+	if (server_response->response_type == MYPROXY_ERROR_RESPONSE) {
+	  myproxy_log("Received ERROR: %s", server_response->error_string);
+	}
         /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
         client_creds->lifetime = 60*60*client_request->hours; 
         get_proxy(attrs, client_creds, server_response);
         break;
     case MYPROXY_PUT_PROXY:
+	/* return server response */
+	send_response(attrs, server_response, client_name);
+	/* Don't continue if there was an error */
+	if (server_response->response_type ==  MYPROXY_ERROR_RESPONSE) {
+	  my_failure("Unable to process client request");
+	}
         /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
         client_creds->lifetime = 60*60*client_request->hours; 
         put_proxy(attrs, client_creds, server_response);
@@ -357,26 +373,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         strcat(server_response->error_string, "Invalid client request command.\n");
         break;
     }
-
-    /* Set version */
-    server_response->version = malloc(strlen(MYPROXY_VERSION) + 1);
-    sprintf(server_response->version, "%s", MYPROXY_VERSION);
-
-    responselen = myproxy_serialize_response(server_response, 
-                                             server_buffer, sizeof(server_buffer));
     
-    if (responselen < 0) {
-        myproxy_log("error in myproxy_serialize_response()");
-        return -1;
-    }
-
-    /* Log request */
-    myproxy_log("Send client %s server response %s", client_name, server_buffer);
- 
-    if (myproxy_send(attrs, server_buffer, responselen) < 0) {
-        fprintf(stderr, "error in myproxy_send()\n");
-	return -1;
-    } 
+    /* return server response */
+    send_response(attrs, server_response, client_name);
   
     myproxy_destroy(attrs, client_request, server_response);
 
@@ -496,6 +495,31 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number)
 	    failure("Error in listen()");
     }
     return listen_sock;
+}
+
+void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, char *client_name) {
+    char server_buffer[1024];
+    int responselen;
+    assert(response != NULL);
+
+    /* set version */
+    response->version = malloc(strlen(MYPROXY_VERSION) + 1);
+    sprintf(response->version, "%s", MYPROXY_VERSION);
+
+    responselen = myproxy_serialize_response(response, server_buffer, sizeof(server_buffer));
+    
+    if (responselen < 0) {
+        my_failure("error in myproxy_serialize_response()");
+    }
+
+    /* Log request */
+    myproxy_log("Send client %s server response %s", client_name, server_buffer);
+ 
+    if (myproxy_send(attrs, server_buffer, responselen) < 0) {
+        my_failure("error in myproxy_send()\n");
+    } 
+
+    return;
 }
 
 void get_proxy(myproxy_socket_attrs_t *attrs, 
@@ -693,12 +717,10 @@ become_daemon(myproxy_server_context_t *context)
     (void)open("/dev/null", O_RDWR);
     dup(0); 
     dup(0);
-    /*
     fd = open("/dev/tty", O_RDWR);
     if (fd >= 0) {
       ioctl(fd, TIOCNOTTY, 0);
       (void)close(fd);
     } 
-    */
     return 0;
 }
