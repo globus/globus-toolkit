@@ -40,6 +40,7 @@ static char usage[] = \
 "                                         server (default 2 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "                                         Can also set MYPROXY_SERVER env. var.\n"
+"       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -a | --allow_anonymous_retrievers Allow credentials to be retrieved\n"
 "                                         with just username/passphrase\n"
 "       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"
@@ -52,14 +53,13 @@ static char usage[] = \
 "                                         for following policy options\n"
 "       -X | --match_cn_only              Set CN matching mode (default)\n"
 "                                         for following policy options\n"
-"       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
-"	-k | --credname <name>		  Specifies credential name\n"
-"	-K | --creddesc <description>	  Specifies credential description\n"
-"	-f | --force			  Force Credential Overwrite\n"
+"       -k | --credname <name>		  Specifies credential name\n"
+"       -K | --creddesc <description>	  Specifies credential description\n"
+"       -f | --force			  Force Credential Overwrite\n"
 "\n";
 
 struct option long_options[] =
@@ -369,7 +369,6 @@ init_arguments(int argc,
 	    break;
 	case 'k':  /*credential name*/
 	    request->credname = strdup (gnu_optarg);
-	    /* XXX: Need input validation here. */
 	    break;
 	case 'K':  /*credential description*/
 	    request->creddesc = strdup (gnu_optarg);
