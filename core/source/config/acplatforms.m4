@@ -60,6 +60,10 @@ case "$host" in
     AC_DEFINE(TARGET_ARCH_LINUX)
     AC_DEFINE(TARGET_ARCH_X86)
   ;;
+  *ia64-*linux* )
+    AC_DEFINE(TARGET_ARCH_LINUX)
+    AC_DEFINE(TARGET_ARCH_IA64)
+  ;;
   alpha-*-linux* )
     AC_DEFINE(TARGET_ARCH_LINUX)
     AC_DEFINE(TARGET_ARCH_AXP)

@@ -22,6 +22,8 @@ pkg_DATA = $(FILELIST_FILES) $(METADATA_FILES)
 
 flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
 
+EXTRA_DIST = MyFilelists.pm
+
 filelist_file: $(MAKEFILE_AMS)
 	@mydir=`pwd`; \
 	if test -f "master.filelist"; then \

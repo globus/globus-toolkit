@@ -49,6 +49,15 @@ filelist:
 		>> $(FILELIST_FILE); \
 	fi
 
+dist-hook: all-local
+	@if test ! -z "@DOXYGEN@"; then \
+		if test -d doc; then \
+		    cp -r doc $(distdir)/doc ; \
+		fi ; \
+		if test -d doc-internal; then \
+		    cp -r doc-internal $(distdir)/doc-internal ; \
+		fi ; \
+	fi ;
 
 include $(top_srcdir)/globus_automake_post
 

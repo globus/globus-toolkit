@@ -1,8 +1,10 @@
-#! /usr/bin/env perl
+#! /usr/bin/env perl 
 
-use strict;
+#use strict;
 use Getopt::Long;
 
+use Cwd;
+use Data::Dumper;
 #********************* subroutine section ***********************
 
 sub pod2usage;
@@ -12,8 +14,31 @@ sub pod2usage;
 #****************************************************************
 
 my $flavor;
-my $link;
+my $link="static";
 my $gpt=$ENV{GPT_LOCATION};
+my $gpath = $ENV{GPT_LOCATION};
+if (!defined($gpath))
+{
+	  $gpath = $ENV{GLOBUS_LOCATION};
+	   
+  }
+  if (!defined($gpath))
+  {
+	     die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+     }
+      
+     @INC = (@INC, "$gpath/lib/perl");
+
+require Grid::GPT::Dependencies;
+require Grid::GPT::DepOrdering;
+require Grid::GPT::Package;
+require Grid::GPT::Version;  
+my $cflagslist;
+my $includeslist;
+my $libslist;
+my $pkglibslist;
+my $pgm_linkslist;
+my $lib_linkslist;
 
 if(!defined($gpt))
 {
@@ -37,34 +62,60 @@ my $temp;
 GetOptions( '-flavor=s' => \$flavor, '-link=s' => \$link) 
 or pod2usage(1);
 
+if (!defined $flavor){
+	pod2usage(1);
+}
+if (@ARGV[0] eq ""){
+	pod2usage(1);
+}
+
 #$flavor is the globus flavor configuration variable... it is needed
 #for the globus-build-env-<flavor>, and for the call of the correct gpt_build_config
 
 #Section One
-#Prepend GLOBUS_ to the necessary lines
 
 open(OUT, ">./temp_header") || die "Cannot open ./temp_header: $!\n";
+#print "flavor is $flavor, link is $link \n";
 
-foreach $ARGV (@ARGV)
-{  #open foreach
+#print Dumper @ARGV;
+my $fakepkg= new Grid::GPT::Package;
+	$fakepkg->{'Name'}="Makefile_Header";
+	$fakepkg->{'Flavor'}=$flavor;
+	$fakepkg->{'Type'}="src";
+	$fakepkg->{'Package_Type'}="src";
+	$fakepkg->{'Source_Dependencies'}={};	
+	my $holder=$fakepkg->{'Source_Dependencies'};
+	my $versionobj= new Grid::GPT::Version;
+	$versionobj->{'type'}="range";
+	$versionobj->{'upper_major'}=1000;
+	$versionobj->{'lower_major'}=0;
+	@versionarray=($versionobj);
+	$holder->{'compile'}={};
+	foreach my $dep (@ARGV){
+		foreach my $foo ('compile', 'pgm_link', 'lib_link'){
+			$holder->{$foo}->{$dep}=new Grid::GPT::SourceDependency;
+			$holder->{$foo}->{$dep}->{'versions'}=\@versionarray; 
+			$holder->{$foo}->{$dep}->{'name'}=$dep;
+			}
+	#	$holder->{'compile'}->{$dep}=\$versionobj;
+	#	$holder->{'pgm_link'}->{$dep}=\$versionobj;
+	#	$holder->{'lib_link'}->{$dep}=\$versionobj;    
+		}
 
-          if(system("$gpt/sbin/gpt_build_config  -src=$globus/etc/globus_packages/$ARGV/pkg_data_".$flavor."_dev.gpt -o=./temp_file -flavor=$flavor -link=$link >/dev/null") == 1)
-          {
-            die "Cannot redirect to /dev/null";
-	  }  
+	#print Dumper $fakepkg;
+	#print Dumper @ARGV;
+	assemble_link_lines($fakepkg, $flavor, $link);
 	  
-	  open(IN, "./temp_file") || die "Cannot open ./output_file for reading: $!\n";
-	 
-	  while(<IN>)
-    	  {
-  	    print OUT  "GLOBUS_";  #prepend GLOBUS_ to each line in temp_file
-	    print OUT  split /GPT_CONFIG_/, "$_";          
-	  }
-
-	  close (IN);
-	  
-	  system("rm ./temp_file");  #remove temp_file 
-}
+print OUT "GLOBUS_CFLAGS=\"$cflagslist\"\n";
+print OUT "GLOBUS_INCLUDES=\" -I$ENV{GLOBUS_LOCATION}/include/$flavor $includeslist\"\n";
+print OUT "GLOBUS_LIBS=\"$libslist\"\n";
+print OUT "GLOBUS_LDFLAGS=\" -L$ENV{GLOBUS_LOCATION}/lib\n";
+print OUT "GLOBUS_PKG_LIBS=\"$pkglibslist\"\n";
+#print OUT "GLOBUS_PGM_LINKS=\"$pgm_linkslist\"\n";
+#print OUT "GLOBUS_LIB_LINKS=\"$lib_linkslist\"\n"; 
+#pgm_links and lib_links are broken at the moment, so we'll put in a hack:
+print OUT "GLOBUS_PGM_LINKS=\"$pkglibslist\"\n";
+print OUT "GLOBUS_LIB_LINKS=\"$pkglibslist\"\n";
 
 print OUT "GLOBUS_LIBTOOL=$globus/sbin/libtool-$flavor\n";
 
@@ -196,21 +247,27 @@ close(IN);
 system("rm ./temp_header");
 
 open(IN, "./temp_file");
-open(OUT, ">./header_file");
+#open(OUT, ">./header_file");
 
 while(<IN>)                          #unfortunately, some lines need ONE set of quotation marks around them
 {                                    #so i first find the return character and replace it with "\n.  this
-  s!\n!"\n!g;                        #stops the file from having a "GLOBUS_...=".  without this line, the " would
+ # s!\n!"\n!g;                        #stops the file from having a "GLOBUS_...=".  without this line, the " would
   m!([^=]+)=([^=]+)!;                #be added to the end after the \n.  the $_ is then split on the =.  i 
   my $copy1=$1;                      #assign each side to a variable, and add a " to the beginning of $2.
-  my $copy2='"'.$2;                  #then both are printed to header_file.
-  print OUT "$copy1=$copy2";
+  my $copy2=$2;                  #then both are printed to header_file.
+  $copy2 =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
+  $copy2 =~ s/\s+/ /g;
+  $copy2 =~ s/^\s//; 
+  $copy2 = $copy2."\n";
+     
+
+  print  "$copy1 = $copy2";
 }
 
-print OUT '"';  #special case
+print  "\n";  #special case
 		#the last line was missing the trailing " so i added it manually
 
-close(OUT);
+#close(OUT);
 close(IN);
 
 system("rm ./temp_file");
@@ -230,9 +287,170 @@ sub pod2usage
 {
 
   my $ex=shift;
-  print "ERROR: Please specify a build flavor: -flavor\n";
-  print "       or specify a link type:        -link\n";
+  print "ERROR: Please specify a build flavor: -flavor=<flavorname>\n";
+  print "	and one or more package names on which you depend, e.g.\n";
+  print "\n             globus-makefile-header -flavor=gcc32dbg globus_io\n\n";
+  print "	You can also specify whether you will be linking\n";
+  print "	shared or static, with -link=[shared|static], but this\n";
+  print "	will only affect which dependencies are checked when it\n";
+  print "	examines your GLOBUS_LOCATION--the output is the same\n";
   exit $ex;
 
 }
 
+sub assemble_link_lines
+{
+
+
+my $prefix = $globus;
+
+my $srcfile;
+my $pkg =shift;
+my $flavor =shift;
+my $linktype = shift;
+my @deps = @_;
+
+my $verbose = 0;
+my ($help, $man);
+
+#print Dumper $pkg;
+#print Dumper @deps;
+
+
+	my $dependencies=new Grid::GPT::Dependencies;
+	my @missing=undef();
+	#	foreach my $package (@deps)
+	#{
+	#my $pkg = new Grid::GPT::Package;
+	#	$pkg->read_metadata_file($package);
+        	@missing=(@missing,$dependencies->get_dependencies($pkg, "build",$flavor,$linktype, "silent"));
+		#}
+#print "missing is: \n";
+#print Dumper @missing;
+        if (defined $missing[0]){
+                #we got a return value, so some dependency was missing
+
+                foreach my $i (@missing){
+						#print DEBUG "Packages not found:";
+                        #print DEBUG " ", $i, ",";
+						print DEBUG "Packages not found:";
+                        print DEBUG " ", $i, ",";   
+                }
+                print #DEBUG "\n";
+				print "\n";
+
+				die "ERROR: Dependent package(s) @missing not found";
+        }else{
+				#we're good on dependencies, let's find our interesting values
+
+#first let's dependency order the list:
+my @deporderlist;
+for my $package (@{$dependencies->{packagelist}}){
+	        push @deporderlist, $$package;
+	}
+	 
+	my @results=Grid::GPT::DepOrdering->dep_ordering(@deporderlist);
+
+#foreach my $dep (@{$dependencies->{packagelist}}) {
+foreach my $dep (@results){
+	my $cflags;
+	my $includes;
+	my $libs;
+	my $pkglibs;
+
+#print "linktype equals $linktype \n";
+	my $build_env = $$dep->{'Build_Environment'};
+
+	($cflags, $includes, $libs, $pkglibs) = ($$dep->{'cflags'}, 
+					    $$dep->{'external_includes'}, 
+					    $$dep->{'external_libs'}, 
+					    $$dep->{'pkg_libs'} );
+
+	if (ref($cflags) eq "HASH"){
+		$cflags=undef();
+	}
+	if (ref($includes) eq "HASH"){
+		$includes=undef();
+	}
+	if (ref($libs) eq "HASH"){
+		$libs=undef();
+	}
+	if (ref($pkglibs) eq "HASH"){
+		$pkglibs=undef();
+	}
+
+
+	if (defined $dependencies->compile->{$$dep->Name."_".$$dep->Package_Type} or 
+		defined	$dependencies->Compile->{$$dep->Name."_".$$dep->Package_Type} or 
+		defined $dependencies->Runtime_Link->{$$dep->Name."_".$$dep->Package_Type} or
+		defined $dependencies->Build_Link->{$$dep->Name."_".$$dep->Package_Type } or 
+		defined$dependencies->lib_link->{$$dep->Name."_".$$dep->Package_Type} or 
+		defined $dependencies->pgm_link->{$$dep->Name."_".$$dep->Package_Type} 
+		 ){
+
+
+		if ($$dep->Package_Type eq 'dev'){
+#print "GREP2: we're looking at a dev dependency\n";
+#print $$dep->Name."_".$$dep->Package_Type."\n";
+			$includeslist .= " ".$includes;  
+			$libslist .= " ".$libs;
+			$pkglibslist .= " ".$pkglibs;
+ 	if(defined$dependencies->pgm_link->{$$dep->Name."_".$$dep->Package_Type} or
+		defined$dependencies->pgm_link->{$$dep->Name."_"."rtl"}) {
+            $pgm_linkslist .= " ".$pkglibs;
+	} 
+	if(defined$dependencies->lib_link->{$$dep->Name."_".$$dep->Package_Type} or
+		defined$dependencies->lib_link->{$$dep->Name."_"."rtl"}){
+            $lib_linkslist .= " ".$pkglibs;
+    }
+#print "BARBAR $pkglibs\n";
+#print Dumper $$dep;
+
+			if ($linktype eq 'static'){
+				$cflagslist .= " ".$cflags;
+			}
+		}
+#		if(defined$dependencies->pgm_link->{$$dep->Name."_".$$dep->Package_Type}) {
+#			$pgm_linkslist .= " ".$pkglibs;
+#	}
+#		if(defined$dependencies->lib_link->{$$dep->Name."_".$$dep->Package_Type}){
+#			$lib_linkslist .= "$$dep->{Name} $$dep->{Package_Type}  ".$pkglibs;
+#print "FOOFOO $pkglibs\n";
+ #   }                               
+
+		if ($$dep->Package_Type eq 'rtl'){
+        	if ($linktype eq 'shared'){
+            	$cflagslist .= " ".$cflags;
+            	$pkglibslist .= " ".$pkglibs;
+#print "FEEFEE $pkglibs\n";
+#print Dumper $$dep;
+        	}
+    	}  
+		if ($$dep->Package_Type eq 'virtual'){
+		#we'd better save the flags from this just in case--I'm not entirely
+		#comfortable with this though--I think virtual packages should have
+		#substantially the same metadata as regular packages (e.g. no "virtual"
+		#type --EBB
+#print "here we are in the virtual package land. $includes $libs $pkglibs
+#$cflags\n";		
+#print Dumper $$dep;
+		 $includeslist .= " ".$includes;
+         $libslist .= " ".$libs;
+         $pkglibslist .= " ".$pkglibs;
+		 $cflagslist .= " ".$cflags;
+		}
+
+	}
+}
+}
+
+
+#print "GREPPER: cflags= $cflagslist, includes= $includeslist, libs=$libslist,
+#pkglibs= $pkglibslist\n";
+#print "Printing pgm_link keys: \n";
+#print keys %{$dependencies->{pgm_link}};
+#print "\n Printing lib_link keys: \n";
+#print keys %{$dependencies->{lib_link}};
+#print "\n";
+
+}

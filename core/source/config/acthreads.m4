@@ -167,6 +167,10 @@ dnl --with-thread-library appropriately
             LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
             LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)	
         ;;
+        *ia64-*linux* )
+            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
+            LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)	
+        ;;
         * )
             LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
             LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
