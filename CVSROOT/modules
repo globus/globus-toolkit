@@ -114,6 +114,7 @@ ws -a \
 	ws-transfer\
 	ws-cas\
 	ws-delegation\
+	ws-replica\
 	wsrf\
 	database\
 	usage
