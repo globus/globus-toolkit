@@ -4,7 +4,8 @@
 typedef enum
 {
     GLOBUS_I_GFS_LOG_ERR,
-    GLOBUS_I_GFS_LOG_INFO
+    GLOBUS_I_GFS_LOG_INFO,
+    GLOBUS_I_GFS_LOG_CONTROL
 } globus_i_gfs_log_type_t;
 
 void
@@ -24,10 +25,4 @@ globus_i_gfs_log_result(
     const char *                        lead,
     globus_result_t                     result);
 
-void
-globus_i_gfs_log_entry(
-    globus_i_gfs_server_instance_t *    instance,
-    const char *                        message,
-    globus_i_gfs_log_type_t             type);
-    
 #endif

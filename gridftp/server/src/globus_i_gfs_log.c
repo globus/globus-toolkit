@@ -7,16 +7,31 @@
  * 
  * if this fails, just print to stderr.
  */
+ 
+static globus_logging_handle_t          log_handle;
+
 void
 globus_i_gfs_log_open(void)
 {
-    
+    globus_logging_init(
+        &log_handle,
+        GLOBUS_NULL, /* no buffered logs */
+        4096,
+        0xFFFFFFFF, 
+        &globus_logging_stdio_module,
+        stderr);
+
+    if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("detach"))
+    {
+        freopen("/dev/null", "w", stderr);
+    }
 }
 
 void
 globus_i_gfs_log_close(void)
 {
-    
+    globus_logging_flush(log_handle);
+    globus_logging_destroy(log_handle);
 }
 
 void
@@ -28,27 +43,9 @@ globus_i_gfs_log_message(
     va_list                             ap;
     
     va_start(ap, format);
-    
-    if(!globus_i_gfs_config_bool("inetd") && !globus_i_gfs_config_bool("detach"))
-    {
-        globus_libc_vfprintf(stderr, format, ap);
-    }
+    globus_logging_vwrite(log_handle, type, format, ap);
+   // globus_libc_vfprintf(stderr, format, ap);
     va_end(ap);
-}
-void
-globus_i_gfs_log_entry(
-    globus_i_gfs_server_instance_t *    instance,
-    const char *                        message,
-    globus_i_gfs_log_type_t             type)
-{
-   
-    globus_i_gfs_log_message(
-        type, 
-        "%s: %s", 
-        instance->remote_contact, 
-        message);
-    
-    return;
 }
 
 void

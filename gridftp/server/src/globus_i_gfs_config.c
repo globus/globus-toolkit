@@ -380,7 +380,7 @@ globus_l_config_loadfile(
     file_len = ftell(file);
     fseek(file, 0L, SEEK_SET);	
 
-    out_buf = (char *) malloc(file_len * sizeof(char));	
+    out_buf = (char *) malloc((file_len + 1) * sizeof(char));	
     if(!out_buf)
     {
         goto error;
@@ -388,6 +388,7 @@ globus_l_config_loadfile(
 
     fread(out_buf, sizeof(char), file_len, file);
     fclose(file);
+    out_buf[file_len] = '\0';
 
     *data_out = out_buf;
          

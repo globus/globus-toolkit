@@ -356,7 +356,7 @@ globus_i_gsc_log(
     if(mask & server_handle->funcs.log_mask)
     {
         server_handle->funcs.log_func(
-            server_handle, command, server_handle->funcs.log_arg);
+            server_handle, command, mask, server_handle->funcs.log_arg);
     }
 }
 

@@ -843,13 +843,38 @@ void
 globus_l_gfs_control_log(
     globus_gridftp_server_control_t     server_handle,
     const char *                        message,
+    int                                 class,
     void *                              user_arg)
 {
     globus_i_gfs_server_instance_t *    instance;
+    globus_i_gfs_log_type_t             type;
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-    globus_i_gfs_log_entry(instance, message, GLOBUS_I_GFS_LOG_INFO);
+    if(instance == GLOBUS_NULL)
+    {
+        return;
+    }
+
+    switch(class)
+    {
+      case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY:
+        type = GLOBUS_I_GFS_LOG_CONTROL;
+        globus_i_gfs_log_message(type, "%s: [SERVER]: %s",
+            instance->remote_contact, message);
+        break;
+      case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR:
+        type = GLOBUS_I_GFS_LOG_ERR;
+        globus_i_gfs_log_message(type, "%s: [CLIENT ERROR]: %s", 
+            instance->remote_contact, message);
+         break;
+      default:
+        type = GLOBUS_I_GFS_LOG_CONTROL;
+        globus_i_gfs_log_message(type, "%s: [CLIENT]: %s",
+            instance->remote_contact, message);
+         break;
+    }
+        
     return;
 }
 

@@ -58,6 +58,13 @@ globus_logging_write(
     ...);
 
 globus_result_t
+globus_logging_vwrite(
+    globus_logging_handle_t             handle,
+    int                                 type,
+    const char *                        fmt,
+    va_list                             ap);
+
+globus_result_t
 globus_logging_flush(
     globus_logging_handle_t             handle);
 

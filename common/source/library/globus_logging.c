@@ -194,15 +194,13 @@ globus_logging_init(
 
     return res;
 }
-
 globus_result_t
-globus_logging_write(
+globus_logging_vwrite(
     globus_logging_handle_t             handle,
     int                                 type,
     const char *                        fmt,
-    ...)
+    va_list                             ap)
 {
-    va_list                             ap;
     globus_result_t                     res;
     globus_size_t                       remain;
     globus_size_t                       nbytes;
@@ -238,10 +236,8 @@ globus_logging_write(
                 handle->used_length += nbytes;
                 remain -= nbytes;
             }
-            va_start(ap, fmt);
             nbytes = vsnprintf(
                 &handle->buffer[handle->used_length], remain, fmt, ap);
-            va_end(ap);
             handle->used_length += nbytes;
             if(type & GLOBUS_LOGGING_INLINE || 
                 handle->type_mask & GLOBUS_LOGGING_INLINE)
@@ -255,6 +251,22 @@ globus_logging_write(
     return GLOBUS_SUCCESS;
 
   err:
+    return res;
+}
+    
+globus_result_t
+globus_logging_write(
+    globus_logging_handle_t             handle,
+    int                                 type,
+    const char *                        fmt,
+    ...)
+{
+    va_list                             ap;
+    globus_result_t                     res;
+    va_start(ap, fmt);
+    res = globus_logging_vwrite(handle, type, fmt, ap);
+    va_end(ap);
+
     return res;
 }
 

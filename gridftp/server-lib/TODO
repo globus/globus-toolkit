@@ -8,6 +8,7 @@ SERVER:
 -server mem management... i know there are some leaks with attrs and now with instance for event stuff
 -mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
 -verify inetd is prepped right
+-return from event cb immediately
 
 LIB:
 -verify feat list
@@ -31,7 +32,6 @@ verify shit still works after that!
 if time, desire, etc etc:
 --------------------------------------------------------------
 SERVER:
--drop in cheap ipc-bounce-oneshot layer
 -make forking/daemon mode better (maybe leave this out for now)
 -define logging classes in config
 -implement setuid/setgid to anonymous_user

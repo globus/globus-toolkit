@@ -402,6 +402,7 @@ typedef void
 (*globus_gridftp_server_control_log_cb_t)(
     globus_gridftp_server_control_t     server_handle,
     const char *                        full_command,
+    int                                 class,
     void *                              user_arg);
 
 /** 
