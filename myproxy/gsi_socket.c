@@ -645,15 +645,11 @@ int
 GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 {
     int				token_status;
-    struct sockaddr_in		server_addr = { 0 };
-    int				server_addr_len = sizeof(server_addr);
-    struct hostent		*server_info = NULL;
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
     gss_name_t			server_gss_name = GSS_C_NO_NAME;
     OM_uint32			req_flags = 0, ret_flags = 0;
     int				return_value = GSI_SOCKET_ERROR;
-    gss_buffer_desc		gss_buffer = { 0 };
-    gss_buffer_desc		tmp_gss_buffer = { 0 };
+    gss_buffer_desc		gss_buffer = { 0 }, tmp_gss_buffer = { 0 };
     gss_name_t			target_name = GSS_C_NO_NAME;
     gss_OID			target_name_type = GSS_C_NO_OID;
     int				i, rc=0;
