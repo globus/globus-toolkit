@@ -13,6 +13,18 @@
 #ifndef GLOBUS_CALLOUT_CONSTANTS_H
 #define GLOBUS_CALLOUT_CONSTANTS_H
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_callout_constants Globus Callout Constants
  */
@@ -42,5 +54,7 @@ typedef enum
     /** Last marker - never used */
     GLOBUS_CALLOUT_ERROR_LAST = 8
 } globus_callout_error_t;
+
+EXTERN_C_END
 
 #endif /* GLOBUS_CALLOUT_CONSTANTS_H */

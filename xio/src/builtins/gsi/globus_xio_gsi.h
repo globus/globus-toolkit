@@ -12,6 +12,18 @@
 #ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
 #define GLOBUS_XIO_GSI_DRIVER_INCLUDE
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 #include "gssapi.h"
 #include "globus_common.h"
 
@@ -606,5 +618,6 @@ typedef void (* globus_xio_gsi_delegation_accept_callback_t)(
     OM_uint32                           time_rec,
     void *				user_arg);
 
+EXTERN_C_END
 
 #endif
