@@ -3,7 +3,7 @@ A simple extensible system for remotely logging gt4 usage statistics with UDP pa
 by Jonathan DiCarlo
 Jan 28, 2005
 
-Bug reports, suggestions, flames, etc. to jdicarlo@mcs.anl.gov.
+Bug reports, questions, suggestions, etc. to jdicarlo@mcs.anl.gov.
 
 *******************************************
 Compiling and running:
@@ -16,12 +16,19 @@ show how a program would use the other classes.
 
 First you will have to set up a database (see SQL SCHEMA), and edit the file
 udpUsage.properties with the right driver class, url, and table names for your
-database.  You should also set the hostname and port number for the machine
-running the receiver.
+database.
 
-Then simply do:
+Also, edit udpUsage.properties to set the hostname and port number for the machine
+running the receiver.  If you want to send to multiple receivers, put a comma-separated list
+of hostnames (or IP addresses) on one line.  For example:
+receiver-ip = localhost, 192.168.0.101, foovax@bar.baz.edu
 
-ant run-reciever (this will block, so open another terminal or run it in background)
+Once you're done editing the properties, you can start the receiver simply by executing:
+
+ant run-reciever 
+
+(this will block, so open another terminal or run it in background).  You can test the receiver
+by running the example sender:
 
 ant run-sender
 
@@ -115,10 +122,7 @@ Known Issues / To-do list:
     should think about how we want to handle this.  The change would
     be in the Sender class.
 
-2.  Sending to multiple recievers -- I think it works, but this has not yet
-    been tested.
-
-3.  SQL assumptions -- this has been tested with MySQL but nothing else;
+2.  SQL assumptions -- this has been tested with MySQL but nothing else;
     probably needs some modification to be portable to other databases.  Also,
     the program expects that an SQL database is already up and running and has
     a table of the appropriate schema.  (See SQL SCHEMA).
