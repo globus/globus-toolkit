@@ -20,7 +20,7 @@ INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/ \
         -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)  \
         -I @SSLPATH@/include     
 
-lib_LTLIBRARIES = libglobus_gss_assist.la
+lib_LTLIBRARIES = libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).la
 libglobus_gss_assist_la_SOURCES = $(Sources)
 include $(top_srcdir)/globus_automake_rules
 include $(top_srcdir)/globus_automake_top_rules
