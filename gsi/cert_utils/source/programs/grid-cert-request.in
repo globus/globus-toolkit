@@ -124,7 +124,7 @@ globus_source ${libexecdir}/globus-args-parser-header $@
 
 set_non_default_ca() 
 {
-    if [ "${nondefaultca}" == "true" ]; then
+    if [ "${nondefaultca}" = "true" ]; then
 
         INSTALLED_CERTS="`echo ${trusted_certs_dir}/*.0`"
 
