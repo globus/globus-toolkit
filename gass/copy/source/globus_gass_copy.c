@@ -3316,23 +3316,19 @@ globus_l_gass_copy_io_read_callback(
 	}/* if(last_data) */
 	else  /* there was an error */
 	{
-	    {
-		if(!state->cancel) /* cancel has not been set already */
-		{
-		    globus_i_gass_copy_set_error(handle, err);
-		    state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
-		    handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-		}
-		else
-		{
-	            globus_mutex_lock(&(state->source.mutex));
-		    state->source.n_pending--;
-		    globus_mutex_unlock(&(state->source.mutex));
-		    return;
-		}
-
-	    }
-	    globus_mutex_unlock(&(state->source.mutex));
+            if(!state->cancel) /* cancel has not been set already */
+            {
+                globus_i_gass_copy_set_error(handle, err);
+                state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
+                handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+            }
+            else
+            {
+                    globus_mutex_lock(&(state->source.mutex));
+                state->source.n_pending--;
+                globus_mutex_unlock(&(state->source.mutex));
+                return;
+            }
 	} /* else (there was an error) */
     }
 
@@ -3903,7 +3899,8 @@ globus_l_gass_copy_io_write_callback(
     globus_gass_copy_handle_t * handle
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_gass_copy_state_t * state = handle->state;
-
+    globus_bool_t close_handle = GLOBUS_FALSE;
+    
 /**
  * used this to simulate a io write error
  *
@@ -3940,7 +3937,7 @@ globus_l_gass_copy_io_write_callback(
 
 			if(state->dest.data.io.free_handle)
 			{
-			    globus_io_close(io_handle);
+			    close_handle = GLOBUS_TRUE;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 			    globus_libc_fprintf(stderr,
                                 "io_write_callback(): handle closed\n");
@@ -3953,6 +3950,11 @@ globus_l_gass_copy_io_write_callback(
 	    } /* end if last write */
 	}
 	globus_mutex_unlock(&(state->source.mutex));
+	
+	if(close_handle)
+	{
+	    globus_io_close(io_handle);
+	}
     }
     else /* there was an error */
     {
