@@ -120,7 +120,7 @@ globus_grim_assertion_init(
     struct globus_l_grim_assertion_s *      ass;
 
     ass = (struct globus_l_grim_assertion_s *)
-                globus_malloc(sizeof(struct globus_l_grim_assertion_s *));
+                globus_malloc(sizeof(struct globus_l_grim_assertion_s));
     if(ass == NULL)
     {
         return globus_error_put(
@@ -288,10 +288,35 @@ globus_grim_assertion_set_dn_array(
     char **                                 dn_array)
 {
     struct globus_l_grim_assertion_s *      info;
+    int                                     ctr;
+    char **                                 tmp_a = NULL;
 
     GlobusLGrimSetGetAssertionEnter(assertion, info);
 
-    info->dna = dn_array;
+    if(dn_array != NULL)
+    {
+        ctr = 0;
+        while(dn_array[ctr] != NULL)
+        {
+            ctr++;
+        }
+        ctr++;
+
+        tmp_a = globus_malloc(sizeof(char *) * ctr);
+    
+        for(ctr = 0; dn_array[ctr] != NULL; ctr++)
+        {
+            tmp_a[ctr] = strdup(dn_array[ctr]);
+        }
+        tmp_a[ctr] = NULL;
+    }
+
+    if(info->dna != NULL)
+    {
+        GlobusGrimFreeNullArray(info->dna);
+    }
+
+    info->dna = tmp_a;
 
     return GLOBUS_SUCCESS;
 }
@@ -328,13 +353,38 @@ globus_grim_assertion_get_port_types_array(
 globus_result_t
 globus_grim_assertion_set_port_types_array(
     globus_grim_assertion_t                 assertion,
-    char **                                 port_types_array)
+    char **                                 port_types)
 {
     struct globus_l_grim_assertion_s *      info;
+    int                                     ctr;
+    char **                                 tmp_a = NULL;
 
     GlobusLGrimSetGetAssertionEnter(assertion, info);
 
-    info->port_types = port_types_array;
+    if(port_types != NULL)
+    {
+        ctr = 0;
+        while(port_types[ctr] != NULL)
+        {
+            ctr++;
+        }
+        ctr++;
+
+        tmp_a = globus_malloc(sizeof(char *) * ctr);
+
+        for(ctr = 0; port_types[ctr] != NULL; ctr++)
+        {
+            tmp_a[ctr] = strdup(port_types[ctr]);
+        }
+        tmp_a[ctr] = NULL;
+    }
+
+    if(info->port_types != NULL)
+    {
+        GlobusGrimFreeNullArray(info->port_types);
+    }
+
+    info->port_types = tmp_a;
 
     return GLOBUS_SUCCESS;
 }
@@ -869,6 +919,7 @@ globus_grim_devel_port_type_file_parse_uid(
     struct group *                          grp_ent;
     int                                     ctr;
     globus_result_t                         res;
+    struct passwd *                         pw_ent;
 
     if(fptr == NULL)
     {
@@ -890,6 +941,9 @@ globus_grim_devel_port_type_file_parse_uid(
     /*
      *  get group list
      */
+    pw_ent = getpwuid(getuid());
+    username = strdup(pw_ent->pw_name);
+
     groups_ndx = 0;
     groups = (char **) globus_malloc(sizeof(char *) * groups_max);
     while((grp_ent = getgrent()) != NULL)
@@ -1306,7 +1360,7 @@ globus_l_grim_build_assertion(
     GrowString(buffer, buffer_size, "</ServiceLocalId>\n", buffer_ndx);
 
     /* add all mapped dns */
-    for(ctr = 0; dna[ctr] != NULL; ctr++)
+    for(ctr = 0; dna != NULL && dna[ctr] != NULL; ctr++)
     {
         GrowString(buffer, buffer_size,
             "<authorizedClientId Format=\"#X509SubjectName\">",
@@ -1316,7 +1370,7 @@ globus_l_grim_build_assertion(
     }
 
     /* add in port_types */
-    for(ctr = 0; port_types[ctr] != NULL; ctr++)
+    for(ctr = 0; port_types != NULL && port_types[ctr] != NULL; ctr++)
     {
         GrowString(buffer, buffer_size, "<authorizedPortType>", buffer_ndx);
         GrowString(buffer, buffer_size, port_types[ctr], buffer_ndx);

@@ -54,9 +54,7 @@ grim_privedged_code(
     globus_gsi_cred_handle_t *              cred_handle,
     char *                                  ca_cert_dir,
     char *                                  user_cert_filename,
-    char *                                  user_key_filename,
-    char *                                  dns[],
-    int                                     dn_count);
+    char *                                  user_key_filename);
 
 int
 grim_parse_input(
@@ -267,9 +265,7 @@ main(
             &cred_handle,
             ca_cert_dir,
             user_cert_filename,
-            user_key_filename,
-            globus_dns,
-            dn_count);
+            user_key_filename);
     if(rc != 0)
     {
         goto exit;
@@ -390,12 +386,14 @@ grim_parse_input(
     int                                     valid;
     int                                     ctr;
     int                                     key_bits;
-    char                                    gridmap[GRIM_STRING_MAX];
+    char *                                  gridmap;
 
     /*
      *  assume these all succed since init succeded
      */
     globus_grim_config_get_default_time(config, &valid);
+    globus_grim_config_get_max_time(config, &max_valid);
+    globus_grim_config_get_gridmap_filename(config, &gridmap);
 
     /* 
      * parse the arguments 
@@ -622,9 +620,7 @@ grim_privedged_code(
     globus_gsi_cred_handle_t *                  cred_handle,
     char *                                      ca_cert_dir,
     char *                                      user_cert_filename,
-    char *                                      user_key_filename,
-    char *                                      dns[],
-    int                                         dn_count)
+    char *                                      user_key_filename)
 {
     globus_result_t                             res;
     globus_gsi_cred_handle_attrs_t              cred_handle_attrs;
@@ -825,6 +821,9 @@ grim_write_proxy(
         grim_write_log("ERROR: coulnd not build assertion.\n");
         return 1;
     }
+    globus_grim_assertion_set_dn_array(assertion, dna);
+    globus_grim_assertion_set_port_types_array(assertion, port_types);
+
     res = globus_grim_assertion_serialize(
               assertion,
               &assertion_string);
@@ -846,7 +845,6 @@ grim_write_proxy(
 
     /*
      *  set the policy in the cert
-     */
     globus_grim_devel_get_NID(&grim_NID);
     res = globus_gsi_proxy_handle_set_policy(
               proxy_handle,
@@ -859,6 +857,7 @@ grim_write_proxy(
         free(assertion);
         return 1;
     }
+     */
  
     /*
      *  create signed proxy
@@ -884,7 +883,7 @@ grim_write_proxy(
         return 1;
     }
 
-    free(assertion);
+//    free(assertion);
 
     res = globus_gsi_cred_get_lifetime(cred_handle, &lifetime);
     if(res != GLOBUS_SUCCESS)
