@@ -620,14 +620,19 @@ globus_i_gsc_terminate(
 
         case GLOBUS_L_GSC_STATE_PROCESSING:
             server_handle->state = GLOBUS_L_GSC_STATE_ABORTING_STOPPING;
-            globus_assert(server_handle->outstanding_op != NULL);
 
-            server_handle->outstanding_op->aborted = GLOBUS_TRUE;
-            if(server_handle->outstanding_op->abort_cb != NULL)
+            /* this doesn't feel right, may require a new state, but
+               may effect every state, this works but if it trips anything
+               else it should be reconsidered. */
+            if(server_handle->outstanding_op != NULL)
             {
-                server_handle->outstanding_op->abort_cb(
-                    server_handle->outstanding_op,
-                    server_handle->outstanding_op->abort_user_arg);
+                server_handle->outstanding_op->aborted = GLOBUS_TRUE;
+                if(server_handle->outstanding_op->abort_cb != NULL)
+                {
+                    server_handle->outstanding_op->abort_cb(
+                        server_handle->outstanding_op,
+                        server_handle->outstanding_op->abort_user_arg);
+                }
             }
             /* ignore return code, we are stopping so it doesn' matter */
             globus_l_gsc_flush_reads(
@@ -695,6 +700,7 @@ globus_l_gsc_finished_op(
 
     server_handle = op->server_handle;
 
+    server_handle->outstanding_op = NULL;
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_PROCESSING:
@@ -968,7 +974,6 @@ globus_l_gsc_final_reply_cb(
                 break;
 
             case GLOBUS_L_GSC_STATE_PROCESSING:
-                server_handle->outstanding_op = NULL;
                 server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
                 globus_l_gsc_process_next_cmd(server_handle);
                 break;
