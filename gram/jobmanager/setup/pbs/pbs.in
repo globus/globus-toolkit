@@ -3,11 +3,13 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
+use POSIX;
+
 package Globus::GRAM::JobManager::pbs;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($mpirun, $qsub, $qstat, $qdel, $host_type, $remote_shell);
+my ($mpirun, $qsub, $qstat, $qdel, $cluster, $cpu_per_node, $remote_shell);
 
 BEGIN
 {
@@ -15,7 +17,8 @@ BEGIN
     $qsub =   '@QSUB@';
     $qstat =  '@QSTAT@';
     $qdel = '@QDEL@';
-    $host_type = '@HOST_TYPE@'; # cluster|smp|chiba_cluster
+    $cluster = @CLUSTER@;
+    $cpu_per_node = @CPU_PER_NODE@;
     $remote_shell = '@REMOTE_SHELL@';
 }
 
@@ -33,6 +36,7 @@ sub submit
 {
     my $self = shift;
     my $description = $self->{JobDescription};
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $status;
     my $pbs_job_script;
     my $pbs_job_script_name;
@@ -95,8 +99,14 @@ sub submit
 
     $self->log('Building job script');
 
-    $pbs_job_script_name = "$Globus::Core::Paths::local_tmpdir" .
-                             "/pbs_job_script.$$";
+    system("globus-gass-cache -add -n $tag/pbs_job_script.$$ file:/dev/null");
+    $pbs_job_script_name = `globus-gass-cache -query $tag/pbs_job_script.$$`;
+    chomp($pbs_job_script_name);
+    if($pbs_job_script_name eq "")
+    {
+	return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+    }
+
     $pbs_job_script = new IO::File($pbs_job_script_name, '>');
 
     $pbs_job_script->print(<<EOF);
@@ -155,13 +165,25 @@ EOF
 	                       $description->host_count().
 			       "\n");
     }
+    elsif($cluster && $cpu_per_node != 0)
+    {
+	$pbs_job_script->print("#PBS -l nodes=" .
+	                       POSIX::ceil($description->count /
+			                   $cpu_per_node).
+				"\n");
+    }
+
     $rsh_env = "";
 
     foreach my $tuple ($description->environment())
     {
-	push(@new_env, ${@{$tuple}}[0] . "=" . ${@{$tuple}}[1]);
-	$rsh_env .= ${@{$tuple}}[0] . "=" . ${@{$tuple}}[1] . ";"
-	         .  "export " . @{$tuple}[0] . ";";
+	if(!ref($tuple) || scalar(@$tuple) != 2)
+	{
+	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
+	}
+	push(@new_env, $tuple->[0] . "=" . $tuple->[1]);
+	$rsh_env .= $tuple->[0] . "=" . $tuple->[1] . ";"
+	         .  "export " . $tuple->[0] . ";";
     }
     $pbs_job_script->print("#PBS -v " .  join(',', @new_env));
 
@@ -180,8 +202,7 @@ EOF
     {
 	$pbs_job_script->print("$mpirun -np " . $description->count());
 
-	if($host_type eq 'chiba_cluster' ||
-	   $host_type eq 'cluster')
+	if($cluster)
 	{
 	    $pbs_job_script->print(" -machinefile \$PBS_NODEFILE ");
 	}
@@ -189,7 +210,7 @@ EOF
 	                       . " $args < "
 			       . $description->stdin() . "\n");
     }
-    elsif($description->jobtype() eq 'multiple' && $host_type eq 'smp')
+    elsif($description->jobtype() eq 'multiple' && !$cluster)
     {
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
@@ -212,7 +233,7 @@ EOF
 	counter=0
 	while test \$counter -lt $count; do
 	    for host in \$hosts; do
-		if test \$counter -lt \$count; then
+		if test \$counter -lt $count; then
 		    $remote_shell \$host '/bin/sh -c "$cmd"' < $stdin &
 		    counter=\`expr \$counter + 1\`
 		else
@@ -228,29 +249,25 @@ EOF
 	$pbs_job_script->print($description->executable() . " $args <" .
 	                       $description->stdin() . "\n");
     }
-    if($host_type eq 'chiba_cluster')
-    {
-	$pbs_job_script->print("#ctrans nfs_in " .
-	                       $description->directory() . "\n");
-	$pbs_job_script->print("#ctrans nfs_out " .
-	                       $description->directory() . "\n");
-    }
     $pbs_job_script->close();
 
     if($description->logfile() ne "")
     {
         $errfile = "2>" . $description->logfile();
     }
+
     chomp($job_id = `$qsub < $pbs_job_script_name $errfile`);
+
     if($? == 0)
     {
         # truncate off the domain name
 	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
-	unlink($pbs_job_script_name);
+
+	system("globus-gass-cache -cleanup-url $tag/pbs_job_script.$$");
 
 	return {JOB_ID => $job_id};
     }
-    unlink($pbs_job_script_name);
+    system("globus-gass-cache -cleanup-url $tag/pbs_job_script.$$");
 
     return Globus::GRAM::Error::INVALID_SCRIPT_REPLY;
 }
@@ -266,7 +283,7 @@ sub poll
     $self->log("polling job $job_id");
 
     # Get first line matching job id
-    $_ = (grep(/$job_id/, `qstat $job_id`))[0];
+    $_ = (grep(/$job_id/, `qstat $job_id 2>/dev/null`))[0];
 
     # Get 4th field (status)
     $_ = (split(/\s+/))[4];

@@ -24,26 +24,47 @@ AC_PATH_PROG(QSUB, qsub, no)
 if test "$QSUB" = "no" ; then
     AC_MSG_ERROR("Cannot locate qsub")
 fi
-HOST_TYPE=no
-AC_ARG_WITH(host-type,
-    [ --with-host-type=cluster|smp|chiba_cluster],
-    [case $withval in
-      cluster|chiba_cluster|smp)
-          HOST_TYPE=$withval
-	  AC_SUBST(HOST_TYPE)
-	  ;;
-    esac])
 
-if test "$HOST_TYPE" = no; then
-    AC_MSG_ERROR([Missing required --with-host-type=cluster|smp|chiba_cluster])
-fi
-AC_PATH_PROGS(REMOTE_SHELL, ssh rsh, no)
-if test "$REMOTE_SHELL" = "no"; then
-    case "$HOST_TYPE" in
-        cluster|chiba_cluster)
-	    AC_MSG_ERROR("Cannot locate a remote shell program")
-	    ;;
-    esac
+AC_ARG_WITH(cluster,
+   [ --without-cluster],
+   [
+     if test "$withval" != "no"; then
+	 CLUSTER=1
+     else
+	 CLUSTER=0
+     fi
+   ],
+   CLUSTER=1)
+
+AC_SUBST(CLUSTER)
+
+AC_ARG_WITH(cpu-per-node,
+   [ --with-cpu-per-node=COUNT],
+   [ if test $withval -lt 0 2>/dev/null; then
+       AC_MSG_ERROR(Invalid cpu-per-node count)
+     fi
+     CPU_PER_NODE=$withval
+   ],
+   CPU_PER_NODE=1)
+
+AC_SUBST(CPU_PER_NODE)
+       
+if test "$CLUSTER" = 1; then
+    AC_ARG_WITH(remote-shell,
+                [ --with-remote-shell=ssh|rsh|default],
+		[ case "$withval" in
+		    default)
+                      AC_PATH_PROGS(REMOTE_SHELL, ssh rsh, no)
+		      ;;
+		    *)
+		      AC_PATH_PROG(REMOTE_SHELL, $withval, no)
+		      ;;
+		  esac
+
+		  if test $REMOTE_SHELL = no; then
+		      AC_MSG_ERROR("Cannot locate remote shell")
+		  fi
+		])
 fi
 
 prefix='$(GLOBUS_LOCATION)'

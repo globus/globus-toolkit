@@ -19,15 +19,18 @@ my $name		= 'jobmanager-pbs';
 my $manager_type	= 'pbs';
 my $force		= 0;
 my $cmd;
-my $host_type = "";
+my $non_cluster		= 0;
+my $cpu_per_node	= 1;
+my $remote_shell	= 'default';
 
 GetOptions('service-name|s=s' => \$name,
-           'with-host-type=s' => \$host_type,
+           'non-cluster' => \$non_cluster,
+           'cpu-per-node=i' => \$cpu_per_node,
+	   'remote-shell=s' => \$remote_shell,
 	   'force|f' => \$force,
 	   'help|h|?' => \$help);
 
 &usage if $help;
-&usage if $host_type eq "";
 
 my $metadata =
     new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup_pbs");
@@ -44,8 +47,17 @@ else
     $force = '';
 }
 
+if($non_cluster != 0)
+{
+    $non_cluster = "--without-cluster";
+}
+else
+{
+    $non_cluster = "--with-cluster";
+}
+
 # Do script relocation
-print `./find-pbs-tools --with-host-type=$host_type`;
+print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null`;
 if($? != 0)
 {
     print STDERR "Error locating PBS commands, aborting!\n";
@@ -68,8 +80,11 @@ else
 
 sub usage
 {
-    print "Usage: $0 [options] --with-host-type=cluster|chiba_cluster|smp\n".
+    print "Usage: $0 [options]\n".
           "Options:  [--service-name|-s service_name]\n".
+	  "          [--non-cluster]\n".
+	  "          [--cpu-per-node=COUNT]\n".
+	  "          [--remote-shell=rsh|ssh]\n".
           "          [--force|-f]\n".
 	  "          [--help|-h]\n";
     exit 1;
