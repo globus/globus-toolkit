@@ -3321,17 +3321,17 @@ globus_libc_addr_is_loopback(
     switch(_addr->sa_family)
     {
       case AF_INET:
-        if(ntohl(((struct sockaddr_in *) _addr)->sin_addr.s_addr) ==
-           INADDR_LOOPBACK)
+        if(*(uint8_t *) &((struct sockaddr_in *) 
+                _addr)->sin_addr.s_addr == 127)
         {
             result = GLOBUS_TRUE;
         }
         break;
       case AF_INET6:
         if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr) ||
-          (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
-     ntohl(*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
-                INADDR_LOOPBACK))
+            (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
+            *(uint8_t *) &((struct sockaddr_in6 *) 
+                _addr)->sin6_addr.s6_addr[12] == 127))        
         {
             result = GLOBUS_TRUE;
         }
