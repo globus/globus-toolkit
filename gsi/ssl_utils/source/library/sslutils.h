@@ -400,8 +400,7 @@ proxy_create_local(
     int                                 bits,
     globus_proxy_type_t                 proxy_type,
     int                                 (*kpcallback)(),
-    char *                              restriction_buf,
-    int                                 restriction_len);
+    STACK_OF(X509_EXTENSION) *          extensions);
 
 
 int

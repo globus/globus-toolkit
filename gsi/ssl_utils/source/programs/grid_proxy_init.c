@@ -92,6 +92,10 @@ static char *  LONG_USAGE = \
 "\n" \
 "    -restriction <file>       Insert a restriction extension into the\n" \
 "                              generated proxy.\n" \
+"    -trusted-subgroup <grp>   Insert a trusted group extension into the\n" \
+"                              generated proxy.\n" \
+"    -untrusted-subgroup <grp> Insert a untrusted group extension into the\n" \
+"                              generated proxy.\n" \
 "\n";
 
 
@@ -206,6 +210,12 @@ main(
     char *                              restriction_filename = NULL;
     FILE *                              fp;
     int                                 (*pw_cb)() = NULL;
+    char *                              trusted_subgroup = NULL;
+    char *                              untrusted_subgroup = NULL;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    ex = NULL;
+    ASN1_OBJECT *                       asn1_obj = NULL;
+    ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
 
     
 #ifdef WIN32
@@ -369,6 +379,28 @@ main(
             restriction_filename = argv[++i];
 	    proxy_type = GLOBUS_RESTRICTED_PROXY;
         }
+        else if (strcmp(argp,"-trusted-subgroup")==0)
+        {
+            args_verify_next(i,argp,"subgroup name missing");
+            if(untrusted_subgroup != NULL ||
+               trusted_subgroup != NULL)
+            {
+                args_error(i,argp,"You may only specify one subgroup.");
+            }
+            trusted_subgroup = argv[++i];
+            proxy_type = GLOBUS_RESTRICTED_PROXY;
+        }
+        else if (strcmp(argp,"-untrusted-subgroup")==0)
+        {
+            args_verify_next(i,argp,"subgroup name missing");
+            if(untrusted_subgroup != NULL ||
+               trusted_subgroup != NULL)
+            {
+                args_error(i,argp,"You may only specify one subgroup.");
+            }
+            untrusted_subgroup = argv[++i];
+            proxy_type = GLOBUS_RESTRICTED_PROXY;
+        }
         else
             args_error(i,argp,"unrecognized option");
     }
@@ -482,12 +514,10 @@ main(
     X509_gmtime_adj(asn1_time,0);
     time_now = ASN1_UTCTIME_mktime(asn1_time);
 
-    if (!quiet)
-    {
-        printf("Creating proxy ");
-        fflush(stdout);
-    }
+    /* deal with the extensions */
 
+    extensions = sk_X509_EXTENSION_new_null();
+    
     if(restriction_filename)
     {
         int restriction_buf_size = 0;
@@ -525,16 +555,107 @@ main(
         }
         while (restriction_buf_len == restriction_buf_size);
 
+        if (restriction_buf_len > 0)
+        {
+            asn1_obj = OBJ_txt2obj("RESTRICTEDRIGHTS",0);   
+        
+            if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
+            {
+                fprintf(stderr, "\nmalloc() failed\n");
+                goto err;
+            }
+
+            asn1_oct_string->data = restriction_buf;
+            asn1_oct_string->length = restriction_buf_len;
+
+            if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
+                                                    1, asn1_oct_string)))
+            {
+                fprintf(stderr, "Failed to create restrictions extension\n");
+                goto err;
+            }
+        
+            asn1_oct_string = NULL;
+
+            if (!sk_X509_EXTENSION_push(extensions, ex))
+            {
+                fprintf(stderr, "Failed to create restrictions extension\n");
+                goto err;
+            }
+        }   
+    }
+
+    if(trusted_subgroup)
+    {
+        asn1_obj = OBJ_txt2obj("TRUSTEDGROUP",0);   
+        
+        if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
+        {
+            fprintf(stderr, "\nmalloc() failed\n");
+            goto err;
+        }
+        
+        asn1_oct_string->data = trusted_subgroup;
+        asn1_oct_string->length = strlen(trusted_subgroup);
+        
+        if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
+                                                1, asn1_oct_string)))
+        {
+            fprintf(stderr, "Failed to create trusted group extension\n");
+            goto err;
+        }
+        
+        asn1_oct_string = NULL;
+        
+        if (!sk_X509_EXTENSION_push(extensions, ex))
+        {
+            fprintf(stderr, "Failed to create trusted group extension\n");
+            goto err;
+        }        
+    }
+
+    if(untrusted_subgroup)
+    {
+        asn1_obj = OBJ_txt2obj("UNTRUSTEDGROUP",0);   
+        
+        if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
+        {
+            fprintf(stderr, "\nmalloc() failed\n");
+            goto err;
+        }
+        
+        asn1_oct_string->data = untrusted_subgroup;
+        asn1_oct_string->length = strlen(untrusted_subgroup);
+        
+        if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
+                                                1, asn1_oct_string)))
+        {
+            fprintf(stderr, "Failed to create untrusted group extension\n");
+            goto err;
+        }
+        
+        asn1_oct_string = NULL;
+        
+        if (!sk_X509_EXTENSION_push(extensions, ex))
+        {
+            fprintf(stderr, "Failed to create untrusted group extension\n");
+            goto err;
+        }        
     }
     
+    if (!quiet)
+    {
+        printf("Creating proxy ");
+        fflush(stdout);
+    }
+
     if (proxy_create_local(pcd,
                            outfile,
                            hours,
                            bits,
                            proxy_type,
                            (int (*)(void)) kpcallback,
-                           restriction_buf,
-                           restriction_buf_len))
+                           extensions))
     {
         goto err;
     }

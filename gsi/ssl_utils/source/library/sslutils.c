@@ -475,6 +475,10 @@ ERR_load_prxyerr_strings(
         }
         
         OBJ_create("1.3.6.1.4.1.3536.1.1.1.2","DELEGATE","Delegate");
+        OBJ_create("1.3.6.1.4.1.3536.1.1.1.4","TRUSTEDGROUP",
+                   "TrustedGroup");
+        OBJ_create("1.3.6.1.4.1.3536.1.1.1.5","UNTRUSTEDGROUP",
+                   "UntrustedGroup");
         OBJ_create("1.3.6.1.4.1.3536.1.1.1.3","RESTRICTEDRIGHTS",
                    "RestrictedRights");
         OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
@@ -2575,7 +2579,9 @@ proxy_verify_callback(
                nid != NID_ext_key_usage &&
                nid != NID_netscape_cert_type &&
                nid != NID_subject_key_identifier &&
-               nid != NID_authority_key_identifier)
+               nid != NID_authority_key_identifier &&
+               nid != OBJ_txt2nid("TRUSTEDGROUP") &&
+               nid != OBJ_txt2nid("UNTRUSTEDGROUP"))
             {
                 if(pvd->extension_cb)
                 {
@@ -4339,18 +4345,14 @@ proxy_create_local(
     int                                 bits,
     globus_proxy_type_t                 proxy_type,
     int                                 (*kpcallback)(),
-    char *                              restriction_buf,
-    int                                 restriction_len)
+    STACK_OF(X509_EXTENSION) *          extensions)
 {
-        
     int                                 status = -1;
     FILE *                              fpout = NULL;
     X509 *                              ncert = NULL; 
     EVP_PKEY *                          npkey;
     X509_REQ *                          req;
     BIO *                               bp = NULL;
-    STACK_OF(X509_EXTENSION) *          extensions = NULL;
-    X509_EXTENSION *                    ex = NULL;
 
     fpout=fopen(outfile,"w");
     if (fpout == NULL)
@@ -4386,44 +4388,7 @@ proxy_create_local(
 #ifdef DEBUG
     fprintf(stderr,"Adding Extensions to request\n");
 #endif
-    if ((extensions = sk_X509_EXTENSION_new_null()) == NULL)
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
-        goto err;
-    }
         
-    if (restriction_buf && restriction_len > 0)
-    {
-        X509_EXTENSION *                    ex = NULL;
-        ASN1_OBJECT *                       asn1_obj = NULL;
-        ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
-
-        asn1_obj = OBJ_txt2obj("RESTRICTEDRIGHTS",0);   
-        
-        if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
-        {
-            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
-            goto err;
-        }
-
-        asn1_oct_string->data = restriction_buf;
-        asn1_oct_string->length = restriction_len;
-
-        if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
-                                                1, asn1_oct_string)))
-        {
-            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
-            goto err;
-        }
-        
-        asn1_oct_string = NULL;
-
-        if (!sk_X509_EXTENSION_push(extensions, ex))
-        {
-            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
-            goto err;
-        }
-    }
 
     if (proxy_sign(pcd->ucert,
                    pcd->upkey,
@@ -4459,16 +4424,6 @@ err:
     if (fpout)
     {
         fclose(fpout);
-    }
-
-    if (extensions)
-    {
-        sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
-    }
-
-    if (ex)
-    {
-        X509_EXTENSION_free(ex);
     }
 
     return status;
