@@ -133,6 +133,7 @@ gss_create_and_fill_context(
     context->dcert = NULL;
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
+    context->goodtill = 0;
     
     proxy_verify_ctx_init(&(context->pvxd));
     proxy_verify_init(&(context->pvd), &(context->pvxd));
