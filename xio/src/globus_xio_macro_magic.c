@@ -228,6 +228,7 @@ globus_xio_driver_open_deliver_DEBUG(
     _res = _op->cached_res;
     if(!_op->restarted)
     {
+        _op->ndx = _my_op->caller_ndx;
         if(_op->ndx == 0) /* if at the top */
         {
             _restart.op = op;
@@ -239,7 +240,6 @@ globus_xio_driver_open_deliver_DEBUG(
                     GLOBUS_CALLBACK_GLOBAL_SPACE : _op->_op_handle->space,
                 &_ndx);
 
-            _op->ndx = _my_op->caller_ndx;
             _my_op->cb(_op, _res, _my_op->user_arg);
 
             /* if the user op restarted, we return because everything below
@@ -252,7 +252,6 @@ globus_xio_driver_open_deliver_DEBUG(
         }
         else
         {
-            _op->ndx = _my_op->caller_ndx;
             _my_op->cb(_op, _res, _my_op->user_arg);
         }
     }
@@ -727,6 +726,7 @@ globus_xio_driver_write_deliver_DEBUG(
 
     if(!_op->restarted)
     {
+        _op->ndx = _my_op->caller_ndx;
         if(_op->ndx == 0) /* if at the top */
         {
             _restart.op = op;
@@ -738,7 +738,6 @@ globus_xio_driver_write_deliver_DEBUG(
                     GLOBUS_CALLBACK_GLOBAL_SPACE : _op->_op_handle->space,
                 &_ndx);
 
-            _op->ndx = _my_op->caller_ndx;
             _my_op->_op_ent_data_cb(_op, _op->cached_res,
                 _my_op->_op_ent_nbytes, _my_op->user_arg);
 
@@ -752,7 +751,6 @@ globus_xio_driver_write_deliver_DEBUG(
         }
         else
         {
-            _op->ndx = _my_op->caller_ndx;
             _my_op->_op_ent_data_cb(_op, _op->cached_res,
                 _my_op->_op_ent_nbytes, _my_op->user_arg);
         }
@@ -1096,6 +1094,7 @@ globus_xio_driver_read_deliver_DEBUG(
     /* call the callback */
     if(!_op->restarted)
     {
+        _op->ndx = _my_op->caller_ndx;
         if(_op->ndx == 0) /* if at the top */
         {
             _restart.op = op;
@@ -1107,7 +1106,6 @@ globus_xio_driver_read_deliver_DEBUG(
                     GLOBUS_CALLBACK_GLOBAL_SPACE : _op->_op_handle->space,
                 &_ndx);
 
-            _op->ndx = _my_op->caller_ndx;
             _my_op->_op_ent_data_cb(_op, _op->cached_res,
                 _my_op->_op_ent_nbytes, _my_op->user_arg);
 
@@ -1121,7 +1119,6 @@ globus_xio_driver_read_deliver_DEBUG(
         }
         else
         {
-            _op->ndx = _my_op->caller_ndx;
             _my_op->_op_ent_data_cb(_op, _op->cached_res,
                 _my_op->_op_ent_nbytes, _my_op->user_arg);
         }
@@ -1138,7 +1135,10 @@ globus_xio_driver_read_deliver_DEBUG(
             _op->ref--;
             if(_op->ref == 0)
             {
-                GlobusXIOOperationDestroy(_op);
+                //GlobusXIOOperationDestroy(_op);
+    globus_assert(_op->ref == 0);
+    globus_memory_push_node(&_op->_op_context->op_memory, _op);
+
                 GlobusIXIOHandleDec(_destroy_handle, _handle);
             }
         }

@@ -98,7 +98,7 @@ server2_main(
     char **                                 argv);
 
 int
-close_barrier_block_main(
+block_barrier_main(
     int                                     argc,
     char **                                 argv);
 

@@ -104,22 +104,47 @@ globus_l_xio_activate()
     return GLOBUS_SUCCESS;
 }
 
+
+void
+globus_l_xio_deactivate_close_cb(
+    globus_xio_handle_t                     handle,
+    globus_result_t                         result,
+    void *                                  user_arg)
+{
+}
+
 static int
 globus_l_xio_deactivate()
 {
+    globus_list_t *                         list;
+    globus_result_t                         res;
+    globus_xio_handle_t                     handle;
     GlobusXIOName(globus_l_xio_deactivate);
 
     GlobusXIODebugInternalEnter();
     /* is this good enough for user callback spaces and deadlock ?? */
+
+/* NOTHING FOR NOW 
     globus_mutex_lock(&globus_l_mutex);
     {
+        for(list = globus_l_outstanding_handles_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
+        {
+            handle = (globus_xio_handle_t) globus_list_first(list);
+            res = globus_xio_register_close(
+                    handle,
+                    NULL,
+                    globus_l_xio_deactivate_close_cb,
+                    NULL);
+        }
         while(!globus_list_empty(globus_l_outstanding_handles_list))
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
-
+*/
     globus_mutex_destroy(&globus_l_mutex);
     globus_cond_destroy(&globus_l_cond);
     globus_i_xio_timer_destroy(&globus_l_xio_timeout_timer);
@@ -445,10 +470,9 @@ globus_l_xio_read_write_callback_kickout(
     globus_mutex_lock(&handle->context->mutex);
     {
         /*
-         *  This is legit in all states except for OPENING and CLOSED
+         *  This is ok in CLOSED state because of will block stuff
          */
-        globus_assert(handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSED &&
-            handle->state != GLOBUS_XIO_HANDLE_STATE_OPENING);
+        globus_assert(handle->state != GLOBUS_XIO_HANDLE_STATE_OPENING);
         /* decrement reference for the operation */
         op->ref--;
         if(op->ref == 0)
@@ -456,12 +480,17 @@ globus_l_xio_read_write_callback_kickout(
             GlobusXIOOperationDestroy(op);
             /* remove refrence for operation */
             GlobusIXIOHandleDec(destroy_handle, handle);
-            /* destroy handle cannot possibly be true yet 
-                the handle stll has its own reference */
-            globus_assert(!destroy_handle);
+            /* destroy handle can be true if the user called close in
+               the callback and then will_block().  this would give the
+               opertuninty to complete. */
         }
     }
     globus_mutex_unlock(&handle->context->mutex);
+
+    if(destroy_handle)
+    {
+        GlobusXIOHandleDestroy(handle);
+    }
 
     GlobusXIODebugInternalExit();
 }

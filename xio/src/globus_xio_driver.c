@@ -46,6 +46,7 @@ globus_i_xio_will_block_cb(
 
     globus_mutex_lock(&op->_op_context->mutex);
     {
+        op->restarted = GLOBUS_TRUE;
         op->ref++;
     }
     globus_mutex_unlock(&op->_op_context->mutex);

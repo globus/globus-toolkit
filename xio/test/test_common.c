@@ -373,6 +373,10 @@ main(
         &globus_l_test_hash, 
         "server2",
         server2_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "block_barrier",
+        block_barrier_main);
 
 
     for(ctr = 1; ctr < argc && !done; ctr++)

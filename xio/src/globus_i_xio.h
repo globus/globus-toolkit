@@ -91,56 +91,56 @@ do                                                                          \
     globus_free(_h);                                                        \
 } while(0)
 
-#define GlobusXIOOperationCreate(op, c)                                     \
+#define GlobusXIOOperationCreate(_out_op, _in_c)                            \
 do                                                                          \
 {                                                                           \
-    globus_i_xio_op_t *                                 _op;                \
-    globus_i_xio_context_t *                             _c;                \
+    globus_i_xio_op_t *                     _X_op;                          \
+    globus_i_xio_context_t *                _X_c;                           \
                                                                             \
-    _c = (c);                                                               \
-    _op = (globus_i_xio_op_t * )                                            \
-            globus_memory_pop_node(&_c->op_memory);                         \
-    if(_op != NULL)                                                         \
+    _X_c = (_in_c);                                                         \
+    _X_op = (globus_i_xio_op_t * )                                          \
+            globus_memory_pop_node(&_X_c->op_memory);                       \
+    if(_X_op != NULL)                                                       \
     {                                                                       \
-        memset(_op, '\0', sizeof(globus_i_xio_op_t) +                       \
-            (sizeof(globus_i_xio_op_entry_t) * (_c->stack_size - 1)));      \
-        _op->_op_context = _c;                                              \
-        _op->stack_size = _c->stack_size;                                   \
-        _op->progress = GLOBUS_TRUE;                                        \
+        memset(_X_op, '\0', sizeof(globus_i_xio_op_t) +                     \
+            (sizeof(globus_i_xio_op_entry_t) * (_X_c->stack_size - 1)));    \
+        _X_op->_op_context = _X_c;                                          \
+        _X_op->stack_size = _X_c->stack_size;                               \
+        _X_op->progress = GLOBUS_TRUE;                                      \
     }                                                                       \
-    op = _op;                                                               \
+    _out_op = _X_op;                                                        \
 } while(0)
 
-#define GlobusXIOOperationDestroy(op)                                       \
+#define GlobusXIOOperationDestroy(_in_op)                                   \
 do                                                                          \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
+    globus_i_xio_op_t *                     _X_op;                          \
                                                                             \
-    _op = (op);                                                             \
-    globus_assert(_op->ref == 0);                                           \
-    globus_memory_push_node(&_op->_op_context->op_memory, _op);             \
+    _X_op = (_in_op);                                                       \
+    globus_assert(_X_op->ref == 0);                                         \
+    globus_memory_push_node(&_X_op->_op_context->op_memory, _X_op);         \
 } while(0)
 
-#define GlobusIXIOHandleDec(free, h)                                        \
+#define GlobusIXIOHandleDec(_out_free, _in_h)                               \
 do                                                                          \
 {                                                                           \
-    globus_i_xio_handle_t *                         _h;                     \
+    globus_i_xio_handle_t *                 _X_h;                           \
                                                                             \
-    _h = (h);                                                               \
-    _h->ref--;                                                              \
-    if(_h->ref == 0)                                                        \
+    _X_h = (_in_h);                                                         \
+    _X_h->ref--;                                                            \
+    if(_X_h->ref == 0)                                                      \
     {                                                                       \
         /* if the handle ref gets down to zero we must be in one            \
          * of the followninf staes.  The statement is that the handle       \
          * only goes away when it is closed or a open fails                 \
          */                                                                 \
         globus_assert(                                                      \
-            _h->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);                   \
-        free = GLOBUS_TRUE;                                                 \
+            _X_h->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);                 \
+        _out_free = GLOBUS_TRUE;                                            \
     }                                                                       \
     else                                                                    \
     {                                                                       \
-        free = GLOBUS_FALSE;                                                \
+        _out_free = GLOBUS_FALSE;                                           \
     }                                                                       \
 } while(0)
 
@@ -804,6 +804,7 @@ extern globus_cond_t                        globus_l_cond;
             globus_xio_driver_read_deliver_DEBUG(op)
 
 #else /* BUILD_DEBUG */
+#   define GlobusXIODebugSetOut(_dst, _src) (_dst) = (_src)
 #   include "globus_xio_macro_magic.h"
 #endif /* BUILD_DEBUG */
 

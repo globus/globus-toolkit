@@ -14,6 +14,7 @@ Sources=                                \
     cancel_test.c                       \
     server2_test.c                      \
     attr_test.c                         \
+    block_barrier_test.c                \
     read_barrier_test.c
 
 INCLUDES += $(GPT_INCLUDES)
