@@ -136,8 +136,8 @@
             fprintf(stderr, "Assertion " #assertion 	\
 		    " failed in file %s at line %d\n",			\
 		    __FILE__, __LINE__);				        \
-	    abort();                                        \
 	    GLOBUS_DUMP_STACK();						    \
+	    abort();                                        \
          }								                \
     } while(0)
 
@@ -148,8 +148,8 @@
     	    fprintf(stderr, "Assertion " #assertion		\
 		    " failed in file %s at line %d: %s",    	\
 		    __FILE__, __LINE__, string);			    \
-	    abort();							            \
-	    GLOBUS_DUMP_STACK();                            \
+	    GLOBUS_DUMP_STACK();						    \
+	    abort();                                        \
     	}								                \
     } while(0)
 #else /* BUILD_DEBUG */

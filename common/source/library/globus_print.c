@@ -14,6 +14,8 @@ CVS Information:
 #include "globus_common_include.h"
 #include "globus_print.h"
 #include "globus_libc.h"
+#include "globus_error.h"
+#include "globus_error_generic.h"
 
 /*****************************************************************************
 		      Module specific prototypes
@@ -334,3 +336,34 @@ globus_get_unique_session_string(void)
     return result;
 } /* globus_get_unique_session_string() */
 
+void
+globus_panic(
+    globus_module_descriptor_t *        module,
+    globus_result_t                     result,
+    const char *                        message,
+    ...)
+{
+    va_list                             ap;
+    
+    if(module)
+    { 
+        fprintf(stderr, "PANIC in module %s\n", module->module_name);
+    }
+    else
+    {
+        fprintf(stderr, "PANIC\n");
+    }
+    
+    va_start(ap, message);
+    vfprintf(stderr, message, ap);
+    va_end(ap);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Result:\n%s\n",  
+            globus_error_print_chain(globus_error_get(result)));
+    }
+    
+    GLOBUS_DUMP_STACK();
+    abort();
+}

@@ -93,6 +93,15 @@ globus_error_get(
 /* returns corresponding object for result,
  * may return GLOBUS_ERROR_NO_INFO */
 
+extern globus_object_t *
+globus_error_peek(
+    globus_result_t                     result);
+/* returns pointer to object for result  DOES NOT REMOVE object.
+ * You must ensure that the object is not touched after a call 
+ * to globus_error_put() could have been made
+ * may return GLOBUS_ERROR_NO_INFO
+ */
+
 extern globus_result_t
 globus_error_put(
     globus_object_t *                   error);
