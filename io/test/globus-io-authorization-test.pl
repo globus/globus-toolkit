@@ -45,7 +45,7 @@ sub basic_func
        }
        else
        {
-           ok($result, "\nan authorization operation failed");
+           ok($result, "an authorization operation failed\n");
        }
    }
 }
