@@ -30,6 +30,43 @@
             <xsd:complexType/>
         </xsd:element>
 
+        <xsd:complexType name="InvalidUrlFault">
+            <xsd:complexContent>
+                <xsd:extension base="ogsi:FaultType">
+                    <xsd:sequence>
+                        <xsd:element name="url" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+
+        <xsd:complexType name="InvalidPathFault">
+            <xsd:complexContent>
+                <xsd:extension base="ogsi:FaultType">
+                    <xsd:sequence>
+                        <xsd:element name="path" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+
+        <xsd:complexType name="FileTransferFault">
+            <xsd:complexContent>
+                <xsd:extension base="ogsi:FaultType">
+                    <xsd:sequence>
+                        <xsd:element name="sourcePath" type="xsd:string"/>
+                        <xsd:element name="destinationUrl" type="xsd:anyURI"/>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+
+        <xsd:complexType name="CredentialsFault">
+            <xsd:complexContent>
+                <xsd:extension base="ogsi:FaultType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+
         <xsd:complexType name="FileStreamOptionsType">
             <xsd:sequence>
                 <xsd:element name="destinationUrl" type="xsd:string"/>
@@ -75,13 +112,34 @@
     <part name="parameters" element="tns:stopResponse"/>
 </message>
 
+<message name="InvalidUrlFaultMessage">
+    <part name="fault" type="tns:InvalidUrlFault"/>
+</message>
+
+<message name="InvalidPathFaultMessage">
+    <part name="fault" type="tns:InvalidPathFault"/>
+</message>
+
+<message name="FileTransferFaultMessage">
+    <part name="fault" type="tns:FileTransferFault"/>
+</message>
+
+<message name="CredentialsFaultMessage">
+    <part name="fault" type="tns:CredentialsFault"/>
+</message>
+
 <gwsdl:portType name="FileStreamPortType"
                 extends="ogsi:GridService
                          gsi:SecureContextEstablishmentPortType">
     <operation name="start">
         <input message="tns:startInputMessage"/>
         <output message="tns:startOutputMessage"/>
+        <fault name="InvalidUrlFault" message="tns:InvalidUrlFaultMessage"/>
+        <fault name="InvalidPathFault" message="tns:InvalidPathFaultMessage"/>
+        <fault name="FileTransferFault" message="tns:FileTransferFaultMessage"/>
+        <fault name="CredentialsFault" message="tns:CredentialsFaultMessage"/>
     </operation>
+
     <operation name="stop">
         <input message="tns:stopInputMessage"/>
         <output message="tns:stopOutputMessage"/>
@@ -97,10 +155,5 @@
             the URL of the stream destination
         </documentation>
     </sd:serviceData>
-
 </gwsdl:portType>
-
 </definitions>
-
-
-  

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.rmi.RemoteException;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -13,6 +14,8 @@ import javax.xml.namespace.QName;
 import javax.security.auth.Subject;
 
 import org.apache.axis.MessageContext;
+import org.apache.axis.types.URI;
+import org.apache.axis.types.URI.MalformedURIException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
@@ -20,16 +23,23 @@ import org.apache.log4j.Logger;
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.util.Tail;
 import org.globus.gsi.gssapi.auth.SelfAuthorization;
+import org.globus.ftp.exception.FTPException;
+import org.globus.io.gass.client.GassException;
 import org.globus.io.streams.FTPOutputStream;
 import org.globus.io.streams.GassOutputStream;
 import org.globus.io.streams.GlobusFileOutputStream;
 import org.globus.io.streams.GridFTPOutputStream;
 import org.globus.io.streams.HTTPOutputStream;
+
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.ServiceData;
+import org.globus.ogsa.base.streaming.CredentialsFault;
 import org.globus.ogsa.base.streaming.FileStreamOptionsType;
 import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
+import org.globus.ogsa.base.streaming.InvalidPathFault;
+import org.globus.ogsa.base.streaming.InvalidUrlFault;
+import org.globus.ogsa.base.streaming.FileTransferFault;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
@@ -40,11 +50,13 @@ import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.gsi.jaas.JaasGssUtil;
 import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.utils.AnyHelper;
+import org.globus.ogsa.utils.FaultHelper;
 import org.globus.ogsa.utils.QueryHelper;
 import org.globus.util.GlobusURL;
 import org.gridforum.ogsi.ExtensibilityType;
 
 import org.ietf.jgss.GSSCredential;
+import org.ietf.jgss.GSSException;
 
 public class FileStreamImpl extends GridServiceImpl {
     
@@ -122,53 +134,135 @@ public class FileStreamImpl extends GridServiceImpl {
         addDestinationUrlServiceData();
     }
     
-    protected OutputStream openUrl(String file) throws RemoteException {
+    protected OutputStream openUrl(String file) throws InvalidUrlFault,
+            FileTransferFault, CredentialsFault, InvalidPathFault {
         GlobusURL url = null;
         try {
             url = new GlobusURL(file);
-        } catch(Exception e) {
-            throw new RemoteException("Invalid URL");
+        } catch(MalformedURLException e) {
+            InvalidUrlFault fault = (InvalidUrlFault) FaultHelper.makeFault(
+                    InvalidUrlFault.class,
+                    "Invalid URL: " + file, e, this);
+            throw fault;
         }
-        try {
-            return openUrl(url);
-        } catch(Exception e) {
-            logger.error("Failed to open remote URL", e);
-            throw new RemoteException("Failed to open remote URL", e);
-        }
+        return openUrl(url);
     }
 
-    protected OutputStream openUrl(GlobusURL url) throws Exception {
+    protected OutputStream openUrl(GlobusURL url) throws InvalidPathFault,
+            InvalidUrlFault, FileTransferFault, CredentialsFault {
         String protocol = url.getProtocol();
-        if (protocol.equalsIgnoreCase("https")) {
-            return new GassOutputStream(this.proxy,
-                                        url.getHost(),
-                                        url.getPort(),
-                                        url.getPath(),
-                                        -1,
-                                        appendStdout);
-        } else if (protocol.equalsIgnoreCase("http")) {
-            return new HTTPOutputStream(url.getHost(),
-                                        url.getPort(),
-                                        url.getPath(),
-                                        -1,
-                                        appendStdout);
-        } else if (protocol.equalsIgnoreCase("gsiftp")) {
-            return new GridFTPOutputStream(this.proxy, 
-                                          url.getHost(),
-                                          url.getPort(),
-                                          url.getPath(),
-                                          appendStdout);
-        } else if (protocol.equalsIgnoreCase("ftp")) {
-            return new FTPOutputStream(url.getHost(),
-                                       url.getPort(),
-                                       url.getUser(),
-                                       url.getPwd(),
-                                       url.getPath(),
-                                       appendStdout);
-        } else if (protocol.equalsIgnoreCase("file")) {
-            return new GlobusFileOutputStream(url.getPath(), appendStdout);
-        } else {
-            throw new Exception("Protocol not supported: " + protocol);
+
+        try {
+            if (protocol.equalsIgnoreCase("https")) {
+                return new GassOutputStream(this.proxy,
+                                            url.getHost(),
+                                            url.getPort(),
+                                            url.getPath(),
+                                            -1,
+                                            appendStdout);
+            } else if (protocol.equalsIgnoreCase("http")) {
+                return new HTTPOutputStream(url.getHost(),
+                                            url.getPort(),
+                                            url.getPath(),
+                                            -1,
+                                            appendStdout);
+            } else if (protocol.equalsIgnoreCase("gsiftp")) {
+                return new GridFTPOutputStream(this.proxy, 
+                                              url.getHost(),
+                                              url.getPort(),
+                                              url.getPath(),
+                                              appendStdout);
+            } else if (protocol.equalsIgnoreCase("ftp")) {
+                return new FTPOutputStream(url.getHost(),
+                                           url.getPort(),
+                                           url.getUser(),
+                                           url.getPwd(),
+                                           url.getPath(),
+                                           appendStdout);
+            } else if (protocol.equalsIgnoreCase("file")) {
+                return new GlobusFileOutputStream(url.getPath(), appendStdout);
+            } else {
+                InvalidUrlFault f =
+                        (InvalidUrlFault) FaultHelper.makeFault(
+                        InvalidUrlFault.class,
+                        "Invalid URL scheme: " + protocol, null, this);
+
+                f.setUrl(url.toString());
+
+                throw f;
+            }
+        } catch(FTPException fe) {
+            FileTransferFault f =
+                    (FileTransferFault) FaultHelper.makeFault(
+                    FileTransferFault.class,
+                    "Error accessing URL " + url, fe, this);
+            f.setSourcePath(sourcePath);
+            try {
+                f.setDestinationUrl(new URI(url.toString()));
+            } catch(MalformedURIException muri) {
+                InvalidUrlFault fault =
+                        (InvalidUrlFault) FaultHelper.makeFault(
+                        InvalidUrlFault.class,
+                        "Invalid URL : " + url.toString(), null, this);
+
+                fault.setUrl(url.toString());
+
+                throw fault;
+            }
+
+            throw f;
+        } catch(GassException ge) {
+            FileTransferFault f =
+                    (FileTransferFault) FaultHelper.makeFault(
+                    FileTransferFault.class,
+                    "Error accessing URL " + url, ge, this);
+            f.setSourcePath(sourcePath);
+            try {
+                f.setDestinationUrl(new URI(url.toString()));
+            } catch(MalformedURIException muri) {
+                InvalidUrlFault fault =
+                        (InvalidUrlFault) FaultHelper.makeFault(
+                        InvalidUrlFault.class,
+                        "Invalid URL : " + url.toString(), null, this);
+
+                fault.setUrl(url.toString());
+
+                throw fault;
+            }
+
+            throw f;
+        } catch(GSSException gse) {
+            CredentialsFault f =
+                    (CredentialsFault) FaultHelper.makeFault(
+                    CredentialsFault.class,
+                    "Credentials problem", gse, this);
+            throw f;
+        } catch(IOException ioe) {
+            if (protocol.equalsIgnoreCase("file")) {
+                InvalidPathFault fault = (InvalidPathFault) FaultHelper.makeFault(
+                        InvalidPathFault.class,
+                        "Invalid Path: " + sourcePath, ioe, this);
+                throw fault;
+            } else {
+                FileTransferFault f =
+                        (FileTransferFault) FaultHelper.makeFault(
+                        FileTransferFault.class,
+                        "Error accessing URL " + url, ioe, this);
+                f.setSourcePath(sourcePath);
+                try {
+                    f.setDestinationUrl(new URI(url.toString()));
+                } catch(MalformedURIException muri) {
+                    InvalidUrlFault fault =
+                            (InvalidUrlFault) FaultHelper.makeFault(
+                            InvalidUrlFault.class,
+                            "Invalid URL : " + url.toString(), null, this);
+
+                    fault.setUrl(url.toString());
+
+                    throw fault;
+                }
+                throw f;
+            }
         }
     }
 
@@ -211,13 +305,12 @@ public class FileStreamImpl extends GridServiceImpl {
         }
     }
 
-    public void start() throws RemoteException {
+    public void start() throws InvalidUrlFault, InvalidPathFault,
+            FileTransferFault, CredentialsFault {
         if (logger.isDebugEnabled()) {
             logger.debug("starting stream");
         }
 
-	// FIXME: this can be done automatically if sec. descriptor is set
-	// get service subject
 	Subject subject = SecurityManager.getManager().getSubject(this);
 	// extract gss credential from subject
 	this.proxy = JaasGssUtil.getCredential(subject);
@@ -229,13 +322,15 @@ public class FileStreamImpl extends GridServiceImpl {
             this.outputFollower.start();
         }
 
-        try { 
-            File outputFile = new File(this.sourcePath);
-            outputStream = openUrl(destinationUrl);
+        File outputFile = new File(this.sourcePath);
+        outputStream = openUrl(destinationUrl);
+        try {
             this.outputFollower.addFile(outputFile,outputStream,offset);
-        } catch(IOException e) {
-            logger.error("Error stream file", e);
-            throw new RemoteException("Error in Stream");
+        } catch(IOException ioe) {
+            InvalidPathFault fault = (InvalidPathFault) FaultHelper.makeFault(
+                    InvalidPathFault.class,
+                    "Invalid Path: " + outputFile, ioe, this);
+            throw fault;
         }
 
         fireFileStreamStarted();

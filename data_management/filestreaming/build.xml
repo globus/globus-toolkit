@@ -39,7 +39,7 @@ Southern California. All Rights Reserved.
   <property name="server.deploy" value="server-deploy.wsdd"/>
   <property name="server.config" value="server-config.wsdd"/>
   <property name="core.config" value="${ogsa.root}/${server.config}"/>
-  <property name="stubs.dir" value="./src/org/globus/ogsa/base"/>
+  <property name="stubs.dir" value="./build/stubs"/>
   <property name="schema.dir" value="schema"/>
   <property name="build.schema" value="${schema.dir}"/>
   <property name="streaming.schema.dir" value="base/streaming"/>
@@ -47,6 +47,7 @@ Southern California. All Rights Reserved.
   <property name="build.packages" value="build-packages.xml"/>
   <property name="test-reports.dir" value="test-reports"/>
   <property name="mapping.file" value="NStoPkg_FSS.properties"/>
+  <property name="stubs.dest" value="../build/stubs"/>
   
   
   <!-- properties added for filestreaming -->
@@ -62,9 +63,6 @@ Southern California. All Rights Reserved.
         <pathelement location="${java.home}/../lib/tools.jar"/>
         <pathelement location="${build.dest}"/>
         <pathelement location="${ogsa.root}/${build.dest}"/>
-        <fileset dir="lib">
-            <include name="*.jar"/>
-        </fileset>
         <fileset dir="${absolute.ogsa.root}/lib">
             <include name="*.jar"/>
             <exclude name="${jar.name}"/>
@@ -147,7 +145,6 @@ Southern California. All Rights Reserved.
         <property name="schema.file.dir" value="${streaming.schema.dir}"/>
         <property name="schema.file" value="file_stream_factory_service.wsdl"/>
         <!-- Command run from within schema dir -->
-        <property name="stubs.dest" value="../src"/>
         <reference refid="classpath"/>
     </ant>
     <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS"
@@ -156,7 +153,6 @@ Southern California. All Rights Reserved.
         <property name="schema.file.dir" value="${streaming.schema.dir}"/>
         <property name="schema.file" value="file_stream_service.wsdl"/>
         <!-- Command run from within schema dir -->
-        <property name="stubs.dest" value="../src"/>
         <reference refid="classpath"/>
     </ant>
   </target>
@@ -164,7 +160,7 @@ Southern California. All Rights Reserved.
   <!-- =================================================================== -->
   <!-- Compiles the source directory                                       -->
   <!-- =================================================================== -->
-  <target name="compile" depends="stubs">
+  <target name="compile" depends="compileStubs">
     <javac srcdir="${src.dir}" destdir="${build.dest}" debug="${debug}"
       deprecation="${deprecation}"
       classpathref="classpath">
@@ -173,7 +169,13 @@ Southern California. All Rights Reserved.
     </javac>
  </target>
 
-
+  <target name="compileStubs" depends="stubs">
+    <javac srcdir="${schema.dir}/${stubs.dest}" destdir="${build.dest}"
+      debug="${debug}"
+      deprecation="${deprecation}"
+      classpathref="classpath">
+    </javac>
+ </target>
 
   <target name="jar" depends="compile">
     <jar jarfile="${build.lib}/${jar.file}" basedir="${build.dest}" >
@@ -190,11 +192,6 @@ Southern California. All Rights Reserved.
  
   <!-- Gar Packaging -->
   <target name="gar" depends="jar">
-    <copy todir="${build.lib}">
-      <fileset dir="${lib.dir}">
-          <include name="**/*.jar"/>
-      </fileset>
-    </copy>
     <ant antfile="${ogsa.root}/${build.packages}" target="makeGar">
       <property name="gar.name" value="${build.lib}/${gar.file}"/>
       <property name="garlib.dir" value="${build.lib}"/>
