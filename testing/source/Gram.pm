@@ -1,5 +1,5 @@
 
-package Globus::Gram;
+package Globus::Testing::Gram;
 
 use Carp;
 use strict 'vars';

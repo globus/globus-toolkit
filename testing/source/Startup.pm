@@ -1,7 +1,7 @@
-package Globus::Startup;
+package Globus::Testing::Startup;
 
-use Globus::Comm;
-use Globus::HostDB;
+use Globus::Testing::Comm;
+use Globus::Testing::HostDB;
 
 use Carp;
 use Cwd;
@@ -12,25 +12,25 @@ use vars qw/$AUTOLOAD $PID %ENV/;
 
 =head1 NAME
 
-Globus::Startup - Start a job on or stage files to/from a remote resource.
+Globus::Testing::Startup - Start a job on or stage files to/from a remote resource.
 
 =head1 SYNOPSIS
 
- $startup = Globus::Startup->new([options....])
+ $startup = Globus::Testing::Startup->new([options....])
  $startup->stage($local_file, $remote_file)
  $startup->stageback($remote_file, $local_file)
  $startup->startup($executable, $args)
 
 =head1 DESCRIPTION
 
-The Globus::Startup object provides an easy way to start jobs on remote
+The Globus::Testing::Startup object provides an easy way to start jobs on remote
 machines using a variety of services. Additionally, files may be transferred
 to or from a remote machine. The machine capabilities are defined in 
-a Globus::HostDB object. A Globus:Comm object may be associated with a
-Globus::Startup object to enable communication between remote jobs and
+a Globus::Testing::HostDB object. A Globus:Comm object may be associated with a
+Globus::Testing::Startup object to enable communication between remote jobs and
 the perl script which launched them.
 
-=head2 sub Globus::Startup->new()
+=head2 sub Globus::Testing::Startup->new()
 
 This function creates a new Startup object.
 
@@ -44,7 +44,7 @@ are:
 =item * I<hosts>
 
 An array of possible hosts to execute on. Note that only one of the
-hosts is actually going to be used. May be empty. See L<Globus::HostDB>
+hosts is actually going to be used. May be empty. See L<Globus::Testing::HostDB>
 for details. 
 
 =item * I<execution> 
@@ -800,7 +800,8 @@ sub startup_local($$$$)
 
 =head1 SEE ALSO
 
-L<Globus::HostDB|Globus::HostDB>, L<Globus::Comm|Globus::Comm>
+L<Globus::Testing::HostDB|Globus::Testing::HostDB>,
+L<Globus::Testing::Comm|Globus::Testing::Comm>
 
 =cut
 

@@ -1,30 +1,30 @@
 =head1 NAME
 
-Globus::HostDB - Host capability configuration
+Globus::Testing::HostDB - Host capability configuration
 
 =cut
 
-package Globus::HostDB;
+package Globus::Testing::HostDB;
 
 use Carp;
-use Globus::Host;
+use Globus::Testing::Host;
 use strict 'vars';
 use vars qw/$AUTOLOAD/;
 
 
 =head1 SYNOPSIS
 
- use Globus::HostDB;
+ use Globus::Testing::HostDB;
 
- $hostdb = new Globus::HostDB;
+ $hostdb = new Globus::Testing::HostDB;
  $hostdb->readdb($filename);
  $hostdb->querydb($query);
 
 =head1 DESCRIPTION
 
-The C<Globus::HostDB> object is used to import a user-defined set of
+The C<Globus::Testing::HostDB> object is used to import a user-defined set of
 host configuration information from a file to be used when running a progam
-using the L<Globus::Startup|Globus::Startup> object.
+using the L<Globus::Testing::Startup|Globus::Testing::Startup> object.
 
 =head2 sub new()
 
@@ -205,19 +205,19 @@ sub readdb
 	 /default/i && do
 	 {
 	    $jobmanager="default";
-	    (($self->$hostname())->$jobmanager(Globus::Gram->new()));
+	    (($self->$hostname())->$jobmanager(Globus::Testing::Gram->new()));
 	    last SWITCH;  
 	 };
 	 /loadleveler/i && do
 	 {
 	    $jobmanager="loadleveler";
-	    (($self->$hostname())->$jobmanager(Globus::Gram->new()));
+	    (($self->$hostname())->$jobmanager(Globus::Testing::Gram->new()));
 	    last SWITCH;  
 	 };
 	 /fork/i && do
 	 {
 	    $jobmanager="fork";
-	    (($self->$hostname())->$jobmanager(Globus::Gram->new()));
+	    (($self->$hostname())->$jobmanager(Globus::Testing::Gram->new()));
 	    last SWITCH;  
 	 };
 
@@ -255,7 +255,7 @@ sub readdb
 	 {
 	    $hostname = $1;
 	    $level == 0 || croak "Wrong level";
-	    $hostobj=Globus::Host->new();
+	    $hostobj=Globus::Testing::Host->new();
 	    $self->$hostname($hostobj);
 	    last SWITCH;
 	 };
@@ -360,7 +360,7 @@ sub print_obj
 
 =head1 SEE ALSO
 
-L<Globus::Startup|Globus::Startup>
+L<Globus::Testing::Startup|Globus::Testing::Startup>
 
 =cut
 

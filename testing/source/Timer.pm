@@ -1,19 +1,19 @@
 =head1 NAME
 
-Globus::Timer - subsecond resolution timers
+Globus::Testing::Timer - subsecond resolution timers
 
 =head1 SYNOPSIS
 
- use Globus::Timer;
+ use Globus::Testing::Timer;
 
- $timer = new Globus::Timer();
+ $timer = new Globus::Testing::Timer();
  $timer->start();
  $timer->stop();
  $timer->print();
 
 =head1 DESCRIPTION
 
-The Globus::Timer module provides subsecond timers for use for timing
+The Globus::Testing::Timer module provides subsecond timers for use for timing
 the performance of code. These measure the interval between a call to
 the C<start> and C<stop> methods of a timer object. The timers do not
 accumulate times from multiple calls to C<start> and C<stop>
@@ -22,7 +22,7 @@ accumulate times from multiple calls to C<start> and C<stop>
 
 =cut
 
-package Globus::Timer;
+package Globus::Testing::Timer;
 
 use Carp;
 use strict 'vars';

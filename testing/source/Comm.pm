@@ -1,11 +1,11 @@
 
 =head1 NAME
 
-Globus::Comm - Communicate with remote perl processes
+Globus::Testing::Comm - Communicate with remote perl processes
 
 =cut
 
-package Globus::Comm;
+package Globus::Testing::Comm;
 
 use Socket;
 use Carp;
@@ -17,10 +17,10 @@ use POSIX "sys_wait_h";
 
 =head1 SYNOPSIS
 
- use Globus::Comm;
+ use Globus::Testing::Comm;
 
- $comm = new Globus::Comm();
- $comm = new Globus::Comm($host,$port);
+ $comm = new Globus::Testing::Comm();
+ $comm = new Globus::Testing::Comm($host,$port);
  $comm->start_server($client_count);
  $comm->put($key,$value)
  $comm->fence($timeout)
@@ -400,7 +400,7 @@ sub DESTROY
 
 =head2 SEE ALSO
 
-L<Globus::Startup|Globus::Startup>
+L<Globus::Testing::Startup|Globus::Testing::Startup>
 
 =cut
 

@@ -1,7 +1,7 @@
 
-package Globus::Host;
+package Globus::Testing::Host;
 
-use Globus::Gram;
+use Globus::Testing::Gram;
 use Carp;
 use strict 'vars';
 use vars qw/$AUTOLOAD/;
