@@ -235,8 +235,7 @@ globus_module_deactivate(
     {
 	ret_val = GLOBUS_SUCCESS;
 
-	if (module_descriptor->activation_func != GLOBUS_NULL
-		 && module_descriptor->deactivation_func != GLOBUS_NULL)
+	if (module_descriptor->activation_func != GLOBUS_NULL)
 	{
 	    if (globus_l_module_decrement(module_descriptor,
 					  parent_key) == GLOBUS_TRUE)
@@ -244,7 +243,10 @@ globus_module_deactivate(
 		parent_key_save = parent_key;
 		parent_key = module_descriptor->activation_func;
 		
-		ret_val = module_descriptor->deactivation_func();
+		if(module_descriptor->deactivation_func != NULL)
+		{
+		    ret_val = module_descriptor->deactivation_func();
+		}
 
 		parent_key = parent_key_save;
 	    }
