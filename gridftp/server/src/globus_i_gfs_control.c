@@ -795,8 +795,11 @@ globus_l_gfs_data_event_cb(
         {
             /* TODO: can we ignore this */
         }
-        globus_gridftp_server_control_begin_transfer(op);
         break;
+
+        case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
+            globus_gridftp_server_control_begin_transfer(op);
+            break;
 
       case GLOBUS_GFS_EVENT_DISCONNECTED:
          globus_gridftp_server_control_disconnected(
