@@ -388,7 +388,14 @@ globus_l_gsc_user_op_kickout(
                 i_op,
                 i_op->net_prt,
                 i_op->max_cs);
-                
+            break;
+
+        case GLOBUS_L_GSC_OP_TYPE_CREATE_PORT:
+            i_op->server->active_func(
+                i_op,
+                i_op->net_prt,
+                (const char **)i_op->cs,
+                i_op->max_cs);
             break;
 
         default:
@@ -1082,8 +1089,8 @@ globus_l_gsc_op_destroy(
 }
 
 globus_result_t
-globus_gridftp_server_control_passive_connect(
-    globus_gridftp_server_control_operation_t       op,
+globus_l_gridftp_server_control_connect(
+    globus_i_gsc_op_t *                             i_op,
     void *                                          user_data_handle,
     globus_result_t                                 res,
     const char **                                   cs,
@@ -1091,27 +1098,36 @@ globus_gridftp_server_control_passive_connect(
 {
     void *                                          tmp_ptr;
     globus_i_gsc_server_t *                         i_server;
-    globus_i_gsc_op_t *                             i_op;
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_resource);
 
-    if(op == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("op");
-    }
-    i_op = (globus_i_gsc_op_t *) op;
-    if(i_op->type != GLOBUS_L_GSC_OP_TYPE_CREATE_PASV)
+    if(i_op == NULL)
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
 
     i_server = i_op->server;
+    if(i_op->type == GLOBUS_L_GSC_OP_TYPE_CREATE_PASV)
+    {
+        i_op->passive_cb(
+            i_server,
+            res,
+            cs,
+            cs_count,
+            i_op->user_arg);
+    }
+    else if(i_op->type == GLOBUS_L_GSC_OP_TYPE_CREATE_PORT)
+    {
+        i_op->port_cb(
+            i_server,
+            res,
+            i_op->user_arg);
+        globus_free(i_op->cs);
+    }
+    else
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
 
-    i_op->passive_cb(
-        i_server,
-        res,
-        cs,
-        cs_count,
-        i_op->user_arg);
 
     globus_mutex_lock(&i_server->mutex);
     {
@@ -1138,6 +1154,36 @@ globus_gridftp_server_control_passive_connect(
     globus_mutex_unlock(&i_server->mutex);
 
     return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_gridftp_server_control_passive_connect(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          user_data_handle,
+    globus_result_t                                 res,
+    const char **                                   cs,
+    int                                             cs_count)
+{
+    return globus_l_gridftp_server_control_connect(
+        op,
+        user_data_handle,
+        res,
+        cs,
+        cs_count);
+}
+
+globus_result_t
+globus_gridftp_server_control_finished_active_connect(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          user_data_handle,
+    globus_result_t                                 res)
+{
+    return globus_l_gridftp_server_control_connect(
+        op,
+        user_data_handle,
+        res,
+        NULL,
+        0);
 }
 
 globus_result_t
@@ -1406,7 +1452,7 @@ globus_gridftp_server_control_pmod_passive(
     globus_i_gsc_server_t *                         i_server;
     globus_result_t                                 res = GLOBUS_SUCCESS;
     globus_i_gsc_op_t *                             i_op;
-    GlobusGridFTPServerName(globus_gridftp_server_control_protocol_error);
+    GlobusGridFTPServerName(globus_gridftp_server_control_pmod_passive);
  
     i_server = (globus_i_gsc_server_t *) server;
 
@@ -1458,7 +1504,55 @@ globus_gridftp_server_control_pmod_port(
     globus_gridftp_server_control_pmod_port_callback_t cb,
     void *                                          user_arg)
 {
-    return GLOBUS_SUCCESS;
+    int                                             ctr;
+    globus_i_gsc_server_t *                         i_server;
+    globus_result_t                                 res = GLOBUS_SUCCESS;
+    globus_i_gsc_op_t *                             i_op;
+    GlobusGridFTPServerName(globus_gridftp_server_control_pmod_port);
+ 
+    i_server = (globus_i_gsc_server_t *) server;
+
+    i_op = (globus_i_gsc_op_t *) globus_malloc(sizeof(globus_i_gsc_op_t));
+    if(i_op == NULL)
+    {
+        return GlobusGridFTPServerErrorMemory("i_op");
+    }
+    memset(i_op, '\0', sizeof(globus_i_gsc_op_t));
+
+    i_op->server = server;
+    i_op->res = GLOBUS_SUCCESS;
+    i_op->user_arg = user_arg;
+    i_op->max_cs = cs_count;
+    i_op->net_prt = net_prt;
+    i_op->port_cb = cb;
+    i_op->cs = globus_malloc(sizeof(char *) * cs_count);
+    for(ctr = 0; ctr < cs_count; ctr++)
+    {
+        i_op->cs[ctr] = globus_libc_strdup(cs[ctr]);
+    }
+    i_op->type = GLOBUS_L_GSC_OP_TYPE_CREATE_PORT;
+
+    globus_mutex_lock(&i_server->mutex);
+    {
+        if(!globus_fifo_empty(&i_server->data_q))
+        {
+            globus_fifo_enqueue(&i_server->data_q, i_op);
+        }
+        else
+        {
+            globus_fifo_enqueue(&i_server->data_q, i_op);
+            res = globus_l_gsc_perform_op(i_op);
+
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_fifo_dequeue(&i_server->data_q);
+                globus_free(i_op);
+            }
+        }
+    }
+    globus_mutex_unlock(&i_server->mutex);
+
+    return res;
 }
 
 /************************************************************************

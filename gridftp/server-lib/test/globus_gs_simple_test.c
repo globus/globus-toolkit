@@ -46,6 +46,19 @@ globus_l_done_cb(
 }
 
 void
+port_connect(
+    globus_gridftp_server_control_operation_t       op,
+    globus_gridftp_server_control_network_protocol_t net_prt,
+    const char **                                   cs,
+    int                                             cs_count)
+{
+    globus_gridftp_server_control_finished_active_connect(
+        op,
+        NULL,
+        GLOBUS_SUCCESS);
+}
+
+void
 passive_connect(
     globus_gridftp_server_control_operation_t       op,
     globus_gridftp_server_control_network_protocol_t net_prt,
@@ -57,7 +70,7 @@ passive_connect(
         op,
         NULL,
         GLOBUS_SUCCESS,
-        (const char *) cs,
+        (const char **) cs,
         1);
 }
 
@@ -192,6 +205,10 @@ main(
 
     res = globus_gridftp_server_control_attr_set_passive(
         ftp_attr, passive_connect);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_active(
+        ftp_attr, port_connect);
     test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
