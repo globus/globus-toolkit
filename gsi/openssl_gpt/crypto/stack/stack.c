@@ -233,8 +233,8 @@ int sk_find(STACK *st, char *data)
 	 * not (type *) pointers, but the *pointers* to (type *) pointers,
 	 * so we get our extra level of pointer dereferencing that way. */
 	comp_func=(int (*)(const void *,const void *))(st->comp);
-	r=(char **)bsearch(&data,(char *)st->data,
-		st->num,sizeof(char *), comp_func);
+	r= st->num > 0 ? (char **)bsearch(&data,(char *)st->data,
+		st->num,sizeof(char *), comp_func) : NULL;
 	if (r == NULL) return(-1);
 	i=(int)(r-st->data);
 	for ( ; i>0; i--)
@@ -328,7 +328,8 @@ void sk_sort(STACK *st)
 		 * type** with type**, so we leave the casting until absolutely
 		 * necessary (ie. "now"). */
 		comp_func=(int (*)(const void *,const void *))(st->comp);
-		qsort(st->data,st->num,sizeof(char *), comp_func);
+		if(st->num > 0)
+		   qsort(st->data,st->num,sizeof(char *), comp_func);
 		st->sorted=1;
 		}
 	}

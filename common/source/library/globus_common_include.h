@@ -235,11 +235,10 @@ typedef int		                                globus_bool_t;
 typedef uint32_t                                        globus_result_t;
 typedef GLOBUS_OFF_T                                    globus_off_t;
 
-/* now defined in globus_error.h: #define GLOBUS_SUCCESS  0 */
-
 #define GLOBUS_TRUE    1
 #define GLOBUS_FALSE   0
 #define GLOBUS_NULL    0
+#define GLOBUS_SUCCESS 0
 #define GLOBUS_FAILURE  -1
 
 #endif  /* GLOBUS_COMMON_INCLUDE_H */
