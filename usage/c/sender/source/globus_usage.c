@@ -188,6 +188,11 @@ globus_l_usage_stats_split_targets(
         tmpstr += end_token;
     }
 
+    if(token && (end_token == -1))
+    {
+        globus_list_insert(targets, token);
+    }
+
     globus_free(newstr);
     return 0;
 }
