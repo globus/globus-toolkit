@@ -20,14 +20,6 @@ typedef void
     int                                 stat_count,
     void *                              user_arg);
 
-globus_result_t
-globus_i_gfs_data_resource_request(
-    globus_i_gfs_server_instance_t *    instance,
-    const char *                        pathname,
-    globus_bool_t                       file_only,
-    globus_i_gfs_data_resource_cb_t     callback,
-    void *                              user_arg);
-
 typedef void
 (*globus_i_gfs_data_transfer_cb_t)(
     globus_i_gfs_server_instance_t *    instance,
@@ -39,6 +31,34 @@ typedef void
     globus_i_gfs_server_instance_t *    instance,
     globus_i_gfs_event_t                type,
     void *                              data,
+    void *                              user_arg);
+
+typedef void
+(*globus_i_gfs_data_active_cb_t)(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    globus_i_gfs_data_handle_t *        data_handle,
+    globus_bool_t                       bi_directional,
+    void *                              user_arg);
+
+typedef void
+(*globus_i_gfs_data_passive_cb_t)(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    globus_i_gfs_data_handle_t *        data_handle,
+    globus_bool_t                       bi_directional,
+    const char **                       contact_strings,
+    int                                 cs_count,
+    void *                              user_arg);
+
+
+
+globus_result_t
+globus_i_gfs_data_resource_request(
+    globus_i_gfs_server_instance_t *    instance,
+    const char *                        pathname,
+    globus_bool_t                       file_only,
+    globus_i_gfs_data_resource_cb_t     callback,
     void *                              user_arg);
 
 globus_result_t
@@ -81,29 +101,11 @@ globus_i_gfs_data_command_request(
     globus_i_gfs_ipc_command_cb_t       callback,
     void *                              user_arg);
 
-typedef void
-(*globus_i_gfs_data_passive_cb_t)(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    globus_i_gfs_data_handle_t *        data_handle,
-    globus_bool_t                       bi_directional,
-    const char **                       contact_strings,
-    int                                 cs_count,
-    void *                              user_arg);
-
 globus_result_t
 globus_i_gfs_data_passive_request(
     globus_i_gfs_server_instance_t *    instance,
     globus_i_gfs_data_attr_t *          attr,
     globus_i_gfs_data_passive_cb_t      callback,
-    void *                              user_arg);
-
-typedef void
-(*globus_i_gfs_data_active_cb_t)(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    globus_i_gfs_data_handle_t *        data_handle,
-    globus_bool_t                       bi_directional,
     void *                              user_arg);
 
 globus_result_t

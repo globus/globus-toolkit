@@ -16,6 +16,14 @@ typedef struct globus_i_gfs_ipc_iface_s *  globus_gfs_ipc_iface_t;
 typedef void
 (*globus_gfs_ipc_callback_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     ipc_result,
+    globus_gfs_ipc_reply_t              reply,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_event_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     ipc_result,
     globus_gfs_ipc_reply_t              reply,
     void *                              user_arg);
 
@@ -54,6 +62,7 @@ typedef struct globus_gfs_ipc_passive_reply_s
 typedef struct globus_gfs_ipc_command_reply_s
 {
     /* XXX not too sure bout these yet */
+    globus_i_gfs_command_t              command;
     char *                              checksum;
     char *                              created_dir;
 } globus_gfs_ipc_command_reply_t;
@@ -70,10 +79,11 @@ struct globus_i_gfs_ipc_reply_s
     int                                 id;
     int                                 reply_code;
     char *                              reply_msg;
+    globus_result_t                     result;
 
     union
     {
-        globus_gfs_ipc_passive_reply_t  passive_reply;
+        globus_gfs_ipc_data_reply_t     data_reply;
         globus_gfs_ipc_command_reply_t  command_reply;
         globus_gfs_ipc_resource_reply_t resource_reply;
     } reply_type;
@@ -91,7 +101,12 @@ typedef struct globus_gfs_ipc_call_entry_s
 } globus_gfs_ipc_call_entry_t;
 
 globus_result_t
-globus_gfs_ipc_reply(
+globus_gfs_ipc_finished_reply(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_ipc_reply_t *            reply);
+
+globus_result_t
+globus_gfs_ipc_event_reply(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_reply_t *            reply);
 
@@ -105,19 +120,6 @@ globus_gfs_ipc_reply(
  *  all parmeters are wrapped in a structure corresponding to
  *  each function call type.  those structures are defined below
  */
-typedef struct globus_gfs_server_state_s
-{
-    globus_bool_t                       ipv6;
-    int                                 nstreams;
-    char                                mode;
-    char                                type;
-    int                                 tcp_bufsize;
-    globus_size_t                       blocksize;
-        
-    globus_ftp_control_protection_t     prot;
-    globus_ftp_control_dcau_t           dcau;
-    gss_cred_id_t                       delegated_cred;
-} globus_gfs_server_state_t;
 
 typedef struct globus_gfs_transfer_state_s
 {
@@ -135,7 +137,7 @@ typedef struct globus_gfs_transfer_state_s
 
 typedef struct globus_gfs_command_state_s
 {
-    /*globus_i_gfs_command_t              command;*/
+    globus_i_gfs_command_t              command;
     char *                              pathname;
 
     globus_off_t                        cksm_offset;
@@ -150,6 +152,15 @@ typedef struct globus_gfs_command_state_s
 
 typedef struct globus_gfs_data_state_s
 {
+    globus_bool_t                       ipv6;
+    int                                 nstreams;
+    char                                mode;
+    char                                type;
+    int                                 tcp_bufsize;
+    globus_size_t                       blocksize;
+        
+    globus_ftp_control_protection_t     prot;
+    globus_ftp_control_dcau_t           dcau;
     const char **                       contact_strings;
     int                                 cs_count;
     globus_gridftp_server_control_network_protocol_t net_prt; /* gag */
