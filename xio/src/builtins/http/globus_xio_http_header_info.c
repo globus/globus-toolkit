@@ -189,6 +189,10 @@ globus_i_xio_http_header_info_set_header(
         {
             headers->connection_close = GLOBUS_TRUE;
         }
+        else if (strcmp(header_value, "keep-alive") == 0)
+        {
+            headers->connection_close = GLOBUS_FALSE;
+        }
         else
         {
             result = GlobusXIOHttpErrorInvalidHeader(header_name, header_value);
