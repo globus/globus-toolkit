@@ -437,6 +437,7 @@ globus_l_gsc_send_restart_marker_cb(
     char *                              msg;
     char *                              tmp_msg;
     globus_i_gsc_restart_ent_t *        ent;
+    globus_i_gsc_restart_ent_t *        tmp_ent;
 
     op = (globus_i_gsc_op_t *) user_arg;
     event = &op->event;
@@ -446,14 +447,20 @@ globus_l_gsc_send_restart_marker_cb(
         if(event->restart_running && event->restart_head != NULL)
         {
             msg = globus_common_create_string("111 Range Marker ");
-            for(ent = event->restart_head; ent != NULL; ent = ent->next)
+            ent = event->restart_head;
+            while(ent != NULL)
             {
                 tmp_msg = globus_common_create_string("%s%"
                     GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT", ",
                      msg, ent->offset, ent->offset + ent->length);
                 globus_free(msg);
                 msg = tmp_msg;
+
+                tmp_ent = ent;
+                ent = ent->next;
+                globus_free(tmp_ent);
             }
+            event->restart_head = NULL;
             len = strlen(msg);
             msg[len - 2] = '\r';
             msg[len - 1] = '\n';

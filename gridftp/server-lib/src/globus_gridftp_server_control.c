@@ -1225,7 +1225,7 @@ globus_l_gsc_parse_command(
         if(*start_ptr == '\r')
         {
             cmd_a[argc_ndx] = NULL;
-            return argc_ndx-1;
+            return argc_ndx;
         }
 
         /* reserve room for the next parameter */
