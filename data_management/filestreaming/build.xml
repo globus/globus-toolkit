@@ -40,6 +40,7 @@ Southern California. All Rights Reserved.
   <property name="build.services" value="${ogsa.root}/build-services.xml"/>
   <property name="stubs.dir" value="./src/org/globus/ogsa/base"/>
   <property name="schema.dir" value="schema"/>
+  <property name="build.schema" value="${schema.dir}"/>
   <property name="streaming.schema.dir" value="base/streaming"/>
   <property name="schema.origin" value="${ogsa.root}/schema"/>
   <property name="package.dir" value="filestreaming"/>
@@ -94,7 +95,6 @@ Southern California. All Rights Reserved.
     <copy toDir="${schema.dir}">
         <fileset dir="${schema.origin}" casesensitive="yes"/>
     </copy>
-    <copy file="${schema.origin}/${nsmap.file}" toDir="./"/>
   </target>
 
 
@@ -123,34 +123,41 @@ Southern California. All Rights Reserved.
    </ant>
   </target>
 
+  <target name="mergePackageMapping">
+    <delete file="${build.schema}/${nsmap.file}"/>
+    <copy file="${nsmap.file}" toFile="${build.schema}/${nsmap.file}.tmp"/>
+
+    <!-- this is neccesary since the core version only works from core dir -->
+    <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
+        <property name="mapping.file" value="${ogsa.root}/${nsmap.file}"/>
+        <property name="nsmap.file" value="${nsmap.file}.tmp"/>
+    </ant>
+
+    <delete file="${build.schema}/${nsmap.file}"/>
+    <move file="${build.schema}/${nsmap.file}.tmp"
+          toFile="${build.schema}/${nsmap.file}"/>
+  </target>
+
   <!-- =================================================================== -->
   <!-- Generate stubs from the WSDLs                                       -->
   <!-- =================================================================== -->
   <target name="stubs" unless="stubs.present" depends="generateWSDL">
-   <!--<ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">-->
-   <ant target="generateStubs">
-    <property name="build.schema" value="${schema.dir}"/>
-    <property name="schema.file.dir" value="${streaming.schema.dir}"/>
-    <property name="schema.file" value="file_stream_factory_service.wsdl"/>
-    <!-- Command run from within schema dir -->
-    <property name="stubs.dest" value="../src"/>
-    <property name="base.namespace"
-              value="http://www.globus.org/namespaces/base/streaming"/>
-    <property name="base.package"
-              value="org.globus.ogsa.base.streaming"/>
-   </ant>
-   <!--<ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">-->
-   <ant target="generateStubs">
-    <property name="build.schema" value="${schema.dir}"/>
-    <property name="schema.file.dir" value="${streaming.schema.dir}"/>
-    <property name="schema.file" value="file_stream_service.wsdl"/>
-    <!-- Command run from within schema dir -->
-    <property name="stubs.dest" value="../src"/>
-    <property name="base.namespace"
-              value="http://www.globus.org/namespaces/base/streaming"/>
-    <property name="base.package"
-              value="org.globus.ogsa.base.streaming"/>
-   </ant>
+    <ant target="mergePackageMapping"/>
+
+    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
+        <property name="build.schema" value="${schema.dir}"/>
+        <property name="schema.file.dir" value="${streaming.schema.dir}"/>
+        <property name="schema.file" value="file_stream_factory_service.wsdl"/>
+        <!-- Command run from within schema dir -->
+        <property name="stubs.dest" value="../src"/>
+    </ant>
+    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
+        <property name="build.schema" value="${schema.dir}"/>
+        <property name="schema.file.dir" value="${streaming.schema.dir}"/>
+        <property name="schema.file" value="file_stream_service.wsdl"/>
+        <!-- Command run from within schema dir -->
+        <property name="stubs.dest" value="../src"/>
+    </ant>
   </target>
 
   <target name="generateStubs">
