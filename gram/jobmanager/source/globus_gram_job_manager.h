@@ -32,6 +32,8 @@ globus_gram_job_manager_logfile_flag_t;
 typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STATE_START,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE,
@@ -125,7 +127,7 @@ typedef struct
      */
     char *				signal_arg;
 
-    int					failure_code;
+    globus_gram_protocol_error_t	failure_code;
 }
 globus_gram_job_manager_query_t;
 /**
@@ -314,6 +316,7 @@ typedef struct
     char *				rsl_spec;
     globus_rsl_t *			rsl;
     int					ttl_limit;
+    int					read_ttl;
 
     char *				remote_io_url;
 

@@ -340,8 +340,132 @@ globus_l_gram_job_manager_proxy_expiration(
 	    "JM: User proxy expired! Abort, but leave job running!\n");
 
     globus_mutex_lock(&request->mutex);
-    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-    /* XXX Update jobmanager_state */
+    switch(request->jobmanager_state)
+    {
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+        if(request->save_state)
+        {
+	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+        }
+        else
+        {
+	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+        }
+        break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
+        if(request->save_state)
+        {
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+        }
+        else
+        {
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT;
+        }
+        break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
+        if(request->save_state)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	}
+	else 
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
+	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND:
+        if(request->save_state)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	}
+	else 
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND;
+	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
+        if(request->save_state)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	}
+	else 
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED;
+	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
+        if(request->save_state)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	}
+	else 
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP;
+	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
+        if(request->save_state)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	}
+	else 
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP;
+	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
+	break;
+
+    }
     globus_mutex_unlock(&request->mutex);
 
     return GLOBUS_TRUE;

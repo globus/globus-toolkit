@@ -7,6 +7,12 @@ enum
     GRAM_JOB_MANAGER_TTL_LIMIT = 60
 };
 
+static
+globus_bool_t
+globus_l_gram_job_manager_state_file_read(
+    globus_abstime_t *			time_stop,
+    void *				user_arg);
+
 /**
  * Compute the name of the state file to use for this job request.
  *
@@ -104,14 +110,11 @@ int
 globus_gram_job_manager_state_file_read(
     globus_gram_jobmanager_request_t *	request)
 {
-    int					rc = GLOBUS_SUCCESS;
     long				curr_time;
-    long				ttl;
     FILE *				fp;
     char				buffer[8192];
     struct stat				statbuf;
-    long				new_ttl;
-    globus_abstime_t			abs;
+    globus_reltime_t			delay;
 
     globus_gram_job_manager_request_log(
 	    request,
@@ -138,41 +141,91 @@ globus_gram_job_manager_state_file_read(
     fscanf( fp, "%[^\n]%*c", buffer );
     request->failure_code = atoi( buffer );
     fscanf( fp, "%[^\n]%*c", buffer );
-    ttl = atoi( buffer );
+    request->read_ttl = atoi( buffer );
 
-    if(ttl > curr_time)
+    fclose(fp);
+
+    if(request->read_ttl > curr_time)
     {
-
 	globus_gram_job_manager_request_log(request,
 		      "JM: state file TTL hasn't expired yet. Waiting...\n");
+	GlobusTimeReltimeSet(delay, request->read_ttl - curr_time + 1, 0);
+    }
+    else
+    {
+	GlobusTimeReltimeSet(delay, 0, 0);
+    }
+    globus_callback_register_oneshot(
+	    &request->poll_timer,
+	    &delay,
+	    globus_l_gram_job_manager_state_file_read,
+	    request,
+	    NULL,
+	    NULL);
 
-	fseek( fp, 0, SEEK_SET );
+    return GLOBUS_SUCCESS;
+}
 
-	abs.tv_sec = ttl + 1;
-	abs.tv_nsec = 0;
+static
+globus_bool_t
+globus_l_gram_job_manager_state_file_read(
+    globus_abstime_t *			time_stop,
+    void *				user_arg)
+{
+    globus_gram_jobmanager_request_t *	request;
+    FILE *				fp;
+    char				buffer[8192];
+    struct stat				statbuf;
+    long				new_ttl;
+    globus_bool_t			event_registered;
 
-	do
-	{
-	    rc = globus_cond_timedwait(&request->cond, &request->mutex, &abs);
-	}
-	while(rc != ETIMEDOUT);
+    request = user_arg;
 
-	fscanf( fp, "%[^\n]%*c", buffer );
-	request->restart_state = atoi( buffer );
-	fscanf( fp, "%[^\n]%*c", buffer );
-	request->status = atoi( buffer );
-	fscanf( fp, "%[^\n]%*c", buffer );
-	request->failure_code = atoi( buffer );
-	fscanf( fp, "%[^\n]%*c", buffer );
-	new_ttl = atoi( buffer );
+    globus_mutex_lock(&request->mutex);
 
-	if (new_ttl != ttl)
-	{
-	    globus_gram_job_manager_request_log(request,
-			  "JM: TTL was renewed! Old JM is still around.\n");
-	    fclose(fp);
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-	}
+    /* If a state change occurred before we got to read the
+     * state file, then just process state changes.
+     */
+    if(request->jobmanager_state !=
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE)
+    {
+	goto state_machine_exit;
+    }
+    if (stat(request->job_state_file, &statbuf) != 0)
+    {
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+	goto state_machine_exit;
+    }
+    fp = fopen( request->job_state_file, "r" );
+    if(!fp)
+    {
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
+	goto state_machine_exit;
+    }
+    fscanf( fp, "%[^\n]%*c", buffer );
+    request->restart_state = atoi( buffer );
+    fscanf( fp, "%[^\n]%*c", buffer );
+    request->status = atoi( buffer );
+    fscanf( fp, "%[^\n]%*c", buffer );
+    request->failure_code = atoi( buffer );
+    fscanf( fp, "%[^\n]%*c", buffer );
+    new_ttl = atoi( buffer );
+
+    if (new_ttl != request->read_ttl)
+    {
+	globus_gram_job_manager_request_log(request,
+		      "JM: TTL was renewed! Old JM is still around.\n");
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+	goto close_fp_exit;
     }
 
     globus_gram_job_manager_request_log(request,
@@ -190,6 +243,10 @@ globus_gram_job_manager_state_file_read(
     fscanf( fp, "%[^\n]%*c", buffer);
     if(strcmp(buffer, " ") != 0)
     {
+	/*
+	 * Need to set the RSL substitution before reading the staging
+	 * state---otherwise we may get an RSL evaluation error
+	 */
 	request->scratchdir = globus_libc_strdup(buffer);
 	globus_symboltable_insert(
 		&request->symbol_table,
@@ -200,9 +257,18 @@ globus_gram_job_manager_state_file_read(
     globus_gram_job_manager_output_read_state(request, fp);
     globus_gram_job_manager_staging_read_state(request,fp);
 
-    fclose( fp );
+close_fp_exit:
+    fclose(fp);
 
-    return GLOBUS_SUCCESS;
+state_machine_exit:
+    do
+    {
+	event_registered = globus_gram_job_manager_state_machine(request);
+    }
+    while(!event_registered);
+    globus_mutex_unlock(&request->mutex);
+
+    return event_registered;
 }
 /* globus_gram_job_manager_state_file_read() */
 
