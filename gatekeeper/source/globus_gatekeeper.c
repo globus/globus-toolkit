@@ -1155,9 +1155,6 @@ static void doit()
 	ret_flags = 0;
 #endif
 
-	/* enable SSL compatability so we can talk https */
-	ret_flags |= GSS_C_GLOBUS_SSL_COMPATABLE;
-
     major_status = globus_gss_assist_accept_sec_context(&minor_status,
                        &context_handle,
                        credential_handle,

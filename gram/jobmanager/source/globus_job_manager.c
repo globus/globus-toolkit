@@ -371,8 +371,7 @@ main(int argc,
     struct stat            statbuf;
     globus_byte_t *        ptr;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-    globus_nexus_buffer_t               reply_buffer;
-    globus_nexus_startpoint_t           reply_sp;
+    globus_byte_t *                     reply;
     globus_rsl_t *                      rsl_tree;
     globus_gass_cache_entry_t *         cache_entries;
     int                                 cache_size;
@@ -1065,10 +1064,8 @@ main(int argc,
 					globus_l_jm_http_query_callback,
 					GLOBUS_NULL );
 
-    #define GRAM_I_PROTOCOL "https" 
-    
-#endif
-
+#define GRAM_I_PROTOCOL "https" 
+ 
     if (rc != GLOBUS_SUCCESS)
     {
 	GRAM_UNLOCK;
@@ -1477,13 +1474,25 @@ main(int argc,
               "JM: request was successful, sending message to client\n");
 	
 	rc = globus_l_gram_pack_http_job_request_result (
-							 reply,
+							 &reply,
 							 GLOBUS_SUCCESS,
 							 graml_job_contact);
 
 	if (rc == GLOBUS_SUCCESS) {
-	  /* TODO: send this reply back down the socket to the client */
+	  /* send this reply back down the socket to the client */
+	  globus_gss_assist_wrap_send(&minor_status,
+				      context_handle,
+				      reply,
+				      strlen(reply) + 1,
+				      &token_status,
+				      globus_gss_assist_token_send_fd,
+				      stdout,
+				      request->jobmanager_log_fp);
+	  /* TODO: close the connection. */
 	}
+
+	/* restore rc to previous value (is this needed??) */
+	rc = GLOBUS_SUCCESS;
 
         if (!request->job_id)
         {
@@ -1527,15 +1536,25 @@ main(int argc,
               "JM: request failed, sending message to client\n");
                             
 	rc = globus_l_gram_pack_http_job_request_result (
-							 reply,
-							 GLOBUS_SUCCESS,
-							 graml_job_contact);
+							 &reply,
+							 request->failure_code,
+							 NULL);
 
 	if (rc == GLOBUS_SUCCESS) {
-	  /* TODO: send this reply back down the socket to the client */
+	  /* send this reply back down the socket to the client */
+	  globus_gss_assist_wrap_send(&minor_status,
+				      context_handle,
+				      reply,
+				      strlen(reply) + 1,
+				      &token_status,
+				      globus_gss_assist_token_send_fd,
+				      stdout,
+				      request->jobmanager_log_fp);
+	  /* TODO: close the connection. */
 	}
 
-	rc = GLOBUS_FAILURE; /* does code below depend on this?? */
+	/* restore rc to previous value (is this needed??) */
+	rc = GLOBUS_FAILURE;
 
 	jm_request_failed = GLOBUS_TRUE;
 
