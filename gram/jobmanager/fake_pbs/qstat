@@ -5,9 +5,7 @@ my_username=`id -u -n`
 my_data_file="$HOME/.globus/uhe-$hostname/fake_qsub_data"
 
 if test -r $my_data_file; then
-    MAXJOBS=`cat $my_data_file`
-else
-    MAXJOBS=0
+    job_list=`cat $my_data_file`
 fi
 
 #=====================================
@@ -69,12 +67,13 @@ Job ID          Username Queue    Jobname    SessID NDS TSK Memory Time  S Time
 --------------- -------- -------- ---------- ------ --- --- ------ ----- - -----
 EOF
 
-outputline="${hostname} ${my_username}  default  STDIN  1184   1  --    --  25:00 E 01:37"
+outputline="${my_username}  default  STDIN  1184   1  --    --  25:00 E 01:37"
 
-y=0
-while [ $y -lt $MAXJOBS ] ; do
-   echo "${y}.${outputline}"
-   y=`expr $y + 1`
+#y=0
+#while [ $y -lt $job_list ] ; do
+for job_id in ${job_list} ; do
+   echo "${job_id} ${outputline}"
+   #y=`expr $y + 1`
 done
 
 } #====================================
