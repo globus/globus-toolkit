@@ -23,6 +23,9 @@
       <COMMENT> what happens if INSTALLDIR_GPTMACRO/setup doesn't exist? </COMMENT>
       <Build_Step>cp setup-openssh INSTALLDIR_GPTMACRO/setup/globus/setup-openssh</Build_Step>
       <Build_Step>cp setup-openssh.pl INSTALLDIR_GPTMACRO/setup/globus/setup-openssh.pl</Build_Step>
+      <Build_Step>cp ssh_config INSTALLDIR_GPTMACRO/setup/globus/ssh_config</Build_Step>
+      <Build_Step>cp sshd_config INSTALLDIR_GPTMACRO/setup/globus/sshd_config</Build_Step>
+      <Build_Step>cp moduli INSTALLDIR_GPTMACRO/setup/globus/moduli</Build_Step>
 
     </Build_Instructions>
 
