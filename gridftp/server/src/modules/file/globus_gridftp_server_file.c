@@ -732,7 +732,7 @@ globus_result_t
 globus_l_gfs_file_open(
     globus_xio_handle_t *               file_handle,
     const char *                        pathname,
-    globus_bool_t                       create,
+    globus_xio_file_flag_t              open_flags,
     void *                              arg)
 {
     globus_result_t                     result;
@@ -749,15 +749,12 @@ globus_l_gfs_file_open(
     
     /* XXX should probably have an option to specify create mode.
      * for now, just the default (u+rw)
-     */
+     */     
     result = globus_xio_attr_cntl(
         attr,
         globus_l_gfs_file_driver,
         GLOBUS_XIO_FILE_SET_FLAGS,
-        GLOBUS_XIO_FILE_BINARY |
-            (create ? 
-                GLOBUS_XIO_FILE_CREAT | GLOBUS_XIO_FILE_WRONLY :
-                GLOBUS_XIO_FILE_RDONLY));
+        open_flags);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
@@ -790,7 +787,7 @@ globus_l_gfs_file_open(
         *file_handle,
         pathname,
         attr,
-        create ? 
+        (open_flags & GLOBUS_XIO_FILE_CREAT) ? 
             globus_l_gfs_file_open_write_cb : 
             globus_l_gfs_file_open_read_cb,
         arg);
@@ -831,6 +828,7 @@ globus_l_gfs_file_recv(
     globus_l_recv_monitor_t *           monitor;
     int                                 optimal_count;
     globus_size_t                       block_size;
+    globus_xio_file_flag_t              open_flags;
     GlobusGFSName(globus_l_gfs_file_recv);
 
     globus_gridftp_server_get_optimal_concurrency(op, &optimal_count);
@@ -849,9 +847,17 @@ globus_l_gfs_file_recv(
     globus_gridftp_server_get_partial_offset(op, 
         &monitor->partial_offset, GLOBUS_NULL);
     monitor->op = op;
+    open_flags = GLOBUS_XIO_FILE_BINARY | 
+        GLOBUS_XIO_FILE_CREAT | 
+        GLOBUS_XIO_FILE_WRONLY;
+    if(monitor->partial_offset == 0) 
+    {
+        open_flags |= GLOBUS_XIO_FILE_TRUNC;
+    }
+    /* XXX get restart here, and set better trunc condition */
     
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, pathname, GLOBUS_TRUE, monitor);
+        &monitor->file_handle, pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
@@ -1288,6 +1294,7 @@ globus_l_gfs_file_send(
     globus_l_send_monitor_t *           monitor;
     int                                 optimal_count;
     globus_size_t                       block_size;
+    globus_xio_file_flag_t              open_flags;
     GlobusGFSName(globus_l_gfs_file_send);
     
     globus_gridftp_server_get_optimal_concurrency(op, &optimal_count);
@@ -1306,9 +1313,10 @@ globus_l_gfs_file_send(
     globus_gridftp_server_get_partial_offset(op, 
         &monitor->partial_offset, &monitor->partial_length);    
     monitor->op = op;
-    
+    open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
+
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, pathname, GLOBUS_FALSE, monitor);
+        &monitor->file_handle, pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
