@@ -1,0 +1,62 @@
+Other patches and addons for OpenSSH. Please send submissions to 
+djm@ibs.com.au
+
+Elsewhere
+---------
+
+http://www.imasy.or.jp/~gotoh/connect.c is a Unix and Windows 
+ProxyCommand which allows OpenSSH to make connections through a SOCKS5
+or http proxy which supports the CONNECT method (eg. Squid).
+
+In this directory
+-----------------
+
+chroot.diff:
+
+Ricardo Cerqueira's <rmcc@clix.pt> patch to enable chrooting using the
+wu-ftpd style magic home directories (containing '/./'). More details in
+the head of the patch itself.
+
+ssh-copy-id:
+
+Phil Hands' <phil@hands.com> shell script to automate the process of adding
+your public key to a remote machine's ~/.ssh/authorized_keys file.
+
+gnome-ssh-askpass:
+
+A GNOME passphrase requester of my own creation. Compilation instructions
+are in the top of the file.
+
+sshd.pam.generic:
+
+A generic PAM config file which may be useful on your system. YMMV
+
+sshd.pam.freebsd:
+
+A PAM config file which works with FreeBSD's PAM port. Contributed by
+Dominik Brettnacher <domi@saargate.de>
+
+mdoc2man.pl:
+
+Converts mdoc formated manpages into normal manpages.  This can be used
+on Solaris machines to provide manpages that are not preformated. 
+Contributed by Mark D. Roth <roth@feep.net>
+
+redhat:
+
+RPM spec file an scripts for building Redhat packages
+
+suse:
+
+RPM spec file an scripts for building SuSE packages
+
+
+Externally maintained
+---------------------
+
+X11 SSH Askpass:
+
+Jim Knoble <jmknoble@pobox.com> has written an excellent X11
+passphrase requester. This is highly recommended:
+
+http://www.ntrnet.net/~jmknoble/software/x11-ssh-askpass/index.html
