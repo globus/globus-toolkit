@@ -63,6 +63,11 @@ else
         push(@tests, "check_existence('$proto$source_host$_', $exists_rc);");
     }
 
+    if(defined($ENV{FTP_TEST_RANDOMIZE}))
+    {
+        shuffle(\@tests);
+    }
+
     if(@ARGV)
     {
         plan tests => scalar(@ARGV);
