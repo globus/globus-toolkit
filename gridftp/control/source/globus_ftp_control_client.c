@@ -4068,8 +4068,6 @@ globus_i_ftp_control_client_deactivate(void)
 {
     globus_ftp_cc_handle_t *            cc_handle;
 
-    fclose(globus_i_ftp_control_devnull);
-
     globus_mutex_lock(&globus_l_ftp_cc_handle_list_mutex);
     {
 	while(!globus_list_empty(globus_l_ftp_cc_handle_list))
@@ -4137,6 +4135,8 @@ globus_i_ftp_control_client_deactivate(void)
     globus_mutex_unlock(&globus_l_ftp_cc_handle_list_mutex);
 
     globus_mutex_destroy(&globus_l_ftp_cc_handle_list_mutex);
+
+    fclose(globus_i_ftp_control_devnull);
 
     return GLOBUS_SUCCESS;
 }

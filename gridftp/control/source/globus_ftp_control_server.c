@@ -688,6 +688,7 @@ globus_ftp_control_command_copy(
     case GLOBUS_FTP_CONTROL_COMMAND_RNFR:
     case GLOBUS_FTP_CONTROL_COMMAND_RNTO:
     case GLOBUS_FTP_CONTROL_COMMAND_REST:
+    case GLOBUS_FTP_CONTROL_COMMAND_QUIT:
 
         dest->noop.string_arg = GLOBUS_NULL;
         
@@ -2446,6 +2447,10 @@ globus_l_ftp_control_read_command_cb(
             cc_handle->cb_count--;
             call_close_cb = GLOBUS_TRUE; 
         }
+	else if(code == GLOBUS_FTP_CONTROL_COMMAND_QUIT)
+	{
+            cc_handle->cb_count--;
+	}
     }
     globus_mutex_unlock(&(cc_handle->mutex));
     

@@ -394,16 +394,16 @@ typedef struct globus_ftp_control_auth_info_s
     globus_ftp_control_command_code_t           prev_cmd;
     char *					auth_gssapi_subject;
     gss_ctx_id_t  				auth_gssapi_context;
-    gss_cred_id_t  				credential_handle;
-    globus_bool_t				locally_acquired_credential;
+    gss_cred_id_t                               credential_handle;
+    globus_bool_t                               locally_acquired_credential;
     gss_name_t                                  target_name;
     struct gss_channel_bindings_struct          chan_bindings;
     OM_uint32                                   req_flags;
-    char *					user;
-    char *					password;
-    char *					account;
-    gss_cred_id_t  				delegated_credential_handle;
-    globus_bool_t				encrypt;
+    char *                                      user;
+    char *                                      password;
+    char *	                                    account;
+    gss_cred_id_t                               delegated_credential_handle;
+    globus_bool_t                               encrypt;
 }
 globus_ftp_control_auth_info_t;
 
@@ -656,8 +656,11 @@ typedef struct globus_i_ftp_dc_handle_s
     globus_ftp_control_callback_t               close_callback;
     void *                                      close_callback_arg;
 
-    globus_netlogger_handle_t                   nl_handle;
-    globus_bool_t                               nl_handle_set;
+    globus_netlogger_handle_t                   nl_io_handle;
+    globus_bool_t                               nl_io_handle_set;
+
+    globus_netlogger_handle_t                   nl_ftp_handle;
+    globus_bool_t                               nl_ftp_handle_set;
 
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
@@ -754,7 +757,9 @@ globus_ftp_control_local_layout(
 globus_result_t
 globus_ftp_control_set_netlogger(
     globus_ftp_control_handle_t *               handle,
-    globus_netlogger_handle_t *                 nl_handle);
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               nl_ftp_control,
+    globus_bool_t                               nl_globus_io);
 
 /*****************************************************************
  *  standard layout functions 
@@ -1465,6 +1470,12 @@ globus_ftp_control_local_spor(
     globus_ftp_control_handle_t *		handle,
     globus_ftp_control_host_port_t              addresses[],
     unsigned int                                num_addresses);
+
+globus_result_t
+globus_ftp_control_get_spor(
+    globus_ftp_control_handle_t *               handle,
+    globus_ftp_control_host_port_t              addresses[],
+    unsigned int *                              num_addresses);
 
 globus_result_t
 globus_ftp_control_local_type(
