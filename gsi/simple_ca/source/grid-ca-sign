@@ -40,8 +40,8 @@ long_usage () {
 
 ${short_usage}
 
-  Expects a certificate request as input from stdin, and prints
-  the signed certificate to stdout.
+  Expects a certificate request as input from the -in argument, and prints
+  the signed certificate to file specified by -out.
 
   Options:
     -force             : Sign a certificate request with subject that

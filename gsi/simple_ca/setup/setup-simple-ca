@@ -171,6 +171,7 @@ while test -z "${got_subject}" ; do
 	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/"`
 	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/"`
             HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/[^o]*\(o=Globus,\s*o=Grid\)/\1/"`
+	    check_for_globus_ns "$GSI_CA_BASE_DN"
 	    if test -z "${GSI_CA_NAME}" || 
                test -z "${GSI_CA_BASE_DN}"; then
 		echo "" 
@@ -276,7 +277,7 @@ BEGIN     { FS = ","; lastorg=0; lastou=0; hasgrid=0; }
         split(b[i],c,"=");
         if(tolower(c[1]) ~ /o/)
         {
-            org[lastorg++]=c[2];
+	    org[++lastorg]=c[2];	    
         }
         i++;
     }
@@ -474,7 +475,7 @@ configuration files for this CA:
 \$GPT_LOCATION/sbin/globus-build -install-only \\
 ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-\$GLOBUS_LOCATION/setup/globus-postinstall.sh
+\$GPT_LOCATION/sbin/gpt-postinstall
 
 -------------------------------------------------------------------
 
@@ -497,10 +498,31 @@ install_security_config() {
         GPT_LOCATION=${GLOBUS_LOCATION}
     fi
 
-    ${GPT_LOCATION}/sbin/globus-build -install-only \
+    ${GPT_LOCATION}/sbin/globus-build -force -install-only \
     ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-    ${GLOBUS_LOCATION}/setup/globus-postinstall.sh
+    finish_simple_ca_setup
+
+    ${GPT_LOCATION}/sbin/gpt-postinstall
+}
+
+################################################################
+# finish_simple_ca_setup: close out the meta-data gpt packaging
+#                         of the simple_ca_setup package.
+#                         This prevents the setup-simple-ca
+#                         script from getting run repeatedly.
+################################################################
+finish_simple_ca_setup() {
+
+    ${GLOBUS_SH_PERL-perl} -I${GLOBUS_LOCATION}/lib/perl -e " \
+\
+use Getopt::Long; \
+use English; \
+\
+require Grid::GPT::Setup; \
+my \$metadata = new Grid::GPT::Setup(package_name => \"globus_simple_ca_setup\"); \
+\$metadata->finish();"
+
 }
 
 ############################################################
@@ -562,9 +584,8 @@ generate_setup_file "Makefile.am"
 generate_setup_file "Makefile.in"
 generate_setup_file "setup-ssl-utils.pl"
 generate_setup_file "/pkgdata/pkg_data_src.gpt.in"
-generate_setup_file "/pkgdata/pkg_data_src.gpt.tmpl"
+generate_setup_file "/pkgdata/pkg_data_src.gpt"
 generate_setup_file "setup-ssl-utils"
-generate_setup_file "grid-default-ca"
 generate_setup_file "setup-ssl-utils.__CACERT_HASH__"
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/globus-ssl.conf.tmpl" "${tmp_ca_setup_dir}/globus-ssl.conf"
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/setup-ssl-utils.__CACERT_HASH__" "${tmp_ca_setup_dir}/setup-ssl-utils.${CA_CERT_HASH}"
@@ -576,7 +597,7 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-#./bootstrap
+./bootstrap
 ./configure
 make dist
 
@@ -613,7 +634,7 @@ do_trap() {
     echo "to setup the simple CA."
     echo ""
 
-    ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+#    ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 
     cd ${current_dir}
     
@@ -633,7 +654,7 @@ if test -z "${GLOBUS_LOCATION}"; then
 fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${libexecdir}/globus-sh-tools.sh
+globus_source ${libexecdir}/globus-sh-tools-vars.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 

@@ -1,6 +1,3 @@
-setup-gsi
-setup-ssl-utils
-setup-ssl-utils.pl
 setup-ssl-utils-sh-scripts.in
 setup-ssl-utils-sh-scripts
 globus-ssl.conf.tmpl
@@ -27,12 +24,11 @@ globus_automake_post
 globus_automake_post_top
 globus_automake_pre
 globus_automake_pre_top
-grid-default-ca.tmpl
+grid-default-ca
 pkgdata/pkg_data_src.gpt.in.tmpl
 pkgdata/Makefile.am
 pkgdata/Makefile.in
 pkgdata/pkg_data_src.gpt.tmpl
-grid-cert-request.in
 setup-ssl-utils.tmpl
 setup-ssl-utils.pl.tmpl
 setup-gsi.tmpl

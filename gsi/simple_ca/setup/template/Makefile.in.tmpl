@@ -152,7 +152,7 @@ Scripts =  	setup-ssl-utils-sh-scripts 	setup-ssl-utils 	setup-ssl-utils.pl 	set
 Data =  	grid-security.conf.$(CACERT_HASH) 	globus-ssl.conf 	$(CACERT_HASH).0 	$(CACERT_HASH).signing_policy
 
 
-bin_SCRIPTS =  	grid-cert-request         grid-default-ca
+bin_SCRIPTS =          grid-default-ca
 
 
 simple_ca_setup_SCRIPTS = $(Scripts)
@@ -163,20 +163,20 @@ setup_SCRIPTS = setup-ssl-utils.$(CACERT_HASH)
 
 SUBDIRS = pkgdata
 
-EXTRA_DIST =  	$(Scripts)         $(Data) 	grid-cert-request 	grid-default-ca 	setup-ssl-utils.$(CACERT_HASH)  bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
+EXTRA_DIST =  	$(Scripts)         $(Data) 	grid-default-ca 	setup-ssl-utils.$(CACERT_HASH)  bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
 
 
 TAR = @TAR@
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_CLEAN_FILES =  grid-cert-request
+CONFIG_CLEAN_FILES = 
 SCRIPTS =  $(bin_SCRIPTS) $(setup_SCRIPTS) $(simple_ca_setup_SCRIPTS)
 
 DATA =  $(simple_ca_setup_DATA)
 
 DIST_COMMON =  Makefile.am Makefile.in aclocal.m4 config.guess \
-config.sub configure configure.in grid-cert-request.in install-sh \
-ltconfig ltmain.sh missing mkinstalldirs
+config.sub configure configure.in install-sh ltconfig ltmain.sh missing \
+mkinstalldirs
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -198,8 +198,6 @@ config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
 $(srcdir)/configure: @MAINTAINER_MODE_TRUE@$(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
 	cd $(srcdir) && $(AUTOCONF)
-grid-cert-request: $(top_builddir)/config.status grid-cert-request.in
-	cd $(top_builddir) && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)

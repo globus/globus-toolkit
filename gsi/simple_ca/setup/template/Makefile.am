@@ -22,7 +22,6 @@ Data = \
 	$(CACERT_HASH).signing_policy
 
 bin_SCRIPTS = \
-	grid-cert-request \
         grid-default-ca
 
 setup_SCRIPTS = $(Scripts)
@@ -34,7 +33,6 @@ SUBDIRS = pkgdata
 EXTRA_DIST = \
 	$(Scripts) \
 	$(Data) \
-	grid-cert-request \
 	grid-default-ca
 
 TAR=@TAR@

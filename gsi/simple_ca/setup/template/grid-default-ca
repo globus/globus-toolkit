@@ -178,7 +178,8 @@ if [ ! -w "${secconfdir}" ]; then
     echo $secconfdir
     echo
     echo "To change the location of the CA config"
-    echo "files, set the GRID_SECURITY_DIR environment"
+    echo "files, use the -dir option or set"
+    echo "the GRID_SECURITY_DIR environment"
     echo "variable to their location"
     echo
     exit 1
