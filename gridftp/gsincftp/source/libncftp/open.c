@@ -548,6 +548,11 @@ okay:
 
 	/* When a new site is opened, ASCII mode is assumed (by protocol). */
 	cip->curTransferType = 'A';
+	/* When a new site is opened, Authenticate only protection is assumed
+	 * (by protocol).
+	 */
+	cip->curProtectionLevel = kProtectionLevelAuthenticated;
+
 	PrintF(cip, "Logged in to %s as %s.\n", cip->host, cip->user);
 
 	/* Don't leave cleartext password in memory. */

@@ -110,4 +110,6 @@
 #define kErrControlTimedOut			(-193)
 #define kErrDataTimedOut			(-194)
 #define kErrUserCanceled			(-195)
-#define kErrLast				(195)
+#define kErrBadProtectionLevel			(-196)
+#define kErrPROTFailed				(-197)
+#define kErrLast				(197)

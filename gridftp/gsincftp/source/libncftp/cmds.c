@@ -877,6 +877,56 @@ FTPSetTransferType(const FTPCIPtr cip, int type)
 }	/* FTPSetTransferType */
 
 
+int
+FTPSetProtectionLevel(const FTPCIPtr cip)
+{
+	int result;
+
+	if (cip == NULL)
+		return (kErrBadParameter);
+	if (strcmp(cip->magic, kLibraryMagic))
+		return (kErrBadMagic);
+
+	if (cip->curProtectionLevel != cip->protectionLevel) {
+		switch (cip->protectionLevel) {
+			case kProtectionLevelClear:
+			case kProtectionLevelSafe:
+			case kProtectionLevelPrivate:
+			/*case kProtectionLevelConfidential:*/
+			case kProtectionLevelAuthenticated:
+				break;
+			default:
+				Error(cip, kDontPerror, "Bad protection level [%c].\n", cip->protectionLevel);
+				cip->errNo = kErrBadProtectionLevel;
+				return (kErrBadProtectionLevel);
+		}
+		result = FTPCmd(cip, "PBSZ 16384");
+		if (result != 2) {
+			result = kErrPROTFailed;
+			cip->errNo = kErrPROTFailed;
+			return (result);
+		}
+		if(cip->protectionLevel == kProtectionLevelClear)
+		{
+		    result = FTPCmd(cip, "DCAU N");
+		    if (result != 2) {
+			    result = kErrPROTFailed;
+			    cip->errNo = kErrPROTFailed;
+			    return (result);
+		    }
+		}
+		result = FTPCmd(cip, "PROT %c", cip->protectionLevel);
+		if (result != 2) {
+			result = kErrPROTFailed;
+			cip->errNo = kErrPROTFailed;
+			return (result);
+		}
+		cip->curProtectionLevel = cip->protectionLevel;
+	}
+	return (kNoErr);
+}	/* FTPSetProtectionLevel */
+
+
 
 
 /* If the remote host supports the SIZE command, we can find out the exact

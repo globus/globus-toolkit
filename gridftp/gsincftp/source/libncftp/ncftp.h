@@ -268,6 +268,7 @@ typedef struct FTPConnectionInfo {
 #if HAVE_GSSAPI
         gss_ctx_id_t  connectionContext;	/* Do not use or modify. */
 	int protectionLevel;			/* You may modify this. */
+	int curProtectionLevel;			/* Do not use or modify. */
 #endif
 #if USE_SIO
 	char srlBuf[768];

@@ -61,6 +61,7 @@ extern int gDataPortMode, gRedialDelay;
 extern int gDebug;
 extern int gNumProgramRuns, gDoNotDisplayAds;
 extern int gSOBufsize;
+extern int gProtectionLevel;
 extern FTPProgressMeterProc gProgressMeter;
 
 static void
@@ -118,6 +119,7 @@ InitConnectionInfo(void)
 
 	gConn.debugLog = NULL;
 	gConn.errLog = stderr;
+	gConn.protectionLevel = gProtectionLevel;
 	SetDebug(gDebug);
 	UseTrace();
 	(void) STRNCPY(gConn.user, "anonymous");

@@ -1058,6 +1058,9 @@ FTPStartDataCmd(const FTPCIPtr cip, int netMode, int type, longest_int startPoin
 	result = FTPSetTransferType(cip, type);
 	if (result < 0)
 		return (result);
+	result = FTPSetProtectionLevel(cip);
+	if (result < 0)
+		return (result);
 
 	/* Re-set the cancellation flag. */
 	cip->cancelXfer = 0;
