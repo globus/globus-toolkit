@@ -374,7 +374,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 				   "error in myproxy_deserialize_request()");
     }
 
-    /* Note request type - retrieval or renewal */
+    /* Note request type - retrieval or renewal. For credential adding and info requests these don't matter */
     if (client_request->passphrase && strlen(client_request->passphrase) )
 	request_type = RETRIEVAL;
     else
@@ -446,7 +446,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     client_creds->force_dbase_write = client_request->force_dbase_write;
 
-    /* First level authorization checking happens here. */
+    /* First level authorization checking happens here - server-wide policy. For proxy initialization only one level of authorization is sufficient*/
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
        myproxy_log(DBG_LO, debug_level,"authorization failed - server-wide policy failure");

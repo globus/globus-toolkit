@@ -44,6 +44,7 @@ static char usage[] = \
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential as the default username\n"
 "                                         instead of the LOGNAME env. var.\n"
+"	-k | --cred_name	<name>    Specify credential name\n"
 "\n";
 
 struct option long_options[] =
@@ -58,10 +59,11 @@ struct option long_options[] =
     {"version",                no_argument, NULL, 'v'},
     {"authorization",    required_argument, NULL, 'r'},
     {"dn_as_username",         no_argument, NULL, 'd'},
+    {"cred_name",	 required_argument, NULL, 'k'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:va:d";
+static char short_options[] = "hus:p:l:t:o:va:dk:";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -197,6 +199,9 @@ init_arguments(int argc,
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
 	    dn_as_username = 1;
+	    break;
+	case 'k':   /* credential name */
+	    request->cred_name = strdup (gnu_optarg);
 	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
