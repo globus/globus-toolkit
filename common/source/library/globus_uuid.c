@@ -89,7 +89,7 @@ globus_l_uuid_get_mac(
     if(ioctl(sock, SIOCGARP, &req) < 0)
     {
         close(sock);
-        return GLOBUS_FAILURE
+        return GLOBUS_FAILURE;
     }
     
     memcpy(mac, req.arp_ha.sa_data, 6);
