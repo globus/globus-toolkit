@@ -126,7 +126,7 @@ globus_gram_http_post_and_get( char *                         url,
 			       globus_byte_t *                request_message,
 			       globus_size_t                  request_size,
 			       globus_byte_t **               reply_message,
-			       globus_size_t *                reply_size,
+			       globus_size_t *                reply_sizep,
 			       globus_gram_http_monitor_t *   monitor);
 
 

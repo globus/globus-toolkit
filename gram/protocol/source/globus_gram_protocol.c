@@ -29,7 +29,7 @@
 	The function must forward information B:
 	    monitor       : a monitor to signal done and error codes
 	    reply_message : pointer to pointer to buf with parsed reply in
-	    reply_size    : pointer to size_t, updated to reply size
+	    reply_sizep   : pointer to size_t, updated to reply size
 
    Typedefs:
    ---------
@@ -215,7 +215,8 @@ typedef struct
     void *                         callback_arg;
     void *                         user_pointer;
     globus_byte_t **                reply_bufp;
-    globus_size_t *                reply_size;
+    globus_size_t *                reply_sizep	/* may be NULL if user doesn't
+						   care. */;
     globus_gram_http_monitor_t *   monitor;
 } globus_gram_http_read_t;
 
@@ -252,7 +253,7 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
 				    void *                        userptr,
 				    globus_gram_http_monitor_t *  monitor,
 				    globus_byte_t **              bufp, 
-				    globus_size_t *               bufsize) 
+				    globus_size_t *               bufsizep) 
 { 
     *read_t = my_malloc(globus_gram_http_read_t,1);
     
@@ -265,7 +266,7 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
     (*read_t)->user_pointer   = userptr; 
     (*read_t)->monitor        = monitor; 
     (*read_t)->reply_bufp      = bufp; 
-    (*read_t)->reply_size     = bufsize;
+    (*read_t)->reply_sizep     = bufsizep;
 }
 
 
@@ -754,7 +755,8 @@ globus_l_gram_http_get_callback( void *                read_t,
 	(res == GLOBUS_SUCCESS)  )
     {
 	*status->reply_bufp = buf;
-	*status->reply_size = nbytes;
+	if (status->reply_sizep)
+	    *status->reply_sizep = nbytes;
     }
     else
     {
@@ -1646,7 +1648,7 @@ globus_gram_http_post_and_get( char *                         url,
 			       globus_byte_t *                request_message,
 			       globus_size_t                  request_size,
 			       globus_byte_t **               reply_message,
-			       globus_size_t *                reply_size,
+			       globus_size_t * reply_sizep /* May be NULL */,
 			       globus_gram_http_monitor_t *   monitor)
 {
     globus_gram_http_read_t *       status;
@@ -1660,7 +1662,7 @@ globus_gram_http_post_and_get( char *                         url,
 	GLOBUS_NULL,                                /* userptr            */
 	monitor,                                    /* monitor            */
 	reply_message,                              /* replybuf           */
-	reply_size );                               /* replysize          */
+	reply_sizep);                               /* replysize          */
 
     status->callback_arg = (void *) status;
 
