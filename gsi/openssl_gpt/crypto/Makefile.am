@@ -15,6 +15,7 @@ SUBDIRS = \
 Sources = \
 	cryptlib.c \
 	mem.c \
+	mem_clr.c \
 	mem_dbg.c \
 	cversion.c \
 	ex_data.c \

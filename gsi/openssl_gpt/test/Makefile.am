@@ -57,7 +57,8 @@ Test_Programs = \
 	dhtest \
 	dsatest \
 	ssltest \
-	rsa_test
+	rsa_test \
+	dummytest
 
 Test_Targets = \
 	test_des \
@@ -121,6 +122,7 @@ nodist_dhtest_SOURCES = dhtest.c
 nodist_dsatest_SOURCES = dsatest.c
 nodist_ssltest_SOURCES = ssltest.c
 nodist_rsa_test_SOURCES = rsa_test.c
+dummytest_SOURCES = dummytest.c
 
 tests: $(Test_Programs) $(Test_Targets)
 
