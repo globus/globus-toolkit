@@ -62,6 +62,7 @@
 #include <openssl/lhash.h>
 #include <openssl/bn.h>
 #include <openssl/rsa.h>
+#include <openssl/rand.h>
 
 const char *RSA_version="RSA" OPENSSL_VERSION_PTEXT;
 
@@ -71,7 +72,9 @@ static STACK_OF(CRYPTO_EX_DATA_FUNCS) *rsa_meth=NULL;
 
 RSA *RSA_new(void)
 	{
-	return(RSA_new_method(NULL));
+	RSA *r=RSA_new_method(NULL);
+
+	return r;
 	}
 
 void RSA_set_default_method(RSA_METHOD *meth)
@@ -251,7 +254,8 @@ void RSA_blinding_off(RSA *rsa)
 		BN_BLINDING_free(rsa->blinding);
 		rsa->blinding=NULL;
 		}
-	rsa->flags&= ~RSA_FLAG_BLINDING;
+	rsa->flags &= ~RSA_FLAG_BLINDING;
+	rsa->flags |= RSA_FLAG_NO_BLINDING;
 	}
 
 int RSA_blinding_on(RSA *rsa, BN_CTX *p_ctx)
@@ -270,15 +274,32 @@ int RSA_blinding_on(RSA *rsa, BN_CTX *p_ctx)
 	if (rsa->blinding != NULL)
 		BN_BLINDING_free(rsa->blinding);
 
+	/* NB: similar code appears in setup_blinding (rsa_eay.c);
+	 * this should be placed in a new function of its own, but for reasons
+	 * of binary compatibility can't */
+
 	BN_CTX_start(ctx);
 	A = BN_CTX_get(ctx);
-	if (!BN_rand_range(A,rsa->n)) goto err;
+	if ((RAND_status() == 0) && rsa->d != NULL && rsa->d->d != NULL)
+		{
+		/* if PRNG is not properly seeded, resort to secret exponent as unpredictable seed */
+		RAND_add(rsa->d->d, rsa->d->dmax * sizeof rsa->d->d[0], 0);
+		if (!BN_pseudo_rand_range(A,rsa->n)) goto err;
+		}
+	else
+		{
+		if (!BN_rand_range(A,rsa->n)) goto err;
+		}
 	if ((Ai=BN_mod_inverse(NULL,A,rsa->n,ctx)) == NULL) goto err;
 
 	if (!rsa->meth->bn_mod_exp(A,A,rsa->e,rsa->n,ctx,rsa->_method_mod_n))
-	    goto err;
-	rsa->blinding=BN_BLINDING_new(A,Ai,rsa->n);
-	rsa->flags|=RSA_FLAG_BLINDING;
+		goto err;
+	if ((rsa->blinding=BN_BLINDING_new(A,Ai,rsa->n)) == NULL) goto err;
+	/* to make things thread-safe without excessive locking,
+	 * rsa->blinding will be used just by the current thread: */
+	rsa->blinding->thread_id = CRYPTO_thread_id();
+	rsa->flags |= RSA_FLAG_BLINDING;
+	rsa->flags &= ~RSA_FLAG_NO_BLINDING;
 	BN_free(Ai);
 	ret=1;
 err:
