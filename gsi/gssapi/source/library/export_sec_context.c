@@ -165,22 +165,25 @@ GSS_CALLCONV gss_export_sec_context(
     L2N(peer_cert_count, (char *)int_buffer);
     BIO_write(bp, (char *)int_buffer, 4);
     
+    local_result = globus_gsi_callback_get_cert_chain(
+        context->callback_data,
+        &cert_chain);
+
+    if(local_result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_result,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+        major_status = GSS_S_FAILURE;
+        goto unlock_mutex;
+    }
+    
     for(index = 0; index < peer_cert_count; ++index)
     {
-        local_result = globus_gsi_callback_get_cert_chain(
-            context->callback_data,
-            &cert_chain);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto unlock_mutex;
-        }
-
         i2d_X509_bio(bp, sk_X509_value(cert_chain, index));
     }
+
+    sk_X509_pop_free(cert_chain, X509_free);
     
     local_major_status = globus_i_gsi_gss_SSL_write_bio(&local_minor_status,
                                                         context,

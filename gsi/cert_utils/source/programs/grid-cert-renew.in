@@ -246,7 +246,7 @@ ${GLOBUS_SH_CAT-cat} <<EOF
        Use your current passphrase when prompted.
 
 EOF
-proxy_opts="-hours 1 -bits 1024 -out ${tmpproxy}"
+proxy_opts="-valid 0:5 -bits 1024 -out ${tmpproxy}"
 if [ -n "${oldkey}" ]; then
     proxy_opts="${proxy_opts} -key ${oldkey}"
 fi

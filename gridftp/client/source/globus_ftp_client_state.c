@@ -2712,6 +2712,8 @@ redo:
 	    {
 		target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
 		globus_i_ftp_client_transfer_complete(client_handle);
+		
+		goto do_return;
 	    }
 	}
 	else
@@ -2880,7 +2882,7 @@ redo:
 	
 	goto do_return;
 
-	return;
+	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_FAULT:
     case GLOBUS_FTP_CLIENT_TARGET_CLOSED:

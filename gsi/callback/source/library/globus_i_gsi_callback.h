@@ -182,7 +182,8 @@ typedef struct globus_l_gsi_callback_data_s {
 
     int                                 cert_depth;
     int                                 proxy_depth;
-    globus_gsi_cert_utils_proxy_type_t  proxy_type;
+    int                                 max_proxy_depth;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     STACK_OF(X509) *                    cert_chain;
     int                                 multiple_limited_proxy_ok;
     char *                              cert_dir;

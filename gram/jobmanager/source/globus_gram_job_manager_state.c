@@ -701,6 +701,21 @@ globus_gram_job_manager_state_machine(
 			request,
 			GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
 
+            /*
+             * Remove stdout_position and stderr_position before merging.
+             * They aren't valid for job submission RSLs, but are for
+             * restart RSLs. They will be reinserted after validation.
+             */
+            request->stdout_position_hack =
+                globus_gram_job_manager_rsl_extract_relation(
+                    restart_rsl,
+                    GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
+
+            request->stderr_position_hack = 
+                globus_gram_job_manager_rsl_extract_relation(
+                    restart_rsl,
+                    GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
+
 	    request->rsl = globus_gram_job_manager_rsl_merge(
 			original_rsl,
 			restart_rsl);
@@ -716,11 +731,8 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    "Merged Job RSL");
 	}
-	request->jobmanager_state =
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR;
-	break;
 
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
+	/* GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR used to be here */
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR;
 
@@ -867,6 +879,25 @@ globus_gram_job_manager_state_machine(
 	globus_l_gram_job_manager_state_log_rsl(
 		request,
 		"Job RSL (post-validation)");
+
+        /*
+         * Insert stdout_position and stderr_position back to rsl if they were
+         * present in restart RSL
+         */
+        if(request->stdout_position_hack != NULL)
+        {
+            globus_gram_job_manager_rsl_add_relation(
+                request->rsl,
+                request->stdout_position_hack);
+            request->stdout_position_hack = NULL;
+        }
+        if(request->stderr_position_hack != NULL)
+        {
+            globus_gram_job_manager_rsl_add_relation(
+                request->rsl,
+                request->stderr_position_hack);
+            request->stderr_position_hack = NULL;
+        }
 
 	rc = globus_rsl_eval(request->rsl, &request->symbol_table);
 	if(rc != GLOBUS_SUCCESS)
@@ -1157,7 +1188,23 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-	if(request->two_phase_commit == 0)
+	if(request->two_phase_commit != 0 && request->commit_extend != 0)
+	{
+	    GlobusTimeReltimeSet(delay_time,
+				 request->commit_extend,
+				 0);
+
+	    globus_callback_register_oneshot(
+			&request->poll_timer,
+			&delay_time,
+			globus_gram_job_manager_state_machine_callback,
+			request);
+
+	    request->commit_extend = 0;
+
+	    event_registered = GLOBUS_TRUE;
+	}
+	else if(request->two_phase_commit == 0)
 	{
 	    /* Nothing to do here if we are not doing the two-phase
 	     * commit protocol
@@ -1690,7 +1737,23 @@ globus_gram_job_manager_state_machine(
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-	if(request->two_phase_commit == 0)
+	if(request->two_phase_commit != 0 && request->commit_extend != 0)
+	{
+	    GlobusTimeReltimeSet(delay_time,
+				 request->commit_extend,
+				 0);
+
+	    globus_callback_register_oneshot(
+			&request->poll_timer,
+			&delay_time,
+			globus_gram_job_manager_state_machine_callback,
+			request);
+
+	    request->commit_extend = 0;
+
+	    event_registered = GLOBUS_TRUE;
+	}
+	else if(request->two_phase_commit == 0)
 	{
 	    /* Nothing to do here if we are not doing the two-phase
 	     * commit protocol
@@ -2028,45 +2091,6 @@ globus_gram_job_manager_state_machine(
 
 	    event_registered = GLOBUS_TRUE;
 	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
-	/* Commit extend signal came in, so we'll wait a bit longer
-	 * for the commit to time out
-	 */
-	if(request->jobmanager_state ==
-	       GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
-	}
-	else if(request->jobmanager_state ==
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND)
-	{
-	    request->jobmanager_state =
-			GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END;
-	}
-	else if(request->jobmanager_state ==
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
-	}
-	GlobusTimeReltimeSet(delay_time,
-			     request->commit_extend,
-			     0);
-
-	globus_callback_register_oneshot(
-		&request->poll_timer,
-		&delay_time,
-		globus_gram_job_manager_state_machine_callback,
-		request);
-
-	request->commit_extend = 0;
-
-	event_registered = GLOBUS_TRUE;
 	break;
     }
 
@@ -2447,7 +2471,6 @@ globus_l_gram_job_manager_state_string(
     switch(state)
     {
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_START)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
@@ -2484,9 +2507,6 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND)
-        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)

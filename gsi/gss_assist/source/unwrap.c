@@ -81,7 +81,7 @@ globus_gss_assist_get_unwrap(
 
       GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
           3, (globus_i_gsi_gss_assist_debug_fstream,
-              "unwrap: maj: %8.8x min: %8.8x inlen: %d outlen: %d\n",
+              "unwrap: maj: %8.8x min: %8.8x inlen: %u outlen: %u\n",
               (unsigned int) major_status, 
               (unsigned int) *minor_status, 
               input_token->length,

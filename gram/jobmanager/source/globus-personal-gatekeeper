@@ -344,7 +344,7 @@ for file in gridmap services.conf gatekeeper.conf jobmanager.conf gatekeeper.log
     ${GLOBUS_SH_RM-rm} -f ${scratch}/${file}
 done
 
-subject=`${bindir}/grid-proxy-info -subject|sed 's!/CN=proxy!!g'`
+subject=`${bindir}/grid-proxy-info -identity`
 
     ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
@@ -412,14 +412,14 @@ echo "$pid" > ${scratch}/gatekeeper.pid
 contact=
 shallexit=
 count=0
-while [ ${count} -lt 5 -a -z "${contact}" -a -z "${shallexit}" ]; do
+while [ ${count} -lt 10 -a -z "${contact}" -a -z "${shallexit}" ]; do
     ${GLOBUS_SH_SLEEP-sleep} 1
     contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${scratch}/gatekeeper.log`"
     shallexit="`${GLOBUS_SH_GREP-grep} FAILED_PLEASE_EXIT ${scratch}/gatekeeper.log`"
     count=`${GLOBUS_SH_EXPR-expr} ${count} + 1`
 done
 
-if [ ${count} -ge 5 -o -n "${shallexit}" ]; then
+if [ ${count} -ge 10 -o -n "${shallexit}" ]; then
     echo "ERROR: gatekeeper did not start up properly" >&2
     docleanup=true
     exit 1

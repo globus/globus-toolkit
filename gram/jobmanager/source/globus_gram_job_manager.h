@@ -32,13 +32,11 @@ globus_gram_job_manager_logfile_flag_t;
 typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STATE_START,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN,
     GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT,
@@ -47,7 +45,6 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP,
@@ -63,7 +60,6 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP,
@@ -331,6 +327,9 @@ typedef struct
 					output;
     globus_gass_cache_t			cache_handle;
     char *				cache_tag;
+
+    globus_rsl_t *                      stdout_position_hack;
+    globus_rsl_t *                      stderr_position_hack;
 
     globus_symboltable_t		symbol_table;
     char *				rsl_spec;
@@ -651,6 +650,16 @@ int
 globus_gram_job_manager_rsl_remove_attribute(
     globus_gram_jobmanager_request_t *	request,
     char *				attribute);
+
+globus_rsl_t *
+globus_gram_job_manager_rsl_extract_relation(
+    globus_rsl_t *	                rsl,
+    char *				attribute);
+
+void
+globus_gram_job_manager_rsl_add_relation(
+    globus_rsl_t *	                rsl,
+    globus_rsl_t *	                relation);
 
 int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(

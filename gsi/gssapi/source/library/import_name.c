@@ -70,9 +70,6 @@ GSS_CALLCONV gss_import_name(
         goto exit;
     } 
     
-    output_name->group = NULL;
-    output_name->group_types = NULL;
-
     if(g_OID_equal(input_name_type, GSS_C_NT_ANONYMOUS))
     {
         output_name->name_oid = input_name_type;
@@ -121,6 +118,58 @@ GSS_CALLCONV gss_import_name(
         {
             /* replace with a / */
             *index = '/';   
+        }
+
+        if(!isdigit((int) *(index + 1)) &&
+           !globus_libc_getenv("GSI_NO_NAME_LOOKUP"))
+        {
+            struct hostent              hostinfo;
+            char *                      buffer;
+            char *                      new_name;
+            int                         name_offset;
+            int                         local_errno = 0;
+
+            buffer = malloc(8192);
+
+            if(buffer == NULL)
+            {
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+                goto free_x509_name;
+            }
+            
+            if(globus_libc_gethostbyname_r(index + 1,
+                                           &hostinfo,
+                                           buffer,
+                                           8192,
+                                           &local_errno))
+            {
+                name_offset = (index - name_buffer)/sizeof(char) + 1;
+                new_name = realloc(name_buffer,
+                                   name_offset + 1 + strlen(hostinfo.h_name));
+                if(new_name == NULL)
+                {
+                    GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                    major_status = GSS_S_FAILURE;
+                    goto free_x509_name;
+                }
+
+                name_buffer = new_name;
+
+                strcpy(&name_buffer[name_offset],hostinfo.h_name);
+                free(buffer);
+            }
+            else
+            {
+                free(buffer);
+                errno = local_errno;
+                GLOBUS_GSI_GSSAPI_ERRNO_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_CANONICALIZING_HOST,
+                    ("Failed lookup of host %s",index + 1));
+                major_status = GSS_S_FAILURE;
+                goto free_x509_name;                
+            }
         }
         
         x509_name_entry = X509_NAME_ENTRY_create_by_NID(

@@ -27,6 +27,7 @@ my @test_cases=qw(
     submit031 submit032 submit033 submit034 submit035
     submit036 submit037 submit038 submit039 submit040
     submit041 submit042 submit043 submit044 submit045
+    submit046 submit047 submit048 submit049
 );
 
 my @todo_cases=qw(
@@ -80,15 +81,16 @@ sub test_rsl
     ok("$testname:$additional_rsl:$rc", "$testname:$additional_rsl:0");
 }
 
+foreach(@test_cases)
+{
+    push(@tests, "test_rsl(\"$_\", \"\")");
+}
+
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"\")");
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"(save_state = yes)\")");
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"(two_phase = 10)\")");
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"(save_state = yes)(two_phase = 10)\")");
 
-foreach(@test_cases)
-{
-    push(@tests, "test_rsl(\"$_\", \"\")");
-}
 foreach(@todo_cases)
 {
     push(@tests, "test_cases(\"$_\", \"\")");

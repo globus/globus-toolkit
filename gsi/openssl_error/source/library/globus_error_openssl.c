@@ -83,7 +83,7 @@ globus_l_gsi_openssl_error_activate(void)
     /* initializes arrays for the error handling library containing
      * function names, library names, and reasons for errors
      */
-    ERR_load_crypto_strings();
+
     SSL_load_error_strings();
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;

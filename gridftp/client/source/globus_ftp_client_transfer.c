@@ -160,9 +160,11 @@ globus_ftp_client_mkdir(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -389,9 +391,11 @@ globus_ftp_client_rmdir(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -619,9 +623,12 @@ globus_ftp_client_delete(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
+    
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
     {
@@ -855,9 +862,11 @@ globus_ftp_client_list(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -1146,9 +1155,11 @@ globus_ftp_client_verbose_list(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -1447,9 +1458,11 @@ globus_ftp_client_move(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -1925,9 +1938,11 @@ globus_l_ftp_client_extended_get(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -2411,9 +2426,11 @@ globus_l_ftp_client_extended_put(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -2940,9 +2957,11 @@ globus_l_ftp_client_extended_third_party_transfer(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -3339,9 +3358,11 @@ globus_ftp_client_modification_time(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)
@@ -3589,9 +3610,11 @@ globus_ftp_client_size(
 
 	goto error_exit;
     }
-    globus_i_ftp_client_handle_is_active(u_handle);
-
+    
     handle = *u_handle;
+    u_handle = handle->handle;
+    
+    globus_i_ftp_client_handle_is_active(u_handle);
 
     globus_i_ftp_client_handle_lock(handle);
     if(handle->op != GLOBUS_FTP_CLIENT_IDLE)

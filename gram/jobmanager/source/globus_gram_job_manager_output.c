@@ -1147,11 +1147,15 @@ globus_l_gram_job_manager_output_insert_urls(
 		request,
 		destination,
 		filename);
-	
+
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW;
 
 	globus_list_insert(destinations, destination);
 
+        if (destination->type == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_UNKNOWN)
+        {
+            return error_value;
+        }
 	return GLOBUS_SUCCESS;
     }
     else if(globus_rsl_value_is_sequence(value) && !recursive)
@@ -2174,10 +2178,13 @@ globus_l_gram_job_manager_output_get_type(
 {
     int					rc;
     globus_url_t			url;
+    globus_bool_t                       destroy_url = GLOBUS_FALSE;
+    char **                             values = NULL;
 
     rc = globus_url_parse(filename, &url);
     if(rc == GLOBUS_SUCCESS)
     {
+        destroy_url = GLOBUS_TRUE;
 	if(url.scheme_type == GLOBUS_URL_SCHEME_FTP ||
 	   url.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
 	{
@@ -2202,15 +2209,61 @@ globus_l_gram_job_manager_output_get_type(
 	}
 	else
 	{
-	    destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_UNKNOWN;
+            goto free_url_exit;
 	}
 	globus_url_destroy(&url);
     }
     else
     {
 	destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FILE;
-	destination->url = globus_libc_strdup(filename);
+
+        if (filename[0] == '/')
+        {
+            destination->url = globus_libc_strdup(filename);
+        }
+        else
+        {
+            rc = globus_rsl_param_get(request->rsl,
+                    GLOBUS_RSL_VALUE_LITERAL,
+                    GLOBUS_GRAM_PROTOCOL_DIR_PARAM, 
+                    &values);
+            if (rc == GLOBUS_SUCCESS)
+            {
+                destination->url = globus_libc_malloc(strlen(filename) +
+                        strlen(values[0]) + 2);
+                if (destination->url == NULL)
+                {
+                    goto free_values_exit;
+                }
+                sprintf(destination->url, "%s/%s", values[0], filename);
+                globus_libc_free(values);
+            }
+            else
+            {
+                destination->url = globus_libc_malloc(strlen(request->home) +
+                        strlen(filename) + 2);
+                if (destination->url == NULL)
+                {
+                    goto error_exit;
+                }
+                sprintf(destination->url, "%s/%s", request->home, filename);
+            }
+        }
     }
+    return;
+
+free_values_exit:
+    if (values != NULL)
+    {
+        globus_libc_free(values);
+    }
+free_url_exit:
+    if (destroy_url)
+    {
+        globus_url_destroy(&url);
+    }
+error_exit:
+    destination->type = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_UNKNOWN;
 }
 /* globus_l_gram_job_manager_output_get_type() */
 

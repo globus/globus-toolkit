@@ -87,7 +87,7 @@ GSS_CALLCONV gss_delete_sec_context(
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
-                "delete_sec_context: output_token->length=%d\n",
+                "delete_sec_context: output_token->length=%u\n",
                 output_token->length));
     }
 
@@ -168,6 +168,18 @@ GSS_CALLCONV gss_delete_sec_context(
         SSL_free((*context_handle)->gss_ssl);
         (*context_handle)->gss_ssl = NULL;
     } 
+
+    major_status = gss_release_oid_set(
+        &minor_status,
+        &(*context_handle)->extension_oids);
+    if(GSS_ERROR(major_status))
+    {
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+            ("Can't delete oid set."));
+        goto exit;
+    }
 
     globus_mutex_unlock(&(*context_handle)->mutex);
 

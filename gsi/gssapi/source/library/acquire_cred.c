@@ -107,11 +107,6 @@ GSS_CALLCONV gss_acquire_cred(
         }
     }
 
-    if (time_rec != NULL)
-    {
-        *time_rec = GSS_C_INDEFINITE;
-    }
-
     if(desired_name_P)
     {
         desired_name = ((gss_name_desc *)desired_name_P)->x509n;
@@ -131,6 +126,26 @@ GSS_CALLCONV gss_acquire_cred(
         goto error;
     }
 
+    if (time_rec != NULL)
+    {
+        time_t                          lifetime;
+        globus_result_t                 result;                
+        
+        result = globus_gsi_cred_get_lifetime(
+            ((gss_cred_id_desc *) *output_cred_handle_P)->cred_handle,
+            &lifetime);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto error;
+        }
+        
+        *time_rec = (OM_uint32) lifetime;
+    }
+    
     if(desired_name_string)
     {
         free(desired_name_string);

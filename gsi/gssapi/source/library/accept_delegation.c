@@ -267,6 +267,7 @@ GSS_CALLCONV gss_accept_delegation(
                                                     delegated_cred);
         if(GSS_ERROR(major_status))
         {
+            globus_gsi_cred_handle_destroy(delegated_cred);
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
@@ -278,10 +279,12 @@ GSS_CALLCONV gss_accept_delegation(
 
         if (time_rec != NULL)
         {
+            time_t                      lifetime;
+            
             local_result = globus_gsi_cred_get_lifetime(
                 ((gss_cred_id_desc *)(*delegated_cred_handle))->cred_handle,
-                (time_t *)time_rec);
-                if(local_result != GLOBUS_SUCCESS)
+                &lifetime);
+            if(local_result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                     minor_status, local_result,
@@ -289,6 +292,8 @@ GSS_CALLCONV gss_accept_delegation(
                 major_status = GSS_S_FAILURE;
                 goto mutex_unlock;
             }
+
+            *time_rec = (OM_uint32) lifetime;
         }
         
     case GSS_DELEGATION_SIGN_CERT:

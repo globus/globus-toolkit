@@ -42,6 +42,10 @@ my $job_description = new Globus::GRAM::JobDescription($argument_file);
 
 eval "require $manager_class";
 
+if($@) {
+    &fail(Globus::GRAM::Error::GATEKEEPER_MISCONFIGURED);
+}
+
 $manager = new $manager_class($job_description) or
     &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
 

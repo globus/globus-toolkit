@@ -27,19 +27,19 @@ DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
-short_usage="$PROGRAM_NAME [-help] -dn <DN> -ln <local name> [-d] [-f file]"
+short_usage="$PROGRAM_NAME [-help] [-dn <DN>] [-ln <local name>] [-d] [-f file]"
 
 long_usage() {
     ${GLOBUS_SH_CAT-cat} >&2 <<EOF
 
 ${short_usage}
 
-    $PROGRAM_NAME deletes an entry from the Grid mapfile.
+    $PROGRAM_NAME deletes one or more matching entries from the Grid mapfile.
 
     Options:
       -help, -usage           Displays help
       -version                Displays version
-      -dn <DN>                Distuingished Name (DN) to delete
+      -dn <DN>                Distinguished Name (DN) to delete
       -ln <local name>        Local Login Name (LN) to delete
       -dryrun, -d             Shows what would be done but will not
                               delete the entry
@@ -53,27 +53,27 @@ globus_source $libexecdir/globus-args-parser-header $@
 ##############################################
 Cleanup()
 {
-if [ -f $DELETED_ENTRIES ] ; then
+    if [ -f $DELETED_ENTRIES ] ; then
         ${GLOBUS_SH_RM-rm} $DELETED_ENTRIES
-fi
+    fi
 
-if [ -f $CONSISTANCY_CHECK ] ; then
+    if [ -f $CONSISTANCY_CHECK ] ; then
 	${GLOBUS_SH_RM-rm} $CONSISTANCY_CHECK
-fi
+    fi
 
-if [ -f $GRID_MAP_FILE_COPY ] ; then
+    if [ -f $GRID_MAP_FILE_COPY ] ; then
 	${GLOBUS_SH_RM-rm} $GRID_MAP_FILE_COPY
-fi
+    fi
 
-if [ -f $NEW_GRID_MAP_FILE ] ; then
+    if [ -f $NEW_GRID_MAP_FILE ] ; then
 	${GLOBUS_SH_RM-rm} $NEW_GRID_MAP_FILE
-fi
+    fi
 
-${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
-if [ $? -ne 0 ] ; then
-    echo "ERROR: Could not change mode of $GRID_MAP_FILE back to 644" >&2
-    exit 1
-fi
+    ${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+    if [ $? -ne 0 ] ; then
+        echo "ERROR: Could not change mode of $GRID_MAP_FILE back to 644" >&2
+        exit 1
+    fi
 
 }
 
@@ -107,7 +107,7 @@ while [ -n "$1" ]; do
 	    else
                 globus_args_option_error "-dn" "needs a DN argument"
 	    fi
-        ;;
+            ;;
         -ln )
             shift
             if [ $# -ge 1 ] ; then
@@ -115,13 +115,13 @@ while [ -n "$1" ]; do
 		shift
 		if [ $# -ge 1 ] ; then
 		    while [ "$1" != "-dn" -a "$1" != "-d" \
-			    -a "$1" != "-dryrun" -a "$1" != "-f" \
-			    -a "$1" != "-mapfile" ] ; do
-			ln=$ln" "$1
-			shift
-			if [ $# -eq 0 ] ; then
-			    break
-			fi
+                        -a "$1" != "-dryrun" -a "$1" != "-f" \
+                        -a "$1" != "-mapfile" ] ; do
+                      ln=$ln" "$1
+                      shift
+                      if [ $# -eq 0 ] ; then
+                          break
+                      fi
 		    done
 		fi
 	    else
@@ -129,17 +129,20 @@ while [ -n "$1" ]; do
 		exit 1
 	    fi
 	    ;;
-       -d | -dryrun )
+        -d | -dryrun )
 	    ECHO_DRYRUN=echo
 	    shift
 	    ;;
         -f | -mapfile )
 	    opt=$1
 	    shift
+            if test $# -lt 1 ; then
+                globus_args_option_error "$opt" "${opt} requires a argument"
+            fi
 	    GRID_MAP_FILE=$1
 	    shift
 	    ;;
-			
+        
         * )
 	    globus_args_unrecognized_option "$1"
 	    ;;
@@ -150,21 +153,21 @@ done
     # Verify mapfile existance
 
 if [ ! -f $GRID_MAP_FILE ] ; then
-    ${GLOBUS_SH_TOUCH-touch} $GRID_MAP_FILE
-    ${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
-else
-    if [ ! -r $GRID_MAP_FILE ] ; then
-        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
-        exit 1
-    fi
-
-    if [ ! -w $GRID_MAP_FILE ] ; then
-        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
-        exit 1
-    fi
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" does not exist"
+    exit 1
 fi
 
-        # Make a copy of production map file for comparison to original later
+if [ ! -r $GRID_MAP_FILE ] ; then
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
+    exit 1
+fi
+
+if [ ! -w $GRID_MAP_FILE ] ; then
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
+    exit 1
+fi
+
+# Make a copy of production map file for comparison to original later
 
 ${GLOBUS_SH_CP-cp} $GRID_MAP_FILE $GRID_MAP_FILE_COPY
 if [ $? -ne 0 ] ; then
@@ -173,7 +176,7 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-        # Change mode of existing map file to read only (logical UNIX lock)
+# Change mode of existing map file to read only (logical UNIX lock)
 
 ${GLOBUS_SH_CHMOD-chmod} 400 $GRID_MAP_FILE
 if [ $? -ne 0 ] ; then
@@ -183,107 +186,117 @@ if [ $? -ne 0 ] ; then
 fi
 
 if [ -n "$dn" -a -z "$ln" ] ; then
-	requested_dn=$dn
-	$ECHO_DRYRUN "Searching for entries containing the Distinguished Name"
-	$ECHO_DRYRUN "$requested_dn"
+    requested_dn=$dn
+    $ECHO_DRYRUN "Searching for entries containing the Distinguished Name"
+    $ECHO_DRYRUN "$requested_dn"
 elif [ -n "$ln" -a -z "$dn" ] ; then
-	requested_ln=$ln
-	$ECHO_DRYRUN "Searching for entries containing the Local Name(s)"
-	$ECHO_DRYRUN "$requested_ln"
+    requested_ln=$ln
+    $ECHO_DRYRUN "Searching for entries containing the Local Name(s)"
+    $ECHO_DRYRUN "$requested_ln"
 elif [ -n "$ln" -a -n "$dn" ] ; then
-	requested_entry="\"$dn\" $ln"
-	$ECHO_DRYRUN "Searching for entries exactly mathing both the Distinguished Name and the Local Name(s)"
-	$ECHO_DRYRUN "$requested_entry"
+    requested_entry="\"$dn\" $ln"
+    $ECHO_DRYRUN "Searching for entries exactly mathing both the Distinguished Name and the Local Name(s)"
+    $ECHO_DRYRUN "$requested_entry"
 fi
 
 # Create new map file
 
 ${GLOBUS_SH_TOUCH-touch} $NEW_GRID_MAP_FILE
 
-while read line ; do
-		# Match ONLY DNs
-
-	if [ -n "$requested_dn" -a -z "$requested_ln" ]
-	then
-		existing_dn=`echo $line | cut -c2- | cut -f1 -d\"`
-		if [ ! "$requested_dn" = "$existing_dn" ]
-		then
-			echo $line >> $NEW_GRID_MAP_FILE
-		else
-			$ECHO_DRYRUN "Deleting entry: $line"
-			deleted_entries=`expr $deleted_entries + 1`
-		fi
-
-		# Match ANY LNs
-
-	elif [ -z "$requested_dn" -a -n "$requested_ln" ]
-		then
-			found_match=""
-			for name in $ln ; do
-				found_match=`echo $line | ${GLOBUS_SH_GREP-grep} $name`
-				if  [ -n "$found_match" ]
-				then
-#					echo "Found match"
-					break
-				fi
-			done
-
-			if  [ -z "$found_match" ]
-			then
-				echo $line >> $NEW_GRID_MAP_FILE
-			else
-				$ECHO_DRYRUN "Deleting entry: $line"
-			        deleted_entries=`expr $deleted_entries + 1`
-			fi
-
-		# Match EXACTLY both DN and list
-
-	elif [ -n "$requested_entry" ]
-	then
-		if [ ! "$line" = "$requested_entry" ]
-		then
-			echo $line >> $NEW_GRID_MAP_FILE
-		else
-			$ECHO_DRYRUN "Deleting entry: $line"
-                        deleted_entries=`expr $deleted_entries + 1`
-		fi
-	fi
-
-    echo $deleted_entries >  $DELETED_ENTRIES
-
-done < $GRID_MAP_FILE_COPY
-
-      # Exit if Dry Run option was requested"
-
-    deleted_entries=`cat $DELETED_ENTRIES`
-
-    if [ "$ECHO_DRYRUN" = "echo" ] ; then
-        if [ "$deleted_entries" -ne  0 ] ; then
-            if [ "$deleted_entries" -eq  1 ] ; then
-                echo "($deleted_entries) entry would have been deleted"
-            else
-                echo "($deleted_entries) entries would have been deleted"
+while read line || test ! -z "${line}" ; do
+    # Match ONLY DNs
+    
+    if test -n "$requested_dn" -a -z "$requested_ln" ; then
+        # Check for double quote delimitor
+        delim=`echo $line | cut -c1`
+        if [ "X$delim" = "X\"" ]; then
+            # DN is double quote delimited
+            # Check for terminating double quote
+            term_check=`echo $line | cut -c2- | grep \"`
+            if [ -z "$term_check" ]; then
+                echo "The following entry is missing a closing double quote"
+                echo "$line"
+                Cleanup
+                exit 1
             fi
-            echo "Since ( dryrun, -d ) option was used no actions were carried out"
-            Cleanup
-            exit 0
+            existing_dn=`echo $line | cut -f2 -d\"`
+        else
+            # No double quote delimitor on DN
+            existing_dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
+        fi
+
+        if test ! "$requested_dn" = "$existing_dn" ; then
+            echo $line >> $NEW_GRID_MAP_FILE
+        else
+            $ECHO_DRYRUN "Deleting entry: $line"
+            deleted_entries=`expr $deleted_entries + 1`
+        fi
+
+    # Match ANY LNs
+
+    elif test -z "$requested_dn" -a -n "$requested_ln" ; then
+        found_match=""
+        for name in $ln ; do
+            found_match=`echo $line | ${GLOBUS_SH_GREP-grep} $name`
+            if  [ -n "$found_match" ] ; then
+#		   echo "Found match"
+                break
+            fi
+        done
+        
+        if  [ -z "$found_match" ] ; then
+            echo $line >> $NEW_GRID_MAP_FILE
+        else
+            $ECHO_DRYRUN "Deleting entry: $line"
+            deleted_entries=`expr $deleted_entries + 1`
+        fi
+        
+    # Match EXACTLY both DN and list
+        
+    elif [ -n "$requested_entry" ] ; then
+        if [ ! "$line" = "$requested_entry" ] ; then
+            echo $line >> $NEW_GRID_MAP_FILE
+        else
+            $ECHO_DRYRUN "Deleting entry: $line"
+            deleted_entries=`expr $deleted_entries + 1`
         fi
     fi
+    
+    echo $deleted_entries >  $DELETED_ENTRIES
+    
+done < $GRID_MAP_FILE_COPY
+
+# Exit if Dry Run option was requested"
+
+deleted_entries=`cat $DELETED_ENTRIES`
+
+if [ "$ECHO_DRYRUN" = "echo" ] ; then
+    if [ "$deleted_entries" -ne  0 ] ; then
+        if [ "$deleted_entries" -eq  1 ] ; then
+            echo "($deleted_entries) entry would have been deleted"
+        else
+            echo "($deleted_entries) entries would have been deleted"
+        fi
+        echo "Since ( dryrun, -d ) option was used no actions were carried out"
+        Cleanup
+        exit 0
+    fi
+fi
 
 		# Replace existing map file with new mapfile
 
 if [ "$deleted_entries" -ne  0 ] ; then
-        # Verify that no changes to original map file
-        # during the execution of this program
+    # Verify that no changes to original map file
+    # during the execution of this program
 
-	${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTANCY_CHECK
+    ${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTANCY_CHECK
     if  [ -s $CONSISTANCY_CHECK ] ; then
         echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
         echo "No changes will be made." >&2
         Cleanup
         exit 1
     else
-		# make copy of old map file
+      	# make copy of old map file
 
 	${GLOBUS_SH_CP-cp} $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
         if [ $? -ne 0 ] ; then
@@ -303,7 +316,7 @@ if [ "$deleted_entries" -ne  0 ] ; then
             Cleanup
             exit 1
         fi
-    
+        
         if [ "$deleted_entries" -eq  1 ] ; then
             echo "($deleted_entries) entry deleted"
         else
@@ -311,7 +324,9 @@ if [ "$deleted_entries" -ne  0 ] ; then
         fi
     fi
 else
-	echo "no such entry exists"
+    echo "ERROR: No such entry exists"
+    Cleanup
+    exit 1
 fi
 
 Cleanup

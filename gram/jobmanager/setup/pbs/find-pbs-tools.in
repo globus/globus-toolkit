@@ -10,7 +10,7 @@ fi
 
 AC_PATH_PROG(MPIRUN, mpirun, no)
 if test "$MPIRUN" = "no" ; then
-    AC_MSG_ERROR("Cannot locate mpirun")
+    AC_MSG_WARN("Cannot locate mpirun")
 fi
 AC_PATH_PROG(QDEL, qdel, no)
 if test "$QDEL" = "no" ; then

@@ -100,7 +100,7 @@ GSS_CALLCONV gss_init_delegation(
     X509 *                              cert = NULL;
     STACK_OF(X509) *                    cert_chain = NULL;
     PROXYCERTINFO *                     pci;
-    globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -179,52 +179,6 @@ GSS_CALLCONV gss_init_delegation(
 
     output_token->length = 0;
 
-    if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
-    {
-        local_result = globus_gsi_cred_get_cert(cred->cred_handle,
-                                                &cert);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-
-        local_result = 
-            globus_gsi_cert_utils_check_proxy_name(cert, 
-                                                   &proxy_type);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            X509_free(cert);
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-
-        X509_free(cert);
-        cert = NULL;
-
-        if(extension_oids != GSS_C_NO_OID_SET ||
-           proxy_type == GLOBUS_RESTRICTED_PROXY)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                ("Credential claims to be a restricted proxy, "
-                 "but request flags claims limited proxy."));
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-        else
-        {
-            proxy_type = GLOBUS_LIMITED_PROXY;        
-        }
-    }
-    
     if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
     {
         bio = BIO_new(BIO_s_mem());
@@ -301,21 +255,97 @@ GSS_CALLCONV gss_init_delegation(
             goto mutex_unlock;
         }
 
+        local_result = globus_gsi_cred_get_cert_type(
+            context->cred_handle->cred_handle,
+            &cert_type);
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
+            goto mutex_unlock;
+        }
+
+        if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_CA)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
+            goto mutex_unlock;            
+        }
+        else if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+        {
+            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
+            { 
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else
+            {
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+            }
+        }
+        else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+        }
+        
+        local_result =
+            globus_gsi_proxy_handle_set_type(
+                context->proxy_handle,
+                cert_type);
+        
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
+            goto mutex_unlock;            
+        }    
+
+        /* clear the proxycertinfo */
+
+        
+        local_result =
+            globus_gsi_proxy_handle_clear_cert_info(context->proxy_handle);
+        
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
+            goto mutex_unlock;            
+        }
+        
         /* set the proxycertinfo here */
         if(extension_oids != GSS_C_NO_OID_SET)
         {
+            if(!GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type))
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    ("A restricted globus proxy may not be created "
+                     "from a legacy globus proxy"));
+                context->delegation_state = GSS_DELEGATION_DONE;
+                major_status = GSS_S_FAILURE;
+                goto mutex_unlock;
+            }
+            
             for(index = 0; index < extension_oids->count; index++)
             {
                 if(g_OID_equal((gss_OID) &extension_oids->elements[index],
                                gss_proxycertinfo_extension))
                 {
-                    d2i_PROXYCERTINFO(
-                        &pci, 
-                        (unsigned char **) 
-                        &extension_oids->elements[index].elements,
-                        extension_oids->elements[index].length);
-                    
-                    local_result = 
+                    local_result =
                         globus_gsi_proxy_handle_set_proxy_cert_info(
                             context->proxy_handle,
                             pci);
@@ -325,6 +355,7 @@ GSS_CALLCONV gss_init_delegation(
                             minor_status, local_result,
                             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
                         major_status = GSS_S_FAILURE;
+                        context->delegation_state = GSS_DELEGATION_DONE;
                         goto mutex_unlock;
                     }
                 }
@@ -335,12 +366,14 @@ GSS_CALLCONV gss_init_delegation(
             context->proxy_handle,
             cred->cred_handle,
             bio);
+        
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
             major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
             goto mutex_unlock;
         }
 
@@ -351,6 +384,7 @@ GSS_CALLCONV gss_init_delegation(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
             goto mutex_unlock;
         }
                 
@@ -366,6 +400,7 @@ GSS_CALLCONV gss_init_delegation(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
             goto mutex_unlock;
         }
 
@@ -379,6 +414,7 @@ GSS_CALLCONV gss_init_delegation(
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
                     ("Couldn't get cert from cert chain"));
                 major_status = GSS_S_FAILURE;
+                context->delegation_state = GSS_DELEGATION_DONE;
                 goto mutex_unlock;
             }
             
