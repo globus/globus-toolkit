@@ -42,12 +42,12 @@ find_ca_dir() {
 get_security_dir() {
     cadir=$1
 
-    if test "$cadir" -ef "/etc/grid-security/certificates"; then
+    if test ! -z "${GRID_SECURITY_DIR}" ; then
+        echo "${GRID_SECURITY_DIR}"
+    elif test "$cadir" -ef "/etc/grid-security/certificates"; then
         echo "/etc/grid-security"
     elif test "$cadir" -ef "${GLOBUS_LOCATION}/share/certificates"; then
         echo "${GLOBUS_LOCATION}/etc"
-    elif test "$cadir" -ef "${X509_CERT_DIR}"; then
-        echo ${GRID_SECURITY_DIR}
     fi
 }
 
