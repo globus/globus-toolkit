@@ -25,7 +25,6 @@ if ( ! -d $webroot )
 }
 
 ($subdir, @files) = split(/ /,$ARGV[0]);
-$newdir = $subdir;
 
 print "subdir is \"$subdir\"\n" if $verbose;
 # Make sure loginfo is setup correctly
@@ -51,10 +50,17 @@ if ( ! -d $fulldir )
 {
    chdir $webroot;
    print "Adding new subdirectory $subdir\n" if $verbose;
-   system("echo cvs co -d $newdir") if $verbose;
-   system("cvs co -d $newdir");
-   system("echo chgrp -R $cvsgrp ./$subdir") if $verbose;
-   system("chgrp -R $cvsgrp ./$subdir");
+   # Take /path/to/new/dir, and run cvs up -dP on 
+   # /path/to/new to add the lower-level dir.
+   if ( $subdir =~ m#(.*/)([^/]+)# )
+   {
+       $checkoutdir = $1;
+   }
+
+   system("echo cvs up -dP ./$checkoutdir") if $verbose;
+   system("cvs up -dP ./$checkoutdir");
+   system("echo chgrp -R $cvsgrp $scheckoutdir") if $verbose;
+   system("chgrp -R $cvsgrp $checkoutdir");
 } else {
    chdir $fulldir;
    foreach my $f (@files) {
@@ -63,6 +69,10 @@ if ( ! -d $fulldir )
       system("cvs up -dP $f");
       system("echo chgrp $cvsgrp $f") if $verbose;
       system("chgrp $cvsgrp $f");
+   }
+   if ( -f "Makefile" ) {
+      system("echo Running make in the target directory");
+      system("make");
    }
 }
 
