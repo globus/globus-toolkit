@@ -245,10 +245,10 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             else
-                AC_PATH_PROGS(lac_cv_CC, $CC ecc cc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC ecc CC c++)
-                AC_PATH_PROGS(lac_cv_F77, $F77 efc f77)
-                AC_PATH_PROGS(lac_cv_F90, $F90 efc f90)
+                AC_PATH_PROGS(lac_cv_CC, $CC icc ecc cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc ecc CC c++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 ifc efc f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 ifc efc f90)
                 lac_CFLAGS="$lac_CFLAGS -restrict"
             fi
         fi
@@ -706,7 +706,7 @@ case ${host}--$1 in
         lac_CXXFLAGS="-Xm $lac_CXXFLAGS"
         lac_LDFLAGS="-Xm $lac_LDFLAGS"
       ;;
-    *linux*--pthreads )
+    *linux* )
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
@@ -721,13 +721,16 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
+                AC_PATH_PROGS(lac_cv_CC, $CC icc cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc CC c++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 ifc f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 ifc f90)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
       ;;
