@@ -111,6 +111,13 @@ globus_gatekeeper_util_globusxmap( char * filename, char * index, char ** comman
 	    if (line[i - 1] == '\n') {
 			line[i - 1] = '\0';
 		}
+                if (!index)
+                {
+                        *command = strdup(line);
+                        fclose(fd);
+                        return(0);
+                }
+ 
 		rc = sscanf(line, " \"%255[^\"]%*c%n %n", 
 						f_index, &offset, &offset);
 		if (rc != 1) {

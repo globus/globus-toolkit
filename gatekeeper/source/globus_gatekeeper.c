@@ -1475,7 +1475,7 @@ static void doit()
 
     if ((rc = globus_gatekeeper_util_globusxmap(
 		genfilename(gatekeeperhome,grid_services,service_name), 
-		service_name, 
+		NULL, 
 		&service_line)) != 0)
       {
 	    failure3(FAILED_SERVICELOOKUP,
