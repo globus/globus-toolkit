@@ -1,11 +1,4 @@
 
-
-/*
-gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_LOCATION/lib delegation_test.c -lglobus_gssapi_gsi_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_ssl_utils_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg
-
-*/
-
-
 #define EXT_SIZE 16
 #include <gssapi.h>
 #include "../source/library/gssapi_ssleay.h"
@@ -22,6 +15,7 @@ int main()
     OM_uint32                           maj_stat;
     OM_uint32                           min_stat;
     OM_uint32                           ret_flags;
+    OM_uint32                           req_flags = 0;
     OM_uint32                           time_rec;
     gss_buffer_desc                     send_tok;
     gss_buffer_desc                     recv_tok;
@@ -29,20 +23,17 @@ int main()
     gss_buffer_desc                     oid_buffer;
     gss_buffer_set_desc                 oid_buffers;
     gss_buffer_set_t                    inquire_buffers;
-    gss_OID				name_type;
     gss_OID                             mech_type;
     gss_OID_set_desc                    oid_set;
     gss_name_t                          target_name;
-    gss_ctx_id_t  			init_context;
-    gss_ctx_id_t  			accept_context;
+    gss_ctx_id_t                        init_context;
+    gss_ctx_id_t                        accept_context;
     gss_ctx_id_desc *                   init_context_handle;
-    gss_ctx_id_t  			del_init_context;
-    gss_ctx_id_t  			del_accept_context;
+    gss_ctx_id_t                        del_init_context;
+    gss_ctx_id_t                        del_accept_context;
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
-    char *                              subject =
-        "/O=Grid/O=Globus/OU=mcs.anl.gov/CN=Samuel Meder";
     char *                              error_str;
     char *                              buf; 
 
@@ -53,7 +44,6 @@ int main()
     accept_context = GSS_C_NO_CONTEXT;
     del_init_context = GSS_C_NO_CONTEXT;
     del_accept_context = GSS_C_NO_CONTEXT;
-    name_type = GSS_C_NT_USER_NAME;
     delegated_cred = GSS_C_NO_CREDENTIAL;
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
     ret_flags = 0;
@@ -72,9 +62,6 @@ int main()
     oid_set.count = 1;
     oid_set.elements = gss_restrictions_extension;
     
-    send_tok.value = subject;
-    send_tok.length = strlen(subject) + 1;
-
     /* acquire the credential */
 
     maj_stat = gss_acquire_cred(&min_stat,
@@ -98,12 +85,14 @@ int main()
     }
 
     
-    /* import the subject name */
+    /* get the subject name */
     
-    maj_stat = gss_import_name(&min_stat, 
-                               &send_tok, 
-                               name_type, 
-                               &target_name);
+    maj_stat = gss_inquire_cred(&min_stat, 
+                                cred_handle,
+                                &target_name,
+                                NULL,
+                                NULL,
+                                NULL);
 
     if(maj_stat != GSS_S_COMPLETE)
     {
@@ -223,6 +212,7 @@ int main()
                                         &oid_set,
                                         &oid_buffers,
                                         token_ptr,
+                                        req_flags,
                                         0,
                                         &send_tok);
     
@@ -246,6 +236,7 @@ int main()
                                               GSS_C_NO_OID_SET,
                                               GSS_C_NO_BUFFER_SET,
                                               &send_tok,
+                                              req_flags,
                                               0,
                                               &time_rec,
                                               &delegated_cred,
@@ -275,6 +266,7 @@ int main()
                                             &oid_set,
                                             &oid_buffers,
                                             &recv_tok,
+                                            req_flags,
                                             0,
                                             &send_tok);
 
@@ -512,7 +504,7 @@ int main()
            __LINE__,
            (char *) inquire_buffers->elements[0].value);
 
-    
+    exit(0);
 }
 
 
