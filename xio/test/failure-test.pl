@@ -6,6 +6,12 @@ use Test;
 
 require "test-common.pl";
 
+my $type = 0;
+if(@ARGV == 1)
+{   
+    $type = 1;
+}
+
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
@@ -41,7 +47,7 @@ sub failure_tests
             foreach(@failures)
             {
                 my $f=$_;
-                push(@tests, "$test_exec $test_name $f -w 1 -r 1 -s $inline_finish $d");
+                push(@tests, "$test_name $f -w 1 -r 1 -s $inline_finish $d");
             }
         }
         $inline_finish="";
@@ -49,11 +55,21 @@ sub failure_tests
 }
 
 &failure_tests();
-plan tests => scalar(@tests), todo => \@todo;
-my $cnt=0;
-foreach(@tests)
+if($type == 1)
 {
-    my $test_str="$test_name.$cnt";
-    &run_test($_, $test_str);
-    $cnt++;
+    foreach(@tests)
+    {
+        print "$_\n";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+    my $cnt=0;
+    foreach(@tests)
+    {
+        my $test_str="$test_name.$cnt";
+        &run_test("$test_exec $_", $test_str);
+        $cnt++;
+    }
 }

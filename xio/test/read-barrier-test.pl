@@ -6,6 +6,12 @@ use Test;
 
 require "test-common.pl";
 
+my $type = 0;
+if(@ARGV == 1)
+{   
+    $type = 1;
+}
+
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
@@ -44,7 +50,7 @@ sub read_barrier
             {
                 for(my $read_count = 1; $read_count <= 8; $read_count *= 2)
                 {
-                    push(@tests, "$test_exec $test_name -r $read_count -c $c -b $buffer_size $inline_finish $_");
+                    push(@tests, "$test_name -r $read_count -c $c -b $buffer_size $inline_finish $_");
                 }
             }
         }
@@ -53,11 +59,21 @@ sub read_barrier
 }
 
 &read_barrier();
-plan tests => scalar(@tests), todo => \@todo;
-my $cnt=0;
-foreach(@tests)
+if($type == 1)
 {
-    my $test_str="$test_name.$cnt";
-    &run_test($_, $test_str);
-    $cnt++;
+    foreach(@tests)
+    {
+        print "$_\n";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+    my $cnt=0;
+    foreach(@tests)
+    {
+        my $test_str="$test_name.$cnt";
+        &run_test("$test_exec $_", $test_str);
+        $cnt++;
+    }
 }

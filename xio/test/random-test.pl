@@ -6,6 +6,12 @@ use Test;
 
 require "test-common.pl";
 
+my $type = 0;
+if(@ARGV == 1)
+{   
+    $type = 1;
+}
+
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
@@ -30,17 +36,27 @@ sub basic_tests
         for(my $j = 0; $j < 10; $j++)
         {
             my $sd = time % 1000;
-            push(@tests, "$test_exec $test_name -X $sd -w 32 -r 32 $d -W 524288 -R 524288");
+            push(@tests, "$test_name -X $sd -w 32 -r 32 $d -W 524288 -R 524288");
         }
     }
 }
 
 &basic_tests();
-my $cnt=0;
-plan tests => scalar(@tests), todo => \@todo;
-foreach(@tests)
+if($type == 1)
 {
-    my $test_str="random.$cnt";
-    &run_test($_, $test_str);
-    $cnt++;
+    foreach(@tests)
+    {
+        print "$_\n";
+    }
+}
+else
+{
+    my $cnt=0;
+    plan tests => scalar(@tests), todo => \@todo;
+    foreach(@tests)
+    {
+        my $test_str="random.$cnt";
+        &run_test("$test_exec $_", $test_str);
+        $cnt++;
+    }
 }

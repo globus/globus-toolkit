@@ -103,6 +103,7 @@ parse_parameters(
 
     globus_list_insert(&globus_l_driver_list, base_driver);
 
+    optind = 0;
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
     while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != -1)
@@ -273,6 +274,42 @@ test_common_end()
 }
 
 int
+make_argv(
+    char *                                      line, 
+    char ***                                    out_argv)
+{
+    globus_list_t *                             list = NULL;
+    char *                                      tmp_ptr;
+    char **                                     argv;
+    int                                         size;
+    int                                         ctr;
+
+    tmp_ptr = strtok(line, " ");
+    while(tmp_ptr != NULL)
+    {
+        if(strcmp("\n", tmp_ptr) != 0)
+        {
+            globus_list_insert(&list, strdup(tmp_ptr));
+        }        
+        tmp_ptr = strtok(NULL, " ");
+    }
+
+    size = globus_list_size(list);
+    argv = (char **) globus_malloc(size * sizeof(char *));
+
+    ctr = size - 1;
+    while(!globus_list_empty(list))
+    {
+        argv[ctr] = (char *) globus_list_remove(&list, list);
+        ctr--;
+    } 
+
+    *out_argv = argv;
+
+    return size;
+}
+
+int
 main(
     int                                         argc,
     char **                                     argv)
@@ -324,14 +361,11 @@ main(
         else
         {
             done = GLOBUS_TRUE;
-            ctr--;
+            name = argv[ctr];
         }
     }
 
-    argv += ctr;
-    argc -= ctr;
-
-    if(argc < 1)
+    if(name == NULL)
     {
         fprintf(stderr, 
             "%s: [-A -D] <test name | file name> [test options]\n", 
@@ -346,14 +380,34 @@ main(
         rc = globus_module_activate(GLOBUS_XIO_MODULE);
         globus_assert(rc == GLOBUS_SUCCESS);
     }
-    name = argv[argc];
     if(file)
     {
+        FILE *                          in;
+        char                            line[512];
+        int                             cnt;
+        char **                         out_argv;
+
+        in = fopen(name, "r");
+        globus_assert(in != NULL);
+
+        while(fgets(line, 512, in) != NULL)
+        {
+            cnt = make_argv(line, &out_argv);
+            rc = call_test(cnt, out_argv);
+
+            for(ctr = 0; ctr < cnt; ctr++)
+            {
+                globus_free(out_argv[ctr]);
+            }
+            globus_free(out_argv);
+        }
         /* TODO: call function that opens file and walks through
             all the tests in that file */
     }
     else
     {
+        argv++;
+        argc--;
         rc = call_test(argc, argv);
     }
 

@@ -6,6 +6,12 @@ use Test;
 
 require "test-common.pl";
 
+my $type = 0;
+if(@ARGV == 1)
+{
+    $type = 1;
+}
+
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
@@ -42,13 +48,13 @@ sub close_barrier
             my $c = $_;
             foreach(@drivers)
             {
-                push(@tests, "$test_exec $test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $_");
-                push(@tests, "$test_exec $test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $_");
+                push(@tests, "$test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $_");
+                push(@tests, "$test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $_");
                 for(my $write_count = 1; $write_count <= 8; $write_count *= 2)
                 {
                     for(my $read_count = 1; $read_count <= 8; $read_count *= 2)
                     {
-                        push(@tests, "$test_exec $test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $_");
+                        push(@tests, "$test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $_");
                     }
                 }
             }
@@ -58,11 +64,21 @@ sub close_barrier
 }
 
 &close_barrier();
-plan tests => scalar(@tests), todo => \@todo;
-my $cnt=0;
-foreach(@tests)
+if($type == 1)
 {
-    my $test_str="$test_name.$cnt";
-    &run_test($_, $test_str);
-    $cnt++;
+    foreach(@tests)
+    {
+        print "$_\n";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+    my $cnt=0;
+    foreach(@tests)
+    {
+        my $test_str="$test_name.$cnt";
+        &run_test("$test_exec $_", $test_str);
+        $cnt++;
+    }
 }
