@@ -82,7 +82,7 @@ GetNodeCountFork () {
               Mds-Cpu-Free-1min:)
                   smp_free_1minX100="$val"
                   # truncate fixed-precision fraction to whole integer
-                  FREENODES=`expr $smp_free_1min / 100`
+                  FREENODES=`expr $smp_free_1min100 / 100`
               ;;
           esac
       done
