@@ -25,7 +25,7 @@ struct verror_context
     int number;
 };
 
-struct verror_context my_context = { 0, NULL, 0, 0 };
+static struct verror_context my_context = { 0, NULL, 0, 0 };
 
 /**********************************************************************
  *
@@ -146,6 +146,22 @@ verror_put_string(const char *format, ...)
 	}
 
 	my_context.string = strcat(new_string, string);
+    }
+
+    /* Append a carriage return if not present */
+    new_string_len = strlen(my_context.string);
+    
+    if (my_context.string[new_string_len - 1] != '\n') 
+    {
+	new_string = realloc(my_context.string,
+			     new_string_len + 2 /* CR and NUL */);
+	
+	/* Just do nothing if realloc() failed */
+	if (new_string != NULL) 
+	{
+	    strcat(new_string, "\n");
+	    my_context.string = new_string;
+	}
     }
     
   error:
