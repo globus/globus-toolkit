@@ -24,10 +24,16 @@ public class ThroughputTester {
     public ThroughputTester() { }
 
     public void createAll() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("creating " + this.count + " job(s)");
+        }
         this.jobList = new SingleJobThread[this.count];
         this.jobPhaseState = new int[this.count];
         this.createdCount = 0;
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("perf log start [createService]");
+        }
         this.perfLog.start();
 
         for (int i=0; i<this.count; i++) {
@@ -35,7 +41,16 @@ public class ThroughputTester {
             new Thread(this.jobList[i]).start();
         }
 
+        int oldCreatedCount = -1;
         while (this.createdCount < this.count) {
+            if (logger.isDebugEnabled()) {
+                if (oldCreatedCount != this.createdCount) {
+                    logger.debug("waiting for "
+                                + (this.count - this.createdCount)
+                                + " job(s) to be created");
+                    oldCreatedCount = this.createdCount;
+                }
+            }
             synchronized (this) {
                 //avoid deadlock by checking once more when we have the lock
                 if (this.createdCount < this.count) {
@@ -57,15 +72,30 @@ public class ThroughputTester {
     }
 
     public void startAll() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting " + this.count + " job(s)");
+        }
         this.startedCount = 0;
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("perf log start [start]");
+        }
         this.perfLog.start();
 
         for (int i=0; i<this.count; i++) {
             this.jobList[i].start();
         }
 
+        int oldStartedCount = -1;
         while (this.startedCount < this.count) {
+            if (logger.isDebugEnabled()) {
+                if (oldStartedCount != this.startedCount) {
+                    logger.debug("waiting for "
+                                + (this.count - this.startedCount)
+                                + " job(s) to be started");
+                    oldStartedCount = this.startedCount;
+                }
+            }
             synchronized (this) {
                 //avoid deadlock by checking once more when we have the lock
                 if (this.startedCount < this.count) {
@@ -79,9 +109,21 @@ public class ThroughputTester {
         }
 
         this.perfLog.stop("start");
+        if (logger.isDebugEnabled()) {
+            logger.debug("perf log start [complete]");
+        }
         this.perfLog.start();
 
+        int oldCompletedCount = -1;
         while (this.completedCount < this.count) {
+            if (logger.isDebugEnabled()) {
+                if (oldCompletedCount != this.completedCount) {
+                    logger.debug("waiting for "
+                                + (this.count - this.completedCount)
+                                + " job(s) to be completed");
+                    oldCompletedCount = this.completedCount;
+                }
+            }
             synchronized (this) {
                 //avoid deadlock by checking once more when we have the lock
                 if (this.completedCount < this.count) {
@@ -131,7 +173,28 @@ public class ThroughputTester {
         return this.count;
     }
 
+    public static void printUsage(String customMessage) {
+        StringBuffer usageMessage = new StringBuffer(customMessage);
+        usageMessage.append("\nUsage:");
+        usageMessage.append("\njava ... ");
+        usageMessage.append(ThroughputTester.class.getName()).append(" \\");
+        usageMessage.append("\n\t<factory URL> <RSL file> <job count>");
+        System.out.println(usageMessage.toString());
+    }
+
     public static void main(String[] args) {
+        if (args.length == 1) {
+            if (   args[0].equals("-h")
+                || args[0].equals("--help")) {
+                ThroughputTester.printUsage("-- Help --");
+                System.exit(0);
+            }
+
+        }
+        if (args.length != 3) {
+            ThroughputTester.printUsage("Error: invalid number of arguments");
+            System.exit(1);
+        }
         ThroughputTester harness = new ThroughputTester();
         harness.setFactoryUrl(args[0]);
         harness.setRslFile(args[1]);

@@ -30,6 +30,7 @@
   <property name="test-reports.dir" value="test-reports" />
   <property name="service.port" value="8080" />
   <property name="container.initialization" value="eager" />
+  <property name="job.count" value="1" />
 
   <target name="setenv">
     <!--provide a property for when we must be-->
@@ -274,19 +275,16 @@
    </java>
   </target>
 
-  <target name="runClient" depends="setenv, deployServer">
-    <echo message="running Relocatable Data Client"/>
-
-    <delete quiet="true">
-      <fileset dir="/home/lane/Development/Fusion/DestinationData"/>
-    </delete>
+  <target name="runTestApp" depends="setenv">
+    <echo message="running Throughput Tester"/>
 
     <java classname="org.globus.ogsa.base.gram.testing.throughput.ThroughputTester"
           fork="yes"
           classpathref="classpath" failonerror="true" >
 
-      <arg value=""/>
-      <arg value=""/>
+      <arg value="http://140.221.36.12:31415/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
+      <arg value="./date.xml"/>
+      <arg value="${job.count}"/>
     </java>
   </target>
 

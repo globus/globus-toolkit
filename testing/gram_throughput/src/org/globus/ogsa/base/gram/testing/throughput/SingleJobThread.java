@@ -77,6 +77,9 @@ public class SingleJobThread
     // This method is invoked once each time the stress target is run
     // with this class
     public void run() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("running job thread");
+        }
         //retrieve, parse, and validate the RSL
         /*
         File file = new File(rslFile);
@@ -100,6 +103,9 @@ public class SingleJobThread
         this.perfLog.start();
 
         //create MJS instance
+        if (logger.isDebugEnabled()) {
+            logger.debug("creating job");
+        }
         /*
         LocatorType gshHolder = gridServiceFactory.createService(extension);
         ManagedJobServiceGridLocator mjsLocator
@@ -117,9 +123,18 @@ public class SingleJobThread
 
         //stop timming createService()
         this.perfLog.stop("createService");
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifying harness of creation...");
+        }
         this.harness.notifyCreated();
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifyed harness of creation");
+        }
 
         //wait for start signal
+        if (logger.isDebugEnabled()) {
+            logger.debug("waiting for signal to start");
+        }
         synchronized (this) {
             try {
                 this.wait();
@@ -140,6 +155,9 @@ public class SingleJobThread
     }
 
     protected void start0() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting job");
+        }
         //setup MJS stub
         /*
         ((Stub)this.managedJob)._setProperty(GSIConstants.GSI_AUTHORIZATION,
@@ -169,7 +187,13 @@ public class SingleJobThread
 
         //stop timming start()
         this.perfLog.stop("start");
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifying harness of start...");
+        }
         this.harness.notifyStarted();
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifyed harness of start");
+        }
 
         //start timming Active
         this.perfLog.start();
