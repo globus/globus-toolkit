@@ -2393,7 +2393,7 @@ int ftp_authorization_initialize_sc(gss_ctx_id_t        ctx,
                                     char *              errstr,
                                     int                 errstr_len)
 {
-    globus_result_t             result;
+    globus_auth_result_t            result;
     
     result = globus_authorization_handle_set_gss_ctx(globus_auth_handle,
                                                      ctx);
