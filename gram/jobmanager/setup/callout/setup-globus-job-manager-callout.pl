@@ -19,16 +19,26 @@ my $metadata =
     new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup_callout");
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
-my @libs = <$globusdir/lib/libglobus_gram_job_manager_callout_*.a>;
+my @libs = glob("$globusdir/lib/libglobus_gram_job_manager_callout_*.a");
 my $config = "";
 my $found = 0;
+my $lib;
 
-if(@libs > 1)
+foreach (@libs)
 {
-    die("Error determining flavor of callout library. More than one flavor installed\n");
+    if($_ =~ m/.*libglobus_gram_job_manager_callout_[^_]*$/)
+    {
+        $lib = $_;
+        last;
+    }
+}
+
+if(!$lib)
+{
+    die("Could not find callout library\n");
 } 
 
-$libs[0] =~ s/\.a$//;
+$lib =~ s/\.a$//;
 
 if(defined($opt_nonroot))
 {
@@ -56,7 +66,7 @@ while(<CONF>)
         $found = 1;
         if(defined($opt_force))
         {
-            $_ = "globus_gram_jobmanager_authz $libs[0] globus_gram_callout\n";
+            $_ = "globus_gram_jobmanager_authz $lib globus_gram_callout\n";
         }
         else
         {
@@ -69,7 +79,7 @@ while(<CONF>)
     
 if($found == 0)
 {
-    $config .= "globus_gram_jobmanager_authz $libs[0] globus_gram_callout\n";
+    $config .= "globus_gram_jobmanager_authz $lib globus_gram_callout\n";
 }
 
 close(CONF);
