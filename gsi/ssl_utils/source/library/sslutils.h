@@ -240,6 +240,8 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_R_CA_NOPATH             149
 #define PRXYERR_R_CA_NOFILE             150
 #define PRXYERR_R_CA_POLICY_ERR         151
+#define PRXYERR_R_INVALID_CERT          152
+#define PRXYERR_R_CERT_NOT_YET_VALID    153
 
 /* constants for gsi error messages 
  *  this information is kept internally by the
