@@ -23,6 +23,8 @@
 #include "myproxy_delegation.h"
 #include "myproxy_log.h"
 #include "myproxy_read_pass.h"
+#include "myproxy_sasl_client.h"
+#include "myproxy_sasl_server.h"
 #include "myproxy_server.h"
 #include "verror.h"
 
