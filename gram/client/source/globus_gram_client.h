@@ -114,6 +114,11 @@ CVS Information:
 #define GRAM_DEFAULT_MYJOB                  "collective"
 #define GRAM_DEFAULT_JOBTYPE                "multiple"
 
+/*
+ *  Internal stuff needed by the job manager
+ */
+#define GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID         0
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
