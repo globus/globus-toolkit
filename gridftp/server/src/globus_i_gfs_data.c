@@ -1972,7 +1972,8 @@ globus_i_gfs_data_request_passive(
             goto error_handle;
         }
         handle->session_handle = session_handle;
-
+        
+        handle->info.cs_count = 1;
         address.host[0] = 1; /* prevent address lookup */
         address.port = 0;
         result = globus_ftp_control_local_pasv(&handle->data_channel, &address);
@@ -2501,7 +2502,6 @@ globus_i_gfs_data_request_send(
     op->stripe_chunk = send_info->node_ndx;
     op->node_count = send_info->node_count;
     op->stripe_count = send_info->stripe_count;
-    op->nstreams = send_info->nstreams;
     op->eof_count = (int *) globus_calloc(1, op->stripe_count * sizeof(int));
 
     /* events and disconnects cannot happen while i am in this
@@ -2686,7 +2686,6 @@ globus_i_gfs_data_request_list(
     data_op->stripe_chunk = list_info->node_ndx;
     data_op->node_count = list_info->node_count;
     data_op->stripe_count = list_info->stripe_count;
-    data_op->nstreams = list_info->nstreams;
     data_op->eof_count = (int *)
         globus_calloc(1, data_op->stripe_count * sizeof(int));
 
@@ -3625,10 +3624,9 @@ globus_l_gfs_data_trev_kickout(
 
             case GLOBUS_GFS_EVENT_RANGES_RECVD:
                 event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
-                globus_range_list_merge(
+                globus_range_list_copy(
                     &event_reply->recvd_ranges,
-                    bounce_info->op->recvd_ranges,
-                    NULL);
+                    bounce_info->op->recvd_ranges);
                 globus_range_list_remove(
                     bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
                 break;

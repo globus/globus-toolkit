@@ -54,9 +54,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "when debugging."},
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
-    "0 = No authentication or authorization. 1 = Authentication only.  "
-    "2 = Authentication and authorization.  "
-    "If not set uses level 3 for frontends and level 1 for data nodes."},
+    "0 = Disables all authorization checks. 1 = Authorize identity only.  "
+    "2 = Authorize all file/resource accesses.  "
+    "If not set uses level 2 for front ends and level 1 for data nodes."},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
@@ -71,27 +71,25 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"cas", "cas", NULL, "cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable CAS authorization."},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Use gsi security on ipc channel."},
+    "Use GSI security on ipc channel."},
  {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia", GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
-    "Set authorization mode for the ipc connection.  Options are: none, host, self or subject:<subject>"},
- {"allow_anonymous", "allow_anonymous", NULL, "allow-anon", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Set GSI authorization mode for the ipc connection.  Options are: none, host, self or subject:<subject>"},
+ {"allow_anonymous", "allow_anonymous", NULL, "allow-anonymous", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
     "must also be set.  Disables ipc security."},
- {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"anonymous_user", "anonymous_user", NULL, "anonymous-user", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "User to setuid to for an anonymous connection. Only applies when running as root."},
- {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"anonymous_group", "anonymous_group", NULL, "anonymous-group", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Group to setgid to for an anonymous connection. If unset, the default group "
     "of anonymous_user will be used."},
- {"pw_file", "pw_file", NULL, "password-file", "pf", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Enable cleartext access and authenticate users against this /etc/passwd formatted file."},
  {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Maximum concurrent connections allowed.  Only applies when running in daemon "
     "mode.  Unlimited if not set."},
- {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
     "in the configuration file and then the server issued a SIGHUP in order to reload that config."},
- {"no_security", "no_security", NULL, "no-security", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    NULL} /* don't use gssapi xio driver. */,
 {NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"log_level", "log_level", NULL, "log-level", "d", GLOBUS_L_GFS_CONFIG_STRING, 0, "ERROR",
     "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, DUMP, ALL'. "
@@ -108,9 +106,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "for each process (which is normally each new client session).  If neither this option or "
     "log_single is set, logs will be written to stderr unless the execution mode is detached or inetd, "
     "in which case logging will be disabled."},
- {"log_transfer", "log_transfer", NULL, "Z", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"log_transfer", "log_transfer", NULL, "log-transfer", "Z", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Log netlogger style info for each transfer into this file."},
- {"log_filemode", "log_filemode", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"log_filemode", "log_filemode", NULL, "log-filemode", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "File access permissions of log files. Should be an octal number such as "
     "0644 (the leading 0 is required)."},
  {"disable_usage_stats", "disable_usage_stats", "GLOBUS_USAGE_OPTOUT", "disable-usage-stats", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
@@ -126,9 +124,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Size in bytes of sequential data that each stripe will transfer."},
  {"stripe_layout", "stripe_layout", NULL, "stripe-layout", "sl", GLOBUS_L_GFS_CONFIG_INT, GLOBUS_GFS_LAYOUT_BLOCKED, NULL,
     "Stripe layout. 1 = Partitioned, 2 = Blocked."},
- {"stripe_blocksize_locked", "stripe_blocksize_locked", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"stripe_blocksize_locked", "stripe_blocksize_locked", NULL, "stripe-blocksize-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Do not allow client to override stripe blocksize with the OPTS RETR command"},
- {"stripe_layout_locked", "stripe_layout_locked", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"stripe_layout_locked", "stripe_layout_locked", NULL, "stripe-layout-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Do not allow client to override stripe layout with the OPTS RETR command"},
  {"stripe_mode", "stripe_mode", NULL, "stripe-mode", NULL, GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
     NULL /* "Mode 1 is a 1-1 stripe configuration. Mode 2 is ALL-ALL."  */},
@@ -145,43 +143,43 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Port on which a frontend will listend for client control channel connections, "
     "or on which a data node will listen for connections from a frontend.  If not set "
     "a random port will be chosen and printed via the logging mechanism."},
- {"control_interface", "control_interface", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"control_interface", "control_interface", NULL, "control-interface", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Hostname or IP address of the interface to listen for control connections "
     "on. If not set will listen on all interfaces."},
- {"data_interface", "data_interface", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"data_interface", "data_interface", NULL, "data-interface", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Hostname or IP address of the interface to use for data connections. If not "
     "set will use the current control interface."},
- {"ipc_interface", "ipc_interface", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"ipc_interface", "ipc_interface", NULL, "ipc-interface", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Hostname or IP address of the interface to use for ipc connections. If not "
     "set will listen on all interfaces."},
- {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"hostname", "hostname", NULL, "hostname", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Effectively sets the above control_interface, data_interface and ipc_interface options."},
  {"ipc_port", "ipc_port", NULL, "ipc-port", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which the frontend will listen for data node connections."},
 {NULL, "Timeouts", NULL, NULL, NULL, 0, 0, NULL, NULL},
- {"control_preauth_timeout", "control_preauth_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"control_preauth_timeout", "control_preauth_timeout", NULL, "control-preauth-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 120, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity before authenticating."},
- {"control_idle_timeout", "control_idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"control_idle_timeout", "control_idle_timeout", NULL, "control-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity."},
- {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
     "Idle time in seconds before an unused ipc connection will close."},
- {"ipc_connect_timeout", "ipc_connect_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 30, NULL,
+ {"ipc_connect_timeout", "ipc_connect_timeout", NULL, "ipc-connect-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 60, NULL,
     "Time in seconds before cancelling an attempted ipc connection."},
 {NULL, "User Messages", NULL, NULL, NULL, 0, 0, NULL, NULL},
- {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"banner", "banner", NULL, "banner", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Message to display to the client before authentication."},
- {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"banner_file", "banner_file", NULL, "banner-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "File to read banner message from."},
- {"banner_terse", "banner_terse", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"banner_terse", "banner_terse", NULL, "banner-terse", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "When this is set, the minimum allowed banner message will be displayed "
     "to unauthenticated clients."},
- {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"login_msg", "login_msg", NULL, "login-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Message to display to the client after authentication."},
- {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"login_msg_file", "login_msg_file", NULL, "login-msg-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "File to read login message from."},
- {"chdir_on_login", "chdir_on_login", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
+ {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Set the virtual current directory to the authenticated users home dir."},
 {NULL, "Module Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"load_dsi_module", "load_dsi_module", NULL, "dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, "file",

@@ -340,18 +340,14 @@ globus_l_gfs_done_cb(
         char *                          tmp_str;
 
         tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        /* XXX find out why we get (false) error here 
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
             "Control connection closed with error: %s\n",
-             tmp_str);
+             tmp_str); */
         globus_free(tmp_str);
     }
-    else
-    {
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "Control connection closed\n");
-    }
+    
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -402,7 +398,7 @@ globus_l_gfs_auth_session_cb(
             reply->info.session.username);
 
         if(reply->info.session.home_dir != NULL && 
-            globus_i_gfs_config_bool("chdir_on_login"))
+            globus_i_gfs_config_bool("use_home_dirs"))
         {
             globus_gridftp_server_control_set_cwd(
                 auth_info->instance->server_handle,
@@ -1928,8 +1924,6 @@ globus_i_gfs_control_start(
 
     result = globus_gridftp_server_control_attr_set_security(
         attr,
-        (globus_i_gfs_config_bool("no_security")) ?
-        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE :
         GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI |
         ((globus_i_gfs_config_bool("allow_anonymous")) ?
         GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));

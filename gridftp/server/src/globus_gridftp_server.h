@@ -144,23 +144,23 @@ typedef enum globus_gfs_layout_type_e
  * Similar to a posix struct stat.  Defined in the server-lib.
  *
  * (this comment should not be relied upon, so check the
- *   definition in the server-lib to be sure)
+ *   definition in globus_gridftp_server_control.h to be sure)
  *  
- * typedef struct globus_gridftp_server_control_stat_s
- * {
- *     int                              mode;
- *     int                              nlink;
- *     char                             name[MAXPATHLEN];
- *     char                             symlink_target[MAXPATHLEN];
- *     uid_t                            uid;
- *     gid_t                            gid;
- *     globus_size_t                    size;
- *     globus_time_t                    atime;
- *     globus_time_t                    ctime;
- *     globus_time_t                    mtime;
- *     int                              dev;
- *     int                              ino;
- * } globus_gridftp_server_control_stat_t;
+ * typedef struct globus_gridftp_server_control_stat_s                    
+ * {                                                                      
+ *     int                                     mode;                      
+ *     int                                     nlink;                     
+ *     char                                    name[MAXPATHLEN];          
+ *     char                                    symlink_target[MAXPATHLEN];
+ *     uid_t                                   uid;                       
+ *     gid_t                                   gid;                       
+ *     globus_off_t                            size;                      
+ *     globus_time_t                           atime;                     
+ *     globus_time_t                           ctime;                     
+ *     globus_time_t                           mtime;                     
+ *     int                                     dev;                       
+ *     int                                     ino;                       
+ * } globus_gridftp_server_control_stat_t;                                
  */
 typedef globus_gridftp_server_control_stat_t    globus_gfs_stat_t;
 
@@ -330,8 +330,6 @@ typedef struct globus_gfs_transfer_info_s
     int                                 node_count;    
     /** node index */
     int                                 node_ndx;
-    /** number of parallel streams */
-    int                                 nstreams;   
 } globus_gfs_transfer_info_t;
 
 /*
@@ -376,11 +374,11 @@ typedef struct globus_gfs_data_info_s
     /** data channel type */
     char                                type;
     /** tcp buffersize to use */
-    int                                 tcp_bufsize;
+    globus_size_t                       tcp_bufsize;
     /** blocksize to use */
-    int                                 blocksize;
+    globus_size_t                       blocksize;
     /** blocksize to use for stripe layout */
-    int                                 stripe_blocksize;
+    globus_size_t                       stripe_blocksize;
     /** stripe layout to use */
     int                                 stripe_layout;
 

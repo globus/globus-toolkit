@@ -3079,7 +3079,6 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeUInt32(buffer, len, trans_info->stripe_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_ndx);
-    GFSDecodeUInt32(buffer, len, trans_info->nstreams);
     GFSDecodeChar(buffer, len, ch);
     trans_info->truncate = (globus_bool_t) ch;
 
@@ -4995,7 +4994,6 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->stripe_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->nstreams);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, trans_info->truncate);
 
     /* pack range list */
@@ -5511,9 +5509,9 @@ globus_l_gfs_ipc_pack_data(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->nstreams);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->mode);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->type);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->tcp_bufsize);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->blocksize);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_blocksize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (int) data_info->tcp_bufsize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (int) data_info->blocksize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (int) data_info->stripe_blocksize);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_layout);
 
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->prot);

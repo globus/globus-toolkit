@@ -2057,8 +2057,19 @@ globus_l_gfs_file_open_read_cb(
             "globus_l_gfs_file_dispatch_read", result);
         goto error_dispatch;
     }
-
-    globus_mutex_unlock(&monitor->lock);
+    
+    if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
+    {
+        globus_assert(monitor->eof || monitor->aborted);
+        globus_mutex_unlock(&monitor->lock);
+        globus_gridftp_server_finished_transfer(
+            monitor->op, GLOBUS_SUCCESS);
+        globus_l_gfs_file_monitor_destroy(monitor);
+    }
+    else
+    {
+        globus_mutex_unlock(&monitor->lock);
+    }
     
     GlobusGFSFileDebugExit();
     return;
