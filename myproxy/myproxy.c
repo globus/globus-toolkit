@@ -217,14 +217,6 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
         return -1;
     }
 
-   if (GSI_SOCKET_set_encryption(attrs->gsi_socket, 1) == GSI_SOCKET_ERROR)
-   {
-       GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
-                                   sizeof(error_string));
-       verror_put_string("Error enabling encryption: %s\n", error_string);
-       return -1;
-   }
-
    /*
     * Are we connecting to a server that has a non-standard DN.
     */

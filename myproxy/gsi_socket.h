@@ -63,17 +63,6 @@ int GSI_SOCKET_get_error_string(GSI_SOCKET *gsi_socket,
 void GSI_SOCKET_clear_error(GSI_SOCKET *gsi_socket);
 
 /*
- * GSI_SOCKET_set_encryption()
- *
- * If value is non-zero data transmitted will be encrypted.
- * If value is zero data will not be encrypted (this is the default).
- *
- * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
- */
-int GSI_SOCKET_set_encryption(GSI_SOCKET *gsi_socket,
-			     int value);
-
-/*
  * GSI_SOCKET_set_expected_peer_name()
  *
  * This should be called before GSI_SOCKET_authentication_init() to
