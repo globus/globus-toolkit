@@ -44,8 +44,35 @@ extern ServerOptions options;
 #define krb5_get_err_text(context,code) error_message(code)
 #endif
 
+static int ssh_gssapi_krb5_init();
+static int ssh_gssapi_krb5_userok(ssh_gssapi_client *client, char *name);
+static int ssh_gssapi_krb5_localname(ssh_gssapi_client *client, char **user);
+static void ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client);
+
 static krb5_context krb_context = NULL;
 
+/* We've been using a wrongly encoded mechanism ID for yonks */
+
+ssh_gssapi_mech gssapi_kerberos_mech_old = {
+	"Se3H81ismmOC3OE+FwYCiQ==",
+	"Kerberos",
+	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
+	&ssh_gssapi_krb5_init,
+	&ssh_gssapi_krb5_userok,
+	&ssh_gssapi_krb5_localname,
+	&ssh_gssapi_krb5_storecreds
+};
+
+ssh_gssapi_mech gssapi_kerberos_mech = {
+	"toWM5Slw5Ew8Mqkay+al2g==",
+	"Kerberos",
+	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
+	NULL,
+	&ssh_gssapi_krb5_userok,
+	&ssh_gssapi_krb5_localname,
+	&ssh_gssapi_krb5_storecreds
+};
+	
 /* Initialise the krb5 library, so we can use it for those bits that
  * GSSAPI won't do */
 
@@ -145,6 +172,7 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client) {
 	static char name[40];
 	int tmpfd;
 	OM_uint32 maj_status,min_status;
+	gss_cred_id_t krb5_cred_handle;
 
 	if (client->creds==NULL) {
 		debug("No credentials stored"); 
@@ -202,16 +230,14 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client) {
 	
 	krb5_free_principal(krb_context,princ);
 
-	#ifdef HEIMDAL
-	if ((problem = krb5_cc_copy_cache(krb_context, 
-					   client->creds->ccache,
-					   ccache))) {
-		log("krb5_cc_copy_cache(): %.100s", 
-			krb5_get_err_text(krb_context,problem));
-		krb5_cc_destroy(krb_context,ccache);
-		return;
-	}
-	#else
+#ifdef MECHGLUE
+	krb5_cred_handle =
+	    __gss_get_mechanism_cred(client->creds,
+				     &(gssapi_kerberos_mech.oid));
+#else
+	krb5_cred_handle = gssapi_client_creds;
+#endif
+
 	if ((maj_status = gss_krb5_copy_ccache(&min_status, 
 					       client->creds, 
 					       ccache))) {
@@ -219,7 +245,6 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client) {
 		krb5_cc_destroy(krb_context,ccache);
 		return;
 	}
-	#endif
 	
 	krb5_cc_close(krb_context,ccache);
 
@@ -234,28 +259,6 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client) {
 	return;
 }
 
-/* We've been using a wrongly encoded mechanism ID for yonks */
-
-ssh_gssapi_mech gssapi_kerberos_mech_old = {
-	"Se3H81ismmOC3OE+FwYCiQ==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	&ssh_gssapi_krb5_init,
-	&ssh_gssapi_krb5_userok,
-	&ssh_gssapi_krb5_localname,
-	&ssh_gssapi_krb5_storecreds
-};
-
-ssh_gssapi_mech gssapi_kerberos_mech = {
-	"toWM5Slw5Ew8Mqkay+al2g==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	NULL,
-	&ssh_gssapi_krb5_userok,
-	&ssh_gssapi_krb5_localname,
-	&ssh_gssapi_krb5_storecreds
-};
-	
 #endif /* KRB5 */
 
 #endif /* GSSAPI */
