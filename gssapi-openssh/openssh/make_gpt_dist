@@ -1,8 +1,9 @@
 #!/usr/bin/env perl
-
 #
-# the default source directory and source package names are both
-# 'gsi-openssh'.  Change at will to suit your needs.
+# make_gpt_dist - adapted from GPT's make_gpt_dist script
+#
+# Create a GPT source package after deriving the necessary build files.  You can define
+# the source directory and package names to suit your needs.
 #
 
 $srcdirname = "gsi-openssh";
