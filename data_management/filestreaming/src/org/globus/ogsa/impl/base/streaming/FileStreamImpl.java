@@ -21,25 +21,24 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import org.globus.axis.gsi.GSIConstants;
-import org.globus.util.Tail;
-import org.globus.gsi.gssapi.auth.SelfAuthorization;
 import org.globus.ftp.exception.FTPException;
+import org.globus.gsi.gssapi.auth.SelfAuthorization;
+import org.globus.gsi.jaas.JaasGssUtil;
 import org.globus.io.gass.client.GassException;
 import org.globus.io.streams.FTPOutputStream;
 import org.globus.io.streams.GassOutputStream;
 import org.globus.io.streams.GlobusFileOutputStream;
 import org.globus.io.streams.GridFTPOutputStream;
 import org.globus.io.streams.HTTPOutputStream;
-
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.ServiceData;
 import org.globus.ogsa.base.streaming.CredentialsFault;
 import org.globus.ogsa.base.streaming.FileStreamOptionsType;
 import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
+import org.globus.ogsa.base.streaming.FileTransferFault;
 import org.globus.ogsa.base.streaming.InvalidPathFault;
 import org.globus.ogsa.base.streaming.InvalidUrlFault;
-import org.globus.ogsa.base.streaming.FileTransferFault;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
@@ -47,12 +46,14 @@ import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
 import org.globus.ogsa.impl.security.SecurityManager;
 import org.globus.ogsa.impl.security.authentication.Constants;
-import org.globus.gsi.jaas.JaasGssUtil;
 import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.FaultHelper;
+import org.globus.ogsa.utils.MessageUtils;
 import org.globus.ogsa.utils.QueryHelper;
 import org.globus.util.GlobusURL;
+import org.globus.util.Tail;
+
 import org.gridforum.ogsi.ExtensibilityType;
 
 import org.ietf.jgss.GSSCredential;
@@ -63,6 +64,8 @@ public class FileStreamImpl extends GridServiceImpl {
     static Log logger = LogFactory.getLog (FileStreamImpl.class.getName());
 
     private static final String DEST_URL_SDE_NAME = "destinationUrl";
+    private static final String FILE_STREAMING_RESOURCES =
+            "org.globus.ogsa.impl.base.streaming.Resources";
     protected Tail outputFollower;
     protected boolean appendStdout = true;
     protected GSSCredential proxy = null;
@@ -140,9 +143,13 @@ public class FileStreamImpl extends GridServiceImpl {
         try {
             url = new GlobusURL(file);
         } catch(MalformedURLException e) {
+            String message = MessageUtils.getMessage(
+                    FILE_STREAMING_RESOURCES,
+                    "InvalidUrlFault00",
+                    new String [] { file });
             InvalidUrlFault fault = (InvalidUrlFault) FaultHelper.makeFault(
-                    InvalidUrlFault.class,
-                    "Invalid URL: " + file, e, this);
+                    InvalidUrlFault.class, message, e, this);
+
             throw fault;
         }
         return openUrl(url);
@@ -151,6 +158,7 @@ public class FileStreamImpl extends GridServiceImpl {
     protected OutputStream openUrl(GlobusURL url) throws InvalidPathFault,
             InvalidUrlFault, FileTransferFault, CredentialsFault {
         String protocol = url.getProtocol();
+        String message;
 
         try {
             if (protocol.equalsIgnoreCase("https")) {
@@ -182,28 +190,40 @@ public class FileStreamImpl extends GridServiceImpl {
             } else if (protocol.equalsIgnoreCase("file")) {
                 return new GlobusFileOutputStream(url.getPath(), appendStdout);
             } else {
+                message = MessageUtils.getMessage(
+                        FILE_STREAMING_RESOURCES,
+                        "InvalidUrlFault01",
+                        new String [] { protocol });
                 InvalidUrlFault f =
                         (InvalidUrlFault) FaultHelper.makeFault(
                         InvalidUrlFault.class,
-                        "Invalid URL scheme: " + protocol, null, this);
+                        message, null, this);
 
                 f.setUrl(url.toString());
 
                 throw f;
             }
         } catch(FTPException fe) {
+            message = MessageUtils.getMessage(
+                    FILE_STREAMING_RESOURCES,
+                    "FileTransferFault00",
+                    new String [] { url.toString() });
             FileTransferFault f =
                     (FileTransferFault) FaultHelper.makeFault(
                     FileTransferFault.class,
-                    "Error accessing URL " + url, fe, this);
+                    message, fe, this);
             f.setSourcePath(sourcePath);
             try {
                 f.setDestinationUrl(new URI(url.toString()));
             } catch(MalformedURIException muri) {
+                message = MessageUtils.getMessage(
+                        FILE_STREAMING_RESOURCES,
+                        "InvalidUrlFault00",
+                        new String [] { url.toString() });
                 InvalidUrlFault fault =
                         (InvalidUrlFault) FaultHelper.makeFault(
                         InvalidUrlFault.class,
-                        "Invalid URL : " + url.toString(), null, this);
+                        message, muri, this);
 
                 fault.setUrl(url.toString());
 
@@ -212,18 +232,26 @@ public class FileStreamImpl extends GridServiceImpl {
 
             throw f;
         } catch(GassException ge) {
+            message = MessageUtils.getMessage(
+                    FILE_STREAMING_RESOURCES,
+                    "FileTransferFault00",
+                    new String [] { url.toString() });
             FileTransferFault f =
                     (FileTransferFault) FaultHelper.makeFault(
                     FileTransferFault.class,
-                    "Error accessing URL " + url, ge, this);
+                    message, ge, this);
             f.setSourcePath(sourcePath);
             try {
                 f.setDestinationUrl(new URI(url.toString()));
             } catch(MalformedURIException muri) {
+                message = MessageUtils.getMessage(
+                        FILE_STREAMING_RESOURCES,
+                        "InvalidUrlFault00",
+                        new String [] { url.toString() });
                 InvalidUrlFault fault =
                         (InvalidUrlFault) FaultHelper.makeFault(
                         InvalidUrlFault.class,
-                        "Invalid URL : " + url.toString(), null, this);
+                        message, null, this);
 
                 fault.setUrl(url.toString());
 
@@ -232,30 +260,48 @@ public class FileStreamImpl extends GridServiceImpl {
 
             throw f;
         } catch(GSSException gse) {
+            message = MessageUtils.getMessage(
+                    FILE_STREAMING_RESOURCES,
+                    "CredentialsFault00",
+                    new String [] { url.toString() });
             CredentialsFault f =
                     (CredentialsFault) FaultHelper.makeFault(
                     CredentialsFault.class,
-                    "Credentials problem", gse, this);
+                    message, gse, this);
             throw f;
         } catch(IOException ioe) {
             if (protocol.equalsIgnoreCase("file")) {
-                InvalidPathFault fault = (InvalidPathFault) FaultHelper.makeFault(
+                message = MessageUtils.getMessage(
+                        FILE_STREAMING_RESOURCES,
+                        "InvalidPathFault00",
+                        new String [] { url.getPath() });
+                InvalidPathFault fault = (InvalidPathFault)
+                        FaultHelper.makeFault(
                         InvalidPathFault.class,
-                        "Invalid Path: " + sourcePath, ioe, this);
+                        message, ioe, this);
+                fault.setPath(url.getPath());
                 throw fault;
             } else {
+                message = MessageUtils.getMessage(
+                        FILE_STREAMING_RESOURCES,
+                        "FileTransferFault00",
+                        new String [] { url.toString() });
                 FileTransferFault f =
                         (FileTransferFault) FaultHelper.makeFault(
                         FileTransferFault.class,
-                        "Error accessing URL " + url, ioe, this);
+                        message, ioe, this);
                 f.setSourcePath(sourcePath);
                 try {
                     f.setDestinationUrl(new URI(url.toString()));
                 } catch(MalformedURIException muri) {
+                    message = MessageUtils.getMessage(
+                            FILE_STREAMING_RESOURCES,
+                            "InvalidUrlFault00",
+                            new String [] { url.toString() });
                     InvalidUrlFault fault =
                             (InvalidUrlFault) FaultHelper.makeFault(
                             InvalidUrlFault.class,
-                            "Invalid URL : " + url.toString(), null, this);
+                            message, null, this);
 
                     fault.setUrl(url.toString());
 
@@ -327,9 +373,16 @@ public class FileStreamImpl extends GridServiceImpl {
         try {
             this.outputFollower.addFile(outputFile,outputStream,offset);
         } catch(IOException ioe) {
+            String message;
+
+            message = MessageUtils.getMessage(
+                    FILE_STREAMING_RESOURCES,
+                    new String [] { outputFile.toString() });
+
             InvalidPathFault fault = (InvalidPathFault) FaultHelper.makeFault(
                     InvalidPathFault.class,
-                    "Invalid Path: " + outputFile, ioe, this);
+                    message, ioe, this);
+            fault.setPath(sourcePath);
             throw fault;
         }
 
