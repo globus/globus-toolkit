@@ -655,7 +655,8 @@ globus_l_gfs_remote_send(
         new_transfer_info->partial_length = transfer_info->partial_length;
         new_transfer_info->range_list = transfer_info->range_list;
         new_transfer_info->data_handle_id = stripe_info->data_handle_id;
-        new_transfer_info->node_count = stripe_count;
+        new_transfer_info->node_count = 
+            (bounce_info->stripes_pending == 0) ? stripe_count : 0;
         new_transfer_info->stripe_count = stripe_count;
         new_transfer_info->node_ndx = bounce_info->stripes_pending;
                             

@@ -652,8 +652,8 @@ globus_l_gfs_request_transfer_event(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-    globus_i_gfs_data_request_transfer_event(
-        NULL, instance->transfer_id, event_type);
+  //  globus_i_gfs_data_request_transfer_event(
+  //      NULL, instance->transfer_id, event_type);
     
     return;
 }

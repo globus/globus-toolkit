@@ -1246,11 +1246,6 @@ globus_i_gfs_data_request_recv(
     op->node_ndx = recv_info->node_ndx;
     op->node_count = recv_info->node_count;    
     op->stripe_count = recv_info->stripe_count;
-    op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
-    for(i = 0; i < op->stripe_count; i++)
-    {
-        op->eof_count[i] = op->node_count;
-    }
     
     /* XXX */
     result = dsi->recv_func(op, recv_info, dsi_user_arg);
@@ -1334,7 +1329,7 @@ globus_i_gfs_data_request_send(
     op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
     for(i = 0; i < op->stripe_count; i++)
     {
-        op->eof_count[i] = op->node_count;
+        op->eof_count[i] = (op->node_count) ? op->node_count - 1 : 0;
     }
 
     
@@ -1546,15 +1541,7 @@ error_hook1:
 error_op:
     return result;
 }
-static
-void
-globus_l_gfs_data_send_eof_cb(
-    void *                              user_arg,
-    struct globus_ftp_control_handle_s * handle,
-    globus_object_t *			error)
-{
 
-}
 
 void
 globus_gridftp_server_begin_transfer(
@@ -1620,6 +1607,17 @@ error_connect:
 
 static
 void
+globus_l_gfs_data_send_eof_cb(
+    void *                                      callback_arg,
+    struct globus_ftp_control_handle_s *        handle,
+    globus_object_t *				error)
+{
+
+}
+
+
+static
+void
 globus_l_gfs_data_write_eof_cb(
     void *                              user_arg,
     globus_ftp_control_handle_t *       handle,
@@ -1628,16 +1626,31 @@ globus_l_gfs_data_write_eof_cb(
     globus_size_t                       length,
     globus_off_t                        offset,
     globus_bool_t                       eof)
-{
-    globus_gfs_operation_t   op;
-    
+{    
     /* XXX mode s only */
     /* racey shit here */
     globus_gfs_ipc_reply_t *            reply;   
-    globus_gfs_ipc_event_reply_t *            event_reply;   
+    globus_gfs_ipc_event_reply_t *      event_reply; 
+    globus_result_t                     result;  
+        globus_gfs_operation_t   op;
+
     GlobusGFSName(globus_l_gfs_data_write_eof_cb);
     
     op = (globus_gfs_operation_t) user_arg;
+
+    result = globus_ftp_control_data_send_eof(
+        &op->data_handle->data_channel,
+        op->eof_count,
+        op->stripe_count,
+        (op->node_count > 0) ? GLOBUS_TRUE : GLOBUS_FALSE,
+        globus_l_gfs_data_send_eof_cb,
+        op);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_i_gfs_log_result(
+            "IPC ERROR", result);
+    }
+
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
     event_reply = (globus_gfs_ipc_event_reply_t *) 
@@ -1708,20 +1721,6 @@ globus_gridftp_server_finished_transfer(
         
         if(result == GLOBUS_SUCCESS && op->sending)
         {
-                result = globus_ftp_control_data_send_eof(
-                    &op->data_handle->data_channel,
-                    op->eof_count,
-                    op->stripe_count,
-                    (op->node_count > 0) ? GLOBUS_TRUE : GLOBUS_FALSE,
-                    globus_l_gfs_data_send_eof_cb,
-                    op);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    //goto error_connect;
-                }
-
-        }
-        /*
             result = globus_ftp_control_data_write(
                 &op->data_handle->data_channel,
                 "",
@@ -1730,9 +1729,7 @@ globus_gridftp_server_finished_transfer(
                 GLOBUS_TRUE,
                 globus_l_gfs_data_write_eof_cb,
                 op);
-                */
-
-        
+        }        
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
             globus_gfs_ipc_event_reply_t *      event_reply;   
