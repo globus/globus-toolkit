@@ -61,6 +61,8 @@ sub fixpaths
         "/etc/sshrc" => "${sysconfdir}/sshrc",
         "/usr/X11R6/bin/xauth" => "${xauth_path}",
         "/usr/bin:/bin:/usr/sbin:/sbin" => "/usr/bin:/bin:/usr/sbin:/sbin:${bindir}",
+        "/path/to/scp.real" => "${bindir}/scp.real",
+        "/path/to/ssh" => "${bindir}/ssh",
         );
 
     #
@@ -68,6 +70,7 @@ sub fixpaths
     #
 
     @files = (
+        "${bindir}/scp",
         "${sysconfdir}/ssh_config",
         "${sysconfdir}/sshd_config",
         "${sysconfdir}/moduli",
