@@ -146,8 +146,11 @@ main(int argc,
      */
     if ((log_fp = fopen("job_mgr.tmp", "a")) == NULL)
     {
-        printf("Cannot open logfile.\n");
+		if ((log_fp = fopen("/tmp/job_mgr.tmp", "a")) == NULL)
+		{
+        fprintf(stderr, "Cannot open logfile.\n");
         exit(1);
+		}
     }
 
     setbuf(log_fp, NULL);
