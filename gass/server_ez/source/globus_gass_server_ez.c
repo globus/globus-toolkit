@@ -192,6 +192,7 @@ globus_l_gass_server_ez_get_fd_done(globus_gass_server_get_request_t *request,
     globus_gass_server_get_request_done(request);
     r->server->requests_outstanding--;
     server_ez_exit(server);
+    globus_free(r);
 } /* globus_l_gass_server_ez_get_fd_done() */
 
 /******************************************************************************
