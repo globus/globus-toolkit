@@ -1,6 +1,6 @@
 #include "globus_io.h"
 
-#include <arpa/inet.h>
+//#include <arpa/inet.h>
 
 void test1(void);
 void test2(void);
@@ -81,12 +81,10 @@ main(int argc, char **argv)
     globus_module_activate(GLOBUS_IO_MODULE);
     
 
-#if 0
     test1();				/* connect, read, write, read */
     test2();				/* connect, read, writev, read */
     test3();				/* failed connect */
-#endif
-    test4(atoi(argv[1]));		/* connect to secure server*/
+    //test4(atoi(argv[1]));		/* connect to secure server*/
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }

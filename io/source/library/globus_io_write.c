@@ -224,6 +224,9 @@ globus_io_register_write(
     globus_size_t			iovcnt;
     globus_io_write_info_t *		info;
     static char *			myname="globus_io_register_write";
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
 
     if(handle == GLOBUS_NULL)
     {
@@ -289,15 +292,15 @@ globus_io_register_write(
      * GSSAPI tokens.
      */
     rc = globus_i_io_securesocket_wrap_buffer(handle,
-                                              buf,
-					      nbytes,
-					      &iov,
-					      &iovcnt);
+	                                            buf,
+												nbytes,
+												&iov,
+												&iovcnt);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
+		err = globus_error_get(rc);
 
-	goto error_exit;
+		goto error_exit;
     }
 	
     info = globus_l_io_write_info_init(buf,
@@ -312,30 +315,70 @@ globus_io_register_write(
 				       callback_arg);
     if(iovcnt == 0)
     {
-	/* No security wrapping was done, so we can send the buffer
-	 * with a single write
-	 */
-	rc = globus_i_io_register_write_func(handle,
-					     globus_l_io_write_callback,
-					     (void *) info,
-					     globus_l_io_write_info_destroy);
+		/* No security wrapping was done, so we can send the buffer
+		* with a single write
+		*/
+		rc = globus_i_io_register_write_func(handle,
+							globus_l_io_write_callback,
+							(void *) info,
+							globus_l_io_write_info_destroy);
+#ifdef TARGET_ARCH_WIN32
+		// post the initial write
+		returnCode= globus_i_io_windows_write( handle, 
+					 info->buf, 
+					 info->nbytes, 
+					 1 );
+		if ( returnCode == -1 ) // a fatal error occurred
+		{
+			// unregister the write callback
+			globus_i_io_unregister_write( handle, GLOBUS_FALSE );
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					errno );
+			globus_l_io_write_info_destroy(info);
+			goto error_exit;
+		}
+#endif
     }
     else
     {
-	/* Security wrapping was done, so the data may be spread over
-	 * multiple GSSAPI tokens in the iovec array.
-	 */
-	rc = globus_i_io_register_write_func(handle,
-					     globus_l_io_writev_callback,
-					     (void *) info,
-					     globus_l_io_write_info_destroy);
+		/* Security wrapping was done, so the data may be spread over
+		* multiple GSSAPI tokens in the iovec array.
+		*/
+		rc = globus_i_io_register_write_func(handle,
+							globus_l_io_writev_callback,
+							(void *) info,
+							globus_l_io_write_info_destroy);
+#ifdef TARGET_ARCH_WIN32
+		// post the initial write
+		returnCode= globus_i_io_windows_write( handle, 
+					 info->iov[0].iov_base,
+					 info->iov[0].iov_len, 
+					 1 );
+		if ( returnCode == -1 ) // a fatal error occurred
+		{
+			// unregister the write callback
+			globus_i_io_unregister_write( handle, GLOBUS_FALSE );
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					errno );
+			globus_l_io_write_info_destroy(info);
+			goto error_exit;
+		}
+#endif
     }
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	globus_l_io_write_info_destroy(info);
+		err = globus_error_get(rc);
+		globus_l_io_write_info_destroy(info);
 
-	goto error_exit;
+		goto error_exit;
     }
     
     globus_i_io_mutex_unlock();
@@ -396,6 +439,7 @@ globus_io_register_write(
  *
  * @ingroup common
  */
+#ifndef TARGET_ARCH_WIN32
 globus_result_t 
 globus_io_register_send( 
     globus_io_handle_t *		handle,
@@ -550,6 +594,7 @@ globus_io_register_send(
     return globus_error_put(err);
 }
 /* globus_io_register_send() */
+#endif /* TARGET_ARCH_WIN32 */
 
 /**
  *
@@ -614,6 +659,9 @@ globus_io_register_writev(
     globus_size_t			new_iovcnt;
     globus_io_write_info_t *		writev_info;
     static char *			myname="globus_io_register_writev";
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;		
+#endif
 
     if(handle == GLOBUS_NULL)
     {
@@ -725,12 +773,33 @@ globus_io_register_writev(
 					 globus_l_io_write_info_destroy);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	
-	globus_l_io_write_info_destroy(writev_info);
-	
-	goto error_exit;
+		err = globus_error_get(rc);
+		
+		globus_l_io_write_info_destroy(writev_info);
+		
+		goto error_exit;
     }
+
+#ifdef TARGET_ARCH_WIN32
+	// post the initial write
+	returnCode= globus_i_io_windows_write( handle, 
+				 writev_info->iov[0].iov_base,
+				 writev_info->iov[0].iov_len, 
+				 1 );
+	if ( returnCode == -1 )
+	{
+		// unregister the write callback
+		globus_i_io_unregister_write( handle, GLOBUS_FALSE );
+
+		err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				errno );
+		globus_l_io_write_info_destroy(writev_info);
+		goto error_exit;
+	}
+#endif
 
     globus_i_io_mutex_unlock();
 
@@ -968,6 +1037,7 @@ globus_io_try_write(
  *
  * @ingroup common
  */
+#ifndef TARGET_ARCH_WIN32
 globus_result_t
 globus_io_try_send(
     globus_io_handle_t *		handle,
@@ -1105,6 +1175,7 @@ globus_io_try_send(
     return globus_error_put(err);
 }
 /* globus_io_try_send() */
+#endif /* TARGET_ARCH_WIN32 */
 
 /**
  * Blocking TCP or file write.
@@ -1278,6 +1349,7 @@ globus_io_write(
  *
  * @ingroup common
 */
+#ifndef TARGET_ARCH_WIN32
 globus_result_t
 globus_io_send(
     globus_io_handle_t *		handle,
@@ -1353,6 +1425,7 @@ globus_io_send(
     }
 }
 /* globus_io_send() */
+#endif /* TARGET_ARCH_WIN32 */
 
 /**
  * Blocking TCP or file writev.
@@ -1513,10 +1586,21 @@ globus_i_io_try_write(
                 "Important",
                 tag_str);
         }
-	n_written = globus_libc_write(
-	    handle->fd,
-	    buf+num_written,
-	    max_nbytes-num_written);
+#ifndef TARGET_ARCH_WIN32
+		n_written = globus_libc_write(
+			handle->fd,
+			buf+num_written,
+			max_nbytes-num_written);
+#else
+		// NOTE: If the handle encapsulates a file, the following
+		// call will always return -1 and set errno to EWOULDBLOCK
+		// (see globus_i_io_windows_file_write() for an explanation)
+		n_written= globus_i_io_windows_write( 
+			handle,
+			buf+num_written,
+			max_nbytes-num_written, 
+			0 );
+#endif /* TARGET_ARCH_WIN32 */
 
         /*
          *  NETLOGGER information
@@ -1613,6 +1697,7 @@ globus_i_io_try_write(
  *
  * @ingroup common
  */
+#ifndef TARGET_ARCH_WIN32
 static
 globus_result_t
 globus_l_io_try_send(
@@ -1689,7 +1774,8 @@ globus_l_io_try_send(
   error_exit:
     return globus_error_put(err);
 }
-/* globus_i_io_try_write() */
+/* globus_l_io_try_send() */
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -1745,10 +1831,10 @@ globus_i_io_try_writev(
             "Important",
             tag_str);
 
-	n_written = globus_libc_writev(
-	    handle->fd,
-	    iov,
-	    count_used);
+		n_written = globus_libc_writev(
+			handle->fd,
+			iov,
+			count_used);
 
         sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%ld",
             handle->fd,
@@ -1808,7 +1894,7 @@ globus_i_io_try_writev(
   error_exit:
     return globus_error_put(err);
 }
-/* globus_i_io_try_write() */
+/* globus_i_io_try_writev() */
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -1829,6 +1915,7 @@ globus_i_io_try_writev(
  *
  * @ingroup common
  */
+#ifndef TARGET_ARCH_WIN32
 globus_result_t
 globus_i_io_try_sendmsg(
     globus_io_handle_t *		handle,
@@ -1913,6 +2000,7 @@ globus_i_io_try_sendmsg(
     return globus_error_put(err);
 }
 /* globus_i_io_try_sendmsg() */
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -1994,61 +2082,61 @@ globus_l_io_write_info_init(
         info->nbytes = 0;
         if(original_iovcnt > 0)
         {
-	    int i;
-    
-	    for(i = 0; i < original_iovcnt; i++)
-	    {
-	        info->nbytes += original_iov[i].iov_len;
-	    }
+			int i;
+	    
+			for(i = 0; i < original_iovcnt; i++)
+			{
+				info->nbytes += original_iov[i].iov_len;
+			}
         }
     }
     if(secure_iovcnt == 0)
     {
-	/* no security wrap */
-	info->orig_secure_iov = GLOBUS_NULL;
-	info->orig_secure_iovcnt = 0;
+		/* no security wrap */
+		info->orig_secure_iov = GLOBUS_NULL;
+		info->orig_secure_iovcnt = 0;
 
-	/* create working copy of iovec, if we are doing a writev */
-	if(original_iovcnt != 0)
-	{
-	    info->iov = (struct iovec *)
-	        globus_malloc(sizeof(struct iovec) * original_iovcnt);
-	    memcpy(info->iov,
-	           original_iov,
-	           sizeof(struct iovec) * original_iovcnt);
-	}
-	else
-	{
-	    info->iov = GLOBUS_NULL;
-	}
+		/* create working copy of iovec, if we are doing a writev */
+		if(original_iovcnt != 0)
+		{
+			info->iov = (struct iovec *)
+				globus_malloc(sizeof(struct iovec) * original_iovcnt);
+			memcpy(info->iov,
+				original_iov,
+				sizeof(struct iovec) * original_iovcnt);
+		}
+		else
+		{
+			info->iov = GLOBUS_NULL;
+		}
 
-	info->iovcnt = original_iovcnt;
+		info->iovcnt = original_iovcnt;
 	    
-	/* original pointers returned from malloc() for working copy */
-	info->orig_malloced_iov = info->iov;
-	info->orig_malloced_iovcnt = info->iovcnt;
-	
-	info->nbytes_written = 0;
+		/* original pointers returned from malloc() for working copy */
+		info->orig_malloced_iov = info->iov;
+		info->orig_malloced_iovcnt = info->iovcnt;
+		
+		info->nbytes_written = 0;
     }
     else
     {
-	/* original pointers to secure copy of data */
-	info->orig_secure_iov = secure_iov;
-	info->orig_secure_iovcnt = secure_iovcnt;
+		/* original pointers to secure copy of data */
+		info->orig_secure_iov = secure_iov;
+		info->orig_secure_iovcnt = secure_iovcnt;
 
-	/* create working copy of iov, since we're doing a writev */
-	info->iov = (struct iovec *)
-	    globus_malloc(sizeof(struct iovec) * secure_iovcnt);
-	memcpy(info->iov,
-	       secure_iov,
-	       sizeof(struct iovec) * secure_iovcnt);
-	info->iovcnt = secure_iovcnt;
-	    
-	/* original pointers to working copy */
-	info->orig_malloced_iov = info->iov;
-	info->orig_malloced_iovcnt = info->iovcnt;
-	    
-	info->nbytes_written = 0;
+		/* create working copy of iov, since we're doing a writev */
+		info->iov = (struct iovec *)
+			globus_malloc(sizeof(struct iovec) * secure_iovcnt);
+		memcpy(info->iov,
+			secure_iov,
+			sizeof(struct iovec) * secure_iovcnt);
+		info->iovcnt = secure_iovcnt;
+		    
+		/* original pointers to working copy */
+		info->orig_malloced_iov = info->iov;
+		info->orig_malloced_iovcnt = info->iovcnt;
+		    
+		info->nbytes_written = 0;
     }
     return info;
 }
@@ -2087,11 +2175,11 @@ globus_l_io_write_info_destroy(
         {
     	    globus_free(writev_info->orig_secure_iov[i].iov_base);
         }
-	globus_free(writev_info->orig_secure_iov);
+		globus_free(writev_info->orig_secure_iov);
     }
     if(writev_info->orig_malloced_iov)
     {
-	globus_free(writev_info->orig_malloced_iov);
+		globus_free(writev_info->orig_malloced_iov);
     }
     globus_free(writev_info);
 }
@@ -2137,16 +2225,20 @@ globus_l_io_write_callback(
     globus_size_t			nbytes;
     globus_byte_t *			buf;
     globus_object_t *			err;
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
 
     write_info = (globus_io_write_info_t *) arg;
 
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
-	
-	goto error_exit;
+		err = globus_error_get(result);
+		
+		goto error_exit;
     }
 
+#ifndef TARGET_ARCH_WIN32
     buf = (write_info->buf + write_info->nbytes_written);
     nbytes = (write_info->nbytes - write_info->nbytes_written);
     result = globus_i_io_try_write(handle, buf, nbytes, &n_written);
@@ -2154,30 +2246,73 @@ globus_l_io_write_callback(
     write_info->nbytes_written += n_written;
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+		err = globus_error_get(result);
 
-	goto error_exit;
+		goto error_exit;
     }
+#else
+	write_info->nbytes_written+= 
+	 handle->winIoOperation.numberOfBytesProcessed;
+	// if the handle is a file, update the file pointer
+	if ( handle->winIoOperation.numberOfBytesProcessed > 0 && 
+	 handle->type == GLOBUS_IO_HANDLE_TYPE_FILE )
+	{
+		LARGE_INTEGER numberOfBytes;
+		numberOfBytes.QuadPart= 
+		 handle->winIoOperation.numberOfBytesProcessed;
+		rc= globus_i_io_windows_move_file_pointer( handle,
+			numberOfBytes, NULL );
+		if ( rc )
+		{
+			err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						errno );
+			goto error_exit;
+		}
+	}
+#endif
+
     if(write_info->nbytes_written >= write_info->nbytes)
     {
-	/* Write is satisfied, call back to user */
-	(*write_info->buf_callback)(write_info->arg,
-				    handle,
-				    result,
-				    write_info->buf,
-				    write_info->nbytes_written);
-	globus_l_io_write_info_destroy(write_info);
+		/* Write is satisfied, call back to user */
+		(*write_info->buf_callback)(write_info->arg,
+						handle,
+						result,
+						write_info->buf,
+						write_info->nbytes_written);
+		globus_l_io_write_info_destroy(write_info);
 
     }
     else
     {
-	/* write not yet satisfied, so reregister with the event driver */
-	globus_i_io_mutex_lock();
-	globus_i_io_register_write_func(handle,
-					globus_l_io_write_callback,
-					(void *) write_info,
-					globus_l_io_write_info_destroy);
-	globus_i_io_mutex_unlock();
+		/* write not yet satisfied, so reregister with the event driver */
+		globus_i_io_mutex_lock();
+		globus_i_io_register_write_func(handle,
+						globus_l_io_write_callback,
+						(void *) write_info,
+						globus_l_io_write_info_destroy);
+#ifdef TARGET_ARCH_WIN32
+		// post another write
+		rc= globus_i_io_windows_write( handle,
+		 write_info->buf + write_info->nbytes_written,
+		 write_info->nbytes - write_info->nbytes_written, 
+		 1 );
+		if ( rc == -1 ) // a fatal error occurred
+		{
+			// unregister the write callback
+			globus_i_io_unregister_write( handle, GLOBUS_FALSE );
+
+			err = globus_io_error_construct_system_failure(
+	             GLOBUS_IO_MODULE,
+			     GLOBUS_NULL,
+			     handle,
+			     errno );
+			goto error_exit;
+		}
+#endif
+		globus_i_io_mutex_unlock();
     }
 
     return;
@@ -2222,6 +2357,7 @@ globus_l_io_write_callback(
  * @see globus_io_write_info_t, globus_io_register_send(), 
  * @see globus_i_io_try_send()
  */
+#ifndef TARGET_ARCH_WIN32
 static
 void
 globus_l_io_send_callback(
@@ -2292,7 +2428,8 @@ globus_l_io_send_callback(
 
     globus_l_io_write_info_destroy(write_info);
 }
-/* globus_l_io_write_callback() */
+/* globus_l_io_send_callback() */
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -2331,91 +2468,141 @@ globus_l_io_writev_callback(
     globus_size_t			n_written;
     globus_object_t *			err;
     globus_size_t			report_amt;
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
 	
     
     writev_info = (globus_io_write_info_t *) arg;
 
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+		err = globus_error_get(result);
 
-	goto error_exit;
+		goto error_exit;
     }
 
+#ifndef TARGET_ARCH_WIN32
     result = globus_i_io_try_writev(handle,
 				    writev_info->iov,
 				    writev_info->iovcnt,
 				    &n_written);
     writev_info->nbytes_written += n_written;
+#else
+	// update the number of bytes written
+	n_written= handle->winIoOperation.numberOfBytesProcessed;
+    writev_info->nbytes_written += n_written;
+	// if the handle is a file, update the file pointer
+	if ( handle->winIoOperation.numberOfBytesProcessed > 0 && 
+	 handle->type == GLOBUS_IO_HANDLE_TYPE_FILE )
+	{
+		LARGE_INTEGER numberOfBytes;
+		numberOfBytes.QuadPart= 
+		 handle->winIoOperation.numberOfBytesProcessed;
+		rc= globus_i_io_windows_move_file_pointer( handle,
+			numberOfBytes, NULL );
+		if ( rc )
+		{
+			err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						errno );
+			goto error_exit;
+		}
+	}
+#endif
 
     /* Adjust the iov array so that we can find the starting
      * point in the iovect array for the next writev
      */
     while (n_written > 0)
     {
-	if (n_written >= writev_info->iov->iov_len)
-	{
-	    n_written -= writev_info->iov->iov_len;
-	    writev_info->iov++;
-	    writev_info->iovcnt--;
-	}
-	else
-	{
-	    writev_info->iov->iov_base =
-		(void *) (((globus_byte_t *) writev_info->iov->iov_base)
-			  + n_written);
-	    writev_info->iov->iov_len -= n_written;
-	    n_written = 0;
-	}
+		if (n_written >= writev_info->iov->iov_len)
+		{
+			n_written -= writev_info->iov->iov_len;
+			writev_info->iov++;
+			writev_info->iovcnt--;
+		}
+		else
+		{
+			writev_info->iov->iov_base =
+			(void *) (((globus_byte_t *) writev_info->iov->iov_base)
+				+ n_written);
+			writev_info->iov->iov_len -= n_written;
+			n_written = 0;
+		}
     }
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+		err = globus_error_get(result);
 
-	goto error_exit;
+		goto error_exit;
     }
     if (writev_info->iovcnt == 0)
     {
-	/* Hmm... we may write more than the original IOVs
-	 * add up to, if we are using security wrapping,
-	 * so we will just say we wrote what were expected
-	 * to.
-	 */
-	report_amt = writev_info->nbytes_written;
+		/* Hmm... we may write more than the original IOVs
+		* add up to, if we are using security wrapping,
+		* so we will just say we wrote what were expected
+		* to.
+		*/
+		report_amt = writev_info->nbytes_written;
+		
+		if(writev_info->nbytes < writev_info->nbytes_written)
+		{
+			report_amt = writev_info->nbytes;
+		}
+		if(writev_info->iov_callback)
+		{
+			(*writev_info->iov_callback)(writev_info->arg,
+						handle,
+						GLOBUS_SUCCESS,
+						writev_info->orig_iov,
+						writev_info->orig_iovcnt,
+						report_amt);
+		}
+		else
+		{
+			(*writev_info->buf_callback)(writev_info->arg,
+						handle,
+						GLOBUS_SUCCESS,
+						writev_info->buf,
+						report_amt);
+		}
 	
-	if(writev_info->nbytes < writev_info->nbytes_written)
-	{
-	    report_amt = writev_info->nbytes;
-	}
-	if(writev_info->iov_callback)
-	{
-	    (*writev_info->iov_callback)(writev_info->arg,
-					 handle,
-					 GLOBUS_SUCCESS,
-					 writev_info->orig_iov,
-					 writev_info->orig_iovcnt,
-					 report_amt);
+		globus_l_io_write_info_destroy(writev_info);
 	}
 	else
 	{
-	    (*writev_info->buf_callback)(writev_info->arg,
-					 handle,
-					 GLOBUS_SUCCESS,
-					 writev_info->buf,
-					 report_amt);
+		globus_i_io_mutex_lock();
+		globus_i_io_register_write_func(handle,
+						globus_l_io_writev_callback,
+						(void *) writev_info,
+						globus_l_io_write_info_destroy);
+#ifdef TARGET_ARCH_WIN32
+		// post another write operation
+		// for now, just fake the vectored write call
+		// TODO: add an array of WSABUF structs in order to handle
+		// actual vectored I/O
+		rc= globus_i_io_windows_write( handle, 
+			 writev_info->iov[0].iov_base,
+			 writev_info->iov[0].iov_len, 
+			 1 );
+		if ( rc == -1 ) // a fatal error occurred
+		{
+			// unregister the write callback
+			globus_i_io_unregister_write( handle, GLOBUS_FALSE );
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					errno );
+			goto error_exit;
+		}
+#endif
+		globus_i_io_mutex_unlock();
 	}
-	
-	globus_l_io_write_info_destroy(writev_info);
-    }
-    else
-    {
-	globus_i_io_mutex_lock();
-	globus_i_io_register_write_func(handle,
-					globus_l_io_writev_callback,
-					(void *) writev_info,
-					globus_l_io_write_info_destroy);
-	globus_i_io_mutex_unlock();
-    }
     return;
 
   error_exit:
@@ -2428,20 +2615,20 @@ globus_l_io_writev_callback(
 
     if(writev_info->iov_callback)
     {
-	(*writev_info->iov_callback)(writev_info->arg,
-				     handle,
-				     globus_error_put(err),
-				     writev_info->orig_iov,
-				     writev_info->orig_iovcnt,
-				     report_amt);
+		(*writev_info->iov_callback)(writev_info->arg,
+						handle,
+						globus_error_put(err),
+						writev_info->orig_iov,
+						writev_info->orig_iovcnt,
+						report_amt);
     }
     else
     {
-	(*writev_info->buf_callback)(writev_info->arg,
-				     handle,
-				     globus_error_put(err),
-				     writev_info->buf,
-				     report_amt);
+		(*writev_info->buf_callback)(writev_info->arg,
+						handle,
+						globus_error_put(err),
+						writev_info->buf,
+						report_amt);
     }
     globus_l_io_write_info_destroy(writev_info);
 
@@ -2474,6 +2661,7 @@ globus_l_io_writev_callback(
  *
  * @return void
  * @see globus_io_write_info_t, globus_io_register_writev() */
+#ifndef TARGET_ARCH_WIN32
 static
 void
 globus_l_io_sendmsg_callback(
@@ -2606,7 +2794,8 @@ globus_l_io_sendmsg_callback(
     globus_l_io_write_info_destroy(writev_info);
 
 }
-/* globus_io_writev_callback() */
+/* globus_l_io_sendmsg_callback() */
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL

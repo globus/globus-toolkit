@@ -1,6 +1,10 @@
 #include "globus_io.h"
 #include <stdlib.h>
 
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
+
 void test1(int argc, char **argv);
 
 typedef struct
@@ -133,6 +137,11 @@ test1(int argc, char **argv)
     char *				errstring = GLOBUS_NULL;
     int                                 host[4];
 
+#ifdef TARGET_ARCH_WIN32
+	//handle.io_handle= 0x84;
+	//child_handle.user_pointer= GLOBUS_NULL;
+#endif
+
     globus_io_tcpattr_init(&attr);
 
     globus_io_attr_set_secure_authentication_mode(
@@ -151,7 +160,11 @@ test1(int argc, char **argv)
 	&attr,
 	GLOBUS_FALSE);
 */
+#ifdef TARGET_ARCH_WIN32
+    while (( c = getoptWin(argc, argv, "rgsci:I:")) != EOF)
+#else
     while (( c = getopt(argc, argv, "rgsci:I:")) != EOF)
+#endif
     {
         switch(c)
 	{
@@ -208,17 +221,24 @@ test1(int argc, char **argv)
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
 
-	globus_libc_printf("test 1 create listener failed: %s\n",
-                           errstring);
-	goto exit;
+		globus_libc_printf("test 1 create listener failed: %s\n",
+							errstring);
+		goto exit;
     }
     else
     {
         globus_libc_printf("listening on port %d\n", (int) port);
     }
 
-    globus_io_tcp_listen(&handle);
-    result = globus_io_tcp_accept(&handle,
+    result= globus_io_tcp_listen(&handle);
+	if ( result != GLOBUS_SUCCESS )
+	{
+        err = globus_error_get(result);
+        errstring = globus_object_printable_to_string(err);
+		globus_libc_printf("test 1 accept failed: %s\n", errstring);
+		goto exit;
+	}
+	result = globus_io_tcp_accept(&handle,
 				  &attr,
 				  &child_handle);
 
@@ -226,8 +246,8 @@ test1(int argc, char **argv)
     {
         err = globus_error_get(result);
         errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test 1 accept failed: %s\n", errstring);
-	goto exit;
+		globus_libc_printf("test 1 accept failed: %s\n", errstring);
+		goto exit;
     }
     else
     {

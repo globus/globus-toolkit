@@ -118,12 +118,22 @@ globus_l_io_udp_set_socket_size(
     int rc = 0;
 
     size = MAX_SOCKET_SEND_BUFFER;
+#ifndef TARGET_ARCH_WIN32
     if(setsockopt(handle->fd, 
 		  SOL_SOCKET, 
 		  SO_SNDBUF, 
 		  (char *) &size, 
 		  sizeof(int)) < 0)
     {
+#else
+    if(setsockopt(handle->fd, 
+		  SOL_SOCKET, 
+		  SO_SNDBUF, 
+		  (char *) &size, 
+		  sizeof(int)) < 0)
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
           return globus_error_put(globus_io_error_construct_system_failure(
 					    GLOBUS_IO_MODULE,
 					    GLOBUS_NULL,
@@ -131,24 +141,44 @@ globus_l_io_udp_set_socket_size(
 				            errno));
     }
 
+#ifndef TARGET_ARCH_WIN32
     if (getsockopt(handle->fd, 
 		   SOL_SOCKET, 
 		   SO_SNDBUF, 
 		   (char *) &sock_size,
                    &sock_opt_len) < 0)
     {
+#else
+    if (getsockopt(handle->fd, 
+		   SOL_SOCKET, 
+		   SO_SNDBUF, 
+		   (char *) &sock_size,
+                   &sock_opt_len) < 0)
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
         save_error = errno;
         sock_size = -1;
     }
 
     size = MAX_SOCKET_RECEIVE_BUFFER;
 
+#ifndef TARGET_ARCH_WIN32
     if(setsockopt(handle->fd, 
 	       SOL_SOCKET, 
 	       SO_RCVBUF, 
 	       (char *) &size, 
 	       sizeof(int)) < 0)
     {
+#else
+    if(setsockopt(handle->fd, 
+	       SOL_SOCKET, 
+	       SO_RCVBUF, 
+	       (char *) &size, 
+	       sizeof(int)) < 0)
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
           return globus_error_put(globus_io_error_construct_system_failure(
 					    GLOBUS_IO_MODULE,
 					    GLOBUS_NULL,
@@ -157,12 +187,22 @@ globus_l_io_udp_set_socket_size(
 
     }
 
+#ifndef TARGET_ARCH_WIN32
     if (getsockopt(handle->fd, 
 		   SOL_SOCKET, 
 		   SO_RCVBUF, 
 		   (char *) &sock_size,
 		    &sock_opt_len) < 0 ) 
     {
+#else
+    if (getsockopt(handle->fd, 
+		   SOL_SOCKET, 
+		   SO_RCVBUF, 
+		   (char *) &sock_size,
+		    &sock_opt_len) < 0 ) 
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
         return globus_error_put(globus_io_error_construct_system_failure(
 					    GLOBUS_IO_MODULE,
 					    GLOBUS_NULL,
@@ -275,7 +315,7 @@ globus_io_udp_set_attr(
  * multicast_ttl: 1
  * multicast_enabled: FALSE
  * address: NULL
- * interface: INADDR_ANY
+ * interface_addr: INADDR_ANY
  * @endcode
  *
  * @return
@@ -478,7 +518,7 @@ globus_io_udp_bind(
         found_port = GLOBUS_FALSE;
         bzero((char*) &my_addr, sizeof(my_addr));
         my_addr.sin_family = AF_INET;
-        my_addr.sin_addr.s_addr = htonl((unsigned long)udp_attr->interface);
+        my_addr.sin_addr.s_addr = htonl((unsigned long)udp_attr->interface_addr);
         my_addr.sin_port = htons(myport);
 
         if(bind(handle->fd,
@@ -498,8 +538,14 @@ globus_io_udp_bind(
 	}
     } while(!found_port && !bind_error);
 
+#ifndef TARGET_ARCH_WIN32
     if(bind_error)
     {
+#else
+    if(bind_error)
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
         return globus_error_put(
 		    globus_io_error_construct_system_failure(
 		    GLOBUS_IO_MODULE,
@@ -856,7 +902,11 @@ globus_l_io_udp_create_socket(
   error_exit:
     if(handle->fd >= 0)
     {
-	globus_libc_close(handle->fd);
+#ifndef TARGET_ARCH_WIN32
+		globus_libc_close(handle->fd);
+#else
+		globus_i_io_winsock_close( (SOCKET)handle->io_handle );
+#endif /*TARGET_ARCH_WIN32*/
     }
     return globus_error_put(err);
 }
@@ -881,35 +931,36 @@ globus_l_io_setup_udp_socket(
     int                                 save_errno;
     globus_object_t *                   err;
     static char *                       myname="globus_l_io_setup_udp_socket";
+#ifndef TARGET_ARCH_WIN32
     struct ip_mreq                      imr;
-
+#endif
     rc = globus_i_io_setup_securesocket(handle);
     
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+		return rc;
     }
-
+#ifndef TARGET_ARCH_WIN32
     if(udp_attr->mc_enabled)
     {
-	if(udp_attr->reuse)
-	{
-	    int                         so_reuse = 1;
+		if(udp_attr->reuse)
+		{
+			int so_reuse = 1;
 
-            if (setsockopt(handle->fd, 
-			   SOL_SOCKET, 
-			   SO_REUSEPORT,
-			   (char *) &so_reuse, 
-			   sizeof(so_reuse)) == -1)
-            {
-                return globus_error_put(
-			     globus_io_error_construct_system_failure(
-					    GLOBUS_IO_MODULE,
-					    GLOBUS_NULL,
-					    handle,
-				            errno));
-	    }
-	}
+			if (setsockopt(handle->fd, 
+			SOL_SOCKET, 
+			SO_REUSEPORT,
+			(char *) &so_reuse, 
+			sizeof(so_reuse)) == -1)
+			{
+				return globus_error_put(
+				globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+							errno));
+			}
+		}
 
         if (setsockopt(handle->fd, 
 		       IPPROTO_IP, 
@@ -948,10 +999,10 @@ globus_l_io_setup_udp_socket(
 					    GLOBUS_NULL,
 					    handle,
 				            errno));
-	}
+		}
 
-        imr.imr_interface.s_addr = (unsigned long)udp_attr->interface;
-	if(setsockopt(handle->fd, 
+        imr.imr_interface_addr.s_addr = (unsigned long)udp_attr->interface_addr;
+		if(setsockopt(handle->fd, 
 		      IPPROTO_IP, 
 		      IP_ADD_MEMBERSHIP,
                       (char *) &imr, 
@@ -965,7 +1016,7 @@ globus_l_io_setup_udp_socket(
 				            errno));
         }
     }
-
+#endif
     return GLOBUS_SUCCESS;
 }
 /* globus_l_io_setup_udp_socket() */

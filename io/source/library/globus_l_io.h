@@ -20,6 +20,7 @@
  */
 
 #include "globus_common.h"
+#ifndef TARGET_ARCH_WIN32
 #include "config.h"
 
 #include <sys/types.h>
@@ -34,6 +35,8 @@
 #endif
 
 #include <netdb.h>
+#endif /* TARGET_ARCH_WIN32 */
+
 #include <stdlib.h>
 
 #ifdef HAVE_SYS_SELECT_H
@@ -50,6 +53,16 @@
 
 #include "globus_io.h"
 
+#ifdef TARGET_ARCH_WIN32
+#define ssize_t long
+#include "globus_io_windows.h"
+#include "globus_io_winsock.h"
+#define EWOULDBLOCK EAGAIN
+#define EINPROGRESS 150 /* according to POSIX */
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 145 /* according to POSIX */
+#endif
+#endif /* TARGET_ARCH_WIN32 */
 
 /*
  *  NETLOGGER
@@ -367,6 +380,11 @@ globus_i_io_fileattr_construct(void);
 globus_result_t
 globus_i_io_fileattr_initialize(
     globus_object_t *				obj);
+
+globus_result_t
+globus_i_io_copy_fileattr_to_handle(
+    globus_io_attr_t *			attr,
+    globus_io_handle_t *		handle);
 
 globus_object_t *
 globus_i_io_tcpattr_construct(void);

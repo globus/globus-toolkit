@@ -31,6 +31,16 @@
  * standard POSIX open() function. The attr argument contains other
  * handle attributes to be associated with the handle or GLOBUS_NULL to
  * indicate default attributes. This is a blocking operation.
+ * NOTE: Windows does not support all of the available POSIX options, it
+ * supports only the following options:
+ * O_RDONLY
+ * O_WRONLY
+ * O_RDWR
+ * O_APPEND
+ * O_CREAT
+ * O_TRUNC
+ * O_EXCL
+ * 
  *
  * @param path The path to the file to open.
  * @param flags The flags argument consists of a bitwise-or of the
@@ -63,7 +73,7 @@ globus_io_file_open(
     globus_result_t			rc;
 
     char *				myname = "globus_io_file_open";
-    
+
     globus_i_io_debug_printf(3, ("%s(): entering\n", myname));
 
     rc = GLOBUS_SUCCESS;
@@ -71,20 +81,20 @@ globus_io_file_open(
     
     if(handle == GLOBUS_NULL)
     {
-	return globus_error_put(
-	    globus_io_error_construct_null_parameter(
-	        GLOBUS_IO_MODULE,
-	        GLOBUS_NULL,
-	        "handle",
-	        5,
-	        myname));
+		return globus_error_put(
+			globus_io_error_construct_null_parameter(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				"handle",
+				5,
+				myname));
     }
     
     rc = globus_i_io_initialize_handle(handle,
                                        GLOBUS_IO_HANDLE_TYPE_FILE);
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+		return rc;
     }
 
     globus_i_io_copy_fileattr_to_handle(attr,
@@ -102,42 +112,74 @@ globus_io_file_open(
 
 #   if defined(TARGET_ARCH_CYGWIN)
     {
-	if(handle->file_attr.file_type == GLOBUS_IO_FILE_TYPE_TEXT)
-	{
-	    flags |= O_TEXT;
-	}
-	else
-	{
-	    flags |= O_BINARY;
-	}
+		if(handle->file_attr.file_type == GLOBUS_IO_FILE_TYPE_TEXT)
+		{
+			flags |= O_TEXT;
+		}
+		else
+		{
+			flags |= O_BINARY;
+		}
     }
 #   endif
     globus_i_io_mutex_lock();
-    {
+#ifndef TARGET_ARCH_WIN32
 	do
 	{
-	    fd = open(path, flags | O_NDELAY, mode);
+		fd = open(path, flags | O_NDELAY, mode);
 	}
 	while (fd < 0 && errno == EINTR);
 
 	if (fd < 0)
 	{
-	    rc =
+		rc =
 		globus_error_put(
-		    globus_io_error_construct_system_failure(
+			globus_io_error_construct_system_failure(
 			GLOBUS_IO_MODULE,
 			GLOBUS_NULL,
 			handle,
 			errno));
-	    handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
+		handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
 	}
 	else
 	{
-	    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
+		handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
 	}
 	handle->fd = fd;
-    }
-    globus_i_io_mutex_unlock();
+#else
+	if ( globus_i_io_windows_file_open( handle, path, flags, NULL ) )
+	{
+		rc = globus_error_put(
+				globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				errno));
+		handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
+	}
+	else
+	{
+		handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
+		// initialize the WinIoOperation struct
+		globus_i_io_windows_init_io_operation( 
+			&(handle->winIoOperation) );
+		/* associate the new file with the completion port */
+		if ( CreateIoCompletionPort( handle->io_handle,
+			completionPort, (ULONG_PTR)handle, 0 ) == NULL )
+		{
+			rc= globus_error_put(
+					globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					globus_i_io_windows_get_last_error() ) );
+		
+			globus_i_io_windows_close( handle );
+		}
+	}
+#endif /* TARGET_ARCH_WIN32 */
+
+	globus_i_io_mutex_unlock();
 
     globus_i_io_debug_printf(3, ("%s(): exiting\n", myname));
 
@@ -179,6 +221,9 @@ globus_io_file_seek(
     static char *                       myname=
 	                                "globus_io_file_seek";
     globus_object_t *			err;
+#ifdef TARGET_ARCH_WIN32
+	LARGE_INTEGER numberOfBytes;
+#endif
     
 
     if(handle == GLOBUS_NULL)
@@ -194,36 +239,42 @@ globus_io_file_seek(
     
     if(handle->type != GLOBUS_IO_HANDLE_TYPE_FILE)
     {
-	err = globus_io_error_construct_invalid_type(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    "handle",
-	    1,
-	    myname,
-	    "GLOBUS_IO_HANDLE_TYPE_FILE");
+		err = globus_io_error_construct_invalid_type(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			"handle",
+			1,
+			myname,
+			"GLOBUS_IO_HANDLE_TYPE_FILE");
 
-	goto error_exit;
+		goto error_exit;
     }
 
+#ifndef TARGET_ARCH_WIN32
     rc = lseek(handle->fd,
 	       offset,
 	       whence);
     if (rc != -1)
+#else
+	numberOfBytes.QuadPart= offset;
+	rc= globus_i_io_windows_seek( handle, numberOfBytes, whence, NULL );
+    if ( rc == 0 )
+#endif
     {
-	return GLOBUS_SUCCESS;
+		return GLOBUS_SUCCESS;
     }
     else
     {
-	globus_result_t result;
+		globus_result_t result;
 
-	result =
-	    globus_error_put(
-		globus_io_error_construct_system_failure(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle,
-		    errno));
-	return result;
+		result =
+			globus_error_put(
+			globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				errno));
+		return result;
     }
 
   error_exit:

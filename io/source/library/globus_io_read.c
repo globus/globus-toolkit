@@ -202,14 +202,14 @@ globus_io_register_read(
 						    callback_arg);
         if(rc == GLOBUS_SUCCESS)
         {
-	    goto done;
+			goto done;
         } 
-	else
-	{
-	    err = globus_error_get(rc);
+		else
+		{
+			err = globus_error_get(rc);
 
-	    goto error_exit;
-	}
+			goto error_exit;
+		}
     }
 
     rc = globus_i_io_register_read(handle,
@@ -220,9 +220,9 @@ globus_io_register_read(
 			           callback_arg);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	
-	goto error_exit;
+		err = globus_error_get(rc);
+		
+		goto error_exit;
     }
   done:
     globus_i_io_mutex_unlock();
@@ -357,10 +357,10 @@ globus_io_try_read(
     if(handle->securesocket_attr.channel_mode !=
        GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR)
     {
-	*nbytes_read = 0;
+		*nbytes_read = 0;
 
         globus_i_io_mutex_unlock();
-	return GLOBUS_SUCCESS;
+		return GLOBUS_SUCCESS;
     }
     rc = globus_i_io_try_read(handle,
 			      buf,
@@ -570,11 +570,22 @@ globus_i_io_try_read(
                 "Important",
                 tag_str);
         }
-	n_read =
-	    globus_libc_read(
-		handle->fd,
-		buf + num_read,
-		max_nbytes - num_read);
+#ifndef TARGET_ARCH_WIN32
+		n_read =
+			globus_libc_read(
+			handle->fd,
+			buf + num_read,
+			max_nbytes - num_read);
+#else
+		// NOTE: If the handle encapsulates a file, the following
+		// call will always return -1 and set errno to EWOULDBLOCK
+		// (see globus_i_io_windows_file_read() for an explanation)
+		n_read= globus_i_io_windows_read( 
+			handle, 
+			buf + num_read, 
+			max_nbytes - num_read, 
+			0 );
+#endif /* TARGET_ARCH_WIN32 */
 
         /*
          *  NETLOGGER write
@@ -592,58 +603,58 @@ globus_i_io_try_read(
                 "Important",
                 tag_str);
         }
-	save_errno = errno;
-	globus_i_io_debug_printf(
-	    5,
-	    ("%s(): read returned n_read=%d\n",
-	      myname, (int) n_read));
-	
-	/*
-	 * n_read: is > 0 if it successfully read some bytes
-	 *         is < 0 on error -- need to check errno
-	 *         is 0 on EOF
-	 */
-	if (n_read > 0)
-	{
-	    *nbytes_read += n_read;
-	    num_read += n_read;
-            if(num_read >= max_nbytes)
-            {
-                return GLOBUS_SUCCESS;
-            }
-	}
-	else if (n_read == 0)
-	{
-	    err =
-		globus_io_error_construct_eof(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
+		save_errno = errno;
+		globus_i_io_debug_printf(
+			5,
+			("%s(): read returned n_read=%d\n",
+			myname, (int) n_read));
 		
-	    goto error_exit;
-	}
-	else /* n_read < 0 */
-	{
-	    if (save_errno == EINTR)
-	    {
-		/* Try again */
-	    }
-	    else if (save_errno == EAGAIN || save_errno == EWOULDBLOCK)
-	    {
-		/* We've read all we can for now. */
-		done = GLOBUS_TRUE;
-	    }
-	    else
-	    {
-		err = globus_io_error_construct_system_failure(
-		              GLOBUS_IO_MODULE,
-			      GLOBUS_NULL,
-			      handle,
-			      save_errno);
-		goto error_exit;
-	    }
-	}
-    }
+		/*
+		* n_read: is > 0 if it successfully read some bytes
+		*         is < 0 on error -- need to check errno
+		*         is 0 on EOF
+		*/
+		if (n_read > 0)
+		{
+			*nbytes_read += n_read;
+			num_read += n_read;
+				if(num_read >= max_nbytes)
+				{
+					return GLOBUS_SUCCESS;
+				}
+		}
+		else if (n_read == 0)
+		{
+			err =
+			globus_io_error_construct_eof(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle);
+			
+			goto error_exit;
+		}
+		else /* n_read < 0 */
+		{
+			if (save_errno == EINTR)
+			{
+				/* Try again */
+			}
+			else if (save_errno == EAGAIN || save_errno == EWOULDBLOCK)
+			{
+				/* We've read all we can for now. */
+				done = GLOBUS_TRUE;
+			}
+			else
+			{
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						save_errno);
+				goto error_exit;
+			}
+		}
+    } /* end for */
     return GLOBUS_SUCCESS;
 
   error_exit:
@@ -669,6 +680,10 @@ globus_i_io_register_read(
     globus_result_t			rc;
     globus_object_t *			err;
 
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
+
     read_info = (globus_io_read_info_t *)
 	globus_malloc(sizeof(globus_io_read_info_t));
     
@@ -686,12 +701,38 @@ globus_i_io_register_read(
 					GLOBUS_TRUE);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	globus_free(read_info);
+		err = globus_error_get(rc);
+		globus_free(read_info);
 	
-	goto error_exit;
+		goto error_exit;
     }
     
+#ifdef TARGET_ARCH_WIN32
+	// post the initial read
+	returnCode= globus_i_io_windows_read( handle, buf, max_nbytes, 1 );
+	if ( returnCode == -1 )
+	{
+		// unregister the read callback
+		globus_i_io_unregister_read( handle, GLOBUS_FALSE );
+
+		// Check for end of file condition if the handle is encapsulating
+		// a file
+		if ( handle->type == GLOBUS_IO_HANDLE_TYPE_FILE && 
+		 errno == GLOBUS_WIN_EOF )
+			err= globus_io_error_construct_eof(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle);
+		else
+			err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				errno );
+		goto error_exit;
+	}
+#endif
+
     return GLOBUS_SUCCESS;
     
   error_exit:
@@ -756,28 +797,31 @@ globus_l_io_read_callback(
     globus_object_t *			err;
     char                                tag_str[64];
     static char *			myname="globus_l_io_read_callback";
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
 
     read_info = (globus_io_read_info_t *) arg;
 
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+		err = globus_error_get(result);
 
-	goto error_exit;
+		goto error_exit;
     }
 
     globus_i_io_debug_printf(5,("%s(): entering\n",myname));
 
     for (done = GLOBUS_FALSE; !done; )
     {
-	globus_i_io_debug_printf(
-	    5,
-	    ("%s(): calling read, fd=%i, buf=%p, size=%lu\n",
-	     myname,
-	     handle->fd,
-	     (read_info->buf + read_info->nbytes_read),
-	     (unsigned long)
-                  (read_info->max_nbytes - read_info->nbytes_read)));
+		globus_i_io_debug_printf(
+			5,
+			("%s(): calling read, fd=%i, buf=%p, size=%lu\n",
+			myname,
+			handle->fd,
+			(read_info->buf + read_info->nbytes_read),
+			(unsigned long)
+					(read_info->max_nbytes - read_info->nbytes_read)));
 
         /*
          *  NETLOGGER information
@@ -793,11 +837,33 @@ globus_l_io_read_callback(
 				"Important",
                 tag_str);
         }
-	n_read =
-	    globus_libc_read(
-		handle->fd,
-		(read_info->buf + read_info->nbytes_read),
-		(read_info->max_nbytes - read_info->nbytes_read));
+#ifndef TARGET_ARCH_WIN32
+		n_read =
+			globus_libc_read(
+			handle->fd,
+			(read_info->buf + read_info->nbytes_read),
+			(read_info->max_nbytes - read_info->nbytes_read));
+#else
+		n_read= handle->winIoOperation.numberOfBytesProcessed;
+		// if the handle is a file, update the file pointer
+		if ( n_read > 0 && handle->type == GLOBUS_IO_HANDLE_TYPE_FILE )
+		{
+			int rc;
+			LARGE_INTEGER numberOfBytes;
+			numberOfBytes.QuadPart= n_read;
+			rc= globus_i_io_windows_move_file_pointer( handle,
+			 numberOfBytes, NULL );
+			if ( rc )
+			{
+				err = globus_io_error_construct_system_failure(
+							GLOBUS_IO_MODULE,
+							GLOBUS_NULL,
+							handle,
+							errno );
+				goto error_exit;
+			}
+		}
+#endif /* TARGET_ARCH_WIN32 */
 
         /*
          *  NETLOGGER information
@@ -813,93 +879,118 @@ globus_l_io_read_callback(
                 "GIOR",
 				"Important",
                 tag_str);
-	}
+		}
  
-	save_errno = errno;
-	globus_i_io_debug_printf(
-	    5,
-	    ("%s(): read returned n_read=%li\n",
-	     myname,
-	     n_read));
-	
-	/*
-	 * n_read: is > 0 if it successfully read some bytes
-	 *         is < 0 on error -- need to check errno
-	 *         is 0 on EOF
-	 */
-	if (n_read > 0 ||
-	    (n_read == 0 &&
-	     read_info->max_nbytes == 0))
-	{
-	    read_info->nbytes_read += n_read;
-	    if (read_info->nbytes_read >= read_info->wait_for_nbytes)
-	    {
-		(*read_info->callback)(read_info->arg,
-				       handle,
-				       GLOBUS_SUCCESS,
-				       read_info->buf,
-				       read_info->nbytes_read);
-		globus_free(read_info);
-		done = GLOBUS_TRUE;
-	    }
-	    else
-	    {
-		globus_i_io_mutex_lock();
-		globus_i_io_register_read_func(handle,
-					       globus_l_io_read_callback,
-					       (void *)read_info,
-					       globus_i_io_default_destructor,
-					       GLOBUS_TRUE);
-		globus_i_io_mutex_unlock();
-	        done = GLOBUS_TRUE;
-	    }
-	}
-	else if (n_read == 0)
-	{
-	    err =
-		globus_io_error_construct_eof(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-	    
-	    goto error_exit;
-	}
-	else /* n_read < 0 */
-	{
+		save_errno = errno;
+		globus_i_io_debug_printf(
+			5,
+			("%s(): read returned n_read=%li\n",
+			myname,
+			n_read));
+		
+		/*
+		* n_read: is > 0 if it successfully read some bytes
+		*         is < 0 on error -- need to check errno
+		*         is 0 on EOF
+		*/
+		if (n_read > 0 ||
+			(n_read == 0 &&
+			read_info->max_nbytes == 0))
+		{
+			read_info->nbytes_read += n_read;
+			if (read_info->nbytes_read >= read_info->wait_for_nbytes)
+			{
+				(*read_info->callback)(read_info->arg,
+							handle,
+							GLOBUS_SUCCESS,
+							read_info->buf,
+							read_info->nbytes_read);
+				globus_free(read_info);
+				done = GLOBUS_TRUE;
+			}
+			else
+			{
+				globus_i_io_mutex_lock();
+				globus_i_io_register_read_func(handle,
+								globus_l_io_read_callback,
+								(void *)read_info,
+								globus_i_io_default_destructor,
+								GLOBUS_TRUE);
+				globus_i_io_mutex_unlock();
+				done = GLOBUS_TRUE;
+#ifdef TARGET_ARCH_WIN32
+				// post another read
+				rc= globus_i_io_winsock_read( handle, 
+				 read_info->buf + read_info->nbytes_read,
+				 read_info->max_nbytes - read_info->nbytes_read, 1 );
+				if ( rc == -1 ) // a fatal error occurred
+				{
+					// unregister the read callback
+					globus_i_io_unregister_read( handle, GLOBUS_FALSE );
 
-	    globus_i_io_debug_printf(
-		3,
-		("%s(): ERROR, errno=%d, fd=%d\n",
-		 myname,
-		 save_errno,
-		 handle->fd));
-	    
-	    if (save_errno == EINTR)
-	    {
-		/* Try again */
-	    }
-	    else if (save_errno == EAGAIN || save_errno == EWOULDBLOCK)
-	    {
-		/* We've read all we can for now.  So repost the read. */
-		globus_i_io_mutex_lock();
-		globus_i_io_register_read_func(handle,
-					       globus_l_io_read_callback,
-					       (void *) read_info,
-					       globus_i_io_default_destructor,
-					       GLOBUS_TRUE);
-		globus_i_io_mutex_unlock();
-		done = GLOBUS_TRUE;
-	    }
-	    else
-	    {
-		err = globus_io_error_construct_system_failure(
-		                 GLOBUS_IO_MODULE,
-			         GLOBUS_NULL,
-			         handle,
-				 save_errno);
-		goto error_exit;
-	    }
-	}
+					err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						errno );
+					goto error_exit;
+				}
+#endif
+			}
+		}
+		else if (n_read == 0)
+		{
+			err =
+			globus_io_error_construct_eof(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle);
+		    
+			goto error_exit;
+		}
+		else /* n_read < 0 */
+		{
+#ifndef TARGET_ARCH_WIN32
+/* If we're using Windows, n_read will never be < 0; but just to
+ *	make sure that nothing goes wrong I'll #ifdef this part out. 
+ *	(just 'cause you're paranoid doesn't mean people aren't out
+ *	to get you)
+ *	Michael Lebman	4-26-02
+ */
+			globus_i_io_debug_printf(
+			3,
+			("%s(): ERROR, errno=%d, fd=%d\n",
+			myname,
+			save_errno,
+			handle->fd));
+		    
+			if (save_errno == EINTR)
+			{
+				/* Try again */
+			}
+			else if (save_errno == EAGAIN || save_errno == EWOULDBLOCK)
+			{
+				/* We've read all we can for now.  So repost the read. */
+				globus_i_io_mutex_lock();
+				globus_i_io_register_read_func(handle,
+							globus_l_io_read_callback,
+							(void *) read_info,
+							globus_i_io_default_destructor,
+							GLOBUS_TRUE);
+				globus_i_io_mutex_unlock();
+				done = GLOBUS_TRUE;
+			}
+			else
+#endif /* TARGET_ARCH_WIN32 */
+			{
+				err = globus_io_error_construct_system_failure(
+							GLOBUS_IO_MODULE,
+							GLOBUS_NULL,
+							handle,
+							save_errno);
+				goto error_exit;
+			}
+		}
     }
 
     globus_i_io_debug_printf(5, ("%s(): exiting\n",myname));

@@ -127,6 +127,9 @@ globus_io_tcp_register_connect(
     unsigned short			myport = 0;
     static char *			myname=
 	                                "globus_io_tcp_register_connect";
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
 
     if(handle == GLOBUS_NULL)
     {
@@ -150,26 +153,26 @@ globus_io_tcp_register_connect(
     }
     if(callback == GLOBUS_NULL)
     {
-	return globus_error_put(
-	    globus_io_error_construct_null_parameter(
-	        GLOBUS_IO_MODULE,
-	        GLOBUS_NULL,
-		"callback",
-		4,
-		myname));
+		return globus_error_put(
+			globus_io_error_construct_null_parameter(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+			"callback",
+			4,
+			myname));
     }
     
     rc = globus_i_io_initialize_handle(handle,
-                                       GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
+			GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+		return rc;
     }
     rc = globus_i_io_copy_tcpattr_to_handle(attr,
 					    handle);
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+		return rc;
     }
 
     /* 
@@ -191,15 +194,15 @@ globus_io_tcp_register_connect(
 				     &hp_errnop);
     if (hp == NULL)
     {
-	err = globus_io_error_construct_host_not_found(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    "host",
-	    1,
-	    myname,
-	    host);
+		err = globus_io_error_construct_host_not_found(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			"host",
+			1,
+			myname,
+			host);
 
-	goto error_exit;
+		goto error_exit;
     }
 
     memset(&his_addr, '\0', sizeof(his_addr));
@@ -213,7 +216,7 @@ globus_io_tcp_register_connect(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+		return rc;
     }
 
     /* bind socket (using restrict port for firewalls and interface
@@ -221,77 +224,118 @@ globus_io_tcp_register_connect(
      */
     err = globus_l_io_tcp_bind_socket(handle, attr, &myport);
 
+	/*	The following line of code was originally placed beneath the
+	 *	codeblock that begins with the call to 
+	 *	globus_i_io_setup_nonblocking(). I moved it here so that it
+	 *	apply to both the Unix and Windows versions.
+	 */
+    handle->type = GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED;
+
+#ifndef TARGET_ARCH_WIN32
     /* get it ready for nonblocking I/O */
     if ((rc = globus_i_io_setup_nonblocking(handle)) != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	
-	globus_i_io_debug_printf(2,
-				 ("%s(): "
-				  "globus_i_io_setup_nonblocking() failed\n",
-				  myname));
-	globus_libc_close(handle->fd);
-
-	goto error_exit;
+		err = globus_error_get(rc);
+		
+		globus_i_io_debug_printf(2,
+					("%s(): "
+					"globus_i_io_setup_nonblocking() failed\n",
+					myname));
+		globus_libc_close(handle->fd);
+		goto error_exit;
     }
-    handle->type = GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED;
     
-
     /* start connecting */
     connect_succeeded = GLOBUS_FALSE;
     while (!connect_succeeded)
     {
-	use_his_addr = his_addr;
+		use_his_addr = his_addr;
 
-	if (connect(handle->fd,
+		if (connect(handle->fd,
 		    (struct sockaddr *)&use_his_addr,
 		    sizeof(use_his_addr)) == 0)
-	{
-	    connect_succeeded = GLOBUS_TRUE;
-	}
-	else
-	{
-	    save_errno = errno;
-	    if (save_errno == EINPROGRESS)
-	    {
-		/*
-		 * man connect: EINPROGRESS:
-		 *   The socket is non-blocking and the connection cannot be
-		 *   completed immediately.  It is possible to select(2) for
-		 *   completion by selecting the socket for writing.
-		 * So this connect has, for all practical purposes, succeeded.
-		 */
-		connect_succeeded = GLOBUS_TRUE;
-	    }
-	    else if (save_errno == EINTR)
-	    {
-		/*
-		 * Do nothing.  Just try again.
-		 */
-	    }
-	    else if (save_errno == ETIMEDOUT)
-	    {
-		/*
-		 * Might as well give other threads a chance to run before
-		 * trying again.
-		 */
-	        globus_thread_yield();
-	    }
-	    else
-	    {
-		globus_libc_close(handle->fd);
+		{
+			connect_succeeded = GLOBUS_TRUE;
+		}
+		else
+		{
+			save_errno = errno;
+			if (save_errno == EINPROGRESS )
+			{
+			/*
+			* man connect: EINPROGRESS:
+			*   The socket is non-blocking and the connection cannot be
+			*   completed immediately.  It is possible to select(2) for
+			*   completion by selecting the socket for writing.
+			* So this connect has, for all practical purposes, succeeded.
+			*/
+				connect_succeeded = GLOBUS_TRUE;
+			}
+			else if (save_errno == EINTR)
+			{
+			/*
+			* Do nothing.  Just try again.
+			*/
+			}	
+			else if (save_errno == ETIMEDOUT)	
+			{
+			/*
+			* Might as well give other threads a chance to run before
+			* trying again.
+			*/
+				globus_thread_yield();
+			}
+			else
+			{
+				globus_libc_close(handle->fd);
 
-		/* something else (bad) occurred */
+				/* something else (bad) occurred */
+				err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					save_errno);
+
+				goto error_exit;
+			}
+		}
+    }
+#else
+	// FOR NOW- This call will block (per discussion with Steve) because
+	// the I/O completion port model does not support the connect() call
+	// TODO- change this so that an asynchronous model for calling
+	// connect() can be supported
+	use_his_addr= his_addr;
+	if ( connect( (SOCKET)handle->io_handle, 
+	 (struct sockaddr *)&use_his_addr, 
+	  sizeof(use_his_addr)) == SOCKET_ERROR )
+	{
+		int save_error;
+		globus_i_io_winsock_get_last_error();
+		save_error= errno;
 		err = globus_io_error_construct_system_failure(
-		            GLOBUS_IO_MODULE,
-			    GLOBUS_NULL,
-			    handle,
-			    save_errno);
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			handle,
+			save_error );
+
+		globus_i_io_winsock_close( handle );
 
 		goto error_exit;
-	    }
 	}
+    /* get it ready for nonblocking I/O */
+    if ((rc = globus_i_io_setup_nonblocking(handle)) != GLOBUS_SUCCESS)
+    {
+		err = globus_error_get(rc);
+		
+		globus_i_io_debug_printf(2,
+					("%s(): "
+					"globus_i_io_setup_nonblocking() failed\n",
+					myname));
+		globus_i_io_winsock_close( handle );
+		goto error_exit;
     }
+#endif /* TARGET_ARCH_WIN32 */
 
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTING;
     
@@ -300,40 +344,59 @@ globus_io_tcp_register_connect(
     if(handle->securesocket_attr.authentication_mode ==
        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-	globus_i_io_callback_info_t *	info;
-	
-	info = (globus_i_io_callback_info_t *)
-	    globus_malloc(sizeof(globus_i_io_callback_info_t));
-	info->callback = callback;
-	info->callback_arg = callback_arg;
-	
-	rc = globus_i_io_register_write_func(handle,
+		globus_i_io_callback_info_t *	info;
+		
+		info = (globus_i_io_callback_info_t *)
+			globus_malloc(sizeof(globus_i_io_callback_info_t));
+		info->callback = callback;
+		info->callback_arg = callback_arg;
+		
+		rc = globus_i_io_register_write_func(handle,
 					     globus_i_io_connect_callback,
 					     info,
 					     globus_i_io_default_destructor);
     }
     else
     {
-	globus_i_io_callback_info_t *	info;
-	
-	info = (globus_i_io_callback_info_t *)
-	    globus_malloc(sizeof(globus_i_io_callback_info_t));
-	info->callback = callback;
-	info->callback_arg = callback_arg;
-	
-	rc = globus_i_io_register_write_func(handle,
+		globus_i_io_callback_info_t *	info;
+		
+		info = (globus_i_io_callback_info_t *)
+			globus_malloc(sizeof(globus_i_io_callback_info_t));
+		info->callback = callback;
+		info->callback_arg = callback_arg;
+		
+		rc = globus_i_io_register_write_func(handle,
 					     globus_i_io_securesocket_register_connect_callback,
 					     info,
 					     globus_i_io_default_destructor);
     }
     
+#ifdef TARGET_ARCH_WIN32
+	// post a packet in order to trigger the callback
+	returnCode= globus_i_io_windows_post_completion( 
+				 handle, 
+				 WinIoConnecting );
+	if ( returnCode ) // a fatal error occurred
+	{
+		// unregister the write callback
+		globus_i_io_unregister_write( handle, GLOBUS_FALSE );
+
+		err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				returnCode );
+		goto error_exit;
+	}
+#endif
+
     err = globus_error_get(rc);
 
     globus_i_io_mutex_unlock();
 
     if(rc != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+		goto error_exit;
     }
     
     return GLOBUS_SUCCESS;
@@ -562,34 +625,49 @@ globus_io_tcp_create_listener(
 	goto error_exit;
     }
     
+#ifndef TARGET_ARCH_WIN32
     if(listen(handle->fd,
 	      (backlog < 0 ? SOMAXCONN : backlog)) < 0)
     {
-	save_errno = errno;
+#else
+    if(listen( (SOCKET)handle->io_handle,
+	      (backlog < 0 ? SOMAXCONN : backlog)) == SOCKET_ERROR )
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /*TARGET_ARCH_WIN32 */
+		save_errno = errno;
 
-	globus_assert(GLOBUS_FALSE && "listen() failed");
+		globus_assert(GLOBUS_FALSE && "listen() failed");
 
-	err = globus_io_error_construct_internal_error(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    myname);
+		err = globus_io_error_construct_internal_error(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			myname);
 
-	goto error_exit;    
+		goto error_exit;    
     }
 
+#ifndef TARGET_ARCH_WIN32
     if(getsockname(handle->fd,
 		   (struct sockaddr *) & my_addr,
 		   &len) < 0)
     {
+#else
+    if(getsockname( (SOCKET)handle->io_handle,
+		   (struct sockaddr *) & my_addr,
+		   &len) == SOCKET_ERROR )
+	{
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
         save_errno = errno;
 
         err = globus_io_error_construct_system_failure(
-                  GLOBUS_IO_MODULE,
-	          GLOBUS_NULL,
-	          handle,
-		  save_errno);
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				save_errno);
 
-	goto error_exit;    
+		goto error_exit;    
     }
     
     *port = ntohs(my_addr.sin_port);
@@ -601,7 +679,11 @@ globus_io_tcp_create_listener(
     return GLOBUS_SUCCESS;
     
   error_exit:
+#ifndef TARGET_ARCH_WIN32
     globus_libc_close(handle->fd);
+#else
+	globus_i_io_windows_close( handle );
+#endif /* TARGET_ARCH_WIN32 */
     globus_l_io_tcp_handle_destroy(handle);
     
     return globus_error_put(err);
@@ -667,6 +749,9 @@ globus_io_tcp_register_accept(
     globus_object_t *			err;
     static char *			myname="globus_io_tcp_register_accept";
     globus_netlen_t			addrlen;
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
     
     if(listener_handle == GLOBUS_NULL)
     {
@@ -732,29 +817,29 @@ globus_io_tcp_register_accept(
     /* if passed in, verify attributes are OK */
     if(attr != GLOBUS_NULL)
     {
-	if(attr->attr == GLOBUS_NULL)
-	{
-	    err = globus_io_error_construct_not_initialized(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		2,
-		myname);
+		if(attr->attr == GLOBUS_NULL)
+		{
+			err = globus_io_error_construct_not_initialized(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			"attr",
+			2,
+			myname);
 
-	    goto error_exit;
-	}
-	if(globus_object_get_type(attr->attr) != GLOBUS_IO_OBJECT_TYPE_TCPATTR)
-	{
-	    err = globus_io_error_construct_invalid_type(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    "attr",
-		    2,
-		    myname,
-		    "GLOBUS_IO_OBJECT_TYPE_TCPATTR");
+			goto error_exit;
+		}
+		if(globus_object_get_type(attr->attr) != GLOBUS_IO_OBJECT_TYPE_TCPATTR)
+		{
+			err = globus_io_error_construct_invalid_type(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				"attr",
+				2,
+				myname,
+				"GLOBUS_IO_OBJECT_TYPE_TCPATTR");
 
-	    goto error_exit;
-	}
+			goto error_exit;
+		}
     }
 
     /* Keep a copy of the listener's defaults, so we can restore once
@@ -764,9 +849,9 @@ globus_io_tcp_register_accept(
 				&listener_attr);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	
-	goto error_exit;
+		err = globus_error_get(rc);
+		
+		goto error_exit;
     }
 
     if(attr == GLOBUS_NULL)
@@ -782,24 +867,23 @@ globus_io_tcp_register_accept(
 	/* temporarily change listener to desired attributes */
         rc = globus_io_tcp_set_attr(listener_handle,
                                     attr);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-	
-	    globus_io_tcpattr_destroy(&listener_attr);
+		if(rc != GLOBUS_SUCCESS)
+		{
+			err = globus_error_get(rc);
+		
+			globus_io_tcpattr_destroy(&listener_attr);
 
-	    goto error_exit;
-	}
+			goto error_exit;
+		}
     }
-
 
     rc = globus_i_io_initialize_handle(new_handle,
 				       GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
+		err = globus_error_get(rc);
 
-	goto restore_listener_error_exit;
+		goto restore_listener_error_exit;
     }
     /* Set state of new handle to be the same as the modified listener */
     rc = globus_i_io_copy_tcpattr_to_handle(attr,
@@ -807,9 +891,9 @@ globus_io_tcp_register_accept(
    
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	
-	goto restore_listener_error_exit;
+		err = globus_error_get(rc);
+		
+		goto restore_listener_error_exit;
     }
 
     /* 
@@ -826,43 +910,81 @@ globus_io_tcp_register_accept(
 
     proceed = GLOBUS_FALSE;
 
+#ifndef TARGET_ARCH_WIN32
     /* make the new socket by calling accept() */
     while(!proceed)
     {
-	int				fd;
-	
-	fd = accept(listener_handle->fd,
-		    &addr,
-		    &addrlen);
-	if(fd < 0)
-	{
-	    save_errno = errno;
-	    if(save_errno == EINTR)
-	    {
-		continue;
-	    }
-	    else
-	    {
-		globus_i_io_debug_printf(2,
-					 ("globus_io_tcp_accept(): "
-					  "accept() failed\n"));
+		int				fd;
+		
+		fd = accept(listener_handle->fd,
+				&addr,
+				&addrlen);
+		if(fd < 0)
+		{
+			save_errno = errno;
+			if(save_errno == EINTR)
+			{
+				continue;
+			}
+			else
+			{
+				globus_i_io_debug_printf(2,
+						("globus_io_tcp_accept(): "
+						"accept() failed\n"));
 
-                err = globus_io_error_construct_system_failure(
-		            GLOBUS_IO_MODULE,
-			    GLOBUS_NULL,
-			    new_handle,
-			    save_errno);
+				err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				new_handle,
+				save_errno);
 
-		goto restore_listener_error_exit;
-	    }
-	}
-	else
-	{
-	    new_handle->fd = fd;
-	    proceed = GLOBUS_TRUE;
-	}
+				goto restore_listener_error_exit;
+			}
+		}
+		else
+		{
+			new_handle->fd = fd;
+			proceed = GLOBUS_TRUE;
+		}
     }
+#else
 
+    /* make the new socket by calling accept() */
+	// NOTE: For now, this function will loop continuously if the
+	// call to accept() fails with WSAEWOULDBLOCK
+    while(!proceed)
+    {
+		SOCKET newSocket;		
+		newSocket= accept( (SOCKET)listener_handle->io_handle,
+				 &addr,
+				 &addrlen);
+		if( newSocket == INVALID_SOCKET )
+		{			
+			globus_i_io_winsock_get_last_error();
+			save_errno = errno;
+			if( save_errno != EWOULDBLOCK )
+			{
+				globus_i_io_debug_printf(2,
+						("globus_io_tcp_accept(): "
+						"accept() failed\n"));
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						new_handle,
+						save_errno);
+
+				goto restore_listener_error_exit;
+			}
+		}
+		else
+		{
+			new_handle->io_handle= (HANDLE)newSocket;
+			proceed = GLOBUS_TRUE;
+		}
+    }
+#endif
+		
     /* The new socket is nearly ready now. We now restore the listener
      * to it's original state.
      */
@@ -870,18 +992,18 @@ globus_io_tcp_register_accept(
     {
         rc = globus_io_tcp_set_attr(listener_handle,
                                     &listener_attr);
-	/*
-	 * This is kind of bad. We've changed the listener's default
-	 * state. Not much we can do here, I'm afraid.
-	 */
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-	
-	    globus_io_tcpattr_destroy(&listener_attr);
+		/*
+		* This is kind of bad. We've changed the listener's default
+		* state. Not much we can do here, I'm afraid.
+		*/
+		if(rc != GLOBUS_SUCCESS)
+		{
+			err = globus_error_get(rc);
+		
+			globus_io_tcpattr_destroy(&listener_attr);
 
-	    goto error_exit;
-	}
+			goto error_exit;
+		}
     }
 
     /* We are done with this guy now, so let's free him up */
@@ -890,48 +1012,90 @@ globus_io_tcp_register_accept(
     /* get it ready for nonblocking I/O */
     if ((rc = globus_i_io_setup_nonblocking(new_handle)) != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	
-	globus_i_io_debug_printf(2,
-				 ("%s(): "
-				  "globus_i_io_setup_nonblocking() failed\n",
-				  myname));
-	globus_libc_close(new_handle->fd);
+		err = globus_error_get(rc);
+		
+		globus_i_io_debug_printf(2,
+					("%s(): "
+					"globus_i_io_setup_nonblocking() failed\n",
+					myname));
+#ifndef TARGET_ARCH_WIN32
+		globus_libc_close(new_handle->fd);
+#else
+		globus_i_io_windows_close( new_handle );
+#endif /* TARGET_ARCH_WIN32 */
 
-	goto error_exit;
+		goto error_exit;
     }
 
     new_handle->state = GLOBUS_IO_HANDLE_STATE_ACCEPTING;
+
+#ifdef TARGET_ARCH_WIN32
+	// initialize the WinIoOperation struct
+	globus_i_io_windows_init_io_operation( 
+	 &(new_handle->winIoOperation) );
+	/* associate the new socket with the completion port */
+	if ( CreateIoCompletionPort( new_handle->io_handle,
+		completionPort, (ULONG_PTR)new_handle, 0 ) == NULL )
+	{
+		err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				new_handle,
+				globus_i_io_windows_get_last_error() );
+	
+		globus_i_io_windows_close( new_handle );
+
+		goto error_exit;
+	}
+#endif
 
     /* if no authentication is to be done, callback now */
     if(new_handle->securesocket_attr.authentication_mode ==
        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-	new_handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-	globus_i_io_register_write_func(new_handle,
-				      callback,
-				      callback_arg,
-				      GLOBUS_NULL);
-    }
+		new_handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
+		globus_i_io_register_write_func(new_handle,
+						callback,
+						callback_arg,
+						GLOBUS_NULL);
+#ifdef TARGET_ARCH_WIN32
+		// post a packet in order to trigger the callback
+		returnCode= globus_i_io_windows_post_completion( 
+					new_handle, 
+					WinIoAccepting );
+		if ( returnCode ) // a fatal error occurred
+		{
+			// unregister the write callback
+			globus_i_io_unregister_write( new_handle, GLOBUS_FALSE );
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					new_handle,
+					returnCode );
+			goto error_exit;
+		}
+#endif
+	}
     else
     {
-	globus_i_io_callback_info_t *	info;
-	
-	info = (globus_i_io_callback_info_t *)
-	    globus_malloc(sizeof(globus_i_io_callback_info_t));
-	info->callback = callback;
-	info->callback_arg = callback_arg;
-	
-	rc = globus_i_io_securesocket_register_accept(new_handle,
-						      globus_i_io_accept_callback,
-						      info);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-	    goto error_exit;
-	}
-    }
-    
+		globus_i_io_callback_info_t *	info;
+		
+		info = (globus_i_io_callback_info_t *)
+			globus_malloc(sizeof(globus_i_io_callback_info_t));
+		info->callback = callback;
+		info->callback_arg = callback_arg;
+		
+		rc = globus_i_io_securesocket_register_accept(new_handle,
+								globus_i_io_accept_callback,
+								info);
+		if(rc != GLOBUS_SUCCESS)
+		{
+			err = globus_error_get(rc);
+			goto error_exit;
+		}
+    }	
+
     globus_i_io_debug_printf(1, ("%s(): exit\n",
 				 myname));
 
@@ -947,15 +1111,15 @@ globus_io_tcp_register_accept(
     {
         rc = globus_io_tcp_set_attr(listener_handle,
                                     &listener_attr);
-	/*
-	 * This is kind of bad. We've changed the listener's default
-	 * state. Not much we can do here, I'm afraid.
-	 */
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-	
-	}
+		/*
+		* This is kind of bad. We've changed the listener's default
+		* state. Not much we can do here, I'm afraid.
+		*/
+		if(rc != GLOBUS_SUCCESS)
+		{
+			err = globus_error_get(rc);
+		
+		}
     }
 
     globus_io_tcpattr_destroy(&listener_attr);
@@ -1114,17 +1278,17 @@ globus_io_tcp_get_attr(
     
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
+		err = globus_error_get(rc);
 
-	/* massage the error into one from this call */
-	if(globus_object_type_match(globus_object_get_type(err),
-				    GLOBUS_IO_ERROR_TYPE_BAD_PARAMETER))
-	{
-	    globus_io_error_bad_parameter_set_position(err,2);
-	    globus_io_error_bad_parameter_set_name(err,"attr");
-	    globus_io_error_bad_parameter_set_function(err,myname);
-	}
-	goto error_exit;
+		/* massage the error into one from this call */
+		if(globus_object_type_match(globus_object_get_type(err),
+						GLOBUS_IO_ERROR_TYPE_BAD_PARAMETER))
+		{
+			globus_io_error_bad_parameter_set_position(err,2);
+			globus_io_error_bad_parameter_set_name(err,"attr");
+			globus_io_error_bad_parameter_set_function(err,myname);
+		}
+		goto error_exit;
     }
 
     globus_i_io_securesocket_get_attr(handle,
@@ -1238,22 +1402,32 @@ globus_io_tcp_set_attr(
     /* set local socket options */
     if(instance->nodelay != handle->tcp_attr.nodelay)
     {
-	if(setsockopt(handle->fd,
-		      IPPROTO_TCP,
-		      TCP_NODELAY,
-		      (char *) &instance->nodelay,
-		      sizeof(instance->nodelay)) < 0)
-	{
-	    save_errno = errno;
+#ifndef TARGET_ARCH_WIN32
+		if(setsockopt(handle->fd,
+				IPPROTO_TCP,
+				TCP_NODELAY,
+				(char *) &instance->nodelay,
+				sizeof(instance->nodelay)) < 0)
+		{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				IPPROTO_TCP,
+				TCP_NODELAY,
+				(char *) &instance->nodelay,
+				sizeof(instance->nodelay)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
+			save_errno = errno;
 
-	    err = globus_io_error_construct_system_failure(
-		        GLOBUS_IO_MODULE,
-		        GLOBUS_NULL,
-			handle,
-		        save_errno);
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					save_errno);
 
-	    goto error_exit;
-	}
+			goto error_exit;
+		}
     }
 
     if(instance->restrict_port != handle->tcp_attr.restrict_port)
@@ -1275,35 +1449,35 @@ globus_io_tcp_set_attr(
 					   attr);
     if(rc != GLOBUS_SUCCESS)
     {
-	int pos;
+		int pos;
 
-	err = globus_error_get(rc);
-	if(globus_object_type_match(globus_object_get_type(err),
-				    GLOBUS_IO_ERROR_TYPE_BAD_PARAMETER))
-	{
-	    pos = globus_io_error_bad_parameter_get_position(err);
+		err = globus_error_get(rc);
+		if(globus_object_type_match(globus_object_get_type(err),
+						GLOBUS_IO_ERROR_TYPE_BAD_PARAMETER))
+		{
+			pos = globus_io_error_bad_parameter_get_position(err);
 
-	    if(pos == 1)
-	    {
-		globus_io_error_bad_parameter_set_position(err,1);
-		globus_io_error_bad_parameter_set_name(err,"handle");
-		globus_io_error_bad_parameter_set_function(err,myname);
-	    }
-	    else if(pos == 2)
-	    {
-		globus_io_error_bad_parameter_set_position(err,2);
-		globus_io_error_bad_parameter_set_name(err,"attr");
-		globus_io_error_bad_parameter_set_function(err,myname);
-	    }
-	}
+			if(pos == 1)
+			{
+			globus_io_error_bad_parameter_set_position(err,1);
+			globus_io_error_bad_parameter_set_name(err,"handle");
+			globus_io_error_bad_parameter_set_function(err,myname);
+			}
+			else if(pos == 2)
+			{
+			globus_io_error_bad_parameter_set_position(err,2);
+			globus_io_error_bad_parameter_set_name(err,"attr");
+			globus_io_error_bad_parameter_set_function(err,myname);
+			}
+		}
 
-	goto undo_nodelay;
+		goto undo_nodelay;
     }
 
     /* commit any changes to the handle structure */
     if(instance->nodelay != handle->tcp_attr.nodelay)
     {
-	handle->tcp_attr.nodelay = instance->nodelay;
+		handle->tcp_attr.nodelay = instance->nodelay;
     }
     
     return GLOBUS_SUCCESS;
@@ -1311,11 +1485,15 @@ globus_io_tcp_set_attr(
   undo_nodelay:
     if(instance->nodelay != handle->tcp_attr.nodelay)
     {
-	setsockopt(handle->fd,
-		   IPPROTO_TCP,
-		   TCP_NODELAY,
-		   (char *) &handle->tcp_attr.nodelay,
-		   sizeof(handle->tcp_attr.nodelay));
+#ifndef TARGET_ARCH_WIN32
+		setsockopt(handle->fd,
+#else
+#endif
+		setsockopt( (SOCKET)handle->io_handle,
+			IPPROTO_TCP,
+			TCP_NODELAY,
+			(char *) &handle->tcp_attr.nodelay,
+			sizeof(handle->tcp_attr.nodelay));
     }
     
   error_exit:
@@ -1900,11 +2078,20 @@ globus_io_tcp_get_local_address(
 
 	goto error_exit;
     }
+#ifndef TARGET_ARCH_WIN32
     if(getsockname(handle->fd,
 		   (struct sockaddr *) & my_addr,
 		   &len) < 0)
     {
-	int save_errno;
+		int save_errno;
+#else
+    if(getsockname( (SOCKET)handle->io_handle,
+		   (struct sockaddr *) & my_addr,
+		   &len) == SOCKET_ERROR )
+    {
+		int save_errno;
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32*/
 
         save_errno = errno;
 
@@ -2015,11 +2202,20 @@ globus_io_tcp_get_remote_address(
 
 	goto error_exit;
     }
+#ifndef TARGET_ARCH_WIN32
     if(getpeername(handle->fd,
 		   (struct sockaddr *) & my_addr,
 		   &len) < 0)
     {
-	int save_errno;
+		int save_errno;
+#else
+    if(getpeername( (SOCKET)handle->io_handle,
+		   (struct sockaddr *) & my_addr,
+		   &len) == SOCKET_ERROR )
+    {
+		int save_errno;
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
 
         save_errno = errno;
 
@@ -2077,35 +2273,65 @@ globus_l_io_tcp_create_socket(
     
     handle->context = GSS_C_NO_CONTEXT;
 
+#ifndef TARGET_ARCH_WIN32
     if((handle->fd = socket(AF_INET,
 			    SOCK_STREAM,
 			    0)) < 0)
     {
-	save_errno = errno;
+#else
+    if( (SOCKET)( handle->io_handle = (HANDLE)socket( AF_INET,
+	 SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
+		save_errno = errno;
 
-	err = globus_io_error_construct_system_failure(
+		err = globus_io_error_construct_system_failure(
 	            GLOBUS_IO_MODULE,
 		    GLOBUS_NULL,
 		    handle,
 		    save_errno);
 	
-	goto error_exit;
+		goto error_exit;
     }
 
     rc = globus_l_io_setup_tcp_socket(handle);
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(rc);
-	goto error_exit;
+		err = globus_error_get(rc);
+		goto error_exit;
     }
+
+#ifdef TARGET_ARCH_WIN32
+	/* initialize the WinIoOperation struct */
+	globus_i_io_windows_init_io_operation( 
+	 &(handle->winIoOperation) );
+	/* associate the socket with the completion port */
+	if ( CreateIoCompletionPort( handle->io_handle,
+		completionPort, (ULONG_PTR)handle, 0 ) == NULL )
+	{
+		err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				globus_i_io_windows_get_last_error() );
+	
+		goto error_exit;
+	}
+#endif
     
     return GLOBUS_SUCCESS;
     
   error_exit:
+#ifndef TARGET_ARCH_WIN32
     if(handle->fd >= 0)
     {
-	globus_libc_close(handle->fd);
+		globus_libc_close(handle->fd);
     }
+#else
+    if( (SOCKET)handle->io_handle != INVALID_SOCKET )
+		globus_i_io_windows_close( handle );
+#endif /* TARGET_ARCH_WIN32 */
 
     return globus_error_put(err);
 }
@@ -2152,56 +2378,76 @@ globus_l_io_setup_tcp_socket(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+		return rc;
     }
     else
     {
-	if(handle->tcp_attr.nodelay)
-	{
-	    if(setsockopt(handle->fd,
-			  IPPROTO_TCP,
-			  TCP_NODELAY,
-			  (char *) &one,
-			  sizeof(one)) < 0)
-	    {
-		save_errno = errno;
-		goto error_exit;
-	    }
-	}
+		if(handle->tcp_attr.nodelay)
+		{	
+#ifndef TARGET_ARCH_WIN32
+			if(setsockopt(handle->fd,
+				IPPROTO_TCP,
+				TCP_NODELAY,
+				(char *) &one,
+				sizeof(one)) < 0)
+			{
+#else
+			if(setsockopt( (SOCKET)handle->io_handle,
+				IPPROTO_TCP,
+				TCP_NODELAY,
+				(char *) &one,
+				sizeof(one)) == SOCKET_ERROR )
+			{
+				globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
+				save_errno = errno;
+				goto error_exit;
+		    }
+		}
 
 #       ifdef HAVE_TCP_FASTACK
-	{
-	    /* If using a socket one-way only, there are potential
-	     * problems on IRIX 6.5; occasionally an ACK to a probing
-	     * packet will not left unanswered or dropped, resulting
-	     * in a reset of the TCP window and a 5-second timeout.
-	     *
-	     * While investigating the nature of the bug, SGI have
-	     * provided a workaround; Setting the IRIX-specific
-	     * TCP_FASTACK will result in a much shorter timeout
-	     * instead of a 5-second timeout. We can live with that
-	     * for the time being.
-	     */
-	
-	    int     fastack_arg;
-	    char *  fastack_str = globus_libc_getenv("GLOBUS_IO_TCP_FASTACK");
-	    
-	    if (fastack_str)
-	    {
-		fastack_arg = atoi(fastack_str);
-		if (fastack_arg < 0) fastack_arg = 0;
-		
-		if(setsockopt(handle->fd,
-			      IPPROTO_TCP,
-			      TCP_FASTACK,
-			      &fastack_arg,
-			      sizeof(fastack_arg)) < 0)
 		{
-		    save_errno = errno;               
-		    goto error_exit;
+			/* If using a socket one-way only, there are potential
+			* problems on IRIX 6.5; occasionally an ACK to a probing
+			* packet will not left unanswered or dropped, resulting
+			* in a reset of the TCP window and a 5-second timeout.
+			*
+			* While investigating the nature of the bug, SGI have
+			* provided a workaround; Setting the IRIX-specific
+			* TCP_FASTACK will result in a much shorter timeout
+			* instead of a 5-second timeout. We can live with that
+			* for the time being.
+			*/
+		
+			int     fastack_arg;
+			char *  fastack_str = globus_libc_getenv("GLOBUS_IO_TCP_FASTACK");
+		    
+			if (fastack_str)
+			{
+				fastack_arg = atoi(fastack_str);
+				if (fastack_arg < 0) fastack_arg = 0;
+		
+#ifndef TARGET_ARCH_WIN32
+				if(setsockopt(handle->fd,
+						IPPROTO_TCP,
+						TCP_FASTACK,
+						&fastack_arg,
+						sizeof(fastack_arg)) < 0)
+				{
+#else
+				if(setsockopt(handle->io_handle,
+						IPPROTO_TCP,
+						TCP_FASTACK,
+						&fastack_arg,
+						sizeof(fastack_arg)) == SOCKET_ERROR )
+				{
+					globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
+					save_errno = errno;               
+					goto error_exit;
+				}
+		    }
 		}
-	    }
-	}
 #       endif /* HAVE_TCP_FASTACK */
     }
     return GLOBUS_SUCCESS;
@@ -2248,8 +2494,8 @@ globus_l_io_tcp_bind_socket(
         if(globus_i_io_tcp_used_port_table != GLOBUS_NULL &&
 	   instance->restrict_port)
         {
-	    myport = globus_i_io_tcp_used_port_min;
-	    end_port = globus_i_io_tcp_used_port_max;
+			myport = globus_i_io_tcp_used_port_min;
+			end_port = globus_i_io_tcp_used_port_max;
         }
     }
     else
@@ -2259,19 +2505,21 @@ globus_l_io_tcp_bind_socket(
 
     do
     {
-	found_port = GLOBUS_FALSE;
-        if(!strcmp(instance->interface, "000.000.000.000"))
+		found_port = GLOBUS_FALSE;
+        if(!strcmp(instance->interface_addr, "000.000.000.000"))
         {
             my_addr.sin_addr.s_addr = INADDR_ANY;
         }
         else
         {
-	    my_addr.sin_addr.s_addr = inet_addr(&instance->interface[0]);
-	}
+			my_addr.sin_addr.s_addr = inet_addr(&instance->interface_addr[0]);
+		}
         my_addr.sin_family = AF_INET;
         my_addr.sin_port = htons(myport);
 
-        if(bind(handle->fd,
+
+#ifndef TARGET_ARCH_WIN32
+		if(bind(handle->fd,
 	    (struct sockaddr *)&my_addr,
 	    len) >= 0)
         {
@@ -2279,13 +2527,23 @@ globus_l_io_tcp_bind_socket(
         }
         else
         {
+#else
+		if( bind( (SOCKET)handle->io_handle, 
+		 (struct sockaddr *)&my_addr, len ) == 0 )
+        {
+            found_port = GLOBUS_TRUE;
+        }
+        else
+        {
+			globus_i_io_winsock_get_last_error();
+#endif
             (myport)++;
 
-	    if(myport > end_port)
-	    {
-                bind_error = GLOBUS_TRUE;
-	    }
-	}
+			if(myport > end_port)
+			{
+					bind_error = GLOBUS_TRUE;
+			}
+		}
     } while(!found_port && !bind_error);
 
     if(bind_error)

@@ -38,7 +38,11 @@ static char *rcsid = "$Header$";
 #ifdef HAVE_SYSCONF
 #   define GLOBUS_L_IO_NUM_FDS sysconf(_SC_OPEN_MAX)
 #else
+# ifndef TARGET_ARCH_WIN32
 #   define GLOBUS_L_IO_NUM_FDS 256
+# else
+#   define GLOBUS_L_IO_NUM_FDS 256
+# endif
 #endif
 
 /*
@@ -146,6 +150,19 @@ globus_l_io_adaptive_skip_poll_get_delay(
 static globus_bool_t globus_l_io_activate(void);
 static globus_bool_t globus_l_io_deactivate(void);
 
+/* This is the old module descriptor: */
+/*
+globus_module_descriptor_t globus_i_io_module =
+{
+    "globus_io",
+    globus_l_io_activate,
+    globus_l_io_deactivate,
+    GLOBUS_NULL
+};
+*/
+
+/* This is the new module descriptor: */
+
 globus_module_descriptor_t globus_i_io_module =
 {
     "globus_io",
@@ -155,6 +172,7 @@ globus_module_descriptor_t globus_i_io_module =
     GLOBUS_NULL,
     &local_version
 };
+
 
 /*
  * Module specific variables
@@ -277,6 +295,7 @@ static volatile globus_bool_t	        globus_l_io_wakeup_pending;
  */
 static volatile globus_bool_t	        globus_l_io_shutdown_called;
 
+#ifndef TARGET_ARCH_WIN32
 /**
  * Pipe to myself.
  *
@@ -292,6 +311,9 @@ static int			        globus_l_io_wakeup_pipe[2];
  * This is used so that it can be registered properly.
  */
 static globus_io_handle_t	        globus_l_io_wakeup_pipe_handle;
+#else
+static globus_io_handle_t	        winWakeUpHandle;
+#endif
 
 /**
  * Handle to the periodic event registered with the globus_callback
@@ -343,12 +365,21 @@ static globus_bool_t                    globus_l_io_use_skip_poll;
     (Qhead) = (Qhead)->next; \
 }
 
+#ifndef TARGET_ARCH_WIN32
 #define globus_l_io_read_isregistered(handle) \
     (FD_ISSET(handle->fd, globus_l_io_read_fds))
 #define globus_l_io_write_isregistered(handle) \
     (FD_ISSET(handle->fd, globus_l_io_write_fds))
 #define globus_l_io_except_isregistered(handle) \
     (FD_ISSET(handle->fd, globus_l_io_except_fds))
+#else
+#define globus_l_io_read_isregistered(handle) \
+    (FD_ISSET(handle->io_handle, globus_l_io_read_fds))
+#define globus_l_io_write_isregistered(handle) \
+    (FD_ISSET(handle->io_handle, globus_l_io_write_fds))
+#define globus_l_io_except_isregistered(handle) \
+    (FD_ISSET(handle->io_handle, globus_l_io_except_fds))
+#endif
 
 /******************************************************************************
 		       Module specific callbacks
@@ -370,6 +401,13 @@ globus_l_io_table_remove_fd(
 static
 int
 globus_l_io_handle_events(void);
+
+#ifdef TARGET_ARCH_WIN32
+// Windows-specific helper functions
+int globus_l_io_get_table_index( globus_io_handle_t * handle );
+int globus_l_io_get_first_available_table_slot( void );
+void globus_l_io_remove_handle_from_table( globus_io_handle_t * handle );
+#endif
 
 
 /******************************************************************************
@@ -398,35 +436,49 @@ globus_l_io_select_wakeup(void)
 
     if(!globus_l_io_mutex_acquired())
     {
-	return GLOBUS_FALSE;
+		return GLOBUS_FALSE;
     }
 
     if (!globus_l_io_select_active || globus_l_io_wakeup_pending)
     {
-	rc = GLOBUS_TRUE;
-	goto fn_exit;
+		rc = GLOBUS_TRUE;
+		goto fn_exit;
     }
 
     globus_i_io_debug_printf(5,
 		       ("globus_l_io_select_wakeup(): poking handler thread\n"));
 
+#ifndef TARGET_ARCH_WIN32
     while ((rc = globus_libc_write(globus_l_io_wakeup_pipe[1],
 				   &byte,
 				   sizeof(char))) == -1 &&
 	   errno == EINTR)
     {
-	/* do nothing */
+		/* do nothing */
     }
 
     if (rc > 0)
     {
-	globus_l_io_wakeup_pending = GLOBUS_TRUE;
-	rc = GLOBUS_TRUE;
+		globus_l_io_wakeup_pending = GLOBUS_TRUE;
+		rc = GLOBUS_TRUE;
     }
     else
     {
-	rc = GLOBUS_FALSE;
+		rc = GLOBUS_FALSE;
     }
+#else
+	// post a fake completion packet so that GetQueuedCompletionStatus()
+	// will return
+	rc= globus_i_io_windows_post_completion( &winWakeUpHandle, 
+	 WinIoWakeup );
+	if ( rc ) // error occurred
+		rc= GLOBUS_FALSE;
+	else
+    {
+		globus_l_io_wakeup_pending = GLOBUS_TRUE;
+		rc = GLOBUS_TRUE;
+    }
+#endif
 
   fn_exit:
     globus_i_io_debug_printf(3, ("globus_l_io_select_wakeup(): exiting\n"));
@@ -491,6 +543,9 @@ globus_l_io_table_add(
     globus_io_handle_t *		handle)
 {
     globus_io_select_info_t *		select_info;
+#ifdef TARGET_ARCH_WIN32
+	int index;
+#endif
 
     globus_i_io_debug_printf(3,
 		       ("globus_l_io_table_add(): entering, fd=%d\n",
@@ -500,11 +555,24 @@ globus_l_io_table_add(
      *			("globus_l_io_table_add()\n"));
      */
 
+#ifdef TARGET_ARCH_WIN32
+	// check whether there is already an entry in the table for this
+	// socket/file
+	// if so, set fd to that index
+	// else, find the index of the first available slot
+	index= globus_l_io_get_table_index( handle );
+	if ( index != -1 ) // found it!
+		handle->fd= index;
+	else // not in the table yet- get the first available slot
+		handle->fd= globus_l_io_get_first_available_table_slot();
+		// TODO: We should check this return value- it could be invalid!
+#endif
+
     if (globus_l_io_fd_table[handle->fd])
     {
-	globus_l_io_fd_table[handle->fd]->handle = handle;
+		globus_l_io_fd_table[handle->fd]->handle = handle;
 
-	goto fn_exit;
+		goto fn_exit;
     }
     select_info = (globus_io_select_info_t *)
 	globus_malloc(sizeof(globus_io_select_info_t));
@@ -520,7 +588,7 @@ globus_l_io_table_add(
     globus_l_io_fd_table[handle->fd] = select_info;
     if(globus_l_io_highest_fd < handle->fd)
     {
-	globus_l_io_highest_fd = handle->fd;
+		globus_l_io_highest_fd = handle->fd;
     }
 
   fn_exit:
@@ -587,10 +655,10 @@ globus_l_io_table_remove_fd(
     select_info = globus_l_io_fd_table[fd];
     if (select_info != GLOBUS_NULL)
     {
-	globus_l_io_fd_table[fd] = (void *) GLOBUS_NULL;
-	globus_l_io_fd_table_modified = GLOBUS_TRUE;
-	
-	globus_free(select_info);
+		globus_l_io_fd_table[fd] = (void *) GLOBUS_NULL;
+		globus_l_io_fd_table_modified = GLOBUS_TRUE;
+		
+		globus_free(select_info);
     }
 
     globus_i_io_debug_printf(3, ("globus_l_io_table_remove_fd(): exiting\n"));
@@ -627,16 +695,20 @@ globus_i_io_register_read_func(
     globus_l_io_table_add(handle);
     select_info = globus_l_io_fd_table[handle->fd];
 
+#ifndef TARGET_ARCH_WIN32
     if(FD_ISSET(handle->fd, globus_l_io_read_fds))
+#else
+    if(FD_ISSET(handle->io_handle, globus_l_io_read_fds))
+#endif
     {
-	globus_object_t *		err;
+		globus_object_t *		err;
 
-	err = globus_io_error_construct_read_already_registered(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    handle);
-	
-	return globus_error_put(err);
+		err = globus_io_error_construct_read_already_registered(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			handle);
+		
+		return globus_error_put(err);
     }
     
     select_info->read_callback = callback_func;
@@ -644,7 +716,11 @@ globus_i_io_register_read_func(
     select_info->read_destructor = arg_destructor;
     select_info->read_select = register_select;
     
+#ifndef TARGET_ARCH_WIN32
     FD_SET(handle->fd, globus_l_io_read_fds);
+#else
+    FD_SET( (SOCKET)handle->io_handle, globus_l_io_read_fds);
+#endif
     globus_l_io_fd_num_set++;
 
     if(!register_select)
@@ -689,11 +765,19 @@ globus_i_io_unregister_read(
     globus_l_io_table_add(handle);
     select_info = globus_l_io_fd_table[handle->fd];
 
+#ifndef TARGET_ARCH_WIN32
     if(!FD_ISSET(handle->fd, globus_l_io_read_fds))
+#else
+    if(!FD_ISSET(handle->io_handle, globus_l_io_read_fds))
+#endif
     {
 	globus_object_t *		err;
 
+#ifndef TARGET_ARCH_WIN32
 	globus_assert(FD_ISSET(handle->fd, globus_l_io_read_fds));
+#else
+	globus_assert(FD_ISSET(handle->io_handle, globus_l_io_read_fds));
+#endif
 
 	err = globus_io_error_construct_internal_error(
 	    GLOBUS_IO_MODULE,
@@ -722,7 +806,11 @@ globus_i_io_unregister_read(
     select_info->read_arg = GLOBUS_NULL;
     select_info->read_destructor = GLOBUS_NULL;
 
+#ifndef TARGET_ARCH_WIN32
     FD_CLR(handle->fd, globus_l_io_read_fds);
+#else
+    FD_CLR( (SOCKET)handle->io_handle, globus_l_io_read_fds);
+#endif
     globus_l_io_fd_num_set--;
     globus_l_io_fd_table_modified = GLOBUS_TRUE;
     
@@ -763,20 +851,27 @@ globus_i_io_register_write_func(
      */
     globus_l_io_table_add(handle);
     select_info = globus_l_io_fd_table[handle->fd];
-
+#ifndef TARGET_ARCH_WIN32
     if(FD_ISSET(handle->fd, globus_l_io_write_fds))
+#else
+    if(FD_ISSET(handle->io_handle, globus_l_io_write_fds))
+#endif
     {
-	globus_object_t *		err;
+		globus_object_t *		err;
 
-	err = globus_io_error_construct_write_already_registered(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    handle);
+		err = globus_io_error_construct_write_already_registered(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			handle);
 
-	return globus_error_put(err);
+		return globus_error_put(err);
     }
     
+#ifndef TARGET_ARCH_WIN32
     FD_SET(handle->fd, globus_l_io_write_fds);
+#else
+    FD_SET( (SOCKET)handle->io_handle, globus_l_io_write_fds);
+#endif
     select_info->write_callback = callback_func;
     select_info->write_arg = callback_arg;
     select_info->write_destructor = write_destructor;
@@ -824,18 +919,26 @@ globus_i_io_unregister_write(
     globus_l_io_table_add(handle);
     select_info = globus_l_io_fd_table[handle->fd];
 
-    if(!FD_ISSET(handle->fd, globus_l_io_write_fds))
+#ifndef TARGET_ARCH_WIN32
+	if(!FD_ISSET(handle->fd, globus_l_io_write_fds))
+#else
+	if(!FD_ISSET(handle->io_handle, globus_l_io_write_fds))
+#endif
     {
-	globus_object_t *		err;
+		globus_object_t *		err;
 
-	globus_assert(FD_ISSET(handle->fd, globus_l_io_write_fds));
+#ifndef TARGET_ARCH_WIN32
+		globus_assert(FD_ISSET(handle->fd, globus_l_io_write_fds));
+#else
+		globus_assert(FD_ISSET(handle->io_handle, globus_l_io_write_fds));
+#endif
 
-	err = globus_io_error_construct_internal_error(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    myname);
+		err = globus_io_error_construct_internal_error(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			myname);
 
-	return globus_error_put(err);
+		return globus_error_put(err);
     }
     
     select_info->write_callback = GLOBUS_NULL;
@@ -848,7 +951,11 @@ globus_i_io_unregister_write(
     select_info->write_arg = GLOBUS_NULL;
     select_info->write_destructor = GLOBUS_NULL;
 
+#ifndef TARGET_ARCH_WIN32
     FD_CLR(handle->fd, globus_l_io_write_fds);
+#else
+    FD_CLR( (SOCKET)handle->io_handle, globus_l_io_write_fds);
+#endif
     globus_l_io_fd_num_set--;
     globus_l_io_fd_table_modified = GLOBUS_TRUE;
     
@@ -889,7 +996,11 @@ globus_i_io_register_except_func(
     globus_l_io_table_add(handle);
     select_info = globus_l_io_fd_table[handle->fd];
 
+#ifndef TARGET_ARCH_WIN32
     if(FD_ISSET(handle->fd, globus_l_io_except_fds))
+#else
+    if(FD_ISSET(handle->io_handle, globus_l_io_except_fds))
+#endif
     {
 	globus_object_t *		err;
 
@@ -904,12 +1015,16 @@ globus_i_io_register_except_func(
     select_info->except_callback = callback_func;
     select_info->except_arg = callback_arg;
 
+#ifndef TARGET_ARCH_WIN32
     FD_SET(handle->fd, globus_l_io_except_fds);
+#else
+    FD_SET( (SOCKET)handle->io_handle, globus_l_io_except_fds);
+#endif
     globus_l_io_fd_num_set++;
 
     if (globus_l_io_select_active)
     {
-	globus_l_io_select_wakeup();
+		globus_l_io_select_wakeup();
     }
 
     globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
@@ -947,23 +1062,35 @@ globus_i_io_unregister_except(
     globus_l_io_table_add(handle);
     select_info = globus_l_io_fd_table[handle->fd];
 
+#ifndef TARGET_ARCH_WIN32
     if(!FD_ISSET(handle->fd, globus_l_io_except_fds))
+#else
+    if(!FD_ISSET(handle->io_handle, globus_l_io_except_fds))
+#endif
     {
-	globus_object_t *		err;
+		globus_object_t *		err;
 
-	globus_assert(!FD_ISSET(handle->fd, globus_l_io_except_fds));
-	err = globus_io_error_construct_internal_error(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    myname);
+#ifndef TARGET_ARCH_WIN32
+		globus_assert(!FD_ISSET(handle->fd, globus_l_io_except_fds));
+#else
+		globus_assert(!FD_ISSET(handle->io_handle, globus_l_io_except_fds));
+#endif
+		err = globus_io_error_construct_internal_error(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			myname);
 
-	return globus_error_put(err);
+		return globus_error_put(err);
     }
     
     select_info->except_callback = GLOBUS_NULL;
     select_info->except_arg = GLOBUS_NULL;
 
+#ifndef TARGET_ARCH_WIN32
     FD_CLR(handle->fd, globus_l_io_except_fds);
+#else
+    FD_CLR( (SOCKET)handle->io_handle, globus_l_io_except_fds);
+#endif
     globus_l_io_fd_num_set--;
     globus_l_io_fd_table_modified = GLOBUS_TRUE;
     
@@ -1006,46 +1133,46 @@ globus_i_io_close(
 
     if(globus_l_io_read_isregistered(handle))
     {
-	globus_i_io_unregister_read(handle, GLOBUS_TRUE);
+		globus_i_io_unregister_read(handle, GLOBUS_TRUE);
 
-        /* Don't create an error if we are closing the pipe
-         * handle
-         */
-        if(handle->type != GLOBUS_IO_HANDLE_TYPE_INTERNAL)
-        {
-	    err = globus_io_error_construct_internal_error(
-	        GLOBUS_IO_MODULE,
-	        GLOBUS_NULL,
-	        myname);
+		/* Don't create an error if we are closing the pipe
+		* handle
+		*/
+		if(handle->type != GLOBUS_IO_HANDLE_TYPE_INTERNAL)
+		{
+			err = globus_io_error_construct_internal_error(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				myname);
 
-	    rc = globus_error_put(err);
-	}
+			rc = globus_error_put(err);
+		}
     }
 
     if(globus_l_io_write_isregistered(handle))
     {
-	globus_i_io_unregister_write(handle, GLOBUS_TRUE);
-	if(rc == GLOBUS_SUCCESS)
-	{
-	    err = globus_io_error_construct_internal_error(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		myname);
-	    rc = globus_error_put(err);
-	}
+		globus_i_io_unregister_write(handle, GLOBUS_TRUE);
+		if(rc == GLOBUS_SUCCESS)
+		{
+			err = globus_io_error_construct_internal_error(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			myname);
+			rc = globus_error_put(err);
+		}
     }
 
     if(globus_l_io_except_isregistered(handle))
     {
-	globus_i_io_unregister_except(handle);
-	if(rc == GLOBUS_SUCCESS)
-	{
-	    err = globus_io_error_construct_internal_error(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		myname);
-	    rc = globus_error_put(err);
-	}
+		globus_i_io_unregister_except(handle);
+		if(rc == GLOBUS_SUCCESS)
+		{
+			err = globus_io_error_construct_internal_error(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			myname);
+			rc = globus_error_put(err);
+		}
     }
 
     /*
@@ -1058,6 +1185,11 @@ globus_i_io_close(
     }
 #   endif
 
+#ifdef TARGET_ARCH_WIN32
+	// remove the handle from the table by nullifying its reference
+	globus_l_io_remove_handle_from_table( handle );
+#endif
+
     /*
      * Force the handler thread to return from the select() before attempting
      * to close() listeners.  This is necessary because we may be in the
@@ -1066,16 +1198,16 @@ globus_i_io_close(
      */
     if (globus_l_io_select_active && globus_l_io_fd_table_modified)
     {
-	unsigned			cnt = globus_l_io_select_count;
-	
-	globus_l_io_select_wakeup();
+		unsigned			cnt = globus_l_io_select_count;
+		
+		globus_l_io_select_wakeup();
 
-	while(cnt == globus_l_io_select_count)
-	{
-	    globus_l_io_cond_wait();
-	}
+		while(cnt == globus_l_io_select_count)
+		{
+			globus_l_io_cond_wait();
+		}
     }
-
+#ifndef TARGET_ARCH_WIN32
     /*
      * Close() the FD. First we set it to blocking, so that any data
      * in the file descriptor's kernel buffers gets written before
@@ -1085,29 +1217,29 @@ globus_i_io_close(
 			  F_GETFL,
 			  0)) < 0)
     {
-	save_errno = errno;
-	if(save_errno != EINTR)
-	{
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		err = globus_io_error_construct_internal_error(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    myname);
-		
-		rc = globus_error_put(err);
-	    }
-	    goto close_fd;
-	}
+		save_errno = errno;
+		if(save_errno != EINTR)
+		{
+			if(rc != GLOBUS_SUCCESS)
+			{
+				err = globus_io_error_construct_internal_error(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					myname);
+				
+				rc = globus_error_put(err);
+			}
+			goto close_fd;
+		}
     }
     
 #   if defined(TARGET_ARCH_HPUX)
     {
-	flags &= ~O_NONBLOCK;
+		flags &= ~O_NONBLOCK;
     }
 #   else
     {
-	flags &= ~O_NDELAY;
+		flags &= ~O_NDELAY;
     }
 #   endif
     
@@ -1115,40 +1247,42 @@ globus_i_io_close(
 		 F_SETFL,
 		 flags) < 0)
     {
-	save_errno = errno;
-	if(save_errno != EINTR)
-	{
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		err = globus_io_error_construct_internal_error(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    myname);
-		
-		rc = globus_error_put(err);
-	    }
-	    goto close_fd;
-	}
+		save_errno = errno;
+		if(save_errno != EINTR)
+		{
+			if(rc != GLOBUS_SUCCESS)
+			{
+				err = globus_io_error_construct_internal_error(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					myname);
+				
+				rc = globus_error_put(err);
+			}
+			goto close_fd;
+		}
     }
-    
  close_fd:
     while (globus_libc_close(handle->fd) < 0)
     {
-	save_errno = errno;
-	if (save_errno != EINTR)
-	{
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		err = globus_io_error_construct_internal_error(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    myname);
-		
-		rc = globus_error_put(err);
-	    }
-	    break;
-	}
+		save_errno = errno;
+		if (save_errno != EINTR)
+		{
+			if(rc != GLOBUS_SUCCESS)
+			{
+				err = globus_io_error_construct_internal_error(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					myname);
+				
+				rc = globus_error_put(err);
+			}
+			break;
+		}
     }
+#else
+	globus_i_io_windows_close( handle );
+#endif /* TARGET_ARCH_WIN32 */
 
     globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
 
@@ -1352,27 +1486,27 @@ globus_i_io_register_cancel(
     if(cancel_callback != GLOBUS_NULL ||
        perform_callbacks)
     {
-	/* create data structure to be used in the next poll to perform
-	 * the callbacks
-	 */
-	if(globus_l_io_cancel_free_list)
-	{
-	    cancel_info = globus_l_io_cancel_free_list;
-	    
-	    globus_l_io_cancel_free_list =
-		globus_l_io_cancel_free_list->next;
-	    
-	    cancel_info->next = GLOBUS_NULL;
-	}
-	else
-	{
-	    cancel_info = globus_malloc(sizeof(globus_io_cancel_info_t));
-	}
-	memset(cancel_info,
-	       '\0',
-	       sizeof(globus_io_cancel_info_t));
+		/* create data structure to be used in the next poll to perform
+		* the callbacks
+		*/
+		if(globus_l_io_cancel_free_list)
+		{
+			cancel_info = globus_l_io_cancel_free_list;
+		    
+			globus_l_io_cancel_free_list =
+			globus_l_io_cancel_free_list->next;
+		    
+			cancel_info->next = GLOBUS_NULL;
+		}
+		else
+		{
+			cancel_info = globus_malloc(sizeof(globus_io_cancel_info_t));
+		}
+		memset(cancel_info,
+			'\0',
+			sizeof(globus_io_cancel_info_t));
 
-	cancel_info->handle = select_info->handle;
+		cancel_info->handle = select_info->handle;
     }
     
     /* store any callbacks in the cancel_info structure, and unregister
@@ -1380,69 +1514,69 @@ globus_i_io_register_cancel(
      */
     if (globus_l_io_read_isregistered(select_info->handle))
     {
-	globus_bool_t			call_destructor = GLOBUS_FALSE;
-	
-	if(perform_callbacks)
-	{
-	    cancel_info->read_callback = select_info->read_callback;
-	    cancel_info->read_arg = select_info->read_arg;
-	    cancel_info->read_dispatched = GLOBUS_FALSE;
-	    cancel_info->read_destructor = select_info->read_destructor;
-	}
-	else if(select_info->read_destructor != GLOBUS_NULL)
-	{
-	    call_destructor = GLOBUS_TRUE;
-	    cancel_info->read_destructor = GLOBUS_NULL;
-	}
-	
-	globus_i_io_unregister_read(select_info->handle,
-				    call_destructor);
+		globus_bool_t			call_destructor = GLOBUS_FALSE;
+		
+		if(perform_callbacks)
+		{
+			cancel_info->read_callback = select_info->read_callback;
+			cancel_info->read_arg = select_info->read_arg;
+			cancel_info->read_dispatched = GLOBUS_FALSE;
+			cancel_info->read_destructor = select_info->read_destructor;
+		}
+		else if(select_info->read_destructor != GLOBUS_NULL)
+		{
+			call_destructor = GLOBUS_TRUE;
+			cancel_info->read_destructor = GLOBUS_NULL;
+		}
+		
+		globus_i_io_unregister_read(select_info->handle,
+						call_destructor);
     }
 
     if (globus_l_io_write_isregistered(select_info->handle))
     {
-	globus_bool_t			call_destructor = GLOBUS_FALSE;
-	
-	if(perform_callbacks)
-	{
-	    cancel_info->write_callback = select_info->write_callback;
-	    cancel_info->write_arg = select_info->write_arg;
-	    cancel_info->write_dispatched = GLOBUS_FALSE;
-	    cancel_info->write_destructor = select_info->write_destructor;
-	}
-	else if(select_info->write_destructor != GLOBUS_NULL)
-	{
-	    call_destructor = GLOBUS_TRUE;
-	    cancel_info->write_destructor = GLOBUS_NULL;
-	}
-	
-	globus_i_io_unregister_write(select_info->handle,
-				     call_destructor);
+		globus_bool_t			call_destructor = GLOBUS_FALSE;
+		
+		if(perform_callbacks)
+		{
+			cancel_info->write_callback = select_info->write_callback;
+			cancel_info->write_arg = select_info->write_arg;
+			cancel_info->write_dispatched = GLOBUS_FALSE;
+			cancel_info->write_destructor = select_info->write_destructor;
+		}
+		else if(select_info->write_destructor != GLOBUS_NULL)
+		{
+			call_destructor = GLOBUS_TRUE;
+			cancel_info->write_destructor = GLOBUS_NULL;
+		}
+		
+		globus_i_io_unregister_write(select_info->handle,
+						call_destructor);
     }
     
     if (globus_l_io_except_isregistered(select_info->handle))
     {
-	if(perform_callbacks)
-	{
-	    cancel_info->except_callback = select_info->except_callback;
-	    cancel_info->except_arg = select_info->except_arg;
-	    cancel_info->except_dispatched = GLOBUS_FALSE;
-	}
-	
-	globus_i_io_unregister_except(select_info->handle);
+		if(perform_callbacks)
+		{
+			cancel_info->except_callback = select_info->except_callback;
+			cancel_info->except_arg = select_info->except_arg;
+			cancel_info->except_dispatched = GLOBUS_FALSE;
+		}
+		
+		globus_i_io_unregister_except(select_info->handle);
     }
 
     /* if we are performing any callbacks, add ourselves to the list */
     if(cancel_info)
     {
-	cancel_info->cancel_dispatched = GLOBUS_FALSE;
-	cancel_info->cancel_callback = cancel_callback;
-	cancel_info->cancel_arg = cancel_arg;
-	cancel_info->cancel_destructor = cancel_destructor;
-	
-	globus_l_io_enqueue(globus_l_io_cancel_list,
-			    globus_l_io_cancel_tail,
-			    cancel_info);
+		cancel_info->cancel_dispatched = GLOBUS_FALSE;
+		cancel_info->cancel_callback = cancel_callback;
+		cancel_info->cancel_arg = cancel_arg;
+		cancel_info->cancel_destructor = cancel_destructor;
+		
+		globus_l_io_enqueue(globus_l_io_cancel_list,
+					globus_l_io_cancel_tail,
+					cancel_info);
     }
 
     /* wake up select loop
@@ -1572,6 +1706,15 @@ globus_l_io_handle_events(void)
     globus_bool_t                       time_left_is_zero = GLOBUS_FALSE;
     globus_bool_t			handled_something = GLOBUS_FALSE;
     int                                 select_highest_fd;
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+	DWORD numberOfBytes;
+	OVERLAPPED * overlappedPtr;
+	WinIoOperation * winIoOperationPtr; // for the io operation object returned by GetQueuedCompletionStatus()
+	DWORD winTimeout;
+	globus_object_t * err;
+	globus_result_t result;
+#endif
 
     globus_i_io_debug_printf(5,
 		       ("%s(): entering\n",
@@ -1584,187 +1727,208 @@ globus_l_io_handle_events(void)
     done = GLOBUS_FALSE;
     while (!done && !globus_l_io_shutdown_called)
     {
-	/* Handle any cancel or secure read callbacks right away.
-	 * They do not need to block on the select but will 
-	 * kick out events.
-	 */
-	while(!globus_list_empty(globus_l_io_reads))
-	{
-	    globus_io_select_info_t *	select_info;
-
-	    select_info = globus_list_first(globus_l_io_reads);
-	    handle = select_info->handle;
-	    callback = select_info->read_callback;
-	    arg = select_info->read_arg;
-	    globus_i_io_debug_printf(5,
-				     ("%s(): non-selecting read, fd=%d\n",
-				      myname, handle->fd));
-	    globus_i_io_unregister_read(handle,
-					GLOBUS_FALSE);
-	    globus_i_io_mutex_unlock();
-	    (*callback)(arg, handle, GLOBUS_SUCCESS);
-	    globus_i_io_mutex_lock();
-
-	    /* We've handled an event, so we don't need to
-	     * block in the select
-	     */
-            GlobusTimeReltimeSet(time_left, 0, 0);
-	    handled_something = GLOBUS_TRUE;
-
-	    /* Drop out of handling events if we've been
-	     * restarted, or we are deactivating
-	     */
-	    if(globus_l_io_shutdown_called ||
-	       globus_callback_was_restarted())
-	    {
-		goto handle_abort;
-	    }
-	}
-	while(globus_l_io_cancel_list)
-	{
-	    globus_io_cancel_info_t *	cancel_info;
-	    globus_object_t *		err;
-
-	    /*
-	     * We can safely peek at the head of the cancel list
-	     * until we've been restarted.
-	     */
-	    cancel_info = globus_l_io_cancel_list;
-
-	    if(cancel_info->read_dispatched == GLOBUS_FALSE &&
-	       cancel_info->read_callback)
-	    {
-
-		cancel_info->read_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->read_callback;
-		arg = cancel_info->read_arg;
-
-		err = globus_io_error_construct_io_cancelled(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, globus_error_put(err));
-		globus_i_io_mutex_lock();
-
-		handled_something = GLOBUS_TRUE;
-		if(globus_callback_was_restarted() ||
-		   globus_l_io_shutdown_called)
+		/* Handle any cancel or secure read callbacks right away.
+		* They do not need to block on the select but will 
+		* kick out events.
+		*/
+		while(!globus_list_empty(globus_l_io_reads))
 		{
-		    goto end_cancel_handling;
-		}
-	    }
-	    if(cancel_info->write_dispatched == GLOBUS_FALSE &&
-	       cancel_info->write_callback)
-	    {
-		cancel_info->write_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->write_callback;
-		arg = cancel_info->write_arg;
+			globus_io_select_info_t *	select_info;
 
-		err = globus_io_error_construct_io_cancelled(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, globus_error_put(err));
-		globus_i_io_mutex_lock();
+			select_info = globus_list_first(globus_l_io_reads);
+			handle = select_info->handle;
+			callback = select_info->read_callback;
+			arg = select_info->read_arg;
+			globus_i_io_debug_printf(5,
+						("%s(): non-selecting read, fd=%d\n",
+						myname, handle->fd));
+			globus_i_io_unregister_read(handle,
+						GLOBUS_FALSE);
+			globus_i_io_mutex_unlock();
+			(*callback)(arg, handle, GLOBUS_SUCCESS);
+			globus_i_io_mutex_lock();
 
-		handled_something = GLOBUS_TRUE;
-		if(globus_callback_was_restarted() ||
-		   globus_l_io_shutdown_called)
+			/* We've handled an event, so we don't need to
+			* block in the select
+			*/
+			GlobusTimeReltimeSet(time_left, 0, 0);
+			handled_something = GLOBUS_TRUE;
+
+			/* Drop out of handling events if we've been
+			* restarted, or we are deactivating
+			*/
+			if(globus_l_io_shutdown_called ||
+			globus_callback_was_restarted())
+			{
+				goto handle_abort;
+			}
+		} /* end while */
+		while(globus_l_io_cancel_list)
 		{
-		    goto end_cancel_handling;
-		}
-	    }
-	    if(cancel_info->except_dispatched == GLOBUS_FALSE &&
-	       cancel_info->except_callback)
-	    {
-		cancel_info->except_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->except_callback;
-		arg = cancel_info->except_arg;
-		
-		err = globus_io_error_construct_io_cancelled(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, globus_error_put(err));
-		globus_i_io_mutex_lock();
+			globus_io_cancel_info_t *	cancel_info;
+			globus_object_t *		err;
 
-		handled_something = GLOBUS_TRUE;
-		if(globus_callback_was_restarted() ||
-		   globus_l_io_shutdown_called)
-		{
-		    goto end_cancel_handling;
-		}
-	    }
-	    if(cancel_info->cancel_dispatched == GLOBUS_FALSE &&
-	       cancel_info->cancel_callback)
-	    {
-		cancel_info->cancel_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->cancel_callback;
-		arg = cancel_info->cancel_arg;
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, GLOBUS_SUCCESS);
-		globus_i_io_mutex_lock();
+			/*
+			* We can safely peek at the head of the cancel list
+			* until we've been restarted.
+			*/
+			cancel_info = globus_l_io_cancel_list;
 
-		handled_something = GLOBUS_TRUE;
-	    }
-	    if(!globus_callback_was_restarted())
-	    {
-		/*
-		 * remove it from the fifo after we've dispatched
-		 * all of the callbacks for this cancel_info.
+			if(cancel_info->read_dispatched == GLOBUS_FALSE &&
+			cancel_info->read_callback)
+			{
+				cancel_info->read_dispatched = GLOBUS_TRUE;
+				handle = cancel_info->handle;
+				callback = cancel_info->read_callback;
+				arg = cancel_info->read_arg;
+
+				err = globus_io_error_construct_io_cancelled(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle);
+
+				globus_i_io_mutex_unlock();
+				(*callback)(arg, handle, globus_error_put(err));
+				globus_i_io_mutex_lock();
+
+				handled_something = GLOBUS_TRUE;
+				if(globus_callback_was_restarted() ||
+				globus_l_io_shutdown_called)
+				{
+					goto end_cancel_handling;
+				}
+			}
+			if(cancel_info->write_dispatched == GLOBUS_FALSE &&
+			cancel_info->write_callback)
+			{
+				cancel_info->write_dispatched = GLOBUS_TRUE;
+				handle = cancel_info->handle;
+				callback = cancel_info->write_callback;
+				arg = cancel_info->write_arg;
+
+				err = globus_io_error_construct_io_cancelled(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle);
+				globus_i_io_mutex_unlock();
+				(*callback)(arg, handle, globus_error_put(err));
+				globus_i_io_mutex_lock();
+
+				handled_something = GLOBUS_TRUE;
+				if(globus_callback_was_restarted() ||
+				globus_l_io_shutdown_called)
+				{
+					goto end_cancel_handling;
+				}
+			}
+			if(cancel_info->except_dispatched == GLOBUS_FALSE &&
+			cancel_info->except_callback)
+			{
+				cancel_info->except_dispatched = GLOBUS_TRUE;
+				handle = cancel_info->handle;
+				callback = cancel_info->except_callback;
+				arg = cancel_info->except_arg;
+				
+				err = globus_io_error_construct_io_cancelled(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle);
+				globus_i_io_mutex_unlock();
+				(*callback)(arg, handle, globus_error_put(err));
+				globus_i_io_mutex_lock();
+
+				handled_something = GLOBUS_TRUE;
+				if(globus_callback_was_restarted() ||
+				globus_l_io_shutdown_called)
+				{
+					goto end_cancel_handling;
+				}
+			}
+			if(cancel_info->cancel_dispatched == GLOBUS_FALSE &&
+			cancel_info->cancel_callback)
+			{
+				cancel_info->cancel_dispatched = GLOBUS_TRUE;
+				handle = cancel_info->handle;
+				callback = cancel_info->cancel_callback;
+				arg = cancel_info->cancel_arg;
+				globus_i_io_mutex_unlock();
+				(*callback)(arg, handle, GLOBUS_SUCCESS);
+				globus_i_io_mutex_lock();
+
+				handled_something = GLOBUS_TRUE;
+			}
+			if(!globus_callback_was_restarted())
+			{
+				/*
+				* remove it from the fifo after we've dispatched
+				* all of the callbacks for this cancel_info.
+				*/
+				globus_assert(globus_l_io_cancel_list == cancel_info);
+				globus_l_io_dequeue(globus_l_io_cancel_list,
+							globus_l_io_cancel_tail,
+							cancel_info);
+				
+				cancel_info->next = globus_l_io_cancel_free_list;
+				globus_l_io_cancel_free_list = cancel_info;
+			}
+
+		end_cancel_handling:
+			if(handled_something)
+			{
+					GlobusTimeReltimeSet(time_left, 0, 0);
+			}
+			/* Drop out of handling events if we've been
+			* restarted, or we are deactivating
+			*/
+			if(globus_l_io_shutdown_called ||
+			globus_callback_was_restarted())
+			{
+				goto handle_abort;
+			}
+		} /* end while */
+
+		/* NOTE: While it seems like a sensible course of action to
+		 * bail out of this function if there are no I/O operations to
+		 * wait for, we cannot do so on Windows in a multi-threaded
+		 * build. If we bail now, globus_l_io_poll() still holds the 
+		 * mutex. Because nothing has been handled, globus_l_io_poll() 
+		 * will again call globus_l_io_handle_events() even though it 
+		 * would not be possible for any operations to have been 
+		 * registered. Consequently, we will end up in a continual 
+		 * loop until the timeout has expired, which might be a very 
+		 * long time. The reason that this race condition has not been 
+		 * encountered on the POSIX side is because of the wakeup pipe 
+		 * that is used to force select to return. In order to use the 
+		 * pipe, a read operation on the pipe must be registered at all
+		 * times. Consequently, there will always be an I/O handle to 
+		 * select on and globus_l_io_fd_num_set will always be > 0. 
+		 * Because we do not use the wakeup pipe in Windows, it is 
+		 * possible for globus_l_io_fd_num_set to be 0, which at times 
+		 * will allow this race condition to have effect.
 		 */
-		globus_assert(globus_l_io_cancel_list == cancel_info);
-		globus_l_io_dequeue(globus_l_io_cancel_list,
-				    globus_l_io_cancel_tail,
-				    cancel_info);
-		
-		cancel_info->next = globus_l_io_cancel_free_list;
-		globus_l_io_cancel_free_list = cancel_info;
-	    }
+#if !defined(TARGET_ARCH_WIN32) || defined(BUILD_LITE)
+		if (globus_l_io_fd_num_set <= 0)
+		{
+			done = GLOBUS_TRUE;
+			continue;
+		}
+#endif
 
-	end_cancel_handling:
-	    if(handled_something)
-	    {
-                GlobusTimeReltimeSet(time_left, 0, 0);
-	    }
-	    /* Drop out of handling events if we've been
-	     * restarted, or we are deactivating
-	     */
-	    if(globus_l_io_shutdown_called ||
-	       globus_callback_was_restarted())
-	    {
-		goto handle_abort;
-	    }
-	}
-
-	if (globus_l_io_fd_num_set <= 0)
-	{
-	    done = GLOBUS_TRUE;
-	    continue;
-	}
-
-	/*
-	 * round the highest fd to the nearest 64 bits, since we
-	 * do not know where in the struct it will be located
-	 * because of endian differences
-	 */
-	n_fdcopy = (globus_l_io_highest_fd+63)/8;
-	memcpy(globus_l_io_active_read_fds, globus_l_io_read_fds, n_fdcopy);
-	memcpy(globus_l_io_active_write_fds, globus_l_io_write_fds, n_fdcopy);
-	memcpy(globus_l_io_active_except_fds, globus_l_io_except_fds, n_fdcopy);
-
+#ifndef TARGET_ARCH_WIN32
+		/*
+		* round the highest fd to the nearest 64 bits, since we
+		* do not know where in the struct it will be located
+		* because of endian differences
+		*/
+		n_fdcopy = (globus_l_io_highest_fd+63)/8;
+		memcpy(globus_l_io_active_read_fds, globus_l_io_read_fds, n_fdcopy);
+		memcpy(globus_l_io_active_write_fds, globus_l_io_write_fds, n_fdcopy);
+		memcpy(globus_l_io_active_except_fds, globus_l_io_except_fds, n_fdcopy);
+#endif
 #       if !defined(HAVE_THREAD_SAFE_SELECT)
-	{
-            GlobusTimeReltimeSet(time_left, 0, 0);
-	}
+		{
+			GlobusTimeReltimeSet(time_left, 0, 0);
+		}
 #       endif
 
         if(globus_reltime_cmp(
@@ -1783,95 +1947,364 @@ globus_l_io_handle_events(void)
         {
             time_left_is_zero = GLOBUS_TRUE;
         }
-	/*
-	 * If we were using a timeout on select() then we must release the
-	 * FD mutex so that other threads can do some work
-	 */
-        select_highest_fd = globus_l_io_highest_fd;
-	if (!time_left_is_zero)
-	{
-	    globus_l_io_select_active = GLOBUS_TRUE;
-	    globus_i_io_mutex_unlock();
-	}
-	globus_i_io_debug_printf(1,("%s(): Calling select()\n",myname));
-	n_ready = select(select_highest_fd + 1,
-			 NEXUS_FD_SET_CAST globus_l_io_active_read_fds,
-			 NEXUS_FD_SET_CAST globus_l_io_active_write_fds,
-			 NEXUS_FD_SET_CAST globus_l_io_active_except_fds,
-			 (use_timeout ? &time_left : GLOBUS_NULL));
-	select_errno = errno;
-	globus_i_io_debug_printf(1,
-			   ("%s(): select() returned\n",myname));
-
-	/*
-	 * If we were using a timeout on select() then we must reacquire the
-	 * FD mutex and verify that our state hasn't changed
-	 */
-	if (!time_left_is_zero)
-	{
-	    globus_i_io_mutex_lock();
-	    globus_l_io_select_active = GLOBUS_FALSE;
-
-	    /*
-	     * Increase the select() counter and signal any waiting threads
-	     * that the current select has completed.  The select() counter is
-	     * used by routines like globus_i_io_close() to determine when it's
-	     * file descriptor has been removed from the select list.
-	     */
-	    globus_l_io_select_count++;
-	    globus_l_io_cond_signal();
-
-	    /*
-	     * If the FD table has been modified in a way which invalidates the
-	     * information returned by select(), then reset the modification
-	     * flag and retry the select()
-	     */
-	    if (globus_l_io_fd_table_modified)
-	    {
-		globus_l_io_fd_table_modified = GLOBUS_FALSE;
-                globus_callback_get_timeout(&time_left);
-	
-		continue;
-	    }
-
-	    /*
-	     * If shutdown has been called, then just bail out, ignoring any
-	     * pending communication requests
-	     */
-	    if (globus_l_io_shutdown_called)
-	    {
-		break;
-	    }
-	}
-
-	if (n_ready < 0)
-	{
-	    if (select_errno == EINTR)
-	    {
-		continue;
-	    }
-	    else
-	    {
-		goto handle_abort;
-	    }
-	}
-	else if (n_ready > 0)
-	{
-	    int fd;
-	   
-	    done = GLOBUS_TRUE;
-	    handled_something = GLOBUS_TRUE;
-    
-	    for (n_checked = 0, fd = globus_l_io_select_count%(select_highest_fd+1);
-		 n_checked < n_ready;
-		 fd++)
-	    {
-                if(fd == select_highest_fd+1)
-                {
-		    fd = 0;
-                }
-		if (FD_ISSET(fd, globus_l_io_active_read_fds))
+#ifdef TARGET_ARCH_WIN32
+		// For now, make sure the timeout is not zero; otherwise, this
+		// loop could chew up 100% of the CPU time (it happened in
+		// testing)
+		if ( time_left_is_zero )
 		{
+			time_left_is_zero= GLOBUS_FALSE;
+			winTimeout= 500;
+		}
+		else if ( use_timeout )
+		{
+			GlobusTimeReltimeToMilliSec( winTimeout, time_left );
+		}
+		else
+			winTimeout= INFINITE;
+#endif
+		/*
+		* If we were using a timeout on select() then we must release the
+		* FD mutex so that other threads can do some work
+		*/
+		select_highest_fd = globus_l_io_highest_fd;
+		if (!time_left_is_zero)
+		{
+			globus_l_io_select_active = GLOBUS_TRUE;
+			globus_i_io_mutex_unlock();
+		}
+#ifndef TARGET_ARCH_WIN32
+		globus_i_io_debug_printf(1,("%s(): Calling select()\n",myname));
+		n_ready = select(select_highest_fd + 1,
+				NEXUS_FD_SET_CAST globus_l_io_active_read_fds,
+				NEXUS_FD_SET_CAST globus_l_io_active_write_fds,
+				NEXUS_FD_SET_CAST globus_l_io_active_except_fds,
+				(use_timeout ? &time_left : GLOBUS_NULL));
+#else
+		globus_i_io_debug_printf(1,("%s(): Calling GetQueuedCompletionStatus()\n",myname));
+		//errno= 0; // reset state just to make sure
+		// the completion key will be the globus I/O handle
+		rc= GetQueuedCompletionStatus( completionPort, &numberOfBytes,
+		 (PULONG_PTR)&handle, &overlappedPtr, winTimeout );
+#endif
+		select_errno = errno;
+
+		globus_i_io_debug_printf(1,
+				("%s(): select() returned\n",myname));
+
+		/*
+		* If we were using a timeout on select() then we must reacquire the
+		* FD mutex and verify that our state hasn't changed
+		*/
+		if (!time_left_is_zero)
+		{
+			globus_i_io_mutex_lock();
+			globus_l_io_select_active = GLOBUS_FALSE;
+
+			/*
+			* Increase the select() counter and signal any waiting threads
+			* that the current select has completed.  The select() counter is
+			* used by routines like globus_i_io_close() to determine when it's
+			* file descriptor has been removed from the select list.
+			*/
+			globus_l_io_select_count++;
+			globus_l_io_cond_signal();
+
+			/*
+			* If the FD table has been modified in a way which invalidates the
+			* information returned by select(), then reset the modification
+			* flag and retry the select()
+			*/
+			if (globus_l_io_fd_table_modified)
+			{
+				globus_l_io_fd_table_modified = GLOBUS_FALSE;
+				globus_callback_get_timeout(&time_left);
+				/* We must NOT throw away the completion packet in
+					Windows */
+#ifndef TARGET_ARCH_WIN32			
+				continue;
+#endif
+			}
+
+			/*
+			* If shutdown has been called, then just bail out, ignoring any
+			* pending communication requests
+			*/
+			if (globus_l_io_shutdown_called)
+			{
+				break;
+			}
+		} /* end if */
+
+#ifdef TARGET_ARCH_WIN32
+		n_ready= 1; // presume we got a completion packet back
+		if ( overlappedPtr == NULL ) 
+		{
+			// no completion packet was dequeued; either the call
+			// timed out or something went horribly wrong
+			int lastError= globus_i_io_windows_get_last_error();
+			if ( lastError != WAIT_TIMEOUT )
+				goto handle_abort;
+			// TESTING!!!
+			//fprintf( stderr, "GetQueuedCompletionStatus() timed out\n" );
+			// END TESTING
+			n_ready= 0;	// dispel the presumption
+		}
+		else if ( rc == 0 ) // an error occurred in the I/O operation
+		{
+			globus_i_io_windows_get_last_error();
+			if ( errno == GLOBUS_WIN_EOF )
+				err = globus_io_error_construct_eof(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle);
+			else
+				err= globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						errno );
+			result= globus_error_put(err);
+		}
+		else
+			result= GLOBUS_SUCCESS;
+
+		if ( n_ready )
+		{
+			handled_something = GLOBUS_TRUE;
+
+			// retrieve the I/O operation struct
+			// NOTE: Although the I/O operation struct is a member of
+			// the handle, we will use the following code to retrieve
+			// it for purposes of memorializing the alternative method.
+			// If we eventually separate the I/O operation struct from
+			// the handle, such as because we decide to associate 
+			// multiple I/O operations with a single handle, then we
+			// have the necessary code available.
+			winIoOperationPtr= CONTAINING_RECORD( overlappedPtr, 
+				WinIoOperation, overlapped );
+			switch( winIoOperationPtr->state )
+			{
+				case WinIoListening: // this is really checking whether
+									 // a listening socket has an
+									 // incoming connection request
+					// TESTING!!!
+					//fprintf( stderr, "state is WinIoListening\n" );
+					// END TESTING
+					// first, check whether we're still interested in
+					// this socket operation
+					if ( !FD_ISSET( handle->io_handle, 
+					 globus_l_io_read_fds ) )
+						break;
+					// check whether a connection request is
+					// pending by checking the readability of
+					// this socket
+					rc= globus_i_io_winsock_socket_is_readable( 
+						(SOCKET)handle->io_handle, 500 );
+					if ( rc == 0 ) // success- socket is readable
+					{
+						// call the callback
+						select_info = globus_l_io_fd_table[handle->fd];
+						callback = select_info->read_callback;
+						arg = select_info->read_arg;
+						globus_i_io_unregister_read(handle, GLOBUS_FALSE);
+
+						globus_i_io_mutex_unlock();
+						(*callback)( arg, handle, result );
+						globus_i_io_mutex_lock();
+					}
+					else if ( rc == WSAETIMEDOUT )
+					{
+						// repost a packet
+						int rc= globus_i_io_windows_post_completion( 
+									handle, 
+									WinIoListening );
+						if ( rc ) // a fatal error occurred
+						{
+							// unregister the read callback
+							globus_i_io_unregister_read( handle, GLOBUS_FALSE );
+
+							err = globus_io_error_construct_system_failure(
+									GLOBUS_IO_MODULE,
+									GLOBUS_NULL,
+									handle,
+									rc );
+							result= globus_error_put(err);
+							globus_i_io_mutex_unlock();
+							(*callback)( arg, handle, result );
+							globus_i_io_mutex_lock();
+						}
+					}
+					else // a fatal error occurred
+					{
+						// unregister the read callback
+						globus_i_io_unregister_read( handle, GLOBUS_FALSE );
+
+						err = globus_io_error_construct_system_failure(
+								GLOBUS_IO_MODULE,
+								GLOBUS_NULL,
+								handle,
+								rc );
+						result= globus_error_put(err);
+						globus_i_io_mutex_unlock();
+						(*callback)( arg, handle, result );
+						globus_i_io_mutex_lock();
+					}
+					break;
+				case WinIoConnecting:
+					// TESTING!!!
+					//fprintf( stderr, "state is WinIoConnecting\n" );
+					// END TESTING
+					// WARNING: This state currently assumes that the
+					// call to connect() blocks and therefore this
+					// point in the code will not be reached unless the
+					// call to connect() succeeds. When the attempt to
+					// connect is made asynchronous, this assumption 
+					// will no longer be true and the actual state of
+					// the socket must be checked
+					// this operation must trigger a callback registered
+					// with globus_i_io_register_write_func()
+					if ( !FD_ISSET( handle->io_handle, 
+					 globus_l_io_write_fds ) )
+						break; // we don't care about this handle any longer
+					globus_i_io_debug_printf(5,
+							("%s(): write, fd=%d\n", myname, handle->fd));
+					select_info = globus_l_io_fd_table[handle->fd];
+					callback = select_info->write_callback;
+					arg = select_info->write_arg;
+					globus_i_io_unregister_write(handle, GLOBUS_FALSE);
+
+					globus_i_io_mutex_unlock();
+					(*callback)( arg, handle, result );
+					globus_i_io_mutex_lock();
+					break;
+				case WinIoAccepting:
+					// TESTING!!!
+					//fprintf( stderr, "state is WinIoAccepting\n" );
+					// END TESTING
+					/* WARNING: For now, this state occurs only after
+					 *	a call to accept() has succeeded and the socket
+					 *	does not authenticate. The callback was
+					 *	registered in globus_io_tcp_register_accept()
+					 *	using globus_i_io_register_write_func(), so we
+					 *	must callback the "write" callback. (Sorry, no
+					 *	pun intended)
+					 */
+					if ( !FD_ISSET( handle->io_handle, 
+					 globus_l_io_write_fds ) )
+						break; // we don't care about this handle any longer
+					globus_i_io_debug_printf(5,
+							("%s(): write, fd=%d\n", myname, handle->fd));
+					select_info = globus_l_io_fd_table[handle->fd];
+					callback = select_info->write_callback;
+					arg = select_info->write_arg;
+					globus_i_io_unregister_write(handle, GLOBUS_FALSE);
+
+					globus_i_io_mutex_unlock();
+					(*callback)( arg, handle, result );
+					globus_i_io_mutex_lock();
+					break;
+				case WinIoReading:
+					// TESTING!!!
+					//fprintf( stderr, "state is WinIoReading\n" );
+					//if ( result == GLOBUS_SUCCESS &&
+						//handle->winIoOperation.operationAttempted == 1 )
+					//fprintf( stderr, "Read completed; number of bytes read is %d\n", numberOfBytes );
+					// END TESTING
+					if ( !FD_ISSET( handle->io_handle, 
+					 globus_l_io_read_fds ) )
+						break; // we don't care about this handle any longer
+					globus_i_io_debug_printf(5,
+							("%s(): read, fd=%d\n", myname, handle->fd));
+					// check for the EOF condition (which indicates a
+					// graceful close by the other side in the case of
+					// a socket); we need to make sure that an actual
+					// I/O operation was attempted, otherwise this
+					// completion packet is the result of a call to
+					// PostQueuedCompletionStatus().
+					if ( result == GLOBUS_SUCCESS && numberOfBytes == 0 
+						//&& winIoOperationPtr->operationAttempted == 1 )
+						&& handle->winIoOperation.operationAttempted == 1 )
+					{
+						err = globus_io_error_construct_eof(
+								GLOBUS_IO_MODULE,
+								GLOBUS_NULL,
+								handle);
+						result= globus_error_put(err);
+					}
+					if ( result == GLOBUS_SUCCESS )
+						handle->winIoOperation.numberOfBytesProcessed= 
+						 numberOfBytes;
+					select_info = globus_l_io_fd_table[handle->fd];
+					callback = select_info->read_callback;
+					arg = select_info->read_arg;
+					globus_i_io_unregister_read(handle, GLOBUS_FALSE);
+
+					globus_i_io_mutex_unlock();
+					(*callback)( arg, handle, result );
+					globus_i_io_mutex_lock();
+
+					break;
+				case WinIoWriting:
+					// TESTING!!!
+					//fprintf( stderr, "state is WinIoWriting\n" );
+					// END TESTING
+					if ( !FD_ISSET( handle->io_handle, 
+					 globus_l_io_write_fds ) )
+						break; // we don't care about this handle any longer
+					globus_i_io_debug_printf(5,
+							("%s(): write, fd=%d\n", myname, handle->fd));
+					if ( result == GLOBUS_SUCCESS )
+						handle->winIoOperation.numberOfBytesProcessed= 
+						 numberOfBytes;
+					select_info = globus_l_io_fd_table[handle->fd];
+					callback = select_info->write_callback;
+					arg = select_info->write_arg;
+					globus_i_io_unregister_write(handle, GLOBUS_FALSE);
+
+					globus_i_io_mutex_unlock();
+					(*callback)( arg, handle, result );
+					globus_i_io_mutex_lock();
+					break;
+				case WinIoWakeup:
+				    globus_l_io_wakeup_pending = GLOBUS_FALSE;
+					break;
+			} // end switch
+
+			if (globus_callback_was_restarted())
+				goto handle_abort;
+		} // end if
+#endif /* TARGET_ARCH_WIN32*/
+
+#ifndef TARGET_ARCH_WIN32
+		if (n_ready < 0)
+		{
+			if (select_errno == EINTR)
+			{
+				continue;
+			}
+			else
+			{
+				goto handle_abort;
+			}
+		}
+		else if (n_ready > 0)
+		{
+			int fd;
+		   
+			done = GLOBUS_TRUE;
+			handled_something = GLOBUS_TRUE;
+	    
+			for (n_checked = 0, fd = globus_l_io_select_count%(select_highest_fd+1);
+			n_checked < n_ready;
+			fd++)
+			{
+				if(fd == select_highest_fd+1)
+				{
+					fd = 0;
+				}
+				if (FD_ISSET(fd, globus_l_io_active_read_fds))
+				{
                     n_checked++;
 
                     /* Only do the callback if we are still interested
@@ -1879,102 +2312,102 @@ globus_l_io_handle_events(void)
                      */
                     if (FD_ISSET(fd, globus_l_io_read_fds))
                     {
-		        select_info = globus_l_io_fd_table[fd];
-		        handle = select_info->handle;
-		        callback = select_info->read_callback;
-		        arg = select_info->read_arg;
-		        globus_i_io_debug_printf(5,
-				           ("%s(): read, fd=%d\n", myname, fd));
-		        globus_i_io_unregister_read(handle,
-						    GLOBUS_FALSE);
+						select_info = globus_l_io_fd_table[fd];
+						handle = select_info->handle;
+						callback = select_info->read_callback;
+						arg = select_info->read_arg;
+						globus_i_io_debug_printf(5,
+								("%s(): read, fd=%d\n", myname, fd));
+						globus_i_io_unregister_read(handle,
+									GLOBUS_FALSE);
 
-		        globus_i_io_mutex_unlock();
-		        (*callback)(arg, handle, GLOBUS_SUCCESS);
-		        globus_i_io_mutex_lock();
+						globus_i_io_mutex_unlock();
+						(*callback)(arg, handle, GLOBUS_SUCCESS);
+						globus_i_io_mutex_lock();
 
-		        if (globus_callback_was_restarted())
-		        {
-			    goto handle_abort;
-		        }
+						if (globus_callback_was_restarted())
+						{
+							goto handle_abort;
+						}
                     }
 
                     if (n_checked == n_ready)
-		    {
-		        break;
-		    }
-		}
-		if (FD_ISSET(fd, globus_l_io_active_write_fds))
-		{
-		    n_checked++;
+					{
+						break;
+					}
+				}
+				if (FD_ISSET(fd, globus_l_io_active_write_fds))
+				{
+					n_checked++;
 
                     /* Only do the callback if we are still interested
                      * in the FD
                      */
                     if (FD_ISSET(fd, globus_l_io_write_fds))
                     {
-		        globus_i_io_debug_printf(5,
-				           ("%s(): write, fd=%d\n", myname, fd));
-		        select_info = globus_l_io_fd_table[fd];
-		        handle = select_info->handle;
-		        callback = select_info->write_callback;
-		        arg = select_info->write_arg;
-		        globus_i_io_unregister_write(handle, GLOBUS_FALSE);
+						globus_i_io_debug_printf(5,
+								("%s(): write, fd=%d\n", myname, fd));
+						select_info = globus_l_io_fd_table[fd];
+						handle = select_info->handle;
+						callback = select_info->write_callback;
+						arg = select_info->write_arg;
+						globus_i_io_unregister_write(handle, GLOBUS_FALSE);
 
-		        globus_i_io_mutex_unlock();
-		        (*callback)(arg, handle, GLOBUS_SUCCESS);
-		        globus_i_io_mutex_lock();
+						globus_i_io_mutex_unlock();
+						(*callback)(arg, handle, GLOBUS_SUCCESS);
+						globus_i_io_mutex_lock();
 
-
-		        if (globus_callback_was_restarted())
-		        {
-			    goto handle_abort;
-		        }
-		    }
-		    if (n_checked == n_ready)
-		    {
-			break;
-		    }
-		}
-		if (FD_ISSET(fd, globus_l_io_active_except_fds))
-		{
-		    n_checked++;
+						if (globus_callback_was_restarted())
+						{
+							goto handle_abort;
+						}
+					}
+					if (n_checked == n_ready)
+					{
+						break;
+					}
+				}
+				if (FD_ISSET(fd, globus_l_io_active_except_fds))
+				{
+					n_checked++;
 
                     /* Only do the callback if we are still interested
                      * in the FD
                      */
-		    if (FD_ISSET(fd, globus_l_io_except_fds))
+					if (FD_ISSET(fd, globus_l_io_except_fds))
                     {
-		        globus_i_io_debug_printf(5,
-				           ("%s(): except, fd=%d\n", myname, fd));
-		        select_info = globus_l_io_fd_table[fd];
-		        handle = select_info->handle;
-		        callback = select_info->except_callback;
-		        arg = select_info->except_arg;
-		        globus_i_io_unregister_except(handle);
+						globus_i_io_debug_printf(5,
+								("%s(): except, fd=%d\n", myname, fd));
+						select_info = globus_l_io_fd_table[fd];
+						handle = select_info->handle;
+						callback = select_info->except_callback;
+						arg = select_info->except_arg;
+						globus_i_io_unregister_except(handle);
 
-		        globus_i_io_mutex_unlock();
-		        (*callback)(arg, handle, GLOBUS_SUCCESS);
-		        globus_i_io_mutex_lock();
+						globus_i_io_mutex_unlock();
+						(*callback)(arg, handle, GLOBUS_SUCCESS);
+						globus_i_io_mutex_lock();
 
-		        if (globus_callback_was_restarted())
-		        {
-			    goto handle_abort;
-		        }
-		    }
+						if (globus_callback_was_restarted())
+						{
+							goto handle_abort;
+						}
+					}
 
-		    if (n_checked == n_ready)
-		    {
-			break;
-		    }
+					if (n_checked == n_ready)
+					{
+					break;
+					}
+				}
+		    } /* for */
+		} /* endif */
+#endif /* !TARGET_ARCH_WIN32 */
+
+		if ( n_ready == 0 )
+		{
+			done = GLOBUS_TRUE;
 		}
-	    } /* for */
-	} /* endif */
-
-	if ( n_ready == 0 )
-	{
-	    done = GLOBUS_TRUE;
-	}
-    }
+    } /* end while */
 
 handle_abort:
     globus_i_io_debug_printf(5, ("%s(): exiting\n",myname));
@@ -1997,25 +2430,26 @@ globus_l_io_wakeup_pipe_callback(
     globus_io_handle_t *		handle,
     globus_result_t			result)
 {
+#ifndef TARGET_ARCH_WIN32
     char				buf;
     ssize_t				done = 0;
 
     while (!done)
     {
-	done = globus_libc_read(handle->fd, &buf, sizeof(buf));
-	if (done == -1)
-	{
-	    const int			errno_save = errno;
+		done = globus_libc_read(handle->fd, &buf, sizeof(buf));
+		if (done == -1)
+		{
+			const int			errno_save = errno;
 
-	    if (errno_save == EINTR)
-	    {
-		done = 0;
-	    }
-	    else if (errno_save != EAGAIN && errno_save != EWOULDBLOCK)
-	    {
-		/* XXX: badness has happened; do something about it */
-	    }
-	}
+			if (errno_save == EINTR)
+			{
+				done = 0;
+			}
+			else if (errno_save != EAGAIN && errno_save != EWOULDBLOCK)
+			{
+			/* XXX: badness has happened; do something about it */
+			}
+		}
     }
 
     globus_i_io_mutex_lock();
@@ -2029,6 +2463,7 @@ globus_l_io_wakeup_pipe_callback(
 				       GLOBUS_TRUE);
     }
     globus_i_io_mutex_unlock();
+#endif /* TARGET_ARCH_WIN32 */
 }
 /* globus_l_io_wakeup_pipe_callback() */
 
@@ -2108,6 +2543,10 @@ globus_l_io_activate(void)
     int                                 fd_allocsize;
     int					num_fds;
     globus_reltime_t                    delay;
+#ifdef TARGET_ARCH_WIN32
+	WORD wVersionRequested;
+	WSADATA wsaData;
+#endif
 
     /* In the pre-activation of the thread module, we
      * are setting up some code to block the SIGPIPE
@@ -2150,6 +2589,19 @@ globus_l_io_activate(void)
         g_globus_i_io_use_netlogger = GLOBUS_FALSE;
     }
 #   endif
+
+#ifdef TARGET_ARCH_WIN32
+	/* Startup the Winsock DLL */
+	wVersionRequested = MAKEWORD( 2, 0 ); /* version 2.0 */	 
+	rc= WSAStartup( wVersionRequested, &wsaData );
+	if ( rc != 0 ) /* error- Winsock not available */
+		return GLOBUS_FAILURE;
+
+	/* Create the completion port */
+	completionPort= CreateIoCompletionPort( INVALID_HANDLE_VALUE, NULL, 0, 0 );
+	if ( completionPort == NULL )
+		return GLOBUS_FAILURE;
+#endif
 
     globus_i_io_debug_printf(3, ("globus_l_io_activate(): entering\n"));
 
@@ -2242,7 +2694,7 @@ globus_l_io_activate(void)
     
     for (i = 0; i < globus_l_io_fd_tablesize; i++)
     {
-	globus_l_io_fd_table[i] = (globus_io_select_info_t *) GLOBUS_NULL;
+		globus_l_io_fd_table[i] = (globus_io_select_info_t *) GLOBUS_NULL;
     }
     globus_l_io_fd_table_modified = GLOBUS_FALSE;
 
@@ -2279,7 +2731,11 @@ globus_l_io_activate(void)
     }
 
     globus_l_io_fd_num_set = 0;
-    
+#ifndef TARGET_ARCH_WIN32    
+/* The pipe references were taken out in order to compile an
+ * initial version of Globus IO on Windows.
+ * -- Michael Lebman, 3-2-02
+ */
     /*
      * Create a pipe to myself, so that I can wake up the thread that is
      * blocked on a select().
@@ -2293,8 +2749,8 @@ globus_l_io_activate(void)
 					    &globus_l_io_wakeup_pipe_handle);
     if(rc != 0)
     {
-	rc = -2;
-	goto unlock_and_abort;
+		rc = -2;
+		goto unlock_and_abort;
     }
     
     globus_i_io_setup_nonblocking(&globus_l_io_wakeup_pipe_handle);
@@ -2303,6 +2759,28 @@ globus_l_io_activate(void)
 				   GLOBUS_NULL,
 				   GLOBUS_NULL,
 				   GLOBUS_TRUE);
+#else
+	// initialize the wakeup handle
+	// first, create a dummy socket
+    winWakeUpHandle.io_handle = (HANDLE)socket( AF_INET,
+	 SOCK_STREAM, 0 );
+    if( (SOCKET)winWakeUpHandle.io_handle == INVALID_SOCKET )
+    {
+		rc = -2;
+		goto unlock_and_abort;
+    }
+	// initialize the WinIoOperation struct
+	globus_i_io_windows_init_io_operation( 
+	 &(winWakeUpHandle.winIoOperation) );
+	/* associate the wakeup handle with the completion port */
+	if ( CreateIoCompletionPort( winWakeUpHandle.io_handle,
+		completionPort, (ULONG_PTR)&winWakeUpHandle, 0 ) == NULL )
+	{
+		rc = -2;
+		globus_i_io_windows_close( &winWakeUpHandle );
+		goto unlock_and_abort;	
+	}
+#endif /* TARGET_ARCH_WIN32 */
 
     /* if not using skip poll register as periodic for efficiency */
 
@@ -2359,7 +2837,7 @@ globus_l_io_deactivate(void)
      */
     if (globus_l_io_select_active)
     {
-	globus_l_io_select_wakeup();
+		globus_l_io_select_wakeup();
     }
 
     /*
@@ -2369,83 +2847,90 @@ globus_l_io_deactivate(void)
      */
     globus_i_io_mutex_unlock();
     {
-	globus_i_callback_blocking_cancel(&globus_l_io_callback_handle);
+		globus_i_callback_blocking_cancel(&globus_l_io_callback_handle);
     }
     globus_i_io_mutex_lock();
 
+#ifndef TARGET_ARCH_WIN32
+/* The pipe references were taken out in order to compile an
+ * initial version of Globus IO on Windows.
+ * -- Michael Lebman, 3-2-02
+ */
     globus_i_io_close(&globus_l_io_wakeup_pipe_handle);
     
     while(globus_libc_close(globus_l_io_wakeup_pipe[1]) < 0)
     {
-	int save_errno = errno;
-	if(save_errno != EINTR)
-	{
-	    break;
-	}
+		int save_errno = errno;
+		if(save_errno != EINTR)
+		{
+			break;
+		}
     }
-    
+#else
+	globus_i_io_windows_close( &winWakeUpHandle );
+#endif /* TARGET_ARCH_WIN32 */    
     /*
      * free up table resources
      */
     for (fd = 0; fd < globus_l_io_fd_tablesize; fd++)
     {
-	globus_io_select_info_t *	select_info;
+		globus_io_select_info_t *	select_info;
 
-	select_info = globus_l_io_fd_table[fd];
+		select_info = globus_l_io_fd_table[fd];
 
-	if(select_info != GLOBUS_NULL)
-	{
-	    if(select_info->read_arg &&
-	       select_info->read_destructor)
-	    {
-		select_info->read_destructor(select_info->read_arg);
-	    }
-	    if(select_info->write_arg &&
-	       select_info->write_destructor)
-	    {
-		select_info->write_destructor(select_info->write_arg);
-	    }
-	    globus_l_io_table_remove_fd(fd);
-	}
+		if(select_info != GLOBUS_NULL)
+		{
+			if(select_info->read_arg &&
+			 select_info->read_destructor)
+			{
+				select_info->read_destructor(select_info->read_arg);
+			}
+			if(select_info->write_arg &&
+			 select_info->write_destructor)
+			{
+				select_info->write_destructor(select_info->write_arg);
+			}
+			globus_l_io_table_remove_fd(fd);
+		}
     }
     globus_free(globus_l_io_fd_table);
 
     /* free any cancel data structures */
     while(globus_l_io_cancel_list)
     {
-	globus_io_cancel_info_t *	tmp;
+		globus_io_cancel_info_t *	tmp;
 
-	globus_l_io_dequeue(globus_l_io_cancel_list,
-			    globus_l_io_cancel_tail,
-			    tmp);
-	
-	if(tmp->read_arg &&
-	   tmp->read_destructor &&
-	   (!tmp->read_dispatched))
-	{
-	    tmp->read_destructor(tmp->read_arg);
-	}
-	if(tmp->write_arg &&
-	   tmp->write_destructor &&
-	   (!tmp->write_dispatched))
-	{
-	    tmp->write_destructor(tmp->write_arg);
-	}
-	if(tmp->cancel_arg &&
-	   tmp->cancel_destructor &&
-	   (!tmp->cancel_dispatched))
-	{
-	    tmp->cancel_destructor(tmp->cancel_arg);
-	}
-	globus_free(tmp);
+		globus_l_io_dequeue(globus_l_io_cancel_list,
+					globus_l_io_cancel_tail,
+					tmp);
+		
+		if(tmp->read_arg &&
+		tmp->read_destructor &&
+		(!tmp->read_dispatched))
+		{
+			tmp->read_destructor(tmp->read_arg);
+		}
+		if(tmp->write_arg &&
+		tmp->write_destructor &&
+		(!tmp->write_dispatched))
+		{
+			tmp->write_destructor(tmp->write_arg);
+		}
+		if(tmp->cancel_arg &&
+		tmp->cancel_destructor &&
+		(!tmp->cancel_dispatched))
+		{
+			tmp->cancel_destructor(tmp->cancel_arg);
+		}
+		globus_free(tmp);
     }
     while(globus_l_io_cancel_free_list)
     {
-	globus_io_cancel_info_t *	tmp;
-	globus_l_io_dequeue(globus_l_io_cancel_free_list,
-			    GLOBUS_NULL,
-			    tmp);
-	globus_free(tmp);
+		globus_io_cancel_info_t *	tmp;
+		globus_l_io_dequeue(globus_l_io_cancel_free_list,
+					GLOBUS_NULL,
+					tmp);
+		globus_free(tmp);
     }
 
     /* Free up list of non-selecting reads */
@@ -2466,6 +2951,10 @@ globus_l_io_deactivate(void)
     globus_mutex_destroy(&globus_i_io_mutex);
     globus_cond_destroy(&globus_i_io_cond);
     rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
+#ifdef TARGET_ARCH_WIN32
+	WSACleanup();
+	CloseHandle( completionPort );
+#endif
     if(rc != GLOBUS_SUCCESS)
     {
        return rc;
@@ -2484,7 +2973,22 @@ globus_i_io_setup_nonblocking(
     globus_result_t			rc = GLOBUS_SUCCESS;
     globus_object_t *			err;
     static char *			myname="globus_i_io_setup_nonblocking";
-    
+
+#ifdef TARGET_ARCH_WIN32
+	u_long argp= 1;
+	int rcWin;
+
+	rcWin= ioctlsocket( (SOCKET)handle->io_handle, FIONBIO, &argp );
+	if ( rcWin == SOCKET_ERROR )
+	{
+		err = globus_io_error_construct_internal_error(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				myname);
+		return globus_error_put(err);
+	}
+	return GLOBUS_SUCCESS;
+#else
 
     while ((flags = fcntl(handle->fd,
 		       F_GETFL,
@@ -2530,6 +3034,7 @@ globus_i_io_setup_nonblocking(
 	rc = globus_error_put(err);
     }
     return rc;
+#endif /* TARGET_ARCH_WIN32 */
 }
 /* globus_i_io_setup_nonblocking() */
 
@@ -2652,3 +3157,57 @@ globus_l_io_adaptive_skip_poll_get_delay(
 
     return GLOBUS_TRUE;
 }
+
+/* Helper Functions for Windows
+*/
+#ifdef TARGET_ARCH_WIN32
+
+int globus_l_io_get_table_index( globus_io_handle_t * handle )
+{
+	int i;
+
+	if ( handle == GLOBUS_NULL )
+		return -1;
+
+	// iterate through the table to find an entry containing this handle
+	for ( i= 0; i < globus_l_io_fd_tablesize; i++ )
+	{
+		if ( globus_l_io_fd_table[i] && 
+		 globus_l_io_fd_table[i]->handle &&
+		 globus_l_io_fd_table[i]->handle->io_handle == handle->io_handle )
+			return i;
+	}
+	return -1;
+}
+
+int globus_l_io_get_first_available_table_slot( void )
+{
+	int i;
+
+	// iterate through the table to find the first null entry
+	for ( i= 0; i < globus_l_io_fd_tablesize; i++ )
+	{
+		if ( globus_l_io_fd_table[i] == GLOBUS_NULL )
+			return i;
+	}
+	// none of the entries are null, so iterate again to find
+	// the first entry that contains a handle that is null
+	for ( i= 0; i < globus_l_io_fd_tablesize; i++ )
+	{
+		if ( globus_l_io_fd_table[i]->handle == GLOBUS_NULL )
+			return i;
+	}
+
+	// all full at the inn
+	return -1;
+}
+
+void globus_l_io_remove_handle_from_table( globus_io_handle_t * handle )
+{
+	// verify that the handle exists and that it has been added to the
+	// table- fd will be -1 if it has never been added to the table
+	if ( handle && handle->fd >= 0 )
+		globus_l_io_fd_table[handle->fd]->handle= GLOBUS_NULL;
+}
+
+#endif /* TARGET_ARCH_WIN32 */

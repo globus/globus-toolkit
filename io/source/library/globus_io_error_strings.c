@@ -1,4 +1,8 @@
 #include "globus_common.h"
+#ifdef TARGET_ARCH_WIN32
+/* globus_io.h requires a certain order */
+#include "globus_io_win_io_operation.h"
+#endif
 #include "globus_io.h"
 
 char *

@@ -1,5 +1,9 @@
 #include "globus_io.h"
 
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
+
 void test1(int argc, char **argv);
 
 typedef struct
@@ -121,7 +125,11 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
+#ifdef TARGET_ARCH_WIN32
+    while (( c = getoptWin(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
+#else
     while (( c = getopt(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
+#endif
     {
 	switch(c)
 	{
@@ -232,14 +240,14 @@ test1(int argc, char **argv)
 
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
-	errstring = globus_object_printable_to_string(err);
-	globus_libc_printf("test1 large write failed: %s\n", errstring);
-	goto exit;
+		err = globus_error_get(result);
+		errstring = globus_object_printable_to_string(err);
+		globus_libc_printf("test1 large write failed: %s\n", errstring);
+		goto exit;
     }
     else
     {
-	globus_libc_printf("wrote large_block\n");
+		globus_libc_printf("wrote large_block\n");
     }
 
     result = globus_io_read(&handle,
@@ -250,27 +258,28 @@ test1(int argc, char **argv)
 
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+		err = globus_error_get(result);
 
-	if(!globus_io_eof(err))
-	{
-	    errstring = globus_object_printable_to_string(err);
-	    globus_libc_printf("test1 large read failed: %s\n", errstring);
-	}
-	goto exit;
+		if(!globus_io_eof(err))
+		{
+			errstring = globus_object_printable_to_string(err);
+			globus_libc_printf("test1 large read failed: %s\n", errstring);
+		}
+		goto exit;
     }
     else
     {
-	globus_libc_printf("read large_block\n");
+		globus_libc_printf("read large_block\n");
     }
+
     for(i = 0; i < large_buf_size; i++)
     {
-	if(large_buf[i] != large_buf2[i])
-	{
-	    globus_libc_printf("comparison failed at byte %d\n",i);
+		if(large_buf[i] != large_buf2[i])
+		{
+			globus_libc_printf("comparison failed at byte %d\n",i);
 
-	    goto exit;
-	}
+			goto exit;
+		}
     }
   exit:
     if(large_buf2)
@@ -283,11 +292,21 @@ test1(int argc, char **argv)
     }
     if(err)
     {
-	globus_object_free(err);
+		// TESTING!!!
+		fprintf( stderr, "=====================================================\n" );
+		fprintf( stderr, "calling globus_object_free()\n" );
+		// END TESTING
+		globus_object_free(err);
     }
     if(errstring)
     {
-	globus_free(errstring);
+		// TESTING!!!
+		//fprintf( stderr, "calling globus_free()\n" );
+		// END TESTING
+		globus_free(errstring);
     }
+	// TESTING!!!
+	//fprintf( stderr, "calling globus_io_close()\n" );
+	// END TESTING
     globus_io_close(&handle);
 }

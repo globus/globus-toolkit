@@ -48,6 +48,10 @@ EXTERN_C_BEGIN
 #include "globus_gss_ext_compat.h"
 #endif
 
+#ifdef TARGET_ARCH_WIN32
+#include "globus_io_win_io_operation.h"
+#endif
+
 struct globus_netlogger_handle_s;
 typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;
 
@@ -718,6 +722,7 @@ typedef enum
  */
 typedef enum
 {
+#ifndef TARGET_ARCH_WIN32
     /** Read, write, execute: owner */
     GLOBUS_IO_FILE_IRWXU	= S_IRWXU,
     /** Read permission: owner */
@@ -744,7 +749,8 @@ typedef enum
     GLOBUS_IO_FILE_IWGRP	= S_IWGRP,
     /** Execute permission: group members */
     GLOBUS_IO_FILE_IXGRP	= S_IXGRP
-#endif
+#endif /* TARGET_ARCH_CYGWIN */
+#endif /* TARGET_ARCH_WIN32 */
 } globus_io_file_create_mode_t;
 
 /**
@@ -803,7 +809,7 @@ typedef struct
 {
     globus_bool_t				nodelay;
     globus_bool_t				restrict_port;
-    unsigned char				interface[16];
+    unsigned char				interface_addr[16];
 } globus_i_io_tcpattr_instance_t;
 #endif
 
@@ -816,7 +822,7 @@ typedef struct
     char                                        mc_ttl;
     globus_bool_t                               mc_enabled;
     char *                                      address;
-    char *                                      interface;
+    char *                                      interface_addr;
     globus_bool_t				restrict_port;
 } globus_i_io_udpattr_instance_t;
 #endif
@@ -856,6 +862,10 @@ struct globus_io_handle_s
 {
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
     int						fd;
+#ifdef TARGET_ARCH_WIN32
+	HANDLE io_handle; /* to be used for both sockets and files */
+	WinIoOperation winIoOperation;
+#endif
     gss_ctx_id_t				context;
     gss_cred_id_t				delegated_credential;
     globus_size_t				max_wrap_length;
@@ -1213,13 +1223,13 @@ globus_result_t
 globus_io_attr_set_udp_multicast_membership(
     globus_io_attr_t * attr,
     char * address,
-    char * interface);
+    char * interface_addr);
 
 globus_result_t
 globus_io_attr_get_udp_multicast_membership(
     globus_io_attr_t * attr,
     char ** address,
-    char ** interface);
+    char ** interface_addr);
 
 globus_result_t
 globus_io_attr_set_udp_multicast_ttl(
@@ -1234,12 +1244,12 @@ globus_io_attr_get_udp_multicast_ttl(
 globus_result_t
 globus_io_attr_set_udp_multicast_interface(
     globus_io_attr_t * attr,
-    char * interface);
+    char * interface_addr);
 
 globus_result_t
 globus_io_attr_get_udp_multicast_interface(
     globus_io_attr_t * attr,
-    char ** interface);
+    char ** interface_addr);
 
 /* delegation functions */
 
@@ -1458,12 +1468,12 @@ globus_io_attr_get_tcp_nodelay(
 globus_result_t
 globus_io_attr_set_tcp_interface(
     globus_io_attr_t * attr,
-    const char * interface);
+    const char * interface_addr);
 
 globus_result_t
 globus_io_attr_get_tcp_interface(
     globus_io_attr_t * attr,
-    char ** interface);
+    char ** interface_addr);
 
 globus_result_t
 globus_io_attr_set_secure_authentication_mode(
