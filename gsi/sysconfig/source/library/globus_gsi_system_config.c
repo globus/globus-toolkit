@@ -3513,7 +3513,8 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 goto done;
             }
         }
-        else if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+        else if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result) &&
+                !GLOBUS_GSI_SYSCONFIG_FILE_HAS_BAD_PERMISSIONS(result))
         {
 	    home = NULL;
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(

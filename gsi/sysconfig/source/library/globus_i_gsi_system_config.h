@@ -172,6 +172,12 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
                         GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST) == \
      GLOBUS_TRUE)
 
+#define GLOBUS_GSI_SYSCONFIG_FILE_HAS_BAD_PERMISSIONS(_RESULT) \
+    (globus_error_match(globus_error_peek(_RESULT), \
+                        GLOBUS_GSI_SYSCONFIG_MODULE, \
+                        GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS) == \
+     GLOBUS_TRUE)
+
 #define GLOBUS_GSI_SYSCONFIG_FILE_ZERO_LENGTH(_RESULT) \
     (globus_error_match(globus_error_peek(_RESULT), \
                         GLOBUS_GSI_SYSCONFIG_MODULE, \
