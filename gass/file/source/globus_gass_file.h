@@ -24,6 +24,8 @@ CVS Information:
 #endif
 #endif
 
+#include "globus_common.h"
+
 #include <stdio.h>
 #include <fcntl.h>
 

@@ -15,6 +15,8 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "globus_common.h"
+
 #include <sys/types.h>
 #include <string.h>
 #include <stdio.h>
@@ -22,7 +24,6 @@ CVS Information:
 #include <fcntl.h>
 #include <stdarg.h>
 
-#include "globus_common.h"
 #include "globus_gass_file.h"
 #include "globus_gass_cache.h"
 #include "globus_gass_transfer_assist.h"
