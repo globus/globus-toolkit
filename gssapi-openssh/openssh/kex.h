@@ -131,8 +131,9 @@ void	 kex_derive_keys(Kex *, u_char *, BIGNUM *);
 void	 kexdh(Kex *);
 void	 kexgex(Kex *);
 #ifdef GSSAPI
-void	 kexgss(Kex *kex);
+void	 kexgss(Kex *);
 #endif
+
 Newkeys *kex_get_newkeys(int);
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH)

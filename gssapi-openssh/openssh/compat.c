@@ -69,11 +69,12 @@ compat_datafellows(const char *version)
 		{ "OpenSSH_2.5.0p1*,"
 		  "OpenSSH_2.5.1p1*",
 					SSH_BUG_BIGENDIANAES|SSH_OLD_DHGEX|
-					SSH_BUG_NOREKEY },
+					SSH_BUG_NOREKEY|SSH_OLD_GSSAPI },
 		{ "OpenSSH_2.5.0*,"
 		  "OpenSSH_2.5.1*,"
 		  "OpenSSH_2.5.2*",	SSH_OLD_DHGEX|SSH_BUG_NOREKEY },
 		{ "OpenSSH_2.5.3*",	SSH_BUG_NOREKEY },
+		{ "OpenSSH_2.9p*",	SSH_OLD_GSSAPI },
 		{ "Sun_SSH_1.0*",	SSH_BUG_NOREKEY },
 		{ "OpenSSH*",		0 },
 		{ "*MindTerm*",		0 },

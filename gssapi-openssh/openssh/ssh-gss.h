@@ -92,7 +92,7 @@ void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid);
 void ssh_gssapi_supported_oids(gss_OID_set *oidset);
 enum ssh_gss_id ssh_gssapi_get_ctype(Gssctxt *ctxt);
 
-OM_uint32 ssh_gssapi_import_name(Gssctxt *ctx, const char *host);
+OM_uint32 ssh_gssapi_import_name(Gssctxt *ctx, char *host);
 OM_uint32 ssh_gssapi_acquire_cred(Gssctxt *ctx);
 OM_uint32 ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds,
 			      gss_buffer_desc *recv_tok, 
