@@ -610,7 +610,7 @@ main(int argc,
     grami_fprintf( request->jobmanager_log_fp,
           "-----------------------------------------\n");
     grami_fprintf( request->jobmanager_log_fp,
-          "JM: Entering gram_job_manager main()\n");
+          "JM: Entering gram_job_manager main().\n");
 
     /* tell the API to use this callback function for filenames */
     request->filename_callback_func = 
@@ -665,7 +665,12 @@ main(int argc,
 	error = globus_common_install_path_from_config_file(
 	    graml_env_deploy_path,
 	    &graml_env_install_path );
-	globus_assert(!error);
+	if (error != GLOBUS_SUCCESS)
+	{
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: failed to get GLOBUS_INSTALL_PATH from config file\n");
+	    return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+	}
     }
 
     grami_fprintf( request->jobmanager_log_fp,
@@ -681,10 +686,20 @@ main(int argc,
 		       GLOBUS_TRUE);
 
     error = globus_common_tools_path( &graml_env_tools_path );
-    globus_assert(!error);
-
+    if (error != GLOBUS_SUCCESS)
+    {
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: globus_common_tools_path failed\n");
+	return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+    }
+    
     error = globus_common_services_path( &graml_env_services_path );
-    globus_assert(!error);
+    if (error != GLOBUS_SUCCESS)
+    {
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: globus_common_services_path failed\n");
+	return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+    }
 
     if (jm_home_dir)
     {
@@ -2535,7 +2550,7 @@ globus_l_gram_cancel_handler(globus_nexus_endpoint_t * endpoint,
                         globus_nexus_endpoint_get_user_pointer(endpoint);
 
     grami_fprintf( request->jobmanager_log_fp,
-          "JM: in globus_l_gram_cancel_handler\n");
+          "JM : in globus_l_gram_cancel_handler\n");
 
     globus_nexus_get_int(buffer, &gram_version, 1);
     if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
@@ -2792,6 +2807,7 @@ globus_l_gram_status_handler(globus_nexus_endpoint_t * endpoint,
     globus_gram_jobmanager_request_t * request;
     int job_status;
 
+    
     request = (globus_gram_jobmanager_request_t * )
                         globus_nexus_endpoint_get_user_pointer(endpoint);
 
