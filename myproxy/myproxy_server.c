@@ -477,12 +477,12 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     strcpy(creds->location, delegfile);
 
     if (myproxy_creds_store(creds) < 0) {
+	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
         strcat(response->error_string, "Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
-    response->response_type = MYPROXY_OK_RESPONSE;
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
