@@ -106,13 +106,20 @@ if [ ! -z "${grami_args}" ] ; then
    done
 fi
 
-$DEBUG_ECHO "JM_SCRIPT: testing jobtype">> $grami_logfile
-if [ $grami_jobtype = "mpi" ] ; then
+# 4 jobtypes exist               easymcs progtype
+# -----------------              -------------------
+# jobtype 0 = mpi        ----->  M
+# jobtype 1 = single     ----->  S
+# jobtype 2 = multiple   ----->  N
+# jobtype 3 = condor     ----->  ERROR
+#
+$DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
+if [ $grami_jobtype = "0" ] ; then
     sp_progtype="M"
-elif [ $grami_jobtype = "multiple" ] ; then
-    sp_progtype="N"
-elif [ $grami_jobtype = "single" ] ; then
+elif [ $grami_jobtype = "1" ] ; then
     sp_progtype="S"
+elif [ $grami_jobtype = "2" ] ; then
+    sp_progtype="N"
 else
    $DEBUG_ECHO "JM_SCRIPT: invalid jobtype parameter, exiting with 1"
                >> $grami_logfile

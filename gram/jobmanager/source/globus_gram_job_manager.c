@@ -503,6 +503,8 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
      */
     if (request->dryrun)
     {
+        grami_fprintf(request->jobmanager_log_fp,"JMI: This is a dry run!!\n");
+        request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
         request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_DRYRUN;
         return(GLOBUS_FAILURE);
     }
@@ -681,6 +683,7 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     if (request->dryrun)
     {
         grami_fprintf(request->jobmanager_log_fp,"JMI: This is a dry run!!\n");
+        request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
         request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_DRYRUN;
         return(GLOBUS_FAILURE);
     }

@@ -101,11 +101,12 @@ if [ -z "${grami_notification}" ] ; then
    grami_notification=${default_notification}
 fi
 
-# 3 jobtypes exist               loadleveler jobtype
+# 4 jobtypes exist               loadleveler jobtype
 # -----------------              -------------------
 # jobtype 0 = mpi        ----->  parallel
 # jobtype 1 = single     ----->  serial
 # jobtype 2 = multiple   ----->  parallel
+# jobtype 3 = condor     ----->  ERROR
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
 if [ $grami_jobtype = "0" ] ; then
     ll_jobtype="parallel"
