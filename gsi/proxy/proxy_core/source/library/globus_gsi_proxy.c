@@ -393,6 +393,8 @@ globus_gsi_proxy_create_req(
             ASN1_OCTET_STRING_free(ext_data);
             goto error_exit;
         }
+        
+        ASN1_OCTET_STRING_free(ext_data);
 
         extensions = sk_X509_EXTENSION_new_null();
 
@@ -495,6 +497,7 @@ globus_gsi_proxy_inquire_req(
     int                                 i;
     STACK_OF(X509_EXTENSION) *          req_extensions = NULL;
     X509_EXTENSION *                    extension;
+    unsigned char *                     tmp_data;
     
     static char *                       _function_name_ =
         "globus_gsi_proxy_inquire_req";
@@ -556,24 +559,17 @@ globus_gsi_proxy_inquire_req(
                 goto done;
             }
 
-            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
-            {
-                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                    ("Failed to copy extension data."));
-                goto done;                
-            }
-
             if(handle->proxy_cert_info)
             {
                 PROXYCERTINFO_free(handle->proxy_cert_info);
                 handle->proxy_cert_info = NULL;
             }    
 
+            tmp_data = ext_data->data;
+            
             if((d2i_PROXYCERTINFO(
                     &handle->proxy_cert_info,
-                    &ext_data->data,
+                    &tmp_data,
                     ext_data->length)) == NULL)
             {
                 GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -645,6 +641,12 @@ globus_gsi_proxy_inquire_req(
     result = GLOBUS_SUCCESS;
 
  done:
+
+    if(req_extensions != NULL)
+    {
+        sk_X509_EXTENSION_pop_free(req_extensions, X509_EXTENSION_free);
+    }
+    
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
