@@ -579,7 +579,7 @@ AC_DEFUN(LAC_PROG_CC_GNU,
 [
 AC_PROG_CC_GNU
 
-if test "$ac_cv_gcc" = "yes" ; then
+if test "$ac_cv_prog_gcc" = "yes" ; then
     :
     $2
 else
