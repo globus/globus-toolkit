@@ -1456,7 +1456,7 @@ globus_ftp_control_command_init(
 
 	if(!strcmp(cmd,"HELP"))
 	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_LIST;
+	    command->code=GLOBUS_FTP_CONTROL_COMMAND_HELP;
 	    command->help.string_arg=
 		(char *) globus_libc_malloc(length);
 	    
