@@ -64,18 +64,6 @@ my $keyfiles = {
                  "rsa1" => "ssh_host_key",
                };
 
-#
-# Check that we are running as root
-#
-
-$uid = $>;
-
-if ($uid != 0)
-{
-    print "--> NOTE: You must be root to run this script! <--\n";
-    exit 0;
-}
-
 sub copyKeyFiles
 {
     my($copylist) = @_;
