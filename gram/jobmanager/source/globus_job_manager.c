@@ -2037,7 +2037,9 @@ globus_l_gram_client_callback(int status, int failure_code)
 	    else                             /* connect failed, most likely */
 	    {
 		grami_fprintf( graml_log_fp,
-			       "JM: callback failed, rc = %d\n", rc );
+			       "JM: callback failed, rc = %d, \"%s\"\n", 
+			       rc,
+			       globus_gram_client_error_string (rc));
 		globus_libc_free(monitor);
                 client_contact_node->failed_count++;
 	    }
