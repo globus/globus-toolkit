@@ -1333,8 +1333,7 @@ globus_netlogger_write(
 
 globus_result_t
 globus_netlogger_handle_init(
-    globus_netlogger_handle_t *       nl_handle,
-    void *                            handle,
+    globus_netlogger_handle_t *       gnl_handle,
     const char *                      hostname,
     const char *                      progname,
     const char *                      pid);
