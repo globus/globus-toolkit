@@ -1,5 +1,5 @@
 /******************************************************************************
-globus_gram_job_manager.c 
+globus_job_manager.c 
 
 Description:
     Resource Allocation Job Manager
@@ -311,6 +311,7 @@ static int            graml_cleanup_print_flag = 1;
 static globus_bool_t  graml_jm_cancel = GLOBUS_FALSE;
 static globus_bool_t  graml_jm_commit_request = GLOBUS_FALSE;
 static globus_bool_t  graml_jm_commit_end = GLOBUS_FALSE;
+static globus_bool_t  graml_jm_request_made = GLOBUS_FALSE;
 static char *         graml_gass_cache_tag = GLOBUS_NULL;
 static char *         graml_job_state_file = GLOBUS_NULL;
 static int            graml_commit_time_extend = 0;
@@ -2016,6 +2017,11 @@ int main(int argc,
 
         graml_rsl_tree = rsl_tree;
         rc = globus_jobmanager_request(request);
+
+	if ( rc == GLOBUS_SUCCESS )
+	{
+	    graml_jm_request_made = GLOBUS_TRUE;
+	}
     }
 
     if (rc == GLOBUS_SUCCESS && request->save_state == GLOBUS_TRUE)
@@ -5060,7 +5066,10 @@ globus_l_jm_http_query_callback( void *               arg,
 	else
 	{
 	    GRAM_LOCK;
-	    rc = globus_jobmanager_request_cancel(request);
+	    if ( graml_jm_request_made )
+	    {
+		rc = globus_jobmanager_request_cancel(request);
+	    }
  	    /*
 	     * NOTE: old code set state to FAILED. Shouldn't it be DONE?
 	     */
