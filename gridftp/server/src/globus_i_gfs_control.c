@@ -846,6 +846,28 @@ globus_l_gfs_data_transfer_cb(
     }
     if(!request->transfer_events)
     {
+        globus_gfs_transfer_info_t *    info;
+        info = (globus_gfs_transfer_info_t *) request->info;
+        if(info)
+        {
+            if(info->pathname)
+            {
+                globus_free(info->pathname);
+            }
+            if(info->list_type)
+            {
+                globus_free(info->list_type);
+            }
+            if(info->module_name)
+            {
+                globus_free(info->module_name);
+            }
+            if(info->module_args)
+            {
+                globus_free(info->module_args);
+            }
+            globus_free(info);
+        }
         globus_l_gfs_request_info_destroy(request);
     }
 }

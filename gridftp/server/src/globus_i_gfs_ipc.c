@@ -413,7 +413,6 @@ globus_l_gfs_ipc_request_destroy(
                     }
                     globus_free(data_reply->contact_strings);
                 }
-                // globus_free(data_reply);
                 break;
 
             default:
@@ -421,86 +420,100 @@ globus_l_gfs_ipc_request_destroy(
                 break;
         }
         globus_free(request->reply);
-
+    }
     /* if there was an info structure clean it up */
-        if(request->info_struct != NULL)
+    if(request->info_struct != NULL)
+    {
+        switch(request->type)
         {
-            switch(request->reply->type)
-            {
-                case GLOBUS_GFS_OP_STAT:
-                    stat_info =
-                        (globus_gfs_stat_info_t *) request->info_struct;
-                    if(stat_info->pathname != NULL)
-                    {
-                        globus_free(stat_info->pathname);
-                    }
-                    globus_free(stat_info);
-                    break;
+            case GLOBUS_GFS_OP_STAT:
+                stat_info =
+                    (globus_gfs_stat_info_t *) request->info_struct;
+                if(stat_info->pathname != NULL)
+                {
+                    globus_free(stat_info->pathname);
+                }
+                globus_free(stat_info);
+                break;
 
-                case GLOBUS_GFS_OP_RECV:
-                case GLOBUS_GFS_OP_SEND:
-                case GLOBUS_GFS_OP_LIST:
-                    trans_info =
-                        (globus_gfs_transfer_info_t *) request->info_struct;
-                    if(trans_info->pathname != NULL)
-                    {
-                        globus_free(trans_info->pathname);
-                    }
-                    if(trans_info->module_name != NULL)
-                    {
-                        globus_free(trans_info->module_name);
-                    }
-                    if(trans_info->module_args != NULL)
-                    {
-                        globus_free(trans_info->module_args);
-                    }
-                    if(trans_info->list_type != NULL)
-                    {
-                        globus_free((char *)trans_info->list_type);
-                    }
-                    globus_range_list_destroy(trans_info->range_list);
-                    globus_free(trans_info);
-                    break;
+            case GLOBUS_GFS_OP_RECV:
+            case GLOBUS_GFS_OP_SEND:
+            case GLOBUS_GFS_OP_LIST:
+                trans_info =
+                    (globus_gfs_transfer_info_t *) request->info_struct;
+                if(trans_info->pathname != NULL)
+                {
+                    globus_free(trans_info->pathname);
+                }
+                if(trans_info->module_name != NULL)
+                {
+                    globus_free(trans_info->module_name);
+                }
+                if(trans_info->module_args != NULL)
+                {
+                    globus_free(trans_info->module_args);
+                }
+                if(trans_info->list_type != NULL)
+                {
+                    globus_free((char *)trans_info->list_type);
+                }
+                globus_range_list_destroy(trans_info->range_list);
+                globus_free(trans_info);
+                break;
 
-                case GLOBUS_GFS_OP_COMMAND:
-                    cmd_info =
-                        (globus_gfs_command_info_t *) request->info_struct;
-                    if(cmd_info->pathname != NULL)
-                    {
-                        globus_free(cmd_info->pathname);
-                    }
-                    if(cmd_info->cksm_alg != NULL)
-                    {
-                        globus_free(cmd_info->cksm_alg);
-                    }
-                    if(cmd_info->rnfr_pathname != NULL)
-                    {
-                        globus_free(cmd_info->rnfr_pathname);
-                    }
-                    globus_free(cmd_info);
-                    break;
+            case GLOBUS_GFS_OP_COMMAND:
+                cmd_info =
+                    (globus_gfs_command_info_t *) request->info_struct;
+                if(cmd_info->pathname != NULL)
+                {
+                    globus_free(cmd_info->pathname);
+                }
+                if(cmd_info->cksm_alg != NULL)
+                {
+                    globus_free(cmd_info->cksm_alg);
+                }
+                if(cmd_info->rnfr_pathname != NULL)
+                {
+                    globus_free(cmd_info->rnfr_pathname);
+                }
+                globus_free(cmd_info);
+                break;
 
-                case GLOBUS_GFS_OP_PASSIVE:
-                case GLOBUS_GFS_OP_ACTIVE:
-                    data_info =
-                        (globus_gfs_data_info_t *) request->info_struct;
-                    if(data_info->subject != NULL)
+            case GLOBUS_GFS_OP_PASSIVE:
+            case GLOBUS_GFS_OP_ACTIVE:
+                data_info =
+                    (globus_gfs_data_info_t *) request->info_struct;
+                if(data_info->subject != NULL)
+                {
+                    globus_free(data_info->subject);
+                }
+                if(data_info->interface != NULL)
+                {
+                    globus_free(data_info->interface);
+                }
+                if(data_info->pathname != NULL)
+                {
+                    globus_free(data_info->pathname);
+                }
+                if(data_info->contact_strings != NULL)
+                {
+                    for(ctr = 0; ctr < data_info->cs_count; ctr++)
                     {
-                        globus_free(data_info->subject);
+                        globus_free((char *)data_info->contact_strings[ctr]);
                     }
-                    globus_free(data_info);
-                    break;
+                    globus_free(data_info->contact_strings);
+                }
+                globus_free(data_info);
+                break;
 
-                case GLOBUS_GFS_OP_DESTROY:
-                    break;
+            case GLOBUS_GFS_OP_DESTROY:
+                break;
 
-                default:
-                    globus_assert(0 && "possible memory corruption");
-                    break;
-            }
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
         }
     }
-
     globus_free(request);
 }
 
@@ -582,28 +595,31 @@ void
 globus_l_gfs_session_info_free(
     globus_gfs_session_info_t *         session_info)
 {
-    if(session_info->username)
+    if(session_info)
     {
-        globus_free(session_info->username);
+        if(session_info->username)
+        {
+            globus_free(session_info->username);
+        }
+        if(session_info->password)
+        {
+            globus_free(session_info->password);
+        }
+        if(session_info->subject)
+        {
+            globus_free(session_info->subject);
+        }
+        if(session_info->cookie)
+        {
+            globus_free(session_info->cookie);
+        }
+        if(session_info->host_id)
+        {
+            globus_free(session_info->host_id);
+        }
+    
+        globus_free(session_info);
     }
-    if(session_info->password)
-    {
-        globus_free(session_info->password);
-    }
-    if(session_info->subject)
-    {
-        globus_free(session_info->subject);
-    }
-    if(session_info->cookie)
-    {
-        globus_free(session_info->cookie);
-    }
-    if(session_info->host_id)
-    {
-        globus_free(session_info->host_id);
-    }
-
-    globus_free(session_info);
 }
 
 static
@@ -2412,13 +2428,20 @@ globus_l_gfs_ipc_unpack_reply(
                 buffer, len, reply->info.data.data_arg);
             GFSDecodeUInt32(
                 buffer, len, reply->info.data.cs_count);
-            reply->info.data.contact_strings = (const char **)
-                globus_malloc(sizeof(char *) * reply->info.data.cs_count);
-            for(ctr = 0; ctr < reply->info.data.cs_count; ctr++)
+            if(reply->info.data.cs_count > 0)
             {
-                char *                  tmp_cs;
-                GFSDecodeString(buffer, len, tmp_cs);
-                reply->info.data.contact_strings[ctr] = tmp_cs;
+                reply->info.data.contact_strings = (const char **)
+                    globus_malloc(sizeof(char *) * reply->info.data.cs_count);
+                for(ctr = 0; ctr < reply->info.data.cs_count; ctr++)
+                {
+                    char *                  tmp_cs;
+                    GFSDecodeString(buffer, len, tmp_cs);
+                    reply->info.data.contact_strings[ctr] = tmp_cs;
+                }
+            }
+            else
+            {
+                reply->info.data.contact_strings = NULL;
             }
             GFSDecodeChar(buffer, len, ch);
             reply->info.data.ipv6 = (int)ch;
@@ -2653,13 +2676,20 @@ globus_l_gfs_ipc_unpack_data(
     GFSDecodeUInt32(buffer, len, data_info->max_cs);
 
     GFSDecodeUInt32(buffer, len, data_info->cs_count);
-    data_info->contact_strings = (const char **) 
-        globus_malloc(sizeof(char *) * data_info->cs_count);
-    for(ctr = 0; ctr < data_info->cs_count; ctr++)
+    if(data_info->cs_count > 0)
     {
-        char *                          tmp_cs;
-        GFSDecodeString(buffer, len, tmp_cs);
-        data_info->contact_strings[ctr] = tmp_cs;
+        data_info->contact_strings = (const char **) 
+            globus_malloc(sizeof(char *) * data_info->cs_count);
+        for(ctr = 0; ctr < data_info->cs_count; ctr++)
+        {
+            char *                          tmp_cs;
+            GFSDecodeString(buffer, len, tmp_cs);
+            data_info->contact_strings[ctr] = tmp_cs;
+        }
+    }
+    else
+    {
+        data_info->contact_strings = NULL;
     }
     GFSDecodeString(buffer, len, data_info->pathname);
     GFSDecodeString(buffer, len, data_info->interface);
@@ -3394,6 +3424,8 @@ globus_l_gfs_ipc_reply_read_header_cb(
     if(stopping)
     {
         ipc->iface->session_stop_func(ipc, ipc->user_arg);
+        globus_l_gfs_session_info_free(ipc->session_info);
+        ipc->session_info = NULL;
         globus_mutex_lock(&ipc->mutex);
         {
             switch(ipc->state)
@@ -3770,10 +3802,12 @@ globus_gfs_ipc_reply_finished(
         {
             goto error;
         }
-        request->reply = reply;
 
         if(ipc->local)
         {
+            /* XXX can't kickout here without copying the reply 
+            to request->reply */
+            globus_assert(0 && "read comment");
             globus_callback_register_oneshot(
                 NULL,
                 NULL,
@@ -3783,6 +3817,9 @@ globus_gfs_ipc_reply_finished(
         /* if on wire pack up reply and send it */
         else
         {
+            /* don't need the request anymore */
+            globus_l_gfs_ipc_request_destroy(request);
+
             /* pack the header */
             buffer = globus_malloc(ipc->buffer_size);
             if(buffer == NULL)
@@ -3929,7 +3966,6 @@ globus_gfs_ipc_reply_finished(
             {
                 goto xio_error;
             }
-            globus_free(request);
         }
     }
     globus_mutex_unlock(&ipc_handle->mutex);
