@@ -38,14 +38,10 @@ sub check_size
     my $command = "$test_exec -s $src_url 2>/dev/null";
     $checked_size = `$command`;
     chomp($checked_size);
-    $rc = $? / 256;
-    if($rc != 0 && $size >= 0)
+    $rc = $?;
+    if($rc / 256 != 0 && $size >= 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
+        $errors .= "\n# Test exited with " . $rc / 256;
     }
     if($size != -1 && $checked_size != $size)
     {

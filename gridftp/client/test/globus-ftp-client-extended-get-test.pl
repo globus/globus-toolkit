@@ -43,23 +43,11 @@ sub basic_func
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    unlink('core', $tmpname);
+    unlink($tmpname);
 
     my $command = "$test_exec -P $parallelism -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        my $core_str = $test_exec."_basic_P_".$parallelism.".core";
-        system("mv core $core_str");
-
-        $errors .= "\n# Core file generated.";
-    }
-
-    if(0 != &compare_data($test_data, $tmpname))
+    $errors = run_command($command, 0);
+    if($errors eq "" && 0 != &compare_data($test_data, $tmpname))
     {
 	$errors .= "\n# Differences between $testfile and output.";
     }
@@ -86,22 +74,8 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-
     my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here >/dev/null  2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 1)
-    {
-        $errors .= "\n# Test exited with $rc.";
-    }
-    if(-r 'core')
-    {
-        my $core_str = $test_exec."_bad_url.core";
-        system("mv core $core_str");
-
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 1);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -124,18 +98,8 @@ sub abort_test
     my ($abort_point) = shift;
     my ($par) = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -P $par -a $abort_point -s gsiftp://$source_host$testfile >/dev/null 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if(-r 'core')
-    {
-        my $core_str = $test_exec."_abort_".$abort_point."_P_".$par.".core";
-        system("mv core $core_str");
-
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, -2);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -167,27 +131,13 @@ sub restart_test
     my ($restart_point) = shift;
     my ($par) = shift;
 
-    unlink('core', $tmpname);
+    unlink($tmpname);
 
     my $command = "$test_exec -P $par -r $restart_point -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
+    $errors = run_command($command, 0);
+    if($errors eq "" && 0 != &compare_data($test_data, $tmpname))
     {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        my $core_str = $test_exec."_restart_".$restart_point."_P_".$par.".core";
-        system("mv core $core_str");
-
-        $errors .= "\n# Core file generated.";
-    }
-    if($errors eq "")
-    {
-      if(0 != &compare_data($test_data, $tmpname))
-	{
-	    $errors .= "\n# Differences between $testfile and output.";
-	}
+        $errors .= "\n# Differences between $testfile and output.";
     }
 
     if($errors eq "")
@@ -222,19 +172,8 @@ sub perf_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-
     my $command = "$test_exec -s gsiftp://$source_host$testfile -M >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 0);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -261,19 +200,8 @@ sub throughput_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-
     my $command = "$test_exec -s gsiftp://$source_host$testfile -T >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 0);
     if($errors eq "")
     {
         ok('success', 'success');

@@ -14,6 +14,7 @@ require Exporter;
               run_command
               compare_local_files );            # symbols to export by default
 
+
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 
 my $self = {};
@@ -25,6 +26,16 @@ use Sys::Hostname;
 use Data::Dumper;
 use File::Copy;
 use Cwd;
+use Config;
+defined $Config{sig_name} || die "No sigs?";
+my $name;
+my $i;
+my @signame;
+foreach $name (split(' ', $Config{sig_name}))
+{
+    $signame[$i] = $name;
+    $i++;
+}
 
 # These are globus test support modules.
 # use Globus::URL;
@@ -313,9 +324,12 @@ sub ftp_commands()
             'LIST', 'NLST', 'MDTM', 'MKD', 'RMD', 'RNFR', 'RNTO', 'NOOP' );
 }
 
-sub run_command($)
+sub run_command($$)
 {
     my $command = shift;
+    my $expected_rc = shift;
+    my $errors = "";
+    my $rc;
     
     if(defined($ENV{"FTP_TEST_EF"}))
     {
@@ -332,7 +346,29 @@ sub run_command($)
         $command = "valgrind $command";
     }
 
-    return system($command);
+    system($command);
+    $rc = $? >> 8;
+    if($expected_rc != -2 &&
+        ($expected_rc == -1 && $rc == 0) ||
+        ($expected_rc > -1 && $rc != $expected_rc))
+    {
+        if($expected_rc == -1)
+        {
+            $expected_rc = "anything but 0";
+        }
+        $errors .= "\n# Test exited with $rc when expected $expected_rc.";
+    }
+    $rc = $rc > 127 ? $rc - 128 : 0;
+    if($? & 127 || $rc)
+    {
+        $errors .= "\n# Test exited on signal " . $signame[$? & 127 || $rc];
+    }
+    if($? & 128)
+    {
+        $errors .= "\n# Core file generated.";
+    }
+   
+    return $errors;
 }
 
 =back

@@ -41,7 +41,7 @@ sub basic_func
     my $newfile = new FileHandle;
     my $offset = shift;
     my $data = "";
-    unlink('core', $dest_file);
+    unlink($dest_file);
 
     # Create a file of known contents, for the partial update.
     open($newfile, ">$dest_file");
@@ -70,14 +70,10 @@ sub basic_func
     }
     close($newfile);
 
-    $rc = $? >> 8;
-    if($rc != 0)
+    $rc = $?;
+    if($rc / 256 != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
+        $errors .= "\n# Test exited with " . $rc / 256;
     }
 
     open($newfile, "|diff - $dest_file");

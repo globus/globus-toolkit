@@ -44,8 +44,6 @@ sub basic_func
     my $offset = shift;
     my ($source_data, $dest_data) = ("", "");
 
-    unlink('core');
-
     # Create initial contents of the source file.
     for(my $i = 0; $i < 8192; $i++)
     {
@@ -83,14 +81,10 @@ sub basic_func
            " -s gsiftp://$source_host$tmpname2 -d gsiftp://$dest_host$tmpname";
     print `$cmd`;
 
-    $rc = $? >> 8;
-    if($rc != 0)
+    $rc = $?;
+    if($rc / 256 != 0)
     {
-        $errors .= "\n# Test exited with $rc.";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
+        $errors .= "\n# Test exited with " . $rc / 256;
     }
 
     open($newfile, "<$tmpname");

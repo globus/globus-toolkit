@@ -33,16 +33,7 @@ sub bad_buffer
     unlink('core');
     
     my $command = "$test_exec -s gsiftp://$source_host$source_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 2)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 2);
     if($errors eq "")
     {
         ok('success', 'success');

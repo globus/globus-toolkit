@@ -46,26 +46,18 @@ sub basic_func
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
-    unlink('core', $tmpname);
+    unlink($tmpname);
 
     my $command = "$test_exec -R $range -s gsiftp://$source_host$source_file  >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
+    $errors = run_command($command, 0);
+    if($errors eq "")
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $rc = &compare_data($data, $tmpname);
+        if($rc != 0)
+        {
+        	$errors .= "\n# Differences between $local_copy and output.";
+        }
     }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-    
-    $rc = &compare_data($data, $tmpname);
-	
-    if($rc != 0)
-    {
-	$errors .= "\n# Differences between $local_copy and output.";
-    }
-
     if($errors eq "")
     {
         ok('success', 'success');
@@ -85,19 +77,11 @@ push(@tests, "basic_func();");
 # a stronger measure of success here)
 sub abort_test
 {
-    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    unlink('core', $tmpname);
-
     my $command = "$test_exec -a $abort_point -R $range -s gsiftp://$source_host$source_file  >/dev/null 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, -2);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -107,7 +91,6 @@ sub abort_test
         $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    unlink($tmpname);
 }
 for(my $i = 1; $i <= 41; $i++)
 {
@@ -125,22 +108,17 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    unlink('core', $tmpname);
+    unlink($tmpname);
 
     my $command = "$test_exec -r $restart_point -R $range -s gsiftp://$source_host$source_file  >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
+    $errors = run_command($command, 0);
+    if($errors eq "")
     {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-    $rc = &compare_data($data, $tmpname);
-    if($rc != 0)
-    {
-        $errors .= "\n# Differences found between files.";
+        $rc = &compare_data($data, $tmpname);
+        if($rc != 0)
+        {
+            $errors .= "\n# Differences found between files.";
+        }
     }
 
     if($errors eq "")

@@ -32,19 +32,8 @@ sub check_existence
     my $src_url = shift;
     my $existence_rc = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -s $src_url >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != $existence_rc)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, $existence_rc);
     if($errors eq "")
     {
         ok('success', 'success');

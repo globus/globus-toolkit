@@ -36,23 +36,13 @@ sub basic_func
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
-    unlink('core');
-
     $old_proxy=$ENV{'X509_USER_PROXY'}; 
     if($use_proxy == 0)
     {
         $ENV{'X509_USER_PROXY'} = "/dev/null";
     }
     my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
+    $errors = run_command($command, $use_proxy ? 0 : -1);
     if($use_proxy && $errors eq "")
     {
         my ($output) = get_remote_file($dest_host, $dest_file);
@@ -90,19 +80,8 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-
     my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 2)
-    {
-        $errors .= "\n# Test exited with $rc.";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 2);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -125,16 +104,7 @@ sub bad_url_dest
     my ($errors,$rc) = ("",0);
 
     my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host/no-such-file-here >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 2)
-    {
-        $errors .= "\n# Test exited with $rc.";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 2);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -157,15 +127,8 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -a $abort_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, -2);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -193,18 +156,8 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -r $restart_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
+    $errors = run_command($command, 0);
     if($errors eq "")
     {
         my ($output) = get_remote_file($dest_host, $dest_file);

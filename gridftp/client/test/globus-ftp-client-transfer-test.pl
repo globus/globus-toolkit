@@ -54,8 +54,6 @@ sub basic_func
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
-    unlink('core');
-
     $old_proxy=$ENV{'X509_USER_PROXY'}; 
     if($use_proxy == 0)
     {
@@ -63,15 +61,7 @@ sub basic_func
     }
     
     my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
+    $errors = run_command($command, $use_proxy ? 0 : -1);
     if($use_proxy && $errors eq "")
     {
         my ($output) = get_remote_file($dest_host, $dest_file);
@@ -125,19 +115,8 @@ sub bad_url_src
     my ($errors,$rc) = ("",0);
     my $src = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -s '$src' -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 1)
-    {
-        $errors .= "\n# Test exited with $rc.";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 1);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -171,19 +150,8 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-
     my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host/no-such-file-here >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 1)
-    {
-        $errors .= "\n# Test exited with $rc.";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 1);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -211,15 +179,8 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -a $abort_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, -2);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -249,18 +210,8 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    unlink('core');
-
     my $command = "$test_exec -r $restart_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
+    $errors = run_command($command, 0);
     if($errors eq "")
     {
         my ($output) = get_remote_file($dest_host, $dest_file);
@@ -316,19 +267,9 @@ sub dcau_test
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
-    unlink('core');
-
     my $command = "$test_exec -c $dcau -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != $desired_rc)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-    if($rc == 0)
+    $errors = run_command($command, $desired_rc);
+    if($errors eq "" && $desired_rc == 0)
     {
         my ($output) = get_remote_file($dest_host, $dest_file);
         $errors = compare_local_files($local_copy, $output);
@@ -392,19 +333,9 @@ sub prot_test
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
-    unlink('core');
-
     my $command = "$test_exec -c self -t $prot -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != $desired_rc)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-    if($errors eq "")
+    $errors = run_command($command, $desired_rc);
+    if($errors eq "" && $desired_rc == 0)
     {
         my ($output) = get_remote_file($dest_host, $dest_file);
         $errors = compare_local_files($local_copy, $output);

@@ -32,7 +32,7 @@ sub correct_auth
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($hostname) = ();
-    unlink('core', $tmpname);
+    unlink($tmpname);
 
     if(exists $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
     {
@@ -51,22 +51,15 @@ sub correct_auth
     chomp($hostname);
     
     my $command = "$test_exec -s gsiftp://$source_host$source_file -A '$hostname' >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
+    $errors = run_command($command, 0);
+    if($errors eq "")
     {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-    
-    my $diffs = `diff $local_copy $tmpname | sed -e 's/^/# /'`;
-        
-    if($? != 0)
-    {
-        $errors .= "\n# Differences between /etc/group and output.";
-        $errors .= "$diffs";
+        my $diffs = `diff $local_copy $tmpname | sed -e 's/^/# /'`;
+        if($? != 0)
+        {
+            $errors .= "\n# Differences between /etc/group and output.";
+            $errors .= "$diffs";
+        }
     }
     
     if($errors eq "")
@@ -89,18 +82,10 @@ sub incorrect_auth
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($hostname) = ("googly_goodness");
-    unlink('core', $tmpname);
+    unlink($tmpname);
 
     my $command = "$test_exec -s gsiftp://$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
-    $rc = run_command($command) / 256;
-    if($rc != 1)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
+    $errors = run_command($command, 1);
     if($errors eq "")
     {
         ok('success', 'success');

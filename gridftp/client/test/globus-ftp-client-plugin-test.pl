@@ -27,16 +27,7 @@ sub go
 {
     my $rc;
     my $errors="";
-    $rc = run_command("$test_exec") / 256;
-    if($rc != 0)
-    {
-        $errors .= "Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command("$test_exec", 0);
     if($errors eq "")
     {
         ok('success', 'success');

@@ -25,19 +25,8 @@ sub create_destroy
 {
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-    
     my $command = "$test_exec >/dev/null 2>&1";
-    $rc = run_command($command) / 256;
-    if($rc != 0)
-    {
-        $errors .= "\n# Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
-    }
-
+    $errors = run_command($command, 0);
     if($errors eq "")
     {
         ok('success', 'success');
