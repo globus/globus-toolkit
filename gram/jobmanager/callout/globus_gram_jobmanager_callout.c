@@ -156,8 +156,6 @@ globus_gram_callout(
                 result,
                 GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED,
                 ("Client is not authorized"));
-            gss_release_buffer_set(&minor_status,
-                                   &cert_chain_buffers);
             goto exit;
         }
     }
