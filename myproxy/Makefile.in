@@ -1,4 +1,4 @@
-GSI_DEVELOPMENT_PATH	=	/usr/local/globus/development/i686-pc-linux-gnu_nothreads_standard_debug/
+GSI_DEVELOPMENT_PATH	=	@GLOBUS_DEV_PATH@
 
 include $(GSI_DEVELOPMENT_PATH)/etc/makefile_header
 
@@ -26,7 +26,7 @@ myproxy-get-delegation: myproxy_get_delegation.o myproxy.o gsi_socket.o gnu_geto
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
-myproxy-server: myproxy_server.o myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
+myproxy-server: myproxy_server.o myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o verror.o
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
