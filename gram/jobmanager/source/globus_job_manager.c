@@ -620,6 +620,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
     *(params->dir)       = '\0';
     *(params->std_in)    = '\0';
     *(params->std_out)   = '\0';
+    *(params->paradyn)   = '\0';
     *(params->std_err)   = '\0';
     *pgm_maxtime         = '\0';
     *pgm_count           = '\0';
@@ -633,6 +634,16 @@ grami_jm_request_params(gram_specification_t * description_tree,
     grami_jm_param_get(description_tree, GRAM_STDOUT_PARAM, params->std_out);
     grami_jm_param_get(description_tree, GRAM_STDERR_PARAM, params->std_err);
     grami_jm_param_get(description_tree, GRAM_MAXTIME_PARAM, pgm_maxtime);
+
+    grami_jm_param_get(description_tree, GRAM_PARADYN_PARAM, params->paradyn);
+
+    if (grami_is_paradyn_job(params))
+    {
+	if (!grami_paradyn_rewrite_params(params))
+	{
+            return (GRAM_ERROR_INVALID_PARADYN);
+	}
+    }
 
     /*
      * set defaults for everything, if not specified
