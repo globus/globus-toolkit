@@ -11,8 +11,8 @@
 #include "globus_gsi_proxy.h"
 #include "proxycertinfo.h"
 
-#ifndef GLOBUS_L_INCLUDE_GSI_PROXY_H
-#define GLOBUS_L_INCLUDE_GSI_PROXY_H
+#ifndef GLOBUS_I_INCLUDE_GSI_PROXY_H
+#define GLOBUS_I_INCLUDE_GSI_PROXY_H
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -65,6 +65,6 @@ void globus_i_gsi_proxy_create_private_key_cb(BIO *);
 
 EXTERN_C_END
 
-#endif /* GLOBUS_L_INCLUDE_FTP_CLIENT_H */
+#endif /* GLOBUS_I_INCLUDE_GSI_PROXY_H */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
