@@ -12,7 +12,6 @@
 
 #include "globus_i_error_openssl.h"
 #include "globus_common.h"
-#include "globus_openssl.h"
 #include "version.h"
 #include <openssl/err.h>
 #include <openssl/ssl.h>
