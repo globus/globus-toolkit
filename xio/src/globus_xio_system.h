@@ -50,7 +50,7 @@ typedef void
 (*globus_xio_system_data_callback_t)(
     globus_xio_system_handle_t          handle,
     globus_result_t                     result,
-    globus_ssize_t                      nbytes,
+    globus_size_t                       nbytes,
     void *                              user_arg);
 
 globus_result_t
@@ -100,22 +100,25 @@ globus_xio_system_read(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
-    globus_ssize_t *                    nread);
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nread);
 
 globus_result_t
 globus_xio_system_read_ex(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
+    globus_size_t                       waitforbytes,
     int                                 flags,
     const globus_sockaddr_t *           from,
-    globus_ssize_t *                    nread);
+    globus_size_t *                     nread);
 
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
+    globus_size_t                       waitforbytes,
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg);
 
@@ -124,6 +127,7 @@ globus_xio_system_register_read_ex(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
+    globus_size_t                       waitforbytes,
     int                                 flags,
     const globus_sockaddr_t *           from,
     globus_xio_system_data_callback_t   callback,
@@ -134,7 +138,7 @@ globus_xio_system_write(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
-    globus_ssize_t *                    nwritten);
+    globus_size_t *                     nwritten);
 
 globus_result_t
 globus_xio_system_write_ex(
@@ -143,7 +147,7 @@ globus_xio_system_write_ex(
     int                                 iovc,
     int                                 flags,
     const globus_sockaddr_t *           to,
-    globus_ssize_t *                    nwritten);
+    globus_size_t *                     nwritten);
 
 globus_result_t
 globus_xio_system_register_write(
