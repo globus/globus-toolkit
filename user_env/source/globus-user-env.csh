@@ -14,19 +14,19 @@ if ( ! $?GLOBUS_LOCATION ) then
 endif
 
 if ( ! $?LD_LIBRARY_PATH ) then
-    setenv LD_LIBRARY_PATH
+    setenv LD_LIBRARY_PATH ''
 endif
 
 if ( ! $?LIBPATH ) then
-    setenv LIBPATH
+    setenv LIBPATH ''
 endif
 
 if ( ! $?SHLIB_PATH ) then
-    setenv SHLIB_PATH
+    setenv SHLIB_PATH ''
 endif
 
 if ( ! $?SASL_PATH ) then
-    setenv SASL_PATH
+    setenv SASL_PATH ''
 endif
 
 if ( $?GLOBUS_PATH ) then
