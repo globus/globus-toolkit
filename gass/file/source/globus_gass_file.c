@@ -717,7 +717,7 @@ globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
 		return rc;
 	    }
 	    
-	    globus_gass_cache_add_done(&globus_l_gass_file_cache_handle,
+	    rc = globus_gass_cache_add_done(&globus_l_gass_file_cache_handle,
 				       file->url,
 				       file->tag,
 				       file->timestamp);
