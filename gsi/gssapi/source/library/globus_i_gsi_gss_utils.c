@@ -864,7 +864,7 @@ globus_i_gsi_gss_handshake(
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, result,
+            minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         goto exit;
     }
