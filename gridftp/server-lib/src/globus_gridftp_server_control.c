@@ -1456,7 +1456,7 @@ globus_gridftp_server_control_start(
         server_handle->funcs.data_destroy_cb = i_attr->funcs.data_destroy_cb;
         server_handle->funcs.list_cb = i_attr->funcs.list_cb;
         server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
-        server_handle->funcs.done_cb = i_attr->funcs.done_cb;
+        server_handle->funcs.done_cb = done_cb;
         server_handle->funcs.abort_cb = i_attr->funcs.abort_cb;
 
         globus_hashtable_copy(
