@@ -856,16 +856,25 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	}
     }
 
-    /* Only add error string if necessary */
+    /* Only add error string(s) if necessary */
     if (response->response_type == MYPROXY_ERROR_RESPONSE) {
-	char *buf;
+	char *buf, *start, *end;
 	buf = strdup (verror_get_string());
-	strip_char (buf, '\n');
-        len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
-				  buf, "\n", NULL);
-        if (len < 0)
-	  return -1;
-        totlen += len;
+	/* send each line individually */
+	for (start=buf; (end = strchr(start, '\n')) != NULL; start = end+1) {
+	    *end = '\0';
+	    len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
+				      start, "\n", NULL);
+	    if (len < 0) return -1;
+	    totlen += len;
+	}
+	/* send the last line */
+	if (start[0] != '\0') {
+	    len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
+				      start, "\n", NULL);
+	    if (len < 0) return -1;
+	    totlen += len;
+	}
 	free(buf);
     }
 
@@ -986,6 +995,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	    }
 	}
 
+	tmp[0] = '\0';
+	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_CRED_NAME_STRING, NULL);
+	if (len < 0) return -1;
+
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+	if (len == -1) return -1;
+	if (len > 0)
+	    response->info_creds->credname = strdup(buffer);
+		
 	tmp[0] = '\0';
 	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
 				  "_", MYPROXY_CRED_DESC_STRING, NULL);
