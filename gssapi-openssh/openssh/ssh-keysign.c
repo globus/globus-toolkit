@@ -149,10 +149,11 @@ main(int argc, char **argv)
 	u_int slen, dlen;
 	u_int32_t rnd[256];
 
+	init_pathnames();
+
 	key_fd[0] = open(_PATH_HOST_RSA_KEY_FILE, O_RDONLY);
 	key_fd[1] = open(_PATH_HOST_DSA_KEY_FILE, O_RDONLY);
 
-	init_pathnames();
 	seteuid(getuid());
 	setuid(getuid());
 
