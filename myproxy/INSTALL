@@ -135,22 +135,6 @@ following as root:
  
            kill -HUP <pid-of-inetd>
  
-    *  Copy the Myproxy startup script SXXmyproxy
- 
-       to the appropriate systems startup directory.
-       E.g., /etc/rc.d/rc5.d/S[nn]myproxy   (under RedHat)  or
-             /etc/rc3.d/S[nn]myproxy        (under Solaris) or
-             /sbin/rc3.d/S[nn]myproxy       (under HP-UX)
-         where nn is a number between 00 and 99.
- 
-       Alternatively, make a call to this script from the
-       system startup script. E.g., under BSD add an entry
-       in /etc/rc.local which calls SXXmyproxy
-
-    *   Execute the command:
- 
-        SXXmyproxy start
-
 4a. Installing the myproxy-server using a non-host certificate
 --------------------------------------------------------------
 
