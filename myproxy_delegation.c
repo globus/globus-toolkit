@@ -31,11 +31,6 @@ static int myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
                                   char *passphrase,
 				  char *certfile);
 
-/*
- * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
- * setlinebuf().
- */
-
 int myproxy_set_delegation_defaults(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request)
