@@ -22,12 +22,13 @@ AC_CHECK_HEADERS(dce/cma_ux.h)
 
 dnl GPT_SET_LIBS("-lglobus_common_$GLOBUS_FLAVOR_NAME -lglobus_gss_assist_$GLOBUS_FLAVOR_NAME -lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME -lglobus_ssl_utils_$GLOBUS_FLAVOR_NAME -lssl_$GLOBUS_FLAVOR_NAME -lcrypto_$GLOBUS_FLAVOR_NAME")
 
+GPT_SET_LIBS("-lsocket -lnsl")
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
-	tests/Makefile
 	,
 	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
