@@ -863,9 +863,9 @@ grami_jm_request_params(globus_rsl_t * description_tree,
 		       params->gram_myjob);
 
     /*
-     * Substitute ${GLOBUS_PREFIX} with the Globus prefix directory
+     * Substitute $(GLOBUS_PREFIX) with the Globus prefix directory
      */
-    if (strncmp(params->pgm, "${GLOBUS_PREFIX}", 16) == 0)
+    if (strncmp(params->pgm, "$(GLOBUS_PREFIX)", 16) == 0)
     {
 	char				str[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
 	int				prefix_len;
