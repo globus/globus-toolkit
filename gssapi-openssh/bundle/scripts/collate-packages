@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+
+source ./scripts/version.sh
+
+if [ ! -e sources/ ]; then
+    mkdir -p sources/
+fi
+
+cp ../packages-harvest/gsi_openssh-$VERSION-src.tar.gz
