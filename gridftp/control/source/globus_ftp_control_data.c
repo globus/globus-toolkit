@@ -6258,9 +6258,8 @@ globus_l_ftp_control_stripes_destroy(
                 stripe,
                 data_conn);
 
-            res = globus_io_register_cancel(
+            res = globus_io_register_close(
                       &data_conn->io_handle,
-                      GLOBUS_TRUE,
                       globus_l_ftp_io_close_callback,
                       (void *)callback_info);
         }
