@@ -1,5 +1,8 @@
 include $(top_srcdir)/globus_automake_pre
 
+SUBDIRS= \
+        pkgdata 
+
 Sources= \
 	globus_i18n.c \
 	globus_i18n.h
