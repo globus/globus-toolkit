@@ -5066,6 +5066,7 @@ globus_l_jm_http_query_callback( void *               arg,
     	    /*
 	     * wake up the timed() wait in the main routine
 	     */
+            graml_jm_cancel = GLOBUS_TRUE;
 	    graml_jm_done = GLOBUS_TRUE;
 	    globus_cond_signal(&graml_api_cond);
 	    GRAM_UNLOCK;
