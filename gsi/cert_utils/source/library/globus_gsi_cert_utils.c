@@ -1,5 +1,6 @@
 
 #include "globus_i_gsi_cert_utils.h"
+#include "proxycertinfo.h"
 #include "globus_openssl.h"
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
@@ -209,7 +210,13 @@ globus_gsi_cert_utils_get_cert_type(
     X509_NAME *                         name = NULL;
     X509_NAME_ENTRY *                   ne = NULL;
     X509_NAME_ENTRY *                   new_ne = NULL;
+    X509_EXTENSION *                    pci_ext = NULL;
+    ASN1_OCTET_STRING *                 ext_data = NULL;
     ASN1_STRING *                       data = NULL;
+    PROXYCERTINFO *                     pci = NULL;
+    PROXYPOLICY *                       policy = NULL;
+    ASN1_OBJECT *                       policy_lang = NULL;
+    int                                 policy_nid;
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 index;
     int                                 critical;
@@ -257,10 +264,82 @@ globus_gsi_cert_utils_get_cert_type(
             *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
         else if((index = X509_get_ext_by_NID(cert,
-                                            OBJ_sn2nid(PROXYCERTINFO_SN),
-                                            -1)) != -1 &&
-                X509_EXTENSION_get_critical(X509_get_ext(cert,index)))
+                                             OBJ_sn2nid(PROXYCERTINFO_SN),
+                                             -1)) != -1 &&
+                (pci_ext = X509_get_ext(cert,index)) &&
+                X509_EXTENSION_get_critical(pci_ext))
         {
+            if((ext_data = X509_EXTENSION_get_data(pci_ext)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't get DER encoded extension "
+                     "data from X509 extension object"));
+                goto exit;
+            }
+
+            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Failed to copy extension data."));
+                goto exit;                
+            }
+
+            if((d2i_PROXYCERTINFO(
+                    &pci,
+                    &ext_data->data,
+                    ext_data->length)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form"));
+                goto exit;
+            }
+            
+            if((policy = PROXYCERTINFO_get_policy(pci)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't get policy from PROXYCERTINFO extension"));
+                goto exit;
+            }
+
+            if((policy_lang = PROXYPOLICY_get_policy_language(policy))
+               == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't get policy language from"
+                     " PROXYCERTINFO extension"));
+                goto exit;
+            }
+
+            policy_nid = OBJ_obj2nid(policy_lang);
+            
+            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+            }
+            else
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+            }
+            
             if((index = X509_get_ext_by_NID(cert,
                                             OBJ_sn2nid(PROXYCERTINFO_SN),
                                             index)) != -1)
@@ -271,13 +350,9 @@ globus_gsi_cert_utils_get_cert_type(
                     ("Found more than one PCI extension"));
                 goto exit;
             }
-
-            *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
         }
 
-        if(*type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
-           *type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
-           *type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+        if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(*type))
         {
             /* its some kind of proxy - now we check if the subject
              * matches the signer, by adding the proxy name entry CN
