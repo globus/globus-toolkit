@@ -29,39 +29,39 @@ Syntax: globus-personal-gatekeeper [options]
     [options]
     -help
     -usage
-	Displays usage
+    Displays usage
 
     -version
-	Displays version
+    Displays version
 
     -debug
-	Displays extra output
+    Displays extra output
 
     -start [-jmtype <type>] [-port <port>]
-	Starts a new gatekeeper, mapping default service to a
-	jobmanager. By default, the jobmanager is configured with
-	jmtype=fork. The option -port can be used to restrict the
-	gatekeeper to use a particular port. The default is to let the
-	system choose a port.
+    Starts a new gatekeeper, mapping default service to a
+    jobmanager. By default, the jobmanager is configured with
+    jmtype=fork. The option -port can be used to restrict the
+    gatekeeper to use a particular port. The default is to let the
+    system choose a port.
 
     -list
-	Scans for active personal gatekeepers. If found, an
-	authentication test is made to determine if the gatekeeper is
-	still functioning.  If the authentictation test succeeds, the
-	contact to that gatekeeper is printed out.
+    Scans for active personal gatekeepers. If found, an
+    authentication test is made to determine if the gatekeeper is
+    still functioning.  If the authentictation test succeeds, the
+    contact to that gatekeeper is printed out.
 
     -directory <contact>
-	Returns the temporary directory used by the personal
-	gatekeeper associated with <contact>. The directory contains
-	grid-mapfile, log file, etc.
+    Returns the temporary directory used by the personal
+    gatekeeper associated with <contact>. The directory contains
+    grid-mapfile, log file, etc.
 
     -kill <contact>
-	Finds and kills the personal gatekeeper associated with
-	<contact>.
+    Finds and kills the personal gatekeeper associated with
+    <contact>.
 
     -killall
-	Finds all personal gatekeepers running on the local host and
-	kills them.
+    Finds all personal gatekeepers running on the local host and
+    kills them.
 
 EOF
 }
@@ -224,40 +224,40 @@ file_prefix=".personal-gatekeeper.$host"
 while [ -n "$1" ]; do
     case "$1" in
     -jmtype)
-	jmtype="$2"
-	shift
-	;;
+    jmtype="$2"
+    shift
+    ;;
     -port)
-	port="$2"
-	shift
-	;;
+    port="$2"
+    shift
+    ;;
     -kill)
-	verify_setup
-	killem "$2"
-	exit 0
-	;;
+    verify_setup
+    killem "$2"
+    exit 0
+    ;;
     -killall)
-	verify_setup
-	killem ""
-	exit 0
-	;;
+    verify_setup
+    killem ""
+    exit 0
+    ;;
     -list)
-	listem
-	exit 0
-	;;
+    listem
+    exit 0
+    ;;
     -directory)
-	findit "$2"
-	exit 0
-	;;
+    findit "$2"
+    exit 0
+    ;;
     -start)
-	startnew=true
-	;;
+    startnew=true
+    ;;
     -debug)
-	debug=echo
-	;;
-    *)	
-	globus_args_unrecognized_option "$1"
-	;;
+    debug=echo
+    ;;
+    *)  
+    globus_args_unrecognized_option "$1"
+    ;;
     esac
     shift
 done
