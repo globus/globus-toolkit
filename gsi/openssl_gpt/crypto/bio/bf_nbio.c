@@ -61,7 +61,6 @@
 #include "cryptlib.h"
 #include <openssl/rand.h>
 #include <openssl/bio.h>
-#include <openssl/evp.h>
 
 /* BIO_put and BIO_get both add to the digest,
  * BIO_gets returns the digest */
@@ -104,7 +103,7 @@ static int nbiof_new(BIO *bi)
 	{
 	NBIO_TEST *nt;
 
-	nt=(NBIO_TEST *)OPENSSL_malloc(sizeof(NBIO_TEST));
+	if (!(nt=(NBIO_TEST *)OPENSSL_malloc(sizeof(NBIO_TEST)))) return(0);
 	nt->lrn= -1;
 	nt->lwn= -1;
 	bi->ptr=(char *)nt;
