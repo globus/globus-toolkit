@@ -1,6 +1,7 @@
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
+#include "globus_gsi_authz.h"
 #include "version.h"
 
 #include <sys/wait.h>
@@ -814,6 +815,7 @@ main(
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
+    globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
 
 
     /* activate all the server modules */
@@ -853,7 +855,10 @@ main(
             chdir("/");
         }
     }
-    
+    if(globus_i_gfs_config_bool("cas"))
+    {
+        globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
+    }
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         result = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);

@@ -42,7 +42,6 @@ void
 globus_i_gfs_acl_destroy(
     struct globus_i_gfs_acl_handle_s *  acl_handle);
 
-
 /*
  *  interface implementation functions
  */
@@ -98,5 +97,9 @@ typedef struct globus_i_gfs_acl_handle_s
     globus_list_t *                     current_list;
     globus_result_t                     cached_res;
 } globus_i_gfs_acl_handle_t;
+
+void
+globus_gfs_acl_add_module(
+    globus_gfs_acl_module_t *           module);
 
 #endif

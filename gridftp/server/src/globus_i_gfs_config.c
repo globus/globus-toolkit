@@ -36,6 +36,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"cas",           "cas",         NULL, "-cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE},
  {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},

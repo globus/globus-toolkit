@@ -807,8 +807,12 @@ globus_i_gfs_data_destroy_handle(
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
                 result = globus_ftp_control_handle_destroy(
                     &data_handle->data_channel);
-                globus_assert(result == GLOBUS_SUCCESS);
-                globus_free(data_handle);
+                if(result == GLOBUS_SUCCESS)
+                {
+                    /* XXX this is strange, shouldn't be happening, make it 
+                        an assert  */
+                    globus_free(data_handle);
+                }
                 break;
 
             /* we shouldn't get this callback twice */

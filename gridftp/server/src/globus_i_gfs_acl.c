@@ -216,3 +216,10 @@ globus_gfs_acl_authorized_finished(
         acl_handle);
 }
 
+void
+globus_gfs_acl_add_module(
+    globus_gfs_acl_module_t *           module)
+{
+    globus_list_insert(&globus_l_acl_module_list, module);
+}
+
