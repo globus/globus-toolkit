@@ -51,7 +51,6 @@
                    value="org.globus.ogsa.base.streaming.FileStreamPortType"/>
         <parameter name="instance-instance-handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
-        <parameter name="instance-instance-security" value="gsi"/>
     </service>
 </deployment>
 
