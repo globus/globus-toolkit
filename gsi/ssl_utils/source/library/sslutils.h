@@ -16,9 +16,18 @@ CVS Information:
 
 #ifndef _SSLUTILS_H
 #define _SSLUTILS_H
-#ifdef	__cplusplus
-extern "C" {
+
+#ifndef EXTERN_C_BEGIN
+#ifdef __cplusplus
+#define EXTERN_C_BEGIN extern "C" {
+#define EXTERN_C_END }
+#else
+#define EXTERN_C_BEGIN
+#define EXTERN_C_END
 #endif
+#endif
+
+EXTERN_C_BEGIN
 
 /**********************************************************************
                              Include header files
@@ -148,13 +157,13 @@ extern "C" {
  * with 0.8.1 which does not have it, if so, define a dummy
  * ERR_add_error_data and ERR_get_error_line_data
 	
- */
+*/
 
 #if SSLEAY_VERSION_NUMBER < 0x0900
 void ERR_add_error_data( VAR_PLIST( int, num ) );
 
 unsigned long ERR_get_error_line_data(char **file,int *line,
-        char **data, int *flags);
+                                      char **data, int *flags);
 #endif
 
 /*
@@ -244,26 +253,29 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
                                Type definitions
 **********************************************************************/
 
-typedef struct proxy_cred_desc_struct {
-	X509 *                   ucert ;
-	EVP_PKEY *               upkey ;
-	STACK_OF(X509) *         cert_chain ;
-	SSL_CTX *                gs_ctx ;
-	unsigned long            hSession ; /* smart card session handle */
-	unsigned long            hPrivKey ; /* private key session handle */
-	char *                   certdir ;
-	char *                   certfile;
-	int                      num_null_enc_ciphers;
-	int                  	 type; /*  for gsi err messages */
-  	int 			 owner; /* for gsi error messages */
-}  proxy_cred_desc;
+typedef struct proxy_cred_desc_struct
+{
+    X509 *                              ucert;
+    EVP_PKEY *                          upkey;
+    STACK_OF(X509) *                    cert_chain;
+    SSL_CTX *                           gs_ctx;
+    /* smart card session handle */
+    unsigned long                       hSession;
+    /* private key session handle */
+    unsigned long                       hPrivKey; 
+    char *                              certdir;
+    char *                              certfile;
+    int                                 num_null_enc_ciphers;
+    int                  	        type; /*  for gsi err messages */
+    int 			        owner; /* for gsi error messages */
+} proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */
 
 typedef struct proxy_verify_ctx_desc_struct {
-  int				magicnum ;  
-  char				*certdir; 
-  time_t			goodtill;
+    int                                 magicnum ;  
+    char *                              certdir; 
+    time_t			        goodtill;
 } proxy_verify_ctx_desc ;
 
 /* proxy_verify_desc - allows for recursive verifys with delegation */
@@ -271,16 +283,16 @@ typedef struct proxy_verify_ctx_desc_struct {
 typedef struct proxy_verify_desc_struct proxy_verify_desc;
 
 struct proxy_verify_desc_struct {
-  int				magicnum;
-  proxy_verify_desc *previous;
-  proxy_verify_ctx_desc * pvxd;
-  int				flags;
-  X509_STORE_CTX    *cert_store;
-  int				recursive_depth;
-  int				proxy_depth ;
-  int				cert_depth ;
-  int				limited_proxy;
-  STACK_OF(X509)	*cert_chain; /*  X509 */
+    int				        magicnum;
+    proxy_verify_desc *                 previous;
+    proxy_verify_ctx_desc *             pvxd;
+    int				        flags;
+    X509_STORE_CTX *                    cert_store;
+    int				        recursive_depth;
+    int				        proxy_depth;
+    int				        cert_depth;
+    int				        limited_proxy;
+    STACK_OF(X509) *                    cert_chain; /*  X509 */
 };
 
 /**********************************************************************
@@ -303,119 +315,167 @@ int
 proxy_cred_desc_free(proxy_cred_desc * pcd);
 
 int
-proxy_get_filenames(int proxy_in,
-		char ** p_cert_file,
-		char ** p_cert_dir,
-		char ** p_user_proxy,
-		char ** p_user_cert,
-		char ** p_user_key);
+proxy_get_filenames(
+    int                                 proxy_in,
+    char **                             p_cert_file,
+    char **                             p_cert_dir,
+    char **                             p_user_proxy,
+    char **                             p_user_cert,
+    char **                             p_user_key);
 
 int
-proxy_load_user_cert(proxy_cred_desc * pcd, 
-			const char * user_cert,
-			int (*pw_cb)(), BIO * bp);
+proxy_load_user_cert(
+    proxy_cred_desc *                   pcd, 
+    const char *                        user_cert,
+    int                                 (*pw_cb)(),
+    BIO *                               bp);
 int
-proxy_load_user_key(proxy_cred_desc * pcd, 
-			const char * user_key,
-			int (*pw_cb)(), BIO * bp);
+proxy_load_user_key(
+    proxy_cred_desc *                   pcd, 
+    const char *                        user_key,
+    int                                 (*pw_cb)(),
+    BIO *                               bp);
 
 int
-proxy_create_local(proxy_cred_desc * pcd,
-			const char * outfile,
-			int hours,
-			int bits,
-			int limited_proxy,
-			int (*kpcallback)(),
-			char * buffer,
-			int length);
+proxy_create_local(
+    proxy_cred_desc *                   pcd,
+    const char *                        outfile,
+    int                                 hours,
+    int                                 bits,
+    int                                 limited_proxy,
+    int                                 (*kpcallback)(),
+    char *                              buffer,
+    int                                 length);
 
 
 int
-proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp);
+proxy_init_cred(
+    proxy_cred_desc *                   pcd,
+    int                                 (*pw_cb)(),
+    BIO *                               bp);
 
 void
-proxy_verify_init(proxy_verify_desc * pvd , proxy_verify_ctx_desc *pvxd);
+proxy_verify_init(
+    proxy_verify_desc *                 pvd,
+    proxy_verify_ctx_desc *             pvxd);
 
 void
-proxy_verify_release(proxy_verify_desc * pvd);
+proxy_verify_release(
+    proxy_verify_desc *                 pvd);
 
 int
-proxy_check_proxy_name(X509 *);
+proxy_check_proxy_name(
+    X509 *);
 
 int 
-proxy_check_issued(X509_STORE_CTX *ctx, X509 *x, X509 *issuer);
+proxy_check_issued(
+    X509_STORE_CTX *                    ctx,
+    X509 *                              x,
+    X509 *                              issuer);
 
 int
-proxy_verify_certchain(STACK_OF(X509) *certchain, proxy_verify_desc * ppvd);
+proxy_verify_certchain(
+    STACK_OF(X509) *                    certchain,
+    proxy_verify_desc *                 ppvd);
 
 int
-proxy_verify_callback(int ok, X509_STORE_CTX * ctx);
+proxy_verify_callback(
+    int                                 ok,
+    X509_STORE_CTX *                    ctx);
 
 int
-proxy_genreq(X509 *ucert,
-             X509_REQ **reqp,
-             EVP_PKEY **pkeyp,
-             int bits,
-             int (*callback)(),
-			 proxy_cred_desc * pcd);
+proxy_genreq(
+    X509 *                              ucert,
+    X509_REQ **                         reqp,
+    EVP_PKEY **                         pkeyp,
+    int                                 bits,
+    int                                 (*callback)(),
+    proxy_cred_desc *                   pcd);
 
 int
-proxy_sign(X509 *ucert,
-             EVP_PKEY *upkey,
-             EVP_MD *method,
-             X509_REQ *req,
-             X509 **ncertp,
-             int hours,
-             int limit_proxy);
+proxy_sign(
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
+    EVP_MD *                            method,
+    X509_REQ *                          req,
+    X509 **                             ncertp,
+    int                                 hours,
+    int                                 limit_proxy);
 
 int
-proxy_sign_ext(int function,
-               X509 *ucert,
-               EVP_PKEY *upkey,
-               EVP_MD *method,
-               X509_REQ *req,
-               X509 **ncertp,
-               int seconds,
-               int limit_proxy,
-               int serial,
-               char * newcn,
-			   STACK_OF(X509_EXTENSION) * extensions);
+proxy_sign_ext(
+    int                                 function,
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
+    EVP_MD *                            method,
+    X509_REQ *                          req,
+    X509 **                             ncertp,
+    int                                 seconds,
+    int                                 limit_proxy,
+    int                                 serial,
+    char *                              newcn,
+    STACK_OF(X509_EXTENSION) *          extensions);
 
 int
-proxy_marshal_tmp(X509 *ncert,
-				EVP_PKEY *npkey,
-				X509 *ucert,
-				STACK_OF(X509) *store_ctx,
-				char **filename);
+proxy_marshal_tmp(
+    X509 *                              ncert,
+    EVP_PKEY *                          npkey,
+    X509 *                              ucert,
+    STACK_OF(X509) *                    store_ctx,
+    char **                             filename);
 
 int
-proxy_marshal_bp(BIO *bp,
-                X509 *ncert,
-                EVP_PKEY *npkey,
-                X509 *ucert,
-                STACK_OF(X509) *store_ctx);
+proxy_marshal_bp(
+    BIO *                               bp,
+    X509 *                              ncert,
+    EVP_PKEY *                          npkey,
+    X509 *                              ucert,
+    STACK_OF(X509) *                    store_ctx);
 
 int
-proxy_load_user_proxy(STACK_OF(X509) *cert_chain, char *file, BIO * bp);
+proxy_load_user_proxy(
+    STACK_OF(X509) *                    cert_chain,
+    char *                              file,
+    BIO *                               bp);
 
 int
-proxy_get_base_name(X509_NAME *subject);
+proxy_get_base_name(
+    X509_NAME *                         subject);
 
-int proxy_password_callback_no_prompt(char *, int, int);
+int proxy_password_callback_no_prompt(
+    char *,
+    int,
+    int);
 
 X509_EXTENSION *
-proxy_extension_class_add_create(void * buffer, 
-			size_t length);
+proxy_extension_class_add_create(
+    void *                              buffer, 
+    size_t                              length);
 /*
  * SSLeay does not have a compare time function
  * So we add a convert to time_t function
  */
 
 time_t
-ASN1_UTCTIME_mktime(ASN1_UTCTIME * ctm);
+ASN1_UTCTIME_mktime(
+    ASN1_UTCTIME *                     ctm);
 
-#ifdef __cplusplus
-} 
-#endif
+/*
+ * Functions similar to {i2d,d2i}_X509_bio which write/read a integer
+ * (ASN.1 representation) to/from a bio
+ */
+
+int
+i2d_integer_bio(
+    BIO *                               bp,
+    long                                v);
+
+long
+d2i_integer_bio(
+    BIO *                               bp,
+    long *                              v);
+
+
+EXTERN_C_END
 
 #endif /* _SSLUTILS_H */

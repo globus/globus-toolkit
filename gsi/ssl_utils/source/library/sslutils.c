@@ -4210,4 +4210,103 @@ err:
 }
 
 
+/**********************************************************************
+Function: proxy_extension_restrictions_create()
+
+Description:
+            create a X509_EXTENSION for the restrictions info. 
+        
+Parameters:
+                A buffer and length. The date is added as
+                ANS1_OCTET_STRING to an extension with the 
+                class_add  OID.
+
+Returns:
+
+**********************************************************************/
+
+X509_EXTENSION *
+proxy_extension_restrictions_create(
+    void *                              buffer,
+    size_t                              length)
+
+{
+    X509_EXTENSION *                    ex = NULL;
+    ASN1_OBJECT *                       asn1_obj = NULL;
+    ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
+    int                                 crit = 0;
+
+    if(!(asn1_obj = OBJ_nid2obj(OBJ_txt2nid("RESTRICTIONS"))))
+    {
+        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_OID);
+        goto err;
+    }
+
+    if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
+    {
+        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
+        goto err;
+    }
+
+    asn1_oct_string->data = buffer;
+    asn1_oct_string->length = length;
+
+    if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
+                                            crit, asn1_oct_string)))
+    {
+        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
+        goto err;
+    }
+    asn1_oct_string = NULL;
+
+    return ex;
+
+err:
+    if (asn1_oct_string)
+    {
+        ASN1_OCTET_STRING_free(asn1_oct_string);
+    }
+    
+    if (asn1_obj)
+    {
+        ASN1_OBJECT_free(asn1_obj);
+    }
+    return NULL;
+}
+
+
+int
+i2d_integer_bio(
+    BIO *                               bp,
+    long                                v)
+{
+    ASN1_INTEGER *                      asn1_int;
+    unsigned char *                     buffer;
+    
+    asn1_int = ASN1_INTEGER_new();
+
+    ASN1_INTEGER_set(asn1_int, v);
+
+    ASN1_i2d_bio(i2d_ASN1_INTEGER, bp, (unsigned char *) asn1_int);
+    
+    ASN1_INETGER_free(asn1_int);
+    
+}
+
+long
+d2i_integer_bio(
+    BIO *                               bp,
+    long *                              v)
+{
+    ASN1_INTEGER *                      asn1_int;
+    ASN1_d2i_bio((char *(*)())ASN1_INTEGER_new,
+                 (char *(*)())d2i_ASN1_INTEGER,
+                 (bp),
+                 (unsigned char **)(&asn1_int));
+    
+    *v = ASN1_INTEGER_get(asn1_int);
+    ASN1_INETGER_free(asn1_int);
+
+    return *v;
+}
 
