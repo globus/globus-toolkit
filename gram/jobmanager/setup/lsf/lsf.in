@@ -30,7 +30,8 @@ sub submit
     my $status;
     my $lsf_job_script;
     my $lsf_job_script_name;
-    my $errfile = '';
+    my $lsf_job_err;
+    my $lsf_job_err_name;
     my $queue;
     my $job_id;
     my $script_url;
@@ -273,29 +274,66 @@ EOF
     close(JOB);
     chmod 0755, $lsf_job_script_name;
 
-    if($description->logfile() ne '')
+    $self->log("about to add job error file to cache");
+
+    $lsf_job_err = "$tag/lsf_job_err.$$";
+    $self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag,
+                            '-n', $lsf_job_err, 'file:/dev/null');
+    $lsf_job_err_name = $self->pipe_out_cmd( $cache_pgm, '-query', '-t', 
+					     $tag, $lsf_job_err );
+    $self->log("job err is at $lsf_job_err_name");
+    if($lsf_job_err_name eq '')
     {
-        $errfile = "2>" . $description->logfile();
+	return Globus::GRAM::ERROR::TEMP_SCRIPT_FILE_FAILED();
     }
+
+    $self->log("about to submit job");
     $self->nfssync( $lsf_job_script_name );
+    $self->nfssync( $lsf_job_err_name );
     $job_id = (grep(/is submitted/,
-                   split(/\n/, `$bsub < $lsf_job_script_name $errfile`)))[0];
+                       split(/\n/, `$bsub < $lsf_job_script_name 2> $lsf_job_err_name`)))[0];
 
     if($? == 0)
     {
 	$job_id =~ m/<([^>]*)>/;
 	$job_id = $1;
 
+	$self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
+				  "$script_url");
+	$self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
+				  "$lsf_job_err");
 	return {
 	           JOB_ID => $job_id,
 		   JOB_STATE => Globus::GRAM::JobState::PENDING
 		};
     }
-    #system("$cache_pgm -cleanup-url $tag/lsf_job_script.$$");
-    $self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
-			      "$tag/lsf_job_script.$$" );
+    else
+    {
+        $self->log("job submission failed, checking $lsf_job_err_name");
 
-    return Globus::GRAM::Error::INVALID_SCRIPT_REPLY;
+        my $stderr;
+        local(*ERR);
+        $self->nfssync( $lsf_job_err_name );
+        open(ERR, "<$lsf_job_err_name");
+        local $/;
+        $stderr = <ERR>;
+        close(ERR);
+
+        open(ERR, '>' . $description->stderr());
+        print ERR $stderr;
+        close(ERR);
+
+        $stderr =~ s/\n/ /g;
+
+        $self->respond({ GT3_FAILURE_MESSAGE => $stderr });
+    }
+
+    $self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
+			      "$script_url");
+    $self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
+			      "$lsf_job_err");
+
+    return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
 }
 
 sub poll
