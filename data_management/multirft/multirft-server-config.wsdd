@@ -16,12 +16,12 @@
     <parameter name="instance-baseClassName" value="org.globus.ogsa.impl.base.multirft.RftImpl"/>
     <parameter name="instance-securityConfig" value="org/globus/ogsa/impl/base/multirft/security-config.xml"/>
     <parameter name="handlerClass" value="org.globus.ogsa.handlers.RPCURIProvider"/>
-    <parameter name="className" value="org.globus.ogsa.security.authentication.factory.SecureNotificationFactoryPortType"/>
+    <parameter name="className" value="org.gridforum.ogsi.NotificationFactory"/>
     <parameter name="allowedMethods" value="*"/>
     <parameter name="factoryCallback" value="org.globus.ogsa.impl.base.multirft.RftFactoryImpl"/>
     <parameter name="operationProviders" value="org.globus.ogsa.impl.ogsi.FactoryProvider org.globus.ogsa.impl.security.authentication.SecureNotificationSourceProvider "/>
     <parameter name="persistent" value="true"/>
-    <parameter name="schemaPath" value="schema/security/authentication/secure_notification_factory_service.wsdl"/>
+    <parameter name="schemaPath" value="schema/ogsi/ogsi_notification_factory_service.wsdl"/>
    
     <parameter name="baseClassName" value="org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl"/>
     <parameter name="instance-operationProviders" value="org.globus.ogsa.impl.security.authentication.SecureNotificationSourceProvider "/>
