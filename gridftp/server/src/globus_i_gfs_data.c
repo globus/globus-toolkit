@@ -288,6 +288,8 @@ globus_gridftp_server_operation_finished(
     globus_result_t                     result,
     globus_gfs_finished_info_t *        finished_info)
 {
+    finished_info->id = op->id;
+    
     if(op->callback != NULL)
     {
         op->callback(
@@ -310,6 +312,8 @@ globus_gridftp_server_operation_event(
     globus_result_t                     result,
     globus_gfs_event_info_t *           event_info)
 {
+    event_info->id = op->id;
+
     if(op->event_callback != NULL)
     {
         op->event_callback(
