@@ -6,13 +6,14 @@
  */
 
 #include "config.h"
-
+#include "proto.h"
 #ifdef GSSAPI
 
 #ifdef GSSAPI_KRB5
 #include <krb5.h>
 #endif /* GSSAPI_KRB5 */
 
+#include "gssapi-local.h"
 #include "secure_ext.h"
 
 #include <unistd.h>		/* For syslog() */
@@ -140,7 +141,7 @@ gssapi_setup_environment()
  * Fix up our environment
  */
 int
-gssapi_fix_env(void)
+gssapi_fix_env()
 {
   int status = 0;
 

@@ -29,9 +29,12 @@ int auth(char * type);
 int auth_data(char * data);
 int pbsz(char * size_string);
 int send_adat_reply(int code, unsigned char * data, int length);
-
-
-
+int encode_secure_message(char *message,
+                          char *smessage,
+                          int smessage_size);
+int decode_secure_message(char *smessage,
+                          char *message,
+                          int message_size);
 /*
  * Protection levels
  */

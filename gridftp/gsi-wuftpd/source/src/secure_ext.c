@@ -5,10 +5,17 @@
  */
 
 #include "config.h"
+#include "proto.h"
 
 #ifdef FTP_SECURITY_EXTENSIONS
 
 #include "secure_ext.h"
+
+#ifdef GSSAPI
+#   include "gssapi-local.h"
+#endif
+
+#include "radix.h"
 
 #include <unistd.h>		/* For syslog() */
 #include <errno.h>
