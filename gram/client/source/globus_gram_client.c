@@ -140,6 +140,20 @@ static char     tmpbuf[1024];
 
 int print_flag;
 
+static nexus_mutex_t gram_api_mutex;
+static int gram_api_mutex_is_initialized = 0;
+
+#define GRAM_API_LOCK { \
+  int err; \
+  assert (gram_api_mutex_is_initialized==1); \
+  err = nexus_mutex_lock (&gram_api_mutex); assert (!err); \
+}
+
+#define GRAM_API_UNLOCK { \
+  int err; \
+  err = nexus_mutex_unlock (&gram_api_mutex); assert (!err); \
+}
+
 /******************************************************************************
 Function:	grami_ggg_get_token_nexus()
 Description:
@@ -260,7 +274,15 @@ gram_init(int * argc, char *** argv)
     {
 	return(rc);
     }
-		    
+    
+    if ( gram_api_mutex_is_initialized == 0 ) {
+      /* initialize mutex which makes the client thread-safe */
+      int err;
+
+      err = nexus_mutex_init (&gram_api_mutex, NULL); assert (!err);
+      gram_api_mutex_is_initialized = 1;
+    }
+    
     /*
      * Parse the command line arguments
      */
@@ -333,6 +355,8 @@ gram_job_request(char * gatekeeper_url,
 
     notice("in gram_job_request()");
 
+    GRAM_API_LOCK;
+
     nexus_mutex_init(&job_request_monitor.mutex, (nexus_mutexattr_t *) NULL);
     nexus_cond_init(&job_request_monitor.cond, (nexus_condattr_t *) NULL);
     job_request_monitor.done = NEXUS_FALSE;
@@ -355,8 +379,10 @@ gram_job_request(char * gatekeeper_url,
     size += nexus_sizeof_char(strlen(callback_url));
     size += nexus_sizeof_startpoint(&reply_sp, 1);
 
-    if (size >= GRAM_MAX_MSG_SIZE)
-        return (GRAM_ERROR_INVALID_REQUEST);
+    if (size >= GRAM_MAX_MSG_SIZE) {
+      GRAM_API_UNLOCK;
+      return (GRAM_ERROR_INVALID_REQUEST);
+    }
     /*
      * contact_msg_size includes the extra int added to the front of the 
      * message.
@@ -390,15 +416,16 @@ gram_job_request(char * gatekeeper_url,
     nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
 
 #if 1 
-	if (strncmp(gatekeeper_url,"x-nexus://",10) == 0) 
-	{
+    if (strncmp(gatekeeper_url,"x-nexus://",10) == 0) 
+      {
     if (nexus_split_url(gatekeeper_url,
                         &gatekeeper_host,
                         &gatekeeper_port,
                         NULL) != 0)
     {
         fprintf(stderr, " invalid url.\n");
-        return (1);
+	GRAM_API_UNLOCK;
+	return (1);
     }
 
 
@@ -434,7 +461,8 @@ gram_job_request(char * gatekeeper_url,
 		} else
 		{
 		  fprintf(stderr,"strdup failed for gatekeeper_url");
-		  return(0);
+		  GRAM_API_UNLOCK;
+		  return(1);
 		}
 	}
 
@@ -448,6 +476,7 @@ gram_job_request(char * gatekeeper_url,
     if (rc != 0)
     {
         fprintf(stderr, " nexus_fd_connect failed.  rc = %d\n", rc);
+	GRAM_API_UNLOCK;
         return (GRAM_ERROR_CONNECTION_FAILED);
     }
 
@@ -500,24 +529,27 @@ gram_job_request(char * gatekeeper_url,
           break;
       }
       fprintf(stderr, 
-	   "GSS authentication failed. rc = %8.8x\n Reason : %s\n",
-	    rc, reason);
-		nexus_fd_close(gatekeeper_fd);
+	      "GSS authentication failed. rc = %8.8x\n Reason : %s\n",
+	      rc, reason);
+      nexus_fd_close(gatekeeper_fd);
+      GRAM_API_UNLOCK;
       return (GRAM_ERROR_AUTHORIZATION);
     }
 
-	if (grami_ggg_get_token_nexus((void *) &gatekeeper_fd,
-			 (void **) &auth_msg_buf, &auth_msg_buf_size))
+    if (grami_ggg_get_token_nexus((void *) &gatekeeper_fd,
+				  (void **) &auth_msg_buf, &auth_msg_buf_size))
     {
-	   fprintf(stderr, "Authoirization message not received");
-	   return (GRAM_ERROR_AUTHORIZATION);
+      fprintf(stderr, "Authoirization message not received");
+      GRAM_API_UNLOCK;
+      return (GRAM_ERROR_AUTHORIZATION);
     }
-	if (auth_msg_buf_size > 1 )
-	{
-		fprintf(stderr, auth_msg_buf);
-		nexus_fd_close(gatekeeper_fd);
-		return (GRAM_ERROR_AUTHORIZATION);
-	}
+
+    if (auth_msg_buf_size > 1 ) {
+      fprintf(stderr, auth_msg_buf);
+      nexus_fd_close(gatekeeper_fd);
+      GRAM_API_UNLOCK;
+      return (GRAM_ERROR_AUTHORIZATION);
+    }
 
     notice("Authentication/authorization complete");
 #else
@@ -532,15 +564,15 @@ gram_job_request(char * gatekeeper_url,
                                      (void *) &job_request_monitor);
     if (rc != 0)
     {
-        fprintf(stderr, "nexus_fd_register_for_write failed\n");
-		nexus_fd_close(gatekeeper_fd);
-        return (GRAM_ERROR_PROTOCOL_FAILED);
+      fprintf(stderr, "nexus_fd_register_for_write failed\n");
+      nexus_fd_close(gatekeeper_fd);
+      GRAM_API_UNLOCK;
+      return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
     nexus_mutex_lock(&job_request_monitor.mutex);
-    while (!job_request_monitor.done)
-    {
-        nexus_cond_wait(&job_request_monitor.cond, &job_request_monitor.mutex);
+    while (!job_request_monitor.done) {
+      nexus_cond_wait(&job_request_monitor.cond, &job_request_monitor.mutex);
     }
     nexus_mutex_unlock(&job_request_monitor.mutex);
 
@@ -559,7 +591,8 @@ gram_job_request(char * gatekeeper_url,
     free(contact_msg_buffer);
 */
 
-	nexus_fd_close(gatekeeper_fd);
+    nexus_fd_close(gatekeeper_fd);
+    GRAM_API_UNLOCK;
     return(job_request_monitor.job_status);
 
 } /* gram_job_request() */
@@ -673,10 +706,13 @@ gram_job_cancel(char * job_contact)
 
     notice("in gram_job_cancel()");
 
+    GRAM_API_LOCK;
+
     rc = nexus_attach(job_contact, &sp_to_job_manager);
     if (rc != 0)
     {
         printf("nexus_attach returned %d\n", rc);
+	GRAM_API_UNLOCK;
         return (1);
     }
     nexus_buffer_init(&buffer, 1, 0);
@@ -688,6 +724,7 @@ gram_job_cancel(char * job_contact)
 
     nexus_startpoint_destroy(&sp_to_job_manager);
 
+    GRAM_API_UNLOCK;
     if (rc != 0)
     {
         return (GRAM_ERROR_PROTOCOL_FAILED);
@@ -718,6 +755,8 @@ gram_callback_allow(gram_callback_func_t callback_func,
 
     notice("in gram_callback_allow()");
 
+    GRAM_API_LOCK;
+
     callback = (callback_s *) malloc(sizeof(callback_s));
     callback->callback_func = (gram_callback_func_t) callback_func;
     callback->user_callback_arg = user_callback_arg;
@@ -741,6 +780,8 @@ gram_callback_allow(gram_callback_func_t callback_func,
        malloc(sizeof(port) + MAXHOSTNAMELEN + 13);
 
     sprintf(* callback_contact, "x-nexus://%s:%hu/", host, port);
+
+    GRAM_API_UNLOCK;
 
     return(0);
 
@@ -850,6 +891,8 @@ gram_job_start_time(char * job_contact,
 
     notice("in gram_job_start_time()");
 
+    GRAM_API_LOCK;
+
     nexus_mutex_init(&start_time_monitor.mutex, (nexus_mutexattr_t *) NULL);
     nexus_cond_init(&start_time_monitor.cond, (nexus_condattr_t *) NULL);
 
@@ -868,8 +911,9 @@ gram_job_start_time(char * job_contact,
     rc = nexus_attach(job_contact, &sp_to_job_manager);
     if (rc != 0)
     {
-        printf("nexus_attach returned %d\n", rc);
-        return (GRAM_ERROR_PROTOCOL_FAILED);
+      printf("nexus_attach returned %d\n", rc);
+      GRAM_API_UNLOCK;
+      return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
     size  = nexus_sizeof_float(1);
@@ -887,8 +931,9 @@ gram_job_start_time(char * job_contact,
 
     if (rc != 0)
     {
-        printf("nexus_send_rsr returned %d\n", rc);
-        return (GRAM_ERROR_PROTOCOL_FAILED);
+      printf("nexus_send_rsr returned %d\n", rc);
+      GRAM_API_UNLOCK;
+      return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
     nexus_startpoint_destroy(&sp_to_job_manager);
@@ -906,6 +951,7 @@ gram_job_start_time(char * job_contact,
     estimate->dumb_time = start_time_monitor.start_time_estimate;
     interval_size->dumb_time = start_time_monitor.start_time_interval_size;
  
+    GRAM_API_UNLOCK;
     return (GRAM_SUCCESS);
 
 } /* gram_job_start_time() */
