@@ -62,7 +62,7 @@ static char *  LONG_USAGE = \
                  "%s-%s", \
                  PACKAGE, \
                  VERSION); \
-        fprintf(stderr, "%s", buf); \
+        fprintf(stderr, "%s\n", buf); \
         globus_module_deactivate_all(); \
         exit(0); \
     }
