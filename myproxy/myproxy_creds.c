@@ -292,6 +292,7 @@ get_storage_locations(const char *username,
 {
     int return_code = -1;
     char *sterile_username = NULL;
+    char *sterile_credname = NULL;
     const char *creds_suffix = ".creds";
     const char *data_suffix = ".data";
     
@@ -299,10 +300,10 @@ get_storage_locations(const char *username,
     assert(creds_path != NULL);
     assert(data_path != NULL);
 
-    if (check_storage_directory() == -1)
-    {
+    if (check_storage_directory() == -1) {
         goto error;
     }
+
     if (strchr(username, '/')) {
        sterile_username = strmd5(username, NULL);
        if (sterile_username == NULL)
@@ -310,14 +311,13 @@ get_storage_locations(const char *username,
     } else {
        sterile_username = mystrdup(username);
 
-       if (sterile_username == NULL)
-       {
+       if (sterile_username == NULL) {
 	   goto error;
        }
        
        sterilize_string(sterile_username);
     }
-    
+
     creds_path[0] = '\0';
    
     if (!credname)
@@ -343,18 +343,25 @@ get_storage_locations(const char *username,
     }
     else
     {
+	sterile_credname = mystrdup(credname);
+	if (sterile_credname == NULL) {
+	    goto error;
+	}
+	sterilize_string(sterile_credname);
+    
     	if (concatenate_strings(creds_path, creds_path_len, storage_dir,
-				    "/", sterile_username, "-", credname, creds_suffix, NULL) == -1)
-    	{
-        	verror_put_string("Internal error: creds_path too small: %s line %s",
-               	           __FILE__, __LINE__);
-        	goto error;
+				"/", sterile_username, "-",
+				sterile_credname, creds_suffix, NULL) == -1) {
+         verror_put_string("Internal error: creds_path too small: %s line %s",
+			      __FILE__, __LINE__);
+       	 goto error;
     	}
 
     	data_path[0] = '\0';
     
     	if (concatenate_strings(data_path, data_path_len, storage_dir,
-				    "/", sterile_username, "-", credname, data_suffix, NULL) == -1)
+				"/", sterile_username, "-",
+				sterile_credname, data_suffix, NULL) == -1)
     	{
        	 verror_put_string("Internal error: data_path too small: %s line %s",
        	                   __FILE__, __LINE__);
@@ -366,9 +373,11 @@ get_storage_locations(const char *username,
     return_code = 0;
 
   error:
-    if (sterile_username != NULL)
-    {
+    if (sterile_username != NULL) {
         free(sterile_username);
+    }
+    if (sterile_credname != NULL) {
+        free(sterile_credname);
     }
     
     return return_code;
