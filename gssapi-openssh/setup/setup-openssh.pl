@@ -349,7 +349,7 @@ print "\n";
 
 $response = query_boolean("Do you wish to continue with the setup package?","y");
 
-if ($response eq "n")
+if ($response ne "y")
 {
     print "\n";
     print "Okay.. exiting gsi_openssh setup.\n";
