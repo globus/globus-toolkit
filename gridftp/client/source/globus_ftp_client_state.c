@@ -173,10 +173,8 @@ globus_i_ftp_client_response_callback(
     
     globus_i_ftp_client_debug_printf(2, (stderr, 
         "   handle state = %s\n"
-        "   target url = %s\n"
         "   target state = %s\n",
         globus_i_ftp_handle_state_to_string(client_handle->state),
-        target->url_string,
         globus_i_ftp_target_state_to_string(target->state)));
     
     globus_i_ftp_client_plugin_notify_response(
@@ -2714,10 +2712,8 @@ redo:
                 "globus_i_ftp_client_response_callback() exiting\n"));
             globus_i_ftp_client_debug_printf(2, (stderr, 
                 "   handle state = %s\n"
-                "   target url = %s\n"
                 "   target state = %s\n",
                 globus_i_ftp_handle_state_to_string(client_handle->state),
-                target->url_string,
                 globus_i_ftp_target_state_to_string(saved_target_state)));
 
 	    return;
@@ -2740,11 +2736,6 @@ redo:
 	    goto notify_fault;
 	}
 	else if(response->response_class ==
-		GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
-	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
-	}
-	else if(response->response_class ==
 		GLOBUS_FTP_POSITIVE_PRELIMINARY_REPLY)
 	{
 	    if(response->code == 111)
@@ -2754,6 +2745,21 @@ redo:
 	    }
 	    break;
 	}
+	else if(response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
+	}
+	else
+	{
+	    /* any other response must be a transient error such as 
+	     * 426 data timeout
+	     */
+            client_handle->err = 
+                GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
+	    
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
+	}
+	
 	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE:
@@ -2822,10 +2828,8 @@ redo:
             "globus_i_ftp_client_response_callback() exiting\n"));
         globus_i_ftp_client_debug_printf(2, (stderr, 
             "   handle state = %s\n"
-            "   target url = %s\n"
             "   target state = %s\n",
             globus_i_ftp_handle_state_to_string(client_handle->state),
-            target->url_string,
             globus_i_ftp_target_state_to_string(saved_target_state)));
 
 	return;
@@ -2939,10 +2943,8 @@ redo:
                         "globus_i_ftp_client_response_callback() exiting\n"));
                     globus_i_ftp_client_debug_printf(2, (stderr, 
                         "   handle state = %s\n"
-                        "   target url = %s\n"
                         "   target state = %s\n",
                         globus_i_ftp_handle_state_to_string(client_handle->state),
-                        target->url_string,
                         globus_i_ftp_target_state_to_string(saved_target_state)));
 
 		    return;
@@ -2960,10 +2962,8 @@ redo:
         "globus_i_ftp_client_response_callback() exiting\n"));
     globus_i_ftp_client_debug_printf(2, (stderr, 
         "   handle state = %s\n"
-        "   target url = %s\n"
         "   target state = %s\n",
         globus_i_ftp_handle_state_to_string(client_handle->state),
-        target->url_string,
         globus_i_ftp_target_state_to_string(target->state)));
 
     return;
@@ -2988,17 +2988,14 @@ redo:
     }
     
     globus_i_ftp_client_debug_printf(1, (stderr, 
-        "globus_i_ftp_client_response_callback() exiting\n"));
+        "globus_i_ftp_client_response_callback() exiting with error\n"));
     globus_i_ftp_client_debug_printf(2, (stderr, 
         "   handle state = %s\n"
-        "   target url = %s\n"
         "   target state = %s\n",
         globus_i_ftp_handle_state_to_string(client_handle->state),
-        target->url_string,
         globus_i_ftp_target_state_to_string(saved_target_state)));
 
     return;
-
 }
 /* globus_i_ftp_client_response_callback() */
 
