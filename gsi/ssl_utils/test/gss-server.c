@@ -51,6 +51,7 @@ void usage()
 {
      fprintf(stderr, "Usage: gss-server [-port port] [-verbose]\n");
      fprintf(stderr, "       [-inetd] [-logfile file] [service_name]\n");
+     fprintf(stderr, "       [-no_limited] [-limited_many]\n");
      exit(1);
 }
 
@@ -58,6 +59,7 @@ FILE *log;
 
 int verbose = 0;
 int expimp = 0; /* export_sec_context then import_sec_context */
+int req_flags = 0;
 
 /*
  * Function: server_acquire_creds
@@ -368,7 +370,7 @@ int sign_server(s, server_creds)
      OM_uint32 maj_stat, min_stat;
      int i;
      int conf_state = 0;
-     int ret_flags = 0;
+     int ret_flags = req_flags;
      char	*cp;
      
      /* Establish a context with the client */
@@ -481,6 +483,10 @@ main(argc, argv)
 		  perror(*argv);
 		  exit(1);
 	      }
+          } else if (strcmp(*argv, "-no_limited") == 0) {
+              req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+          } else if (strcmp(*argv, "-limited_many") == 0) {
+              req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
 	  } else
 	       break;
 	  argc--; argv++;
