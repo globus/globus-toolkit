@@ -113,9 +113,9 @@ AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
             case ${lac_cv_CPU} in
                 *mips3*)
                     if test "$GCC" = "yes"; then
-                        lac_CFLAGS="$lac_CFLAGS -mmips-as -O3"
+                        lac_CFLAGS="$lac_CFLAGS -mips3 -mmips-as -O3"
                     else
-                        lac_CFLAGS="$lac_CFLAGS -O2 -use_readonly_const"
+                        lac_CFLAGS="$lac_CFLAGS -mips3 -O2 -use_readonly_const"
                     fi
                 ;;
                 *mips4*)
