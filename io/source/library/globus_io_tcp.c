@@ -2189,7 +2189,8 @@ globus_io_tcp_get_local_address(
 	        myname));
     }
     globus_i_io_mutex_lock();
-    if(handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED)
+    if(handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED &&
+        handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_LISTENER)
     {
 	err = globus_io_error_construct_invalid_type(
 	    GLOBUS_IO_MODULE,
