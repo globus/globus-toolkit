@@ -24,8 +24,11 @@
         GLOBUS_GSI_PROXY_MODULE, \
         errno, \
         GLOBUS_GSI_PROXY_ERROR_ERRNO, \
-        "%s:%d: Could not allocate enough memory: %d bytes", \
-        __FILE__, __LINE__, _LENGTH_))
+        __FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "Could not allocate enough memory: %d bytes", \
+        _LENGTH_))
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 

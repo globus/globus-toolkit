@@ -124,7 +124,7 @@ globus_source ${libexecdir}/globus-args-parser-header $@
 
 set_non_default_ca() 
 {
-    if [ "${nondefaultca}" == "true" ]; then
+    if [ "${nondefaultca}" = "true" ]; then
 
         INSTALLED_CERTS="`echo ${trusted_certs_dir}/*.0`"
 
@@ -273,7 +273,7 @@ read_command_line ()
                 ;;
             -ca)
                 if [ ! -z "$2" ] && \
-                   [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e "s|[^-]*||g"`" ]
+                   [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e \"s|[^-]*||g\"`" ]
                 then
                     nondefaultca=$2
                     shift

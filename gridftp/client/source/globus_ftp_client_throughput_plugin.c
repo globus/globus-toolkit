@@ -502,8 +502,7 @@ globus_ftp_client_throughput_plugin_init(
 {
     throughput_plugin_info_t *                  info;
     globus_result_t                             result;
-    static char *                               myname =
-        "globus_ftp_client_throughput_plugin_init";
+    GlobusFuncName(globus_ftp_client_throughput_plugin_init);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -512,7 +511,7 @@ globus_ftp_client_throughput_plugin_init(
                 GLOBUS_NULL,
                 "[%s] NULL plugin at %s\n",
                 GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname));
+                _globus_func_name));
     }
 
     info = (throughput_plugin_info_t *)
@@ -525,7 +524,7 @@ globus_ftp_client_throughput_plugin_init(
                                 GLOBUS_NULL,
                                 "[%s] Out of memory at %s\n",
                                  GLOBUS_FTP_CLIENT_MODULE->module_name,
-                                 myname));
+                                 _globus_func_name));
     }
 
     /*
@@ -601,8 +600,7 @@ globus_ftp_client_throughput_plugin_set_copy_destroy(
 {
     globus_result_t                             result;
     throughput_plugin_info_t *                  info;
-    static char *                               myname =
-        "globus_ftp_client_throughput_plugin_set_copy_destroy";
+    GlobusFuncName(globus_ftp_client_throughput_plugin_set_copy_destroy);
 
     if(plugin == GLOBUS_NULL ||
         copy_cb == GLOBUS_NULL ||
@@ -613,7 +611,7 @@ globus_ftp_client_throughput_plugin_set_copy_destroy(
                 GLOBUS_NULL,
                 "[%s] NULL arg at %s\n",
                 GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname));
+                _globus_func_name));
     }
 
     result = globus_ftp_client_perf_plugin_get_user_specific(
@@ -651,8 +649,7 @@ globus_ftp_client_throughput_plugin_destroy(
 {
     globus_result_t                             result;
     throughput_plugin_info_t *                  info;
-    static char *                               myname =
-        "globus_ftp_client_throughput_plugin_destroy";
+    GlobusFuncName(globus_ftp_client_throughput_plugin_destroy);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -661,7 +658,7 @@ globus_ftp_client_throughput_plugin_destroy(
                 GLOBUS_NULL,
                 "[%s] NULL plugin at %s\n",
                 GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname));
+                _globus_func_name));
     }
 
     result = globus_ftp_client_perf_plugin_get_user_specific(
@@ -709,8 +706,7 @@ globus_ftp_client_throughput_plugin_get_user_specific(
 {
     globus_result_t                                 result;
     throughput_plugin_info_t *                      info;
-    static char *                                   myname =
-        "globus_ftp_client_throughput_plugin_get_user_specific";
+    GlobusFuncName(globus_ftp_client_throughput_plugin_get_user_specific);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -719,7 +715,7 @@ globus_ftp_client_throughput_plugin_get_user_specific(
             GLOBUS_NULL,
             "[%s] NULL plugin at %s\n",
             GLOBUS_FTP_CLIENT_MODULE->module_name,
-            myname));
+            _globus_func_name));
     }
 
     if(user_specific == GLOBUS_NULL)
@@ -729,7 +725,7 @@ globus_ftp_client_throughput_plugin_get_user_specific(
             GLOBUS_NULL,
             "[%s] NULL user_specific at %s\n",
             GLOBUS_FTP_CLIENT_MODULE->module_name,
-            myname));
+            _globus_func_name));
     }
 
     result = globus_ftp_client_perf_plugin_get_user_specific(

@@ -1,0 +1,14 @@
+aclocal.m4
+missing
+install-sh
+mkinstalldirs
+Makefile.in
+Makefile
+configure
+config.log
+config.guess
+config.cache
+config.status
+config.sub
+globus_gram_job_manager_test-[0-9]*
+globus-gram-job-manager-run-tests.pl

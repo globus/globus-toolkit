@@ -127,9 +127,15 @@ extern int                              globus_i_gsi_authz_gaa_callout_debug_lev
 
 typedef struct globus_i_gsi_authz_handle_s
 {
-    gaa_ptr		gaa;
-    gaa_sc_ptr 		sc;
-    char *		auth;	/* authority for request rights */
-    int			no_cred_extension;
+    gaa_ptr		                gaa;
+    gaa_sc_ptr 		                sc;
+    char *		                auth;	/* authority for request rights */
+    int			                no_cred_extension;
 } globus_i_gsi_authz_handle_t;
 
+typedef struct globus_l_gsi_authz_gaa_cb_arg_s
+{
+    globus_gsi_authz_handle_t           handle;
+    void *                              arg;
+    globus_gsi_authz_cb_t		callback;
+} globus_l_gsi_authz_gaa_cb_arg_t;

@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\gsi\sysconfig\source\library\Win32;\include;\include\threaded;\include\openssl"
+				AdditionalIncludeDirectories="\include\nonthreaded;\gsi\sysconfig\source\library\Win32;\include;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;BUILD_DEBUG"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"

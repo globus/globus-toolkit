@@ -7,6 +7,7 @@ SUBDIRS= \
 
 Sources = \
 	globus_gsi_authz.c \
+	globus_gsi_authz_error.c \
 	globus_gsi_authz.h \
 	globus_gsi_authz_constants.h \
 	globus_i_gsi_authz.h

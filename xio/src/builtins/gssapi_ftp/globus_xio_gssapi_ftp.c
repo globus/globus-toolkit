@@ -819,7 +819,7 @@ globus_l_xio_gssapi_ftp_unwrap(
                     NULL);
     if(maj_stat != GSS_S_COMPLETE)
     {
-        GlobusXIOGssapiFTPGSIAuthFailure(res, maj_stat, min_stat);
+        res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
         globus_free(buf);
         goto err;
     }
@@ -882,7 +882,7 @@ globus_l_xio_gssapi_ftp_wrap(
                         &gss_out_buf);
     if(maj_stat  != GSS_S_COMPLETE)
     {
-        GlobusXIOGssapiFTPGSIAuthFailure(res, maj_stat, min_stat);
+        res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
         goto err;
     }
 
@@ -1530,7 +1530,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
             break;
 
         default:
-            GlobusXIOGssapiFTPGSIAuthFailure(res, maj_stat, min_stat);
+            res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
             goto err;
             break;
     }
@@ -1681,7 +1681,7 @@ globus_l_xio_gssapi_ftp_client_adat(
                             &handle->target_name);
             if(maj_stat != GSS_S_COMPLETE)
             {
-                GlobusXIOGssapiFTPGSIAuthFailure(res, maj_stat, min_stat);
+                res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
                 globus_l_xio_gssapi_ftp_handle_destroy(handle);
                 goto err;
             }
@@ -1782,7 +1782,7 @@ globus_l_xio_gssapi_ftp_client_adat(
             break; 
 
         default:
-            GlobusXIOGssapiFTPGSIAuthFailure(res, maj_stat, min_stat);
+            res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
             goto err;
     }
     gss_release_buffer(&min_stat, &send_tok);
@@ -2275,7 +2275,7 @@ globus_l_xio_gssapi_ftp_open(
                         &handle->cred_handle);
         if(maj_stat != GSS_S_COMPLETE)
         {
-            GlobusXIOGssapiFTPGSIAuthFailure(res, maj_stat, min_stat);
+            res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
             globus_l_xio_gssapi_ftp_handle_destroy(handle);
             goto err;
         }

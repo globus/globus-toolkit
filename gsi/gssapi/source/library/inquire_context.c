@@ -122,18 +122,30 @@ GSS_CALLCONV gss_inquire_context(
     if (lifetime_rec)
     {
         time_t                          lifetime;
+        time_t                          current_time;
         
-        local_result = globus_gsi_cred_get_lifetime(
-            context->cred_handle->cred_handle,
+        major_status = globus_i_gsi_gss_get_context_goodtill(
+            &local_minor_status,
+            context,
             &lifetime);
-        if(local_result != GLOBUS_SUCCESS)
+        if(GSS_ERROR(major_status))
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
             goto exit;
         }
-        *lifetime_rec = (OM_uint32) lifetime;
+
+        current_time = time(NULL);
+
+        if(current_time > lifetime)
+        {
+            *lifetime_rec = 0;
+        }
+        else
+        {
+            *lifetime_rec = (OM_uint32) (lifetime - current_time);
+        }
     }
 
     if (mech_type)

@@ -38,3 +38,9 @@ if test "x$GPT_LOCATION" = "x"; then
 fi
 
 . ${GPT_LOCATION}/libexec/gpt-bootstrap.sh
+
+# update stamp.h.in
+
+if test -f "stamp-h.in" ; then
+    touch stamp-h.in
+fi

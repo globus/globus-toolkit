@@ -21,9 +21,9 @@ LDADD = $(GPT_PGM_LINKS)
 callout_test_SOURCES = callout_test.c
 callout_test_LDFLAGS = $(GPT_LDFLAGS)
 
-test_LTLIBRARIES = libtest.la
+test_LTLIBRARIES = libtest_$(GLOBUS_FLAVOR_NAME).la
 
-libtest_la_SOURCES = libtest.c
+libtest___GLOBUS_FLAVOR_NAME__la_SOURCES = libtest.c
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -110,13 +110,7 @@ copy $(OutDir)\libglobus_callout_win32dbgdll.pdb \bin
 				RelativePath="..\library\globus_callout_error.c">
 			</File>
 			<File
-				RelativePath="win_ldtl.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""/>
-				</FileConfiguration>
+				RelativePath="win_ltdl.c">
 			</File>
 		</Filter>
 		<Filter
@@ -130,6 +124,9 @@ copy $(OutDir)\libglobus_callout_win32dbgdll.pdb \bin
 			</File>
 			<File
 				RelativePath="..\library\globus_i_callout.h">
+			</File>
+			<File
+				RelativePath="win_ltdl.h">
 			</File>
 		</Filter>
 		<Filter

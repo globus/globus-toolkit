@@ -3,11 +3,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_callout_test", "callout_te
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalloutLib", "CalloutLib.vcproj", "{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalloutDebugDLL", "CalloutDLL.vcproj", "{6A0742FB-0DD7-475A-8BE9-B9906C0F87F3}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyTest", "MyTest\MyTest.vcproj", "{994F6BC1-E798-4E74-BF4D-0BE76A316645}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtest", "libtest.vcproj", "{6914AACF-4316-4396-B097-DCDBFB231851}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalloutLibThr", "CalloutLibThr.vcproj", "{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
@@ -25,18 +23,14 @@ Global
 		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Debug.Build.0 = Debug|Win32
 		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Release.ActiveCfg = Release|Win32
 		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Release.Build.0 = Release|Win32
-		{6A0742FB-0DD7-475A-8BE9-B9906C0F87F3}.Debug.ActiveCfg = Debug|Win32
-		{6A0742FB-0DD7-475A-8BE9-B9906C0F87F3}.Debug.Build.0 = Debug|Win32
-		{6A0742FB-0DD7-475A-8BE9-B9906C0F87F3}.Release.ActiveCfg = Release|Win32
-		{6A0742FB-0DD7-475A-8BE9-B9906C0F87F3}.Release.Build.0 = Release|Win32
-		{994F6BC1-E798-4E74-BF4D-0BE76A316645}.Debug.ActiveCfg = Debug|Win32
-		{994F6BC1-E798-4E74-BF4D-0BE76A316645}.Debug.Build.0 = Debug|Win32
-		{994F6BC1-E798-4E74-BF4D-0BE76A316645}.Release.ActiveCfg = Release|Win32
-		{994F6BC1-E798-4E74-BF4D-0BE76A316645}.Release.Build.0 = Release|Win32
 		{6914AACF-4316-4396-B097-DCDBFB231851}.Debug.ActiveCfg = Debug|Win32
 		{6914AACF-4316-4396-B097-DCDBFB231851}.Debug.Build.0 = Debug|Win32
 		{6914AACF-4316-4396-B097-DCDBFB231851}.Release.ActiveCfg = Release|Win32
 		{6914AACF-4316-4396-B097-DCDBFB231851}.Release.Build.0 = Release|Win32
+		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Debug.ActiveCfg = Debug|Win32
+		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Debug.Build.0 = Debug|Win32
+		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Release.ActiveCfg = Release|Win32
+		{B6664A4E-FD65-45D8-BFD8-69D4580C08F5}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

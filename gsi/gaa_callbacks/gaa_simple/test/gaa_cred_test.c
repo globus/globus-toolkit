@@ -263,8 +263,15 @@ process_gaa(char *gaa_config_file, gss_ctx_id_t ctx)
     for (i = 0; i < data_set->count; i++)
     {
 	printf("saml extension %d\n", i);
-	if (assertion = data_set->elements[i].value)
+	if (data_set->elements[i].length && data_set->elements[i].value)
+	{
+	    assertion = malloc(data_set->elements[i].length+1);
+	    strncpy(assertion,
+		    data_set->elements[i].value,
+		    data_set->elements[i].length);
+	    assertion[data_set->elements[i].length] = '\0';
 	    break;
+	}
     }
 
     if (! assertion)
@@ -295,6 +302,7 @@ process_gaa(char *gaa_config_file, gss_ctx_id_t ctx)
     else
     {
 	if (authz_id_param)
+	    
 	    *((char **)authz_id_param) = strdup(assertion);
     }
 

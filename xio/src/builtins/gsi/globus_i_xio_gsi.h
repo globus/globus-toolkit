@@ -48,8 +48,11 @@
             (major_status),                                                  \
             (minor_status),                                                  \
             GLOBUS_XIO_ERROR_WRAPPED,                                        \
-            "[%s:%d] %s failed.",                                            \
-            _xio_name, __LINE__, (failed_func)))
+            __FILE__,                                                        \
+            _xio_name,                                                       \
+            __LINE__,                                                        \
+            "%s failed.",                                                    \
+            (failed_func)))
 
 /* XIO debug stuff */
 

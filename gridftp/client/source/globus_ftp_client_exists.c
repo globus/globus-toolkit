@@ -240,7 +240,7 @@ globus_l_ftp_client_existence_info_init(
     globus_object_t *				err = GLOBUS_SUCCESS;
     globus_result_t				result;
     int						rc;
-    static char *myname = "globus_l_ftp_client_existence_info_init";
+    GlobusFuncName(globus_l_ftp_client_existence_info_init);
 
     *existence_info =
 	globus_libc_calloc(1, sizeof(globus_l_ftp_client_existence_info_t));

@@ -35,7 +35,7 @@ globus_ftp_client_handleattr_init(
     globus_ftp_client_handleattr_t *		attr)
 {
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_init";
+    GlobusFuncName(globus_ftp_client_handleattr_init);
 
     if(attr == GLOBUS_NULL)
     {
@@ -82,7 +82,7 @@ globus_ftp_client_handleattr_destroy(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_i_ftp_client_handleattr_t *		i_attr;
 
-    static char * myname = "globus_ftp_client_handleattr_destroy";
+    GlobusFuncName(globus_ftp_client_handleattr_destroy);
 
     if(attr == GLOBUS_NULL)
     {
@@ -132,7 +132,7 @@ globus_ftp_client_handleattr_copy(
     globus_ftp_client_handleattr_t *		src)
 {
     globus_result_t				result;
-    static char * myname = "globus_i_ftp_client_handleattr_copy";
+    GlobusFuncName(globus_i_ftp_client_handleattr_copy);
     
     if(src == GLOBUS_NULL)
     {
@@ -195,7 +195,7 @@ globus_ftp_client_handleattr_set_cache_all(
 {
     globus_object_t *				err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_set_cache_all";
+    GlobusFuncName(globus_ftp_client_handleattr_set_cache_all);
 
     if(attr == GLOBUS_NULL)
     {
@@ -221,7 +221,7 @@ globus_ftp_client_handleattr_get_cache_all(
 {
     const globus_i_ftp_client_handleattr_t *	i_attr;
     globus_object_t *				err = GLOBUS_SUCCESS;
-    static char * myname = "globus_ftp_client_handleattr_get_cache_all";
+    GlobusFuncName(globus_ftp_client_handleattr_get_cache_all);
 
     if(attr == GLOBUS_NULL)
     {
@@ -252,7 +252,7 @@ globus_ftp_client_handleattr_set_rfc1738_url(
 {
     globus_object_t *				err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_set_rfc1738_url";
+    GlobusFuncName(globus_ftp_client_handleattr_set_rfc1738_url);
 
     if(attr == GLOBUS_NULL)
     {
@@ -278,7 +278,7 @@ globus_ftp_client_handleattr_get_rfc1738_url(
 {
     const globus_i_ftp_client_handleattr_t *	i_attr;
     globus_object_t *				err = GLOBUS_SUCCESS;
-    static char * myname = "globus_ftp_client_handleattr_get_rfc1738_url";
+    GlobusFuncName(globus_ftp_client_handleattr_get_rfc1738_url);
 
     if(attr == GLOBUS_NULL)
     {
@@ -325,7 +325,7 @@ globus_ftp_client_handleattr_add_cached_url(
     const char *				url)
 {
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_add_cached_url";
+    GlobusFuncName(globus_ftp_client_handleattr_add_cached_url);
 
     if(attr == GLOBUS_NULL)
     {
@@ -350,7 +350,7 @@ globus_ftp_client_handleattr_remove_cached_url(
     const char *				url)
 {
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_remove_cached_url";
+    GlobusFuncName(globus_ftp_client_handleattr_remove_cached_url);
 
     if(attr == GLOBUS_NULL)
     {
@@ -403,7 +403,7 @@ globus_ftp_client_handleattr_set_netlogger_ftp_io(
 {
     globus_object_t *                           err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *          i_attr;
-    static char * myname = "globus_ftp_client_handleattr_set_netlogger";
+    GlobusFuncName(globus_ftp_client_handleattr_set_netlogger);
 
     if(attr == GLOBUS_NULL)
     {
@@ -460,7 +460,7 @@ globus_ftp_client_handleattr_add_plugin(
     globus_list_t *				node;
     globus_object_t *				err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_add_plugin";
+    GlobusFuncName(globus_ftp_client_handleattr_add_plugin);
 
     if(attr == GLOBUS_NULL)
     {
@@ -542,7 +542,7 @@ globus_ftp_client_handleattr_remove_plugin(
     globus_i_ftp_client_plugin_t *		tmp;
     globus_object_t *				err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *		i_attr;
-    static char * myname = "globus_ftp_client_handleattr_remove_plugin()";
+    GlobusFuncName(globus_ftp_client_handleattr_remove_plugin());
 
     if(attr == GLOBUS_NULL)
     {
@@ -603,7 +603,7 @@ globus_ftp_client_operationattr_init(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_init";
+    GlobusFuncName(globus_ftp_client_operationattr_init);
 
     if(attr == GLOBUS_NULL)
     {
@@ -691,7 +691,7 @@ globus_ftp_client_operationattr_destroy(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_destroy";
+    GlobusFuncName(globus_ftp_client_operationattr_destroy);
 
     if(attr == GLOBUS_NULL)
     {
@@ -774,7 +774,7 @@ globus_ftp_client_operationattr_set_parallelism(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_parallelism";
+    GlobusFuncName(globus_ftp_client_operationattr_set_parallelism);
 
     if(attr == GLOBUS_NULL)
     {
@@ -818,7 +818,7 @@ globus_ftp_client_operationattr_get_parallelism(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_parallelism";
+    GlobusFuncName(globus_ftp_client_operationattr_get_parallelism);
 
     if(attr == GLOBUS_NULL)
     {
@@ -886,7 +886,7 @@ globus_ftp_client_operationattr_set_striped(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_striped";
+    GlobusFuncName(globus_ftp_client_operationattr_set_striped);
 
     if(attr == GLOBUS_NULL)
     {
@@ -913,7 +913,7 @@ globus_ftp_client_operationattr_get_striped(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t * i_attr; 
-    static char * myname = "globus_ftp_client_operationattr_get_striped";
+    GlobusFuncName(globus_ftp_client_operationattr_get_striped);
 
     if(attr == GLOBUS_NULL)
     {
@@ -976,7 +976,7 @@ globus_ftp_client_operationattr_set_layout(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_layout";
+    GlobusFuncName(globus_ftp_client_operationattr_set_layout);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1017,7 +1017,7 @@ globus_ftp_client_operationattr_get_layout(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_layout";
+    GlobusFuncName(globus_ftp_client_operationattr_get_layout);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1089,7 +1089,7 @@ globus_ftp_client_operationattr_set_tcp_buffer(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_tcp_buffer";
+    GlobusFuncName(globus_ftp_client_operationattr_set_tcp_buffer);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1123,7 +1123,7 @@ globus_ftp_client_operationattr_get_tcp_buffer(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_tcp_buffer";
+    GlobusFuncName(globus_ftp_client_operationattr_get_tcp_buffer);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1187,7 +1187,7 @@ globus_ftp_client_operationattr_set_type(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_type";
+    GlobusFuncName(globus_ftp_client_operationattr_set_type);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1220,7 +1220,7 @@ globus_ftp_client_operationattr_get_type(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_type";
+    GlobusFuncName(globus_ftp_client_operationattr_get_type);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1288,7 +1288,7 @@ globus_ftp_client_operationattr_set_mode(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_mode";
+    GlobusFuncName(globus_ftp_client_operationattr_set_mode);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1337,7 +1337,7 @@ globus_ftp_client_operationattr_get_mode(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t * i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_mode";
+    GlobusFuncName(globus_ftp_client_operationattr_get_mode);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1393,7 +1393,7 @@ globus_ftp_client_operationattr_set_resume_third_party_transfer(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_resume_thid_party_transfer";
+    GlobusFuncName(globus_ftp_client_operationattr_set_resume_thid_party_transfer);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1419,7 +1419,7 @@ globus_ftp_client_operationattr_get_resume_third_party_transfer(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t * i_attr; 
-    static char * myname = "globus_ftp_client_operationattr_get_resume_third_party_transfer";
+    GlobusFuncName(globus_ftp_client_operationattr_get_resume_third_party_transfer);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1499,7 +1499,7 @@ globus_ftp_client_operationattr_set_authorization(
     char *					tmp_gss_sub;
     globus_i_ftp_client_operationattr_t * 	i_attr;
 
-    static char * myname = "globus_ftp_client_operationattr_set_authorization";
+    GlobusFuncName(globus_ftp_client_operationattr_set_authorization);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1626,7 +1626,7 @@ globus_ftp_client_operationattr_get_authorization(
     char *					tmp_gss_sub  = GLOBUS_NULL;
     const globus_i_ftp_client_operationattr_t *	i_attr;
 
-    static char * myname = "globus_ftp_client_operationattr_get_authorization";
+    GlobusFuncName(globus_ftp_client_operationattr_get_authorization);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1719,7 +1719,7 @@ globus_ftp_client_operationattr_set_dcau(
     globus_i_ftp_client_operationattr_t *	i_attr;
     globus_object_t *				err;
 
-    static char * myname = "globus_ftp_client_operationattr_set_dcau";
+    GlobusFuncName(globus_ftp_client_operationattr_set_dcau);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1769,7 +1769,7 @@ globus_ftp_client_operationattr_get_dcau(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_dcau";
+    GlobusFuncName(globus_ftp_client_operationattr_get_dcau);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1827,7 +1827,7 @@ globus_ftp_client_operationattr_set_data_protection(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_data_protection";
+    GlobusFuncName(globus_ftp_client_operationattr_set_data_protection);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1853,7 +1853,7 @@ globus_ftp_client_operationattr_get_data_protection(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_data_protection";
+    GlobusFuncName(globus_ftp_client_operationattr_get_data_protection);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1910,7 +1910,7 @@ globus_ftp_client_operationattr_set_control_protection(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_control_protection";
+    GlobusFuncName(globus_ftp_client_operationattr_set_control_protection);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1946,7 +1946,7 @@ globus_ftp_client_operationattr_get_control_protection(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_control_protection";
+    GlobusFuncName(globus_ftp_client_operationattr_get_control_protection);
 
     if(attr == GLOBUS_NULL)
     {
@@ -2006,7 +2006,7 @@ globus_ftp_client_operationattr_set_append(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_append";
+    GlobusFuncName(globus_ftp_client_operationattr_set_append);
 
     if(attr == GLOBUS_NULL)
     {
@@ -2039,7 +2039,7 @@ globus_ftp_client_operationattr_get_append(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_append";
+    GlobusFuncName(globus_ftp_client_operationattr_get_append);
 
     if(attr == GLOBUS_NULL)
     {
@@ -2111,7 +2111,7 @@ globus_ftp_client_operationattr_set_read_all(
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_read_all";
+    GlobusFuncName(globus_ftp_client_operationattr_set_read_all);
 
     if(attr == GLOBUS_NULL)
     {
@@ -2141,7 +2141,7 @@ globus_ftp_client_operationattr_get_read_all(
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_read_all";
+    GlobusFuncName(globus_ftp_client_operationattr_get_read_all);
 
     if(attr == GLOBUS_NULL)
     {
@@ -2358,7 +2358,7 @@ globus_i_ftp_client_handleattr_copy(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_ftp_client_plugin_t *		new_plugin;
     globus_list_t **				last_plugin;
-    static char * myname = "globus_i_ftp_client_handleattr_copy";
+    GlobusFuncName(globus_i_ftp_client_handleattr_copy);
     
     if(src == GLOBUS_NULL)
     {

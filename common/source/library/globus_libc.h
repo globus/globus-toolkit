@@ -288,6 +288,11 @@ globus_libc_strtok(
 #define globus_libc_strcmp strcmp
 #define globus_libc_strlen strlen
 
+char *
+globus_libc_join(
+    const char **                       array,
+    int                                 count);
+    
 globus_size_t
 globus_libc_strlen(const char * string);
 

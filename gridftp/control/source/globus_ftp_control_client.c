@@ -6,6 +6,7 @@
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
+#include "globus_error_gssapi.h"
 #include <string.h>
 #include <ctype.h>
 #ifndef TARGET_ARCH_WIN32
@@ -2489,7 +2490,6 @@ globus_l_ftp_control_send_cmd_cb(
     gss_buffer_desc *                           token_ptr;
     struct gss_channel_bindings_struct *        chan_bindings;
     char *                                      radix_buf;
-    char *                                      error_str;
     OM_uint32                                   max_input_size[2];
     OM_uint32                                   pbsz;
 
@@ -2616,17 +2616,15 @@ globus_l_ftp_control_send_cmd_cb(
 	    
 	    if(maj_stat != GSS_S_COMPLETE) 
 	    {
-		globus_gss_assist_display_status_str(&error_str,
-						     GLOBUS_NULL,
-						     maj_stat,
-						     min_stat,
-						     0);
-						     
-		error_obj=globus_error_construct_string(
-		    GLOBUS_FTP_CONTROL_MODULE,
-		    GLOBUS_NULL,
-		    "globus_l_ftp_control_send_cmd_cb: gss_import_name failed\n\n %s",error_str);
-		globus_libc_free(error_str);
+	        error_obj = globus_error_wrap_gssapi_error(
+	            GLOBUS_FTP_CONTROL_MODULE,
+                    maj_stat,
+                    min_stat,
+                    0,
+                    __FILE__,
+                    "globus_l_ftp_control_send_cmd_cb",
+                    __LINE__,
+                    "gss_import_name failed");
 		goto return_error;
 	    }
 	    
@@ -2660,18 +2658,15 @@ globus_l_ftp_control_send_cmd_cb(
 	    if(maj_stat != GSS_S_COMPLETE && 
 	       maj_stat != GSS_S_CONTINUE_NEEDED) 
 	    {
-		globus_gss_assist_display_status_str(&error_str,
-						     GLOBUS_NULL,
-						     maj_stat,
-						     min_stat,
-						     0);
-
-		error_obj = globus_error_construct_string(
-		    GLOBUS_FTP_CONTROL_MODULE,
-		    GLOBUS_NULL,
-		    "globus_l_ftp_control_send_cmd_cb: gss_init_sec_context failed\n\n %s",
-		    error_str);
-		globus_libc_free(error_str);
+	        error_obj = globus_error_wrap_gssapi_error(
+	            GLOBUS_FTP_CONTROL_MODULE,
+                    maj_stat,
+                    min_stat,
+                    0,
+                    __FILE__,
+                    "globus_l_ftp_control_send_cmd_cb",
+                    __LINE__,
+                    "gss_init_sec_context failed");
 		goto return_error;
 	    }
 	    
@@ -2801,18 +2796,15 @@ globus_l_ftp_control_send_cmd_cb(
 	    if(maj_stat != GSS_S_COMPLETE && 
 	       maj_stat != GSS_S_CONTINUE_NEEDED) 
 	    {
-		globus_gss_assist_display_status_str(&error_str,
-						     GLOBUS_NULL,
-						     maj_stat,
-						     min_stat,
-						     0);
-
-		error_obj = globus_error_construct_string(
-		    GLOBUS_FTP_CONTROL_MODULE,
-		    GLOBUS_NULL,
-		    "globus_l_ftp_control_send_cmd_cb: gss_init_sec_context failed\n\n %s",
-		    error_str);
-		globus_libc_free(error_str);
+	        error_obj = globus_error_wrap_gssapi_error(
+	            GLOBUS_FTP_CONTROL_MODULE,
+                    maj_stat,
+                    min_stat,
+                    0,
+                    __FILE__,
+                    "globus_l_ftp_control_send_cmd_cb",
+                    __LINE__,
+                    "gss_init_sec_context failed");
 		gss_release_buffer(&min_stat, token_ptr);
 		
 		goto return_error;
@@ -2935,18 +2927,15 @@ globus_l_ftp_control_send_cmd_cb(
                 
                 if(maj_stat != GSS_S_COMPLETE)
                 {
-                    globus_gss_assist_display_status_str(&error_str,
-                                                         GLOBUS_NULL,
-                                                         maj_stat,
-                                                         min_stat,
-                                                         0);
-
-                    error_obj = globus_error_construct_string(
-                        GLOBUS_FTP_CONTROL_MODULE,
-                        GLOBUS_NULL,
-                        "globus_l_ftp_control_send_cmd_cb: gss_init_sec_context failed\n\n %s",
-                        error_str);
-                    globus_libc_free(error_str);
+                    error_obj = globus_error_wrap_gssapi_error(
+    	                GLOBUS_FTP_CONTROL_MODULE,
+                        maj_stat,
+                        min_stat,
+                        0,
+                        __FILE__,
+                        "globus_l_ftp_control_send_cmd_cb",
+                        __LINE__,
+                        "gss_init_sec_context failed");
                     gss_release_buffer(&min_stat, token_ptr);
 		
                     goto return_error;

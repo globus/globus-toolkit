@@ -19,13 +19,17 @@
 #endif
 #include "version.h"
 
+/* ToDo: HACK! This is undefined on the Windows side so do this for now */
+#ifdef WIN32
+#define flavor "win32dbg"
+#endif
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
 static void
 globus_l_callout_library_table_element_free(
     void *                              element);
 
-static globus_result_t
+static void
 globus_l_callout_data_free(
     globus_i_callout_data_t *           data);
 
@@ -266,7 +270,9 @@ globus_callout_handle_destroy(
  *      where "abstract type" denotes the type of callout,
  *      e.g. globus_gram_jobmanager_authz, "library" denotes the library the
  *      callout can be found in and "symbol" denotes the function name of the
- *      callout.
+ *      callout. The library argument can be specified in two forms, libfoo or
+ *      libfoo_<flavor>. When using the former version the current flavor will
+ *      automatically be added to the library name. 
  *
  * @param handle
  *        The handle that is to be configured
@@ -290,6 +296,7 @@ globus_callout_read_config(
     char                                type[128];
     char                                library[256];
     char                                symbol[128];
+    char *                              flavor_start;
     char *                              pound;
     int                                 index;
     int                                 rc;
@@ -363,13 +370,32 @@ globus_callout_read_config(
         memset(datum,'\0',sizeof(globus_i_callout_data_t));
 
         datum->next = datum;
-        
-        datum->file = strdup(library);
 
-        if(datum->file == NULL)
+        /* check if library is flavored already */
+
+        if((flavor_start = strrchr(library,'_')) &&
+           (strstr(flavor_start, "32") || strstr(flavor_start, "64")))
         {
-            GLOBUS_CALLOUT_MALLOC_ERROR(result);
-            goto error_exit;
+            datum->file = strdup(library);
+            
+            if(datum->file == NULL)
+            {
+                GLOBUS_CALLOUT_MALLOC_ERROR(result);
+                goto error_exit;
+            }
+        }
+        else
+        { 
+            datum->file = malloc(strlen(library) + 2 + strlen(flavor));
+            if(datum->file == NULL)
+            {
+                GLOBUS_CALLOUT_MALLOC_ERROR(result);
+                goto error_exit;
+            }
+            datum->file[0] = '\0';
+            strcat(datum->file, library);
+            strcat(datum->file, "_");
+            strcat(datum->file, flavor);
         }
         
         datum->symbol = strdup(symbol);
@@ -459,6 +485,7 @@ globus_callout_register(
     globus_result_t                     result;
     globus_i_callout_data_t *           datum = NULL;
     globus_i_callout_data_t *           existing_datum;
+    char *                              flavor_start;
     
     static char *                       _function_name_ =
         "globus_callout_register";
@@ -479,13 +506,31 @@ globus_callout_register(
     memset(datum,'\0',sizeof(globus_i_callout_data_t));
 
     datum->next = datum;
-    
-    datum->file = strdup(library);
-    
-    if(datum->file == NULL)
+
+
+    if((flavor_start = strrchr(library,'_')) &&
+       (strstr(flavor_start, "32") || strstr(flavor_start, "64")))
     {
-        GLOBUS_CALLOUT_MALLOC_ERROR(result);
-        goto error_exit;
+        datum->file = strdup(library);
+        
+        if(datum->file == NULL)
+        {
+            GLOBUS_CALLOUT_MALLOC_ERROR(result);
+            goto error_exit;
+        }
+    }
+    else
+    { 
+        datum->file = malloc(strlen(library) + 2 + strlen(flavor));
+        if(datum->file == NULL)
+        {
+            GLOBUS_CALLOUT_MALLOC_ERROR(result);
+            goto error_exit;
+        }
+        datum->file[0] = '\0';
+        strcat(datum->file, library);
+        strcat(datum->file, "_");            
+        strcat(datum->file, flavor);
     }
     
     datum->symbol = strdup(symbol);
@@ -686,11 +731,10 @@ globus_callout_call_type(
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-static globus_result_t
+static void
 globus_l_callout_data_free(
     globus_i_callout_data_t *           data)
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_l_callout_data_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
@@ -716,8 +760,6 @@ globus_l_callout_data_free(
     }
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
-
-    return result;
 }
 
 

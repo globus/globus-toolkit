@@ -127,8 +127,11 @@ typedef enum
         GLOBUS_NULL,                                                        \
         GLOBUS_NULL,                                                        \
         GLOBUS_GFS_ERROR_MEMORY,                                            \
-        "[%s:%d] Memory allocation failed on %s",                           \
-        _gfs_name, __LINE__, (mem_name))                               
+        __FILE__,                                                           \
+        _gfs_name,                                                          \
+        __LINE__,                                                           \
+        "Memory allocation failed on %s",                                   \
+        (mem_name))                               
                                                                             
 #define GlobusGFSErrorSystemError(system_func, _errno)                      \
     globus_error_put(                                                       \
@@ -136,8 +139,11 @@ typedef enum
             GLOBUS_NULL,                                                    \
             (_errno),                                                       \
             GLOBUS_GFS_ERROR_SYSTEM_ERROR,                                  \
-            "[%s:%d] System error in %s",                                   \
-            _gfs_name, __LINE__, (system_func)))                            
+            __FILE__,                                                       \
+            _gfs_name,                                                      \
+            __LINE__,                                                       \
+            "System error in %s",                                           \
+            (system_func)))
                                                                             
 #define GlobusGFSErrorWrapFailed(failed_func, result)                       \
     globus_error_put(GlobusGFSErrorObjWrapFailed(failed_func, result))
@@ -147,8 +153,11 @@ typedef enum
         GLOBUS_NULL,                                                        \
         globus_error_get((result)),                                         \
         GLOBUS_GFS_ERROR_WRAPPED,                                           \
-        "[%s:%d] %s failed.",                                               \
-        _gfs_name, __LINE__, (failed_func))
+        __FILE__,                                                           \
+        _gfs_name,                                                          \
+        __LINE__,                                                           \
+        "%s failed.",                                                       \
+        (failed_func))
 
 #define GlobusGFSErrorData(reason)                                          \
     globus_error_put(GlobusGFSErrorObjData(reason))                               
@@ -158,8 +167,11 @@ typedef enum
         GLOBUS_NULL,                                                        \
         GLOBUS_NULL,                                                        \
         GLOBUS_GFS_ERROR_DATA,                                              \
-        "[%s:%d] %s",                                                       \
-        _gfs_name, __LINE__, (reason))                             
+        __FILE__,                                                           \
+        _gfs_name,                                                          \
+        __LINE__,                                                           \
+        "%s",                                                               \
+        (reason))
  
 #define GlobusGFSErrorGeneric(reason)                                       \
     globus_error_put(GlobusGFSErrorObjGeneric(reason))                               
@@ -169,8 +181,11 @@ typedef enum
         GLOBUS_NULL,                                                        \
         GLOBUS_NULL,                                                        \
         GLOBUS_GFS_ERROR_GENERIC,                                           \
-        "[%s:%d] %s",                                                       \
-        _gfs_name, __LINE__, (reason))                             
+        __FILE__,                                                           \
+        _gfs_name,                                                          \
+        __LINE__,                                                           \
+        "%s",                                                               \
+        (reason))                             
                           
                                                                             
 #endif

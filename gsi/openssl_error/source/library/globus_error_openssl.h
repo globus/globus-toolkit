@@ -157,7 +157,10 @@ globus_error_initialize_openssl_error(
 globus_object_t *
 globus_error_wrap_openssl_error(
     globus_module_descriptor_t *        base_source,
-    const int                           error_type,
+    int                                 error_type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        format,
     ...);
 

@@ -33,13 +33,6 @@
          
 /* Function Prototypes */
 const char *win32_secure_path(void);
-const char *x509_default_user_cert(void);
-const char *x509_default_user_key(void);
-const char *x509_default_pkcs12_file(void);
-const char *x509_local_trusted_cert_dir(void);
-const char *x509_local_cert_dir(void);
-const char *local_gridmap(void);
-const char *local_authz_file(void);
 const char *win32_cwd(void);
 const char *x509_installed_trusted_cert_dir(void);
 const char *x509_installed_cert_dir(void);
@@ -50,6 +43,7 @@ const char *x509_default_trusted_cert_dir(void);
 const char *x509_default_cert_dir(void);
 const char *default_gridmap(void);
 const char *default_authz_file(void);
+const char *default_gaa_file(void);
 
 #define WIN32_FALLBACK_PATH             "c:\\temp"
 #define WIN32_SECURE_PATH               win32_secure_path()
@@ -89,6 +83,11 @@ const char *default_authz_file(void);
 #include <dirent.h>
 #endif
 
+/* ToDo: HACK! This is undefined on the Windows side so do this for now */
+#ifdef WIN32
+#define flavor "win32dbg"
+#endif
+
 #define X509_CERT_DIR                   "X509_CERT_DIR"
 #define X509_CERT_FILE                  "X509_CERT_FILE"
 #define X509_USER_PROXY                 "X509_USER_PROXY"
@@ -101,6 +100,7 @@ const char *default_authz_file(void);
 /* This is added after the CA name hash to make the policy filename */
 #define SIGNING_POLICY_FILE_EXTENSION   ".signing_policy"
 
+/* Win32 Definitions */
 #ifdef WIN32
 #define FILE_SEPERATOR                  "\\"
 #define X509_DEFAULT_USER_CERT          ".globus\\usercert.pem"
@@ -119,6 +119,18 @@ const char *default_authz_file(void);
 #define INSTALLED_AUTHZ_FILE            installed_authz_file()
 #define LOCAL_AUTHZ_FILE                ".gsi-authz.conf"
 
+/* Note: Authz Lib Is Going Away So These Definitions Should Be OK */
+#define DEFAULT_AUTHZ_LIB_FILE_BASE     "gsi-authz_lib"
+#define DEFAULT_AUTHZ_LIB_FILE_DIR      "\\etc\\grid-security\\"
+#define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
+#define HOME_AUTHZ_LIB_FILE_BASE        ".gsi-authz_lib"
+#define INSTALLED_AUTHZ_LIB_DIR         "etc\\"
+
+#define DEFAULT_GAA_FILE                default_gaa_file()
+#define INSTALLED_GAA_FILE              "etc\\gsi-gaa.conf"  /* Relative to CWD*/
+#define LOCAL_GAA_FILE                  ".gsi-gaa.conf"      /* Relative to CWD */
+
+/* Unix Definitions */
 #else
 #define FILE_SEPERATOR                  "/"
 #define X509_DEFAULT_USER_CERT          ".globus/usercert.pem"
@@ -136,19 +148,11 @@ const char *default_authz_file(void);
 #define DEFAULT_AUTHZ_FILE              "/etc/grid-security/gsi-authz.conf"
 #define INSTALLED_AUTHZ_FILE            "etc/gsi-authz.conf"
 #define LOCAL_AUTHZ_FILE                ".gsi-authz.conf"
-#define DEFAULT_AUTHZ_LIB_FILE_BASE	"gsi-authz_lib"
-#define DEFAULT_AUTHZ_LIB_FILE_DIR         "\\etc\\grid-security\\"
-#define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
-#define HOME_AUTHZ_LIB_FILE_BASE	".gsi-authz_lib"
-#define INSTALLED_AUTHZ_LIB_DIR         "etc\\"
-#define DEFAULT_GAA_FILE                "\\etc\\grid-security\\gsi-gaa.conf"
-#define INSTALLED_GAA_FILE              "etc\\gsi-gaa.conf"
-#define LOCAL_GAA_FILE                  "gsi-gaa.conf"
-#define DEFAULT_AUTHZ_LIB_FILE_BASE	"gsi-authz_lib"
+#define DEFAULT_AUTHZ_LIB_FILE_BASE     "gsi-authz_lib"
 #define DEFAULT_AUTHZ_LIB_FILE_DIR      "/etc/grid-security/"
 #define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
 #define INSTALLED_AUTHZ_LIB_DIR         "etc/"
-#define HOME_AUTHZ_LIB_FILE_BASE	".gsi-authz_lib"
+#define HOME_AUTHZ_LIB_FILE_BASE        ".gsi-authz_lib"
 #define DEFAULT_GAA_FILE                "/etc/grid-security/gsi-gaa.conf"
 #define INSTALLED_GAA_FILE              "etc/gsi-gaa.conf"
 #define LOCAL_GAA_FILE                  ".gsi-gaa.conf"
@@ -168,8 +172,10 @@ const char *default_authz_file(void);
         GLOBUS_GSI_SYSCONFIG_MODULE, \
         errno, \
         GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO, \
-        "%s:%d: Could not allocate enough memory", \
-        __FILE__, __LINE__))
+        __FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "Could not allocate enough memory"))
 
 
 int                                     globus_i_gsi_sysconfig_debug_level;
@@ -519,9 +525,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error opening keyfile for reading\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error opening keyfile for reading\n"));
         goto exit;
     }
 
@@ -532,9 +539,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error getting status of keyfile\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error getting status of keyfile\n"));
         goto exit;
     }
 
@@ -576,10 +584,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS,
-                __FILE__":%d:%s: Error setting permissions to "
-                "user read only of file: %s\n", 
-                __LINE__,
+                __FILE__,
                 _function_name_,
+                __LINE__,
+                "Error setting permissions to user read only of file: %s\n", 
                 filename));
         goto exit;
     }
@@ -743,10 +751,10 @@ globus_gsi_sysconfig_file_exists_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of file: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         
@@ -846,10 +854,10 @@ globus_gsi_sysconfig_dir_exists_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of certificate directory: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of certificate directory: %s\n",
                     filename));
             goto exit;
         
@@ -943,9 +951,10 @@ globus_gsi_sysconfig_check_keyfile_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-                    __FILE__":%d:%s: Error getting status of file: %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         }
@@ -1064,9 +1073,10 @@ globus_gsi_sysconfig_check_certfile_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-                    __FILE__":%d:%s: Error getting status of file %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file %s\n",
                     filename));
             goto exit;
         }
@@ -1175,8 +1185,10 @@ globus_gsi_sysconfig_get_current_working_dir_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                    "%s:%d: Couldn't get the current working directory",
-                    __FILE__, __LINE__));
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
+                    "Couldn't get the current working directory"));
         }
         else
         {
@@ -1853,7 +1865,7 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING);
                 goto done;
             }
-            *user_cert = *user_key;
+            *user_cert = globus_libc_strdup(*user_key);
         }
         else if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
         {
@@ -2730,6 +2742,9 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error opening directory: %s", ca_cert_dir));
         goto exit;
     }
@@ -2850,6 +2865,9 @@ globus_gsi_sysconfig_remove_all_owned_files_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error opening directory: %s", DEFAULT_SECURE_TMP_DIR));
         goto exit;
     }
@@ -3231,10 +3249,6 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_authz_lib_conf_filename_win32";
 
-   /* ToDo: Port This */
-   /* Return any old error */
-   return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-   #ifdef THISHASNOTBEENPORTEDYET
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     if((authz_lib_env = (char *) getenv("GSI_AUTHZ_LIB_CONF"))   != NULL)
@@ -3393,7 +3407,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-#endif
+
 }
 /* @} */
 
@@ -3426,11 +3440,6 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
         "globus_gsi_sysconfig_get_gaa_conf_filename_win32";
 
     
-   /* ToDo: Port This */
-   /* Return any old error */
-   return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-   #ifdef THISHASNOTBEENPORTEDYET
-
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     if((gaa_env = (char *) getenv("GSI_GAA_CONF"))   != NULL)
@@ -3581,7 +3590,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
-    #endif
+
 }
 /* @} */
 
@@ -3767,9 +3776,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error opening keyfile for reading\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error opening keyfile for reading\n"));
         goto exit;
     }
 
@@ -3780,9 +3790,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error getting status of keyfile\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error getting status of keyfile\n"));
         goto exit;
     }
 
@@ -3832,10 +3843,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS,
-                __FILE__":%d:%s: Error setting permissions to "
-                "user read only of file: %s\n", 
-                __LINE__,
+                __FILE__,
                 _function_name_,
+                __LINE__,
+                "Error setting permissions to user read only of file: %s\n", 
                 filename));
         goto exit;
     }
@@ -4275,8 +4286,10 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                    "%s:%d: Couldn't get the current working directory",
-                    __FILE__, __LINE__));
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
+                    "Couldn't get the current working directory"));
         }
         else
         {
@@ -4459,10 +4472,10 @@ globus_gsi_sysconfig_file_exists_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of file: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         
@@ -4561,10 +4574,10 @@ globus_gsi_sysconfig_dir_exists_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of certificate directory: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of certificate directory: %s\n",
                     filename));
             goto exit;
         
@@ -4665,9 +4678,10 @@ globus_gsi_sysconfig_check_keyfile_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-                    __FILE__":%d:%s: Error getting status of file: %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         }
@@ -4798,9 +4812,10 @@ globus_gsi_sysconfig_check_certfile_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-                    __FILE__":%d:%s: Error getting status of file %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file %s\n",
                     filename));
             goto exit;
         }
@@ -5232,7 +5247,7 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING);
                 goto done;
             }
-            *user_cert = *user_key;
+            *user_cert = globus_libc_strdup(*user_key);
         }
         else if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
         {
@@ -6205,6 +6220,9 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error opening directory: %s", ca_cert_dir));
         goto exit;
     }
@@ -6323,9 +6341,10 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error opening directory: %s\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_, 
+                "Error opening directory: %s\n",
                 DEFAULT_SECURE_TMP_DIR));
         goto exit;
     }
@@ -7315,6 +7334,15 @@ const char *installed_authz_file(void)
     sprintf(buffer,"%s%s",win32_cwd(),"\\etc\\gsi-authz.conf");
     return buffer;
 }
+
+/* Relative to Current Working Directory */
+const char *default_gaa_file(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_cwd(),"\\etc\\grid-security\\gsi-gaa.conf");
+    return buffer;
+}
+
 
 /*---------------------------*/
 /* Get Windows etc Directory */

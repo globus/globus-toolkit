@@ -631,12 +631,21 @@ globus_i_gfs_data_active_request(
         }
     }
     
-    result = globus_ftp_control_local_spor(
-        &handle->data_channel, addresses, cs_count);
+    
+    if(cs_count == 1)
+    {
+        result = globus_ftp_control_local_port(
+            &handle->data_channel, addresses);
+    }
+    else
+    {
+        result = globus_ftp_control_local_spor(
+            &handle->data_channel, addresses, cs_count);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_ftp_control_local_spor", result);
+            "globus_ftp_control_local_port/spor", result);
         goto error_control;
     }
     

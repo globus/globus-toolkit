@@ -81,4 +81,8 @@ $GPT_LOCATION/sbin/gpt_create_automake_rules || error
 echo "running autoconf"
 autoconf || error
 
+# update stamp.h.in
 
+if test -f "stamp-h.in" ; then
+    touch stamp-h.in
+fi

@@ -806,11 +806,9 @@ globus_l_xio_gsi_is_ssl_token(
     GlobusXIOName(globus_l_xio_gsi_is_ssl_token);
     GlobusXIOGSIDebugInternalEnter();
 
-    if((t[0] >= 20 &&
-        t[0] <= 26 &&
-        (t[1] == 3 && (t[2] == 0 || t[2] == 1) ||
-         t[1] == 2 && t[2] == 0)) ||
-       ((t[0] & 0x80) && t[2] == 1))
+    if(t[0] >= 20 &&
+       t[0] <= 26 &&
+       t[1] == 3 && (t[2] == 0 || t[2] == 1))
     {
         /* it's a SSL token */
         *length = (t[3] << 8) | t[4];
@@ -2447,7 +2445,13 @@ globus_l_xio_gsi_write_cb(
         }
     }
 
-    globus_xio_driver_finished_write(op, result, nbytes);
+    if(result != GLOBUS_SUCCESS &&
+       nbytes != GlobusXIOOperationGetWaitFor(op))
+    {
+        handle->bytes_written = 0;
+    }
+    
+    globus_xio_driver_finished_write(op, result, handle->bytes_written);
     GlobusXIOGSIDebugInternalExit();
     return;
 }
@@ -2633,6 +2637,8 @@ globus_l_xio_gsi_write(
 
         handle->write_iovec = tmp_ptr;
         handle->write_iovec_count = write_iovec_count;
+        memset(handle->write_iovec, 0,
+               sizeof(globus_xio_iovec_t)*write_iovec_count);
     }
 
     /* if we didn't wrap complete iovec start with first iovec found, otherwise
@@ -2708,7 +2714,7 @@ globus_l_xio_gsi_write(
                 result = GlobusXIOErrorWrapGSSFailed("gss_wrap",
                                                      major_status,
                                                      minor_status);
-                goto error;
+                goto free_wrapped;
             }
 
             if(handle->frame_writes == GLOBUS_TRUE)
@@ -2742,6 +2748,32 @@ globus_l_xio_gsi_write(
                              globus_l_xio_gsi_write_cb, handle);
     GlobusXIOGSIDebugExit();
     return result;
+    
+ free_wrapped:
+    if(handle->frame_writes == GLOBUS_FALSE)
+    { 
+        for(i = 0;i < j;i++)
+        {
+            if(handle->write_iovec[i].iov_base != NULL)
+            {
+                free(handle->write_iovec[i].iov_base);
+                handle->write_iovec[i].iov_base = NULL;
+            }
+        }
+    }
+    else
+    {
+        for(i = 1;i < j;i += 2)
+        {
+            /* exclude the headers for framed writes */
+            if(handle->write_iovec[i].iov_base != NULL)
+            {
+                free(handle->write_iovec[i].iov_base);
+                handle->write_iovec[i].iov_base = NULL;
+                handle->write_iovec[i - 1].iov_base = NULL;
+            }
+        }
+    }    
  error:
     GlobusXIOGSIDebugExitWithError();
     return result;

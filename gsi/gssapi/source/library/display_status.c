@@ -113,7 +113,7 @@ GSS_CALLCONV gss_display_status(
     else if(status_type == GSS_C_MECH_CODE)
     {
         error_obj = globus_error_get((globus_result_t) status_value);
-        error_chain_string = globus_error_print_chain(error_obj);
+        error_chain_string = globus_error_print_friendly(error_obj);
 
         status_string->value = globus_gsi_cert_utils_create_string(
             "GSS Minor Status Error Chain:\n%s",

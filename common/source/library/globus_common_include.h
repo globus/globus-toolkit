@@ -7,6 +7,15 @@
 
 #include "globus_config.h"
 
+#ifdef __GNUC__
+#define GlobusFuncName(func) static const char * _globus_func_name \
+    __attribute__((__unused__)) = #func
+#else
+#define GlobusFuncName(func) static const char * _globus_func_name = #func
+#endif
+
+extern const char * _globus_func_name;
+
 /** GET IPv6 compatible types (at least with GNU) **/
 #ifndef __USE_POSIX
 #define __USE_POSIX

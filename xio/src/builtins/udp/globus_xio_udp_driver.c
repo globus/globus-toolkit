@@ -29,8 +29,10 @@ static globus_module_descriptor_t       globus_i_xio_udp_module =
             &globus_i_xio_udp_module,                                       \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDP_ERROR_NO_ADDRS,                                  \
-            "[%s:%d] No addrs for INET family",                             \
-            _xio_name, __LINE__))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "No addrs for INET family"))
 
 #define GlobusXIOUdpErrorShortWrite()                                       \
     globus_error_put(                                                       \
@@ -38,8 +40,10 @@ static globus_module_descriptor_t       globus_i_xio_udp_module =
             &globus_i_xio_udp_module,                                       \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDP_ERROR_SHORT_WRITE,                               \
-            "[%s:%d] Unable to write full request",                         \
-            _xio_name, __LINE__))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Unable to write full request"))
 
 #define GlobusIXIOUdpCloseFd(fd)                                            \
     do                                                                      \

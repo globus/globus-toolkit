@@ -51,8 +51,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PARAMETER,                  \
-            "[%s:%d] Bad parameter, %s",                                    \
-            _gridftp_server_name, __LINE__, (param_name)))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Bad parameter, %s",                                            \
+            (param_name)))
 
 #define GlobusGridFTPServerErrorMemory(mem_name)                            \
     globus_error_put(                                                       \
@@ -60,8 +63,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_MEMORY,                     \
-            "[%s:%d] Memory allocation failed on %s",                       \
-            _gridftp_server_name, __LINE__, (mem_name)))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Memory allocation failed on %s",                               \
+            (mem_name)))
 
 #define GlobusGridFTPServerErrorState(state)                                \
     globus_error_put(                                                       \
@@ -69,8 +75,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_STATE,                      \
-            "[%s:%d] Invalid state: %d",                                    \
-            _gridftp_server_name, __LINE__, (state)))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Invalid state: %d",                                            \
+            (state)))
 
 #define GlobusGridFTPServerNotAuthenticated()                               \
     globus_error_put(                                                       \
@@ -78,8 +87,10 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_NO_AUTH,                          \
-            "[%s:%d] Not yet authenticated.",                               \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Not yet authenticated."))
 
 #define GlobusGridFTPServerPostAuthenticated()                              \
     globus_error_put(                                                       \
@@ -87,8 +98,10 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_POST_AUTH,                        \
-            "[%s:%d] Not yet authenticated.",                               \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Not yet authenticated."))
 
 #define GlobusGridFTPServerNotACommand()                                    \
     globus_error_put(                                                       \
@@ -96,8 +109,10 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_NO_COMMAND,                       \
-            "[%s:%d] Command not implemented.",                             \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Command not implemented."))
 
 
 #define GlobusGridFTPServerOpSetUserArg(_in_op, _in_arg)                    \

@@ -142,7 +142,7 @@ globus_ftp_client_mkdir(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_mkdir";
+    GlobusFuncName(globus_ftp_client_mkdir);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -373,7 +373,7 @@ globus_ftp_client_rmdir(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_rmdir";
+    GlobusFuncName(globus_ftp_client_rmdir);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -605,7 +605,7 @@ globus_ftp_client_delete(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_delete";
+    GlobusFuncName(globus_ftp_client_delete);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -838,7 +838,7 @@ globus_ftp_client_list(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
-    static char * myname = "globus_ftp_client_list";
+    GlobusFuncName(globus_ftp_client_list);
     
     return globus_l_ftp_client_list_op(
                 u_handle,
@@ -896,7 +896,7 @@ globus_ftp_client_verbose_list(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
-    static char * myname = "globus_ftp_client_verbose_list";
+    GlobusFuncName(globus_ftp_client_verbose_list);
     
     return globus_l_ftp_client_list_op(
                 u_handle,
@@ -954,7 +954,7 @@ globus_ftp_client_machine_list(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
-    static char * myname = "globus_ftp_client_machine_list";
+    GlobusFuncName(globus_ftp_client_machine_list);
     
     return globus_l_ftp_client_list_op(
                 u_handle,
@@ -1030,7 +1030,7 @@ globus_ftp_client_mlst(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_mlst";
+    GlobusFuncName(globus_ftp_client_mlst);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -1291,7 +1291,7 @@ globus_ftp_client_move(
     globus_url_t                                url;
     globus_i_ftp_client_handle_t *		handle;
     globus_ftp_client_handleattr_t		handleattr;
-    static char * myname = "globus_ftp_client_move";
+    GlobusFuncName(globus_ftp_client_move);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -1576,7 +1576,7 @@ globus_ftp_client_chmod(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_chmod";
+    GlobusFuncName(globus_ftp_client_chmod);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -2023,7 +2023,7 @@ globus_l_ftp_client_extended_get(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_get";
+    GlobusFuncName(globus_ftp_client_get);
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_extended_get() entering\n"));
@@ -2511,7 +2511,7 @@ globus_l_ftp_client_extended_put(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_put";
+    GlobusFuncName(globus_ftp_client_put);
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_extended_put() entering\n"));
@@ -3036,7 +3036,7 @@ globus_l_ftp_client_extended_third_party_transfer(
     globus_ftp_client_operationattr_t 		normalized_dest_attr;
     globus_i_ftp_client_operationattr_t *	use_attr;
 
-    static char * myname = "globus_ftp_client_partial_third_party_transfer";
+    GlobusFuncName(globus_ftp_client_partial_third_party_transfer);
     
     globus_i_ftp_client_debug_printf(1, (stderr,
         "globus_l_ftp_client_extended_third_party_transfer() entering\n"));
@@ -3439,7 +3439,7 @@ globus_ftp_client_modification_time(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_modification_time";
+    GlobusFuncName(globus_ftp_client_modification_time);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -3689,7 +3689,7 @@ globus_ftp_client_size(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_size";
+    GlobusFuncName(globus_ftp_client_size);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -3948,7 +3948,7 @@ globus_ftp_client_cksm(
     globus_object_t *				err;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_cksm";
+    GlobusFuncName(globus_ftp_client_cksm);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -4170,7 +4170,7 @@ globus_ftp_client_abort(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_ftp_client_abort";
+    GlobusFuncName(globus_ftp_client_abort);
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_ftp_client_abort() entering\n"));
@@ -4486,7 +4486,7 @@ globus_l_ftp_client_list_op(
     globus_ftp_client_operationattr_t  		local_attr;
     globus_ftp_control_parallelism_t	        parallelism;
     globus_i_ftp_client_handle_t *		handle;
-    static char * myname = "globus_l_ftp_client_list_op";
+    GlobusFuncName(globus_l_ftp_client_list_op);
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)

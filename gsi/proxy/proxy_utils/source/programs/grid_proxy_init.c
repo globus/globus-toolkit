@@ -16,6 +16,9 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
+#ifdef WIN32
+#include "globus_gssapi_config.h"
+#endif
 
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.1.1.8"
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_SN  "GENERICPOLICY"

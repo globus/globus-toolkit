@@ -20,8 +20,10 @@
             GLOBUS_GSI_CREDENTIAL_MODULE, \
             errno, \
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS, \
-            __FILE__":__LINE__:%s:%s", \
+            __FILE__, \
             _function_name_, \
+            __LINE__, \
+            "%s", \
             globus_l_gsi_cred_error_strings[ \
                 GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]))
 

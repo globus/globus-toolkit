@@ -282,13 +282,43 @@ gssapi_remove_delegation()
 /*
  * gssapi_identity()
  *
- * Return gssapi identity of authenticated user.
+ * Return remote identity of authenticated user, to be used for authorization.
  *
  * Arguments: None
  * Returns: Identity (NUL-terminated string)
  */
 char *
 gssapi_identity()
+{
+#ifdef GLOBUS_AUTHORIZATION
+
+    /*
+     * If the authorization system wants us to use a particular identity,
+     * use it.  Otherwise, just use the normal authenticated identity.
+     */
+
+    char *identity;
+    if (identity = ftp_authz_identity())
+    {
+	return(identity);
+    }
+
+#endif /* GLOBUS_AUTHORIZATION */
+
+    return (char *)client_name.value;
+}
+
+/*
+ * gssapi_audit_identity()
+ *
+ * Return the authenticated remote identity of authenticated user, to be
+ * used for audit.
+ *
+ * Arguments: None
+ * Returns: Identity (NUL-terminated string)
+ */
+char *
+gssapi_audit_identity()
 {
     return (char *)client_name.value;
 }
@@ -364,11 +394,15 @@ gssapi_check_authorization(char *gssapi_name, char *account)
 	 *  Check mapping between client name and local name
 	 */
 
+#ifdef GLOBUS_AUTHORIZATION
+	result = globus_gss_assist_userok(gssapi_name, account);
+#else
         result = globus_gss_assist_map_and_authorize(gssapi_get_gss_ctx_id_t(),
                                                      "gridftp",
                                                      account,
                                                      identity_buffer,
                                                      256);
+#endif
         
 	if (result == GLOBUS_SUCCESS) {
 	    /* Success */
@@ -854,33 +888,6 @@ gssapi_handle_auth_data(char *data, int length)
     pchan = &chan;
 #endif /* !GSSAPI_GLOBUS */
 
-#ifdef GLOBUS_AUTHORIZATION
-    /*
-     * Need to set option in context before first call to inform
-     * GSSAPI libraries we wil handle any restrictions in GSI
-     * credentials used to authenticate.
-     */
-    if (gcontext == GSS_C_NO_CONTEXT)
-    {
-        stat_maj = globus_gss_assist_will_handle_restrictions(&stat_min,
-                                                          &gcontext);
-    
-        if (stat_maj != GSS_S_COMPLETE) 
-        {
-            /*
-             * Don't need to fail here, since if there are no restrictions
-             * in the credentials used to authenticate, we're fine. And if
-             * there are we'll fail later anyways. But we should make a note
-             * of this error to help someone figure out what's going on.
-             */
-            syslog(LOG_NOTICE,
-                   "Warning: globus_gss_assist_will_handle_restrictions() failed"
-                   " (major status = %x minor_status = %x)",
-                   stat_maj, stat_min);
-        }
-    }
-#endif /* GLOBUS_AUTHORIZATION */
-
     rc = gssapi_acquire_server_credentials();
 
     if(rc == -1)
@@ -965,43 +972,6 @@ gssapi_handle_auth_data(char *data, int length)
         
 	if (debug)
 	    syslog(LOG_INFO, "Client identity is: %s", client_name.value);
-
-#ifdef GLOBUS_AUTHORIZATION
-        stat_maj = gss_get_group(&stat_min, client,
-                                 &client_group, &subgroup_types);
-
-	if (stat_maj != GSS_S_COMPLETE) {
-	    gssapi_reply_error(535, stat_maj, stat_min,
-			       "extracting GSSAPI group");
-	    syslog(LOG_ERR, "gssapi error extracting group");
-	    return -1;
-	}
-        
-        if(client_group != NULL)
-        {
-            syslog(LOG_INFO,
-                   "Client identity %s is in the following group:",
-                   client_name.value);
-
-            for(i=0;i<client_group->count;i++)
-            {
-                if(g_OID_equal((gss_OID) &subgroup_types->elements[i],
-                               gss_untrusted_group))
-                {
-                    syslog(LOG_INFO,
-                           "\tUntrusted subgroup %s\n",
-                           (char *) client_group->elements[i].value);
-                }
-                else
-                {
-                    syslog(LOG_INFO,
-                           "\tTrusted subgroup %s\n",
-                           (char *) client_group->elements[i].value);
-                }   
-            }
-
-        }
-#endif
         
 	/* If the server accepts the security data, but does
 	   not require any additional data (i.e., the security
@@ -1099,6 +1069,15 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
 char *globus_local_name(globus_id)
      char *globus_id;
 {
+#ifdef GLOBUS_AUTHORIZATION
+    char * idptr = 0;
+    if (globus_gss_assist_gridmap(globus_id, &idptr))
+    {
+	return(0);
+    }
+    return(idptr);
+#else /* GLOBUS_AUTHORIZATION */
+
     char identity_buffer[256];
     globus_result_t result;
 
@@ -1118,6 +1097,7 @@ char *globus_local_name(globus_id)
     {
         return strdup(identity_buffer);
     }
+#endif /* GLOBUS_AUTHORIZATION */
 }
 #endif /* GSSAPI_GLOBUS */
 

@@ -60,7 +60,7 @@ globus_i_ftp_client_restart_register_oneshot(
     globus_reltime_t				when;
     globus_reltime_t				zero;
     globus_result_t                             result = GLOBUS_SUCCESS;
-    static char * myname = "globus_l_ftp_client_restart_register_oneshot";
+    GlobusFuncName(globus_l_ftp_client_restart_register_oneshot);
 
     /* Update the restart marker in the handle */
     globus_ftp_client_restart_marker_destroy(&handle->restart_marker);
@@ -659,7 +659,7 @@ globus_i_ftp_client_restart(
 {
     globus_object_t *				err = GLOBUS_SUCCESS;
     globus_result_t				result;
-    static char * myname = "globus_i_ftp_client_restart";
+    GlobusFuncName(globus_i_ftp_client_restart);
 
     switch(handle->state)
     {

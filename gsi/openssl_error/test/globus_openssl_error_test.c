@@ -61,6 +61,9 @@ int main(int argc, char * argv[])
         error1 = globus_error_wrap_openssl_error(
             GLOBUS_GSI_OPENSSL_ERROR_TEST_MODULE,
             (const int) 42,
+            NULL,
+            NULL,
+            0,
             "Test Error: %s:%d",
             "blah",
             42);

@@ -952,7 +952,6 @@ globus_l_gfs_file_dispatch_read(
         
         monitor->pending_read++;
     }
-    globus_mutex_unlock(&monitor->lock);
     
     return GLOBUS_SUCCESS;
 
@@ -1065,23 +1064,26 @@ globus_l_gfs_file_read_cb(
             goto error;
         }
         
-        result = globus_gridftp_server_register_write(
-            monitor->op,
-            buffer,
-            nbytes,
-            monitor->current_offset,
-            -1,
-            globus_l_gfs_file_server_write_cb,
-            monitor);
-        if(result != GLOBUS_SUCCESS)
+        if(nbytes > 0)
         {
-            monitor->error = GlobusGFSErrorObjWrapFailed(
-                "globus_gridftp_server_register_write", result);
-            goto error;
+            result = globus_gridftp_server_register_write(
+                monitor->op,
+                buffer,
+                nbytes,
+                monitor->current_offset,
+                -1,
+                globus_l_gfs_file_server_write_cb,
+                monitor);
+            if(result != GLOBUS_SUCCESS)
+            {
+                monitor->error = GlobusGFSErrorObjWrapFailed(
+                    "globus_gridftp_server_register_write", result);
+                goto error;
+            }
+            
+            monitor->pending_writes++;
+            monitor->current_offset += nbytes;
         }
-        
-        monitor->pending_writes++;
-        monitor->current_offset += nbytes;
         
         result = globus_l_gfs_file_dispatch_read(monitor);
         if(result != GLOBUS_SUCCESS)
@@ -1090,8 +1092,21 @@ globus_l_gfs_file_read_cb(
                 "globus_l_gfs_file_dispatch_read", result);
             goto error;
         }
+       
+        if(monitor->pending_read == 0 && monitor->pending_writes == 0)
+        {
+            globus_assert(monitor->eof);
+            globus_mutex_unlock(&monitor->lock);
+            globus_gridftp_server_finished_transfer(
+                monitor->op, GLOBUS_SUCCESS);
+            globus_l_gfs_send_monitor_destroy(monitor);
+        }
+        else
+        {
+            globus_mutex_unlock(&monitor->lock);
+        }
     }
-    globus_mutex_unlock(&monitor->lock);
+    /* already unlocked */
 
     return;
 

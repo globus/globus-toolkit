@@ -47,6 +47,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_gssapi_acquire_test", "..\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_win_sysconfig_test", "..\..\..\sysconfig\source\win32\_win_sysconfig_test.vcproj", "{B41EBA04-0012-4614-8639-2D9024674CC8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grid_proxy_init", "..\..\..\proxy\proxy_utils\source\win32\grid_proxy_init.vcproj", "{8971636F-B8BE-494B-B369-C01CAB5D62FF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grid_proxy_info", "..\..\..\proxy\proxy_utils\source\win32\grid_proxy_info.vcproj", "{8971636F-B8BE-494B-B369-C01CAB5D62FF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grid_proxy_destroy", "..\..\..\proxy\proxy_utils\source\win32\grid_proxy_destroy.vcproj", "{8971636F-B8BE-494B-B369-C01CAB5D62FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		ConfigName.0 = Debug
@@ -200,6 +206,24 @@ Global
 		{B41EBA04-0012-4614-8639-2D9024674CC8}.DebugThr.Build.0 = Debug|Win32
 		{B41EBA04-0012-4614-8639-2D9024674CC8}.Release.ActiveCfg = Release|Win32
 		{B41EBA04-0012-4614-8639-2D9024674CC8}.Release.Build.0 = Release|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Debug.ActiveCfg = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Debug.Build.0 = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.DebugThr.ActiveCfg = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.DebugThr.Build.0 = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Release.ActiveCfg = Release|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Release.Build.0 = Release|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Debug.ActiveCfg = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Debug.Build.0 = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.DebugThr.ActiveCfg = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.DebugThr.Build.0 = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Release.ActiveCfg = Release|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Release.Build.0 = Release|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Debug.ActiveCfg = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Debug.Build.0 = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.DebugThr.ActiveCfg = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.DebugThr.Build.0 = Debug|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Release.ActiveCfg = Release|Win32
+		{8971636F-B8BE-494B-B369-C01CAB5D62FF}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

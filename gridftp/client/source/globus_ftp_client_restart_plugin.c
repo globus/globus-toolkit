@@ -26,7 +26,7 @@
 		GLOBUS_NULL,\
 		"[%s] NULL plugin at %s\n",\
 		GLOBUS_FTP_CLIENT_MODULE->module_name,\
-		myname));\
+		_globus_func_name));\
     }
 #define GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(d, func) \
     result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_restart_plugin_##func); \
@@ -977,7 +977,7 @@ globus_ftp_client_restart_plugin_init(
     globus_l_ftp_client_restart_plugin_t *	d;
     globus_object_t *				err;
     globus_result_t				result;
-    static char * myname = "globus_ftp_client_restart_plugin_init";
+    GlobusFuncName(globus_ftp_client_restart_plugin_init);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -986,7 +986,7 @@ globus_ftp_client_restart_plugin_init(
 		GLOBUS_NULL,
 		"[%s] NULL plugin at %s\n",
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		_globus_func_name));
     }
         
     d =
@@ -999,7 +999,7 @@ globus_ftp_client_restart_plugin_init(
 				GLOBUS_NULL,
 				"[%s] Out of memory at %s\n",
 				 GLOBUS_FTP_CLIENT_MODULE->module_name,
-				 myname));
+				 _globus_func_name));
     }
 
     result = globus_ftp_client_plugin_init(plugin,
@@ -1102,7 +1102,7 @@ globus_ftp_client_restart_plugin_destroy(
 {
     globus_l_ftp_client_restart_plugin_t * d;
     globus_result_t result;
-    static char * myname = "globus_ftp_client_restart_plugin_destroy";
+    GlobusFuncName(globus_ftp_client_restart_plugin_destroy);
 
     GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin);
 

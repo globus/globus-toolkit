@@ -149,6 +149,21 @@ globus_gsi_authz_gaa_system_destroy_callout(
 }
 
 
+static void callback_wrapper(
+    void *                              args)
+{
+    globus_l_gsi_authz_gaa_cb_arg_t *   wrapper_args;
+    
+    wrapper_args = (globus_l_gsi_authz_gaa_cb_arg_t *) args;
+
+    wrapper_args->callback(wrapper_args->arg, wrapper_args->handle,
+                           GLOBUS_SUCCESS);
+
+    free(wrapper_args);
+
+    return;
+}
+
 globus_result_t
 globus_gsi_authz_gaa_handle_init_callout(
     va_list                             ap)
@@ -157,6 +172,7 @@ globus_gsi_authz_gaa_handle_init_callout(
     gss_ctx_id_t 			context;
     globus_gsi_authz_cb_t 		callback;
     void * 				callback_arg;
+    globus_l_gsi_authz_gaa_cb_arg_t *   callback_wrapper_arg;
     void *	 			authz_system_state;
     globus_gsi_authz_handle_t *		handle;
     gaa_status 				status;
@@ -164,7 +180,7 @@ globus_gsi_authz_gaa_handle_init_callout(
     gaa_sc_ptr				sc = 0;
     gss_buffer_set_t 			data_set = 0;
     gaa_gss_generic_param_s *		gaa_gss_param = 0;
-    
+    globus_reltime_t                    reltime;    
     globus_result_t                 	result = GLOBUS_SUCCESS;
     static char *                   	_function_name_ =
 	"globus_gsi_authz_gaa_handle_init_callout";
@@ -232,12 +248,15 @@ globus_gsi_authz_gaa_handle_init_callout(
 
     for (i = 0; i < data_set->count; i++)
     {
-	if (assertion = data_set->elements[i].value)
-	    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF2(
-		GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE,
-		"%s: found assertion\n",
-		_function_name_);
+	if (data_set->elements[i].length && data_set->elements[i].value)
+	{
+	    assertion = malloc(data_set->elements[i].length+1);
+	    strncpy(assertion,
+		    data_set->elements[i].value,
+		    data_set->elements[i].length);
+	    assertion[data_set->elements[i].length] = '\0';
 	    break;
+	}
     }
 
     if (! assertion)
@@ -346,14 +365,47 @@ globus_gsi_authz_gaa_handle_init_callout(
     (*handle)->sc = sc;
 	
  end:
+
+    if (data_set)
+    {
+	(void)gss_release_buffer_set(&minor_status, &data_set);
+    }
+    if(result == GLOBUS_SUCCESS)
+    { 
+        callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_gaa_cb_arg_t));
+        if(!callback_wrapper_arg)
+        {
+            GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
+        }
+        else
+        {
+            callback_wrapper_arg->handle = *handle;
+            callback_wrapper_arg->arg = callback_arg;
+            callback_wrapper_arg->callback = callback;
+            
+            GlobusTimeReltimeSet(reltime, 0, 0);
+            globus_callback_register_oneshot(
+                GLOBUS_NULL,
+                &reltime,
+                callback_wrapper,
+                callback_wrapper_arg);
+        }
+    }
+
     if (result != GLOBUS_SUCCESS)
     {
 	if (gaa)
+        { 
 	    gaa_free_gaa(gaa);
+            (*handle)->gaa = NULL;
+        }
 	if (sc)
+        { 
 	    gaa_free_sc(sc);
+            (*handle)->sc = NULL;
+        }
     }
-    callback(callback_arg, callback_arg, result);
+
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT;
     return result;
 }
@@ -374,6 +426,8 @@ globus_gsi_authz_gaa_authorize_async_callout(
     gaa_request_right *			right;
     gaa_answer_ptr 			answer = 0;
     char				answer_debug_string[2048];
+    globus_l_gsi_authz_gaa_cb_arg_t *   callback_wrapper_arg;
+    globus_reltime_t                    reltime;    
 
     globus_result_t                 	result = GLOBUS_SUCCESS;
     static char *                   	_function_name_ =
@@ -533,14 +587,42 @@ globus_gsi_authz_gaa_authorize_async_callout(
     }
 
  end:
-	if (policy)
-	    gaa_free_policy(policy);
-	if (list)
-	    gaa_list_free(list);
-	if (answer)
-	    gaa_free_answer(answer);
 
-    callback(callback_arg, handle, result);
+
+    if(result == GLOBUS_SUCCESS)
+    { 
+        callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_gaa_cb_arg_t));
+        if(!callback_wrapper_arg)
+        {
+            GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
+        }
+        else
+        {
+            callback_wrapper_arg->handle = handle;
+            callback_wrapper_arg->arg = callback_arg;
+            callback_wrapper_arg->callback = callback;
+            
+            GlobusTimeReltimeSet(reltime, 0, 0);
+            globus_callback_register_oneshot(
+                GLOBUS_NULL,
+                &reltime,
+                callback_wrapper,
+                callback_wrapper_arg);
+        }
+    }
+
+    if (policy)
+    { 
+        gaa_free_policy(policy);
+    }
+    if (list)
+    { 
+        gaa_list_free(list);
+    }
+    if (answer)
+    { 
+        gaa_free_answer(answer);
+    }
 
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT;    
     return result;
@@ -582,6 +664,8 @@ globus_gsi_authz_gaa_handle_destroy_callout(
     globus_gsi_authz_cb_t		callback;
     void *				callback_arg;
     void * 				authz_system_state;
+    globus_l_gsi_authz_gaa_cb_arg_t *   callback_wrapper_arg;
+    globus_reltime_t                    reltime;    
     
     globus_result_t                    	result = GLOBUS_SUCCESS;
     static char *                   	_function_name_ =
@@ -610,7 +694,27 @@ globus_gsi_authz_gaa_handle_destroy_callout(
 	free(handle);
     }
 
-    callback(callback_arg, handle, result);
+    if(result == GLOBUS_SUCCESS)
+    { 
+        callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_gaa_cb_arg_t));
+        if(!callback_wrapper_arg)
+        {
+            GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
+        }
+        else
+        {
+            callback_wrapper_arg->handle = handle;
+            callback_wrapper_arg->arg = callback_arg;
+            callback_wrapper_arg->callback = callback;
+            
+            GlobusTimeReltimeSet(reltime, 0, 0);
+            globus_callback_register_oneshot(
+                GLOBUS_NULL,
+                &reltime,
+                callback_wrapper,
+                callback_wrapper_arg);
+        }
+    }
 
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT;
     return (int)result;
@@ -625,6 +729,8 @@ globus_gsi_authz_gaa_get_authorization_identity_callout(
     globus_gsi_authz_cb_t		callback;
     void *				callback_arg;
     void * 				authz_system_state;
+    globus_l_gsi_authz_gaa_cb_arg_t *   callback_wrapper_arg;
+    globus_reltime_t                    reltime;    
     
     globus_result_t                    	result = GLOBUS_SUCCESS;
     gaa_status				status;
@@ -662,8 +768,28 @@ globus_gsi_authz_gaa_get_authorization_identity_callout(
 					       status);
     }
 
-    callback(callback_arg, handle, result);
-
+    if(result == GLOBUS_SUCCESS)
+    { 
+        callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_gaa_cb_arg_t));
+        if(!callback_wrapper_arg)
+        {
+            GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
+        }
+        else
+        {
+            callback_wrapper_arg->handle = handle;
+            callback_wrapper_arg->arg = callback_arg;
+            callback_wrapper_arg->callback = callback;
+            
+            GlobusTimeReltimeSet(reltime, 0, 0);
+            globus_callback_register_oneshot(
+                GLOBUS_NULL,
+                &reltime,
+                callback_wrapper,
+                callback_wrapper_arg);
+        }
+    }
+    
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT;
     return (int)result;
 }

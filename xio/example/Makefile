@@ -2,9 +2,18 @@ include makefile_header
 
 all: globus-xio-telnet globus-xio-email globus-xio-udp-echo globus-xio-http-app
 
+globus-xio-client: globus_xio_client.c
+	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-client \
+        globus_xio_client.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
+
+globus-xio-server: globus_xio_server.c
+	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-server \
+        globus_xio_server.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
+
 globus-xio-example: globus_xio_example.c
 	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-example \
         globus_xio_example.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
+
 globus-xio-email: globus_xio_example.c
 	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-example \
         globus_xio_example.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
@@ -22,4 +31,4 @@ globus-xio-http-app: globus_xio_http_app.c
 	globus_xio_http_app.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
 
 clean:
-	rm globus-xio-email globus-xio-telnet globus-xio-udp-echo globus-xio-http-app
+	rm globus-xio-email globus-xio-telnet globus-xio-udp-echo globus-xio-http-app globus-xio-server globus-xio-client

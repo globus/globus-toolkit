@@ -10,7 +10,7 @@ globus_module_descriptor_t    globus_i_gsi_authz_module;
 /* authz handle init initializes the authz state for the connection */
 
 typedef struct globus_i_gsi_authz_handle_s *
-globus_gsi_authz_handle_t;
+    globus_gsi_authz_handle_t;
 
 typedef void (* globus_gsi_authz_cb_t)(
     void *                              callback_arg,

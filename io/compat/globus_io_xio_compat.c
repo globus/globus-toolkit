@@ -89,8 +89,11 @@
             major_status,                                                    \
             minor_status,                                                    \
             2,                                                               \
-            "[%s:%d] %s failed.",                                            \
-            _io_name, __LINE__, (failed_func)))
+            __FILE__,                                                        \
+            _io_name,                                                        \
+            __LINE__,                                                        \
+            "%s failed.",                                                    \
+            (failed_func)))
 
 
 typedef enum
@@ -2352,11 +2355,13 @@ globus_l_io_tcp_register_accept(
                     GLOBUS_XIO_MODULE,
                     GLOBUS_NULL,
                     GLOBUS_XIO_ERROR_PARAMETER,
-                    "[%s:%d] Globus IO-XIO requires that the attrs"
+                    __FILE__,
+                    _io_name,
+                    __LINE__,
+                    "Globus IO-XIO requires that the attrs"
                         " passed to globus_io_tcp_create_listener and"
                         " globus_io_tcp_register_accept either both require"
-                        " authentication or both not require it",
-                    _io_name, __LINE__));
+                        " authentication or both not require it"));
             goto error_gsi;
         }
     }

@@ -432,27 +432,31 @@ globus_xio_server_register_accept(
  *     pair.  if it does not contain a ':', it will be parsed as the path
  * 
  *  the following are examples of valid formats:
- *    <path to file>
- *    host-name ":" <service or port>
- *    "file:" <path to file>
- *    <scheme> "://" [ "/" [ <path to resource> ]  ]
- *    <scheme> "://" location [ "/" [ <path to resource> ] ]
+ *  <pre>
+ *    &lt;path to file&gt;
+ *    host-name ":" &lt;service or port&gt;
+ *    "file:" &lt;path to file&gt;
+ *    &lt;scheme&gt; "://" [ "/" [ &lt;path to resource&gt; ]  ]
+ *    &lt;scheme&gt; "://" location [ "/" [ &lt;path to resource&gt; ] ]
  *      location:
  *          [ auth-part ] host-part
  *      auth-part:
- *          <user> [ ":" <password> ] "@" 
+ *          &lt;user&gt; [ ":" &lt;password&gt; ] "@" 
  *      host-part:
- *          [ "<" <subject> ">:" ] host-name [ ":" <port or service> ]
+ *          [ "<" &lt;subject&gt; ">" ] host-name [ ":" &lt;port or service&gt; ]
  *      host-name:
- *          <hostname> | <dotted quad> | "[" <ipv6 address> "]"
- * 
+ *          &lt;hostname&rt; | &lt;dotted quad&rt; | "[" &lt;ipv6 address&gt; "]"
+ *    </pre>
+ *
  *    Except for use as the above delimeters, the following special characters
- *    MUST be encoded with the %HH format where H == hex char.
+ *    MUST be encoded with the \%HH format where H == hex char.
  *    
+ *    <pre>
  *    "/" and "@" in location except subject
  *    "<" and ">" in location
  *    ":" everywhere except subject
  *    "%" everywhere (can be encoded with %HH or %%)
+ *    </pre>
  */
 globus_result_t
 globus_xio_target_init(

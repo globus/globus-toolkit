@@ -415,6 +415,12 @@ typedef gaa_status(*gaa_x_get_authorization_identity_func)(gaa_ptr *gaa,
 							   void *param);
 
 extern gaa_status
+gaa_x_get_getpolicy_param(gaa_ptr gaa, void **param);
+
+extern gaa_status
+gaa_x_get_get_authorization_identity_param(gaa_ptr gaa, void **param);
+
+extern gaa_status
 gaa_x_get_authorization_identity(gaa_ptr gaa, char **identity_ptr);
 
 extern gaa_status

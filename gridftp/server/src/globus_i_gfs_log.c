@@ -39,7 +39,7 @@ globus_i_gfs_log_result(
 {
     char *                              message;
     
-    message = globus_error_print_chain(globus_error_peek(result));
+    message = globus_error_print_friendly(globus_error_peek(result));
     globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, "%s:\n%s\n", lead, message);
     globus_free(message);
 }

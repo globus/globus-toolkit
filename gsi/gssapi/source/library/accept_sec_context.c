@@ -128,12 +128,7 @@ GSS_CALLCONV gss_accept_sec_context(
             /* accept does not have req_flags, we need one */
             *ret_flags = 0 ;
         }
-
-        if (time_rec != NULL)
-        {
-            *time_rec = GSS_C_INDEFINITE;
-        }
-
+        
         if (delegated_cred_handle_P != NULL)
         {
             *delegated_cred_handle_P = GSS_C_NO_CREDENTIAL;
@@ -406,8 +401,9 @@ GSS_CALLCONV gss_accept_sec_context(
      * about the error (i.e. an SSL alert message) we want to send to the other
      * side.
      */
-    local_major_status = globus_i_gsi_gss_get_token(&local_minor_status, 
-                                              context, NULL, output_token);
+    local_major_status = globus_i_gsi_gss_get_token(
+        &local_minor_status, 
+        context, NULL, output_token);
 
     if(GSS_ERROR(local_major_status))
     {
@@ -423,9 +419,37 @@ GSS_CALLCONV gss_accept_sec_context(
         goto exit;
     }
 
-    if (context->gss_state != GSS_CON_ST_DONE)
+    if(context->gss_state != GSS_CON_ST_DONE)
     {
         major_status |= GSS_S_CONTINUE_NEEDED;
+    }
+    else if(time_rec != NULL)
+    {
+        time_t                          lifetime;
+        time_t                          current_time;
+        
+        major_status = globus_i_gsi_gss_get_context_goodtill(
+            &local_minor_status,
+            context,
+            &lifetime);
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+            goto exit;
+        }
+
+        current_time = time(NULL);
+
+        if(current_time > lifetime)
+        {
+            *time_rec = 0;
+        }
+        else
+        {
+            *time_rec = (OM_uint32) (lifetime - current_time);
+        }
     }
 
     if (ret_flags != NULL)

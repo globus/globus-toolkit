@@ -85,10 +85,10 @@ globus_i_gsi_gssapi_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_GSSAPI_MODULE,
             error_type,
-            "%s:%d: %s: %s%s%s",
             filename,
-            line_number,
             function_name,
+            line_number,
+            "%s%s%s",
             globus_l_gsi_gssapi_error_strings[error_type],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
@@ -126,8 +126,10 @@ globus_i_gsi_gssapi_error_result(
             GLOBUS_GSI_GSSAPI_MODULE,
             NULL,
             GLOBUS_GSI_GSSAPI_ERROR_MINOR_STATUS(minor_status),
-            "%s:%d: %s: %s%s%s",
-            filename, line_number, function_name,
+            filename,
+            function_name,
+            line_number, 
+            "%s%s%s",
             globus_l_gsi_gssapi_error_strings[minor_status],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
@@ -166,8 +168,10 @@ globus_i_gsi_gssapi_error_chain_result(
             GLOBUS_GSI_GSSAPI_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s%s%s",
-            filename, line_number, function_name,
+            filename,
+            function_name,
+            line_number, 
+            "%s%s%s",
             globus_l_gsi_gssapi_error_strings[error_type],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
@@ -223,7 +227,10 @@ globus_i_gsi_gssapi_error_join_chains_result(
                 GLOBUS_GSI_GSSAPI_MODULE,
                 NULL,
                 GLOBUS_GSI_GSSAPI_ERROR_CREATING_ERROR_OBJ,
-                ("Couldn't join inner and outter error chains"));
+                __FILE__,
+                _function_name_,
+                __LINE__, 
+                "Couldn't join inner and outter error chains");
     }
 
     result = globus_error_put(result_error_obj);
