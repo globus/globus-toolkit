@@ -9,22 +9,39 @@ my $start = time();
 my $testtmp = &make_tmpdir();
 my @log_data;
 my $log_path = &get_log_path();
+my $skip_all = 0;
+
+if (! defined($log_path))
+{
+    $skip_all = 1;
+}
 
 plan tests => 1;
 
-@test_data = &parse_test_data();
-
-&write_test_data_to_log($log_path, @test_data);
-&run_fork_seg("$testtmp/output");
+skip($skip_all ? "Fork SEG not configured" : 0, &run_test, 0);
 
 
-if (compare("$testtmp/output", $log_path) == 0)
+sub run_test
 {
-    print "ok\n";
-}
-else
-{
-    print "not ok\n";
+    if (! $skip_all)
+    {
+        @test_data = &parse_test_data();
+        &write_test_data_to_log($log_path, @test_data);
+        my $rc = &run_fork_seg("$testtmp/output");
+
+        if ($rc == 0)
+        {
+            return compare("$testtmp/output", $log_path);
+        }
+        else
+        {
+            return 'Unable to run SEG with fork module: is it installed?';
+        }
+    }
+    else
+    {
+        return "skip";
+    }
 }
 
 sub run_fork_seg
@@ -32,8 +49,7 @@ sub run_fork_seg
     my $output = shift;
     my $seg = $ENV{GLOBUS_LOCATION} .
         '/libexec/globus-scheduler-event-generator';
-    my @args = ($seg, '-s', $ENV{GLOBUS_LOCATION} .
-            '/lib/libglobus_seg_fork_gcc32dbg.so', '-t', $start);
+    my @args = ($seg, '-s', 'fork', '-t', $start);
     my $pid2 = open(FH, "|-");
     my $size;
 
@@ -44,6 +60,11 @@ sub run_fork_seg
         exec {$args[0]} @args;
     }
 
+    while (! -f $output)
+    {
+        sleep(1);
+    }
+
     do
     {
         $size = -s $output;
@@ -51,6 +72,8 @@ sub run_fork_seg
     } while ($size < (-s $output));
 
     close(FH);
+
+    return $?;
 }
 
 sub parse_test_data 
@@ -100,7 +123,7 @@ sub write_test_data_to_log {
 
 sub get_log_path {
     my $gram_fork_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-fork.conf";
-    open(CONF, "<$gram_fork_conf");
+    open(CONF, "<$gram_fork_conf") || return undef;
     my $log;
 
     while (<CONF>) {
