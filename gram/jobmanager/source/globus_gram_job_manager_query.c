@@ -276,6 +276,8 @@ globus_gram_job_manager_query_callback(
             }
         }
     }
+
+    rc = 0;
     
     rest = strchr(query,' ');
     if (rest)
