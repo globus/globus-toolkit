@@ -21,23 +21,15 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include <stdio.h>
  
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
   
 EXTERN_C_BEGIN
 
 /* endif SWIG */
 #endif
+
 
 /******************************************************************************
 			       Type definitions
@@ -56,6 +48,9 @@ typedef struct
     int                                 branch_id;
 } globus_version_t;
 
+/*
+ * this remains publicly exposed.  Used throughpout globus
+ */
 typedef struct
 {
     char *				module_name;
@@ -66,7 +61,6 @@ typedef struct
     globus_version_t *                  version;
 } globus_module_descriptor_t;
 
-
 /******************************************************************************
 			      Function prototypes
 ******************************************************************************/
@@ -75,26 +69,44 @@ typedef struct
  * NOTE: all functions return either GLOBUS_SUCCESS or an error code
  */
 
+/**
+ *  Activate a module
+ */
 int
 globus_module_activate(
-    globus_module_descriptor_t *	module_descriptor);
+    globus_module_descriptor_t *	        module_descriptor);
 
+/**
+ *  Deactivate a module
+ */
 int
 globus_module_deactivate(
-    globus_module_descriptor_t *	module_descriptor);
+    globus_module_descriptor_t *	        module_descriptor);
 
+/**
+ *  deactivate all active modules
+ */
 int
 globus_module_deactivate_all(void);
 
+/**
+ *  set an environment variable
+ */
 void
 globus_module_setenv(
-    char * name,
-    char * value);
+    char *                                  name,
+    char *                                  value);
 
+/**
+ *  Get the value of an environment variable
+ */
 char *
 globus_module_getenv(
-    char * name);
+    char *                                  name);
 
+/**
+ *  Get a module pointer
+ */
 void *
 globus_module_get_module_pointer(
     globus_module_descriptor_t *);
@@ -136,8 +148,8 @@ globus_module_get_args(
 
 #ifndef SWIG
 EXTERN_C_END
-
-/* endif SWIG */
 #endif
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
+
+

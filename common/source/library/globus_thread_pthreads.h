@@ -32,7 +32,9 @@
 #endif
 #endif
 
-#include "globus_common.h"
+#include "globus_time.h"
+#include "globus_list.h"
+#include "globus_module.h"
 
 #ifdef TARGET_ARCH_AIX
 /* Only add the 'extern "C" {' for AIX since doing so for some other platforms
@@ -49,8 +51,6 @@ EXTERN_C_END
 
 EXTERN_C_BEGIN
 
-
-typedef struct timespec      globus_abstime_t;
 
 typedef pthread_t		globus_thread_t;
 typedef pthread_attr_t		globus_threadattr_t;

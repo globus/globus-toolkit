@@ -1,6 +1,9 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_I_CALLBACK
 #define GLOBUS_INCLUDE_GLOBUS_I_CALLBACK
 
+#include "globus_error.h"
+#include "globus_error_generic.h"
+
 /* common error objects */
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(func)           \

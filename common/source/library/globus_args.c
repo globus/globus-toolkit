@@ -2,9 +2,11 @@
                    check globus_args.h for more detailed information.
 */
 
-#include "config.h"
-#include "globus_common.h"
-#include <string.h>
+#include "globus_common_include.h"
+#include "globus_args.h"
+#include "globus_libc.h"
+#include "globus_fifo.h"
+#include GLOBUS_THREAD_INCLUDE
 
 #define globus_l_args_malloc(type,n)  (type *) globus_malloc(n * sizeof(type))
 
@@ -437,8 +439,8 @@ globus_args_scan(
     if (rc==GLOBUS_SUCCESS)
     {
 	/* if successful, return number of options found */
-	*options_found = fifo.head;
-	rc = globus_list_size(*options_found);
+		*options_found = globus_fifo_convert_to_list( &fifo );
+	rc = globus_fifo_size(&fifo);
 
 	/* modify argc/argv */
 	if (my_argc>1)
@@ -613,4 +615,5 @@ globus_validate_filename( char *    value,
 
     return GLOBUS_SUCCESS;
 }
+
 

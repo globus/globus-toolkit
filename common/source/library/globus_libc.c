@@ -15,8 +15,7 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
+#include "globus_libc.h"
 
 
 #ifdef HAVE_STRING_H
@@ -98,6 +97,85 @@ globus_libc_unlock(void)
     return GLOBUS_FAILURE;
 } /* globus_libc_unlock() */
 
+
+
+/******************************************************************************
+Function: globus_libc_strncasecmp
+ 
+Description: 
+
+Parameters: 
+
+Returns:
+ ******************************************************************************/
+int
+globus_libc_strncasecmp(
+	const char *                            s1,
+	const char *                            s2,
+	globus_size_t                           n)
+{
+    int                                     rc;
+    int                                     save_errno;
+
+    globus_libc_lock();
+
+#   if HAVE_STRNCASECMP    
+    {
+        rc = strncasecmp(s1, s2, n);
+    }
+#   else
+    {
+        char ch1;
+        char ch2;
+        int  ctr;
+
+        for(ctr = 0; ctr < n; ctr++)
+        {
+	        if(s2[ctr] == '\0' && s1[ctr] == '\0')
+	        {
+	            rc = 0;
+	            goto exit;
+	        } 
+        	else if(s2[ctr] == '\0')
+	        {
+	            rc = -1;
+	            goto exit;
+	        }
+	        else if(s1[ctr] == '\0')
+	        {
+	            rc = 1;
+	            goto exit;
+	        }
+            else
+	        {
+                ch1 = toupper(s2[ctr]);
+                ch2 = toupper(s1[ctr]);
+                if(ch2 > ch1)
+		        {
+                    rc = 1;
+                    goto exit;
+		        }
+                else if(ch2 < ch1)
+		        {
+                    rc = -1;
+                    goto exit;
+		        }
+            }
+        }
+        rc = 0;
+    }
+#   endif
+
+  exit:
+    save_errno = errno;
+
+    globus_libc_unlock();
+    errno = save_errno;
+
+    return(rc);
+}
+
+
 #if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
 
 /******************************************************************************
@@ -128,11 +206,11 @@ globus_libc_open(char *path,
 #       ifdef HAVE_STDARG_H
         {
             va_start(ap, flags);
-	}
+	    }
 #       else
-	{
+	    {
             va_start(ap);
-	}
+	    }
 #       endif
         mode = va_arg(ap, int);
         va_end(ap);
@@ -288,32 +366,6 @@ globus_libc_fstat(int fd,
 #endif /* !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE) */
 
  
-/******************************************************************************
-Function: globus_libc_lseek()
-
-Description: 
-
-Parameters: 
-
-Returns:
-******************************************************************************/
-#undef globus_libc_lseek
-int
-globus_libc_lseek(int fd,
-		  globus_off_t offset,
-		  int whence)
-{
-    int rc;
-    int save_errno;
-    globus_libc_lock();
-    rc = lseek(fd, offset, whence);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_lseek() */
- 
 #if !defined(BUILD_LITE)
 /******************************************************************************
 Function: globus_libc_malloc()
@@ -335,27 +387,27 @@ globus_libc_malloc(
 
     do
     {
-	globus_libc_lock();
-	{
-	    ptr = (void *) malloc(bytes);
-	    save_errno = errno;
-	}
-	globus_libc_unlock();
+		globus_libc_lock();
+		{
+			ptr = (void *) malloc(bytes);
+			save_errno = errno;
+		}
+		globus_libc_unlock();
 
-	if (ptr == GLOBUS_NULL &&
-	    (save_errno == EINTR ||
-	     save_errno == EAGAIN ||
-	     save_errno == EWOULDBLOCK))
-	{
-	    done = GLOBUS_FALSE;
-	    globus_thread_yield();
-	}
-	else
-	{
-	    done = GLOBUS_TRUE;
-	}
+		if (ptr == GLOBUS_NULL &&
+			(save_errno == EINTR ||
+			save_errno == EAGAIN ||
+			save_errno == EWOULDBLOCK))
+		{
+			done = GLOBUS_FALSE;
+			globus_thread_yield();
+		}
+		else
+		{
+			done = GLOBUS_TRUE;
+		}
     }
-    while (!done);
+	while (!done);
     
     errno = save_errno;
     return(ptr);
@@ -850,14 +902,16 @@ globus_libc_gethostname(char *name, int len)
         }
         hostname_length = strlen(hostname);
         if(strchr(hostname, '.') != GLOBUS_NULL)
-	{
-             int i=0;
-             for (i=0; i<hostname_length; i++)
-               hostname[i] = tolower(hostname[i]);
-	    strncpy(name, hostname, len);
+	    {
+            unsigned int                    i = 0;
+            for (i=0; i<hostname_length; i++)
+            {
+                hostname[i] = tolower(hostname[i]);
+            }
+	        strncpy(name, hostname, len);
             globus_mutex_unlock(&gethostname_mutex);
-	    return 0;
-	}
+	        return 0;
+	    }
 
 	hp_ptr = globus_libc_gethostbyname_r(hostname,
 					     &hp2,
@@ -947,6 +1001,95 @@ globus_libc_gethostname(char *name, int len)
 } /* globus_libc_gethostname() */
 
 
+/*
+ *  The windows definition of the following funtions differs
+ */
+#if defined(TARGET_ARCH_WIN32)
+
+int
+globus_libc_system_memory(
+    globus_off_t *                  mem)
+{
+    MEMORYSTATUSEX                      statex;
+
+    if(mem == GLOBUS_NULL)
+    {
+        return -1;
+    }
+
+    statex.dwLength = sizeof(statex);
+    GlobalMemoryStatusEx(&statex);
+
+    *mem = statex.ullTotalPhys;
+
+    return 0;
+}
+
+int
+globus_libc_free_memory(
+    globus_off_t *                  mem)
+{
+    MEMORYSTATUSEX                      statex;
+
+    if(mem == GLOBUS_NULL)
+    {
+        return -1;
+    }
+
+    statex.dwLength = sizeof(statex);
+    GlobalMemoryStatusEx(&statex);
+
+    *mem = statex.ullAvailPhys;
+    
+    return 0;
+}
+
+int
+globus_libc_usleep(long usec)
+{
+	globus_libc_lock();
+	Sleep(usec/1000);
+	globus_libc_unlock();
+
+	return 0;
+}
+
+int
+globus_libc_getpid(void)
+{
+    int pid;
+    
+    globus_libc_lock();
+
+    pid = (int) _getpid();
+
+    globus_libc_unlock();
+
+    return(pid);
+} /* globus_libc_getpid() */
+
+int
+globus_libc_fork(void)
+{
+    return -1;
+}
+
+#else /* TARGET_ARCH_WIN32 */
+
+int
+globus_libc_system_memory(
+    globus_size_t *                  mem)
+{
+    return -1;
+}
+
+int
+globus_libc_free_memory(
+    globus_size_t *                  mem)
+{
+    return -1;
+}
+
 /******************************************************************************
 Function: globus_libc_getpid()
 
@@ -1020,7 +1163,7 @@ globus_libc_usleep(long usec)
 
 #   if !defined(HAVE_THREAD_SAFE_SELECT)
     {
-	globus_libc_lock();
+	    globus_libc_lock();
     }
 #   endif
     
@@ -1028,12 +1171,13 @@ globus_libc_usleep(long usec)
     
 #   if !defined(HAVE_THREAD_SAFE_SELECT)
     {
-	globus_libc_unlock();
+	     globus_libc_unlock();
     }
 #   endif
 	
     return GLOBUS_SUCCESS;
 } /* globus_libc_usleep() */
+#endif /* TARGET_ARCH_WIN32 */
 
 /******************************************************************************
 Function: globus_libc_wallclock()
@@ -1047,10 +1191,13 @@ Returns:
 double
 globus_libc_wallclock(void)
 {
-    struct timeval tv;
+    globus_abstime_t now;
+    long sec;
+    long usec;
 
-    gettimeofday(&tv, 0);
-    return (((double) tv.tv_sec) + ((double) tv.tv_usec) / 1000000.0);
+    GlobusTimeAbstimeGetCurrent(now);
+    GlobusTimeAbstimeGet(now, sec, usec);
+    return (((double) sec) + ((double) usec) / 1000000.0);
 } /* globus_libc_wallclock() */
 
 
@@ -1073,13 +1220,11 @@ globus_libc_gethostbyname_r(char *hostname,
     struct hostent *hp=GLOBUS_NULL;
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
         struct hostent_data hp_data;
-	int rc;
+	    int rc;
 #   endif
-
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_6)
-	int rc;
+	   int rc;
 #   endif
-
 
     globus_libc_lock();
 
@@ -1100,31 +1245,31 @@ globus_libc_gethostbyname_r(char *hostname,
 	{
 	    if (h_errnop != GLOBUS_NULL)
 	    {
-		*h_errnop = h_errno;
+	        *h_errnop = h_errno;
 	    }
 	} 
     }
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
     {
-	rc = gethostbyname_r(hostname,
+	    rc = gethostbyname_r(hostname,
 			     result,
 			     &hp_data);
         if(rc == 0)
-	{
+	    {
             globus_l_libc_copy_hostent_data_to_buffer(result, buffer, (size_t) buflen);
-	    hp = result;
-	    if (h_errnop != GLOBUS_NULL)
-	    {
-		*h_errnop = h_errno;
-	    }
+	        hp = result;
+	        if(h_errnop != GLOBUS_NULL)
+	        {
+		        *h_errnop = h_errno;
+	        }
         }
-	else
-	{
-	    hp = GLOBUS_NULL;
-	    if (h_errnop != GLOBUS_NULL)
+	    else
 	    {
-		*h_errnop = h_errno;
-	    }
+	        hp = GLOBUS_NULL;
+	        if(h_errnop != GLOBUS_NULL)
+	        {
+		        *h_errnop = h_errno;
+	        }
         }
     }
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_5)
@@ -1146,7 +1291,7 @@ globus_libc_gethostbyname_r(char *hostname,
     }
 #   else
     {
-	GLOBUS_HAVE_GETHOSTBYNAME symbol must be defined!!!;
+	    GLOBUS_HAVE_GETHOSTBYNAME symbol must be defined!!!;
     }
 #   endif
 
@@ -1159,23 +1304,23 @@ globus_libc_gethostbyname_r(char *hostname,
      */
     if (hp == GLOBUS_NULL)
     {
-	if (isdigit(hostname[0]))
-	{
-	    struct in_addr			addr;
-
-	    addr.s_addr = inet_addr(hostname);
-	    if ((int) addr.s_addr != -1)
+	    if(isdigit(hostname[0]))
 	    {
-		hp = globus_libc_gethostbyaddr_r(
-		    (void *) &addr,
-		    sizeof(addr),
-		    AF_INET,
-		    result,
-		    buffer,
-		    buflen,
-		    h_errnop);
+	        struct in_addr			addr;
+
+	        addr.s_addr = inet_addr(hostname);
+	        if ((int) addr.s_addr != -1)
+	        {
+		        hp = globus_libc_gethostbyaddr_r(
+		        (void *) &addr,
+		        sizeof(addr),
+		        AF_INET,
+		        result,
+		        buffer,
+		        buflen,
+		        h_errnop);
+	        }
 	    }
-	}
     }
 
     return hp;
@@ -1342,6 +1487,10 @@ globus_libc_ctime_r(time_t *clock,
     return tmp_buf;
 } /* globus_libc_ctime_r() */
 
+/*
+ * These functions are not defined on win32
+ */
+#if !defined(TARGET_ARCH_WIN32)
 /******************************************************************************
 Function: globus_libc_getpwnam_r()
 
@@ -1504,6 +1653,8 @@ globus_libc_getpwuid_r(uid_t uid,
     return rc;
 } /* globus_libc_getpwuid_r */
 
+#endif /* TARGET_ARCH_WIN32 */
+
 /******************************************************************************
 Function: globus_l_libc_copy_hostent_data_to_buffer()
 
@@ -1618,6 +1769,30 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
     }
 } /* globus_l_libc_copy_hostent_data_to_buffer() */
 
+
+/*
+ * globus_libc_system_error_string()
+ *
+ * Return the string for the current errno.
+ */
+char *
+globus_libc_system_error_string(int the_error)
+{
+#if !defined HAVE_STRERROR
+#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
+    extern char *sys_errlist[];
+#endif
+    return ((char *)sys_errlist[the_error]);
+#else
+    return strerror(the_error);
+#endif
+} /* globus_libc_system_error_string() */
+
+
+/*
+ *  these functions are not defined on win32
+ */
+#if !defined(TARGET_ARCH_WIN32)
 /******************************************************************************
 Function: globus_l_libc_copy_pwd_data_to_buffer()
 
@@ -1685,9 +1860,6 @@ globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
     }
 #   endif
 
-    /* CYGWIN B20.1 has pw_comment defined, but it is not initialized
-       (not even set to NULL) nor used. /Olle */
-#   if !defined(TARGET_ARCH_CYGWIN)
 #   if defined(GLOBUS_HAVE_PW_COMMENT)
     {
 	/* pw_comment */
@@ -1706,7 +1878,6 @@ globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
 	}
     }
 #   endif
-#   endif	
 
     /* pw_gecos */
     if (pwd->pw_gecos)
@@ -1753,23 +1924,6 @@ globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
 } /* globus_l_libc_copy_pwd_data_to_buffer() */
 
 
-/*
- * globus_libc_system_error_string()
- *
- * Return the string for the current errno.
- */
-char *
-globus_libc_system_error_string(int the_error)
-{
-#if !defined HAVE_STRERROR
-#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
-    extern char *sys_errlist[];
-#endif
-    return ((char *)sys_errlist[the_error]);
-#else
-    return strerror(the_error);
-#endif
-} /* globus_libc_system_error_string() */
 
 
 /******************************************************************************
@@ -1852,6 +2006,7 @@ globus_libc_gethomedir(char *result, int bufsize)
     return rc;
 } /* globus_libc_gethomedir() */
 
+#endif /* TARGET_ARCH_WIN32 */
 
 char *
 globus_libc_strdup(const char * string)
@@ -1894,6 +2049,38 @@ globus_libc_strdup(const char * string)
 /* globus_libc_strdup */
 
 
+/*
+ * not defined on win32
+ */
+#if !defined(TARGET_ARCH_WIN32)
+
+/******************************************************************************
+Function: globus_libc_lseek()
+
+Description: 
+
+Parameters: 
+
+Returns:
+******************************************************************************/
+#undef globus_libc_lseek
+
+int
+globus_libc_lseek(int fd,
+		  globus_off_t offset,
+		  int whence)
+{
+    int rc;
+    int save_errno;
+    globus_libc_lock();
+    rc = lseek(fd, offset, whence);
+    save_errno = errno;
+    /* Should convert EWOULDBLOCK to EINTR */
+    globus_libc_unlock();
+    errno = save_errno;
+    return(rc);
+} /* globus_libc_lseek() */
+ 
 
 
 #undef globus_libc_opendir
@@ -2121,6 +2308,8 @@ globus_libc_readdir_r(DIR *dirp,
 #   endif
 }
 
+#endif /* TARGET_ARCH_WIN32 */
+
 int
 globus_libc_vprintf_length(const char * fmt, va_list ap)
 {
@@ -2129,8 +2318,12 @@ globus_libc_vprintf_length(const char * fmt, va_list ap)
     globus_libc_lock();
     if(devnull == GLOBUS_NULL)
     {
+#ifndef TARGET_ARCH_WIN32
 	devnull = fopen("/dev/null", "w");
         fcntl(fileno(devnull), F_SETFD, FD_CLOEXEC);
+#else
+	devnull = fopen("NUL", "w");
+#endif
     }
     globus_libc_unlock();
 
@@ -2566,4 +2759,6 @@ globus_l_libc_i00afunc (long address)
 #endif /* CRAY */
 #endif /* !defined (__GNUC__) || __GNUC__ < 2 */
 #endif /* TARGET_ARCH_CRAYT3E */
+
+
 

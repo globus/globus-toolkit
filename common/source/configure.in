@@ -18,21 +18,13 @@ AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 dnl Determine thread library flags
 if test "x$NO_FLAVOR" = "x"; then
 LAC_THREADS
-
 fi
+
 dnl Check for large file support before doing any other probes, it may
 dnl change prototypes for some functions.
 AC_SYS_LARGEFILE
 
 AC_TYPE_SIGNAL
-
-CHECK_HEADERS
-
-CHECK_FUNCS
-
-CHECK_FOR_TIMESPEC
-
-CHECK_FOR_IOVEC
 
 CHECK_FOR_TCPFASTACK
 
@@ -40,7 +32,6 @@ CHECK_FOR_ATEXIT
 
 CHECK_REENTRANT_FUNCS
 
-CHECK_SIZES
 
 CHECK_NEED_LNSL
 

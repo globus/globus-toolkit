@@ -68,6 +68,13 @@ typedef struct
     globus_size_t           token_length_read;
     globus_size_t           token_offset;
     globus_bool_t           error_occurred;
+#ifdef TARGET_ARCH_WIN32
+	// The following four variables are needed for secure reads
+	globus_byte_t *	mysteryBuffer; // a pointer to the buffer that bytes should be read into
+	globus_size_t	mysteryNumberOfBytes; // the number of bytes to throttle the mystery read
+	globus_size_t *	mysteryUpdateRead; // a pointer to the field that stores the number of bytes read
+	globus_size_t *	mysteryUpdateToRead; // a pointer to the field that stores the number of bytes left to read
+#endif
 } globus_io_input_token_t;
 
 typedef struct
@@ -80,6 +87,13 @@ typedef struct
     globus_io_read_callback_t       callback;
     globus_io_handle_t *        handle;
     globus_bool_t	    selecting;
+#ifdef TARGET_ARCH_WIN32
+	// The following four variables are needed for secure reads
+	globus_byte_t *	mysteryBuffer; // a pointer to the buffer that bytes should be read into
+	globus_size_t	mysteryNumberOfBytes; // the number of bytes to throttle the mystery read
+	globus_size_t *	mysteryUpdateRead; // a pointer to the field that stores the number of bytes read
+	globus_size_t *	mysteryUpdateToRead; // a pointer to the field that stores the number of bytes left to read
+#endif
 } globus_io_secure_read_info_t;
 
 static
@@ -291,6 +305,9 @@ globus_i_io_securesocket_register_accept(
     OM_uint32                   min_stat;
     globus_object_t *               err;
     globus_result_t                 rc;
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
     
     info = (globus_i_io_callback_info_t *)
         globus_malloc(sizeof(globus_i_io_callback_info_t));
@@ -426,6 +443,32 @@ globus_i_io_securesocket_register_accept(
                 handle, 
                 GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
         }
+#ifdef TARGET_ARCH_WIN32
+		else
+		{
+			// post a packet in order to trigger the callback
+			returnCode= globus_i_io_windows_post_completion( 
+						handle, 
+						WinIoReading );
+			if ( returnCode ) // a fatal error occurred
+			{
+				// unregister the read operation
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE, 
+							GLOBUS_I_IO_READ_OPERATION);
+				// end the operation
+				globus_i_io_end_operation(
+					handle, 
+					GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						returnCode );
+				return globus_error_put(err);
+			}
+		}
+#endif
     }
     
     return rc;
@@ -468,6 +511,7 @@ globus_i_io_securesocket_register_connect_callback(
     }
     optlen = sizeof(optval);
 
+#ifndef TARGET_ARCH_WIN32
     /* Check to verify that an in progress connection completed */
 /*                                            After select indicates */
 /*                writability,  use  getsockopt(2)   to   read   the */
@@ -486,6 +530,7 @@ globus_i_io_securesocket_register_connect_callback(
             optval);
         goto error_exit;
     }
+#endif
 
 
     switch(handle->securesocket_attr.delegation_mode)
@@ -572,7 +617,11 @@ globus_i_io_securesocket_register_connect_callback(
         int                        save_errno;
         int                        herror;
         
+#ifndef TARGET_ARCH_WIN32
         rc = getpeername(handle->fd,
+#else
+        rc = getpeername( (SOCKET)handle->io_handle,
+#endif
                          (struct sockaddr *) &addr,
                          &namelen);
         if(rc != 0)
@@ -1547,6 +1596,10 @@ globus_l_io_secure_read_callback(
     globus_result_t         rc;
     globus_io_secure_read_info_t *  secure_read_info;
     globus_object_t *           err = GLOBUS_NULL;
+#ifdef TARGET_ARCH_WIN32
+	char dataWasUnwrapped= GLOBUS_FALSE;
+	int returnCode;
+#endif
     
     secure_read_info = (globus_io_secure_read_info_t *) arg;
 
@@ -1588,8 +1641,44 @@ globus_l_io_secure_read_callback(
 	    buffer = (globus_io_input_token_t *) 
 		globus_fifo_tail_peek(&handle->wrapped_buffers);
 
-	    result = globus_l_io_read_input_token(handle,
-						  buffer);
+#ifdef TARGET_ARCH_WIN32
+		// update the number of bytes read in case an asynchronous read
+		// has just completed
+		// WARNING: neither field will point to a valid address if this
+		// function has been entered because of a fake completion packet
+		if ( handle->winIoOperation_read.numberOfBytesProcessed > 0 )
+		{
+			if ( buffer->mysteryUpdateRead != NULL )
+			{
+				*(buffer->mysteryUpdateRead)+= 
+				 handle->winIoOperation_read.numberOfBytesProcessed;
+			}
+			if ( buffer->mysteryUpdateToRead != NULL )
+			{
+				*(buffer->mysteryUpdateToRead)-= 
+				 handle->winIoOperation_read.numberOfBytesProcessed;
+			}
+		}
+#endif
+        result = globus_l_io_read_input_token(handle,
+                                              buffer);
+#ifdef TARGET_ARCH_WIN32
+			// The call to globus_l_io_securesocket_unwrap_data() below
+			// may destroy the wrapped buffer, which is pointed to by
+			// the local variable, "buffer". Consequently, "buffer" will
+			// point to deallocated memory following that call.
+			//
+			// store the reading field data in case another read
+			// has to be posted
+			secure_read_info->mysteryBuffer= 
+			 buffer->mysteryBuffer;
+			secure_read_info->mysteryNumberOfBytes= 
+			 buffer->mysteryNumberOfBytes;
+			secure_read_info->mysteryUpdateRead=
+			 buffer->mysteryUpdateRead;
+			secure_read_info->mysteryUpdateToRead=
+			 buffer->mysteryUpdateToRead;
+#endif
             if(result != GLOBUS_SUCCESS)
             {
 		err = globus_error_get(result);
@@ -1616,6 +1705,14 @@ globus_l_io_secure_read_callback(
 		    goto error_exit;
 		}
         
+#ifdef TARGET_ARCH_WIN32
+			// if the token_to_read variable was zero, then there must
+			// have been a token to unwrap; and if 
+			// globus_l_io_securesocket_unwrap_data() returned
+			// successfully, the data must have been unwrapped and the
+			// wrapped buffer discarded
+			dataWasUnwrapped= GLOBUS_TRUE;
+#endif        
 	    }
         }
     }
@@ -1671,6 +1768,49 @@ globus_l_io_secure_read_callback(
 
             goto error_exit;
         }
+#ifdef TARGET_ARCH_WIN32
+		// first check whether the data was unwrapped; if so, post a
+		// fake completion packet, otherwise post another read
+		if ( dataWasUnwrapped )
+        //if( globus_fifo_empty( &handle->wrapped_buffers ) )
+		{
+			returnCode= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoReading );
+			if ( returnCode ) // serious error occurred
+			{
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE, 
+							GLOBUS_I_IO_READ_OPERATION);
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						returnCode );
+				goto error_exit;
+			}
+		}
+		else
+		{
+			returnCode= globus_i_io_windows_read( 
+						handle, 
+						secure_read_info->mysteryBuffer,
+						secure_read_info->mysteryNumberOfBytes,
+						1 );
+			if ( returnCode == -1 )
+			{
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE, 
+							GLOBUS_I_IO_READ_OPERATION);
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						returnCode );
+				goto error_exit;
+			}
+		}
+#endif
         globus_i_io_mutex_unlock();
     }
 
@@ -1778,6 +1918,9 @@ globus_i_io_securesocket_register_read(
     globus_result_t         rc;
     globus_object_t *           err;
     globus_size_t           num_read;
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
 
     globus_assert(handle != GLOBUS_NULL);
 
@@ -1855,6 +1998,27 @@ globus_i_io_securesocket_register_read(
 
             goto error_exit;
         }
+#ifdef TARGET_ARCH_WIN32
+		// post a completion packet only if data is needed
+		else if( num_read < wait_for_nbytes )
+		{
+			returnCode= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoReading );
+			if ( returnCode ) // serious error occurred
+			{
+				globus_i_io_unregister_operation( handle, GLOBUS_TRUE, 
+				 GLOBUS_I_IO_READ_OPERATION );
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						returnCode );
+				goto error_exit;
+			}
+		}
+#endif /* TARGET_ARCH_WIN32 */
     }
 
     return GLOBUS_SUCCESS;
@@ -1875,6 +2039,9 @@ globus_l_io_init_sec_context(
 {
     globus_io_authentication_info_t *   init_info;
     globus_object_t *           err;
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
 
     init_info = (globus_io_authentication_info_t *) arg;
     
@@ -1946,6 +2113,28 @@ globus_l_io_init_sec_context(
             GLOBUS_NULL,
             GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+		if ( result == GLOBUS_SUCCESS )
+		{
+			// post a packet in order to trigger the callback
+			rc= globus_i_io_windows_post_completion( 
+				handle, 
+				WinIoWriting );
+			if ( rc ) // a fatal error occurred
+			{
+				// unregister the write operation
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+				 GLOBUS_I_IO_WRITE_OPERATION );
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						rc );
+				goto error_exit;
+			}
+		}
+#endif
     }
     else
     {
@@ -1959,6 +2148,28 @@ globus_l_io_init_sec_context(
                 GLOBUS_NULL,
                 GLOBUS_TRUE,
                 GLOBUS_I_IO_READ_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+			if ( result == GLOBUS_SUCCESS )
+			{
+				// post a packet in order to trigger the callback
+				rc= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoReading );
+				if ( rc ) // a fatal error occurred
+				{
+					// unregister the read operation
+					globus_i_io_unregister_operation( handle, 
+					 GLOBUS_FALSE, GLOBUS_I_IO_READ_OPERATION );
+
+					err = globus_io_error_construct_system_failure(
+							GLOBUS_IO_MODULE,
+							GLOBUS_NULL,
+							handle,
+							rc );
+					goto error_exit;
+				}
+			}
+#endif
         }
         else
         {
@@ -2043,6 +2254,9 @@ globus_l_io_accept_sec_context(
 {
     globus_io_authentication_info_t *   accept_info;
     globus_object_t *           err;
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
 
     accept_info = (globus_io_authentication_info_t *) arg;
 
@@ -2109,6 +2323,22 @@ globus_l_io_accept_sec_context(
             GLOBUS_NULL,
             GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+		if ( result == GLOBUS_SUCCESS )
+		{
+			// post a packet in order to trigger the callback
+			rc= globus_i_io_windows_post_completion( 
+				handle, 
+				WinIoWriting );
+			if ( rc ) // a fatal error occurred
+			{
+				// unregister the write operation
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+				 GLOBUS_I_IO_WRITE_OPERATION );
+				goto error_exit;
+			}
+		}
+#endif
     }
     else
     {
@@ -2122,6 +2352,25 @@ globus_l_io_accept_sec_context(
                 GLOBUS_NULL,
                 GLOBUS_TRUE,
                 GLOBUS_I_IO_READ_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+			// post a packet in order to trigger the callback
+			rc= globus_i_io_windows_post_completion( 
+				 handle, 
+				 WinIoReading );
+			if ( rc ) // a fatal error occurred
+			{
+				// unregister the read operation
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+				 GLOBUS_I_IO_READ_OPERATION );
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						rc );
+				goto error_exit;
+			}
+#endif
         }
         else
         {
@@ -2191,6 +2440,11 @@ globus_l_io_write_auth_token(
 {
     globus_io_authentication_info_t *   init_info;
     globus_object_t *           err;
+#ifdef TARGET_ARCH_WIN32
+	globus_byte_t * mysteryBuffer;
+	globus_size_t numberOfBytes;
+	int rc;
+#endif
 
     init_info = (globus_io_authentication_info_t *) arg;
     
@@ -2256,6 +2510,14 @@ globus_l_io_write_auth_token(
         }
         else
         {
+#ifdef TARGET_ARCH_WIN32
+			// store the necessary information for purposes of posting
+			// another write below
+			mysteryBuffer= init_info->output_buffer_header + 
+				init_info->output_header_offset;
+			numberOfBytes= init_info->output_header_len - 
+				init_info->output_header_offset;
+#endif
             goto continue_write;
         }
     }
@@ -2296,6 +2558,14 @@ globus_l_io_write_auth_token(
         }
         else
         {
+#ifdef TARGET_ARCH_WIN32
+			// store the necessary information for purposes of posting
+			// another write below
+			mysteryBuffer= init_info->output_buffer + 
+				init_info->output_offset;
+			numberOfBytes= init_info->output_buflen - 
+				init_info->output_offset;
+#endif
             goto continue_write;
         }
     }
@@ -2354,6 +2624,28 @@ globus_l_io_write_auth_token(
 
         goto error_exit;
     }
+#ifdef TARGET_ARCH_WIN32
+	else
+	{
+		// post a packet in order to trigger the callback
+		rc= globus_i_io_windows_post_completion( 
+				handle, 
+				WinIoReading );
+		if ( rc ) // a fatal error occurred
+		{
+			// unregister the read operation
+			globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+			 GLOBUS_I_IO_READ_OPERATION );
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					rc );
+			goto error_exit;
+		}
+	}
+#endif
 
     globus_i_io_mutex_unlock();
 
@@ -2380,6 +2672,31 @@ continue_write:
 
         goto error_exit;
     }
+#ifdef TARGET_ARCH_WIN32
+	else // post another write
+	{		
+		rc= globus_i_io_windows_write( handle, 
+			mysteryBuffer, 
+			numberOfBytes, 
+			1, 0 );
+		if ( rc == -1 ) // a fatal error occurred
+		{
+			// unregister the write; NOTE: if we post the write before
+			// calling the registration function, the completion packet
+			// might return before the registration function can be called
+			// in a multi-threaded environment
+			globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+			 GLOBUS_I_IO_WRITE_OPERATION );
+
+			err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				errno );
+			goto error_exit;
+		}
+	}
+#endif
     
     globus_i_io_mutex_unlock();
     
@@ -2424,6 +2741,9 @@ globus_l_io_read_auth_token(
 {
     globus_io_authentication_info_t *   init_info;
     globus_object_t *           err;
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
 
     init_info = (globus_io_authentication_info_t *) arg;
     
@@ -2436,6 +2756,26 @@ globus_l_io_read_auth_token(
         err = globus_error_get(result);
         goto error_exit;
     }
+
+#ifdef TARGET_ARCH_WIN32
+	// update the number of bytes read in case an asynchronous read
+	// has just completed
+	// WARNING: neither field will point to a valid address if this
+	// function has been entered because of a fake completion packet
+	if ( handle->winIoOperation_read.numberOfBytesProcessed > 0 )
+	{
+		if ( init_info->input_token.mysteryUpdateRead != NULL )
+		{
+			*(init_info->input_token.mysteryUpdateRead)+= 
+			  handle->winIoOperation_read.numberOfBytesProcessed;
+		}
+		if ( init_info->input_token.mysteryUpdateToRead != NULL )
+		{
+			*(init_info->input_token.mysteryUpdateToRead)-= 
+			  handle->winIoOperation_read.numberOfBytesProcessed;
+		}
+	}
+#endif
 
     result = globus_l_io_read_input_token(handle,
                                           &init_info->input_token);
@@ -2472,14 +2812,37 @@ globus_l_io_read_auth_token(
         GLOBUS_NULL,
         GLOBUS_TRUE,
         GLOBUS_I_IO_READ_OPERATION);
-    globus_i_io_mutex_unlock();
     
     if(result != GLOBUS_SUCCESS)
     {
+	    globus_i_io_mutex_unlock();
         err = globus_error_get(result);
 
         goto error_exit;
     }
+
+#ifdef TARGET_ARCH_WIN32
+	// post another read
+	rc= globus_i_io_windows_read( handle, 
+		init_info->input_token.mysteryBuffer,
+		init_info->input_token.mysteryNumberOfBytes,
+		 1 );
+	if ( rc == -1 ) // a fatal error occurred
+	{
+		// unregister the read operation
+		globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+		 GLOBUS_I_IO_READ_OPERATION );
+	    globus_i_io_mutex_unlock();
+
+		err = globus_io_error_construct_system_failure(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			handle,
+			errno );
+		goto error_exit;
+	}
+#endif
+    globus_i_io_mutex_unlock();
     
 do_return:
     globus_i_io_debug_printf(3, (stderr, 
@@ -2797,6 +3160,16 @@ globus_l_io_read_input_token(
 
         if(input_token->token_length_read < 4)
         {
+#ifdef TARGET_ARCH_WIN32
+			// store necessary information in order to post another read
+			input_token->mysteryBuffer= input_token->token_length_buffer 
+				+ input_token->token_length_read;
+			input_token->mysteryNumberOfBytes= 
+				4 - input_token->token_length_read;
+			input_token->mysteryUpdateRead= 
+				&(input_token->token_length_read);
+			input_token->mysteryUpdateToRead= NULL;
+#endif
             return GLOBUS_SUCCESS;
         }
     }
@@ -2845,6 +3218,16 @@ globus_l_io_read_input_token(
             }
             else if(amt_read < (5 - input_token->token_length_read))
             {
+#ifdef TARGET_ARCH_WIN32
+				// store necessary information in order to post another read
+				input_token->mysteryBuffer= input_token->token_length_buffer 
+					+ input_token->token_length_read;
+				input_token->mysteryNumberOfBytes= 
+					5 - input_token->token_length_read;
+				input_token->mysteryUpdateRead= 
+					&(input_token->token_length_read);
+				input_token->mysteryUpdateToRead= NULL;
+#endif
                 return GLOBUS_SUCCESS;
             }
             else
@@ -2906,6 +3289,14 @@ globus_l_io_read_input_token(
 
         if(input_token->token_to_read != 0)
         {
+#ifdef TARGET_ARCH_WIN32
+			// store necessary information in order to post another read
+			input_token->mysteryBuffer= input_token->token +
+				input_token->token_offset;
+			input_token->mysteryNumberOfBytes= input_token->token_to_read;
+			input_token->mysteryUpdateRead= &(input_token->token_offset);
+			input_token->mysteryUpdateToRead= &(input_token->token_to_read);
+#endif
             return GLOBUS_SUCCESS;
         }
     }
@@ -3087,7 +3478,7 @@ globus_io_register_init_delegation(
     {
         globus_free(init_info);
     }
-    
+
     return rc;
 } /* globus_io_register_init_delegation */
 
@@ -3479,6 +3870,9 @@ globus_l_io_init_delegation(
     gss_buffer_desc *                   token_ptr;
     gss_buffer_desc                     input_token;
     gss_buffer_desc                     output_token; 
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
     
     init_info = (globus_io_authentication_info_t *) arg;
 
@@ -3546,6 +3940,28 @@ globus_l_io_init_delegation(
             GLOBUS_NULL,
             GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+		if ( result == GLOBUS_SUCCESS )
+		{
+			// post a packet in order to trigger the callback
+			rc= globus_i_io_windows_post_completion( 
+				handle, 
+				WinIoWriting );
+			if ( rc ) // a fatal error occurred
+			{
+				// unregister the write operation
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+				 GLOBUS_I_IO_WRITE_OPERATION );
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						rc );
+				goto error_exit;
+			}
+		}
+#endif
     }
     else
     {
@@ -3559,6 +3975,28 @@ globus_l_io_init_delegation(
                 GLOBUS_NULL,
                 GLOBUS_TRUE,
                 GLOBUS_I_IO_READ_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+			if ( result == GLOBUS_SUCCESS )
+			{
+				// post a packet in order to trigger the callback
+				rc= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoReading );
+				if ( rc ) // a fatal error occurred
+				{
+					// unregister the read operation
+					globus_i_io_unregister_operation( handle, 
+					 GLOBUS_FALSE, GLOBUS_I_IO_READ_OPERATION );
+
+					err = globus_io_error_construct_system_failure(
+							GLOBUS_IO_MODULE,
+							GLOBUS_NULL,
+							handle,
+							rc );
+					goto error_exit;
+				}
+			}
+#endif
         }
         else
         {
@@ -3624,6 +4062,9 @@ globus_l_io_accept_delegation(
     gss_buffer_desc                     input_token;
     gss_buffer_desc                     output_token;
     gss_OID                             mech_type; 
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+#endif
     
     accept_info = (globus_io_authentication_info_t *) arg;
 
@@ -3694,6 +4135,28 @@ globus_l_io_accept_delegation(
             GLOBUS_NULL,
             GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+		if ( result == GLOBUS_SUCCESS )
+		{
+			// post a packet in order to trigger the callback
+			rc= globus_i_io_windows_post_completion( 
+				handle, 
+				WinIoWriting );
+			if ( rc ) // a fatal error occurred
+			{
+				// unregister the write operation
+				globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
+				 GLOBUS_I_IO_WRITE_OPERATION );
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						handle,
+						rc );
+				goto error_exit;
+			}
+		}
+#endif
     }
     else
     {
@@ -3707,6 +4170,28 @@ globus_l_io_accept_delegation(
                 GLOBUS_NULL,
                 GLOBUS_TRUE,
                 GLOBUS_I_IO_READ_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+			if ( result == GLOBUS_SUCCESS )
+			{
+				// post a packet in order to trigger the callback
+				rc= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoReading );
+				if ( rc ) // a fatal error occurred
+				{
+					// unregister the read operation
+					globus_i_io_unregister_operation( handle, 
+					 GLOBUS_FALSE, GLOBUS_I_IO_READ_OPERATION );
+
+					err = globus_io_error_construct_system_failure(
+							GLOBUS_IO_MODULE,
+							GLOBUS_NULL,
+							handle,
+							rc );
+					goto error_exit;
+				}
+			}
+#endif
         }
         else
         {

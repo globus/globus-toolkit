@@ -13,12 +13,14 @@ CVS Information:
 ******************************************************************************/
 #include "config.h"
 #include "globus_handle_table.h"
+#include "globus_libc.h"
 
 #define GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE 100
 
 /******************************************************************************
                            local data structures
 ******************************************************************************/
+
 typedef struct globus_l_handle_entry_s
 {
     int                                 index;
@@ -26,6 +28,16 @@ typedef struct globus_l_handle_entry_s
     void *                              value;
     struct globus_l_handle_entry_s *    pnext;
 } globus_l_handle_entry_t;
+
+typedef struct globus_l_handle_table_s
+{
+    struct globus_l_handle_entry_s **   table;
+    int                                 next_slot;
+    int                                 table_size;
+    struct globus_l_handle_entry_s *    inactive;
+    globus_handle_destructor_t          destructor;
+} globus_l_handle_table_t;
+
 
 /*
  * Function: globus_handle_table_init()
@@ -38,10 +50,19 @@ typedef struct globus_l_handle_entry_s
  */
 int
 globus_handle_table_init(
-    globus_handle_table_t *             handle_table,
+    globus_handle_table_t *             e_handle_table,
     globus_handle_destructor_t          destructor)
 {
-    if(!handle_table)
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_FAILURE;
+    }
+
+    handle_table = (globus_l_handle_table_t *)
+	 globus_libc_malloc(sizeof(globus_l_handle_table_t));
+    if(handle_table == NULL)
     {
         return GLOBUS_FAILURE;
     }
@@ -51,8 +72,12 @@ globus_handle_table_init(
             sizeof(globus_l_handle_entry_t *));
     if(!handle_table->table)
     {
+        globus_libc_free(handle_table);
+
         return GLOBUS_FAILURE;
     }
+
+    *e_handle_table = handle_table;
 
     handle_table->next_slot = GLOBUS_NULL_HANDLE + 1;
     handle_table->table_size = GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE;
@@ -74,13 +99,21 @@ globus_handle_table_init(
  */
 int
 globus_handle_table_destroy(
-    globus_handle_table_t *             handle_table)
+    globus_handle_table_t *             e_handle_table)
 {
     int                                 i;
     globus_l_handle_entry_t **          table;
     globus_l_handle_entry_t *           inactive;
     globus_l_handle_entry_t *           save;
     globus_handle_destructor_t          destructor;
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_FAILURE;
+    }
+
+    handle_table = *e_handle_table;
 
     if(!handle_table)
     {
@@ -113,8 +146,14 @@ globus_handle_table_destroy(
         inactive = save;
     }
 
-    /* finally, free table */
+    /* free the table */
     globus_libc_free(table);
+
+    /* free the table handle */
+    globus_libc_free(handle_table);
+
+    /* finally, invalidate the handle */
+    *e_handle_table = NULL;
 
     return GLOBUS_SUCCESS;
 }
@@ -136,11 +175,19 @@ globus_handle_table_destroy(
  */
 globus_handle_t
 globus_handle_table_insert(
-    globus_handle_table_t *             handle_table,
+    globus_handle_table_t *             e_handle_table,
     void *                              value,
     int                                 initial_refs)
 {
     globus_l_handle_entry_t *           entry;
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_NULL_HANDLE;
+    }
+
+    handle_table = *e_handle_table;
 
     if(!handle_table)
     {
@@ -199,11 +246,19 @@ globus_handle_table_insert(
 
 globus_bool_t
 globus_handle_table_increment_reference_by(
-    globus_handle_table_t *             handle_table,
+    globus_handle_table_t *             e_handle_table,
     globus_handle_t                     handle,
     unsigned int                        inc)
 {
     globus_l_handle_entry_t *           entry;
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_FALSE;
+    }
+
+    handle_table = *e_handle_table;
 
     if(!handle_table)
     {
@@ -246,10 +301,18 @@ globus_handle_table_increment_reference_by(
  */
 globus_bool_t
 globus_handle_table_decrement_reference(
-    globus_handle_table_t *             handle_table,
+    globus_handle_table_t *             e_handle_table,
     globus_handle_t                     handle)
 {
     globus_l_handle_entry_t *           entry;
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_FALSE;
+    }
+
+    handle_table = *e_handle_table;
 
     if(!handle_table)
     {
@@ -304,10 +367,18 @@ globus_handle_table_decrement_reference(
  */
 globus_bool_t
 globus_handle_table_increment_reference(
-    globus_handle_table_t *             handle_table,
+    globus_handle_table_t *             e_handle_table,
     globus_handle_t                     handle)
 {
     globus_l_handle_entry_t *           entry;
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_FALSE;
+    }
+
+    handle_table = *e_handle_table;
 
     if(!handle_table)
     {
@@ -350,10 +421,18 @@ globus_handle_table_increment_reference(
  */
 void *
 globus_handle_table_lookup(
-    globus_handle_table_t *             handle_table,
+    globus_handle_table_t *             e_handle_table,
     globus_handle_t                     handle)
 {
     globus_l_handle_entry_t *           entry;
+    globus_l_handle_table_t *		handle_table;
+
+    if(!e_handle_table)
+    {
+        return GLOBUS_NULL;
+    }
+
+    handle_table = *e_handle_table;
 
     if(!handle_table)
     {

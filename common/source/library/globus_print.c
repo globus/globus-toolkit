@@ -1,5 +1,5 @@
 /*****************************************************************************
-globus_error.c
+globus_print.c
 
 Description:
    Error- and status-reporting functions, extracted from nexus
@@ -11,18 +11,20 @@ CVS Information:
    $State$
    $Author$
 ******************************************************************************/
-#include "config.h"
+#include "globus_common_include.h"
+#include "globus_print.h"
+#include "globus_libc.h"
 
-#include "globus_common.h"
-#include <string.h>
 /*****************************************************************************
 		      Module specific prototypes
 *****************************************************************************/
 
-static void globus_l_descriptor_string(char *fmt,
-					      char *s1,
-					      char *s2,
-					      char *s3);
+static void 
+globus_l_descriptor_string(
+    char *                                          fmt,
+    char *                                          s1,
+	char *                                          s2,
+	char *                                          s3);
 
 /*****************************************************************************
 		      Module specific prototypes
@@ -64,7 +66,8 @@ va_dcl
 #else
     va_start(ap);
 #endif
-    globus_thread_diagnostics_vprintf(fmt, ap);
+/*    globus_thread_diagnostics_vprintf(fmt, ap); */
+	vprintf(fmt, ap);
     va_end(ap);
 
     GLOBUS_DUMP_STACK();
@@ -72,6 +75,8 @@ va_dcl
     globus_silent_fatal();
     
 } /* globus_fatal() */
+
+#ifndef TARGET_ARCH_WIN32
 
 /* this isnt guaranteed to work since globus_l_callback_main_thread can be set 
  * from a thread... hopefully not
@@ -99,6 +104,8 @@ void globus_dump_stack()
     system(s);
 }
 
+#endif /* TARGET_ARCH_WIN32 */
+
 /*
  * globus_l_descriptor_string()
  *
@@ -107,8 +114,19 @@ static void
 globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
 {
     globus_libc_sprintf(fmt, "t%lu:p%lu%s%s%s%s%s%s",
+/* The following line was changed to preserve the encapsulation of the 
+ *  globus_thread_t datatype.  This change was necessary because this datatype maps
+ *  to different implementations on different platforms, and the UNIX implementation 
+ *  conflicted with the Windows implementation.
+ *    Michael Lebman 2-8-02
+ */
+
+#ifndef TARGET_ARCH_WIN32
 			(unsigned long) globus_thread_self(),
-			(unsigned long) getpid(),
+#else
+			(unsigned long) globus_thread_get_threadID_as_long(),
+#endif
+			(unsigned long) globus_libc_getpid(),
 			(s1 ? ": " : ""),
 			(s1 ? s1 : ""),
 			(s2 ? ": " : ""),

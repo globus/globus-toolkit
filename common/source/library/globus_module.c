@@ -15,8 +15,14 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
+#include "globus_module.h"
+#include "globus_list.h"
+#include "globus_thread_common.h"
+#include "globus_memory.h"
+#include "globus_hashtable.h"
+#include "globus_libc.h"
+#include GLOBUS_THREAD_INCLUDE
 
 /******************************************************************************
 			       Type definitions
@@ -723,7 +729,6 @@ globus_l_module_initialize()
      * Now finish initializing the threads package
      */
     globus_module_activate(GLOBUS_THREAD_MODULE);
-
 }
 /* globus_l_module_initialize() */
 
@@ -944,9 +949,18 @@ globus_l_module_mutex_lock(
     globus_mutex_lock(&mutex->mutex);
     {
 	globus_assert(mutex->level >= 0);
+/* The following 2 lines were changed to preserve the encapsulation of the 
+ *  globus_thread_t datatype.  This change was necessary because this datatype maps
+ *  to different implementations on different platforms, and the UNIX implementation 
+ *  conflicted with the Windows implementation.
+ *    Michael Lebman 2-8-02
+ */
+/*	
 	
 	while (mutex->level > 0
-	       && mutex->thread_id != globus_thread_self())
+	       && mutex->thread_id != globus_thread_self()) */
+	while (mutex->level > 0
+		   && !globus_thread_equal( mutex->thread_id, globus_thread_self()) )
 	{
 	    globus_cond_wait(&mutex->cond, &mutex->mutex);
 	}
@@ -982,8 +996,17 @@ globus_l_module_mutex_unlock(
     globus_mutex_lock(&mutex->mutex);
     {
 	globus_assert(mutex->level > 0);
+/* The following line was changed to preserve the encapsulation of the 
+ *  globus_thread_t datatype.  This change was necessary because this datatype maps
+ *  to different implementations on different platforms, and the UNIX implementation 
+ *  conflicted with the Windows implementation.
+ *    Michael Lebman 4-2-02
+ */
+/*	
 	globus_assert(mutex->thread_id == globus_thread_self());
-	
+*/		
+	globus_assert( globus_thread_equal( mutex->thread_id, globus_thread_self() ) );
+
 	mutex->level--;
 	if (mutex->level == 0)
 	{
@@ -1025,4 +1048,3 @@ globus_module_get_args(
     *argc = globus_l_module_argc;
     *argv = globus_l_module_argv;
 }
-

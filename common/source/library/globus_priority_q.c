@@ -1,4 +1,5 @@
 #include "globus_priority_q.h"
+#include "globus_libc.h"
 
 #define GLOBUS_L_PRIORITY_Q_CHUNK_SIZE 100
 

@@ -19,17 +19,8 @@ ry/globus_strptime.c,v $
 /******************************************************************************
                              Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_libc.h"
-
-#if HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
 
 /******************************************************************************
 Function: globus_strptime()
@@ -234,25 +225,25 @@ globus_strptime(
                     }
                     got_tm_wday = 1;
 
-                    if( !strncasecmp( date_wk_ptr, "Sun", 3 ))
+                    if( !globus_libc_strncasecmp( date_wk_ptr, "Sun", 3 ))
                     {
                         time_ptr->tm_wday = 0;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "day", 3 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "day", 3 ))
                         {
                             date_wk_ptr += 3;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Mon", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Mon", 3 ))
                     {
                         time_ptr->tm_wday = 1;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "day", 3 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "day", 3 ))
                         {
                             date_wk_ptr += 3;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Tue", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Tue", 3 ))
                     {
                         time_ptr->tm_wday = 2;
                         date_wk_ptr += 3;
@@ -260,13 +251,13 @@ globus_strptime(
                            || ( *date_wk_ptr == 'S' ))
                         {
                             date_wk_ptr++;
-                            if( !strncasecmp( date_wk_ptr, "day", 3 ))
+                            if( !globus_libc_strncasecmp( date_wk_ptr, "day", 3 ))
                             {
                                 date_wk_ptr += 3;
                             }
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Wed", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Wed", 3 ))
                     {
                         time_ptr->tm_wday = 3;
                         date_wk_ptr += 3;
@@ -274,13 +265,13 @@ globus_strptime(
                            || ( *date_wk_ptr == 'N' ))
                         {
                             date_wk_ptr++;
-                            if( !strncasecmp( date_wk_ptr, "esday", 5 ))
+                            if( !globus_libc_strncasecmp( date_wk_ptr, "esday", 5 ))
                             {
                                 date_wk_ptr += 5;
                             }
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Thu", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Thu", 3 ))
                     {
                         time_ptr->tm_wday = 4;
                         date_wk_ptr += 3;
@@ -288,22 +279,22 @@ globus_strptime(
                            || ( *date_wk_ptr == 'R' ))
                         {
                             date_wk_ptr++;
-                            if( !strncasecmp( date_wk_ptr, "sday", 4 ))
+                            if( !globus_libc_strncasecmp( date_wk_ptr, "sday", 4 ))
                             {
                                 date_wk_ptr += 4;
                             }
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Fri", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Fri", 3 ))
                     {
                         time_ptr->tm_wday = 5;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "day", 3 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "day", 3 ))
                         {
                             date_wk_ptr += 3;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Sat", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Sat", 3 ))
                     {
                         time_ptr->tm_wday = 6;
                         date_wk_ptr += 3;
@@ -311,7 +302,7 @@ globus_strptime(
                            || ( *date_wk_ptr == 'U' ))
                         {
                             date_wk_ptr++;
-                            if( !strncasecmp( date_wk_ptr, "rday", 4 ))
+                            if( !globus_libc_strncasecmp( date_wk_ptr, "rday", 4 ))
                             {
                                 date_wk_ptr += 4;
                             }
@@ -333,106 +324,106 @@ globus_strptime(
                     }
                     got_tm_mon = 1;
 
-                    if( !strncasecmp( date_wk_ptr, "Jan", 3 ))
+                    if( !globus_libc_strncasecmp( date_wk_ptr, "Jan", 3 ))
                     {
                         time_ptr->tm_mon = 0;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "uary", 4 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "uary", 4 ))
                         {
                             date_wk_ptr += 4;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Feb", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Feb", 3 ))
                     {
                         time_ptr->tm_mon = 1;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "ruary", 5 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "ruary", 5 ))
                         {
                             date_wk_ptr += 5;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Mar", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Mar", 3 ))
                     {
                         time_ptr->tm_mon = 2;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "ch", 2 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "ch", 2 ))
                         {
                             date_wk_ptr += 2;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Apr", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Apr", 3 ))
                     {
                         time_ptr->tm_mon = 3;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "il", 2 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "il", 2 ))
                         {
                             date_wk_ptr += 2;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "May", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "May", 3 ))
                     {
                         time_ptr->tm_mon = 4;
                         date_wk_ptr += 3;
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Jun", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Jun", 3 ))
                     {
                         time_ptr->tm_mon = 5;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "e", 1 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "e", 1 ))
                         {
                             date_wk_ptr += 1;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Jul", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Jul", 3 ))
                     {
                         time_ptr->tm_mon = 6;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "y", 1 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "y", 1 ))
                         {
                             date_wk_ptr += 1;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Aug", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Aug", 3 ))
                     {
                         time_ptr->tm_mon = 7;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "ust", 3 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "ust", 3 ))
                         {
                             date_wk_ptr += 3;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Sep", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Sep", 3 ))
                     {
                         time_ptr->tm_mon = 8;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "tember", 6 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "tember", 6 ))
                         {
                             date_wk_ptr += 6;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Oct", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Oct", 3 ))
                     {
                         time_ptr->tm_mon = 9;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "ober", 4 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "ober", 4 ))
                         {
                             date_wk_ptr += 4;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Nov", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Nov", 3 ))
                     {
                         time_ptr->tm_mon = 10;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "ember", 5 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "ember", 5 ))
                         {
                             date_wk_ptr += 5;
                         }
                     }
-                    else if( !strncasecmp( date_wk_ptr, "Dec", 3 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "Dec", 3 ))
                     {
                         time_ptr->tm_mon = 11;
                         date_wk_ptr += 3;
-                        if( !strncasecmp( date_wk_ptr, "ember", 5 ))
+                        if( !globus_libc_strncasecmp( date_wk_ptr, "ember", 5 ))
                         {
                             date_wk_ptr += 5;
                         }
@@ -712,20 +703,20 @@ globus_strptime(
                     }
                     got_ampm = 1;
 
-                    if( !strncasecmp( date_wk_ptr, "AM", 2 ))
+                    if( !globus_libc_strncasecmp( date_wk_ptr, "AM", 2 ))
                     {
                         date_wk_ptr += 2;
                     }
-                    else if( !strncasecmp( date_wk_ptr, "A.M.", 4 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "A.M.", 4 ))
                     {
                         date_wk_ptr += 4;
                     }
-                    else if( !strncasecmp( date_wk_ptr, "PM", 2 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "PM", 2 ))
                     {
                         time_ptr->tm_hour += 12;
                         date_wk_ptr += 2;
                     }
-                    else if( !strncasecmp( date_wk_ptr, "P.M.", 4 ))
+                    else if( !globus_libc_strncasecmp( date_wk_ptr, "P.M.", 4 ))
                     {
                         time_ptr->tm_hour += 12;
                         date_wk_ptr += 4;

@@ -1,5 +1,3 @@
-/* globus_config.h.in.  Generated automatically from configure.in by autoheader.  */
-
 #undef HAVE_EXTERNALTHREADS
 #undef HAVE_PTHREAD
 #undef HAVE_PTHREAD_DRAFT_10
@@ -50,3 +48,39 @@
 #undef TARGET_ARCH_CYGWIN
 #undef TARGET_ARCH_X86
 #undef TARGET_ARCH_IA64
+
+#undef HAVE_PWD_H
+#undef HAVE_DIRENT_H
+#undef HAVE_SYS_FILE_H
+#undef GLOBUS_TIMESPEC_EXISTS
+#undef HAVE_NETINET_IN_H
+#undef HAVE_SYS_STAT_H
+#undef HAVE_SYS_TYPES_H
+#undef HAVE_IO_H
+#undef HAVE_SYS_SIGNAL_H
+#undef HAVE_UNISTD_H
+#undef HAVE_NETDB_H
+#undef HAVE_SYS_PARAM_H
+#undef HAVE_FCNTL_H
+#undef HAVE_SYS_TIME_H
+#undef HAVE_STRING_H
+#undef HAVE_CTYPE_H
+#undef HAVE_SYS_SOCKET_H
+#undef HAVE_STDARG_H
+
+#undef HAVE_SYS_UIO_H
+#undef HAVE_STRUCT_IOVEC
+#undef IOV_MAX
+#undef RETSIGTYPE
+#undef HAVE_ATEXIT
+#undef TIME_WITH_SYS_TIME
+#undef HAVE_ALLOCA_H
+
+#undef GLOBUS_OFF_T
+#undef GLOBUS_OFF_T_FORMAT 
+
+#define GLOBUS_TRUE 1
+#define GLOBUS_FALSE 0
+#define GLOBUS_SUCCESS 0
+#define GLOBUS_FAILURE 1
+#define GLOBUS_NULL 0

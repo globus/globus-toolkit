@@ -3,6 +3,10 @@
 
 int test1(int argc, char **argv);
 
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
+
 typedef struct
 {
     globus_mutex_t			mutex;
@@ -143,7 +147,11 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
+#ifndef TARGET_ARCH_WIN32
     while (( c = getopt(argc, argv, "abrHi:vgsch:p:I:dDz:")) != EOF)
+#else
+    while (( c = getoptWin(argc, argv, "rHi:gsch:p:I:dDz:")) != EOF)
+#endif
     {
 	switch(c)
 	{
@@ -317,14 +325,14 @@ test1(int argc, char **argv)
 	  default:
 	    printf("unknown flag -%c\n",(char) c);
 	    globus_io_tcpattr_destroy(&attr);
-	    return;
+	    return -1;
 	}
     }
     if(host == GLOBUS_NULL || port == 0)
     {
 	printf("please specify -h host and -p port\n");
 	globus_io_tcpattr_destroy(&attr);
-	return;
+	return -1;
     }
 
     result = globus_io_tcp_connect(

@@ -1,8 +1,12 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_i_callback.h"
+#include "globus_thread_common.h"
 #include "globus_thread_pool.h"
+#include "globus_priority_q.h"
+#include "globus_callback.h"
+#include "globus_handle_table.h"
 
 #define GLOBUS_CALLBACK_POLLING_THREADS 1
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
@@ -13,15 +17,17 @@
  */
 #define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 5000  /* 5ms */
 
+#ifndef TARGET_ARCH_WIN32
 extern pid_t                        globus_l_callback_main_thread;
+#endif
 
 static
 int
-globus_l_callback_activate();
+globus_l_callback_activate(void);
 
 static
 int
-globus_l_callback_deactivate();
+globus_l_callback_deactivate(void);
 
 #include "version.h"
 
@@ -243,7 +249,8 @@ globus_l_callback_activate()
     int                                 rc;
     int                                 i;
     char *                              tmp_string;
-    
+
+#ifndef TARGET_ARCH_WIN32
     if(!globus_l_callback_main_thread)
     {
         /* this is used by globus_dump_stack because linux threads have
@@ -251,6 +258,7 @@ globus_l_callback_activate()
          */
         globus_l_callback_main_thread = getpid();
     }
+#endif
     
     rc = globus_module_activate(GLOBUS_THREAD_MODULE);
     if(rc != GLOBUS_SUCCESS)

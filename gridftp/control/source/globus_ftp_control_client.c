@@ -8,7 +8,9 @@
 #include "globus_i_ftp_control.h"
 #include <string.h>
 #include <ctype.h>
+#ifndef TARGET_ARCH_WIN32
 #include <netinet/in.h>
+#endif
 
 
 /* Local variable declarations */
@@ -3452,8 +3454,12 @@ globus_i_ftp_control_auth_info_init(
 
     if(src == GLOBUS_NULL)
     {
+#ifndef TARGET_ARCH_WIN32
         bzero((void *) dest,
               sizeof(globus_ftp_control_auth_info_t));
+#else
+		memset( (void *)dest, 0, sizeof(globus_ftp_control_auth_info_t));
+#endif
     }
     else
     {
@@ -4181,7 +4187,11 @@ globus_i_ftp_control_client_activate(void)
     globus_mutex_init(
         &(globus_l_ftp_cc_handle_list_mutex), GLOBUS_NULL);
 
+#ifndef TARGET_ARCH_WIN32
     globus_i_ftp_control_devnull=fopen("/dev/null","w"); 
+#else
+    globus_i_ftp_control_devnull=fopen("NUL","w"); 
+#endif
 
     if (globus_i_ftp_control_devnull == NULL)
     {

@@ -1,7 +1,6 @@
-#include "config.h"
-#include "globus_common.h"
 #include "globus_error_string.h"
-#include <string.h>
+#include "globus_libc.h"
+#include "globus_error.h"
 
 /**
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_STRING
@@ -109,4 +108,6 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_STRING_DEFINITION
 	globus_l_error_string_copy,
 	globus_l_error_string_free,
 	globus_l_error_string_printable);
+
+
 

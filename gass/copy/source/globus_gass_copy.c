@@ -2600,7 +2600,11 @@ globus_l_gass_copy_io_setup_get(
 	result = globus_io_file_open(
 	    parsed_url.url_path,
 	    GLOBUS_IO_FILE_RDONLY,
-	    GLOBUS_IO_FILE_IRUSR,
+#ifndef TARGET_ARCH_WIN32
+		GLOBUS_IO_FILE_IRUSR,
+#else
+		0,
+#endif
 	    state->source.attr->io,
 	    state->source.data.io.handle);
 
@@ -2662,9 +2666,13 @@ globus_l_gass_copy_io_setup_put(
         result = globus_io_file_open(
 	    parsed_url.url_path,
 	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC),
+#ifndef TARGET_ARCH_WIN32
 	    (GLOBUS_IO_FILE_IRUSR|GLOBUS_IO_FILE_IWUSR|
 	        GLOBUS_IO_FILE_IRGRP|GLOBUS_IO_FILE_IWGRP|
 	        GLOBUS_IO_FILE_IROTH|GLOBUS_IO_FILE_IWOTH),
+#else
+		0,
+#endif
 	    state->dest.attr->io,
 	    state->dest.data.io.handle);
 
@@ -3102,7 +3110,7 @@ globus_l_gass_copy_ftp_read_callback(
     globus_gass_copy_state_t * state
         = copy_handle->state;
 
-    globus_bool_t last_data;
+    globus_bool_t last_data= GLOBUS_FALSE;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     globus_libc_fprintf(stderr,

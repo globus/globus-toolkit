@@ -45,12 +45,22 @@ globus_i_io_setup_socket(
     
     if(handle->socket_attr.reuseaddr != GLOBUS_FALSE)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_REUSEADDR,
 		      (char *) &one,
 		      sizeof(one)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_REUSEADDR,
+				(char *) &one,
+				sizeof(one)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -59,12 +69,22 @@ globus_i_io_setup_socket(
 
     if(handle->socket_attr.keepalive != GLOBUS_FALSE)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_KEEPALIVE,
 		      (char *) &one,
 		      sizeof(one)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_KEEPALIVE,
+				(char *) &one,
+				sizeof(one)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -76,12 +96,22 @@ globus_i_io_setup_socket(
 	linger.l_onoff = 1;
 	linger.l_linger = handle->socket_attr.linger_time;
 	
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_KEEPALIVE,
 		      (char *) &linger,
 		      sizeof(struct linger)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_KEEPALIVE,
+				(char *) &linger,
+				sizeof(struct linger)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -89,12 +119,22 @@ globus_i_io_setup_socket(
     }
     if(handle->socket_attr.oobinline)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_OOBINLINE,
 		      (char *) &one,
 		      sizeof(one)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_OOBINLINE,
+				(char *) &one,
+				sizeof(one)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -102,12 +142,22 @@ globus_i_io_setup_socket(
     }
     if(handle->socket_attr.sndbuf)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_SNDBUF,
 		      (char *) &handle->socket_attr.sndbuf,
 		      sizeof(one)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_SNDBUF,
+				(char *) &handle->socket_attr.sndbuf,
+				sizeof(one)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -120,12 +170,22 @@ globus_i_io_setup_socket(
 
 	len = sizeof(int);
 
+#ifndef TARGET_ARCH_WIN32
 	if(getsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_SNDBUF,
 		      (char *) &handle->socket_attr.sndbuf,
 		      &len) < 0)
 	{
+#else
+		if(getsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_SNDBUF,
+				(char *) &handle->socket_attr.sndbuf,
+				&len) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -133,12 +193,22 @@ globus_i_io_setup_socket(
     }
     if(handle->socket_attr.rcvbuf)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_RCVBUF,
 		      (char *) &handle->socket_attr.rcvbuf,
 		      sizeof(one)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_RCVBUF,
+				(char *) &handle->socket_attr.rcvbuf,
+				sizeof(one)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -151,12 +221,22 @@ globus_i_io_setup_socket(
 	len = sizeof(int);
 
 	/* Turn request for default into a concrete default value */
+#ifndef TARGET_ARCH_WIN32
 	if(getsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_RCVBUF,
 		      (char *) &handle->socket_attr.rcvbuf,
 		      &len) < 0)
 	{
+#else
+		if(getsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_RCVBUF,
+				(char *) &handle->socket_attr.rcvbuf,
+				&len) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -252,12 +332,22 @@ globus_i_io_socket_set_attr(
     }
     if(instance->keepalive != handle->socket_attr.keepalive)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_KEEPALIVE,
 		      (char *) &instance->keepalive,
 		      sizeof(instance->keepalive)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_KEEPALIVE,
+				(char *) &instance->keepalive,
+				sizeof(instance->keepalive)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto sockopt_failure;
@@ -272,12 +362,22 @@ globus_i_io_socket_set_attr(
 	linger.l_onoff = instance->linger;
 	linger.l_linger = instance->linger_time;
 	
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_LINGER,
 		      (char *) &linger,
 		      sizeof(struct linger)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_LINGER,
+				(char *) &linger,
+				sizeof(struct linger)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto undo_keepalive;
@@ -285,12 +385,22 @@ globus_i_io_socket_set_attr(
     }
     if(instance->oobinline != handle->socket_attr.oobinline)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_OOBINLINE,
 		      (char *) &instance->oobinline,
 		      sizeof(instance->oobinline)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_OOBINLINE,
+				(char *) &instance->oobinline,
+				sizeof(instance->oobinline)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto undo_linger;
@@ -301,12 +411,22 @@ globus_i_io_socket_set_attr(
        instance->sndbuf != 0 &&
        handle->socket_attr.sndbuf != 0)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      SOL_SOCKET,
 		      SO_SNDBUF,
 		      (char *) &instance->sndbuf,
 		      sizeof(instance->sndbuf)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				SOL_SOCKET,
+				SO_SNDBUF,
+				(char *) &instance->sndbuf,
+				sizeof(instance->sndbuf)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
 	    save_errno = errno;
 	    
 	    goto undo_oobinline;
@@ -325,6 +445,7 @@ globus_i_io_socket_set_attr(
 	    {
 		if(instance->rcvbuf == 0)
 		{
+#ifndef TARGET_ARCH_WIN32
 		    int			fd;
 		    GLOBUS_SOCK_SIZE_T  len;
 
@@ -369,6 +490,53 @@ globus_i_io_socket_set_attr(
 			goto undo_sndbuf;
 		    }
 		}
+#else
+					SOCKET socketHandle;
+					GLOBUS_SOCK_SIZE_T  len;
+
+					len = sizeof(int);
+
+					socketHandle= socket(PF_INET, SOCK_STREAM, 0);
+					if( socketHandle !=  INVALID_SOCKET )
+					{
+						len = sizeof(int);
+
+						if( getsockopt( socketHandle,
+								SOL_SOCKET,
+								SO_RCVBUF,
+								(char *) &rcvbuf,
+								&len) == SOCKET_ERROR )
+						{
+							globus_i_io_winsock_get_last_error();
+							save_errno= errno;
+							closesocket( socketHandle );
+							goto undo_sndbuf;
+						}
+						closesocket( socketHandle );
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					rcvbuf = instance->rcvbuf;
+				}
+				if(rcvbuf != 0)
+				{
+					if( setsockopt( (SOCKET)handle->io_handle,
+						SOL_SOCKET,
+						SO_RCVBUF,
+						(char *) &rcvbuf,
+						sizeof(rcvbuf)) == SOCKET_ERROR )
+					{ 
+						globus_i_io_winsock_get_last_error();
+						save_errno= errno;
+						goto undo_sndbuf;
+					}
+				}
+#endif
 	    }
 	    break;
           default:
@@ -421,7 +589,11 @@ globus_i_io_socket_set_attr(
   undo_sndbuf:
     if(instance->sndbuf != handle->socket_attr.sndbuf)
     {
+#ifndef TARGET_ARCH_WIN32
 	setsockopt(handle->fd,
+#else
+		setsockopt( (SOCKET)handle->io_handle,
+#endif
 		   SOL_SOCKET,
 		   SO_SNDBUF,
 		   (char *) &handle->socket_attr.sndbuf,
@@ -434,7 +606,11 @@ globus_i_io_socket_set_attr(
   undo_oobinline:
     if(instance->oobinline != handle->socket_attr.oobinline)
     {
+#ifndef TARGET_ARCH_WIN32
 	setsockopt(handle->fd,
+#else
+		setsockopt( (SOCKET)handle->io_handle,
+#endif
 		   SOL_SOCKET,
 		   SO_SNDBUF,
 		   (char *) &handle->socket_attr.oobinline,
@@ -453,7 +629,11 @@ globus_i_io_socket_set_attr(
 	linger.l_onoff = handle->socket_attr.linger;
 	linger.l_linger = handle->socket_attr.linger_time;
 	
+#ifndef TARGET_ARCH_WIN32
 	setsockopt(handle->fd,
+#else
+		setsockopt( (SOCKET)handle->io_handle,
+#endif
 		   SOL_SOCKET,
 		   SO_LINGER,
 		   (char *) &linger,
@@ -466,7 +646,11 @@ globus_i_io_socket_set_attr(
   undo_keepalive:
     if(instance->keepalive != handle->socket_attr.keepalive)
     {
+#ifndef TARGET_ARCH_WIN32
 	setsockopt(handle->fd,
+#else
+		setsockopt( (SOCKET)handle->io_handle,
+#endif
 		   SOL_SOCKET,
 		   SO_SNDBUF,
 		   (char *) &handle->socket_attr.keepalive,

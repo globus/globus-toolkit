@@ -7,7 +7,9 @@
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
 #include <string.h>
+#ifndef TARGET_ARCH_WIN32
 #include <sys/uio.h>
+#endif
 
 /*
  *  logging messages
@@ -7002,6 +7004,7 @@ globus_l_ftp_control_strip_ascii(
         return length;
     }
 
+#ifndef TARGET_ARCH_WIN32
     for(ctr = 0; ctr < length - 1; ctr++)
     {
         if(buf[ctr] == '\r' &&
@@ -7011,6 +7014,7 @@ globus_l_ftp_control_strip_ascii(
             count++;
         }
     }
+#endif
 
     return length - count;
 }
@@ -7029,6 +7033,7 @@ globus_l_ftp_control_add_ascii(
         return GLOBUS_NULL;
     }
 
+#ifndef TARGET_ARCH_WIN32
     /* allocating twice the memory may be a bad idea */
     out_buf = (globus_byte_t *)globus_malloc(length*2);
 
@@ -7042,6 +7047,11 @@ globus_l_ftp_control_add_ascii(
         out_buf[out_ndx] = in_buf[ctr];
         out_ndx++;
     }
+#else
+    out_buf = (globus_byte_t *)globus_malloc(length);
+	memcpy( out_buf, in_buf, length );
+	out_ndx= length;
+#endif
 
     *ascii_len = out_ndx;
 

@@ -1,23 +1,7 @@
 #if !defined(GLOBUS_TIME_H)
 #define      GLOBUS_TIME_H
 
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
-
-
-#include <assert.h>
-#include <stdlib.h>
-#include <sys/time.h>
-
-#include "globus_common.h"
+#include "globus_common_include.h"
 
 EXTERN_C_BEGIN
 
@@ -25,10 +9,20 @@ EXTERN_C_BEGIN
 #define GLOBUS_I_TIME_INFINITY_NSEC  INT_MAX
 #define GLOBUS_I_TIME_INFINITY_USEC  INT_MAX
 
+#if defined (GLOBUS_TIMESPEC_EXISTS)
+    typedef struct timespec      globus_abstime_t;
+#else
+    typedef struct globus_abstime_s
+    {
+       long    tv_sec;
+       long    tv_nsec;
+    } globus_abstime_t;
+#endif
+
 typedef struct timeval  globus_reltime_t;
 
-/*
- * passed in relative time and set to absolute
+/**
+ *  Set the abstime structure to the sec and usec parameter values.
  */
 #define  GlobusTimeAbstimeSet(Abstime, Sec, USec)         \
 {                                                         \
@@ -41,8 +35,8 @@ typedef struct timeval  globus_reltime_t;
     }                                                     \
     (Abstime).tv_sec += Sec;                              \
 }
-/*
- * gets the remaining time
+/**
+ *  Seperates abstime structure into its components,sec and usec.
  */
 #define  GlobusTimeAbstimeGet(Abstime, Sec, USec)         \
 {                                                         \
@@ -50,6 +44,9 @@ typedef struct timeval  globus_reltime_t;
     USec = ((Abstime).tv_nsec / 1000);                    \
 }
 
+/**
+ *  Set the reltime structure to the sec and usec parameter values.
+ */
 #define  GlobusTimeReltimeSet(Reltime, Sec, USec)         \
 {                                                         \
     (Reltime).tv_usec = (USec);                           \
@@ -79,8 +76,8 @@ typedef struct timeval  globus_reltime_t;
     printf("usec -->%lu\n", (Reltime).tv_usec);           \
 }
 
-/* 
- * return absolute value in Relative time result
+/**
+ *  Find the difference between the 2 absolute times.
  */
 #define  GlobusTimeAbstimeDiff(Reltime, T1, T2)           \
 {                                                         \
@@ -146,12 +143,27 @@ typedef struct timeval  globus_reltime_t;
     }                                                     \
 }
 
+/**
+ *  Convert a relitive time into a long in usec units
+ */
 #define  GlobusTimeReltimeToUSec(SlpInt, Reltime)         \
 {                                                         \
     SlpInt = ((Reltime).tv_sec * 1000000) +               \
                                      ((Reltime).tv_usec); \
 }
 
+/**
+ *  Convert a relative time into a long in millisec units
+ */
+#define  GlobusTimeReltimeToMilliSec( Milliseconds, Reltime)  \
+{                                                         \
+    Milliseconds = ((Reltime).tv_sec * 1000) +            \
+                              ((Reltime).tv_usec)/ 1000;   \
+}
+
+/**
+ *  Add reltime to abstime
+ */
 #define  GlobusTimeAbstimeInc(Abstime, Reltime)           \
 {                                                         \
     (Abstime).tv_nsec += ((Reltime).tv_usec * 1000);      \
@@ -174,27 +186,51 @@ typedef struct timeval  globus_reltime_t;
     (Abstime).tv_sec -= (Reltime).tv_sec;                 \
 }
 
-#define  GlobusTimeAbstimeGetCurrent(Abstime)             \
-{                                                         \
-    struct timeval __time;                                \
-                                                          \
-    gettimeofday(&__time, GLOBUS_NULL);                   \
-    (Abstime).tv_sec = __time.tv_sec;                     \
-    (Abstime).tv_nsec = (__time.tv_usec * 1000);           \
-}
 
+/**
+ *  Get the current time
+ */
+#if !defined(TARGET_ARCH_WIN32)
+#   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
+    {                                                     \
+        struct timeval __time;                            \
+                                                          \
+        gettimeofday(&__time, GLOBUS_NULL);               \
+        (Abstime).tv_sec = __time.tv_sec;                 \
+        (Abstime).tv_nsec = (__time.tv_usec * 1000);      \
+    }
+#else  /* the windows way */
+#   define GlobusTimeAbstimeGetCurrent(Abstime)           \
+    {                                                     \
+        struct _timeb timebuffer;                      \
+                                                          \
+        _ftime(&timebuffer);                            \
+        (Abstime).tv_sec = timebuffer.time;               \
+        (Abstime).tv_nsec = (timebuffer.millitm * 1000);  \
+    }
+#endif
+
+/**
+ *  Copy the absolute time
+ */
 #define  GlobusTimeAbstimeCopy(Dest, Src)                 \
 {                                                         \
    (Dest).tv_sec = (Src).tv_sec;                          \
    (Dest).tv_nsec = (Src).tv_nsec;                        \
 }
 
+/**
+ *  Copy the relative time
+ */
 #define  GlobusTimeReltimeCopy(Dest, Src)                 \
 {                                                         \
    (Dest).tv_sec = (Src).tv_sec;                          \
    (Dest).tv_usec = (Src).tv_usec;                        \
 }
 
+/**
+ *  Multiple the reltime by factor
+ */
 #define  GlobusTimeReltimeMultiply(Reltime, Factor)       \
 {                                                         \
    (Reltime).tv_usec *= Factor;                           \
@@ -207,10 +243,13 @@ typedef struct timeval  globus_reltime_t;
     }                                                     \
 }
 
+/**
+ *  divide the reltime by factor
+ */
 #define  GlobusTimeReltimeDivide(Reltime, Factor)         \
 {                                                         \
-   (Reltime).tv_usec /= 2;                                \
-   (Reltime).tv_sec /= 2;                                 \
+   (Reltime).tv_usec /= Factor;                           \
+   (Reltime).tv_sec /= Factor;                            \
 }
 
 extern const globus_abstime_t         globus_i_abstime_infinity;
@@ -218,23 +257,55 @@ extern const globus_abstime_t         globus_i_abstime_zero;
 extern const globus_reltime_t         globus_i_reltime_infinity;
 extern const globus_reltime_t         globus_i_reltime_zero;
 
+/**
+ *  Has abstime expired
+ *
+ *  Returns a boolean that reflects whether or not abstime is less than the
+ *  current time.
+ */
 globus_bool_t
 globus_time_has_expired(
     const globus_abstime_t *                     abstime);
 
+/**
+ *  Returns a boolean that reflects whether or not abstime is infinity.
+ */
 globus_bool_t
 globus_time_abstime_is_infinity(
     const globus_abstime_t *                     abstime);
 
+/**
+ *  Returns a boolean that reflects whether or not reltime is infinity.
+ */
 globus_bool_t
 globus_time_reltime_is_infinity(
     const globus_reltime_t *                     reltime);
 
+/**
+ *  Compare two absolute times.
+ *
+ *  This function returns an integer that reflects the comparison of two 
+ *  abstimes in the following way.
+ *
+ *  0  :  values are the same.
+ *  -1 :  the first value is less than the second.
+ *  1  :  the first value is greater than the second.
+ */
 int
 globus_abstime_cmp(
     const globus_abstime_t *                     abstime_1,
     const globus_abstime_t *                     abstime_2);
 
+/**
+ *  Compare two absolute times.
+ *
+ *  This function returns an integer that reflects the comparison of two 
+ *  reltimes in the following way.
+ *
+ *  0  :  values are the same.
+ *  -1 :  the first value is less than the second.
+ *  1  :  the first value is greater than the second.
+ */
 int
 globus_reltime_cmp(
     const globus_reltime_t *                     reltime_1,
@@ -244,3 +315,5 @@ globus_reltime_cmp(
 EXTERN_C_END
 
 #endif /* GLOBUS_TIME_H */
+
+
