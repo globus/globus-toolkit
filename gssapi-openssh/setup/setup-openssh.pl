@@ -99,6 +99,8 @@ my $keyfiles = {
 
 my($prompt, $force, $verbose);
 
+$prompt = 1;
+
 GetOptions(
             'prompt!' => \$prompt,
             'force' => \$force,
@@ -124,9 +126,6 @@ print "will also attempt to copy or create a number of SSH key pairs for\n";
 print "this machine.  (Loosely, if I find a pair of host keys in /etc/ssh,\n";
 print "I will copy them into \$GLOBUS_LOCATION/etc/ssh.  Otherwise, I will\n";
 print "generate them for you.)\n";
-print "\n";
-print "    Jacobim Mugatu says,\n";
-print "        \"Utopian Prime Minister Bad!  GSI-OpenSSH Good!\"\n";
 print "\n";
 
 if ( isForced() )
@@ -220,13 +219,13 @@ if ( !getPrivilegeSeparation() )
 
 print "\n";
 print "  o For more information about GSI-Enabled OpenSSH, visit:\n";
-print "    <http://www.ncsa.uiuc.edu/Divisions/ACES/GSI/openssh/>\n";
+print "    <http://www.ncsa.uiuc.edu/Divisions/NSM/GST/GSI/openssh/>\n";
 
 #
 # give the user a chance to read all of this output
 #
 
-if (!$prompt)
+if ( $prompt )
 {
     print "\n";
     print "Press <return> to continue... ";
@@ -1123,7 +1122,7 @@ sub query_boolean
     my($query_text, $default) = @_;
     my($nondefault, $foo, $bar);
 
-    if (!$prompt)
+    if ( !$prompt )
     {
         print "Prompt suppressed.  Continuing...\n";
         return "y";
