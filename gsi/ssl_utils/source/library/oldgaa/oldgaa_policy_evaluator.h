@@ -67,4 +67,51 @@ oldgaa_evaluate_sech_mech_cond(oldgaa_principals_ptr  principal,
                         oldgaa_options_ptr     options);
 
 
+/**********************************************************************
+             Helpers Static Functions         
+ **********************************************************************/
+
+static
+oldgaa_error_code
+evaluate_condition(oldgaa_sec_context_ptr sc, 
+                   oldgaa_conditions_ptr  condition,
+                   oldgaa_options_ptr     options);
+
+static
+char *
+get_day();
+
+static
+char *
+get_hr_24();
+
+static
+char *
+get_hr_12();
+
+static
+char *
+get_minutes();
+
+static
+char *
+get_seconds();
+
+static
+char *
+get_am_pm();
+
+static
+int
+day_to_val(char *str);
+
+static
+int
+check_day(char *str1, char *str2, char *day);
+
+static
+char*
+get_value(int *jj, const char *cond, const char delimiter);
+
+
 #endif /* _OLDGAA_POLICY_EVALUATOR_H */

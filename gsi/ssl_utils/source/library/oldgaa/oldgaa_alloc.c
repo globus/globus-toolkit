@@ -10,10 +10,6 @@ Description:
 
 /*****************************************************************************/
 
-extern
-void
-oldgaa_gl__fout_of_memory(const char file[], int line);
-
 oldgaa_error_code  
 oldgaa_allocate_buffer (oldgaa_buffer_ptr*  buffer_addr   /* IN  */)
 {

@@ -112,12 +112,40 @@ oldgaa_policy_ptr
 oldgaa_globus_policy_retrieve(uint32      *minor_status,
                            oldgaa_data_ptr object,
                            oldgaa_data_ptr policy_db, ...);
+static
+int
+get_default_policy_file(oldgaa_data_ptr policy_db);
 
 policy_file_context_ptr 
 oldgaa_globus_policy_file_open(const char *filename);
 
 void
 oldgaa_globus_policy_file_close(policy_file_context_ptr  pcontext);
+
+
+/**********************************************************************
+  Policy Parsing Functions 
+ **********************************************************************/
+
+static
+int
+oldgaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
+                 char                    *str, 
+                 const char              *message);
+static
+int
+oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
+                        char                    *str,
+                        char                    **errstring);
+static
+int
+oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
+                            char                    *str);
+static
+int
+oldgaa_globus_omit_comment_line(policy_file_context_ptr  pcontext);
+
+
 
 oldgaa_error_code  
 oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,

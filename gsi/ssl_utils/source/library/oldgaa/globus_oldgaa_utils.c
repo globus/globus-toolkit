@@ -12,7 +12,7 @@ Description:
 
 #include "globus_oldgaa.h"
 #include "globus_oldgaa_utils.h" 
-#include "oldgaa_policy_evaluator.h"
+
 #include "oldgaa_utils.h"
 #include "config.h"
 
@@ -26,201 +26,8 @@ Description:
 **********************************************************************/
 
 static  int     end_of_file;
+static  char   *parse_error  = NULL;
 static  uint32  m_status     = 0;
-
-
-/**********************************************************************
-  Policy Parsing Functions 
- **********************************************************************/
-
-/**********************************************************************
-
-Function: oldgaa_globus_get_string_with_whitespaces
-
-Description:
-	Read a string from a given stream up to it finds STRING_DELIMITER.
-
-Parameters:
-	pcontext, handle to a structure, containing the stream to read from.
-
-	str, pointer to string to be filled in.
-
-Returns:
-        0 on success
-       -1 on error
-
-**********************************************************************/
-static
-int
-oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
-                                       char                    *str)
-{
- int  i, len = strlen(str);
- int  chr;
-
- for (i=0; i<len-1; i++) str[i] = str[i+1]; /* get rid of ' in the 
-                                               begining of str */
- if(str[i-1] == STRING_DELIMITER) 
- {
-   str[i-1] = NUL; /* clean up the tailing ' */
-   return 0;
-  }
-
-                   
-  while(i < MAX_STRING_SIZE) /* read chars from the stream 
-                            untill see STRING_DELIMITER */
-  {  
-     chr = fgetc(pcontext->stream); 
-
-     if(chr == EOF)  
-    {     
-      end_of_file = TRUE;
-
-      oldgaa_handle_error(&(pcontext->parse_error),
-		 "oldgaa_globus_get_string_with_white_spaces: Missing string delimiter \'");
-      return -1;
-    }        
-      if (chr == STRING_DELIMITER) break;
-      else { str[i] = chr; i++; }
-  }
-
-
-  if(i >= MAX_STRING_SIZE)/* string is too long */
-    {
-      oldgaa_handle_error(&(pcontext->parse_error),
-		 "get_string_with_white_spaces: String is too long");
-      return -1;
-    }
-
-  str[i] = NUL; /* terminate the string */
-
-  return 0;
-}
-
-
-/**********************************************************************
-
-Function: oldgaa_globus_omit_comment_line
-
-Description:
-	omit comment from the stream
-
-Parameters:
-	pcontext, handle to a structure, containing the stream to read from.
-
-Returns:
-        0 on success
-       -1 on error
-
-**********************************************************************/
-
-static
-int
-oldgaa_globus_omit_comment_line(policy_file_context_ptr  pcontext)
-{
- int chr;  
- 
- while((chr = fgetc(pcontext->stream))!= EOF)
-  {         
-     if (chr == END_OF_LINE) break;          
-  }
-
-  if (chr == EOF) end_of_file = TRUE;
-
-  return 0;
-}   
-
-/**********************************************************************
-
-Function: oldgaa_globus_read_string
-
-Description:
-	Read a string from a given stream up to and including the newline
-	and return it in an allocated buffer.
-
-Parameters:
-	pcontext, handle to a structure, containing the stream to read from.
-
-	str, pointer to string to be filled in.
-
-	errstring, pointer to the pointer to be filled in with
-	a pointer to a string describing an error that occurs.
-	May be NULL.
-
-Returns:
-        0 on success
-        1 on error
-
-**********************************************************************/
-
-static
-int
-oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
-                        char                    *str,
-                        char                    **errstring)
-{   
-  if (fscanf(pcontext->stream, "%s",str) == EOF) 
-  {
-    end_of_file = TRUE; 
-    return 0; 
-  }
-
-  oldgaa_handle_error(&(pcontext->str),str); /* set the string value to
-                             report it in the case there is an error */
-
-  
-  if (str[0]== STRING_DELIMITER) /* get strings with white spaces */
-  {
-   if(oldgaa_globus_get_string_with_whitespaces(pcontext, str) == -1)
-    {
-      oldgaa_handle_error(&(pcontext->parse_error),
-		        "error while reading string");      
-      return 1;
-    }
-  }
-
-
-  if (str[0]== COMMENT) /* omit comment line */
-  { 
-    if(oldgaa_globus_omit_comment_line(pcontext))
-    {
-     oldgaa_handle_error(&(pcontext->parse_error),
-		       "error while reading string"); 
-     return 1;
-    }
-
-    if(oldgaa_globus_read_string(pcontext, str, errstring))
-    {
-      
-     oldgaa_handle_error(&(pcontext->parse_error),
-		      "error while reading string"); 
-     return 1;
-    }
-  } 
-  
- return 0;
-
-}
-
-/**********************************************************************/
-
-static
-int
-oldgaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
-                            char                    *str, 
-                            const char              *message)
-{
-
- if (oldgaa_globus_read_string(pcontext, str, NULL)) return 1;
-
- if (end_of_file == TRUE) 
-     {       
-       oldgaa_handle_error(&(pcontext->parse_error), message);
-       return 1;         
-     }  
-     	 
- return 0;
-}
 
 static oldgaa_error_code
 oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
@@ -282,57 +89,7 @@ print_oldgaa_principal_ptr(oldgaa_principals_ptr pr)
 	}
     }
 }
-
 #endif /* LDEBUG */
- 
-/**********************************************************************/
-
-extern
-void
-oldgaa_gl__fout_of_memory(const char file[], int line);
-
-static
-int
-get_default_policy_file(oldgaa_data_ptr policy_db)
-{
-  char *ca_policy_file_path  = NULL;
-  char *cert_dir             = NULL;
-  char *ca_policy_filename   = GRID_CA_POLICY_FILENAME;
-
-  cert_dir = getenv("X509_CERT_DIR");
-
-  if (cert_dir)
-  {
-    ca_policy_file_path = malloc(strlen(cert_dir) +
-				 strlen(ca_policy_filename) +
-				 2 /* for '/' and NUL */);
-
-   if(!ca_policy_file_path) out_of_memory();
-
-  }
-
-
-  if (ca_policy_file_path)
-  {
-    sprintf(ca_policy_file_path, "%s/%s", cert_dir, ca_policy_filename);
-
-    policy_db->str = oldgaa_strcopy(ca_policy_file_path, policy_db->str) ;
-
-  }
-  
- if (!ca_policy_file_path)
-  {    	   
-   policy_db->error_str = 
-   oldgaa_strcopy("Can not find default policy location. X509_CERT_DIR is not defined.\n",
-                policy_db->error_str);
-   policy_db->error_code = ERROR_WHILE_GETTING_DEFAULT_POLICY_LOCATION;
-
-   return 1;
-  }
- 
-  return 0; 
-}
-
 /**********************************************************************
   OLDGAA Cleanup Functions 
  **********************************************************************/
@@ -586,10 +343,54 @@ fprintf(stderr, "\noldgaa_globus_policy_retrieve:\n");
 
     return NULL;
 }
+ 
+/**********************************************************************/
 
-extern
-void
-oldgaa_gl__fout_of_memory(const char file[], int line);
+static
+int
+get_default_policy_file(oldgaa_data_ptr policy_db)
+{
+  char *ca_policy_file_path  = NULL;
+  char *cert_dir             = NULL;
+  char *ca_policy_filename   = GRID_CA_POLICY_FILENAME;
+
+  cert_dir = getenv("X509_CERT_DIR");
+
+  if (cert_dir)
+  {
+    ca_policy_file_path = malloc(strlen(cert_dir) +
+				 strlen(ca_policy_filename) +
+				 2 /* for '/' and NUL */);
+
+   if(!ca_policy_file_path) out_of_memory();
+
+  }
+
+
+  if (ca_policy_file_path)
+  {
+    struct stat stat_buf;
+
+    sprintf(ca_policy_file_path, "%s/%s", cert_dir, ca_policy_filename);
+
+    policy_db->str = oldgaa_strcopy(ca_policy_file_path, policy_db->str) ;
+
+  }
+  
+ if (!ca_policy_file_path)
+  {    	   
+   policy_db->error_str = 
+   oldgaa_strcopy("Can not find default policy location. X509_CERT_DIR is not defined.\n",
+                policy_db->error_str);
+   policy_db->error_code = ERROR_WHILE_GETTING_DEFAULT_POLICY_LOCATION;
+
+   return 1;
+  }
+ 
+  return 0; 
+}
+
+
 
 /**********************************************************************
 
@@ -687,6 +488,200 @@ fprintf(stderr, "\noldgaa_globus_policy_file_close:\n");
 } 
 
 
+/**********************************************************************
+  Policy Parsing Functions 
+ **********************************************************************/
+/**********************************************************************/
+
+static
+int
+oldgaa_globus_help_read_string(policy_file_context_ptr  pcontext, 
+                            char                    *str, 
+                            const char              *message)
+{
+
+ if (oldgaa_globus_read_string(pcontext, str, NULL)) return 1;
+
+ if (end_of_file == TRUE) 
+     {       
+       oldgaa_handle_error(&(pcontext->parse_error), message);
+       return 1;         
+     }  
+     	 
+ return 0;
+}
+
+
+
+/**********************************************************************
+
+Function: oldgaa_globus_read_string
+
+Description:
+	Read a string from a given stream up to and including the newline
+	and return it in an allocated buffer.
+
+Parameters:
+	pcontext, handle to a structure, containing the stream to read from.
+
+	str, pointer to string to be filled in.
+
+	errstring, pointer to the pointer to be filled in with
+	a pointer to a string describing an error that occurs.
+	May be NULL.
+
+Returns:
+        0 on success
+        1 on error
+
+**********************************************************************/
+
+static
+int
+oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
+                        char                    *str,
+                        char                    **errstring)
+{   
+  if (fscanf(pcontext->stream, "%s",str) == EOF) 
+  {
+    end_of_file = TRUE; 
+    return 0; 
+  }
+
+  oldgaa_handle_error(&(pcontext->str),str); /* set the string value to
+                             report it in the case there is an error */
+
+  
+  if (str[0]== STRING_DELIMITER) /* get strings with white spaces */
+  {
+   if(oldgaa_globus_get_string_with_whitespaces(pcontext, str) == -1)
+    {
+      oldgaa_handle_error(&(pcontext->parse_error),
+		        "error while reading string");      
+      return 1;
+    }
+  }
+
+
+  if (str[0]== COMMENT) /* omit comment line */
+  { 
+    if(oldgaa_globus_omit_comment_line(pcontext))
+    {
+     oldgaa_handle_error(&(pcontext->parse_error),
+		       "error while reading string"); 
+     return 1;
+    }
+
+    if(oldgaa_globus_read_string(pcontext, str, errstring))
+    {
+      
+     oldgaa_handle_error(&(pcontext->parse_error),
+		      "error while reading string"); 
+     return 1;
+    }
+  } 
+  
+ return 0;
+
+}
+
+/**********************************************************************
+
+Function: oldgaa_globus_get_string_with_whitespaces
+
+Description:
+	Read a string from a given stream up to it finds STRING_DELIMITER.
+
+Parameters:
+	pcontext, handle to a structure, containing the stream to read from.
+
+	str, pointer to string to be filled in.
+
+Returns:
+        0 on success
+       -1 on error
+
+**********************************************************************/
+static
+int
+oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
+                                       char                    *str)
+{
+ int  i, len = strlen(str);
+ int  chr;
+
+ for (i=0; i<len-1; i++) str[i] = str[i+1]; /* get rid of ' in the 
+                                               begining of str */
+ if(str[i-1] == STRING_DELIMITER) 
+ {
+   str[i-1] = NUL; /* clean up the tailing ' */
+   return 0;
+  }
+
+                   
+  while(i < MAX_STRING_SIZE) /* read chars from the stream 
+                            untill see STRING_DELIMITER */
+  {  
+     chr = fgetc(pcontext->stream); 
+
+     if(chr == EOF)  
+    {     
+      end_of_file = TRUE;
+
+      oldgaa_handle_error(&(pcontext->parse_error),
+		 "oldgaa_globus_get_string_with_white_spaces: Missing string delimiter \'");
+      return -1;
+    }        
+      if (chr == STRING_DELIMITER) break;
+      else { str[i] = chr; i++; }
+  }
+
+
+  if(i >= MAX_STRING_SIZE)/* string is too long */
+    {
+      oldgaa_handle_error(&(pcontext->parse_error),
+		 "get_string_with_white_spaces: String is too long");
+      return -1;
+    }
+
+  str[i] = NUL; /* terminate the string */
+
+  return 0;
+}
+
+/**********************************************************************
+
+Function: oldgaa_globus_omit_comment_line
+
+Description:
+	omit comment from the stream
+
+Parameters:
+	pcontext, handle to a structure, containing the stream to read from.
+
+Returns:
+        0 on success
+       -1 on error
+
+**********************************************************************/
+
+static
+int
+oldgaa_globus_omit_comment_line(policy_file_context_ptr  pcontext)
+{
+ int chr;  
+ 
+ while((chr = fgetc(pcontext->stream))!= EOF)
+  {         
+     if (chr == END_OF_LINE) break;          
+  }
+
+  if (chr == EOF) end_of_file = TRUE;
+
+  return 0;
+}   
+
+
 
 /**********************************************************************
 
@@ -711,6 +706,7 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
                          oldgaa_policy_ptr          *policy_handle)
 
 {
+  oldgaa_policy_ptr        ptr_policy       = NULL;
   oldgaa_conditions_ptr    all_conditions   = NULL;
 /*
  *DEE all_conditions is only used in this routine to look for
@@ -725,6 +721,7 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
   char                  str[MAX_STRING_SIZE] = {NUL};
   int                   cond_present     = FALSE;
   int                   new_entry        = TRUE; 
+  int                   line_number;
 
   oldgaa_rights_ptr old_rights = 0;
  
@@ -893,7 +890,7 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
 			    oldgaa_principals_ptr    *added_principal)
 {
   char               str[MAX_STRING_SIZE],*type;
-  int                first     = TRUE;
+  int                first     = TRUE, ret_val;
   oldgaa_principals_ptr principal = NULL;
 
 #ifdef DEBUG
@@ -1014,7 +1011,7 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
                         int                     *end_of_entry)
 {
   char            str[MAX_STRING_SIZE];
-  int             first  = TRUE;
+  int             first  = TRUE, ret_val;
   oldgaa_rights_ptr  rights = NULL;
   
 #ifdef DEBUG
@@ -1109,10 +1106,10 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
                             int                     *end_of_entry )
 {
   char                  str[MAX_STRING_SIZE];
-  int                   first = TRUE;
+  int                   first = TRUE, ret_val;
   oldgaa_conditions_ptr    cond;
   oldgaa_cond_bindings_ptr cond_bind;
-  uint32        inv_minor_status = 0;
+  uint32        inv_minor_status = 0, inv_major_status = 0;
 
 #ifdef DEBUG
 fprintf(stderr, "\noldgaa_globus_parse conditions:\n");

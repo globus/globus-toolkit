@@ -15,15 +15,15 @@ Sources= \
 	globus_oldgaa_utils.h \
 	rfc1779.c
 
-lib_LTLIBRARIES = libglobus_gsi_oldgaa_$(GLOBUS_FLAVOR_NAME).la
+noinst_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = $(GPT_INCLUDES)
 
 #AM_CFLAGS = -DDEBUG
 
-libglobus_gsi_oldgaa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_gsi_oldgaa___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-libglobus_gsi_oldgaa___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post

@@ -38,47 +38,6 @@ int	       string_max   = 0;
 static char   *parse_error  = NULL;
 
 
-/**********************************************************************
-
-Function:	oldgaa_to_regex()
-
-Description:    
-	Convert a shell-style regex to a regex suitable
-	to feed into the posix regex commands.
-
-	Specifically:
-
-	'*' is converted to '.*'
-
-	'?' is converted to '.'
-
-	'.', '^', '\, and '$' are escaped by preceding them
-	with a backslash
-			
-	'^' is prepended to the string and '$' is appended so that the
-	resulting regex will force a complete match.
-
-Parameters:
-	glob_regex, a pointer to the glob-style regex string.
-
-Returns:
-	a pointer to allocated regex string
-	NULL on error (errno is set).
-		
-**********************************************************************/
-
-static
-char *
-oldgaa_to_regex(const char * const glob_regex)
-{
-    /* don't do the conversion */
-    /* we're no longer doing regex matching -Sam */
-    return strdup(glob_regex);
-} /* oldgaa_to_regex() */
-
-
-/**********************************************************************/
-
 /******************************************************************************
 
 Function:   oldgaa_oldgaa_handle_error
@@ -159,10 +118,6 @@ oldgaa_strings_match(
  *     In any event, OLDGAA_STRCOPY returns a pointer to the new copy of S,
  *     or a NULL pointer.
  *****************************************************************************/
-
-extern 
-void
-oldgaa_gl__fout_of_memory(const char file[], int line);
 
 char *
 oldgaa_strcopy(const char *s, char *r)
@@ -665,4 +620,43 @@ fprintf(stderr, "\noldgaa_parse_regex:\n");
 }
 
 
+/**********************************************************************
 
+Function:	oldgaa_to_regex()
+
+Description:    
+	Convert a shell-style regex to a regex suitable
+	to feed into the posix regex commands.
+
+	Specifically:
+
+	'*' is converted to '.*'
+
+	'?' is converted to '.'
+
+	'.', '^', '\, and '$' are escaped by preceding them
+	with a backslash
+			
+	'^' is prepended to the string and '$' is appended so that the
+	resulting regex will force a complete match.
+
+Parameters:
+	glob_regex, a pointer to the glob-style regex string.
+
+Returns:
+	a pointer to allocated regex string
+	NULL on error (errno is set).
+		
+**********************************************************************/
+
+static
+char *
+oldgaa_to_regex(const char * const glob_regex)
+{
+    /* don't do the conversion */
+    /* we're no longer doing regex matching -Sam */
+    return strdup(glob_regex);
+} /* oldgaa_to_regex() */
+
+
+/**********************************************************************/
