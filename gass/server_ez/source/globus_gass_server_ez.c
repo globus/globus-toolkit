@@ -412,11 +412,14 @@ globus_l_gass_server_ez_listen_callback(
 				 globus_l_gass_server_ez_register_accept_callback,
 				 (void *)listener);
 
-    /* to listen for additional requests*/
-    rc=globus_gass_transfer_register_listen(listener,
-                                        globus_l_gass_server_ez_listen_callback,
-                                        user_arg);
-
+    if(rc != GLOBUS_SUCCESS)
+    {
+	/* to listen for additional requests*/
+	globus_gass_transfer_register_listen(
+	    listener,
+	    globus_l_gass_server_ez_listen_callback,
+	    user_arg);
+    }
 }
 
 
@@ -453,12 +456,12 @@ globus_l_gass_server_ez_register_accept_callback(
        parsed_url.url_path == GLOBUS_NULL)
     {
         globus_url_destroy(&parsed_url);
-        return;
+	goto reregister;
     }
     if(strlen(parsed_url.url_path) == 0U)
     {
         globus_url_destroy(&parsed_url);
-        return;
+        goto reregister;
     }
 
     /* lookup our options */
@@ -597,7 +600,7 @@ globus_l_gass_server_ez_register_accept_callback(
 	  break;
 	default:
 	deny:
-	  globus_gass_transfer_deny(request, 400, "Client Error");
+	  globus_gass_transfer_deny(request, 400, "Bad Request");
 	  globus_gass_transfer_request_destroy(request);
 
 	}
