@@ -41,7 +41,8 @@ int main(int argc, char * argv[])
        mem_init(mem_ptr[cnt], cnt);
    }
 
-   dump((globus_byte_t *) mem_ptr[0], MEM_INIT_SIZE * sizeof(mem_test_t));
+   /* nodes are aligned on mod 8 boundaries, add 1 to 7 to make 8 */
+   dump((globus_byte_t *) mem_ptr[0], MEM_INIT_SIZE * (sizeof(mem_test_t) + 1));
    
    globus_memory_push_node(&mem, (globus_byte_t *)mem_ptr[0]);
    
