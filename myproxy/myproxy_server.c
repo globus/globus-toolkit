@@ -176,28 +176,42 @@ main(int argc, char *argv[])
                 myproxy_log_perror("Error in accept()");
             }
         }
-        childpid = fork();
+	
+	if (!debug)
+	{
+	    childpid = fork();
         
-        if (childpid < 0) {              /* check for error */
-            myproxy_log_perror("Error in fork");
-	    close(socket_attrs->socket_fd);
-        } else if (childpid == 0) {      /* child process */
-            fd = open("/dev/tty",O_RDWR);
-            if (fd >= 0) {
-                ioctl(fd, TIOCNOTTY, 0);
-                close(fd);
-            }
-            fclose(stdin);
-            close(0);
-            close(listenfd);
+	    if (childpid < 0) {              /* check for error */
+		myproxy_log_perror("Error in fork");
+		close(socket_attrs->socket_fd);
+	    }
+	    else if (childpid != 0)
+	    {
+		/* Parent */
+
+		/* parent closes connected socket */
+		close(socket_attrs->socket_fd);
+
+		continue;	/* while(1) */
+	    }
+
+	    /* child process */
+	    fd = open("/dev/tty",O_RDWR);
+	    if (fd >= 0) {
+		ioctl(fd, TIOCNOTTY, 0);
+		close(fd);
+	    }
+	    fclose(stdin);
+	    close(0);
+	    close(listenfd);
 	    numclients++;
-	    myproxy_log("Client has connected, total clients=%d", numclients);
-            if (handle_client(socket_attrs, server_context) < 0) {
-                my_failure("error in handle_client()");
-            } 
-            _exit(0);
-        }
-        close(socket_attrs->socket_fd);  /* parent closes connected socket */
+	}
+	
+	myproxy_log("Client has connected, total clients=%d", numclients);
+	if (handle_client(socket_attrs, server_context) < 0) {
+	    my_failure("error in handle_client()");
+	} 
+	_exit(0);
     }
     exit(0);
 }
