@@ -1717,7 +1717,7 @@ static void doit()
 
     {
         char *proxyfile;
-        if ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
+        if ((proxyfile = getenv("X509_USER_PROXY")) != NULL)
         {
             chown(proxyfile,service_uid,service_gid);
         }
@@ -1853,7 +1853,9 @@ static void doit()
         unsetenv("GLOBUSKEYDIR"); /* unset it */
         unsetenv("X509_USER_KEY"); /* unset it */
         unsetenv("X509_USER_CERT"); /* unset it */
-        unsetenv("X509_USER_PROXY"); /* unset it */
+
+	/* SLANG - can't unset this, otherwise jobmanager won't know where to look. */
+	/* unsetenv("X509_USER_PROXY"); /* unset it  */
     }
 
     /* for tranition, if gatekeeper has the path, set it

@@ -1516,15 +1516,13 @@ proxy_marshal_tmp(
         return 1;
     }
 
-/*      if ((envstr = (char *)malloc(strlen(X509_USER_PROXY) + */
-    if ((envstr = (char *)malloc(strlen(X509_USER_DELEG_PROXY) +
+    if ((envstr = (char *)malloc(strlen(X509_USER_PROXY) +
                                  strlen(filename) + 2)) == NULL)
     {
         PRXYerr(PRXYERR_F_PROXY_TMP, PRXYERR_R_OUT_OF_MEMORY);
         return 1;
     }
-/*      strcpy(envstr,X509_USER_PROXY); */
-    strcpy(envstr,X509_USER_DELEG_PROXY);
+    strcpy(envstr,X509_USER_PROXY);
     strcat(envstr,"=");
     strcat(envstr,filename);
 
