@@ -12,6 +12,8 @@
 #ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
 #define GLOBUS_XIO_GSI_DRIVER_INCLUDE
 
+#include "gssapi.h"
+#include "globus_common.h"
 
 /**
  * @defgroup globus_xio_gsi_datatypes Datatypes
@@ -68,7 +70,15 @@ typedef enum
     /** Get the name of the peer */
     GLOBUS_XIO_GSI_GET_PEER_NAME,
     /** Get the name associated with the local credentials */
-    GLOBUS_XIO_GSI_GET_LOCAL_NAME
+    GLOBUS_XIO_GSI_GET_LOCAL_NAME,
+    /** Initialize delegation-at-any-time process */
+    GLOBUS_XIO_GSI_INIT_DELEGATION,
+    /** Initialize non-blocking delegation-at-any-time process */
+    GLOBUS_XIO_GSI_REGISTER_INIT_DELEGATION,
+    /** Accept delegation-at-any-time process */
+    GLOBUS_XIO_GSI_ACCEPT_DELEGATION,
+    /** Accept delegation-at-any-time process */
+    GLOBUS_XIO_GSI_REGISTER_ACCEPT_DELEGATION
 } globus_xio_gsi_cmd_t;
 
 /**
@@ -114,5 +124,24 @@ typedef enum
     /** Accept both full and limited proxies unconditionally */
     GLOBUS_XIO_GSI_PROXY_MODE_MANY
 } globus_xio_gsi_proxy_mode_t;
+
+/**
+ * Globus XIO GSI init delegation callback
+ * @ingroup globus_xio_gsi_datatypes
+ */
+typedef void (* globus_xio_gsi_delegation_init_callback_t)(
+    globus_result_t			result,
+    void *				user_arg);
+
+/**
+ * Globus XIO GSI init delegation callback
+ * @ingroup globus_xio_gsi_datatypes
+ */
+typedef void (* globus_xio_gsi_delegation_accept_callback_t)(
+    globus_result_t			result,
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec,
+    void *				user_arg);
+
 
 #endif

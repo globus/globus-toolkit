@@ -1,6 +1,7 @@
 #ifndef GLOBUS_I_XIO_GSI_H
 #define GLOBUS_I_XIO_GSI_H
 
+#include <assert.h>
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
 #include "globus_i_xio.h"
@@ -152,6 +153,43 @@ typedef struct
     globus_size_t                       bytes_returned;
     globus_bool_t                       done;
     globus_result_t                     result;
+    globus_xio_context_t                xio_context;
 } globus_l_handle_t;
 
+/*
+ * Structure used for passing information needed for the init/accept delegation
+ * operations 
+ */
+
+typedef struct
+{
+    globus_l_handle_t *                 xio_handle;
+    void *                              user_arg;
+    globus_xio_gsi_delegation_init_callback_t
+                                        init_callback;
+    globus_xio_gsi_delegation_accept_callback_t
+                                        accept_callback;
+    gss_cred_id_t                       cred;
+    gss_OID_set                         restriction_oids;
+    gss_buffer_set_t                    restriction_buffers;
+    OM_uint32                           time_req;
+    OM_uint32                           time_rec;
+    globus_xio_iovec_t                  iovec[2];
+    unsigned char                       header[4];
+    globus_bool_t                       done;
+    globus_result_t                     result;
+    globus_bool_t                       reading_header;
+} globus_l_delegation_handle_t;
+
+typedef struct
+{
+    globus_bool_t                       done;
+    globus_result_t                     result;
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    OM_uint32 *                         time_rec;
+    gss_cred_id_t *                     cred;
+} globus_l_xio_gsi_delegation_arg_t;
+
 #endif
+

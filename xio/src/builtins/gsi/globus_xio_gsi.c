@@ -27,6 +27,14 @@ globus_l_xio_gsi_read_token_cb(
 
 static
 void
+globus_l_xio_gsi_read_delegation_token_cb(
+    struct globus_i_xio_op_s *          op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
+
+static
+void
 globus_l_xio_gsi_close_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
@@ -1446,7 +1454,8 @@ globus_l_xio_gsi_open(
     }
 
     memset(handle, 0, sizeof(globus_l_handle_t));
-    
+
+    handle->xio_context = context;
     handle->target = target;
     result = globus_l_xio_gsi_attr_copy((void **) &handle->attr, attr);
 
@@ -2347,6 +2356,342 @@ globus_l_xio_gsi_write(
 }
 
 
+
+/* Write callback received after writing a delegation token. Checks the
+ * result and registers another read unless the handle indicates we are
+ * done - internal only
+ */
+static void
+globus_l_xio_gsi_write_delegation_token_cb(
+    struct globus_i_xio_op_s *          op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_xio_context_t                context;
+    globus_l_delegation_handle_t *      handle;
+    gss_buffer_desc                     tmp_buffer;
+    OM_uint32                           minor_status;
+
+    GlobusXIOName(globus_l_xio_gsi_write_delegation_token_cb);
+    GlobusXIOGSIDebugInternalEnter();
+
+    handle = (globus_l_delegation_handle_t *) user_arg;
+     
+    context = GlobusXIOOperationGetContext(op);
+
+    /* iovec was used to write a sec token */
+    
+    tmp_buffer.length = handle->iovec[1].iov_len;
+    tmp_buffer.value = handle->iovec[1].iov_base;
+
+    gss_release_buffer(&minor_status, &tmp_buffer);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    if(handle->done == GLOBUS_TRUE)
+    {
+        /* call callback */
+        if(handle->init_callback)
+        {
+            handle->init_callback(handle->result,
+                                  handle->user_arg);
+        }
+        else
+        {
+            handle->accept_callback(handle->result,
+                                    handle->cred,
+                                    handle->time_rec,
+                                    user_arg);
+        }
+
+        free(handle);
+        
+        GlobusXIOGSIDebugInternalExit();
+        return;
+    }
+    else
+    {
+        handle->reading_header = GLOBUS_TRUE;
+        GlobusXIODriverPassRead(result, op, handle->iovec, 1, 4,
+                                globus_l_xio_gsi_read_delegation_token_cb,
+                                handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+    
+    GlobusXIOGSIDebugInternalExit();
+    return;
+    
+ error:
+    /* call callback */
+    if(handle->init_callback)
+    {
+        handle->init_callback(result,
+                              handle->user_arg);
+    }
+    else
+    {
+        handle->accept_callback(result,
+                                handle->cred,
+                                handle->time_rec,
+                                user_arg);
+    }
+
+    free(handle);
+    
+    GlobusXIOGSIDebugInternalExitWithError();
+    return;
+}
+
+/* Read callback received after reading a delegation token. Checks the
+ * result, passes the read token to the right gss call and starts a write if
+ * the gss call did emit another token. - internal only
+ */
+static
+void
+globus_l_xio_gsi_read_delegation_token_cb(
+    struct globus_i_xio_op_s *          op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_l_delegation_handle_t *      handle;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_buffer_desc 		        output_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc 		        input_token;
+    gss_OID                             mech_type;
+    globus_size_t                       wait_for = 0;
+    
+    GlobusXIOName(globus_l_xio_gsi_read_delegation_token_cb);
+    GlobusXIOGSIDebugInternalEnter();
+
+    handle = (globus_l_delegation_handle_t *) user_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+
+    if(handle->reading_header == GLOBUS_TRUE)
+    {
+        handle->reading_header = GLOBUS_FALSE;
+        GlobusLXIOGSIGetTokenLength(handle->iovec[0],wait_for);
+        handle->iovec[1].iov_base = malloc(wait_for);
+        if(!handle->iovec[1].iov_base)
+        {
+            result = GlobusXIOErrorMemory("handle->iovec[1].iov_base");
+            goto error;
+        }
+        handle->iovec[1].iov_len = wait_for;
+        GlobusXIODriverPassRead(result, op, &handle->iovec[1], 1,
+                                wait_for,
+                                globus_l_xio_gsi_read_delegation_token_cb,
+                                handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        GlobusXIOGSIDebugInternalExit();
+        return;
+    }
+    else
+    {
+        wait_for = 0;
+        input_token.value = handle->iovec[1].iov_base;
+        input_token.length = nbytes;
+    }
+    
+    /* init/accept sec context */
+    
+    if(handle->init_callback)
+    {
+        major_status = gss_init_delegation(
+            &minor_status,
+            handle->xio_handle->context,
+            handle->cred,
+            GSS_C_NO_OID,
+            handle->restriction_oids,
+            handle->restriction_buffers,
+            &input_token,
+            0,
+            handle->time_req,
+            &output_token);
+
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusXIOErrorWrapGSSFailed("gss_init_delegation",
+                                                 major_status,
+                                                 minor_status);
+
+            /* if we have a output token try to send it */
+            if(output_token.length == 0)
+            {
+                goto error;
+            }
+            else
+            {
+                handle->result = result;
+                handle->done = GLOBUS_TRUE;
+            }
+        }
+        else if(major_status == GSS_S_COMPLETE)
+        {
+            handle->done = GLOBUS_TRUE;
+        }
+    }
+    else
+    {
+        major_status = gss_accept_delegation(&minor_status,
+                                             handle->xio_handle->context,
+                                             handle->restriction_oids,
+                                             handle->restriction_buffers,
+                                             &input_token,
+                                             0,
+                                             handle->time_req,
+                                             &handle->time_rec,
+                                             handle->cred,
+                                             &mech_type,
+                                             &output_token);
+        
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusXIOErrorWrapGSSFailed("gss_accept_delegation",
+                                                 major_status,
+                                                 minor_status);
+            /* if we have a output token try to send it */
+            if(output_token.length == 0)
+            {
+                goto error;
+            }
+            else
+            {
+                handle->result = result;
+                handle->done = GLOBUS_TRUE;
+            }
+        }
+        else if(major_status == GSS_S_COMPLETE)
+        {
+            handle->done = GLOBUS_TRUE;
+        }
+    }
+
+    if(output_token.length != 0)
+    {
+        /* send the output token */
+
+        GlobusLXIOGSICreateHeader(handle->iovec[0], output_token.length);
+        
+        handle->iovec[1].iov_len = output_token.length;
+        handle->iovec[1].iov_base = output_token.value;
+            
+        wait_for = 4 + output_token.length;
+        
+        GlobusXIODriverPassWrite(result, op, handle->iovec, 2, wait_for,
+                                 globus_l_xio_gsi_write_delegation_token_cb,
+                                 handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gss_release_buffer(&minor_status, &output_token);
+            goto error;
+        }
+    }
+    else if(handle->done == GLOBUS_TRUE)
+    {
+        /* we're done */
+        /* call callback */
+        if(handle->init_callback)
+        {
+            handle->init_callback(result,
+                                  handle->user_arg);
+        }
+        else
+        {
+            handle->accept_callback(result,
+                                    handle->cred,
+                                    handle->time_rec,
+                                    user_arg);
+        }
+
+        free(handle);
+    }
+
+    GlobusXIOGSIDebugInternalExit();
+    return;
+
+ error:
+
+    /* call callback */
+    if(handle->init_callback)
+    {
+        handle->init_callback(result,
+                              handle->user_arg);
+    }
+    else
+    {
+        handle->accept_callback(result,
+                                handle->cred,
+                                handle->time_rec,
+                                user_arg);
+    }
+
+    free(handle);
+    
+    GlobusXIOGSIDebugInternalExitWithError();
+    return;
+}
+
+static
+void
+globus_l_xio_gsi_init_delegation_cb(
+    globus_result_t			result,
+    void *				user_arg)
+{
+    globus_l_xio_gsi_delegation_arg_t * monitor;
+
+    monitor = (globus_l_xio_gsi_delegation_arg_t *) user_arg;
+
+    globus_mutex_lock(&monitor->mutex);
+
+    monitor->result = result;
+    monitor->done = GLOBUS_TRUE;
+    
+    globus_mutex_unlock(&monitor->mutex);
+
+    return;
+}
+
+static
+void
+globus_l_xio_gsi_accept_delegation_cb(
+    globus_result_t			result,
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec,
+    void *				user_arg)
+{
+    globus_l_xio_gsi_delegation_arg_t * monitor;
+
+    monitor = (globus_l_xio_gsi_delegation_arg_t *) user_arg;
+
+    globus_mutex_lock(&monitor->mutex);
+
+    monitor->result = result;
+    *(monitor->cred) = delegated_cred;
+    *(monitor->time_rec) = time_rec;
+    monitor->done = GLOBUS_TRUE;
+    
+    globus_mutex_unlock(&monitor->mutex);
+
+    return;    
+}
+
 /*
  * driver cntl interface function
  */
@@ -2361,9 +2706,15 @@ globus_l_xio_gsi_cntl(
     gss_name_t *                        out_name;
     gss_cred_id_t *                     out_cred;
     gss_ctx_id_t *                      out_ctx;
-
-    globus_result_t                     result;
-
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 rc;
+    globus_l_delegation_handle_t *      delegation_handle;
+    globus_xio_operation_t              op = NULL;
+    gss_buffer_desc                     output_token;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    globus_l_xio_gsi_delegation_arg_t   monitor;
+    
     GlobusXIOName(globus_l_xio_gsi_cntl);
     GlobusXIOGSIDebugEnter();
 
@@ -2391,15 +2742,237 @@ globus_l_xio_gsi_cntl(
         out_name = va_arg(ap, gss_name_t *);
         *out_name = handle->local_name;
         break;
+      case GLOBUS_XIO_GSI_INIT_DELEGATION:
+
+        monitor.done = GLOBUS_FALSE;
+        monitor.result = GLOBUS_SUCCESS;
+        
+        rc = globus_mutex_init(&monitor.mutex, NULL);
+        
+        assert(rc == GLOBUS_SUCCESS);
+        
+        rc = globus_cond_init(&monitor.cond, NULL);
+        
+        assert(rc == GLOBUS_SUCCESS);
+            
+      case GLOBUS_XIO_GSI_REGISTER_INIT_DELEGATION:
+        delegation_handle = (globus_l_delegation_handle_t *)
+            malloc(sizeof(globus_l_delegation_handle_t));
+        if(!delegation_handle)
+        {
+            result = GlobusXIOErrorMemory("delegation_handle");
+            goto delegation_error;
+        }
+
+        delegation_handle->xio_handle = handle;
+        delegation_handle->cred = va_arg(ap, gss_cred_id_t);
+        delegation_handle->restriction_oids = va_arg(ap, gss_OID_set);
+        delegation_handle->restriction_buffers = va_arg(ap, gss_buffer_set_t);
+        delegation_handle->time_req = va_arg(ap, OM_uint32);
+
+        if(cmd == GLOBUS_XIO_GSI_INIT_DELEGATION)
+        {
+            delegation_handle->init_callback =
+                globus_l_xio_gsi_init_delegation_cb;
+            delegation_handle->user_arg = &monitor;
+        }
+        else
+        { 
+            delegation_handle->init_callback =
+                va_arg(ap, globus_xio_gsi_delegation_init_callback_t);
+            delegation_handle->user_arg = va_arg(ap,void *);
+        }
+
+        delegation_handle->accept_callback = NULL;
+        delegation_handle->iovec[0].iov_base = delegation_handle->header;
+        delegation_handle->iovec[0].iov_len = 4;
+        delegation_handle->done = GLOBUS_FALSE;
+        delegation_handle->result = GLOBUS_SUCCESS;
+        
+        major_status = gss_init_delegation(
+            &minor_status,
+            handle->context,
+            delegation_handle->cred,
+            GSS_C_NO_OID,
+            delegation_handle->restriction_oids,
+            delegation_handle->restriction_buffers,
+            GSS_C_NO_BUFFER,
+            0,
+            delegation_handle->time_req,
+            &output_token);
+
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusXIOErrorWrapGSSFailed("gss_init_delegation",
+                                                 major_status,
+                                                 minor_status);
+            goto delegation_error;
+        }
+
+        if(major_status & GSS_S_CONTINUE_NEEDED)
+        { 
+            result = globus_xio_driver_operation_create(&op,
+                                                        handle->xio_context);
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                GlobusXIOErrorWrapFailed("globus_xio_driver_operation_create",
+                                         result);
+                goto delegation_error;
+            }
+        
+            delegation_handle->iovec[1].iov_base = output_token.value;
+            delegation_handle->iovec[1].iov_len = output_token.length;
+            
+            GlobusLXIOGSICreateHeader(delegation_handle->iovec[0],
+                                      output_token.length);
+            
+            GlobusXIODriverPassWrite(
+                result, op, delegation_handle->iovec, 2,
+                output_token.length + 4,
+                globus_l_xio_gsi_write_delegation_token_cb,
+                delegation_handle);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto delegation_error;
+            }
+
+            if(cmd == GLOBUS_XIO_GSI_INIT_DELEGATION)
+            {
+                globus_mutex_lock(&monitor.mutex);
+                while(monitor.done == GLOBUS_FALSE)
+                {
+                    globus_cond_wait(&monitor.cond, &monitor.mutex);
+                }
+                globus_mutex_unlock(&monitor.mutex);
+                
+                result = monitor.result;
+            }
+        }
+        else
+        {
+            free(delegation_handle);
+        }
+
+        if(cmd == GLOBUS_XIO_GSI_INIT_DELEGATION)
+        {
+            globus_mutex_destroy(&monitor.mutex);
+            globus_cond_destroy(&monitor.cond);        
+        }
+        
+        break;
+      case GLOBUS_XIO_GSI_ACCEPT_DELEGATION:
+
+        monitor.done = GLOBUS_FALSE;
+        monitor.result = GLOBUS_SUCCESS;
+        monitor.cred = va_arg(ap, gss_cred_id_t *);
+        
+        rc = globus_mutex_init(&monitor.mutex, NULL);
+        
+        assert(rc == GLOBUS_SUCCESS);
+        
+        rc = globus_cond_init(&monitor.cond, NULL);
+        
+        assert(rc == GLOBUS_SUCCESS);
+
+      case GLOBUS_XIO_GSI_REGISTER_ACCEPT_DELEGATION:
+        delegation_handle = (globus_l_delegation_handle_t *)
+            malloc(sizeof(globus_l_delegation_handle_t));
+        if(!delegation_handle)
+        {
+            result = GlobusXIOErrorMemory("delegation_handle");
+            goto delegation_error;
+        }
+
+        delegation_handle->xio_handle = handle;
+        delegation_handle->cred = GSS_C_NO_CREDENTIAL;
+        delegation_handle->restriction_oids = va_arg(ap, gss_OID_set);
+        delegation_handle->restriction_buffers = va_arg(ap, gss_buffer_set_t);
+        delegation_handle->time_req = va_arg(ap, OM_uint32);
+        delegation_handle->init_callback = NULL;
+        
+        if(cmd == GLOBUS_XIO_GSI_ACCEPT_DELEGATION)
+        {
+            delegation_handle->init_callback =
+                globus_l_xio_gsi_accept_delegation_cb;
+            delegation_handle->user_arg = &monitor;
+            monitor.time_rec = va_arg(ap, OM_uint32 *);
+        }
+        else
+        {
+            delegation_handle->accept_callback =
+                va_arg(ap, globus_xio_gsi_delegation_accept_callback_t);
+            delegation_handle->user_arg = va_arg(ap,void *);
+        }
+        delegation_handle->iovec[0].iov_base = delegation_handle->header;
+        delegation_handle->iovec[0].iov_len = 4;
+        delegation_handle->done = GLOBUS_FALSE;
+        delegation_handle->result = GLOBUS_SUCCESS;
+        delegation_handle->reading_header = GLOBUS_TRUE;
+        
+        result = globus_xio_driver_operation_create(&op,
+                                                    handle->xio_context);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            GlobusXIOErrorWrapFailed("globus_xio_driver_operation_create",
+                                     result);
+            goto delegation_error;
+        }
+        
+        GlobusXIODriverPassRead(result, op, delegation_handle->iovec, 1,
+                                4,
+                                globus_l_xio_gsi_read_delegation_token_cb,
+                                delegation_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto delegation_error;
+        }
+
+        if(cmd == GLOBUS_XIO_GSI_ACCEPT_DELEGATION)
+        {
+            globus_mutex_lock(&monitor.mutex);
+
+            while(monitor.done == GLOBUS_FALSE)
+            {
+                globus_cond_wait(&monitor.cond, &monitor.mutex);
+            }
+            
+            globus_mutex_unlock(&monitor.mutex);
+            
+            result = monitor.result;
+            globus_mutex_destroy(&monitor.mutex);
+            globus_cond_destroy(&monitor.cond);        
+        }
+        
+        break;
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
-        goto invalid_cmd;
+        GlobusXIOGSIDebugExitWithError();
+        return result;
     }
     
     GlobusXIOGSIDebugExit();
     return GLOBUS_SUCCESS;
+
+ delegation_error:
+    if(delegation_handle)
+    {
+        free(delegation_handle);
+    }
+
+    if(op)
+    {
+        globus_xio_driver_operation_destroy(op);
+    }
+
+    if(cmd == GLOBUS_XIO_GSI_INIT_DELEGATION ||
+       cmd == GLOBUS_XIO_GSI_ACCEPT_DELEGATION)
+    {
+        globus_mutex_destroy(&monitor.mutex);
+        globus_cond_destroy(&monitor.cond);
+    }
     
- invalid_cmd:
     GlobusXIOGSIDebugExitWithError();
     return result;
 }
