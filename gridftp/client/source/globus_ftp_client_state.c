@@ -176,7 +176,6 @@ globus_i_ftp_client_response_callback(
 {
     globus_i_ftp_client_target_t *		target;
     globus_i_ftp_client_handle_t *		client_handle;
-    globus_ftp_client_target_state_t            saved_target_state;
     globus_result_t				result;
     globus_object_t *                           caller_error = error;
     globus_bool_t				registered=GLOBUS_FALSE;
@@ -198,11 +197,7 @@ globus_i_ftp_client_response_callback(
 
     globus_i_ftp_client_handle_lock(client_handle);
     
-    globus_i_ftp_client_debug_printf(2, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(target->state)));
+    globus_i_ftp_client_debug_states(2, client_handle);
     
     globus_i_ftp_client_plugin_notify_response(
 	client_handle,
@@ -2729,7 +2724,6 @@ redo:
 		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT));
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
             
-            saved_target_state = target->state;
 	    globus_l_ftp_client_connection_error(client_handle,
 						 target,
 						 error,
@@ -2737,11 +2731,7 @@ redo:
             
             globus_i_ftp_client_debug_printf(1, (stderr, 
                 "globus_i_ftp_client_response_callback() exiting\n"));
-            globus_i_ftp_client_debug_printf(2, (stderr, 
-                "   handle state = %s\n"
-                "   target state = %s\n",
-                globus_i_ftp_handle_state_to_string(client_handle->state),
-                globus_i_ftp_target_state_to_string(saved_target_state)));
+            globus_i_ftp_client_debug_states(2, client_handle);
 
 	    return;
 	}
@@ -2848,16 +2838,11 @@ redo:
 	    }
 	}
 	
-	saved_target_state = target->state;
 	globus_i_ftp_client_transfer_complete(client_handle);
 	
 	globus_i_ftp_client_debug_printf(1, (stderr, 
             "globus_i_ftp_client_response_callback() exiting\n"));
-        globus_i_ftp_client_debug_printf(2, (stderr, 
-            "   handle state = %s\n"
-            "   target state = %s\n",
-            globus_i_ftp_handle_state_to_string(client_handle->state),
-            globus_i_ftp_target_state_to_string(saved_target_state)));
+        globus_i_ftp_client_debug_states(2, client_handle);
 
 	return;
 
@@ -2960,7 +2945,6 @@ redo:
 			target->url_string,
 			error);
                     
-                    saved_target_state = target->state;
 		    globus_l_ftp_client_connection_error(client_handle,
 							 target,
 							 error,
@@ -2968,11 +2952,7 @@ redo:
 		    
 		    globus_i_ftp_client_debug_printf(1, (stderr, 
                         "globus_i_ftp_client_response_callback() exiting\n"));
-                    globus_i_ftp_client_debug_printf(2, (stderr, 
-                        "   handle state = %s\n"
-                        "   target state = %s\n",
-                        globus_i_ftp_handle_state_to_string(client_handle->state),
-                        globus_i_ftp_target_state_to_string(saved_target_state)));
+                    globus_i_ftp_client_debug_states(2, client_handle);
 
 		    return;
 		}
@@ -2987,11 +2967,7 @@ redo:
     
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_i_ftp_client_response_callback() exiting\n"));
-    globus_i_ftp_client_debug_printf(2, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(target->state)));
+    globus_i_ftp_client_debug_states(2, client_handle);
 
     return;
 
@@ -3003,7 +2979,6 @@ redo:
 	target->url_string,
 	error);
  connection_error:
-    saved_target_state = target->state;
     globus_l_ftp_client_connection_error(client_handle,
 					 target,
 					 error,
@@ -3016,11 +2991,7 @@ redo:
     
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_i_ftp_client_response_callback() exiting with error\n"));
-    globus_i_ftp_client_debug_printf(2, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(saved_target_state)));
+    globus_i_ftp_client_debug_states(2, client_handle);
 
     return;
 }

@@ -611,7 +611,6 @@ globus_l_ftp_client_data_callback(
     globus_l_ftp_client_data_t *		data;
     globus_bool_t				dispatch_final = GLOBUS_FALSE;
     globus_i_ftp_client_target_t *		target;
-    globus_ftp_client_target_state_t            saved_target_state;
     globus_off_t				user_offset;
     
     globus_i_ftp_client_debug_printf(3, (stderr, 
@@ -634,11 +633,7 @@ globus_l_ftp_client_data_callback(
 	target = client_handle->dest;
     }
     
-    globus_i_ftp_client_debug_printf(4, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(target->state)));
+    globus_i_ftp_client_debug_states(4, client_handle);
 
     if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
     {
@@ -786,7 +781,6 @@ globus_l_ftp_client_data_callback(
 		   eof);
     globus_l_ftp_client_data_delete(data);
 
-    saved_target_state = target->state;
     if(dispatch_final)
     {
 	/*
@@ -802,11 +796,7 @@ globus_l_ftp_client_data_callback(
     
     globus_i_ftp_client_debug_printf(3, (stderr, 
         "globus_l_ftp_client_data_callback() exiting\n"));
-    globus_i_ftp_client_debug_printf(4, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(saved_target_state)));
+    globus_i_ftp_client_debug_states(4, client_handle);
 
     return;
 }
@@ -843,7 +833,6 @@ globus_l_ftp_client_read_all_callback(
     globus_l_ftp_client_data_t *		data;
     globus_bool_t				dispatch_final = GLOBUS_FALSE;
     globus_i_ftp_client_target_t *		target;
-    globus_ftp_client_target_state_t            saved_target_state;
     globus_ftp_client_data_callback_t		read_all_callback = GLOBUS_NULL;
     void *					read_all_callback_arg = GLOBUS_NULL;
     globus_off_t				base_offset;
@@ -864,11 +853,7 @@ globus_l_ftp_client_read_all_callback(
     
     globus_i_ftp_client_debug_printf(3, (stderr, 
         "globus_l_ftp_client_read_all_callback() entering\n"));
-    globus_i_ftp_client_debug_printf(4, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(target->state)));
+    globus_i_ftp_client_debug_states(4, client_handle);
 
     if(bytes_read > 0 &&
        offset_read + bytes_read > client_handle->read_all_biggest_offset)
@@ -1042,7 +1027,6 @@ globus_l_ftp_client_read_all_callback(
 	globus_l_ftp_client_data_delete(data);
     }
     
-    saved_target_state = target->state;
     if(dispatch_final)
     {
 	/*
@@ -1057,11 +1041,7 @@ globus_l_ftp_client_read_all_callback(
     }
     globus_i_ftp_client_debug_printf(3, (stderr, 
         "globus_l_ftp_client_read_all_callback() exiting\n"));
-    globus_i_ftp_client_debug_printf(4, (stderr, 
-        "   handle state = %s\n"
-        "   target state = %s\n",
-        globus_i_ftp_handle_state_to_string(client_handle->state),
-        globus_i_ftp_target_state_to_string(saved_target_state)));
+    globus_i_ftp_client_debug_states(4, client_handle);
 
 
     return;
