@@ -73,12 +73,22 @@ globus_i_xio_http_client_open_callback(
         goto error_exit;
     }
 
-    result = globus_i_xio_http_client_write_request(op, http_handle);
-
-    if (result != GLOBUS_SUCCESS)
+    if(http_handle->request_info.delay_write_header)
     {
-        http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
-        goto error_exit;
+        globus_xio_driver_finished_open(
+            http_handle,
+            op,
+            result);
+    }
+    else
+    {
+        result = globus_i_xio_http_client_write_request(op, http_handle);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+            goto error_exit;
+        }
     }
 
     globus_mutex_unlock(&http_handle->mutex);
@@ -506,10 +516,22 @@ globus_l_xio_http_client_write_request_callback(
 
     globus_mutex_unlock(&http_handle->mutex);
 
-    globus_xio_driver_finished_open(
+    if(http_handle->request_info.delay_write_header)
+    {
+        http_handle->request_info.delay_write_header = 0;
+        globus_i_xio_http_write(
+            http_handle,
+            http_handle->request_info.first_write_iovec,
+            http_handle->request_info.first_write_iovec_count,
+            op);
+    }
+    else
+    {
+        globus_xio_driver_finished_open(
             http_handle,
             op,
             result);
+    }
 
     return;
 
@@ -523,10 +545,20 @@ free_read_buffer_exit:
 error_exit:
     globus_mutex_unlock(&http_handle->mutex);
 
-    globus_xio_driver_finished_open(
+    if(http_handle->request_info.delay_write_header)
+    {
+        globus_xio_driver_finished_write(
+            op,
+            result,
+            nbytes);
+    }
+    else
+    {
+        globus_xio_driver_finished_open(
             http_handle,
             op,
             result);
+    }
 }
 /* globus_i_xio_http_client_write_request_callback() */
 

@@ -1398,7 +1398,6 @@ globus_l_globusrun_gramrun(char * request_string,
          * we have to wait until the job is submitted and finished staging
          */
         if ((options & GLOBUSRUN_ARG_BATCH) &&
-            (options & GLOBUSRUN_ARG_ALLOW_READS) &&
             (monitor.job_state != 0 &&
              monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED
                     &&

@@ -211,7 +211,7 @@ main(
                 xio_handle,
                 buffer,
                 sizeof(buffer),
-                sizeof(buffer),
+		1,
                 &nbytes,
                 NULL);
             fputs(buffer, fp);

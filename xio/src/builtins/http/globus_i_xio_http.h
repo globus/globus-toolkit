@@ -208,6 +208,10 @@ typedef struct
      * Information about headers associated with this request
      */
     globus_i_xio_http_header_info_t     headers;
+
+    int                                 delay_write_header;
+    const globus_xio_iovec_t *          first_write_iovec;
+    int                                 first_write_iovec_count;
 }
 globus_i_xio_http_request_t;
 

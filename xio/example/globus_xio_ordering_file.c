@@ -134,13 +134,9 @@ main(
 
     res = globus_xio_driver_load("mode_e", &mode_e_driver);
     test_res(res);
-    res = globus_xio_driver_load("ordering", &ordering_driver);
-    test_res(res);
     res = globus_xio_stack_init(&stack, NULL);
     test_res(res);
     res = globus_xio_stack_push_driver(stack, mode_e_driver);
-    test_res(res);
-    res = globus_xio_stack_push_driver(stack, ordering_driver);
     test_res(res);
 
     globus_mutex_init(&mutex, NULL);
@@ -232,7 +228,7 @@ main(
                 xio_handle,
                 buffer,
                 size - 1,
-                size - 1,
+		1,
                 NULL,
 		read_cb,
 		fp);
@@ -247,8 +243,6 @@ main(
 	}
 	globus_mutex_unlock(&mutex);
 	res = globus_xio_close(xio_handle, NULL);
-	test_res(res);
-	res = globus_xio_driver_unload(ordering_driver);
 	test_res(res);
 	res = globus_xio_driver_unload(mode_e_driver);
 	test_res(res);
@@ -295,8 +289,6 @@ main(
 	    GLOBUS_TRUE,
 	    num_streams));
 	res = globus_xio_close(xio_handle, attr);
-	test_res(res);
-	res = globus_xio_driver_unload(ordering_driver);
 	test_res(res);
 	res = globus_xio_driver_unload(mode_e_driver);
 	test_res(res);

@@ -173,6 +173,11 @@ globus_i_xio_http_attr_cntl(
             attr->request.callback_arg = va_arg(ap, void *);
             break;
 
+        case GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER:
+        
+            attr->request.delay_write_header = 1;
+            break;
+
         default:
             res = GlobusXIOErrorParameter("cmd");
     }

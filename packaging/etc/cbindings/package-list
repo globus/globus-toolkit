@@ -1,4 +1,20 @@
-globus_libxml2				ogsa-c/tools/libxml2			
+
+# 3.9.2 packages
+
+globus_libxml2                          chosting/tools/libxml2
+globus_js                               chosting/schema/parser/js/source
+globus_wsdl_parser                      chosting/schema/parser/wsdl/source
+globus_wsrf_cgen                        chosting/schema/parser/cgen/source
+globus_c_wsrf_core                      chosting/core/source
+globus_soap_message                     chosting/message/source
+globus_handler_ws_addressing            chosting/handlers/addressing/source
+CounterService_client_bindings          chosting/samples/counter/source tar
+globus_c_wsrf_sample_counter_test       chosting/samples/counter/test
+globus_xio_buffer                       chosting/transport/buffer/source
+
+# older C-bindings packages
+
+#globus_libxml2				ogsa-c/tools/libxml2			
 globus_libxml25				ogsa-c/tools/libxml25
 globus_libxslt				ogsa-c/tools/libxslt
 globus_xmlsec				ogsa-c/tools/xmlsec
