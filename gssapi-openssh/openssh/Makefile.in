@@ -5,6 +5,7 @@
 
 DISTPERL=perl
 DISTSED=sed
+DISTAWK=awk
 AUTORECONF=autoreconf
 
 prefix=@prefix@
@@ -230,7 +231,7 @@ catman-do:
 		echo -n "cat.." ; \
 		nroff -mandoc ./mdoc/$$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
 		echo -n "man.." ; \
-		cat ./mdoc/$$f | $(AWK) -f ./mdoc2man.awk > ./man/$$f ; \
+		cat ./mdoc/$$f | $(DISTAWK) -f ./mdoc2man.awk > ./man/$$f ; \
 		echo "done." ; \
 	done
 
