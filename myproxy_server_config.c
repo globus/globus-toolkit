@@ -396,10 +396,11 @@ is_name_in_list(const char **list,
  *
  */
 
+static const char default_config_file[] = "/etc/myproxy-server.config";
+
 int
 myproxy_server_config_read(myproxy_server_context_t *context)
 {
-    char config_file[MAXPATHLEN];
     FILE *config_stream = NULL;
     const char *config_open_mode = "r";
     int rc;
@@ -411,22 +412,42 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	return -1;
     }
     
-    if (context->config_file != NULL)
-    {
-	my_strncpy(config_file, context->config_file, sizeof(config_file));
-    }
-    else
-    {
-	verror_put_string("No configuration file specified");
-	goto error;
+    if (context->config_file == NULL) {
+	if (access(default_config_file, R_OK) == 0) {
+	    context->config_file = strdup(default_config_file);
+	    if (context->config_file == NULL) {
+		verror_put_string("strdup() failed");
+		return -1;
+	    }
+	} else {
+	    char *conf, *GL;
+	    GL = getenv("GLOBUS_LOCATION");
+	    if (!GL) {
+		verror_put_string("$GLOBUS_LOCATION undefined.  "
+				  "myproxy-server.config not found.\n");
+		return -1;
+	    }
+	    conf = (char *)malloc(strlen(GL)+strlen(default_config_file)+1);
+	    if (!conf) {
+		perror("malloc()");
+		exit(1);
+	    }
+	    sprintf(conf, "%s%s", GL, default_config_file);
+	    if (access(conf, R_OK) < 0) {
+		fprintf(stderr, "%s not found.\n", conf);
+		exit(1);
+	    }
+	    context->config_file = conf;
+	}
     }
 
-    config_stream = fopen(config_file, config_open_mode);
+    config_stream = fopen(context->config_file, config_open_mode);
 
     if (config_stream == NULL)
     {
 	verror_put_errno(errno);
-	verror_put_string("opening configuration file \"%s\"", config_file);
+	verror_put_string("opening configuration file \"%s\"",
+			  context->config_file);
 	goto error;
     }
     
@@ -447,7 +468,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     if (rc == -1)
     {
 	verror_put_string("Error parsing configuration file %s",
-			  config_file);
+			  context->config_file);
 	goto error;
     }
 
