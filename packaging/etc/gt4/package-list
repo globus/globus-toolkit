@@ -80,7 +80,6 @@ globus_js                                   wsrf/c/tools/js/source gpt
 globus_c_wsrf_core_tools                    wsrf/c/core/tools/source gpt
 globus_c_wsrf_core_bindings                 wsrf/c/core/source gpt
 globus_notification_consumer                wsrf/c/core/notification/source gpt
-globus_c_subscription_manager_client_bindings wsrf/c/core/subscription-manager/bindings tar
 globus_c_wsrf_providers                     wsrf/c/core/providers/source gpt
 globus_c_ws_messaging                       wsrf/c/message/source gpt
 globus_handler_ws_addressing                wsrf/c/handlers/addressing/source gpt
