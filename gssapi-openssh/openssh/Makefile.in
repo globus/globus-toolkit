@@ -9,11 +9,11 @@ AUTORECONF=autoreconf
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-bindir=@bindir@
+bindir=@bindir@/ssh.d
 sbindir=@sbindir@
 libexecdir=@libexecdir@
 datadir=@datadir@
-mandir=@mandir@
+mandir=@mandir@/ssh.d
 mansubdir=@mansubdir@
 sysconfdir=$$GLOBUS_LOCATION/etc/ssh
 docdir=$$GLOBUS_LOCATION/doc/gsi_openssh
@@ -23,7 +23,7 @@ top_srcdir=@top_srcdir@
 
 DESTDIR=
 VPATH=@srcdir@
-SSH_PROGRAM=@bindir@/ssh
+SSH_PROGRAM=$(bindir)/ssh
 ASKPASS_PROGRAM=$(libexecdir)/ssh-askpass
 SFTP_SERVER=$(libexecdir)/sftp-server
 SSH_KEYSIGN=$(libexecdir)/ssh-keysign
