@@ -27,6 +27,8 @@
 #define MYPROXY_USERNAME_STRING     "USERNAME="
 #define MYPROXY_PASSPHRASE_STRING   "PASSPHRASE="
 #define MYPROXY_LIFETIME_STRING     "LIFETIME="
+#define MYPROXY_RETRIEVER_STRING     "RETRIEVER="
+#define MYPROXY_RENEWER_STRING     "RENEWER="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
 #define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
@@ -65,6 +67,9 @@ typedef struct
 } myproxy_socket_attrs_t;
 
 /* A client request object */
+#define REGULAR_EXP 1
+#define MATCH_CN_ONLY 0
+
 typedef struct
 {
     char                         *version;
@@ -74,6 +79,8 @@ typedef struct
     int                          proxy_lifetime;
     char                         **authorized_service_dns;
     char                         **authorized_client_dns;
+    char                         *retrievers;
+    char                         *renewers;
 } myproxy_request_t;
 
 /* A server response object */

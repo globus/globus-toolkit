@@ -28,6 +28,9 @@
 
 #endif
 
+#define REGULAR_EXP 1
+#define NON_REGULAR_EXP 0
+
 /**********************************************************************
  *
  * Internal Functions
@@ -156,6 +159,27 @@ line_parse_callback(void *context_arg,
 	}
     }
     
+    if((strcmp(directive, "default_retrievers") == 0))
+    {
+	int index = 1; /* Skip directive */
+	
+	matched = 1;
+	
+	while(tokens[index] != NULL)
+	{
+	    context->default_retriever_dns =
+		add_entry(context->default_retriever_dns,
+			  tokens[index]);
+	    
+	    if (context->default_retriever_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
     if (strcmp(directive, "authorized_renewers") == 0)
     {
 	int index = 1; /* Skip directive */
@@ -169,6 +193,27 @@ line_parse_callback(void *context_arg,
 			  tokens[index]);
 	    
 	    if (context->authorized_renewer_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
+    if (strcmp(directive, "default_renewers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	matched = 1;
+	
+	while(tokens[index] != NULL)
+	{
+	    context->default_renewer_dns =
+		add_entry(context->default_renewer_dns,
+			  tokens[index]);
+	    
+	    if (context->default_renewer_dns == NULL)
 	    {
 		goto error;
 	    }
@@ -345,8 +390,8 @@ is_name_in_list(const char **list,
     while (*list != NULL)
     {
 	int rc;
-	
-	rc = regex_compare(*list, name);
+
+	  rc = regex_compare(*list, name);
 	
 	if (rc != 0)
 	{
@@ -465,6 +510,7 @@ myproxy_server_check_cred(myproxy_server_context_t *context,
     return return_code;
 }
 
+
 int
 myproxy_server_check_retriever(myproxy_server_context_t *context,
 			       const char *service_name)
@@ -488,7 +534,7 @@ myproxy_server_check_retriever(myproxy_server_context_t *context,
 
 int
 myproxy_server_check_renewer(myproxy_server_context_t *context,
-			     const char *service_name)
+			   const char *service_name)
 {
     int return_code = -1;
     

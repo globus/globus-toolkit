@@ -99,11 +99,16 @@ myproxy_log_use_stream(FILE *stream)
 
 
 void
-myproxy_log(const char *format, ...)
+myproxy_log(int dbg_level, int current_debug_level, const char *format, ...)
 {
+	// this dbg_level is only for myproxy_log. my_context.debug_level shouldbe 1 in order for this to log
+
     char *string = NULL;
     va_list ap;
-    
+
+    if (current_debug_level < dbg_level)
+	return;
+
     va_start(ap, format);
     
     string = my_vsnprintf(format, ap);

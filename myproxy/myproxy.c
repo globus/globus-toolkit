@@ -51,11 +51,15 @@ static const char *
 encode_command(const myproxy_proto_request_type_t	command_value);
 
 static int
+parse_integer(const char			*lifetime_str,
+	       int				*lifetime_value);
+
+static int
 parse_lifetime(const char			*lifetime_str,
 	       int				*lifetime_value);
 
 static int
-encode_lifetime(int				lifetime,
+encode_integer(int				value,
 		char				*string,
 		int				string_len);
 		
@@ -85,7 +89,7 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data);
 #define STRING_TO_INT_ERROR		-1
 #define STRING_TO_INT_NONNUMERIC	0
 
-
+static int debug_level = DBG_IN;   //debugging level
 /**********************************************************************
  *
  * Exported functions
@@ -196,6 +200,8 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error setting credentials to use: %s\n", error_string);
+
+//	myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 1\n");  //C
        return -1;
    }
 
@@ -203,6 +209,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error authenticating: %s\n", error_string);
+	//myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 2\n");  //C
        return -1;
    }
    return 0;
@@ -283,6 +290,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     int len;
     int totlen = 0;
     char lifetime_string[64];
+    char expr_type_string[5];
     const char *command_string;
     char **authorized_services, **authorized_clients;
 
@@ -323,7 +331,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     if (len < 0)
       return -1;
 
-    if (encode_lifetime(request->proxy_lifetime,
+    if (encode_integer(request->proxy_lifetime,
 			lifetime_string,
 			sizeof(lifetime_string)) == -1)
     {
@@ -337,7 +345,30 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
       return -1;
 
     totlen += len;
+   
+    if (request->retrievers != NULL)
+    { 
+      len = concatenate_strings(data, datalen, MYPROXY_RETRIEVER_STRING,
+			      request->retrievers, "\n", NULL); 
+      if (len < 0)
+        return -1;
 
+      totlen += len;
+
+    }
+
+    if (request->renewers != NULL)
+    { 
+      len = concatenate_strings(data, datalen, MYPROXY_RENEWER_STRING,
+			      request->renewers, "\n", NULL); 
+      if (len < 0)
+        return -1;
+
+      totlen += len;
+
+    }
+
+    //myproxy_log (DBG_HI, debug_level, "OK\n");
     for (authorized_services = request->authorized_service_dns;
 	 authorized_services; authorized_services++) {
 	len = concatenate_strings(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
@@ -370,13 +401,15 @@ myproxy_deserialize_request(const char *data, const int datalen,
 
     assert(request != NULL);
     assert(data != NULL);
+
+    //myproxy_log(DBG_HI, debug_level, "myproxy_deserialize_request: Data = %s\n\n", data);
     
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  buf, sizeof(buf));
 
-    if (len == -1)
+    if (len <= -1)
     {
 	verror_prepend_string("Error parsing version from client request");
 	return -1;
@@ -397,7 +430,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  buf, sizeof(buf));
 
-    if (len == -1)
+    if (len <= -1)
     {
 	verror_prepend_string("Error parsing command from client request");
 	return -1;
@@ -412,7 +445,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  MYPROXY_USERNAME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  buf, sizeof(buf));
-    if (len == -1)
+    if (len <= -1)
     {
 	verror_prepend_string("Error parsing usename from client request");
 	return -1;
@@ -433,7 +466,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
                           buf, sizeof(buf));
 
-    if (len == -1) 
+    if (len <= -1) 
     {
 	verror_prepend_string("Error parsing passphrase from client request");
 	return -1;
@@ -446,9 +479,9 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  MYPROXY_LIFETIME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
                           buf, sizeof(buf));
-    if (len == -1)
+    if (len <= -1)
     {
-	verror_prepend_string("Error parsing passphrase from client request");
+	verror_prepend_string("Error parsing lifetime from client request");
 	return -1;
     }
     
@@ -456,6 +489,57 @@ myproxy_deserialize_request(const char *data, const int datalen,
     {
 	return -1;
     }
+
+    len = convert_message(data, datalen,
+			  MYPROXY_RETRIEVER_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->retrievers = NULL;
+    else
+    if (len <= -1)
+    {
+	verror_prepend_string("Error parsing retriever from client request");
+	return -1;
+    }
+    else
+    {
+      request->retrievers = strdup(buf);
+    
+      if (request->retrievers == NULL)
+      {
+	verror_put_string("strdup() failed");
+	verror_put_errno(errno);
+	return -1;
+      }
+    }
+
+
+    len = convert_message(data, datalen,
+			  MYPROXY_RENEWER_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->renewers = NULL;
+    else
+       if (len <= -1)
+       {
+ 	verror_prepend_string("Error parsing renewer from client request");
+	return -1;
+       }
+       else
+       {
+         request->renewers = strdup(buf);
+    
+         if (request->renewers == NULL)
+         {
+	  verror_put_string("strdup() failed");
+	  verror_put_errno(errno);
+	  return -1;
+         }
+       }
 
     len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
@@ -742,7 +826,7 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
  *                                         are concatenated.
  *
  * Returns the number of characters copied into the line (not including the
- * terminating '\0'). On error returns -1, setting verror.
+ * terminating '\0'). On error returns -1, setting verror. Returns -2 if string  * not found
  */
 static int
 convert_message(const char			*buffer,
@@ -861,6 +945,7 @@ convert_message(const char			*buffer,
     if (foundone == 0)
     {
 	/* verror_put_string("No value found"); */
+        return_value = -2; /*string not found*/
 	goto error;
     }
 
@@ -871,7 +956,7 @@ convert_message(const char			*buffer,
     if (buffer_copy)
        free(buffer_copy);
 
-    if (return_value == -1)
+    if (return_value == -1 || return_value == -2)
     {
 	/* Don't return anything in line on error */
 	line[0] = '\0';
@@ -1007,15 +1092,58 @@ parse_lifetime(const char			*lifetime_str,
 
 
 /*
- * encode_lifetime()
+ * parse_integer()
  *
- * Encode the given lifetime as a string into the given buffer with
+ * Given a string representation of an integer value, fill in the given
+ * integer with its integral value.
+ *
+ * Currently the string is just an ascii representation of the integer.
+ *
+ * Returns 0 on success, -1 on error setting verror.
+ */
+static int
+parse_integer(const char			*integer_str,
+	       int				*data_value)
+{
+    int				value;
+    int				return_value = -1;
+    
+    assert(integer_str != NULL);
+    assert(data_value != NULL);
+    
+    /* XXX Should also handle string commands */
+
+    switch (string_to_int(integer_str, &value))
+    {
+      case STRING_TO_INT_SUCCESS:
+	return_value = 0;
+	*data_value = value;
+	break;
+	
+      case STRING_TO_INT_NONNUMERIC:
+	verror_put_string("Non-numeric characters in string \"%s\"",
+			  integer_str);
+	break;
+	
+      case STRING_TO_INT_ERROR:
+	break;
+    }
+    
+    return return_value;
+}
+
+
+
+/*
+ * encode_integer()
+ *
+ * Encode the given integer as a string into the given buffer with
  * length of buffer_len.
  *
  * Returns 0 on success, -1 on error setting verror.
  */
 static int
-encode_lifetime(int				lifetime,
+encode_integer(int				value,
 		char				*string,
 		int				string_len)
 {
@@ -1024,7 +1152,7 @@ encode_lifetime(int				lifetime,
     
     assert(string != NULL);
 
-    sprintf(buffer, "%d", lifetime);
+    sprintf(buffer, "%d", value);
     
     if (my_strncpy(string, buffer, string_len) == -1)
     {
