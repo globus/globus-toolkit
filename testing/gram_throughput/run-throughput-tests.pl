@@ -7,17 +7,19 @@ use Pod::Usage;
 
 my $hostname = `$ENV{GLOBUS_LOCATION}/libexec/globus-libc-hostname`;
 
-my ($verbose,   $host,  $port,  $startCount,    $endCount,  $factoryType) =
-   (1,          "",     8080,   1,              1,          "Fork");
-my ($help,  $man) =
-   (0,      0);
+my ($verbose,   $host,  $port,  $startLoad,    $endLoad) =
+   (1,          "",     8080,   1,             1);
+my ($parallelism,   $duration,  $factoryType,   $help,  $man) =
+   (1,              0,          "Fork",         0,      0);
 
 GetOptions(
     "verbose!"      => \$verbose,
-    "h|host=s"        => \$host,
+    "h|host=s"      => \$host,
     "port=s"        => \$port,
-    "startcount=s"  => \$startCount,
-    "endcount=s"    => \$endCount,
+    "startLoad=s"   => \$startLoad,
+    "endLoad=s"     => \$endLoad,
+    "l|parallelism=s" => \$parallelism,
+    "duration=s"    => \$duration,
     "type=s"        => \$factoryType,
     "help"          => \$help,
     "man"           => \$man)
@@ -36,20 +38,25 @@ if (!length($host)) {
 if ($verbose) {
     print   "Host: $host\n"
           . "Port: $port\n"
-          . "Start Count: $startCount\n"
-          . "End Count: $endCount\n";
+          . "Start Load: $startLoad\n"
+          . "End Load: $endLoad\n"
+          . "Load: $load\n"
+          . "Parallelism: $parallelism\n"
+          . "Duration: $duratiin\n";
 }
 
 STDOUT->autoflush(1);
 TESTLOG->autoflush(1);
 TIMINGSLOG->autoflush(1);
 
-for (my $index=$startCount; $index<=$endCount; $index*=2) {
+for (my $index=$startLoad; $index<=$endLoad; $index*=2) {
     my $testOutputFile = "throughput-test-" . $index . ".log";
     my $testExec = "ant "
                  . "-Dservice.host=$host "
                  . "-Dservice.port=$port "
-                 . "-Djob.count=$index "
+                 . "-Dload=$index "
+                 . "-Dparallelism=$parallelism "
+                 . "-Dduration=$duration "
                  . "-Dfactory.type=$factoryType "
                  . "-Dogsa.root=$ENV{GLOBUS_LOCATION} "
                  . "runTestApp";

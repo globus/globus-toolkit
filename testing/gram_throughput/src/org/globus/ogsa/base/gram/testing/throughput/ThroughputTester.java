@@ -1,5 +1,7 @@
 package org.globus.ogsa.base.gram.testing.throughput;
 
+import java.util.Hashtable;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -11,7 +13,9 @@ public class ThroughputTester {
 
     String factoryUrl = null;
     String rslFile = null;
-    int count = 1;
+    int load = 1;
+    int parallelism = 1;
+    long duration = 1;
     SingleJobThread[] jobList = null;
     int[] jobPhaseState = null;
     boolean[] completedList = null;
@@ -38,27 +42,27 @@ public class ThroughputTester {
     }
 
     protected void createAll() {
-        this.jobList = new SingleJobThread[this.count];
-        this.jobPhaseState = new int[this.count];
+        this.jobList = new SingleJobThread[this.load];
+        this.jobPhaseState = new int[this.load];
 
         //START TIMMING createService
         if (logger.isDebugEnabled()) {
-            logger.debug("creating " + this.count + " job(s)");
+            logger.debug("creating " + this.load + " job(s)");
             logger.debug("perf log start [createService]");
         }
         this.perfLog.start();
 
-        for (int i=0; i<this.count; i++) {
+        for (int i=0; i<this.load; i++) {
             this.jobList[i] = new SingleJobThread(this, i);
             new Thread(this.jobList[i]).start();
         }
 
         int oldCreatedCount = -1;
-        while (this.createdCount < this.count) {
+        while (this.createdCount < this.load) {
             if (logger.isDebugEnabled()) {
                 if (oldCreatedCount != this.createdCount) {
                     logger.debug("waiting for "
-                                + (this.count - this.createdCount)
+                                + (this.load - this.createdCount)
                                 + " job(s) to be created");
                     oldCreatedCount = this.createdCount;
                 }
@@ -80,12 +84,12 @@ public class ThroughputTester {
 
     protected void startAll() {
         if (logger.isDebugEnabled()) {
-            logger.debug("starting " + this.count + " job(s)");
+            logger.debug("starting " + this.load + " job(s)");
         }
 
         //START TIMMING start
         if (logger.isDebugEnabled()) {
-            logger.debug("starting " + this.count + " job(s)");
+            logger.debug("starting " + this.load + " job(s)");
             logger.debug("perf log start [start]");
         }
         this.perfLog.start();
@@ -98,11 +102,11 @@ public class ThroughputTester {
 
         boolean startedTimmingComplete = false;
         int oldStartedCount = -1;
-        while (this.startedCount < this.count) {
+        while (this.startedCount < this.load) {
             if (logger.isDebugEnabled()) {
                 if (oldStartedCount != this.startedCount) {
                     logger.debug("waiting for "
-                                + (this.count - this.startedCount)
+                                + (this.load - this.startedCount)
                                 + " job(s) to be started");
                     oldStartedCount = this.startedCount;
                 }
@@ -117,7 +121,7 @@ public class ThroughputTester {
             if (!startedTimmingComplete) {
                 //START TIMMING complete
                 if (logger.isDebugEnabled()) {
-                    logger.debug("starting " + this.count + " job(s)");
+                    logger.debug("starting " + this.load + " job(s)");
                     logger.debug("perf log start [start]");
                 }
                 this.completePerfLog.start();
@@ -133,16 +137,16 @@ public class ThroughputTester {
     }
 
     protected void waitForAllToComplete() {
-        this.completedList = new boolean[this.count];
-        for (int index=0; index<this.count; index++) {
+        this.completedList = new boolean[this.load];
+        for (int index=0; index<this.load; index++) {
             this.completedList[index] = false;
         }
         int oldCompletedCount = -1;
-        while (this.completedCount < this.count) {
+        while (this.completedCount < this.load) {
             if (logger.isDebugEnabled()) {
                 if (oldCompletedCount != this.completedCount) {
                     logger.debug("waiting for "
-                                + (this.count - this.completedCount)
+                                + (this.load - this.completedCount)
                                 + " job(s) to be completed");
                     oldCompletedCount = this.completedCount;
                 }
@@ -154,7 +158,7 @@ public class ThroughputTester {
                 logger.error("unabled to wait", e);
             }
             this.completedCount = 0;
-            for (int index=0; index<this.count; index++) {
+            for (int index=0; index<this.load; index++) {
                 if (this.completedList[index]) {
                     this.completedCount++;
                 } else {
@@ -171,7 +175,7 @@ public class ThroughputTester {
             logger.debug("all jobs completed");
         }
 
-        for (int index=0; index<this.count; index++) {
+        for (int index=0; index<this.load; index++) {
             if (!this.completedList[index]) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("False notify for job #" + index);
@@ -187,11 +191,11 @@ public class ThroughputTester {
         }
 
         int oldStoppedCount = -1;
-        while (this.stoppedCount < this.count) {
+        while (this.stoppedCount < this.load) {
             if (logger.isDebugEnabled()) {
                 if (oldStoppedCount != this.stoppedCount) {
                     logger.debug("waiting for "
-                                + (this.count - this.stoppedCount)
+                                + (this.load - this.stoppedCount)
                                 + " job(s) to be stopped");
                     oldStoppedCount = this.stoppedCount;
                 }
@@ -212,7 +216,7 @@ public class ThroughputTester {
     }
 
     synchronized void notifyError() {
-        this.count--;
+        this.load--;
         notifyAll();
     }
 
@@ -265,47 +269,133 @@ public class ThroughputTester {
         return this.rslFile;
     }
 
-    public void setCount(int count) {
-        this.count = count;
+    public void setLoad(int load) {
+        this.load = load;
     }
 
-    public int getCount() {
-        return this.count;
+    public int getLoad() {
+        return this.load;
+    }
+
+    public void setParallelism(int parallelism) {
+        this.parallelism = parallelism;
+    }
+
+    public int getParallelism() {
+        return this.parallelism;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    public long getDuration() {
+        return this.duration;
     }
 
     public static void printUsage(String customMessage) {
         StringBuffer usageMessage = new StringBuffer(customMessage);
         usageMessage.append("\nUsage:");
-        usageMessage.append("\njava ... ");
-        usageMessage.append(ThroughputTester.class.getName()).append(" \\");
-        usageMessage.append("\n\t<factory URL> <RSL file> <job count>");
+        usageMessage.append("\njava [JAVA OPTIONS] ");
+        usageMessage.append(ThroughputTester.class.getName());
+        usageMessage.append(" [OPTIONS]\n\nOPTIONS:\n");
+        usageMessage.append("\n\t--help\t\t\t\tPrint this usage message.");
+        usageMessage.append("\n\t--factory <factory URL>\t\t(M)MJFS URL");
+        usageMessage.append("\n\t--file <RSL file>\t\tRSL file name");
+        usageMessage.append("\n\t--load <load>\t\t\tPer-thread job load");
+        usageMessage.append("\n\t--parallelism <parallelism>");
+        usageMessage.append("\tNumber of client threads");
+        usageMessage.append("\n\t--duration <duration>");
+        usageMessage.append("\t\tLoad maintenance duratuon");
         System.out.println(usageMessage.toString());
     }
 
     public static void main(String[] args) {
-        if (args.length == 1) {
-            if (   args[0].equals("-h")
-                || args[0].equals("--help")) {
-                ThroughputTester.printUsage("-- Help --");
-                System.exit(0);
-            }
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("argument count: " + args.length);
         }
-        if (args.length != 3) {
-            ThroughputTester.printUsage("Error: invalid number of arguments");
+        Hashtable options = new Hashtable();
+        options.put("help", new Boolean(false));
+        options.put("factory", "");
+        options.put("file", "");
+        options.put("load", "1");
+        options.put("parallelism", "1");
+        options.put("duration", "1");
+        String argName = null;
+        String argValue = null;
+        for (int index=0; index<args.length; index++) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("argument #" + index + ": " + args[index]);
+            }
+            if (args[index].startsWith("--")) {
+                argName = args[index].substring(2);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("argument name: " + argName);
+                }
+                index++;
+                try {
+                    argValue = args[index];
+                } catch(ArrayIndexOutOfBoundsException e) {
+                    Object defaultValue = options.get(argName);
+                    if ((defaultValue != null) &&
+                        (defaultValue instanceof String)) {
+                        ThroughputTester.printUsage(
+                            "Error: value expected for " + argName);
+                        System.exit(1);
+                    }
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("argument value: " + argName);
+                }
+                if (((argValue != null) && (argValue.startsWith("--")))
+                    || (argValue == null)) {
+                    index--;
+                    options.put(argName, new Boolean(true));
+                } else {
+                    options.put(argName, argValue);
+                }
+            } else if (args[index].startsWith("-")) {
+                ThroughputTester.printUsage(
+                    "Single-dash options not supported");
+                System.exit(1);
+            } else {
+                ThroughputTester.printUsage(
+                    "Error: unexpected argument " + argName);
+                System.exit(1);
+            }
+            argValue = null;
+        }
+        if (((Boolean)options.get("help")).booleanValue()) {
+            ThroughputTester.printUsage("-- Help --");
+            System.exit(0);
+        }
+        if (((String)options.get("factory")).length() < 0) {
+            ThroughputTester.printUsage("Error: --factory <url> not specified");
+            System.exit(1);
+        }
+        if (((String)options.get("file")).length() < 0) {
+            ThroughputTester.printUsage(
+                "Error: --file <rsl file> not specified");
             System.exit(1);
         }
         if (logger.isDebugEnabled()) {
-            logger.debug("Factory URL: " + args[0]);
-            logger.debug("RSL File: " + args[1]);
-            logger.debug("Job Count: " + args[2]);
+            logger.debug("Factory URL: " + options.get("factory"));
+            logger.debug("RSL File: " + options.get("file"));
+            logger.debug("Per-Thread Job Load: " + options.get("load"));
+            logger.debug("Parallelism: " + options.get("parallelism"));
+            logger.debug("Load Maintenance Duration: "
+                        +options.get("duration"));
         }
 
         ThroughputTester harness = new ThroughputTester();
-        harness.setFactoryUrl(args[0]);
-        harness.setRslFile(args[1]);
-        harness.setCount(Integer.parseInt(args[2]));
+        harness.setFactoryUrl((String)options.get("factory"));
+        harness.setRslFile((String)options.get("file"));
+        harness.setLoad(Integer.parseInt((String)options.get("load")));
 
-        harness.run();
+        harness.setParallelism(
+            Integer.parseInt((String)options.get("parallelism")));
+        harness.setDuration(Long.parseLong((String)options.get("duration")));
+
+        //harness.run();
     }
 }
