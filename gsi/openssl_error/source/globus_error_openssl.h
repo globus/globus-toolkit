@@ -32,6 +32,7 @@
 EXTERN_C_BEGIN
 
 #include <string.h>
+#include "globus_common.h"
 #include "version.h"
 #include "globus_error_generic.h"
 
