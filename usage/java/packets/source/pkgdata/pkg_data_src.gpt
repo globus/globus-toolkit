@@ -21,7 +21,6 @@
 
     <Version_Label>0.1.0</Version_Label>
 
-    <!--
     <Source_Dependencies Type="compile" >
     
         <Dependency Name="globus_java_ws_core" Package="pgm"> 
@@ -31,7 +30,6 @@
         </Dependency>
                 
     </Source_Dependencies>
-    -->
 
     <Build_Instructions>
         <Build_Step> ant -Denv.GLOBUS_LOCATION=INSTALLDIR_GPTMACRO</Build_Step>

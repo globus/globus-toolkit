@@ -1,10 +1,12 @@
 package org.globus.usage.packets;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import java.util.Date;
+import java.net.Inet6Address;
 import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
+import java.util.Date;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /*GRAM usage monitor packets, in addition to the fields in IPTimeMonitorPacket,
 include the following:
@@ -20,8 +22,9 @@ include the following:
     - gt2 error code if present and Failed
     - fault class name or identifier if Failed
 */
-public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
-
+public class GramUsageMonitorPacket
+    extends                                 IPTimeMonitorPacket
+{
     static Log logger = LogFactory.getLog(GramUsageMonitorPacket.class);
 
     private static byte FALSE   = 0;
@@ -35,22 +38,22 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
     private String schedulerType;
 
     //jobCredentialEndpoint present flag
-    private boolean usedJobCredentialEndpoint;
+    private boolean jobCredentialEndpointUsed;
 
     //fileStageIn present flag
-    private boolean usedFileStageIn;
+    private boolean fileStageInUsed;
 
     //fileStageOut present flag
-    private boolean usedFileStageOut;
+    private boolean fileStageOutUsed;
 
     //fileCleanUp present flag
-    private boolean usedFileCleanUp;
+    private boolean fileCleanUpUsed;
 
     //CleanUpHold flag
-    private boolean usedCleanUpHold;
+    private boolean cleanUpHoldUsed;
 
     //job type
-    private static final byte JOB_TYPE_UNKOWN    = 0;
+    private static final byte JOB_TYPE_UNKNOWN   = 0;
     private static final byte JOB_TYPE_SINGLE    = 1;
     private static final byte JOB_TYPE_MULTIPLE  = 2;
     private static final byte JOB_TYPE_MPI       = 3;
@@ -61,7 +64,7 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
     private int gt2ErrorCode;
 
     //fault class name
-    private static final byte FAULT_CLASS_UNKNOWN                   = 0
+    private static final byte FAULT_CLASS_UNKNOWN                   = 0;
     private static final byte FAULT_CLASS_CREDENTIAL_SERIALIZATION  = 1;
     private static final byte FAULT_CLASS_EXECUTION_FAILED          = 2;
     private static final byte FAULT_CLASS_FAULT                     = 3;
@@ -93,49 +96,49 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
         return this.schedulerType;
     }
 
-    public void setUsedJobCredentialEndpoint(boolean usedJobCredentialEndpoint)
+    public void setJobCredentialEndpointUsed(boolean jobCredentialEndpointUsed)
     {
-        this.usedJobCredentialEndpoint = usedJobCredentialEndpoint;
+        this.jobCredentialEndpointUsed = jobCredentialEndpointUsed;
     }
 
-    public String getUsedJobCredentialEndpoint() {
-        return this.usedJobCredentialEndpoint;
+    public boolean getJobCredentialEndpointUsed() {
+        return this.jobCredentialEndpointUsed;
     }
 
-    public void setUsedFileStageIn(boolean usedFileStageIn)
+    public void setFileStageInUsed(boolean FileStageInUsed)
     {
-        this.usedFileStageIn = usedFileStageIn;
+        this.fileStageInUsed = FileStageInUsed;
     }
 
-    public String getUsedFileStageIn() {
-        return this.usedFileStageIn;
+    public boolean isFileStageInUsed() {
+        return this.fileStageInUsed;
     }
 
-    public void setUsedFileStageOut(boolean usedFileStageOut)
+    public void setFileStageOutUsed(boolean FileStageOutUsed)
     {
-        this.usedFileStageOut = usedFileStageOut;
+        this.fileStageOutUsed = FileStageOutUsed;
     }
 
-    public String getUsedFileStageOut() {
-        return this.usedFileStageOut;
+    public boolean isFileStageOutUsed() {
+        return this.fileStageOutUsed;
     }
 
-    public void setUsedFileCleanUp(boolean usedFileCleanUp)
+    public void setFileCleanUpUsed(boolean FileCleanUpUsed)
     {
-        this.usedFileCleanUp = usedFileCleanUp;
+        this.fileCleanUpUsed = FileCleanUpUsed;
     }
 
-    public String getUsedFileCleanUp() {
-        return this.usedFileCleanUp;
+    public boolean isFileCleanUpUsed() {
+        return this.fileCleanUpUsed;
     }
 
-    public void setUsedCleanUpHold(boolean usedCleanUpHold)
+    public void setCleanUpHoldUsed(boolean CleanUpHoldUsed)
     {
-        this.usedCleanUpHold = usedCleanUpHold;
+        this.cleanUpHoldUsed = CleanUpHoldUsed;
     }
 
-    public String getUsedCleanUpHold() {
-        return this.usedCleanUpHold;
+    public boolean isCleanUpHoldUsed() {
+        return this.cleanUpHoldUsed;
     }
 
     public void setJobType(String jobType)
@@ -204,30 +207,31 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
             schedulerTypeFixedLength = schedulerType;
         }
         byte[] schedulerTypeFixedBytes = schedulerTypeFixedLength.getBytes();
+        buf.put(schedulerTypeFixedBytes);
 
-        //usedJobCredentialEndpoint
-        buf.pack(this.usedJobCredentialEndpoint?TRUE:FALSE);
+        //jobCredentialEndpointUsed
+        buf.put(this.jobCredentialEndpointUsed?TRUE:FALSE);
 
-        //usedFileStageIn
-        buf.pack(this.usedFileStageIn?TRUE:FALSE);
+        //FileStageInUsed
+        buf.put(this.fileStageInUsed?TRUE:FALSE);
 
-        //usedFileStageOut
-        buf.pack(this.usedFileStageOut?TRUE:FALSE);
+        //FileStageOutUsed
+        buf.put(this.fileStageOutUsed?TRUE:FALSE);
 
-        //usedFileCleanUp
-        buf.pack(this.usedFileCleanUp?TRUE:FALSE);
+        //FileCleanUpUsed
+        buf.put(this.fileCleanUpUsed?TRUE:FALSE);
 
-        //usedCleanUpHold
-        buf.pack(this.usedCleanUpHold?TRUE:FALSE);
+        //CleanUpHoldUsed
+        buf.put(this.cleanUpHoldUsed?TRUE:FALSE);
 
         //jobType
-        buf.pack(jobTypeToByte(this.jobType));
+        buf.put(jobTypeToByte(this.jobType));
 
         //gt2ErrorCode
-        buf.packInt(this.gt2ErrorCode);
+        buf.putInt(this.gt2ErrorCode);
 
         //faultClass
-        buf.pack(GramUsageMonitorPacket.faultClassToByte(this.faultClass));
+        buf.put(GramUsageMonitorPacket.faultClassToByte(this.faultClass));
     }
    
     public void unpackCustomFields(CustomByteBuffer buf)
@@ -242,20 +246,20 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
         buf.get(schedulerTypeBytes);
         this.schedulerType = new String(schedulerTypeBytes);
 
-        //usedJobCredentialEndpoint
-        this.usedJobCredentialEndpoint = (buf.get()==1?true:false);
+        //jobCredentialEndpointUsed
+        this.jobCredentialEndpointUsed = (buf.get()==1?true:false);
 
-        //usedFileStageIn
-        this.usedFileStageIn = (buf.get()==1?true:false);
+        //FileStageInUsed
+        this.fileStageInUsed = (buf.get()==1?true:false);
 
-        //usedFileStageOut
-        this.usedFileStageOut = (buf.get()==1?true:false);
+        //FileStageOutUsed
+        this.fileStageOutUsed = (buf.get()==1?true:false);
 
-        //usedFileCleanUp
-        this.usedFileCleanUp = (buf.get()==1?true:false);
+        //FileCleanUpUsed
+        this.fileCleanUpUsed = (buf.get()==1?true:false);
 
-        //usedCleanUpHold
-        this.usedCleanUpHold = (buf.get()==1?true:false);
+        //CleanUpHoldUsed
+        this.cleanUpHoldUsed = (buf.get()==1?true:false);
 
         //jobType
         this.jobType = byteToJobType(buf.get());
@@ -275,19 +279,19 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
      */
     private static byte jobTypeToByte(String jobType)
     {
-        if (jobType.getName().equals("mpi"))
+        if (jobType.equals("mpi"))
         {
             return JOB_TYPE_MPI;
         } else
-        if (jobType.getName().equals("single"))
+        if (jobType.equals("single"))
         {
             return JOB_TYPE_SINGLE;
         } else
-        if (jobType.getName().equals("multiple"))
+        if (jobType.equals("multiple"))
         {
             return JOB_TYPE_MULTIPLE;
         } else
-        if (jobType.getName().equals("condor"))
+        if (jobType.equals("condor"))
         {
             return JOB_TYPE_CONDOR;
         } else
@@ -490,13 +494,14 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
     {
         super.display();
 
-        logger.info("creationTime = "+creationTime);
-        logger.info("schedulerType = "+schedulerType);
-        logger.info("usedJobCredentialEndpoint = "+usedJobCredentialEndpoint);
-        logger.info("usedFileStageIn = "+usedFileStageIn);
-        logger.info("usedFileStageOut = "+usedFileStageOut);
-        logger.info("usedFileCleanUp = "+usedFileCleanUp);
-        logger.info("usedCleanUpHold = "+usedCleanUpHold);
+        logger.info("creationTime = "+this.creationTime);
+        logger.info("schedulerType = "+this.schedulerType);
+        logger.info("jobCredentialEndpointUsed = "
+                    +this.jobCredentialEndpointUsed);
+        logger.info("FileStageInUsed = "+fileStageInUsed);
+        logger.info("FileStageOutUsed = "+fileStageOutUsed);
+        logger.info("FileCleanUpUsed = "+fileCleanUpUsed);
+        logger.info("CleanUpHoldUsed = "+cleanUpHoldUsed);
         logger.info("jobType = "+jobType);
         logger.info("gt2ErrorCode = "+gt2ErrorCode);
         logger.info("faultClass = "+faultClass);
@@ -507,23 +512,23 @@ public class GramUsageMonitorPacket extends IPTimeMonitorPacket {
         StringBuffer sqlCommand = new StringBuffer("(");
         sqlCommand.append("creation_time,");
         sqlCommand.append("scheduler_type,");
-        sqlCommand.append("used_job_credential_endpoint,");
-        sqlCommand.append("used_stage_in,");
-        sqlCommand.append("used_file_stage_out,");
-        sqlCommand.append("used_file_clean_up,");
-        sqlCommand.append("used_clean_up_hold,");
+        sqlCommand.append("job_credential_endpoint_used,");
+        sqlCommand.append("stage_in_used,");
+        sqlCommand.append("file_stage_out_used,");
+        sqlCommand.append("file_clean_up_used,");
+        sqlCommand.append("clean_up_hold_used,");
         sqlCommand.append("job_type,");
         sqlCommand.append("gt2_error_code,");
         sqlCommand.append("fault_class");
         sqlCommand.append(") VALUES ('");
         sqlCommand.append("'").append(this.creationTime).append("'");
         sqlCommand.append("'").append(this.schedulerType).append("'");
-        sqlCommand.append("'").append(this.usedJobCredentialEndpoint)
+        sqlCommand.append("'").append(this.jobCredentialEndpointUsed)
                   .append("'");
-        sqlCommand.append("'").append(this.usedFileStageIn).append("'");
-        sqlCommand.append("'").append(this.usedFileStageOut).append("'");
-        sqlCommand.append("'").append(this.usedFileCleanUp).append("'");
-        sqlCommand.append("'").append(this.usedCleanUpHold).append("'");
+        sqlCommand.append("'").append(this.fileStageInUsed).append("'");
+        sqlCommand.append("'").append(this.fileStageOutUsed).append("'");
+        sqlCommand.append("'").append(this.fileCleanUpUsed).append("'");
+        sqlCommand.append("'").append(this.cleanUpHoldUsed).append("'");
         sqlCommand.append("'").append(this.jobType).append("'");
         sqlCommand.append("'").append(this.gt2ErrorCode).append("'");
         sqlCommand.append("'").append(this.faultClass).append("'");
