@@ -35,18 +35,16 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
     6. Resolve all of the conflicts in each of the listed files.
 
-    7. Commit all of the files in your working directory to the repository and tag
-       the repository.
-
-          $ cvs commit
-          $ cvs rtag -F -r <newBase> OPENSSH_GSI_GPT_BASE openssh
-
-    8. Add an entry to the History section of this file detailing your merge action,
+    7. Add an entry to the History section of this file detailing your merge action,
        along with noting conflicts that occurred and any interesting changes you had
        to make to resolve them.
 
-    9. Commit your change to this file to the repository and tag the working directory
-       as merged.
+    8. Move OPENSSH_GSI_GPT_BASE.
+
+          $ cvs rtag -F -r <newBase> OPENSSH_GSI_GPT_BASE openssh
+
+    9. Commit all of the files in your working directory to the repository and tag the 
+       working directory as merged.
 
           $ cvs commit
           $ cvs tag <newBase>_GPT-merged
