@@ -19,6 +19,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       <p>The following topics contain high level descriptions
           of what's new in the following technology areas: </p>
       <UL>
+        <LI> <a href="#common">Common</a>        
         <LI><A 
         href="#Core">WS Core</A>         
         <LI><A 
@@ -33,7 +34,13 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
         href="#GRAM">Resource 
                 Management (GRAM)</A> 
         <LI><a href="#packaging">Packaging</a>
-        </UL>
+</UL>
+      <h2><a name="common"></a>Common</h2>
+      <p>Fixed the following bug for globus_common:</p>
+      <ul>
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1684">1684:
+            lookups always failing on IRIX 6.5</a></li>
+      </ul>
       <h2><A name=Core></A>WS Core</h2>
       <p>Fixed the following bugs for WS Core:</p>
       <ul>
@@ -105,11 +112,6 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 	<ul>
       <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1706">1706:
           Vendorcc flavor fails on AIX</a> (updated AIX vendorcc support) </li>
-</ul>
-	<p>Fixed the following bug for globus_common:</p>
-	<ul>
-      <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1684">1684:
-          lookups always failing on IRIX 6.5</a></li>
 </ul>
 	<p align="left">Fixed the following bug for pyGlobus:</p>
 	<ul>
