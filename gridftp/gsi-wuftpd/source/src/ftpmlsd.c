@@ -1,3 +1,5 @@
+#include "config.h"
+#include "proto.h"
 #include "mlsx.h"
 #include <unistd.h>
 #include <sys/types.h>
