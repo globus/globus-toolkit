@@ -190,7 +190,7 @@ struct globus_gass_copy_handle_s
 
   globus_ftp_client_handle_t	      ftp_source_handle;
   globus_ftp_client_handle_t	      ftp_dest_handle;
-  
+  globus_ftp_client_plugin_t **	      ftp_plugins;
 };
 
 /**
@@ -202,6 +202,7 @@ typedef struct globus_gass_copy_attr_s
   globus_ftp_client_attr_t * ftp_attr;
   globus_io_attr_t * io;
   globus_gass_transfer_requestattr_t * gass_requestattr;
+  globus_ftp_client_plugin_t **		ftp_plugins;
 } globus_gass_copy_attr_t;
 
 /** initialization and destruction of GASS Copy handle */
@@ -212,6 +213,11 @@ globus_gass_copy_handle_init(
 globus_result_t
 globus_gass_copy_handle_destroy(
     globus_gass_copy_handle_t * handle);
+
+globus_result_t
+globus_gass_copy_attr_set_ftp_plugins(
+    globus_gass_copy_handle_t * handle,
+    globus_ftp_client_plugin_t ** ftp_plugins);
 
 /** set the size of the buffer to be used for the transfers */
 globus_result_t

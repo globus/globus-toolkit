@@ -165,7 +165,9 @@ globus_l_gass_copy_monitor_callback(
  *       This function returns GLOBUS_SUCCESS if successful, or a
  *       globus_result_t indicating the error that occurred.
  *
- * @see globus_gass_copy_handle_destroy() , globus_ftp_client_hande_init()
+ * @see globus_gass_copy_handle_destroy() ,
+ *          globus_gass_copy_handle_set_ftp_plugins(),
+ *          globus_ftp_client_hande_init()
  */
 globus_result_t
 globus_gass_copy_handle_init(
@@ -195,7 +197,8 @@ globus_gass_copy_handle_init(
 	handle->buffer_length = 1024*1024;
 	handle->user_pointer = GLOBUS_NULL;
 	handle->err = GLOBUS_NULL;
-
+	handle->ftp_plugins = GLOBUS_NULL;
+	
 	return GLOBUS_SUCCESS;
     }
     else
@@ -225,7 +228,9 @@ globus_gass_copy_handle_init(
  *       This function returns GLOBUS_SUCCESS if successful, or a
  *       globus_result_t indicating the error that occurred.
  *
- * @see globus_gass_copy_handle_init(), globus_ftp_client_handle_destroy()
+ * @see globus_gass_copy_handle_init(),
+ *         globus_gass_copy_handle_set_ftp_plugins(),
+ *         globus_ftp_client_handle_destroy() 
  */
 globus_result_t
 globus_gass_copy_handle_destroy(
@@ -261,6 +266,46 @@ globus_gass_copy_handle_destroy(
 	return globus_error_put(err);
     }
 }
+
+/**
+ * Set the plugins for ftp/gsiftp transfers
+ *
+ * The globus_ftp_client library allows for plugins to extend the behaviour of the API
+ * to add new reliability or performance features without changing the rest of the API.
+ * This function can be used to pass a list of plugins to the globus_ftp_client API for transfer
+ * associated with this handle.
+  *
+ * @param handle
+ *      A globus_gass_copy handle that should use these plugins
+ *@param ftp_plugins
+ *      The ftp/gsiftp plugins to be used
+ *
+ * @see globus_gass_copy_handle_init(),
+ *      globus_gass_copy_handle_destroy()
+ */
+globus_result_t
+globus_gass_copy_handle_set_ftp_plugins(
+    globus_gass_copy_handle_t * handle,
+    globus_ftp_client_plugin_t ** ftp_plugins)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_handle_set_ftp_plugins";
+    
+    if(handle != GLOBUS_NULL)
+    {
+	handle->ftp_plugins = ftp_plugins;
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+	return globus_error_put(err);
+    }
+} /*  globus_gass_copy_handle_set_ftp_plugins() */
 
 /**
  * Set the size of the buffer to be used for doing transfers
@@ -394,7 +439,8 @@ globus_gass_copy_attr_set_ftp(
 	    myname);
 	return globus_error_put(err);
     }
-}
+} /* globus_gass_copy_attr_set_ftp() */
+
 
 /**
  * Set the attributes for file transfers
@@ -2034,7 +2080,8 @@ globus_l_gass_copy_ftp_setup_get(
 		   &(handle->ftp_source_handle),
 		   state->source.url,
 		   state->source.attr->ftp_attr,
-		   GLOBUS_NULL,
+		   /*GLOBUS_NULL,*/
+		   handle->ftp_plugins,
 		   globus_l_gass_copy_ftp_get_done_callback,
 		   (void *) handle);
 
@@ -2067,7 +2114,8 @@ globus_l_gass_copy_ftp_setup_put(
 		   &(handle->ftp_dest_handle),
 		   state->dest.url,
 		   state->dest.attr->ftp_attr,
-		   GLOBUS_NULL,
+		   /*GLOBUS_NULL,*/
+		   handle->ftp_plugins,
 		   globus_l_gass_copy_ftp_put_done_callback,
 		   (void *) handle);
     
@@ -3664,7 +3712,8 @@ globus_gass_copy_register_url_to_url(
 	    state->source.attr->ftp_attr,
 	    dest_url,
 	    state->dest.attr->ftp_attr,
-	    GLOBUS_NULL,
+	    /*GLOBUS_NULL,*/
+	    handle->ftp_plugins,
 	    globus_l_gass_copy_ftp_transfer_callback,
 	    (void *) handle);
 
@@ -4533,7 +4582,7 @@ globus_l_gass_copy_generic_cancel(
 /************************************************************
  * Attributes
  ************************************************************/
-#ifdef USE_FTP
+#ifdef USE_FTP_ATTRS
 /**
  * Set TCP buffer/window size
  */
