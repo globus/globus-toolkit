@@ -96,7 +96,7 @@ globus_i_gfs_data_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_arg,
     int                                 transfer_id,
-    int                                 event_type);
+    globus_gfs_event_info_t *           event_info);
 
 void
 globus_i_gfs_data_request_set_cred(

@@ -507,14 +507,14 @@ typedef void
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_handle,
     int                                 transfer_id,
-    int                                 event_type);
+    globus_gfs_event_info_t *           event_info);
 
 
 globus_result_t
 globus_gfs_ipc_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 transfer_id,
-    int                                 event_type);
+    globus_gfs_event_info_t *           event_info);
 
 
 /*

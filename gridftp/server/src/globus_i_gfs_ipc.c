@@ -2200,7 +2200,7 @@ globus_l_gfs_ipc_unpack_event_reply(
         return NULL;
     }
 
-    GFSDecodeChar(buffer, len, reply->type);
+    GFSDecodeUInt32(buffer, len, reply->type);
     GFSDecodeUInt32(buffer, len, reply->node_ndx);
 
     /* encode the specific types */
@@ -2230,6 +2230,15 @@ globus_l_gfs_ipc_unpack_event_reply(
             }
             break;
             
+        case GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT:
+            GFSDecodeUInt32(buffer, len, reply->node_count);
+            reply->eof_count = (int *) 
+                globus_calloc(1, sizeof(int) * (reply->node_count + 1));
+            for(ctr = 0; ctr < reply->node_count; ctr++)
+            {
+                GFSDecodeUInt32(buffer, len, reply->eof_count[ctr]);
+            }
+            break;
         default:
             break;
     }
@@ -2435,14 +2444,37 @@ globus_l_gfs_ipc_unpack_event_request(
     globus_byte_t *                     buffer,
     globus_size_t                       len,
     int *                               transfer_id,
-    int *                               event_type)
+    globus_gfs_event_info_t **          out_event_info)
 {
-    char                                id;
+    int                                 type;
+    globus_gfs_event_info_t *           event_info;
+    int                                 ctr;
+    
 
     GFSDecodeUInt32(buffer, len, *transfer_id);
-    GFSDecodeChar(buffer, len, id);
-    *event_type = (int) id;
-
+    GFSDecodeUInt32(buffer, len, type);
+    
+    event_info = (globus_gfs_event_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_event_info_t));
+    event_info->type = type;
+    switch(event_info->type)
+    {
+        case GLOBUS_GFS_EVENT_FINAL_EOF_COUNT:
+            GFSDecodeUInt32(buffer, len, event_info->node_count);
+            event_info->eof_count = (int *) 
+                globus_calloc(1, sizeof(int) * (event_info->node_count + 1));
+            for(ctr = 0; ctr < event_info->node_count; ctr++)
+            {
+                GFSDecodeUInt32(buffer, len, event_info->eof_count[ctr]);
+            }
+            break;
+            
+        default:
+            break;
+    }
+    
+    *out_event_info = event_info;
+    
     return 0;
 
   decode_err:
@@ -2727,12 +2759,12 @@ globus_l_gfs_ipc_reply_read_body_cb(
     globus_gfs_transfer_info_t *        trans_info;
     globus_gfs_data_info_t *            data_info;
     globus_gfs_stat_info_t *            stat_info;
+    globus_gfs_event_info_t *           event_info;
     globus_byte_t *                     user_buffer;
     globus_size_t                       user_buffer_length;
     int                                 user_buffer_type;
     int                                 rc;
     int                                 data_connection_id;
-    int                                 event_type;
     int                                 transfer_id;
     GlobusGFSName(globus_l_gfs_ipc_read_body_cb);
 
@@ -2918,16 +2950,16 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 ipc, ipc->user_arg, data_connection_id);
             break;
             
-        case GLOBUS_GFS_OP_EVENT:
+        case GLOBUS_GFS_OP_EVENT:            
             rc = globus_l_gfs_ipc_unpack_event_request(
-                ipc, buffer, len, &transfer_id, &event_type);
+                ipc, buffer, len, &transfer_id, &event_info);
             if(rc != 0)
             {
                 result = GlobusGFSErrorIPC();
                 goto err;
             }
             ipc->iface->transfer_event_func(
-                ipc, ipc->user_arg, transfer_id, event_type);
+                ipc, ipc->user_arg, transfer_id, event_info);
             break;
             
         default:
@@ -3669,7 +3701,7 @@ globus_gfs_ipc_reply_event(
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
             /* pack the body--this part is like a reply header */
-            GFSEncodeChar(
+            GFSEncodeUInt32(
                 buffer, ipc->buffer_size, ptr, reply->type);
             GFSEncodeUInt32(
                 buffer, ipc->buffer_size, ptr, reply->node_ndx);
@@ -3706,6 +3738,16 @@ globus_gfs_ipc_reply_event(
                             buffer, ipc->buffer_size, ptr, offset);
                         GFSEncodeUInt64(
                             buffer, ipc->buffer_size, ptr, length);
+                    }
+                    break;
+                case GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, reply->node_count);
+                    for(ctr = 0; ctr < reply->node_count; ctr++)
+                    {
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, 
+                            ptr, reply->eof_count[ctr]);
                     }
                     break;
                     
@@ -4345,7 +4387,7 @@ globus_result_t
 globus_gfs_ipc_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 transfer_id,
-    int                                 event_type)
+    globus_gfs_event_info_t *           event_info)
 {
     globus_size_t                       msg_size;
     globus_result_t                     result;
@@ -4353,6 +4395,7 @@ globus_gfs_ipc_request_transfer_event(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_gfs_ipc_request_t *          request;
+    int                                 ctr;
     GlobusGFSName(globus_gfs_ipc_request_transfer_event);
 
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
@@ -4390,8 +4433,26 @@ globus_gfs_ipc_request_transfer_event(
 
             /* pack body */
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, transfer_id);
-            GFSEncodeChar(buffer, ipc->buffer_size, ptr, event_type);
+            GFSEncodeUInt32(
+                buffer, ipc->buffer_size, ptr, event_info->type);
 
+            switch(event_info->type)
+            {
+                case GLOBUS_GFS_EVENT_FINAL_EOF_COUNT:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, event_info->node_count);
+                    for(ctr = 0; ctr < event_info->node_count; ctr++)
+                    {
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, 
+                            ptr, event_info->eof_count[ctr]);
+                    }
+                    break;
+                
+                default:
+                    break;
+            }
+                      
             msg_size = ptr - buffer;
             /* now that we know size, add it in */
             ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
@@ -4416,7 +4477,7 @@ globus_gfs_ipc_request_transfer_event(
     if(ipc->local)
     {
         ipc->iface->transfer_event_func(
-            ipc, ipc->user_arg, transfer_id, event_type);
+            ipc, ipc->user_arg, transfer_id, event_info);
     }
     
     return GLOBUS_SUCCESS;

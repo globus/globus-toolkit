@@ -106,6 +106,7 @@ typedef struct globus_l_gfs_data_operation_s
     int                                 nstreams;
     int                                 stripe_count;
     int *                               eof_count;
+    globus_bool_t                       eof_ready;
     int                                 node_count;
     int                                 node_ndx;
     int                                 write_stripe;
@@ -1926,7 +1927,7 @@ globus_i_gfs_data_request_send(
     op->node_count = send_info->node_count;
     op->stripe_count = send_info->stripe_count;
     op->nstreams = send_info->nstreams;
-    op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
+    op->eof_count = (int *) globus_calloc(1, op->stripe_count * sizeof(int));
 
     /* events and disconnects cannot happen while i am in this
         function */
@@ -2091,7 +2092,7 @@ globus_i_gfs_data_request_list(
     data_op->stripe_count = list_info->stripe_count;
     data_op->nstreams = list_info->nstreams;
     data_op->eof_count = (int *) 
-        globus_malloc(data_op->stripe_count * sizeof(int));
+        globus_calloc(1, data_op->stripe_count * sizeof(int));
     
     /* events and disconnects cannot happen while i am in this
         function */
@@ -2516,7 +2517,7 @@ void
 globus_l_gfs_data_send_eof_cb(
     void *                              callback_arg,
     struct globus_ftp_control_handle_s * handle,
-    globus_object_t *				    error)
+    globus_object_t *			error)
 {
     globus_l_gfs_data_operation_t *     op;
 
@@ -2544,7 +2545,6 @@ globus_l_gfs_data_write_eof_cb(
     /* XXX mode s only */
     globus_bool_t                       end = GLOBUS_FALSE;
     globus_result_t                     result;  
-    int                                 i;
     globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_data_write_eof_cb);
     
@@ -2566,30 +2566,45 @@ globus_l_gfs_data_write_eof_cb(
         {
             if(op->data_handle->info.mode == 'E')
             {        
-                for(i = 0; i < op->stripe_count; i++)
-                {
-                    op->eof_count[i] = 
-                        (op->node_ndx == 0) ?
-                        (op->node_count - 1) * op->data_handle->info.nstreams :
-                        0;
-                }
-
                 result = globus_ftp_control_data_send_eof(
                     &op->data_handle->data_channel,
                     op->eof_count,
                     op->stripe_count,
-                    (op->node_ndx == 0) ? GLOBUS_TRUE : GLOBUS_FALSE,
+                    op->node_ndx == 0 ? GLOBUS_TRUE : GLOBUS_FALSE,
                     globus_l_gfs_data_send_eof_cb,
                     op);
+                if(op->node_ndx != 0)
+                {
+                   /* I think we want the eof event to kick off even
+                    though we may have an error here since someone is 
+                    expecting it.  The transfer should still error out
+                    normally */    
+                    globus_gfs_ipc_event_reply_t        event_reply;
+                    memset(&event_reply, '\0', 
+                        sizeof(globus_gfs_ipc_event_reply_t));
+                    event_reply.id = op->id;
+                    event_reply.eof_count = op->eof_count;
+                    event_reply.type = GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT;
+                    event_reply.node_count = op->node_count;
+                    if(op->event_callback != NULL)
+                    {
+                        op->event_callback(
+                            &event_reply,
+                            op->user_arg);
+                    }
+                    else
+                    {
+                        globus_gfs_ipc_reply_event(
+                            op->ipc_handle,
+                            &event_reply);
+                    }                        
+                }
                 if(result != GLOBUS_SUCCESS)
                 {
                     globus_i_gfs_log_result(
                         "ERROR", result);
                     op->cached_res = result;
                     globus_l_gfs_data_end_transfer_kickout(op);
-                }
-                if(op->node_ndx != 0)
-                {
                 }
             }
             else
@@ -2617,6 +2632,43 @@ globus_l_gfs_data_write_eof_cb(
     }
 }
 
+static
+void
+globus_l_gfs_data_send_eof(
+    globus_l_gfs_data_operation_t *     op)
+{
+    globus_result_t                     result;  
+    GlobusGFSName(globus_l_gfs_data_send_eof);
+    
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        if(op->state == GLOBUS_L_GFS_DATA_FINISH)
+        {
+            result = globus_ftp_control_data_write(
+                &op->data_handle->data_channel,
+                "",
+                0,
+                0,
+                GLOBUS_TRUE,
+                globus_l_gfs_data_write_eof_cb,
+                op);
+            if(result != GLOBUS_SUCCESS)
+            {
+                op->cached_res = result;
+                globus_callback_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_l_gfs_data_end_transfer_kickout,
+                    op);
+            }
+        }
+        else
+        {
+            op->eof_ready = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
+}    
 
 static
 void
@@ -2926,7 +2978,7 @@ globus_i_gfs_data_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_arg,
     int                                 transfer_id,
-    int                                 event_type)
+    globus_gfs_event_info_t *           event_info)
 {
     globus_result_t                     result;
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
@@ -2948,7 +3000,7 @@ globus_i_gfs_data_request_transfer_event(
         globus_assert(op->data_handle != NULL);
 
         /* this is the final event.  dec reference */
-        switch(event_type)
+        switch(event_info->type)
         {
             /* if this event has been received we SHOULD be in complete state
                 if we are not it is a bad message and we ignore it */
@@ -2968,6 +3020,12 @@ globus_i_gfs_data_request_transfer_event(
                 }
                 break;
 
+            case GLOBUS_GFS_EVENT_FINAL_EOF_COUNT:
+                /* XXX check state here, move send_eof call out of lock */
+                op->eof_count = event_info->eof_count;
+                globus_l_gfs_data_send_eof(op);
+                break;
+
             case GLOBUS_GFS_EVENT_BYTES_RECVD:
             case GLOBUS_GFS_EVENT_RANGES_RECVD:
                 /* we ignore these 2 events for everything except the
@@ -2981,7 +3039,7 @@ globus_i_gfs_data_request_transfer_event(
                 {
                     /* if the DSI is handling these events */
                     if(session_handle->dsi->trev_func != NULL &&
-                        event_type & op->event_mask)
+                        event_info->type & op->event_mask)
                     {
                         op->ref++;
                         pass = GLOBUS_TRUE;
@@ -3002,7 +3060,7 @@ globus_i_gfs_data_request_transfer_event(
                             result = GlobusGFSErrorMemory("bounce_info");
                         }
                 
-                        bounce_info->event_type = event_type;
+                        bounce_info->event_type = event_info->type;
                         bounce_info->op = 
                             (globus_l_gfs_data_operation_t *) transfer_id;
         
@@ -3025,7 +3083,7 @@ globus_i_gfs_data_request_transfer_event(
             default:
                 if(op->state != GLOBUS_L_GFS_DATA_CONNECTED ||
                     session_handle->dsi->trev_func == NULL ||
-                    !(event_type & op->event_mask))
+                    !(event_info->type & op->event_mask))
                 {
                     pass = GLOBUS_FALSE;
                 }
@@ -3047,10 +3105,12 @@ globus_i_gfs_data_request_transfer_event(
     if(pass)
     {
         /* if a TRANSFER_COMPLETE event we must respect the barrier */
-        if(event_type != GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+        if(event_info->type != GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
             session_handle->dsi->trev_func(
-                op->transfer_id, event_type, session_handle->session_arg);
+                op->transfer_id, 
+                event_info->type, 
+                session_handle->session_arg);
         }
         globus_mutex_lock(&op->session_handle->mutex);
         {
@@ -3128,7 +3188,7 @@ globus_i_gfs_data_node_start(
         globus_l_gfs_data_ipc_error_cb,
         NULL);
     
-    globus_i_gfs_monitor_wait(&monitor);
+    //globus_i_gfs_monitor_wait(&monitor);
     
     globus_l_gfs_data_is_remote_node = GLOBUS_TRUE;
     
@@ -3204,7 +3264,7 @@ globus_i_gfs_data_session_stop(
         }
         globus_mutex_unlock(&session_handle->mutex);
 
-        if(free_session)
+        if(free_session && 0)
         {
             if(session_handle->dsi != globus_l_gfs_dsi)
             {
@@ -3578,22 +3638,27 @@ globus_gridftp_server_finished_transfer(
                 {
                     if(op->writing)
                     {
-                        result = globus_ftp_control_data_write(
-                            &op->data_handle->data_channel,
-                            "",
-                            0,
-                            0,
-                            GLOBUS_TRUE,
-                            globus_l_gfs_data_write_eof_cb,
-                            op);
-                        if(result != GLOBUS_SUCCESS)
+                        if(op->node_ndx != 0 || 
+                            op->node_count == 1 || 
+                            op->eof_ready)
                         {
-                            op->cached_res = result;
-                            globus_callback_register_oneshot(
-                                NULL,
-                                NULL,
-                                globus_l_gfs_data_end_transfer_kickout,
+                            result = globus_ftp_control_data_write(
+                                &op->data_handle->data_channel,
+                                "",
+                                0,
+                                0,
+                                GLOBUS_TRUE,
+                                globus_l_gfs_data_write_eof_cb,
                                 op);
+                            if(result != GLOBUS_SUCCESS)
+                            {
+                                op->cached_res = result;
+                                globus_callback_register_oneshot(
+                                    NULL,
+                                    NULL,
+                                    globus_l_gfs_data_end_transfer_kickout,
+                                    op);
+                            }
                         }
                     }
                     else

@@ -74,13 +74,15 @@ typedef enum globus_gfs_command_type_e
  */
 typedef enum globus_gfs_event_type_e
 {
-    GLOBUS_GFS_EVENT_TRANSFER_BEGIN = 0x01,
-    GLOBUS_GFS_EVENT_TRANSFER_ABORT = 0x02,
-    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE = 0x04,
-    GLOBUS_GFS_EVENT_DISCONNECTED = 0x08,
-    GLOBUS_GFS_EVENT_BYTES_RECVD = 0x10,
-    GLOBUS_GFS_EVENT_RANGES_RECVD = 0x20,
-    GLOBUS_GFS_EVENT_TRANSFER_CONNECTED = 0x40,
+    GLOBUS_GFS_EVENT_TRANSFER_BEGIN = 0x0001,
+    GLOBUS_GFS_EVENT_TRANSFER_ABORT = 0x0002,
+    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE = 0x0004,
+    GLOBUS_GFS_EVENT_DISCONNECTED = 0x0008,
+    GLOBUS_GFS_EVENT_BYTES_RECVD = 0x0010,
+    GLOBUS_GFS_EVENT_RANGES_RECVD = 0x0020,
+    GLOBUS_GFS_EVENT_TRANSFER_CONNECTED = 0x0040,
+    GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT = 0x0100,
+    GLOBUS_GFS_EVENT_FINAL_EOF_COUNT = 0x0200,
     
     GLOBUS_GFS_EVENT_ALL = 0xFFFF
 } globus_gfs_event_type_t;
@@ -208,6 +210,8 @@ typedef struct globus_gfs_event_info_s
 {
     /** type of event */
     globus_gfs_event_type_t             type;
+    
+    /* reply data */
     /** node that event is from */
     int                                 node_ndx;
     /** unique key of transfer request that event is related to */
@@ -224,6 +228,12 @@ typedef struct globus_gfs_event_info_s
     int                                 session_id;
     /** unique key of data handle that event is related to */    
     int                                 data_handle_id;
+    
+    /* request data */
+    /** array of eof counts */    
+    int *                               eof_count;
+    /** number of nodes (size of eof_count array) */    
+    int                                 node_count;
 } globus_gfs_event_info_t;
 
 /*

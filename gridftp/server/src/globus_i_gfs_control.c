@@ -685,7 +685,8 @@ globus_l_gfs_request_transfer_event(
     void *                              user_arg)
 {
     globus_l_gfs_request_info_t *       request;
-    globus_gfs_event_type_t             event;
+    globus_gfs_event_info_t             event_info;
+
     GlobusGFSName(globus_l_gfs_request_transfer_event);
 
     request = (globus_l_gfs_request_info_t *) user_arg;
@@ -693,19 +694,19 @@ globus_l_gfs_request_transfer_event(
     switch(event_type)
     {
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
-            event = GLOBUS_GFS_EVENT_BYTES_RECVD;
+            event_info.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
             break;
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
-            event = GLOBUS_GFS_EVENT_RANGES_RECVD;
+            event_info.type = GLOBUS_GFS_EVENT_RANGES_RECVD;
             break;
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT:
-            event = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
+            event_info.type = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_INFO,
                 "Requesting abort...\n");
             break;
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE:
-            event = GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
+            event_info.type = GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
             break;
         default:
             goto error;
@@ -716,9 +717,9 @@ globus_l_gfs_request_transfer_event(
         NULL,
         request->instance->session_arg,
         request->transfer_id,
-        event);
+        &event_info);
 
-    if(event == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+    if(event_info.type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
     {
         globus_gfs_transfer_info_t *    info;
         info = (globus_gfs_transfer_info_t *) request->info;
