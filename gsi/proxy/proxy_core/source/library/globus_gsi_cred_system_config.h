@@ -2,6 +2,8 @@
 #ifndef GLOBUS_I_GSI_SYSTEM_CONFIG_H
 #define GLOBUS_I_GSI_SYSTEM_CONFIG_H
 
+#include "globus_common.h"
+
 globus_result_t
 globus_i_gsi_get_home_dir(
     char **                             home_dir_p);

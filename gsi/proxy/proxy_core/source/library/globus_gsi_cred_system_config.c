@@ -1,5 +1,5 @@
 
-#include "globus_i_gsi_system_config.h"
+#include "globus_gsi_cred_system_config.h"
 #include "globus_i_gsi_credential.h"
 #include <openssl/rand.h>
 
