@@ -366,4 +366,4 @@
 /*
  * Undef this to turn of globus_authz.
  */
-#undef GLOBUS_AUTHORIZATION
+#define GLOBUS_AUTHORIZATION 1
