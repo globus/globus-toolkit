@@ -301,7 +301,7 @@ if [ ${debug} = yes ] ; then
 fi
 ${proxy_init} ${proxy_opts}
 xxx=$?
-if [ ${xxx} -ne 0 ] ; then
+if [ ${xxx} -ne 0 -a ${xxx} -ne 2 ] ; then
     if [ ${debug} = yes ] ; then
 	echo "DEBUG: got return value ${xxx}"
     fi
