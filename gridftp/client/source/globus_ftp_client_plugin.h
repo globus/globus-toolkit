@@ -69,7 +69,7 @@ typedef enum
 
     /** SITE, NOOP */
     GLOBUS_FTP_CLIENT_CMD_MASK_MISC			= 1<<6,
-    
+
     /** SBUF, ABUF */
     GLOBUS_FTP_CLIENT_CMD_MASK_BUFFER			= 1<<7,
 
@@ -133,7 +133,7 @@ typedef void (*globus_ftp_client_plugin_destroy_t)(
  * This callback is used to notify a plugin that connection
  * establishment is being done for this client handle.  This
  * notification can occur when a new request is made or when a restart
- * is done by a plugin. 
+ * is done by a plugin.
  *
  * If a response_callback is defined by a plugin, then that will be
  * once the connection establishment has completed (successfully or
@@ -469,7 +469,7 @@ typedef void (*globus_ftp_client_plugin_put_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const char *				url, 
+    const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
     globus_bool_t				restart);
 
@@ -816,84 +816,84 @@ globus_result_t
 globus_ftp_client_plugin_restart_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_verbose_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_delete(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_mkdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_rmdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_move(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
     const char *				dest_url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_get(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
+    const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_client_restart_marker_t *	restart,
-    globus_abstime_t *				when);
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_put(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
+    const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_client_restart_marker_t *	restart,
-    globus_abstime_t *				when);
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_third_party_transfer(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
-    globus_ftp_client_operationattr_t *		source_attr,
+    const globus_ftp_client_operationattr_t *	source_attr,
     const char *				dest_url,
-    globus_ftp_client_operationattr_t *		dest_attr,
+    const globus_ftp_client_operationattr_t *	dest_attr,
     globus_ftp_client_restart_marker_t *	restart,
-    globus_abstime_t *				when);
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_size(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_restart_modification_time(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when);
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
 
 globus_result_t
 globus_ftp_client_plugin_abort(
@@ -935,7 +935,7 @@ globus_ftp_client_plugin_set_copy_func(
 globus_result_t
 globus_ftp_client_plugin_set_destroy_func(
     globus_ftp_client_plugin_t *		plugin,
-    globus_ftp_client_plugin_destroy_t		destroy); 
+    globus_ftp_client_plugin_destroy_t		destroy);
 
 globus_result_t
 globus_ftp_client_plugin_set_delete_func(

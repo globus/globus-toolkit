@@ -34,11 +34,11 @@ globus_result_t
 globus_l_ftp_client_plugin_restart_operation(
     globus_i_ftp_client_handle_t *		handle,
     const char *				source_url,
-    globus_ftp_client_operationattr_t *		source_attr,
+    const globus_ftp_client_operationattr_t *	source_attr,
     const char *				dest_url,
-    globus_ftp_client_operationattr_t *		dest_attr,
+    const globus_ftp_client_operationattr_t *	dest_attr,
     globus_ftp_client_restart_marker_t *	restart,
-    globus_abstime_t *				when);
+    const globus_abstime_t *			when);
 
 
 
@@ -46,9 +46,9 @@ globus_l_ftp_client_plugin_restart_operation(
  * Restart an existing list.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued will be cleared and reused once the connection is
  * re-established.
@@ -61,7 +61,7 @@ globus_l_ftp_client_plugin_restart_operation(
  *        The handle which is associated with the list.
  * @param source_url
  *        The destination URL of the transfer. This may be different than
- *        the original list's URL, if the plugin decides to redirect to 
+ *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param source_attr
@@ -70,7 +70,7 @@ globus_l_ftp_client_plugin_restart_operation(
  * @param when
  *        Absolute time for when to restart the list. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -78,8 +78,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -113,9 +113,9 @@ globus_ftp_client_plugin_restart_list(
  * Restart an existing verbose list.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued will be cleared and reused once the connection is
  * re-established.
@@ -128,7 +128,7 @@ globus_ftp_client_plugin_restart_list(
  *        The handle which is associated with the list.
  * @param source_url
  *        The destination URL of the transfer. This may be different than
- *        the original list's URL, if the plugin decides to redirect to 
+ *        the original list's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param source_attr
@@ -137,7 +137,7 @@ globus_ftp_client_plugin_restart_list(
  * @param when
  *        Absolute time for when to restart the list. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -145,8 +145,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_verbose_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -180,9 +180,9 @@ globus_ftp_client_plugin_restart_verbose_list(
  * Restart an existing delete.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing delete operation 
+ * This function will cause the currently executing delete operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued will be cleared and reused once the connection is
  * re-established.
@@ -195,7 +195,7 @@ globus_ftp_client_plugin_restart_verbose_list(
  *        The handle which is associated with the delete.
  * @param source_url
  *        The destination URL of the transfer. This may be different than
- *        the original delete's URL, if the plugin decides to redirect to 
+ *        the original delete's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param source_attr
@@ -204,7 +204,7 @@ globus_ftp_client_plugin_restart_verbose_list(
  * @param when
  *        Absolute time for when to restart the delete. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -212,8 +212,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_delete(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -230,7 +230,7 @@ globus_ftp_client_plugin_restart_delete(
 
 	return globus_error_put(err);
     }
-    
+
     i_handle = *handle;
 
     return globus_l_ftp_client_plugin_restart_operation(i_handle,
@@ -247,9 +247,9 @@ globus_ftp_client_plugin_restart_delete(
  * Restart an existing mkdir.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing operation 
+ * This function will cause the currently executing operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued will be cleared and reused once the connection is
  * re-established.
@@ -262,7 +262,7 @@ globus_ftp_client_plugin_restart_delete(
  *        The handle which is associated with the mkdir.
  * @param source_url
  *        The destination URL of the transfer. This may be different than
- *        the original mkdir's URL, if the plugin decides to redirect to 
+ *        the original mkdir's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param source_attr
@@ -271,7 +271,7 @@ globus_ftp_client_plugin_restart_delete(
  * @param when
  *        Absolute time for when to restart the mkdir. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -279,8 +279,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_mkdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -314,9 +314,9 @@ globus_ftp_client_plugin_restart_mkdir(
  * Restart an existing rmdir.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing operation 
+ * This function will cause the currently executing operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued will be cleared and reused once the connection is
  * re-established.
@@ -329,7 +329,7 @@ globus_ftp_client_plugin_restart_mkdir(
  *        The handle which is associated with the rmdir.
  * @param source_url
  *        The destination URL of the transfer. This may be different than
- *        the original rmdir's URL, if the plugin decides to redirect to 
+ *        the original rmdir's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param source_attr
@@ -338,7 +338,7 @@ globus_ftp_client_plugin_restart_mkdir(
  * @param when
  *        Absolute time for when to restart the rmdir. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -346,8 +346,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_rmdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -382,10 +382,10 @@ globus_ftp_client_plugin_restart_rmdir(
  * Restart an existing move.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing move operation 
+ * This function will cause the currently executing move operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially new URLs and 
- * attributes. 
+ * silently aborted, and then restarted with potentially new URLs and
+ * attributes.
  *
  * The user will not receive any notification that a restart has
  * happened. Each plugin which is interested in get events will
@@ -395,25 +395,25 @@ globus_ftp_client_plugin_restart_rmdir(
  *        The handle which is associated with the move.
  * @param source_url
  *        The source URL of the move. This may be different than
- *        the original get's URL, if the plugin decides to redirect to 
+ *        the original get's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param dest_url
  *        The destination URL of the move. This may be different than
- *        the original get's URL, if the plugin decides to redirect to 
+ *        the original get's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL. Note that only the path
  *        component of this URL is used.
  * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original move's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param when
  *        Absolute time for when to restart the move. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -422,8 +422,8 @@ globus_ftp_client_plugin_restart_move(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
     const char *				dest_url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -469,9 +469,9 @@ globus_ftp_client_plugin_restart_move(
  * Restart an existing get.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued will be cleared and reused once the connection is
  * re-established.
@@ -484,19 +484,19 @@ globus_ftp_client_plugin_restart_move(
  *        The handle which is associated with the get.
  * @param url
  *        The source URL of the transfer. This may be different than
- *        the original get's URL, if the plugin decides to redirect to 
+ *        the original get's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original get's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param when
  *        Absolute time for when to restart the get. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -504,9 +504,9 @@ globus_result_t
 globus_ftp_client_plugin_restart_get(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
+    const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    globus_abstime_t *				when)
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -540,9 +540,9 @@ globus_ftp_client_plugin_restart_get(
  * Restart an existing put.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes. Any data buffers which are
  * currently queued but not called back will be resent once the
  * connection is re-established.
@@ -555,31 +555,31 @@ globus_ftp_client_plugin_restart_get(
  *        The handle which is associated with the put.
  * @param url
  *        The URL of the transfer. This may be different than
- *        the original put's URL, if the plugin decides to redirect to 
+ *        the original put's URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
- *        problems with the original URL. If the put is restarted with a 
+ *        problems with the original URL. If the put is restarted with a
  *        different URL, the plugin must re-send any data which has
  *        already been acknowledged by it's callback.
  * @param attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original put's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param when
  *        Absolute time for when to restart the put. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
- *        be immediately restarted. 
+ *        be immediately restarted.
  */
 globus_result_t
 globus_ftp_client_plugin_restart_put(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
+    const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    globus_abstime_t *				when)
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -612,9 +612,9 @@ globus_ftp_client_plugin_restart_put(
  * Restart an existing third-party transfer.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URLs and 
+ * silently aborted, and then restarted with potentially a new URLs and
  * attributes.
  *
  * The user will not receive any notification that a restart has
@@ -626,30 +626,30 @@ globus_ftp_client_plugin_restart_put(
  *        The handle which is associated with the transfer.
  * @param source_url
  *        The source URL of the transfer. This may be different than
- *        the original URL, if the plugin decides to redirect to 
+ *        the original URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL
  * @param source_attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original transfer's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param dest_url
  *        The destination URL of the transfer. This may be different than
- *        the original destination URL, if the plugin decides to redirect to 
+ *        the original destination URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param dest_attr
  *        The attributes to use for the new transfer. This may be a
  *        modified version of the original transfer's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param when
  *        Absolute time for when to restart the transfer. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -657,16 +657,16 @@ globus_result_t
 globus_ftp_client_plugin_restart_third_party_transfer(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
-    globus_ftp_client_operationattr_t *		source_attr,
+    const globus_ftp_client_operationattr_t *	source_attr,
     const char *				dest_url,
-    globus_ftp_client_operationattr_t *		dest_attr,
+    const globus_ftp_client_operationattr_t *	dest_attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    globus_abstime_t *				when)
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
     static char * myname = "globus_ftp_client_plugin_restart_transfer";
-    
+
     if(source_url == GLOBUS_NULL ||
        dest_url == GLOBUS_NULL)
     {
@@ -698,7 +698,7 @@ globus_ftp_client_plugin_restart_third_party_transfer(
  *
  * This function will cause the currently executing size check operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URL and 
+ * silently aborted, and then restarted with potentially a new URL and
  * attributes.
  *
  * The user will not receive any notification that a restart has
@@ -709,7 +709,7 @@ globus_ftp_client_plugin_restart_third_party_transfer(
  *        The handle which is associated with the operation.
  * @param source_url
  *        The source URL of the size check. This may be different than
- *        the original operations URL, if the plugin decides to redirect to 
+ *        the original operations URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param source_attr
@@ -718,7 +718,7 @@ globus_ftp_client_plugin_restart_third_party_transfer(
  * @param when
  *        Absolute time for when to restart the size check. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -726,8 +726,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_size(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -790,8 +790,8 @@ globus_result_t
 globus_ftp_client_plugin_restart_modification_time(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_abstime_t *				when)
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -824,7 +824,7 @@ globus_ftp_client_plugin_restart_modification_time(
  * Abort a transfer operation.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to be aborted. When this happens, all plugins will be notified by
  * their abort callbacks. Once those are processed, the complete
  * callback will be called for all plugins, and then for the user's
@@ -848,7 +848,7 @@ globus_ftp_client_plugin_abort(
  * Add data channels to an existing put transfer.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to have additional data channels acquired if the attribute set
  * allows it.
  *
@@ -874,7 +874,7 @@ globus_ftp_client_plugin_add_data_channels(
 
     i_handle = *handle;
     globus_i_ftp_client_handle_lock(i_handle);
-    
+
     if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
@@ -922,7 +922,7 @@ globus_ftp_client_plugin_add_data_channels(
  * Remove data channels from an existing put transfer.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing transfer operation 
+ * This function will cause the currently executing transfer operation
  * to have data channels removed,  if the attribute set
  * allows it.
  *
@@ -947,7 +947,7 @@ globus_ftp_client_plugin_remove_data_channels(
     static char *				myname = "globus_ftp_client_plugin_remove_data_channels";
 
     globus_i_ftp_client_handle_lock(i_handle);
-    
+
     if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
@@ -1213,9 +1213,9 @@ GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(complete)
  * Restart an existing operation.
  * @ingroup globus_ftp_client_plugins
  *
- * This function will cause the currently executing operation 
+ * This function will cause the currently executing operation
  * to be restarted. When a restart happens, the operation will be
- * silently aborted, and then restarted with potentially a new URLs and 
+ * silently aborted, and then restarted with potentially a new URLs and
  * attributes.
  *
  * The user will not receive any notification that a restart has
@@ -1227,30 +1227,30 @@ GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(complete)
  *        The handle which is associated with the operation.
  * @param source_url
  *        The source URL of the operation. This may be different than
- *        the original URL, if the plugin decides to redirect to 
+ *        the original URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL
  * @param source_attr
  *        The attributes to use for the new operation. This may be a
  *        modified version of the original operations's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param dest_url
  *        The destination URL of the operation. This may be different than
- *        the original destination URL, if the plugin decides to redirect to 
+ *        the original destination URL, if the plugin decides to redirect to
  *        another FTP server due to performance or reliability
  *        problems with the original URL.
  * @param dest_attr
  *        The attributes to use for the new operation. This may be a
  *        modified version of the original operations's attribute set. This
- *        may be useful when the plugin wishes to send restart markers 
+ *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
  * @param when
  *        Absolute time for when to restart the operation. The current
  *        control and data connections will be stopped
- *        immediately. If this completes before <b>when</b>, then the 
+ *        immediately. If this completes before <b>when</b>, then the
  *	  restart will be delayed until that time. Otherwise, it will
  *        be immediately restarted.
  */
@@ -1259,11 +1259,11 @@ globus_result_t
 globus_l_ftp_client_plugin_restart_operation(
     globus_i_ftp_client_handle_t *		handle,
     const char *				source_url,
-    globus_ftp_client_operationattr_t *		source_attr,
+    const globus_ftp_client_operationattr_t *	source_attr,
     const char *				dest_url,
-    globus_ftp_client_operationattr_t *		dest_attr,
+    const globus_ftp_client_operationattr_t *	dest_attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    globus_abstime_t *				when)
+    const globus_abstime_t *			when)
 {
     globus_object_t *				err;
     globus_result_t				result;
@@ -1319,7 +1319,7 @@ globus_l_ftp_client_plugin_restart_operation(
 		"[%s] Could not allocate internal data structure at %s\n",
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
 		myname);
-	    
+
 	    goto free_restart_exit;
 	}
 	if(dest_attr)
@@ -1330,7 +1330,7 @@ globus_l_ftp_client_plugin_restart_operation(
 	    if(result)
 	    {
 		err = globus_error_get(result);
-		
+
 		goto free_dest_attr_exit;
 	    }
 	}
@@ -1356,10 +1356,10 @@ globus_l_ftp_client_plugin_restart_operation(
 		"[%s] Could not allocate internal data structure at %s\n",
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
 		myname);
-	    
+
 	    goto destroy_dest_attr_exit;
 	}
-	
+
 	if(source_attr)
 	{
 	    result = globus_ftp_client_operationattr_copy(
@@ -1368,7 +1368,7 @@ globus_l_ftp_client_plugin_restart_operation(
 	    if(result)
 	    {
 		err = globus_error_get(result);
-		
+
 		goto free_source_attr_exit;
 	    }
 	}
@@ -1405,7 +1405,7 @@ globus_l_ftp_client_plugin_restart_operation(
 
 
     globus_i_ftp_client_handle_lock(handle);
-    
+
     if(handle->op == GLOBUS_FTP_CLIENT_IDLE)
     {
         err = globus_error_construct_string(
@@ -1491,7 +1491,7 @@ globus_i_ftp_client_plugin_notify_delete(
     {
 	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
-	
+
 	if(plugin->delete_func)
 	{
 	    if(!unlocked)
@@ -2081,13 +2081,13 @@ globus_i_ftp_client_plugin_notify_connect(
     {
 	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
-	
+
 	if(plugin->move_func)
 	{
 	    if(plugin->connect_func &&
 	       PLUGIN_SUPPORTS_OP(handle->op, plugin) &&
 	       (plugin->command_mask &
-		GLOBUS_FTP_CLIENT_CMD_MASK_CONTROL_ESTABLISHMENT)) 
+		GLOBUS_FTP_CLIENT_CMD_MASK_CONTROL_ESTABLISHMENT))
 	    {
 		if(!unlocked)
 		{
@@ -2131,7 +2131,7 @@ globus_i_ftp_client_plugin_notify_authenticate(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
     tmp = handle->attr.plugins;
@@ -2186,7 +2186,7 @@ globus_i_ftp_client_plugin_notify_read(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
 
@@ -2243,7 +2243,7 @@ globus_i_ftp_client_plugin_notify_write(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
     tmp = handle->attr.plugins;
@@ -2370,7 +2370,7 @@ globus_i_ftp_client_plugin_notify_response(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
 
@@ -2427,7 +2427,7 @@ globus_i_ftp_client_plugin_notify_fault(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
     tmp = handle->attr.plugins;
@@ -2479,7 +2479,7 @@ globus_i_ftp_client_plugin_notify_complete(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
     tmp = handle->attr.plugins;
@@ -2534,7 +2534,7 @@ globus_i_ftp_client_plugin_notify_data(
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
-    
+
     handle->notify_in_progress++;
 
     tmp = handle->attr.plugins;
