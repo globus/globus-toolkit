@@ -101,7 +101,8 @@ BUNDLE gt4-cas-test
 BUNDLE gt4-delegation
         globus_wsrf_delegation_client_java
         globus_wsrf_delegation_service_java
-        globus_wsrf_delegation_common_java
+        globus_wsrf_delegation_common
+        globus_wsrf_delegation_stubs_java
 
 BUNDLE gt4-delegation-test
         globus_wsrf_delegation_service_java_test
