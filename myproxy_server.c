@@ -107,6 +107,10 @@ static int get_client_authdata(myproxy_socket_attrs_t *attrs,
 			       char *client_name,
 			       authorization_data_t *auth_data);
 
+static int do_account_authorization(myproxy_socket_attrs_t *attrs,
+				    myproxy_request_t *client_request,
+				    char *client_name);
+
 static int debug = 0;
 
 int
@@ -956,12 +960,9 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    int   client_owns_credentials = 0;
    int   authorization_ok = -1;
    int   return_status = -1;
-   authorization_data_t auth_data;
-   myproxy_creds_t creds;
+   authorization_data_t auth_data = { 0 };
+   myproxy_creds_t creds = { 0 };
 
-   memset(&creds, 0, sizeof(creds));
-   memset(&auth_data, 0, sizeof(auth_data));
-   
    switch (client_request->command_type) {
    case MYPROXY_GET_PROXY:
        /* Gather all authorization information for the GET request from
@@ -1124,18 +1125,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        break;
 
    case MYPROXY_INFO_PROXY:
-       /* Is this client authorized to store credentials here? */
-       authorization_ok =
-	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
-       if (authorization_ok != 1) {
-	   verror_put_string("\"%s\" not authorized to query credentials on this server", client_name);
-	   goto end;
-       }
-
-       /* Further authorization checking done inside the processing
-	  of the INFO request, since there may be multiple credentials
-          stored under this username. */
-
+       /* Authorization checking done inside the processing of the
+	  INFO request, since there may be multiple credentials stored
+	  under this username. */
+       authorization_ok = 1;
        break;
 
    case MYPROXY_CHANGE_CRED_PASSPHRASE:
@@ -1207,6 +1200,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
       goto end;
    }
 
+#if defined(HAVE_LIBSASL2)
+   if (do_account_authorization(attrs, client_request, client_name) < 0) {
+       goto end;
+   }
+#endif   
+
    return_status = 0;
 
 end:
@@ -1222,10 +1221,10 @@ end:
 }
 
 static int
-get_client_authdata(myproxy_socket_attrs_t *attrs,
-                    myproxy_request_t *client_request,
-		    char *client_name,
-		    authorization_data_t *auth_data)
+do_authz_handshake(myproxy_socket_attrs_t *attrs,
+		   char *client_name,
+		   author_method_t methods[],
+		   authorization_data_t *auth_data)
 {
    myproxy_response_t server_response;
    char  *client_buffer = NULL;
@@ -1238,15 +1237,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
    
    memset(&server_response, 0, sizeof(server_response));
 
-   if (client_request->passphrase && strlen(client_request->passphrase) > 0) {
-      auth_data->server_data = NULL;
-      auth_data->client_data = strdup(client_request->passphrase);
-      auth_data->client_data_len = strlen(client_request->passphrase) + 1;
-      auth_data->method = AUTHORIZETYPE_PASSWD;
-      return 0;
-   }
-
-   authorization_init_server(&server_response.authorization_data);
+   authorization_init_server(&server_response.authorization_data, methods);
    server_response.response_type = MYPROXY_AUTHORIZATION_RESPONSE;
    send_response(attrs, &server_response, client_name);
 
@@ -1279,15 +1270,6 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
    auth_data->client_data_len = client_auth_data->client_data_len;
    auth_data->method = client_auth_data->method;
 
-#if defined(HAVE_LIBSASL2)
-   if (auth_data->method == AUTHORIZETYPE_SASL) {
-       if (auth_sasl_negotiate_server(attrs, client_request) < 0) {
-	   verror_put_string("SASL negotiation failed");
-	   goto end;
-       }
-   }
-#endif
-   
    return_status = 0;
 
 end:
@@ -1296,3 +1278,67 @@ end:
 
    return return_status;
 }
+
+static int
+get_client_authdata(myproxy_socket_attrs_t *attrs,
+                    myproxy_request_t *client_request,
+		    char *client_name,
+		    authorization_data_t *auth_data)
+{
+   int   return_status = -1;
+   author_method_t methods[] = { AUTHORIZETYPE_CERT, AUTHORIZETYPE_NULL };
+
+   assert(auth_data != NULL);
+   
+   if (client_request->passphrase && strlen(client_request->passphrase) > 0) {
+      auth_data->server_data = NULL;
+      auth_data->client_data = strdup(client_request->passphrase);
+      auth_data->client_data_len = strlen(client_request->passphrase) + 1;
+      auth_data->method = AUTHORIZETYPE_PASSWD;
+      return 0;
+   }
+
+   if (do_authz_handshake(attrs, client_name, methods, auth_data) < 0) {
+       goto end;
+   }
+
+   assert(auth_data->method == AUTHORIZETYPE_CERT);
+
+   return_status = 0;
+
+end:
+   return return_status;
+}
+
+#if defined(HAVE_LIBSASL2)
+static int
+do_account_authorization(myproxy_socket_attrs_t *attrs,
+			 myproxy_request_t *client_request,
+			 char *client_name)
+{
+   int   return_status = -1;
+   author_method_t methods[] = { AUTHORIZETYPE_SASL, AUTHORIZETYPE_NULL };
+   authorization_data_t auth_data = { 0 };
+
+   if (do_authz_handshake(attrs, client_name, methods, &auth_data) < 0) {
+       goto end;
+   }
+
+   assert(auth_data.method == AUTHORIZETYPE_SASL);
+
+   if (auth_sasl_negotiate_server(attrs, client_request) < 0) {
+       verror_put_string("Account authorization failed");
+       goto end;
+   }
+   
+   return_status = 0;
+
+end:
+   if (auth_data.server_data)
+      free(auth_data.server_data);
+   if (auth_data.client_data)
+      free(auth_data.client_data);
+
+   return return_status;
+}
+#endif
