@@ -323,6 +323,9 @@ g_send_data(
     /*
      *  perhaps a time out should be added here
      */
+    (void) signal(SIGALRM, g_alarm_signal);
+    alarm(timeout_data);
+
     res = globus_ftp_control_data_connect_write(
               handle,
               connect_callback,
@@ -338,8 +341,14 @@ g_send_data(
         {
             globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
         }
+        l_timed_out = g_monitor.timed_out;
     }
     globus_mutex_unlock(&g_monitor.mutex);
+
+    if(l_timed_out)
+    {
+        goto data_err;
+    }
 
     transflag++;
     switch (type) 
@@ -692,6 +701,9 @@ g_receive_data(
     wu_monitor_reset(&g_monitor);
     g_monitor.offset = offset;
 
+    (void) signal(SIGALRM, g_alarm_signal);
+    alarm(timeout_data);
+
     res = globus_ftp_control_data_connect_read(
               handle,
               connect_callback,
@@ -707,9 +719,15 @@ g_receive_data(
         {
             globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
         }
+        l_timed_out = g_monitor.timed_out;
     }
     globus_mutex_unlock(&g_monitor.mutex);
 
+    if(l_timed_out)
+    {
+        goto data_err;
+    }
+        
     transflag++;
     switch (type) 
     {
@@ -766,10 +784,10 @@ g_receive_data(
         }
         globus_mutex_unlock(&g_monitor.mutex);
 
+        transflag = 0;
         if(aborted)
         {
             alarm(0);
-            transflag = 0;
             g_force_close(cb_count);
 
             return -1;
@@ -780,9 +798,8 @@ g_receive_data(
             goto data_err;
         }
 
-        transflag = 0;
-
         alarm(0);
+
 #       ifdef TRANSFER_COUNT
         {
             file_count_total++;
