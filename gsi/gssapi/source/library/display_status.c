@@ -90,13 +90,13 @@ GSS_CALLCONV gss_display_status
 		}
 		else switch (GSS_ERROR(status_value)) {
 			case GSS_S_FAILURE:
-				reason = "GSS_S_FAILURE - general failure";
+				reason = "General failure";
 				break;
 			case GSS_S_DEFECTIVE_TOKEN:
 				reason = "Communications Error";
 				break;
 			case GSS_S_DEFECTIVE_CREDENTIAL:
-				reason = "Authentication Failed - sslv3 handshake";
+				reason = "Authentication Failed";
 				break;
 			case GSS_S_CREDENTIALS_EXPIRED:
 				reason = "Credentials Expired";
