@@ -113,9 +113,6 @@ main(int argc, char *argv[])
 	goto validation_init_failed;
     }
 
-    printf("dn: %s\n", dn);
-    printf("objectclass: MdsSoftware\n"\
-  	   "Mds-Software-deployment: jobmanager-%s\n\n", request->jobmanager_type);
     printf("dn: Mds-Job-Attribute-name=All Attributes,%s\n", dn);
     printf("objectclass: MdsJobAttributes\n"\
 	    "objectclass: MdsJobAttribute\n"\
