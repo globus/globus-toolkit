@@ -8,7 +8,7 @@ $|=1;
 
 my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
-my $jmtype="-jmtype fork";
+my $startargs="-jmtype fork";
 
 @tests = qw(
     globus-gram-job-manager-stdio-test.pl
@@ -24,11 +24,11 @@ if(0 != system("grid-proxy-info -exists -hours 2") / 255)
 chdir "$globus_location/test/@PACKAGE@";
 if(@ARGV)
 {
-    $jmtype = "-jmtype $ARGV[0]";
+    $startargs = join(' ', @ARGV);
 }
 
 system("globus-personal-gatekeeper -killall >/dev/null 2>/dev/null");
-system("globus-personal-gatekeeper -start -log never $jmtype >/dev/null 2>/dev/null");
+system("globus-personal-gatekeeper -start -log never $startargs >/dev/null 2>/dev/null");
 chomp($contact = `globus-personal-gatekeeper -list`);
 if($? != 0)
 {
