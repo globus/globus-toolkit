@@ -34,6 +34,7 @@ Description:
 
 CVS Information:
  
+
     $Source$
     $Date$
     $Revision$
@@ -58,8 +59,8 @@ CVS Information:
 
 #include "openssl/md5.h"
 
-/*#define DEBUG				1*/
-/*#define GLOBUS_L_GASS_CACHE_LOG 	1*/
+/*#define DEBUG				1 */
+/*#define GLOBUS_L_GASS_CACHE_LOG 	1 */
 #include "globus_i_gass_cache.h"
 #include "globus_i_gass_cache_config.h"
 #include "globus_gass_cache.h"
@@ -108,12 +109,14 @@ static
 int
 globus_l_gass_cache_mangle_html(const char	*string,
 				const char      *separator,
+				int		levels,
 				char		*mangled,
 				int		*length );
 static
 int
 globus_l_gass_cache_mangle_md5(const char	*string,
-				const char      *separator,
+			       const char       *separator,
+			       int		levels,
 			       char		*mangled,
 			       int		*length );
 
@@ -190,7 +193,7 @@ typedef struct cache_mangling_option_s
 {
     unsigned	flagbits;
     char	*prefix;
-    int (* mangle_function) (const char *, const char*, char *, int * );
+    int (* mangle_function) (const char *, const char*, int, char *, int * );
 } cache_mangling_option_t;
 static cache_mangling_option_t cache_mangling_list [] =
 {
@@ -234,6 +237,11 @@ typedef struct
 static char* directory_type_values[] = { "normal", "flat", GLOBUS_NULL };
 static char* directory_separator[] = { "/", "_", GLOBUS_NULL };
 
+/* # of MD5 directory Levels */
+#define GLOBUS_L_GASS_CACHE_CONFIG_KEY_LEVELS "levels"
+#define GLOBUS_L_GASS_CACHE_MAX_LEVELS		4
+#define GLOBUS_L_GASS_CACHE_DEFAULT_LEVELS	2
+#define GLOBUS_L_GASS_CACHE_DEFAULT_LEVELS_OLD	4
 
 /*
  * OLLE: Hmm??? This variable is never used. Commenting it out, instead
@@ -641,7 +649,7 @@ globus_l_gass_cache_trace(
  *     DIRECTORY_TYPE_FLAT    - test (a) work but not (b)
  */
 static int
-globus_l_gass_cache_linktest(globus_gass_cache_t  *cache)
+globus_l_gass_cache_linktest(globus_i_gass_cache_t  *cache)
 {
     char         dir[PATH_MAX];
     char         file[PATH_MAX];
@@ -798,6 +806,7 @@ static
 int
 globus_l_gass_cache_mangle_html(const char	*string,
 				const char      *separator,
+				int		levels,
 				char		*mangled,
 				int		*length )
 {
@@ -807,6 +816,9 @@ globus_l_gass_cache_mangle_html(const char	*string,
     int		mangle_separator = 0;	/* Bool: Mangle extra slashes? */
     int		len = 0;
     int		c;
+
+    /* We ignore the levels setting here... */
+    (void) levels;
 
     /* Copy & clean.. */
     while( ( c = *string++ ) != '\0' )
@@ -903,6 +915,7 @@ static
 int
 globus_l_gass_cache_mangle_md5(const char	*string,
 			       const char       *separator,
+			       int		levels,
 			       char		*mangled,
 			       int		*length )
 {
@@ -919,6 +932,10 @@ globus_l_gass_cache_mangle_md5(const char	*string,
 	unsigned char	md5[MD5_DIGEST_LENGTH], *md5ptr = &md5[0];
 	int		i;
 
+	/* Use the "levels" for the max # of separators.. Adjust it
+	 * here for the "i" index of the loop. */
+	levels -= 2;
+
 	/* Do the real work. */
 	MD5( string, strlen(string), md5 );
 
@@ -928,7 +945,7 @@ globus_l_gass_cache_mangle_md5(const char	*string,
 	    globus_libc_sprintf( mangled, "%02x", *md5ptr );
 	    mangled += 2;
 	    md5ptr++;
-	    if ( i <= 2 )
+	    if ( i <= levels )
 	    {
 		*mangled++ = *separator;
 	    }
@@ -967,11 +984,11 @@ globus_l_gass_cache_mangle_md5(const char	*string,
  *
  */
 int
-globus_l_gass_cache_mangle(const globus_gass_cache_t   *cache,
-			   const char	               *string,
-			   const int                   max_mangled_len,
-			   char	                       **mangled,
-			   int		               *length )
+globus_l_gass_cache_mangle(const globus_gass_cache_t	 cache,
+			   const char			*string,
+			   const int			max_mangled_len,
+			   char				**mangled,
+			   int				*length )
 {
     cache_mangling_option_t	*option;
     int				rc;
@@ -988,7 +1005,9 @@ globus_l_gass_cache_mangle(const globus_gass_cache_t   *cache,
     {
 	if ( cache->mangling_options & option->flagbits )
 	{
-	    rc = option->mangle_function(string, separator, GLOBUS_NULL, &len);
+	    rc = option->mangle_function(string, separator,
+					 cache->directory_levels,
+					 GLOBUS_NULL, &len);
 	    if ( GLOBUS_SUCCESS != rc )
 	    {
 		RET_ERROR( rc );
@@ -1027,6 +1046,7 @@ globus_l_gass_cache_mangle(const globus_gass_cache_t   *cache,
 	*mptr++ = *separator;
 	rc = option->mangle_function( string,
 				      separator,
+				      cache->directory_levels,
 				      mptr,
 				      GLOBUS_NULL );
 	if ( GLOBUS_SUCCESS != rc )
@@ -1385,7 +1405,7 @@ globus_l_gass_cache_names_fill_local( cache_names_t *names )
  */
 static
 int
-globus_l_gass_cache_names_init( const globus_gass_cache_t	*cache,
+globus_l_gass_cache_names_init( const globus_gass_cache_t	 cache,
 				const char			*url,
 				const char			*tag,
 				cache_names_t			*names )
@@ -4236,7 +4256,7 @@ globus_l_gass_cache_unlink_global( cache_names_t		*names,
 
 static
 int
-globus_l_gass_cache_list_all_urls_flat( globus_gass_cache_t *  cache_handle,
+globus_l_gass_cache_list_all_urls_flat( globus_gass_cache_t    cache_handle,
                                         const char *           search_dir,
                                         url_list_head_t *      url_list )
 {
@@ -4352,7 +4372,7 @@ globus_l_gass_cache_list_all_urls_flat( globus_gass_cache_t *  cache_handle,
  */
 static
 int
-globus_l_gass_cache_list_all_urls( globus_gass_cache_t  *cache_handle,
+globus_l_gass_cache_list_all_urls( globus_gass_cache_t   cache_handle,
                                    const char		*search_dir,
                                    const char		*base_mangled,
                                    url_list_head_t	*url_list )
@@ -4404,7 +4424,6 @@ globus_l_gass_cache_list_all_urls( globus_gass_cache_t  *cache_handle,
     for ( dirent_num = 0;  dirent_num < dirent_count; dirent_num++ )
     {
 	const char	*name = dirent_list[dirent_num]->d_name;
-        int             pathsize = PATH_MAX+1;
 	char		name_path[PATH_MAX+1];
 
         /* Build it's full path */
@@ -4603,24 +4622,41 @@ globus_l_gass_cache_delete( cache_names_t		*names,
  */
 int 
 globus_gass_cache_open(const char		*cache_directory_path,
-		       globus_gass_cache_t	*cache_handle)
+		       globus_gass_cache_t	*cache_handlep)
 
 {
     int         rc;			/* general purpose returned code */
     char *      pt;			/* general purpose returned pointer */
-    int		f_name_length;		/* to verify len of the file names */
+    int	f_name_length;			/* to verify len of the file names */
     char	f_name[PATH_MAX+1];	/* path name of the 3 files to open */
 #  if defined GLOBUS_L_GASS_CACHE_LOG
-    char        log_f_name[PATH_MAX+1]; /* log file file name */
+    char	log_f_name[PATH_MAX+1]; /* log file file name */
 #  endif
     char	*uniq;
-    char        homedir[PATH_MAX];
-    char        *separator;
+    char	homedir[PATH_MAX];
+    char	*separator;
 
-    globus_l_gass_cache_config_t   config;
+    globus_l_gass_cache_config_t	config;
+    unsigned				write_config = 0x0;
+    globus_i_gass_cache_t *      cache_handle;
+
+# define WRITE_CONFIG_TYPE	0x01
+# define WRITE_CONFIG_LEVELS	0x02
+
+    if (cache_handlep == NULL)
+    {
+        return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+    }
+
+    (*cache_handlep) = globus_libc_calloc(1, sizeof(globus_i_gass_cache_t));
+    cache_handle = *cache_handlep;
+
+    if (cache_handle == NULL)
+    {
+        return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+    }
 
     CHECK_CACHE_IS_NOT_INIT(cache_handle);
-    memset( cache_handle, 0, sizeof( globus_gass_cache_t ) );
     CLR_ERROR;
 
     /* Random initialize */
@@ -4795,6 +4831,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
     strcat(f_name,GLOBUS_L_GASS_CACHE_CONFIG_FILE);
 
     cache_handle->cache_type = -1;
+    cache_handle->directory_levels = -1;
 
     if (globus_l_gass_cache_config_init(f_name, &config) == GLOBUS_SUCCESS)
     {
@@ -4811,27 +4848,89 @@ globus_gass_cache_open(const char		*cache_directory_path,
 		break;
 	    }
 	}
-    }
 
+	/* Get the # of levels */
+        value = globus_l_gass_cache_config_get(
+	    &config,
+	    GLOBUS_L_GASS_CACHE_CONFIG_KEY_LEVELS);
+	if (  ( GLOBUS_NULL != value ) && ( isdigit ( *value ) )  )
+	{
+	    int	levels;
+	    levels = atoi( value );
+	    if ( levels <= GLOBUS_L_GASS_CACHE_MAX_LEVELS )
+	    {
+		cache_handle->directory_levels = levels;
+	    }
+	}
+    }
     globus_l_gass_cache_config_destroy(&config);
 
-    /* if no config, perform link test */
-    if (cache_handle->cache_type < 0)
+    /* Create the global directory name & path.  We're doing this
+     * before the below test because we're useing it to detect an
+     * existing cache. */
+    rc = globus_l_gass_cache_build_filename(
+	cache_handle->cache_directory_path,
+	"/", /* always */
+	GLOBUS_L_GASS_CACHE_GLOBAL_DIR,
+	GLOBUS_NULL,
+	GLOBUS_NULL,
+	&cache_handle->global_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
     {
-        FILE*          fp;
+	LOG_ERROR( rc );
+	return rc;
+    }
+
+    /* Set the default # of levels */
+    /* If the global directory exists, assume old settings */
+    if ( cache_handle->directory_levels < 0 )
+    {
+	rc = globus_l_gass_cache_stat( cache_handle->global_directory_path,
+				       GLOBUS_NULL );
+	/* If stat ok, use the "old" value, otherwise the default */
+	cache_handle->directory_levels =
+	    (   ( GLOBUS_SUCCESS == rc ) ?
+		GLOBUS_L_GASS_CACHE_DEFAULT_LEVELS_OLD :
+		GLOBUS_L_GASS_CACHE_DEFAULT_LEVELS  );
+
+	/* Force a config write... */
+	write_config |= WRITE_CONFIG_LEVELS;
+    }
+
+    /* if no config, perform link test */
+    if ( cache_handle->cache_type < 0 )
+    {
+	write_config |= WRITE_CONFIG_TYPE;
 
 	/* find out what type by performing a link test */
-	cache_handle->cache_type = globus_l_gass_cache_linktest(cache_handle);
+	cache_handle->cache_type = globus_l_gass_cache_linktest( cache_handle );
+    }
+
+    /* Save the config settings */
+    if ( write_config )
+    {
+        FILE*          fp;
 
         /* save these settings */
 	fp = fopen(f_name, "a");
 	if (fp)
 	{
-	    globus_libc_fprintf(
-		fp, 
-		"%s=%s\n", 
-		GLOBUS_L_GASS_CACHE_CONFIG_KEY_TYPE,
-		directory_type_values[cache_handle->cache_type]);
+	    if ( write_config & WRITE_CONFIG_TYPE )
+	    {
+		globus_libc_fprintf(
+		    fp, 
+		    "%s=%s\n", 
+		    GLOBUS_L_GASS_CACHE_CONFIG_KEY_TYPE,
+		    directory_type_values[cache_handle->cache_type]);
+	    }
+	    if ( write_config & WRITE_CONFIG_LEVELS )
+	    {
+		globus_libc_fprintf(
+		    fp,
+		    "%s=%d\n",
+		    GLOBUS_L_GASS_CACHE_CONFIG_KEY_LEVELS,
+		    cache_handle->directory_levels );
+	    }
 	}
 	if (fp)
 	{
@@ -4872,19 +4971,9 @@ globus_gass_cache_open(const char		*cache_directory_path,
     }
 # endif
 
-    /* Crate the global directory name & path */
-    rc = globus_l_gass_cache_build_filename(
-	cache_handle->cache_directory_path,
-	"/", /* always */
-	GLOBUS_L_GASS_CACHE_GLOBAL_DIR,
-	GLOBUS_NULL,
-	GLOBUS_NULL,
-	&cache_handle->global_directory_path );
-    if ( GLOBUS_SUCCESS != rc )
-    {
-	LOG_ERROR( rc );
-	return rc;
-    }
+    /* Now, create the global directory (after the above test).  Note
+     * that the directory path is built above, before the config
+     * tests */
     rc = globus_l_gass_cache_make_dirtree(
 	cache_handle->global_directory_path,
         cache_handle->cache_type);
@@ -4895,7 +4984,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
     }
 
-    /* Crate the local directory name & path */
+    /* Create the local directory name & path */
     rc = globus_l_gass_cache_build_filename(
 	cache_handle->cache_directory_path,
 	"/", /* always */
@@ -4918,7 +5007,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
     }
 
-    /* Crate the tmp directory name & path */
+    /* Create the tmp directory name & path */
     rc = globus_l_gass_cache_build_filename(
 	cache_handle->cache_directory_path,
 	"/", /* always */
@@ -4987,6 +5076,10 @@ globus_gass_cache_open(const char		*cache_directory_path,
 
     /* Done */
     return GLOBUS_SUCCESS;
+
+    /* Cleanup the namespace... */
+# undef WRITE_CONFIG_TYPE
+# undef WRITE_CONFIG_LEVELS
 }
 /*  globus_gass_cache_open() */
 
@@ -5012,8 +5105,12 @@ globus_gass_cache_open(const char		*cache_directory_path,
  */
 int
 globus_gass_cache_close(
-    globus_gass_cache_t *          cache_handle)
+    globus_gass_cache_t *          cache_handlep)
 {
+    globus_i_gass_cache_t *        cache_handle;
+
+    cache_handle = *cache_handlep;
+
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT(cache_handle);
     CLR_ERROR;
@@ -5051,6 +5148,8 @@ globus_gass_cache_close(
     globus_free( cache_handle->global_directory_path );
     globus_free( cache_handle->local_directory_path );
     globus_free( cache_handle->tmp_directory_path );
+
+    globus_free( *cache_handlep );
     
     GLOBUS_L_GASS_CACHE_LG("Cache Closed");
     return(GLOBUS_SUCCESS);
@@ -5132,7 +5231,7 @@ globus_gass_cache_close(
  */
 int
 globus_gass_cache_add(
-    globus_gass_cache_t *	cache_handle,
+    globus_gass_cache_t  	cache_handle,
     const char			*url,
     const char			*tag,
     globus_bool_t		create,
@@ -5386,7 +5485,7 @@ globus_gass_cache_add(
  */
 int
 globus_gass_cache_add_done(
-    globus_gass_cache_t	*cache_handle,
+    globus_gass_cache_t	 cache_handle,
     const char		*url,
     const char		*tag,
     unsigned long	timestamp)
@@ -5486,7 +5585,7 @@ globus_gass_cache_add_done(
  */
 int
 globus_gass_cache_query(
-    globus_gass_cache_t		*cache_handle,
+    globus_gass_cache_t		 cache_handle,
     const char			*url,
     const char			*tag,
     globus_bool_t		wait_for_lock,
@@ -5586,7 +5685,7 @@ globus_gass_cache_query(
  *
  */
 int
-globus_gass_cache_delete_start(globus_gass_cache_t	*cache_handle,
+globus_gass_cache_delete_start(globus_gass_cache_t	 cache_handle,
 			       const char		*url,
 			       const char		*tag,
 			       unsigned long		*timestamp)
@@ -5693,7 +5792,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t	*cache_handle,
  */
 int
 globus_gass_cache_delete(
-    globus_gass_cache_t *cache_handle,
+    globus_gass_cache_t  cache_handle,
     const char		*url,
     const char		*tag,
     unsigned long        timestamp,
@@ -5775,7 +5874,7 @@ globus_gass_cache_delete(
  */
 int
 globus_gass_cache_cleanup_tag(
-    globus_gass_cache_t *cache_handle,
+    globus_gass_cache_t  cache_handle,
     const char		*url,
     const char		*tag)
 {
@@ -5854,7 +5953,7 @@ globus_gass_cache_cleanup_tag(
  */
 int
 globus_gass_cache_cleanup_tag_all(
-    globus_gass_cache_t *cache_handle,
+    globus_gass_cache_t  cache_handle,
     char                *tag )
 {
     int			rc;			/* Temp return code */
@@ -5984,7 +6083,7 @@ globus_gass_cache_cleanup_tag_all(
  *
  */
 int
-globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_mangle_url( const globus_gass_cache_t	 cache_handle,
 			      const char		*url,
 			      char			**mangled_url,
 			      int			*length )
@@ -6026,7 +6125,7 @@ globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_mangle_tag( const globus_gass_cache_t	 cache_handle,
 			      const char		*tag,
 			      char			**mangled_tag,
 			      int			*length )
@@ -6059,7 +6158,7 @@ globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_get_cache_dir( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_get_cache_dir( const globus_gass_cache_t	 cache_handle,
 				 char			**cache_dir )
 {
     int		rc = GLOBUS_SUCCESS;	/* general purpose return code */
@@ -6113,7 +6212,7 @@ globus_gass_cache_get_cache_dir( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_get_dirs( const globus_gass_cache_t	 cache_handle,
 			    const char			*url,
 			    const char			*tag,
 			    char			**global_root,
@@ -6231,8 +6330,8 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_get_cache_type_string( const globus_gass_cache_t	*cache_handle,
-					 char			**cache_type )
+globus_gass_cache_get_cache_type_string( const globus_gass_cache_t	 cache_handle,
+					 char				**cache_type )
 {
     int		rc = GLOBUS_SUCCESS;	/* general purpose return code */
 

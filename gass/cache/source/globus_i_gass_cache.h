@@ -163,6 +163,43 @@ CVS Information:
 #define GLOBUS_L_GASS_CACHE_LG3(_f_,_a1_,_a2_)
 #define GLOBUS_L_GASS_CACHE_LG4(_f_,_a1_,_a2_,_a3_)
 #endif
+
+typedef struct globus_i_gass_cache_t
+{
+    /* dirty hack to know if this cache has been opened/init. */
+    void*       init;
+
+    /* version number read out of the state file */
+    char        *cache_directory_path;
+    char        *global_directory_path;
+    char        *local_directory_path;
+    char        *tmp_directory_path;
+
+    /* Current lengths */
+    int         global_dir_len;
+    int         local_dir_len;
+    int         tmp_dir_len;
+
+    /* Max lengths */
+    int         max_mangled_url;
+    int         max_mangled_tag;
+
+    /* Valid mangling options */
+    unsigned    mangling_options;
+
+    /* Cache directory type (hierarchial, flat,...) */
+    int         cache_type;
+
+    /* Cache MD5 directory levels (for non flat) */
+    int         directory_levels;
+
+    /* Logging info */
+    FILE*       log_FILE;
+    char        *log_file_name;
+}
+globus_i_gass_cache_t;
+
+
 									      
 #endif
 

@@ -9,7 +9,6 @@ Description:
     $Source$
     $Date$
     $Revision$
-    $Author$
 
 ******************************************************************************/
 #ifndef _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H_
@@ -83,38 +82,8 @@ EXTERN_C_BEGIN
  * directory. This structure MUST NOT be modified directly, but passed to
  * the globus_gass_cache functions
  */
+typedef struct globus_i_gass_cache_t * globus_gass_cache_t;
 
-typedef struct
-{
-    /* dirty hack to know if this cache has been opened/init. */
-    void*	init;   
-
-    /* version number read out of the state file */
-    char	*cache_directory_path;
-    char	*global_directory_path;
-    char	*local_directory_path;
-    char	*tmp_directory_path;
-
-    /* Current lengths */
-    int		global_dir_len;
-    int		local_dir_len;
-    int		tmp_dir_len;
-
-    /* Max lengths */
-    int		max_mangled_url;
-    int		max_mangled_tag;
-
-    /* Valid mangling options */
-    unsigned	mangling_options;
-
-    /* Cache directory type (hierarchial, flat,...) */
-    int         cache_type;
-
-    /* Logging info */
-    FILE*	log_FILE;
-    char	*log_file_name;
-
-} globus_gass_cache_t;      /* cache handle */
 
 /*
  *
@@ -269,7 +238,7 @@ globus_gass_cache_close(globus_gass_cache_t *  cache_handle);
  */
 extern
 int
-globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
+globus_gass_cache_add(globus_gass_cache_t    cache_handle,
 	       const char	*url,
 	       const char	*tag,
 	       globus_bool_t	create,
@@ -301,7 +270,7 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
  */
 extern int
 globus_gass_cache_add_done(
-    globus_gass_cache_t *cache_handle,
+    globus_gass_cache_t  cache_handle,
     const char		*url,
     const char		*tag,
     unsigned long	timestamp);
@@ -348,7 +317,7 @@ globus_gass_cache_add_done(
  */
 int
 globus_gass_cache_query(
-    globus_gass_cache_t		*cache_handle,
+    globus_gass_cache_t		 cache_handle,
     const char			*url,
     const char			*tag,
     globus_bool_t		wait_for_lock,
@@ -406,7 +375,7 @@ globus_gass_cache_query(
 extern
 int
 globus_gass_cache_delete_start(
-    globus_gass_cache_t	*cache_handle,
+    globus_gass_cache_t	 cache_handle,
     const char		*url,
     const char		*tag,
     unsigned long	*timestamp);
@@ -414,7 +383,7 @@ globus_gass_cache_delete_start(
 extern
 int
 globus_gass_cache_delete(
-    globus_gass_cache_t *cache_handle,
+    globus_gass_cache_t  cache_handle,
     const char		*url,
     const char		*tag,
     unsigned long	timestamp,
@@ -454,14 +423,14 @@ globus_gass_cache_delete(
 extern
 int
 globus_gass_cache_cleanup_tag(
-    globus_gass_cache_t	*cache_handle,
+    globus_gass_cache_t	 cache_handle,
     const char		*url,
     const char		*tag);
 
 extern
 int
 globus_gass_cache_cleanup_tag_all(
-    globus_gass_cache_t *cache_handle,
+    globus_gass_cache_t  cache_handle,
     char                *tag );
 
 /*
@@ -490,7 +459,7 @@ globus_gass_cache_cleanup_tag_all(
  *
  */
 int
-globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_mangle_url( const globus_gass_cache_t	cache_handle,
 			      const char		*url,
 			      char			**mangled_url,
 			      int			*length );
@@ -521,7 +490,7 @@ globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_mangle_tag( const globus_gass_cache_t	cache_handle,
 			      const char		*tag,
 			      char			**mangled_tag,
 			      int			*length );
@@ -557,7 +526,7 @@ globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_get_dirs( const globus_gass_cache_t	 cache_handle,
 			    const char			*url,
 			    const char			*tag,
 			    char			**global_root,
@@ -584,7 +553,7 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_get_cache_dir( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_get_cache_dir( const globus_gass_cache_t	 cache_handle,
 				 char			**cache_dir );
 
 /*
@@ -603,7 +572,7 @@ globus_gass_cache_get_cache_dir( const globus_gass_cache_t	*cache_handle,
  *
  */
 int
-globus_gass_cache_get_cache_type_string( const globus_gass_cache_t	*cache_handle,
+globus_gass_cache_get_cache_type_string( const globus_gass_cache_t	 cache_handle,
 					 char			**cache_type );
 
 /*
