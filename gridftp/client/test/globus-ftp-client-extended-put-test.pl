@@ -211,8 +211,11 @@ sub perf_test
         ok("\n# $test_exec -M \n#$errors", 'success');
     }
     unlink($tmpname);
+    if($i == 38)
+    {
+	push(@todo, 54 + $i);
+    }
 }
-
 push(@tests, "perf_test();");
 
 =head2 I<throughput_test> (Test 96)

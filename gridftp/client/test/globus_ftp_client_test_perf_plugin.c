@@ -31,32 +31,37 @@ globus_l_ftp_client_test_perf_plugin_deactivate(void)
 
 static
 void perf_plugin_begin_cb(
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific)
+    const char *                                    source_url,
+    const char *                                    dest_url,
+    globus_bool_t                                   restart)
 {
     globus_libc_fprintf(stderr, "perf_plugin_begin_cb\n");
 }
 
 static
 void perf_plugin_marker_cb(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
-    time_t                                          time_stamp,
+    globus_ftp_client_handle_t *                    handle,
+    long                                            time_stamp_int,
+    char                                            time_stamp_tength,
     int                                             stripe_ndx,
     int                                             num_stripes,
-    globus_size_t                                   nbytes)
+    globus_off_t                                    nbytes)
 {
     globus_libc_fprintf(stderr, "perf_plugin_marker_cb\n");
-    globus_libc_fprintf(stderr, "time_stamp   %ld\n", time_stamp);
+    globus_libc_fprintf(stderr, "time_stamp   %ld.%d\n", time_stamp_int, time_stamp_tength);
     globus_libc_fprintf(stderr, "stripe_ndx   %d\n", stripe_ndx);
     globus_libc_fprintf(stderr, "num_stripes  %d\n", num_stripes);
-    globus_libc_fprintf(stderr, "nbytes       %d\n", nbytes);
+    globus_libc_fprintf(stderr, "nbytes       %" GLOBUS_OFF_T_FORMAT "\n", nbytes);
 }
 
 static
 void perf_plugin_complete_cb(
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific)
+    globus_bool_t                                   success)
 {
     globus_libc_fprintf(stderr, "perf_plugin_complete_cb\n");
 }
@@ -70,8 +75,6 @@ globus_ftp_client_test_perf_plugin_init(
         perf_plugin_begin_cb,
         perf_plugin_marker_cb,
         perf_plugin_complete_cb,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
         GLOBUS_NULL);
 }
 

@@ -19,7 +19,7 @@ int test_abort_count = 0;
 
 void
 test_parse_args(int argc,
-		char *argv[],
+		char **argv,
 		globus_ftp_client_handleattr_t * handle_attr,
 		globus_ftp_client_operationattr_t * operation_attr,
 		char **src,
@@ -235,5 +235,5 @@ test_remove_arg(int *argc, char **argv, int *start, int num_of_options)
 	argv[j] = argv[j + num_of_options + 1];
     }
     *argc -= num_of_options + 1;
-    *start--;
+    (*start)--;
 }

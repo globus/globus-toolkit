@@ -76,6 +76,7 @@ test_PROGRAMS= \
 	globus-ftp-client-multiple-block-put-test \
 	globus-ftp-client-partial-get-test \
 	globus-ftp-client-partial-put-test \
+	globus-ftp-client-partial-read-all-test \
 	globus-ftp-client-partial-transfer-test \
 	globus-ftp-client-plugin-test \
 	globus-ftp-client-read-all-test \
@@ -186,6 +187,9 @@ globus_ftp_client_size_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_plugin_test_SOURCES = globus_ftp_client_plugin_test.c $(LibHeaders)
 globus_ftp_client_plugin_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_partial_read_all_test_SOURCES = globus_ftp_client_partial_read_all_test.c $(LibHeaders)
+globus_ftp_client_partial_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
