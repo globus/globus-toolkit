@@ -210,7 +210,7 @@ globus_l_callback_activate()
         return rc;
     }
     
-    GlobusReltimeSet(
+    GlobusTimeReltimeSet(
         globus_l_callback_own_thread_period,
         0,
         GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD);
@@ -1747,7 +1747,7 @@ globus_l_callback_thread_poll(
                     else
                     {
                         callback_info->running_count++;
-                        GlobusReltimeCopy(period, callback_info->period);
+                        GlobusTimeReltimeCopy(period, callback_info->period);
                     }
                 }
             }
