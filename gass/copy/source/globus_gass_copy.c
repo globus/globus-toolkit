@@ -24,8 +24,10 @@ struct globus_gass_copy_perf_info_s
     globus_ftp_client_plugin_t              ftp_perf_plugin;
 
     /* for 3pt only (may need to set EB mode) */
-    globus_bool_t                           saved_ftp_attr;
-    globus_ftp_client_operationattr_t *     ftp_attr;
+    globus_bool_t                           saved_dest_attr;
+    globus_bool_t                           saved_source_attr;
+    globus_ftp_client_operationattr_t *     dest_ftp_attr;
+    globus_ftp_client_operationattr_t *     source_ftp_attr;
 
     /* for local callback computation only */
     globus_callback_handle_t                local_cb_handle;
@@ -965,8 +967,10 @@ globus_gass_copy_register_performance_cb(
         }
 
         handle->performance->copy_handle = handle;
-        handle->performance->saved_ftp_attr = GLOBUS_FALSE;
-        handle->performance->ftp_attr = GLOBUS_NULL;
+        handle->performance->saved_dest_attr = GLOBUS_FALSE;
+        handle->performance->saved_source_attr = GLOBUS_FALSE;
+        handle->performance->dest_ftp_attr = GLOBUS_NULL;
+        handle->performance->source_ftp_attr = GLOBUS_NULL;
 
         result = globus_ftp_client_throughput_plugin_init(
             &handle->performance->ftp_perf_plugin,
@@ -1124,16 +1128,46 @@ globus_l_gass_copy_perf_cancel_ftp_callback(
         &perf_info->copy_handle->ftp_dest_handle,
         &perf_info->ftp_perf_plugin);
 
-    if(perf_info->copy_handle->state &&
-        perf_info->copy_handle->state->dest.attr &&
-        perf_info->saved_ftp_attr)
+    if(perf_info->saved_dest_attr)
     {
-        globus_ftp_client_operationattr_destroy(
-            perf_info->copy_handle->state->dest.attr->ftp_attr);
-        perf_info->copy_handle->state->dest.attr->ftp_attr = perf_info->ftp_attr;
+        if(perf_info->copy_handle->state &&
+            perf_info->copy_handle->state->dest.attr)
+        {
+            globus_ftp_client_operationattr_destroy(
+                perf_info->copy_handle->state->dest.attr->ftp_attr);
 
-        perf_info->saved_ftp_attr = GLOBUS_FALSE;
-        perf_info->ftp_attr = GLOBUS_NULL;
+            perf_info->copy_handle->state->dest.attr->ftp_attr =
+                perf_info->dest_ftp_attr;
+        }
+        else
+        {
+            globus_ftp_client_operationattr_destroy(
+                perf_info->dest_ftp_attr);
+        }
+
+        perf_info->saved_dest_attr = GLOBUS_FALSE;
+        perf_info->dest_ftp_attr = GLOBUS_NULL;
+    }
+
+    if(perf_info->saved_source_attr)
+    {
+        if(perf_info->copy_handle->state &&
+            perf_info->copy_handle->state->source.attr)
+        {
+            globus_ftp_client_operationattr_destroy(
+                perf_info->copy_handle->state->source.attr->ftp_attr);
+
+            perf_info->copy_handle->state->source.attr->ftp_attr =
+                perf_info->source_ftp_attr;
+        }
+        else
+        {
+            globus_ftp_client_operationattr_destroy(
+                perf_info->source_ftp_attr);
+        }
+
+        perf_info->saved_source_attr = GLOBUS_FALSE;
+        perf_info->source_ftp_attr = GLOBUS_NULL;
     }
 }
 
@@ -4576,8 +4610,6 @@ globus_gass_copy_register_url_to_url(
 
             new_ftp_attr = GLOBUS_NULL;
 
-            globus_l_gass_copy_perf_setup_ftp_callback(handle->performance);
-
             /* to get perf markers in 3pt we MUST have EB mode enabled */
             if(state->dest.attr->ftp_attr)
             {
@@ -4586,7 +4618,7 @@ globus_gass_copy_register_url_to_url(
                     state->dest.attr->ftp_attr,
                     &mode);
 
-                if(result == GLOBUS_SUCCESS &&
+                if(result != GLOBUS_SUCCESS ||
                     mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
                 {
                     new_ftp_attr = (globus_ftp_client_operationattr_t *)
@@ -4605,12 +4637,53 @@ globus_gass_copy_register_url_to_url(
 
             if(new_ftp_attr)
             {
-                handle->performance->saved_ftp_attr = GLOBUS_TRUE;
-                handle->performance->ftp_attr = state->dest.attr->ftp_attr;
+                handle->performance->saved_dest_attr = GLOBUS_TRUE;
+                handle->performance->dest_ftp_attr = state->dest.attr->ftp_attr;
+
                 globus_ftp_client_operationattr_set_mode(new_ftp_attr,
                     GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+
                 state->dest.attr->ftp_attr = new_ftp_attr;
             }
+
+            new_ftp_attr = GLOBUS_NULL;
+
+            if(state->source.attr->ftp_attr)
+            {
+                globus_ftp_control_mode_t   mode;
+                result = globus_ftp_client_operationattr_get_mode(
+                    state->source.attr->ftp_attr,
+                    &mode);
+
+                if(result != GLOBUS_SUCCESS ||
+                    mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+                {
+                    new_ftp_attr = (globus_ftp_client_operationattr_t *)
+		        globus_libc_malloc(sizeof(globus_ftp_client_operationattr_t));
+
+		    globus_ftp_client_operationattr_copy(new_ftp_attr,
+		        state->source.attr->ftp_attr);
+                }
+            }
+            else
+            {
+                new_ftp_attr = (globus_ftp_client_operationattr_t *)
+		        globus_libc_malloc(sizeof(globus_ftp_client_operationattr_t));
+                globus_ftp_client_operationattr_init(new_ftp_attr);
+            }
+
+            if(new_ftp_attr)
+            {
+                handle->performance->saved_source_attr = GLOBUS_TRUE;
+                handle->performance->source_ftp_attr = state->source.attr->ftp_attr;
+
+                globus_ftp_client_operationattr_set_mode(new_ftp_attr,
+                    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+
+                state->source.attr->ftp_attr = new_ftp_attr;
+            }
+
+            globus_l_gass_copy_perf_setup_ftp_callback(handle->performance);
         }
 
         handle->external_third_party = GLOBUS_TRUE;
