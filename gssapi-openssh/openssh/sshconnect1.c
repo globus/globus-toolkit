@@ -1660,14 +1660,11 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
           newname = (char *) malloc(strlen(retname) + strlen(server_user) + 4);
           if (newname) {
             strcpy(newname, server_user);
-            if(options.user == NULL)
-              {
+            if(options.implicit) {
                 strcat(newname,":i:");
-              }
-            else
-              {
+	    } else {
                 strcat(newname,":x:");
-              }
+	    }
             strcat(newname, retname);
             server_user = newname;
             free(retname);
