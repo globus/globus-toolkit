@@ -755,8 +755,6 @@ globus_xio_server_register_signal_handler(
     globus_xio_callback_t                       callback,
     void *                                      user_arg);
 
-#define GlobusXIOErrorIsEOF(res) GLOBUS_FALSE
-
 extern globus_module_descriptor_t globus_i_xio_module;
 
 #define GLOBUS_XIO_MODULE &globus_i_xio_module

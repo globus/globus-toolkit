@@ -72,6 +72,7 @@ do                                                                          \
     globus_i_xio_op_entry_t *                       _next_entry;            \
     globus_i_xio_op_entry_t *                       _my_entry;              \
     int                                             _caller_ndx;            \
+    GlobusXIOName(GlobusXIODriverPassServerAccept);                         \
                                                                             \
     _op = (globus_i_xio_op_t *)(_in_op);                                    \
     _server = _op->_op_server;                                              \
@@ -79,8 +80,7 @@ do                                                                          \
     globus_assert(_op->ndx < _op->stack_size);                              \
     if(_op->canceled)                                                       \
     {                                                                       \
-        _out_res = GlobusXIOErrorOperationCanceled(                         \
-                    "GlobusXIODriverPassServerAccept");                     \
+        _out_res = GlobusXIOErrorCanceled();                                \
     }                                                                       \
     else                                                                    \
     {                                                                       \
@@ -158,19 +158,19 @@ do                                                                          \
     globus_i_xio_op_entry_t *                       _next_op;               \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     int                                             _caller_ndx;            \
+    GlobusXIOName(GlobusXIODriverPassOpen);                                 \
                                                                             \
     globus_assert(_op->ndx < _op->stack_size);                              \
     _op = (_in_op);                                                         \
     _handle = _op->_op_handle;                                              \
-    _context = _handle->context;                                           \
+    _context = _handle->context;                                            \
     _my_context = &_context->entry[_op->ndx];                               \
     _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPENING;                   \
     _caller_ndx = _op->ndx;                                                 \
                                                                             \
     if(_op->canceled)                                                       \
     {                                                                       \
-        _out_res = GlobusXIOErrorOperationCanceled(                         \
-                        "GlobusXIODriverPassOpen");                         \
+        _out_res = GlobusXIOErrorCanceled();                                \
     }                                                                       \
     else                                                                    \
     {                                                                       \
@@ -301,6 +301,7 @@ do                                                                          \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_bool_t                                   _pass;                  \
     globus_i_xio_op_entry_t *                       _my_op;                 \
+    GlobusXIOName(GlobusXIODriverPassClose);                                \
                                                                             \
     globus_assert(_op->ndx < _op->stack_size);                              \
     _op = (_in_op);                                                         \
@@ -348,13 +349,12 @@ do                                                                          \
     }                                                                       \
     globus_mutex_unlock(&_my_context->mutex);                               \
                                                                             \
-    _my_op->cb = (_in_cb);                                                 \
+    _my_op->cb = (_in_cb);                                                  \
     _my_op->user_arg = (_in_ua);                                            \
     /* op can be checked outside of lock */                                 \
     if(_op->canceled)                                                       \
     {                                                                       \
-        _out_res = GlobusXIOErrorOperationCanceled(                         \
-                        "GlobusXIODriverPassClose");                        \
+        _out_res = GlobusXIOErrorCanceled();                                \
     }                                                                       \
     else if(_pass)                                                          \
     {                                                                       \
@@ -429,6 +429,7 @@ do                                                                          \
     globus_i_xio_context_t *                        _context;               \
     globus_bool_t                                   _close = GLOBUS_FALSE;  \
     int                                             _caller_ndx;            \
+    GlobusXIOName(GlobusXIODriverPassWrite);                                \
                                                                             \
     _op = (_in_op);                                                         \
     _context = _op->_op_context;                                            \
@@ -444,12 +445,11 @@ do                                                                          \
         _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED &&       \
         _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED)        \
     {                                                                       \
-        _out_res = GlobusXIOErrorHandleBadState("GlobusXIODriverPassWrite"); \
+        _out_res = GlobusXIOErrorInvalidState(_my_context->state);          \
     }                                                                       \
     else if(_op->canceled)                                                  \
     {                                                                       \
-        _out_res = GlobusXIOErrorOperationCanceled(                          \
-                        "GlobusXIODriverPassWrite");                        \
+        _out_res = GlobusXIOErrorCanceled();                                \
     }                                                                       \
     else                                                                    \
     {                                                                       \
@@ -650,6 +650,7 @@ do                                                                          \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_t *                        _context;               \
     int                                             _caller_ndx;            \
+    GlobusXIOName(GlobusXIODriverPassRead);                                 \
                                                                             \
     _op = (_in_op);                                                         \
     _context = _op->_op_context;                                            \
@@ -664,16 +665,15 @@ do                                                                          \
     if(_my_context->state != GLOBUS_XIO_HANDLE_STATE_OPEN &&                \
         _my_context->state != GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)         \
     {                                                                       \
-        _out_res = GlobusXIOErrorHandleBadState("GlobusXIODriverPassRead"); \
+        _out_res = GlobusXIOErrorInvalidState(_my_context->state);          \
     }                                                                       \
     else if(_op->canceled)                                                  \
     {                                                                       \
-        _out_res = GlobusXIOErrorOperationCanceled(                         \
-                        "GlobusXIODriverPassRead");                         \
+        _out_res = GlobusXIOErrorCanceled();                                \
     }                                                                       \
     else if(_my_context->state == GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)     \
     {                                                                       \
-        _op->cached_res = GlobusXIOErrorReadEOF();                          \
+        _op->cached_res = GlobusXIOErrorEOF();                              \
         globus_list_insert(&_my_context->eof_op_list, _op);                 \
         _my_context->outstanding_operations++;                              \
     }                                                                       \
@@ -762,7 +762,7 @@ do                                                                          \
     _my_op->_op_ent_nbytes += nbytes;                                       \
     _op->ndx = _caller_ndx;                                                 \
                                                                             \
-    if(GlobusXIOErrorIsEOF(result))                                         \
+    if(_res != GLOBUS_SUCCESS && GlobusXIOErrorIsEOF(_res))                 \
     {                                                                       \
         globus_mutex_lock(&_my_context->mutex);                             \
         {                                                                   \

@@ -843,7 +843,7 @@ globus_xio_target_cntl(
                 return res;
             }
         }
-        return GlobusXIOErrorDriverNotFound("globus_i_xio_target_cntl");
+        return GlobusXIOErrorInvalidDriver("not found");
     }
     else
     {

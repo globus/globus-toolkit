@@ -237,4 +237,7 @@
         (new_iovc) = _iovc - _i;                                            \
     } while(0)
 
+
+#define GlobusXIOErrorIsEOF(res) 0
+
 #endif
