@@ -110,15 +110,15 @@ int send_token(s, tok)
 
      len = htonl(tok->length);
 
-     ret = write_all(s, (char *) &len, 4);
+     ret = write_all(s, (char *) &len, sizeof(len));
      if (ret < 0) {
 	  perror("sending token length");
 	  return -1;
-     } else if (ret != 4) {
+     } else if (ret != sizeof(len)) {
 	 if (display_file)
 	     fprintf(display_file, 
 		     "sending token length: %d of %d bytes written\n", 
-		     ret, 4);
+		     ret, sizeof(len));
 	  return -1;
      }
 
@@ -164,15 +164,15 @@ int recv_token(s, tok)
 {
      int ret;
 
-     ret = read_all(s, (char *) &tok->length, 4);
+     ret = read_all(s, (char *) &tok->length, sizeof(tok->length));
      if (ret < 0) {
 	  perror("reading token length");
 	  return -1;
-     } else if (ret != 4) {
+     } else if (ret != sizeof(tok->length)) {
 	 if (display_file)
 	     fprintf(display_file, 
 		     "reading token length: %d of %d bytes read\n", 
-		     ret, 4);
+		     ret, sizeof(tok->length));
 	 return -1;
      }
 	  
