@@ -70,7 +70,7 @@ get_abs_path(
     }
     else
     {
-        char                            cwd[1024];
+        char                            cwd[MAXPATHLEN];
         
         snprintf(
             abs_path,
@@ -83,7 +83,7 @@ get_abs_path(
     abs_path[size - 1] = 0;
     
     slash = strrchr(abs_path, '/');
-    if(slash && *(slash + 1) == '\0')
+    if(slash && slash != abs_path && *(slash + 1) == '\0')
     {
         *slash = '\0';
     }
@@ -93,7 +93,7 @@ void
 mlst(
     const char *                        path)
 {
-    char                                full_path[1024];
+    char                                full_path[MAXPATHLEN];
     char                                fact_str[2048];
     
     get_abs_path(path, full_path, sizeof(full_path));
@@ -115,7 +115,7 @@ void
 mlsd(
     const char *                        path)
 {
-    char                                abs_path[1024];
+    char                                abs_path[MAXPATHLEN];
     DIR *                               dir;
     
     get_abs_path(path, abs_path, sizeof(abs_path));
@@ -131,7 +131,7 @@ mlsd(
         
         closedir(dir);
         snprintf(
-            params, sizeof(params), "%s %s", get_mlsx_options(), abs_path);
+            params, sizeof(params), "%s %s", abs_path, get_mlsx_options());
         params[sizeof(params) - 1] = 0;
     
         retrieve("ftpmlsd %s", params, -1, -1);
