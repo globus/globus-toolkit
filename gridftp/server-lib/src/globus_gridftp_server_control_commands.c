@@ -1402,6 +1402,11 @@ globus_l_gsc_cmd_opts(
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXMODE;
             tmp_ptr++;
         }
+        if(strstr(cmd_a[2], "unix.slink"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINK;
+            tmp_ptr++;
+        }
         if(strstr(cmd_a[2], "unique"))
         {
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIQUE;

@@ -2166,7 +2166,8 @@ globus_l_gfs_ipc_unpack_reply(
         case GLOBUS_GFS_OP_STAT:
             GFSDecodeUInt32(buffer, len, reply->info.stat.stat_count);
             reply->info.stat.stat_array = (globus_gfs_stat_t *)
-                globus_calloc(sizeof(globus_gfs_stat_t), 1);
+                globus_calloc(1, 
+                sizeof(globus_gfs_stat_t) * reply->info.stat.stat_count);
             if(reply->info.stat.stat_array == NULL)
             {
                 goto decode_err;
@@ -2178,14 +2179,34 @@ globus_l_gfs_ipc_unpack_reply(
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].nlink);
                 GFSDecodeString(buffer, len, str);
-                if(strlen(str) < MAXPATHLEN)
+                if(str != NULL)
                 {
-                    strcpy(reply->info.stat.stat_array[ctr].name, str);
-                    globus_free(str);
+                    if(strlen(str) < MAXPATHLEN)
+                    {
+                        strcpy(
+                            reply->info.stat.stat_array[ctr].name, 
+                            str);
+                        globus_free(str);
+                    }
+                    else
+                    {
+                        goto decode_err;
+                    }
                 }
-                else
+                GFSDecodeString(buffer, len, str);
+                if(str != NULL)
                 {
-                    goto decode_err;
+                    if(strlen(str) < MAXPATHLEN)
+                    {
+                        strcpy(
+                            reply->info.stat.stat_array[ctr].symlink_target, 
+                            str);
+                        globus_free(str);
+                    }
+                    else
+                    {
+                        goto decode_err;
+                    }
                 }
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].uid);
@@ -2456,6 +2477,7 @@ globus_l_gfs_ipc_unpack_data(
     GFSDecodeChar(buffer, len, data_info->type);
     GFSDecodeUInt32(buffer, len, data_info->tcp_bufsize);
     GFSDecodeUInt32(buffer, len, data_info->blocksize);
+    GFSDecodeUInt32(buffer, len, data_info->stripe_blocksize);
     GFSDecodeChar(buffer, len, data_info->prot);
     GFSDecodeChar(buffer, len, data_info->dcau);
     GFSDecodeUInt32(buffer, len, data_info->max_cs);
@@ -3626,6 +3648,9 @@ globus_gfs_ipc_reply_finished(
                         GFSEncodeString(
                             buffer, ipc->buffer_size, ptr, 
                             reply->info.stat.stat_array[ctr].name);
+                        GFSEncodeString(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.stat.stat_array[ctr].symlink_target);
                         GFSEncodeUInt32(
                             buffer, ipc->buffer_size, ptr, 
                             reply->info.stat.stat_array[ctr].uid);
@@ -4650,6 +4675,7 @@ globus_l_gfs_ipc_pack_data(
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->type);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->tcp_bufsize);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->blocksize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_blocksize);
 
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->prot);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->dcau);

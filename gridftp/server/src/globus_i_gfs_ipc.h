@@ -181,7 +181,14 @@ do                                                                      \
     {                                                                   \
         goto decode_err;                                                \
     }                                                                   \
-    _w = strdup(_buf);                                                  \
+    if(_ctr > 0)                                                        \
+    {                                                                   \
+        _w = strdup(_buf);                                              \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        _w = NULL;                                                      \
+    }                                                                   \
     _ctr = strlen(_buf) + 1;                                            \
     _buf += _ctr;                                                       \
     _len -= _ctr;                                                       \

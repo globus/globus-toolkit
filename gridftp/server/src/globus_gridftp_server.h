@@ -320,6 +320,8 @@ typedef struct globus_gfs_data_info_s
     int                                 tcp_bufsize;
     /** blocksize to use */
     globus_size_t                       blocksize;
+    /** blocksize to use for stripe layout */
+    globus_size_t                       stripe_blocksize;
 
     /** protection mode */
     char                                prot;
@@ -339,7 +341,8 @@ typedef struct globus_gfs_data_info_s
     /** interface that should be used for data connections */
     char *                              interface;
 
-    /* XXX: is this temp */
+    /* if this is set, the data channel will use it instead
+        of the default session credential */
     gss_cred_id_t                       del_cred;
 } globus_gfs_data_info_t;
 

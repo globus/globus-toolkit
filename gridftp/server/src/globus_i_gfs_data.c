@@ -152,6 +152,7 @@ typedef struct globus_l_gfs_data_operation_s
     void *                              info;
 
     globus_gfs_storage_iface_t *        dsi;
+    int                                 sent_partial_eof;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -367,10 +368,9 @@ globus_l_gfs_data_new_dsi(
     globus_l_gfs_data_session_t *       session_handle,
     const char *                        in_module_name)
 {
-    globus_gfs_storage_iface_t *        dsi;
-    char *                              module_name;
+    const char *                        module_name;
 
-    if(in_module_name == NULL)
+    if(in_module_name == NULL || *in_module_name == '\0')
     {
         return session_handle->dsi;
     }
@@ -393,7 +393,7 @@ globus_l_gfs_data_new_dsi(
             globus_free(session_handle->mod_dsi_name);
             globus_extension_release(session_handle->mod_dsi_handle);
 
-            session_handle->mod_dsi_name = module_name;
+            session_handle->mod_dsi_name = globus_libc_strdup(module_name);
             session_handle->mod_dsi = globus_i_gfs_data_new_dsi(
                 &session_handle->mod_dsi_handle,
                 session_handle->mod_dsi_name);
@@ -405,7 +405,7 @@ globus_l_gfs_data_new_dsi(
     }
     else
     {
-        session_handle->mod_dsi_name = module_name;
+        session_handle->mod_dsi_name =  globus_libc_strdup(module_name);
         session_handle->mod_dsi = globus_i_gfs_data_new_dsi(
             &session_handle->mod_dsi_handle,
             session_handle->mod_dsi_name);
@@ -413,7 +413,6 @@ globus_l_gfs_data_new_dsi(
         {
             goto error;
         }
-        dsi = session_handle->mod_dsi;
     }
 
     return session_handle->mod_dsi;
@@ -851,7 +850,6 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->eof_count);
     }
-    memset(op, -1, sizeof(globus_l_gfs_data_operation_t));
     globus_free(op);
 }
 
@@ -928,6 +926,7 @@ globus_l_gfs_data_stat_kickout(
         globus_error_put(bounce_info->error) : GLOBUS_SUCCESS;
     reply.info.stat.stat_array =  bounce_info->stat_array;
     reply.info.stat.stat_count =  bounce_info->stat_count;
+    reply.info.stat.uid =  bounce_info->op->uid;
 
     if(bounce_info->op->callback != NULL)
     {
@@ -2048,6 +2047,7 @@ globus_i_gfs_data_request_recv(
     {
         globus_gridftp_server_finished_transfer(
             op, GlobusGFSErrorGeneric("bad module"));
+        goto error_module;
     }
 
     if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
@@ -2066,6 +2066,7 @@ globus_i_gfs_data_request_recv(
 
     return;
 
+error_module:
 error_op:
 error_handle:
     return;
@@ -2145,7 +2146,9 @@ globus_i_gfs_data_request_send(
     {
         globus_gridftp_server_finished_transfer(
             op, GlobusGFSErrorGeneric("bad module"));
+        goto error_module;
     }
+
     if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
     {
         globus_callback_register_oneshot(
@@ -2161,7 +2164,8 @@ globus_i_gfs_data_request_send(
     }
 
     return;
-
+    
+error_module:
 error_op:
 error_handle:
     return;
@@ -2390,7 +2394,7 @@ globus_l_gfs_data_finish_connected(
         if(op->writing)
         {
             if(op->node_ndx != 0 || 
-                op->node_count == 1 || 
+                op->stripe_count == 1 || 
                 op->eof_ready)
             {
                 result = globus_ftp_control_data_write(
@@ -2651,7 +2655,10 @@ globus_l_gfs_data_end_transfer_kickout(
     reply.type = GLOBUS_GFS_OP_TRANSFER;
     reply.id = op->id;
     reply.result = op->cached_res;
-
+    
+    globus_assert(!op->writing || 
+        (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
+        (op->node_ndx == 0 && op->eof_ready))); 
     /* tell the control side the finished was called */
     if(op->callback != NULL)
     {
@@ -2872,10 +2879,11 @@ globus_l_gfs_data_write_eof_cb(
                         &op->data_handle->data_channel,
                         op->eof_count,
                         op->stripe_count,
-                        op->node_ndx == 0 ? GLOBUS_TRUE : GLOBUS_FALSE,
+                        (op->node_ndx == 0 || op->stripe_count == 1) ? 
+                            GLOBUS_TRUE : GLOBUS_FALSE,
                         globus_l_gfs_data_send_eof_cb,
                         op);
-                    if(op->node_ndx != 0)
+                    if(op->node_ndx != 0 && op->stripe_count > 1)
                     {
                        /* I think we want the eof event to kick off even
                         though we may have an error here since someone is 
@@ -2899,7 +2907,8 @@ globus_l_gfs_data_write_eof_cb(
                             globus_gfs_ipc_reply_event(
                                 op->ipc_handle,
                                 &event_reply);
-                        }                        
+                        }   
+                        op->sent_partial_eof++;                     
                     }
                     if(result != GLOBUS_SUCCESS)
                     {
@@ -3100,6 +3109,11 @@ globus_l_gfs_data_trev_kickout(
     }
     globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
 
+    if(globus_i_gfs_config_bool("sync"))
+    {
+        sync();
+    }
+    
     if(pass)
     {
         if(bounce_info->op->event_callback != NULL)
@@ -3115,7 +3129,7 @@ globus_l_gfs_data_trev_kickout(
                 event_reply);
         }
     }
-
+    
     globus_mutex_lock(&bounce_info->op->session_handle->mutex);
     {    
         bounce_info->op->ref--;
@@ -3199,8 +3213,6 @@ globus_l_gfs_data_force_close(
         {
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                globus_i_gfs_log_result(
-                    "force_close", result);
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
@@ -3830,7 +3842,7 @@ globus_gridftp_server_begin_transfer(
                     /* for the begin callback on success */
                     if(op->writing && op->data_handle->is_mine)
                     {
-                        op->ref ++;
+                        op->ref++;
                         op->stripe_connections_pending = 
                             op->stripe_count;
                     }
@@ -4305,7 +4317,7 @@ globus_gridftp_server_get_read_range(
     {
         if(op->node_count > 1)
         {
-            stripe_block_size = op->data_handle->info.blocksize * 2;
+            stripe_block_size = op->data_handle->info.stripe_blocksize;
             start_offset = op->stripe_chunk * stripe_block_size;
             end_offset = start_offset + stripe_block_size;
                 
@@ -4509,7 +4521,7 @@ globus_gridftp_server_register_write(
     bounce_info->callback.write = callback;
     bounce_info->user_arg = user_arg;
 
-    if(op->data_handle->info.mode == 'E')
+    if(op->data_handle->info.mode == 'E' && op->stripe_count > 1)
     {
         /* XXX not sure what this is all about */
         globus_mutex_lock(&op->session_handle->mutex);
@@ -4520,7 +4532,6 @@ globus_gridftp_server_register_write(
             }
             if(op->write_stripe >= op->stripe_count)
             {
-                globus_assert(op->stripe_count && "stripe_count must be > 0");
                 op->write_stripe %= op->stripe_count;
             }    
             result = globus_ftp_control_data_write_stripe(

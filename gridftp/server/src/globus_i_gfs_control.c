@@ -1146,6 +1146,7 @@ globus_l_gfs_get_data_info(
     globus_assert(result == GLOBUS_SUCCESS);
 
     data_info->blocksize = globus_i_gfs_config_int("blocksize");
+    data_info->stripe_blocksize = globus_i_gfs_config_int("stripe_blocksize");
 
 }
 

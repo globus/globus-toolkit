@@ -16,8 +16,7 @@ signal handling:
 
 striping:
 -- verify eofc handling, should move out of remote into data.c
-** configuration of layout/buffer sizes/1-1,ALL-ALL, etc
-** verify _get_read_range()
+-- verify _get_read_range()
     
 ipc:
 XX connect backwards
@@ -29,12 +28,6 @@ logging:
 -- configuration to choose logging module
 -- syslog module for globus_logging
 -- produce netlogger output based on perf marker info ( -Z option in wu )
-
-data:
--- sync() before each transfer stat update (by option)
-
-dsi:
-** load dsi speficied in module_name on ERET/ESTO 
 
 general:
 -- verify on 64bit machines (after void * changes)
@@ -50,12 +43,12 @@ cleanup:
 
 -----------------------------------------------------------------------
 known bugs:
--- on zero byte sends, file module calls begin, and immediately calls finished 
-with success.  this results in server sending 226 and never 150 since the
-begin_cb hasn't happened yet.  need to delay the transfer finished until
-after the transfer_connected.  (the client lib seems to handle this fine,
-but it causes problems when trying a striped transfer of 0 bytes). 
-
+-- op used in data_session_start isn't freed
+-- there's no way to tell the difference between a NULL string and an empty
+    string ("") over the ipc since they are encoded the same. DecodeString
+    was always decoding them as "", but I don't think we send "" purposely, 
+    and I know we rely on some values being NULL, so I changed DecodeString
+    to decode it as a NULL pointer.  This still needs to be fixed.
 
 
 DONE
@@ -70,4 +63,14 @@ DONE
     send first _ipc_request_recv() with trunc set, wait for BEGIN,
     then send the rest with no trunc.  
 ** use handle_tables for psuedo-passing void *
-** encryption
+** encryption/security
+** configuration of layout/buffer sizes/1-1,ALL-ALL, etc
+** load dsi speficied in module_name on ERET/ESTO 
+-- sync() before each transfer stat update (by option)
+-- added ipc connect timeout and idle timeout (removes from cache)
+
+-- on zero byte sends, file module calls begin, and immediately calls finished 
+with success.  this results in server sending 226 and never 150 since the
+begin_cb hasn't happened yet.  need to delay the transfer finished until
+after the transfer_connected.  (the client lib seems to handle this fine,
+but it causes problems when trying a striped transfer of 0 bytes). 
