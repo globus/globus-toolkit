@@ -9,6 +9,7 @@
 use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
+use Globus::GRAM::StdioMerger;
 use Globus::Core::Paths;
 
 use Config;
@@ -31,6 +32,10 @@ sub new
     my $class = ref($proto) || $proto;
     my $self = $class->SUPER::new(@_);
     my $log_dir;
+    my $description = $self->{JobDescription};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $stdout = $description->stdout();
+    my $stderr = $description->stderr();
 
     if(! exists($ENV{GLOBUS_SPOOL_DIR}))
     {
@@ -40,6 +45,17 @@ sub new
     {
         $log_dir = $ENV{GLOBUS_SPOOL_DIR};
     }
+
+    if($description->jobtype() eq 'multiple' && $description->count > 1)
+    {
+        $self->{STDIO_MERGER} =
+        new Globus::GRAM::StdioMerger($tag, $stdout, $stderr);
+    }
+    else
+    {
+        $self->{STDIO_MERGER} = 0;
+    }
+
 
     $self->{condor_logfile} = "$log_dir/gram_condor_log."
 			    . $self->{JobDescription}->uniq_id();
@@ -67,11 +83,17 @@ sub submit
     my @response_text;
     my @submit_attrs;
     my $submit_attrs_string;
+    my $multi_output = 0;
 
     if($description->jobtype() eq 'single' ||
        $description->jobtype() eq 'multiple')
     {
 	$universe = 'vanilla';
+
+        if ($description->jobtype() eq 'multiple'
+                && ($description->count() > 1)) {
+            $multi_output = 1;
+        }
     }
     elsif($description->jobtype() eq 'condor')
     {
@@ -232,22 +254,33 @@ sub submit
     {
 	print SCRIPT_FILE "$rank\n";
     }
+
     print SCRIPT_FILE "Environment = $environment_string\n";
     print SCRIPT_FILE "Arguments = $argument_string\n";
     print SCRIPT_FILE "InitialDir = " . $description->directory() . "\n";
     print SCRIPT_FILE "Input = " . $description->stdin() . "\n";
-    print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
-    print SCRIPT_FILE "Error = " . $description->stderr() . "\n";
     print SCRIPT_FILE "Log = " . $self->{condor_logfile} . "\n";
     print SCRIPT_FILE "#Extra attributes specified by client\n";
     print SCRIPT_FILE "$submit_attrs_string\n";
-    print SCRIPT_FILE "queue " . $description->count() . "\n";
+
+    for (my $i = 0; $i < $description->count(); $i++) {
+        if ($multi_output) {
+            print SCRIPT_FILE "Output = " .
+                    $self->{STDIO_MERGER}->add_file('out') . "\n";
+            print SCRIPT_FILE "Error = " .
+                    $self->{STDIO_MERGER}->add_file('err') . "\n";
+        } else {
+            print SCRIPT_FILE "Output = " . $description->stdout() . "\n";
+            print SCRIPT_FILE "Error = " . $description->stderr() . "\n";
+        }
+        print SCRIPT_FILE "queue 1\n";
+    }
 
     close(SCRIPT_FILE);
 
     local(*FH);
     my $pid = open(FH, "-|");
-    if( !defined($pid)
+    if( !defined($pid))
     {
         # failure to fork
         @response_text = ();
@@ -338,6 +371,10 @@ sub poll
     else
     {
 	$state = Globus::GRAM::JobState::SUSPENDED;
+    }
+
+    if($self->{STDIO_MERGER}) {
+        $self->{STDIO_MERGER}->poll($state == Globus::GRAM::JobState::DONE);
     }
 
     return { JOB_STATE => $state };
