@@ -15,11 +15,11 @@
  )
  (file_stage_out = 
                    ( "x-gass-cache://" # $(TEST_STDOUT) # ".002"
-                     $(TEST_STDOUT) # ".002")
+                     $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".002")
                    ( "x-gass-cache://" # $(TEST_STDERR) # ".002"
-                     $(TEST_STDERR) # ".002")
-                   ( $(SCRATCH_DIRECTORY) # "/stdout.001"
-                     $(TEST_STDOUT) # ".001")
-                   ( $(SCRATCH_DIRECTORY) # "/stderr.001"
-                     $(TEST_STDERR) # ".001")
+                     $(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".002")
+                   ( $(SCRATCH_DIRECTORY) # "/stdout.004"
+                     $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".004")
+                   ( $(SCRATCH_DIRECTORY) # "/stderr.004"
+                     $(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".004")
  )

@@ -5,7 +5,7 @@
  (stdout = ("x-gass-cache://" # $(TEST_STDOUT) # ".001" ))
  (stderr = ("x-gass-cache://" # $(TEST_STDERR) # ".001" ))
  (file_stage_out = ("x-gass-cache://" # $(TEST_STDOUT) # ".001"
-                    $(TEST_STDOUT) # ".001")
+                    $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001")
                    ("x-gass-cache://" # $(TEST_STDERR) # ".001"
-                    $(TEST_STDERR) # ".001")
+                    $(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".001")
  )

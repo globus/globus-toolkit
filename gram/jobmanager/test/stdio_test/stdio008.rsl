@@ -6,7 +6,7 @@
  (stdout = ($(SCRATCH_DIRECTORY) # "/stdout.001" ))
  (stderr = ($(SCRATCH_DIRECTORY) # "/stderr.001" ))
  (file_stage_out = ($(SCRATCH_DIRECTORY) # "/stdout.001"
-                    $(TEST_STDOUT) # ".001")
+                    $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001")
                    ($(SCRATCH_DIRECTORY) # "/stderr.001"
-                    $(TEST_STDERR) # ".001")
+                    $(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".001")
  )
