@@ -42,7 +42,9 @@ bin_SCRIPTS = $(Scripts) globus-job-submit
 
 # EXTRA_DIST is used to include files in
 # a source distribution that automake fails to detect.
-EXTRA_DIST = $(Scripts)
+EXTRA_DIST = $(Scripts) \
+	version.h.in \
+	dirt.sh
 
 bin_PROGRAMS = globusrun
 

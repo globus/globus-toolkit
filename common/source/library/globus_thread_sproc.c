@@ -23,6 +23,7 @@ CVS Information:
 #include "unistd.h"
 #include <signal.h>
 #include <sys/wait.h>
+#include "version.h"
 
 
 /******************************************************************************
@@ -1159,11 +1160,12 @@ globus_thread_postfork(void)
 
 globus_module_descriptor_t globus_i_thread_module =
 {
-    "globus_thread",
+    "globus_thread_sproc",
     globus_l_thread_activate,
     globus_l_thread_deactivate,
     GLOBUS_NULL,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    &local_version
 };
 
 static void globus_i_sigchld_handler (int sig)

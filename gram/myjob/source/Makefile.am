@@ -5,6 +5,10 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
+EXTRA_DIST = \
+	version.h.in \
+	dirt.sh
+
 Sources = \
 	globus_gram_myjob.h \
 	globus_gram_myjob_duct.c \

@@ -9,6 +9,7 @@
 #endif
 
 #include "globus_i_ftp_client.h"
+#include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -66,7 +67,9 @@ globus_module_descriptor_t		globus_i_ftp_client_module =
     "globus_ftp_client",
     globus_l_ftp_client_activate,
     globus_l_ftp_client_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /**

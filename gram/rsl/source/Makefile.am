@@ -19,7 +19,9 @@ Sources= \
 	globus_rsl_parser.c
 
 EXTRA_DIST= \
-	globus_rsl_parser.lex.c
+	globus_rsl_parser.lex.c \
+	version.h.in \
+	dirt.sh
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.

@@ -45,7 +45,7 @@ CVS Information:
 
 #include "globus_rsl_assist.h"
 #include "globus_gss_assist.h"
-
+#include "version.h" /* provides local_version */
 
 /******************************************************************************
                                Type definitions
@@ -158,14 +158,16 @@ static char *  oneline_usage
 static char *  long_usage = \
 "\n" \
 "Syntax: globusrun [options] [RSL String]\n"\
-"        globusrun -version\n"\
+"        globusrun -version[s]\n"\
 "        globusrun -help\n"\
 "\n" \
 "    Options\n"\
 "    -help | -usage\n"\
 "           Display help\n"\
-"    -v | -version\n"\
+"    -version\n"\
 "           Display version\n"\
+"    -versions\n"\
+"           Display versions of all activated modules\n"\
 "    -i | -interactive \n"\
 "           Run globusrun in interactive mode (multirequests only)\n"\
 "    -f <rsl filename> | -file <rsl filename> \n"\
@@ -425,7 +427,37 @@ static int arg_f_mode = O_RDONLY;
 	    globus_libc_fprintf(stderr, "Error initializing globus\n");
 	    return 1;
 	}
-
+        err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+	if(err != GLOBUS_SUCCESS)
+	{
+	    globus_libc_fprintf(stderr,
+				"Error initializing GRAM: %s\n",
+				globus_gram_protocol_error_string(err));
+            globus_module_deactivate_all();
+	    return 1;
+	}
+	err = globus_module_activate(GLOBUS_NEXUS_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            globus_libc_fprintf (stderr, "Error initializing nexus\n");
+            globus_module_deactivate_all();
+            return 1;
+        }
+        err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            globus_libc_fprintf(stderr, "Error initializing gass_server_ez\n");
+            globus_module_deactivate_all();
+            return 1;
+        }
+        err = globus_module_activate(GLOBUS_DUROC_CONTROL_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            globus_libc_fprintf(stderr, "Error initializing duroc control\n");
+            globus_module_deactivate_all();
+            return 1;
+        }
+        
 	if (strrchr(argv[0],'/'))
 	    program = strrchr(argv[0],'/') + 1;
 	else
@@ -438,7 +470,7 @@ static int arg_f_mode = O_RDONLY;
 				   arg_num,
 				   args_options,
 				   "globusrun",
-				   "",
+				   &local_version,
 				   oneline_usage,
 				   long_usage,
 				   &options_found,
@@ -584,15 +616,6 @@ static int arg_f_mode = O_RDONLY;
 	    globusrun_l_args_error("no resource manager contact specified"
 				   "for authentication test" );
 	}
-	err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-	if(err != GLOBUS_SUCCESS)
-	{
-	    globus_libc_fprintf(stderr,
-				"\n%s: Error initializing GRAM: %s\n",
-				program,
-				globus_gram_protocol_error_string(err));
-	    return 1;
-	}
 	err = globus_gram_client_ping(rm_contact);
 	if(err == GLOBUS_SUCCESS)
 	{
@@ -688,13 +711,6 @@ static int arg_f_mode = O_RDONLY;
     }
 
     /* intialize and start nexus */
-    err = globus_module_activate(GLOBUS_NEXUS_MODULE);
-    if ( err != GLOBUS_SUCCESS )
-    {
-	globus_libc_fprintf (stderr, "Error initializing nexus\n");
-	return -1;
-    }
-
     globus_nexus_enable_fault_tolerance(globus_l_globusrun_fault_callback,
 					GLOBUS_NULL);
 
@@ -708,13 +724,6 @@ static int arg_f_mode = O_RDONLY;
 	char *url_relation_string;
 	char *relation_format="rsl_substitution=(GLOBUSRUN_GASS_URL %s)";
 
-        err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
-        if ( err != GLOBUS_SUCCESS )
-        {
-            globus_libc_fprintf(stderr, "Error initializing gass_server_ez\n");
-            globus_module_deactivate_all();
-            return 1;
-        }
 	server_ez_opts |=
 	    GLOBUS_GASS_SERVER_EZ_LINE_BUFFER
 	    | GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND
@@ -817,14 +826,9 @@ static int arg_f_mode = O_RDONLY;
 	}
 	req = globus_rsl_unparse(request_ast);
 
-	err = globus_module_activate(GLOBUS_DUROC_CONTROL_MODULE);
-	if(err == GLOBUS_SUCCESS)
-	{
-	    err = globus_l_globusrun_durocrun(req,
+	err = globus_l_globusrun_durocrun(req,
 					      options,
 					      mpirun_version);
-	    globus_module_deactivate(GLOBUS_DUROC_CONTROL_MODULE);
-	}
 	globus_free(req);
     }
     else
@@ -1230,16 +1234,6 @@ globus_l_globusrun_gramrun(char * request_string,
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
-    err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-    if(err != GLOBUS_SUCCESS)
-    {
-	globus_libc_fprintf(stderr,
-			    "Error initializing GRAM client: %d - %s\n",
-			    err,
-			    globus_gram_protocol_error_string(err));
-	goto hard_exit;
-    }
-
     if(options & GLOBUSRUN_ARG_IGNORE_CTRLC)
     {
         globus_l_globusrun_signal(SIGINT,
@@ -1376,8 +1370,6 @@ hard_exit:
     {
 	globus_gram_client_job_contact_free(job_contact);
     }
-
-    globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 
     return err;
 } /* globus_l_globusrun_gramrun() */
@@ -2055,20 +2047,12 @@ globus_l_globusrun_kill_job(char * job_contact)
 
     int err;
 
-    err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-
-    if ( err != GLOBUS_SUCCESS )
-    {
-	globus_libc_fprintf(stderr, "Error initializing GRAM_CLIENT\n");
-	return -1;
-    }
     err = globus_gram_client_job_cancel(job_contact);
     if ( err != GLOBUS_SUCCESS )
     {
 	globus_libc_fprintf(stderr, "Error canceling job\n");
     }
 
-    globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
     return err;
 }
 
@@ -2088,14 +2072,6 @@ globus_l_globusrun_status_job(char * job_contact)
     int failure_code;
     int err;
 
-
-    err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-
-    if ( err != GLOBUS_SUCCESS )
-    {
-	globus_libc_fprintf(stderr, "Error initializing GRAM_CLIENT\n");
-	return -1;
-    }
     err = globus_gram_client_job_status(job_contact,
 					&job_status,
 					&failure_code);
@@ -2143,8 +2119,6 @@ globus_l_globusrun_status_job(char * job_contact)
 	    break;
 	}
     }
-
-    globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 
     return err;
 } /* globus_l_globusrun_status_job() */

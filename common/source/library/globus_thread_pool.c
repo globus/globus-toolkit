@@ -1,6 +1,7 @@
 #include "config.h"
 #include "globus_common.h"
 #include "globus_thread_pool.h"
+#include "version.h"
 
 /* Number of idle threads we're willing to have waiting for tasks. Any more
  * idle threads than this will expire after TOO_MANY_IDLE_TIMEOUT seconds of
@@ -66,10 +67,12 @@ globus_mutex_t                           globus_l_thread_pool_key_mutex;
 
 globus_module_descriptor_t              globus_i_thread_pool_module = 
 {
-    "globus_callback",
+    "globus_thread_pool",
     globus_i_thread_pool_activate,
     globus_i_thread_pool_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 int

@@ -12,6 +12,7 @@
 #include "globus_ftp_client_perf_plugin.h"
 #include <time.h>
 #include <sys/timeb.h>
+#include "version.h"
 
 #define GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME "globus_ftp_client_throughput_plugin"
 
@@ -23,7 +24,9 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module =
     GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME,
     globus_l_ftp_client_throughput_plugin_activate,
     globus_l_ftp_client_throughput_plugin_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 static

@@ -105,7 +105,7 @@ do_test( char *argv[] )
 			    n_options,
 			    option_list,
 			    "footest",
-			    "2.0.0",
+			    GLOBUS_NULL,
 			    oneline_usage,
 			    long_usage,
 			    &options_found,

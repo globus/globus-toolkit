@@ -39,6 +39,7 @@
 #if defined(TARGET_ARCH_SOLARIS)
 #include <netdb.h>
 #endif
+#include "version.h"
 
 /*
  * Module specific prototypes
@@ -78,7 +79,9 @@ globus_module_descriptor_t globus_gram_client_module =
     "globus_gram_client",
     globus_i_gram_client_activate,
     globus_i_gram_client_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 FILE *			globus_l_print_fp;

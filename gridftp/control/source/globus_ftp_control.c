@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "version.h"
 
 #undef GLOBUS_FAILURE
 #define GLOBUS_FAILURE globus_error_put(GLOBUS_ERROR_NO_INFO)
@@ -24,7 +25,9 @@ globus_module_descriptor_t globus_i_ftp_control_module =
     "globus_ftp_control",
     globus_l_ftp_control_activate,
     globus_l_ftp_control_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 static

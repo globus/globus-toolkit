@@ -20,7 +20,9 @@ Sources= \
 	globus_gram_protocol_error.c
 
 BUILT_SOURCES = globus_gram_protocol_constants.h
-EXTRA_DIST = globus-gram-protocol-constants.sh
+EXTRA_DIST = globus-gram-protocol-constants.sh \
+	version.h.in \
+	dirt.sh
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.

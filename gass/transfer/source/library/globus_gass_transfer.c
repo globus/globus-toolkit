@@ -14,6 +14,7 @@
 #endif
 
 #include "globus_i_gass_transfer.h"
+#include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 globus_hashtable_t globus_i_gass_transfer_protocols;
@@ -38,7 +39,9 @@ globus_module_descriptor_t globus_i_gass_transfer_module =
     "globus_gass_transfer",
     globus_l_gass_transfer_activate,
     globus_l_gass_transfer_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 static

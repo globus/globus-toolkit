@@ -1,6 +1,7 @@
 #include "config.h"
 #include "globus_common.h"
 #include "globus_object_cache.h"
+#include "version.h"
 
 /**********************************************************************
  * Error Types
@@ -315,7 +316,9 @@ globus_module_descriptor_t globus_i_error_module =
   "globus_error",
   s_error_cache_init,
   s_error_cache_destroy,
-  GLOBUS_NULL
+  GLOBUS_NULL,
+  GLOBUS_NULL,
+  &local_version
 };
 
 

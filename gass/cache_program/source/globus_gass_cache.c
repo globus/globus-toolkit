@@ -25,6 +25,7 @@ CVS Information:
 #include "globus_gass_copy.h"
 #include "globus_gass_server_ez.h"
 #include "globus_gass_cache.h"
+#include "version.h"  /* provides local_version */
 
 /******************************************************************************
                              Type definitions
@@ -69,7 +70,7 @@ static char * oneline_usage =
 
 static char * long_usage = 
 "\n"
-"Usage: globus-gass-cache -help | -usage | -version\n"
+"Usage: globus-gass-cache -help | -usage | -version[s]\n"
 "       globus-gass-cache -op [-r resource][-n new_name][-t tag]...[URL]\n"
 "\n"
 "Valid operations (-op) are:\n"
@@ -230,17 +231,36 @@ main(int argc, char **argv)
     char *                             name              = GLOBUS_NULL;
     char *                             tag               = GLOBUS_NULL;
     int                                rc;
-
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    
+    if (rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE))
+    {
+	globus_libc_fprintf(stderr,
+			    "ERROR initializing GRAM: %s\n",
+			    globus_gram_protocol_error_string(rc));
+	exit(1);
+    }
+    if (rc = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE))
+    {
+	globus_libc_fprintf(stderr,
+			    "ERROR initializing GASS server: %d\n",
+			    rc);
+	exit(1);
+    }
+    if(rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE))
+    {
+	globus_libc_printf("Error %d activating GASS copy library\n",
+			   rc);
+	exit(1);
+    }
+    
     globus_i_gass_cache_args_init();
 
     if ( 0 > globus_args_scan( &argc,
 			       &argv,
 			       n_args,
 			       args_options,
-			       PACKAGE,
-			       VERSION,
+			       "globus-gass-cache-program",
+			       &local_version,
 			       oneline_usage,
 			       long_usage,
 			       &options_found,
@@ -310,13 +330,6 @@ main(int argc, char **argv)
 
 	case arg_r:
 	    resource = globus_libc_strdup(instance->values[0]);
-	    if (rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE))
-	    {
-		globus_libc_fprintf(stderr,
-				    "ERROR initializing GRAM: %s\n",
-				    globus_gram_protocol_error_string(rc));
-		globus_l_args_usage();
-	    }
 	    if (globus_gram_client_ping(resource))
 		globus_l_args_error("cannot authenticate to remote resource");
 	    break;
@@ -540,10 +553,9 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     {
 	printf("Error allowing GRAM callback: %s\n",
 	       globus_gram_protocol_error_string(rc));
-	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
+	globus_module_deactivate_all();
 	exit(1);
     }
-    globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
     
     rc = globus_gass_server_ez_init(&listener,
                                     attr,
@@ -557,8 +569,8 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 
     if ( rc != GLOBUS_SUCCESS )
     {
-	printf("Error %d initializing GASS server library\n", rc);
-	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
+	printf("Error %d initializing GASS server\n", rc);
+	globus_module_deactivate_all();
 	exit(1);
     }
 
@@ -602,8 +614,6 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     }
     globus_mutex_unlock(&globus_l_cache_monitor_mutex);
     globus_gass_server_ez_shutdown(listener);
-    globus_module_deactivate(GLOBUS_GASS_SERVER_EZ_MODULE);
-    globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 } /* globus_l_cache_remote_op() */
 
 /******************************************************************************
@@ -628,15 +638,6 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
     int                          rc;
     int                          i;
     int                          size             = 0;
-    
-    rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-	globus_libc_printf("Error %d activating GASS transfer library\n",
-			   rc);
-	return;
-    }
     
     rc = globus_gass_cache_open(GLOBUS_NULL, &cache_handle);
     if(rc != GLOBUS_SUCCESS)

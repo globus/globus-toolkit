@@ -8,6 +8,7 @@
 
 #include "globus_gass_copy.h"
 #include <sys/timeb.h>
+#include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -104,7 +105,9 @@ globus_module_descriptor_t globus_i_gass_copy_module =
     "globus_gass_copy",
     globus_l_gass_copy_activate,
     globus_l_gass_copy_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /*
