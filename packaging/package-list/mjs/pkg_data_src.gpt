@@ -26,6 +26,7 @@
       <Dependency Name="filestreaming" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="providers" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="rips" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="mds-db" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_runtime">
