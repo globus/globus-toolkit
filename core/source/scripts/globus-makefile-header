@@ -1,0 +1,238 @@
+#! /usr/bin/perl -w
+
+use strict;
+use Getopt::Long;
+
+#********************* subroutine section ***********************
+
+sub pod2usage;
+
+#sub pod2usage informs the user if the -flavor or -link command is not present
+
+#****************************************************************
+
+my $flavor;
+my $link;
+my $gpt=$ENV{GPT_LOCATION};
+
+if(!defined($gpt))
+{
+  $gpt=$ENV{GLOBUS_LOCATION};
+}
+if(!defined($gpt))
+{
+  die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script\n";
+}
+
+my $globus=$ENV{GLOBUS_LOCATION};
+
+if(!defined($globus))
+{
+  die "GLOBUS_LOCATION needs to be set before running this script\n";
+}
+
+my %hash;
+my $temp;
+
+GetOptions( '-flavor=s' => \$flavor, '-link=s' => \$link) 
+or pod2usage(1);
+
+#$flavor is the globus flavor configuration variable... it is needed
+#for the globus-build-env-<flavor>, and for the call of the correct gpt_build_config
+
+#Section One
+#Prepend GLOBUS_ to the necessary lines
+
+open(OUT, ">./temp_header") || die "Cannot open ./temp_header: $!\n";
+
+foreach $ARGV (@ARGV)
+{  #open foreach
+
+          if(system("$gpt/sbin/gpt_build_config  -src=$globus/etc/globus_packages/$ARGV/pkg_data_".$flavor."_dev.gpt -o=./temp_file -flavor=$flavor -link=$link >/dev/null") == 1)
+          {
+            die "Cannot redirect to /dev/null";
+	  }  
+	  
+	  open(IN, "./temp_file") || die "Cannot open ./output_file for reading: $!\n";
+	 
+	  while(<IN>)
+    	  {
+  	    print OUT  "GLOBUS_";  #prepend GLOBUS_ to each line in temp_file
+	    print OUT  split /GPT_CONFIG_/, "$_";          
+	  }
+
+	  close (IN);
+	  
+	  system("rm ./temp_file");  #remove temp_file 
+}
+
+print OUT "GLOBUS_LIBTOOL=$globus/sbin/libtool-$flavor\n";
+
+open(IN, "$globus/libexec/globus-build-env-$flavor.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-build-env-$flavor.sh\n";
+
+while(<IN>)
+{ 
+  if(m!\S!)                           #if not whitespace
+  { 
+    my $copy=$_;
+
+    if($copy !~ m!([A-Z]+)_([A-Z]+)!) #if copy does NOT an uppercase letter followed by a _ then another uppercase letter 
+    {
+      print OUT "GLOBUS_";            #prepend GLOBUS_ to the lines of globus-build-env-$flavor.sh
+      print OUT $copy;
+    }
+  }   
+}
+close (OUT);
+
+#END of Section one:  prepending GLOBUS_
+
+
+#Section Two
+#creating a hash table 
+
+open(INSIDE, "./temp_header") || die "Cannot open ./temp_header: #!\n";
+
+while(<INSIDE>)
+{
+  
+  m!([^=]+)=([^=]+)!;                 #this splits $_ on the =  
+  
+  my $copy1=$1;
+  my $copy2=$2 ;
+  if($copy2 =~ m!\S!)                 #checks to see if $copy2 is a non-whitespace character
+  { #open outer
+    $temp= $hash{$copy1};
+    if(defined $temp)                 #this adds the value of $temp to the front of $2 it is
+    { #open inner                     #useful in the case that $hash{$copy1} has already
+      $hash{$copy1} = $temp . $copy2; #received a useful value that we dont want to lose  
+    } #close inner
+    else
+    { #else inner
+      $hash{$copy1}=$copy2;           #this is the case that $copy2 is a non-whitespace character
+    } #close inner else               #and $hash{$copy1} has yet to be defined
+  } #close outer
+  else
+  { #open outer else
+    if(!(exists $hash{$copy1}))       #this is the special case when $copy2
+    {                                 #is equal to a whitespace character
+      $hash{$copy1}="\n";              #without this exception, it is possible
+    }                                 #to lose some of the necessary hash elements 
+  }
+}
+
+close (INSIDE);
+system("rm ./temp_header");
+
+#END of Section Two: creating hash
+
+
+#Section Three
+#displaying hash in a useful format
+#this will be stored in header_file
+
+open(OUT, ">./temp_file");           #opens ./temp_file so that i can store the contents of %hash in it
+
+for my $Loop (sort keys %hash)       #for loop to store the %hash in a sorted order by it's keys
+{
+  print OUT "$Loop=$hash{$Loop}\n";  #if they want the '=' sign between the GLOBUS_stuff and the stuff removed, do it here
+}
+close(OUT);                          #close ./temp_file
+
+open(IN, "./temp_file");             #opens ./temp_file so that i can read from it
+open(OUT, ">./temp_header");         #opens ./temp_header so that i can write to it
+                                     
+while(<IN>)                          #this while loop is used to get rid of blank lines in the 
+{				     #file ./temp_file.  the file w/o the blank lines is stored
+  if(m!\S!)                          #in ./temp_header
+  {
+    print OUT $_;
+  }
+}
+close(OUT);
+close(IN);
+
+system("rm ./temp_file");           
+
+open(IN, "./temp_header");
+open(OUT, ">./temp_file");
+
+while(<IN>)                           #remove all "'s from the file.  this is needed because there
+{                                     #are unneccessary "'s througout the file.
+  s!"!\n!g;                           #the "'s are replaced with \n
+  print OUT $_;
+}
+ 
+close(OUT);
+close(IN);
+system("rm ./temp_header");
+
+open(IN, "./temp_file");
+open(OUT, ">./temp_header");
+
+while(<IN>)                           #remove all \n from the file and replace them with ' '.
+{                                     #this is still part of the effort to remove the extra "'s
+  s!\n! !g;                           #from the file.
+  print OUT $_;
+}
+
+close(OUT);
+close(IN);
+
+system("rm ./temp_file");
+
+open(IN, "./temp_header");
+open(OUT, ">./temp_file");
+
+while(<IN>)                          #right now everything is stored in one long line.  this section
+{                                    #of code replaces GLOBUS_ with \nGLOBUS, and gets every value on
+  s! GLOBUS_!\nGLOBUS_!g;            #it's own line
+  print OUT $_;
+}
+
+close(OUT);
+close(IN);
+
+system("rm ./temp_header");
+
+open(IN, "./temp_file");
+open(OUT, ">./header_file");
+
+while(<IN>)                          #unfortunately, some lines need ONE set of quotation marks around them
+{                                    #so i first find the return character and replace it with "\n.  this
+  s!\n!"\n!g;                        #stops the file from having a "GLOBUS_...=".  without this line, the " would
+  m!([^=]+)=([^=]+)!;                #be added to the end after the \n.  the $_ is then split on the =.  i 
+  my $copy1=$1;                      #assign each side to a variable, and add a " to the beginning of $2.
+  my $copy2='"'.$2;                  #then both are printed to header_file.
+  print OUT "$copy1=$copy2";
+}
+
+print OUT '"';  #special case
+		#the last line was missing the trailing " so i added it manually
+
+close(OUT);
+close(IN);
+
+system("rm ./temp_file");
+
+
+#END of displayihng hash
+
+
+
+
+
+
+
+#******************************** subroutine definitions *********************************
+
+sub pod2usage
+{
+
+  my $ex=shift;
+  print "ERROR: Please specify a build flavor: -flavor\n";
+  print "       or specify a link type:        -link\n";
+  exit $ex;
+
+}
+
