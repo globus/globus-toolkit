@@ -734,7 +734,7 @@ globus_gfs_ipc_passive_data(
     {
         result = ipc_handle->iface->passive_func(
             ipc_handle,
-            call_entry->id,,
+            call_entry->id,
             data_state);
     }
     else

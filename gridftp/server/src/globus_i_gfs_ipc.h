@@ -203,22 +203,60 @@ typedef void
  */
 typedef struct globus_gfs_server_state_s
 {
+    globus_bool_t                       ipv6;
+    int                                 nstreams;
+    char                                mode;
+    char                                type;
+    int                                 tcp_bufsize;
+    globus_size_t                       blocksize;
+        
+    globus_ftp_control_protection_t     prot;
+    globus_ftp_control_dcau_t           dcau;
+    gss_cred_id_t                       delegated_cred;
 } globus_gfs_server_state_t;
 
-typedef struct globus_gfs_server_state_s
+typedef struct globus_gfs_transfer_state_s
 {
-} globus_gfs_server_state_t;
+    char *                              pathname;    
+    char *                              module_name;
+    char *                              module_args;
+    
+    globus_off_t                        partial_offset;
+    globus_off_t                        partial_length;
+    globus_range_list_t                 range_list;
+
+    /* yeah yeah, this don't belong, need it for list and events (for now) */    
+    globus_gridftp_server_control_op_t  control_op;
+} globus_gfs_transfer_state_t;
 
 typedef struct globus_gfs_command_state_s
 {
+    globus_i_gfs_command_t              command;
+    char *                              pathname;
+
+    globus_off_t                        cksm_offset;
+    globus_off_t                        cksm_length;
+    char *                              cksm_alg;
+    char *                              cksm_response;
+    
+    mode_t                              chmod_mode;
+    
+    char *                              rnfr_pathname;    
 } globus_gfs_command_state_t;
 
 typedef struct globus_gfs_data_state_s
 {
+    const char **                       contact_strings;
+    int                                 cs_count;
+    globus_gridftp_server_control_network_protocol_t net_prt; /* gag */
 } globus_gfs_data_state_t;
 
 typedef struct globus_gfs_resource_state_s
 {
+    char *                              pathname;
+    /* maybe just a bool file_only here? 
+        (tells me to return info on dir contents or dir itself) */
+    globus_gridftp_server_control_resource_mask_t mask;
 } globus_gfs_resource_state_t;
 /*
  *  interface to the function that gets called on the remote side when

@@ -874,7 +874,22 @@ globus_l_gfs_list_request(
     }
     
     globus_l_gfs_get_full_path(instance, path, &fullpath);
-
+    {
+    globus_gfs_transfer_state_t *       list_state;
+    
+    list_state = (globus_gfs_transfer_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_transfer_state_t));
+    
+    list_state->pathname = fullpath;
+    
+    result = globus_gfs_ipc_list(
+        instance->ipc_handle,
+        list_state,
+        globus_l_gfs_ipc_transfer_cb,
+        globus_l_gfs_ipc_event_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_list_request(
         instance,
         data,
@@ -882,6 +897,7 @@ globus_l_gfs_list_request(
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         op);
+    */    
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
