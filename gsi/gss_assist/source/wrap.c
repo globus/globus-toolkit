@@ -80,7 +80,7 @@ globus_gss_assist_wrap_send(
   
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         3, (globus_i_gsi_gss_assist_debug_fstream,
-            "Wrap_send:maj:%8.8x min:%8.8x inlen:%u outlen:%u\n",
+            _GASL("Wrap_send:maj:%8.8x min:%8.8x inlen:%u outlen:%u\n"),
             (unsigned int) major_status, 
             (unsigned int) *minor_status, 
             input_token->length = length,
@@ -99,7 +99,7 @@ globus_gss_assist_wrap_send(
         {
             globus_gss_assist_display_status(
                 stderr,
-                "gss_assist_wrap_send failure:",
+                _GASL("gss_assist_wrap_send failure:"),
                 major_status,
                 local_minor_status,
                 *token_status);
@@ -121,7 +121,7 @@ globus_gss_assist_wrap_send(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_WRAP,
-            ("Error sending output token. token status: %d\n", 
+            (_GASL("Error sending output token. token status: %d\n"), 
              *token_status));
         *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;

@@ -6,6 +6,7 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_management_sample
         globus_java_ws_core_counter_sample
         globus_java_ws_core_registry
+        globus_wsrf_xindice
 
 BUNDLE gt4-java-ws-core-test
         globus_java_ws_core_tools_test
@@ -25,7 +26,8 @@ BUNDLE gt4-c-ws-core
         globus_c_wsrf_resource
         globus_js
         globus_xio_buffer
-        globus_c_wsrf_resource
+        globus_c_wsrf_providers
+        globus_notification_consumer
 
 BUNDLE gt4-mds
         globus_wsrf_mds_aggregator
@@ -34,11 +36,13 @@ BUNDLE gt4-mds
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_servicegroup
+        globus_wsrf_mds_archive
 
 BUNDLE gt4-mds-test
         globus_wsrf_mds_index_test
         globus_wsrf_mds_trigger_test
         globus_wsrf_mds_aggregator_test
+        globus_wsrf_mds_archive_test
 
 BUNDLE gt4-rft
         globus_wsrf_rft_client_java
@@ -99,7 +103,8 @@ BUNDLE gt4-cas-test
 BUNDLE gt4-delegation
         globus_wsrf_delegation_client_java
         globus_wsrf_delegation_service_java
-        globus_wsrf_delegation_common_java
+        globus_wsrf_delegation_common
+        globus_wsrf_delegation_stubs_java
 
 BUNDLE gt4-delegation-test
         globus_wsrf_delegation_service_java_test

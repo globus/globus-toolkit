@@ -86,6 +86,9 @@ EXTERN_C_BEGIN
 extern 
 globus_module_descriptor_t              globus_i_gsi_credential_module;
 
+#define _GCRSL(s) globus_common_i18n_get_string( \
+		    GLOBUS_GSI_CREDENTIAL_MODULE, \
+		    s) 
 /**
  * @defgroup globus_gsi_cred_handle Credential Handle Management
  *

@@ -133,7 +133,7 @@ GSS_CALLCONV gss_add_oid_set_member(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid argument passed to function"));
+            (_GGSL("Invalid argument passed to function")));
         goto exit;
     }
         
@@ -213,7 +213,7 @@ GSS_CALLCONV gss_create_empty_oid_set(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid argument passed to function"));
+            (_GGSL("Invalid argument passed to function")));
         goto exit;
     }
 
@@ -387,7 +387,7 @@ GSS_CALLCONV gss_test_oid_set_member(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid argument passed to function"));
+            (_GGSL("Invalid argument passed to function")));
         goto exit;
     }
 	

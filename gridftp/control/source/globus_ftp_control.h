@@ -249,6 +249,7 @@ typedef struct globus_ftp_control_host_port_s
 
 extern globus_module_descriptor_t globus_i_ftp_control_module; 
 
+#define _FCSL(s) globus_common_i18n_get_string(GLOBUS_FTP_CONTROL_MODULE,s)
 /*
  * Module Specific Data Types
  */

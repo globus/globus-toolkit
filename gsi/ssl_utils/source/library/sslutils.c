@@ -492,7 +492,7 @@ ERR_load_prxyerr_strings(
         OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
 
         ERR_load_strings(ERR_USER_LIB_PRXYERR_NUMBER,prxyerr_str_functs);
-        ERR_load_strings(ERR_USER_LIB_PRXYERR_NUMBER,prxyerr_str_reasons);
+        ERR_load_strings(ERR_USER_LIB_PRXYERR_NUMBER,_SUSL(prxyerr_str_reasons));
 
         /*
          * We need to get a lot of randomness for good security

@@ -124,6 +124,7 @@ globus_i_gfs_acl_init(
         acl_handle->pwent.pw_name = strdup(pwent->pw_name);
         if(acl_handle->pwent.pw_name == NULL)
         {
+            goto alloc_error;
         }
     }
     if(pwent->pw_passwd)
@@ -131,6 +132,7 @@ globus_i_gfs_acl_init(
         acl_handle->pwent.pw_passwd = strdup(pwent->pw_passwd);
         if(acl_handle->pwent.pw_passwd == NULL)
         {
+            goto alloc_error;
         }
     }
     if(pwent->pw_dir)
@@ -138,6 +140,7 @@ globus_i_gfs_acl_init(
         acl_handle->pwent.pw_dir = strdup(pwent->pw_dir);
         if(acl_handle->pwent.pw_dir == NULL)
         {
+            goto alloc_error;
         }
     }
     if(pwent->pw_shell)
@@ -145,6 +148,7 @@ globus_i_gfs_acl_init(
         acl_handle->pwent.pw_shell = strdup(pwent->pw_shell);
         if(acl_handle->pwent.pw_shell == NULL)
         {
+            goto alloc_error;
         }
     }
     acl_handle->pwent.pw_uid = pwent->pw_uid;
@@ -156,6 +160,7 @@ globus_i_gfs_acl_init(
         acl_handle->grpent.gr_name = strdup(grpent->gr_name);
         if(acl_handle->grpent.gr_name == NULL)
         {
+            goto alloc_error;
         }
     }
     if(grpent->gr_passwd)
@@ -163,6 +168,7 @@ globus_i_gfs_acl_init(
         acl_handle->grpent.gr_passwd = strdup(grpent->gr_passwd);
         if(acl_handle->grpent.gr_passwd == NULL)
         {
+            goto alloc_error;
         }
     }
     acl_handle->grpent.gr_gid = grpent->gr_gid;
@@ -172,12 +178,14 @@ globus_i_gfs_acl_init(
     acl_handle->grpent.gr_mem = globus_calloc(1, sizeof(char *) * (ctr+1));
     if(acl_handle->grpent.gr_mem == NULL)
     {
+            goto alloc_error;
     }
     for(ctr = 0; grpent->gr_mem[ctr] != NULL; ctr++)
     {
         acl_handle->grpent.gr_mem[ctr] = strdup(grpent->gr_mem[ctr]);
         if(acl_handle->grpent.gr_mem[ctr] == NULL)
         {
+            goto alloc_error;
         }
     }
     if(ipaddr != NULL)
@@ -185,13 +193,15 @@ globus_i_gfs_acl_init(
         acl_handle->ipaddr = strdup(ipaddr);
         if(acl_handle->ipaddr == NULL)
         {
+            goto alloc_error;
         }
     }
     if(given_pw != NULL)
     {
         acl_handle->given_pw = strdup(given_pw);
-        if(acl_handle->ipaddr == NULL)
+        if(acl_handle->given_pw == NULL)
         {
+            goto alloc_error;
         }
     }
 
@@ -215,7 +225,8 @@ globus_i_gfs_acl_init(
 
     return rc;
 
-  err:
+alloc_error:
+err:
     globus_i_gfs_acl_destroy(acl_handle);
 
     return -1;
@@ -225,6 +236,7 @@ void
 globus_i_gfs_acl_destroy(
     struct globus_i_gfs_acl_handle_s *  acl_handle)
 {
+    int                                 ctr;
     globus_l_gfs_acl_request_t *        acl_request;
 
     while(!globus_list_empty(acl_handle->module_list))
@@ -237,6 +249,47 @@ globus_i_gfs_acl_destroy(
     if(acl_handle->auth_action != NULL)
     {
         globus_free(acl_handle->auth_action);
+    }
+    /* copy the pwent info */
+    if(acl_handle->pwent.pw_name)
+    {
+        globus_free(acl_handle->pwent.pw_name);
+    }
+    if(acl_handle->pwent.pw_passwd)
+    {
+        globus_free(acl_handle->pwent.pw_passwd);
+    }
+    if(acl_handle->pwent.pw_dir)
+    {
+        globus_free(acl_handle->pwent.pw_dir);
+    }
+    if(acl_handle->pwent.pw_shell)
+    {
+        globus_free(acl_handle->pwent.pw_shell);
+    }
+    if(acl_handle->grpent.gr_name)
+    {
+        globus_free(acl_handle->grpent.gr_name);
+    }
+    if(acl_handle->grpent.gr_passwd)
+    {
+        globus_free(acl_handle->grpent.gr_passwd);
+    }
+    if(acl_handle->ipaddr)
+    {
+        globus_free(acl_handle->ipaddr);
+    }
+    if(acl_handle->given_pw)
+    {
+        globus_free(acl_handle->given_pw);
+    }
+    if(acl_handle->grpent.gr_mem)
+    {
+        for(ctr = 0; acl_handle->grpent.gr_mem[ctr] != NULL; ctr++)
+        {
+            globus_free(acl_handle->grpent.gr_mem[ctr]);
+        }
+        globus_free(acl_handle->grpent.gr_mem);
     }
 }
 

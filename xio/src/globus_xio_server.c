@@ -81,8 +81,8 @@ globus_l_xio_server_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO,
-                        ("[globus_i_xio_handle_destroy]"
-                        " :: signalling handle unload.\n"));
+                        (_XIOSL("[globus_i_xio_handle_destroy]"
+                        " :: signalling handle unload.\n")));
 
                 xio_server->sd_monitor->count--;
                 if(xio_server->sd_monitor->count == 0)
@@ -537,9 +537,10 @@ globus_l_xio_accept_timeout_callback(
             {
                 globus_i_xio_op_entry_t * my_op;
                 my_op = &xio_op->entry[xio_op->ndx - 1];
-		my_op->in_register = GLOBUS_TRUE;
-                xio_op->cancel_cb(xio_op, xio_op->cancel_arg);
-		my_op->in_register = GLOBUS_FALSE;
+                my_op->in_register = GLOBUS_TRUE;
+                xio_op->cancel_cb(
+                    xio_op, xio_op->cancel_arg, GLOBUS_XIO_ERROR_TIMEOUT);
+                my_op->in_register = GLOBUS_FALSE;
             }            
         }
 
@@ -1056,7 +1057,7 @@ globus_xio_server_cntl(
             }
             if(!found)
             {
-                res = GlobusXIOErrorInvalidDriver("not found");
+                res = GlobusXIOErrorInvalidDriver(_XIOSL("not found"));
             }
         }
     }
@@ -1171,10 +1172,10 @@ globus_xio_server_cancel_accept(
             {
                 globus_i_xio_op_entry_t * my_op;
                 my_op = &xio_server->op->entry[xio_server->op->ndx - 1];
-		my_op->in_register = GLOBUS_TRUE;
+                my_op->in_register = GLOBUS_TRUE;
                 xio_server->op->cancel_cb(xio_server->op,
-                    xio_server->op->cancel_arg);
-		my_op->in_register = GLOBUS_FALSE;
+                    xio_server->op->cancel_arg, GLOBUS_XIO_ERROR_CANCELED);
+                my_op->in_register = GLOBUS_FALSE;
             }            
         }
     }
@@ -1316,10 +1317,10 @@ globus_i_xio_server_close(
             {
                 globus_i_xio_op_entry_t * my_op;
                 my_op = &xio_server->op->entry[xio_server->op->ndx - 1];
-		my_op->in_register = GLOBUS_TRUE;
+                my_op->in_register = GLOBUS_TRUE;
                 xio_server->op->cancel_cb(xio_server->op,
-                    xio_server->op->cancel_arg);
-		my_op->in_register = GLOBUS_FALSE;
+                    xio_server->op->cancel_arg, GLOBUS_XIO_ERROR_CANCELED);
+                my_op->in_register = GLOBUS_FALSE;
             }
         }
 
@@ -1700,7 +1701,7 @@ globus_xio_contact_parse(
                     s = strchr(working, '>');
                     if(!s)
                     {
-                        result = GlobusXIOErrorContactString("expecting >");
+                        result = GlobusXIOErrorContactString(_XIOSL("expecting >"));
                         goto error_format;
                     }
                     *s = 0;
@@ -1771,7 +1772,7 @@ globus_xio_contact_parse(
                 }
                 else if(*s)
                 {
-                    result = GlobusXIOErrorContactString("expecting : or /");
+                    result = GlobusXIOErrorContactString(_XIOSL("expecting : or /"));
                     goto error_format;
                 }
                 
@@ -1839,7 +1840,7 @@ globus_xio_contact_parse(
                     s = strchr(working, ']');
                     if(!s)
                     {
-                        result = GlobusXIOErrorContactString("expecting ]");
+                        result = GlobusXIOErrorContactString(_XIOSL("expecting ]"));
                         goto error_format;
                     }
                     

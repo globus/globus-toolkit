@@ -104,7 +104,7 @@ globus_l_error_openssl_printable(
     if(globus_openssl_error_handle_get_data_flags(handle) & ERR_TXT_STRING)
     {
         error_string = globus_common_create_string(
-            "OpenSSL Error: %s:%d: in library: %s, function %s: %s %s",
+            _GOESL("OpenSSL Error: %s:%d: in library: %s, function %s: %s %s"),
             globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
             globus_openssl_error_handle_get_filename(handle),
             globus_openssl_error_handle_get_linenumber(handle),
@@ -119,7 +119,7 @@ globus_l_error_openssl_printable(
     else
     {
         error_string = globus_common_create_string(
-            "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
+            _GOESL("OpenSSL Error: %s:%d: in library: %s, function %s: %s"),
             globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
             globus_openssl_error_handle_get_filename(handle),
             globus_openssl_error_handle_get_linenumber(handle),

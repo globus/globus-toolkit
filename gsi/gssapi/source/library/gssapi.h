@@ -89,6 +89,9 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_gsi_gssapi_module;
 
+#define _GGSL(s) globus_common_i18n_get_string(GLOBUS_GSI_GSSAPI_MODULE,\
+		                s)
+
 /*
  * If the platform supports the xom.h header file, it should be
  * included here.

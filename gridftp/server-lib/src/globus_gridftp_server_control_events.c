@@ -160,6 +160,11 @@ globus_l_gsc_event_done_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
+        if(op->data_destroy_obj)
+        {
+            globus_i_guc_data_object_destroy(
+                op->server_handle, op->data_destroy_obj);
+        }
         globus_i_gsc_op_destroy(op);
     }
     globus_mutex_unlock(&server_handle->mutex);

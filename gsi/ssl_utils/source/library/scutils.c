@@ -190,7 +190,7 @@ sc_get_function_list()
 	    if (!h_m_pkcs11)
 	    {
 		SCerr(SCERR_F_SCINIT,SCERR_R_NO_PKCS11_DLL);
-		ERR_add_error_data(2,"Name of DLL=",
+		ERR_add_error_data(2,_SUSL("Name of DLL="),
 				   dllname? dllname:"NONE");
 		return NULL;
 	    }
@@ -210,7 +210,7 @@ sc_get_function_list()
 	if (!h_m_pkcs11)
 	{
 	    SCerr(SCERR_F_SCINIT,SCERR_R_NO_PKCS11_DLL);
-	    ERR_add_error_data(2,"Name of shared library=",
+	    ERR_add_error_data(2,_SUSL("Name of shared library="),
 			       dllname);
 	    return NULL;
 	}
@@ -221,7 +221,7 @@ sc_get_function_list()
 	if (!gfl)
 	{
 	    SCerr(SCERR_F_LOAD_DLL,SCERR_R_NO_PKCS11_DLL);
-	    ERR_add_error_data(1,"Cant find C_GetFunctionList");
+	    ERR_add_error_data(1,_SUSL("Cant find C_GetFunctionList"));
 	    return NULL;
 
 	}
@@ -408,7 +408,7 @@ sc_init_one(
     if (count == 0)
     {
 	SCerr(SCERR_F_SCINIT,SCERR_R_OPENSESSION);
-	ERR_add_error_data(1,"\n       No SmartCard readers found");
+	ERR_add_error_data(1,_SUSL("\n       No SmartCard readers found"));
 	return SCERR_R_OPENSESSION;
     }
 
@@ -471,7 +471,7 @@ sc_init_info(
     if (status != CKR_OK)
     {
 	SCerr(SCERR_F_SCINIT,SCERR_R_LOGIN);
-	ERR_add_error_data(2, "While reading Smart Card Info",
+	ERR_add_error_data(2, _SUSL("While reading Smart Card Info"),
 			   sc_ERR_code(status));
 	return SCERR_R_LOGIN;
     }
@@ -535,7 +535,7 @@ sc_init_open_login(
 #else
 	des_read_pw_string(rpin,sizeof(rpin),
 			   (userType == CKU_USER) ? 
-			   "Smart Card User PIN:" : "Smart Card SO PIN:",0);
+			   _SUSL("Smart Card User PIN:") : _SUSL("Smart Card SO PIN:"),0);
 #endif			
 	/*DEE should test this too */
     }

@@ -91,7 +91,7 @@ globus_gss_assist_token_get_nexus(
 
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             3, (globus_i_gsi_gss_assist_debug_fstream,
-                "reading SSL token %.2x%.2x%.2x%.2x%.2x\n",
+                _GASL("reading SSL token %.2x%.2x%.2x%.2x%.2x\n"),
                 int_buf[0],int_buf[1],int_buf[2],int_buf[3],int_buf[4]));
 
         if ((int_buf[0] & 0x80)) 
@@ -182,7 +182,7 @@ globus_gss_assist_token_get_nexus(
 
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             3, (globus_i_gsi_gss_assist_debug_fstream,
-                "reading token of size=%d\n", size));
+                _GASL("reading token of size=%d\n", size)));
 
         cp = (char *) malloc(size);
         if (!cp) 
@@ -206,7 +206,7 @@ globus_gss_assist_token_get_nexus(
             
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    " bad token  %c%c%c%c%s\n",
+                    _GASL(" bad token  %c%c%c%c%s\n"),
                     int_buf[0], int_buf[1], 
                     int_buf[2], int_buf[3], (char *) cp));
             return_value = GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE;

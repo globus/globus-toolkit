@@ -269,7 +269,7 @@ globus_l_gfs_file_stat(
     /* lstat is the same as stat when not operating on a link */
     if(lstat(stat_info->pathname, &stat_buf) != 0)
     {
-        result = GlobusGFSErrorSystemError("lstat", errno);
+        result = GlobusGFSErrorSystemError("stat", errno);
         goto error_stat1;
     }
     /* if this is a link we still need to stat to get the info we are 
@@ -1659,16 +1659,15 @@ error_alloc:
 static
 void
 globus_l_gfs_file_event(
-    int                                 transfer_id,
-    int                                 event_type,
+    globus_gfs_event_info_t *           event_info,
     void *                              user_arg)
 {
     globus_l_file_monitor_t *           monitor;
     GlobusGFSName(globus_l_gfs_file_event);
         
-    monitor = (globus_l_file_monitor_t *) transfer_id;
+    monitor = (globus_l_file_monitor_t *) event_info->event_arg;
 
-    switch(event_type)
+    switch(event_info->type)
     {
         case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
             /* currently this will just prevent any further reads

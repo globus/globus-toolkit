@@ -130,7 +130,7 @@ globus_gss_assist_accept_sec_context(
         
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             3, (globus_i_gsi_gss_assist_debug_fstream, 
-                "gss_assist_accept_sec_context(1):inlen:%u\n",
+                _GASL("gss_assist_accept_sec_context(1):inlen:%u\n"),
                 input_token->length));
 
         major_status = gss_accept_sec_context(
@@ -148,9 +148,9 @@ globus_gss_assist_accept_sec_context(
 
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             3, (globus_i_gsi_gss_assist_debug_fstream, 
-                "gss_assist_accept_sec_context(2)"
+                _GASL("gss_assist_accept_sec_context(2)"
                 "maj:%8.8x:min:%8.8x:ret:%8.8x "
-                "outlen:%u:context:%p\n",
+                "outlen:%u:context:%p\n"),
                 (unsigned int) major_status, 
                 (unsigned int) minor_status1, 
                 (unsigned int) ((ret_flags) ? *ret_flags : -1),
@@ -371,7 +371,7 @@ globus_gss_assist_accept_sec_context_async(
     
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         3, (globus_i_gsi_gss_assist_debug_fstream,
-            "gss_assist_accept_sec_context_async(1):inlen:%u\n",
+            _GASL("gss_assist_accept_sec_context_async(1):inlen:%u\n"),
             input_token->length));
 
     major_status = gss_accept_sec_context(&minor_status1,
@@ -388,8 +388,8 @@ globus_gss_assist_accept_sec_context_async(
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         3, (globus_i_gsi_gss_assist_debug_fstream, 
-            "gss_assist_accept_sec_context_async(2)"
-            "maj:%8.8x:min:%8.8x:ret:%8.8x outlen:%u:context:%p\n",
+            _GASL("gss_assist_accept_sec_context_async(2)"
+            "maj:%8.8x:min:%8.8x:ret:%8.8x outlen:%u:context:%p\n"),
             (unsigned int) major_status, 
             (unsigned int) minor_status1, 
             (unsigned int) ((ret_flags) ? *ret_flags : -1),
@@ -477,8 +477,8 @@ globus_gss_assist_accept_sec_context_async(
                     
                     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                         3, (globus_i_gsi_gss_assist_debug_fstream, 
-                            "gss_assist_accept_sec_context_async(3):"
-                                 "u2uflag:%d\n",
+                            _GASL("gss_assist_accept_sec_context_async(3):"
+                                 "u2uflag:%d\n"),
                          *user_to_user_flag));
 
                     major_status3 = gss_display_name(&minor_status3,
@@ -491,7 +491,7 @@ globus_gss_assist_accept_sec_context_async(
                         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                             3, 
                             (globus_i_gsi_gss_assist_debug_fstream,
-                             "   NO client_name: status:%8.8x %8.8x\n",
+                             _GASL("   NO client_name: status:%8.8x %8.8x\n"),
                              (unsigned int) major_status3, 
                              (unsigned int) minor_status3));
                     }
@@ -499,7 +499,7 @@ globus_gss_assist_accept_sec_context_async(
                     {
                         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                             3, (globus_i_gsi_gss_assist_debug_fstream,
-                                "     client_name=%*s\n",
+                                _GASL("     client_name=%*s\n"),
                                 tmp_buffer->length,
                                 (char *) tmp_buffer->value));
 
@@ -515,7 +515,7 @@ globus_gss_assist_accept_sec_context_async(
                     {
                         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                             3, (globus_i_gsi_gss_assist_debug_fstream,
-                                "   NO my_name: status:%8.8x %8.8x\n",
+                                _GASL("   NO my_name: status:%8.8x %8.8x\n"),
                                 (unsigned int) major_status3, 
                                 (unsigned int) minor_status3));
                     }
@@ -523,7 +523,7 @@ globus_gss_assist_accept_sec_context_async(
                     {
                         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FNPRINTF(
                             3, (tmp_buffer->length + 14,
-                                "     my_name=%*s\n",
+                                _GASL("     my_name=%*s\n"),
                                 (char *) tmp_buffer->value));
 
                         gss_release_buffer(&minor_status2, tmp_buffer);

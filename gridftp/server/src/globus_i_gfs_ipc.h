@@ -27,6 +27,20 @@ do                                                                      \
     _buf += 4;                                                          \
 } while(0)
 
+#define GFSDecodeUInt32P(_buf, _len, _w)                                \
+do                                                                      \
+{                                                                       \
+    uint32_t                            _cw;                            \
+    /* verify buffer size */                                            \
+    if(_len - 4 < 0)                                                    \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+    memcpy(&_cw, _buf, 4);                                              \
+    _w = (void *) htonl((uint32_t)_cw);                                 \
+    _buf += 4;                                                          \
+    _len -= 4;                                                          \
+} while(0)
 
 #define GFSDecodeUInt32(_buf, _len, _w)                                 \
 do                                                                      \
@@ -159,15 +173,15 @@ do                                                                      \
     char *                              _str=(char*)_w;                 \
     if(_str == NULL)                                                    \
     {                                                                   \
-        GFSEncodeChar(_start, _len, _buf, '\0');                        \
+        GFSEncodeUInt32(_start, _len, _buf, 0);                         \
     }                                                                   \
     else                                                                \
     {                                                                   \
+        GFSEncodeUInt32(_start, _len, _buf, strlen(_str)+1);            \
         for(_str = (char *)_w; *_str != '\0'; _str++)                   \
         {                                                               \
             GFSEncodeChar(_start, _len, _buf, *_str);                   \
         }                                                               \
-        GFSEncodeChar(_start, _len, _buf, *_str);                       \
     }                                                                   \
 } while(0)
 
@@ -175,23 +189,22 @@ do                                                                      \
 do                                                                      \
 {                                                                       \
     int                                 _ctr;                           \
+    uint32_t                            _sz;                            \
     /* make sure that strip in terminated properly */                   \
-    for(_ctr = 0; _ctr < _len && _buf[_ctr] != '\0'; _ctr++);           \
-    if(_buf[_ctr] != '\0')                                              \
+    GFSDecodeUInt32(_buf, _len, _sz);                                   \
+    if(_sz > 0)                                                         \
     {                                                                   \
-        goto decode_err;                                                \
-    }                                                                   \
-    if(_ctr > 0)                                                        \
-    {                                                                   \
-        _w = strdup(_buf);                                              \
+        _w = malloc(_sz);                                               \
+        for(_ctr = 0; _ctr < _sz - 1; _ctr++)                           \
+        {                                                               \
+            GFSDecodeChar(_buf, _len, _w[_ctr]);                        \
+        }                                                               \
+        _w[_ctr] = '\0';                                                \
     }                                                                   \
     else                                                                \
     {                                                                   \
         _w = NULL;                                                      \
     }                                                                   \
-    _ctr = strlen(_buf) + 1;                                            \
-    _buf += _ctr;                                                       \
-    _len -= _ctr;                                                       \
 } while(0)
 
 typedef globus_gfs_operation_type_t     globus_gfs_ipc_request_type_t;
@@ -274,6 +287,11 @@ globus_result_t
 globus_gfs_ipc_reply_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_event_reply_t *      reply);
+
+globus_result_t
+globus_gfs_ipc_reply_session(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_ipc_reply_t *            reply);
 
 /*
  *  sending
@@ -500,12 +518,6 @@ globus_gfs_ipc_request_stat(
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 
-void
-globus_gfs_ipc_reply_session(
-    globus_gfs_ipc_handle_t             ipc,
-    globus_result_t                     result,
-    void *                              user_arg);
-
 /*
  * poke transfer event request
  */
@@ -513,14 +525,12 @@ typedef void
 (*globus_gfs_ipc_iface_transfer_event_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_handle,
-    int                                 transfer_id,
     globus_gfs_event_info_t *           event_info);
 
 
 globus_result_t
 globus_gfs_ipc_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 transfer_id,
     globus_gfs_event_info_t *           event_info);
 
 
@@ -531,12 +541,12 @@ typedef void
 (*globus_gfs_ipc_iface_data_destroy_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_handle,
-    int                                 data_connection_id);
+    void *                              data_arg);
 
 globus_result_t
 globus_gfs_ipc_request_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 data_connection_id);
+    void *                              data_arg);
 
 typedef struct globus_i_gfs_ipc_iface_s
 {

@@ -92,6 +92,9 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_gsi_proxy_module;
 
+#define _PCSL(s) globus_common_i18n_get_string(\
+		  GLOBUS_GSI_PROXY_MODULE, \
+		  s)
 
 /**
  * GSI Proxy Handle.

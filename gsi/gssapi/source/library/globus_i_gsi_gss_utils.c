@@ -92,7 +92,7 @@ globus_i_gsi_gss_copy_name_to_name(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
-                ("Couldn't copy X509_NAME struct"));
+                (_GGSL("Couldn't copy X509_NAME struct")));
             major_status = GSS_S_BAD_NAME;
             goto exit;
         }
@@ -353,8 +353,8 @@ globus_i_gsi_gss_create_and_fill_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
-            ("The cert_dir parameter in "
-             "the credential handle needs to bet set"));
+            (_GGSL("The cert_dir parameter in "
+             "the credential handle needs to bet set")));
         major_status = GSS_S_FAILURE;
         goto free_cert_dir;
     }
@@ -372,7 +372,7 @@ globus_i_gsi_gss_create_and_fill_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
-            ("Couldn't create SSL object for handshake"));
+            (_GGSL("Couldn't create SSL object for handshake")));
         major_status = GSS_S_FAILURE;
         goto free_cert_dir;
     }
@@ -399,8 +399,8 @@ globus_i_gsi_gss_create_and_fill_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Couldn't set the callback data as the external data "
-             "of the SSL object"));
+            (_GGSL("Couldn't set the callback data as the external data "
+             "of the SSL object")));
         major_status = GSS_S_FAILURE;
         goto free_cert_dir;
     }
@@ -417,7 +417,7 @@ globus_i_gsi_gss_create_and_fill_context(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't set the cipher cert order in the SSL object"));
+                (_GGSL("Couldn't set the cipher cert order in the SSL object")));
             major_status = GSS_S_FAILURE;
             goto free_cert_dir;   
         }
@@ -435,7 +435,7 @@ globus_i_gsi_gss_create_and_fill_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Can't initialize read BIO for SSL handle"));
+            (_GGSL("Can't initialize read BIO for SSL handle")));
         major_status = GSS_S_FAILURE;
         goto free_cert_dir;
     }
@@ -445,7 +445,7 @@ globus_i_gsi_gss_create_and_fill_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Can't initialize write BIO for SSL handle"));
+            (_GGSL("Can't initialize write BIO for SSL handle")));
         major_status = GSS_S_FAILURE;
         goto free_rbio;
     }
@@ -455,7 +455,7 @@ globus_i_gsi_gss_create_and_fill_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Can't create SSL bio"));
+            (_GGSL("Can't create SSL bio")));
         major_status = GSS_S_FAILURE;
         goto free_wbio;
     }
@@ -624,7 +624,7 @@ globus_i_gsi_gss_put_token(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The input token is NULL (GSS_C_NO_BUFFER)\n"));
+            (_GGSL("The input token is NULL (GSS_C_NO_BUFFER)\n")));
         goto exit;        
     }
 
@@ -671,7 +671,7 @@ globus_i_gsi_gss_put_token(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The input token has an invalid length of: %u\n", 
+            (_GGSL("The input token has an invalid length of: %u\n"), 
              input_token->length));
         goto exit;
     }
@@ -755,7 +755,7 @@ globus_i_gsi_gss_get_token(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, 
                     GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-                    ("Error reading token from BIO: %d\n", rc));
+                    (_GGSL("Error reading token from BIO: %d\n"), rc));
                 major_status = GSS_S_FAILURE;
                 goto exit;
             }
@@ -859,14 +859,14 @@ globus_i_gsi_gss_handshake(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED,
-                    ("Couldn't verify the remote certificate"));
+                    (_GGSL("Couldn't verify the remote certificate")));
             }
             else
             {
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_HANDSHAKE,
-                    ("Couldn't do ssl handshake"));
+                    (_GGSL("Couldn't do ssl handshake")));
             }
 
             major_status = GSS_S_DEFECTIVE_CREDENTIAL;
@@ -1061,7 +1061,7 @@ globus_i_gsi_gss_retrieve_peer(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_PROCESS_CERT,
-                ("NULL subject name of peer credential"));
+                (_GGSL("NULL subject name of peer credential")));
             goto exit;
         }
 
@@ -1528,7 +1528,7 @@ globus_i_gsi_gss_create_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
-            ("NULL credential handle passed to function: %s", 
+            (_GGSL("NULL credential handle passed to function: %s"), 
              _function_name_));
         goto error_exit;
     }
@@ -1783,7 +1783,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't read from bio for importing SSL handle"));
+            (_GGSL("Couldn't read from bio for importing SSL handle")));
         goto exit;
     }
 
@@ -1822,7 +1822,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BAD_LEN,
-            ("Invalid data on BIO, should be 4 bytes available"));
+            (_GGSL("Invalid data on BIO, should be 4 bytes available")));
         goto exit;
     }
 
@@ -1836,7 +1836,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BAD_LEN,
-            ("Invalid BIO - not enough data to read an int"));
+            (_GGSL("Invalid BIO - not enough data to read an int")));
         goto exit;
     }
 
@@ -1869,7 +1869,7 @@ globus_i_gsi_gss_SSL_read_bio(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_READ_BIO,
-                ("Couldn't read expected bytes of: %d from BIO",
+                (_GGSL("Couldn't read expected bytes of: %d from BIO"),
                  length));;
         }
     }
@@ -1900,7 +1900,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't set the compression type in the SSL handle"));
+            (_GGSL("Couldn't set the compression type in the SSL handle")));
         major_status = GSS_S_FAILURE;
         goto free_key_block;
     }
@@ -1913,7 +1913,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Attempt to change cipher state of the SSL handle failed"));
+            (_GGSL("Attempt to change cipher state of the SSL handle failed")));
         major_status = GSS_S_FAILURE;
         goto free_key_block;
     }
@@ -1928,7 +1928,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't set the compression type in the SSL handle"));
+            (_GGSL("Couldn't set the compression type in the SSL handle")));
         major_status = GSS_S_FAILURE;
         goto free_key_block;
     }
@@ -1941,7 +1941,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Attempt to change cipher state of the SSL handle failed"));
+            (_GGSL("Attempt to change cipher state of the SSL handle failed")));
         major_status = GSS_S_FAILURE;
         goto free_key_block;
     }
@@ -1960,7 +1960,7 @@ globus_i_gsi_gss_SSL_read_bio(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Error reading SSL data from BIO"));
+            (_GGSL("Error reading SSL data from BIO")));
         goto free_key_block;
     }
     
@@ -2083,7 +2083,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL,
-            ("Null credential handle passed to function: %s",
+            (_GGSL("Null credential handle passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -2095,7 +2095,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Can't initialize the SSL_CTX"));
+            (_GGSL("Can't initialize the SSL_CTX")));
         goto exit;
     }
 
@@ -2127,7 +2127,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("\n       x509_cert_dir=", (ca_cert_dir) ? ca_cert_dir : "NONE"));
+            ("\n       x509_cert_dir=", (ca_cert_dir) ? ca_cert_dir : _GGSL("NONE")));
         goto exit;
     }
 
@@ -2167,7 +2167,7 @@ globus_i_gsi_gssapi_init_ssl_context(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status, 
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't open bio for reading on file: %s", ca_filename));
+                (_GGSL("Couldn't open bio for reading on file: %s"), ca_filename));
             goto exit;
         }
                 
@@ -2177,7 +2177,7 @@ globus_i_gsi_gssapi_init_ssl_context(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't read PEM formatted X509 cert from file: %s",
+                (_GGSL("Couldn't read PEM formatted X509 cert from file: %s"),
                  ca_filename));
             goto exit;
         }
@@ -2214,7 +2214,7 @@ globus_i_gsi_gssapi_init_ssl_context(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
-                ("The GSI credential's certificate has not been set."));
+                (_GGSL("The GSI credential's certificate has not been set.")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -2225,8 +2225,8 @@ globus_i_gsi_gssapi_init_ssl_context(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't set the certificate to "
-                 "be used for the SSL context"));
+                (_GGSL("Couldn't set the certificate to "
+                 "be used for the SSL context")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -2247,7 +2247,7 @@ globus_i_gsi_gssapi_init_ssl_context(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
-                ("The GSI credential's private key has not been set."));
+                (_GGSL("The GSI credential's private key has not been set.")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -2257,8 +2257,8 @@ globus_i_gsi_gssapi_init_ssl_context(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't set the private key to "
-                 "be used for the SSL context"));
+                (_GGSL("Couldn't set the private key to "
+                 "be used for the SSL context")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -2298,8 +2298,8 @@ globus_i_gsi_gssapi_init_ssl_context(
                         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                             minor_status,
                             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                            ("Couldn't add certificate to the SSL context's "
-                             "certificate store."));
+                            (_GGSL("Couldn't add certificate to the SSL context's "
+                             "certificate store.")));
                         major_status = GSS_S_FAILURE;
                         goto exit;
                     }

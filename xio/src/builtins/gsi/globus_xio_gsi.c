@@ -808,7 +808,7 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
  done:
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Transferred %d bytes\n", _xio_name,
+        (_XIOSL("[%s:%d] Transferred %d bytes\n"), _xio_name,
          handle->connection_id,*bytes_read));
 
     GlobusXIOGSIDebugInternalExit();
@@ -895,7 +895,7 @@ globus_l_xio_gsi_write_token_cb(
      
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Wrote token of length %d\n", _xio_name,
+        (_XIOSL("[%s:%d] Wrote token of length %d\n"), _xio_name,
          handle->connection_id,nbytes));
     
     /* read iovec was used to write a sec token */
@@ -925,7 +925,7 @@ globus_l_xio_gsi_write_token_cb(
         
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Done with security handshake\n", _xio_name,
+            (_XIOSL("[%s:%d] Done with security handshake\n"), _xio_name,
              handle->connection_id));
         
         globus_xio_driver_finished_open(handle, op, result);
@@ -936,7 +936,7 @@ globus_l_xio_gsi_write_token_cb(
     {
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Trying to read another token\n", _xio_name,
+            (_XIOSL("[%s:%d] Trying to read another token\n"), _xio_name,
              handle->connection_id));
 
         /* read another sec token */
@@ -1045,7 +1045,7 @@ globus_l_xio_gsi_read_token_cb(
     
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Bytes in buffer %d;bytes wanted %d\n", _xio_name,
+            (_XIOSL("[%s:%d] Bytes in buffer %d;bytes wanted %d\n"), _xio_name,
              handle->connection_id, handle->bytes_read, offset));
     
         /* read more if we have not received a full token or in the case of non
@@ -1112,7 +1112,7 @@ globus_l_xio_gsi_read_token_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Read input token of length %d\n", _xio_name,
+            (_XIOSL("[%s:%d] Read input token of length %d\n"), _xio_name,
              handle->connection_id, input_token.length));
     
         /* init/accept sec context */
@@ -1152,7 +1152,7 @@ globus_l_xio_gsi_read_token_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Generated output token of length %d\n", _xio_name,
+            (_XIOSL("[%s:%d] Generated output token of length %d\n"), _xio_name,
              handle->connection_id, output_token.length));
     
         if(GSS_ERROR(major_status))
@@ -1379,7 +1379,7 @@ globus_l_xio_gsi_read_token_cb(
         /* we're done */
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Done with security handshake\n", _xio_name,
+            (_XIOSL("[%s:%d] Done with security handshake\n"), _xio_name,
              handle->connection_id));
 
         globus_xio_driver_finished_open(handle, op, result);
@@ -1480,7 +1480,7 @@ globus_l_xio_gsi_open_cb(
                                             &handle->time_rec);
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Generated output token of length %d\n", _xio_name,
+            (_XIOSL("[%s:%d] Generated output token of length %d\n"), _xio_name,
              handle->connection_id, output_token.length));
 
         if(GSS_ERROR(major_status))
@@ -1826,7 +1826,7 @@ globus_l_xio_gsi_read_cb(
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Read %d bytes\n",
+        (_XIOSL("[%s:%d] Read %d bytes\n"),
          _xio_name, handle->connection_id, nbytes));
     
     if(result != GLOBUS_SUCCESS)
@@ -1869,7 +1869,7 @@ globus_l_xio_gsi_read_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Finished (%d bytes returned) \n",
+            (_XIOSL("[%s:%d] Finished (%d bytes returned) \n"),
              _xio_name, handle->connection_id, handle->bytes_returned));
 
         if(handle->result_obj && handle->unwrapped_buffer == NULL)
@@ -2020,7 +2020,7 @@ globus_l_xio_gsi_read_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Registering read of size: %d\n",
+            (_XIOSL("[%s:%d] Registering read of size: %d\n"),
              _xio_name, handle->connection_id, wait_for));
         
         result = globus_xio_driver_pass_read(op, &(handle->read_iovec[1]),
@@ -2031,7 +2031,7 @@ globus_l_xio_gsi_read_cb(
     {
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Finished (%d bytes returned) \n",
+            (_XIOSL("[%s:%d] Finished (%d bytes returned) \n"),
              _xio_name, handle->connection_id, handle->bytes_returned));
 
         /* done with either error or success */
@@ -2082,7 +2082,7 @@ globus_l_xio_gsi_read(
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Waiting for %d bytes.\n",
+        (_XIOSL("[%s:%d] Waiting for %d bytes.\n"),
          _xio_name, handle->connection_id, wait_for));
 
     /* reset read related state */
@@ -2155,7 +2155,7 @@ globus_l_xio_gsi_read(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Transfered previously read/unwrapped bytes: %d\n",
+            (_XIOSL("[%s:%d] Transfered previously read/unwrapped bytes: %d\n"),
              _xio_name, handle->connection_id, bytes_read));
     }
 
@@ -2210,7 +2210,7 @@ globus_l_xio_gsi_read(
 
                 GlobusXIOGSIDebugPrintf(
                     GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-                    ("[%s:%d] Transfered previously read/wrapped bytes: %d\n",
+                    (_XIOSL("[%s:%d] Transfered previously read/wrapped bytes: %d\n"),
                      _xio_name, handle->connection_id, bytes_read));
                 
                 handle->bytes_returned += bytes_read;
@@ -2249,7 +2249,7 @@ globus_l_xio_gsi_read(
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Total bytes transfered: %d\n",
+        (_XIOSL("[%s:%d] Total bytes transfered: %d\n"),
          _xio_name, handle->connection_id, handle->bytes_returned));
 
     if(handle->result_obj && wait_for > 0)
@@ -2263,7 +2263,7 @@ globus_l_xio_gsi_read(
         /* done */
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Finished (%d bytes returned) \n",
+            (_XIOSL("[%s:%d] Finished (%d bytes returned) \n"),
              _xio_name, handle->connection_id, handle->bytes_returned));
 
         globus_xio_driver_finished_read(op, result, handle->bytes_returned);
@@ -2306,7 +2306,7 @@ globus_l_xio_gsi_read(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Registering read of size: %d\n",
+            (_XIOSL("[%s:%d] Registering read of size: %d\n"),
              _xio_name, handle->connection_id, wait_for));
 
         result = globus_xio_driver_pass_read(op, &(handle->read_iovec[1]),
@@ -2333,7 +2333,7 @@ globus_l_xio_gsi_read(
 
             GlobusXIOGSIDebugPrintf(
                 GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-                ("[%s:%d] Registering read of size: %d (no protection)\n",
+                (_XIOSL("[%s:%d] Registering read of size: %d (no protection)\n"),
                  _xio_name, handle->connection_id, wait_for));
 
             result = globus_xio_driver_pass_read(op, &(handle->read_iovec[1]),
@@ -2344,7 +2344,7 @@ globus_l_xio_gsi_read(
         {
             GlobusXIOGSIDebugPrintf(
                 GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-                ("[%s:%d] Registering read of size: %d (null callback)\n",
+                (_XIOSL("[%s:%d] Registering read of size: %d (null callback)\n"),
                  _xio_name, handle->connection_id, wait_for));
             result = globus_xio_driver_pass_read(
                         op, (globus_xio_iovec_t *)iovec,
@@ -2379,7 +2379,7 @@ globus_l_xio_gsi_write_cb(
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Wrote %d bytes. \n",
+        (_XIOSL("[%s:%d] Wrote %d bytes. \n"),
          _xio_name, handle->connection_id, nbytes));
 
 
@@ -2477,7 +2477,7 @@ globus_l_xio_gsi_write(
         
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Passed through. No protection\n",
+            (_XIOSL("[%s:%d] Passed through. No protection\n"),
              _xio_name, handle->connection_id));
         result = globus_xio_driver_pass_write(
             op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
@@ -2504,7 +2504,7 @@ globus_l_xio_gsi_write(
     {
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s:%d] Passed through. Empty iovecs\n",
+            (_XIOSL("[%s:%d] Passed through. Empty iovecs\n"),
              _xio_name, handle->connection_id));
         result = globus_xio_driver_pass_write(
                     op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
@@ -2702,8 +2702,8 @@ globus_l_xio_gsi_write(
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-        ("[%s:%d] Got %d bytes to write."
-         " Waiting for %d wrapped bytes to be written\n",
+        (_XIOSL("[%s:%d] Got %d bytes to write."
+         " Waiting for %d wrapped bytes to be written\n"),
          _xio_name, handle->connection_id, handle->bytes_written, wait_for));
     
     /* pass the write */

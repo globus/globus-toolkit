@@ -21,7 +21,7 @@ typedef enum globus_gsc_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PANIC,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX
 } globus_gridftp_server_control_error_type_t;
 
 typedef enum globus_gsc_response_e
@@ -43,6 +43,16 @@ typedef enum globus_gsc_response_e
 #else
 #define GlobusGridFTPServerName(func) static const char * _gridftp_server_name = #func
 #endif
+
+#define _FSCSL(s) globus_common_i18n_get_string( \
+		     GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE, \
+		     s)
+
+#define _FSMSL(s) globus_common_i18n_get_string_by_key( \
+		     NULL, \
+		     GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE->module_name, \
+		     s)
+
 
 #define GlobusGridFTPServerErrorParameter(param_name)                       \
     globus_error_put(                                                       \

@@ -78,6 +78,8 @@ EXTERN_C_BEGIN
 extern 
 globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
 
+#define _CUSL(s) globus_common_i18n_get_string(GLOBUS_GSI_CERT_UTILS_MODULE,\
+		s)
 /**
  * @defgroup globus_gsi_cert_utils Cert Utils Functions
  *

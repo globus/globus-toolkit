@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 			break;
 		}
 		else {
-			fprintf(stderr,"unknown option %s\n",*argv);
+			fprintf(stderr,_GGSL("unknown option %s\n"),*argv);
 			badops=1;
 			break;
 		}
@@ -141,19 +141,19 @@ int main(int argc, char **argv)
 
 	if (badops) {
 bad:
-		fprintf(stderr,"%s [options]\n",program);
-		fprintf(stderr,"where options  are\n");
-		fprintf(stderr," --help    show this list\n");
-		fprintf(stderr," --debug   set debugging on\n");
-		fprintf(stderr," --cert    file name of long term certificate\n");
-		fprintf(stderr," --out1     file name for name\n");
-		fprintf(stderr," --out2    file name for commonName\n");
+		fprintf(stderr,_GGSL("%s [options]\n"),program);
+		fprintf(stderr,_GGSL("where options  are\n"));
+		fprintf(stderr,_GGSL(" --help    show this list\n"));
+		fprintf(stderr,_GGSL(" --debug   set debugging on\n"));
+		fprintf(stderr,_GGSL(" --cert    file name of long term certificate\n"));
+		fprintf(stderr,_GGSL(" --out1     file name for name\n"));
+		fprintf(stderr,_GGSL(" --out2    file name for commonName\n");
 		exit(1);
 	}
 	home = (char *)getenv("HOME");
 	if (home == NULL) {
 #ifndef WIN32
-		fprintf(stderr,"$HOME not defined");
+		fprintf(stderr,_GGSL("$HOME not defined"));
 		exit(1);
 #else
 		home = "c:\\windows";
@@ -168,14 +168,14 @@ bad:
         cp = certfile + 3;
         kp = strchr(cp,':');
         if (kp == NULL) {
-            fprintf(stderr,"Bad format of cert name, SC:card:cert\n");
+            fprintf(stderr,_GGSL("Bad format of cert name, SC:card:cert\n"));
             exit (2);
         }
         kp++; /* skip the : */
         if (hSession == 0) {
             rc = sc_init(&hSession, cp, NULL, pin, CKU_USER, 0);
             if (rc) {
-                fprintf(stderr,"Failed to open card session\n");
+                fprintf(stderr,_GGSL("Failed to open card session\n"));
                 ERR_print_errors_fp (stderr);
                 exit(2);
             }
@@ -184,19 +184,19 @@ bad:
 
         rc = sc_get_cert_obj_by_label(hSession,kp,&ucert);
         if (rc) {
-            fprintf(stderr,"Failed to find certificate on card \n");
+            fprintf(stderr,_GGSL("Failed to find certificate on card \n"));
             ERR_print_errors_fp (stderr);
             exit(2);
         }
 #else
-        fprintf(stderr,"Smart card support not compiled with this program\n");
+        fprintf(stderr,_GGSL("Smart card support not compiled with this program\n"));
             exit (2);
 #endif /* USE_PKCS11 */
 
 	} else {
 		fp = fopen (certfile, "r");
 		if (fp == NULL) {
-			fprintf(stderr," failed to open %s\n",certfile);
+			fprintf(stderr,_GGSL(" failed to open %s\n",certfile));
 	 		exit (1);
 		}
 

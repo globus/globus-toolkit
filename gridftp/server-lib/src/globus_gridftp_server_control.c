@@ -30,7 +30,7 @@ do                                                                      \
         globus_panic(                                                   \
             &globus_i_gsc_module,                                       \
             _res,                                                       \
-            "one shot failed.");                                        \
+            _FSCSL("one shot failed."));                                        \
     }                                                                   \
 } while(0)
 
@@ -50,7 +50,7 @@ do                                                                      \
         globus_panic(                                                   \
             &globus_i_gsc_module,                                       \
             _res,                                                       \
-            "one shot failed.");                                        \
+            _FSCSL("one shot failed."));                                        \
     }                                                                   \
 } while(0)
 
@@ -70,7 +70,7 @@ do                                                                      \
         globus_panic(                                                   \
             &globus_i_gsc_module,                                       \
             _res,                                                       \
-            "one shot failed.");                                        \
+            _FSCSL("one shot failed."));                                        \
     }                                                                   \
 } while(0)
 
@@ -271,7 +271,7 @@ globus_l_gsc_timeout_cb(
         else
         {
             globus_l_gsc_final_reply(server_handle, 
-                "421 Idle Timeout: closing control connection.\r\n");
+                _FSMSL("421 Idle Timeout: closing control connection.\r\n"));
             rc = GLOBUS_TRUE;
         }
     }
@@ -502,7 +502,7 @@ globus_l_gsc_read_cb(
                     if(op == NULL)
                     {
                         res = GlobusGridFTPServerControlErrorSytem();
-                        goto err_unlock;
+                        goto err_alloc_unlock;
                     }
 
                     globus_fifo_enqueue(&server_handle->read_q, op);
@@ -533,7 +533,7 @@ globus_l_gsc_read_cb(
                         server_handle->state=GLOBUS_L_GSC_STATE_PROCESSING;
                         res = globus_l_gsc_final_reply(
                             server_handle,
-                            "226 Abort successful\r\n");
+                            _FSMSL("226 Abort successful\r\n"));
                         if(res != GLOBUS_SUCCESS)
                         {
                             goto err_unlock;
@@ -596,7 +596,9 @@ globus_l_gsc_read_cb(
     globus_free(buffer);
     return;
 
-  err_unlock:
+err_unlock:
+    globus_i_gsc_op_destroy(op);
+err_alloc_unlock:
     globus_mutex_unlock(&server_handle->mutex);
 
   err:
@@ -655,6 +657,34 @@ globus_i_gsc_terminate(
 {
     GlobusGridFTPServerName(globus_i_gsc_terminate);
 
+    if(server_handle->data_object)
+    {
+        globus_i_gsc_data_t *               data_obj;
+
+        data_obj = server_handle->data_object;
+        switch(data_obj->state)
+        {
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+                data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
+                globus_i_guc_data_object_destroy(server_handle, data_obj);
+                server_handle->data_object = NULL;
+                break;
+                                                                                
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+                /* do nuttin */
+                break;
+                                                                                
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+                /* start an abort event */
+                data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT;
+                break;
+                                                                                
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
+    }
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_OPENING:
@@ -695,7 +725,7 @@ globus_i_gsc_terminate(
             /* ignore return code, we are stopping so it doesn' matter */
             globus_l_gsc_flush_reads(
                 server_handle,
-                "421 Service not available, closing control connection.\r\n");
+                _FSMSL("421 Service not available, closing control connection.\r\n"));
 //            res = globus_l_gsc_final_reply(server_handle, msg);
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
@@ -765,7 +795,7 @@ globus_l_gsc_finished_op(
             if(reply_msg == NULL && op->cmd_list == NULL)
             {
                 server_handle->outstanding_op = NULL;
-                reply_msg = "500 Command not supported.\r\n";
+                reply_msg = _FSMSL("500 Command not supported.\r\n");
             }
             if(reply_msg == NULL)
             {
@@ -791,7 +821,7 @@ globus_l_gsc_finished_op(
             globus_i_gsc_op_destroy(op);
             if(reply_msg == NULL)
             {
-                reply_msg = "426 Command Aborted.\r\n";
+                reply_msg = _FSMSL("426 Command Aborted.\r\n");
             }
 
             server_handle->abort_cnt = globus_fifo_size(&server_handle->read_q);
@@ -806,14 +836,14 @@ globus_l_gsc_finished_op(
             }
             res = globus_l_gsc_flush_reads(
                     server_handle,
-                    "426 Command Aborted.\r\n");
+                    _FSMSL("426 Command Aborted.\r\n"));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
             }
             res = globus_l_gsc_final_reply(
                     server_handle,
-                    "226 Abort successful\r\n");
+                    _FSMSL("226 Abort successful\r\n"));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
@@ -1149,7 +1179,6 @@ globus_l_gsc_user_data_destroy_cb_kickout(
         server_handle->funcs.data_destroy_cb(
             data_object->user_handle, server_handle->funcs.data_destroy_arg);
     }
-    globus_free(data_object);
 
     globus_mutex_lock(&server_handle->mutex);
     {
@@ -1157,6 +1186,8 @@ globus_l_gsc_user_data_destroy_cb_kickout(
         globus_l_gsc_server_ref_check(server_handle);
     }
     globus_mutex_unlock(&server_handle->mutex);
+
+    globus_free(data_object);
 }
 
 static void
@@ -1228,7 +1259,6 @@ globus_l_gsc_close_cb(
  *                         -----------------
  *
  ***********************************************************************/
-static
 globus_bool_t
 globus_i_guc_data_object_destroy(
     globus_i_gsc_server_handle_t *      server_handle,
@@ -1255,7 +1285,7 @@ globus_i_guc_data_object_destroy(
                 GLOBUS_CALLBACK_GLOBAL_SPACE);
             if(res != GLOBUS_SUCCESS)
             {
-                globus_panic(&globus_i_gsc_module, res, "one shot failed.");
+                globus_panic(&globus_i_gsc_module, res, _FSCSL("one shot failed."));
             }
             rc = GLOBUS_TRUE;
         }
@@ -1632,6 +1662,7 @@ globus_l_gsc_cmd_site(
 
     op->cmd_list = (globus_list_t *) globus_hashtable_lookup(
         &op->server_handle->site_cmd_table, cmd_a[1]);
+    op->cmd_list = globus_list_copy(op->cmd_list);
     GlobusLGSCRegisterCmd(op);
 }
 
@@ -1668,7 +1699,7 @@ globus_l_gsc_command_callout(
 
         auth = server_handle->authenticated;
 
-        msg = "500 Invalid command.\r\n";
+        msg = _FSMSL("500 Invalid command.\r\n");
         while(!done)
         {
             /* if we ran out of commands before finishing tell the client
@@ -1686,17 +1717,16 @@ globus_l_gsc_command_callout(
             else
             {
                 cmd_ent = (globus_l_gsc_cmd_ent_t *)
-                    globus_list_first(op->cmd_list);
+                    globus_list_remove(&op->cmd_list, op->cmd_list);
                 /* must advance before calling the user callback */
-                op->cmd_list = globus_list_rest(op->cmd_list);
                 if(!auth && !(cmd_ent->desc & GLOBUS_GSC_COMMAND_PRE_AUTH))
                 {
-                    msg = "530 Please login with USER and PASS.\r\n";
+                    msg = _FSMSL("530 Please login with USER and PASS.\r\n");
                 }
                 else if(auth && 
                     !(cmd_ent->desc & GLOBUS_GSC_COMMAND_POST_AUTH))
                 {
-                    msg = "503 You are already logged in.\r\n";
+                    msg = _FSMSL("503 You are already logged in.\r\n");
                 }
                 else
                 {
@@ -1715,7 +1745,7 @@ globus_l_gsc_command_callout(
         if(argc < cmd_ent->min_argc)
         {
             globus_gsc_959_finished_command(op,
-                "501 Syntax error in parameters or arguments.\r\n");
+                _FSMSL("501 Syntax error in parameters or arguments.\r\n"));
         }
         else if(server_handle->fault_cmd != NULL)
         {
@@ -2239,12 +2269,12 @@ globus_gridftp_server_control_start(
     }
     /* default options */
     strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQL");
-    server_handle->opts.send_buf = -1; 
+    server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.restart_frequency = 5;
-    server_handle->opts.receive_buf = -1;
+    server_handle->opts.receive_buf = 0;
     server_handle->opts.parallelism = 1;
-    server_handle->opts.packet_size = -1;
+    server_handle->opts.packet_size = 0;
     server_handle->opts.delayed_passive = GLOBUS_FALSE;
     server_handle->opts.passive_only = GLOBUS_FALSE;
 
@@ -2381,14 +2411,14 @@ globus_i_gsc_command_panic(
             GLOBUS_XIO_CANCEL_READ);
         globus_l_gsc_flush_reads(
             op->server_handle,
-            "421 Service not available, closing control connection.\r\n");
+            _FSMSL("421 Service not available, closing control connection.\r\n"));
         op->server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
 
         /* not much can be done about an error here, we are terminating 
             anyway */
         res = globus_l_gsc_final_reply(
                 op->server_handle,
-                "421 Service not available, closing control connection.\r\n");
+                _FSMSL("421 Service not available, closing control connection.\r\n"));
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -2559,7 +2589,7 @@ globus_i_gsc_get_help(
     if(command_name == NULL)
     {
         help_str = globus_libc_strdup(
-            "214-The following commands are recognized:");
+            _FSMSL("214-The following commands are recognized:"));
         tmp_ptr = help_str;
         globus_hashtable_to_list(&server_handle->cmd_table, &list);
         cmd_ctr = 0;
@@ -2606,7 +2636,7 @@ globus_i_gsc_get_help(
             globus_hashtable_to_list(
                 &server_handle->site_cmd_table, &site_list);
             help_str = globus_common_create_string(
-                "214-Help for %s:\r\n", command_name);
+                _FSMSL("214-Help for %s:\r\n"), command_name);
             while(!globus_list_empty(site_list))
             {
                 list = (globus_list_t *) globus_list_first(site_list);
@@ -2626,7 +2656,7 @@ globus_i_gsc_get_help(
                 }
                 site_list = globus_list_rest(site_list);
             }
-            tmp_ptr = globus_common_create_string("%s214 End.\r\n", help_str);
+            tmp_ptr = globus_common_create_string(_FSMSL("%s214 End.\r\n"), help_str);
             globus_free(help_str);
 
             return tmp_ptr;
@@ -2638,11 +2668,11 @@ globus_i_gsc_get_help(
             if(list == NULL)
             {
                 return globus_common_create_string(
-                    "502 Unknown command '%s'.\r\n", command_name);
+                    _FSMSL("502 Unknown command '%s'.\r\n"), command_name);
             }
 
             help_str = globus_common_create_string(
-                "214-Help for %s:\r\n", command_name);
+                _FSMSL("214-Help for %s:\r\n"), command_name);
             while(!globus_list_empty(list))
             {
                 cmd_ent = (globus_l_gsc_cmd_ent_t *) globus_list_first(list);
@@ -2655,7 +2685,7 @@ globus_i_gsc_get_help(
                 }
                 list = globus_list_rest(list);
             }
-            tmp_ptr = globus_common_create_string("%s214 End.\r\n", help_str);
+            tmp_ptr = globus_common_create_string(_FSMSL("%s214 End.\r\n"), help_str);
             globus_free(help_str);
 
             return tmp_ptr;
@@ -3361,12 +3391,12 @@ globus_i_gsc_port(
                         op->server_handle, op->server_handle->data_object);
                     op->server_handle->data_object = NULL;
                     break;
-                                                                                
-                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+
                 case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
                     /* do nuttin */
                     break;
-                                                                                
+
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
                 case GLOBUS_L_GSC_DATA_OBJ_INUSE:
                 default:
                     globus_assert(0 && "possible memory corruption");
@@ -3438,11 +3468,11 @@ globus_i_gsc_passive(
                     op->server_handle->data_object = NULL;
                     break;
                                                                                 
-                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
                 case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
                     /* do nuttin */
                     break;
-                                                                                
+
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
                 case GLOBUS_L_GSC_DATA_OBJ_INUSE:
                 default:
                     globus_assert(0 && "possible memory corruption");
@@ -3965,8 +3995,8 @@ globus_gridftp_server_control_finished_active_connect(
         return GlobusGridFTPServerErrorParameter("op");
     }
 
-    data_obj = (globus_i_gsc_data_t *) globus_malloc(
-        sizeof(globus_i_gsc_data_t));
+    data_obj = (globus_i_gsc_data_t *) globus_calloc(
+        sizeof(globus_i_gsc_data_t), 1);
     if(data_obj == NULL)
     {
         return GlobusGridFTPServerControlErrorSytem();
@@ -3993,7 +4023,7 @@ globus_gridftp_server_control_finished_active_connect(
 
     return GLOBUS_SUCCESS;
 }
-                                                                                
+ 
 globus_result_t
 globus_gridftp_server_control_finished_passive_connect(
     globus_gridftp_server_control_op_t  op,
@@ -4017,8 +4047,8 @@ globus_gridftp_server_control_finished_passive_connect(
         return GlobusGridFTPServerErrorParameter("op");
     }
 
-    data_obj = (globus_i_gsc_data_t *) globus_malloc(
-        sizeof(globus_i_gsc_data_t));
+    data_obj = (globus_i_gsc_data_t *) globus_calloc(
+        sizeof(globus_i_gsc_data_t), 1);
     if(data_obj == NULL)
     {
         return GlobusGridFTPServerControlErrorSytem();
@@ -4081,7 +4111,7 @@ globus_gridftp_server_control_disconnected(
 
     globus_mutex_lock(&server->mutex);
     {
-        data_obj = (globus_i_gsc_data_t *) globus_hashtable_remove(
+        data_obj = (globus_i_gsc_data_t *) globus_hashtable_lookup(
             &server->data_object_table, user_data_handle);
         if(data_obj == NULL)
         {
@@ -4093,6 +4123,10 @@ globus_gridftp_server_control_disconnected(
             case GLOBUS_L_GSC_DATA_OBJ_READY:
                 data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
                 globus_i_guc_data_object_destroy(server, data_obj);
+                if(data_obj == server->data_object)
+                {
+                    server->data_object = NULL;
+                }
                 break;
 
             case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
@@ -4146,13 +4180,13 @@ globus_gridftp_server_control_begin_transfer(
         if(op->server_handle->data_object->first_use)
         {
             res = globus_i_gsc_intermediate_reply(
-                op, "150 Begining transfer.\r\n");
+                op, _FSMSL("150 Begining transfer.\r\n"));
             op->server_handle->data_object->first_use = GLOBUS_FALSE;
         }
         else
         {
             res = globus_i_gsc_intermediate_reply(
-                op, "125 Begining transfer; reusing existing data connection.\r\n");
+                op, _FSMSL("125 Begining transfer; reusing existing data connection.\r\n"));
         }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -4201,9 +4235,9 @@ globus_gridftp_server_control_finished_transfer(
 
             /* is already removed from the hashtable */
             case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
-                /* kick out the callback */
-                globus_i_guc_data_object_destroy(
-                    op->server_handle, op->server_handle->data_object);
+                /* data_object will get freed when event processing
+                    ends */
+                op->data_destroy_obj = op->server_handle->data_object;
                 op->server_handle->data_object = NULL;
                 break;
 
@@ -4213,7 +4247,6 @@ globus_gridftp_server_control_finished_transfer(
                 globus_assert(0 && "possible memory corruption");
                 break;
         }
-
         if(op->range_list != NULL)
         {
             globus_range_list_destroy(op->range_list);

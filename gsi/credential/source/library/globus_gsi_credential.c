@@ -215,7 +215,7 @@ globus_result_t globus_gsi_cred_read(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             results[result_index],
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Null handle passed to function: %s", _function_name_));
+            (_GCRSL("Null handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -298,8 +298,8 @@ globus_result_t globus_gsi_cred_read(
                 GLOBUS_GSI_CRED_ERROR_RESULT(
                     results[result_index],
                     GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-                    ("The proxy credential: %s\n      with subject: %s\n"
-                     "      expired %d minutes ago.\n",
+                    (_GCRSL("The proxy credential: %s\n      with subject: %s\n"
+                     "      expired %d minutes ago.\n"),
                      proxy,
                      subject,
                      (-lifetime)/60));
@@ -418,8 +418,8 @@ globus_result_t globus_gsi_cred_read(
                 GLOBUS_GSI_CRED_ERROR_RESULT(
                     results[result_index],
                     GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-                    ("The user credential: %s\n      with subject: %s\n"
-                     "     has expired %d minutes ago.\n",
+                    (_GCRSL("The user credential: %s\n      with subject: %s\n"
+                     "     has expired %d minutes ago.\n"),
                      cert,
                      subject,
                      (-lifetime)/60));
@@ -538,8 +538,8 @@ globus_result_t globus_gsi_cred_read(
                 GLOBUS_GSI_CRED_ERROR_RESULT(
                     results[result_index],
                     GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-                    ("The host credential: %s\n     with subject: %s\n     "
-                     "has expired %d minutes ago.\n",
+                    (_GCRSL("The host credential: %s\n     with subject: %s\n     "
+                     "has expired %d minutes ago.\n"),
                      cert,
                      subject,
                      (-lifetime)/60));
@@ -674,8 +674,8 @@ globus_result_t globus_gsi_cred_read(
                     GLOBUS_GSI_CRED_ERROR_RESULT(
                         results[result_index],
                         GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-                        ("The service credential: %s\n     with subject:\n%s\n"
-                         "     has expired %d minutes ago.\n",
+                        (_GCRSL("The service credential: %s\n     with subject:\n%s\n"
+                         "     has expired %d minutes ago.\n"),
                          cert,
                          subject,
                          (-lifetime)/60));
@@ -699,15 +699,15 @@ globus_result_t globus_gsi_cred_read(
                 multiple_obj = globus_error_construct_multiple(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     GLOBUS_GSI_CRED_ERROR_NO_CRED_FOUND,
-                    globus_l_gsi_cred_error_strings[
-                        GLOBUS_GSI_CRED_ERROR_NO_CRED_FOUND]);
+                    _GCRSL(globus_l_gsi_cred_error_strings[
+                        GLOBUS_GSI_CRED_ERROR_NO_CRED_FOUND]));
                 
                 while(result_index--)
                 {
                     globus_error_mutliple_add_chain(
                         multiple_obj,
                         globus_error_get(results[result_index]),
-                        "Attempt %d",
+                        _GCRSL("Attempt %d"),
                         result_index + 1);
                 }
                 
@@ -820,7 +820,7 @@ globus_result_t globus_gsi_cred_read_proxy(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -831,7 +831,7 @@ globus_result_t globus_gsi_cred_read_proxy(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Can't open proxy file: %s for reading", proxy_filename));
+            (_GCRSL("Can't open proxy file: %s for reading"), proxy_filename));
         goto exit;
     }
 
@@ -891,7 +891,7 @@ globus_gsi_cred_read_proxy_bio(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Null handle passed to function: %s", _function_name_));
+            (_GCRSL("Null handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -900,7 +900,7 @@ globus_gsi_cred_read_proxy_bio(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Null bio variable passed to function: %s", _function_name_));
+            (_GCRSL("Null bio variable passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -917,7 +917,7 @@ globus_gsi_cred_read_proxy_bio(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Couldn't read X509 proxy cert from bio"));
+            (_GCRSL("Couldn't read X509 proxy cert from bio")));
         goto exit;
     }
 
@@ -941,15 +941,15 @@ globus_gsi_cred_read_proxy_bio(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_KEY_IS_PASS_PROTECTED,
-                ("The proxy certificate's private key "
-                 "is password protected.\n"));
+                (_GCRSL("The proxy certificate's private key "
+                 "is password protected.\n")));
             goto exit;
         }
         
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Couldn't read proxy's private key from bio"));
+            (_GCRSL("Couldn't read proxy's private key from bio")));
         goto exit;
     }
     
@@ -966,7 +966,7 @@ globus_gsi_cred_read_proxy_bio(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Can't initialize cert chain"));
+            (_GCRSL("Can't initialize cert chain")));
         goto exit;
     }
 
@@ -987,7 +987,7 @@ globus_gsi_cred_read_proxy_bio(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                ("Error adding certificate to proxy's cert chain"));
+                (_GCRSL("Error adding certificate to proxy's cert chain")));
             goto exit;
         }
         ++i;
@@ -1049,7 +1049,7 @@ globus_gsi_cred_read_key(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
        goto exit;
     }
 
@@ -1058,8 +1058,8 @@ globus_gsi_cred_read_key(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't open bio stream for "
-             "key file: %s for reading", key_filename));
+            (_GCRSL("Can't open bio stream for "
+             "key file: %s for reading"), key_filename));
         goto exit;
     }
     
@@ -1078,14 +1078,14 @@ globus_gsi_cred_read_key(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_KEY_IS_PASS_PROTECTED,
-                ("GSI does not currently support password protected "
-                 "private keys."));
+                (_GCRSL("GSI does not currently support password protected "
+                 "private keys.")));
             goto exit;
         }
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't read credential's private key from PEM"));
+            (_GCRSL("Can't read credential's private key from PEM")));
         goto exit;
     }
 
@@ -1136,7 +1136,7 @@ globus_result_t globus_gsi_cred_read_cert(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
        goto exit;
     }
 
@@ -1145,7 +1145,7 @@ globus_result_t globus_gsi_cred_read_cert(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't open cert file: %s for reading", cert_filename));
+            (_GCRSL("Can't open cert file: %s for reading"), cert_filename));
         goto exit;
     }
     
@@ -1162,7 +1162,7 @@ globus_result_t globus_gsi_cred_read_cert(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't read credential cert from bio stream"));
+            (_GCRSL("Can't read credential cert from bio stream")));
         goto exit;
     }
 
@@ -1176,7 +1176,7 @@ globus_result_t globus_gsi_cred_read_cert(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't initialize cert chain\n"));
+            (_GCRSL("Can't initialize cert chain\n")));
         goto exit;
     }
     
@@ -1196,7 +1196,7 @@ globus_result_t globus_gsi_cred_read_cert(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                ("Error adding cert: %s\n to issuer cert chain\n",
+                (_GCRSL("Error adding cert: %s\n to issuer cert chain\n"),
                  X509_NAME_oneline(X509_get_subject_name(tmp_cert), 0, 0)));
             goto exit;
         }
@@ -1267,7 +1267,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
        goto exit;
     }
     
@@ -1277,7 +1277,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Couldn't create BIO for file: %s", pkcs12_filename));
+            (_GCRSL("Couldn't create BIO for file: %s"), pkcs12_filename));
         goto exit;
     }
 
@@ -1287,7 +1287,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Couldn't read in PKCS12 credential from BIO"));
+            (_GCRSL("Couldn't read in PKCS12 credential from BIO")));
         goto exit;
     }
 
@@ -1298,7 +1298,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Couldn't verify the PKCS12 MAC using the specified password"));
+            (_GCRSL("Couldn't verify the PKCS12 MAC using the specified password")));
         goto exit;
     }
 
@@ -1309,7 +1309,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Couldn't dump cert and key from PKCS12 credential"));
+            (_GCRSL("Couldn't dump cert and key from PKCS12 credential")));
         goto exit;
     }
 
@@ -1334,8 +1334,8 @@ globus_result_t globus_gsi_cred_read_pkcs12(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                ("Couldn't get NID from PKCS7 that matched "
-                 "{NID_pkcs7_data, NID_pkcs7_encrypted}"));
+                (_GCRSL("Couldn't get NID from PKCS7 that matched "
+                 "{NID_pkcs7_data, NID_pkcs7_encrypted}")));
             goto exit;
         }
 
@@ -1344,8 +1344,8 @@ globus_result_t globus_gsi_cred_read_pkcs12(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                ("Couldn't unpack the PKCS12 safebags from "
-                 "the PKCS7 credential"));
+                (_GCRSL("Couldn't unpack the PKCS12 safebags from "
+                 "the PKCS7 credential")));
             goto exit;
         }
 
@@ -1369,8 +1369,8 @@ globus_result_t globus_gsi_cred_read_pkcs12(
                     GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                        ("Couldn't get the private key from the"
-                         "PKCS12 credential"));
+                        (_GCRSL("Couldn't get the private key from the"
+                         "PKCS12 credential")));
                     goto exit;
                 }
             }
@@ -1386,7 +1386,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
                     GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                        ("Couldn't get PKCS8 key from PKCS12 credential"));
+                        (_GCRSL("Couldn't get PKCS8 key from PKCS12 credential")));
                     goto exit;
                 }
             
@@ -1396,7 +1396,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
                     GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                        ("Couldn't get private key from PKCS12 credential"));
+                        (_GCRSL("Couldn't get private key from PKCS12 credential")));
                     goto exit;
                 }
                 
@@ -1410,8 +1410,8 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Couldn't read private key from PKCS12 credential "
-             "for unknown reason"));
+            (_GCRSL("Couldn't read private key from PKCS12 credential "
+             "for unknown reason")));
         goto exit;
     }
 
@@ -1437,7 +1437,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Couldn't read X509 certificate from PKCS12 credential"));
+            (_GCRSL("Couldn't read X509 certificate from PKCS12 credential")));
         goto exit;
     }
 
@@ -1507,7 +1507,7 @@ globus_result_t globus_gsi_cred_write(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
         goto error_exit;
     }
     
@@ -1516,7 +1516,7 @@ globus_result_t globus_gsi_cred_write(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-            ("NULL bio variable passed to function: %s", _function_name_));
+            (_GCRSL("NULL bio variable passed to function: %s"), _function_name_));
         goto error_exit;
     }
     
@@ -1525,7 +1525,7 @@ globus_result_t globus_gsi_cred_write(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-            ("Can't write PEM formatted X509 cert to BIO stream"));
+            (_GCRSL("Can't write PEM formatted X509 cert to BIO stream")));
         goto error_exit;
     }
     
@@ -1536,7 +1536,7 @@ globus_result_t globus_gsi_cred_write(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-            ("Can't write PEM formatted private key to BIO stream"));
+            (_GCRSL("Can't write PEM formatted private key to BIO stream")));
         goto error_exit;
     }
     
@@ -1547,8 +1547,8 @@ globus_result_t globus_gsi_cred_write(
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_WRITING_CRED,
-                ("Can't write PEM formatted X509 cert"
-                 " in cert chain to BIO stream"));
+                (_GCRSL("Can't write PEM formatted X509 cert"
+                 " in cert chain to BIO stream")));
             goto error_exit;
         }
     }
@@ -1590,7 +1590,7 @@ globus_result_t globus_gsi_cred_write_proxy(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_GCRSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -1599,7 +1599,7 @@ globus_result_t globus_gsi_cred_write_proxy(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            ("Can't open bio stream for writing to file: %s", proxy_filename));
+            (_GCRSL("Can't open bio stream for writing to file: %s"), proxy_filename));
         goto exit;
     }
 
@@ -1730,7 +1730,7 @@ globus_i_gsi_cred_get_proxycertinfo(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Couldn't get numeric ID for PROXYCERTINFO extension"));
+            (_GCRSL("Couldn't get numeric ID for PROXYCERTINFO extension")));
         goto exit;
     }
 
@@ -1739,7 +1739,7 @@ globus_i_gsi_cred_get_proxycertinfo(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL X509 cert parameter passed to function: %s", 
+            (_GCRSL("NULL X509 cert parameter passed to function: %s"), 
              _function_name_));
         goto exit;
     }
@@ -1759,8 +1759,8 @@ globus_i_gsi_cred_get_proxycertinfo(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Can't find PROXYCERTINFO extension in X509 cert at "
-             "expected location: %d in extension stack", extension_loc));
+            (_GCRSL("Can't find PROXYCERTINFO extension in X509 cert at "
+             "expected location: %d in extension stack"), extension_loc));
         goto exit;
     }
 
@@ -1769,8 +1769,8 @@ globus_i_gsi_cred_get_proxycertinfo(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Can't get DER encoded extension "
-             "data from X509 extension object"));
+            (_GCRSL("Can't get DER encoded extension "
+             "data from X509 extension object")));
         goto exit;
     }
 
@@ -1779,7 +1779,7 @@ globus_i_gsi_cred_get_proxycertinfo(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Failed to copy extension data."));
+            (_GCRSL("Failed to copy extension data.")));
         goto exit;                
     }
     
@@ -1793,8 +1793,8 @@ globus_i_gsi_cred_get_proxycertinfo(
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Can't convert DER encoded PROXYCERTINFO "
-             "extension to internal form"));
+            (_GCRSL("Can't convert DER encoded PROXYCERTINFO "
+             "extension to internal form")));
         goto exit;
     }
     
@@ -1866,7 +1866,7 @@ globus_l_gsi_cred_subject_cmp(
             GLOBUS_GSI_CRED_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                ("No Common Name found in desired subject %s.\n", desired_str));
+                (_GCRSL("No Common Name found in desired subject %s.\n"), desired_str));
             goto exit;
         }
 
@@ -1882,7 +1882,7 @@ globus_l_gsi_cred_subject_cmp(
             GLOBUS_GSI_CRED_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                ("No Common Name found in subject %s.\n", actual_str));
+                (_GCRSL("No Common Name found in subject %s.\n"), actual_str));
             goto exit;
         }
 
@@ -1894,7 +1894,7 @@ globus_l_gsi_cred_subject_cmp(
             GLOBUS_GSI_CRED_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                ("More than one Common Name found in subject %s.\n", actual_str));
+                (_GCRSL("More than one Common Name found in subject %s.\n"), actual_str));
             goto exit;
         }
 
@@ -1962,10 +1962,10 @@ globus_l_gsi_cred_subject_cmp(
             GLOBUS_GSI_CRED_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                ("Desired subject and actual subject of certificate"
+                (_GCRSL("Desired subject and actual subject of certificate"
                  " do not match.\n"
                  "     Desired subject: %s\n"
-                 "     Actual subject: %s\n",
+                 "     Actual subject: %s\n"),
                  desired_str,
                  actual_str));
 
@@ -1981,10 +1981,10 @@ globus_l_gsi_cred_subject_cmp(
                 GLOBUS_GSI_CRED_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                    ("Desired subject and actual subject of certificate"
+                    (_GCRSL("Desired subject and actual subject of certificate"
                      " do not match.\n"
                      "     Desired subject: %s\n"
-                     "     Actual subject: %s\n",
+                     "     Actual subject: %s\n"),
                      desired_str,
                      actual_str));
             }
@@ -2001,10 +2001,10 @@ globus_l_gsi_cred_subject_cmp(
                 GLOBUS_GSI_CRED_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                    ("Desired subject and actual subject of certificate"
+                    (_GCRSL("Desired subject and actual subject of certificate"
                      " do not match.\n"
                      "     Desired subject: %s\n"
-                     "     Actual subject: %s\n",
+                     "     Actual subject: %s\n"),
                      desired_str,
                      actual_str));
             }
@@ -2021,10 +2021,10 @@ globus_l_gsi_cred_subject_cmp(
                 GLOBUS_GSI_CRED_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                    ("Desired subject and actual subject of certificate"
+                    (_GCRSL("Desired subject and actual subject of certificate"
                      " do not match.\n"
                      "     Desired subject: %s\n"
-                     "     Actual subject: %s\n",
+                     "     Actual subject: %s\n"),
                      desired_str,
                      actual_str));
             }
@@ -2045,10 +2045,10 @@ globus_l_gsi_cred_subject_cmp(
             GLOBUS_GSI_CRED_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
-                ("Desired subject and actual subject of certificate"
+                (_GCRSL("Desired subject and actual subject of certificate"
                  " do not match.\n"
                  "     Desired subject: %s\n"
-                 "     Actual subject: %s\n",
+                 "     Actual subject: %s\n"),
                  desired_str,
                  actual_str));
         }
@@ -2119,7 +2119,7 @@ globus_l_gsi_cred_get_service(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
-            ("No Common Name found in subject %s.\n", subject_str));
+            (_GCRSL("No Common Name found in subject %s.\n"), subject_str));
         goto exit;
     }
 
@@ -2131,7 +2131,7 @@ globus_l_gsi_cred_get_service(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
-            ("More than one Common Name found in subject %s.\n", subject_str));
+            (_GCRSL("More than one Common Name found in subject %s.\n"), subject_str));
         goto exit;
     }
 
@@ -2153,7 +2153,7 @@ globus_l_gsi_cred_get_service(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
-            ("No service name found in subject %s.\n", subject_str));
+            (_GCRSL("No service name found in subject %s.\n"), subject_str));
         goto exit;
     }
 
@@ -2169,7 +2169,7 @@ globus_l_gsi_cred_get_service(
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
-            ("No service name found in subject %s.\n", subject_str));        
+            (_GCRSL("No service name found in subject %s.\n"), subject_str));        
     }
     
     goto exit;

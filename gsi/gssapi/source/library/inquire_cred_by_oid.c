@@ -78,7 +78,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid credential handle passed to function"));
+            (_GGSL("Invalid credential handle passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -88,7 +88,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid desired object passed to function"));
+            (_GGSL("Invalid desired object passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -98,7 +98,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid data_set passed to function"));
+            (_GGSL("Invalid data_set passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -147,7 +147,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Couldn't create ASN1_OBJECT for the desired extension"));
+            (_GGSL("Couldn't create ASN1_OBJECT for the desired extension")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -175,8 +175,8 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Couldn't get extension at index %d "
-                     "from cert in credential.",
+                    (_GGSL("Couldn't get extension at index %d "
+                     "from cert in credential."),
                      found_index));
                 major_status = GSS_S_FAILURE;
                 goto exit;
@@ -188,8 +188,8 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Couldn't get cert extension in the form of an "
-                     "ASN1 octet string."));
+                    (_GGSL("Couldn't get cert extension in the form of an "
+                     "ASN1 octet string.")));
                 major_status = GSS_S_FAILURE;
                 goto exit;
             }

@@ -4,10 +4,20 @@
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
+#define _GSSL(s) globus_common_i18n_get_string_by_key(\
+		    NULL, \
+		    "globus_gridftp_server", \
+		    s)
+
+#define _FSSL(s,p) globus_common_i18n_get_string_by_key(\
+		     p, \
+		    "globus_gridftp_server", \
+		    s)
+
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
 
-#define GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE " ** Developement Release **"
+#define GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE " ** Development Release **"
 
 /*
  *  globus_gfs_error_type_t
@@ -133,7 +143,7 @@ typedef globus_gridftp_server_control_stat_t    globus_gfs_stat_t;
 typedef struct globus_gfs_data_finished_info_s
 {
     /** unique key for the data_handle */
-    int                                 data_handle_id;
+    void *                              data_arg;
     /** false if the direction of data flow is restricted */
     globus_bool_t                       bi_directional;
     /** is the connection using ipv6? */
@@ -211,24 +221,24 @@ typedef struct globus_gfs_event_info_s
 {
     /** type of event */
     globus_gfs_event_type_t             type;
+
+    /** arg supplied with the BEGIN_TRANSFER event, 
+        will be passed back with each transfer event */
+    void *                              event_arg;
     
     /* reply data */
     /** node that event is from */
     int                                 node_ndx;
     /** unique key of transfer request that event is related to */
     int                                 id;
-    /** unique key of transfer op that event is related to */
-    int                                 transfer_id;
     /** mask of events that should be passed in */
     int                                 event_mask;
     /** number of bytes received for current transfer */
     globus_off_t                        recvd_bytes;
     /** ranges of bytes received for current transfer */
     globus_range_list_t                 recvd_ranges;
-    /** unique key of session that event is related to */
-    int                                 session_id;
     /** unique key of data handle that event is related to */    
-    int                                 data_handle_id;
+    void *                              data_arg;
     
     /* request data */
     /** array of eof counts */    
@@ -250,7 +260,7 @@ typedef struct globus_gfs_transfer_info_s
     char *                              module_name;
     char *                              module_args;
     /** type of list requested */
-    const char *                        list_type;
+    char *                              list_type;
     
     /** offset of partial transfer */
     globus_off_t                        partial_offset;
@@ -262,7 +272,7 @@ typedef struct globus_gfs_transfer_info_s
     globus_bool_t                       truncate;
     
     /** unique key that identifies the associated data_handle */
-    int                                 data_handle_id;
+    void *                              data_arg;
     /** number of eof that sender should send  xxx might need to be array here */
     int                                 eof_count;
     /** total number of local stripes that will be involved */
@@ -319,9 +329,9 @@ typedef struct globus_gfs_data_info_s
     /** tcp buffersize to use */
     int                                 tcp_bufsize;
     /** blocksize to use */
-    globus_size_t                       blocksize;
+    int                                 blocksize;
     /** blocksize to use for stripe layout */
-    globus_size_t                       stripe_blocksize;
+    int                                 stripe_blocksize;
 
     /** protection mode */
     char                                prot;
@@ -362,6 +372,7 @@ typedef struct globus_gfs_stat_info_s
 typedef struct globus_gfs_session_info_s
 {
     gss_cred_id_t                       del_cred;
+    globus_bool_t                       free_cred;
     char *                              username;
     char *                              password;
     char *                              subject;
@@ -467,7 +478,7 @@ typedef void
  */
 typedef void
 (*globus_gfs_storage_data_destroy_t)(
-    int                                 data_handle_id,
+    void *                              data_arg,
     void *                              user_arg);
 
 /*
@@ -479,8 +490,7 @@ typedef void
  */
 typedef void
 (*globus_gfs_storage_trev_t)(
-    int                                 transfer_id,
-    int                                 event_type,
+    globus_gfs_event_info_t *           event_info,
     void *                              user_arg);
 
 /*
@@ -491,7 +501,7 @@ typedef void
  */
 typedef void
 (*globus_gfs_storage_set_cred_t)(
-    gss_cred_id_t                       cred_thing,
+    gss_cred_id_t                       del_cred,
     void *                              user_arg);
 
 /*
@@ -631,7 +641,7 @@ void
 globus_gridftp_server_finished_active_data(
     globus_gfs_operation_t              op, 
     globus_result_t                     result,
-    int                                 data_handle_id,
+    void *                              data_arg,
     globus_bool_t                       bi_directional);
 
 /*
@@ -643,7 +653,7 @@ void
 globus_gridftp_server_finished_passive_data(
     globus_gfs_operation_t              op, 
     globus_result_t                     result,
-    int                                 data_handle_id,
+    void *                              data_arg,
     globus_bool_t                       bi_directional,
     const char **                       contact_strings,
     int                                 cs_count);
@@ -843,7 +853,7 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
         __FILE__,                                                           \
         _gfs_name,                                                          \
         __LINE__,                                                           \
-        "user a bad parameter %s",                                          \
+        "invalid parameter: %s",                                            \
         (param_name))                               
                                                                             
 #define GlobusGFSErrorSystemError(system_func, _errno)                      \

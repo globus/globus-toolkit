@@ -80,7 +80,7 @@ GSS_CALLCONV gss_set_sec_context_option(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context_handle passed to function - cannot be NULL"));
+            (_GGSL("Invalid context_handle passed to function - cannot be NULL")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -92,7 +92,7 @@ GSS_CALLCONV gss_set_sec_context_option(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid option passed to function with value: GSS_C_NO_OID"));
+            (_GGSL("Invalid option passed to function with value: GSS_C_NO_OID")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -126,8 +126,8 @@ GSS_CALLCONV gss_set_sec_context_option(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
-                ("The callback data in the context "
-                 "could not be initialized."));
+                (_GGSL("The callback data in the context "
+                 "could not be initialized.")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -137,8 +137,8 @@ GSS_CALLCONV gss_set_sec_context_option(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
-            ("The context has already been initialized!  %s should be "
-             "called on a context before initialization", _function_name_));
+            (_GGSL("The context has already been initialized!  %s should be "
+             "called on a context before initialization"), _function_name_));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -158,7 +158,7 @@ GSS_CALLCONV gss_set_sec_context_option(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                ("Invalid buffer passed to function"));
+                (_GGSL("Invalid buffer passed to function")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
