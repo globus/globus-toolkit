@@ -177,7 +177,6 @@ main(
     /* default to a 12 hour cert */
     int                                 hours       = 12;
     /* dont restrict the proxy */
-    int                                 limit_proxy = 0;
     int                                 verify      = 0;
     int                                 i;
     int                                 j;
@@ -193,6 +192,7 @@ main(
     proxy_cred_desc *                   pcd         = NULL;
     proxy_verify_desc                   pvd;
     proxy_verify_ctx_desc               pvxd;
+    globus_proxy_type_t                 proxy_type = GLOBUS_REGULAR_PROXY;
     BIO *                               bio_err;
     X509 *                              xcert;
     time_t                              time_after;
@@ -339,7 +339,7 @@ main(
         }
         else if (strcmp(argp,"-limited")==0)
         {
-            limit_proxy++;
+            proxy_type = GLOBUS_LIMITED_PROXY;
         }
         else if (strcmp(argp,"-verify")==0)
         {
@@ -366,6 +366,7 @@ main(
         {
             args_verify_next(i,argp,"restriction file name missing");
             restriction_filename = argv[++i];
+	    proxy_type = GLOBUS_RESTRICTED_PROXY;
         }
         else
             args_error(i,argp,"unrecognized option");
@@ -529,7 +530,7 @@ main(
                            outfile,
                            hours,
                            bits,
-                           limit_proxy,
+                           proxy_type,
                            (int (*)(void)) kpcallback,
                            restriction_buf,
                            restriction_buf_len))

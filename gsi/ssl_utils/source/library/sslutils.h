@@ -103,6 +103,7 @@ EXTERN_C_BEGIN
 #define X509_USER_PROXY "X509_USER_PROXY"
 #define X509_USER_CERT  "X509_USER_CERT"
 #define X509_USER_KEY   "X509_USER_KEY"
+#define X509_USER_DELEG_PROXY   "X509_USER_DELEG_PROXY"
 #define X509_USER_DELEG_FILE    "x509up_p"
 #define X509_USER_PROXY_FILE    "x509up_u"
 
@@ -330,11 +331,21 @@ struct proxy_verify_desc_struct {
     int                                 proxy_depth;
     int                                 cert_depth;
     int                                 limited_proxy;
-    STACK_OF(X509) *                    cert_chain; /*  X509 */
+      STACK_OF(X509) *                    cert_chain; /*  X509 */
     int                                 multiple_limited_proxy_ok;
     proxy_verify_extension_callback_t   extension_cb;
     void *                              extension_oids;
+
 };
+
+typedef enum
+{
+  GLOBUS_NOT_PROXY        = 0,
+  GLOBUS_REGULAR_PROXY    = 1,
+  GLOBUS_LIMITED_PROXY    = 2,
+  GLOBUS_RESTRICTED_PROXY = 3
+} 
+globus_proxy_type_t;
 
 /**********************************************************************
                                Global variables
@@ -388,7 +399,7 @@ proxy_create_local(
     const char *                        outfile,
     int                                 hours,
     int                                 bits,
-    int                                 limited_proxy,
+    globus_proxy_type_t                 proxy_type,
     int                                 (*kpcallback)(),
     char *                              restriction_buf,
     int                                 restriction_len);
@@ -446,7 +457,7 @@ proxy_sign(
     X509 **                             new_cert,
     int                                 seconds,
     STACK_OF(X509_EXTENSION) *          extensions,
-    int                                 limited_proxy);
+    globus_proxy_type_t                 proxy_type);
 
 int
 proxy_sign_ext(
