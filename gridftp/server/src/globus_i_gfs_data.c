@@ -1557,6 +1557,7 @@ globus_gridftp_server_get_write_range(
     globus_off_t *                      write_delta,
     globus_off_t *                      transfer_delta)
 {
+    GlobusGFSName(globus_gridftp_server_get_write_range);
     globus_off_t                        tmp_off = 0;
     globus_off_t                        tmp_len = -1;
     globus_off_t                        tmp_write = 0;
@@ -1607,7 +1608,7 @@ globus_gridftp_server_get_read_range(
     globus_off_t *                      length,
     globus_off_t *                      write_delta)
 {
-    GlobusGFSName(globus_gridftp_server_get_restart_offset);
+    GlobusGFSName(globus_gridftp_server_get_read_range);
     globus_off_t                        tmp_off = 0;
     globus_off_t                        tmp_len = -1;
     globus_off_t                        tmp_write = 0;
@@ -1668,6 +1669,7 @@ globus_i_gfs_data_kickoff_event(
     globus_i_gfs_server_instance_t *    instance,
     int                                 event_type)
 {
+    GlobusGFSName(globus_i_gfs_data_kickoff_event);
     switch(event_type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
@@ -1687,4 +1689,3 @@ globus_i_gfs_data_kickoff_event(
     }   
        
 }
-
