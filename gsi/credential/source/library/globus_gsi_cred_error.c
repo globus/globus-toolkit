@@ -43,7 +43,8 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
           " possible locations specified by the credential search order.",
 /* 21 */  "Error comparing subject names.",
 /* 22 */  "Error determining service name.",
-/* 23 */  "Bad parameter"
+/* 23 */  "Bad parameter",
+/* 24 */  "Error with credential's certificate name"
 };
 
 /* ERROR FUNCTIONS */

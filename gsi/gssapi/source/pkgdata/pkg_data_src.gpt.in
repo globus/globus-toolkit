@@ -43,7 +43,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_credential">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_callback">
@@ -86,7 +86,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_credential">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_callback">
