@@ -23,7 +23,7 @@
     <parameter name="persistent" value="true"/>
     <parameter name="schemaPath" value="schema/ogsi/ogsi_notification_factory_service.wsdl"/>
    
-    <parameter name="baseClassName" value="org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl"/>
+    <parameter name="baseClassName" value="org.globus.ogsa.impl.ogsi.GridServiceImpl"/>
     <parameter name="instance-operationProviders" value="org.globus.ogsa.impl.security.authentication.SecureNotificationSourceProvider "/>
     
     <parameter name="JdbcDriver" value="org.postgresql.Driver"/>

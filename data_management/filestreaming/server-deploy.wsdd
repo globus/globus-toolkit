@@ -11,7 +11,7 @@
         <parameter name="schemaPath"
                    value="schema/ogsi/ogsi_factory_service.wsdl"/>
         <parameter name="baseClassName"
-                   value="org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl"/>
+                   value="org.globus.ogsa.impl.ogsi.GridServiceImpl"/>
         <parameter name="className"
                    value="org.gridforum.ogsi.Factory"/>
         <parameter name="operationProviders"
