@@ -775,7 +775,7 @@ proxy_load_user_proxy(
 
         if (bp || count)
         {
-            i = sk_X509_insert(cert_chain,x,0);
+            i = sk_X509_insert(cert_chain,x,sk_X509_num(cert_chain));
 
             x = NULL;
         }
@@ -2551,7 +2551,7 @@ proxy_verify_callback(
         pvd->cert_chain = sk_X509_new_null();
     }
     
-    sk_X509_push(pvd->cert_chain, X509_dup(ctx->current_cert));
+    sk_X509_insert(pvd->cert_chain, X509_dup(ctx->current_cert),0);
 
     pvd->cert_depth++;
 
