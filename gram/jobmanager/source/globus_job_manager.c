@@ -737,8 +737,8 @@ graml_status_file_gen(int job_status)
     /*
      *  don't output a status file when the job has terminated
      */
-    if ((job_status != GRAM_JOB_STATE_DONE) && 
-        (job_status != GRAM_JOB_STATE_FAILED))
+    if ((job_status != GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) && 
+        (job_status != GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
     {
 
         if ((status_fp = fopen(status_file, "a")) == NULL)
@@ -759,16 +759,16 @@ graml_status_file_gen(int job_status)
              */
             switch(job_status)
             {
-                case GRAM_JOB_STATE_PENDING:
+                case GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING:
                     strcpy(job_status_str, "PENDING");
                     break;
-                case GRAM_JOB_STATE_ACTIVE:
+                case GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE:
                     strcpy(job_status_str, "ACTIVE");
                     break;
-                case GRAM_JOB_STATE_DONE:
+                case GLOBUS_GRAM_CLIENT_JOB_STATE_DONE:
                     strcpy(job_status_str, "DONE");
                     break;
-                case GRAM_JOB_STATE_FAILED:
+                case GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED:
                     strcpy(job_status_str, "FAILED");
                     break;
                 default:
@@ -882,7 +882,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
 	
 	if (str_len + prefix_len + 1 > GLOBUS_GRAM_CLIENT_PARAM_SIZE)
 	{
-	    return (GRAM_ERROR_NO_RESOURCES); /* correct error code??? */
+	    return (GLOBUS_GRAM_CLIENT_ERROR_NO_RESOURCES); /* correct error code??? */
 	}
 
 	strcpy(params->pgm, GLOBUS_PREFIX);
