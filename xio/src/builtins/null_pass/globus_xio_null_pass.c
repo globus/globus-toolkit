@@ -178,7 +178,8 @@ globus_l_xio_null_pass_load(
         globus_l_xio_null_pass_close,
         globus_l_xio_null_pass_read,
         globus_l_xio_null_pass_write,
-        globus_l_xio_null_pass_cntl);
+        globus_l_xio_null_pass_cntl,
+        NULL);
 
     globus_xio_driver_set_server(
         driver,

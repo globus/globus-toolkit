@@ -779,8 +779,7 @@ globus_l_xio_file_init(
         globus_l_xio_file_close,
         globus_l_xio_file_read,
         globus_l_xio_file_write,
-        globus_l_xio_file_cntl,
-        NULL);
+        globus_l_xio_file_cntl);
 
     globus_xio_driver_set_client(
         driver,

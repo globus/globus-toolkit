@@ -323,6 +323,7 @@ globus_l_xio_op_load(
         globus_l_xio_op_close,
         globus_l_xio_op_read,
         globus_l_xio_op_write,
+        NULL,
         NULL);
 
     *out_driver = driver;

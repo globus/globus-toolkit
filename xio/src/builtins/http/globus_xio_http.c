@@ -574,7 +574,8 @@ globus_l_xio_http_load(
         globus_l_xio_http_close,
         globus_l_xio_http_read,
         globus_l_xio_http_write,
-        globus_l_xio_http_handle_cntl);
+        globus_l_xio_http_handle_cntl,
+	NULL);
 
     globus_xio_driver_set_attr(
         driver,

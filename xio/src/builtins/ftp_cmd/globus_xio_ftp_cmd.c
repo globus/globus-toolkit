@@ -476,6 +476,7 @@ globus_l_xio_ftp_cmd_load(
         globus_l_xio_ftp_cmd_close,
         globus_l_xio_ftp_cmd_read,
         NULL, /* leave write null for now */
+        NULL,
         NULL);
 
     globus_xio_driver_set_client(

@@ -369,7 +369,8 @@ globus_l_xio_queue_load(
         globus_l_xio_queue_close,
         globus_l_xio_queue_read,
         globus_l_xio_queue_write,
-        NULL);
+        NULL,
+	NULL);
 
     *out_driver = driver;
 

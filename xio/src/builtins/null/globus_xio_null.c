@@ -42,7 +42,8 @@ globus_l_xio_null_load(
         NULL,
         NULL,
         NULL,
-        NULL);
+        NULL,
+	NULL);
 
     globus_xio_driver_set_server(
         driver,

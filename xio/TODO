@@ -11,3 +11,5 @@ need clean method of getting contact string
 need a kickout utility for drivers so their driver specific cntls can respect callback space
 
 po canceled by driver then op bounces down bug
+
+need to add driver_attr_cntl also

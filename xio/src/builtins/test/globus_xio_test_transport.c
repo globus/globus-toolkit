@@ -860,8 +860,7 @@ globus_l_xio_test_transport_load(
         globus_l_xio_test_close,
         globus_l_xio_test_read,
         globus_l_xio_test_write,
-        globus_l_xio_test_cntl,
-        NULL);
+        globus_l_xio_test_cntl);
 
     globus_xio_driver_set_client(
         driver,

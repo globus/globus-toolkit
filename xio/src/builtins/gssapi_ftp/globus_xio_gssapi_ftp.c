@@ -2596,6 +2596,7 @@ globus_l_xio_gssapi_ftp_load(
         globus_l_xio_gssapi_ftp_close,
         globus_l_xio_gssapi_ftp_read,
         globus_l_xio_gssapi_ftp_write,
+        NULL,
         NULL);
 
     globus_xio_driver_set_attr(

@@ -387,7 +387,8 @@ globus_l_xio_verify_load(
         globus_l_xio_verify_close,
         globus_l_xio_verify_read,
         globus_l_xio_verify_write,
-        globus_l_xio_verify_cntl);
+        globus_l_xio_verify_cntl,
+        NULL);
 
     globus_xio_driver_set_client(
         driver,

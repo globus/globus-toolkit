@@ -472,6 +472,7 @@ globus_l_xio_smtp_load(
         globus_l_xio_smtp_close,
         globus_l_xio_smtp_read,
         globus_l_xio_smtp_write,
+        NULL,
         NULL);
 
     globus_xio_driver_set_attr(

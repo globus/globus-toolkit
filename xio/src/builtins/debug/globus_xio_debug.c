@@ -300,7 +300,8 @@ globus_l_xio_debug_load(
         globus_l_xio_debug_close,
         globus_l_xio_debug_read,
         globus_l_xio_debug_write,
-        globus_l_xio_debug_cntl);
+        globus_l_xio_debug_cntl,
+        NULL);
 
     globus_xio_driver_set_server(
         driver,

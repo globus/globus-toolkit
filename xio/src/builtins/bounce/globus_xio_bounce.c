@@ -460,7 +460,8 @@ globus_l_xio_bounce_load(
         globus_l_xio_bounce_close,
         globus_l_xio_bounce_read,
         globus_l_xio_bounce_write,
-        globus_l_xio_bounce_cntl);
+        globus_l_xio_bounce_cntl,
+        NULL);
 
     *out_driver = driver;
 
