@@ -377,13 +377,13 @@ globus_error_peek(
   {
     globus_object_t *                   cached;
     
+    globus_object_reference(error);
     cached = (globus_object_t *) globus_thread_getspecific(s_peek_key);
     if(cached)
     {
         globus_object_free(cached);
     }
     
-    globus_object_reference(error);
     globus_thread_setspecific(s_peek_key, error);
   }
   
