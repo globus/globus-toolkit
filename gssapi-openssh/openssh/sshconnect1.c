@@ -1072,13 +1072,10 @@ int try_gssapi_authentication(char *host, Options *options)
   debug("Service name is %s", service_name);
 
   /* Forward credentials? */
-
-#ifdef GSSAPI
   if(options->gss_deleg_creds) {
     debug("Delegating GSSAPI credentials");
     req_flags |= GSS_C_DELEG_FLAG;
   }
-#endif /* GSSAPI */
 
   debug("req_flags = %u", (unsigned int)req_flags);
 
@@ -1123,6 +1120,11 @@ int try_gssapi_authentication(char *host, Options *options)
       } else {
 	  debug("GSSAPI mechanism %s not supported", supported_mechs[i].name);
       }
+  }
+
+  if (my_mechs->count == 0) {
+      debug("No GSSAPI mechanisms.");
+      goto cleanup;
   }
 
   /*
@@ -1171,6 +1173,7 @@ int try_gssapi_authentication(char *host, Options *options)
       break;
 
   case SSH_MSG_AUTH_GSSAPI_ABORT:
+  case SSH_SMSG_FAILURE:
       debug("Unable to negotiate GSSAPI mechanism type with server");
       packet_get_all();
       goto cleanup;
@@ -1259,6 +1262,7 @@ int try_gssapi_authentication(char *host, Options *options)
         break;
 
       case SSH_MSG_AUTH_GSSAPI_ABORT:
+      case SSH_SMSG_FAILURE:
         debug("Server aborted GSSAPI authentication.");
         packet_get_all();
         goto cleanup;
@@ -1289,7 +1293,7 @@ int try_gssapi_authentication(char *host, Options *options)
   debug("Reading hash of server and host keys...");
   type = packet_read();
 
-  if (type == SSH_MSG_AUTH_GSSAPI_ABORT) {
+  if (type == SSH_MSG_AUTH_GSSAPI_ABORT || type == SSH_SMSG_FAILURE) {
     debug("Server aborted GSSAPI authentication.");
     packet_get_all();
     ret_stat = 0;
@@ -1668,25 +1672,21 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
       options.gss_authentication)
     {
       char *canonhost;
+      int gssapi_succeeded;
       debug("Trying GSSAPI authentication...");
       canonhost = xstrdup(get_canonical_hostname(1));
       resolve_localhost(&canonhost);
-      try_gssapi_authentication(canonhost, &options);
+      gssapi_succeeded = try_gssapi_authentication(canonhost, &options);
       xfree(canonhost);
       canonhost=NULL;
 
-      /*
-       * XXX Hmmm. Kerberos authentication only reads a packet if it thinks
-       * the authentication went OK, but the server seems to always send
-       * a packet back. So I'm not sure if I'm missing something or
-       * the Kerberos code is broken. - vwelch 1/27/99
-       */
-
-      type = packet_read();
-      if (type == SSH_SMSG_SUCCESS)
-        return; /* Successful connection. */
-      if (type != SSH_SMSG_FAILURE)
-        packet_disconnect("Protocol error: got %d in response to Kerberos auth", type);
+      if (gssapi_succeeded) {
+	  type = packet_read();
+	  if (type == SSH_SMSG_SUCCESS)
+	      goto success;
+	  if (type != SSH_SMSG_FAILURE)
+	      packet_disconnect("Protocol error: got %d in response to GSSAPI auth", type);
+      }
 
       debug("GSSAPI authentication failed");
     }
