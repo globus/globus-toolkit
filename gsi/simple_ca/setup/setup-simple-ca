@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh -x
 
 # catch the kill signal (ctrl-c) and do cleanup
 trap do_trap 1 2 3 6 9 13 15
@@ -196,7 +196,7 @@ fi
 ############################################################
 generate_unique_name() {
 
-tmp_hostname=`${GLOBUS_LOCATION}/bin/globus-hostname`
+tmp_hostname=`export GLOBUS_LOCATION=${GLOBUS_LOCATION};${GLOBUS_LOCATION}/bin/globus-hostname`
 
 if test -z "${tmp_hostname}"; then
     echo "" 
@@ -207,6 +207,7 @@ if test -z "${tmp_hostname}"; then
 fi
 
 echo "simpleCA-${tmp_hostname}"
+return 0
 }
 
 split_subject() {
@@ -245,7 +246,10 @@ get_ca_info() {
 
 
 CA_ORG_NAME=`generate_unique_name`
-
+res=$?
+if test res -ne 0; then
+    exit 1
+fi
 GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
 GSI_CA_NAME="Globus Simple CA"
 
@@ -648,10 +652,9 @@ ${GLOBUS_SH_CAT-cat} <<EOF
 The following commands will now be run to setup the security
 configuration files for this CA:
 
-\$GPT_LOCATION/sbin/gpt-build -install-only \\
-${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
+\$GLOBUS_LOCATION/sbin/gpt-build ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-\$GPT_LOCATION/sbin/gpt-postinstall
+\$GLOBUS_LOCATION/sbin/gpt-postinstall
 EOF
 
 fi
@@ -813,10 +816,10 @@ CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 #./bootstrap
 
 if test -n "$verbose"; then
-    ./configure $outlog
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};./configure $outlog
     RES=$?
 else
-    ./configure $outlog > configure.log 2>&1
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};./configure $outlog > configure.log 2>&1
     RES=$?
 fi
 
@@ -828,10 +831,10 @@ if test $RES -ne 0; then
 fi
 
 if test -n "$verbose"; then
-    make distdir
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};make distdir
     RES=$?
 else
-    make distdir > make.log 2>&1
+    export GLOBUS_LOCATION=${GLOBUS_LOCATION};make distdir > make.log 2>&1
     RES=$?
 fi
 
@@ -918,19 +921,58 @@ do_trap() {
 ############################################################
 # main code section
 ############################################################
+
+currentwd=${PWD}
+if test -z "${currentwd}"; then
+    currentwd=`cwd`
+    if test -z "${currentwd}"; then
+        echo ""
+        echo "ERROR: Failed to get current working directory"
+	echo ""
+	exit 1
+    fi
+fi
+
+thiscommand=${0}
+currenthome=${HOME}
+mycommand=
+
+##  expand . and ~
+firstchar=`echo ${thiscommand} | cut -b 1`
+if test ${firstchar} == "."; then
+    rest=`echo ${thiscommand} | cut -b 2-`
+    mycommand="${currentwd}/${rest}"
+elif test ${firstchar} == "~"; then
+    rest=`echo ${thiscommand} | cut -b 2-`
+    mycommand="${currenthome}/${rest}"
+elif test ${firstchar} == "/"; then
+    mycommand="${thiscommand}"
+else
+    mycommand="${currentwd}/${rest}"
+fi
+
+if test ! -x ${mycommand}; then
+   echo ""
+   echo "ERROR: Failed to parse ${mycommand} into a the path for this script"
+   echo ""
+   exit 1
+fi
+
 if test -z "${GLOBUS_LOCATION}"; then
+    
+    GLOBUS_LOCATION=`echo ${mycommand} | sed -e "s|\(.*\)/setup/globus/setup-simple-ca|\1|"`
     echo ""
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
-    echo "running this script"
+    echo "WARNING: GLOBUS_LOCATION not set, assuming:"
+    echo "         GLOBUS_LOCATION=${GLOBUS_LOCATION}"
     echo ""
-    exit 1
 fi
 
 if test -z "${GPT_LOCATION}"; then
+    GPT_LOCATION=${GLOBUS_LOCATION}
     echo ""
-    echo "ERROR: Please set GPT_LOCATION to a valid install of gpt"
+    echo "WARNING: GPT_LOCATION not set, assuming:"
+    echo "         GPT_LOCATION=${GPT_LOCATION}"
     echo ""
-    exit 1
 fi
 
 if test ! -f ${GLOBUS_LOCATION}/libexec/globus-script-initializer; then
