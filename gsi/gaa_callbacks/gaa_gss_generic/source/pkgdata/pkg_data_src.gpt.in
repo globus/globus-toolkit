@@ -18,7 +18,7 @@
 <Simple_Version Major="2" />
 </Version>
 </Dependency>
-<Dependency Name="gssapi" >
+<Dependency Name="globus_gssapi_gsi" >
 <Version >
 <Simple_Version Major="2" />
 </Version>
@@ -30,7 +30,7 @@
 <Simple_Version Major="1" />
 </Version>
 </Dependency>
-<Dependency Name="gssapi" >
+<Dependency Name="globus_gssapi_gsi" >
 <Version >
 <Simple_Version Major="2" />
 </Version>
