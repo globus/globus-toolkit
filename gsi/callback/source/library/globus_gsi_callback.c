@@ -477,7 +477,7 @@ int globus_gsi_callback_handshake_callback(
     globus_gsi_callback_data_t          callback_data;
     SSL *                               ssl = NULL;
     static char *                       _function_name_ = 
-        "globus_i_gsi_callback_handshake_callback";
+        "globus_gsi_callback_handshake_callback";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
