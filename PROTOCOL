@@ -44,11 +44,11 @@ MyProxyv2 protocol
     connection and no more data should be sent in either direction.
 
     Update for version 0.3:
-    If the client sends an enpty passphrase, the server can also reply
+    If the client sends an empty passphrase, the server can also reply
     with a MYPROXY_AUTHORIZATION_RESPONSE message:
 
     VERSION=MYPROXYv2
-    COMMAND=2
+    RESPONSE=2
     AUTHORIZATION_DATA=<method id>:<method data>
     ...
 
@@ -57,15 +57,16 @@ MyProxyv2 protocol
     authorization methods along with data needed to use the
     methods. The client will choose one method, create a response
     according to server's challenge and send it back to the server.
-    The first four bytes of the response must convey an method
-    identifier (see myproxy_authorization.[ch] for supported methods),
-    contents of remaining part of the response depends on the
+    The first four bytes of the response convey a method
+    identifier (see myproxy_authorization.[ch] for supported methods).
+    Currently, the identifier is specified in the first byte only.
+    The remaining three bytes are ignored.
+    The contents of the remaining part of the response depends on the
     particular authorization method and is not specified here.
 
     The server will verify the response, check authorization data,
     check authorization policy and reply with either an OK or an ERROR
-    message. Then the protocol will continue with the fifth step of
-    the original protocol (i.e.  delegating of credentials).
+    message. Then the protocol will continue.
 
     Currently there are two supported methods: the original password
     based and a new X.509 certificate based. When using the later one,
