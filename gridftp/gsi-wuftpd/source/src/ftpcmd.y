@@ -217,7 +217,7 @@ extern int port_allowed(const char *remoteaddr);
     ABOR    DELE    CWD     LIST    NLST    SITE
     STAT_CMD    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
-    FAULT   MLST
+    FAULT   MLST    MLSX    MLSD
 
     AUTH    ADAT    PROT    PBSZ    CCC     DCAU
 
@@ -827,7 +827,7 @@ cmd: USER SP username CRLF
 		ls(NULL, 0);
 #endif
             }
-#else /* USE_GLOBUS_DATA_CODE */
+#else
 	    if (log_commands)
 		syslog(LOG_INFO, "NLST");
 	    if ($2 && !restrict_check("."))
@@ -862,6 +862,17 @@ cmd: USER SP username CRLF
 		free($4);
 #endif
 	}
+    | MLST check_login CRLF
+	=	{
+	    if(exit_at == MLST)
+	    {
+		dologout(0);
+	    }
+	    if (log_commands)
+		syslog(LOG_INFO, "DELE dummy");
+        mlst("",get_mlsx_options());
+	}
+
     | MLST check_login SP pathname CRLF
 	=	{
 	    if(exit_at == MLST)
@@ -869,10 +880,36 @@ cmd: USER SP username CRLF
 		dologout(0);
 	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "MLST");
-        mlst("","");
+		syslog(LOG_INFO, "DELE dummy");
+        mlst($4,get_mlsx_options());
 	}
 
+
+    | MLSD check_login CRLF
+	=	{
+	    if(exit_at == MLST)
+	    {
+		dologout(0);
+	    }
+	    if (log_commands)
+		syslog(LOG_INFO, "MLST");
+        retrieve("mlsd %s",get_mlsx_options(),-1,-1);
+	}
+    | MLSD check_login SP pathname CRLF
+	=	{
+	    if(exit_at == LIST)
+	    {
+		dologout(0);
+	    }
+	    if (log_commands)
+		syslog(LOG_INFO, "LIST %s", CHECKNULL($4));
+	    if ($2 && $4 != NULL && !restrict_list_check($4)) {
+		retrieve_is_data = 0;
+        retrieve("mlsd", $4, -1, -1);
+	    }
+	    if ($4 != NULL)
+		free($4);
+	}
 
     | LIST check_login CRLF
 	=	{
@@ -886,35 +923,14 @@ cmd: USER SP username CRLF
 		retrieve_is_data = 0;
 #ifndef INTERNAL_LS
 		if (anonymous && dolreplies)
-		    retrieve_mlst(ls_long, "", -1, -1);
+		    retrieve(ls_long, "", -1, -1);
 		else
-		    retrieve_mlst(ls_short, "", -1, -1);
+		    retrieve(ls_short, "", -1, -1);
 #else
 		ls(NULL, 0);
 #endif
 	    }
 	}
-
-/*     | LIST check_login CRLF */
-/* 	=	{ */
-/* 	    if(exit_at == LIST) */
-/* 	    { */
-/* 		dologout(0); */
-/* 	    } */
-/* 	    if (log_commands) */
-/* 		syslog(LOG_INFO, "LIST"); */
-/* 	    if ($2 && !restrict_check(".")) { */
-/* 		retrieve_is_data = 0; */
-/* #ifndef INTERNAL_LS */
-/* 		if (anonymous && dolreplies) */
-/* 		    retrieve(ls_long, "", -1, -1); */
-/* 		else */
-/* 		    retrieve(ls_short, "", -1, -1); */
-/* #else */
-/* 		ls(NULL, 0); */
-/* #endif */
-/* 	    } */
-/* 	} */
 
     | LIST check_login SP pathname CRLF
 	=	{
@@ -1893,7 +1909,14 @@ password: /* empty */
 byte_size: NUMBER
     ;
 
-opts: SP RETR SP retr_option_list 
+opts: 
+    SP MLSX SP STRING
+    {
+        mlsx_options($4);
+    }
+
+    SP RETR SP retr_option_list 
+    
     ;
 
 byte_range_list:
@@ -3007,6 +3030,21 @@ int yylex(void)
 	    {
 		cbuf[cpos] = c;
 		return DELAYED_PASV;
+	    }
+	    else if(strcasecmp(cp, "mlst") == 0)
+	    {
+		cbuf[cpos] = c;
+		return MLST;
+	    }
+	    else if(strcasecmp(cp, "mlsd") == 0)
+	    {
+		cbuf[cpos] = c;
+		return MLSD;
+	    }
+	    else if(strcasecmp(cp, "mlsx") == 0)
+	    {
+		cbuf[cpos] = c;
+		return MLSX;
 	    }
 	    else
 	    {
