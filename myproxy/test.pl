@@ -4,6 +4,14 @@
 # written by Jim Basney <jbasney@ncsa.uiuc.edu>
 # Feb 11 2003
 
+# Assumes myproxy-server running as root on the local machine if
+# MYPROXY_SERVER not set.
+# Requires a valid proxy credential.
+# Assumes myproxy-server.config has:
+#   1. accepted_credentials, authorized_retrievers, and
+#      authorized_renewers matching the proxy credential
+#   2. default_renewers "none"
+
 use Expect; # if missing, install with: perl -MCPAN -e 'install Expect'
 $Expect::Log_Stdout=0; # suppress output to STDOUT
 
@@ -181,7 +189,7 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
 	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v",
 		 $passphrase . "\n" . $passphrase . "\n");
 }
-if ($exitstatus != 0 && $output =~ /A proxy has been received/) {
+if ($exitstatus != 0) {
     print "SUCCEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
