@@ -355,7 +355,7 @@ globus_gass_transfer_register_accept(
 					    callback,
 					    user_arg);
 
-	if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
+	if(*request == GLOBUS_NULL_HANDLE)
 	{
 	    rc = GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
 	    goto error_exit;

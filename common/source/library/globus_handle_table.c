@@ -144,7 +144,7 @@ globus_handle_table_insert(
 
     if(!handle_table)
     {
-        return GLOBUS_HANDLE_TABLE_NO_HANDLE;
+        return GLOBUS_NULL_HANDLE;
     }
 
     /* see if we have an inactive handle, if so, take it */
@@ -169,7 +169,7 @@ globus_handle_table_insert(
 
             if(!new_table)
             {
-                return GLOBUS_HANDLE_TABLE_NO_HANDLE;
+                return GLOBUS_NULL_HANDLE;
             }
 
             handle_table->table = new_table;
@@ -180,7 +180,7 @@ globus_handle_table_insert(
             globus_libc_malloc(sizeof(globus_l_handle_entry_t));
         if(!entry)
         {
-            return GLOBUS_HANDLE_TABLE_NO_HANDLE;
+            return GLOBUS_NULL_HANDLE;
         }
 
         entry->index = handle_table->next_slot++;

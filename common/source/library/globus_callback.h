@@ -90,47 +90,20 @@ typedef enum
 } globus_callback_error_type_t;
 
 /**
- * Handle for a periodic callback.  This handle can be copied or compared.
+ * Handle for a periodic callback.  This handle can be copied or compared,
+ * and represented as NULL with GLOBUS_NULL_HANDLE
  */
 typedef int                             globus_callback_handle_t;
 
 /**
- * @hideinitializer
- *
- * The null callback handle.
- *
- * This is allows a user to initialize a callback handle to this value and know
- * that it cant be a valid (this value is NOT zero)
- */
-#define GLOBUS_CALLBACK_NULL_HANDLE -1
-
-/**
- * @hideinitializer
- *
- * The null space handle.
- *
- * This is allows a user to initialize a space handle to this value and know
- * that it cant be a valid space (this value is NOT zero)
- */
-#define GLOBUS_CALLBACK_NULL_SPACE -1
-
-/**
- * @hideinitializer
- *
- * The null space attr.
- *
- * This is allows a user to initialize a space attr to this value and know
- * that it cant be a valid attr (this value is NOT zero)
- */
-#define GLOBUS_CALLBACK_NULL_SPACE_ATTR -1
-
-/**
- * Handle for a callback space.  This handle can be copied or compared.
+ * Handle for a callback space.  This handle can be copied or compared
+ * and represented as NULL with GLOBUS_NULL_HANDLE
  */
 typedef int                             globus_callback_space_t;
 
 /**
- * Handle for a space attr.  This handle can be copied or compared.
+ * Handle for a space attr.  This handle can be copied or compared
+ * and represented as NULL with GLOBUS_NULL_HANDLE
  */
 typedef int                             globus_callback_space_attr_t;
 
@@ -789,10 +762,10 @@ typedef enum
  *        with globus_callback_space_destroy()
  *
  * @param attr
- *        a space attr descibing desired behaviors.  If NULL, the default
- *        behavior of GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED is assumed.
- *        This attr is copied into the space, so it is acceptable to destroy
- *        the attr as soon as it is no longer needed
+ *        a space attr descibing desired behaviors.  If GLOBUS_NULL_HANDLE, 
+ *        the default behavior of GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED 
+ *        is assumed.  This attr is copied into the space, so it is acceptable
+ *        to destroy the attr as soon as it is no longer needed
  *
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT on NULL space

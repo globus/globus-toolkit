@@ -103,7 +103,7 @@ globus_gass_transfer_register_get(
 					GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET,
 					callback,
 					user_arg);
-    if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
+    if(*request == GLOBUS_NULL_HANDLE)
     {
 	return GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
     }
@@ -282,7 +282,7 @@ globus_gass_transfer_register_put(
 					callback,
 					user_arg);
 
-    if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
+    if(*request == GLOBUS_NULL_HANDLE)
     {
 	return GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
     }
@@ -469,7 +469,7 @@ globus_gass_transfer_register_append(
 					callback,
 					user_arg);
 
-    if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
+    if(*request == GLOBUS_NULL_HANDLE)
     {
 	return GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
     }
