@@ -9,6 +9,7 @@ auth:
 -- we need to authorize to cas (globus_gss_assist_map_and_authorize?), how does
     this affect above?
 XX authz instrumentation
+-- password file / plaintext password authentication
 
 protocol:
 -- correct FEAT response?
