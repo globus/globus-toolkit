@@ -1257,6 +1257,10 @@ void
 globus_xio_operation_disable_cancel(
     globus_xio_operation_t              op);
 
+globus_bool_t
+globus_xio_operation_is_canceled(
+    globus_xio_operation_t              op);
+
 globus_size_t
 globus_xio_operation_get_wait_for(
     globus_xio_operation_t              op);

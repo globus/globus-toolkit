@@ -1353,13 +1353,14 @@ globus_l_xio_timeout_callback(
         }
         goto exit;
     }
-
-    globus_mutex_lock(&handle->context->mutex);
+    
+    /* if canceling set the res and we will remove this timer event */
+    if(cancel)
     {
-        /* if canceling set the res and we will remove this timer event */
-        if(cancel)
+        rc = GLOBUS_TRUE;
+        
+        globus_mutex_lock(&handle->context->cancel_mutex);
         {
-            rc = GLOBUS_TRUE;
             /* Assume all timeouts originate from user */
             op->canceled = 1;
             if(op->cancel_cb)
@@ -1367,7 +1368,11 @@ globus_l_xio_timeout_callback(
                 op->cancel_cb(op, op->cancel_arg);
             }
         }
-
+        globus_mutex_unlock(&handle->context->cancel_mutex);
+    }
+        
+    globus_mutex_lock(&handle->context->mutex);
+    {
         /* if callback has already arriverd set flag to later
             call accept callback and set rc to remove timed event */
         if(op->state == GLOBUS_XIO_OP_STATE_FINISH_WAITING)

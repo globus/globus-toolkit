@@ -1990,7 +1990,7 @@ globus_xio_operation_enable_cancel(
     }
     else
     {
-        mutex = &op->_op_context->mutex;
+        mutex = &op->_op_context->cancel_mutex;
     }
     
     globus_mutex_lock(mutex);
@@ -2019,7 +2019,7 @@ globus_xio_operation_disable_cancel(
     }
     else
     {
-        mutex = &op->_op_context->mutex;
+        mutex = &op->_op_context->cancel_mutex;
     }
     
     globus_mutex_lock(mutex);
@@ -2028,6 +2028,16 @@ globus_xio_operation_disable_cancel(
         op->cancel_arg = NULL;
     }
     globus_mutex_unlock(mutex);
+}
+
+/* this is intended to only be used with a lock that a user also holds in the
+ * cancel callback.  I have not thought of the validity outside of that use
+ */
+globus_bool_t
+globus_xio_operation_is_canceled(
+    globus_xio_operation_t              op)
+{
+    return op->canceled != 0;
 }
 
 globus_size_t
