@@ -46,7 +46,7 @@ globus_l_xio_ftp_cmd_read_cb(
  *************************************************************************/
 #include "version.h"
 
-static globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
+globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
 {
     "globus_xio_ftp_cmd",
     globus_l_xio_ftp_cmd_activate,
@@ -295,7 +295,7 @@ globus_l_xio_ftp_cmd_open(
         globus_l_xio_ftp_cmd_open_cb,
         handle);
 
-    return GLOBUS_SUCCESS;
+    return res;
 }
 
 globus_result_t
@@ -331,10 +331,11 @@ globus_l_xio_ftp_cmd_request_data(
     else
     {
         handle->out_iovec[0].iov_base = globus_fifo_dequeue(&handle->read_q);
-        handle->out_iovec[0].iov_len = strlen(handle->out_iovec[0].iov_base);
+        handle->out_iovec[0].iov_len = 
+            strlen((char*)handle->out_iovec[0].iov_base);
 
         globus_xio_driver_finished_read(
-            op, GLOBUS_SUCCESS, handle->iovec.iov_len);
+            op, GLOBUS_SUCCESS, handle->out_iovec[0].iov_len);
     }
 
     return res;
