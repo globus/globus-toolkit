@@ -25,6 +25,9 @@ typedef struct
     int                                 ref_count;
 } globus_xio_driver_hook_t;
 
+/* if you call this in a module activate func, you MUST call
+ * globus_xio_driver_unload in module deactivate func
+ */
 globus_result_t
 globus_xio_driver_load(
     const char *                        driver_name,

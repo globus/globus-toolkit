@@ -789,7 +789,7 @@ globus_xio_server_destroy(
     globus_mutex_lock(&xio_server->mutex);
     {
         if(xio_server->state == GLOBUS_XIO_SERVER_STATE_ACCEPTING ||
-           xio_server->state == GLOBUS_XIO_SERVER_STATE_COMPLETEING)
+           xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSED)
         {
             res = GlobusXIOErrorInvalidState(xio_server->state);
         }

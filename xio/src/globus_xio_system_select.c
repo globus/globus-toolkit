@@ -24,6 +24,21 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
         ("[%s] Exiting with error\n", _xio_name))
 
+#define GlobusXIOSystemDebugEnterFD(fd)                                     \
+    GlobusXIOSystemDebugPrintf(                                             \
+        GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
+        ("[%s] fd=%d, Entering\n", _xio_name, (fd)))
+
+#define GlobusXIOSystemDebugExitFD(fd)                                      \
+    GlobusXIOSystemDebugPrintf(                                             \
+        GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
+        ("[%s] fd=%d, Exiting\n", _xio_name, (fd)))
+
+#define GlobusXIOSystemDebugExitWithErrorFD(fd)                             \
+    GlobusXIOSystemDebugPrintf(                                             \
+        GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
+        ("[%s] fd=%d, Exiting with error\n", _xio_name, (fd)))
+
 enum globus_l_xio_error_levels
 {
     GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE     = 1,
@@ -652,7 +667,7 @@ globus_l_xio_system_register_read(
     globus_bool_t                       canceled;
     GlobusXIOName(globus_l_xio_system_register_read);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     /* I have to do this outside the lock because of lock inversion issues */
     GlobusXIODriverEnableCancel(
@@ -702,7 +717,7 @@ globus_l_xio_system_register_read(
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_canceled:
@@ -713,7 +728,7 @@ error_too_many_fds:
     GlobusXIODriverDisableCancel(read_info->op);
 
 error_cancel_enable:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -727,7 +742,7 @@ globus_l_xio_system_register_write(
     globus_bool_t                       canceled;
     GlobusXIOName(globus_l_xio_system_register_write);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     /* I have to do this outside the lock because of lock inversion issues */
     GlobusXIODriverEnableCancel(
@@ -777,7 +792,7 @@ globus_l_xio_system_register_write(
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_canceled:
@@ -788,7 +803,7 @@ error_too_many_fds:
     GlobusXIODriverDisableCancel(write_info->op);
 
 error_cancel_enable:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -800,13 +815,13 @@ globus_l_xio_system_unregister_read(
 {
     GlobusXIOName(globus_l_xio_system_unregister_read);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     globus_assert(FD_ISSET(fd, globus_l_xio_system_read_fds));
     FD_CLR(fd, globus_l_xio_system_read_fds);
     globus_l_xio_system_read_operations[fd] = GLOBUS_NULL;
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
 }
 
 /* called locked */
@@ -817,13 +832,13 @@ globus_l_xio_system_unregister_write(
 {
     GlobusXIOName(globus_l_xio_system_unregister_write);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     globus_assert(FD_ISSET(fd, globus_l_xio_system_write_fds));
     FD_CLR(fd, globus_l_xio_system_write_fds);
     globus_l_xio_system_write_operations[fd] = GLOBUS_NULL;
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
 }
 
 static
@@ -834,9 +849,9 @@ globus_l_xio_system_kickout(
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_l_xio_system_kickout);
 
-    GlobusXIOSystemDebugEnter();
-
     op_info = (globus_l_operation_info_t *) user_arg;
+
+    GlobusXIOSystemDebugEnterFD(op_info->fd);
 
     GlobusXIODriverDisableCancel(op_info->op);
 
@@ -886,10 +901,9 @@ globus_l_xio_system_kickout(
 
         break;
     }
-
+    
+    GlobusXIOSystemDebugExitFD(op_info->fd);
     GlobusIXIOSystemFreeOperation(op_info);
-
-    GlobusXIOSystemDebugExit();
 }
 
 static
@@ -949,7 +963,7 @@ globus_l_xio_system_try_read(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_read);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -980,13 +994,13 @@ globus_l_xio_system_try_read(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
 error_eof:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1002,7 +1016,7 @@ globus_l_xio_system_try_readv(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_readv);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1033,13 +1047,13 @@ globus_l_xio_system_try_readv(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
 error_eof:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1056,7 +1070,7 @@ globus_l_xio_system_try_recv(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_recv);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1087,13 +1101,13 @@ globus_l_xio_system_try_recv(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
 error_eof:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1112,7 +1126,7 @@ globus_l_xio_system_try_recvfrom(
     globus_size_t                       len;
     GlobusXIOName(globus_l_xio_system_try_recvfrom);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1150,13 +1164,13 @@ globus_l_xio_system_try_recvfrom(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
 error_eof:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1172,7 +1186,7 @@ globus_l_xio_system_try_recvmsg(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_recvmsg);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1203,13 +1217,13 @@ globus_l_xio_system_try_recvmsg(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
 error_eof:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1225,7 +1239,7 @@ globus_l_xio_system_try_write(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_write);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1251,12 +1265,12 @@ globus_l_xio_system_try_write(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1272,7 +1286,7 @@ globus_l_xio_system_try_writev(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_writev);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1298,12 +1312,12 @@ globus_l_xio_system_try_writev(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1320,7 +1334,7 @@ globus_l_xio_system_try_send(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_send);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1346,12 +1360,12 @@ globus_l_xio_system_try_send(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1369,7 +1383,7 @@ globus_l_xio_system_try_sendto(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_sendto);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1401,12 +1415,12 @@ globus_l_xio_system_try_sendto(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1422,7 +1436,7 @@ globus_l_xio_system_try_sendmsg(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_sendmsg);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -1448,12 +1462,12 @@ globus_l_xio_system_try_sendmsg(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_errno:
     *nbytes = 0;
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -1468,7 +1482,7 @@ globus_l_xio_system_handle_read(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_handle_read);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     handled_it = GLOBUS_FALSE;
     read_info = globus_l_xio_system_read_operations[fd];
@@ -1637,7 +1651,7 @@ error_canceled:
         }
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return handled_it;
 }
 
@@ -1652,7 +1666,7 @@ globus_l_xio_system_handle_write(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_handle_write);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     handled_it = GLOBUS_FALSE;
     result = GLOBUS_SUCCESS;
@@ -1812,7 +1826,7 @@ error_canceled:
         }
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return handled_it;
 }
 
@@ -2037,7 +2051,7 @@ globus_xio_system_register_open(
 
     *out_fd = fd;
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2065,7 +2079,7 @@ globus_xio_system_register_connect(
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_xio_system_register_connect);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     GlobusIXIOSystemAddNonBlocking(fd, rc);
     if(rc < 0)
@@ -2122,7 +2136,7 @@ globus_xio_system_register_connect(
 
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2132,7 +2146,7 @@ error_op_info:
 error_connect:
 error_nonblocking:
     GlobusIXIOSystemCloseFd(fd);
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -2148,7 +2162,7 @@ globus_xio_system_register_accept(
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_xio_system_register_accept);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(listener_fd);
 
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2174,14 +2188,14 @@ globus_xio_system_register_accept(
         goto error_register;
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(listener_fd);
     return GLOBUS_SUCCESS;
 
 error_register:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(listener_fd);
     return result;
 }
 
@@ -2200,7 +2214,7 @@ globus_xio_system_register_read(
     struct iovec *                      iov;
     GlobusXIOName(globus_xio_system_register_read);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2248,7 +2262,7 @@ globus_xio_system_register_read(
         goto error_register;
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2261,7 +2275,7 @@ error_iovec:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -2283,7 +2297,7 @@ globus_xio_system_register_read_ex(
     struct msghdr *                     msghdr;
     GlobusXIOName(globus_xio_system_register_read_ex);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     if(!flags && !from)
     {
@@ -2363,7 +2377,7 @@ globus_xio_system_register_read_ex(
         goto error_register;
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2379,7 +2393,7 @@ error_iovec:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -2398,7 +2412,7 @@ globus_xio_system_register_write(
     struct iovec *                      iov;
     GlobusXIOName(globus_xio_system_register_write);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2446,7 +2460,7 @@ globus_xio_system_register_write(
         goto error_register;
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2459,7 +2473,7 @@ error_iovec:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -2482,7 +2496,7 @@ globus_xio_system_register_write_ex(
     globus_sockaddr_t *                 to;
     GlobusXIOName(globus_xio_system_register_write_ex);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     if(!flags && !to)
     {
@@ -2577,7 +2591,7 @@ globus_xio_system_register_write_ex(
         goto error_register;
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2599,7 +2613,7 @@ error_to:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
@@ -2615,7 +2629,7 @@ globus_xio_system_register_close(
     int                                 rc;
     GlobusXIOName(globus_xio_system_register_close);
 
-    GlobusXIOSystemDebugEnter();
+    GlobusXIOSystemDebugEnterFD(fd);
 
     do
     {
@@ -2651,7 +2665,7 @@ globus_xio_system_register_close(
         goto error_register;
     }
 
-    GlobusXIOSystemDebugExit();
+    GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_register:
@@ -2659,7 +2673,7 @@ error_register:
 
 error_close_info:
 error_close:
-    GlobusXIOSystemDebugExitWithError();
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
 
