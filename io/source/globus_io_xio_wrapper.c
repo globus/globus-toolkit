@@ -1008,7 +1008,7 @@ globus_io_file_posix_convert(
         goto error_push;
     }
     
-    result = globus_xio_target_init(&target, myattr, GLOBUS_NULL, stack);
+    result = globus_xio_target_init(&target, myattr, "", stack);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_target;
@@ -1311,17 +1311,19 @@ globus_io_read(
 error_register:
     if(globus_xio_error_is_eof(result))
     {
-        result = globus_io_error_construct_eof(
-            GLOBUS_IO_MODULE,
-            globus_error_get(result),
-            (*handle)->io_handle);
+        result = globus_error_put(
+            globus_io_error_construct_eof(
+                GLOBUS_IO_MODULE,
+                globus_error_get(result),
+                (*handle)->io_handle));
     }
     else if(globus_xio_error_is_canceled(result))
     {
-        result = globus_io_error_construct_io_cancelled(
-            GLOBUS_IO_MODULE,
-            globus_error_get(result),
-            (*handle)->io_handle);
+        result = globus_error_put(
+            globus_io_error_construct_io_cancelled(
+                GLOBUS_IO_MODULE,
+                globus_error_get(result),
+                (*handle)->io_handle));
     }
     
     return result;
@@ -1449,10 +1451,11 @@ globus_io_write(
 error_register:
     if(globus_xio_error_is_canceled(result))
     {
-        result = globus_io_error_construct_io_cancelled(
-            GLOBUS_IO_MODULE,
-            globus_error_get(result),
-            (*handle)->io_handle);
+        result = globus_error_put(
+            globus_io_error_construct_io_cancelled(
+                GLOBUS_IO_MODULE,
+                globus_error_get(result),
+                (*handle)->io_handle));
     }
     
     return result;
