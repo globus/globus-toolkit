@@ -209,6 +209,16 @@ typedef struct globus_gfs_ipc_request_s
 
 static globus_xio_stack_t               globus_l_gfs_ipc_stack;
 
+static void
+globus_l_gfs_ipc_read_header_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
+
 /************************************************************************
  *   open
  *
@@ -218,6 +228,8 @@ static void
 globus_l_gfs_ipc_open_kickout(
     void *                              user_arg)
 {
+    globus_byte_t *                     new_buf;
+    globus_result_t                     res;
     globus_i_gfs_ipc_handle_t *         ipc;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
@@ -226,6 +238,24 @@ globus_l_gfs_ipc_open_kickout(
     if(ipc->open_cb != NULL)
     {
         ipc->open_cb(ipc, GLOBUS_SUCCESS, ipc->open_arg);
+    }
+
+    if(!ipc->local)
+    {
+        new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+        res = globus_xio_register_read(
+            ipc->xio_handle,
+            new_buf,
+            GFS_IPC_HEADER_SIZE,
+            GFS_IPC_HEADER_SIZE,
+            NULL,
+            globus_l_gfs_ipc_read_header_cb,
+            ipc);
+        if(res != GLOBUS_SUCCESS && ipc->error_cb)
+        {
+            ipc->error_cb(ipc, res, ipc->error_arg);
+            globus_free(new_buf);
+        }
     }
 }
 
@@ -511,7 +541,7 @@ globus_l_gfs_ipc_read_body_cb(
         GFS_IPC_HEADER_SIZE,
         GFS_IPC_HEADER_SIZE,
         NULL,
-        globus_l_gfs_ipc_read_body_cb,
+        globus_l_gfs_ipc_read_header_cb,
         ipc);
     if(res != GLOBUS_SUCCESS)
     {
@@ -577,7 +607,8 @@ globus_l_gfs_ipc_read_header_cb(
                     globus_hashtable_lookup(&ipc->call_table, (void *)id);
                 if(request == NULL)
                 {
-                    /* XXX this means that other side wrote bad things */
+                    res = IPC_ERROR;
+                    goto lock_err;
                 }
                 break;
 
@@ -593,34 +624,37 @@ globus_l_gfs_ipc_read_header_cb(
                 if(request == NULL)
                 {
                     res = GlobusGFSErrorMemory("request");
-                    goto err;
+                    goto lock_err;
                 }
                 request->id = id;
                 request->type = type;
                 request->ipc = ipc;
 
             default:
-                /* XXX a bad message */
+                res = IPC_ERROR;
+                goto lock_err;
                 break;
+        }
+
+        res = globus_xio_register_read(
+            handle,
+            new_buf,
+            reply_size,
+            reply_size,
+            NULL,
+            globus_l_gfs_ipc_read_body_cb,
+            request);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto lock_err;
         }
     }
     globus_mutex_unlock(&ipc->mutex);
 
-    res = globus_xio_register_read(
-        handle,
-        new_buf,
-        reply_size,
-        reply_size,
-        NULL,
-        globus_l_gfs_ipc_read_body_cb,
-        request);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-
     return;
 
+  lock_err:
+    globus_mutex_unlock(&ipc->mutex);
   err:
     if(buffer != NULL)
     {
