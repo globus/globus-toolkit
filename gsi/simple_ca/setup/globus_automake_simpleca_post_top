@@ -1,0 +1,5 @@
+
+dist-hook:
+	tar cvf - -C template `cat template_list` | gzip -c > globus_simple_ca_setup_template.tar.gz
+	$(GPT_LOCATION)/sbin/gpt_create_automake_rules --excludes=doxygen -srcdir=$(top_distdir)
+

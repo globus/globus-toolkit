@@ -56,6 +56,9 @@ if test -d "${GRID_CA_DIR}"; then
 	exit;
     fi
 else
+    if [ ! -d "${HOME}/.globus" ]; then
+	${GLOBUS_SH_MKDIR-mkdir} ${HOME}/.globus
+    fi
     ${GLOBUS_SH_MKDIR-mkdir} ${GRID_CA_DIR}
 fi
 
@@ -127,9 +130,8 @@ while [ -z "${got_subject}" ]; do
     echo
     echo -n "Do you want to keep this as the CA subject (y/n) [y]: "
 
-    answer="y"
     read _answer
-    answer=${_answer:-${answer}}
+    answer=${_answer:-y}
 
     if [ "`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`" == 'n' ]; then
     
@@ -384,6 +386,13 @@ ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
 This file must be distributed to any host wishing to request
 certificates from this CA.
+
+To install this package, run:
+
+\$GLOBUS_LOCATION/sbin/globus-build -install-only \\
+    ${CA_UTILS_PACKAGE}
+
+CA setup complete.
 
 EOF
 

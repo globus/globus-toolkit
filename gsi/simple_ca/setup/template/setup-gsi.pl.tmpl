@@ -251,7 +251,7 @@ sub pod2usage
 
 sub setup_config_files {
 
-if(! -l "$target_dir/grid-security.conf") 
+if((! -l "$target_dir/grid-security.conf") && (-f "$target_dir/grid-security.conf")) 
 {
     #
     # if the security config files aren't symbolic links, then move them
@@ -356,7 +356,6 @@ if(defined($opt_default))
     $ret_value += ($? >> 8);
     system "rm -f $target_dir/globus-host-ssl.conf";
     $ret_value += ($ >> 8);
-    die "\nERROR: Can't remove config files (symlinks) in $target_dir\n\n" if ($ret_value != 0);
 
     my $ret_value  = symlink("$trusted_certs_dir/grid-security.conf.$ca_install_hash",   "$target_dir/grid-security.conf");
        $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.$ca_install_hash", "$target_dir/globus-user-ssl.conf");

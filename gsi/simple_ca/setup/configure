@@ -31,41 +31,11 @@
 
 
 
-# libtool.m4 - Configure libtool for the host system. -*-Shell-script-*-
 
-# serial 46 AC_PROG_LIBTOOL
-
+# serial 40 AC_PROG_LIBTOOL
 
 
 
-# _LT_AC_CHECK_DLFCN
-# --------------------
-# _LT_AC_CHECK_DLFCN
-
-# AC_LIBTOOL_SYS_GLOBAL_SYMBOL_PIPE
-# ---------------------------------
- # AC_LIBTOOL_SYS_GLOBAL_SYMBOL_PIPE
-
-# _LT_AC_LIBTOOL_SYS_PATH_SEPARATOR
-# ---------------------------------
-# _LT_AC_LIBTOOL_SYS_PATH_SEPARATOR
-
-# _LT_AC_PROG_ECHO_BACKSLASH
-# --------------------------
-# Add some code to the start of the generated configure script which
-# will find an echo command which doesn;t interpret backslashes.
-# _LT_AC_PROG_ECHO_BACKSLASH
-
-# _LT_AC_TRY_DLOPEN_SELF (ACTION-IF-TRUE, ACTION-IF-TRUE-W-USCORE,
-#                           ACTION-IF-FALSE, ACTION-IF-CROSS-COMPILING)
-# ------------------------------------------------------------------
-# _LT_AC_TRY_DLOPEN_SELF
-
-# AC_LIBTOOL_DLOPEN_SELF
-# -------------------
-# AC_LIBTOOL_DLOPEN_SELF
-
-# _LT_AC_LTCONFIG_HACK
 
 # AC_LIBTOOL_DLOPEN - enable checks for dlopen support
 
@@ -98,36 +68,11 @@
 #   `yes'.
 
 
-# AC_DISABLE_FAST_INSTALL - set the default to --disable-fast-install
-
-
-# AC_LIBTOOL_PICMODE - implement the --with-pic flag
-# Usage: AC_LIBTOOL_PICMODE[(MODE)]
-#   Where MODE is either `yes' or `no'.  If omitted, it defaults to
-#   `both'.
-
-
-
-# AC_PATH_TOOL_PREFIX - find a file program which can recognise shared library
-
-
-
-# AC_PATH_MAGIC - find a file program which can recognise a shared library
-
+# AC_ENABLE_FAST_INSTALL - set the default to --disable-fast-install
 
 
 # AC_PROG_LD - find the path to the GNU or non-GNU linker
 
-
-# AC_PROG_LD_GNU -
-
-
-# AC_PROG_LD_RELOAD_FLAG - find reload flag for linker
-#   -- PORTME Some linkers may need a different reload flag.
-
-
-# AC_DEPLIBS_CHECK_METHOD - how to check for library dependencies
-#  -- PORTME fill in with the dynamic library characteristics
 
 
 
@@ -162,16 +107,6 @@
 # In the future, this macro may have to be called after AC_PROG_LIBTOOL.
 
 
-# old names
-
-
-
-
-
-
-
-
-# This is just to silence aclocal about the macro not being used
 
 
 # Do all the work for Automake.  This macro actually does too much --
@@ -723,7 +658,7 @@ fi
 
 
 echo $ac_n "checking whether to enable maintainer-specific portions of Makefiles""... $ac_c" 1>&6
-echo "configure:727: checking whether to enable maintainer-specific portions of Makefiles" >&5
+echo "configure:662: checking whether to enable maintainer-specific portions of Makefiles" >&5
     # Check whether --enable-maintainer-mode or --disable-maintainer-mode was given.
 if test "${enable_maintainer_mode+set}" = set; then
   enableval="$enable_maintainer_mode"
@@ -1000,7 +935,7 @@ ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:1004: checking for a BSD compatible install" >&5
+echo "configure:939: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1053,7 +988,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 echo $ac_n "checking whether build environment is sane""... $ac_c" 1>&6
-echo "configure:1057: checking whether build environment is sane" >&5
+echo "configure:992: checking whether build environment is sane" >&5
 # Just in case
 sleep 1
 echo timestamp > conftestfile
@@ -1110,7 +1045,7 @@ test "$program_suffix" != NONE &&
 test "$program_transform_name" = "" && program_transform_name="s,x,x,"
 
 echo $ac_n "checking whether ${MAKE-make} sets \${MAKE}""... $ac_c" 1>&6
-echo "configure:1114: checking whether ${MAKE-make} sets \${MAKE}" >&5
+echo "configure:1049: checking whether ${MAKE-make} sets \${MAKE}" >&5
 set dummy ${MAKE-make}; ac_make=`echo "$2" | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_prog_make_${ac_make}_set'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1156,7 +1091,7 @@ EOF
 
 missing_dir=`cd $ac_aux_dir && pwd`
 echo $ac_n "checking for working aclocal""... $ac_c" 1>&6
-echo "configure:1160: checking for working aclocal" >&5
+echo "configure:1095: checking for working aclocal" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1169,7 +1104,7 @@ else
 fi
 
 echo $ac_n "checking for working autoconf""... $ac_c" 1>&6
-echo "configure:1173: checking for working autoconf" >&5
+echo "configure:1108: checking for working autoconf" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1182,7 +1117,7 @@ else
 fi
 
 echo $ac_n "checking for working automake""... $ac_c" 1>&6
-echo "configure:1186: checking for working automake" >&5
+echo "configure:1121: checking for working automake" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1195,7 +1130,7 @@ else
 fi
 
 echo $ac_n "checking for working autoheader""... $ac_c" 1>&6
-echo "configure:1199: checking for working autoheader" >&5
+echo "configure:1134: checking for working autoheader" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1208,7 +1143,7 @@ else
 fi
 
 echo $ac_n "checking for working makeinfo""... $ac_c" 1>&6
-echo "configure:1212: checking for working makeinfo" >&5
+echo "configure:1147: checking for working makeinfo" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.

@@ -63,13 +63,13 @@ s%@mandir@%${prefix}/man%g
 s%@MAINTAINER_MODE_TRUE@%#%g
 s%@MAINTAINER_MODE_FALSE@%%g
 s%@MAINT@%#%g
-s%@GPT_LOCATION@%/home/globdev/INSTALL-simple_ca-over-beta2%g
+s%@GPT_LOCATION@%/home/globdev/INSTALL-beta2-gcc32dbg-gainly%g
 s%@GPT_CFLAGS@%%g
-s%@GPT_INCLUDES@%-I/home/globdev/INSTALL-simple_ca-over-beta2/include/noflavor %g
+s%@GPT_INCLUDES@%-I/home/globdev/INSTALL-beta2-gcc32dbg-gainly/include/noflavor %g
 s%@GPT_EXTERNAL_INCLUDES@%%g
 s%@GPT_EXTERNAL_LIBS@%%g
 s%@GPT_LIBS@% %g
-s%@GPT_LDFLAGS@% -L/home/globdev/INSTALL-simple_ca-over-beta2/lib %g
+s%@GPT_LDFLAGS@% -L/home/globdev/INSTALL-beta2-gcc32dbg-gainly/lib %g
 s%@GPT_CONFIG_CFLAGS@%%g
 s%@GPT_CONFIG_INCLUDES@%%g
 s%@GPT_CONFIG_LIBS@%%g
@@ -103,7 +103,7 @@ s%@EXEEXT@%%g
 s%@FILELIST_FILE@%/home/globdev/devel/globus-cvs/campaign-branches/simple_ca-branch/gsi/simple_ca/setup/pkgdata/master.filelist%g
 s%@GPT_MAJOR_VERSION@%0%g
 s%@GPT_MINOR_VERSION@%1%g
-s%@DIRT_TIMESTAMP@%1015829959%g
+s%@DIRT_TIMESTAMP@%1016242170%g
 s%@DIRT_BRANCH_ID@%7%g
 s%@LIBTOOL@%$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)%g
 s%@LN_S@%%g
