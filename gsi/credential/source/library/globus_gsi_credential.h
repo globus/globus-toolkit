@@ -1,3 +1,14 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_credential.h
+ * Globus GSI Credential Library
+ * @author Sam Lang, Sam Meder
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H
 #define GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H
@@ -80,7 +91,9 @@ typedef enum
 {
     GLOBUS_PROXY,
     GLOBUS_USER,
-    GLOBUS_HOST
+    GLOBUS_HOST,
+    GLOBUS_SERVICE,
+    GLOBUS_SO_END
 } globus_gsi_cred_type_t;
 
 /**
@@ -154,13 +167,19 @@ globus_result_t globus_gsi_cred_handle_attrs_copy(
 
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
-    char *                              desired_subject);
+    char *                              desired_subject,
+    char *                              cert_file,
+    char *                              key_file,
+    char *                              proxy_file);
 
 globus_result_t globus_gsi_cred_read_proxy(
-    globus_gsi_cred_handle_t            handle);
+    globus_gsi_cred_handle_t            handle,
+    char *                              proxy_filename);
 
 globus_result_t globus_gsi_cred_read_cert_and_key(
-    globus_gsi_cred_handle_t            handle);
+    globus_gsi_cred_handle_t            handle,
+    char *                              cert_filename,
+    char *                              key_filename);
 
 
 /* Read a credential from a BIO. IE: read cert, read key, read cert
@@ -184,7 +203,8 @@ globus_result_t globus_gsi_cred_write(
  */
 
 globus_result_t globus_gsi_cred_write_proxy(
-    globus_gsi_cred_handle_t            handle);
+    globus_gsi_cred_handle_t            handle,
+    char *                              proxy_filename);
 
 /* Determine whether the credential structure contains a proxy */
 
@@ -239,34 +259,6 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
 globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char **                             ca_cert_dir);
-
-
-globus_result_t globus_gsi_cred_handle_attrs_set_proxy_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              proxy_file);
-
-
-globus_result_t globus_gsi_cred_handle_attrs_get_proxy_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             proxy_file);
-
-globus_result_t globus_gsi_cred_handle_attrs_set_cert_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              cert_file);
-
-
-globus_result_t globus_gsi_cred_handle_attrs_get_cert_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             cert_file);
-
-globus_result_t globus_gsi_cred_handle_attrs_set_key_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              key_file);
-
-
-globus_result_t globus_gsi_cred_handle_attrs_get_key_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             key_file);
 
 globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,

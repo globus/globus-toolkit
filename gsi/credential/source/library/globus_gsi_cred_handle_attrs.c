@@ -1,3 +1,13 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_cred_handle_attrs.c
+ * @author Sam Lang, Sam Meder
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_cred_system_config.h"
@@ -31,7 +41,7 @@ globus_gsi_cred_handle_attrs_init(
     char *                              error_string = NULL;
     globus_result_t                     result;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_init";
 
 
@@ -53,31 +63,8 @@ globus_gsi_cred_handle_attrs_init(
            (int) NULL, 
            sizeof(globus_i_gsi_cred_handle_attrs_t));
     
-    result = globus_gsi_cred_get_cert_dir(
+    result = GLOBUS_GSI_CRED_GET_CERT_DIR(
         &(*handle_attrs)->ca_cert_dir);
-    if(result != GLOBUS_SUCCESS)
-    {
-        error_string = __FILE__":""__LINE__"
-            ": error in cred_handle_attrs_init";
-        goto error_exit;
-    }
-
-    /* default init is always to read a proxy */
-    result = globus_gsi_cred_get_proxy_filename(&(*handle_attrs)->proxy_file,
-                                                1);
-    if(result != GLOBUS_SUCCESS)
-    {
-        error_string = __FILE__":""__LINE__"
-            ": error in cred_handle_attrs_init";
-        goto error_exit;
-    }
-
-    /* always sets the cert and key filenames to the user's cert and key
-     * as the default.
-     */
-    result = globus_gsi_cred_get_user_cert_filename(
-        &(*handle_attrs)->cert_file,
-        &(*handle_attrs)->key_file);
     if(result != GLOBUS_SUCCESS)
     {
         error_string = __FILE__":""__LINE__"
@@ -87,11 +74,13 @@ globus_gsi_cred_handle_attrs_init(
 
     (*handle_attrs)->search_order = 
         (globus_gsi_cred_type_t *) 
-        globus_malloc(sizeof(globus_gsi_cred_type_t) * 3);
+        globus_malloc(sizeof(globus_gsi_cred_type_t) * 5);
 
     (*handle_attrs)->search_order[0] = GLOBUS_HOST;
     (*handle_attrs)->search_order[1] = GLOBUS_PROXY;
     (*handle_attrs)->search_order[2] = GLOBUS_USER;
+    (*handle_attrs)->search_order[3] = GLOBUS_SERVICE;
+    (*handle_attrs)->search_order[4] = GLOBUS_SO_END;
 
     return GLOBUS_SUCCESS;
 
@@ -136,18 +125,6 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
         {
             globus_free(handle_attrs->ca_cert_dir);
         }
-        if(handle_attrs->proxy_file != NULL)
-        {
-            globus_free(handle_attrs->proxy_file);
-        }
-        if(handle_attrs->cert_file != NULL)
-        {
-            globus_free(handle_attrs->cert_file);
-        }
-        if(handle_attrs->key_file != NULL)
-        {
-            globus_free(handle_attrs->key_file);
-        }
         if(handle_attrs->search_order != NULL)
         {
             globus_free(handle_attrs->search_order);
@@ -180,7 +157,10 @@ globus_gsi_cred_handle_attrs_copy(
     globus_gsi_cred_handle_attrs_t      a,
     globus_gsi_cred_handle_attrs_t *    b)
 {
-    const char *                        _FUNCTION_NAME_ =
+    int                                 size;
+    int                                 index;
+
+    static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_copy";
 
     if(a == NULL || b == NULL)
@@ -200,45 +180,27 @@ globus_gsi_cred_handle_attrs_copy(
             globus_l_gsi_cred_error_strings[
                 GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
     }
-    if(((*b)->proxy_file = strdup(a->proxy_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    if(((*b)->cert_file = strdup(a->cert_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    if(((*b)->key_file = strdup(a->key_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
 
-    if(memcpy((*b)->search_order, 
-              a->search_order) == NULL)
+    size = -1;
+    while(a->search_order[++size] != GLOBUS_SO_END);
+
+    if(((*b)->search_order = 
+        (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
+                                          * (size + 1))) == NULL)
     {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
+        return globus_error_wrap_errno_error(
+            GLOBUS_GSI_CREDENTIAL_MODULE,
+            errno,
+            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
+            __FILE__":__LINE__:%s:%s",
+            _function_name_,
+            globus_l_gsi_cred_error_strings[
+                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
+    }        
+
+    for(index = 0; index <= size; ++index)
+    {
+        (*b)->search_order[index] = a->search_order[index];
     }
 
     return GLOBUS_SUCCESS;
@@ -266,7 +228,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char *                              ca_cert_dir)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_set_ca_cert_dir";
     
     if(handle_attrs == NULL)
@@ -312,7 +274,7 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char **                             ca_cert_dir)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_get_ca_cert_dir";
 
     if(handle_attrs == NULL)
@@ -328,286 +290,6 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     }
 
     if((*ca_cert_dir = strdup(handle_attrs->ca_cert_dir)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    return GLOBUS_SUCCESS;
-}
-
-/**
- * Set Proxy File
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Set the Proxy Filename of the handle attributes
- *
- * @param handle_attrs
- *        handle attributes containing the proxy filename to be set
- * @param proxy_file
- *        the proxy filename to set it to
- * @return 
- *        GLOBUS_SUCCESS if no errors occurred.  In case of
- *        a null handle_attrs, 
- *        an error object id is returned
- */
-globus_result_t globus_gsi_cred_handle_attrs_set_proxy_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              proxy_file)
-{
-    const char *                        _FUNCTION_NAME_ =
-        "globus_gsi_cred_handle_attrs_set_proxy_file";
-
-    if(handle_attrs == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
-    }
-    
-    if((handle_attrs->proxy_file = strdup(proxy_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
-/**
- * Get Proxy Filename
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Get the Proxy Filename of the Credential Handle Attributes
- *
- * @param handle_attrs
- *        The handle attributes to get the proxy filename from
- * @param proxy_file
- *        The proxy filename to get
- * @return
- *        GLOBUS_SUCCESS if no error.  In case of a null handle_attrs
- *        or proxy_file is null, return an error object id
- */
-globus_result_t globus_gsi_cred_handle_attrs_get_proxy_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             proxy_file)
-{
-    const char *                        _FUNCTION_NAME_ =
-        "globus_gsi_cred_handle_attrs_get_proxy_file";
-
-    if(handle_attrs == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
-    }
-    
-    if(proxy_file == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_BAD_PARAMETER);
-    }
-
-    if(*proxy_file = strdup(handle_attrs->proxy_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
-/**
- * Set Cert File
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Set the certificate filename of the credential handle attributes
- *
- * @param handle_attrs
- *        the handle attributes holding the cert filename to be set
- * @param cert_file
- *        the new cert filename value
- * @return
- *        GLOBUS_SUCCESS if no error.  If the handle_attrs is null,
- *        an error object id is returned.
- */
-globus_result_t globus_gsi_cred_handle_attrs_set_cert_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              cert_file)
-{
-    const char *                        _FUNCTION_NAME_ =
-        "globus_gsi_cred_handle_attrs_set_cert_file";
-
-    if(handle_attrs == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
-    }
-    
-    if(handle_attrs->cert_file = strdup(cert_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
-/**
- * Get Cert File
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Get the certificate filename from the credential handle attributes
- *
- * @param handle_attrs
- *        the handle attributes to get the user certificate filename from
- * @param cert_file
- *        the filename from the handle attributes
- * @return
- *        GLOBUS_SUCCESS unless the handle_attrs or cert_file is null
- */ 
-globus_result_t globus_gsi_cred_handle_attrs_get_cert_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             cert_file)
-{
-    const char *                        _FUNCTION_NAME_ =
-        "globus_gsi_cred_handle_attrs_get_cert_file";
-
-    if(handle_attrs == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
-    }
-    
-    if(cert_file == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_BAD_PARAMETER);
-    }
-
-    if(*cert_file = strdup(handle_attrs->cert_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
-/**
- * Set Key File
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Set the User's Key Filename
- *
- * @param handle_attrs
- *        the handle attributes to set the key filename of
- * @param key_filename
- *        the value to set it to
- * @return
- *        GLOBUS_SUCCESS unless handle_attrs is null
- */
-globus_result_t globus_gsi_cred_handle_attrs_set_key_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char *                              key_file)
-{
-    const char *                        _FUNCTION_NAME_ =
-        "globus_gsi_cred_handle_attrs_set_key_file";
-
-    if(handle_attrs == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
-    }
-    
-    if((handle_attrs->key_file = strdup(key_file)) == NULL)
-    {
-        return globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS]);
-    }
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
-/**
- * Get Key File
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Get the User's Key Filename
- *
- * @param handle_attrs
- *        The handle attributes containing the value of the user's key filename
- * @param key_file
- *        The resulting key filename to be set
- * @return 
- *        GLOBUS_SUCCESS unless handle_attrs or key_file is null
- */
-globus_result_t globus_gsi_cred_handle_attrs_get_key_file(
-    globus_gsi_cred_handle_attrs_t      handle_attrs,
-    char **                             key_file)
-{
-    const char *                        _FUNCTION_NAME_ =
-        "globus_gsi_cred_handle_attrs_get_key_file";
-
-    if(handle_attrs == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_NULL_HANDLE_ATTRS);
-    }
-    
-    if(key_file == NULL)
-    {
-        return GLOBUS_GSI_CRED_ERROR_RESULT(
-            GLOBUS_GSI_CRED_ERROR_BAD_PARAMETER);
-    }
-
-    if((*key_file = strdup(handle_attrs->key_file)) == NULL)
     {
         return globus_error_wrap_errno_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
@@ -644,7 +326,10 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     globus_gsi_cred_type_t              search_order[])
 {
-    const char *                        _FUNCTION_NAME_ =
+    int                                 size;
+    int                                 index;
+
+    static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_set_search_order";
 
     if(handle_attrs == NULL)
@@ -655,7 +340,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
 
 
     size = -1;
-    while(search_order[++size]);
+    while(search_order[++size] != GLOBUS_SO_END);
 
     if((handle_attrs->search_order = 
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
@@ -700,7 +385,7 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
 {
     int                                 size;
     int                                 index;
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_handle_attrs_get_search_order";
 
     if(handle_attrs == NULL)
@@ -716,7 +401,7 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
     }
 
     size = -1;
-    while(handle->search_order[++size]);
+    while(handle_attrs->search_order[++size] != GLOBUS_SO_END);
 
     if((*search_order = 
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
@@ -734,7 +419,7 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
 
     for(index = 0; index <= size; ++index)
     {
-        search_order[index] = handle->search_order[index];
+        (*search_order)[index] = handle_attrs->search_order[index];
     }
 
     return GLOBUS_SUCCESS;

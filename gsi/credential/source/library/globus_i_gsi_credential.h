@@ -33,7 +33,7 @@ EXTERN_C_BEGIN
     globus_i_gsi_credential_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _FUNCTION_NAME_, \
+        _function_name_, \
         __LINE__, \
         NULL)
 
@@ -41,7 +41,7 @@ EXTERN_C_BEGIN
     globus_i_gsi_credential_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _FUNCTION_NAME_, \
+        _function_name_, \
         __LINE__, \
         NULL)
 
@@ -50,7 +50,7 @@ EXTERN_C_BEGIN
         _TOP_RESULT_, \
         _ERRORTYPE_, \
         __FILE__, \
-        _FUNCTION_NAME_, \
+        _function_name_, \
         __LINE__, \
         NULL)
 
@@ -71,14 +71,8 @@ typedef struct globus_l_gsi_cred_handle_attrs_s
 {
     /* the filename of the CA certificate directory */
     char *                              ca_cert_dir;
-    /* the filename of the proxy certificate */
-    char *                              proxy_file;
-    /* the filename of the user certificate */
-    char *                              cert_file;
-    /* the filename of the user private key */
-    char *                              key_file;
     /* the order to search in for a certificate */
-    globus_gsi_cred_type_t              search_order[]; /*{PROXY,USER,HOST}*/
+    globus_gsi_cred_type_t *            search_order; /*{PROXY,USER,HOST}*/
 } globus_i_gsi_cred_handle_attrs_t;
 
 /**
@@ -173,4 +167,5 @@ EXTERN_C_END
 
 #endif /* GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H */
 
-#endif /* GLBOUS_DONT_DOCUMENT_INTERNAL */
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+

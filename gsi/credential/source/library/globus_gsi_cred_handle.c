@@ -1,3 +1,13 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_cred_handle.c
+ * @author Sam Lang, Sam Meder
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_proxy.h"
@@ -25,7 +35,7 @@ globus_result_t globus_gsi_cred_handle_init(
     globus_gsi_cred_handle_t *          handle,
     globus_gsi_cred_handle_attrs_t      handle_attrs)
 {
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_gsi_cred_handle_init";
 
     if(handle == NULL)
@@ -126,7 +136,7 @@ globus_result_t globus_gsi_cred_set_cert(
     globus_gsi_cred_handle_t            handle,
     X509 *                              cert)
 {
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_gsi_cred_set_cert";
 
     if(handle == NULL)
@@ -173,7 +183,7 @@ globus_result_t globus_gsi_cred_set_key(
     unsigned char *                     der_encoded;
     int                                 len;
 
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_set_key";
 
     if(handle == NULL)
@@ -230,8 +240,9 @@ globus_result_t globus_gsi_cred_set_cert_chain(
     globus_gsi_cred_handle_t            handle,
     STACK_OF(X509) *                    cert_chain)
 {
+    int                                 i;
     X509 *                              tmp_cert;
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_gsi_cred_set_cert_chain";
 
     if(handle == NULL)
@@ -255,12 +266,12 @@ globus_result_t globus_gsi_cred_set_cert_chain(
 
     for(i = 0; i < sk_X509_num(cert_chain); ++i)
     {
-        if((tmp_cert = X509_dup(sk_X509_value(cert_chain, i))) == NULL ||
-           (sk_X509_push(handle->cert_chain, tmp_cert)) == NULL)
+        if((tmp_cert = X509_dup(sk_X509_value(cert_chain, i))) == NULL)
         {
             return GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 GLOBUS_GSI_CRED_ERROR_WITH_X509_CERT_CHAIN);
         }
+        sk_X509_push(handle->cert_chain, tmp_cert);
     }
 
     return GLOBUS_SUCCESS;
@@ -290,7 +301,7 @@ globus_result_t globus_gsi_cred_get_cert(
     globus_gsi_cred_handle_t            handle,
     X509 **                             cert)
 {
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_gsi_cred_get_cert";
 
     if(handle == NULL)
@@ -335,9 +346,9 @@ globus_result_t globus_gsi_cred_get_key(
     EVP_PKEY **                         key)
 {
     int                                 len;
-    char *                              der_encoded;
+    unsigned char *                     der_encoded;
 
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_gsi_cred_get_key";
 
     if(handle == NULL)
@@ -352,7 +363,7 @@ globus_result_t globus_gsi_cred_get_key(
             GLOBUS_GSI_CRED_ERROR_WITH_PRIVATE_KEY);
     }
 
-    len = i2d_PrivateKey(handle->key, &der_encoded);
+    len = i2d_PrivateKey(handle->key, & der_encoded);
 
     if(!d2i_PrivateKey(handle->key->type, 
                        key, 
@@ -392,7 +403,7 @@ globus_result_t globus_gsi_cred_get_cert_chain(
 {
     int                                 i;
     X509 *                              tmp_cert;
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_gsi_cred_get_cert_chain";
 
     if(handle == NULL)
@@ -411,12 +422,12 @@ globus_result_t globus_gsi_cred_get_cert_chain(
     for(i = 0; i < sk_X509_num(handle->cert_chain); ++i)
     {
         if((tmp_cert = X509_dup(sk_X509_value(handle->cert_chain, i)))
-           == NULL ||
-           (sk_X509_push(*cert_chain, tmp_cert)) == NULL)
+           == NULL)
         {
             return GLOBUS_GSI_CRED_ERROR_RESULT(
                 GLOBUS_GSI_CRED_ERROR_WITH_X509_CERT_CHAIN);
         }
+        sk_X509_push(*cert_chain, tmp_cert);
     }
 
     return GLOBUS_SUCCESS;
@@ -444,7 +455,7 @@ globus_result_t globus_gsi_cred_get_subject_name(
     globus_gsi_cred_handle_t            handle,
     char **                             subject_name)
 {
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_get_subject_name";
 
     if(handle == NULL)
@@ -492,7 +503,7 @@ globus_result_t globus_gsi_cred_get_issuer_name(
     globus_gsi_cred_handle_t            handle,
     char **                             issuer_name)
 {
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_get_issuer_name";
 
     if(handle == NULL)

@@ -82,6 +82,15 @@ globus_l_gsi_credential_deactivate(void)
  *        should already be initialized using globus_gsi_cred_handle_init.
  * @param desired_subject
  *        The subject to check for when reading in a credential
+ * @param cert_file
+ *        The certificate filename to use when searching for a certificate
+ *        to read into the handle
+ * @param key_file
+ *        The key filename to use when searching for a private key
+ *        to read into the handle
+ * @param proxy_file
+ *        The proxy filename to use when searching for a proxy credential
+ *        to read into the handle
  * @return
  *        GLOBUS_SUCCESS if no errors occured, otherwise, an error object
  *        identifier is returned.
@@ -91,15 +100,16 @@ globus_l_gsi_credential_deactivate(void)
  */
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
-    char *                              desired_subject)
+    char *                              desired_subject,
+    char *                              cert_file,
+    char *                              key_file,
+    char *                              proxy_file)
 {
     int                                 index;
     globus_result_t                     result;
     char *                              found_subject;
-    char *                              cert_filename  = NULL;
-    char *                              key_filename = NULL;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_read";
 
     if(handle == NULL)
@@ -118,67 +128,46 @@ globus_result_t globus_gsi_cred_read(
         {
         case GLOBUS_PROXY:
             
-            if((result = globus_gsi_cred_read_proxy(handle)) 
+            if(!proxy_file)
+            {
+                break;
+            }
+
+            if((result = globus_gsi_cred_read_proxy(handle, proxy_file)) 
                != GLOBUS_SUCCESS)
             {
                 result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                     result,
                     GLOBUS_GSI_CRED_ERROR_READING_PEM);
+                break;
             }
-
+            
             globus_gsi_cred_get_subject_name(handle, & found_subject);
             if(desired_subject == NULL ||
                !strcmp(found_subject, desired_subject))
-            {
-                
+            {                
                 goto done;
             }
             break;
 
         case GLOBUS_USER:
-            
-            globus_gsi_cred_get_user_cert_filename(&cert_filename, 
-                                                   &key_filename); 
-            globus_gsi_cred_handle_attrs_set_cert_file(
-                handle->attrs,
-                cert_filename);
-            globus_gsi_cred_handle_attrs_set_key_file(
-                handle->attrs,
-                key_filename);
-
-            if((result = globus_gsi_cred_read_cert_and_key(handle))
-               != GLOBUS_SUCCESS)
-            {
-                result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                    result,
-                    GLOBUS_GSI_CRED_ERROR_READING_PEM);
-            }
-
-            globus_gsi_cred_get_subject_name(handle, & found_subject);
-            if(desired_subject == NULL ||
-               !strcmp(found_subject, desired_subject))
-            {
-                goto done;
-            }
-            break;
-
         case GLOBUS_HOST:
+        case GLOBUS_SERVICE:
 
-            globus_gsi_cred_get_host_cert_filename(&cert_filename, 
-                                                   &key_filename); 
-            globus_gsi_cred_handle_attrs_set_cert_file(
-                handle->attrs,
-                cert_filename);
-            globus_gsi_cred_handle_attrs_set_key_file(
-                handle->attrs,
-                key_filename);
+            if(!cert_file || !key_file)
+            {
+                break;
+            }
             
-            if((result = globus_gsi_cred_read_cert_and_key(handle))
+            if((result = globus_gsi_cred_read_cert_and_key(handle,
+                                                           cert_file,
+                                                           key_file))
                != GLOBUS_SUCCESS)
             {
                 result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                     result,
                     GLOBUS_GSI_CRED_ERROR_READING_PEM);
+                break;
             }
             
             globus_gsi_cred_get_subject_name(handle, & found_subject);
@@ -189,17 +178,20 @@ globus_result_t globus_gsi_cred_read(
             }
             break;
             
-        default:
+        case GLOBUS_SO_END:
             return globus_i_gsi_credential_error_result(
                 GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL,
-                __FILE__, _FUNCTION_NAME_, __LINE__, 
-                "The search order location of: %d is not valid",
-                handle->attrs->search_order[index]);
+                __FILE__, _function_name_, __LINE__, 
+                "Credentials could not be found in any of the"
+                "possible locations specified by the search order");
         }
     }
     
  done:
-    globus_free(found_subject);
+    if(found_subject)
+    {
+        globus_free(found_subject);
+    }
     return result;
 }
 /* @} */
@@ -220,14 +212,13 @@ globus_result_t globus_gsi_cred_read(
  *        GLOBUS_SUCCESS or an error object identifier
  */
 globus_result_t globus_gsi_cred_read_proxy(
-    globus_gsi_cred_handle_t            handle)
+    globus_gsi_cred_handle_t            handle,
+    char *                              proxy_filename)
 {
     X509 *                              tmp_cert = NULL;
     BIO *                               proxy_bio;
-    globus_result_t                     result;
-    char *                              proxy_filename = NULL;
     
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_read_proxy";
 
     if(handle == NULL)
@@ -235,15 +226,6 @@ globus_result_t globus_gsi_cred_read_proxy(
         return GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_NULL_HANDLE);
     }
-
-    if((result = globus_gsi_cred_handle_attrs_get_proxy_file(
-        handle->attrs,
-        & proxy_filename)) != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
-    }        
 
     /* create the bio to read the proxy in from */
 
@@ -333,41 +315,22 @@ globus_result_t globus_gsi_cred_read_proxy(
  *        GLOBUS_SUCCESS or an error object identifier
  */
 globus_result_t globus_gsi_cred_read_cert_and_key(
-    globus_gsi_cred_handle_t            handle)
+    globus_gsi_cred_handle_t            handle,
+    char *                              cert_filename,
+    char *                              key_filename)
 {
     BIO *                               cert_bio = NULL;
     BIO *                               key_bio = NULL;
     FILE *                              cert_fp = NULL;
     FILE *                              key_fp = NULL;
-    char *                              cert_filename = NULL;
-    char *                              key_filename = NULL;
-    globus_result_t                     result;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_read_cert_and_key";
 
     if(handle == NULL)
     {
         return GLOBUS_GSI_CRED_ERROR_RESULT(
             GLOBUS_GSI_CRED_ERROR_NULL_HANDLE);
-    }
-
-    if((result = globus_gsi_cred_handle_attrs_get_cert_file(
-            handle->attrs,
-            &cert_filename)) != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
-    }
-
-    if((result = globus_gsi_cred_handle_attrs_get_key_file(
-            handle->attrs,
-            & key_filename)) != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
     }
 
     if(!(cert_fp = fopen(cert_filename, "r")))
@@ -462,7 +425,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     globus_gsi_cred_handle_t            hand;
     X509 *                              tmp_cert = NULL;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_read_proxy_bio";
 
     if(handle == NULL)
@@ -547,7 +510,7 @@ globus_result_t globus_gsi_cred_write(
     BIO *                               bio)
 {
     int                                 i;
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_write";
     
     if(handle == NULL)
@@ -595,15 +558,14 @@ globus_result_t globus_gsi_cred_write(
  */
 
 globus_result_t globus_gsi_cred_write_proxy(
-    globus_gsi_cred_handle_t            handle)
+    globus_gsi_cred_handle_t            handle,
+    char *                              proxy_filename)
 {
     int                                 i;
-    globus_result_t                     result;
     BIO *                               proxy_bio = NULL;
     FILE *                              proxy_fp = NULL;
-    char *                              proxy_filename = NULL;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_write_proxy";
 
     if(handle == NULL)
@@ -612,15 +574,6 @@ globus_result_t globus_gsi_cred_write_proxy(
             GLOBUS_GSI_CRED_ERROR_NULL_HANDLE);
     }
 
-    if((result = globus_gsi_cred_handle_attrs_get_proxy_file(handle->attrs, 
-                                                             & proxy_filename))
-       != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS);
-    }        
-    
     if(!(proxy_fp = fopen(proxy_filename, "w")))
     {
         return GLOBUS_GSI_CRED_ERROR_RESULT(
@@ -681,7 +634,7 @@ globus_result_t globus_gsi_cred_is_proxy(
     char *                              subject_name = NULL;
     globus_result_t                     result;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_is_proxy";
 
     if(handle == NULL)
@@ -696,7 +649,7 @@ globus_result_t globus_gsi_cred_is_proxy(
         return globus_i_gsi_credential_error_chain_result(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CREDENTIAL_HANDLE_ATTRS,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error getting subject name of cred handle");
     }
 
@@ -772,7 +725,7 @@ globus_result_t globus_gsi_cred_is_proxy(
 /*                      } */
 /*                      else */
 /*                      { */
-/*                          /*DEE need errprhere * */
+/*                          *DEE need errprhere * */
 /*                          goto err; */
 /*                      } */
 /*                  } */
@@ -786,7 +739,7 @@ globus_result_t globus_gsi_cred_is_proxy(
 /*          X509_STORE_CTX_init(&csc,cert_store,scert,NULL); */
 
 /*  #if SSLEAY_VERSION_NUMBER >=  0x0090600fL */
-/*          /* override the check_issued with our version * */
+/*          * override the check_issued with our version * */
 /*          csc.check_issued = proxy_check_issued; */
 /*  #endif */
 /*          X509_STORE_CTX_set_ex_data(&csc, */
@@ -815,7 +768,7 @@ globus_gsi_cred_verify(
     globus_result_t                     result;
     int                                 is_proxy;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_cred_verify";
 
     if(handle == NULL)
@@ -938,7 +891,7 @@ globus_gsi_cred_verify(
 /*                      } */
 /*                      else */
 /*                      { */
-/*                          /*DEE need errprhere * */
+/*                          *DEE need errprhere * */
 /*                          goto err; */
 /*                      } */
 /*                  } */
@@ -952,7 +905,7 @@ globus_gsi_cred_verify(
 /*          X509_STORE_CTX_init(&csc,cert_store,scert,NULL); */
 
 /*  #if SSLEAY_VERSION_NUMBER >=  0x0090600fL */
-/*          /* override the check_issued with our version * */
+/*          * override the check_issued with our version * */
 /*          csc.check_issued = proxy_check_issued; */
 /*  #endif */
 /*          X509_STORE_CTX_set_ex_data(&csc, */
@@ -968,7 +921,7 @@ globus_gsi_cred_verify(
 /*  err: */
 /*      return retval; */
 /*  } */
-/*  #endif /* NO_PROXY_VERIFY_CALLBACK * */
+/*  #endif * NO_PROXY_VERIFY_CALLBACK * */
 
 /*  int */
 /*  globus_i_gsi_X509_check_issued( */
@@ -986,8 +939,8 @@ globus_gsi_cred_verify(
 /*          switch (ret) */
 /*          { */
 /*  #warning  SLANG:  removed to see if its needed - if it doesnt break... */
-/*  /*          case X509_V_ERR_AKID_SKID_MISMATCH: * */
-/*              /*  */
+/*  *          case X509_V_ERR_AKID_SKID_MISMATCH: * */
+/*              *  */
 /*               * If the proxy was created with a previous version of Globus */
 /*               * where the extensions where copied from the user certificate */
 /*               * This error could arise, as the akid will be the wrong key */
@@ -997,7 +950,7 @@ globus_gsi_cred_verify(
 /*               * */
 
 /*          case X509_V_ERR_KEYUSAGE_NO_CERTSIGN: */
-/*              /* */
+/*              * */
 /*               * If this is a proxy certificate then the issuer */
 /*               * does not need to have the key_usage set. */
 /*               * So check if its a proxy, and ignore */
@@ -1022,7 +975,7 @@ globus_gsi_cred_verify(
 /*      X509_STORE_CTX *                    ctx) */
 /*  { */
 
-/*      /* */
+/*      * */
 /*       * OpenSSL-0.9.6 has a  check_issued routine which */
 /*       * we want to override so we  can replace some of the checks. */
 /*       * */
