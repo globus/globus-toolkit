@@ -29,7 +29,6 @@ CVS Information:
 #include <string.h>
 #include <sys/param.h>
 #include <sys/time.h>
-#include <globus_nexus.h>
 #include <globus_io.h>
 #include "globus_i_gram_version.h"
 #include "globus_gram_client.h"
@@ -44,69 +43,6 @@ CVS Information:
 #endif
 
 #include "globus_i_gram_http.h"
-
-/******************************************************************************
-                               Type definitions
-******************************************************************************/
-typedef struct
-{
-    globus_mutex_t           mutex;
-    globus_cond_t            cond;
-    volatile globus_bool_t   done;
-    int                      job_status;
-    char                     job_contact_str[1000];
-} globus_l_job_request_monitor_t;
-
-typedef struct
-{
-    globus_mutex_t mutex;
-    globus_cond_t cond;
-    volatile globus_bool_t done;
-    int start_time_status;
-    int start_time_estimate;
-    int start_time_interval_size;
-} globus_l_start_time_monitor_t;
-
-typedef struct
-{
-    globus_mutex_t         mutex;
-    globus_cond_t          cond;
-    volatile globus_bool_t done;
-    int                    cancel_status;
-} globus_l_cancel_monitor_t;
-
-typedef struct
-{
-    globus_mutex_t mutex;
-    globus_cond_t cond;
-    volatile globus_bool_t done;
-    int job_status;
-} globus_l_status_monitor_t;
-
-typedef struct
-{
-    globus_mutex_t mutex;
-    globus_cond_t cond;
-    volatile globus_bool_t done;
-    int job_status;
-    int register_status;
-} globus_l_register_monitor_t;
-
-typedef struct
-{
-    globus_mutex_t mutex;
-    globus_cond_t cond;
-    volatile globus_bool_t done;
-    int job_status;
-    int unregister_status;
-} globus_l_unregister_monitor_t;
-
-typedef struct
-{
-    globus_gram_client_callback_func_t callback_func;
-    void * user_callback_arg;
-    globus_nexus_endpoint_t endpoint;
-} globus_l_callback_t;
 
 
 /******************************************************************************
@@ -125,10 +61,25 @@ globus_l_gram_client_authenticate(
     globus_io_secure_delegation_mode_t     delegation_mode,
     globus_io_handle_t *                   gatekeeper_handle );
 
+
+static int
+globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
+					       char **   gatekeeper_url,
+					       char **   gatekeeper_service,
+					       char **   gatekeeper_dn );
+
+static int 
+globus_l_gram_client_setup_attr_t(
+    globus_io_attr_t *                     attrp,
+    globus_io_secure_delegation_mode_t     delegation_mode,
+    char *                                 gatekeeper_dn );
+
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
-globus_module_descriptor_t globus_gram_client_module = {
+
+globus_module_descriptor_t globus_gram_client_module = 
+{
     "globus_gram_client",
     globus_i_gram_client_activate,
     globus_i_gram_client_deactivate,
@@ -139,18 +90,7 @@ FILE *			globus_l_print_fp;
 static globus_mutex_t	globus_l_mutex;
 static int		globus_l_is_initialized = 0;
 
-#define GLOBUS_L_LOCK { \
-    int err; \
-    assert (globus_l_is_initialized==1); \
-    err = globus_mutex_lock (&globus_l_mutex); \
-    assert (!err); \
-}
-
-#define GLOBUS_L_UNLOCK { \
-    int err; \
-    err = globus_mutex_unlock (&globus_l_mutex); \
-    assert (!err); \
-}
+#define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1); \
 
 #ifdef GSS_AUTHENTICATION
 /*
@@ -171,18 +111,8 @@ int
 globus_i_gram_client_activate(void)
 {
     int rc;
-    int i;
     OM_uint32 major_status;
     OM_uint32 minor_status;
-
-    /*
-     * Initialize nexus
-     */
-    rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	return(rc);
-    }
     
     rc = globus_module_activate(GLOBUS_POLL_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -302,12 +232,6 @@ globus_i_gram_client_deactivate(void)
 	return(rc);
     }
 
-    rc = globus_module_deactivate(GLOBUS_NEXUS_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	return(rc);
-    }
-
     return (GLOBUS_SUCCESS);
 } /* globus_i_gram_client_deactivate() */
 
@@ -328,83 +252,111 @@ globus_gram_client_debug(void)
 
 
 /******************************************************************************
+Function:	globus_l_gram_client_parse_gatekeeper_url()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
+					       char **   gatekeeper_url,
+					       char **   gatekeeper_service,
+					       char **   gatekeeper_dn )
+{
+    char *                host;
+    char *                port;
+    char *                dn;
+    char *                service;
+    unsigned short        iport;
+
+    /*
+     *  the gatekeeper contact format:  <host>:<port>[/<service>]:<dn>
+     */
+
+    if ((host = strdup(contact_string)))
+    {
+	dn = host;
+	if ((port = strchr(host,':')))
+	{
+	    *port++ = '\0';
+	    if ((dn = strchr(port, ':'))) 
+		*dn++ = '\0';
+    
+	    if ((service = strchr(port,'/')))
+		*service++ = '\0';
+	    else
+		service = "jobmanager";
+	}
+	else
+	    port = "754";
+    } 
+    else 
+    {
+	grami_fprintf(globus_l_print_fp, "strdup failed for contact_string\n");
+	return(1);
+    }
+    
+    *gatekeeper_url = globus_libc_malloc(strlen(host) +
+					 strlen(port) + 
+					 strlen("https://:/"));
+
+    globus_libc_sprintf(*gatekeeper_url, "https://%s:%s/", host, port);
+    *gatekeeper_service = strdup(service);
+    *gatekeeper_dn = strdup(dn);
+    globus_libc_free(host);
+
+    return GLOBUS_SUCCESS;
+}
+
+
+/******************************************************************************
 Function:	globus_l_gram_client_authenticate()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 static int 
-globus_l_gram_client_authenticate(
-    char *                                 gatekeeper_url,
+globus_l_gram_client_setup_attr_t(
+    globus_io_attr_t *                     attrp,
     globus_io_secure_delegation_mode_t     delegation_mode,
-    globus_io_attr_t *                     attrp)
+    char *                                 gatekeeper_dn )
 {
-  globus_result_t                        res;
-  globus_io_secure_authorization_data_t  auth_data;
-  char *                                 gatekeeper_host;
-  char *                                 gatekeeper_princ;
-  char *                                 gatekeeper_service = "jobmanager";
+    globus_result_t                        res;
+    globus_io_secure_authorization_data_t  auth_data;
 
-  if ((cp = strdup(gatekeeper_url))) {
-    gatekeeper_host = gatekeeper_princ = cp;
-    if ((sp = strchr(cp,':'))) {
-      *sp++ = '\0';
-      if ((qp = strchr(sp, ':'))) {
-	*qp++ = '\0';
-	gatekeeper_princ = qp;
-      }
- 
-      /*** TODO: this is wrong: the service is optional ***/
- 
-      if ((pp = strchr(sp,'/'))) {
-	*pp++ = '\0';
-	gatekeeper_service = pp;
-      }
-      gatekeeper_port = atoi(sp);
+    if ( (res = globus_io_tcpattr_init(attrp))
+	 || (res = globus_io_secure_authorization_data_initialize(
+	     &auth_data))
+	 || (res = globus_io_attr_set_secure_authentication_mode(
+	     attrp,
+	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+	     GSS_C_NO_CREDENTIAL))
+	 || (res = globus_io_secure_authorization_data_set_identity(
+	     &auth_data,
+	     gatekeeper_dn))
+	 || (res = globus_io_attr_set_secure_authorization_mode(
+	     attrp,
+	     GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+	     &auth_data))
+	 || (res = globus_io_attr_set_secure_delegation_mode(
+	     attrp,
+	     delegation_mode))
+	 || (res = globus_io_attr_set_secure_channel_mode(
+	     attrp,
+	     GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+    {
+	globus_object_t *  err = globus_error_get(res);
+	
+	grami_fprintf(globus_l_print_fp, 
+		      "setting up IO attributes failed\n");
+	
+	/* TODO: interrogate 'err' to choose the correct error code */
+	
+	globus_object_free(err);
+	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
     }
-    else {
-      gatekeeper_port = 754;
-    }
-  } 
-  else {
-    grami_fprintf(globus_l_print_fp, "strdup failed for gatekeeper_url\n");
-    GLOBUS_L_UNLOCK;
-    return(1);
-  }
 
-  if ( (res = globus_io_tcpattr_init(attrp))
-       || (res = globus_io_secure_authorization_data_initialize(
-			     &auth_data))
-       || (res = globus_io_attr_set_secure_authentication_mode(
-			     attrp,
-			     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-			     GSS_C_NO_CREDENTIAL))
-       || (res = globus_io_secure_authorization_data_set_identity(
-			     &auth_data,
-			     gatekeeper_princ))
-       || (res = globus_io_attr_set_secure_authorization_mode(
-		             attrp,
-			     GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
-			     &auth_data))
-       || (res = globus_io_attr_set_secure_delegation_mode(
-			     attrp,
-			     delegation_mode))
-       || (res = globus_io_attr_set_secure_channel_mode(
-			     attrp,
-			     GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) ) {
-    globus_object_t *  err = globus_error_get(res);
-    
-    grami_fprintf(globus_l_print_fp, 
-		  "setting up IO attributes failed\n");
-    
-    /* TODO: interrogate 'err' to choose the correct error code */
-    
-    globus_object_free(err);
-    GLOBUS_L_UNLOCK;
-    return GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
-  }
-
-  return GLOBUS_SUCCESS;
+    return GLOBUS_SUCCESS;
 } /* globus_l_gram_client_authenticate() */
 
 
@@ -421,6 +373,7 @@ globus_gram_client_version(void)
 
 } /* globus_gram_client_version() */
 
+
 /******************************************************************************
 Function:	globus_gram_client_ping()
 Description:
@@ -428,59 +381,74 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-globus_gram_client_ping(char * gatekeeper_url)
+globus_gram_client_ping(char * gatekeeper_contact)
 {
-  int                          rc;
-  globus_io_attr_t             attr;
-  char                         query[GLOBUS_GRAM_HTTP_BUFSIZE];
-  globus_gram_http_monitor_t   monitor;
-  globus_size_t                querysize;
+    int                          rc;
+    globus_io_attr_t             attr;
+    char *                       url;
+    char *                       service;
+    char *                       dn;
+    char                         query[GLOBUS_GRAM_HTTP_BUFSIZE];
+    globus_gram_http_monitor_t   monitor;
+    globus_size_t                querysize;
+    
+    querysize = 0;
+    
+    rc = globus_l_gram_client_parse_gatekeeper_contact(
+	gatekeeper_contact,
+	&url,
+	&service,
+	&dn );
+    
+    if (rc != GLOBUS_SUCCESS)
+	goto globus_gram_client_ping_parse_failed;
 
-  if ( rc = globus_l_gram_client_authenticate( 
-                   gatekeeper_url,
-#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-		   GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
-#else
-		   GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
-#endif
-		   &attr) ) {
-    goto globus_gram_client_ping_authenticate_failed;
-  }
+    rc = globus_l_gram_client_setup_attr_t( 
+	&attr,
+	GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
+	dn );
 
-  querysize = 0;
+    if (rc != GLOBUS_SUCCESS)
+	goto globus_gram_client_ping_attr_failed;
 
-  globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
-  globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
-  monitor.done = GLOBUS_FALSE;
+    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
+    globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
+    monitor.done = GLOBUS_FALSE;
 
-  /* TODO: pass attr into this */
-  if ( rc = globus_gram_http_post_and_get(
-				     gatekeeper_url,
-				     (globus_byte_t *) query,
-				     &querysize,
-				     &monitor) ) {
-    goto globus_gram_client_ping_post_failed;
-  }
+    if ( rc = globus_gram_http_post_and_get(
+	url,
+	&attr,
+	(globus_byte_t *) query,
+	&querysize,
+	&monitor) )
+    {
+	goto globus_gram_client_ping_post_failed;
+    }
 
-  globus_mutex_lock(&monitor.mutex);
-  while (!monitor.done) {
-    globus_cond_wait(&monitor.cond, &monitor.mutex);
-  }
-  rc = monitor.errorcode;
-  globus_mutex_unlock(&monitor.mutex);
+    globus_mutex_lock(&monitor.mutex);
+    {
+	while (!monitor.done)
+	    globus_cond_wait(&monitor.cond, &monitor.mutex);
 
-  /* TODO: check ping response for version?? */
+	rc = monitor.errorcode;
+    }
+    globus_mutex_unlock(&monitor.mutex);
 
-  /* success, so fall through all cleanup code */
-  rc = GLOBUS_SUCCESS;
+    if (rc == GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
+	rc = GLOBUS_SUCCESS;
 
- globus_gram_client_ping_post_failed:
-  globus_mutex_destroy(&monitor.mutex);
-  globus_cond_destroy(&monitor.cond);
+globus_gram_client_ping_post_failed:
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+    globus_io_tcpattr_destroy (&attr);
 
-  globus_io_tcpattr_destroy (&attr);
- globus_gram_client_ping_authenticate_failed:
-  return rc;
+globus_gram_client_ping_attr_failed:
+    globus_libc_free(url);
+    globus_libc_free(service);
+    globus_libc_free(dn);
+
+globus_gram_client_ping_parse_failed:
+    return rc;
 } /* globus_gram_client_ping() */
 
 
@@ -530,6 +498,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     rc = globus_gram_http_post_and_get(
 	    gatekeeper_url,
+	    &attr,
 	    (globus_byte_t *) query,
 	    &querysize,
 	    &monitor);
@@ -619,7 +588,7 @@ globus_gram_client_job_cancel(char * job_contact)
     globus_size_t                 querysize;
     globus_gram_http_monitor_t    monitor;
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
@@ -634,6 +603,7 @@ globus_gram_client_job_cancel(char * job_contact)
 
     rc = globus_gram_http_post_and_get(
 	    job_contact,
+	    GLOBUS_NULL,
 	    (globus_byte_t *) query,
 	    &querysize,
 	    &monitor);
@@ -641,7 +611,7 @@ globus_gram_client_job_cancel(char * job_contact)
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_cancel_done;
 
-    GLOBUS_L_UNLOCK;
+    
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
@@ -651,7 +621,7 @@ globus_gram_client_job_cancel(char * job_contact)
     rc = monitor.errorcode;
     globus_mutex_unlock(&monitor.mutex);
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     if (rc == GLOBUS_SUCCESS && querysize > 0)
     {
@@ -666,7 +636,7 @@ globus_gram_client_job_cancel(char * job_contact)
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     
-    GLOBUS_L_UNLOCK;
+    
     return rc;
 }
 
@@ -689,7 +659,7 @@ globus_gram_client_job_status(char * job_contact,
     globus_size_t                querysize;
     globus_gram_http_monitor_t   monitor;
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
@@ -704,9 +674,10 @@ globus_gram_client_job_status(char * job_contact,
 
     rc = globus_gram_http_post_and_get(
 	    job_contact,
+	    GLOBUS_NULL,
 	    (globus_byte_t *) query,
 	    &querysize,
-	    &monitor);
+	    &monitor );
 
     grami_fprintf(globus_l_print_fp,
 		  "post and get returned %d\n",rc);
@@ -714,7 +685,7 @@ globus_gram_client_job_status(char * job_contact,
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_status_done;
 
-    GLOBUS_L_UNLOCK;
+    
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
@@ -727,7 +698,7 @@ globus_gram_client_job_status(char * job_contact,
     grami_fprintf(globus_l_print_fp,
 		  "monitor released, errcode=%d\n",rc);
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     if (rc == GLOBUS_SUCCESS && querysize > 0)
     {
@@ -743,7 +714,7 @@ globus_gram_client_job_status_done:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     
-    GLOBUS_L_UNLOCK;
+    
     return rc;
 }
 
@@ -765,7 +736,7 @@ globus_gram_client_callback_allow(
     char *                    host;
     int                       rc;
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     rc = globus_gram_http_allow_attach( &port,
 					&host,
@@ -786,7 +757,7 @@ globus_gram_client_callback_allow(
 			    port);
     }
 
-    GLOBUS_L_UNLOCK;    
+        
 
     return rc;
 } /* globus_gram_client_callback_allow() */
@@ -813,7 +784,7 @@ globus_gram_client_job_callback_register(char * job_contact,
     globus_size_t                querysize;
     globus_gram_http_monitor_t   monitor;
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
@@ -830,14 +801,15 @@ globus_gram_client_job_callback_register(char * job_contact,
 
     rc = globus_gram_http_post_and_get(
 	    job_contact,
+	    GLOBUS_NULL,
 	    (globus_byte_t *) query,
 	    &querysize,
-	    &monitor);
+	    &monitor );
 
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_callback_register_done;
 
-    GLOBUS_L_UNLOCK;
+    
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
@@ -847,7 +819,7 @@ globus_gram_client_job_callback_register(char * job_contact,
     rc = monitor.errorcode;
     globus_mutex_unlock(&monitor.mutex);
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     if (rc == GLOBUS_SUCCESS)
     {
@@ -867,7 +839,7 @@ globus_gram_client_job_callback_register_done:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     
-    GLOBUS_L_UNLOCK;
+    
     return rc;
 }
 
@@ -890,7 +862,7 @@ globus_gram_client_job_callback_unregister(char * job_contact,
     globus_size_t                querysize;
     globus_gram_http_monitor_t   monitor;
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
@@ -906,14 +878,15 @@ globus_gram_client_job_callback_unregister(char * job_contact,
 
     rc = globus_gram_http_post_and_get(
 	    job_contact,
+	    GLOBUS_NULL,
 	    (globus_byte_t *) query,
 	    &querysize,
-	    &monitor);
+	    &monitor );
 
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_callback_unregister_done;
 
-    GLOBUS_L_UNLOCK;
+    
 
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
@@ -923,7 +896,7 @@ globus_gram_client_job_callback_unregister(char * job_contact,
     rc = monitor.errorcode;
     globus_mutex_unlock(&monitor.mutex);
 
-    GLOBUS_L_LOCK;
+    GLOBUS_L_CHECK_IF_INITIALIZED;
 
     if (rc == GLOBUS_SUCCESS)
     {
@@ -937,8 +910,6 @@ globus_gram_client_job_callback_unregister_done:
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-    
-    GLOBUS_L_UNLOCK;
     return rc;
 }
 
