@@ -35,6 +35,16 @@ static globus_bool_t done = GLOBUS_FALSE;
 globus_mutex_t mutex;
 globus_cond_t cond;
 
+#if defined(BUILD_LITE)
+static int globus_sleepy_callback(int can_block)
+{
+    globus_libc_usleep(10000);
+
+    return GLOBUS_FALSE;
+}
+#endif
+
+
 void client_shutdown_callback()
 {
     globus_mutex_lock(&mutex);
@@ -149,6 +159,11 @@ int main(int argc, char **argv)
         options = default_options;
     }
     
+#   if defined(BUILD_LITE)
+    {
+        globus_poll_add(globus_sleepy_callback, 1);
+    }
+#   endif
     rc = globus_gass_server_ez_init(
 	&port,
 	&url,
