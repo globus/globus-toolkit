@@ -8,6 +8,7 @@
 #include "ssl_utils.h"
 #include "verror.h"
 #include "string_funcs.h"
+#include "myproxy_log.h"
 
 #include <string.h>
 #include <assert.h>
@@ -32,7 +33,6 @@ struct _gsi_socket
     gss_ctx_id_t		gss_context;
     OM_uint32			major_status;
     OM_uint32			minor_status;
-    char			*expected_peer_name;
     char			*peer_name;
     /* Buffer to hold unread, unwrapped data */
     char			*input_buffer;
@@ -429,11 +429,6 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 	free(self->input_buffer);
     }
 
-    if (self->expected_peer_name != NULL)
-    {
-	free(self->expected_peer_name);
-    }
-    
     if (self->peer_name != NULL)
     {
 	free(self->peer_name);
@@ -465,12 +460,12 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
     
     if (self == NULL)
     {
-	return my_strncpy(buffer, "GSI_SOCKET is NULL", bufferlen);
+	return my_strncpy(buffer, "GSI SOCKET not initialized", bufferlen);
     }
 
     if (self->error_string != NULL)
     {
-	chars = my_strncpy(buffer, self->error_string, bufferlen);
+	chars = my_strncpy(buffer, self->error_string, bufferlen-1);
 	
 	if (chars == -1)
 	{
@@ -481,9 +476,13 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	buffer = &buffer[chars];
 	bufferlen -= chars;
     }
-    
+
     if (self->error_number != 0)
     {
+	if (total_chars && bufferlen && *(buffer-1) != '\n') {
+	    *buffer = '\n'; buffer++; total_chars++; bufferlen--;
+	}
+
 	chars = my_strncpy(buffer, strerror(self->error_number), bufferlen);
 
 	if (chars == -1)
@@ -498,6 +497,10 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 
     if (self->major_status)
     {
+	if (total_chars && bufferlen && *(buffer-1) != '\n') {
+	    *buffer = '\n'; buffer++; total_chars++; bufferlen--;
+	}
+
 	chars = append_gss_status(buffer, bufferlen, 
 				  self->major_status,
 				  GSS_C_GSS_CODE);
@@ -587,38 +590,6 @@ GSI_SOCKET_allow_anonymous(GSI_SOCKET *self, const int value)
     return GSI_SOCKET_SUCCESS;
 }
 
-int
-GSI_SOCKET_set_expected_peer_name(GSI_SOCKET *self,
-				  const char *name)
-{
-    if (self == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    if (self->peer_name != NULL)
-    {
-	self->error_string = strdup("Already connected to peeer");
-	return GSI_SOCKET_ERROR;
-    }
-    
-    if (name == NULL)
-    {
-	self->error_string = strdup("Bad name");
-	return GSI_SOCKET_ERROR;
-    }
-    
-    self->expected_peer_name = strdup(name);
-
-    if (self->expected_peer_name == NULL)
-    {
-	self->error_number = errno;
-	return GSI_SOCKET_ERROR;
-    }
-
-    return GSI_SOCKET_SUCCESS;
-}  
-
 /* XXX This routine really needs a complete overhaul */
 int
 GSI_SOCKET_use_creds(GSI_SOCKET *self,
@@ -640,19 +611,60 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
 }
 
 int
-GSI_SOCKET_authentication_init(GSI_SOCKET *self)
+GSI_SOCKET_check_creds(GSI_SOCKET *self)
 {
-    char			*server_name = NULL;
-    int				token_status;
-    struct sockaddr_in		server_addr;
-    int				server_addr_len = sizeof(server_addr);
-    struct hostent		*server_info;
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
+    int				return_value = GSI_SOCKET_ERROR;
+
+    if (self == NULL) {	
+	return GSI_SOCKET_ERROR;
+    }
+
+    self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
+							GSS_C_BOTH,
+							&creds);
+
+    if (self->major_status != GSS_S_COMPLETE) {
+	goto error;
+    }
+    
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+    
+  error:
+    if (creds != GSS_C_NO_CREDENTIAL) {
+	OM_uint32 minor_status;
+
+	gss_release_cred(&minor_status, &creds);
+    }
+    
+    return return_value;
+}
+
+int
+GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
+{
+    int				token_status;
+    struct sockaddr_in		server_addr = { 0 };
+    int				server_addr_len = sizeof(server_addr);
+    struct hostent		*server_info = NULL;
+    gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
+    gss_name_t			server_gss_name = GSS_C_NO_NAME;
     OM_uint32			req_flags = 0, ret_flags = 0;
     int				return_value = GSI_SOCKET_ERROR;
+    gss_buffer_desc		gss_buffer = { 0 };
+    gss_buffer_desc		tmp_gss_buffer = { 0 };
+    gss_name_t			target_name = GSS_C_NO_NAME;
+    gss_OID			target_name_type = GSS_C_NO_OID;
+    int				i, rc=0;
     
     if (self == NULL)
     {
+	return GSI_SOCKET_ERROR;
+    }
+
+    if (accepted_peer_names == NULL ||
+	accepted_peer_names[0] == NULL) {
 	return GSI_SOCKET_ERROR;
     }
 
@@ -674,58 +686,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	}
     }
 
-    if (self->expected_peer_name == NULL)
-    {
-	/*
-	 * No expected peer name supplied, use "host/<fqdn>"
-	 */
-
-	if (getpeername(self->sock, (struct sockaddr *) &server_addr,
-			&server_addr_len) < 0)
-	{
-	    self->error_number = errno;
-	    self->error_string = strdup("Could not get server address");
-	    goto error;
-	}
-
-	server_info = gethostbyaddr((char *) &server_addr.sin_addr,
-				    sizeof(server_addr.sin_addr),
-				    server_addr.sin_family);
-    
-	if ((server_info == NULL) || (server_info->h_name == NULL))
-	{
-	    self->error_number = errno;
-	    self->error_string = strdup("Could not get server hostname");
-	    goto error;
-	}
-
-	server_name = (char *) malloc(strlen(DEFAULT_SERVICE_NAME) +
-				      strlen(server_info->h_name) + 
-				      2 /* 1 for '@', 1 for NUL */);
-
-	if (server_name == NULL)
-	{
-	    self->error_string = strdup("malloc() failed");
-	    goto error;
-	}
-
-	sprintf(server_name, "%s@%s", DEFAULT_SERVICE_NAME,
-		server_info->h_name);
-    }
-    else 
-    {
-	/*
-	 * Use supplied expected peer name
-	 */
-	server_name = strdup(self->expected_peer_name);
-	
-	if (server_name == NULL)
-	{
-	    self->error_number = errno;
-	    goto error;
-	}
-    }
-	
     req_flags |= GSS_C_REPLAY_FLAG;
     req_flags |= GSS_C_MUTUAL_FLAG;
     req_flags |= GSS_C_CONF_FLAG;
@@ -735,7 +695,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	globus_gss_assist_init_sec_context(&self->minor_status,
 					   creds,
 					   &self->gss_context,
-					   server_name,
+					   "GSI-NO-TARGET",
 					   req_flags,
 					   &ret_flags,
 					   &token_status,
@@ -744,8 +704,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 					   assist_write_token,
 					   &self->sock);
 
-    if (self->major_status != GSS_S_COMPLETE)
-    {
+    if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
     }
 
@@ -754,27 +713,88 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     req_flags &= ~(GSS_C_ANON_FLAG); /* GSI GSSAPI doesn't set this flag */
     if ((req_flags & ret_flags) != req_flags) {
       self->error_string =
-	strdup("GSI_SOCKET requested service not supported");
+	strdup("requested GSSAPI service not supported");
       goto error;
     }
 
-    /* Success */
-    self->peer_name = server_name;
-    server_name = NULL;		/* To prevent free() below */
+    /* Check the authenticated identity of the server. */
+    self->major_status = gss_inquire_context(&self->minor_status,
+					     self->gss_context,
+					     NULL,
+					     &server_gss_name,
+					     NULL, NULL, NULL, NULL, NULL);
+    if (self->major_status != GSS_S_COMPLETE) {
+	self->error_string = strdup("gss_inquire_context() failed");
+	goto error;
+    }
 
+    self->major_status = gss_display_name(&self->minor_status,
+					  server_gss_name, &gss_buffer, NULL);
+    if (self->major_status != GSS_S_COMPLETE) {
+	self->error_string = strdup("gss_display_name() failed");
+	goto error;
+    }
+
+    self->peer_name = strdup(gss_buffer.value);
+    myproxy_debug("server name: %s", self->peer_name);
+
+    /* We told gss_assist_init_sec_context() not to check the server
+       name so we can check it manually here. */
+    for (i=0; accepted_peer_names[i] != NULL; i++) {
+	myproxy_debug("checking if server name matches \"%s\"",
+		      accepted_peer_names[i]);
+	tmp_gss_buffer.value = (void *)accepted_peer_names[i];
+	tmp_gss_buffer.length = strlen(accepted_peer_names[i]);
+	if (strchr(accepted_peer_names[i],'@') && 
+	    !strstr(accepted_peer_names[i],"CN=")) { 
+	    target_name_type = GSS_C_NT_HOSTBASED_SERVICE;
+	} else {
+	    target_name_type = GSS_C_NO_OID;
+	}
+	self->major_status = gss_import_name(&self->minor_status,
+					     &tmp_gss_buffer,
+					     target_name_type,
+					     &target_name);
+	if (self->major_status != GSS_S_COMPLETE) {
+	    char error_string[550];
+	    sprintf(error_string, "failed to import GSS name \"%.500s\"",
+		    accepted_peer_names[i]);
+	    self->error_string = strdup(error_string);
+	    goto error;
+	}
+	self->major_status = gss_compare_name(&self->minor_status,
+					      server_gss_name,
+					      target_name, &rc);
+	if (self->major_status != GSS_S_COMPLETE) {
+	    char error_string[1050];
+	    sprintf(error_string,
+		    "gss_compare_name(\"%.500s\",\"%.500s\") failed",
+		    self->peer_name, accepted_peer_names[i]);
+	    self->error_string = strdup(error_string);
+	    goto error;
+	}
+	if (rc) {
+	    myproxy_debug("server name accepted");
+	    break;
+	} else {
+	    myproxy_debug("server name does not match");
+	}
+    }
+    if (!rc) {		/* no match with acceptable target names */
+	self->error_string = strdup("authenticated peer name does not match");
+	return_value = GSI_SOCKET_UNAUTHORIZED;
+	goto error;
+    }
+
+    /* Success */
     return_value = GSI_SOCKET_SUCCESS;
     
   error:
-    if (server_name != NULL)
-    {
-	free(server_name);
-    }
-    
-    if (creds != GSS_C_NO_CREDENTIAL)
     {
 	OM_uint32 minor_status;
-	
 	gss_release_cred(&minor_status, &creds);
+	gss_release_buffer(&minor_status, &gss_buffer);
+	gss_release_name(&minor_status, &server_gss_name);
     }
     
     return return_value;
@@ -788,24 +808,20 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     int				token_status;
     int				return_value = GSI_SOCKET_ERROR;
 
-
-    if (self == NULL)
-    {	
+    if (self == NULL) {	
 	return GSI_SOCKET_ERROR;
     }
 
-    if (self->gss_context != GSS_C_NO_CONTEXT)
-    {
+    if (self->gss_context != GSS_C_NO_CONTEXT) {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
 	goto error;
     }
-	
+
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
 							GSS_C_ACCEPT,
 							&creds);
 
-    if (self->major_status != GSS_S_COMPLETE)
-    {
+    if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
     }
     
@@ -825,8 +841,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 					     assist_write_token,
 					     &self->sock);
 
-    if (self->major_status != GSS_S_COMPLETE)
-    {
+    if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
     }
     
@@ -834,18 +849,17 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     return_value = GSI_SOCKET_SUCCESS;
     
   error:
-    if (creds != GSS_C_NO_CREDENTIAL)
-    {
+    if (creds != GSS_C_NO_CREDENTIAL) {
 	OM_uint32 minor_status;
 
 	gss_release_cred(&minor_status, &creds);
     }
     
     return return_value;
- }
+}
 
 int
-GSI_SOCKET_get_client_name(GSI_SOCKET *self,
+GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
 			   char *buffer,
 			   const int buffer_len)
 {
