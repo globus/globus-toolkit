@@ -154,7 +154,7 @@ EOF
 	{
 	    $total_cpu_time = $cpu_time;
 	}
-	$lsf_job_script->print("#BSUB -c ${cpu_time}\n");
+	$lsf_job_script->print("#BSUB -c ${total_cpu_time}\n");
     }
 
     if($wall_time != 0)
