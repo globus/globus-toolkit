@@ -292,14 +292,10 @@ globus_i_gsi_sysconfig_create_cert_dir_string(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
         free(*cert_dir_value);
-        *cert_dir_value = NULL;
         goto exit;
     }
 
-    if(format)
-    {
-        *cert_dir = *cert_dir_value;
-    }
+    *cert_dir = *cert_dir_value;
 
     result = GLOBUS_SUCCESS;
 
@@ -346,14 +342,10 @@ globus_i_gsi_sysconfig_create_cert_string(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING);
         free(*cert_string_value);
-        *cert_string_value = NULL;
         goto exit;
     }
 
-    if(format)
-    {
-        *cert_string = *cert_string_value;
-    }
+    *cert_string = *cert_string_value;
 
     result = GLOBUS_SUCCESS;
 
@@ -401,10 +393,7 @@ globus_i_gsi_sysconfig_create_key_string(
         goto exit;
     }
 
-    if(format)
-    {
-        *key_string = *key_string_value;
-    }
+    *key_string = *key_string_value;
 
     result = GLOBUS_SUCCESS;
 
@@ -1151,27 +1140,6 @@ globus_gsi_sysconfig_get_cert_dir_win32(
 
  done:
 
-    if(env_cert_dir && (env_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(env_cert_dir);
-    }
-    if(reg_cert_dir && (reg_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(reg_cert_dir);
-    }
-    if(local_cert_dir && (local_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(local_cert_dir);
-    }
-    if(installed_cert_dir && (installed_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(installed_cert_dir);
-    }
-    if(default_cert_dir && (default_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(default_cert_dir);
-    }
-
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
     return result;
@@ -1400,23 +1368,6 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
     }
 
  done:
-
-    if(env_user_cert && env_user_cert != (*user_cert))
-    {
-        globus_libc_free(env_user_cert);
-    }
-    if(env_user_key && env_user_key != (*user_key))
-    {
-        globus_libc_free(env_user_key);
-    }
-    if(default_user_cert && default_user_cert != (*user_cert))
-    {
-        globus_libc_free(default_user_cert);
-    }
-    if(default_user_key && default_user_key != (*user_key))
-    {
-        globus_libc_free(default_user_key);
-    }
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     
@@ -3641,28 +3592,12 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     {
         *cert_dir = NULL;
     }
+
     if(home != NULL)
     {
 	free(home);
     }
     
-    if(env_cert_dir && (env_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(env_cert_dir);
-    }
-    if(local_cert_dir && (local_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(local_cert_dir);
-    }
-    if(installed_cert_dir && (installed_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(installed_cert_dir);
-    }
-    if(default_cert_dir && (default_cert_dir != (*cert_dir)))
-    {
-        globus_libc_free(default_cert_dir);
-    }
-
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
     return result;
@@ -3900,26 +3835,7 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
     {
         *user_cert = NULL;
     }
-    if(env_user_cert && env_user_cert != (*user_cert))
-    {
-        globus_libc_free(env_user_cert);
-    }
-    if(env_user_key && env_user_key != (*user_key))
-    {
-        globus_libc_free(env_user_key);
-    }
-    if(default_user_cert && default_user_cert != (*user_cert))
-    {
-        globus_libc_free(default_user_cert);
-    }
-    if(default_user_key && default_user_key != (*user_key))
-    {
-        globus_libc_free(default_user_key);
-    }
-    if(default_pkcs12_user_cred && default_pkcs12_user_cred != (*user_key))
-    {
-        globus_libc_free(default_pkcs12_user_cred);
-    }
+
     if(home)
     {
         free(home);
@@ -4185,38 +4101,6 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
     {
         *host_cert = NULL;
         *host_key = NULL;
-    }
-    if(env_host_cert && env_host_cert != *host_cert)
-    {
-        globus_libc_free(env_host_cert);
-    }
-    if(env_host_key && env_host_key != *host_key)
-    {
-        globus_libc_free(env_host_key);
-    }
-    if(installed_host_cert && installed_host_cert != *host_cert)
-    {
-        globus_libc_free(installed_host_cert);
-    }
-    if(installed_host_key && installed_host_key != *host_key)
-    {
-        globus_libc_free(installed_host_key);
-    }
-    if(local_host_cert && local_host_cert != *host_cert)
-    {
-        globus_libc_free(local_host_cert);
-    }
-    if(local_host_key && local_host_key != *host_key)
-    {
-        globus_libc_free(local_host_key);
-    }
-    if(default_host_cert && default_host_cert != *host_cert)
-    {
-        globus_libc_free(default_host_cert);
-    }
-    if(default_host_key && default_host_key != *host_key)
-    {
-        globus_libc_free(default_host_key);
     }
 
     if(home)
@@ -4538,38 +4422,6 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
         *service_cert = NULL;
         *service_key = NULL;
     }
-    if(env_service_cert && env_service_cert != *service_cert)
-    {
-        globus_libc_free(env_service_cert);
-    }
-    if(env_service_key && env_service_key != *service_key)
-    {
-        globus_libc_free(env_service_key);
-    }
-    if(installed_service_cert && installed_service_cert != *service_cert)
-    {
-        globus_libc_free(installed_service_cert);
-    }
-    if(installed_service_key && installed_service_key != *service_key)
-    {
-        globus_libc_free(installed_service_key);
-    }
-    if(local_service_cert && local_service_cert != *service_cert)
-    {
-        globus_libc_free(local_service_cert);
-    }
-    if(local_service_key && local_service_key != *service_key)
-    {
-        globus_libc_free(local_service_key);
-    }
-    if(default_service_cert && default_service_cert != *service_cert)
-    {
-        globus_libc_free(default_service_cert);
-    }
-    if(default_service_key && default_service_key != *service_key)
-    {
-        globus_libc_free(default_service_key);
-    }
 
     if(home)
     {
@@ -4695,8 +4547,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
                 X509_USER_PROXY_FILE,
                 user_id_string);
             
-            if(result != GLOBUS_SUCCESS &&
-               !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                     result,
@@ -4727,13 +4578,10 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
     {
         *user_proxy = NULL;
     }
+    
     if(user_id_string)
     {
         free(user_id_string);
-    }
-    if(default_user_proxy && (default_user_proxy != (*user_proxy)))
-    {
-        globus_libc_free(default_user_proxy);
     }
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
