@@ -7,6 +7,7 @@ use Test;
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $verbose = 0;
 
 my @test_rsls=qw(
 	error_bad_directory.rsl
@@ -89,15 +90,26 @@ sub test_rsl
 {
     my $rsl_file = shift;
     my $file = new IO::File("$testdatadir/$rsl_file", '<');
-    my $value = <$file>;
+    my @all_rsl = <$file>;
     my $error;
+    my $value;
+
+    $value = $all_rsl[0];
 
     chomp($value);
+
     $value =~ s/\(\*\s*(\S*)\s*\*\)/$1/;
-
     $value =~ s/GLOBUS_GRAM_PROTOCOL_ERROR_//;
-
     $error = eval "Globus::GRAM::Error::$value()";
+
+    if($verbose)
+    {
+	print "# Submitting RSL\n";
+	foreach(@all_rsl)
+	{
+	    print "#    $_";
+	}
+    }
 
     system("globusrun -s -r \"$contact\" -f \"$testdatadir/$rsl_file\" >/dev/null 2>&1");
 
@@ -119,6 +131,7 @@ foreach(@todo_rsls)
 if(@ARGV)
 {
     my @doit;
+    $verbose = 1;
 
     foreach(@ARGV)
     {

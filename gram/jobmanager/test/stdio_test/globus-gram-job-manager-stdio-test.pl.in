@@ -11,6 +11,7 @@ my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = &make_tmpdir();
 my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $verbose = 0;
 
 my @test_cases=qw(
     stdio001 stdio002 stdio003 stdio004 stdio005
@@ -29,6 +30,7 @@ sub test_rsl
     my $out_rsl_fp = new IO::File($additionalrslfile, '>');
     my $rsl_list;
     my $out_count;
+    my $all_rsl;
 
     $rsl_list = join('', <$test_rsl_fp>);
     $rsl_list =~ s/&//;
@@ -38,16 +40,29 @@ sub test_rsl
     $test_rsl_fp->close();
 
     $out_rsl_fp->print('&');
+    $all_rsl = '&';
 
     # need to put the RSL substitutions in the additional RSL
     # before the main RSL clauses
     if($additional_rsl ne '')
     {
 	$out_rsl_fp->print($additional_rsl . "\n");
+	$all_rsl .= "$additional_rsl\n";
     }
     $out_rsl_fp->print($rsl_list);
+    $all_rsl .= $rsl_list;
     
     $out_rsl_fp->close();
+
+    if($verbose)
+    {
+	print "# Submitting job\n";
+
+	foreach(split(/\n/, $all_rsl))
+	{
+	    print "#    $_\n";
+	}
+    }
 
     system("globusrun -s -r \"$contact\" -f $additionalrslfile");
 
@@ -95,6 +110,8 @@ foreach(@test_cases)
 if(@ARGV)
 {
     my @doit;
+
+    $verbose = 1;
 
     foreach(@ARGV)
     {
