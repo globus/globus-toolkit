@@ -37,34 +37,50 @@ pkgdata_DATA =				\
 	large-file
 
 test_SCRIPTS =				\
+	basic-test.pl                   \
+	close-barrier-test.pl           \
+	close-cancel-test.pl            \
+	failure-test.pl                 \
+	read-barrier-test.pl            \
+	timeout-test.pl                 \
+	cancel-test.pl                  \
+	random-test.pl                  \
+	server-test.pl                  \
+	verify-test.pl                  \
+	attr-test.pl                    \
+	space-test.pl                   \
+	server2-test.pl                 \
+	block-barrier-test.pl           \
+	stack-test.pl                   \
+	unload-test.pl                  \
 	http-get-test.pl		\
 	http-header-test.pl		\
 	http-post-test.pl		\
 	http-put-test.pl		\
-	run-http-tests.pl
+	test-common.pl                  \
+	run-http-tests.pl               \
+	run-xio-tests.pl                \
+	run-all-tests.pl                \
+	TESTS.pl
 		
+LDADD = $(GPT_PGM_LINKS)
 
 framework_test_SOURCES = $(Sources)
 framework_test_LDFLAGS = $(GPT_LDFLAGS)
-framework_test_LDADD = $(GPT_PGM_LINKS) 
 
 HTTP_COMMON_Sources = http_test_common.h http_test_common.c
 
 http_header_test_SOURCES = http_header_test.c $(HTTP_COMMON_Sources)
 http_header_test_LDFLAGS = $(GPT_LDFLAGS)
-http_header_test_LDADD = $(GPT_PGM_LINKS) 
 
 http_post_test_SOURCES = http_post_test.c $(HTTP_COMMON_Sources)
 http_post_test_LDFLAGS = $(GPT_LDFLAGS)
-http_post_test_LDADD = $(GPT_PGM_LINKS) 
 
 http_put_test_SOURCES = http_put_test.c $(HTTP_COMMON_Sources)
 http_put_test_LDFLAGS = $(GPT_LDFLAGS)
-http_put_test_LDADD = $(GPT_PGM_LINKS) 
 
 http_get_test_SOURCES = http_get_test.c $(HTTP_COMMON_Sources)
 http_get_test_LDFLAGS = $(GPT_LDFLAGS)
-http_get_test_LDADD = $(GPT_PGM_LINKS) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -1080,6 +1080,8 @@ globus_libc_gethostaddr(
         }
     }
     
+    globus_libc_freeaddrinfo(save_addrinfo);
+    
     return 0;
 }
 

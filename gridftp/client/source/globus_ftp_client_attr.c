@@ -2400,6 +2400,16 @@ globus_ftp_client_operationattr_copy(
 	goto destroy_exit;
     }
 
+    result = 
+	globus_ftp_client_operationattr_set_list_uses_data_mode(
+            dst,
+            i_src->list_uses_data_mode);
+            
+    if(result)
+    {
+	goto destroy_exit;
+    }
+    
     if(!i_src->using_default_auth)
     {
 	result = 

@@ -1405,6 +1405,7 @@ globus_l_xio_register_writev(
 
     globus_mutex_lock(&handle->context->mutex);
     {
+        handle->ref += ref;
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
             res = GlobusXIOErrorInvalidState(handle->state);
@@ -1429,8 +1430,6 @@ globus_l_xio_register_writev(
             ("[%s] : inserting write op @ 0x%x\n", 
             _xio_name, op));
         globus_list_insert(&handle->write_op_list, op);
-        /* may be zero if it was already referenced via data descriptor */
-        handle->ref += ref;
     }
     globus_mutex_unlock(&handle->context->mutex);
 
@@ -1481,6 +1480,7 @@ globus_l_xio_register_writev(
                 globus_assert(op->ref > 0);
             }
         }
+  bad_state_err:
         /* clean up the operation */
         GlobusXIOOpDec(op);
         if(op->ref == 0)
@@ -1490,7 +1490,6 @@ globus_l_xio_register_writev(
             globus_assert(!destroy_handle);
         }
     }
-  bad_state_err:
     globus_mutex_unlock(&handle->context->mutex);
 
     GlobusXIODebugInternalExitWithError();
@@ -1516,6 +1515,7 @@ globus_l_xio_register_readv(
 
     globus_mutex_lock(&handle->context->mutex);
     {
+        handle->ref += ref;
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
             res = GlobusXIOErrorInvalidState(handle->state);
@@ -1550,7 +1550,6 @@ globus_l_xio_register_readv(
             ("[%s] : inserting read op @ 0x%x\n", 
             _xio_name, op));
         globus_list_insert(&handle->read_op_list, op);
-        handle->ref += ref;
     }
     globus_mutex_unlock(&handle->context->mutex);
 
@@ -1601,6 +1600,7 @@ globus_l_xio_register_readv(
                 globus_assert(op->ref > 0);
             }
         }
+  bad_state_err:
         /* clean up the operation */
         GlobusXIOOpDec(op);
         if(op->ref == 0)
@@ -1610,7 +1610,6 @@ globus_l_xio_register_readv(
             globus_assert(!destroy_handle);
         }
     }
-  bad_state_err:
     globus_mutex_unlock(&handle->context->mutex);
 
     GlobusXIODebugInternalExitWithError();

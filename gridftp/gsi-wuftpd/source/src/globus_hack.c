@@ -609,6 +609,7 @@ wu_monitor_reset(
     mon->last_perf_update = time(GLOBUS_NULL);
     mon->last_range_update = mon->last_perf_update;
     mon->callback_handle = 0;
+    globus_fifo_destroy(&mon->ranges);
     globus_fifo_init(&mon->ranges);
 }
 
@@ -618,7 +619,8 @@ wu_monitor_init(
 {
     globus_mutex_init(&mon->mutex, GLOBUS_NULL);
     globus_cond_init(&mon->cond, GLOBUS_NULL);
-
+    globus_fifo_init(&mon->ranges);
+    
     wu_monitor_reset(mon);
 }
 
@@ -1172,6 +1174,8 @@ g_send_data(
                     G_EXIT();
                     perror_reply(451, "Local resource failure: malloc");
                     retrieve_is_data = 1;
+		    globus_free(offset_a);
+                    globus_free(length_a);
 		    goto bail0;
                 }
 
@@ -1226,6 +1230,8 @@ g_send_data(
                     sprintf(error_buf, "data_write() failed: %s", 
                         globus_object_printable_to_string(
                             globus_error_get(res)));
+                    globus_free(offset_a);
+                    globus_free(length_a);
                     goto data_err;
                 }
 		buf = GLOBUS_NULL; /* So that time outs or or other goto
@@ -1302,7 +1308,10 @@ g_send_data(
 #           endif
 
         } /* end for */
-
+        
+        globus_free(offset_a);
+        globus_free(length_a);
+        
 #       ifdef THROUGHPUT
         {
             if (bps != -1)

@@ -4484,9 +4484,7 @@ globus_l_ftp_client_list_op(
     globus_result_t                             result;
     globus_bool_t				registered;
     globus_ftp_client_operationattr_t  		local_attr;
-    globus_ftp_control_parallelism_t	        parallelism;
     globus_i_ftp_client_handle_t *		handle;
-    globus_i_ftp_client_operationattr_t *	i_attr;
 
     GlobusFuncName(globus_l_ftp_client_list_op);
 
@@ -4560,46 +4558,6 @@ globus_l_ftp_client_list_op(
 	goto free_url_exit;
     }
     
-    /* force stream/ASCII/no parallelism, 
-        unless we are allowing lists in the current data mode */
-
-    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
-     
-    if(!i_attr || !i_attr->list_uses_data_mode)
-    {        
-        result = globus_ftp_client_operationattr_set_mode(
-            &local_attr,
-            GLOBUS_FTP_CONTROL_MODE_STREAM);
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto destroy_local_attr_exit;
-        }
-
-        result = globus_ftp_client_operationattr_set_type(
-            &local_attr,
-            GLOBUS_FTP_CONTROL_TYPE_ASCII);
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto destroy_local_attr_exit;
-        }
-               
-        parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
-        
-        result = globus_ftp_client_operationattr_set_parallelism(
-            &local_attr,
-            &parallelism);
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(result);
-            goto destroy_local_attr_exit;
-        }
-    }    
-    
     /* Obtain a connection to the FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
 					  url,
@@ -4609,9 +4567,29 @@ globus_l_ftp_client_list_op(
     {
 	goto destroy_local_attr_exit;
     }
+    
+    /* force stream/ASCII/no parallelism, 
+        unless we are allowing lists in the current data mode */
+    if(handle->source->features &&
+        globus_i_ftp_client_feature_get(
+            handle->source->features, 
+            GLOBUS_FTP_CLIENT_FEATURE_OPTS_LIST) == GLOBUS_FTP_CLIENT_FALSE)
+    {
+        /* we've already determined that the server doesn't support the
+         * opts list command
+         */
+        handle->source->attr->list_uses_data_mode = GLOBUS_FALSE;
+    }
+                    
+    if(!handle->source->attr->list_uses_data_mode)
+    {
+        handle->source->attr->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
+        handle->source->attr->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
+        handle->source->attr->parallelism.mode = 
+            GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
+    }    
 
     /* Notify plugins that a list operation is happening */
-    
     switch(op)
     {
       case GLOBUS_FTP_CLIENT_NLST:
@@ -4637,8 +4615,6 @@ globus_l_ftp_client_list_op(
         break;
         
     }
-        
-        
         
     /* 
      * check our handle state before continuing, because we just unlocked.

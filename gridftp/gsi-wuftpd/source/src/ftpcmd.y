@@ -84,7 +84,6 @@ globus_ftp_control_delay_passive_t              g_delayed_passive;
 globus_ftp_control_dcau_t			g_dcau;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
-int                                             g_list_mode;
 extern gss_cred_id_t                            g_deleg_cred;
 #endif
 
@@ -229,7 +228,7 @@ extern int port_allowed(const char *remoteaddr);
     CHECKMETHOD     CHECKSUM        BUFSIZE PSIZE
 
     STRIPELAYOUT    PARTITIONED BLOCKED BLOCKSIZE
-    PARALLELISM     DELAYED_PASV
+    PARALLELISM     DELAYED_PASV USE_DATA_MODE
 
     LEXERR	CKSM
 
@@ -2022,15 +2021,15 @@ list_option_list:
     ;
 
 list_option:
-    MODE EQUALS STRING SEMICOLON
+    USE_DATA_MODE EQUALS STRING SEMICOLON
     {
-        if(strcasecmp($3, "e") == 0)
+        if(strcasecmp($3, "yes") == 0)
         {
-            g_list_mode = GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
+            /* we don't enforce this right now */
         }
-        else if(strcasecmp($3, "s") == 0)
+        else if(strcasecmp($3, "no") == 0)
         {
-            g_list_mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
+            /* we don't enforce this right now */
         }
         else
         {
@@ -3222,10 +3221,10 @@ int yylex(void)
 	    c = cbuf[cpos];
 	    cbuf[cpos] = '\0';
 
-	    if(strcasecmp(cp, "mode") == 0)
+	    if(strcasecmp(cp, "usedatamode") == 0)
 	    {
 		cbuf[cpos] = c;
-		return MODE;
+		return USE_DATA_MODE;
 	    }
 	    else if(strcasecmp(cp, "stripelayout") == 0)
 	    {
@@ -3252,7 +3251,7 @@ int yylex(void)
 		cbuf[cpos] = c;
 		return PARALLELISM;
 	    }
-	    else if(strcasecmp(cp, "delayed_pasv") == 0)
+	    else if(strcasecmp(cp, "delayedpasv") == 0)
 	    {
 		cbuf[cpos] = c;
 		return DELAYED_PASV;
