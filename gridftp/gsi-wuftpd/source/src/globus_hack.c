@@ -603,32 +603,29 @@ receive_data(
                       (void *)&monitor);
             if(res != GLOBUS_SUCCESS)
             {
+                globus_free(buf);
+                goto data_err;
             }
-            monitor.cb_count++;
+            cb_count++;
         }
 
         globus_mutex_lock(&monitor.mutex);
         {
-            while(!monitor.done || monitor.count < monitor.cb_count)
+            while(!monitor.done && monitor.count < cb_count)
             {
                 globus_cond_wait(&monitor.cond, &monitor.mutex);
             }
         }
         globus_mutex_unlock(&monitor.mutex);
         
-
-        transflag = 0;
-        if (cnt != 0)
-        {
-            if (cnt < 0)
-                goto data_err;
-            goto file_err;
-        }
-        if (draconian_FILE == NULL)
+   
+        if(monitor.done || g_timeout_occured)
         {
             goto data_err;
         }
-        draconian_FILE = NULL;
+
+        transflag = 0;
+
         alarm(0);
 #       ifdef TRANSFER_COUNT
         {
@@ -653,6 +650,27 @@ receive_data(
     }
 
   data_err:
+    /*
+     *  force close the data connection
+     */
+    monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              handle,
+              data_close_callback,
+              (void*)&monitor);
+
+    /*
+     *  wait for all the callbacks and the close callback 
+     */
+    globus_mutex_lock(&monitor.mutex);
+    {   
+        while(!monitor.done || monitor.count < cb_count)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
     alarm(0);
     transflag = 0;
     perror_reply(426, "Data Connection");
@@ -683,6 +701,11 @@ data_read_callback(
     {
         if(error != GLOBUS_NULL)
         {
+            monitor->done = GLOBUS_TRUE;
+            globus_cond_signal(&monitor->cond, &monitor->mutex);
+            globus_mutex_unlock(&monitor->mutex);
+
+            return;
         }
 
         if(length > 0)
@@ -716,6 +739,13 @@ data_read_callback(
                       (void *)&monitor);
             if(res != GLOBUS_SUCCESS)
             {
+                globus_free(buffer);
+                monitor->done = GLOBUS_TRUE;
+                globus_cond_signal(&monitor->cond, &monitor->mutex);
+            
+                globus_mutex_unlock(&monitor->mutex);
+
+                return;
             }
         }
 
