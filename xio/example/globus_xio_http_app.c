@@ -40,24 +40,31 @@ main(
     globus_xio_driver_t                     tcp_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
-    globus_xio_server_t			    server;
+    globus_xio_server_t			            server;
     globus_xio_target_t                     target;
     globus_xio_attr_t                       attr = NULL;
     char *                                  cs = (char*)globus_malloc(512);
     globus_result_t                         res;
     int                                     ctr;
     globus_bool_t                           be_server = GLOBUS_FALSE;
-    globus_hashtable_t*			    hashtable = (globus_hashtable_t*) globus_malloc(sizeof(globus_hashtable_t));
+    globus_hashtable_t*			            hashtable = (globus_hashtable_t*) globus_malloc(sizeof(globus_hashtable_t));
+    globus_hashtable_t*			            user_table = (globus_hashtable_t*) globus_malloc(sizeof(globus_hashtable_t));
+    globus_xio_http_string_pair_t           *string_pair;
+
     int                                     rc;
     FILE*				    fp;
     char				    buffer[SIZE];
-    char*				    uri = (char*)globus_malloc(sizeof(char)*LINE_LEN); 
+    globus_xio_http_string_pair_t*			length;
     int					    nbytes;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
 
     globus_hashtable_init(hashtable,
+                          16,  /*XXX how to decide this size? */
+                          globus_hashtable_string_hash,
+                          globus_hashtable_string_keyeq);
+    globus_hashtable_init(user_table,
                           16,  /*XXX how to decide this size? */
                           globus_hashtable_string_hash,
                           globus_hashtable_string_keyeq);
@@ -121,8 +128,8 @@ main(
                                          GLOBUS_XIO_HTTP_GET_HEADERS,
                                          hashtable);
             test_res(res); 
-            uri = (char*)globus_hashtable_lookup(hashtable, "Content-Length");
-            printf("length: %s\n", uri);
+            length = (globus_xio_http_string_pair_t*)globus_hashtable_lookup(hashtable, "Accept");
+            printf("Accepts: %s\n", length->value);
 
             nbytes = SIZE;
             res = globus_xio_read(
@@ -133,8 +140,7 @@ main(
                                   &nbytes,
                                   NULL);
 
-            printf("%s", buffer);
-            fp = fopen("/home/wellner/usenet.sig", "r");
+            fp = fopen("sample.html", "r");
             res = globus_xio_handle_cntl(
                                          xio_handle,
                                          http_driver,
@@ -145,17 +151,21 @@ main(
                                          http_driver,
                                          GLOBUS_XIO_HTTP_SET_EXIT_TEXT,
                                          "Much Love");
+            string_pair = (globus_xio_http_string_pair_t*)malloc(sizeof(globus_xio_http_string_pair_t));
+            string_pair->key = "Content";
+            string_pair->value = "bob";
+            globus_hashtable_insert(user_table, "Content", string_pair);
+
             res = globus_xio_handle_cntl(
                                          xio_handle,
                                          http_driver,
                                          GLOBUS_XIO_HTTP_SET_HEADERS,
-                                         "Content: bob\r\n");
+                                         user_table);
 
             while (!feof(fp))
                 {
                     fgets(buffer, sizeof(buffer), fp);
                     nbytes = strlen(buffer);
-                    printf("app: %s\n", buffer);
                     res = globus_xio_write(
                                            xio_handle,
                                            buffer,
