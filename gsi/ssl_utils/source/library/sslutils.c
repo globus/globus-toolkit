@@ -2196,7 +2196,7 @@ Description:
     if not use $HOME/.globus/certificates
 	or /etc/grid-security/certificates
 	or $GLOBUS_DEPLOY_PATH/share/certificates
-	or $GLOBUS_INSTALL_PATH/share/certificates
+	or $GLOBUS_LOCATION/share/certificates
 	or $GSI_DEPLOY_PATH/share/certificates
 	or $GSI_INSTALL_PATH/share/certificates
 
@@ -2373,37 +2373,37 @@ proxy_get_filenames(int proxy_in,
 			/*
 			 * ...else look for (in order)
 			 * $GLOBUS_DEPLOY_PATH/share/certificates
-			 * $GLOBUS_INSTALL_PATH/share/certficates
+			 * $GLOBUS_LOCATION/share/certficates
 			 */
-			char *globus_install_path;
+			char *globus_location;
 
 
-			globus_install_path = getenv("GLOBUS_DEPLOY_PATH");
+			globus_location = getenv("GLOBUS_DEPLOY_PATH");
 
-			if (!globus_install_path)
+			if (!globus_location)
 			{		
-					globus_install_path = getenv("GLOBUS_INSTALL_PATH");
+					globus_location = getenv("GLOBUS_LOCATION");
 			}
 
-			if (!globus_install_path)
+			if (!globus_location)
 			{
-					globus_install_path = getenv("GSI_DEPLOY_PATH");
+					globus_location = getenv("GSI_DEPLOY_PATH");
 			}
 
-			if (!globus_install_path)
+			if (!globus_location)
 			{
-					globus_install_path = getenv("GSI_INSTALL_PATH");
+					globus_location = getenv("GSI_INSTALL_PATH");
 			}
 
-			if (globus_install_path)
+			if (globus_location)
 			{
 #ifdef DEBUG
 				fprintf(stderr,
 					"Checking for certdir in Globus install/deploy path (%s)\n",
-					globus_install_path);
+					globus_location);
 #endif /* DEBUG */
 
-				len = strlen(globus_install_path) +
+				len = strlen(globus_location) +
 					strlen(X509_INSTALLED_CERT_DIR)
 					+ 2 /* NUL and FILE_SEPERATOR */;
 
@@ -2416,7 +2416,7 @@ proxy_get_filenames(int proxy_in,
 				}
 			sprintf(installed_cert_dir,
 				"%s%s%s",
-				globus_install_path,
+				globus_location,
 				FILE_SEPERATOR,
 				X509_INSTALLED_CERT_DIR);
 
