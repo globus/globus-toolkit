@@ -15,7 +15,6 @@
 
 #ifdef  _MEMORY_USE_INTERNAL_MEM
     static globus_memory_t                globus_l_memory_list_info;
-    static globus_mutex_t                 globus_l_list_memory_lock;
 
 #   define MALLOC_LIST_T()                                            \
         ((globus_list_t *)                                            \

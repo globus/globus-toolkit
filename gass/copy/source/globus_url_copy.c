@@ -64,12 +64,17 @@ static RETSIGTYPE
 globus_l_globus_url_copy_sigint_handler(int dummy);
 
 #if defined(BUILD_LITE)
-    static int
-    globus_l_globus_url_copy_signal_wakeup(globus_abstime_t *  time_stop,
-                                           void *              user_args);
-#   define globus_l_globus_url_copy_remove_cancel_poll() globus_callback_unregister(globus_l_callback_handle);
+static
+void
+globus_l_globus_url_copy_signal_wakeup(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args);
+
+#define globus_l_globus_url_copy_remove_cancel_poll() \
+    globus_callback_unregister(globus_l_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL)
 #else
-#   define globus_l_globus_url_copy_remove_cancel_poll()
+#define globus_l_globus_url_copy_remove_cancel_poll()
 #endif
 
 static int
@@ -752,13 +757,12 @@ main(int argc, char **argv)
 
         GlobusTimeReltimeSet(delay_time, 0, 0);
         GlobusTimeReltimeSet(period_time, 0, 500000);
-        globus_callback_register_periodic(&globus_l_callback_handle,
-                                        &delay_time,
-                                        &period_time,
-                                        globus_l_globus_url_copy_signal_wakeup,
-                                        GLOBUS_NULL,
-                                        GLOBUS_NULL,
-                                        GLOBUS_NULL);
+        globus_callback_register_periodic(
+            &globus_l_callback_handle,
+            &delay_time,
+            &period_time,
+            globus_l_globus_url_copy_signal_wakeup,
+            GLOBUS_NULL);
     }
 #   endif
 
@@ -959,11 +963,17 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static int
-globus_l_globus_url_copy_signal_wakeup(globus_abstime_t *  time_stop,
-                                       void *              user_args)
+static 
+void
+globus_l_globus_url_copy_signal_wakeup(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
 {
-    return globus_l_globus_url_copy_ctrlc;
+    if(globus_l_globus_url_copy_ctrlc)
+    {
+        globus_callback_signal_poll();
+    }
 } /* globus_l_globus_url_copy_signal_wakeup() */
 
 

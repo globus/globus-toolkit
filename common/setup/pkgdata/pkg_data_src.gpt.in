@@ -16,7 +16,7 @@
 
     <Source_Dependencies Type="pgm_runtime" >
         <Dependency Name="globus_core" Package="pgm"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
-        <Dependency Name="globus_common" Package="pgm"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
+        <Dependency Name="globus_common" Package="pgm"> <Version><Simple_Version Major="3"></Simple_Version></Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Setup_Dependency PkgType="pgm" >

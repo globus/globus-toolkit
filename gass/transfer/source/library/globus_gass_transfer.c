@@ -61,8 +61,12 @@ globus_l_gass_transfer_activate(void)
 			  globus_hashtable_string_hash,
 			  globus_hashtable_string_keyeq);
 
-    globus_handle_table_init(&globus_i_gass_transfer_request_handles);
-    globus_handle_table_init(&globus_i_gass_transfer_listener_handles);
+    globus_handle_table_init(
+        &globus_i_gass_transfer_request_handles,
+        GLOBUS_NULL);
+    globus_handle_table_init(
+        &globus_i_gass_transfer_listener_handles,
+        GLOBUS_NULL);
 
     globus_module_activate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
 

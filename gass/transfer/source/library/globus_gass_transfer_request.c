@@ -669,7 +669,7 @@ globus_gass_transfer_request_destroy(
  *        The request handle to initialize. If this function is successful, 
  *        the value pointed to by this will be initialized to the new
  *        handle id; otherwise, the it will be set to 
- *        GLOBUS_HANDLE_TABLE_NO_HANDLE.
+ *        GLOBUS_NULL_HANDLE.
  * @param attr
  *        The request attributes to use to create the handle. If non-NULL,
  *        they are copied into the request structure.
@@ -766,7 +766,7 @@ globus_i_gass_transfer_request_init(
   free_req:
     globus_free(req);
   error_exit:
-    *request = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+    *request = GLOBUS_NULL_HANDLE;
     return;
 }
 /* globus_i_gass_transfer_request_init() */
@@ -857,7 +857,7 @@ globus_i_gass_transfer_request_destroy(
 	}
 
 	globus_free(req);
-	request = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+	request = GLOBUS_NULL_HANDLE;
 
 	return GLOBUS_SUCCESS;
     }

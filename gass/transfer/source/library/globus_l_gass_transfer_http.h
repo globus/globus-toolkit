@@ -380,15 +380,17 @@ globus_l_gass_transfer_http_read_buffered_callback(
     globus_size_t				nbytes);
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_read_buffered_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_ready_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 void
 globus_l_gass_transfer_http_copy_text_buffer(
@@ -518,9 +520,10 @@ globus_l_gass_transfer_http_listener_proto_destroy(
     globus_gass_transfer_http_listener_proto_t *
 						proto);
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_listen_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static
@@ -570,9 +573,10 @@ istspecial(
     char 					byte);
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_send_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static
@@ -622,9 +626,10 @@ globus_l_gass_transfer_http_extract_referral(
     globus_size_t *					referral_count);
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_denied(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static

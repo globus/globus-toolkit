@@ -1,11 +1,11 @@
 /******************************************************************************
 globus_handle_table.c
- 
+
 Description:
     This module implements a reference-counting handle table structure.
- 
+
 CVS Information:
- 
+
     $Source$
     $Date$
     $Revision$
@@ -14,286 +14,369 @@ CVS Information:
 #include "config.h"
 #include "globus_handle_table.h"
 
-/******************************************************************************
-		             Type definitions
-******************************************************************************/
-#define GLOBUS_L_HASH_TABLE_SIZE            42
+#define GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE 100
 
 /******************************************************************************
                            local data structures
 ******************************************************************************/
-typedef struct
+typedef struct globus_l_handle_entry_s
 {
-    int					ref;
-    globus_handle_t			handle;
-    void *				value;
+    int                                 index;
+    int                                 ref;
+    void *                              value;
+    struct globus_l_handle_entry_s *    pnext;
 } globus_l_handle_entry_t;
 
 /*
  * Function: globus_handle_table_init()
- * 
- * Description: Initialize a handle table, setting it up to generate
- *              unique handle numbers
- * 
- * Parameters: 
- * 
- * Returns: 
+ *
+ * Description: Initialize a handle table
+ *
+ * Parameters:
+ *
+ * Returns:
  */
-void
+int
 globus_handle_table_init(
-    globus_handle_table_t *		handle_table)
+    globus_handle_table_t *             handle_table,
+    globus_handle_destructor_t          destructor)
 {
-    globus_mutex_init(&handle_table->lock,
-		      (globus_mutexattr_t *) GLOBUS_NULL);
+    if(!handle_table)
+    {
+        return GLOBUS_FAILURE;
+    }
 
-    globus_hashtable_init(&handle_table->table,
-			  GLOBUS_L_HASH_TABLE_SIZE,
-			  globus_hashtable_int_hash,
-			  globus_hashtable_int_keyeq);
+    handle_table->table = (globus_l_handle_entry_t **)
+        globus_libc_malloc(GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE * 
+            sizeof(globus_l_handle_entry_t *));
+    if(!handle_table->table)
+    {
+        return GLOBUS_FAILURE;
+    }
 
-    handle_table->last_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+    handle_table->next_slot = GLOBUS_NULL_HANDLE + 1;
+    handle_table->table_size = GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE;
+    handle_table->inactive = GLOBUS_NULL;
+    handle_table->destructor = destructor;
+    
+    return GLOBUS_SUCCESS;
 }
-/* globus_l_callback_handle_init() */
+/* globus_handle_table_init() */
 
 /*
  * Function: globus_handle_table_destroy()
- * 
- * Description: Delete a handle table
- * 
- * Parameters: 
- * 
- * Returns: 
+ *
+ * Description: Destroy a handle table
+ *
+ * Parameters:
+ *
+ * Returns:
  */
-void
+int
 globus_handle_table_destroy(
-    globus_handle_table_t *		handle_table)
+    globus_handle_table_t *             handle_table)
 {
-    globus_mutex_destroy(&handle_table->lock);
-    globus_hashtable_destroy(&handle_table->table);
+    int                                 i;
+    globus_l_handle_entry_t **          table;
+    globus_l_handle_entry_t *           inactive;
+    globus_l_handle_entry_t *           save;
+    globus_handle_destructor_t          destructor;
+
+    if(!handle_table)
+    {
+        return GLOBUS_FAILURE;
+    }
+
+    /* first free all active handles */
+    table = handle_table->table;
+    destructor = handle_table->destructor;
+    i = handle_table->next_slot;
+    while(--i > GLOBUS_NULL_HANDLE)
+    {
+        if(table[i])
+        {
+            if(destructor)
+            {
+                destructor(table[i]->value);
+            }
+            
+            globus_libc_free(table[i]);
+        }
+    }
+
+    /* then free inactive handles */
+    inactive = handle_table->inactive;
+    while(inactive)
+    {
+        save = inactive->pnext;
+        globus_libc_free(inactive);
+        inactive = save;
+    }
+
+    /* finally, free table */
+    globus_libc_free(table);
+
+    return GLOBUS_SUCCESS;
 }
 /* globus_l_callback_handle_destroy() */
 
 /*
  * Function: globus_handle_table_insert()
- * 
+ *
  * Description: Insert a value into the handle table, and
  *              return a unique handle.
- * 
+ *
  * Parameters:  handle_table - the table of unique handles
  *                  we want to use
  *              value - the value to insert into the table
  *              initial_refs - the initial reference count
  *                  of this value in the table.
- * 
- * Returns:  A unique handle. Note that if all possible
- *           integers are already used as handles, then
- *           this will deadlock.
+ *
+ * Returns:  A unique handle.
  */
 globus_handle_t
 globus_handle_table_insert(
-    globus_handle_table_t *		handle_table,
-    void *				value,
-    int					initial_refs)
+    globus_handle_table_t *             handle_table,
+    void *                              value,
+    int                                 initial_refs)
 {
-    globus_bool_t			done = GLOBUS_FALSE;
-    void *				tmp_found;
-    globus_l_handle_entry_t *		entry;
+    globus_l_handle_entry_t *           entry;
 
-    globus_mutex_lock(&handle_table->lock);
-
-    /* Search for new handle number */
-    while(!done)
+    if(!handle_table)
     {
-        handle_table->last_handle++;
-	if(handle_table->last_handle == GLOBUS_HANDLE_TABLE_NO_HANDLE)
-        {
-	    handle_table->last_handle++;
-	}
-        
-        tmp_found = globus_hashtable_lookup(&handle_table->table, 
-				            (void *)handle_table->last_handle);
-        if(tmp_found == GLOBUS_NULL)
-	{
-            done = GLOBUS_TRUE;
-	}
+        return GLOBUS_NULL_HANDLE;
     }
 
-    /* Create a new handle table entry */
-    entry = (globus_l_handle_entry_t *)
-	       globus_malloc(sizeof(globus_l_handle_entry_t));
-    entry->handle = handle_table->last_handle;
+    /* see if we have an inactive handle, if so, take it */
+    if(handle_table->inactive)
+    {
+        entry = handle_table->inactive;
+        handle_table->inactive = entry->pnext;
+    }
+    /* otherwise allocate a new entry */
+    else
+    {
+        /* if table is full, make bigger */
+        if(handle_table->next_slot == handle_table->table_size)
+        {
+            globus_l_handle_entry_t ** new_table;
+
+            new_table = (globus_l_handle_entry_t **)
+                globus_libc_realloc(
+                    handle_table->table,
+                    (handle_table->table_size + 
+                        GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE) *
+                        sizeof(globus_l_handle_entry_t *));
+
+            if(!new_table)
+            {
+                return GLOBUS_NULL_HANDLE;
+            }
+
+            handle_table->table = new_table;
+            handle_table->table_size += GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE;
+        }
+
+        entry = (globus_l_handle_entry_t *)
+            globus_libc_malloc(sizeof(globus_l_handle_entry_t));
+        if(!entry)
+        {
+            return GLOBUS_NULL_HANDLE;
+        }
+
+        entry->index = handle_table->next_slot++;
+    }
+
+    /* now bind this entry to table */
+    handle_table->table[entry->index] = entry;
+
     entry->value = value;
     entry->ref = initial_refs;
 
-    /* Insert it into the handle table */
-    globus_hashtable_insert(&handle_table->table, 
-			    (void *) entry->handle,
-			    (void *) entry);
-    globus_mutex_unlock(&handle_table->lock);
-
-    /* Return our new, unique handle */
-    return entry->handle;
+    return entry->index;
 }
 /* globus_handle_table_insert() */
 
 globus_bool_t
 globus_handle_table_increment_reference_by(
-    globus_handle_table_t *                     handle_table,
-    globus_handle_t                             handle,
-    unsigned int                                inc)
+    globus_handle_table_t *             handle_table,
+    globus_handle_t                     handle,
+    unsigned int                        inc)
 {
-    globus_l_handle_entry_t *		entry;
-    globus_bool_t			still_in_table;
+    globus_l_handle_entry_t *           entry;
 
-    globus_mutex_lock(&handle_table->lock);
-
-    entry = globus_hashtable_lookup(&handle_table->table,
-				    (void *) handle);
-
-    if(entry == GLOBUS_NULL)
+    if(!handle_table)
     {
-	still_in_table = GLOBUS_FALSE;
+        return GLOBUS_FALSE;
+    }
+
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
+    {
+        entry = handle_table->table[handle];
     }
     else
     {
-	still_in_table = GLOBUS_TRUE;
-	entry->ref += inc;
+        entry = GLOBUS_NULL;
     }
-    globus_mutex_unlock(&handle_table->lock);
 
-    return still_in_table;
+    if(entry)
+    {
+        entry->ref += inc;
+        return GLOBUS_TRUE;
+    }
+    else
+    {
+        return GLOBUS_FALSE;
+    }
 }
+
 /*
  * Function: globus_handle_table_decrement_reference()
- * 
+ *
  * Description: Remove a reference to a handle table entry,
  *              deleting the entry if no more references
  *              exist.
- * 
+ *
  * Parameters:  handle_table - the table of unique handles
  *                  we want to use
  *              handle - the handle that we want to remove
- * 
+ *
  * Returns:  GLOBUS_TRUE if the handle is still referenced.
  *
  */
 globus_bool_t
 globus_handle_table_decrement_reference(
-    globus_handle_table_t *		handle_table,
-    globus_handle_t			handle)
+    globus_handle_table_t *             handle_table,
+    globus_handle_t                     handle)
 {
-    globus_l_handle_entry_t *		entry;
-    globus_bool_t			still_in_table;
-    void *				rc;
+    globus_l_handle_entry_t *           entry;
 
-    globus_mutex_lock(&handle_table->lock);
-
-    entry = globus_hashtable_lookup(&handle_table->table,
-				    (void *) handle);
-
-    if(entry == GLOBUS_NULL)
+    if(!handle_table)
     {
-	rc =  GLOBUS_NULL;
-	still_in_table = GLOBUS_FALSE;
+        return GLOBUS_FALSE;
+    }
+
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
+    {
+        entry = handle_table->table[handle];
     }
     else
     {
-	entry->ref--;
-	rc = entry->value;
-	if(entry->ref == 0)
-	{
-	    globus_hashtable_remove(&handle_table->table,
-				    (void *)handle);
-	    globus_free(entry);
-	    still_in_table = GLOBUS_FALSE;
-	}
-	else
-	{
-	    still_in_table = GLOBUS_TRUE;
-	}
+        entry = GLOBUS_NULL;
     }
-    globus_mutex_unlock(&handle_table->lock);
 
-    return still_in_table;
+    if(entry)
+    {
+        entry->ref--;
+        if(entry->ref == 0)
+        {
+            if(handle_table->destructor)
+            {
+                handle_table->destructor(entry->value);
+            }
+            
+            /* NULL out slot and push this on the inactive list */
+            handle_table->table[handle] = GLOBUS_NULL;
+            entry->pnext = handle_table->inactive;
+            handle_table->inactive = entry;
+        }
+        else
+        {
+            return GLOBUS_TRUE;
+        }
+    }
+
+    return GLOBUS_FALSE;
 }
-/* globus_handle_table_remove() */
+/* globus_handle_table_decrement_reference() */
 
 /*
  * Function: globus_handle_table_increment_reference()
- * 
+ *
  * Description: Add a reference to a handle table entry.
- * 
+ *
  * Parameters:  handle_table - the table of unique handles
  *                  we want to use
  *              handle - the handle that we want to remove
- * 
+ *
  * Returns:  GLOBUS_TRUE if the handle is still referenced.
  *
  */
 globus_bool_t
 globus_handle_table_increment_reference(
-    globus_handle_table_t *		handle_table,
-    globus_handle_t			handle)
+    globus_handle_table_t *             handle_table,
+    globus_handle_t                     handle)
 {
-    globus_l_handle_entry_t *		entry;
-    globus_bool_t			still_in_table;
+    globus_l_handle_entry_t *           entry;
 
-    globus_mutex_lock(&handle_table->lock);
-
-    entry = globus_hashtable_lookup(&handle_table->table,
-				    (void *) handle);
-
-    if(entry == GLOBUS_NULL)
+    if(!handle_table)
     {
-	still_in_table = GLOBUS_FALSE;
+        return GLOBUS_FALSE;
+    }
+
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
+    {
+        entry = handle_table->table[handle];
     }
     else
     {
-	still_in_table = GLOBUS_TRUE;
-	entry->ref++;
+        entry = GLOBUS_NULL;
     }
-    globus_mutex_unlock(&handle_table->lock);
 
-    return still_in_table;
+    if(entry)
+    {
+        entry->ref++;
+        return GLOBUS_TRUE;
+    }
+    else
+    {
+        return GLOBUS_FALSE;
+    }
 }
-/* globus_handle_table_remove() */
+/* globus_handle_table_increment_reference() */
 
 /*
  * Function: globus_handle_table_lookup()
- * 
+ *
  * Description: Find the void * corresponding to a unique
  *              handle. Does not update the reference count.
- * 
+ *
  * Parameters:  handle_table - the table of unique handles
  *                  we want to use
  *              handle - the handle that we want to look up
- * 
+ *
  * Returns:  the data value associated with the handle
  *
  */
 void *
 globus_handle_table_lookup(
-    globus_handle_table_t *		handle_table,
-    globus_handle_t			handle)
+    globus_handle_table_t *             handle_table,
+    globus_handle_t                     handle)
 {
-    globus_l_handle_entry_t *		entry;
-    void *				rc;
+    globus_l_handle_entry_t *           entry;
 
-    globus_mutex_lock(&handle_table->lock);
-
-    entry = globus_hashtable_lookup(&handle_table->table,
-				    (void *) handle);
-
-    if(entry == GLOBUS_NULL)
+    if(!handle_table)
     {
-	rc =  GLOBUS_NULL;
+        return GLOBUS_NULL;
+    }
+
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
+    {
+        entry = handle_table->table[handle];
     }
     else
     {
-	rc = entry->value;
+        entry = GLOBUS_NULL;
     }
-    globus_mutex_unlock(&handle_table->lock);
 
-    return rc;
+    if(entry)
+    {
+        return entry->value;
+    }
+    else
+    {
+        return GLOBUS_NULL;
+    }
 }
 /* globus_handle_table_lookup() */
+

@@ -30,17 +30,16 @@ int test3[] = {5, -1 };
 int *tests[] = { test1, test2, test3, NULL};
 
 static
-globus_bool_t
+void
 wakeup_func(
-    globus_abstime_t *          time_stop,
-    void *			arg)
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *			        arg)
 {
     globus_mutex_lock(&mutex);
     done = GLOBUS_TRUE;
     globus_cond_signal(&cond);
     globus_mutex_unlock(&mutex);
-
-    return GLOBUS_TRUE;
 }
 
 int main()
@@ -71,10 +70,8 @@ int main()
 
         GlobusTimeReltimeSet(delay_time, tests[i][0], 0);	
 	globus_callback_register_oneshot(GLOBUS_NULL,
-					 &delay_time,
+	                                 &delay_time,
 					 wakeup_func,
-					 GLOBUS_NULL,
-					 GLOBUS_NULL,
 					 GLOBUS_NULL);
 	wait_func(tests[i][1],
 		  &signalled,

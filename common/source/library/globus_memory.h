@@ -75,14 +75,14 @@ globus_bool_t
 globus_memory_create_list(
     globus_memory_t *           mem_info);
 
-globus_byte_t *
+void *
 globus_memory_pop_node(
     globus_memory_t *           mem_info);
 
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
-    globus_byte_t *              buf);
+    void *                      buf);
 
 globus_bool_t
 globus_memory_destroy(

@@ -31,7 +31,7 @@ const globus_reltime_t        globus_i_reltime_zero =
 
 globus_bool_t
 globus_time_has_expired(
-    globus_abstime_t *                     abstime)
+    const globus_abstime_t *                     abstime)
 {
     globus_abstime_t                       time_now;
 
@@ -47,13 +47,8 @@ globus_time_has_expired(
 
 globus_bool_t
 globus_time_abstime_is_infinity(
-    globus_abstime_t *                     abstime)
+    const globus_abstime_t *                     abstime)
 {
-    if(abstime == GLOBUS_NULL)
-    {
-	return GLOBUS_FALSE;
-    }
-
     if(abstime->tv_sec == GLOBUS_I_TIME_INFINITY_SEC &&
        abstime->tv_nsec == GLOBUS_I_TIME_INFINITY_NSEC)
     {
@@ -65,13 +60,8 @@ globus_time_abstime_is_infinity(
 
 globus_bool_t
 globus_time_reltime_is_infinity(
-    globus_reltime_t *                     reltime)
+    const globus_reltime_t *                     reltime)
 {
-    if(reltime == GLOBUS_NULL)
-    {
-	return GLOBUS_FALSE;
-    }
-
     if(reltime->tv_sec == GLOBUS_I_TIME_INFINITY_SEC &&
        reltime->tv_usec == GLOBUS_I_TIME_INFINITY_NSEC)
     {
@@ -83,82 +73,86 @@ globus_time_reltime_is_infinity(
 
 int
 globus_abstime_cmp(
-    globus_abstime_t *                     abstime_1,
-    globus_abstime_t *                     abstime_2)
+    const globus_abstime_t *                     abstime_1,
+    const globus_abstime_t *                     abstime_2)
 {
-    int                                    rc;
-
-    if(abstime_1 == GLOBUS_NULL ||
-       abstime_2 == GLOBUS_NULL)
+    long                                         tv_sec1;
+    long                                         tv_sec2;
+    
+    tv_sec1 = abstime_1->tv_sec;
+    tv_sec2 = abstime_2->tv_sec;
+    
+    if(tv_sec1 > tv_sec2)
     {
-	return GLOBUS_FALSE;
+	return 1;
     }
-
-    if(abstime_1->tv_sec > abstime_2->tv_sec)
+    else if(tv_sec1 < tv_sec2)
     {
-	rc = 1;
-    }
-    else if(abstime_1->tv_sec < abstime_2->tv_sec)
-    {
-	rc = -1;
+	return -1;
     }
     else
     {
+        long                                     tv_nsec1;
+        long                                     tv_nsec2;
+        
+        tv_nsec1 = abstime_1->tv_nsec;
+        tv_nsec2 = abstime_2->tv_nsec;
+    
         /* look at nanosecs */
-        if(abstime_1->tv_nsec > abstime_2->tv_nsec)
+        if(tv_nsec1 > tv_nsec2)
 	{
-            rc = 1;
+            return 1;
 	}
-	else if(abstime_1->tv_nsec < abstime_2->tv_nsec)
+	else if(tv_nsec1 < tv_nsec2)
 	{
-            rc = -1;
+            return -1;
 	}
 	else
 	{
-            rc = 0;
+            return 0;
 	}
     }
-
-    return rc;
 }
 
 int
 globus_reltime_cmp(
-    globus_reltime_t *                     reltime_1,
-    globus_reltime_t *                     reltime_2)
+    const globus_reltime_t *                     reltime_1,
+    const globus_reltime_t *                     reltime_2)
 {
-    int                                    rc;
-
-    if(reltime_1 == GLOBUS_NULL ||
-       reltime_2 == GLOBUS_NULL)
+    long                                         tv_sec1;
+    long                                         tv_sec2;
+    
+    tv_sec1 = reltime_1->tv_sec;
+    tv_sec2 = reltime_2->tv_sec;
+    
+    if(tv_sec1 > tv_sec2)
     {
-	return GLOBUS_FALSE;
+	return 1;
     }
-
-    if(reltime_1->tv_sec > reltime_2->tv_sec)
+    else if(tv_sec1 < tv_sec2)
     {
-	rc = 1;
-    }
-    else if(reltime_1->tv_sec < reltime_2->tv_sec)
-    {
-	rc = -1;
+	return -1;
     }
     else
     {
-        /* look at nanosecs */
-        if(reltime_1->tv_usec > reltime_2->tv_usec)
+        long                                     tv_usec1;
+        long                                     tv_usec2;
+        
+        tv_usec1 = reltime_1->tv_usec;
+        tv_usec2 = reltime_2->tv_usec;
+    
+        /* look at microosecs */
+        if(tv_usec1 > tv_usec2)
 	{
-            rc = 1;
+            return 1;
 	}
-	else if(reltime_1->tv_usec < reltime_2->tv_usec)
+	else if(tv_usec1 < tv_usec2)
 	{
-            rc = -1;
+            return -1;
 	}
 	else
 	{
-            rc = 0;
+            return 0;
 	}
     }
-
-    return rc;
 }

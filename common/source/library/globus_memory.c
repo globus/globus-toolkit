@@ -21,6 +21,10 @@ CVS Information:
 
 #include <assert.h>
 
+/* #define GLOBUS_MEMORY_DEBUG_LEAKS 1 */
+
+#ifndef GLOBUS_MEMORY_DEBUG_LEAKS
+
 globus_mutex_t                     globus_i_memory_mutex;
 
 #define I_ALIGN_SIZE               sizeof(long)
@@ -74,7 +78,6 @@ globus_memory_create_list(
     int                          ctr;
     globus_l_memory_header_t *   header;
     globus_byte_t *              buf;
-    globus_byte_t *              tmp_buf;
     int                          tmp_size;
     
     mem_info->first = globus_malloc(
@@ -109,7 +112,7 @@ globus_memory_create_list(
     return GLOBUS_TRUE;
 }
 
-globus_byte_t *
+void *
 globus_memory_pop_node(
     globus_memory_t * mem_info)
 {
@@ -146,9 +149,12 @@ globus_memory_pop_node(
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
-    globus_byte_t *              buf)
+    void *                      buffer)
 {
     globus_l_memory_header_t *   header;
+    globus_byte_t *              buf;
+    
+    buf = (globus_byte_t *) buffer;
     
     globus_mutex_lock(&mem_info->lock);
     { 
@@ -172,15 +178,10 @@ globus_bool_t
 globus_memory_destroy(
     globus_memory_t * mem_info)
 {
-/* TODO: fail if memory not freed correctly */
-    globus_byte_t *     tmp_byte;
     int                 ctr;
 
     globus_mutex_lock(&mem_info->lock);
     {
-        if(mem_info->nodes_used > 0)
-        {
-        }
         for(ctr = 0; ctr <= mem_info->free_ptrs_offset; ctr++)
         {
             free(mem_info->free_ptrs[ctr]);
@@ -192,3 +193,54 @@ globus_memory_destroy(
     globus_mutex_destroy(&mem_info->lock);
     return GLOBUS_TRUE;
 }
+
+#else
+
+globus_bool_t
+globus_i_memory_pre_activate(void)
+{
+    return GLOBUS_SUCCESS;
+}
+
+globus_bool_t
+globus_memory_init(
+    globus_memory_t *         mem_info,
+    int                       node_size,
+    int                       node_count)
+{
+    mem_info->node_size = node_size;
+
+    return GLOBUS_TRUE;
+}
+
+globus_bool_t
+globus_memory_create_list(
+    globus_memory_t * mem_info)
+{
+    return GLOBUS_TRUE;
+}
+
+void *
+globus_memory_pop_node(
+    globus_memory_t * mem_info)
+{
+    return globus_malloc(mem_info->node_size);
+}
+
+globus_bool_t
+globus_memory_push_node(
+    globus_memory_t *          mem_info,
+    void *                      buffer)
+{
+    globus_free(buffer);
+    return GLOBUS_TRUE;
+}
+
+globus_bool_t
+globus_memory_destroy(
+    globus_memory_t * mem_info)
+{
+    return GLOBUS_TRUE;
+}
+
+#endif
