@@ -291,14 +291,6 @@ typedef enum
 }
 globus_ftp_client_target_state_t;
 
-typedef struct
-{
-    struct globus_i_ftp_client_target_s *	source;
-    struct globus_i_ftp_client_target_s *	dest;
-    globus_i_ftp_client_operation_t		operation;
-}
-globus_i_ftp_client_data_target_t;
-
 /**
  * FTP server features we are interested in. 
  *
