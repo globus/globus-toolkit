@@ -1,6 +1,7 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_file_driver.h"
 #include "version.h"
+#include <stdio.h>
 
 GlobusDebugDefine(GLOBUS_XIO_FILE);
 
@@ -362,6 +363,7 @@ globus_l_xio_file_open(
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
     globus_l_open_info_t *              open_info;
+    globus_xio_system_handle_t          converted_handle;
     GlobusXIOName(globus_l_xio_file_open);
     
     GlobusXIOFileDebugEnter();
@@ -377,7 +379,26 @@ globus_l_xio_file_open(
         goto error_handle;
     }
     
-    if(attr->handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
+    converted_handle = attr->handle;
+    if(converted_handle == GLOBUS_XIO_FILE_INVALID_HANDLE && 
+        !contact_info->resource && contact_info->scheme)
+    {
+        /* if scheme is one of the following, we'll convert the handle */
+        if(strcmp(contact_info->scheme, "stdin") == 0)
+        {
+            converted_handle = fileno(stdin);
+        }
+        else if(strcmp(contact_info->scheme, "stdout") == 0)
+        {
+            converted_handle = fileno(stdout);
+        }
+        else if(strcmp(contact_info->scheme, "stderr") == 0)
+        {
+            converted_handle = fileno(stderr);
+        }
+    }
+    
+    if(converted_handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
     {
         if(!contact_info->resource)
         {
@@ -413,7 +434,7 @@ globus_l_xio_file_open(
     }
     else
     {
-        handle->handle = attr->handle;
+        handle->handle = converted_handle;
         handle->converted = GLOBUS_TRUE;
         globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     }
