@@ -14,4 +14,7 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
     exit
 fi
 
+cp ../source/library/gssapi_openssl.h \
+   ../source/library/globus_gsi_gss_constants.h .
+
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh

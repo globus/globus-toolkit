@@ -11,7 +11,9 @@ Sources= \
 	gssapi_delegation_compat_test.c \
 	gssapi_test_utils.c \
 	gssapi_test_utils.h \
-	gssapi_thread_test.c 
+	gssapi_thread_test.c \
+	gssapi_openssl.h \
+	globus_gsi_gss_constants.h
 #	gssapi_group_test.c \
 
 INCLUDES += $(GPT_INCLUDES)

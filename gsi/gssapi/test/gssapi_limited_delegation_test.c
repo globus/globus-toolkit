@@ -1,7 +1,7 @@
 
 #define EXT_SIZE 16
 #include <gssapi.h>
-#include "../source/library/gssapi_openssl.h"
+#include "gssapi_openssl.h"
 #include "globus_gss_assist.h"
 
 int verify_cred(
