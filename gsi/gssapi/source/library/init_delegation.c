@@ -36,7 +36,7 @@ GSS_CALLCONV gss_init_delegation(
     const gss_buffer_t                  input_token,
     gss_buffer_t                        output_token)
 {
-    OM_uint32 		                major_status = 0;
+    OM_uint32 		                major_status = GSS_S_COMPLETE;
     OM_uint32                           time_req; /* probably a
                                                      parameter */
     gss_ctx_id_desc *                   context;
@@ -143,7 +143,8 @@ GSS_CALLCONV gss_init_delegation(
                        EVP_md5(),
                        reqp,
                        &ncert,
-                       time_req,
+                       0,
+                       /*time_req, */
                        0, /* don't want limited proxy */
                        0,
                        "proxy",
@@ -193,7 +194,7 @@ GSS_CALLCONV gss_init_delegation(
         
         i2d_X509_bio(context->gs_sslbio,cred->pcd->ucert);
         
-        context->gs_state = GS_DELEGATION_START; /* reset state
+        context->delegation_state = GS_DELEGATION_START; /* reset state
                                                     machine */
         X509_free(ncert);
         ncert = NULL;

@@ -35,7 +35,6 @@ GSS_CALLCONV gss_accept_delegation(
     gss_ctx_id_desc *                   context;
     X509_REQ *                          reqp = NULL;
     X509 *                              dcert = NULL;
-    EVP_PKEY *                          dpkey;
     STACK_OF(X509) *                    cert_chain;
     int                                 cert_chain_length;
     int                                 i;
@@ -44,7 +43,7 @@ GSS_CALLCONV gss_accept_delegation(
 #ifdef DEBUG
     fprintf(stderr, "accept_delegation:\n") ;
 #endif /* DEBUG */
-
+    
     *minor_status = 0;
     output_token->length = 0;
     context = (gss_ctx_id_desc *) context_handle;
@@ -64,12 +63,14 @@ GSS_CALLCONV gss_accept_delegation(
     case GS_DELEGATION_START:
 
         /* generate the proxy */
+
+        /* */
         
         BIO_read(context->gs_sslbio,dbuf,1);
 #ifdef DEBUG
-        fprintf(stderr,"delegation flag:%.1s\n",&dbuf);
+        fprintf(stderr,"delegation flag:%.1s\n",dbuf);
 #endif
-        if (*dbuf == 'D')
+        if (dbuf[0] == 'D')
         {
             if(proxy_genreq(
                    context->gs_ssl->session->peer,
@@ -125,7 +126,7 @@ GSS_CALLCONV gss_accept_delegation(
                                                 delegated_cred_handle,
                                                 GSS_C_BOTH,
                                                 dcert,
-                                                dpkey,
+                                                context->dpkey,
                                                 cert_chain,
                                                 NULL);
         sk_X509_pop_free(cert_chain, X509_free);
