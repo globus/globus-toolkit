@@ -219,6 +219,10 @@
 /* Define if you want AFS support */
 #undef AFS
 
+/* Define this if you want to use AFS/Kerberos 5 option, which runs aklog. */
+#undef AFS_KRB5
+#undef AKLOG_PATH
+
 /* Define if you want GSI/Globus authentication support */
 #undef GSI
 

@@ -1496,13 +1496,13 @@ main(int ac, char **av)
 		options.kerberos_authentication = 0;
 	}
 #endif /* KRB4 && !KRB5 */
-#ifdef AFS
+#if defined(AFS) || defined(AFS_KRB5)
 	/* If machine has AFS, set process authentication group. */
 	if (k_hasafs()) {
 		k_setpag();
 		k_unlog();
 	}
-#endif /* AFS */
+#endif /* AFS || AFS_KRB5 */
 
 	packet_set_nonblocking();
 

@@ -2117,6 +2117,33 @@ AC_ARG_WITH(kerberos4,
 	]
 )
 
+# Check whether user wants AFS_KRB5 support
+AFS_KRB5_MSG="no"
+AC_ARG_WITH(afs-krb5,
+	[  --with-afs-krb5[[=AKLOG_PATH]]  Enable aklog to get token (default=/usr/bin/aklog).],
+	[
+		if test "x$withval" != "xno" ; then
+
+			if test "x$withval" != "xyes" ; then
+				AC_DEFINE_UNQUOTED(AKLOG_PATH, "$withval")
+			else
+				AC_DEFINE_UNQUOTED(AKLOG_PATH, "/usr/bin/aklog")
+			fi
+
+			if test -z "$KRB5" ; then
+				AC_MSG_WARN([AFS_KRB5 requires Kerberos 5 support, build may fail])
+			fi
+
+			LIBS="-lkrbafs $LIBS"
+			if test ! -z "$AFS_LIBS" ; then
+				LIBS="$LIBS $AFS_LIBS"
+			fi
+			AC_DEFINE(AFS_KRB5)
+			AFS_KRB5_MSG="yes"
+		fi
+	]
+)
+
 # Check whether user wants AFS support
 AFS_MSG="no" 
 AC_ARG_WITH(afs,
