@@ -167,6 +167,13 @@ void
 globus_i_gass_transfer_recv_dispatcher(
     globus_gass_transfer_request_t		request);
 
+int
+globus_i_gass_transfer_fail(
+    globus_gass_transfer_request_t		request,
+    globus_gass_transfer_request_struct_t *	req,
+    globus_gass_transfer_callback_t		callback,
+    void *					callback_arg);
+
 extern globus_cond_t globus_i_gass_transfer_shutdown_cond;
 extern globus_mutex_t globus_i_gass_transfer_mutex;
 

@@ -1,12 +1,12 @@
 /******************************************************************************
 globus_gass_transfer_http.c
- 
+
 Description:
     This module implements the http and https URL schemes for the GASS transfer
     library
- 
+
 CVS Information:
- 
+
     $Source$
     $Date$
     $Revision$
@@ -407,19 +407,19 @@ globus_l_gass_transfer_http_fail(
 	    signalled = GLOBUS_TRUE;
 	    new_proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING;
 	    new_proto->failure_occurred = GLOBUS_TRUE;
-    
+
 	    result = globus_io_register_close(
 	        &new_proto->handle,
 	        globus_l_gass_transfer_http_close_callback,
 	        new_proto);
-    
+
 	    if(result != GLOBUS_SUCCESS)
 	    {
 	        new_proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE;
 	    }
-    
+
 	    break;
-    
+
           case GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING:
           case GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE:
           case GLOBUS_GASS_TRANSFER_HTTP_STATE_REQUESTING:
@@ -783,7 +783,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
 {
     globus_object_t *				err = GLOBUS_NULL;
     globus_gass_transfer_http_request_proto_t *		proto;
-    
+
     proto = (globus_gass_transfer_http_request_proto_t *) callback_arg;
 
     if(result != GLOBUS_SUCCESS)
@@ -1128,7 +1128,7 @@ globus_l_gass_transfer_http_listen(
 	&new_proto->handle,
 	globus_l_gass_transfer_http_listen_callback,
 	(void *) new_proto);
-    
+
     if(result != GLOBUS_SUCCESS)
     {
 	globus_callback_register_oneshot(
@@ -1200,7 +1200,7 @@ globus_l_gass_transfer_http_accept_callback(
     fflush(stdout);
 
     l = (globus_gass_transfer_http_listener_proto_t *) callback_arg;
-    
+
     switch(l->state)
     {
       case GLOBUS_GASS_TRANSFER_HTTP_LISTENER_ACCEPTING:
@@ -1324,7 +1324,7 @@ globus_l_gass_transfer_http_request_refer(
     offset += sprintf(referral_string + offset,
 		      GLOBUS_L_LOCATION_HEADER,
 		      referral.url[0]);
-    
+
     offset += sprintf(referral_string + offset,
 		      GLOBUS_L_HTML_HEADER);
     offset += sprintf(referral_string + offset,
@@ -1332,7 +1332,7 @@ globus_l_gass_transfer_http_request_refer(
 		      (int) body_count);
     offset += sprintf(referral_string + offset,
 		      CRLF);
-    
+
     offset += sprintf(referral_string + offset,
 		      GLOBUS_L_HTML_REFERRAL_BODY_HEAD);
     for(i = 0 ; i < referral.count; i++)
@@ -1402,7 +1402,7 @@ globus_l_gass_transfer_http_request_deny(
      * <html><head><title>%d %s</title></head><body> CRLF
      * %d %s</title></body></html> CRLF
      */
-    
+
     deny_count = 1;
     deny_count += strlen(GLOBUS_L_DENIAL_RESPONSE);
     deny_count += 3 ; /* code */
@@ -1438,7 +1438,7 @@ globus_l_gass_transfer_http_request_deny(
 		      (int) body_count);
     offset += sprintf(deny_string + offset,
 		      CRLF);
-    
+
     offset += sprintf(deny_string + offset,
 		      GLOBUS_L_HTML_DENIAL_BODY,
 		      reason,
@@ -2464,7 +2464,7 @@ globus_l_gass_transfer_http_connect_callback(
     {
 	goto deny_exit;
     }
-    
+
     /* Send our command to the server */
     result = globus_io_register_write(
 	&proto->handle,
@@ -2666,7 +2666,7 @@ globus_l_gass_transfer_http_command_callback(
     globus_l_gass_transfer_http_unlock();
 }
 /* globus_l_gass_transfer_http_command_callback() */
-    
+
 static
 void
 globus_l_gass_transfer_http_response_callback(
@@ -2789,36 +2789,28 @@ globus_l_gass_transfer_http_response_callback(
 	    else if(proto->code >= 300 &&
 		    proto->code < 400)
 	    {
+		char ** referral;
+		globus_size_t referral_count;
 		/* We've got a referral from the server */
-		char * location;
+		globus_l_gass_transfer_http_extract_referral(proto,
+							     &referral,
+							     &referral_count);
 
-		location = globus_i_gass_transfer_keyvalue_lookup(
-		    &proto->headers,
-		    "location");
-		if(location == GLOBUS_NULL)
+		if(referral == GLOBUS_NULL)
 		{
-		    goto deny_exit;
+		    goto put_fail_exit;
 		}
 		else
 		{
-		    char ** referral;
-		    char * p;
-
-		    p = location;
-
-		    for(p=location; *p != '\0'; p++)
-		    {
-			if(!isspace(*p))
-			{
-			    break;
-			}
-		    }
-
-		    referral = (char **) globus_malloc(sizeof(char *));
-		    referral[0] = globus_libc_strdup(p);
-  
 		    proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING;
 
+		    globus_l_gass_transfer_http_unlock();
+		    globus_gass_transfer_proto_request_referred(
+			proto->request,
+			referral,
+			referral_count);
+		    globus_l_gass_transfer_http_lock();
+		    
 		    result = globus_io_register_close(
 			&proto->handle,
 			globus_l_gass_transfer_http_close_callback,
@@ -2828,16 +2820,11 @@ globus_l_gass_transfer_http_response_callback(
 		    {
 			proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE;
 		    }
-		    globus_l_gass_transfer_http_unlock();
-
-		    globus_gass_transfer_proto_request_referred(
-			proto->request,
-			referral,
-			1);
-		    
 		    globus_l_gass_transfer_http_destroy(
 			(globus_gass_transfer_request_proto_t *) proto,
 			proto->request);
+
+		    globus_l_gass_transfer_http_unlock();
 		    return;
 		}
 	    }
@@ -2980,10 +2967,70 @@ globus_l_gass_transfer_http_response_callback(
 	     * or the server kills our request
 	     */
 	    if(proto->code < 100 ||
-	       proto->code >= 300)
+	       proto->code >= 400)
 	    {
 		/* Request failed. */
 		goto put_fail_exit;
+	    }
+	    else if(proto->code >= 300 &&
+		    proto->code < 400)
+	    {
+		char ** referral;
+		globus_size_t referral_count;
+		/* Request referred. */
+		globus_l_gass_transfer_http_extract_referral(proto,
+							     &referral,
+							     &referral_count);
+		if(referral == GLOBUS_NULL)
+		{
+		    goto put_fail_exit;
+		}
+		else if(proto->state == GLOBUS_GASS_TRANSFER_HTTP_STATE_IDLE)
+		{
+		    globus_l_gass_transfer_http_unlock();
+		    globus_gass_transfer_proto_request_referred(proto->request,
+								referral,
+								referral_count);
+		    globus_l_gass_transfer_http_lock();
+		    result = globus_io_register_close(
+			&proto->handle,
+			globus_l_gass_transfer_http_close_callback,
+			proto);
+
+		    globus_assert(result == GLOBUS_SUCCESS);
+	
+		    if(result != GLOBUS_SUCCESS)
+		    {
+			proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE;
+		    }
+		}
+		else
+		{
+		    proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING;
+
+		    proto->failure_occurred = GLOBUS_TRUE;
+	
+		    result = globus_io_register_close(
+			&proto->handle,
+			globus_l_gass_transfer_http_close_callback,
+			proto);
+
+		    globus_assert(result == GLOBUS_SUCCESS);
+		    
+		    if(result != GLOBUS_SUCCESS)
+		    {
+			proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE;
+		    }
+		    
+		    globus_l_gass_transfer_http_unlock();
+
+		    globus_gass_transfer_proto_request_referred(
+			proto->request,
+			referral,
+			referral_count);
+
+		    return;
+		}
 	    }
 	    else if(proto->code >= 100 &&
 		    proto->code < 200)
@@ -3564,7 +3611,7 @@ globus_l_gass_transfer_http_callback_read_buffered_callback(
     proto = (globus_gass_transfer_http_request_proto_t *) arg;
 
     globus_l_gass_transfer_http_lock();
-    
+
     proto->oneshot_registered = GLOBUS_FALSE;
     proto->oneshot_active = GLOBUS_TRUE;
 
@@ -3937,7 +3984,7 @@ globus_l_gass_transfer_http_construct_request(
     globus_size_t				cmd_len;
     char *					cmd = GLOBUS_NULL;
     globus_size_t				length;
-    
+
     /* Construct the request string to send to the server */
     cmd_len = 3;			/* for CRLF\0 termination */
     cmd_len += strlen(proto->url.url_path); /* What we want */
@@ -4301,7 +4348,7 @@ globus_l_gass_transfer_http_parse_status_line(
 	goto parse_error;
     }
     reason_offset = (globus_size_t) r_offset;
-    
+
     proto->reason = globus_libc_strdup((char *) (proto->response_buffer +
 						 proto->parsed_offset +
 						 reason_offset));
@@ -5706,3 +5753,41 @@ globus_l_gass_transfer_http_handle_chunk(
 }
 /* globus_l_gass_transfer_http_handle_chunk() */
 
+static
+void
+globus_l_gass_transfer_http_extract_referral(
+    globus_gass_transfer_http_request_proto_t *		proto,
+    char ***						referral,
+    globus_size_t *					referral_count)
+{
+    char *				location;
+    char *				p;
+
+    location = globus_i_gass_transfer_keyvalue_lookup(
+	&proto->headers,
+	"location");
+    if(location == GLOBUS_NULL)
+    {
+	*referral = GLOBUS_NULL;
+	*referral_count = 0;
+    }
+    else
+    {
+	p = location;
+
+	for(p=location; *p != '\0'; p++)
+	{
+	    if(!isspace(*p))
+	    {
+		break;
+	    }
+	}
+
+	*referral = (char **) globus_malloc(sizeof(char *));
+	(*referral)[0] = globus_libc_strdup(p);
+
+	*referral_count = 1;
+    }
+    return;
+}
+/* globus_l_gass_transfer_http_extract_referral() */

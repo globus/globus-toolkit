@@ -100,8 +100,10 @@ globus_l_gass_transfer_operation_complete(
 	    req->status = GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING;
 
 	    while(req->status == GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING ||
-		  (req->status == GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING &&
-		  !globus_fifo_empty(&req->pending_data)))
+		  (
+		      (req->status == GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING ||
+		       req->status == GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING)
+		   && !globus_fifo_empty(&req->pending_data)))
 	    {
 		head = globus_fifo_dequeue(&req->pending_data);
 
@@ -109,7 +111,7 @@ globus_l_gass_transfer_operation_complete(
 		globus_i_gass_transfer_unlock();
 		head->callback(head->callback_arg,
 			       request,
-			       bytes,
+			       head->bytes,
 			       nbytes,
 			       last_data);
 		globus_i_gass_transfer_lock();
@@ -233,6 +235,37 @@ globus_l_gass_transfer_operation_complete(
 		      request);
 	return;
 
+      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING:
+	req->status = GLOBUS_GASS_TRANSFER_REQUEST_REFERRING;
+	last_data = GLOBUS_TRUE;
+
+	while(!globus_fifo_empty(&req->pending_data))
+	{
+	    head = globus_fifo_dequeue(&req->pending_data);
+
+	    /* Call back to user */
+	    globus_i_gass_transfer_unlock();
+	    head->callback(head->callback_arg,
+			   request,
+			   head->bytes,
+			   nbytes,
+			   last_data);
+
+	    globus_free(head);
+
+	    nbytes = 0;
+	    globus_i_gass_transfer_lock();
+	}
+	/* free up references to request and proto */
+	req->proto->destroy(req->proto,
+			    request);
+	/* free up the proto's and GASS's reference to this request */
+	globus_i_gass_transfer_request_destroy(request);
+
+	globus_i_gass_transfer_unlock();
+
+	return;
+
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
@@ -249,6 +282,7 @@ globus_l_gass_transfer_operation_complete(
       case GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING:
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
+      case GLOBUS_GASS_TRANSFER_REQUEST_REFERRING:
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_PENDING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED);
@@ -265,6 +299,7 @@ globus_l_gass_transfer_operation_complete(
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FINISHING);
+	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRING);
 	goto finish;
       case GLOBUS_GASS_TRANSFER_REQUEST_INVALID:
 	goto finish;
@@ -465,9 +500,11 @@ globus_gass_transfer_proto_request_ready(
 	globus_i_gass_transfer_request_destroy(request);
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING:
+      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING:
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
+      case GLOBUS_GASS_TRANSFER_REQUEST_REFERRING:
       case GLOBUS_GASS_TRANSFER_REQUEST_REFERRED:
       case GLOBUS_GASS_TRANSFER_REQUEST_DENIED:
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
@@ -479,9 +516,11 @@ globus_gass_transfer_proto_request_ready(
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING);
+	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_PENDING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED);
+	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRED);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_DONE);
@@ -659,9 +698,11 @@ globus_gass_transfer_proto_request_denied(
 
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_REFERRED:
+      case GLOBUS_GASS_TRANSFER_REQUEST_REFERRING:
       case GLOBUS_GASS_TRANSFER_REQUEST_DENIED:
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING:
+      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING:
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
@@ -675,10 +716,12 @@ globus_gass_transfer_proto_request_denied(
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRED);
+	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_DONE);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING);
+	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_PENDING);
 	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED);
         globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL1);
@@ -710,6 +753,8 @@ globus_gass_transfer_proto_request_referred(
     globus_gass_transfer_request_struct_t *	req;
     globus_gass_transfer_callback_t		callback;
     void *					callback_arg;
+    globus_size_t				i;
+    globus_gass_transfer_pending_t *		head;
 
     globus_i_gass_transfer_lock();
     req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
@@ -757,8 +802,56 @@ globus_gass_transfer_proto_request_referred(
 
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING:
-      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
+	/* request is in progress, when operation completes,
+	 * the callback queue will be drained
+	 */
+	req->status = GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING;
+	req->referral_url = url;
+	req->referral_count = num_urls;
+
+	break;
+
+
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
+	req->status = GLOBUS_GASS_TRANSFER_REQUEST_REFERRING;
+	
+	while(!globus_fifo_empty(&req->pending_data))
+	{
+	    head = globus_fifo_dequeue(&req->pending_data);
+
+	    /* Call back to user */
+	    globus_i_gass_transfer_unlock();
+	    head->callback(head->callback_arg,
+			   request,
+			   head->bytes,
+			   0,
+			   GLOBUS_TRUE);
+	    globus_i_gass_transfer_lock();
+
+	    globus_free(head);
+
+	    req->status = GLOBUS_GASS_TRANSFER_REQUEST_REFERRED;
+	}
+	/* free up references to request and proto */
+	req->proto->destroy(req->proto,
+			    request);
+	/* free up the GASS's reference to this request */
+	globus_i_gass_transfer_request_destroy(request);
+	
+	break;
+
+      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING:
+	/* user callback in progress */
+        req->status = GLOBUS_GASS_TRANSFER_REQUEST_REFERRING;
+	req->referral_url = url;
+	req->referral_count = num_urls;
+
+	/* callbacks are going to occur after the current
+	 * one completes (in the operation_complete function
+	 * above)
+	 */
+	break;
+
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
       case GLOBUS_GASS_TRANSFER_REQUEST_REFERRED:
       case GLOBUS_GASS_TRANSFER_REQUEST_DENIED:
@@ -769,31 +862,32 @@ globus_gass_transfer_proto_request_referred(
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING2:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING3:
       case GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING:
-      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRED);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_DONE);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_PENDING);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL1);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL2);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL3);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_STARTING2);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_STARTING3);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_PENDING);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILING);
-	globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FINISHING);
-	goto finish;
+      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
+        /* free urls, no state change */
+        goto free_urls;
+
+      case GLOBUS_GASS_TRANSFER_REQUEST_REFERRING:
+      case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING:
+        globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRING);
+        globus_assert(req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_REFERRING);
+        goto free_urls;
+	
       case GLOBUS_GASS_TRANSFER_REQUEST_INVALID:
 	goto finish;
     }
   finish:
     globus_i_gass_transfer_unlock();
+    return;
+
+  free_urls:
+    for(i = 0; i < num_urls; i++)
+    {
+	globus_free(url[i]);
+    }
+    globus_free(url);
+
     return;
 }
 /* globus_gass_transfer_proto_request_referred() */

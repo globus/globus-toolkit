@@ -568,12 +568,6 @@ istspecial(
 
 static
 globus_bool_t
-globus_l_gass_transfer_http_callback_receive_callback(
-    globus_time_t				time_can_block,
-    void *					arg);
-
-static
-globus_bool_t
 globus_l_gass_transfer_http_callback_send_callback(
     globus_time_t				time_can_block,
     void *					arg);
@@ -616,6 +610,13 @@ static
 globus_bool_t
 globus_l_gass_transfer_http_parse_request_line(
     globus_gass_transfer_http_request_proto_t *		proto);
+
+static
+void
+globus_l_gass_transfer_http_extract_referral(
+    globus_gass_transfer_http_request_proto_t *		proto,
+    char ***						referral,
+    globus_size_t *					referral_count);
 
 EXTERN_C_END
 
