@@ -79,6 +79,13 @@ void sig_exit(int signo);
 void sig_chld(int signo);
 void sig_ign(int signo);
 
+#if defined (MULTICRED_FEATURE)
+int myproxy_creds_info(struct myproxy_creds *creds,
+		       myproxy_response_t *response);
+#else
+int myproxy_creds_info(struct myproxy_creds *creds);
+#endif
+
 /* Function declarations */
 int init_arguments(int argc, 
                    char *argv[], 
@@ -308,12 +315,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     char  client_buffer[4096];
     int   requestlen;
     myproxy_server_context_t *client_context;
-    int num_strings;
 
-    authorization_data_t *client_auth_data = NULL;
-    authorization_data_t auth_data;
-    author_method_t      client_auth_method;
-   
     myproxy_creds_t *client_creds;          
     myproxy_request_t *client_request;
     myproxy_response_t *server_response;
@@ -711,7 +713,6 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	       myproxy_response_t *response) 
 {
     int min_lifetime;
-    char filename[64];
   
     /* Delegate credentials to client */
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
