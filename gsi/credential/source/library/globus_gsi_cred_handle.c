@@ -1537,8 +1537,6 @@ globus_gsi_cred_verify_cert_chain(
 
             goto exit;
         }
-
-        X509_STORE_CTX_free(store_context);
     } 
 
  exit:
