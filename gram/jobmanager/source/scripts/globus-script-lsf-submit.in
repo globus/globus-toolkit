@@ -27,14 +27,8 @@ mpirun=@MPIRUN@
 rm=@RM@
 SH=@SH@
 
-#        Site-specific settings
-#        Temporary directory in which job script will be built
-
-TMP_DIR="/tmp"
-
 #        File name to be used for temporary job script
-
-LSF_JOB_SCRIPT=$TMP_DIR"/lsf_job_script."$$
+LSF_JOB_SCRIPT="${local_tmpdir}/lsf_job_script."$$
 
 arg_file=$1
 

@@ -26,9 +26,6 @@ default_ip_requirements="(Arch == "'"R6000"'") && (Adapter == "'"hps_ip"'")"
 default_us_requirements="(Arch == "'"R6000"'") && (Adapter == "'"hps_user"'")" 
 #------------------------------------------------------------------
 
-deploy_sbin=${deploy_prefix}/sbin
-deploy_tmp=${deploy_prefix}/tmp
-
 #
 ################################################
 # Site-specific settings
@@ -236,7 +233,7 @@ createScript () {
    echo "# end command file"
 }
  
-run_file=${deploy_tmp}/loadleveler_script.description.$$
+run_file=${local_tmpdir}/loadleveler_script.description.$$
 createScript >$run_file
 
 $DEBUG_ECHO "JM_SCRIPT: testing successful creation of the submit"\

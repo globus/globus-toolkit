@@ -15,9 +15,8 @@
 # PBS job id is appended to the file passed as an argument to this
 # script to be used by other scripts at a later time.
 
-# The temporary job script is created in a location defined by the
-# TMP_DIR and PBS_JOB_SCRIPT name variables. This file is removed at
-# the end of this script. 
+# The temporary job script is created for the submission and then removed 
+# at the end of this script. 
 
 	
 qsub=@QSUB@
@@ -26,14 +25,8 @@ awk=@AWK@
 mpirun=@MPIRUN@
 rm=@RM@
 
-	# Site-specific settings
-	# Temporary directory in which job script will be built
-
-TMP_DIR="/tmp"
-
 	# File name to be used for temporary job script
-
-PBS_JOB_SCRIPT=$TMP_DIR"/pbs_job_script."$$
+PBS_JOB_SCRIPT="${local_tmpdir}/pbs_job_script."$$
 
 arg_file=$1
 

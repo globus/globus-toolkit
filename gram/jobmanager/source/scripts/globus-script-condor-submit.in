@@ -19,9 +19,6 @@ condor_arch=SUN4x
 #----------------------
 condor_opsys=SOLARIS251
 
-deploy_sbin=${deploy_prefix}/sbin
-deploy_tmp=${deploy_prefix}/tmp
-
 ################################################
 # Site-specific settings
 ################################################
@@ -174,7 +171,7 @@ fi
 $DEBUG_ECHO "JM_SCRIPT: condor environment = "\
                 "${new_grami_env}" >> $grami_logfile
 
-condor_file=${deploy_tmp}/condor_script.description.$$
+condor_file=${local_tmpdir}/condor_script.description.$$
 createScript >$condor_file
 
 $DEBUG_ECHO "JM_SCRIPT: testing successful creation of the submit"\

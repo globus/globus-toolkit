@@ -13,9 +13,6 @@
 #	though they completed successfully.
 #
 
-deploy_prefix=@deploy_prefix@
-deploy_tmp=${deploy_prefix}/tmp
-
 ################################################
 # Site-specific settings
 ################################################
@@ -145,7 +142,7 @@ if [ -z "${res_status}" ] ; then
    $DEBUG_ECHO "##############################" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED@"
 else
-   prun_err_file="${deploy_tmp}/prun${res_status}.err"
+   prun_err_file="${local_tmpdir}/prun${res_status}.err"
    $DEBUG_ECHO "JM_SCRIPT: creating prun error log file ${prun_err_file}" >> $grami_logfile
    ${rm} -f $prun_err_file
    :>$prun_err_file

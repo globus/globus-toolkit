@@ -10,9 +10,6 @@
 #
 #
 
-deploy_prefix=@deploy_prefix@
-deploy_tmp=${deploy_prefix}/tmp
-
 ################################################
 # Site-specific settings
 ################################################
@@ -53,7 +50,7 @@ $DEBUG_ECHO "JM_SCRIPT: executing ${preserve} -c ${res_id} ">> $grami_logfile
 
 ${preserve} -c ${res_id} > /dev/null
 
-prun_err_file="${deploy_tmp}/prun${res_id}.err"
+prun_err_file="${local_tmpdir}/prun${res_id}.err"
 
 $DEBUG_ECHO "JM_SCRIPT: removing prun error file ${prun_err_file}" >> $grami_logfile
 ${rm} -f $prun_err_file

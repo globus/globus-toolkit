@@ -10,9 +10,6 @@
 #
 #
 
-deploy_prefix=@deploy_prefix@
-deploy_tmp=${deploy_prefix}/tmp
-
 ################################################
 # Site-specific settings
 ################################################
@@ -79,7 +76,7 @@ else
    fi  
 fi
 
-prun_err_file="${deploy_tmp}/prun${res_id}.err"
+prun_err_file="${local_tmpdir}/prun${res_id}.err"
 
 $DEBUG_ECHO "JM_SCRIPT: checking error file ${prun_err_file}" >> $grami_logfile
 if [ -s $prun_err_file ] ; then
