@@ -28,14 +28,13 @@ EOF
   case "${PROGRAM_NAME}" in
 
     globus-hostname)
-      echo ${PROGRAM_NAME} returns the system hostname and makes some 1>&2
-      echo additional checks to ensure a fully qualified hostname. 1>&2
+      echo "    ${PROGRAM_NAME} returns the system hostname and makes some" 1>&2
+      echo "    additional checks to ensure a fully qualified hostname." 1>&2
       ;;
 
     globus-domainname)
-      ${PROGRAM_NAME} tries to return the system domainname 
-      ;;
-
+		echo "    ${PROGRAM_NAME} tries to return the system domainname" 1>&2 
+		;;
     *)
       echo "Configuration error"  1>&2
       exit 1
@@ -84,9 +83,6 @@ if [ -z "${GLOBUS_HOSTNAME}" ] ; then
 fi
 
 GLOBUS_DOMAINNAME="`echo $GLOBUS_HOSTNAME | ${GLOBUS_SH_CUT-cut} -s -d '.' -f '2-'`"
-
-export GLOBUS_HOSTNAME
-export GLOBUS_DOMAINNAME
 
 case "${PROGRAM_NAME}" in
 
