@@ -61,7 +61,8 @@ typedef struct
     int                                 num_streams;
     globus_bool_t                       no_3pt;
     globus_bool_t                       no_dcau;
-    globus_bool_t                       encrypt_data;
+    globus_bool_t                       data_safe;
+    globus_bool_t                       data_private;
     globus_bool_t                       cancelled;
     globus_bool_t                       recurse;
     int                                 restart_retries;
@@ -203,7 +204,7 @@ const char * oneline_usage =
 "                        [-q] [-r] [-rst] [-f <filename>]\n"
 "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
 "                        [-tcp-bs <size>] [-bs <size>] [-p <parallelism>]\n"
-"                        [-notpt] [-nodcau]\n"
+"                        [-notpt] [-nodcau] [-dcsafe | -dcpriv]\n"
 "                        <sourceURL> <destURL>";
 
 const char * long_usage =
@@ -274,8 +275,10 @@ const char * long_usage =
 "\t      turn third-party transfers off (on by default)\n"
 "\t -nodcau | -no-data-channel-authentication\n"
 "\t      turn off data channel authentication for ftp transfers\n"
-"\t -dcenc | -data-channel-encryption\n"
-"\t      turn on data channel encryption for ftp transfers\n"
+"\t -dcsafe | -data-channel-safe\n"
+"\t      set data channel protection mode to SAFE\n"
+"\t -dcpriv | -data-channel-private\n"
+"\t      set data channel protection mode to PRIVATE\n"
 "\n";
 
 /***********
@@ -343,7 +346,8 @@ enum
     arg_bs, 
     arg_notpt, 
     arg_nodcau,
-    arg_encrypt_data,
+    arg_data_safe,
+    arg_data_private,
     arg_recurse,
     arg_striped,
     arg_num = arg_striped
@@ -375,7 +379,8 @@ flagdef(arg_debugftp, "-dbg", "-debugftp");
 flagdef(arg_restart, "-rst", "-restart");
 flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
 flagdef(arg_nodcau, "-nodcau", "-no-data-channel-authentication");
-flagdef(arg_encrypt_data, "-dcenc", "-data-channel-encryption");
+flagdef(arg_data_safe, "-dcsafe", "-data-channel-safe");
+flagdef(arg_data_private, "-dcpriv", "-data-channel-private");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 
@@ -414,7 +419,8 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_p);                    \
     setupopt(arg_notpt);                \
     setupopt(arg_nodcau);               \
-    setupopt(arg_encrypt_data);         \
+    setupopt(arg_data_safe);            \
+    setupopt(arg_data_private);         \
     setupopt(arg_recurse);		\
     setupopt(arg_striped);
 
@@ -1233,7 +1239,8 @@ globus_l_guc_parse_arguments(
 
     guc_info->no_3pt = GLOBUS_FALSE;
     guc_info->no_dcau = GLOBUS_FALSE;
-    guc_info->encrypt_data = GLOBUS_FALSE;
+    guc_info->data_safe = GLOBUS_FALSE;
+    guc_info->data_private = GLOBUS_FALSE;
     guc_info->recurse = GLOBUS_FALSE;
     guc_info->num_streams = 0;
     guc_info->tcp_buffer_size = 0;
@@ -1322,8 +1329,11 @@ globus_l_guc_parse_arguments(
         case arg_nodcau:
             guc_info->no_dcau = GLOBUS_TRUE;
             break;
-        case arg_encrypt_data:
-            guc_info->encrypt_data = GLOBUS_TRUE;
+        case arg_data_safe:
+            guc_info->data_safe = GLOBUS_TRUE;
+            break;
+        case arg_data_private:
+            guc_info->data_private = GLOBUS_TRUE;
             break;
         case arg_debugftp:
             g_use_debug = GLOBUS_TRUE;
@@ -1429,6 +1439,12 @@ globus_l_guc_parse_arguments(
     {
         globus_url_copy_l_args_error(
             "option -ascii and -binary are exclusive");
+        return -1;
+    }
+    if(guc_info->data_safe & guc_info->data_private)
+    {
+        globus_url_copy_l_args_error(
+            "option -data-channel-safe and -data-channel-private are exclusive");
         return -1;
     }
     return 0;
@@ -1859,11 +1875,17 @@ globus_l_guc_gass_attr_init(
                 &dcau);
         }
         
-        if (guc_info->encrypt_data)
+        if (guc_info->data_private)
         {
             globus_ftp_client_operationattr_set_data_protection(
                 ftp_attr,
                 GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
+        }
+        else if (guc_info->data_safe)
+        {
+            globus_ftp_client_operationattr_set_data_protection(
+                ftp_attr,
+                GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
         }
 
         globus_gass_copy_attr_set_ftp(gass_copy_attr,
