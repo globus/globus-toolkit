@@ -1,0 +1,19 @@
+class   all   real,guest,anonymous  *
+
+limit   all   10   Any              /etc/msgs/msg.dead
+
+readme  README*    login
+readme  README*    cwd=*
+
+message /welcome.msg            login
+message .message                cwd=*
+
+compress        yes             all
+tar             yes             all
+
+log commands real
+log transfers anonymous,real inbound,outbound
+
+shutdown /etc/shutmsg
+
+email user@hostname
