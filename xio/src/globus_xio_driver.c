@@ -303,6 +303,10 @@ globus_i_xio_driver_deliver_op(
     int                                     ndx,
     globus_xio_operation_type_t             deliver_type)
 {
+    GlobusXIOName(globus_i_xio_driver_deliver_op);
+
+    GlobusXIODebugInternalEnter();
+
     switch(deliver_type)
     {
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:
@@ -321,7 +325,9 @@ globus_i_xio_driver_deliver_op(
             globus_assert(0);
             break;
     }
+    GlobusXIODebugInternalExit();
 }
+
 void
 globus_i_xio_will_block_cb(
     globus_thread_callback_index_t          wb_ndx,
@@ -463,7 +469,6 @@ globus_l_xio_driver_op_write_kickout(
 
     globus_xio_driver_write_delivered(op, ndx, &deliver_type);
 
-  exit:
     GlobusXIODebugInternalExit();
 }   
    
@@ -538,7 +543,6 @@ globus_l_xio_driver_op_read_kickout(
 
     globus_xio_driver_read_delivered(op, ndx, &deliver_type);
 
-  exit:
     GlobusXIODebugInternalExit();
 }   
    
@@ -767,7 +771,6 @@ globus_l_xio_driver_open_op_kickout(
     }
 
     globus_xio_driver_open_delivered(op, ndx, &deliver_type);
-  exit:
 
     GlobusXIODebugInternalExit();
 }
