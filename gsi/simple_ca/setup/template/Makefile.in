@@ -141,7 +141,7 @@ AUTOMAKE_OPTIONS = no-dependencies
 
 # the value of this variable gets replace when a specific
 # ca package is generated
-CACERT_HASH = 68c28de4
+CACERT_HASH = __CACERT_HASH__
 
 Scripts =  	setup-ssl-utils-sh-scripts 	setup-ssl-utils 	setup-ssl-utils.pl 	setup-gsi 	setup-gsi.pl 	grid-cert-request-config.in 	grid-security-config.in 	setup-ssl-utils-sh-scripts.in
 

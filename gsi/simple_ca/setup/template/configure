@@ -1182,7 +1182,7 @@ else
     fi
   done
   IFS="$ac_save_ifs"
-  test -z "$ac_cv_path_TAR" && ac_cv_path_TAR="null"
+  test -z "$ac_cv_path_TAR" && ac_cv_path_TAR="failed"
   ;;
 esac
 fi
@@ -1194,7 +1194,7 @@ else
 fi
 
 
-if test $TAR = null; then
+if test $TAR = failed; then
 { echo "configure: error: "Could not find gnu tar in your current path"" 1>&2; exit 1; }
 fi
 

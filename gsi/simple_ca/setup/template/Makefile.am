@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre_top
 
 # the value of this variable gets replace when a specific
 # ca package is generated
-CACERT_HASH=68c28de4
+CACERT_HASH=__CACERT_HASH__
 
 Scripts = \
 	setup-ssl-utils-sh-scripts \
