@@ -201,9 +201,7 @@ read_token(const int sock,
 	(header[major_version] != 3) ||
 	((header[minor_version] != 0) && (header[minor_version] != 1)))
     {
-#if defined(EINVAL)
 	errno = EINVAL;
-#endif
 	return -1;
     }
     
