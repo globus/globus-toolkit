@@ -12,8 +12,24 @@ main(int argc, char *argv[])
     char * 		out;
     int			hash;
 
+    if (argc<2)
+    {
+	printf("Usage:  globus-i18n-resource-init <infile> <outfile>\n");
+	return GLOBUS_FAILURE;
+    }
+    
     fptr = fopen(argv[1], "r");
+    if (fptr==NULL)
+    {
+	printf("File %s could not be opened for reading\n", argv[1]);
+	return GLOBUS_FAILURE;
+    }
     outptr = fopen(argv[2], "wt");
+    if (outptr==NULL)
+    {
+	printf("File %s could not be opened for writing\n", argv[2]);
+	return GLOBUS_FAILURE;
+    }
 
 
     fprintf(outptr, "root { \n\n");
