@@ -219,7 +219,7 @@ if ( !getPrivilegeSeparation() )
 
 print "\n";
 print "  o For more information about GSI-Enabled OpenSSH, visit:\n";
-print "    <http://www.ncsa.uiuc.edu/Divisions/NSM/GST/GSI/openssh/>\n";
+print "    <http://grid.ncsa.uiuc.edu/ssh/>\n";
 
 #
 # give the user a chance to read all of this output
