@@ -140,9 +140,6 @@ static int
 string_to_int(const char			*string,
 	      int				*integer);
 
-static char **
-make_string_list (char str[], int strlen);
-
 static char *
 parse_entry(char *buffer, authorization_data_t *data);
 
@@ -352,7 +349,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     char lifetime_string[64];
     char str[64];
     const char *command_string;
-    char **authorized_services, **authorized_clients;
 
     assert(data != NULL);
     assert(datalen > 0);
@@ -482,28 +478,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
    
-    //authorized service string
-    for (authorized_services = request->authorized_service_dns;
-	 authorized_services; authorized_services++) {
-	len = concatenate_strings(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
-				  *authorized_services, "\n", NULL);
-	if (len < 0) {
-	    return -1;
-	}
-	totlen += len;
-    }
-
-    // authorized client dns
-    for (authorized_clients = request->authorized_client_dns;
-	 authorized_clients; authorized_clients++) {
-	len = concatenate_strings(data, datalen, MYPROXY_AUTH_CLIENT_STRING,
-				  *authorized_clients, "\n", NULL);
-	if (len < 0) {
-	    return -1;
-	}
-	totlen += len;
-    }
-
     return totlen+1;
 }
 
@@ -739,32 +713,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
     	{
 		return -1;
     	}
-
-    //authorization service
-    len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
-			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
-			  buf, sizeof(buf));
-    if (len >= 0) {
-	request->authorized_service_dns = make_string_list(buf, len);
-	if (request->authorized_service_dns == NULL) {
-	    //verror_put_string("make_string_list() failed");
-	    verror_put_errno(errno);
-	    return -1;
-	}
-    }
-			  
-    //authorization client
-    len = convert_message(data, datalen, MYPROXY_AUTH_CLIENT_STRING,
-			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
-			  buf, sizeof(buf));
-    if (len >= 0) {
-	request->authorized_client_dns = make_string_list(buf, len);
-	if (request->authorized_client_dns == NULL) {
-	    //verror_put_string("make_string_list() failed");
-	    verror_put_errno(errno);
-	    return -1;
-	}
-    }
 
     /* Success */
     return 0;
@@ -2018,40 +1966,6 @@ string_to_int(const char			*string,
     
   error:
     return return_value;
-}
-
-/*
- *  make_string_list()
- *  
- *  Convert a potentially multi-line string into an array of one-line
- *  strings.  The input string is modified during the conversion.
- */
-static char **
-make_string_list(char str[], int strlen)
-{
-	int num_lines, i;
-	char **list = NULL;
-
-        if (str[strlen-1] == '\n') {
-	            str[--strlen] = '\0';
-	}
-	for (num_lines=1, i=0; i < strlen; i++) {
-	    if (str[i] == '\n') {
-	            num_lines++;
-	    }
-	}
-	list = (char **)calloc(num_lines+1, sizeof(char *));
-	if (list == NULL) {
-		        return list;
-		    }
-        for (i=strlen-2; i >= 0; i--) {
-            if (str[i] == '\n') {
-                list[--num_lines] = strdup(&(str[i+1]));
-                str[i] = '\0';
-            }
-        }
-        list[0] = strdup(str);
-        return list;
 }
 
 /* Returns pointer to last processed char in the buffer or NULL on error */
