@@ -164,21 +164,16 @@ int PROXYGROUP_print(
     BIO *                               bp,
     PROXYGROUP *                        group)
 {
-    int                                 ret,
-                                        tmpret;
+    STACK_OF(CONF_VALUE) *              values = NULL;
+    
+    values = i2v_PROXYGROUP(PROXYGROUP_x509v3_ext_meth(),
+                            group,
+                            values);
 
-    ret = BIO_printf(bp, "PROXYGROUP::GroupName: ");
-    if(ret < 0) { return ret; }
+    X509V3_EXT_val_prn(bp, values, 0, 1);
 
-    tmpret = ASN1_STRING_print(bp, group->group_name);
-    if(tmpret < 0) { return tmpret; }
-    ret += tmpret;
-
-    tmpret = BIO_printf(bp, "\nPROXYGROUP::AttachedGroup: %s\n", 
-                        group->attached_group ? "TRUE" : "FALSE");
-    if(tmpret < 0) { return tmpret; }
-
-    return (ret + tmpret);
+    sk_CONF_VALUE_pop_free(values, X509V3_conf_free);
+    return 1;
 }
 /* PROXYGROUP_print() */
 /* @} */
@@ -391,3 +386,49 @@ PROXYGROUP * d2i_PROXYGROUP(
 }
 /* d2i_PROXYGROUP() */
 /* @} */
+
+
+X509V3_EXT_METHOD * PROXYGROUP_x509v3_ext_meth()
+{
+    static X509V3_EXT_METHOD proxygroup_x509v3_ext_meth =
+    {
+        -1,
+        X509V3_EXT_MULTILINE,
+        (X509V3_EXT_NEW) PROXYGROUP_new,
+        (X509V3_EXT_FREE) PROXYGROUP_free,
+        (X509V3_EXT_D2I) d2i_PROXYGROUP,
+        (X509V3_EXT_I2D) i2d_PROXYGROUP,
+        NULL, NULL,
+        (X509V3_EXT_I2V) i2v_PROXYGROUP,
+        NULL,
+        NULL, NULL,
+        NULL
+    };
+    return (&proxygroup_x509v3_ext_meth);
+}
+/* @} */
+
+STACK_OF(CONF_VALUE) * i2v_PROXYGROUP(
+    struct v3_ext_method *              method,
+    PROXYGROUP *                        ext,
+    STACK_OF(CONF_VALUE) *              extlist)
+{
+    long                                group_name_length;
+    char *                              group_name = NULL;
+    char *                              name_string = NULL;
+
+    X509V3_add_value("Proxy Group:", NULL, &extlist);
+    
+    group_name = PROXYGROUP_get_name(ext, &group_name_length);
+    name_string = malloc(group_name_length + 2);
+    snprintf(name_string, (group_name_length + 2), " %s", group_name);
+    
+    X509V3_add_value("    Group Name",
+                     name_string,
+                     &extlist);
+    X509V3_add_value("    Attached",
+                     (*PROXYGROUP_get_attached(ext)) ? " TRUE" : " FALSE",
+                     &extlist);
+
+    return extlist;
+}

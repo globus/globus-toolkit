@@ -33,6 +33,24 @@
 EXTERN_C_BEGIN
 
 
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <string.h>
+
+/**
+ * @defgroup proxycertinfo ProxyCertInfo
+ * 
+ * @author Sam Meder
+ * @author Sam Lang
+ * 
+ * The proxycertinfo.h file defines a method of
+ * maintaining information about proxy certificates.
+ */
+
+#define PROXYGROUP_OID               "1.3.6.1.4.1.3536.1.225"
+#define PROXYGROUP_SN                "PROXYGROUP"
+#define PROXYGROUP_LN                "Proxy Group"
+
 /* Used for error handling */
 #define ASN1_F_PROXYGROUP_NEW                            440
 #define ASN1_F_D2I_PROXYGROUP                            441
@@ -114,6 +132,13 @@ PROXYGROUP * d2i_PROXYGROUP(
     PROXYGROUP **                       group,
     unsigned char **                    a,
     long                                length);
+
+X509V3_EXT_METHOD * PROXYGROUP_x509v3_ext_meth();
+
+STACK_OF(CONF_VALUE) * i2v_PROXYGROUP(
+    struct v3_ext_method *              method,
+    PROXYGROUP *                        ext,
+    STACK_OF(CONF_VALUE) *              extlist);
 
 EXTERN_C_END
 

@@ -143,10 +143,6 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 #ifndef DOXYGEN
 
 globus_result_t
-globus_gsi_proxy_get_proxycertinfo_NID(
-    int *                               pci_NID);
-
-globus_result_t
 globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_t *         handle,
     globus_gsi_proxy_handle_attrs_t     handle_attrs);
@@ -189,6 +185,7 @@ globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
     unsigned char *                     policy,
+    int                                 policy_length,
     int                                 policy_NID);
 
 globus_result_t
@@ -335,6 +332,12 @@ globus_gsi_proxy_assemble_cred(
     globus_gsi_proxy_handle_t           handle,
     globus_gsi_cred_handle_t *          proxy_credential,
     BIO *                               input_bio);
+
+globus_result_t
+globus_gsi_proxy_create_signed(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer,
+    globus_gsi_cred_handle_t *          proxy_credential);
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_set_keybits(

@@ -1,7 +1,3 @@
-
-#warning need to add debugging code for all proxy_ssl code
-#warning need to re-examine errors - when they are getting called - proxycertinfo library, etc.
-
 #ifndef HEADER_PROXYCERTINFO_H
 #define HEADER_PROXYCERTINFO_H
 
@@ -40,6 +36,9 @@
 
 EXTERN_C_BEGIN
 
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <string.h>
 
 /**
  * @defgroup proxycertinfo ProxyCertInfo
@@ -50,6 +49,10 @@ EXTERN_C_BEGIN
  * The proxycertinfo.h file defines a method of
  * maintaining information about proxy certificates.
  */
+
+#define PROXYCERTINFO_OID               "1.3.6.1.4.1.3536.1.222"
+#define PROXYCERTINFO_SN                "PROXYCERTINFO"
+#define PROXYCERTINFO_LN                "Proxy Certificate Info Extension"
 
 /**
  * Used for error checking
@@ -147,6 +150,13 @@ int PROXYCERTINFO_set_pC(
     PROXYCERTINFO *                     cert_info,
     ASN1_BOOLEAN                        pC);
 
+int PROXYCERTINFO_set_version(
+    PROXYCERTINFO *                     cert_info,
+    long                                version);
+
+long PROXYCERTINFO_get_version(
+    PROXYCERTINFO *                     cert_info);
+
 PROXYGROUP * PROXYCERTINFO_get_group(
     PROXYCERTINFO *                     cert_info);
 
@@ -159,7 +169,7 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
 
 int PROXYCERTINFO_set_path_length(
     PROXYCERTINFO *                     cert_info,
-    long *                              path_length);
+    long                                path_length);
 
 long PROXYCERTINFO_get_path_length(
     PROXYCERTINFO *                     cert_info);
@@ -180,6 +190,12 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
     unsigned char **                    a,
     long                                length);
 
+X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth();
+
+STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
+    struct v3_ext_method *              method,
+    PROXYCERTINFO *                     ext,
+    STACK_OF(CONF_VALUE) *              extlist);
 
 EXTERN_C_END
 

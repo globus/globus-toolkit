@@ -32,6 +32,24 @@
 
 EXTERN_C_BEGIN
 
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <string.h>
+
+/**
+ * @defgroup proxycertinfo ProxyCertInfo
+ * 
+ * @author Sam Meder
+ * @author Sam Lang
+ * 
+ * The proxycertinfo.h file defines a method of
+ * maintaining information about proxy certificates.
+ */
+
+#define PROXYRESTRICTION_OID               "1.3.6.1.4.1.3536.1.224"
+#define PROXYRESTRICTION_SN                "PROXYRESTRICTION"
+#define PROXYRESTRICTION_LN                "Proxy Restriction"
+
 /* Used for error handling */
 #define ASN1_F_PROXYRESTRICTION_NEW                      450
 #define ASN1_F_D2I_PROXYRESTRICTION                      451
@@ -111,6 +129,13 @@ PROXYRESTRICTION * d2i_PROXYRESTRICTION(
     PROXYRESTRICTION **                 restriction,
     unsigned char **                    a,
     long                                length);
+
+X509V3_EXT_METHOD * PROXYRESTRICTION_x509v3_ext_meth();
+
+STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
+    struct v3_ext_method *              method,
+    PROXYRESTRICTION *                  ext,
+    STACK_OF(CONF_VALUE) *              extlist);
 
 EXTERN_C_END
 

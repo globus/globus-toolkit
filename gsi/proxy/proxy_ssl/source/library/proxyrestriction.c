@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <openssl/err.h>
 #include <openssl/asn1_mac.h>
+#include <openssl/objects.h>
 
 #include "proxyrestriction.h"
 
@@ -33,7 +34,6 @@ ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
 }
 /* PROXYRESTRICTION_asn1_meth() */
 /* @} */
-
 
 /**
  * @name New
@@ -153,39 +153,22 @@ int PROXYRESTRICTION_cmp(
  * @param bp the BIO stream to print to
  * @param restriction the PROXYRESTRICTION to print
  *
- * @return the number of bytes printed, -1 or -2 on error
+ * @return 1 on success, 0 on error
  */
 int PROXYRESTRICTION_print(
     BIO *                               bp,
     PROXYRESTRICTION *                  restriction)
 {
-    int                                 ret,
-                                        tmpret;
+    STACK_OF(CONF_VALUE) *              values = NULL;
 
-    ret = BIO_printf(bp, "PROXYRESTRICTION::PolicyLanguage: %s, %s, %d\n", 
-                     restriction->policy_language->ln,
-                     restriction->policy_language->sn,
-                     restriction->policy_language->nid);
-    if(ret < 0) { return ret; }
-
-    tmpret = BIO_dump(bp,
-                      restriction->policy_language->data,
-                      restriction->policy_language->length);
-    if(tmpret < 0) { return tmpret; }
-    ret += tmpret;
-
-    tmpret = BIO_printf(bp, "PROXYRESTRICTION::Policy: ");
-    if(tmpret < 0) { return tmpret; }
-    ret += tmpret;
-
-    tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) restriction->policy);
-    if(tmpret < 0) { return tmpret; }
-    ret += tmpret;
+    values = i2v_PROXYRESTRICTION(PROXYRESTRICTION_x509v3_ext_meth(),
+                                  restriction,
+                                  values);
     
-    tmpret = BIO_printf(bp, "\n");
-    if(tmpret < 0) { return tmpret; }
-    
-    return (ret + tmpret);
+    X509V3_EXT_val_prn(bp, values, 0, 1);
+
+    sk_CONF_VALUE_pop_free(values, X509V3_conf_free);
+    return 1;
 }
 /* @} */
 
@@ -291,7 +274,10 @@ int PROXYRESTRICTION_set_policy(
 {
     if(policy != NULL)
     {
-        ASN1_OCTET_STRING_set(restriction->policy, policy, length);
+        unsigned char *                 copy = malloc(length);
+        memcpy(copy, policy, length);
+
+        ASN1_OCTET_STRING_set(restriction->policy, copy, length);
         return 1;
     }
     return 0;
@@ -319,7 +305,14 @@ unsigned char * PROXYRESTRICTION_get_policy(
     int *                               length)
 {
     (*length) = restriction->policy->length;
-    return restriction->policy->data;
+    if(length > 0 && restriction->policy->data)
+    {
+        unsigned char *                 copy = malloc(*length);
+        memcpy(copy, restriction->policy->data, *length);
+        return copy;
+    }
+
+    return NULL;
 }
 /* @} */
 
@@ -392,3 +385,85 @@ PROXYRESTRICTION * d2i_PROXYRESTRICTION(
                       ASN1_F_D2I_PROXYRESTRICTION);
 }
 /* @} */
+
+
+X509V3_EXT_METHOD * PROXYRESTRICTION_x509v3_ext_meth()
+{
+    static X509V3_EXT_METHOD proxyrestriction_x509v3_ext_meth =
+    {
+        -1,
+        X509V3_EXT_MULTILINE,
+        (X509V3_EXT_NEW) PROXYRESTRICTION_new,
+        (X509V3_EXT_FREE) PROXYRESTRICTION_free,
+        (X509V3_EXT_D2I) d2i_PROXYRESTRICTION,
+        (X509V3_EXT_I2D) i2d_PROXYRESTRICTION,
+        NULL, NULL,
+        (X509V3_EXT_I2V) i2v_PROXYRESTRICTION,
+        NULL,
+        NULL, NULL,
+        NULL
+    };
+    return (&proxyrestriction_x509v3_ext_meth);
+}
+
+STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
+    struct v3_ext_method *              method,
+    PROXYRESTRICTION *                  ext,
+    STACK_OF(CONF_VALUE) *              extlist)
+{
+    char *                              policy = NULL;
+    char                                policy_lang[128];
+    char *                              tmp_string = NULL;
+    char *                              index = NULL;
+    int                                 nid;
+    int                                 policy_length;
+
+    X509V3_add_value("Proxy Restriction:", NULL, &extlist);
+
+    nid = OBJ_obj2nid(PROXYRESTRICTION_get_policy_language(ext));
+
+    snprintf(policy_lang, 128, " %s", 
+             (nid != NID_undef) ? OBJ_nid2ln(nid) : "UNKNOWN");
+    
+    X509V3_add_value("    Policy Language", 
+                     policy_lang,
+                     &extlist);
+    
+    policy = PROXYRESTRICTION_get_policy(ext, &policy_length);
+    
+    if(!policy)
+    {
+        X509V3_add_value("    Policy: ", "EMPTY", &extlist);
+    }
+    else
+    {
+        X509V3_add_value("    Policy:", NULL, &extlist);
+
+        tmp_string = policy;
+        while(1)
+        {
+            index = strchr(tmp_string, '\n');
+            if(!index)
+            {
+                int                     length;
+                unsigned char *         last_string;
+                length = (policy_length - (tmp_string - policy)) + 9;
+                last_string = malloc(length);
+                snprintf(last_string, length, "%8s%s", "", tmp_string);
+                X509V3_add_value(NULL, last_string, &extlist);
+                free(last_string);
+                break;
+            }
+            
+            *index = '\0';
+            
+            X509V3_add_value(NULL, tmp_string, &extlist);
+            
+            tmp_string = index + 1;
+        }
+        
+        free(policy);
+    }
+
+    return extlist;
+}

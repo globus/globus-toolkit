@@ -67,6 +67,11 @@ X509_SIG * d2i_X509_SIG(
     unsigned char **                    buffer,
     long                                length);
 
+STACK_OF(CONF_VALUE) * i2v_X509_SIG(
+    struct v3_ext_method *              method,
+    X509_SIG *                          sig,
+    STACK_OF(CONF_VALUE) *              extlist);
+
 EXTERN_C_END
 
 #endif // HEADER_SIGNATURE_H

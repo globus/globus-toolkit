@@ -27,10 +27,10 @@ sub basic_func
    my $test_index = shift;
    my $options = shift;
 
-   print "$test_prog $options 1>$test_prog.log1.stdout 2>$test_prog.log1.stderr\n\n";
+   print "$test_prog $options 1> $test_prog.log1.stdout\n\n";
 
-   my $rc1 = system("$test_prog $options 1>$test_prog.log1.stdout 2>$test_prog.log1.stderr") / 256;
-   my $rc2 = system("$test_prog -in $test_prog.log1.stdout 1>$test_prog.log2.stdout 2>$test_prog.log2.stderr") / 256;
+   my $rc1 = system("./$test_prog $options -out $test_prog.norm$test_index.der 1>$test_prog.log1.stdout") / 256;
+   my $rc2 = system("./$test_prog -in $test_prog.norm$test_index.der -out $test_prog.log$test_index.der 1> $test_prog.log2.stdout") / 256;
 
    if($rc1 != 0 || $rc2 != 0)
    {
@@ -42,19 +42,12 @@ sub basic_func
       $errors .= "\n# Core file generated.";
    }
    
-   $rc1 = system("$diff $test_prog.log1.stdout $test_prog.norm$test_index.stdout") / 256;
+   $rc1 = system("$diff $test_prog.log$test_index.der $test_prog.norm$test_index.der") / 256;
    
    if($rc1 != 0)
    {
-       $errors .= "Test produced unexpected output, when compared to the correct output: $test_prog.norm$test_index.stderr\n\n";
+       $errors .= "Test produced unexpected output, when compared to the correct output: $test_prog.norm$test_index.stdout\n\n";
    } 
-
-   $rc1 = system("$diff $test_prog.log1.stderr $test_prog.log2.stderr") / 256;
-
-   if($rc1 != 0)
-   {
-      $errors .= "Test produced unexpected output, see $test_prog.log1.stderr\n\n";
-   }
 
    $rc1 = system("$diff $test_prog.log1.stdout $test_prog.log2.stdout 1>/dev/null 2>/dev/null") / 256;
    
@@ -110,7 +103,7 @@ push(@tests, "basic_func(1, \"-pc 1 -path 10 -group GROUPNAME 1 -rest POLICYLANG
 push(@tests, "basic_func(2, \"-pc 1 -path 10 -group GROUPNAME 0\");");
 push(@tests, "basic_func(3, \"-pc 0 -path 0 -rest POLICYLANGUAGE POLICY -version 10\");");
 push(@tests, "basic_func(4, \"-pc 0 -group GROUPNAME 1 -rest POLICYLANGUAGE POLICY\");");
-push(@tests, "basic_func(5, \"-pc 1\");");
+push(@tests, "basic_func(5, \"-pc 1 -out test_pci5.der\");");
 
 
 # Now that the tests are defined, set up the Test to deal with them.

@@ -3,7 +3,8 @@
 #include <openssl/asn1.h>
 #include <openssl/asn1_mac.h>
 #include <openssl/evp.h>
-
+#include <openssl/x509v3.h>
+#include <string.h>
 #include "signature.h"
 
 /**
@@ -100,24 +101,14 @@ int X509_SIG_print(
     BIO *                               bp,
     X509_SIG *                          signature) 
 {
-    int                                 ret,
-                                        tmpret;
-    BIO *                               b64;
+    STACK_OF(CONF_VALUE) *              values = NULL;
+    values = i2v_X509_SIG(NULL,
+                          signature,
+                          values);
+    X509V3_EXT_val_prn(bp, values, 0, 1);
 
-    b64 = BIO_new(BIO_f_base64());
-
-    ret = BIO_printf(bp, "Signing Algorithm: %d, %s, %s\n", 
-                     OBJ_obj2nid(signature->algor->algorithm),
-                     signature->algor->algorithm->sn,
-                     signature->algor->algorithm->ln);
-    if(ret < 0) { return ret; }
-    
-    bp = BIO_push(b64, bp);
-    tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest);
-    if(tmpret < 0) { return tmpret; }
-    BIO_flush(bp);
-    BIO_pop(bp);
-    return (tmpret + ret);
+    sk_CONF_VALUE_pop_free(values, X509V3_conf_free);
+    return 1;
 }
 /* @} */
 
@@ -258,3 +249,69 @@ unsigned char * X509_SIG_get_signature(
     return (unsigned char *) signature->digest->data;
 }    
 /* @} */
+
+STACK_OF(CONF_VALUE) * i2v_X509_SIG(
+    struct v3_ext_method *              method,
+    X509_SIG *                          sig,
+    STACK_OF(CONF_VALUE) *              extlist)
+{
+    int                                 sig_nid;
+    char                                sig_byte[4];
+    char                                sig_ln[128];
+    char                                tmp_string[128];
+    char *                              sig_string = NULL;
+    int                                 sig_length;
+    char *                              sig_data = NULL;
+    int                                 index;
+    
+    sig_nid = OBJ_obj2nid(sig->algor->algorithm);
+    
+    snprintf(sig_ln, 128, " %s", 
+             (sig_nid == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(sig_nid));
+        
+    X509V3_add_value(
+        "Issuer Signature:", NULL, &extlist);
+    X509V3_add_value(
+        "    Signature Algorithm", 
+        sig_ln,
+        &extlist);
+        
+    sig_length = sig->digest->length;
+    sig_data = (char *) sig->digest->data;
+    
+    memset(tmp_string, 0, 128);
+    sig_string = tmp_string;
+    memcpy(sig_string, "        ", 8);
+    sig_string += 8;
+    for(index = 0; index < sig_length; ++index)
+    {
+        if(index != 0 && (index % 15) == 0)
+        {
+            sig_string[0] = '\0';
+            X509V3_add_value(NULL, tmp_string, &extlist);
+            memset(tmp_string, 0, 128);
+            sig_string = tmp_string;
+            memcpy(sig_string, "        ", 8);
+            sig_string += 8;
+        }
+        
+        snprintf(sig_byte, 4, "%02x%s", 
+                 (unsigned char) sig_data[index],
+                 ((index + 1) == sig_length) ? "" : ":");
+        memcpy(sig_string, sig_byte, 
+               ((index + 1) == sig_length) ? 2 : 3);
+        if((index + 1) == sig_length)
+        {
+            sig_string += 2;
+        }
+        else
+        {
+            sig_string += 3;
+        }
+    }
+    
+    sig_string[0] = '\0';
+    X509V3_add_value(NULL, tmp_string, &extlist);
+
+    return extlist;
+}

@@ -98,7 +98,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
 #define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_RESULT_, \
                                               _ERRORTYPE_, _ERRORSTR_) \
     char *                              _tmp_string_ = \
-        globus_i_gsi_proxy_create_string _ERRORSTR_; \
+        globus_gsi_cert_utils_create_string _ERRORSTR_; \
     _RESULT_ = globus_i_gsi_proxy_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
@@ -110,7 +110,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
 #define GLOBUS_GSI_PROXY_ERROR_RESULT(_RESULT_, \
                                       _ERRORTYPE_, _ERRORSTR_) \
     char *                              _tmp_string_ = \
-        globus_i_gsi_proxy_create_string _ERRORSTR_; \
+        globus_gsi_cert_utils_create_string _ERRORSTR_; \
     _RESULT_ = globus_i_gsi_proxy_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
@@ -251,11 +251,6 @@ globus_i_gsi_proxy_error_chain_result(
     const char *                        function_name,
     int                                 line_number,
     const char *                        long_desc);
-
-char *
-globus_i_gsi_proxy_create_string(
-    const char *                        format,
-    ...);
 
 EXTERN_C_END
 

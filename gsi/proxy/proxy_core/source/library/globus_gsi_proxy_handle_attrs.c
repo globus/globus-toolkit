@@ -12,7 +12,7 @@
 #include <errno.h>
 
 #define DEFAULT_KEY_BITS                1024
-#define DEFAULT_PUB_EXPONENT            0x10001  /* 65537 */
+#define DEFAULT_PUB_EXPONENT            RSA_F4  /* 65537 */
 #define DEFAULT_SIGNING_ALGORITHM       EVP_md5()
 #define DEFAULT_TIME_VALID              (12*60)   /* actually in minutes */
 #define DEFAULT_CLOCK_SKEW              (5*60)    /* actually in seconds */
@@ -71,7 +71,7 @@ globus_gsi_proxy_handle_attrs_init(
 
     len = sizeof(globus_i_gsi_proxy_handle_attrs_t);
     if((*handle_attrs = (globus_gsi_proxy_handle_attrs_t)
-       globus_malloc(len)) == NULL)
+       malloc(len)) == NULL)
     {
         result = GLOBUS_GSI_PROXY_HANDLE_ATTRS_MALLOC_ERROR;
         goto exit;
@@ -122,7 +122,7 @@ globus_gsi_proxy_handle_attrs_destroy(
 
     if(handle_attrs != NULL)
     {
-        globus_free(handle_attrs);
+        globus_libc_free(handle_attrs);
         handle_attrs = NULL;
     }
 
@@ -707,7 +707,7 @@ globus_gsi_proxy_handle_attrs_copy(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
-        goto exit;
+        goto error_exit;
     }
     if(b == NULL)
     {
@@ -716,7 +716,7 @@ globus_gsi_proxy_handle_attrs_copy(
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
-        goto exit;
+        goto error_exit;
     }
 
     result = globus_gsi_proxy_handle_attrs_init(b);
@@ -725,7 +725,7 @@ globus_gsi_proxy_handle_attrs_copy(
         GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
-        goto exit;
+        goto error_exit;
     }
 
     (*b)->key_bits = a->key_bits;
@@ -733,15 +733,19 @@ globus_gsi_proxy_handle_attrs_copy(
     (*b)->signing_algorithm = a->signing_algorithm;
     (*b)->time_valid = a->time_valid;
     (*b)->clock_skew = a->clock_skew;
+    (*b)->key_gen_callback = a->key_gen_callback;
 
     result = GLOBUS_SUCCESS;
+    goto exit;
 
- exit:
+ error_exit:
 
-    if(b)
+    if(*b)
     {
         globus_gsi_proxy_handle_attrs_destroy(*b);
     }
+
+ exit:
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
