@@ -900,7 +900,7 @@ globus_gram_client_job_request(
     rc = monitor.errorcode;
     if(job_contact)
     {
-	*job_contact = monitor.contact;
+	*job_contact = globus_libc_strdup(monitor.contact);
     }
     globus_mutex_unlock(&monitor.mutex);
 
@@ -2229,14 +2229,17 @@ globus_l_gram_client_job_request(
                      (iattr != NULL)
                          ? iattr->credential : GSS_C_NO_CREDENTIAL,
 		     GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
-		     dn )) 
+		     dn )) != GLOBUS_SUCCESS)
+    {
+        goto globus_gram_client_job_request_attr_failed;
+    }
 
-	|| (rc = globus_gram_protocol_pack_job_request(
+    if ((rc = globus_gram_protocol_pack_job_request(
 	             job_state_mask,
 		     callback_contact,
 		     description,
 		     &query,
-		     &querysize)) )
+		     &querysize)) != GLOBUS_SUCCESS )
     {
 	goto globus_gram_client_job_request_pack_failed;
     }
@@ -2258,13 +2261,10 @@ globus_l_gram_client_job_request(
     if (query)
 	globus_libc_free(query);
 
-    if(rc == GLOBUS_SUCCESS)
-    {
-	return rc;
-    }
-
 globus_gram_client_job_request_pack_failed:
     globus_io_tcpattr_destroy (&attr);
+
+globus_gram_client_job_request_attr_failed:
     globus_libc_free(url);
     if (dn)
         globus_libc_free(dn);
@@ -2323,11 +2323,6 @@ globus_l_gram_client_ping(
                  monitor);
     globus_mutex_unlock(&monitor->mutex);
 
-    if (rc == GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-
     globus_io_tcpattr_destroy (&attr);
 
 globus_gram_client_ping_attr_failed:
@@ -2338,7 +2333,7 @@ globus_gram_client_ping_attr_failed:
 globus_gram_client_ping_parse_failed:
     return rc;
 }
-/* globus_l_gram_client__ping() */
+/* globus_l_gram_client_ping() */
 
 static
 int
@@ -2381,6 +2376,11 @@ globus_l_gram_client_job_refresh_credentials(
 	     ?  globus_l_gram_client_register_callback
 	     : globus_l_gram_client_monitor_callback,
 	 monitor);
+
+    if(query)
+    {
+	globus_libc_free(query);
+    }
 
 end:
     globus_mutex_unlock(&monitor->mutex);
@@ -2609,7 +2609,6 @@ globus_l_gram_client_register_callback(
 	              monitor->contact,
 		      monitor->status,
 		      monitor->job_failure_code);
-    monitor->contact = GLOBUS_NULL;
 
     globus_l_gram_client_monitor_destroy(monitor);
     globus_libc_free(monitor);
@@ -2641,6 +2640,13 @@ int
 globus_l_gram_client_monitor_destroy(
     globus_l_gram_client_monitor_t *	monitor)
 {
+
+    if (monitor->contact != GLOBUS_NULL)
+    {
+        globus_gram_client_job_contact_free(monitor->contact);
+        monitor->contact = GLOBUS_NULL;
+    }
+
     globus_mutex_destroy(&monitor->mutex);
     globus_cond_destroy(&monitor->cond);
 
