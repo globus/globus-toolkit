@@ -737,48 +737,44 @@ globus_i_io_end_operation(
         globus_assert(0 && "operation never started");
     }
     
-    operation_info->refs--;
-    if(operation_info->refs <= 0)
+    /* clear out all operations bound to this structure */
+    if(handle->read_operation == operation_info)
     {
-        /* clear out all operations bound to this structure */
-        if(handle->read_operation == operation_info)
-        {
-            handle->read_operation = GLOBUS_NULL;
-        }
-        
-        if(handle->write_operation == operation_info)
-        {
-            handle->write_operation = GLOBUS_NULL;
-        }
-        
-        if(handle->except_operation == operation_info)
-        {
-            handle->except_operation = GLOBUS_NULL;
-        }
-            
-        if(!operation_info->canceled)
-        {
-            select_info = globus_l_io_fd_table[handle->fd];
-            
-            if(select_info->read == operation_info)
-            {
-                select_info->read = GLOBUS_NULL;
-            }
-            
-            if(select_info->write == operation_info)
-            {
-                select_info->write = GLOBUS_NULL;
-            }
-            
-            if(select_info->except == operation_info)
-            {
-                select_info->except = GLOBUS_NULL;
-            }
-        }
-        
-        globus_memory_push_node(
-            &globus_l_io_operation_info_memory, operation_info);
+        handle->read_operation = GLOBUS_NULL;
     }
+    
+    if(handle->write_operation == operation_info)
+    {
+        handle->write_operation = GLOBUS_NULL;
+    }
+    
+    if(handle->except_operation == operation_info)
+    {
+        handle->except_operation = GLOBUS_NULL;
+    }
+        
+    if(!operation_info->canceled)
+    {
+        select_info = globus_l_io_fd_table[handle->fd];
+        
+        if(select_info->read == operation_info)
+        {
+            select_info->read = GLOBUS_NULL;
+        }
+        
+        if(select_info->write == operation_info)
+        {
+            select_info->write = GLOBUS_NULL;
+        }
+        
+        if(select_info->except == operation_info)
+        {
+            select_info->except = GLOBUS_NULL;
+        }
+    }
+    
+    globus_memory_push_node(
+        &globus_l_io_operation_info_memory, operation_info);
     
     globus_i_io_debug_printf(3,
         (stderr, "%s(): exiting, fd=%d\n", myname, handle->fd));
@@ -1051,7 +1047,7 @@ globus_i_io_quick_operation_destructor(
 {
     globus_i_io_quick_operation_info_t *quick_info;
     
-    quick_info = (globus_i_io_quick_operation_info_t *) callback_arg;
+    quick_info = (globus_i_io_quick_operation_info_t *) arg;
     
     if(quick_info->arg_destructor && quick_info->callback_arg)
     {
@@ -1584,15 +1580,15 @@ globus_i_io_register_cancel(
                     operation_info->arg_destructor(operation_info->arg);
                 }
             }
+        
+            if(operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(
+                    handle, GLOBUS_I_IO_READ_OPERATION);
+            }
         }
         /* else */
         /* 4 */
-        
-        if(operation_info->refs <= 0)
-        {
-            globus_i_io_end_operation(
-                handle, GLOBUS_I_IO_READ_OPERATION);
-        }
         
         operation_info->canceled = GLOBUS_TRUE;
     }
@@ -1643,15 +1639,15 @@ globus_i_io_register_cancel(
                     operation_info->arg_destructor(operation_info->arg);
                 }
             }
+            
+            if(operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(
+                    handle, GLOBUS_I_IO_WRITE_OPERATION);
+            }
         }
         /* else */
         /* 4 */
-        
-        if(operation_info->refs <= 0)
-        {
-            globus_i_io_end_operation(
-                handle, GLOBUS_I_IO_WRITE_OPERATION);
-        }
         
         operation_info->canceled = GLOBUS_TRUE;
     }
@@ -1702,15 +1698,15 @@ globus_i_io_register_cancel(
                     operation_info->arg_destructor(operation_info->arg);
                 }
             }
+            
+            if(operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(
+                    handle, GLOBUS_I_IO_EXCEPT_OPERATION);
+            }
         }
         /* else */
         /* 4 */
-        
-        if(operation_info->refs <= 0)
-        {
-            globus_i_io_end_operation(
-                handle, GLOBUS_I_IO_EXCEPT_OPERATION);
-        }
         
         operation_info->canceled = GLOBUS_TRUE;
     }
@@ -1827,6 +1823,8 @@ globus_l_io_kickout_cb(
     /* see if I was canceled */
     globus_i_io_mutex_lock();
     {
+        operation_info->refs--;
+        
         if(!operation_info->canceled && !globus_l_io_shutdown_called)
         {
             globus_callback_unregister(
@@ -1842,7 +1840,7 @@ globus_l_io_kickout_cb(
         }
         else
         {
-            if(operation_info->canceled)
+            if(operation_info->canceled && operation_info->refs == 0)
             {
                 globus_i_io_end_operation(handle, operation_info->op);
             }
