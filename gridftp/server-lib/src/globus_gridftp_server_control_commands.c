@@ -964,15 +964,20 @@ globus_l_gsc_cmd_opts(
     }
     else if(strcmp("LIST", cmd_a[1]) == 0)
     {
-        char                                tmp_buf[4];
+        char *                                  tmp_buf;
+
+        tmp_buf = strdup(cmd_a[2]);
         if(sscanf(cmd_a[2], "usedatamode=%s", tmp_buf) == 1)
         {
             if(strcmp(tmp_buf, "yes") == 0)
             {
+                op->server_handle->list_data_mode = GLOBUS_TRUE;
             }
             else
             {
+                op->server_handle->list_data_mode = GLOBUS_FALSE;
             }
+            globus_free(tmp_buf);
         }
         else
         {
@@ -1836,6 +1841,9 @@ globus_l_gsc_cmd_stor_retr(
     }
     wrapper->op = op;
 
+    op->transfer_mode = op->server_handle->mode;
+    op->transfer_type = op->server_handle->type;
+
     if(strcmp(cmd_a[0], "STOR") == 0 ||  strcmp(cmd_a[0], "ESTO") == 0)
     {
         wrapper->type = GLOBUS_L_GSC_OP_TYPE_RECV;
@@ -1918,6 +1926,11 @@ globus_l_gsc_cmd_stor_retr(
         else
         {
             path = strdup(cmd_a[1]);
+        }
+        if(!op->server_handle->list_data_mode)
+        {
+            op->transfer_mode = 'S';
+            op->transfer_type = 'A';
         }
     }
 

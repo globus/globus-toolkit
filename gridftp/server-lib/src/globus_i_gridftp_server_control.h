@@ -244,6 +244,9 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
 
+    char                                    transfer_mode;
+    char                                    transfer_type;
+
     uid_t                                   uid;
 
     /* stuff for resource */
@@ -384,6 +387,8 @@ typedef struct globus_i_gsc_server_handle_s
     
     globus_i_gsc_data_t *                   data_object;
     globus_fifo_t                           data_q;
+
+    globus_bool_t                           list_data_mode;
 
     globus_result_t                         cached_res;
     globus_list_t *                         feature_list;

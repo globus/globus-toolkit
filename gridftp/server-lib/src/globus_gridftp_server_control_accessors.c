@@ -73,7 +73,7 @@ globus_gridftp_server_control_get_mode(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_mode = op->server_handle->mode;
+        *out_mode = op->transfer_mode;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -91,7 +91,7 @@ globus_gridftp_server_control_get_type(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_type = op->server_handle->type;
+        *out_type = op->transfer_type;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
