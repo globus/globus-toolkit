@@ -1618,6 +1618,10 @@ globus_l_io_kickout_read_cb(
     
     select_info = (globus_io_select_info_t *) user_args;
     
+    globus_i_io_debug_printf(6, (stderr, 
+        "globus_l_io_kickout_read_cb(): entering, fd=%d\n", 
+        select_info->handle->fd));
+        
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
@@ -1647,6 +1651,9 @@ globus_l_io_kickout_read_cb(
 
     globus_i_io_mutex_lock();
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_read_cb(): exiting, fd=%d\n", 
+            select_info->handle->fd));
 exit:    
         globus_l_io_pending_count--;
         if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
@@ -1671,6 +1678,10 @@ globus_l_io_kickout_write_cb(
     
     select_info = (globus_io_select_info_t *) user_args;
     
+    globus_i_io_debug_printf(6, (stderr, 
+        "globus_l_io_kickout_write_cb(): entering, fd=%d\n", 
+        select_info->handle->fd));
+
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
@@ -1700,6 +1711,9 @@ globus_l_io_kickout_write_cb(
 
     globus_i_io_mutex_lock();
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_write_cb(): exiting, fd=%d\n", 
+            select_info->handle->fd));
 exit:    
         globus_l_io_pending_count--;
         if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
@@ -1724,6 +1738,10 @@ globus_l_io_kickout_except_cb(
     
     select_info = (globus_io_select_info_t *) user_args;
     
+    globus_i_io_debug_printf(6, (stderr, 
+        "globus_l_io_kickout_except_cb(): entering, fd=%d\n", 
+        select_info->handle->fd));
+
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
@@ -1752,6 +1770,9 @@ globus_l_io_kickout_except_cb(
 
     globus_i_io_mutex_lock();
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_except_cb(): exiting, fd=%d\n", 
+            select_info->handle->fd));
 exit:    
         globus_l_io_pending_count--;
         if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
@@ -1780,7 +1801,7 @@ globus_l_io_kickout_cancel_cb(
     globus_result_t                     result;
     
     cancel_info = (globus_io_cancel_info_t *) user_args;
-    
+
     globus_i_io_mutex_lock();
     {
         globus_io_cancel_info_t **          ci;
@@ -1790,6 +1811,11 @@ globus_l_io_kickout_cancel_cb(
             goto exit;
         }
         
+        handle = cancel_info->handle;
+        
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): entering, fd=%d\n", handle->fd));
+
         globus_callback_unregister(
             cancel_info->callback_handle,
             GLOBUS_NULL,
@@ -1797,7 +1823,6 @@ globus_l_io_kickout_cancel_cb(
         
         /* need to see if a two phase cancel is going to be necessary */
         clean_up = GLOBUS_TRUE;
-        handle = cancel_info->handle;
         globus_callback_space_get(&space);
         
         /* if this were a blocking cancel, the first phase callback would be
@@ -1880,6 +1905,10 @@ globus_l_io_kickout_cancel_cb(
     
     if(read_callback)
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel read, fd=%d\n",
+            handle->fd));
+
         err = globus_io_error_construct_io_cancelled(
             GLOBUS_IO_MODULE,
             GLOBUS_NULL,
@@ -1893,6 +1922,10 @@ globus_l_io_kickout_cancel_cb(
     
     if(write_callback)
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel write, fd=%d\n",
+            handle->fd));
+
         err = globus_io_error_construct_io_cancelled(
             GLOBUS_IO_MODULE,
             GLOBUS_NULL,
@@ -1906,6 +1939,10 @@ globus_l_io_kickout_cancel_cb(
     
     if(except_callback)
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel except, fd=%d\n",
+            handle->fd));
+
         err = globus_io_error_construct_io_cancelled(
             GLOBUS_IO_MODULE,
             GLOBUS_NULL,
@@ -1919,6 +1956,10 @@ globus_l_io_kickout_cancel_cb(
     
     if(cancel_info->cancel_callback)
     {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel kickout, fd=%d\n",
+            handle->fd));
+
         cancel_info->cancel_callback(
             cancel_info->cancel_arg,
             handle,
@@ -1967,6 +2008,9 @@ globus_l_io_kickout_cancel_cb(
         {
             globus_callback_space_destroy(handle->socket_attr.space);
         }
+        
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): exiting, fd=%d\n", handle->fd));
 exit:
         globus_l_io_pending_count--;
         if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
@@ -2171,7 +2215,7 @@ globus_l_io_handle_events(
 	    globus_l_io_select_active = GLOBUS_TRUE;
 	    globus_i_io_mutex_unlock();
 	}
-	globus_i_io_debug_printf(1,
+	globus_i_io_debug_printf(5,
 	    (stderr, "%s(): Calling select()\n",myname));
 	n_ready = select(select_highest_fd + 1,
 			 NEXUS_FD_SET_CAST globus_l_io_active_read_fds,
@@ -2179,7 +2223,7 @@ globus_l_io_handle_events(
 			 NEXUS_FD_SET_CAST globus_l_io_active_except_fds,
 			 (use_timeout ? time_left : GLOBUS_NULL));
 	select_errno = errno;
-	globus_i_io_debug_printf(1,
+	globus_i_io_debug_printf(5,
             (stderr, "%s(): select() returned\n",myname));
 
 	/*

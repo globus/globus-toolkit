@@ -1858,6 +1858,10 @@ globus_l_io_init_sec_context(
     globus_object_t *           err;
 
     init_info = (globus_io_authentication_info_t *) arg;
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_init_sec_context(): entering, fd=%d\n", 
+        handle->fd));
 
     globus_i_io_mutex_lock();
 
@@ -1956,6 +1960,11 @@ globus_l_io_init_sec_context(
             globus_free(init_info);
         }
     }
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_init_sec_context(): exiting, fd=%d\n", 
+        handle->fd));
+        
     return;
     
 error_exit:
@@ -1976,6 +1985,10 @@ error_exit:
                         globus_error_put(err),
                         init_info);
     globus_free(init_info);
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_init_sec_context(): exiting with error, fd=%d\n", 
+        handle->fd));
 }
 /* globus_l_io_init_sec_context() */
 
@@ -2120,7 +2133,11 @@ globus_l_io_write_auth_token(
     globus_object_t *           err;
 
     init_info = (globus_io_authentication_info_t *) arg;
-
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_write_auth_token(): entering, fd=%d\n", 
+        handle->fd));
+        
     globus_i_io_mutex_lock();
     if(init_info->output_buffer_header == GLOBUS_NULL)
     {
@@ -2252,7 +2269,7 @@ globus_l_io_write_auth_token(
         }
         globus_free(init_info);
 
-        return;
+        goto do_return;
     }
 
     /* once we've sent a token, and we know that we are not done yet,
@@ -2274,6 +2291,11 @@ globus_l_io_write_auth_token(
 
     globus_i_io_mutex_unlock();
 
+do_return:    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_write_auth_token(): exiting, fd=%d\n", 
+        handle->fd));
+        
     return;
 
 continue_write:
@@ -2284,6 +2306,10 @@ continue_write:
         GLOBUS_NULL);
 
     globus_i_io_mutex_unlock();
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_write_auth_token(): exiting, fd=%d\n", 
+        handle->fd));
     return;
 
 error_exit:
@@ -2302,6 +2328,10 @@ error_exit:
                         globus_error_put(err),
                         init_info);
     globus_free(init_info);
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_write_auth_token(): exiting with error, fd=%d\n", 
+        handle->fd));
 }
 /* globus_l_io_write_auth_token() */
 
@@ -2316,7 +2346,11 @@ globus_l_io_read_auth_token(
     globus_object_t *           err;
 
     init_info = (globus_io_authentication_info_t *) arg;
-
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_read_auth_token(): entering, fd=%d\n", 
+        handle->fd));
+        
     if(result != GLOBUS_SUCCESS)
     {
         err = globus_error_get(result);
@@ -2347,7 +2381,7 @@ globus_l_io_read_auth_token(
                              handle,
                              GLOBUS_SUCCESS);
     
-        return;
+        goto do_return;
     }
 
     result = globus_i_io_register_read_func(
@@ -2363,6 +2397,11 @@ globus_l_io_read_auth_token(
 
         goto error_exit;
     }
+    
+do_return:
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_read_auth_token(): exiting, fd=%d\n", 
+        handle->fd));
 
     return;
 
@@ -2398,6 +2437,10 @@ error_exit:
         globus_free(init_info->name);
     }
     globus_free(init_info);
+    
+    globus_i_io_debug_printf(3, (stderr, 
+        "globus_l_io_read_auth_token(): exiting with error, fd=%d\n", 
+        handle->fd));
 }
 /* globus_l_io_read_auth_token() */
 
