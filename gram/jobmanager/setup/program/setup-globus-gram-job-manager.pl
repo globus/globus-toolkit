@@ -21,8 +21,6 @@ my $setupdir = "$globusdir/setup/globus/";
 my $gk_conf = "$globusdir/etc/globus-gatekeeper.conf";
 my $jm_conf = "$globusdir/etc/globus-job-manager.conf";
 my $jm_service = "$globusdir/etc/grid-services/jobmanager";
-my $hostname = `$globusdir/bin/globus-hostname`;
-my $cg_results = `$globusdir/sbin/config.guess`;
 my $need_print = 1;
 my $port;
 my $subject;
@@ -80,13 +78,21 @@ else
 
       $need_print=0;
 
+      #get values from system commands/file
+      my $hostname = `$globusdir/bin/globus-hostname`;
+      my $cg_results = `$globusdir/sbin/config.guess`;
+      ($junk, my $uname_cmd) = split(/=/, `grep GLOBUS_SH_UNAME $globusdir/libexec/globus-sh-tools.sh`);
+
       chomp($hostname);
       chomp($cg_results);
-      ($cpu, $manuf, $os_version) = split(/-/, $cg_results);
+      chomp($uname_cmd);
 
-      (my $os, $junk) = split(/\d/, $os_version);
+      my $os_version=`$uname_cmd -r`;
+      my $os_name=`$uname_cmd -s`;
+      chomp($os_version);
+      chomp($os_name);
 
-      $os_version =~ s/^\D+//;
+      ($cpu, $manuf, $junk) = split(/-/, $cg_results);
 
       print CONF "-home $globusdir\n";
       print CONF "-e $globusdir/libexec\n";
@@ -95,7 +101,7 @@ else
       print CONF "-globus-gatekeeper-subject $subject\n";
       print CONF "-globus-host-cputype $cpu\n";
       print CONF "-globus-host-manufacturer $manuf\n";
-      print CONF "-globus-host-osname $os\n";
+      print CONF "-globus-host-osname $os_name\n";
       print CONF "-globus-host-osversion $os_version\n";
       print CONF "-save-logfile on_errors\n";
       print CONF "-machine-type unknown\n";
