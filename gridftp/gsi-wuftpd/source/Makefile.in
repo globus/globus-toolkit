@@ -103,8 +103,10 @@ install: all
 	@INSTALL_DATA@ -m 644 doc/xferlog.5 $(DESTDIR)/$(mandir)/man5/xferlog.5
 	@INSTALL_DATA@ -m 644 doc/ftprestart.8 $(DESTDIR)/$(mandir)/man8/ftprestart.8
 	@INSTALL_DATA@ -m 644 util/privatepw/privatepw.8 $(DESTDIR)/$(mandir)/man8/privatepw.8
-	@if test ! -f $(DESTDIR)/@ETCDIR@/ftpaccess; then echo "Since you didn't have a ftpaccess file, the sample has been"; echo "installed to $(DESTDIR)/@ETCDIR@/ftpaccess."; echo "You will probably want to edit it."; @INSTALL@ -c -m 644 doc/examples/ftpaccess $(DESTDIR)/@ETCDIR@/ftpaccess; fi
-	@if test ! -f $(DESTDIR)/@ETCDIR@/ftpconversions; then echo "Since you didn't have a ftpconversions file, the sample has been"; echo "installed to $(DESTDIR)/@ETCDIR@/ftpconversions."; echo "You will probably want to edit it."; @INSTALL@ -c -m 644 doc/examples/ftpconversions $(DESTDIR)/@ETCDIR@/ftpconversions; fi
+	@if test -w $(DESTDIR)/@ETCDIR@; then \
+	    if test ! -f $(DESTDIR)/@ETCDIR@/ftpaccess; then echo "Since you didn't have a ftpaccess file, the sample has been"; echo "installed to $(DESTDIR)/@ETCDIR@/ftpaccess."; echo "You will probably want to edit it."; @INSTALL@ -c -m 644 doc/examples/ftpaccess $(DESTDIR)/@ETCDIR@/ftpaccess; fi ; \
+	    if test ! -f $(DESTDIR)/@ETCDIR@/ftpconversions; then echo "Since you didn't have a ftpconversions file, the sample has been"; echo "installed to $(DESTDIR)/@ETCDIR@/ftpconversions."; echo "You will probably want to edit it."; @INSTALL@ -c -m 644 doc/examples/ftpconversions $(DESTDIR)/@ETCDIR@/ftpconversions; fi ; \
+	fi
 	if test -n "$(DOXYGEN)"; then \
 	    for x in doc/html/*; do \
 		base=`basename $$x` ; \
