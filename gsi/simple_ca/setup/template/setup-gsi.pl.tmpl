@@ -52,21 +52,28 @@ if(defined($opt_nonroot))
     if($opt_nonroot eq "") 
     {
 	$target_dir = $globusdir . "/etc/";
+        $trusted_certs_dir = $globusdir . "/share/certificates/";
     } 
     else 
     {
 	$target_dir = "$opt_nonroot";
+        $trusted_certs_dir = $target_dir . "/certificates/";
     }
-
-    $trusted_certs_dir = $globusdir . "/share/certificates/";
 }
 else
 {
-   $target_dir = "/etc/grid-security";
+   if(defined($ENV{GRID_SECURITY_DIR}))
+   {
+        $target_dir = $ENV{GRID_SECURITY_DIR};
+   }
+   else
+   {
+        $target_dir = "/etc/grid-security";
+        $ENV{GRID_SECURITY_DIR} = "$target_dir";
+   }
    $trusted_certs_dir = $target_dir . "/certificates/";
 }
     
-$ENV{GRID_SECURITY_DIR} = "$target_dir";
 $ENV{TRUSTED_CA_DIR}    = "$trusted_certs_dir";
 
 
