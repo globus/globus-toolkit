@@ -206,11 +206,6 @@ globus_result_t globus_gsi_cred_get_subject_name(
     globus_gsi_cred_handle_t            handle,
     char **                             subject_name);
 
-globus_result_t globus_gsi_cred_get_group_names(
-    globus_gsi_cred_handle_t            handle,
-    STACK **                            sub_groups,
-    ASN1_BIT_STRING **                  sub_group_types);
-
 globus_result_t globus_gsi_cred_get_policies(
     globus_gsi_cred_handle_t            handle,
     STACK **                            policies);

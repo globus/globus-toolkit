@@ -606,9 +606,6 @@ globus_gsi_proxy_sign_req(
         goto free_req_pubkey;
     }
 
-    EVP_PKEY_free(req_pubkey);
-    req_pubkey = NULL;
-    
     result = globus_gsi_cred_get_cert(issuer_credential, &issuer_cert);
     if(result != GLOBUS_SUCCESS)
     {
@@ -632,7 +629,7 @@ globus_gsi_proxy_sign_req(
         long                            sub_hash;
         unsigned int                    len;
         
-        X509_digest(issuer_cert, sha1, md, &len);
+        ASN1_digest(i2d_PUBKEY,sha1,(char *) req_pubkey,md,&len);
 
         common_name = malloc(sizeof(long)*4 + 1);
 
@@ -786,16 +783,6 @@ globus_gsi_proxy_sign_req(
             GLOBUS_GSI_PROXY_ERROR_WITH_X509);
         goto free_issuer_cert;
     }
-
-    req_pubkey  = X509_REQ_get_pubkey(handle->req);
-    if(!req_pubkey)
-    {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            ("Couldnt get the public key from the request"));
-        goto free_issuer_cert;
-    }
     
     if(!X509_set_pubkey(new_pc, req_pubkey))
     {
@@ -804,12 +791,6 @@ globus_gsi_proxy_sign_req(
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Couldn't set pubkey of X509 cert"));
         goto free_issuer_cert;
-    }
-
-    if(req_pubkey)
-    {
-        EVP_PKEY_free(req_pubkey);
-        req_pubkey = NULL;
     }
 
     /* sign the new certificate */
@@ -987,17 +968,6 @@ globus_gsi_proxy_create_signed(
         goto exit;
     }
 
-    result = globus_gsi_proxy_handle_set_type(
-        inquire_handle,
-        handle->type);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
-        goto exit;
-    }
-
     result = globus_gsi_proxy_inquire_req(inquire_handle, rw_mem_bio);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1007,6 +977,30 @@ globus_gsi_proxy_create_signed(
         goto exit;
     }
 
+    result = globus_gsi_proxy_handle_set_type(
+        inquire_handle,
+        handle->type);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
+        goto exit;
+    }
+
+    result = globus_gsi_proxy_handle_set_time_valid(
+        inquire_handle,
+        handle->time_valid);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
+        goto exit;
+    }
+    
     result = globus_gsi_proxy_sign_req(inquire_handle, issuer, rw_mem_bio);
     if(result != GLOBUS_SUCCESS)
     {

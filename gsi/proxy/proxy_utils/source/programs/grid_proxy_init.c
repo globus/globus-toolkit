@@ -36,17 +36,21 @@ static char *  LONG_USAGE = \
 "    -q                        Quiet mode, minimal output\n" \
 "    -verify                   Verifies certificate to make proxy for\n" \
 "    -pwstdin                  Allows passphrase from stdin\n" \
-"    -limited                  Creates a limited proxy\n" \
-"    -valid H:M                Proxy is valid for H hours and M " \
-                               "minutes (default:12:00)\n" \
+"    -limited                  Creates a limited legacy globus proxy\n" \
+"    -old                      Creates a full legacy globus proxy\n" \
+"    -valid H:M                Proxy is valid for H hours and M \n" \
+"                              minutes (default:12:00)\n" \
 "    -hours H                  Deprecated support of hours option\n" \
 "    -bits  B                  Number of bits in key {512|1024|2048|4096}\n" \
+"    -policy   <policyfile>    File containing policy to store in the\n" \
+"                              ProxyCertInfo extension\n" \
+"    -pl <oid>,                OID string for the policy language\n" \
+"    -policy-language <oid>    used in the policy file\n" \
 "\n" \
 "    -cert     <certfile>      Non-standard location of user certificate\n" \
 "    -key      <keyfile>       Non-standard location of user key\n" \
 "    -certdir  <certdir>       Non-standard location of trusted cert dir\n" \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
-"    -type     <proxytype>     Non-standard proxy type\n"
 "\n" ;
 
 #   define args_show_version() \
@@ -291,6 +295,10 @@ main(
         {
             cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
+        else if(strcmp(argp, "-old") == 0)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+        }        
         else if(strcmp(argp, "-verify") == 0)
         {
             verify++;
@@ -309,7 +317,7 @@ main(
                              "policy file name missing");
             policy_filename = argv[++arg_index];
         }
-        else if(strcmp(argp, "-pl") == 0 &&
+        else if(strcmp(argp, "-pl") == 0 ||
                 strcmp(argp, "-policy-language") == 0)
         {
             args_verify_next(arg_index, argp, "policy language missing");
@@ -321,6 +329,24 @@ main(
         }
     }
 
+    /* A few sanity checks */
+
+    if(policy_language && !policy_filename)
+    {
+        globus_libc_fprintf(stderr, 
+                            "\n\nERROR: If you specify a policy language "
+                            "you also need to specify a policy file.\n");
+        exit(1);
+    }
+
+    if(policy_filename && cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+    {
+        globus_libc_fprintf(stderr, 
+                            "\n\nERROR: Globus legacy proxies are"
+                            "not able to carry policy data\n");
+        exit(1);
+    }
+    
     result = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     
     if(result != GLOBUS_SUCCESS)
@@ -328,6 +354,7 @@ main(
         globus_libc_fprintf(stderr, 
                             "\n\nERROR: Couldn't initialize "
                             "the proxy handle attributes.\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
     /* set the key bits for the proxy cert in the proxy handle
@@ -376,6 +403,18 @@ main(
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
+    /* set the type of proxy to be generated
+     */
+    result = globus_gsi_proxy_handle_set_type(proxy_handle, cert_type);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(stderr,
+                            "\n\nERROR: Couldn't set the type"
+                            "of the proxy cert\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+    
     if(!user_cert_filename || !user_key_filename)
     {
         result = GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(
