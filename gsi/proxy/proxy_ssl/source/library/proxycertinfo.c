@@ -391,20 +391,20 @@ int i2d_PROXYCERTINFO(
     PROXYCERTINFO *                     cert_info,
     unsigned char **                    pp)
 {
-    int                                 v1;
-
     M_ASN1_I2D_vars(cert_info);
-    
-    v1 = 0;
 
-    M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
-                           i2d_ASN1_INTEGER,
-                           1, v1);
-    M_ASN1_I2D_len(cert_info->policy,      
-                   i2d_PROXYPOLICY);
+    if(cert_info->path_length)
+    { 
+        M_ASN1_I2D_len(cert_info->path_length, i2d_ASN1_INTEGER);
+    }
+    
+    M_ASN1_I2D_len(cert_info->policy, i2d_PROXYPOLICY);
 
     M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
+    if(cert_info->path_length)
+    { 
+        M_ASN1_I2D_put(cert_info->path_length, i2d_ASN1_INTEGER);
+    }
     M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
     M_ASN1_I2D_finish();
 }
