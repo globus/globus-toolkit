@@ -515,7 +515,12 @@ globus_xio_data_descriptor_destroy(
     globus_xio_data_descriptor_t        data_desc);
 
 /**
+ *  Touch driver specific data in data descriptors
  *  @ingroup GLOBUS_XIO_API
+ * 
+ *  This function allows the user to comunicate directly with a driver
+ *  in association with a data descriptors.  The driver defines what operations
+ *  can be preformed.
  */
 globus_result_t
 globus_xio_data_descriptor_cntl(

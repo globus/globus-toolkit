@@ -2,6 +2,11 @@
 CLEAN UP DOC
 
 --------------------
+- driver load func cant use var args. need a special load for that
+- driver init interface needs to have a 'command' which is zero by default
+- need set_accepted() for user api
+- add init accepted to set_server
+- change 'link' to 'accepted'
 
 in_register looks like it needs to be a counter and inc/decr under locks.
 -- probably not high priority as very few drivers even finish in_register let

@@ -138,11 +138,11 @@ globus_xio_driver_load(
     return GLOBUS_SUCCESS;
 
 error_init:
-    globus_module_deactivate(GLOBUS_XIO_MODULE);
     if(--hook->ref_count == 0)
     {
         globus_module_deactivate(hook->module);
     }
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
     
 error_activate:
 error_find:
@@ -181,13 +181,14 @@ globus_xio_driver_unload(
 
         globus_i_xio_close_handles(driver);
         hook->unload(driver);
-        globus_module_deactivate(GLOBUS_XIO_MODULE);
     
         if(--hook->ref_count == 0)
         {
             globus_module_deactivate(hook->module);
             /* this is where i would unload dll and remove from table */
         }
+        
+        globus_module_deactivate(GLOBUS_XIO_MODULE);
     }
     globus_rmutex_unlock(&globus_l_xio_load_lock);
     

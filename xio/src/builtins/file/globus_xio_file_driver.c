@@ -54,6 +54,7 @@ typedef struct
 {
     int                                 mode;
     int                                 flags;
+    globus_off_t                        trunc_offset;
     globus_xio_system_handle_t          handle;
 } globus_l_attr_t;
 
@@ -66,7 +67,8 @@ static const globus_l_attr_t            globus_l_xio_file_attr_default =
         GLOBUS_XIO_FILE_IROTH,
     GLOBUS_XIO_FILE_CREAT       |       /* flags    */
         GLOBUS_XIO_FILE_RDWR    | 
-        GLOBUS_XIO_FILE_BINARY,   
+        GLOBUS_XIO_FILE_BINARY,
+    0,                                  /* trunc_offset */
     GLOBUS_XIO_FILE_INVALID_HANDLE      /* handle   */             
 };
 
@@ -87,7 +89,7 @@ globus_l_xio_file_activate(void)
     
     GlobusXIOName(globus_l_xio_file_activate);
     
-    GlobusDebugInit(GLOBUS_XIO_FILE, TRACE);
+    GlobusDebugInit(GLOBUS_XIO_FILE, TRACE INFO);
     
     GlobusXIOFileDebugEnter();
     
@@ -169,6 +171,7 @@ globus_l_xio_file_attr_cntl(
     globus_l_attr_t *                   attr;
     int *                               out_int;
     globus_xio_system_handle_t *        out_handle;
+    globus_off_t *                      out_offset;
     GlobusXIOName(globus_l_xio_file_attr_cntl);
     
     GlobusXIOFileDebugEnter();
@@ -196,6 +199,17 @@ globus_l_xio_file_attr_cntl(
       case GLOBUS_XIO_FILE_GET_FLAGS:
         out_int = va_arg(ap, int *);
         *out_int = attr->flags;
+        break;
+      
+      /* globus_off_t                     offset */
+      case GLOBUS_XIO_FILE_SET_TRUNC_OFFSET:
+        attr->trunc_offset = va_arg(ap, globus_off_t);
+        break;
+        
+      /* globus_off_t *                   offset_out */
+      case GLOBUS_XIO_FILE_GET_TRUNC_OFFSET:
+        out_offset = va_arg(ap, globus_off_t *);
+        *out_offset = attr->trunc_offset;
         break;
     
       /* globus_xio_system_handle_t     handle */
@@ -314,6 +328,7 @@ typedef struct
 {
     globus_xio_operation_t              op;
     globus_l_handle_t *                 handle;
+    globus_off_t                        trunc_offset;
 } globus_l_open_info_t;
 
 static
@@ -333,8 +348,24 @@ globus_l_xio_file_system_open_cb(
     {
         /* all handles created by me are closed on exec */
         fcntl(open_info->handle->handle, F_SETFD, FD_CLOEXEC);
+        if(open_info->trunc_offset > 0)
+        {
+            int                         rc;
+            
+            rc = ftruncate(open_info->handle->handle, open_info->trunc_offset);
+            if(rc < 0)
+            {
+                result = GlobusXIOErrorSystemError("ftruncate", errno);
+                
+                do
+                {
+                    rc = close(open_info->handle->handle);
+                } while(rc < 0 && errno == EINTR);
+            }
+        }
     }
-    else
+    
+    if(result != GLOBUS_SUCCESS)
     {
         globus_l_xio_file_handle_destroy(open_info->handle);
         open_info->handle = GLOBUS_NULL;
@@ -366,6 +397,7 @@ globus_l_xio_file_open(
     globus_result_t                     result;
     globus_l_open_info_t *              open_info;
     globus_xio_system_handle_t          converted_handle;
+    int                                 flags;
     GlobusXIOName(globus_l_xio_file_open);
     
     GlobusXIOFileDebugEnter();
@@ -419,10 +451,24 @@ globus_l_xio_file_open(
         open_info->op = op;
         open_info->handle = handle;
         
+        flags = attr->flags;
+        if(flags & GLOBUS_XIO_FILE_TRUNC)
+        {
+            open_info->trunc_offset = attr->trunc_offset;
+            if(open_info->trunc_offset > 0)
+            {
+                flags = flags & ~GLOBUS_XIO_FILE_TRUNC;
+            }
+        }
+        else
+        {
+            open_info->trunc_offset = 0;
+        }
+        
         result = globus_xio_system_register_open(
             op,
             contact_info->resource,
-            attr->flags,
+            flags,
             attr->mode,
             &handle->handle,
             globus_l_xio_file_system_open_cb,
@@ -438,6 +484,19 @@ globus_l_xio_file_open(
     {
         handle->handle = converted_handle;
         handle->converted = GLOBUS_TRUE;
+        
+        if(attr->flags & GLOBUS_XIO_FILE_TRUNC)
+        {
+            int                         rc;
+            
+            rc = ftruncate(handle->handle, attr->trunc_offset);
+            if(rc < 0)
+            {
+                result = GlobusXIOErrorSystemError("ftruncate", errno);
+                goto error_truncate;
+            }
+        }
+        
         globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     }
     
@@ -447,6 +506,7 @@ globus_l_xio_file_open(
 error_register:
     globus_free(open_info);
 
+error_truncate:
 error_info:
 error_pathname:
     globus_l_xio_file_handle_destroy(handle);

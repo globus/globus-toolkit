@@ -722,7 +722,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     }
 
 #ifdef TCP_RFC1323
-    if(attr->sndbuf ||attr->rcvbuf)
+    if(attr->sndbuf || attr->rcvbuf)
     {
         /* On AIX, RFC 1323 extensions can be set system-wide,
          * using the 'no' network options command. But we can also set them
