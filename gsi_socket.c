@@ -596,6 +596,7 @@ GSI_SOCKET_set_encryption(GSI_SOCKET *self,
 }
 
 
+/* XXX This routine really needs a complete overhaul */
 int
 GSI_SOCKET_use_creds(GSI_SOCKET *self,
 		     const char *creds)
@@ -605,10 +606,7 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
 #ifdef GSI_SOCKET_SSLEAY
     if (creds == NULL)
     {
-	/* Unset environment variables so libs use default */
-	myunsetenv("X509_USER_PROXY");
-	myunsetenv("X509_USER_KEY"); 
-	myunsetenv("X509_USER_CERT"); 
+	/* XXX Do nothing for now */
 	return_code = GSI_SOCKET_SUCCESS;
     }
     else
