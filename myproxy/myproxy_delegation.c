@@ -75,13 +75,6 @@ myproxy_socket_attrs_t *socket_attrs,
         return(1);
     }
     
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "Error: %s: %s\n", 
-		socket_attrs->pshost, verror_get_string());
-        return(1);
-    }
-
 #if defined(CONDITIONAL_ENCRYPTION)
     /* DK: due to compatibility with globus 1.1.4 that doesn't support 
        encryption. In this way at least certificate based authorization will
@@ -89,6 +82,17 @@ myproxy_socket_attrs_t *socket_attrs,
     if (strlen(client_request->passphrase) == 0)
        GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
 #endif
+
+    /* Attempt anonymous-mode credential retrieval if we don't have a
+       credential. */
+    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
+
+     /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+        fprintf(stderr, "Error: %s: %s\n", 
+		socket_attrs->pshost, verror_get_string());
+        return(1);
+    }
 
     /* Serialize client request object */
     requestlen = myproxy_serialize_request(client_request, 
