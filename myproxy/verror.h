@@ -50,6 +50,15 @@ char *verror_get_string();
 int verror_get_errno();
 
 /*
+ * verror_strerror()
+ *
+ * Return a pointer to the error string associated with the current
+ * error number or a empty string if no error number is currently
+ * set. The string is statically allocated and should not be modified.
+ */
+char *verror_strerror();
+
+/*
  * verror_get_value()
  *
  * Return the numeric value associated with the current error.

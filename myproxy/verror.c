@@ -180,6 +180,21 @@ verror_get_errno()
     return my_context.number;
 }
 
+char *
+verror_strerror()
+{
+    char *return_string;
+    
+    if (my_context.number == 0)
+    {
+	return_string = "";
+    }
+    else
+    {
+	return_string = strerror(my_context.number);
+    }
+}
+
 int
 verror_get_value()
 {
