@@ -597,6 +597,25 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
 	int authenticated;
+
+    	if(strcmp(authctxt->user,"") == 0) {
+        	char *user;
+        	char *gridmapped_name = NULL;
+        	struct passwd *pw = NULL;
+        	gssapi_setup_env();
+        	if(globus_gss_assist_gridmap(gssapi_client_name.value,
+                           &gridmapped_name) == 0) {
+               		user = gridmapped_name;
+               		debug("I gridmapped and got %s", user);
+               		pw = getpwnam(user);
+               		if (pw && allowed_user(pw)) {
+                     		authctxt->user = user;
+                     		authctxt->pw = pwcopy(pw);
+                     		authctxt->valid = 1;
+               		}
+        	}
+    	}
+
 	
 	if (authctxt == NULL || authctxt->methoddata == NULL)
 		fatal("No authentication or GSSAPI context");

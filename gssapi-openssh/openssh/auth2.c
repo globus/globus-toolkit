@@ -57,6 +57,8 @@ RCSID("$OpenBSD: auth2.c,v 1.85 2002/02/24 19:14:59 markus Exp $");
 #include "ssh-gss.h"
 #ifdef GSI
 #include "globus_gss_assist.h"
+char* olduser;
+int  changeuser = 0;
 #endif
 #endif
 
@@ -197,25 +199,43 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	service = packet_get_string(NULL);
 	method = packet_get_string(NULL);
 
-        if(strcmp(method,"external-keyx") == 0 && strcmp(user,"") == 0) {
+#ifdef GSSAPI
+#ifdef GSI
+        if(changeuser == 0 && (strcmp(method,"external-keyx") == 0 || strcmp(method,"gssapi") ==0) && strcmp(user,"") == 0) {
                 char *gridmapped_name = NULL;
                 struct passwd *pw = NULL;
-
+                gssapi_setup_env();
                 if(globus_gss_assist_gridmap(gssapi_client_name.value,
                                      &gridmapped_name) == 0) {
                         user = gridmapped_name;
                         debug("I gridmapped and got %s", user);
                         pw = getpwnam(user);
                         if (pw && allowed_user(pw)) {
+                                olduser = authctxt->user;
                                 authctxt->user = user;
                                 authctxt->pw = pwcopy(pw);
                                 authctxt->valid = 1;
+                                changeuser = 1;
                         }
+
                 } else {
                 debug("I gridmapped and got null, reverting to %s", authctxt->user);
                 user = authctxt->user;
                 }
         }
+        else if(changeuser) {
+                struct passwd *pw = NULL;
+                pw = getpwnam(user);
+                if (pw && allowed_user(pw)) {
+                        authctxt->user = olduser;
+                        authctxt->pw = pwcopy(pw);
+                        authctxt->valid = 1;
+                        changeuser = 0;
+                }
+        }
+
+#endif  /* GSI */
+#endif /* GSSAPI */
 
 	debug("userauth-request for user %s service %s method %s", user, service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
