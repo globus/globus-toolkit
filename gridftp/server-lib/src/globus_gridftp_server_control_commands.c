@@ -1570,7 +1570,7 @@ globus_l_gsc_cmd_rest(
         tmp_ptr = cmd_a[1];
         while(tmp_ptr != NULL)
         {
-            sc = sscanf(cmd_a[1], 
+            sc = sscanf(tmp_ptr, 
                 "%"GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT, 
                 &offset, &length);
             if(sc != 2)
@@ -1583,6 +1583,10 @@ globus_l_gsc_cmd_rest(
 
             globus_range_list_insert(range_list, offset, length);
             tmp_ptr = strchr(tmp_ptr, ',');
+            if(tmp_ptr)
+            {
+                tmp_ptr++;
+            }
         }
     }
     if(op->server_handle->range_list != NULL)
