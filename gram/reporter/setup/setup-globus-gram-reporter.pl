@@ -28,6 +28,19 @@ my $line_added       = 0;
 my $hostname = `${setupdir}/globus-hostname`;
 $hostname =~ s/\s//g; #strip whitespace
 
+# Let's make sure the required files are there.
+if ( ! -f "$slapd_conf" )
+{
+   print "Error: $slapd_conf file not found.  It is required for this setup program\n";
+   exit(1);
+}
+
+if ( ! -f "$ldif_conf" )
+{
+   print "Error: $ldif_conf file not found.  It is required for this setup program\n";
+   exit(1);
+}
+
 system("grep grid-info-gram-reporter.schema $slapd_conf >/dev/null");
 if ( ! $? )
 {
