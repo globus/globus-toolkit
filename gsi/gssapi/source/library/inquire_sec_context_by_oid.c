@@ -132,6 +132,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         major_status = GSS_S_FAILURE;
+        cert_chain = NULL;
         goto exit;
     }
 
@@ -211,6 +212,11 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     /* unlock the context mutex */
     globus_mutex_unlock(&context->mutex);
 
+    if(cert_chain != NULL)
+    {
+        sk_X509_pop_free(cert_chain, X509_free);
+    }
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
