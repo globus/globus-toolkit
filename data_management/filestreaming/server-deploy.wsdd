@@ -22,7 +22,6 @@
         />
         <parameter name="handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
-	/>
 
         <!--Factory Parameters-->
         <parameter name="instance-securityConfig"

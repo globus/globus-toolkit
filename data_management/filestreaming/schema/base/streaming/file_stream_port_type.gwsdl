@@ -155,5 +155,17 @@
             the URL of the stream destination
         </documentation>
     </sd:serviceData>
+
+    <sd:serviceData name="done"
+                    type="xsd:boolean"
+                    minOccurs="1"
+                    maxOccurs="1"
+                    mutability="mutable"
+                    nillable="false">
+        <documentation>
+            Flag indicating whether this file streaming service instance
+            has completed streaming the data file to the destination URL.
+        </documentation>
+    </sd:serviceData>
 </gwsdl:portType>
 </definitions>

@@ -1,3 +1,7 @@
+/*
+ * This file is licensed under the terms of the Globus Toolkit Public
+ * License, found at http://www.globus.org/toolkit/download/license.html.
+ */
 package org.globus.ogsa.impl.base.streaming;
 
 import java.io.File;
@@ -62,7 +66,12 @@ public class FileStreamImpl extends GridServiceImpl {
     
     static Log logger = LogFactory.getLog (FileStreamImpl.class.getName());
 
-    private static final String DEST_URL_SDE_NAME = "destinationUrl";
+    private static final String FSS_NAMESPACE =
+        "http://www.globus.org/namespaces/2003/04/base/streaming";
+    private static final QName DEST_URL_SDE_QNAME =
+        new QName(FSS_NAMESPACE, "destinationUrl");
+    private static final QName DONE_SDE_QNAME =
+        new QName(FSS_NAMESPACE, "done");
     private static final String FILE_STREAMING_RESOURCES =
             "org.globus.ogsa.impl.base.streaming.Resources";
     protected Tail outputFollower;
@@ -73,6 +82,7 @@ public class FileStreamImpl extends GridServiceImpl {
     private int offset;
     private OutputStream outputStream;
     private Vector fileStreamStateListeners = new Vector();
+    private ServiceData doneServiceData;
 
     public FileStreamImpl() {
         super("FileStreamImpl");
@@ -87,9 +97,16 @@ public class FileStreamImpl extends GridServiceImpl {
 
     private void addDestinationUrlServiceData() throws GridServiceException {
         ServiceData destinationUrlServiceData =
-            this.serviceData.create(DEST_URL_SDE_NAME);
+            this.serviceData.create(DEST_URL_SDE_QNAME);
         destinationUrlServiceData.setValue(this.destinationUrl);
         this.serviceData.add(destinationUrlServiceData);
+    }
+
+    private void addDoneServiceData() throws GridServiceException {
+        logger.debug("Setting \"done\" to FALSE\"");
+        doneServiceData = this.serviceData.create(DONE_SDE_QNAME);
+        doneServiceData.setValue(Boolean.FALSE);
+        this.serviceData.add(doneServiceData);
     }
     
     public void postCreate(GridContext context) throws GridServiceException {
@@ -134,6 +151,7 @@ public class FileStreamImpl extends GridServiceImpl {
         }
 
         addDestinationUrlServiceData();
+        addDoneServiceData();
     }
     
     protected OutputStream openUrl(String file) throws InvalidUrlFault,
@@ -425,6 +443,9 @@ public class FileStreamImpl extends GridServiceImpl {
                 } catch (IOException ioe) {
                 }
             }
+            
+            doneServiceData.setValue(Boolean.TRUE);
+            doneServiceData.notifyChange();
 
             fireFileStreamStopped();
         } catch (GridServiceException gse) {

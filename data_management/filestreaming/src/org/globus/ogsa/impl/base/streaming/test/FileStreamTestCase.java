@@ -1,11 +1,7 @@
-
-/**
- * FileStreamTestCase.java
- *
- * This file was auto-generated from WSDL
- * by the Apache WSIF WSDL2Java emitter.
+/*
+ * This file is licensed under the terms of the Globus Toolkit Public
+ * License, found at http://www.globus.org/toolkit/download/license.html.
  */
-
 package org.globus.ogsa.impl.base.streaming.test;
 
 import java.io.BufferedReader;
@@ -17,6 +13,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.Iterator;
+
+import javax.xml.namespace.QName;
 import javax.xml.rpc.Stub;
 
 import junit.framework.Test;
@@ -41,6 +39,7 @@ import org.globus.ogsa.server.test.GridTestCase;
 import org.globus.ogsa.server.test.TestServer;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GridServiceFactory;
+import org.globus.ogsa.utils.QueryHelper;
 import org.globus.ogsa.wsdl.GSR;
 import org.gridforum.ogsi.ExtensibilityType;
 import org.gridforum.ogsi.Factory;
@@ -49,6 +48,7 @@ import org.gridforum.ogsi.GridService;
 import org.gridforum.ogsi.LocatorType;
 import org.gridforum.ogsi.OGSIServiceGridLocator;
 import org.gridforum.ogsi.ReferenceType;
+import org.gridforum.ogsi.ServiceDataValuesType;
 
 public class FileStreamTestCase extends GridTestCase {
     static Log logger = LogFactory.getLog(FileStreamTestCase.class.getName());
@@ -193,6 +193,33 @@ public class FileStreamTestCase extends GridTestCase {
         }
     }
 
+    private void assertDoneEquals(FileStreamPortType fileStream, Boolean hope) {
+        try {
+            Boolean b = null;
+            Object o = null;
+            QName doneSDE = new QName(
+                    "http://www.globus.org/namespaces/2003/04/base/streaming",
+                    "done");
+            ExtensibilityType queryResult =
+                fileStream.findServiceData(QueryHelper.getNamesQuery(doneSDE));
+            ServiceDataValuesType sd = (ServiceDataValuesType)
+                AnyHelper.getAsServiceDataValues(queryResult);
+
+            assertNotNull("done service data is null", sd);
+            assertNotNull("done service data doesn't contain a value", sd.get_any());
+            o = AnyHelper.getAsSingleObject(sd);
+            assertNotNull("done service data didn't contain an object", o);
+            assertEquals("done did not contain a Boolean", o.getClass(), Boolean.class);
+
+            b = (Boolean) o;
+
+            assertEquals("unexpected value of \"done\" SDE", b, hope);
+        } catch (Exception e) {
+            assertNull(e.toString(), e);
+        }
+        logger.debug("done equalled what I expected");
+    }
+
     public void testFileStream() {
         try {
             createServer();
@@ -224,6 +251,8 @@ public class FileStreamTestCase extends GridTestCase {
             return;
         }
 
+        assertDoneEquals(fileStream, Boolean.FALSE);
+
         try {
             fileStream.stop();
         } catch (RemoteException re) {
@@ -232,6 +261,7 @@ public class FileStreamTestCase extends GridTestCase {
         }
 
         assertTestPatternTransmitted(0);
+        assertDoneEquals(fileStream, Boolean.TRUE);
 
         try {
             fileStream.destroy();
