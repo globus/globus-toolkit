@@ -19,18 +19,20 @@ CVS Information:
 #include <malloc.h>
 #include <sys/param.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <assert.h>
 #include <string.h>
 #include <memory.h>
-#include <nexus.h>
 #include <fcntl.h>
-#include "gram_client.h"
-#include "grami_client.h"
+#include "globus_nexus.h"
+#include "globus_gram_client.h"
 #include "grami_fprintf.h"
-#include "gram_rsl.h"
-#include "grami_jm.h"
-#include "gass_file.h"
-#include "gass_cache.h"
+#include "globus_rsl.h"
+#include "globus_i_gram_jm.h"
+#include "globus_gass_file.h"
+#include "globus_gass_cache.h"
+#include "globus_gass_client.h"
 
 /******************************************************************************
                                Type definitions
@@ -66,7 +68,7 @@ static int
 graml_status_file_gen(int job_status);
 
 static void 
-graml_tree_free(gram_specification_t * sp);
+graml_tree_free(globus_rsl_t * sp);
 
 static char *
 genfilename(char * prefix, char * path, char * sufix);
@@ -102,10 +104,11 @@ static nexus_handler_t graml_handlers[] =
 #endif  /* BUILD_LITE */
 };
 
+static char graml_callback_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+static char graml_job_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+static char graml_my_globusid[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+
 static char *                      graml_jm_status_dir = NULL;
-static char                        graml_callback_contact[GRAM_MAX_MSG_SIZE];
-static char                        graml_job_contact[GRAM_MAX_MSG_SIZE];
-static char                        graml_my_globusid[GRAM_MAX_MSG_SIZE];
 static int                         graml_my_count;
 static graml_jm_monitor_t          graml_jm_monitor;
 static nexus_endpointattr_t        graml_EpAttr;
@@ -145,7 +148,7 @@ main(int argc,
     int                    message_handled;
     int                    print_debug_flag = 0;
     int                    save_files_flag = 0;
-    char                   description[GRAM_MAX_MSG_SIZE];
+    char                   description[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     char                   test_dat_file[256];
     char                   tmp_buffer[256];
     char *                 jm_home_dir = NULL;
@@ -158,25 +161,43 @@ main(int argc,
     nexus_byte_t           type;
     nexus_byte_t *         ptr;
     nexus_byte_t           bformat;
-    nexus_byte_t           buffer[GRAM_MAX_MSG_SIZE];
+    nexus_byte_t           buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     nexus_buffer_t         reply_buffer;
     nexus_startpoint_t     reply_sp;
-    gram_specification_t * description_tree;
-    gass_cache_t           cache_handle;
-    gass_cache_entry_t   * cache_entries;
+    globus_rsl_t *         description_tree;
+    globus_gass_cache_t           cache_handle;
+    globus_gass_cache_entry_t   * cache_entries;
     int                    cache_size;
 
-    /* Initialize nexus */
-    rc = nexus_init(&argc,
-		    &argv,
-		    "NEXUS_ARGS", /* conf info env variable          */
-		    "nx",         /* package designator              */
-		    NULL);        /* additional modules              */
-    if (rc != NEXUS_SUCCESS)
+    /* Initialize modules that I use */
+    rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
+    if (rc != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "nexus_init() failed with rc=%d\n", rc);
+	fprintf(stderr, "nexus activation failed with rc=%d\n", rc);
 	exit(1);
     }
+
+    rc = globus_module_activate(GLOBUS_GASS_CLIENT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_client activation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_cache activation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_activate(GLOBUS_GASS_FILE_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_file activation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
     nexus_enable_fault_tolerance(NULL, NULL);
 
     if ( graml_api_mutex_is_initialized == 0 )
@@ -413,7 +434,7 @@ main(int argc,
     if (rc != 0)
     {
         GRAM_UNLOCK;
-        return(GRAM_ERROR_JM_FAILED_ALLOW_ATTACH);
+        return(GLOBUS_GRAM_CLIENT_ERROR_JM_FAILED_ALLOW_ATTACH);
     } 
     else
     {
@@ -427,7 +448,7 @@ main(int argc,
 
     /* call the RSL routine to parse the user request
      */
-    description_tree = gram_specification_parse(description);
+    description_tree = globus_rsl_parse(description);
 
     /*
      * Start the job.  If successful reply with graml_job_contact else
@@ -455,7 +476,7 @@ main(int argc,
  
     nexus_send_rsr(&reply_buffer,
                    &reply_sp,
-                   GRAMI_CLIENT_REPLY_HANDLER_ID,
+                   GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID,
                    NEXUS_TRUE,
                    NEXUS_FALSE);
 
@@ -479,7 +500,7 @@ main(int argc,
                             &graml_jm_monitor.mutex);
             */
 	    nexus_usleep(1000000);
-    	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, 
+    	    nexus_fd_handle_events(GLOBUS_NEXUS_FD_POLL_NONBLOCKING_ALL, 
                                    &message_handled);
 	    if (--skip_poll <= 0)
 	    {
@@ -535,30 +556,30 @@ main(int argc,
      */
     grami_fprintf( grami_log_fp,
 		   "JM: Cleaning GASS cache\n");
-    rc = gass_cache_open(NULL,
-			 &cache_handle);
+    rc = globus_gass_cache_open(NULL,
+				&cache_handle);
     if(rc == GLOBUS_SUCCESS)
     {
-	rc = gass_cache_list(&cache_handle,
-			     &cache_entries,
-			     &cache_size);
+	rc = globus_gass_cache_list(&cache_handle,
+				    &cache_entries,
+				    &cache_size);
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    for(i=0; i<cache_size; i++)
 	    {
 		grami_fprintf(grami_log_fp,
 			      "Trying to clean up with <url=%s> <tag=%s>\n",
-		       cache_entries[i].url,
-		       graml_job_contact);
-		gass_cache_cleanup_tag(&cache_handle,
-				       cache_entries[i].url,
-				       graml_job_contact);
+			      cache_entries[i].url,
+			      graml_job_contact);
+		globus_gass_cache_cleanup_tag(&cache_handle,
+					      cache_entries[i].url,
+					      graml_job_contact);
 	    }
 	}
 	fflush(grami_log_fp);
-	gass_cache_list_free(cache_entries,
-			     cache_size);
-	gass_cache_close(&cache_handle);
+	globus_gass_cache_list_free(cache_entries,
+				    cache_size);
+	globus_gass_cache_close(&cache_handle);
     }
     graml_tree_free(description_tree);
 
@@ -569,7 +590,33 @@ main(int argc,
 
     grami_fprintf( grami_log_fp, "JM: exiting gram_job_request\n");
 
-    nexus_shutdown();
+    rc = globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_file deactivation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_deactivate(GLOBUS_GASS_CACHE_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_cache deactivation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_deactivate(GLOBUS_GASS_CLIENT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass client deactivation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_deactivate(GLOBUS_NEXUS_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "nexus deactivation failed with rc=%d\n", rc);
+	exit(1);
+    }
 
     return(0);
 
@@ -733,10 +780,10 @@ graml_status_file_gen(int job_status)
              *
              */
             fprintf(status_fp, "%s;%s;%s;%d\n",
-                graml_my_globusid,
-                job_status_str,
-                graml_job_contact,
-                graml_my_count);
+		    graml_my_globusid,
+		    job_status_str,
+		    graml_job_contact,
+		    graml_my_count);
             fclose(status_fp);
         }
     }
@@ -752,17 +799,17 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-grami_jm_request_params(gram_specification_t * description_tree,
+grami_jm_request_params(globus_rsl_t * description_tree,
                         gram_request_param_t * params)
 {
-    char pgm_count[GRAM_PARAM_SIZE];
-    char pgm_maxtime[GRAM_PARAM_SIZE];
+    char pgm_count[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char pgm_maxtime[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
     char * tmp_dir;
     int tmp_fd;
     struct stat statbuf;
 
     if (description_tree == NULL)
-        return(GRAM_ERROR_NULL_SPECIFICATION_TREE);
+        return(GLOBUS_GRAM_CLIENT_ERROR_NULL_SPECIFICATION_TREE);
  
     *(params->pgm)       = '\0';
     *(params->pgm_args)  = '\0';
@@ -777,26 +824,47 @@ grami_jm_request_params(gram_specification_t * description_tree,
     *pgm_maxtime         = '\0';
     *pgm_count           = '\0';
 
-    grami_jm_param_get(description_tree, GRAM_EXECUTABLE_PARAM, params->pgm);
-    grami_jm_param_get(description_tree, GRAM_ARGUMENTS_PARAM, 
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_EXECUTABLE_PARAM,
+		       params->pgm);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_ARGUMENTS_PARAM, 
                        params->pgm_args);
-    grami_jm_param_get(description_tree, GRAM_ENVIRONMENT_PARAM, 
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
                        params->pgm_env);
-    grami_jm_param_get(description_tree, GRAM_DIR_PARAM, params->dir);
-    grami_jm_param_get(description_tree, GRAM_COUNT_PARAM, pgm_count);
-    grami_jm_param_get(description_tree, GRAM_STDIN_PARAM, params->std_in);
-    grami_jm_param_get(description_tree, GRAM_STDOUT_PARAM, params->std_out);
-    grami_jm_param_get(description_tree, GRAM_STDERR_PARAM, params->std_err);
-    grami_jm_param_get(description_tree, GRAM_MAXTIME_PARAM, pgm_maxtime);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_DIR_PARAM,
+		       params->dir);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_COUNT_PARAM,
+		       pgm_count);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_STDIN_PARAM,
+		       params->std_in);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_STDOUT_PARAM,
+		       params->std_out);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_STDERR_PARAM,
+		       params->std_err);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_MAXTIME_PARAM,
+		       pgm_maxtime);
 
-    grami_jm_param_get(description_tree, GRAM_PARADYN_PARAM, params->paradyn);
-    grami_jm_param_get(description_tree, GRAM_JOBTYPE_PARAM, params->jobtype);
-    grami_jm_param_get(description_tree, GRAM_MYJOB_PARAM, params->gram_myjob);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_PARADYN_PARAM,
+		       params->paradyn);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM,
+		       params->jobtype);
+    grami_jm_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_MYJOB_PARAM,
+		       params->gram_myjob);
 
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
      */
-    gass_init();
     graml_stage_file(params->pgm, 0700);
     graml_stage_file(params->std_in, 0400);
     
@@ -804,7 +872,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
     {
 	if (!grami_paradyn_rewrite_params(params))
 	{
-            return (GRAM_ERROR_INVALID_PARADYN);
+            return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_PARADYN);
 	}
 
         graml_stage_file(params->pgm, 0700);
@@ -812,12 +880,12 @@ grami_jm_request_params(gram_specification_t * description_tree,
 
     if (strlen(params->jobtype) == 0)
     {
-       strcpy(params->jobtype, GRAM_DEFAULT_JOBTYPE);
+       strcpy(params->jobtype, GLOBUS_GRAM_CLIENT_DEFAULT_JOBTYPE);
     }
 
     if (strlen(params->gram_myjob) == 0)
     {
-       strcpy(params->gram_myjob, GRAM_DEFAULT_MYJOB);
+       strcpy(params->gram_myjob, GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB);
     }
 
     /*
@@ -831,7 +899,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
     {
         params->maxtime = atoi(pgm_maxtime);
         if (params->maxtime < 1)
-            return (GRAM_ERROR_INVALID_MAXTIME);
+            return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_MAXTIME);
     }
 
     if (strlen(pgm_count) == 0)
@@ -840,13 +908,13 @@ grami_jm_request_params(gram_specification_t * description_tree,
         params->count = atoi(pgm_count);
 
     if (params->count < 1)
-        return (GRAM_ERROR_INVALID_COUNT);
+        return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_COUNT);
 
     /* save count parameter for reporting to MDS */ 
     graml_my_count = params->count;
 
     if (strlen(params->pgm) == 0)
-       strcpy(params->pgm, GRAM_DEFAULT_EXE);
+       strcpy(params->pgm, GLOBUS_GRAM_CLIENT_DEFAULT_EXE);
 
     if (strlen(params->dir) == 0)
     {
@@ -856,17 +924,17 @@ grami_jm_request_params(gram_specification_t * description_tree,
 
     if (strlen(params->std_in) == 0)
     {
-       strcpy(params->std_in, GRAM_DEFAULT_STDIN);
+       strcpy(params->std_in, GLOBUS_GRAM_CLIENT_DEFAULT_STDIN);
     }
 
     if (strlen(params->std_out) == 0)
     {
-       strcpy(params->std_out, GRAM_DEFAULT_STDOUT);
+       strcpy(params->std_out, GLOBUS_GRAM_CLIENT_DEFAULT_STDOUT);
     }
 
     if (strlen(params->std_err) == 0)
     {
-       strcpy(params->std_err, GRAM_DEFAULT_STDERR);
+       strcpy(params->std_err, GLOBUS_GRAM_CLIENT_DEFAULT_STDERR);
     }
 
     return(0);
@@ -881,28 +949,33 @@ Parameters:
 Returns:
 ******************************************************************************/
 void 
-grami_jm_param_get(gram_specification_t * sp,
+grami_jm_param_get(globus_rsl_t * sp,
                    char * param,
                    char * value)
 {
-    gram_specification_t * child;
+    globus_rsl_t * child;
 
     if (sp)
     {
-        if (sp->type == GRAM_SPECIFICATION_BOOLEAN)
+        if (sp->type == GLOBUS_RSL_BOOLEAN)
         {
-            /* GRAM_SPECIFICATION_BOOLEAN */
+            /* GLOBUS_RSL_BOOLEAN */
 
             /* search thru children */
             for (child = sp->req.boolean.child_list;
-                *value == '\0' && child; child = child->next)
-                    grami_jm_param_get(child, param, value);
+		 *value == '\0' && child;
+		 child = child->next)
+	    {
+		grami_jm_param_get(child, param, value);
+	    }
         }
         else
         {
-            /* GRAM_SPECIFICATION_RELATION */
+            /* GLOBUS_RSL_RELATION */
             if (strcmp(sp->req.relation.left_op, param) == 0)
-               strcpy(value, sp->req.relation.right_op);
+	    {
+		strcpy(value, sp->req.relation.right_op);
+	    }
         } /* endif */
     } /* endif */
 } /* grami_jm_param_get() */
@@ -922,6 +995,7 @@ grami_jm_terminate()
     nexus_cond_signal(&(graml_jm_monitor.cond));
     nexus_mutex_unlock(&(graml_jm_monitor.mutex));
 } /* grami_jm_terminate() */
+
 
 /******************************************************************************
 Function:       graml_cancel_handler()
@@ -988,8 +1062,8 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
     float                    confidence;
     nexus_startpoint_t       reply_sp;
     nexus_buffer_t           reply_buffer;
-    gram_time_t              estimate;
-    gram_time_t              interval_size;
+    globus_gram_client_time_t              estimate;
+    globus_gram_client_time_t              interval_size;
 
     grami_fprintf( grami_log_fp, "JM: in graml_start_time_handler\n");
 
@@ -1039,15 +1113,15 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-graml_tree_free(gram_specification_t * sp)
+graml_tree_free(globus_rsl_t * sp)
 {
-    gram_specification_t * child;
+    globus_rsl_t * child;
 
     if (sp)
     {
-        if (sp->type == GRAM_SPECIFICATION_BOOLEAN)
+        if (sp->type == GLOBUS_RSL_BOOLEAN)
         {
-            /* GRAM_SPECIFICATION_BOOLEAN */
+            /* GLOBUS_RSL_BOOLEAN */
 
             /* freeing children */
             while (child = sp->req.boolean.child_list)
@@ -1061,7 +1135,7 @@ graml_tree_free(gram_specification_t * sp)
         }
         else
         {
-            /* GRAM_SPECIFICATION_RELATION ... no children */
+            /* GLOBUS_RSL_RELATION ... no children */
             free(sp);
         } /* endif */
     } /* endif */
@@ -1136,27 +1210,27 @@ graml_stage_file(char *url, int mode)
     rc = globus_url_parse(url, &gurl);
     if(rc == GLOBUS_SUCCESS)	/* this is a valid URL */
     {
-	gass_cache_t cache;
+	globus_gass_cache_t cache;
 	unsigned long timestamp;
 	char *tmpname;
 	
-	gass_cache_open(GLOBUS_NULL,
-			&cache);
+	globus_gass_cache_open(GLOBUS_NULL,
+			       &cache);
 	
-	rc = gass_cache_add(&cache,
-			    url,
-			    graml_job_contact,
-			    GLOBUS_TRUE,
-			    &timestamp,
-			    &tmpname);
-	if(rc == GASS_CACHE_ADD_EXISTS)
+	rc = globus_gass_cache_add(&cache,
+				   url,
+				   graml_job_contact,
+				   GLOBUS_TRUE,
+				   &timestamp,
+				   &tmpname);
+	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
-	    gass_cache_add_done(&cache,
-				url,
-				graml_job_contact,
-				timestamp);
+	    globus_gass_cache_add_done(&cache,
+				       url,
+				       graml_job_contact,
+				       timestamp);
 	}
-	else if(rc == GASS_CACHE_ADD_NEW)
+	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
 	    int fd = open(tmpname,
 			  O_WRONLY|O_TRUNC,
@@ -1175,24 +1249,24 @@ graml_stage_file(char *url, int mode)
 	    }
 	    else
 	    {
-		gass_client_get_fd(url,
-				   GLOBUS_NULL,
-				   fd,
-				   GASS_LENGTH_UNKNOWN,
-				   &timestamp,
-				   GLOBUS_NULL,
-				   GLOBUS_NULL);
+		globus_gass_client_get_fd(url,
+					  GLOBUS_NULL,
+					  fd,
+					  GLOBUS_GASS_LENGTH_UNKNOWN,
+					  &timestamp,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
 	    }
 	    close(fd);
-	    gass_cache_add_done(&cache,
-				url,
-				graml_job_contact,
-				timestamp);
+	    globus_gass_cache_add_done(&cache,
+				       url,
+				       graml_job_contact,
+				       timestamp);
 	}
-	strncpy(url, tmpname, GRAM_PARAM_SIZE);
-	url[GRAM_PARAM_SIZE-1] = '\0';
+	strncpy(url, tmpname, GLOBUS_GRAM_CLIENT_PARAM_SIZE);
+	url[GLOBUS_GRAM_CLIENT_PARAM_SIZE-1] = '\0';
 	globus_free(tmpname);
-	gass_cache_close(&cache);
+	globus_gass_cache_close(&cache);
     }
     globus_url_destroy(&gurl);
     grami_fprintf( grami_log_fp, 

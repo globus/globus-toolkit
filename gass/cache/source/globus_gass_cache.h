@@ -510,6 +510,19 @@ globus_gass_cache_error_string(int error_code);
 
 EXTERN_C_END
 
+/******************************************************************************
+ *                    Module Definition
+ *****************************************************************************/
+#define GLOBUS_GASS_CACHE_MODULE (&globus_gass_cache_module)
+
+static globus_module_descriptor_t globus_gass_cache_module =
+{
+    "globus_gass_cache",
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    GLOBUS_NULL
+};
+
 #endif   /* _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H */
 
 

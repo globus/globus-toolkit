@@ -49,7 +49,7 @@ CVS Information:
 /*****************************************************************************
 Include header files
 ******************************************************************************/
-#include "nexus_config.h"
+#include "globus_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>

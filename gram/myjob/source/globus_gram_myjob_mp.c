@@ -1,5 +1,5 @@
 /******************************************************************************
-gram_myjob_mp.c
+globus_gram_myjob_mp.c
 
 Description:
 
@@ -19,9 +19,9 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "gram_myjob.h"
-#include "nexus.h"
+#include "globus_nexus.h"
 
-#include "gram_myjob_mp.h"
+#include "globus_gram_myjob_mp.h"
 
 /******************************************************************************
 		       Define module specific constants
@@ -37,7 +37,7 @@ CVS Information:
 /******************************************************************************
 		       Define module specific variables
 ******************************************************************************/
-static gram_bool_t			graml_myjob_initialized = GRAM_FALSE;
+static globus_bool_t			graml_myjob_initialized = GLOBUS_FALSE;
 static mp_communicator_t		graml_myjob_communicator;
 static int				graml_myjob_size;
 static int				graml_myjob_rank;
@@ -49,17 +49,17 @@ static int				graml_myjob_rank;
 
 
 /******************************************************************************
-Function:	gram_myjob_init()
+Function:	globus_gram_myjob_init()
 
 Description:	initializes parallel communication; allocates a new
 		 communicator; gets the size and rank, caching them
 
 Parameters:	see API
 
-Returns:	GRAM_MYJOB_SUCCESS
+Returns:	GLOBUS_SUCCESS
 ******************************************************************************/
 int
-gram_myjob_init(
+globus_gram_myjob_init(
     int *				argc,
     char ***				argv)
 {
@@ -70,30 +70,30 @@ gram_myjob_init(
 	MP_COMMUNICATOR_ALLOC(graml_myjob_communicator,
 			      MY_COMMUNICATOR_DIFFERENTIATOR);
 
-	graml_myjob_initialized = GRAM_TRUE;
+	graml_myjob_initialized = GLOBUS_TRUE;
     }
 
-    return(GRAM_MYJOB_SUCCESS);
+    return(GLOBUS_SUCCESS);
 }
 
 
 /******************************************************************************
-Function:	gram_myjob_done()
+Function:	globus_gram_myjob_done()
 
 Description:	frees resources used by the communicator; shut's down
 		parallel communication
 
 Parameters:	see API
 
-Returns:	GRAM_MYJOB_SUCCESS
-		GRAM_MYJOB_ERROR_NOT_INITIALIZED
+Returns:	GLOBUS_SUCCESS
+		GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED
 ******************************************************************************/
 int
-gram_myjob_done()
+globus_gram_myjob_done()
 {
     if (!graml_myjob_initialized)
     {
-	return(GRAM_MYJOB_ERROR_NOT_INITIALIZED);
+	return(GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED);
     }
 
     MP_COMMUNICATOR_FREE(graml_myjob_communicator);
@@ -102,74 +102,74 @@ gram_myjob_done()
     MP_NODE_SHUTDOWN();
     */
 
-    graml_myjob_initialized = GRAM_FALSE;
+    graml_myjob_initialized = GLOBUS_FALSE;
 
-    return(GRAM_MYJOB_SUCCESS);
+    return(GLOBUS_SUCCESS);
 }
 
 
 /******************************************************************************
-Function:	gram_myjob_size()
+Function:	globus_gram_myjob_size()
 
 Description:	sets size to one (1)
 
 Parameters:	see API
 
-Returns:	GRAM_MYJOB_SUCCESS
-		GRAM_MYJOB_ERROR_NOT_INITIALIZED
-		GRAM_MYJOB_BAD_PARAM
+Returns:	GLOBUS_SUCCESS
+		GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED
+		GLOBUS_GRAM_MYJOB_BAD_PARAM
 ******************************************************************************/
 int
-gram_myjob_size(
+globus_gram_myjob_size(
     int *				size)
 {
     if (!graml_myjob_initialized)
     {
-	return(GRAM_MYJOB_ERROR_NOT_INITIALIZED);
+	return(GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED);
     }
 
     if (size == NULL)
     {
-	return(GRAM_MYJOB_ERROR_BAD_PARAM);
+	return(GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM);
     }
 
     *size = graml_myjob_size;
-    return(GRAM_MYJOB_SUCCESS);
+    return(GLOBUS_SUCCESS);
 }
 
 
 /******************************************************************************
-Function:	gram_myjob_rank()
+Function:	globus_gram_myjob_rank()
 
 Description:	sets rank to zero (0)
 
 Parameters:	see API
 
-Returns:	GRAM_MYJOB_SUCCESS
-		GRAM_MYJOB_ERROR_NOT_INITIALIZED
-		GRAM_MYJOB_BAD_PARAM
+Returns:	GLOBUS_SUCCESS
+		GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED
+		GLOBUS_GRAM_MYJOB_BAD_PARAM
 ******************************************************************************/
 int
-gram_myjob_rank(
+globus_gram_myjob_rank(
     int *				rank)
 {
     if (!graml_myjob_initialized)
     {
-	return(GRAM_MYJOB_ERROR_NOT_INITIALIZED);
+	return(GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED);
     }
 
     if (rank == NULL)
     {
-	return(GRAM_MYJOB_ERROR_BAD_PARAM);
+	return(GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM);
     }
 
     *rank = graml_myjob_rank;
-    return(GRAM_MYJOB_SUCCESS);
+    return(GLOBUS_SUCCESS);
 }
 
 
 /******************************************************************************
-Function:	gram_myjob_send()
+Function:	globus_gram_myjob_send()
 
 Description:	Send a message to another process in this job
 
@@ -178,9 +178,9 @@ Parameters:	see API
 Returns:	
 ******************************************************************************/
 int
-gram_myjob_send(
+globus_gram_myjob_send(
     int					dest_rank,
-    gram_byte_t *			msg_buf,
+    globus_byte_t *			msg_buf,
     int					msg_len)
 {
     mp_send_status_t			send_status;
@@ -188,19 +188,19 @@ gram_myjob_send(
 
     if (!graml_myjob_initialized)
     {
-	return(GRAM_MYJOB_ERROR_NOT_INITIALIZED);
+	return(GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED);
     }
 
     if (graml_myjob_size < 2)
     {
-	return(GRAM_MYJOB_ERROR_BAD_SIZE);
+	return(GLOBUS_GRAM_MYJOB_ERROR_BAD_SIZE);
     }
 
     if (dest_rank < 0
 	|| dest_rank >= graml_myjob_size
 	|| dest_rank == graml_myjob_rank)
     {
-	return(GRAM_MYJOB_ERROR_BAD_RANK);
+	return(GLOBUS_GRAM_MYJOB_ERROR_BAD_RANK);
     }
 
 
@@ -216,12 +216,12 @@ gram_myjob_send(
 	MP_SEND_STATUS(send_status, send_done);
     } while(!send_done);
 
-    return(GRAM_MYJOB_SUCCESS);
+    return(GLOBUS_SUCCESS);
 }
 
 
 /******************************************************************************
-Function:	gram_myjob_receive()
+Function:	globus_gram_myjob_receive()
 
 Description:	Wait for a new message to arrive
 
@@ -230,8 +230,8 @@ Parameters:	see API
 Returns:	
 ******************************************************************************/
 int
-gram_myjob_receive(
-    gram_byte_t *			msg_buf,
+globus_gram_myjob_receive(
+    globus_byte_t *			msg_buf,
     int *				msg_len)
 {
     mp_receive_status_t			recv_status;
@@ -239,31 +239,31 @@ gram_myjob_receive(
 
     if (!graml_myjob_initialized)
     {
-	return(GRAM_MYJOB_ERROR_NOT_INITIALIZED);
+	return(GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED);
     }
 
     if (graml_myjob_size < 2)
     {
-	return(GRAM_MYJOB_ERROR_BAD_SIZE);
+	return(GLOBUS_GRAM_MYJOB_ERROR_BAD_SIZE);
     }
 
     MP_POST_RECEIVE(graml_myjob_communicator,
-		    gram_myjob_receive,
+		    globus_gram_myjob_receive,
 		    msg_buf,
-		    GRAM_MYJOB_MAX_BUFFER_LENGTH,
+		    GLOBUS_GRAM_MYJOB_MAX_BUFFER_LENGTH,
 		    recv_status);
 
-    MP_RECEIVE_WAIT(gram_myjob_receive(),
+    MP_RECEIVE_WAIT(globus_gram_myjob_receive(),
 		    recv_status,
 		    msg_len,
 		    recv_done);
 
-    return(GRAM_MYJOB_SUCCESS);
+    return(GLOBUS_SUCCESS);
 }
 
 
 /******************************************************************************
-Function:	gram_myjob_kill()
+Function:	globus_gram_myjob_kill()
 
 Description:	there are two options possibilities here: (a) the process was
 		started by gram, so we must have gram cancel it, or (b) the
@@ -276,10 +276,10 @@ Parameters:     see API
 Returns:	this will never return
 ******************************************************************************/
 int
-gram_myjob_kill()
+globus_gram_myjob_kill()
 {
     MP_ABORT();
     abort();
 
-    return GRAM_MYJOB_ERROR_COMM_FAILURE;
+    return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
 }

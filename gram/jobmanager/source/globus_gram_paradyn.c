@@ -7,12 +7,10 @@
 #include <sys/time.h>
 #include <string.h> /* for strdup() */
 #include <memory.h>
-#include <nexus.h>
 #include <fcntl.h>
-#include "gram_client.h"
-#include "grami_client.h"
-#include "gram_rsl.h"
-#include "grami_jm.h"
+#include "globus_nexus.h"
+#include "globus_gram_client.h"
+#include "globus_i_gram_jm.h"
 
 /******************************************************************************
                                Type definitions
@@ -61,11 +59,11 @@ Returns:        1 if it successfully
 int
 grami_paradyn_rewrite_params(gram_request_param_t * params)
 {
-    char tmp_string[GRAM_PARAM_SIZE*4];
-    char paradyn_port[GRAM_PARAM_SIZE];
-    char paradyn_host[GRAM_PARAM_SIZE];
-    char paradynd_type[GRAM_PARAM_SIZE];
-    char paradynd_location[GRAM_PARAM_SIZE*2];
+    char tmp_string[GLOBUS_GRAM_CLIENT_PARAM_SIZE*4];
+    char paradyn_port[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char paradyn_host[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char paradynd_type[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char paradynd_location[GLOBUS_GRAM_CLIENT_PARAM_SIZE*2];
 
     /*
      *  Initialize our strings
@@ -116,7 +114,7 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
                          ,params->pgm_args);
     }
 
-    strncpy(params->pgm_args,tmp_string,GRAM_PARAM_SIZE);
+    strncpy(params->pgm_args,tmp_string,GLOBUS_GRAM_CLIENT_PARAM_SIZE);
 
     /*
      * Change program name to paradynd
