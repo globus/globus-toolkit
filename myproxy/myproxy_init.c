@@ -66,6 +66,8 @@ int  grid_proxy_destroy(const char *proxyfile);
 
 void receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response); 
 
+#define		SECONDS_PER_HOUR			(60 * 60)
+
 int
 main(int argc, char *argv[]) 
 {    
@@ -105,10 +107,10 @@ main(int argc, char *argv[])
     }
 
     /* client_request stores the portal lifetime */
-    client_request->portal_lifetime = 60*60*MYPROXY_DEFAULT_PORTAL_HOURS;
+    client_request->portal_lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_PORTAL_HOURS;
 
     /* the lifetime of the proxy */
-    cred_lifetime                   = 60*60*MYPROXY_DEFAULT_HOURS;
+    cred_lifetime                   = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
  
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 
@@ -180,7 +182,7 @@ main(int argc, char *argv[])
     /* Get final response from server */
     receive_response(socket_attrs, server_response);
 
-    hours = (int)(cred_lifetime/3600);
+    hours = (int)(cred_lifetime/SECONDS_PER_HOUR);
     days = (float)(hours/24.0);
     printf("A proxy valid for %d hours (%5.1f days  ) for user %s now exists on %s.\n", 
 	   hours, days, client_request->username, socket_attrs->pshost); 
@@ -211,11 +213,11 @@ init_arguments(int argc,
 	    fprintf(stderr, usage);
 	    exit(1);
 	    break;
-	case 'c': 	/* Specify cred lifetime in seconds */
-	    *cred_lifetime  = 60*60*atoi(gnu_optarg);
+	case 'c': 	/* Specify cred lifetime in hours */
+	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(gnu_optarg);
 	    break;    
-	case 't': 	/* Specify portal lifetime in seconds */
-	    request->portal_lifetime = 60*60*atoi(gnu_optarg);
+	case 't': 	/* Specify portal lifetime in hours */
+	    request->portal_lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
 	    break;        
 	case 's': 	/* pshost name */
 	    attrs->pshost = strdup(gnu_optarg);
@@ -265,12 +267,15 @@ init_arguments(int argc,
  * returns grid-proxy-init status 0 if OK, -1 on error
  */
 int
-grid_proxy_init(int hours, const char *proxyfile) {
+grid_proxy_init(int seconds, const char *proxyfile) {
 
     int rc;
     char command[128];
-  
+    int hours;
+      
     assert(proxyfile != NULL);
+
+    hours = seconds / SECONDS_PER_HOUR;
     
     sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
     rc = system(command);
