@@ -11,10 +11,16 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
 /* Must be included after stdio.h */
 #include "ssl_utils.h"
 
+#include <ssl.h>
 #include <x509.h>
 #include <pem.h>
 #include <err.h>
@@ -65,6 +71,10 @@
 
 #define PROXY_DEFAULT_VERSION		2L /* == v3 */
 
+/* Return values for ssl_check_keys_match() */
+#define SSL_KEYS_MATCH			1
+#define SSL_KEYS_MISMATCH		-1
+
 /**********************************************************************
  *
  * Internal data structures
@@ -104,6 +114,88 @@ static const char *_ssl_pass_phrase = NULL;
  */
 
 /*
+ * buffer_from_file()
+ *
+ * Read the entire contents of a file into a buffer.
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
+ */
+static int
+buffer_from_file(const char			*path,
+		 unsigned char			**pbuffer,
+		 int				*pbuffer_len)
+{
+    int				fd = -1;
+    int				open_flags;
+    int				return_status = SSL_ERROR;
+    struct stat			statbuf;
+    unsigned char		*buffer;
+    int				buffer_len;
+    
+    assert(path != NULL);
+    assert(pbuffer != NULL);
+    assert(pbuffer_len != NULL);
+    
+    open_flags = O_RDONLY;
+    
+    fd = open(path, open_flags);
+    
+    if (fd == -1)
+    {
+	verror_put_string("Failure opening file \"%s\"", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    if (fstat(fd, &statbuf) == -1)
+    {
+	verror_put_string("Failure stating file \"%s\"", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    buffer_len = statbuf.st_size;
+    
+    buffer = malloc(buffer_len);
+    
+    if (buffer == NULL)
+    {
+	verror_put_string("malloc() failed");
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    if (read(fd, buffer, buffer_len) == -1)
+    {
+	verror_put_string("Error reading file \"%s\"", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    /* Succcess */
+    *pbuffer = buffer;
+    *pbuffer_len = buffer_len;
+    return_status = SSL_SUCCESS;
+
+  error:
+    if (fd != -1)
+    {
+	close(fd);
+    }
+    
+    if (return_status == SSL_ERROR)
+    {
+	if (buffer != NULL)
+	{
+	    free(buffer);
+	}
+    }
+    
+    return return_status;
+}
+
+
+/*
  * ssl_error_to_verror()
  *
  * Transfer an error description out of the ssl error handler to verror.
@@ -140,6 +232,101 @@ ssl_error_to_verror()
     ERR_clear_error();
 }
 
+/*
+ * bio_from_buffer()
+ *
+ * Given a buffer of length buffer_len, return a memory bio with the
+ * contents of the buffer.
+ *
+ * Returns pointer to bio on success, NULL on error.
+ */
+static BIO *
+bio_from_buffer(const unsigned char		*buffer,
+		int				buffer_len)
+{
+    BIO			*bio = NULL;
+
+    assert(buffer != NULL);
+    
+    bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
+    {
+	verror_put_string("Failed creating memory BIO");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    if (BIO_write(bio, (unsigned char *) buffer, buffer_len) == SSL_ERROR)
+    {
+	verror_put_string("Failed writing buffer to BIO");
+	ssl_error_to_verror();
+	BIO_free(bio);
+	bio = NULL;
+	goto error;
+    }
+
+  error:
+    return bio;
+}
+
+
+/*
+ * bio_to_buffer()
+ *
+ * Given a bio return the contents of the bio in a buffer.
+ * pbuffer is set to point to the allocated buffer, and pbuffer_len
+ * is filled in with the buffer length. Caller should free *pbuffer.
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR.
+ */
+static int
+bio_to_buffer(BIO				*bio,
+	      unsigned char			**pbuffer,
+	      int				*pbuffer_len)
+{
+    char 		*buffer = NULL;
+    int			buffer_len;
+    int			return_status = SSL_ERROR;
+    
+    assert(bio != NULL);
+    
+    buffer_len = BIO_pending(bio);
+    
+    buffer = malloc(buffer_len);
+    
+    if (buffer == NULL)
+    {
+	verror_put_string("Failed dumping BIO to buffer (malloc() failed)");
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    if (BIO_read(bio, buffer, buffer_len) == SSL_ERROR)
+    {
+	verror_put_string("Failed dumping BIO to buffer (BIO_read() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /* Success */
+    *pbuffer = buffer;
+    *pbuffer_len = buffer_len;
+    return_status = SSL_SUCCESS;
+    
+  error:
+    if (return_status == SSL_ERROR)
+    {
+	if (buffer != NULL)
+	{
+	    free(buffer);
+	}
+    }
+    
+    return return_status;
+}
+
+ 
 /*
  * ssl_cert_chain_free()
  *
@@ -191,7 +378,7 @@ ssl_credentials_free_contents(SSL_CREDENTIALS	*creds)
  * that would be generated from the certificate. If no certificate
  * is supplied, a blank name is used.
  *
- * Returns 0 on success, -1 on error.
+ * Returns name or NULL on error.
  */
 static X509_NAME *
 ssl_proxy_generate_name(X509				*certificate,
@@ -250,7 +437,8 @@ ssl_proxy_generate_name(X509				*certificate,
     }
     
     if (X509_NAME_add_entry(name, name_entry,
-			    X509_NAME_entry_count(name), 0 /* new set */) == 0)
+			    X509_NAME_entry_count(name),
+			    0 /* new set */) == SSL_ERROR)
     {
 	verror_put_string("Error generating name (appending suffix) generating new proxy_request");
 	ssl_error_to_verror();
@@ -306,8 +494,6 @@ my_pass_phrase_callback(char			*buffer,
 			 int			buffer_len,
 			 int			verify /* Ignored */)
 {
-    int rc;
-
     /* SSL libs supply these, make sure they are reasonable */
     assert(buffer != NULL);
     assert(buffer_len > 0);
@@ -324,289 +510,102 @@ my_pass_phrase_callback(char			*buffer,
 
     return strlen(buffer);
 }
+	     
 
 /*
- * ssl_proxy_cert_from_buffer()
+ * ssl_keys_check_match()
  *
- * Retrieve the proxy certificate and certificate chain from the
- * given buffer and put into creds which is assumed to already
- * contain the private key for the proxy certificate.
+ * Check to make sure a private and public key go together.
+ * Currently only checks RSA keys.
  *
- * Return 0 on success, -1 on error.
+ * Returns SSL_KEYS_MATCH, SSL_KEYS_MISMATCH or SSL_ERROR.
  */
 static int
-ssl_proxy_cert_from_buffer(SSL_CREDENTIALS	*creds,
-			   unsigned char	*buffer,
-			   int			buffer_length)
+ssl_keys_check_match(X509			*certificate,
+		     EVP_PKEY			*private_key)
 {
-    BIO			*bio = NULL;
-    X509		*proxy_cert = NULL;
-    unsigned char	number_of_certs;
-    int			cert_index = 0;
-    STACK		*cert_chain = NULL;
-    int			return_status = -1;
+    int					return_status = SSL_ERROR;
+    EVP_PKEY				*public_key;
     
-    assert(creds != NULL);
-    assert(buffer != NULL);
-
-    /* Transfer the buffer to a bio */
-    bio = BIO_new(BIO_s_mem());
+    assert(certificate != NULL);
+    assert(private_key != NULL);
     
-    if (bio == NULL)
+    public_key = X509_PUBKEY_get(X509_get_X509_PUBKEY(certificate));
+    
+    if (public_key == NULL)
     {
-	verror_put_string("Failed unpacking proxy certificate from buffer (BIO_new failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    if (BIO_write(bio, buffer, buffer_length) == -1)
-    {
-	verror_put_string("Failed unpacking proxy certificate from buffer (BIO_write() failed)");
-	ssl_error_to_verror();
+	verror_put_string("Could not certificate key");
 	goto error;
     }
 
-    /*
-     * Buffer contains:
-     *		-a bytes containing the number of certificates.
-     *          -the proxy certificate
-     *          -the certificate chain
-     */
-
-    /* Read number of certificates */
-    if (BIO_read(bio, &number_of_certs, sizeof(number_of_certs)) == 0)
+    if (EVP_MD_type(public_key) != EVP_MD_type(private_key))
     {
-	verror_put_string("Failed unpacking proxy certificate from buffer (reading number of certificates)");
-	ssl_error_to_verror();
+	verror_put_string("Keys types do not match");
+	return_status = SSL_KEYS_MISMATCH;
 	goto error;
     }
-
-    if (number_of_certs == 0) 
+    
+    switch (EVP_MD_type(public_key))
     {
-	verror_put_string("Failed unpacking proxy certificate from buffer (number of certificates == 0)");
-	ssl_error_to_verror();
-	goto error;
-    }
+      case EVP_PKEY_RSA:
+	{
+	    RSA			*private_rsa;
+	    RSA			*public_rsa;
 
-    /* DEBUG */printf("Number of certs = %d\n", number_of_certs);
-    
-    /* Now read the proxy certificate */
-    proxy_cert = d2i_X509_bio(bio, NULL /* make new cert */);
-    
-    if (proxy_cert == NULL)
-    {
-	verror_put_string("Failed unpacking proxy certificate from buffer (reading proxy certificate)");
-	ssl_error_to_verror();
-	goto error;
-    }	
-
-    /*
-     * XXX This would be the place to make sure the proxy cert matches
-     *     the key in creds.
-     */
-
-    cert_index++;
-    
-    /* Now read the certificate chain */
-    cert_chain = sk_new_null();
-    
-    while (cert_index < number_of_certs)
-    {
-	X509		*cert;
+	    private_rsa = private_key->pkey.rsa;
+	    public_rsa = public_key->pkey.rsa;
+	    
+	    if ((public_rsa == NULL) ||
+		(public_rsa->n == NULL))
+	    {
+		verror_put_string("Public key malformed");
+		goto error;
+	    }
 	
-	cert = d2i_X509_bio(bio, NULL /* make new cert */);
-    
-	if (cert == NULL)
-	{
-	    verror_put_string("Failed unpacking proxy certificate from buffer (reading cert chain)");
-	    ssl_error_to_verror();
-	    goto error;
+	    if ((private_rsa == NULL) ||
+		(private_rsa->n == NULL))
+	    {
+		verror_put_string("Private key malformed");
+		goto error;
+	    }
+	
+	    if (BN_cmp(public_rsa->n, private_rsa->n) == 1)
+	    {
+		return_status = SSL_KEYS_MISMATCH;
+	    }
+	    else
+	    {
+		return_status = SSL_KEYS_MATCH;
+	    }
 	}
-
-	if (sk_push(cert_chain, (char *) cert) == 0)
-	{
-	    verror_put_string("Failed unpacking proxy certificate from buffer (building cert chain)");
-	    ssl_error_to_verror();
-	    X509_free(cert);
-	    goto error;
-	}
-
-	cert_index++;
+	
+	break;
+	
+      default:
+	verror_put_string("Unrecognized key type");
+	goto error;
     }
-    
-    /* Success */
 
-    /* XXX Should free any current contents first */
-    creds->certificate = proxy_cert;
-    creds->certificate_chain = cert_chain;
-
-    return_status = 0;
-    
   error:
-    if (bio != NULL)
-    {
-	BIO_free(bio);
-    }
-    
-    if (return_status == -1)
-    {
-	if (proxy_cert != NULL)
-	{
-	    X509_free(proxy_cert);
-	}
-	
-	if (cert_chain != NULL)
-	{
-	    ssl_cert_chain_free(cert_chain);
-	}
-    }
-
     return return_status;
 }
-    
+
     
 
-/*
- * ssl_proxy_cert_to_buffer()
- *
- * Given a proxy certificate and the credentials used to make the proxy
- * certificate, dump the certificate allong with it's certificate chain
- * to a buffer suitable for shipping over the network.
- *
- * Returns 0 on success, -1 on error.
- */
-static int
-ssl_proxy_cert_to_buffer(SSL_CREDENTIALS	*creds,
-			 X509			*proxy_certificate,
-			 unsigned char		**buffer,
-			 int			*buffer_length)
-{
-    BIO			*bio = NULL;
-    unsigned char	number_of_certs;
-    int			index;
-    unsigned char	*tmp_buffer = NULL;
-    int			tmp_buffer_size;
-    int			return_status = -1;
-    
-    assert(creds != NULL);
-    assert(proxy_certificate != NULL);
-    assert(buffer != NULL);
-    assert(buffer_length != NULL);
-    
-    bio = BIO_new(BIO_s_mem());
-    
-    if (bio == NULL)
-    {
-	verror_put_string("Failed dumping proxy certificate to buffer (BIO_new() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
 
-    /*
-     * Determine the number of certificates we are going to write to
-     * to the buffer. We add two - one for the signer's certificate
-     * and one for the proxy certificate.
-     */
-    number_of_certs = sk_num(creds->certificate_chain) + 2;
-
-    if (BIO_write(bio, &number_of_certs, sizeof(number_of_certs)) == 0)
-    {
-	verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    /*
-     * Now write out proxy certificate, followed by the signing certificate
-     * and then the signing certificate's chain.
-     */
-    if (i2d_X509_bio(bio, proxy_certificate) == 0)
-    {
-	verror_put_string("Failed dumping proxy certificate to buffer (write of proxy cert failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    if (i2d_X509_bio(bio, creds->certificate) == 0)
-    {
-	verror_put_string("Failed dumping proxy certificate to buffer (write of signing cert failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    for (index = 0; index < sk_num(creds->certificate_chain); index++)
-    {
-	X509		*cert;
-	
-	cert = (X509 *) sk_value(creds->certificate_chain, index);
-	
-	if (i2d_X509_bio(bio, creds->certificate) == 0)
-	{
-	    verror_put_string("Failed dumping proxy certificate to buffer (write of cert chain failed)");
-	    ssl_error_to_verror();
-	    goto error;
-	}
-    }
-
-    /* Now dump bio's contents to buffer */
-
-    tmp_buffer_size = BIO_pending(bio);
-    
-    tmp_buffer = malloc(tmp_buffer_size);
-    
-    if (tmp_buffer == NULL)
-    {
-	verror_put_string("Failed dumping X509 request to buffer (malloc() failed)");
-	verror_put_errno(errno);
-	goto error;
-    }
-    
-    if (BIO_read(bio, tmp_buffer, tmp_buffer_size) == 0)
-    {
-	verror_put_string("Failed dumping proxy to buffer (BIO_read() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
-    /* Success */
-    *buffer = tmp_buffer;
-    *buffer_length = tmp_buffer_size;
-    return_status = 0;
-    
-  error:
-    if (bio != NULL)
-    {
-	BIO_free(bio);
-    }
-    
-    if (return_status == -1)
-    {
-	if (tmp_buffer != NULL)
-	{
-	    free(tmp_buffer);
-	}
-    }
-    
-    return return_status;
-}
-	     
-	     
-	
 /*
  * ssl_x509_request_to_buffer()
  *
  * Dump the given X509 request structure to an allocated buffer.
  *
- * Returns 0 on success, -1 on error.
+ * Returns SSL_SUCCESS or SSL_ERROR
  */
 static int
 ssl_x509_request_to_buffer(X509_REQ		*request,
 			   unsigned char	**buffer,
 			   int			*buffer_length)
 {
-    char			*tmp_buffer = NULL;
-    int				tmp_buffer_size;
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
     BIO				*bio = NULL;
     
     assert(request != NULL);
@@ -623,35 +622,20 @@ ssl_x509_request_to_buffer(X509_REQ		*request,
     }
 
     
-    if (i2d_X509_REQ_bio(bio, request) == 0)
+    if (i2d_X509_REQ_bio(bio, request) == SSL_ERROR)
     {
 	verror_put_string("Failed dumping X509 request to buffer");
 	ssl_error_to_verror();
 	goto error;
     }
     
-    tmp_buffer_size = BIO_pending(bio);
-    
-    tmp_buffer = malloc(tmp_buffer_size);
-    
-    if (tmp_buffer == NULL)
+    if (bio_to_buffer(bio, buffer, buffer_length) == SSL_ERROR)
     {
-	verror_put_string("Failed dumping X509 request to buffer (malloc() failed)");
-	verror_put_errno(errno);
 	goto error;
     }
-    
-    if (BIO_read(bio, tmp_buffer, tmp_buffer_size) == 0)
-    {
-	verror_put_string("Failed dump X509 request to buffer (BIO_read() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-    
+        
     /* Success */
-    *buffer = tmp_buffer;
-    *buffer_length = tmp_buffer_size;
-    return_status = 0;
+    return_status = SSL_SUCCESS;
     
   error:
     if (bio != NULL)
@@ -659,16 +643,9 @@ ssl_x509_request_to_buffer(X509_REQ		*request,
 	BIO_free(bio);
     }
     
-    if (return_status == -1)
-    {
-	if (tmp_buffer != NULL)
-	{
-	    free(tmp_buffer);
-	}
-    }
-    
     return return_status;
 }
+
 
 /*
  * ssl_x509_request_from_buffer()
@@ -676,7 +653,7 @@ ssl_x509_request_to_buffer(X509_REQ		*request,
  * Parse a buffer as generated by ssl_x509_request_to_buffer() and
  * return the X509_REQ object.
  *
- * Returns 0 on success, -1 on error.
+ * Returns SSL_SUCCESS or SSL_ERROR.
  */
 static int
 ssl_x509_request_from_buffer(unsigned char	*buffer,
@@ -685,23 +662,16 @@ ssl_x509_request_from_buffer(unsigned char	*buffer,
 {
     X509_REQ			*request = NULL;
     BIO				*bio = NULL;
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
     
     assert(buffer != NULL);
     assert(p_request != NULL);
     
-    bio = BIO_new(BIO_s_mem());
-
+    bio = bio_from_buffer(buffer, buffer_length);
+    
     if (bio == NULL)
     {
-	verror_put_string("Failed unpacking X509 request from buffer (BIO_new() failed)");
-	ssl_error_to_verror();
-	goto error;
-    }
-
-    if (BIO_write(bio, buffer, buffer_length) == -1)
-    {
-	verror_put_string("Failed unpacking X509 request from buffer (BIO_write() failed)");
+	verror_put_string("Failed unpacking X509 request from buffer");
 	ssl_error_to_verror();
 	goto error;
     }
@@ -717,7 +687,7 @@ ssl_x509_request_from_buffer(unsigned char	*buffer,
 
     /* Success */
     *p_request = request;
-    return_status = 0;
+    return_status = SSL_SUCCESS;
 
   error:
     if (bio)
@@ -725,7 +695,7 @@ ssl_x509_request_from_buffer(unsigned char	*buffer,
 	BIO_free(bio);
     }
     
-    if (return_status == -1)
+    if (return_status == SSL_ERROR)
     {
 	if (request)
 	{
@@ -742,12 +712,12 @@ ssl_x509_request_from_buffer(unsigned char	*buffer,
  * Check the X509_REQUEST object and make sure it's properly formed
  * and signed. Note that this does not look at the name.
  *
- * Returns 0 on success, -1 on error.
+ * Returns SSL_SUCCESS or SSL_ERROR.
  */
 static int
 ssl_x509_request_verify(X509_REQ		*request)
 {
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
     EVP_PKEY			*request_public_key = NULL;
     int				verify_result;
     
@@ -790,7 +760,7 @@ ssl_x509_request_verify(X509_REQ		*request)
     }
     
     /* Success */
-    return_status = 0;
+    return_status = SSL_SUCCESS;
     
   error:
     return return_status;
@@ -823,7 +793,7 @@ ssl_x509_request_verify(X509_REQ		*request)
  * generation. See SSLeay's doc/rsa.doc RSA_generate_key()
  * function for details.
  *
- * Returns 0 on success, -1 on error.
+ * Returns SSL_ERROR or SSL_SUCCESS
  */
 static int
 ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
@@ -835,7 +805,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
     const int			default_key_size = 512;	/* bits */
     SSL_CREDENTIALS		*creds = NULL;
     X509_NAME			*name = NULL;
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
     EVP_PKEY			*key = NULL;
     RSA				*rsa = NULL;
     X509_REQ			*request = NULL;
@@ -881,7 +851,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
     }
     
     /* Not sure what this does */
-    if (X509_REQ_set_version(request, 0L) == 0)
+    if (X509_REQ_set_version(request, 0L) == SSL_ERROR)
     {
 	verror_put_string("Error generating new proxy request (setting version)");
 	ssl_error_to_verror();
@@ -942,7 +912,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 
 	if (X509_NAME_add_entry(name, name_entry,
 				X509_NAME_entry_count(name),
-				0 /* create new set */) == 0)
+				0 /* create new set */) == SSL_ERROR)
 	{
 	   X509_NAME_ENTRY_free(name_entry);
 	   verror_put_string("Error generating new proxy request (adding name entry)");
@@ -961,7 +931,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 	goto error;
     }
 
-    if (X509_REQ_set_subject_name(request, name) == 0)
+    if (X509_REQ_set_subject_name(request, name) == SSL_ERROR)
     {
 	verror_put_string("Error generating new proxy request (setting name)");
 	ssl_error_to_verror();
@@ -977,21 +947,21 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 	goto error;
     }
     
-    if (EVP_PKEY_assign_RSA(key, rsa) == 0)
+    if (EVP_PKEY_assign_RSA(key, rsa) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy request (assigning RSA key)");
 	ssl_error_to_verror();
 	goto error;
     }
 
-    if (X509_REQ_set_pubkey(request, key) == 0)
+    if (X509_REQ_set_pubkey(request, key) == SSL_ERROR)
     {
 	verror_put_string("Error generating new proxy request (setting public key)");
 	ssl_error_to_verror();
 	goto error;
     }
 
-    if (X509_REQ_sign(request, key, EVP_md5()) == 0)
+    if (X509_REQ_sign(request, key, EVP_md5()) == SSL_ERROR)
     {
 	verror_put_string("Error generating new proxy request (signing request)");
 	ssl_error_to_verror();
@@ -999,13 +969,15 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
     }
     
     /* Success */
+    creds->private_key = key;
+
     *p_creds = creds;
     creds = NULL;
     
     *p_request = request;
     request = NULL;
 
-    return_status = 0;
+    return_status = SSL_SUCCESS;
     
 
   error:
@@ -1014,7 +986,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 	X509_NAME_free(name);
     }
 
-    if (return_status == -1)
+    if (return_status == SSL_ERROR)
     {
     
 	if (key != NULL)
@@ -1050,7 +1022,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
  *
  * restrictions, if non-NULL, will be applied.
  *
- * Returns 0 on succes, -1 on error.
+ * Returns SSL_SUCCESS or SSL_ERROR
  */
 static int
 ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
@@ -1062,13 +1034,13 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     X509_NAME			*proxy_name = NULL;
     X509			*proxy_certificate = NULL;
     ASN1_INTEGER		*serial_number = NULL;
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
     
     assert(creds != NULL);
     assert(request != NULL);
     assert(p_proxy_cert != NULL);
     
-    if (ssl_x509_request_verify(request) == -1)
+    if (ssl_x509_request_verify(request) == SSL_ERROR)
     {
 	goto error;
     }
@@ -1100,7 +1072,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
 	goto error;
     }
 
-    if (X509_set_subject_name(proxy_certificate, proxy_name) == 0)
+    if (X509_set_subject_name(proxy_certificate, proxy_name) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (error setting name)");
 	ssl_error_to_verror();
@@ -1108,7 +1080,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }
     
     if (X509_set_issuer_name(proxy_certificate,
-			     X509_get_subject_name(creds->certificate)) == 0)
+			     X509_get_subject_name(creds->certificate)) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (error setting issuer name)");
 	ssl_error_to_verror();
@@ -1118,7 +1090,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     /* Assign proxy same serial number as user certificate */
     serial_number = X509_get_serialNumber(creds->certificate);
     
-    if (X509_set_serialNumber(proxy_certificate, serial_number) == 0)
+    if (X509_set_serialNumber(proxy_certificate, serial_number) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (setting serial number)");
 	ssl_error_to_verror();
@@ -1149,7 +1121,8 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }
 
     /* Copy public key from request to certificate */
-    if (X509_set_pubkey(proxy_certificate, X509_REQ_get_pubkey(request)) == 0)
+    if (X509_set_pubkey(proxy_certificate,
+			X509_REQ_get_pubkey(request)) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (setting public key)");
 	ssl_error_to_verror();
@@ -1157,7 +1130,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }	
 
     /* Set the certificate version */
-    if (X509_set_version(proxy_certificate, PROXY_DEFAULT_VERSION) == 0)
+    if (X509_set_version(proxy_certificate, PROXY_DEFAULT_VERSION) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (setting version)");
 	ssl_error_to_verror();
@@ -1193,7 +1166,9 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }
 #endif
 
-    if (X509_sign(proxy_certificate, creds->private_key, EVP_md5()) == 0)
+    if (X509_sign(proxy_certificate,
+		  creds->private_key,
+		  EVP_md5()) == SSL_ERROR)
     {
 	verror_put_string("Error generating proxy_certificate (signing certificate)");
 	ssl_error_to_verror();
@@ -1203,7 +1178,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     /* Success */
     *p_proxy_cert = proxy_certificate;
 
-    return_status = 0;
+    return_status = SSL_SUCCESS;
     
   error:
     if (proxy_name != NULL)
@@ -1213,7 +1188,7 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
 
     /* XXX Need to free serial_number? */
 
-    if (return_status == -1)
+    if (return_status == SSL_ERROR)
     {
 	if (proxy_certificate != NULL)
 	{
@@ -1257,7 +1232,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 {
     FILE		*cert_file = NULL;
     X509		*cert = NULL;
-    int			return_status = -1;
+    int			return_status = SSL_ERROR;
     
     assert(creds != NULL);
     assert(path != NULL);
@@ -1288,7 +1263,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     creds->certificate = cert;
 
     /* Success */
-    return_status = 0;
+    return_status = SSL_SUCCESS;
     
   error:
     if (cert_file != NULL) 
@@ -1306,7 +1281,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 {
     FILE		*key_file = NULL;
     EVP_PKEY		*key = NULL;
-    int			return_status = -1;
+    int			return_status = SSL_ERROR;
     
     assert(creds != NULL);
     assert(path != NULL);
@@ -1357,7 +1332,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     creds->private_key = key;
     
     /* Success */
-    return_status = 0;
+    return_status = SSL_SUCCESS;
 
   error:
     if (key_file != NULL)
@@ -1369,19 +1344,19 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 }
 
 int
-ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
-			 const char		*path,
-			 const char		*pass_phrase)
+ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
+		   const unsigned char		*buffer,
+		   int				buffer_len,
+		   const char			*pass_phrase)
 {
-    FILE		*proxy_file = NULL;
+    BIO			*bio = NULL;
     X509		*cert = NULL;
     EVP_PKEY		*key = NULL;
     STACK		*cert_chain = NULL;
-    int			certificate_count = 0;
-    int			return_status = -1;
-    
+    int			return_status = SSL_ERROR;
+
     assert(creds != NULL);
-    assert(path != NULL);
+    assert(buffer != NULL);
 
     my_init();
     
@@ -1389,33 +1364,31 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
      * Put pass phrase where the callback function can find it.
      */
     _ssl_pass_phrase = pass_phrase;
-    
-    proxy_file = fopen(path, "r");
-    
-    if (proxy_file == NULL)
+
+    bio = bio_from_buffer(buffer, buffer_len);
+
+    if (bio == NULL)
     {
-	verror_put_string("Error opening proxy file %s", path);
-	verror_put_errno(errno);
 	goto error;
     }
-    
+
     /*
      * Proxy file contains proxy certificate followed by proxy
      * private key, followed by the certificate chain.
      */
 
     /* Read proxy certificate */
-    if (PEM_read_X509(proxy_file, &cert, PEM_CALLBACK(NULL,NULL)) == NULL)
+    if (PEM_read_bio_X509(bio, &cert, PEM_CALLBACK(NULL,NULL)) == NULL)
     {
-	verror_put_string("Error reading proxy certificate %s", path);
+	verror_put_string("Error parsing proxy certificate");
 	ssl_error_to_verror();
 	goto error;
     }
 
     /* Read proxy private key */
-    if (PEM_read_PrivateKey(proxy_file, &(key),
-			    PEM_CALLBACK(my_pass_phrase_callback,
-					 NULL)) == NULL)
+    if (PEM_read_bio_PrivateKey(bio, &(key),
+				PEM_CALLBACK(my_pass_phrase_callback,
+					     NULL)) == NULL)
     {
 	unsigned long error;
 	
@@ -1428,7 +1401,7 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
 	}
 	else 
 	{
-	    verror_put_string("Error reading private key %s", path);
+	    verror_put_string("Error parsing private key");
 	    ssl_error_to_verror();
 	}
 	
@@ -1444,8 +1417,8 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
     {
 	X509 *certificate = NULL;
 	
-	if (PEM_read_X509(proxy_file, &certificate, PEM_CALLBACK(NULL,
-								 NULL)) == NULL)
+	if (PEM_read_bio_X509(bio, &certificate,
+			      PEM_CALLBACK(NULL, NULL)) == NULL)
 	{
 	    /*
 	     * If we just can't find a start line then we've reached EOF.
@@ -1458,18 +1431,16 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
 	    }
 
 	    /* Actual error */
-	    verror_put_string("Error reading certificate chain from proxy %s",
-			      path);
+	    verror_put_string("Error parsing certificate chain from proxy");
 	    ssl_error_to_verror();
 	    goto error;
 	}
 
 	/* Add to chain */
 	if (sk_insert(cert_chain, (char *) certificate,
-		      sk_num(cert_chain)) == 0)
+		      sk_num(cert_chain)) == SSL_ERROR)
 	{
-	    verror_put_string("Error reading certificate chain from proxy %s",
-			      path);
+	    verror_put_string("Error parsing certificate chain from proxy");
 	    ssl_error_to_verror();
 	    goto error;
 	}
@@ -1486,10 +1457,10 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
     creds->certificate_chain = cert_chain;
     
     /* Success */
-    return_status = 0;
+    return_status = SSL_SUCCESS;
     
   error:
-    if (return_status != 0)
+    if (return_status == SSL_ERROR)
     {
 	/*
 	 * On error, clean up any key, cert or chain. On success
@@ -1504,6 +1475,7 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
 	if (key != NULL)
 	{
 	    EVP_PKEY_free(key);
+
 	}
 	
 	if (cert_chain)
@@ -1512,10 +1484,250 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
 	}
     }
 
+    if (bio != NULL)
+    {
+	BIO_free(bio);
+    }
+    
+    return return_status;
+}
+
+    
+int
+ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
+			 const char		*path,
+			 const char		*pass_phrase)
+{
+    unsigned char	*buffer = NULL;
+    int			buffer_len;
+    int			return_status = SSL_ERROR;
+    
+    assert(creds != NULL);
+    assert(path != NULL);
+
+    my_init();
+
+    /* Read the whole contents of the given file */
+    if (buffer_from_file(path, &buffer, &buffer_len) == SSL_ERROR)
+    {
+	goto error;
+    }
+    
+    if (ssl_proxy_from_pem(creds, buffer, buffer_len, pass_phrase) == SSL_ERROR)
+    {
+	verror_prepend_string("Error reading proxy from %s", path);
+	goto error;
+    }
+    
+    /* Success */
+    return_status = SSL_SUCCESS;
+    
+  error:
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+
     return return_status;
 }
 
 
+int
+ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
+		 unsigned char			**pbuffer,
+		 int				*pbuffer_len,
+		 const char			*pass_phrase)
+{
+    BIO				*bio = NULL;
+    EVP_CIPHER			*cipher;
+    int				pass_phrase_len;
+    int				cert_chain_index;
+    int				return_status = SSL_ERROR;
+    
+    assert(creds != NULL);
+    assert(pbuffer != NULL);
+    assert(pbuffer_len != NULL);
+
+    my_init();
+
+    bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
+    {
+	verror_put_string("Failed creating memory BIO");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /*
+     * Write out proxy certificate, followed by proxy private key and
+     * then followed by the cert chain.
+     */
+    if (creds->certificate == NULL)
+    {
+	verror_put_string("Malformed proxy credentials (No certificate)");
+	goto error;
+    }
+    
+    if (PEM_write_bio_X509(bio, creds->certificate) == SSL_ERROR)
+    {
+	verror_put_string("Error packing proxy certificate");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    if (creds->private_key == NULL)
+    {
+	verror_put_string("Malformed proxy credentials (No private key)");
+	goto error;
+    }
+    
+    if (pass_phrase == NULL)
+    {
+	/* No encryption */
+	cipher = NULL;
+	pass_phrase_len = 0;
+    }
+    else
+    {
+	/* Encrypt with pass phrase */
+	/* XXX This is my best guess at a cipher */
+	cipher = EVP_des_cbc();
+	pass_phrase_len = strlen(pass_phrase);
+    }
+
+    if (PEM_write_bio_PrivateKey(bio, creds->private_key, cipher,
+				 (char *) pass_phrase, pass_phrase_len,
+				 NULL /* No callback needed */) == SSL_ERROR)
+    {
+	verror_put_string("Error packing private key");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    if (creds->certificate_chain != NULL)
+    {
+	
+	for (cert_chain_index = 0;
+	     cert_chain_index < sk_num(creds->certificate_chain);
+	     cert_chain_index++)
+	{
+	    X509				*cert;
+	
+	    cert = (X509 *) sk_value(creds->certificate_chain,
+				     cert_chain_index);
+	
+	    if (PEM_write_bio_X509(bio, cert) == SSL_ERROR)
+	    {
+		verror_put_string("Error packing certificate chain");
+		ssl_error_to_verror();
+		goto error;
+	    }
+	}
+    }
+    
+    /* OK, bio is filled, now dump to buffer */
+    if (bio_to_buffer(bio, pbuffer, pbuffer_len) == SSL_ERROR)
+    {
+	goto error;
+    }
+    
+    /* Success */
+    return_status = SSL_SUCCESS;
+    
+  error:
+    if (bio != NULL)
+    {
+	BIO_free(bio);
+    }
+
+    return return_status;
+}
+    
+    
+    
+int
+ssl_proxy_store_to_file(SSL_CREDENTIALS		*proxy_creds,
+			const char		*path,
+			const char		*pass_phrase)
+{
+    int				fd = -1;
+    int				open_flags;
+    int				return_status = SSL_ERROR;
+    unsigned char		*buffer = NULL;
+    int				buffer_len;
+    mode_t			file_mode = 0;
+    
+    assert(proxy_creds != NULL);
+    assert(path != NULL);
+    
+    my_init();
+    
+    /*
+     * Use open to open the file so we can make sure it doesn't already
+     * exist.
+     */
+    open_flags = O_CREAT | O_EXCL | O_WRONLY;
+    
+    fd = open(path, open_flags);
+    
+    if (fd == -1)
+    {
+	verror_put_string("Error creating %s", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    /* Set file permissions */
+    file_mode = S_IRUSR | S_IWUSR;	/* 600 */
+
+    if (fchmod(fd, file_mode) == -1)
+    {
+	verror_put_string("Error setting permissions on %s", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    /*
+     * Dump proxy to buffer
+     */
+    if (ssl_proxy_to_pem(proxy_creds, &buffer,
+			 &buffer_len, pass_phrase) == SSL_ERROR)
+    {
+	goto error;
+    }
+    
+    if (write(fd, buffer, buffer_len) == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("Error writing proxy to %s", path);
+	goto error;
+    }
+    
+    /* Success */
+    return_status = SSL_SUCCESS;
+
+  error:
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+
+    if (fd != -1)
+    {
+	close(fd);
+
+	if (return_status == SSL_ERROR)
+	{
+	    /* Remove any file we created */
+	    unlink(path);
+	}
+    }
+
+    return return_status;
+}
+
+    
 SSL_CREDENTIALS *
 ssl_credentials_new()
 {
@@ -1541,15 +1753,15 @@ ssl_credentials_new()
 
 
 int
-ssl_proxy_buffer_init(SSL_CREDENTIALS		**new_creds,
-		      unsigned char		**buffer,
-		      int			*buffer_length,
-		      int			requested_bits,
-		      void			(*callback)(int,int,char *))
+ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
+			  unsigned char		**buffer,
+			  int			*buffer_length,
+			  int			requested_bits,
+			  void			(*callback)(int,int,char *))
 {
     SSL_CREDENTIALS		*creds = NULL;
     X509_REQ			*request = NULL;
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
 
     
     my_init();
@@ -1563,7 +1775,7 @@ ssl_proxy_buffer_init(SSL_CREDENTIALS		**new_creds,
 				  &request,
 				  NULL /* no name */,
 				  requested_bits,
-				  callback) == -1)
+				  callback) == SSL_ERROR)
     {
 	goto error;
     }
@@ -1571,25 +1783,13 @@ ssl_proxy_buffer_init(SSL_CREDENTIALS		**new_creds,
     /* Request successfully generated, now dump to buffer */
     if (ssl_x509_request_to_buffer(request,
 				   buffer,
-				   buffer_length) == -1)
+				   buffer_length) == SSL_ERROR)
     {
 	goto error;
     }
 
-    /* START DEBUG */
-    {
-	X509_REQ	*tmp_request;
-	
-	if (ssl_x509_request_from_buffer(*buffer, *buffer_length,
-					 &tmp_request) == -1)
-	{
-	    goto error;
-	}
-    }
-    /* END DEBUG */
-
     /* Success */
-    return_status = 0;
+    return_status = SSL_SUCCESS;
 
     *new_creds = creds;
     creds = NULL;
@@ -1613,54 +1813,165 @@ ssl_proxy_buffer_init(SSL_CREDENTIALS		**new_creds,
 
 
 int
-ssl_proxy_buffer_finalize(SSL_CREDENTIALS	*creds,
-			  unsigned char	*buffer,
-			  int			buffer_length)
+ssl_proxy_delegation_finalize(SSL_CREDENTIALS	*creds,
+			      unsigned char	*buffer,
+			      int		buffer_length)
 {
-    int return_status = -1;
-    
+    BIO				*bio = NULL;
+    int				return_status = SSL_ERROR;
+    unsigned char		number_of_certs;
+    X509			*proxy_cert = NULL;
+    int				cert_index = 0;
+    STACK			*cert_chain = NULL;
+
     assert(creds != NULL);
     assert(buffer != NULL);
     
-    if (ssl_proxy_cert_from_buffer(creds,
-				   buffer,
-				   buffer_length) == -1)
+    /* Transfer the buffer to a bio */
+    bio = bio_from_buffer(buffer, buffer_length);
+
+    if (bio == NULL)
     {
+	verror_put_string("Failed unpacking proxy certificate from buffer");
+	goto error;
+    }
+
+    /*
+     * Buffer contains:
+     *		-a bytes containing the number of certificates.
+     *          -the proxy certificate
+     *          -the certificate chain
+     */
+
+    /* Read number of certificates */
+    if (BIO_read(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR)
+    {
+	verror_put_string("Failed unpacking proxy certificate from buffer (reading number of certificates)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    if (number_of_certs == 0) 
+    {
+	verror_put_string("Failed unpacking proxy certificate from buffer (number of certificates == 0)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /* Now read the proxy certificate */
+    proxy_cert = d2i_X509_bio(bio, NULL /* make new cert */);
+    
+    if (proxy_cert == NULL)
+    {
+	verror_put_string("Failed unpacking proxy certificate from buffer (reading proxy certificate)");
+	ssl_error_to_verror();
+	goto error;
+    }	
+
+    /*
+     * Check to make sure new proxy certificate matches private key we
+     * generated earlier.
+     */
+    switch(ssl_keys_check_match(proxy_cert, creds->private_key))
+    {
+      case SSL_KEYS_MATCH:
+	break;
+	
+      case SSL_KEYS_MISMATCH:
+	verror_put_string("Proxy certificate does not match private key");
+	goto error;
+	
+      default:
 	goto error;
     }
     
+    cert_index++;
+    
+    /* Now read the certificate chain */
+    cert_chain = sk_new_null();
+    
+    while (cert_index < number_of_certs)
+    {
+	X509		*cert;
+	
+	cert = d2i_X509_bio(bio, NULL /* make new cert */);
+    
+	if (cert == NULL)
+	{
+	    verror_put_string("Failed unpacking proxy certificate from buffer (reading cert chain)");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+
+	if (sk_push(cert_chain, (char *) cert) == SSL_ERROR)
+	{
+	    verror_put_string("Failed unpacking proxy certificate from buffer (building cert chain)");
+	    ssl_error_to_verror();
+	    X509_free(cert);
+	    goto error;
+	}
+
+	cert_index++;
+    }
+    
     /* Success */
-    return_status = 0;
+
+    /* XXX Should free any current contents first */
+    creds->certificate = proxy_cert;
+    creds->certificate_chain = cert_chain;
+
+    return_status = SSL_SUCCESS;
     
   error:
+    if (bio != NULL)
+    {
+	BIO_free(bio);
+    }
+    
+    if (return_status == SSL_ERROR)
+    {
+	if (proxy_cert != NULL)
+	{
+	    X509_free(proxy_cert);
+	}
+	
+	if (cert_chain != NULL)
+	{
+	    ssl_cert_chain_free(cert_chain);
+	}
+    }
+
     return return_status;
 }
 
 int
-ssl_proxy_buffer_sign(SSL_CREDENTIALS		*creds,
-		      SSL_PROXY_RESTRICTIONS	*restrictions,
-		      unsigned char		*request_buffer,
-		      int			request_buffer_length,
-		      unsigned char		**proxy_buffer,
-		      int			*proxy_buffer_length)
+ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
+			  SSL_PROXY_RESTRICTIONS	*restrictions,
+			  unsigned char			*input_buffer,
+			  int				input_buffer_length,
+			  unsigned char			**output_buffer,
+			  int				*output_buffer_length)
 {
     X509_REQ			*request = NULL;
     X509			*proxy_certificate = NULL;
-    int				return_status = -1;
+    int				return_status = SSL_ERROR;
+    BIO				*bio = NULL;
+    unsigned char		number_of_certs;
+    int				index;
     
     assert(creds != NULL);
     assert(creds->certificate);
     assert(creds->private_key);
-    assert(request_buffer != NULL);
-    assert(proxy_buffer != NULL);
-    assert(proxy_buffer_length != NULL);
+    assert(input_buffer != NULL);
+    assert(output_buffer != NULL);
+    assert(output_buffer_length != NULL);
 
     my_init();
     
     /* Get the request for the buffer */
-    if (ssl_x509_request_from_buffer(request_buffer,
-				     request_buffer_length,
-				     &request) == -1)
+    if (ssl_x509_request_from_buffer(input_buffer,
+				     input_buffer_length,
+				     &request) == SSL_ERROR)
     {
 	goto error;
     }
@@ -1669,24 +1980,82 @@ ssl_proxy_buffer_sign(SSL_CREDENTIALS		*creds,
     if (ssl_proxy_request_sign(creds,
 			       request,
 			       restrictions,
-			       &proxy_certificate) == -1)
+			       &proxy_certificate) == SSL_ERROR)
     {
 	goto error;
     }
 
     /* Now dump certificate and cert chain to buffer */
-    if (ssl_proxy_cert_to_buffer(creds,
-				 proxy_certificate,
-				 proxy_buffer,
-				 proxy_buffer_length) == -1)
+    bio = BIO_new(BIO_s_mem());
+    
+    if (bio == NULL)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (BIO_new() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /*
+     * Determine the number of certificates we are going to write to
+     * to the buffer. We add two - one for the signer's certificate
+     * and one for the proxy certificate.
+     */
+    number_of_certs = sk_num(creds->certificate_chain) + 2;
+
+    if (BIO_write(bio, &number_of_certs, sizeof(number_of_certs)) == SSL_ERROR)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /*
+     * Now write out proxy certificate, followed by the signing certificate
+     * and then the signing certificate's chain.
+     */
+    if (i2d_X509_bio(bio, proxy_certificate) == SSL_ERROR)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (write of proxy cert failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    if (i2d_X509_bio(bio, creds->certificate) == SSL_ERROR)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (write of signing cert failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    for (index = 0; index < sk_num(creds->certificate_chain); index++)
+    {
+	X509		*cert;
+	
+	cert = (X509 *) sk_value(creds->certificate_chain, index);
+	
+	if (i2d_X509_bio(bio, cert) == SSL_ERROR)
+	{
+	    verror_put_string("Failed dumping proxy certificate to buffer (write of cert chain failed)");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+    }
+
+    /* Now dump bio's contents to buffer */
+    if (bio_to_buffer(bio, output_buffer, output_buffer_length) == SSL_ERROR)
     {
 	goto error;
     }
-    
+         
     /* Success */
-    return_status = 0;
+    return_status = SSL_SUCCESS;
 
   error:
+    if (bio != NULL)
+    {
+	BIO_free(bio);
+    }
+    
     if (request != NULL)
     {
 	X509_REQ_free(request);
@@ -1700,9 +2069,16 @@ ssl_proxy_buffer_sign(SSL_CREDENTIALS		*creds,
     return return_status;
 }
 
-    
-      
-	
+
+void
+ssl_free_buffer(unsigned char *buffer)
+{
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+}
+
 	    
 	    
 
