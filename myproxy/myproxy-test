@@ -66,107 +66,107 @@ $SUCCESSES = $FAILURES = 0;
 # commands to test: myproxy-init, myproxy-info, myproxy-destroy,
 #                   myproxy-get-delegation, and myproxy-change-pass-phrase
 
-print "MyProxy Test 1 (store credential with default name): ";
 ($exitstatus, $output) =
     &runtest("myproxy-init -v -a -c 1 -t 1",
 	     $passphrase . "\n" . $passphrase . "\n");
+print "MyProxy Test 1 (store credential with default name): ";
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 2 (get info for stored credential): ";
 ($exitstatus, $output) = &runtest("myproxy-info -v", undef);
+print "MyProxy Test 2 (get info for stored credential): ";
 if ($exitstatus == 0 && $output =~ /default credential/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 3 (retrieve stored credential): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
-	     $passphrase . "\n" . $passphrase . "\n");
+	     $passphrase . "\n");
+print "MyProxy Test 3 (retrieve stored credential): ";
 if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 4 (verify passphrase checking on retrieve): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
-	     "badpassphrase\nbadpassphrase\n");
+	     "badpassphrase\n");
+print "MyProxy Test 4 (verify passphrase checking on retrieve): ";
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 5 (change passphrase for credential): ";
 $old_passphrase = $passphrase;
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 ($exitstatus, $output) =
     &runtest("myproxy-change-pass-phrase -v",
 	     "$old_passphrase\n$passphrase\n$passphrase\n");
+print "MyProxy Test 5 (change passphrase for credential): ";
 if ($exitstatus == 0 && $output =~ /Passphrase changed/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 6 (verify new passphrase): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
-	     $passphrase . "\n" . $passphrase . "\n");
+	     $passphrase . "\n");
+print "MyProxy Test 6 (verify new passphrase): ";
 if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 7 (verify default renewal policy): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+print "MyProxy Test 7 (verify default renewal policy): ";
 if ($exitstatus != 0 && $output =~ /not authorized/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 8 (verify old passphrase fails): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
-	     $old_passphrase . "\n" . $old_passphrase . "\n");
+	     $old_passphrase . "\n");
+print "MyProxy Test 8 (verify old passphrase fails): ";
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 9 (remove credential from repository): ";
 ($exitstatus, $output) =
     &runtest("myproxy-destroy -v", undef);
+print "MyProxy Test 9 (remove credential from repository): ";
 if ($exitstatus == 0 && $output =~ /was succesfully removed/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 10 (verify credentials are removed): ";
 ($exitstatus, $output) =
     &runtest("myproxy-info -v", undef);
+print "MyProxy Test 10 (verify credentials are removed): ";
 if (!($output =~ /default credential/)) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 11 (store credentials with retrieval policies): ";
 ($exitstatus, $output) =
     &runtest("myproxy-init -v -r 'nobody' -k 'nobody' -c 1 -t 1",
 	     $passphrase . "\n" . $passphrase . "\n");
+print "MyProxy Test 11 (store credentials with retrieval policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
 	&runtest("myproxy-init -v -x -r '$cert_subject' -k 'mine' -c 1 -t 1",
@@ -178,14 +178,14 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 12 (verify retrieval policies): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v",
-	     $passphrase . "\n" . $passphrase . "\n");
+	     $passphrase . "\n");
+print "MyProxy Test 12 (verify retrieval policies): ";
 if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v",
-		 $passphrase . "\n" . $passphrase . "\n");
+		 $passphrase . "\n");
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
@@ -213,8 +213,7 @@ sub runtest {
     local($command, $input) = @_;
     local($ex) = Expect->new();
     $ex->raw_pty(1);
-    $ex = $ex->spawn("exec $command 2>&1");
-    die "failed to run $command" if (!defined($ex));
+    $ex->spawn("exec $command 2>&1") || die "failed to run $command";
     if (defined($input)) {
 	@input = split(/\n/, $input);
 	while (defined($input = shift(@input))) {
