@@ -1035,8 +1035,17 @@ globus_l_guc_transfer_files(
                 }
                 else
                 {
-                    src_filename = strrchr(src_url, '/') + 1;
-                    dst_filename = strrchr(dst_url, '/') + 1;
+                    src_filename = strrchr(src_url, '/');
+                    if(!src_filename++)
+                    {
+                        src_filename = src_url;
+                    }
+                    
+                    dst_filename = strrchr(dst_url, '/');
+                    if(!dst_filename++)
+                    {
+                        dst_filename = dst_url;
+                    }
                 }
 
                 
