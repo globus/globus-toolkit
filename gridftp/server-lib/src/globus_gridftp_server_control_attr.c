@@ -42,8 +42,10 @@ globus_gridftp_server_control_attr_init(
 
     attr->resource_func = NULL;
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
-    attr->pmod = &globus_i_gsc_959_proto_mod;
+    attr->pmod = &globus_i_gsc_959_proto_mod; /* for now default is only */
     attr->start_state = GLOBUS_L_GS_STATE_AUTH;
+    attr->modes = globus_libc_strdup("ES");
+    attr->types = globus_libc_strdup("AI");
 
     *in_attr = attr;
 
@@ -85,6 +87,8 @@ globus_gridftp_server_control_attr_destroy(
     globus_hashtable_destroy(&attr->send_func_table);
     globus_hashtable_destroy(&attr->recv_func_table);
 
+    globus_free(attr->modes);
+    globus_free(attr->types);
     globus_free(attr);
 
     GlobusGridFTPServerDebugExit();
@@ -133,11 +137,81 @@ globus_gridftp_server_control_attr_copy(
     attr->version_ctl = src->version_ctl;
     attr->resource_func = src->resource_func;
     globus_hashtable_copy(
-	&src->send_func_table, &src->send_func_table, NULL);
-    globus_hashtable_copy(&src->recv_func_table, &src->recv_func_table, NULL);
+	    &attr->send_func_table, &src->send_func_table, NULL);
+    globus_hashtable_copy(&attr->recv_func_table, &src->recv_func_table, NULL);
+    attr->modes = globus_libc_strdup(src->modes);
+    attr->types = globus_libc_strdup(src->types);
 
     *dst = attr;
 
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusGridFTPServerDebugExitWithError();
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_add_type(
+    globus_gridftp_server_control_attr_t            in_attr,
+    char                                            type)
+{
+    char                                            ch;
+    char *                                          tmp_str;
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_add_type);
+
+    GlobusGridFTPServerDebugEnter();
+    if(in_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("in_attr");
+        goto err;
+    }
+    attr = in_attr;
+
+    ch = toupper(type);
+    tmp_str = globus_common_create_string("%s%c", attr->types, ch);
+    globus_free(attr->types);
+    attr->types = tmp_str;
+
+    GlobusGridFTPServerDebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusGridFTPServerDebugExitWithError();
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_add_mode(
+    globus_gridftp_server_control_attr_t            in_attr,
+    char                                            mode)
+{
+    char                                            ch;
+    char *                                          tmp_str;
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_add_mode);
+
+    GlobusGridFTPServerDebugEnter();
+    if(in_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("in_attr");
+        goto err;
+    }
+    attr = in_attr;
+
+    ch = toupper(mode);
+    tmp_str = globus_common_create_string("%s%c", attr->modes, ch);
+    globus_free(attr->modes);
+    attr->modes = tmp_str;
+
+    GlobusGridFTPServerDebugExit();
     return GLOBUS_SUCCESS;
 
   err:

@@ -178,6 +178,8 @@ typedef struct globus_i_gsc_server_s
     char *                                          pwd;
     char                                            type;
     char                                            mode;
+    char *                                          modes;
+    char *                                          types;
 
     globus_hashtable_t                              command_table;
     globus_hashtable_t                              send_table;
@@ -200,8 +202,6 @@ typedef struct globus_i_gsc_server_s
     int                                             ref;
     globus_i_gs_state_t                             state;
 
-    struct globus_i_gs_attr_s *                     attr;
-
     globus_gridftp_server_control_callback_t        user_stop_func;
     globus_gridftp_server_control_resource_callback_t resource_func;
     globus_gridftp_server_control_callback_t        done_func;
@@ -210,6 +210,7 @@ typedef struct globus_i_gsc_server_s
 typedef enum globus_i_gsc_op_type_e
 {
     GLOBUS_L_GSC_OP_TYPE_AUTH,
+    GLOBUS_L_GSC_OP_TYPE_RESOURCE,
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -224,6 +225,10 @@ typedef struct globus_i_gsc_op_s
     gss_cred_id_t                                   cred;
     gss_cred_id_t                                   del_cred;
     globus_gridftp_server_control_pmod_auth_callback_t auth_cb;
+    globus_gridftp_server_control_pmod_stat_callback_t stat_cb;
+
+    char *                                          path;
+    globus_gridftp_server_control_resource_mask_t   mask;
 
     void *                                          user_arg;
 } globus_i_gsc_op_t;
@@ -237,6 +242,8 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_callback_t        done_func;
     globus_i_gridftp_server_control_pmod_t *        pmod;
     globus_i_gs_state_t                             start_state;
+    char *                                          modes;
+    char *                                          types;
     globus_gridftp_server_control_auth_callback_t   auth_func;
 } globus_i_gsc_attr_t;
 

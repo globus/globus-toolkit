@@ -91,7 +91,7 @@ typedef void
  *  globus_gridftp_server_control_finished_resource() with the appropriate
  *  parameters.
  */
-typedef globus_result_t
+typedef void
 (*globus_gridftp_server_control_resource_callback_t)(
     globus_gridftp_server_control_operation_t       op,
     const char *                                    path,
