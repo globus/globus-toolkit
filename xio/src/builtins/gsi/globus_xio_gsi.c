@@ -70,14 +70,21 @@ typedef struct
     globus_l_target_t *                 target;
     OM_uint32                           ret_flags;
     OM_uint32                           time_rec;
+    OM_uint32                           max_wrap_size;
     gss_ctx_id_t                        context;
     gss_cred_id_t                       delegated_cred;
     gss_OID                             mech_used;
     gss_name_t                          source_name;
-    globus_xio_iovec_t                  iovec[2];
+    size_t                              write_iovec_count;
+    globus_xio_iovec_t                  write_iovec[];
+    globus_xio_iovec_t                  read_iovec[2];
     unsigned char                       header[4];
     unsigned char *                     read_buffer;
     globus_size_t                       bytes_read;
+    unsigned char *                     unwrapped_buffer;
+    globus_size_t                       unwrapped_buffer_length;
+    globus_size_t                       unwrapped_buffer_offset;
+    globus_size_t                       bytes_returned;
     globus_bool_t                       done;
     globus_result_t                     result;
 }
@@ -456,9 +463,9 @@ globus_l_xio_gsi_handle_destroy(
     }
 
     
-    if(handle->iovec[1].io_base != handle->read_buffer)
+    if(handle->read_iovec[1].io_base != handle->read_buffer)
     {
-        free(handle->iovec[1].io_base);
+        free(handle->read_iovec[1].io_base);
     }
     
     free(handle->read_buffer);
@@ -468,7 +475,9 @@ globus_l_xio_gsi_handle_destroy(
 
 static
 globus_bool_t
-globus_l_xio_gsi_is_ssl_packet(void * token)
+globus_l_xio_gsi_is_ssl_token(
+    void *                              token,
+    globus_size_t *                     length)
 {
     unsigned char * t = (unsigned char *) token;
 
@@ -480,14 +489,109 @@ globus_l_xio_gsi_is_ssl_packet(void * token)
          t[1] == 2 && t[2] == 0)) ||
        ((t[0] & 0x80) && t[2] == 1))
     {
+        *length = (t[3] << 8) | t[4];
         return GLOBUS_TRUE;
     }
     else
     {
+        *length = ((globus_size_t) (*((t)++))) << 24;         
+        *length |= ((globus_size_t) (*((t)++))) << 16;
+        *length |= ((globus_size_t) (*((t)++))) << 8;
+        *length |= ((globus_size_t) (*((t)++)));
+        GlobusLXioGsiGetTokenLength(token);
         return GLOBUS_FALSE;
     }
 }
 
+static globus_result_t
+globus_l_xio_gsi_unwrapped_buffer_to_iovec(
+    globus_l_handle_t *                 handle
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_size_t *                     bytes_read)
+{
+    int                                 i;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    GlobusXIOName(globus_l_xio_gsi_unwrapped_buffer_to_iovec);
+    
+    *bytes_read = 0;
+    
+    for(i = 0;i < iovec_count;i++)
+    {
+        if(iovec[i].iov_len >= handle->unwrapped_buffer_length -
+           handle->unwrapped_buffer_offset)
+        {
+            *bytes_read += handle->unwrapped_buffer_length -
+                handle->unwrapped_buffer_offset;
+            memcpy(iovec[i].iov_base,
+                   &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
+                   *bytes_read);
+            handle->unwrapped_buffer_offset = 0;
+            handle->unwrapped_buffer_length = 0;
+            free(handle->unwrapped_buffer);
+            goto done;
+        }
+        else
+        {
+            memcpy(iovec[i].iov_base,
+                   &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
+                   iovec[i].iov_len);
+            *bytes_read += iovec[i].iov_len;
+            handle->unwrapped_buffer_offset += iovec[i].iov_len;
+        }
+    }
+
+ done:
+        
+    return result;
+}
+
+static globus_result_t
+globus_l_xio_gsi_wrapped_buffer_to_iovec(
+    globus_l_handle_t *                 handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_size_t *                     bytes_read,
+    globus_size_t                       offset,
+    globus_size_t                       frame_length)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_buffer_desc                     wrapped_buf;
+    gss_buffer_desc                     unwrapped_buf;
+    globus_result_t                     result;
+    int                                 conf_state=0;
+    gss_qop_t                           qop_state = GSS_C_QOP_DEFAULT;
+
+    GlobusXIOName(globus_l_xio_gsi_wrapped_buffer_to_iovec);
+    
+    wrapped_buf.value = handle->read_buffer;
+    wrapped_buf.length = frame_length;
+
+    major_status = gss_unwrap(&minor_status,
+                              handle->context,
+                              &wrapped_buf,
+                              &unwrapped_buf,
+                              &conf_state,
+                              &qop_state);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = GlobusXIOErrorWrapGSSFailed("gss_unwrap",
+                                             major_status,
+                                             minor_status);
+        return result;
+    }
+
+    handle->unwrapped_buffer = unwrapped_buf.value;
+    handle->unwrapped_buffer_length = unwrapped_buf.length;
+    
+    return globus_l_xio_gsi_unwrapped_buffer_to_iovec(handle,
+                                                      iovec,
+                                                      iovec_count,
+                                                      bytes_read);
+}
 
 static
 void
@@ -514,10 +618,10 @@ globus_l_xio_gsi_write_token_cb(
         goto error_pass_close;
     }
     
-    free(handle->iovec[1].io_base);
+    free(handle->read_iovec[1].io_base);
 
-    handle->iovec[1].iov_base = handle->read_buffer;
-    handle->iovec[1].iov_len = handle->attr->buffer_size;
+    handle->read_iovec[1].iov_base = handle->read_buffer;
+    handle->read_iovec[1].iov_len = handle->attr->buffer_size;
     
     if(handle->done == GLOBUS_TRUE)
     {
@@ -531,9 +635,10 @@ globus_l_xio_gsi_write_token_cb(
     }
     else
     {
-        iovec = &(handle->iovec[1]);
+        iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
-        wait_for = 15;
+        /* ssl record header is 5 bytes */
+        wait_for = 5;
         handle->bytes_read = 0;
 
         GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
@@ -595,32 +700,31 @@ globus_l_xio_gsi_read_token_cb(
 
     if(handle->bytes_read != 0)
     {
-        handle->iovec[1].iov_base = handle->read_buffer;
+        handle->read_iovec[1].iov_base = handle->read_buffer;
         input_token.length = handle->bytes_read + nbytes;
         input_token.value = &(handle->read_buffer[4]);
     }
-    else if(globus_l_xio_gsi_is_ssl_packet(handle->iovec[1].iov_base) ==
+    else if(globus_l_xio_gsi_is_ssl_packet(handle->read_iovec[1].iov_base,
+                                           &wait_for) ==
             GLOBUS_FALSE)
     {
         handle->bytes_read += (nbytes - 4);
     
-        GlobusLXioGsiGetTokenLength((handle->iovec)[1], wait_for);
-
         /* grow read buffer so we can read a full token */
         
         if(wait_for + 4 > handle->attr->buffer_size)
         {
             unsigned char *                 tmp_ptr;
 
-            handle->attr->buffer_size = wait_for + 4;
-            tmp_ptr = globus_remalloc(handle->read_buffer,
-                                      handle->attr->buffer_size);
+            tmp_ptr = globus_realloc(handle->read_buffer,
+                                     wait_for + 4);
             if(!tmp_ptr)
             {
                 result = GlobusXIOErrorMemory("handle->read_buffer");
                 goto error_pass_close;
             }
 
+            handle->attr->buffer_size = wait_for + 4;
             handle->read_buffer = tmp_ptr;
         }
 
@@ -628,8 +732,9 @@ globus_l_xio_gsi_read_token_cb(
         
         if(wait_for)
         {
-            handle->iovec[1].iov_base = &(handle->read_buffer[nbytes]);
-            iovec = &(handle->iovec[1]);
+            handle->read_iovec[1].iov_base = &(handle->read_buffer[nbytes]);
+            handle->read_iovec[1].iov_len = handle->attr->buffer_size - nbytes;
+            iovec = &(handle->read_iovec[1]);
             iovec_count = 1;
             
             GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
@@ -676,12 +781,35 @@ globus_l_xio_gsi_read_token_cb(
             else
             {
                 handle->result = result;
-                handle->done = GLOBUS_TRUE
+                handle->done = GLOBUS_TRUE;
             }
         }
         else if(major_status == GSS_S_COMPLETE)
         {
             handle->done = GLOBUS_TRUE;
+            
+            major_status = gss_wrap_size_limit(
+                &minor_status,
+                handle->context,
+                handle->attr.channel_mode == GLOBUS_XIO_PROT_PRIVACY,
+                GSS_C_QOP_DEFAULT,
+                (4294967295U),
+                &handle->max_wrap_size);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_wrap_size_limit",
+                                                     major_status,
+                                                     minor_status);
+                
+                if(output_token.length == 0)
+                {
+                    goto error_pass_close;
+                }
+                else
+                {
+                    handle->result = result;
+                }
+            }
         }
     }
     else
@@ -715,6 +843,29 @@ globus_l_xio_gsi_read_token_cb(
         else if(major_status == GSS_S_COMPLETE)
         {
             handle->done = GLOBUS_TRUE;
+
+            major_status = gss_wrap_size_limit(
+                &minor_status,
+                handle->context,
+                handle->attr.channel_mode == GLOBUS_XIO_PROT_PRIVACY,
+                GSS_C_QOP_DEFAULT,
+                (4294967295U),
+                &handle->max_wrap_size);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_wrap_size_limit",
+                                                     major_status,
+                                                     minor_status);
+                
+                if(output_token.length == 0)
+                {
+                    goto error_pass_close;
+                }
+                else
+                {
+                    handle->result = result;
+                }
+            }
         }
     }
 
@@ -722,7 +873,7 @@ globus_l_xio_gsi_read_token_cb(
     {
         if(handle->attr->wrap == GLOBUS_TRUE)
         {
-            iovec = handle->iovec;
+            iovec = handle->read_iovec;
             iovec_count = 2;
             GlobusLXioGsiCreateHeader(iovec[0], output_token.length);
             
@@ -735,7 +886,7 @@ globus_l_xio_gsi_read_token_cb(
         }
         else
         {
-            iovec = &(handle->iovec[1]);
+            iovec = &(handle->read_iovec[1]);
             iovec_count = 1;
             iovec[0].iov_len = output_token.length;
             iovec[0].iov_base = output_token.value;
@@ -755,9 +906,10 @@ globus_l_xio_gsi_read_token_cb(
     }
     else
     {
-        iovec = &(handle->iovec[1]);
+        iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
-        wait_for = 15;
+        /* ssl record header is 5 bytes */
+        wait_for = 5;
         
         GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_token_cb, handle);
@@ -851,11 +1003,35 @@ globus_l_xio_gsi_open_cb(
         else if(major_status == GSS_S_COMPLETE)
         {
             handle->done = GLOBUS_TRUE;
+
+            major_status = gss_wrap_size_limit(
+                &minor_status,
+                handle->context,
+                handle->attr.channel_mode == GLOBUS_XIO_PROT_PRIVACY,
+                GSS_C_QOP_DEFAULT,
+                (4294967295U),
+                &handle->max_wrap_size);
+
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_wrap_size_limit",
+                                                     major_status,
+                                                     minor_status);
+                
+                if(output_token.length == 0)
+                {
+                    goto error_destroy_handle;
+                }
+                else
+                {
+                    handle->result = result;
+                }
+            }
         }
         
         if(handle->attr->wrap == GLOBUS_TRUE)
         {
-            iovec = handle->iovec;
+            iovec = handle->read_iovec;
             iovec_count = 2;
              GlobusLXioGsiCreateHeader(iovec[0], output_token.length);
 
@@ -868,7 +1044,7 @@ globus_l_xio_gsi_open_cb(
         }
         else
         {
-            iovec = &(handle->iovec[1]);
+            iovec = &(handle->read_iovec[1]);
             iovec_count = 1;
             iovec[0].iov_len = output_token.length;
             iovec[0].iov_base = output_token.value;
@@ -884,9 +1060,10 @@ globus_l_xio_gsi_open_cb(
     }
     else
     {
-        iovec = &(handle->iovec[1]);
+        iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
-        wait_for = 15;
+        /* ssl record header is 5 bytes */
+        wait_for = 5;
 
         GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_token_cb, handle);
@@ -964,10 +1141,10 @@ globus_l_xio_gsi_open(
         goto error;
     }
 
-    handle->iovec[0].io_len = 4;
-    handle->iovec[0].io_base = handle->header;
-    handle->iovec[1].io_len = handle->attr->buffer_size;
-    handle->iovec[1].io_base = handle->read_buffer;
+    handle->read_iovec[0].io_len = 4;
+    handle->read_iovec[0].io_base = handle->header;
+    handle->read_iovec[1].io_len = handle->attr->buffer_size;
+    handle->read_iovec[1].io_base = handle->read_buffer;
     
     if(target->init == GLOBUS_FALSE)
     {
@@ -1043,8 +1220,125 @@ globus_l_xio_gsi_read_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
+    globus_xio_context_t                context;
+    globus_l_handle_t *                 handle;
+    globus_size_t                       wait_for;
+    globus_size_t                       bytes_read;
+    globus_size_t                       frame_length;
+    globus_size_t                       offset;
+    globus_size_t                       header;
+    globus_bool_t                       ssl_record;
+    globus_bool_t                       no_header = GLOBUS_FALSE;
+
     GlobusXIOName(globus_l_xio_gsi_read_cb);
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+
+    handle = (globus_l_handle_t *) user_arg;
+
+    context = GlobusXIOOperationGetContext(op);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_pass_close;
+    }
+
+    wait_for = GlobusXIOOperationGetWaitFor(op);
+
+    if(handle->attrs->channel_mode == GLOBUS_XIO_PROT_NONE)
+    {        
+        GlobusXIODriverFinishedRead(op, result, nbytes);
+        return;
+    }
+
+    handle->bytes_read += nbytes;
+
+    offset = 0;
+    
+    ssl_record = globus_l_xio_gsi_is_ssl_token(handle->read_buffer,
+                                               &frame_length);
+
+    ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+            
+    while(frame_length + offset + header < handle->bytes_read &&
+          wait_for > 0 &&
+          no_header == GLOBUS_FALSE)
+    {
+        offset += header;
+        
+        result = globus_l_xio_gsi_wrapped_buffer_to_iovec(
+            handle, iovec, iovec_count, &bytes_read, offset,
+            frame_length);
+        if(result != GLOBUS_SUCCESS)
+        {
+            /* error */
+        }
+        
+        wait_for -= bytes_read;
+        
+        handle->bytes_returned += bytes_read;
+        
+        offset += frame_length;
+        
+        if(handle->bytes_read - offset > 4)
+        {
+            ssl_record = globus_l_xio_gsi_is_ssl_token(
+                &handle->read_buffer[offset],
+                &frame_length);
+            ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+        }
+        else
+        {
+            no_header = GLOBUS_TRUE;
+        }
+    }
+
+    if(handle->bytes_read - offset > 0)
+    {
+        memcpy(handle->read_buffer, &handle->read_buffer[offset],
+               handle->bytes_read - offset);
+        handle->bytes_read -= offset;                
+    }
+    
+    if(wait_for > 0)
+    {
+        if(no_header = GLOBUS_TRUE)
+        {
+            wait_for = 5 - handle->bytes_read;
+        }
+        else
+        {
+            wait_for = frame_length - handle->bytes_read;
+
+            if(frame_length + 4 > handle->attr->buffer_size)
+            {
+                unsigned char *                 tmp_ptr;
+                
+                tmp_ptr = globus_realloc(handle->read_buffer,
+                                         frame_length + 4);
+                if(!tmp_ptr)
+                {
+                    result =
+                        GlobusXIOErrorMemory("handle->read_buffer");
+                    goto error_pass_close;
+                }
+                
+                handle->attr->buffer_size = frame_length + 4;
+                handle->read_buffer = tmp_ptr;
+            }
+        }
+        handle->read_iovec[1].iov_base =
+            &(handle->read_buffer[handle->bytes_read]);
+        handle->read_iovec[1].iov_len =
+            handle->attr->buffer_size - handle->bytes_read;
+        GlobusXIODriverPassRead(result, op, &(handle->read_iovec[1]),
+                                1, wait_for,
+                                globus_l_xio_gsi_read_cb, handle);
+    }
+    else
+    {
+        GlobusXIODriverFinishedRead(op, result,handle->bytes_returned);
+    }
+
+    return;
 }
 
 static
@@ -1055,16 +1349,157 @@ globus_l_xio_gsi_read(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
-    globus_result_t                     res;
+    globus_l_handle_t *                 handle;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_size_t                       wait_for;
+    globus_size_t                       bytes_read;
+    globus_size_t                       frame_length;
+    globus_size_t                       offset;
+    globus_size_t                       header;
+    globus_bool_t                       ssl_record;
+    globus_bool_t                       no_header = GLOBUS_TRUE;
+
 
     GlobusXIOName(globus_l_xio_gsi_read);
+
+    handle = (globus_l_handle_t *) driver_handle;
+    
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, \
-        globus_l_xio_gsi_read_cb, NULL);
 
-    return res;
+    if(iovec_count == 0)
+    {
+        if(wait_for > 0)
+        { 
+            /* should probably indicate error here? */
+        }
+        GlobusXIODriverFinishedRead(op, result, 0);
+        return result;
+    }
+
+    if(handle->attrs->channel_mode == GLOBUS_XIO_PROT_NONE)
+    {        
+        GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
+                                globus_l_xio_gsi_read_cb, handle);
+        return result;
+    }
+
+    handle->bytes_returned = 0;
+
+    if(handle->unwrapped_buffer_length != 0)
+    {
+        result = globus_l_xio_gsi_unwrapped_buffer_to_iovec(
+            handle, iovec, iovec_count,&bytes_read);
+        if(result != GLOBUS_SUCCESS)
+        {
+            /* error */
+        }
+
+        wait_for -= bytes_read;
+
+        handle->bytes_returned += bytes_read;
+
+    }
+
+    if(wait_for > 0 && handle->bytes_read != 0)
+    {
+        if(handle->bytes_read < 5)
+        {
+            no_header = GLOBUS_TRUE;
+        }
+        else
+        {
+            no_header = GLOBUS_FALSE;
+
+            offset = 0;
+            
+            ssl_record = globus_l_xio_gsi_is_ssl_token(handle->read_buffer,
+                                                       &frame_length);
+
+            ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+            
+            while(frame_length + offset + header < handle->bytes_read &&
+                  wait_for > 0 &&
+                  no_header == GLOBUS_FALSE)
+            {
+                offset += header;
+                result = globus_l_xio_gsi_wrapped_buffer_to_iovec(
+                    handle, iovec, iovec_count, &bytes_read, offset,
+                    frame_length);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    /* error */
+                }
+
+                wait_for -= bytes_read;
+
+                handle->bytes_returned += bytes_read;
+
+                offset += frame_length;
+                
+                if(handle->bytes_read - offset > 4)
+                {
+                    ssl_record = globus_l_xio_gsi_is_ssl_token(
+                        &handle->read_buffer[offset],
+                        &frame_length);
+                    ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+                }
+                else
+                {
+                    no_header = GLOBUS_TRUE;
+                }
+            }
+
+            if(handle->bytes_read - offset > 0)
+            {
+                memcpy(handle->read_buffer, &handle->read_buffer[offset],
+                       handle->bytes_read - offset);
+                handle->bytes_read -= offset;                
+            }
+        }
+    }
+    
+    if(wait_for > 0)
+    {
+        if(no_header = GLOBUS_TRUE)
+        {
+            wait_for = 5 - handle->bytes_read;
+        }
+        else
+        {
+            wait_for = frame_length - handle->bytes_read;
+
+            if(frame_length + 4 > handle->attr->buffer_size)
+            {
+                unsigned char *                 tmp_ptr;
+                
+                tmp_ptr = globus_realloc(handle->read_buffer,
+                                         frame_length + 4);
+                if(!tmp_ptr)
+                {
+                    result =
+                        GlobusXIOErrorMemory("handle->read_buffer");
+                    goto error_pass_close;
+                }
+                
+                handle->attr->buffer_size = frame_length + 4;
+                handle->read_buffer = tmp_ptr;
+            }
+        }
+        handle->read_iovec[1].iov_base =
+            &(handle->read_buffer[handle->bytes_read]);
+        handle->read_iovec[1].iov_len =
+            handle->attr->buffer_size - handle->bytes_read;
+        GlobusXIODriverPassRead(result, op, &(handle->read_iovec[1]),
+                                1, wait_for,
+                                globus_l_xio_gsi_read_cb, handle);
+    }
+    else
+    {
+        GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
+    }
+
+    return result;
 }
 
 /*
@@ -1078,6 +1513,9 @@ globus_l_xio_gsi_write_cb(
     void *                              user_arg)
 {
     GlobusXIOName(globus_l_xio_gsi_write_cb);
+
+    /* free the buffers here */
+    
     GlobusXIODriverFinishedWrite(op, result, nbytes);
 }
 
@@ -1089,16 +1527,198 @@ globus_l_xio_gsi_write(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
-    globus_result_t                     res;
+    globus_l_handle_t *                 handle;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_size_t                       wait_for;
-
+    gss_buffer_desc                     plaintext_buffer;
+    gss_buffer_desc                     wrapped_buffer;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    globus_size_t                       frame_length;
+    int                                 i;
+    int                                 j;
+    int                                 conf_state;
+    globus_size_t                       iovec_offset;
+    
     GlobusXIOName(globus_l_xio_gsi_write);
-    wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, \
-        globus_l_xio_gsi_write_cb, NULL);
+    handle = (globus_l_handle_t *) driver_handle;
 
-    return res;
+    if(iovec_count == 0)
+    {
+        /* get wait_for here */
+    
+        if(wait_for > 0)
+        { 
+            /* should probably indicate error here? */
+        }
+        GlobusXIODriverFinishedWrite(op, result, 0);
+        return result;
+    }
+
+    handle->write_headers = GLOBUS_FALSE;
+    
+    plaintext_buffer.value = iovec[0].iov_base;
+
+    if(iovec[0].iov_len > handle->max_wrap_size)
+    {
+        plaintext_buffer.length = handle->max_wrap_size;
+        iovec_offset = handle->max_wrap_size;
+    }
+    else
+    { 
+        plaintext_buffer.length = iovec[0].iov_len;
+        iovec_offset = 0;
+    }
+    
+    major_status = gss_wrap(&minor_status,
+                            handle->context,
+                            handle->attr.channel_mode
+                            == GLOBUS_XIO_PROT_PRIVACY,
+                            GSS_C_QOP_DEFAULT,
+                            &plaintext_buffer,
+                            &conf_state,
+                            &wrapped_buffer);
+
+    if(GSS_ERROR(major_status))
+    {
+        /* error */
+    }
+
+    /* figure out how many iovecs I need */
+
+    for(i = 0;i < iovec_count; i++)
+    {
+        handle->write_iovec_count += iovec[i].iov_len / handle->max_wrap_size;
+        if(iovec[i].iov_len % handle->max_wrap_size != 0)
+        {
+            write_iovec_count++;
+        }
+    }
+
+    if(globus_l_xio_gsi_is_ssl_token(wrapped_buffer.value, &frame_length)
+       != GLOBUS_TRUE)
+    {
+        if(write_iovec_count > handle->write_header_count)
+        {
+            void *                      tmp_ptr;
+
+            tmp_ptr = realloc(handle->write_headers, 4 * write_iovec_count);
+
+            if(tmp_ptr == NULL)
+            {
+                /* oom */
+            }
+
+            handle->write_headers = tmp_ptr;
+
+            handle->write_header_count = write_iovec_count;
+        }   
+
+        handle->write_headers = GLOBUS_TRUE;
+        
+        write_iovec_count *= 2;
+    }
+
+    if(write_iovec_count > handle->write_iovec_count)
+    {
+        void *                          tmp_ptr;
+
+        tmp_ptr = realloc(handle->write_iovec,
+                          sizeof(globus_xio_iovec_t)*write_iovec_count);
+        if(tmp_ptr == NULL)
+        {
+            /* oom */
+        }
+
+        handle->write_iovec = tmp_ptr;
+        handle->write_iovec_count = write_iovec_count;
+    }
+
+
+    j = 0;
+    
+    if(handle->write_headers == GLOBUS_TRUE)
+    {
+        handle->write_iovec[j].iov_base = handle->write_headers;
+        handle->write_iovec[j].iov_len = 4;
+        GlobusLXioGsiCreateHeader(handle->write_iovec[j],
+                                  wrapped_buffer.length);
+        j++;
+        wait_for = 4;
+    }
+    else
+    {
+        wait_for = 0;    
+    }
+    
+    handle->write_iovec[j].iov_base = wrapped_buffer.value;
+    handle->write_iovec[j].iov_len = wrapped_buffer.length;
+    wait_for +=  wrapped_buffer.length;
+    j++;
+    
+    if(iovec_offset)
+    {
+        i = 0;
+    }
+    else
+    {
+        i = 1;
+    }
+
+    for(i;i < iovec_count;i++)
+    {
+        do
+        { 
+            plaintext_buffer.value = iovec[i].iov_base + iovec_offset;
+            
+            if(iovec[i].iov_len - iovec_offset > handle->max_wrap_size)
+            {
+                plaintext_buffer.length = handle->max_wrap_size;
+                iovec_offset += handle->max_wrap_size;
+            }
+            else
+            { 
+                plaintext_buffer.length = iovec[0].iov_len - iovec_offset;
+                iovec_offset = 0;
+            }
+            
+            major_status = gss_wrap(&minor_status,
+                                    handle->context,
+                                    handle->attr.channel_mode
+                                    == GLOBUS_XIO_PROT_PRIVACY,
+                                    GSS_C_QOP_DEFAULT,
+                                    &plaintext_buffer,
+                                    &conf_state,
+                                    &wrapped_buffer);
+            
+            if(GSS_ERROR(major_status))
+            {
+                /* error */
+            }
+
+            if(handle->write_headers == GLOBUS_TRUE)
+            { 
+                handle->write_iovec[j].iov_base = handle->write_headers + 2*j;
+                handle->write_iovec[j].iov_len = 4;
+                GlobusLXioGsiCreateHeader(handle->write_iovec[j],
+                                          wrapped_buffer.length);
+                j++;
+                wait_for += 4;
+            }
+
+            handle->write_iovec[j].iov_base = wrapped_buffer.value;
+            handle->write_iovec[j].iov_len = wrapped_buffer.length;
+            j++;
+            wait_for += wrapped_buffer.length;
+        }
+        while(iovec_offset);
+    }
+    
+    GlobusXIODriverPassWrite(res, op, handle->write_iovec,
+                             handle->write_iovec_count, wait_for,
+                             globus_l_xio_gsi_write_cb, handle);
+    return result;
 }
 
 static
