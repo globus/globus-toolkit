@@ -30,7 +30,6 @@ RCSID("$OpenBSD: auth2.c,v 1.102 2003/08/26 09:58:43 markus Exp $");
 #include "packet.h"
 #include "log.h"
 #include "servconf.h"
-#include "compat.h"
 #include "auth.h"
 #include "dispatch.h"
 #include "pathnames.h"

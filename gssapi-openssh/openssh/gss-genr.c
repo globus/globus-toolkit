@@ -384,7 +384,7 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host)
 	
 	gssbuf.length = sizeof("host@") + strlen(xhost);
 	gssbuf.value = xmalloc(gssbuf.length);
-	snprintf(gssbuf.value, gssbuf.length, "host@%s", host);
+	snprintf(gssbuf.value, gssbuf.length, "host@%s", xhost);
 
 	if ((ctx->major = gss_import_name(&ctx->minor,
 	    &gssbuf, GSS_C_NT_HOSTBASED_SERVICE, &ctx->name)))
