@@ -3,7 +3,8 @@
 $title = "Globus Toolkit&reg; 3.2 Release Notes";
 
 include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" ); 
-?><p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
+?>
+<p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
           Notes</a> &gt; 3.2 &lt;</p>
       <a name="top"></a><h1>Globus Toolkit® 3.2 Release
       Notes</h1>
@@ -116,28 +117,29 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
         <tr valign="top">
           <td width="76"><strong>Pre-WS</strong></td>
           <td width="123">pre-web services </td>
-          <td width="405">Components that use proprietary protocols for basic
+          <td width="405"><p>Components that use proprietary protocols for basic
             service interactions. Services and clients formerly distributed in GT2 are included in the
-          3.2 distribution as pre-WS components. </td>
+          3.2 distribution as pre-WS components. </p>
+          </td>
         </tr>
         <tr valign="top">
           <td><strong>WS</strong></td>
           <td>web services </td>
-          <td>Components that use open standards-based protocols for basic service
+          <td><p>Components that use open standards-based protocols for basic service
             interactions. WS components in GT 3.2 comply with Version
-          1.0 of the Open Grid Services Infrastructure (OGSI).</td>
+          1.0 of the Open Grid Services Infrastructure (OGSI).</p>
+          </td>
         </tr>
 </table>
       <h2><A name=Core></A>Core</h2>
-      <p>The Core component  shipped in the 3.2  release contains 
+      <p>The WS Core component  shipped in the 3.2  release contains 
       important bug fixes and improvements on existing functionality. Changes
       include better deactivate semantics, a change in the persistent grid service
       programming model, changes to the security descriptor format, updated third
       party jars and more.</p>
-	<p>Further information can be found in the 
+	  <p>Further information can be found in the 
       <A href="core_notes.html">Core 
       release notes</A>. </p>
-
       <h2><A name=Common></A>Common</h2>
       <p>Error message reporting has been cleaned up.  Messages are much more
       concise and clear.  If a user is still uncertain about a message, they can
@@ -161,7 +163,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       <p align="right">[ <a href="#top">top</a> ]</p>
       <h2><A name=CAS></A>CAS</h2>
       <p> Included in the GT 3.2  release is the first production release
-        of the Community Authorization Service (CAS). CAS
+        of the WS component, Community Authorization Service (CAS). CAS
         is an authorization system that allows for fine-grain (e.g. per file)
         access control of Grid Resources. GT 3.2  includes the CAS Grid Service,
         which allows for creating and administering rights, client tools and
@@ -186,7 +188,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       release notes</a>. </p>
       <p align="right">[ <a href="#top">top</a> ]</p>	  
 	       <h2><A name=GridFTP></A>GridFTP</h2>
-      The Globus Toolkit wuftpd-based 
+      The Pre-WS Globus Toolkit wuftpd-based 
       GridFTP server, its associated tools, and libraries in the 3.2  
       release contain important bug fixes and improvements on existing 
       functionality.&nbsp;
@@ -204,11 +206,11 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       </p>
 <p align="right">[ <a href="#top">top</a> ]</p>
               <h2><A name=RFT></A>RFT</h2>
-      <p>The Reliable File Transfer (RFT) service 
+              <p>The WS Reliable File Transfer (RFT) service 
       component in the GT 3.2  release contains bug fixes and extended 
       functionality. In particular, this version of RFT supports recursive directory
       copy between GridFTP servers that support MLSD/MLST features. </p>
-		<p>The schemas of the service have been reworked 
+		      <p>The schemas of the service have been reworked 
       which increased the scalability of service significantly. </p>
 	  <p>A new service instance level option has been added that turns on data channel reuse if 
       your request consists of multiple transfers between same hosts which will 
@@ -222,7 +224,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       <p align="right">[ <a href="#top">top</a> ]
       </p>
       <h2><A name=RLS></A>RLS</h2>
-     <p>The Replica Location Service (RLS) component in 
+      <p>The Pre-WS Replica Location Service (RLS) component in 
       the GT 3.2  release contains bug fixes and extended functionality.
 				In 
       particular, this version of RLS supports the 
@@ -256,8 +258,8 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 		
       <h2><A name=XIO></A>XIO</h2>
 
-      <p>Globus XIO is the new extensible input/output library for the
-      Globus Toolkit®.  It provides all input and output functionality
+      <p>The  Globus XIO component is the new extensible input/output library
+        for the Globus Toolkit®.  It provides all input and output functionality
       for the C code.</p>
 
       <p>Globus XIO will eventually replace the <code>globus_io</code>
@@ -283,12 +285,13 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       <UL>
 	<LI>Transform drivers: <UL>
 	  <LI>gsi <LI>http</LI></UL></LI></UL>
-      <p align="right">[ <a href="#top">top</a> ]</p> <h2><A
+      <p align="right">[ <a href="#top">top</a> ]</p> 
+      <h2><A
       name=GRAM></A>GRAM</h2>
 
-			<p>The Globus Toolkit Grid Services GRAM component
+			<p>The Pre-WS and WS GRAM components
 			in the GT 3.2  release
-			   contains many important bug fixes and
+			   contain many important bug fixes and
 			   improvements on existing
 		functionality.</p>
 			<p><strong>Improvements: </strong></p>
@@ -349,7 +352,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 	<p align="right">[ <a href="#top">top</a> ] </p>
 
       <h2><A name=Information_Services></A>Index Services</h2>
-      <p>The GT 3.2  release of the Index Services components contains
+      <p>The GT 3.2  release of the WS Index Services components contains
         bug fixes, performance and stability improvements, and a few new features.
         There has also been considerable reworking of Service Data Aggregation
         concepts into a component-based API to allow for a more flexible model
@@ -359,15 +362,15 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       the ServiceGroup registration interfaces.</p>
 		<p>Further information can be found in the 
        	<A 
-      href="http://www-unix.globus.org/toolkit/3.2beta/infosvc_notes.html">Index Services
+      href="indexsvc_notes.html">Index Services
        	 release notes</A>.</p> 
         <p align="right">[ <a href="#top">top</a> ]
         </p>
 </p>
         <h2><A name=CB></A>C Bindings</h2>
-      <p>The C Bindings component of the GT 3.2 release contains bug fixes,
+        <p>The WS C Bindings component of the GT 3.2 release contains bug fixes,
       as well as added support for big numbers using the <code>xsd:integer </code> type. </p>
-      <p>Since GT 3.0.x, a number of important bug fixes have been made, including fixes
+        <p>Since GT 3.0.x, a number of important bug fixes have been made, including fixes
 for the <code>gt3_gram_client</code> library for multiple job submission,as well as a number
 of fixes to memory handling in that library. </p>
       <p>Also, support for the Tru64 native compiler
@@ -376,10 +379,11 @@ of fixes to memory handling in that library. </p>
       </p>
       <h2><a name="PB"></a>Python Bindings (Contribution from Lawrence Berkeley National
           Laboratory) </h2>
-      <p>The Python Bindings component of the GT 3.2  release contains tools
+      <p>The WS Python Bindings component of the GT 3.2  release contains tools
         for creating client-side bindings for OGSI from WSDL/GWSDL. This release
         has facilities for secure messaging including security context negotiation,
-        delegation, and GSS XML Signatures (<a href="#pyglobus">pyGlobus</a> is a security dependency.)</p>
+        delegation, and GSS XML Signatures (<a href="#pyglobus">pyGlobus</a> is
+        a security dependency.)</p>
       <p align="right">[ <a href="#top">top</a> ]
       </p>
 	  <h2><a name="pyglobus"></a>pyGlobus (Contribution from Lawrence Berkeley National
@@ -387,12 +391,12 @@ of fixes to memory handling in that library. </p>
       <p>pyGlobus provides a high-level object-oriented interface to the Globus
         Toolkit 2(r) libraries and related packages such as myProxy. pyGlobus
         includes a series of modules that provide access to the full functionality
-        of the GT2 API while hiding much of the complexity. In addition,
+        of the Pre-WS API while hiding much of the complexity. In addition,
         a number of servers and command line tools are provided, e.g., a GridFTP
         server, a GridFTP GUI client, <code>pyglobusrun</code>, and <code>pyglobus-url-copy</code>.
         This release of pyGlobus includes numbers bug fixes,many contributed
         by the Access Grid developers at ANL, and support for the new Globus
-        XIO package. pyGlobus supports the rapid development of GT2 applications,
+        XIO package. pyGlobus supports the rapid development of Pre-WS applications,
       and allows for easy integration with C/C++ and Fortran codes.</p>
       <p align="right">[ <a href="#top">top</a> ]
       </p>

@@ -9,24 +9,28 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 <p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
     Notes</a> &gt; <a href="index.html">3.2</a> &gt; Index Service &lt;</p>
 <h1>Globus Toolkit&reg; 3.2 Index Service Release Notes</h1>
-<p>This 3.2  release of the Index Services components contains bug
+<p>The Index Service is a WS component that 
+
+
+ provides information about Grid resources for use in resource discovery, selection,
+and optimization.&nbsp; </p>
+<p>The 3.2  release contains bug
+    
+
+  fixes, performance and stability improvements, and a few new features.&nbsp; 
+  
+There has also been considerable reworking of Service Data Aggregation concepts
   
 
-fixes, performance and stability improvements, and a few new features.&nbsp; 
-
-There has also been considerable reworking of Service Data Aggregation concepts
-
-
-into a component-based API to allow for a more flexible programming model 
-capable of handling multiple 
-
+  into a component-based API to allow for a more flexible programming model 
+  capable of handling multiple 
+  
 data aggregation strategies.&nbsp; As a result of these changes, the Index 
-
+  
 Service (and other services that incorporate the Aggregator components) 
-
+  
 can now aggregate service data from other services by using the <strong>ServiceGroup</strong> port
-type and <strong>IndexingServiceGroup</strong> operation provider.&nbsp; </p>
-
+  type and <strong>IndexingServiceGroup</strong> operation provider.&nbsp; </p>
 <p>Service Data aggregated in this fashion will be 
 
 stored in the <strong>EntryContent</strong> field of the <strong>ServiceGroupEntry</strong> that represents the 

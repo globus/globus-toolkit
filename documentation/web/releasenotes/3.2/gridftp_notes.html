@@ -10,8 +10,19 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 <p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
     Notes</a> &gt; <a href="index.html">3.2</a> &gt; GridFTP &lt;</p>
 <h1>Globus Toolkit&reg; 3.2  GridFTP Release Notes</h1>
+<p> GridFTP is a  Pre-WS component that provides a high-performance, secure,
+  reliable data transfer protocol optimized for high-bandwidth wide-area networks.
+  The GridFTP protocol is based on FTP, the highly-popular Internet file transfer
+  protocol. </p>
+<p>The 3.2 release includes contain important bug fixes and improvements on
+existing functionality.&nbsp; Improvements include support for platform 
+      independent, machine parseable, file info (MLST and MLSD commands), a new
+checksum command (<font face="Courier New" size="2">cksm</font>), support for
+the Unix <font face="Courier New" size="2">chmod</font> command, and support
+for file globbing and directory moves, i.e. <font face="Courier New" size="2">globus-url-copy</font> is
+no longer restricted to a single file. <font face="Courier New" size="2">globus-url-copy</font> also
+now has command line options for all the equivalent client library functionality. </p>
 <h2>Wufptd based server, tools, and libraries</h2>
-
 <h3>Bug Fixes</h3>
 <ul>
 <li> <b>555</b> chmod functionality in GridFTP library? </li>
