@@ -72,8 +72,50 @@ if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
 fi
 AC_SUBST(SYSLIBS)
 dnl
+dnl Check for SASL
 dnl
+AC_ARG_WITH(sasl2,
+	[ --with-sasl2=PATH        Build with SASL V2 support],
+	[
+		if test "x$withval" = "xyes" ; then
+		   AC_MSG_ERROR([--with-sasl2 requires PATH argument])
+		fi
+		if test "x$withval" != "xno" ; then
+		   CPPFLAGS="$CPPFLAGS -I${withval}/include/sasl"
+		   LDFLAGS="$LDFLAGS -L${withval}/lib"
+		   AC_CHECK_HEADER(sasl.h)
+		   AC_CHECK_LIB(sasl2, sasl_client_init, ,
+				AC_MSG_ERROR([libsasl2 not found]))
+		   AC_MSG_CHECKING(that sasl.h matches libsasl2)
+		   AC_TRY_RUN([
+#include <sasl.h>
+int main() { if (SASL_VERSION_MAJOR != 2) exit(1); else exit(0); }
+		      ],
+		      [AC_MSG_RESULT([yes])],
+		      [
+			AC_MSG_RESULT([no])
+			AC_MSG_ERROR([sasl.h does not match libsasl2])
+		      ],
+		      [AC_MSG_RESULT([yes])])
+		fi
+	]
+)
 dnl
+dnl Check for Kerberos
+dnl
+AC_ARG_WITH(kerberos5,
+	[ --with-kerberos5=PATH    Build with Kerberos V5 support],
+	[
+		if test "x$withval" = "xyes" ; then
+		   AC_MSG_ERROR([--with-kerberos5 requires PATH argument])
+		fi
+		if test "x$withval" != "xno" ; then
+		   CPPFLAGS="$CPPFLAGS -I${withval}/include"
+		   LDFLAGS="$LDFLAGS -L${withval}/lib"
+		   AC_CHECK_LIB(krb5, krb5_init_context)
+		fi
+	]
+)
 
 LAC_DOXYGEN([" ../ "])
 

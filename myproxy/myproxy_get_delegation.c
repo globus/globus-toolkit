@@ -25,6 +25,9 @@ static char usage[] = \
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -a | --authorization   <path>     Use credential for authorization\n"
 "                                         (instead of passphrase)\n"
+#if defined(HAVE_LIBSASL2)
+"       -m | --sasl_mechanism             Use SASL (Kerberos) mechanism for authorization\n"
+#endif
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential (or default credential\n"
 "                                         if -a not used) as the default\n"
@@ -45,13 +48,14 @@ struct option long_options[] =
     {"verbose",                no_argument, NULL, 'v'},
     {"version",                no_argument, NULL, 'V'},
     {"authorization",    required_argument, NULL, 'r'},
+    {"sasl_mechanism",         no_argument, NULL, 'm'},
     {"dn_as_username",         no_argument, NULL, 'd'},
     {"credname",	 required_argument, NULL, 'k'},
     {"stdin_pass",             no_argument, NULL, 'S'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:S";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:Sm";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -70,6 +74,7 @@ init_arguments(int argc, char *argv[],
 /* location of delegated proxy */
 char *outputfile = NULL;
 char *creds_to_authorization = NULL;
+int kerberos_to_authorization = 0;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
 
@@ -105,7 +110,7 @@ main(int argc, char *argv[])
 						GLOBUS_PROXY_FILE_OUTPUT);
     }
 
-    if (creds_to_authorization == NULL) {
+    if ( (creds_to_authorization == NULL) && (kerberos_to_authorization == 0) ){
        /* Allow user to provide a passphrase */
 	int rval;
 	if (read_passwd_from_stdin) {
@@ -149,7 +154,7 @@ main(int argc, char *argv[])
     }
 
     if (myproxy_get_delegation(socket_attrs, client_request, 
-	    creds_to_authorization, server_response, outputfile)!=0) {
+	    creds_to_authorization, kerberos_to_authorization, server_response, outputfile)!=0) {
 	fprintf(stderr, "Failed to receive a proxy.\n");
 	return 1;
     }
@@ -202,6 +207,9 @@ init_arguments(int argc,
             break;    
 	case 'a':       /* special authorization */
 	    creds_to_authorization = strdup(gnu_optarg);
+	    break;
+	case 'm':       /* user SASL (Kerberos) authorization */
+	    kerberos_to_authorization = 1;
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);

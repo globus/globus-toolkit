@@ -6,6 +6,9 @@
 typedef enum {
   AUTHORIZETYPE_NULL = 0,
   AUTHORIZETYPE_PASSWD,
+#if defined(HAVE_LIBSASL2)
+  AUTHORIZETYPE_SASL,
+#endif
   AUTHORIZETYPE_CERT
 } author_method_t;
 
