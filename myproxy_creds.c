@@ -413,16 +413,7 @@ write_data_file(const struct myproxy_creds *creds,
     FILE *data_stream = NULL;
     int data_file_open_flags = O_WRONLY | O_CREAT | O_TRUNC;
     int return_code = -1;
-    char *tmp1;
 
-    /* Write out all the extra data associated with these credentials 
-     * support for crypt() added btemko /6/16/00
-     * Please, don't try to free tmp1 - crypt() uses one 
-     * static string space, a la getenv()
-     */
-    tmp1=(char *)des_crypt(creds->passphrase, 
-	&creds->owner_name[strlen(creds->owner_name)-3]);
- 
     /*
      * Open with open() first to minimize any race condition with
      * file permissions.
@@ -447,7 +438,6 @@ write_data_file(const struct myproxy_creds *creds,
     }
 
     fprintf (data_stream, "OWNER=%s\n",creds->owner_name);
-    fprintf (data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf (data_stream, "LIFETIME=%d\n", creds->lifetime);
 
     if (creds->credname != NULL)
@@ -593,6 +583,8 @@ read_data_file(struct myproxy_creds *creds,
             continue;
         }
 
+	/* We no longer store a PASSPHRASE element.
+	   Read it in for backwards compatibility only. */
         if (strcmp(variable, "PASSPHRASE") == 0)
         {
             creds->passphrase = mystrdup(value);
@@ -692,7 +684,6 @@ myproxy_creds_store(const struct myproxy_creds *creds)
    
     if ((creds == NULL) ||
         (creds->username == NULL) ||
-        (creds->passphrase == NULL) ||
         (creds->owner_name == NULL) ||
         (creds->location == NULL)) {
         verror_put_errno(EINVAL);
@@ -1335,6 +1326,60 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     
   error:
     myproxy_creds_free_contents(&tmp_creds);
+    ssl_credentials_destroy(ssl_creds);
+
+    return return_code;
+}
+
+int
+myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
+				const char *passphrase)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
+    char *tmp;
+    int return_code = -1;
+    SSL_CREDENTIALS *ssl_creds = NULL;
+    
+    if ((creds == NULL) || (creds->username == NULL) ||
+	(passphrase == NULL)) {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+    
+    if (get_storage_locations(creds->username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
+			      creds->credname) == -1) {
+        goto error;
+    }
+
+    /*
+     * Verify the passphrase here.
+     * If the private key is encrypted, verify the passphrase by attempting
+     * to decrypt.
+     * Otherwise, if we have a crypted passphrase in the myproxy_creds
+     * struct, verify against that (for backwards compatibility).
+     */
+    if (ssl_private_key_is_encrypted(creds_path) == 1 &&
+	(ssl_creds = ssl_credentials_new()) != NULL &&
+	ssl_private_key_load_from_file(ssl_creds, creds_path, passphrase,
+				       NULL) == SSL_SUCCESS) {
+	return_code = 1;
+    }
+    else if (creds->passphrase &&
+	     strlen(passphrase) >= MIN_PASS_PHRASE_LEN &&
+	     (tmp = (char *)des_crypt(passphrase,
+		   &creds->owner_name[strlen(creds->owner_name)-3])) != NULL &&
+	     strcmp(creds->passphrase, tmp) == 0) {
+	return_code = 1;
+    }
+    else
+	return_code = 0;
+
+  error:
     ssl_credentials_destroy(ssl_creds);
 
     return return_code;
