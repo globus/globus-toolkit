@@ -154,6 +154,7 @@ if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
             
             # this tag is defined, so now we need to be sure its active
             $_ = `rlog -r$tag_version{$tag}. -sExp $rcsfile 2>&1`;
+            $save_rlog = $_;
             if(s/.*selected revisions: (\d+).*/$1/s)
             {
                 if($_ == 0)
