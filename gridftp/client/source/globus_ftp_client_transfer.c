@@ -3050,9 +3050,9 @@ globus_l_ftp_client_extended_third_party_transfer(
     {
 	use_attr = normalized_dest_attr;
     }
-    else if(source_attr)
+    else if(dest_attr)
     {
-	use_attr = *source_attr;
+	use_attr = *dest_attr;
     }
     else
     {
