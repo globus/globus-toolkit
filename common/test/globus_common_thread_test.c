@@ -362,10 +362,7 @@ main(
     int						i;
     int						nitems;
     long					thread_id;
-
-    #if !defined(BUILD_LITE)
     globus_thread_t                             thread;
-    #endif
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
