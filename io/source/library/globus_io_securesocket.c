@@ -2484,11 +2484,17 @@ globus_l_io_secure_accept_callback(
 
     callback_info = (globus_i_io_callback_info_t *) arg;
 
-    globus_i_io_mutex_lock();
     if(result != GLOBUS_SUCCESS)
     {
-	goto no_authorization;
+        callback_info->callback(callback_info->callback_arg,
+                                handle,
+                                result);
+        globus_free(callback_info);
+        return;
     }
+
+    
+    globus_i_io_mutex_lock();
 
     /* do authorization now */
     switch(handle->securesocket_attr.authorization_mode)
