@@ -1073,7 +1073,7 @@ globus_l_xio_gsi_read_token_cb(
                                       offset);
                     if(!tmp_ptr)
                     {
-                        result = GlobusXIOErrorMemory(_XIOSL("handle->read_buffer");
+                        result = GlobusXIOErrorMemory("handle->read_buffer");
                         goto error_pass_close;
                     }
                     

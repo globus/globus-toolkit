@@ -51,7 +51,7 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            _XIOSL("%s failed.",)                                                    \
+            _XIOSL("%s failed."),                                                    \
             (failed_func)))
 
 

@@ -1258,7 +1258,7 @@ globus_l_xio_pass_pending_reads(
              * the remaining in the eof queue
              */
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
-                (_XIOSL("[%s]: Dumping pending queue into eof list\n", _xio_name)));
+                (_XIOSL("[%s]: Dumping pending queue into eof list\n"), _xio_name));
             do
             {
                 my_context->pending_reads--;
