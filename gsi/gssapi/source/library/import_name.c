@@ -248,6 +248,8 @@ err:
   if (buf) {
     free(buf);
   }
+  GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
+  *minor_status = GSSERR_R_UNEXPECTED_FORMAT;
   return GSS_S_BAD_NAME ;
 
 } /* gss_import_name */
