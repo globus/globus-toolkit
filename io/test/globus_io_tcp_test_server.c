@@ -1,5 +1,6 @@
 #include "globus_io.h"
 #include <stdlib.h>
+#include <string.h>
 
 int test1(int argc, char **argv);
 
@@ -92,19 +93,13 @@ auth_callback(
     char *				identity,
     gss_ctx_id_t *			context_handle)
 {
-    char				response;
-
-    printf("Do you authorize \"%s\" to connect [y/n]: ", identity);
-    fflush(stdout);
-    scanf("%c", &response);
-    if(response == 'y' ||
-       response == 'Y')
+    if(strcmp((char *) arg,identity))
     {
-	return GLOBUS_TRUE;
+	return GLOBUS_FALSE;
     }
     else
     {
-	return GLOBUS_FALSE;
+	return GLOBUS_TRUE;
     }
 }
 
@@ -156,7 +151,7 @@ test1(int argc, char **argv)
 	&attr,
 	GLOBUS_FALSE);
 */
-    while (( c = getopt(argc, argv, "brgscvi:I:")) != EOF)
+    while (( c = getopt(argc, argv, "brgscvz:i:I:")) != EOF)
     {
         switch(c)
 	{
@@ -195,6 +190,25 @@ test1(int argc, char **argv)
             result = globus_io_attr_set_secure_channel_mode(
 		&attr,
 		GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
+	    break;
+	  case 'z':
+            result = globus_io_secure_authorization_data_set_callback(
+                &auth_data,
+                auth_callback,
+                optarg);
+            result = globus_io_attr_set_secure_authorization_mode(
+		&attr,
+		GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
+                &auth_data);
             if(result != GLOBUS_SUCCESS)
             {
                 err = globus_error_get(result);
