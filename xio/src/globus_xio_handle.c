@@ -244,20 +244,6 @@ globus_l_xio_hande_pre_close(
     }
     globus_mutex_unlock(&handle->cancel_mutex);
 
-    /* register timeout */
-    if(handle->close_timeout_cb != NULL)
-    {
-        /* op the operatin reference count for this */
-        GlobusXIOOpInc(op);
-        op->_op_handle_timeout_cb = handle->close_timeout_cb;
-        globus_i_xio_timer_register_timeout(
-            &globus_l_xio_timeout_timer,
-            op,
-            &op->progress,
-            globus_l_xio_timeout_callback,
-            &handle->close_timeout_period);
-    }
-
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
     {
@@ -1540,6 +1526,19 @@ globus_l_xio_register_close(
     handle = op->_op_handle;
     globus_mutex_lock(&handle->context->mutex);
     {
+        /* register timeout */
+        if(handle->close_timeout_cb != NULL)
+        {
+            /* op the operatin reference count for this */
+            GlobusXIOOpInc(op);
+            op->_op_handle_timeout_cb = handle->close_timeout_cb;
+            globus_i_xio_timer_register_timeout(
+                &globus_l_xio_timeout_timer,
+                op,
+                &op->progress,
+                globus_l_xio_timeout_callback,
+                &handle->close_timeout_period);
+        }
         handle->ref++; /* for the opperation */
     }
     globus_mutex_unlock(&handle->context->mutex);
