@@ -31,6 +31,7 @@ typedef enum
     GLOBUS_I_GASS_COPY_TARGET_INITIAL,
     GLOBUS_I_GASS_COPY_TARGET_READY,
     GLOBUS_I_GASS_COPY_TARGET_DONE,
+    GLOBUS_I_GASS_COPY_TARGET_FAILED,
 } globus_i_gass_copy_target_status_t;
 
 typedef enum

@@ -1338,7 +1338,7 @@ globus_l_gass_copy_read_from_queue(
 {
     globus_gass_copy_state_t * state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
-    globus_byte_t * buffer;
+    globus_byte_t * buffer = GLOBUS_NULL;
     globus_result_t result = GLOBUS_SUCCESS;
     globus_object_t * err;
     globus_bool_t do_the_read = GLOBUS_FALSE;
@@ -1757,6 +1757,12 @@ wakeup_state:
     /* 
      * assume mutex has already been locked by above calls
      */
+    if (handle->status == GLOBUS_GASS_COPY_STATUS_INITIAL)
+	state->source.status = GLOBUS_I_GASS_COPY_TARGET_FAILED;
+    else
+	state->dest.status = GLOBUS_I_GASS_COPY_TARGET_FAILED;
+    handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    
     globus_gass_transfer_request_destroy(request);
     state->monitor.done = 1;
     globus_cond_signal(&state->monitor.cond);
