@@ -68,5 +68,5 @@ deployed='FALSE'              # This line is overwritten during deployment
     sharedstatedir=${prefix}/com
     localstatedir=${prefix}/var
     tmpdir=${prefix}/tmp
-
+    secure_tmpdir=@secure_tmpdir@
     ################# END    Inserted by configure #############
