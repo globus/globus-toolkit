@@ -31,7 +31,7 @@ cp bundle-output/*.tar.gz  $INSTALLER/schedulers
 # copy in test bundles
 mkdir $INSTALLER/tests
 rm -fr *-output
-./make-packages.pl -n --bundles=prews-test,gt4-java-ws-core-test,gt4-mds-test,gt4-cas-delegation-test --version=$VERSION
+./make-packages.pl -n --bundles=prews-test,gt4-java-ws-core-test,gt4-mds-test,gt4-cas-delegation-test,gt4-gram-test --version=$VERSION
 cp bundle-output/*.tar.gz $INSTALLER/tests
 
 if [ -d contrib ]; then
