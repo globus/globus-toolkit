@@ -51,7 +51,7 @@ EXTERN_C_BEGIN
  *  \endcode
  */
 /**
- *  @addtogroup GLOBUS_XIO_API_ASSIST
+ *  \addtogroup GLOBUS_XIO_API_ASSIST
  *
  *  \par Servers
  *  A server data structure provides functionality for passive opens.
@@ -61,17 +61,19 @@ EXTERN_C_BEGIN
  *  will result in an intialized handle which can later be opened.
  *
  *  \code
+ *
  *  globus_xio_server_t             server;
  *  globus_xio_attr_t               attr;
  *
  *  globus_xio_attr_init(&attr);
  *  globus_xio_server_create(&server_handle, attr, stack); 
  *  globus_xio_server_accept(&handle, server);
- *  \encode
+ *
+ *  \endcode
  */
 
 /**
- *  @addtogroup GLOBUS_XIO_API_ASSIST
+ *  \addtogroup GLOBUS_XIO_API_ASSIST
  *
  *  \par Handle Construction
  *  There are two ways to create a handle.  The first is for use as a 
