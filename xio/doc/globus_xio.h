@@ -213,38 +213,107 @@ globus_xio_load_driver(
     const char *                                driver_lookup_string);
 
 /**
- *  Stack functions
+ *  @page user_attr User Attributes
+ *
+ *  Globus XIO uses a single attribute object for all of its functions.
+ *  Attributes give an the user an extenable mechanism to alter default
+ *  values which control parameters in an operation.
+ *
+ *  In most of the globus xio user api functions a user passes an 
+ *  attribute as a parameter.  In many cases the user may ignore the
+ *  attribute parameter and just pass in NULL.  However at times the user
+ *  will wish to tweak the operation.  The attribute structure is used for
+ *  this tweaking.
+ *
+ *  There are only three attribute functions. @ref globus_xio_attr_init 
+ *  @ref globus_xio_attr_cntl and @ref globus_xio_attr_destroy.  The
+ *  init and destroy functions are very simple and require little explaination.
+ *  Before an atribute can be used it must be intialized, and to clean up all
+ *  memory associated with it the user must call destroy on it.
+ *
+ *  The function @ref globus_xio_attr_cntl manipulates values in the
+ *  attribute.  For more info on it see @ref globus_xio_attr_cntl.
  */
-globus_result_t
-globus_xio_stack_init(
-    globus_xio_stack_t *                        stack);
-
-globus_result_t
-globus_xio_stack_push_driver(
-    globus_xio_stack_t                          stack,
-    globus_xio_driver_t                         driver);
-
-globus_result_t
-globus_xio_stack_destroy(
-    globus_xio_stack_t                          stack);
 
 /**
- *  server attr
+ *  Intialize a globus xio attribute.
+ *
+ *  @param attr
+ *         upon return from this function this out parameter will be 
+ *         initialized.  Once the user is finished with the attribute
+ *         they should make sure they destroy it in order to free 
+ *         resources associated with it.
  */
 globus_result_t
-globus_xio_server_attr_init(
-    globus_xio_server_attr_t *                  server_attr);
+globus_xio_attr_init(
+    globus_xio_attr_t *                         attr);
 
+/**
+ *  Manipulate the values associated in the attr.
+ *
+ *  This function provides a means to access the attr structure.  What
+ *  exactly this function does is determined by the value in the parameter
+ *  cmd and the value of the patameter driver.  When the driver parameter
+ *  is NULL it indicates that this function applies to general globus xio
+ *  values.  If it is not NULL it indicates that the function will effect 
+ *  driver specific values.  Each driver is resonsible for defining its own
+ *  enumeration of values for cmd and the var args associated with that 
+ *  command.  The general vlues for cmd that globus xio uses are displayed
+ *  below:
+ *
+ *
+ *  TODO: define the values.
+ *  .  
+ */
 globus_result_t
-globus_xio_server_attr_cntl(
-    globus_xio_server_attr_t                    server_attr,
+globus_xio_attr_cntl(
+    globus_xio_attr_t                           attr,
     globus_xio_driver_t                         driver,
     int                                         cmd,
     ...);
 
+/**
+ *  Clean up resources associated with an attribute.
+ *
+ *  @param attr
+ *         Upon completion of this function all resources associated
+ *         with this structure will returned to the system and the attr
+ *         will no longer be valid.
+ */
 globus_result_t
-globus_xio_server_attr_destroy(
-    globus_xio_server_attr_t                    server_attr);
+globus_xio_attr_destroy(
+    globus_xio_attr_t                           attr);
+
+/**
+ *  Stack functions
+ */
+
+/**
+ *  Initialize a stack object 
+ */
+globus_result_t
+globus_xio_stack_init(
+    globus_xio_stack_t *                        stack,
+    globus_xio_attr_t                           stack_attr);
+
+/**
+ *  Push a driver onto a stack.
+ *
+ *  No attrs are associated with a driver. The stack represents the
+ *  ordered lists of transform drivers and 1 transport driver.
+ */
+globus_result_t
+globus_xio_stack_push_driver(
+    globus_xio_stack_t                          stack,
+    globus_xio_driver_t                         driver,
+    globus_xio_attr_t                           driver_attr);
+
+/**
+ *  Destroy a stack object.
+ */
+globus_result_t
+globus_xio_stack_destroy(
+    globus_xio_stack_t                          stack);
 
 /**
  *  server 
@@ -252,34 +321,44 @@ globus_xio_server_attr_destroy(
 globus_result_t
 globus_xio_server_init(
     globus_xio_server_t *                       server,
-    globus_xio_server_attr_t                    server_attr,
+    globus_xio_attr_t                           server_attr,
     globus_xio_stack_t                          stack);
 
+/**
+ *  This is used to get the contact string 
+ */
 globus_result_t
-globus_xio_server_get_contact_string(
-    globus_xio_server_t                         server,
-    char *                                      out_contact_string,
-    int                                         str_len);
-
-globus_result_t
-globus_xio_server_destroy(
-    globus_xio_server_t                         server);
+globus_xio_server_cntl(
+    globus_xio_server_t                         server_attr,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
 
 /**
  *  target is destroyed when passed to open.  If not passed to
  *  open the use should call destroy
  */
 globus_result_t
-globus_xio_server_get_target(
+globus_xio_server_target_aquire(
     globus_xio_target_t *                       out_target,
+    globus_xio_attr_t                           target_attr,
+    globus_xio_server_t                         server);
+
+globus_result_t
+globus_xio_server_destroy(
     globus_xio_server_t                         server);
 
 globus_result_t
 globus_xio_target_init(
     globus_xio_target_t *                       target,
+    globus_xio_attr_t                           target_attr,
     const char *                                contact_string,
     globus_xio_stack_t                          stack);
 
+/**
+ *  This only needs to be called if the target object is not passed
+ *  to globus_xio_open. 
+ */
 globus_result_t
 globus_xio_target_destroy(
     globus_xio_target_t                         target);
@@ -296,32 +375,6 @@ enum globus_xio_handle_attr_cmd_t
     GLOBUS_XIO_HANDLE_ATTR_CLOSE_TIMEOUT,
     GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT,
 };
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  initialize a handle attribute
- */
-globus_result_t
-globus_xio_handle_attr_init(
-    globus_xio_handle_attr_t *                  attr);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  clean up a handle attribute
- */
-globus_result_t
-globus_xio_handle_attr_destroy(
-    globus_xio_handle_attr_t                    attr);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- */
-globus_result_t
-globus_xio_handle_attr_cntl(
-    globus_xio_handle_attr_t                    attr,
-    globus_xio_driver_t                         driver,
-    int                                         cmd,
-    ...);
 
 /******************************************************************
  *                      setting timeout values
@@ -366,17 +419,6 @@ enum globus_xio_operation_type_t
     GLOBUS_XIO_OPERATION_READ,
     GLOBUS_XIO_OPERATION_WRITE
 };
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  set timeouts for the various operations
- */
-globus_result_t
-globus_xio_handle_attr_cntl(
-    globus_xio_handle_attr_t                    attr,
-    globus_xio_driver_t                         driver,
-    <GLOBUS_XIO_HANDLE_ATTR_XXXX_TIMEOUT>
-    globus_xio_timeout_callback_t               timeout_callback);
 
 /******************************************************************
  *                      data descriptor
@@ -463,7 +505,7 @@ typedef void (*globus_xio_data_callback_t)(
 globus_result_t
 globus_xio_register_open(
     globus_xio_handle_t *                       handle,
-    globus_xio_handle_attr_t                    attr,
+    globus_xio_attr_t                           attr,
     globus_xio_target_t                         target,
     globus_xio_callback_t                       cb,
     void *                                      user_arg);
@@ -563,13 +605,6 @@ typedef void
     globus_xio_signal_type_t                    signal_type,
     globus_xio_driver_t                         driver);
 
-globus_result_t
-globus_xio_handle_attr_cntl(
-    globus_xio_handle_t                         attr,
-    globus_xio_driver_t                         driver,
-    int                                         cmd,
-    ...);
-
 /**
  *  Register a signal listener.
  *  @ingroup GLOBUS_XIO_API
@@ -629,9 +664,10 @@ globus_xio_handle_register_signal_handler(
  *         A user pointed threaded through to the callback.
  */
 globus_result_t
-globus_xio_factory_register_signal_handler(
-    globus_xio_factory_t                        factory,
+globus_xio_server_register_signal_handler(
+    globus_xio_server_t                         factory,
     int                                         signal_mask,
     globus_xio_driver_t                         driver,
     globus_xio_callback_t                       callback,
     void *                                      user_arg);
+

@@ -179,80 +179,39 @@ typedef globus_result_t
  */
 
 /**
- *  @ingroup driver_attr_funcs 
- *
- *  Create and return a driver attribute.
- *
- *  @param out_driver_attr
- *         an out parameter.  Prior to returning from this function
- *         this pointer should be intialized.  The value it is intialized
- *         to will be threaded through to futre driver functions.
- */
-typedef globus_result_t
-(*globus_xio_driver_driver_attr_init_t)(
-    void **                                     out_driver_attr);
-
-/**
  * 
  */
 typedef globus_result_t
-(*globus_xio_driver_attr_copy_t)(
-    void **                                     dst,
-    void *                                      src);
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_attr_destroy_t)(
-    void **                                     dst,
-    void *                                      src);
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_attr_cntl_t)(
-    void *                                      driver_attr,
-    int                                         cmd,
-    ...);
-
-
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_target_server_init)(
-    void **                                     out_server_target,
-    void *                                      target_attr,
+(*globus_xio_driver_server_init)(
+    void **                                     out_server,
+    void *                                      server_attr,
     globus_xio_driver_stack_t                   stack);
 
 typedef globus_result_t
-(*globus_xio_driver_target_client_init)(
-    void **                                     out_client_target,
+(*globus_xio_driver_client_init)(
+    void **                                     out_client,
     const char *                                contact_string,
     globus_xio_driver_stack_t                   stack);
-    
+
 typedef globus_result_t
-(*globus_xio_driver_target_destroy)(
+(*globus_xio_driver_server_destroy)(
     void *                                      server);
 
 /**
  *
  */
 typedef globus_result_t
-(*globus_xio_driver_target_attr_cntl_t)(
+(*globus_xio_driver_server_attr_cntl_t)(
     void *                                      target_attr,
     int                                         cmd,
     ...);
 
 typedef globus_result_t
-(*globus_xio_driver_target_attr_destroy_t)(
+(*globus_xio_driver_server_attr_destroy_t)(
     void *                                      target_attr);
 
 typedef globus_result_t
-(*globus_xio_driver_target_attr_copy_t)(
+(*globus_xio_driver_server_attr_copy_t)(
     void *                                      target_attr);
 
 
@@ -376,10 +335,17 @@ typedef globus_result_t
  *         
  */
 typedef globus_result_t
-(*globus_xio_driver_open_t)(
+(*globus_xio_driver_server_open_t)(
     void **                                     driver_handle,
     void *                                      driver_handle_attr,
-    void *                                      client_target,
+    void *                                      server,
+    globus_xio_driver_operation_t               op);
+
+typedef globus_result_t
+(*globus_xio_driver_client_open_t)(
+    void **                                     driver_handle,
+    void *                                      driver_handle_attr,
+    void *                                      client,
     globus_xio_driver_operation_t               op);
 
 /**
