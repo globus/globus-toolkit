@@ -52,6 +52,10 @@ RCSID("$OpenBSD: monitor_wrap.c,v 1.24 2003/04/01 10:22:21 markus Exp $");
 #include "channels.h"
 #include "session.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 /* Imports */
 extern int compat20;
 extern Newkeys *newkeys[];
@@ -1019,3 +1023,108 @@ mm_auth_krb5(void *ctx, void *argp, char **userp, void *resp)
 	return (success);
 }
 #endif
+#ifdef GSSAPI
+OM_uint32
+mm_ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid) {
+        Buffer m;
+        OM_uint32 major;
+                
+        /* Client doesn't get to see the context */
+        *ctx=NULL;
+
+        buffer_init(&m);
+        buffer_put_string(&m,oid->elements,oid->length);
+
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSETUP, &m);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSETUP, &m);
+
+        major=buffer_get_int(&m);
+
+	buffer_free(&m);
+        return(major);
+}
+
+OM_uint32
+mm_ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *in,
+                         gss_buffer_desc *out, OM_uint32 *flags) {
+ 
+        Buffer m;
+        OM_uint32 major;
+
+        buffer_init(&m);
+        buffer_put_string(&m, in->value, in->length);
+
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSTEP, &m);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSTEP, &m);
+
+        major=buffer_get_int(&m);
+        out->value=buffer_get_string(&m,&out->length);
+        if (flags) *flags=buffer_get_int(&m);
+
+	buffer_free(&m);
+	
+        return(major);
+}
+
+int
+mm_ssh_gssapi_userok(char *user) {
+        Buffer m;
+        int authenticated = 0;
+
+        buffer_init(&m);
+        
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSUSEROK, &m);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSUSEROK,
+                                  &m);
+
+        authenticated = buffer_get_int(&m);
+
+        buffer_free(&m);
+        debug3("%s: user %sauthenticated",__func__, authenticated ? "" : "not ");
+        return(authenticated);
+}
+
+OM_uint32
+mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash) {
+        Buffer m;
+        OM_uint32 major;
+
+        buffer_init(&m);
+        buffer_put_string(&m, data->value, data->length);
+
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSIGN, &m);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSIGN, &m);
+
+        major=buffer_get_int(&m);
+        hash->value = buffer_get_string(&m, &hash->length);
+
+	buffer_free(&m);
+	
+        return(major);
+}
+
+char *
+mm_ssh_gssapi_last_error(Gssctxt *ctx, OM_uint32 *major, OM_uint32 *minor) {
+	Buffer m;
+	OM_uint32 maj,min;
+	char *errstr;
+	
+	buffer_init(&m);
+
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSERR, &m);
+	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSERR, &m);
+
+	maj = buffer_get_int(&m);
+	min = buffer_get_int(&m);
+
+	if (major) *major=maj;
+	if (minor) *minor=min;
+	
+	errstr=buffer_get_string(&m,NULL);
+
+	buffer_free(&m);
+	
+	return(errstr);
+}	
+	
+#endif /* GSSAPI */

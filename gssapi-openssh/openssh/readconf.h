@@ -47,6 +47,15 @@ typedef struct {
 #if defined(AFS) || defined(KRB5)
 	int     kerberos_tgt_passing;	/* Try Kerberos TGT passing. */
 #endif
+
+#ifdef GSSAPI
+	int 	gss_authentication;
+	int	gss_deleg_creds;
+#ifdef GSI
+	int	gss_globus_deleg_limited_proxy;
+#endif /* GSI */
+#endif /* GSSAPI */
+
 #ifdef AFS
 	int     afs_token_passing;	/* Try AFS token passing. */
 #endif
