@@ -38,8 +38,9 @@ globus_range_list_init(
 
 int
 globus_range_list_merge(
-    globus_range_list_t                 dest,
-    globus_range_list_t                 src)
+    globus_range_list_t *               dest,
+    globus_range_list_t                 src1,
+    globus_range_list_t                 src2)
 {
     int                                 size;
     int                                 rc;
@@ -47,22 +48,47 @@ globus_range_list_merge(
     globus_off_t                        offset;
     globus_off_t                        length;
 
-    size = globus_range_list_size(src);
+    rc = globus_range_list_init(dest);
+    if(rc != 0)
+    {
+        return -1;
+    }
+
+    size = globus_range_list_size(src1);
     for(i = 0; i < size; i++)
     {
-        rc = globus_range_list_at(src, i, &offset, &length);
+        rc = globus_range_list_at(src1, i, &offset, &length);
         if(rc != 0)
         {
-            return -1;
+            goto err;
         }
-        rc = globus_range_list_insert(dest, offset, length);
+        rc = globus_range_list_insert(*dest, offset, length);
         if(rc != 0)
         {
-            return -1;
+            goto err;
+        }
+    }
+    size = globus_range_list_size(src2);
+    for(i = 0; i < size; i++)
+    {
+        rc = globus_range_list_at(src2, i, &offset, &length);
+        if(rc != 0)
+        {
+            goto err;
+        }
+        rc = globus_range_list_insert(*dest, offset, length);
+        if(rc != 0)
+        {
+            goto err;
         }
     }
 
     return GLOBUS_SUCCESS;
+
+  err:
+
+    globus_range_list_destroy(*dest);    
+    return -1;
 }
 
 
