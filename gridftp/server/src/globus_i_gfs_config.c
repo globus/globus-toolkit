@@ -553,13 +553,16 @@ globus_l_gfs_config_misc()
         globus_free(value);
     }
     
-    if((value = globus_i_gfs_config_string("remote")) != GLOBUS_NULL)
+    value = globus_i_gfs_config_string("remote");
     {
         globus_i_gfs_community_t *      community;
         globus_list_t *                 community_list;
         community = (globus_i_gfs_community_t *)
             globus_malloc(sizeof(globus_i_gfs_community_t)); 
-
+        if(!value)
+        {
+            value = globus_libc_strdup("");
+        }
         community->name = globus_libc_strdup("default");
         community->root = globus_libc_strdup("/");
         community->cs_count = 1;
@@ -569,7 +572,7 @@ globus_l_gfs_config_misc()
         globus_list_insert(&community_list, community);  
         
         option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
-        &option_table, "community");   
+            &option_table, "community");   
         if(!option)
         {
             option = (globus_l_gfs_config_option_t *)

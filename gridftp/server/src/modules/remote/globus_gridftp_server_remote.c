@@ -38,6 +38,7 @@ globus_l_gfs_ipc_stat_cb(
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
+    globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_ipc_stat_cb);
     
     bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
@@ -48,6 +49,12 @@ globus_l_gfs_ipc_stat_cb(
         reply->info.stat.stat_info, 
         reply->info.stat.stat_count);
    
+   result = globus_gfs_ipc_handle_release(ipc_handle);
+   if(result != GLOBUS_SUCCESS)
+   {
+       globus_i_gfs_log_result("IPC ERROR", result);
+   }
+
    return;
 }
 
