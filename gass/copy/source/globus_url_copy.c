@@ -1116,7 +1116,7 @@ globus_l_guc_transfer_files(
                 
                 if(new_url)
                 {
-                    globus_libc_fprintf(stdout, "%s  -->  %s\n", 
+                    globus_libc_fprintf(stdout, "Source: %s\nDest:   %s\n", 
                         src_url_base, 
                         dst_url_base);
                 }
@@ -1141,7 +1141,8 @@ globus_l_guc_transfer_files(
                      gass_copy_handle);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    goto error_mkdir;
+                    ret_val=1;
+                    goto error_dirlist;
                 }
                 
                 result = globus_gass_copy_mkdir(
@@ -1175,9 +1176,8 @@ globus_l_guc_transfer_files(
         {
             fprintf(stderr, "error: %s\n",
                     globus_error_print_friendly(globus_error_get(result)));
-            globus_mutex_destroy(&monitor.mutex);
-            globus_cond_destroy(&monitor.cond);
-            exit(1);
+            monitor.done = GLOBUS_TRUE;
+            ret_val=1;
         }
 
         globus_mutex_lock(&monitor.mutex);
@@ -1249,8 +1249,7 @@ globus_l_guc_transfer_files(
 
     return ret_val;
 
-
-error_mkdir:
+error_dirlist:
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
 
