@@ -2567,6 +2567,7 @@ globus_l_gass_transfer_http_command_callback(
      * Free the request command buffer.
      */
     globus_free(buf);
+    buf = GLOBUS_NULL;
 
     /*
      * We will now register a response handling buffer & callback
@@ -2636,6 +2637,11 @@ globus_l_gass_transfer_http_command_callback(
     }
 
   deny_exit:
+    if(buf != GLOBUS_NULL)
+    {
+       globus_libc_free(buf);
+       buf = GLOBUS_NULL;
+    }
     /* Give a default error message, if none is generated above */
     if(proto->code == 0)
     {
