@@ -79,29 +79,31 @@ AC_ARG_ENABLE(64bit,
 	[lac_cv_build_64bit="$enableval"],
 	[lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
 
-AC_ARG_WITH(mpl,
-	[  --with-mpl                    include the IBM SP MPL protocols],
-	[if test "$withval" = "yes" ; then
-             LAC_COMPILERS_MPL
-         fi
+AC_ARG_WITH(mp,
+	[  --with-mp=protocol            include the IBM SP MPL, MPI, or Paragon INX protocols],
+	[case $withval in
+		mpl)
+             		LAC_COMPILERS_MPL
+			;;
+		mpi)
+             		LAC_COMPILERS_MPI
+			;;
+		inx)
+             		LAC_COMPILERS_INX
+			;;
+		no)
+			lac_cv_mpl=${lac_cv_mpl='no'}
+			lac_cv_mpi=${lac_cv_mpi='no'}
+			lac_cv_inx=${lac_cv_inx='no'}
+			;;
+         esac
         ],
-	[lac_cv_mpl=${lac_cv_mpl='no'}])
+	[
+	lac_cv_mpl=${lac_cv_mpl='no'}
+	lac_cv_mpi=${lac_cv_mpi='no'}
+	lac_cv_inx=${lac_cv_inx='no'}
+	])
 
-AC_ARG_WITH(mpi,
-	[  --with-mpi                    include the MPI protocols],
-	[if test "$withval" = "yes" ; then
-             LAC_COMPILERS_MPI
-         fi
-        ],
-	[lac_cv_mpi=${lac_cv_mpi='no'}])
-
-AC_ARG_WITH(inx,
-	[  --with-inx                    include the Paragon INX protocols],
-	[if test "$withval" = "yes" ; then
-             LAC_COMPILERS_INX
-         fi
-        ],
-	[lac_cv_inx=${lac_cv_inx='no'}])
 ])
 
 AC_DEFUN(LAC_COMPILERS_MPL,
@@ -124,6 +126,10 @@ AC_DEFUN(LAC_COMPILERS_MPL,
                 lac_cv_mpl="no"
             ;;
         esac])
+    if test $lac_cv_mpl = "no"; then
+	AC_MSG_ERROR([MPL is not supported on this platform])
+	exit 1
+    fi
     AC_MSG_RESULT($lac_cv_mpl)
 ])
 
@@ -159,6 +165,10 @@ AC_DEFUN(LAC_COMPILERS_MPI,
                 lac_cv_mpi="no"
             ;;
         esac])
+    if test $lac_cv_mpi = "no"; then
+        AC_MSG_ERROR([MPI is not supported on this platform])
+        exit 1
+    fi
     AC_MSG_RESULT($lac_cv_mpi)
 ])
 
@@ -174,6 +184,10 @@ AC_DEFUN(LAC_COMPILERS_INX,
                 lac_cv_inx="no"
             ;;
         esac])
+    if test $lac_cv_inx = "no"; then
+	AC_MSG_ERROR([INX is not supported on this platform])
+	exit 1
+    fi
     AC_MSG_RESULT($lac_cv_inx)
 ])
 
