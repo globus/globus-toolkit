@@ -111,4 +111,8 @@ Set the path to store job manager state files (used for restarting a job
 manager which fails). If this is not set, then job state files will be
 stored in the <code>$HOME/.globus</code> directory.
 
+@par -x509-cert-dir
+Set the path to the X.509 trusted certificate directory on the job execution
+hosts. If not present, then the trusted certificate directory
+used by the job manager (usually set by the Gatekeeper) will be used
 */

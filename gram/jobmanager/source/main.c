@@ -313,6 +313,11 @@ main(
         {
 	    request->job_state_file_dir = globus_libc_strdup(argv[++i]);
         }
+        else if ((strcmp(argv[i], "-x509-cert-dir") == 0)
+                 && (i + 1 < argc))
+	{
+	    request->x509_cert_dir = globus_libc_strdup(argv[++i]);
+	}
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -340,6 +345,7 @@ main(
                     "\t-save-logfile [ always | on_errors ]\n"
 		    "\t-scratch-dir-base scratch-directory\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
+		    "\t-x509-cert-dir DIRECTORY\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"
