@@ -10,10 +10,12 @@ import org.globus.ftp.exception.ServerException;
 import org.globus.ftp.exception.ClientException;
 import org.globus.ftp.exception.UnexpectedReplyCodeException;
 
+import org.apache.log4j.Logger;
 public class FileSystemUtil {
 
     GridFTPClient gridFTPClient = null;
     
+    private static Logger logger = Logger.getLogger( FileSystemUtil.class.getName() );
     public void setGridFTPClient(GridFTPClient gridFTPClient) {
         this.gridFTPClient = gridFTPClient;
     }
@@ -24,6 +26,7 @@ public class FileSystemUtil {
     public void makeDirectory(String dir)
     throws IOException,ServerException {
         try {
+                logger.debug("dir: " + dir);
                 this.gridFTPClient.makeDir(dir);
             
         } catch(ServerException e) {
@@ -38,6 +41,8 @@ public class FileSystemUtil {
         try {
             this.gridFTPClient.changeDir(dirString);
         }catch(Exception e) {
+           logger.debug("creating dir: " + dirString);
+           this.makeDirectory(dirString);
            // throw new RemoteException("Exception while changing directories" + e.getMessage());
         }
     }

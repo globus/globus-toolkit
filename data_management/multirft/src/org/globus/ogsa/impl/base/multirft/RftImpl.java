@@ -592,7 +592,7 @@ public class RftImpl
             int status = tempTransferClient.getStatus();
             GlobusURL tempSource = new GlobusURL( sourceURL );
             GlobusURL tempDest = new GlobusURL( destinationURL );
-            if ( ( status == 0 ) || ( status == 2 ) ) {
+            if ( status != 3 ) {
                 flag = true;
             }
             if ( ( source.getHost().equals( tempSource.getHost() ) ) && ( destination.getHost().equals( tempDest.getHost() ) ) && flag ) {

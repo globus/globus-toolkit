@@ -62,12 +62,12 @@ public class URLExpander extends Thread {
             this.sourcePath = "/" + sourceGlobusUrl.getPath();
             this.destinationPath = "/" + destinationGlobusUrl.getPath();
             this.fileSystemUtil = new FileSystemUtil();
-            this.destinationHost.changeDir( destinationPath );
             processURLs = new Vector();
             this.sourceUrlsEx = new Vector();
             this.sourceUrlsEx.add( this.sourcePath );
             this.fileSystemUtil.setGridFTPClient( this.destinationHost );
             this.dbAdapter = TransferDbAdapter.getTransferDbAdapter();
+            this.fileSystemUtil.changeDir( destinationPath );
 			transferJobVector = new Vector();
         } catch ( Exception e ) {
             logger.debug( "Invalid source/dest urls" );
