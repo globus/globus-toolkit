@@ -155,7 +155,7 @@ extern "C" {
 #define BN_BYTES	4
 #define BN_BITS2	32
 #define BN_BITS4	16
-#ifdef WIN32
+#if defined(_MSC_VER) || defined(__BORLANDC__)
 /* VC++ doesn't like the LL suffix */
 #define BN_MASK		(0xffffffffffffffffL)
 #else
@@ -259,6 +259,8 @@ typedef struct bn_blinding_st
 	BIGNUM *A;
 	BIGNUM *Ai;
 	BIGNUM *mod; /* just a reference */
+	unsigned long thread_id; /* added in OpenSSL 0.9.6j and 0.9.7b;
+				  * used only by crypto/rsa/rsa_eay.c, rsa_lib.c */
 	} BN_BLINDING;
 
 /* Used for montgomery multiplication */
@@ -413,7 +415,7 @@ int BN_mod_mul_montgomery(BIGNUM *r,BIGNUM *a,BIGNUM *b,BN_MONT_CTX *mont,
 			  BN_CTX *ctx);
 int BN_from_montgomery(BIGNUM *r,BIGNUM *a,BN_MONT_CTX *mont,BN_CTX *ctx);
 void BN_MONT_CTX_free(BN_MONT_CTX *mont);
-int BN_MONT_CTX_set(BN_MONT_CTX *mont,const BIGNUM *modulus,BN_CTX *ctx);
+int BN_MONT_CTX_set(BN_MONT_CTX *mont,const BIGNUM *mod,BN_CTX *ctx);
 BN_MONT_CTX *BN_MONT_CTX_copy(BN_MONT_CTX *to,BN_MONT_CTX *from);
 
 BN_BLINDING *BN_BLINDING_new(BIGNUM *A,BIGNUM *Ai,BIGNUM *mod);

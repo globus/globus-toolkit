@@ -55,6 +55,59 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.]
  */
+/* ====================================================================
+ * Copyright (c) 1998-2002 The OpenSSL Project.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. All advertising materials mentioning features or use of this
+ *    software must display the following acknowledgment:
+ *    "This product includes software developed by the OpenSSL Project
+ *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+ *
+ * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+ *    endorse or promote products derived from this software without
+ *    prior written permission. For written permission, please contact
+ *    openssl-core@openssl.org.
+ *
+ * 5. Products derived from this software may not be called "OpenSSL"
+ *    nor may "OpenSSL" appear in their names without prior written
+ *    permission of the OpenSSL Project.
+ *
+ * 6. Redistributions of any form whatsoever must retain the following
+ *    acknowledgment:
+ *    "This product includes software developed by the OpenSSL Project
+ *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+ * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+ * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This product includes cryptographic software written by Eric Young
+ * (eay@cryptsoft.com).  This product includes software written by Tim
+ * Hudson (tjh@cryptsoft.com).
+ *
+ */
 
 #include <stdio.h>
 #include <openssl/comp.h>
@@ -105,7 +158,7 @@ static void tls1_P_hash(const EVP_MD *md, const unsigned char *sec,
 		}
 	HMAC_cleanup(&ctx);
 	HMAC_cleanup(&ctx_tmp);
-	memset(A1,0,sizeof(A1));
+	OPENSSL_cleanse(A1,sizeof(A1));
 	}
 
 static void tls1_PRF(const EVP_MD *md5, const EVP_MD *sha1,
@@ -319,10 +372,10 @@ printf("\niv=");
 printf("\n");
 #endif
 
-	memset(tmp1,0,sizeof(tmp1));
-	memset(tmp2,0,sizeof(tmp1));
-	memset(iv1,0,sizeof(iv1));
-	memset(iv2,0,sizeof(iv2));
+	OPENSSL_cleanse(tmp1,sizeof(tmp1));
+	OPENSSL_cleanse(tmp2,sizeof(tmp1));
+	OPENSSL_cleanse(iv1,sizeof(iv1));
+	OPENSSL_cleanse(iv2,sizeof(iv2));
 	return(1);
 err:
 	SSLerr(SSL_F_TLS1_CHANGE_CIPHER_STATE,ERR_R_MALLOC_FAILURE);
@@ -373,13 +426,32 @@ printf("pre-master\n");
 { int z; for (z=0; z<s->session->master_key_length; z++) printf("%02X%c",s->session->master_key[z],((z+1)%16)?' ':'\n'); }
 #endif
 	tls1_generate_key_block(s,p1,p2,num);
-	memset(p2,0,num);
+	OPENSSL_cleanse(p2,num);
 	OPENSSL_free(p2);
 #ifdef TLS_DEBUG
 printf("\nkey block\n");
 { int z; for (z=0; z<num; z++) printf("%02X%c",p1[z],((z+1)%16)?' ':'\n'); }
 #endif
 
+	if (!(s->options & SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS))
+		{
+		/* enable vulnerability countermeasure for CBC ciphers with
+		 * known-IV problem (http://www.openssl.org/~bodo/tls-cbc.txt)
+		 */
+		s->s3->need_empty_fragments = 1;
+
+		if (s->session->cipher != NULL)
+			{
+			if ((s->session->cipher->algorithms & SSL_ENC_MASK) == SSL_eNULL)
+				s->s3->need_empty_fragments = 0;
+			
+#ifndef NO_RC4
+			if ((s->session->cipher->algorithms & SSL_ENC_MASK) == SSL_RC4)
+				s->s3->need_empty_fragments = 0;
+#endif
+			}
+		}
+		
 	return(1);
 err:
 	SSLerr(SSL_F_TLS1_SETUP_KEY_BLOCK,ERR_R_MALLOC_FAILURE);

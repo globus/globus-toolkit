@@ -1,6 +1,6 @@
 /* ssl/ssl_err.c */
 /* ====================================================================
- * Copyright (c) 1999 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1999-2002 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,6 +67,7 @@
 static ERR_STRING_DATA SSL_str_functs[]=
 	{
 {ERR_PACK(0,SSL_F_CLIENT_CERTIFICATE,0),	"CLIENT_CERTIFICATE"},
+{ERR_PACK(0,SSL_F_CLIENT_FINISHED,0),	"CLIENT_FINISHED"},
 {ERR_PACK(0,SSL_F_CLIENT_HELLO,0),	"CLIENT_HELLO"},
 {ERR_PACK(0,SSL_F_CLIENT_MASTER_KEY,0),	"CLIENT_MASTER_KEY"},
 {ERR_PACK(0,SSL_F_D2I_SSL_SESSION,0),	"d2i_SSL_SESSION"},
@@ -80,7 +81,9 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_I2D_SSL_SESSION,0),	"i2d_SSL_SESSION"},
 {ERR_PACK(0,SSL_F_READ_N,0),	"READ_N"},
 {ERR_PACK(0,SSL_F_REQUEST_CERTIFICATE,0),	"REQUEST_CERTIFICATE"},
+{ERR_PACK(0,SSL_F_SERVER_FINISH,0),	"SERVER_FINISH"},
 {ERR_PACK(0,SSL_F_SERVER_HELLO,0),	"SERVER_HELLO"},
+{ERR_PACK(0,SSL_F_SERVER_VERIFY,0),	"SERVER_VERIFY"},
 {ERR_PACK(0,SSL_F_SSL23_ACCEPT,0),	"SSL23_ACCEPT"},
 {ERR_PACK(0,SSL_F_SSL23_CLIENT_HELLO,0),	"SSL23_CLIENT_HELLO"},
 {ERR_PACK(0,SSL_F_SSL23_CONNECT,0),	"SSL23_CONNECT"},
@@ -92,6 +95,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL2_ACCEPT,0),	"SSL2_ACCEPT"},
 {ERR_PACK(0,SSL_F_SSL2_CONNECT,0),	"SSL2_CONNECT"},
 {ERR_PACK(0,SSL_F_SSL2_ENC_INIT,0),	"SSL2_ENC_INIT"},
+{ERR_PACK(0,SSL_F_SSL2_GENERATE_KEY_MATERIAL,0),	"SSL2_GENERATE_KEY_MATERIAL"},
 {ERR_PACK(0,SSL_F_SSL2_PEEK,0),	"SSL2_PEEK"},
 {ERR_PACK(0,SSL_F_SSL2_READ,0),	"SSL2_READ"},
 {ERR_PACK(0,SSL_F_SSL2_READ_INTERNAL,0),	"SSL2_READ_INTERNAL"},
@@ -127,6 +131,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL3_SEND_CLIENT_KEY_EXCHANGE,0),	"SSL3_SEND_CLIENT_KEY_EXCHANGE"},
 {ERR_PACK(0,SSL_F_SSL3_SEND_CLIENT_VERIFY,0),	"SSL3_SEND_CLIENT_VERIFY"},
 {ERR_PACK(0,SSL_F_SSL3_SEND_SERVER_CERTIFICATE,0),	"SSL3_SEND_SERVER_CERTIFICATE"},
+{ERR_PACK(0,SSL_F_SSL3_SEND_SERVER_HELLO,0),	"SSL3_SEND_SERVER_HELLO"},
 {ERR_PACK(0,SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,0),	"SSL3_SEND_SERVER_KEY_EXCHANGE"},
 {ERR_PACK(0,SSL_F_SSL3_SETUP_BUFFERS,0),	"SSL3_SETUP_BUFFERS"},
 {ERR_PACK(0,SSL_F_SSL3_SETUP_KEY_BLOCK,0),	"SSL3_SETUP_KEY_BLOCK"},
@@ -275,6 +280,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_INVALID_COMMAND                   ,"invalid command"},
 {SSL_R_INVALID_PURPOSE                   ,"invalid purpose"},
 {SSL_R_INVALID_TRUST                     ,"invalid trust"},
+{SSL_R_KEY_ARG_TOO_LONG                  ,"key arg too long"},
 {SSL_R_LENGTH_MISMATCH                   ,"length mismatch"},
 {SSL_R_LENGTH_TOO_SHORT                  ,"length too short"},
 {SSL_R_LIBRARY_BUG                       ,"library bug"},
@@ -343,6 +349,8 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_SHORT_READ                        ,"short read"},
 {SSL_R_SIGNATURE_FOR_NON_SIGNING_CERTIFICATE,"signature for non signing certificate"},
 {SSL_R_SSL23_DOING_SESSION_ID_REUSE      ,"ssl23 doing session id reuse"},
+{SSL_R_SSL2_CONNECTION_ID_TOO_LONG       ,"ssl2 connection id too long"},
+{SSL_R_SSL3_SESSION_ID_TOO_LONG          ,"ssl3 session id too long"},
 {SSL_R_SSL3_SESSION_ID_TOO_SHORT         ,"ssl3 session id too short"},
 {SSL_R_SSLV3_ALERT_BAD_CERTIFICATE       ,"sslv3 alert bad certificate"},
 {SSL_R_SSLV3_ALERT_BAD_RECORD_MAC        ,"sslv3 alert bad record mac"},

@@ -5,7 +5,50 @@
   This file gives a brief overview of the major changes between each OpenSSL
   release. For more details please read the CHANGES file.
 
-  Changes between OpenSSL 0.9.6b and OpenSSL 0.9.6c:
+  Major changes between OpenSSL 0.9.6i and OpenSSL 0.9.6j:
+
+      o Security: counter the Klima-Pokorny-Rosa extension of
+        Bleichbacher's attack 
+      o Security: make RSA blinding default.
+      o Build: shared library support fixes.
+
+  Major changes between OpenSSL 0.9.6h and OpenSSL 0.9.6i:
+
+      o Important security related bugfixes.
+
+  Major changes between OpenSSL 0.9.6g and OpenSSL 0.9.6h:
+
+      o New configuration targets for Tandem OSS and A/UX.
+      o New OIDs for Microsoft attributes.
+      o Better handling of SSL session caching.
+      o Better comparison of distinguished names.
+      o Better handling of shared libraries in a mixed GNU/non-GNU environment.
+      o Support assembler code with Borland C.
+      o Fixes for length problems.
+      o Fixes for uninitialised variables.
+      o Fixes for memory leaks, some unusual crashes and some race conditions.
+      o Fixes for smaller building problems.
+      o Updates of manuals, FAQ and other instructive documents.
+
+  Major changes between OpenSSL 0.9.6f and OpenSSL 0.9.6g:
+
+      o Important building fixes on Unix.
+
+  Major changes between OpenSSL 0.9.6e and OpenSSL 0.9.6f:
+
+      o Various important bugfixes.
+
+  Major changes between OpenSSL 0.9.6d and OpenSSL 0.9.6e:
+
+      o Important security related bugfixes.
+      o Various SSL/TLS library bugfixes.
+
+  Major changes between OpenSSL 0.9.6c and OpenSSL 0.9.6d:
+
+      o Various SSL/TLS library bugfixes.
+      o Fix DH parameter generation for 'non-standard' generators.
+
+  Major changes between OpenSSL 0.9.6b and OpenSSL 0.9.6c:
 
       o Various SSL/TLS library bugfixes.
       o BIGNUM library fixes.
@@ -18,7 +61,7 @@
         Broadcom and Cryptographic Appliance's keyserver
         [in 0.9.6c-engine release].
 
-  Changes between OpenSSL 0.9.6a and OpenSSL 0.9.6b:
+  Major changes between OpenSSL 0.9.6a and OpenSSL 0.9.6b:
 
       o Security fix: PRNG improvements.
       o Security fix: RSA OAEP check.
@@ -51,7 +94,7 @@
       o Bug fixes for Win32, HP/UX and Irix.
       o Bug fixes in BIGNUM, SSL, PKCS#7, PKCS#12, X.509, CONF and
         memory checking routines.
-      o Bug fixes for RSA operations in threaded enviroments.
+      o Bug fixes for RSA operations in threaded environments.
       o Bug fixes in misc. openssl applications.
       o Remove a few potential memory leaks.
       o Add tighter checks of BIGNUM routines.
