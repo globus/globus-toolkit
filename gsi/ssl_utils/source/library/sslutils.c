@@ -775,7 +775,7 @@ proxy_load_user_proxy(
 
         if (bp || count)
         {
-            i = sk_X509_insert(cert_chain,x,sk_X509_num(cert_chain));
+            i = sk_X509_insert(cert_chain,x,0);
 
             x = NULL;
         }
