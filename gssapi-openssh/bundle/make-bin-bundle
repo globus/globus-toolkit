@@ -17,6 +17,12 @@ fi
 
 if [ "x$1" = "x" ]; then
     echo "Usage: make-bin-bundle <platform>"
+    echo "Example platforms:"
+    echo "  i686-pc-linux-gnu-gcc32"
+    echo "  sparc-sun-solaris2.8-vendorcc32"
+    echo "  ia64-unknown-linux-gnu-gcc64"
+    echo "  mips-sgi-irix6.5-vendorcc32"
+    echo "  powerpc-ibm-aix5.1.0.0-vendorcc32"
     exit;
 fi
 
