@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions name="FileStream"
-             targetNamespace="http://www.globus.org/namespaces/2003/04/base/streaming"
+             
+targetNamespace="http://www.globus.org/namespaces/2003/04/base/streaming"
              xmlns:tns="http://www.globus.org/namespaces/2003/04/base/streaming"
-             xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
+             
+xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
              xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
              xmlns:sd="http://www.gridforum.org/namespaces/2003/03/serviceData"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -13,19 +15,17 @@
 
 <types>
     <xsd:schema>
-        <xsd:element name="start">
-            <xsd:complexType/>
-            </xsd:element>
-        <xsd:element name="startResponse">
-            <xsd:complexType/>
-        </xsd:element>
-                
-        <xsd:element name="stop">
-            <xsd:complexType/>
-        </xsd:element>
-        <xsd:element name="stopResponse">
-            <xsd:complexType/>
-        </xsd:element>
+        <xsd:element name="start" type="tns:Start"/>
+        <xsd:complexType name="Start"/>
+
+        <xsd:element name="startResponse" type="tns:StartResponse"/>
+        <xsd:complexType name="StartResponse"/>
+
+        <xsd:element name="stop" type="tns:Stop"/>
+        <xsd:complexType name="Stop"/>
+
+        <xsd:element name="stopResponse" type="tns:StopResponse"/>
+        <xsd:complexType name="StopResponse"/>
 
         <xsd:complexType name="InvalidUrlFault">
             <xsd:complexContent>
@@ -70,8 +70,9 @@
                 <xsd:element name="offset" type="xsd:int"/>
             </xsd:sequence>
         </xsd:complexType>
-        <xsd:element name="FileStreamOptionsWrapperType">
-            <xsd:complexType>
+        <xsd:element name="fileStreamOptionsWrapperType" 
+type="tns:FileStreamOptionsWrapperType">
+            <xsd:complexType name="FileStreamOptionsWrapperType">
                 <xsd:sequence>
                     <xsd:element name="fileStreamOptions"
                                  type="tns:FileStreamOptionsType"/>
@@ -84,14 +85,15 @@
                 <xsd:element name="sourcePath" type="xsd:string"/>
             </xsd:sequence>
         </xsd:complexType>
-        <xsd:element name="FileStreamFactoryOptionsWrapperType">
-            <xsd:complexType>
-                <xsd:sequence>
-                    <xsd:element name="fileStreamFactoryOptions"
-                                 type="tns:FileStreamFactoryOptionsType"/>
-                </xsd:sequence>
-            </xsd:complexType>
-        </xsd:element>
+        <xsd:element name="fileStreamFactoryOptionsWrapperType" 
+type="tns:FileStreamFactoryOptionsWrapperType"/>
+
+        <xsd:complexType name="FileStreamFactoryOptionsWrapperType">
+            <xsd:sequence>
+                <xsd:element name="fileStreamFactoryOptions"
+                            type="tns:FileStreamFactoryOptionsType"/>
+            </xsd:sequence>
+        </xsd:complexType>
     </xsd:schema>
 </types>
 
