@@ -899,7 +899,7 @@ globus_ftp_client_plugin_restart_get_marker(
 
     i_handle = *handle;
 
-    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(i_handle->handle))
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
 	return globus_error_put(
             globus_error_construct_string(
