@@ -24,11 +24,14 @@ globus_range_list_init(
 {
     globus_l_range_list_t *             rl;
 
-    rl = (globus_l_range_list_t *) globus_malloc(sizeof(globus_l_range_list_t));
+    rl = (globus_l_range_list_t *) globus_calloc(
+        sizeof(globus_l_range_list_t), 1);
     if(rl == NULL)
     {
         return GLOBUS_RANGE_LIST_ERROR_MEMORY;
     }
+
+    *range_list = rl;
 
     return GLOBUS_SUCCESS;
 }
