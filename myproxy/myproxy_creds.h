@@ -28,20 +28,25 @@ int myproxy_creds_store(const struct myproxy_creds *creds);
 /*
  * myproxy_creds_retrieve()
  *
- * Retrieve the credentials associated with the give username and fill
- * in the passed myproxy_creds structure.
+ * Retrieve the credentials associated with the given username in the
+ * given myproxy_creds structure. The pass_phrase field in the structure
+ * should also be filled in and will be checked.
  *
  * Returns -1 on error, 0 on success.
  */
-int myproxy_creds_retrieve(const char *user_name,
-			   struct myproxy_creds *creds);
+int myproxy_creds_retrieve(struct myproxy_creds *creds);
 
 /*
  * myproxy_creds_delete()
  *
- * Delete any stored credentials held for the given user.
+ * Delete any stored credentials held for the given user as indiciated
+ * by the user_name field in the given myproxy_creds structure. The
+ * pass_phrase field in the structure should also be filled in and will
+ * be checked.
+ *
+ * Returns -1 on error, 0 on success.
  */
-void myproxy_creds_delete(const char *user_name);
+int myproxy_creds_delete(const struct myproxy_creds *creds);
 
 /*
  * myproxy_creds_free_contents()
