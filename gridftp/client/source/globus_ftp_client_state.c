@@ -94,7 +94,7 @@ globus_l_ftp_client_parse_mdtm(
     globus_i_ftp_client_handle_t *		client_handle,
     globus_ftp_control_response_t *		response);
 
-typedef struct 
+typedef struct
 {
     char *					string;
     globus_bool_t				stor_ok;
@@ -124,8 +124,8 @@ globus_l_ftp_client_buffer_cmd_info_t globus_l_ftp_client_buffer_cmd_info[] =
  * FTP response callback.
  *
  * This function is invoked whenever an FTP response is received on
- * an FTP control connection. It processes the FTP state machine to 
- * figure out what to do next. 
+ * an FTP control connection. It processes the FTP state machine to
+ * figure out what to do next.
  *
  * @param user_arg
  *        A void * which is set to the globus_i_ftp_client_target_t
@@ -150,6 +150,7 @@ globus_i_ftp_client_response_callback(
     globus_i_ftp_client_target_t *		target;
     globus_i_ftp_client_handle_t *		client_handle;
     globus_result_t				result;
+    globus_object_t *                           caller_error = error;
     globus_bool_t				registered=GLOBUS_FALSE;
     char *					tmpstr = GLOBUS_NULL;
     const char *				buffer_cmd = GLOBUS_NULL;
@@ -163,7 +164,7 @@ globus_i_ftp_client_response_callback(
     client_handle = target->owner;
 
     globus_assert(! GLOBUS_I_FTP_CLIENT_BAD_MAGIC(&client_handle));
-    
+
     globus_i_ftp_client_handle_lock(client_handle);
     globus_i_ftp_client_plugin_notify_response(
 	client_handle,
@@ -193,39 +194,39 @@ redo:
 	{
 	    /* Successfully connected. Begin authentication */
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_AUTHENTICATE;
-		
+
 	    globus_i_ftp_client_plugin_notify_authenticate(
 		client_handle,
 		target->url_string,
 		&target->auth_info);
-		
+
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	    {
 		break;
 	    }
-	    
+
 	    globus_assert(
 		client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT
 		||
 		client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT);
 
-	    result = 
+	    result =
 		globus_ftp_control_authenticate(
 		    handle,
 		    &target->attr->auth_info,
 		    target->url.scheme_type==GLOBUS_URL_SCHEME_GSIFTP,
 		    globus_i_ftp_client_response_callback,
 		    user_arg);
-		    
+
 	    if(result != GLOBUS_SUCCESS)
 	    {
-		/* 
+		/*
 		 * If authentication fails without registration, notify the
 		 * plugins, then deal with the fault.
 		 */
 		goto result_fault;
-		
+
 	    }
 	}
 	else if(error || response->response_class
@@ -305,13 +306,13 @@ redo:
 	{
 	    break;
 	}
-	    
+
 	globus_assert(
 	    client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT
 	    ||
 	    client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT);
-	    
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"SITE FAULT %s" CRLF,
@@ -366,13 +367,13 @@ redo:
 	{
 	    break;
 	}
-	    
+
 	globus_assert(
 	    client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT
 	    ||
 	    client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT);
-	    
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"SITE HELP" CRLF,
@@ -395,17 +396,17 @@ redo:
 	}
 	else if(response->response_class==GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    /* 
+	    /*
 	     * Parse the reply to find out what is implemented by this
 	     * server
 	     */
 	    globus_l_ftp_client_parse_site_help(target,
 						response);
 	}
-	    
+
 	target->state = GLOBUS_FTP_CLIENT_TARGET_FEAT;
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
-	    
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
@@ -421,7 +422,7 @@ redo:
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT);
 
-	result = 
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"FEAT" CRLF,
@@ -443,7 +444,7 @@ redo:
 	}
 	if(response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    /* 
+	    /*
 	     * Parse the reply to find out what is implemented by this
 	     * server
 	     */
@@ -455,12 +456,12 @@ redo:
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT)
 	{
-	    client_handle->state = 
+	    client_handle->state =
 		GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION;
 	}
 	else
 	{
-	    client_handle->state = 
+	    client_handle->state =
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION;
 	}
 	goto redo;
@@ -481,7 +482,7 @@ redo:
 	    target->mask,
 	    "TYPE %c",
 	    (char) target->attr->type);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
@@ -500,18 +501,18 @@ redo:
 	    globus_i_ftp_client_response_callback,
 	    target,
 	    (char) target->attr->type);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
-    
+
 	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_TYPE:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -561,7 +562,7 @@ redo:
 	{
 	    break;
 	}
-	
+
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
@@ -581,11 +582,11 @@ redo:
 	}
 
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_MODE:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -660,7 +661,7 @@ redo:
 	    }
 	    goto skip_size;
 	}
-	
+
 	if(client_handle->op == GLOBUS_FTP_CLIENT_SIZE)
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
@@ -707,10 +708,10 @@ redo:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION
-	    || 
+	    ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
-	
+
 	if(error != GLOBUS_SUCCESS)
 	{
 	    goto notify_fault;
@@ -734,21 +735,21 @@ redo:
 
 		size = globus_libc_malloc(
 		    strlen((char *) response->response_buffer+3));
-		for(p = response->response_buffer+4, q = size; 
-		    isdigit(*p); 
+		for(p = response->response_buffer+4, q = size;
+		    isdigit(*p);
 		    p++,q++)
 		{
 		    *q = *p;
 		}
 		*q = '\0';
-		
+
 		if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM &&
 		   client_handle->restart_marker.type ==
 		   GLOBUS_FTP_CLIENT_RESTART_NONE)
 		{
-		    client_handle->restart_marker.type = 
+		    client_handle->restart_marker.type =
 			GLOBUS_FTP_CLIENT_RESTART_STREAM;
-		    
+
 		    globus_libc_scan_off_t(
 			(char *) size,
 			&client_handle->restart_marker.stream.offset,
@@ -764,13 +765,13 @@ redo:
 	else if(response->code / 10 == 50)
 	{
 	    /* A 500 response means the server doesn't know about SIZE */
-	    target->features[GLOBUS_FTP_CLIENT_FEATURE_SIZE] = 
+	    target->features[GLOBUS_FTP_CLIENT_FEATURE_SIZE] =
 		GLOBUS_FTP_CLIENT_FALSE;
 	}
 	else if(response->code == 550 && /* file unavailable */
 		client_handle->dest == target)
 	{
-	    /* 
+	    /*
 	     * The file may not exist on the remote side if we're
 	     * restarting.
 	     */
@@ -877,11 +878,11 @@ redo:
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_BUFSIZE:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -891,13 +892,13 @@ redo:
 	    globus_l_ftp_client_update_buffer_feature(client_handle,
 						      target,
 						      GLOBUS_FTP_CLIENT_TRUE);
-	    
+
 	    target->tcp_buffer = target->attr->buffer;
 
 	    result = globus_ftp_control_local_tcp_buffer(
 		target->control_handle,
 		&target->tcp_buffer);
-	    
+
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		goto result_fault;
@@ -964,7 +965,7 @@ redo:
 		"OPTS RETR %s%s" CRLF,
 		layout_opt ? layout_opt : "",
 		parallelism_opt ? parallelism_opt : "");
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
@@ -985,7 +986,7 @@ redo:
 	    target,
 	    layout_opt ? layout_opt : "",
 	    parallelism_opt ? parallelism_opt : "");
-	
+
 	if(parallelism_opt)
 	{
 	    globus_libc_free(parallelism_opt);
@@ -998,7 +999,7 @@ redo:
 	{
 	    goto result_fault;
 	}
-	
+
 	target->state = GLOBUS_FTP_CLIENT_TARGET_REMOTE_RETR_OPTS;
 	break;
 
@@ -1006,7 +1007,7 @@ redo:
 	result = globus_ftp_control_local_parallelism(
 	    target->control_handle,
 	    &target->attr->parallelism);
-	
+
 	if(result)
 	{
 	    goto result_fault;
@@ -1022,18 +1023,18 @@ redo:
 	memcpy(&target->parallelism,
 	       &target->attr->parallelism,
 	       sizeof(globus_ftp_control_parallelism_t));
-	
+
 	memcpy(&target->parallelism,
 	       &target->attr->parallelism,
 	       sizeof(globus_ftp_control_parallelism_t));
-	
+
 	goto skip_opts_retr;
 
     case GLOBUS_FTP_CLIENT_TARGET_REMOTE_RETR_OPTS:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION
-	    || 
+	    ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1049,9 +1050,9 @@ redo:
 	}
 	else if((!error) && response->code / 10 == 50)
 	{
-	    target->features[GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM] = 
+	    target->features[GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM] =
 		GLOBUS_FTP_CLIENT_FALSE;
-	    
+
 	    if(target->attr->parallelism.mode
 	       == GLOBUS_FTP_CONTROL_PARALLELISM_NONE &&
 	       target->attr->layout.mode == GLOBUS_FTP_CONTROL_STRIPING_NONE)
@@ -1113,7 +1114,7 @@ redo:
 	    target->mask,
 	    "DCAU %c%s%s" CRLF,
 	    (char) target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT
-	        ? GLOBUS_FTP_CONTROL_DCAU_SELF : target->attr->dcau.mode, 
+	        ? GLOBUS_FTP_CONTROL_DCAU_SELF : target->attr->dcau.mode,
 	    target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT
 		? " " : "",
 	    target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT
@@ -1124,7 +1125,7 @@ redo:
 	{
 	    break;
 	}
-	
+
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
@@ -1152,7 +1153,7 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_DCAU:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1256,7 +1257,7 @@ redo:
 	{
 	    break;
 	}
-	
+
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
@@ -1280,7 +1281,7 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_PBSZ:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1341,7 +1342,7 @@ redo:
 	{
 	    break;
 	}
-	
+
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
@@ -1365,7 +1366,7 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_PROT:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1397,15 +1398,15 @@ redo:
 	 * skip PASV/PORT */
 	if(client_handle->op == GLOBUS_FTP_CLIENT_DELETE)
 	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE;	    
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE;
 	}
 	else if(client_handle->op == GLOBUS_FTP_CLIENT_MKDIR)
 	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR;	    
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR;
 	}
 	else if(client_handle->op == GLOBUS_FTP_CLIENT_RMDIR)
 	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR;	    
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR;
 	}
 	else if(client_handle->op == GLOBUS_FTP_CLIENT_MOVE)
 	{
@@ -1437,7 +1438,7 @@ redo:
 			  GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
 	}
-	
+
 	goto redo;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV:
@@ -1459,7 +1460,7 @@ redo:
 	}
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_PASV;
-	    
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_DATA_ESTABLISHMENT;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
@@ -1478,7 +1479,7 @@ redo:
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
-	
+
 	result =
 	    globus_ftp_control_send_command(
 		target->control_handle,
@@ -1508,7 +1509,7 @@ redo:
 	    globus_ftp_control_host_port_init(client_handle->pasv_address,
 					      0,
 					      0);
-			
+
 	    result = globus_ftp_control_local_pasv(target->control_handle,
 					           client_handle->pasv_address);
 	    if(result != GLOBUS_SUCCESS)
@@ -1521,9 +1522,9 @@ redo:
 				   + 7 /*SPOR|PORT\r\n\0*/);
 	if(tmpstr == GLOBUS_NULL)
 	{
-	    result = globus_error_put(GLOBUS_ERROR_NO_INFO);
+	    error = GLOBUS_ERROR_NO_INFO;
 
-	    goto result_fault;
+	    goto notify_fault;
 	}
 	else
 	{
@@ -1539,11 +1540,11 @@ redo:
 
 	    if(rc == oldrc)
 	    {
-		result = globus_error_put(GLOBUS_ERROR_NO_INFO);
+		error = GLOBUS_ERROR_NO_INFO;
 
-		goto result_fault;
+	        goto notify_fault;
 	    }
-		
+
 	    for(i = 0; i < client_handle->num_pasv_addresses; i++)
 	    {
 		oldrc = rc;
@@ -1558,9 +1559,9 @@ redo:
 			     client_handle->pasv_address[i].port & 0xff);
 		if(rc == oldrc)
 		{
-		    result = globus_error_put(GLOBUS_ERROR_NO_INFO);
+		    error = GLOBUS_ERROR_NO_INFO;
 
-		    goto result_fault;
+	            goto notify_fault;
 		}
 	    }
 
@@ -1584,7 +1585,7 @@ redo:
 		       GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_PORT;
-	
+
 	    result =
 		globus_ftp_control_send_command(
 			target->control_handle,
@@ -1592,21 +1593,21 @@ redo:
 			globus_i_ftp_client_response_callback,
 			target,
 			tmpstr);
-		    
+
 	    globus_libc_free(tmpstr);
 	}
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
-	
+
 	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_PASV:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1616,7 +1617,7 @@ redo:
 	    globus_l_ftp_client_parse_pasv(response,
 					   &client_handle->pasv_address,
 					   &client_handle->num_pasv_addresses);
-	    
+
 	    if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
 	    {
 		if(client_handle->num_pasv_addresses == 1)
@@ -1660,7 +1661,7 @@ redo:
 		       '\0',
 		       sizeof(globus_i_ftp_client_data_target_t));
 	    }
-	    
+
 	skip_pasv:
 	    if(client_handle->restart_marker.type !=
 	       GLOBUS_FTP_CLIENT_RESTART_NONE)
@@ -1701,7 +1702,7 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_PORT:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1742,13 +1743,13 @@ redo:
 	goto redo;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_STREAM:
-	/* 
+	/*
 	 * REST must be the last thing done on the control connection
 	 * before sending the RETR, STOR, ERET, or ESTO command.
 	 */
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1761,7 +1762,7 @@ redo:
 	}
 	target->state = GLOBUS_FTP_CLIENT_TARGET_REST;
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_MODIFIERS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
             target->url_string,
@@ -1798,13 +1799,13 @@ redo:
 	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_EB:
-	/* 
+	/*
 	 * REST must be the last thing done on the control connection
 	 * before sending the RETR, STOR, ERET, or ESTO command.
 	 */
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1816,7 +1817,7 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_REST;
 	    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_MODIFIERS;
-	
+
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
@@ -1842,7 +1843,7 @@ redo:
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		tmpstr);
-		
+
 	    globus_libc_free(tmpstr);
 	}
 	else
@@ -1859,7 +1860,7 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_REST:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION || 
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
@@ -1881,7 +1882,7 @@ redo:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION;
 	goto redo;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION:
 	switch(client_handle->op)
 	{
@@ -1912,19 +1913,19 @@ redo:
 	    globus_assert(client_handle->op != GLOBUS_FTP_CLIENT_IDLE);
 	    goto finish;
 	}
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_NLST:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
+
 
 	result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
 						 GLOBUS_NULL,
 						 GLOBUS_NULL);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NLST;
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -1932,33 +1933,33 @@ redo:
 
 	client_handle->state =
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "NLST %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"NLST %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -1969,14 +1970,14 @@ redo:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
+
 
 	result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
 						 GLOBUS_NULL,
 						 GLOBUS_NULL);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_LIST;
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -1984,117 +1985,117 @@ redo:
 
 	client_handle->state =
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "LIST %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"LIST %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "DELE %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"DELE %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_RNFR:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "RNFR %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"RNFR %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO:
     {
-        globus_url_t                    dest_url; 
-        
+        globus_url_t                    dest_url;
+
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
         result = (globus_result_t) globus_url_parse(client_handle->dest_url,
@@ -2104,26 +2105,26 @@ redo:
 	{
 	    goto result_fault;
 	}
-        
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "RNTO %s" CRLF,
 	    dest_url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
             globus_url_destroy(&dest_url);
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
 
 	{
-	    result = 
+	    result =
 		globus_ftp_control_send_command(
 		    handle,
 		    "RNTO %s" CRLF,
@@ -2133,7 +2134,7 @@ redo:
 	}
 
         globus_url_destroy(&dest_url);
-        
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -2143,123 +2144,123 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "MKD %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"MKD %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "RMD %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"RMD %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
-    
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
 	    target->mask,
 	    "MDTM %s" CRLF,
 	    target->url.url_path);
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
-	result = 
+
+	result =
 	    globus_ftp_control_send_command(
 		handle,
 		"MDTM %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		target->url.url_path);
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_GET:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
+
 
 	result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
 						 GLOBUS_NULL,
 						 GLOBUS_NULL);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -2267,7 +2268,7 @@ redo:
 
 	client_handle->state =
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
         if(client_handle->eret_alg_str != GLOBUS_NULL)
@@ -2294,14 +2295,14 @@ redo:
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET);
-	
+
 
         if(client_handle->eret_alg_str != GLOBUS_NULL)
 	{
-	    result = 
+	    result =
 		globus_ftp_control_send_command(
 		    handle,
 		    "ERET %s %s" CRLF,
@@ -2312,7 +2313,7 @@ redo:
 	}
 	else
 	{
-	    result = 
+	    result =
 		globus_ftp_control_send_command(
 		    handle,
 		    "RETR %s" CRLF,
@@ -2320,13 +2321,13 @@ redo:
 		    user_arg,
 		    target->url.url_path);
 	}
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 		goto result_fault;
 	}
 	break;
-    
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_PUT:
 	globus_assert(
 	    client_handle->state ==
@@ -2337,15 +2338,15 @@ redo:
 						  GLOBUS_NULL,
 						  GLOBUS_NULL);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
 
-	client_handle->state = 
+	client_handle->state =
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO;
-	
+
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
 	if(client_handle->esto_alg_str != GLOBUS_NULL)
@@ -2373,8 +2374,8 @@ redo:
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO);
 
 	if(client_handle->esto_alg_str != GLOBUS_NULL)
@@ -2390,7 +2391,7 @@ redo:
 	}
 	else if(target->attr->append)
 	{
-	    result = 
+	    result =
 		globus_ftp_control_send_command(
 		    handle,
 		    "APPE %s" CRLF,
@@ -2400,7 +2401,7 @@ redo:
 	}
 	else
 	{
-	    result = 
+	    result =
 		globus_ftp_control_send_command(
 		    handle,
 		    "STOR %s" CRLF,
@@ -2413,19 +2414,19 @@ redo:
 	    goto result_fault;
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_DEST:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
-	
+
 	/* The destination is prepared first. We send all
 	 * of the commands we need to, including the STOR
 	 * or ESTO, and then turn our attention to the
 	 * source.
 	 */
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	
+
 	if(client_handle->esto_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
@@ -2445,18 +2446,18 @@ redo:
 		"STOR %s" CRLF,
 		target->url.url_path);
 	}
-	
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	
-	globus_assert(client_handle->state == 
+
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
-	
+
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
-	
+
 	if(client_handle->esto_alg_str != GLOBUS_NULL)
 	{
 	    result = globus_ftp_control_send_command(
@@ -2476,14 +2477,14 @@ redo:
 		user_arg,
 		    target->url.url_path);
 	}
-	
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
 	}
-	
+
 	target = client_handle->source;
-	
+
 	error =
 	    globus_i_ftp_client_target_activate(client_handle,
 						target,
@@ -2501,17 +2502,17 @@ redo:
 	    }
 	}
 	break;
-	
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	
-	client_handle->state = 
+
+	client_handle->state =
 	    GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER;
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
-	    
+
 	if(client_handle->eret_alg_str)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
@@ -2531,17 +2532,17 @@ redo:
 		"RETR %s" CRLF,
 		target->url.url_path);
 	}
-	    
+
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    break;
 	}
-	globus_assert(client_handle->state == 
+	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER);
-	    
+
 	target->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
-	    
+
 	if(client_handle->eret_alg_str)
 	{
 	    result = globus_ftp_control_send_command(
@@ -2579,7 +2580,7 @@ redo:
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO || 
+	    GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER ||
 	    client_handle->state ==
@@ -2592,7 +2593,7 @@ redo:
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_PRELIMINARY_REPLY)
 	{
-	    /* 
+	    /*
 	     * this should be a "connected" or "using existing
 	     * data connection" response
 	     */
@@ -2603,17 +2604,17 @@ redo:
 	    {
 		target->state =
 		    GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA;
-		
+
 		error =
 		    globus_i_ftp_client_data_dispatch_queue(client_handle);
-		
+
 		if(error != GLOBUS_SUCCESS)
 		{
 		    globus_i_ftp_client_plugin_notify_fault(
 			client_handle,
 			target->url_string,
 			error);
-		    
+
 		    globus_object_free(error);
 
 		    if(client_handle->state
@@ -2632,7 +2633,7 @@ redo:
 			GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
 			client_handle->state ==
 			GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET);
-		    
+
 		    client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
 		    target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 		    globus_ftp_control_force_close(
@@ -2657,7 +2658,7 @@ redo:
 	{
 	    globus_assert(client_handle->state ==
 			  GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER ||
-			  client_handle->state == 
+			  client_handle->state ==
 			  GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER_ONE_COMPLETE);
 	    if(client_handle->state ==
 	       GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER)
@@ -2666,7 +2667,7 @@ redo:
 		client_handle->state =
 		    GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER_ONE_COMPLETE;
 	    }
-	    else if(client_handle->state == 
+	    else if(client_handle->state ==
 		    GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER_ONE_COMPLETE)
 	    {
 		target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
@@ -2698,7 +2699,7 @@ redo:
 		client_handle,
 		target->url_string,
 		client_handle->err);
-	    
+
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	    {
@@ -2713,7 +2714,7 @@ redo:
 		client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
 		client_handle->state ==
-		GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO || 
+		GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||
 		client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER ||
 		client_handle->state ==
@@ -2725,7 +2726,7 @@ redo:
 		 client_handle->state ==
 		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT));
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-	    
+
 	    globus_l_ftp_client_connection_error(client_handle,
 						 target,
 						 error,
@@ -2765,7 +2766,7 @@ redo:
 	    break;
 	}
 	break;
-	    
+
     case GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE:
 	/* Reset the state to setup_connection, so that the url
 	 * caching code knows to keep this one around.
@@ -2774,7 +2775,7 @@ redo:
 	{
 	    if(response->response_class ==
 	       GLOBUS_FTP_POSITIVE_PRELIMINARY_REPLY)
-	    {	
+	    {
 		if(response->code == 111)
 		{
 		    globus_l_ftp_client_parse_restart_marker(client_handle,
@@ -2866,7 +2867,7 @@ redo:
 	     */
 	    globus_assert(client_handle->source == target ||
 			  client_handle->dest == target);
-	    
+
 	    if(client_handle->source == target)
 	    {
 		error =
@@ -2889,7 +2890,7 @@ redo:
 						    client_handle->dest_url,
 						    target->attr,
 						    &new_target);
-		
+
 		if(error != GLOBUS_SUCCESS)
 		{
 		    target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
@@ -2898,26 +2899,26 @@ redo:
 		}
 		client_handle->dest = new_target;
 	    }
-		
+
 	    /* Mark the old target for destruction... */
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 	    /* And release it */
 	    globus_i_ftp_client_target_release(client_handle,
 					       target);
-	    
+
 	    /* Start this new target off */
 	    error = globus_i_ftp_client_target_activate(client_handle,
 							new_target,
 							&registered);
-	    
+
 	    if(registered == GLOBUS_FALSE)
 	    {
 		globus_assert(error ||
-			      client_handle->state == 
+			      client_handle->state ==
 			      GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-			      client_handle->state == 
+			      client_handle->state ==
 			      GLOBUS_FTP_CLIENT_HANDLE_ABORT);
-		/* 
+		/*
 		 * A restart or abort happened during activation, before any
 		 * callbacks were registered. We must deal with them here.
 		 */
@@ -2932,7 +2933,7 @@ redo:
 			client_handle,
 			target->url_string,
 			error);
-		    
+
 		    globus_l_ftp_client_connection_error(client_handle,
 							 target,
 							 error,
@@ -2962,6 +2963,12 @@ redo:
 					 target,
 					 error,
 					 response);
+
+    if(error != caller_error && error != GLOBUS_ERROR_NO_INFO)
+    {
+        globus_object_free(error);
+    }
+
     return;
 
 }
@@ -2999,12 +3006,12 @@ globus_l_ftp_client_parse_site_help(
 
     if (strstr((char *) response->response_buffer, "RETRBUFSIZE") != 0)
     {
-	target->features[GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE] 
+	target->features[GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE]
 	    = GLOBUS_FTP_CLIENT_TRUE;
     }
     if (strstr((char *) response->response_buffer, "RBUFSZ") != 0)
     {
-	target->features[GLOBUS_FTP_CLIENT_FEATURE_RBUFSZ] 
+	target->features[GLOBUS_FTP_CLIENT_FEATURE_RBUFSZ]
 	    = GLOBUS_FTP_CLIENT_TRUE;
     }
     if (((p = strstr((char *) response->response_buffer, "RBUFSIZ")) != 0) &&
@@ -3076,7 +3083,7 @@ globus_l_ftp_client_parse_feat(
 	    /* Last line should contain "211 End" CRLF ONLY */
 	    globus_libc_free(pstart);
 
-	    /* 
+	    /*
 	     * If there are any features which are in the unknown state,
 	     * set them to false now.
 	     */
@@ -3133,7 +3140,7 @@ globus_l_ftp_client_parse_feat(
 		target->features[GLOBUS_FTP_CLIENT_FEATURE_DCAU]
 			= GLOBUS_FTP_CLIENT_TRUE;
 		/* Per our extensions document, if server publishes
-		 * DCAU feature, it must default to DCAU S(elf) 
+		 * DCAU feature, it must default to DCAU S(elf)
 		 * if we used RFC 2228 authentication.
 		 *
 		 * gsi-wuftpd 0.5 and below are broken in this regard.
@@ -3182,7 +3189,7 @@ globus_l_ftp_client_parse_feat(
 			= GLOBUS_FTP_CLIENT_TRUE;
 	    }
 	    p = eol + 2;
-	    
+
 	}
     }
 }
@@ -3240,7 +3247,7 @@ globus_l_ftp_client_parse_pasv(
 	/* skip the initial 227 in the response */
 	p = (char *) response->response_buffer + 3;
     }
-    (*host_port) = globus_libc_calloc((*num_pasv_addresses), 
+    (*host_port) = globus_libc_calloc((*num_pasv_addresses),
 				   sizeof(globus_ftp_control_host_port_t));
 
     for(i = 0; i < (*num_pasv_addresses); i++)
@@ -3269,7 +3276,7 @@ globus_l_ftp_client_parse_pasv(
 }
 
 /**
- * Construct a string suitable for use as an argument to OPTS RETR.   
+ * Construct a string suitable for use as an argument to OPTS RETR.
  *
  * @param target
  *        The target desired containing the layout parameters.
@@ -3278,14 +3285,14 @@ globus_l_ftp_client_parse_pasv(
  *         layout parameter, if it is different from the current
  *         setting on the control handle associated with the
  *         target. If the string is non-NULL, it must be freed by the
- *         caller. 
+ *         caller.
  */
 static
 char *
 globus_l_ftp_client_layout_string(
     globus_i_ftp_client_target_t *		target)
 {
-    char *					ptr = GLOBUS_NULL; 
+    char *					ptr = GLOBUS_NULL;
     globus_size_t				length;
 
     length = 16;		/* " StripeLayout=;\0" */
@@ -3307,7 +3314,7 @@ globus_l_ftp_client_layout_string(
 	        target->layout.round_robin.block_size))
 	{
 	    length += 18;	/* "Blocked;BlockSize=" */
-	    length += 
+	    length +=
 		globus_i_ftp_client_count_digits(
 		    target->attr->layout.round_robin.block_size);
 	    ptr = globus_libc_malloc(length);
@@ -3330,14 +3337,14 @@ globus_l_ftp_client_layout_string(
  * @return This function returns the string representation of the
  *         parallelism parameter, if it is different from the current
  *         setting on the control handle associated with the target. If the
- *         string is non-NULL, it must be freed by the caller. 
+ *         string is non-NULL, it must be freed by the caller.
  */
 static
 char *
 globus_l_ftp_client_parallelism_string(
     globus_i_ftp_client_target_t *		target)
 {
-    char *					ptr = GLOBUS_NULL; 
+    char *					ptr = GLOBUS_NULL;
     globus_size_t				length;
 
     length = 17;		/* " Parallelism=,,;\0" */
@@ -3367,7 +3374,7 @@ globus_l_ftp_client_parallelism_string(
 }
 
 /**
- * Handle a connection fault. 
+ * Handle a connection fault.
  *
  * This function is called from the FTP state machine when a fault
  * occurs. A fault in this scope is one of the following:
@@ -3381,7 +3388,7 @@ globus_l_ftp_client_parallelism_string(
  *
  * There aren't any restart or abort points in this code, but if a
  * restart happened already, in addition to th fault, then we can deal
- * with it. 
+ * with it.
  */
 static
 void
@@ -3425,7 +3432,7 @@ globus_l_ftp_client_connection_error(
 	/* Mark the target for destruction, since we faulted on it. */
 	target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
     }
-    
+
     /*
      * Now, let's figure out to cope with this fault. Get/Put are
      * similar, but 3rd party transfer is rather different
@@ -3442,11 +3449,11 @@ globus_l_ftp_client_connection_error(
 	{
 	    client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
 
-	    /* 
+	    /*
 	     * If we're in this function, then whatever buffers the
 	     * user has registered will not yet be passed to the
 	     * control library. That means we've got to call back for all
-	     * of the data buffers which have been registered. 
+	     * of the data buffers which have been registered.
 	     *
 	     * Because we are in the FAILURE state, the plugins may
 	     * *not* do a restart now.
@@ -3458,7 +3465,7 @@ globus_l_ftp_client_connection_error(
 	     * library, we're done, otherwise, the callbacks for those
 	     * blocks will pick this up and call complete.
 	     */
-	    
+
 	    if(client_handle->num_active_blocks == 0)
 	    {
 		globus_i_ftp_client_transfer_complete(client_handle);
@@ -3496,7 +3503,7 @@ globus_l_ftp_client_connection_error(
 	    if(other_target->state == GLOBUS_FTP_CLIENT_TARGET_START ||
 	       other_target->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION)
 	    {
-		
+
 		/*
 		 * Kill the current target---the other one is idle
 		 */
@@ -3521,7 +3528,7 @@ globus_l_ftp_client_connection_error(
 	    }
 	    else
 	    {
-		/* 
+		/*
 		 * If the target is doing something else, then we will
 		 * just kill it.
 		 */
@@ -3580,7 +3587,7 @@ globus_l_ftp_client_connection_error(
 	if(client_handle->state != GLOBUS_FTP_CLIENT_HANDLE_RESTART)
 	{
 	    client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
-	    
+
 	    globus_i_ftp_client_transfer_complete(client_handle);
 	    return;
 	}
@@ -3712,7 +3719,7 @@ globus_l_ftp_client_parse_restart_marker(
     /* skip 111 Range Marker */
     p += 4;
     while(!isdigit(*p)) p++;
-    
+
     while( sscanf(p, "%"GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT"%n",
 		  &offset, &end, &consumed) >= 2)
     {
@@ -3803,7 +3810,7 @@ globus_l_ftp_client_parse_mdtm(
 	goto error_exit;
     }
     p += 2;
-    
+
     /* 2 digit hour [00-23] */
     rc = sscanf(p, "%02d", &tm.tm_hour);
     if(rc != 1)
