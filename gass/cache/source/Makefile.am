@@ -14,7 +14,7 @@ SUBDIRS= \
 # If this directory builds multiple programs or libraries than these sources
 # will need to be seperated into seperate macros.
 Sources= \
-	globus_gass_cache_lib.c \
+	globus_gass_cache.c \
 	globus_gass_cache.h \
 	globus_i_gass_cache.h
 
