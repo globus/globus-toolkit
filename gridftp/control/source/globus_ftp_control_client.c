@@ -1084,8 +1084,7 @@ globus_l_ftp_control_end_of_reply(
             length=0;
             total_length=0;
 
-            out_buf = globus_libc_malloc(
-                (response->response_length + 3) * 6 / 8);
+            out_buf = globus_libc_malloc(response->response_length + 4);
             
             if( out_buf == GLOBUS_NULL)
             {
@@ -1142,18 +1141,22 @@ globus_l_ftp_control_end_of_reply(
                 current++;
             }
 
+            total_length++;
             memcpy(&(out_buf[total_length]),
                    &(response->response_buffer[found]),
                    response->response_length-found);
                    
             globus_libc_free(response->response_buffer);
             response->response_buffer=out_buf;
-            response->response_buffer_size=
-                (response->response_length + 3) * 6 / 8;
+            response->response_buffer_size= response->response_length + 4;
             response->response_length=
                 total_length+response->response_length-found;
             found=total_length;
-            last=total_length-length-1;
+            last=total_length-length-2;
+            
+        }
+        else
+        {
             
         }
 
