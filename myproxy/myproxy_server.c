@@ -194,7 +194,6 @@ main(int argc, char *argv[])
        if (handle_client(socket_attrs, server_context) < 0) {
 	  my_failure("error in handle_client()");
        } 
-       exit(0);
     } else {    
        /* Run as a daemon */
        listenfd = myproxy_init_server(socket_attrs);
@@ -237,8 +236,8 @@ main(int argc, char *argv[])
 	  } 
 	  _exit(0);
        }
-       exit(0);
     }
+    return 0;
 }   
 
 int

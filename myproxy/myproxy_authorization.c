@@ -134,8 +134,9 @@ char * auth_cert_create_client_data (authorization_data_t *data,
       goto end;
    }
 
-   if (ssl_sign(data->server_data, strlen(data->server_data), proxy,
-	        &signature, &signature_len) == SSL_ERROR) {
+   if (ssl_sign((unsigned char *)data->server_data,
+		strlen(data->server_data), proxy,
+	        &signature, (int *)&signature_len) == SSL_ERROR) {
       verror_prepend_string("ssl_sign()");
       goto end;
    }
@@ -189,7 +190,7 @@ int auth_cert_check_client (authorization_data_t *auth_data,
    char * authorization_subject = NULL;
    int return_status = 0;
 
-   p = auth_data->client_data;
+   p = (unsigned char *)auth_data->client_data;
 
    signature_len = ntohl(*(unsigned int*)p);
    p += 4;

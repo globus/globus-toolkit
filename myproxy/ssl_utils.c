@@ -267,7 +267,7 @@ bio_to_buffer(BIO				*bio,
     }
 
     /* Success */
-    *pbuffer = buffer;
+    *pbuffer = (unsigned char *)buffer;
     *pbuffer_len = buffer_len;
     return_status = SSL_SUCCESS;
     
@@ -992,7 +992,8 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
     }
 
     if (PEM_write_bio_PrivateKey(bio, creds->private_key, cipher,
-				 (char *) pass_phrase, pass_phrase_len,
+				 (unsigned char *) pass_phrase,
+				 pass_phrase_len,
 				 PEM_NO_CALLBACK) == SSL_ERROR)
     {
 	verror_put_string("Error packing private key");
@@ -1676,7 +1677,8 @@ ssl_sign(unsigned char *data, int length,
 
    EVP_SignInit(&ctx, EVP_sha1());
    EVP_SignUpdate(&ctx, (void *)data, length);
-   if (EVP_SignFinal(&ctx, *signature, signature_len, creds->private_key) != 1) {
+   if (EVP_SignFinal(&ctx, *signature, (unsigned int *)signature_len,
+		     creds->private_key) != 1) {
       verror_put_string("Creating signature (EVP_SignFinal())");
       ssl_error_to_verror();
       free(*signature);
