@@ -78,6 +78,10 @@ EXTERN_C_END
 #undef HAVE_NETDB_H
 #endif
 
+#ifndef HAVE_STDARG_H
+#undef  HAVE_STDARG_H
+#endif
+
 #ifndef HAVE_STRUCT_IOVEC
 #undef HAVE_STRUCT_IOVEC
 #endif
