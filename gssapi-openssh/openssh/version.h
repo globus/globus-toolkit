@@ -19,6 +19,7 @@
 #endif
 
 #define SSH_VERSION	"OpenSSH_4.0"
+
 #define SSH_PORTABLE	"p1"
 #define SSH_RELEASE	SSH_VERSION SSH_PORTABLE \
 			" NCSA_GSSAPI_20050312" \
