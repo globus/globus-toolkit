@@ -255,92 +255,99 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 <p align="right">[ <a href="#top">top</a> ]</p>
 		
       <h2><A name=XIO></A>XIO</h2>
-      <p>Globus XIO is an extensible input/output 
-      library for the Globus Toolkit®. For this and future releases of the 
-      Globus Toolkit the <code>globus_xio</code> library will provide all input and output 
-      functionality for the C code. </p>
-		<p>Globus XIO will replace the <code>globus_io</code> 
-      library. A portability layer is included with the release so legacy 
-      applications written to <code>globus_io</code> will be supported; however it is 
-      recommended that future applications code straight to the 
-		<code>globus_xio</code> API. </p>
-     
-		<p>Further information can be found in the 
-		<a href="http://www-unix.globus.org/developer/xio/">XIO documentation
-		page</a>. </p>
-		
+
+      <p>Globus XIO is an extensible input/output library for the Globus
+      Toolkit®. For this and future releases of the Globus Toolkit the
+      <code>globus_xio</code> library provides all input and output
+      functionality for the C code.</p>
+
+      <p>Globus XIO will eventually replace the <code>globus_io</code>
+      library completely. In the meantime, a portability layer is
+      included with the release so legacy applications written to
+      <code>globus_io</code> are still supported; however it is
+      recommended that future applications code straight to the
+      <code>globus_xio</code> API. </p>
+
+		<p>Further information can be found in the <a
+		href="http://www-unix.globus.org/developer/xio/">XIO
+		documentation page</a>. </p>
+
 		<p><b>Features:</b></p>
       <UL>
-        <LI>Simple intuitive open/close/read/write API <br>
+	<LI>Simple intuitive open/close/read/write API <br>
 		<LI>Swappable IO implementations <br>
 <LI>Simple API to many different types of IO<BR></LI></UL>
 <p><strong>Current driver implementations:</strong></p>
       <UL>
-        <LI>Transport drivers: 
-        <UL>
-          <LI>tcp 
-          <LI>udp 
-          <LI>file</LI></UL></LI></UL>
+	<LI>Transport drivers: <UL>
+	  <LI>tcp <LI>udp <LI>file</LI></UL></LI></UL>
       <UL>
-        <LI>Transform drivers: 
-        <UL>
-          <LI>gsi 
-          <LI>http</LI></UL></LI></UL>
-      <p align="right">[ <a href="#top">top</a> ]</p>
-      <h2><A name=GRAM></A>GRAM</h2>
-		
-			<p>The Globus Toolkit Grid Services GRAM component in the GT 3.2  release
-			   contains many important bug fixes and improvements on existing
+	<LI>Transform drivers: <UL>
+	  <LI>gsi <LI>http</LI></UL></LI></UL>
+      <p align="right">[ <a href="#top">top</a> ]</p> <h2><A
+      name=GRAM></A>GRAM</h2>
+
+			<p>The Globus Toolkit Grid Services GRAM component
+			in the GT 3.2  release
+			   contains many important bug fixes and
+			   improvements on existing
 		functionality.</p>
 			<p><strong>Improvements: </strong></p>
 		    <ul>
-              <li>For the web service (WS) Managed Job Service ( <strong>MJS </strong>),
-                we improved the following: <br>
-        <ul>
-          <li>Faults are more easily internationalized. <br>
-          <li>The local scheduler scripts provide better error messages. <br>
-          <li>Instances are deactivated during periods of inactivity in order
-            to increase scalability by reducing memory consumption. </li>
-        </ul>
-              </li>
+	      <li>For the web service (WS) Managed Job Service (
+	      <strong>MJS </strong>),
+		we improved the following: <br>
+	<ul>
+	  <li>Faults are more easily internationalized. <br> <li>The
+	  local scheduler scripts provide better error messages. <br>
+	  <li>Instances are deactivated during periods of inactivity
+	  in order
+	    to increase scalability by reducing memory consumption. </li>
+	</ul>
+	      </li>
       </ul>
 		    <ul>
-              <li>For the pre-WS JobManager, we applied a patch for bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=802">802 </a> which
-                enables an alternate method for job status detection for a user
-                (this is used in Condor-G). <br>
-              <li>For both WS MJS and pre-WS JobManager, the local scheduler
-                scripts <br>
-    have been improved to reduce the chance of errors due to NFS caching delays
-    and increase scalability by reducing memory consumption. <br>
-              <li>The local scheduler scripts have been improved to store job files in a unique job directory instead of the gass cache. <br>
-              <li>The WS GRAM components are now IPV6 compliant. <br>
-              <li>For the managed-job-globusrun program, we added these options: <br>
-                  <ul>
-                    <li>The -deleg [full | limited] option indicates limited
-                      or full proxy delegation. <br>
-                    <li>The -proxy [ &lt;file path&gt;] option selects
-                      credentials to use for authentication. </li>
-                  </ul>
-              </li>
+	      <li>For the pre-WS JobManager, we applied a patch for bug <a
+	      href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=802">802
+	      </a> which
+		enables an alternate method for job status detection
+		for a user (this is used in Condor-G). <br>
+	      <li>For both WS MJS and pre-WS JobManager, the local
+	      scheduler
+		scripts <br>
+    have been improved to reduce the chance of errors due to NFS caching
+    delays and increase scalability by reducing memory consumption. <br>
+	      <li>The local scheduler scripts have been improved to
+	      store job files in a unique job directory instead of the
+	      gass cache. <br> <li>The WS GRAM components are now IPV6
+	      compliant. <br> <li>For the managed-job-globusrun program,
+	      we added these options: <br>
+		  <ul>
+		    <li>The -deleg [full | limited] option indicates
+		    limited
+		      or full proxy delegation. <br>
+		    <li>The -proxy [ &lt;file path&gt;] option selects
+		      credentials to use for authentication. </li>
+		  </ul>
+	      </li>
       </ul>
-		    <p><strong>Important bug fixes: </strong></p>
-		    <ul>
-              <li>For the WS MJS, we fixed: <br>
-                  <ul>
-                    <li>UHE GRIM credential lifetime to obey user configuration. <br>
-                    <li>job recovery problems. <br>
-                    </li>
-                  </ul>
-              <li>For the WS GRAM compontents, we fixed UHE recovery and automatic
-                shutdown (due to inactivity) </li>
+		    <p><strong>Important bug fixes: </strong></p> <ul>
+	      <li>For the WS MJS, we fixed: <br>
+		  <ul>
+		    <li>UHE GRIM credential lifetime to obey user
+		    configuration. <br> <li>job recovery problems. <br>
+		    </li>
+		  </ul>
+	      <li>For the WS GRAM compontents, we fixed UHE recovery
+	      and automatic
+		shutdown (due to inactivity) </li>
       </ul>
 	    <p>
-		Further information can be found in the 
-			<A 
-      href="gram_notes.html">GRAM 
+		Further information can be found in the
+			<A
+      href="gram_notes.html">GRAM
 		release notes</A>. </p>
-        <p align="right">[ <a href="#top">top</a> ]
-        </p>
+	<p align="right">[ <a href="#top">top</a> ] </p>
 
       <h2><A name=Information_Services></A>Index Services</h2>
       <p>The GT 3.2  release of the Index Services components contains
