@@ -2796,12 +2796,19 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-		    yylval.Bignum = atoll(cp);
+#ifdef USE_GLOBUS_DATA_CODE
+		    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
+#else
+                    yylval.Number = atoi(cp);
+#endif
 		    cbuf[cpos] = c;
 
 		    state = EARGS5;
-
+#ifdef USE_GLOBUS_DATA_CODE
 		    return (BIGNUM);
+#else
+                    return(NUMBER);
+#endif                    
 		}
 		break;
 
@@ -2812,12 +2819,20 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-		    yylval.Bignum = atoll(cp);
+#ifdef USE_GLOBUS_DATA_CODE
+		    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
+#else
+                    yylval.Number = atoi(cp);
+#endif
 		    cbuf[cpos] = c;
 
 		    state = STR1;
 
+#ifdef USE_GLOBUS_DATA_CODE
 		    return (BIGNUM);
+#else
+                    return(NUMBER);
+#endif                    
 		}
 		break;
 	    case OPTSARGS:
