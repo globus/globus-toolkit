@@ -388,8 +388,10 @@ sub generate_build_list()
             }
             print "\n";
 
-            # For SDK bundles, also create a threaded version
-            if ( ( $bun =~ /sdk$/ ) and not ( $flavor =~ /thr/ ) )
+            # Also list a threaded version for unthreaded bundles
+            # May not always make sense to build, but good to have
+            # the target available when it does.
+            if ( not ( $flavor =~ /thr/ ) )
             {
                 print "$bun" . "-thr: ";
                 foreach my $pack ( @sdkbundle )

@@ -35,6 +35,7 @@ BUNDLE gt4-c-ws-core-test
         globus_c_wsrf_core_test_interop_bindings
         globus_c_wsrf_core_test_interop_client_test
         globus_c_wsrf_providers_test_service_bindings
+        globus_c_wsrf_providers_test_wsdl
         globus_c_wsrf_sample_counter_client_test
         globus_c_wsrf_provider_test
         globus_c_wsrf_resource_test
