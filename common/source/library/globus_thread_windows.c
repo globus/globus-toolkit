@@ -25,6 +25,7 @@ CVS Information:
 
 // Global data
 globus_list_t * internalThreadList= GLOBUS_NULL;
+globus_mutex_t internalMutex= NULL;
 
 /******************************************************************************
                               Module definition
@@ -49,6 +50,19 @@ int globus_i_thread_pre_activate(void)
  */
 static int globus_l_thread_activate(void)
 {
+	globus_libc_lock();
+	if ( internalMutex == NULL )
+	{
+		int rc;
+		rc= globus_mutex_init( &internalMutex, NULL );
+		if ( rc != GLOBUS_SUCCESS )
+		{
+			globus_libc_unlock();
+			return rc;
+		}
+	}
+	globus_libc_unlock();
+
     return globus_module_activate(GLOBUS_THREAD_COMMON_MODULE);
 }
 /* globus_l_thread_activate() */
@@ -59,10 +73,8 @@ static int globus_l_thread_activate(void)
  */
 static int globus_l_thread_deactivate(void)
 {
-	// This could be nasty, but we should probably destroy the list
-	// of thread objects and maybe even call the destructor functions
-	// for any TLS
-	// TODO
+	if ( internalMutex != NULL )
+		globus_mutex_destroy( &internalMutex );
 
     return globus_module_deactivate(GLOBUS_THREAD_COMMON_MODULE);
 }
@@ -94,7 +106,7 @@ int globus_l_thread_key_matches( void * current_key,
 		return 1;
 
 	return 0;
-}
+} /* globus_l_thread_key_matches */
 
 int globus_l_thread_ithread_matches( void * current_ithread, 
 	void * targetThreadID )
@@ -110,7 +122,7 @@ int globus_l_thread_ithread_matches( void * current_ithread,
 		return 1;
 
 	return 0;
-}
+} /* globus_l_thread_ithread_matches */
 
 unsigned int __stdcall UserFunctionLauncher( void * arg )
 {
@@ -125,7 +137,6 @@ unsigned int __stdcall UserFunctionLauncher( void * arg )
 	(*internalThread->userFunctionInfo.userFunction)(
 	 internalThread->userFunctionInfo.userArg );
 
-	// call the TLS destructors
 	while ( !globus_list_empty( 
 	 internalThread->dataDestructionKeyList ) )
 	{
@@ -155,15 +166,17 @@ unsigned int __stdcall UserFunctionLauncher( void * arg )
 	}
 
 	// remove the internal thread object from the global list
+	globus_mutex_lock( &internalMutex );
 	subList= globus_list_search_pred( internalThreadList,
 	 globus_l_thread_ithread_matches, &internalThread->threadID );
 	globus_list_remove( &internalThreadList, subList ); 
+	globus_mutex_unlock( &internalMutex );
 
 	// delete the internal thread object associated with this thread
 	free( internalThread );
 
 	return 0;
-}
+} /* UserFunctionLauncher */
 
 
 /*
@@ -186,14 +199,17 @@ int globus_thread_create(
 		return GLOBUS_NULL_POINTER_PARAMETER;
 
 	// block all other threads
-	if ( globus_libc_lock() != 0 )
+	if ( globus_mutex_lock( &internalMutex ) != 0 )
 		return GLOBUS_FAILURE;
 
 	// create an internal thread object
 	internalThread= (globus_i_thread_t *)malloc( 
 	 sizeof(globus_i_thread_t) );
 	if ( internalThread == NULL )
+	{
+		globus_mutex_unlock( &internalMutex );
 		return GLOBUS_FAILURE;
+	}
 	// initialize it
 	internalThread->userFunctionInfo.userFunction= func;
 	internalThread->userFunctionInfo.userArg= user_arg;
@@ -210,7 +226,7 @@ int globus_thread_create(
 		if ( thread != NULL )
 			thread->threadID= 0;
 
-		globus_libc_unlock();
+		globus_mutex_unlock( &internalMutex );
 
 		/* how should we report the error- just return an error code?
 		 *  log it? FOR NOW- just return the errno
@@ -225,6 +241,8 @@ int globus_thread_create(
 	// add the internal thread to the list of internal threads
 	globus_list_insert( &internalThreadList, internalThread );
 
+	globus_mutex_unlock( &internalMutex );
+
 	/* we have to close the handle, otherwise a memory leak will occur */
 	CloseHandle( (HANDLE)threadHandle );
 
@@ -235,9 +253,8 @@ int globus_thread_create(
 		thread->threadID= threadID;
 	}
 
-	globus_libc_unlock();
 	return 0;
-}
+} /* globus_thread_create */
 
 /*
  * globus_thread_exit()
@@ -267,7 +284,7 @@ void globus_thread_yield(void)
 globus_bool_t globus_i_am_only_thread(void)
 {
 	return GLOBUS_FALSE;
-}
+} /* globus_i_am_only_thread */
  
 /*
  * globus_thread_self()
@@ -314,13 +331,13 @@ int globus_thread_once(
 		return GLOBUS_NULL_POINTER_PARAMETER;
 
 	// block all other threads
-	if ( globus_libc_lock() != 0 )
+	if ( globus_mutex_lock( &internalMutex ) != 0 )
 		return GLOBUS_FAILURE;
 
 	// check the once control
 	if ( *once_control == GLOBUS_THREAD_ONCE_CALLED )
 	{
-		globus_libc_unlock();
+		globus_mutex_unlock( &internalMutex );
 		return GLOBUS_FAILURE;
 	}
 
@@ -331,7 +348,7 @@ int globus_thread_once(
 	*once_control= GLOBUS_THREAD_ONCE_CALLED;
 
 	// unblock
-	globus_libc_unlock();
+	globus_mutex_unlock( &internalMutex );
 
 	return GLOBUS_SUCCESS;
 } /* globus_thread_once() */
@@ -381,6 +398,9 @@ int globus_thread_key_delete(globus_thread_key_t key)
 	
 	rc= TlsFree( key.TLSIndex );
 
+	// block all other threads
+	globus_mutex_lock( &internalMutex );
+
 	// remove all references to this key from the all of the thread
 	// objects in their data destruction lists
 	// iterate through the list of threads
@@ -399,6 +419,7 @@ int globus_thread_key_delete(globus_thread_key_t key)
 			globus_list_remove( &internalThread->dataDestructionKeyList,
 			 dataDestructionKeyList );
     }
+	globus_mutex_unlock( &internalMutex );
 
 	// reset the data so that it appears to be invalid
 	key.TLSIndex= TLS_OUT_OF_INDEXES;
@@ -443,10 +464,13 @@ int globus_thread_setspecific(
 
 	// find the thread object associated with the current thread
 	// get the internal thread object associated with this thread
+	globus_mutex_lock( &internalMutex );
 	subList= globus_list_search_pred( internalThreadList,
 	 globus_l_thread_ithread_matches, &threadID );
+	globus_mutex_unlock( &internalMutex );
 	if ( subList == NULL ) // thread not in list- definitely a bad sign
 		return GLOBUS_FAILURE;
+
 	internalThread= (globus_i_thread_t *)
 		globus_list_first( subList );
 
@@ -497,7 +521,7 @@ int globus_mutexattr_init(globus_mutexattr_t *attr)
 	
 	attr->securityAttributes= NULL; /* for now */
 	return GLOBUS_SUCCESS;
-}
+} /* globus_mutexattr_init() */
 
 /*
  * globus_mutexattr_destroy()
@@ -509,7 +533,7 @@ int globus_mutexattr_destroy(globus_mutexattr_t *attr)
 		return GLOBUS_NULL_POINTER_PARAMETER;
 
 	return GLOBUS_SUCCESS;
-}
+} /* globus_mutexattr_destroy() */
 
 /*
  * globus_mutex_init()
@@ -629,7 +653,7 @@ int globus_condattr_init(globus_condattr_t *attr)
 	
 	attr->securityAttributes= NULL; /* for now */
 	return GLOBUS_SUCCESS;
-}
+} /* globus_condattr_init() */
 
 /*
  * globus_condattr_destroy()
@@ -641,7 +665,7 @@ int globus_condattr_destroy(globus_condattr_t *attr)
 		return GLOBUS_NULL_POINTER_PARAMETER;
 	
 	return GLOBUS_SUCCESS;
-}
+} /* globus_condattr_destroy() */
 
 /*
  * globus_cond_init()

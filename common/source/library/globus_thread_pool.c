@@ -322,12 +322,15 @@ globus_i_thread_start(
 	}
 	else
 	{
-            globus_l_thread_pool_active_threads++;
+		int rc;
 
-	    globus_thread_create(GLOBUS_NULL,
+		globus_l_thread_pool_active_threads++;
+
+	    rc= globus_thread_create(GLOBUS_NULL,
 	                         GLOBUS_NULL,
 				 globus_l_thread_pool_thread_start,
 				 task);
+		globus_assert( rc == 0 );
 	}
     }
     globus_mutex_unlock(&globus_l_thread_pool_q_mutex);

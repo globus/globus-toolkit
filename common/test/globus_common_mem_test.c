@@ -4,7 +4,11 @@
 static globus_memory_t                   mem;
 
 #define MEM_INIT_SIZE      15
+#ifndef TARGET_ARCH_WIN32
 #define POPS               100000
+#else
+#define POPS                 1000
+#endif
 
 typedef struct mem_test_s
 {

@@ -105,6 +105,13 @@ globus_fifo_move(
     globus_fifo_t *				                        fifo_dest,
     globus_fifo_t *				                        fifo_src);
 
+/**
+ *  Convert the fifo into a list.
+ */
+extern globus_list_t *
+globus_fifo_convert_to_list(
+	globus_fifo_t *										fifo );
+
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_FIFO_H */

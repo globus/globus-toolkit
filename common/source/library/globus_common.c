@@ -52,6 +52,18 @@ globus_module_descriptor_t		globus_i_common_module =
 static int
 globus_l_common_activate(void)
 {
+#ifdef TARGET_ARCH_WIN32
+	int rc;
+	WORD wVersionRequested;
+	WSADATA wsaData;
+
+	// initialize Winsock for the database functions in globus_libc.c
+	wVersionRequested = MAKEWORD( 2, 0 ); /* version 2.0 */	 
+	rc= WSAStartup( wVersionRequested, &wsaData );
+	if ( rc != 0 ) /* error- Winsock not available */
+		return GLOBUS_FAILURE;
+#endif
+
   if ( globus_module_activate(GLOBUS_ERROR_MODULE) != GLOBUS_SUCCESS )
     {
       return GLOBUS_FAILURE;
@@ -97,6 +109,11 @@ globus_l_common_deactivate(void)
     {
 	rc = GLOBUS_FAILURE;
     }
+
+#ifdef TARGET_ARCH_WIN32
+	// shutdown Winsock
+	WSACleanup();
+#endif
 
     return rc;
     

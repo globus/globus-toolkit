@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{FD7449B6-2CD3-4584-BC22-7181CD906B73}"
+	Name="DebugThreadedLib"
+	ProjectGUID="{63F381CD-C469-42F2-8C8F-028C23CAEC34}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\core\source\win32\nonthreaded;..\win32"
+				AdditionalIncludeDirectories="..\..\..\core\source\win32\threaded;&quot;$(SolutionDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -33,7 +33,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_common_win32dbg.lib"/>
+				OutputFile="$(OutDir)/globus_common_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -70,7 +70,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLib.lib"/>
+				OutputFile="$(OutDir)/DebugThreadedLib.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -93,7 +93,7 @@
 				RelativePath="..\library\globus_args.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_callback_nothreads.c">
+				RelativePath="..\library\globus_callback_threads.c">
 			</File>
 			<File
 				RelativePath="..\library\globus_common.c">
@@ -174,19 +174,22 @@
 				RelativePath="..\library\globus_thread_common.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_thread_none.c">
-			</File>
-			<File
 				RelativePath="..\library\globus_thread_pool.c">
 			</File>
 			<File
 				RelativePath="..\library\globus_thread_rw_mutex.c">
 			</File>
 			<File
+				RelativePath="..\library\globus_thread_windows.c">
+			</File>
+			<File
 				RelativePath="..\library\globus_tilde_expand.c">
 			</File>
 			<File
 				RelativePath="..\library\globus_time.c">
+			</File>
+			<File
+				RelativePath="..\library\globus_timeq.c">
 			</File>
 			<File
 				RelativePath="..\library\globus_url.c">
@@ -200,12 +203,6 @@
 			</File>
 			<File
 				RelativePath="..\library\globus_callback.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_cfifo.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_common.h">
 			</File>
 			<File
 				RelativePath="..\library\globus_common_include.h">
@@ -289,19 +286,22 @@
 				RelativePath="..\library\globus_thread_common.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_thread_none.h">
-			</File>
-			<File
 				RelativePath="..\library\globus_thread_pool.h">
 			</File>
 			<File
 				RelativePath="..\library\globus_thread_rw_mutex.h">
 			</File>
 			<File
+				RelativePath="..\library\globus_thread_windows.h">
+			</File>
+			<File
 				RelativePath="..\library\globus_tilde_expand.h">
 			</File>
 			<File
 				RelativePath="..\library\globus_time.h">
+			</File>
+			<File
+				RelativePath="..\library\globus_timeq.h">
 			</File>
 			<File
 				RelativePath="..\library\globus_url.h">

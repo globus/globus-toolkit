@@ -276,3 +276,15 @@ globus_fifo_move(
     return 0;
 }
 
+globus_list_t *
+globus_fifo_convert_to_list(
+	globus_fifo_t *										fifo )
+{
+    struct globus_fifo_s *                          s_fifo;
+    
+    assert(fifo != GLOBUS_NULL);
+    s_fifo = *fifo;
+    assert(s_fifo != GLOBUS_NULL);
+
+	return s_fifo->head;
+}

@@ -200,7 +200,7 @@ typedef GLOBUS_OFF_T                                    globus_off_t;
     };
 #endif 
 
-// POSIX error code remapping
+/* POSIX error code remapping */
 #ifdef TARGET_ARCH_WIN32
 	#define EWOULDBLOCK EAGAIN
 	#define ETIMEDOUT 145 /* according to POSIX */

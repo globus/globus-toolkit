@@ -396,6 +396,9 @@ globus_io_register_listen(
     globus_result_t			rc;
     globus_object_t *			err;
     static char *			myname="globus_io_register_listen";
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
 
     if(handle == GLOBUS_NULL)
     {
@@ -420,6 +423,7 @@ globus_io_register_listen(
 	
 	return globus_error_put(err);
     }
+
     globus_i_io_mutex_lock();
     
     switch(handle->state)
@@ -466,6 +470,29 @@ globus_io_register_listen(
         GLOBUS_NULL,
         GLOBUS_TRUE,
         GLOBUS_I_IO_READ_OPERATION);
+
+#ifdef TARGET_ARCH_WIN32
+	if ( rc == GLOBUS_SUCCESS )
+	{
+		// post a packet in order to trigger the callback
+		returnCode= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoListening );
+		if ( returnCode ) // a fatal error occurred
+		{
+			// unregister the quick read operation
+            globus_i_io_unregister_operation( handle, GLOBUS_TRUE, 
+				GLOBUS_I_IO_READ_OPERATION);
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					returnCode );
+			goto error_exit;
+		}
+	}
+#endif
 
     globus_i_io_mutex_unlock();
 
@@ -739,20 +766,28 @@ globus_i_io_connect_callback(
     if(result == GLOBUS_SUCCESS)
     {
         sock_errlen = sizeof(sock_err);
-	errno = 0;
+		errno = 0;
 
-	if(getsockopt(handle->fd, SOL_SOCKET, SO_ERROR, &sock_err, &sock_errlen) < 0)
-	{
-	    sock_err = errno;
-	}
-	if(sock_err)
-	{
-	    result = globus_error_put(
-	        globus_io_error_construct_system_failure(GLOBUS_IO_MODULE,
-	                                                 GLOBUS_NULL,
-	                                                 handle,
-	                                                 sock_err));
-	}
+#ifndef TARGET_ARCH_WIN32
+		if(getsockopt(handle->fd, SOL_SOCKET, SO_ERROR, &sock_err, &sock_errlen) < 0)
+		{
+#else
+		// perhaps change this to get the value of SOL_CONNECT_TIME?
+		if(getsockopt((SOCKET)handle->io_handle, SOL_SOCKET, SO_ERROR, 
+			&sock_err, &sock_errlen) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif
+			sock_err = errno;
+		}
+		if(sock_err)
+		{
+			result = globus_error_put(
+				globus_io_error_construct_system_failure(GLOBUS_IO_MODULE,
+														GLOBUS_NULL,
+														handle,
+														sock_err));
+		}
     }
     if(result == GLOBUS_SUCCESS)
     {
@@ -760,7 +795,7 @@ globus_i_io_connect_callback(
     }
     else
     {
-	handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
+		handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     }
     
     info->callback(info->callback_arg, handle, result);

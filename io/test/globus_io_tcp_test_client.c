@@ -1,5 +1,9 @@
 #include "globus_io.h"
 
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
+
 void test1(int argc, char **argv);
 
 typedef struct
@@ -121,7 +125,11 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
+#ifndef TARGET_ARCH_WIN32
     while (( c = getopt(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
+#else
+    while (( c = getoptWin(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
+#endif
     {
 	switch(c)
 	{

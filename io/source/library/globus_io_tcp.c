@@ -128,6 +128,9 @@ globus_io_tcp_register_connect(
     globus_i_io_callback_info_t *       info;
     static char *			myname=
 	                                "globus_io_tcp_register_connect";
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
 
     if(handle == GLOBUS_NULL)
     {
@@ -222,6 +225,14 @@ globus_io_tcp_register_connect(
      */
     err = globus_l_io_tcp_bind_socket(handle, attr, &myport);
 
+	/*	The following line of code was originally placed beneath the
+	 *	codeblock that begins with the call to 
+	 *	globus_i_io_setup_nonblocking(). I moved it here so that it
+	 *	apply to both the Unix and Windows versions.
+	 */
+    handle->type = GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED;
+
+#ifndef TARGET_ARCH_WIN32
     /* get it ready for nonblocking I/O */
     if ((rc = globus_i_io_setup_nonblocking(handle)) != GLOBUS_SUCCESS)
     {
@@ -234,9 +245,7 @@ globus_io_tcp_register_connect(
 	globus_libc_close(handle->fd);
 
 	goto error_exit;
-    }
-    handle->type = GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED;
-    
+    }  
 
     /* start connecting */
     connect_succeeded = GLOBUS_FALSE;
@@ -293,6 +302,42 @@ globus_io_tcp_register_connect(
 	    }
 	}
     }
+#else
+	// FOR NOW- This call will block (per discussion with Steve) because
+	// the I/O completion port model does not support the connect() call
+	// TODO- change this so that an asynchronous model for calling
+	// connect() can be supported
+	use_his_addr= his_addr;
+	if ( connect( (SOCKET)handle->io_handle, 
+	 (struct sockaddr *)&use_his_addr, 
+	  sizeof(use_his_addr)) == SOCKET_ERROR )
+	{
+		int save_error;
+		globus_i_io_winsock_get_last_error();
+		save_error= errno;
+		err = globus_io_error_construct_system_failure(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			handle,
+			save_error );
+
+		globus_i_io_winsock_close( handle );
+
+		goto error_exit;
+	}
+    /* get it ready for nonblocking I/O */
+    if ((rc = globus_i_io_setup_nonblocking(handle)) != GLOBUS_SUCCESS)
+    {
+		err = globus_error_get(rc);
+		
+		globus_i_io_debug_printf(2,
+					("%s(): "
+					"globus_i_io_setup_nonblocking() failed\n",
+					myname));
+		globus_i_io_winsock_close( handle );
+		goto error_exit;
+    }
+#endif /* TARGET_ARCH_WIN32 */
 
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTING;
     
@@ -338,6 +383,29 @@ globus_io_tcp_register_connect(
             }
         }
     }
+#ifdef TARGET_ARCH_WIN32
+    if( rc == GLOBUS_SUCCESS )
+	{
+		// post a packet in order to trigger the callback
+		returnCode= globus_i_io_windows_post_completion( 
+					handle, 
+					WinIoConnecting );
+		if ( returnCode ) // a fatal error occurred
+		{
+			// unregister the quick write operation
+            globus_i_io_unregister_operation( handle, GLOBUS_TRUE, 
+				GLOBUS_I_IO_WRITE_OPERATION);
+
+			err = globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					returnCode );
+		    globus_i_io_mutex_unlock();
+			goto error_exit;
+		}
+	}
+#endif
 
     globus_i_io_mutex_unlock();
 
@@ -598,9 +666,16 @@ globus_io_tcp_create_listener(
 	goto error_exit;
     }
     
+#ifndef TARGET_ARCH_WIN32
     if(listen(handle->fd,
 	      (backlog < 0 ? SOMAXCONN : backlog)) < 0)
     {
+#else
+    if(listen( (SOCKET)handle->io_handle,
+	      (backlog < 0 ? SOMAXCONN : backlog)) == SOCKET_ERROR )
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /*TARGET_ARCH_WIN32 */
 	save_errno = errno;
 
 	globus_assert(GLOBUS_FALSE && "listen() failed");
@@ -613,10 +688,18 @@ globus_io_tcp_create_listener(
 	goto error_exit;    
     }
 
+#ifndef TARGET_ARCH_WIN32
     if(getsockname(handle->fd,
 		   (struct sockaddr *) & my_addr,
 		   &len) < 0)
     {
+#else
+    if(getsockname( (SOCKET)handle->io_handle,
+		   (struct sockaddr *) & my_addr,
+		   &len) == SOCKET_ERROR )
+	{
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
         save_errno = errno;
 
         err = globus_io_error_construct_system_failure(
@@ -637,7 +720,11 @@ globus_io_tcp_create_listener(
     return GLOBUS_SUCCESS;
     
   error_exit:
+#ifndef TARGET_ARCH_WIN32
     globus_libc_close(handle->fd);
+#else
+	globus_i_io_windows_close( handle );
+#endif /* TARGET_ARCH_WIN32 */
     globus_l_io_tcp_handle_destroy(handle);
     
     return globus_error_put(err);
@@ -703,6 +790,9 @@ globus_io_tcp_register_accept(
     globus_object_t *			err;
     static char *			myname="globus_io_tcp_register_accept";
     globus_netlen_t			addrlen;
+#ifdef TARGET_ARCH_WIN32
+	int returnCode;
+#endif
     
     if(listener_handle == GLOBUS_NULL)
     {
@@ -863,6 +953,7 @@ globus_io_tcp_register_accept(
 
     proceed = GLOBUS_FALSE;
 
+#ifndef TARGET_ARCH_WIN32
     /* make the new socket by calling accept() */
     while(!proceed)
     {
@@ -899,6 +990,43 @@ globus_io_tcp_register_accept(
 	    proceed = GLOBUS_TRUE;
 	}
     }
+#else
+
+    /* make the new socket by calling accept() */
+	// NOTE: For now, this function will loop continuously if the
+	// call to accept() fails with WSAEWOULDBLOCK
+    while(!proceed)
+    {
+		SOCKET newSocket;		
+		newSocket= accept( (SOCKET)listener_handle->io_handle,
+				 &addr,
+				 &addrlen);
+		if( newSocket == INVALID_SOCKET )
+		{			
+			globus_i_io_winsock_get_last_error();
+			save_errno = errno;
+			if( save_errno != EWOULDBLOCK )
+			{
+				globus_i_io_debug_printf(2,
+						("globus_io_tcp_accept(): "
+						"accept() failed\n"));
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						new_handle,
+						save_errno);
+
+				goto restore_listener_error_exit;
+			}
+		}
+		else
+		{
+			new_handle->io_handle= (HANDLE)newSocket;
+			proceed = GLOBUS_TRUE;
+		}
+    }
+#endif
 
     /* The new socket is nearly ready now. We now restore the listener
      * to it's original state.
@@ -933,14 +1061,37 @@ globus_io_tcp_register_accept(
 				 (stderr, "%s(): "
 				  "globus_i_io_setup_nonblocking() failed\n",
 				  myname));
+#ifndef TARGET_ARCH_WIN32
 	globus_libc_close(new_handle->fd);
+#else
+		globus_i_io_windows_close( new_handle );
+#endif /* TARGET_ARCH_WIN32 */
 
 	goto error_exit;
     }
 
     new_handle->state = GLOBUS_IO_HANDLE_STATE_ACCEPTING;
 
-    /* if no authentication is to be done, callback now */
+#ifdef TARGET_ARCH_WIN32
+	// initialize the WinIoOperation structs
+	globus_i_io_windows_init_io_operations( new_handle );
+	/* associate the new socket with the completion port */
+	if ( CreateIoCompletionPort( new_handle->io_handle,
+		completionPort, (ULONG_PTR)new_handle, 0 ) == NULL )
+	{
+		err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				new_handle,
+				globus_i_io_windows_get_last_error() );
+	
+		globus_i_io_windows_close( new_handle );
+
+		goto error_exit;
+	}
+#endif
+
+	/* if no authentication is to be done, callback now */
     if(new_handle->securesocket_attr.authentication_mode ==
        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
@@ -953,6 +1104,28 @@ globus_io_tcp_register_accept(
             GLOBUS_NULL,
             GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
+#ifdef TARGET_ARCH_WIN32
+		if( rc == GLOBUS_SUCCESS)
+		{
+			// post a packet in order to trigger the callback
+			returnCode= globus_i_io_windows_post_completion( 
+						new_handle, 
+						WinIoAccepting );
+			if ( returnCode ) // a fatal error occurred
+			{
+				// unregister the quick write operation
+				globus_i_io_unregister_operation( new_handle, 
+					GLOBUS_TRUE, GLOBUS_I_IO_WRITE_OPERATION);
+
+				err = globus_io_error_construct_system_failure(
+						GLOBUS_IO_MODULE,
+						GLOBUS_NULL,
+						new_handle,
+						returnCode );
+				goto error_exit;
+			}
+		}
+#endif
     }
     else
     {
@@ -1319,12 +1492,22 @@ globus_io_tcp_set_attr(
     /* set local socket options */
     if(instance->nodelay != handle->tcp_attr.nodelay)
     {
+#ifndef TARGET_ARCH_WIN32
 	if(setsockopt(handle->fd,
 		      IPPROTO_TCP,
 		      TCP_NODELAY,
 		      (char *) &instance->nodelay,
 		      sizeof(instance->nodelay)) < 0)
 	{
+#else
+		if(setsockopt( (SOCKET)handle->io_handle,
+				IPPROTO_TCP,
+				TCP_NODELAY,
+				(char *) &instance->nodelay,
+				sizeof(instance->nodelay)) == SOCKET_ERROR )
+		{
+			globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
 	    save_errno = errno;
 
 	    err = globus_io_error_construct_system_failure(
@@ -1392,7 +1575,11 @@ globus_io_tcp_set_attr(
   undo_nodelay:
     if(instance->nodelay != handle->tcp_attr.nodelay)
     {
+#ifndef TARGET_ARCH_WIN32
 	setsockopt(handle->fd,
+#else
+		setsockopt( (SOCKET)handle->io_handle,
+#endif
 		   IPPROTO_TCP,
 		   TCP_NODELAY,
 		   (char *) &handle->tcp_attr.nodelay,
@@ -2005,11 +2192,20 @@ globus_io_tcp_get_local_address(
 
 	goto error_exit;
     }
+#ifndef TARGET_ARCH_WIN32
     if(getsockname(handle->fd,
 		   (struct sockaddr *) & my_addr,
 		   &len) < 0)
     {
-	int save_errno;
+		int save_errno;
+#else
+    if(getsockname( (SOCKET)handle->io_handle,
+		   (struct sockaddr *) & my_addr,
+		   &len) == SOCKET_ERROR )
+    {
+		int save_errno;
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32*/
 
         save_errno = errno;
 
@@ -2120,11 +2316,20 @@ globus_io_tcp_get_remote_address(
 
 	goto error_exit;
     }
+#ifndef TARGET_ARCH_WIN32
     if(getpeername(handle->fd,
 		   (struct sockaddr *) & my_addr,
 		   &len) < 0)
     {
 	int save_errno;
+#else
+    if(getpeername( (SOCKET)handle->io_handle,
+		   (struct sockaddr *) & my_addr,
+		   &len) == SOCKET_ERROR )
+    {
+		int save_errno;
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
 
         save_errno = errno;
 
@@ -2182,10 +2387,17 @@ globus_l_io_tcp_create_socket(
     
     handle->context = GSS_C_NO_CONTEXT;
 
+#ifndef TARGET_ARCH_WIN32
     if((handle->fd = socket(AF_INET,
 			    SOCK_STREAM,
 			    0)) < 0)
     {
+#else
+    if( (SOCKET)( handle->io_handle = (HANDLE)socket( AF_INET,
+	 SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
+    {
+		globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
 	save_errno = errno;
 
 	err = globus_io_error_construct_system_failure(
@@ -2204,13 +2416,34 @@ globus_l_io_tcp_create_socket(
 	goto error_exit;
     }
     
+#ifdef TARGET_ARCH_WIN32
+	/* initialize the WinIoOperation structs */
+	globus_i_io_windows_init_io_operations( handle );
+	/* associate the socket with the completion port */
+	if ( CreateIoCompletionPort( handle->io_handle,
+		completionPort, (ULONG_PTR)handle, 0 ) == NULL )
+		{
+		err = globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				globus_i_io_windows_get_last_error() );
+	
+		goto error_exit;
+	}
+#endif
     return GLOBUS_SUCCESS;
     
   error_exit:
+#ifndef TARGET_ARCH_WIN32
     if(handle->fd >= 0)
     {
 	globus_libc_close(handle->fd);
     }
+#else
+    if( (SOCKET)handle->io_handle != INVALID_SOCKET )
+		globus_i_io_windows_close( handle );
+#endif /* TARGET_ARCH_WIN32 */
 
     return globus_error_put(err);
 }
@@ -2263,12 +2496,22 @@ globus_l_io_setup_tcp_socket(
     {
 	if(handle->tcp_attr.nodelay)
 	{
+#ifndef TARGET_ARCH_WIN32
 	    if(setsockopt(handle->fd,
 			  IPPROTO_TCP,
 			  TCP_NODELAY,
 			  (char *) &one,
 			  sizeof(one)) < 0)
 	    {
+#else
+			if(setsockopt( (SOCKET)handle->io_handle,
+				IPPROTO_TCP,
+				TCP_NODELAY,
+				(char *) &one,
+				sizeof(one)) == SOCKET_ERROR )
+			{
+				globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
 		save_errno = errno;
 		goto error_exit;
 	    }
@@ -2296,12 +2539,22 @@ globus_l_io_setup_tcp_socket(
 		fastack_arg = atoi(fastack_str);
 		if (fastack_arg < 0) fastack_arg = 0;
 		
+#ifndef TARGET_ARCH_WIN32
 		if(setsockopt(handle->fd,
 			      IPPROTO_TCP,
 			      TCP_FASTACK,
 			      &fastack_arg,
 			      sizeof(fastack_arg)) < 0)
 		{
+#else
+				if(setsockopt(handle->io_handle,
+						IPPROTO_TCP,
+						TCP_FASTACK,
+						&fastack_arg,
+						sizeof(fastack_arg)) == SOCKET_ERROR )
+				{
+					globus_i_io_winsock_get_last_error();
+#endif /* TARGET_ARCH_WIN32 */
 		    save_errno = errno;               
 		    goto error_exit;
 		}
@@ -2363,17 +2616,18 @@ globus_l_io_tcp_bind_socket(
     do
     {
 	found_port = GLOBUS_FALSE;
-        if(!strcmp(instance->interface, "000.000.000.000"))
+        if(!strcmp(instance->interface_addr, "000.000.000.000"))
         {
             my_addr.sin_addr.s_addr = INADDR_ANY;
         }
         else
         {
-	    my_addr.sin_addr.s_addr = inet_addr(&instance->interface[0]);
+	    my_addr.sin_addr.s_addr = inet_addr(&instance->interface_addr[0]);
 	}
         my_addr.sin_family = AF_INET;
         my_addr.sin_port = htons(myport);
 
+#ifndef TARGET_ARCH_WIN32
         if(bind(handle->fd,
 	    (struct sockaddr *)&my_addr,
 	    len) >= 0)
@@ -2382,6 +2636,16 @@ globus_l_io_tcp_bind_socket(
         }
         else
         {
+#else
+		if( bind( (SOCKET)handle->io_handle, 
+		 (struct sockaddr *)&my_addr, len ) == 0 )
+        {
+            found_port = GLOBUS_TRUE;
+        }
+        else
+        {
+			globus_i_io_winsock_get_last_error();
+#endif
             (myport)++;
 
 	    if(myport > end_port)
