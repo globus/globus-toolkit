@@ -438,7 +438,7 @@ globus_ftp_control_connect(
 	   handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_UNCONNECTED &&
 	   handle->cc_handle.signal_deactivate == GLOBUS_FALSE)
 	{
-	    handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTING;
+	    handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_CONNECTING;
 	    globus_fifo_enqueue(&handle->cc_handle.readers,
 				element);
 	    handle->cc_handle.cb_count++;
