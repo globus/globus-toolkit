@@ -111,7 +111,8 @@ globus_l_gram_genfilename(char * prefix,
                           char * sufix);
 
 static int
-globus_l_gram_stage_file(char **url,
+globus_l_gram_stage_file(char *url,
+                         char **staged_file_path,
                          int mode);
 
 static int
@@ -295,6 +296,7 @@ main(int argc,
     char *                 jm_globus_host_osname = NULL;
     char *                 jm_globus_host_osversion = NULL;
     globus_gram_jobmanager_request_t * request;
+    char * tmp_unparse_str = NULL;
 
     /* Initialize modules that I use */
     rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
@@ -854,6 +856,7 @@ main(int argc,
             request->failure_code = 
                  GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED;
         }
+
     }
 
     if (rc == GLOBUS_SUCCESS)
@@ -1611,6 +1614,7 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     struct stat statbuf;
     char ** tmp_param;
     char * gram_myjob;
+    char * staged_file_path;
 
     if (rsl_tree == NULL)
     {
@@ -2040,20 +2044,39 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
     
     /* GEM: Stage executable and stdin to local filesystem, if they are URLs.
-       Do this before paradyn rewriting.
+     * Do this before paradyn rewriting.
      */
-    if (globus_l_gram_stage_file(&(req->executable), 0700) != GLOBUS_SUCCESS)
+
+    if (globus_l_gram_stage_file(req->executable,
+                                 &staged_file_path,
+                                 0700) != GLOBUS_SUCCESS)
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_STAGING_EXECUTABLE;
         return(GLOBUS_FAILURE);
     }
 
-    if (globus_l_gram_stage_file(&(req->my_stdin), 0400) != GLOBUS_SUCCESS)
+    if (staged_file_path)
+    {
+        req->executable = staged_file_path;
+        grami_fprintf( req->jobmanager_log_fp, 
+              "JM: executable staged filename is %s\n", staged_file_path);
+    }
+
+    if (globus_l_gram_stage_file(req->my_stdin,
+                                 &staged_file_path,
+                                 0400) != GLOBUS_SUCCESS)
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_STAGING_STDIN;
         return(GLOBUS_FAILURE);
     }
-    
+
+    if (staged_file_path)
+    {
+        req->my_stdin = staged_file_path;
+        grami_fprintf( req->jobmanager_log_fp, 
+              "JM: stdin staged filename is %s\n", staged_file_path);
+    }
+
     if (grami_is_paradyn_job(req))
     {
 	if (!grami_paradyn_rewrite_params(req))
@@ -2062,11 +2085,17 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             return(GLOBUS_FAILURE);
 	}
 
-        if (globus_l_gram_stage_file(&(req->executable), 0700) 
-            != GLOBUS_SUCCESS)
+        if (globus_l_gram_stage_file(req->executable,
+                                     &staged_file_path,
+                                     0700) != GLOBUS_SUCCESS)
         {
             req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_STAGING_EXECUTABLE;
             return(GLOBUS_FAILURE);
+        }
+
+        if (staged_file_path)
+        {
+            req->executable = staged_file_path;
         }
     }
 
@@ -2251,46 +2280,46 @@ Parameters:
 Returns:
 ******************************************************************************/
 static int
-globus_l_gram_stage_file(char **url, int mode)
+globus_l_gram_stage_file(char *url, char **staged_file_path, int mode)
 {
     globus_url_t gurl;
     int rc;
     int error_flag = 0;
 
-    if(url == NULL)
+    *staged_file_path = GLOBUS_NULL;
+
+    if (url == GLOBUS_NULL)
     {
         return(GLOBUS_FAILURE);
     }
 
-    if(strlen(*url) == 0)
+    if (strlen(url) == 0)
     {
         return(GLOBUS_FAILURE);
     }
-    grami_fprintf( graml_log_fp, 
-                   "JM: staging file = %s\n", *url);
+    grami_fprintf( graml_log_fp, "JM: staging file = %s\n", url);
 
-    rc = globus_url_parse(*url, &gurl);
+    rc = globus_url_parse(url, &gurl);
     if(rc == GLOBUS_SUCCESS)	/* this is a valid URL */
     {
 	unsigned long timestamp;
-	char *tmpname;
 	
 	rc = globus_gass_cache_add(&globus_l_cache_handle,
-				   *url,
+				   url,
 				   graml_job_contact,
 				   GLOBUS_TRUE,
 				   &timestamp,
-				   &tmpname);
+				   staged_file_path);
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
 	    globus_gass_cache_add_done(&globus_l_cache_handle,
-				       *url,
+				       url,
 				       graml_job_contact,
 				       timestamp);
 	}
 	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
-	    int fd = open(tmpname,
+	    int fd = open(*staged_file_path,
 			  O_WRONLY|O_TRUNC,
 			  mode);
 	    if(gurl.scheme_type == GLOBUS_URL_SCHEME_FILE)
@@ -2307,7 +2336,7 @@ globus_l_gram_stage_file(char **url, int mode)
 	    }
 	    else
 	    {
-		error_flag = globus_gass_client_get_fd(*url,
+		error_flag = globus_gass_client_get_fd(url,
 					  GLOBUS_NULL,
 					  fd,
 					  GLOBUS_GASS_LENGTH_UNKNOWN,
@@ -2317,12 +2346,10 @@ globus_l_gram_stage_file(char **url, int mode)
 	    }
 	    close(fd);
 	    globus_gass_cache_add_done(&globus_l_cache_handle,
-				       *url,
+				       url,
 				       graml_job_contact,
 				       timestamp);
 	}
-	globus_libc_free(*url);
-        *url = tmpname;
     }
     globus_url_destroy(&gurl);
     grami_fprintf( graml_log_fp, "JM: new name = %s\n", *url);
@@ -2424,7 +2451,7 @@ globus_l_gram_getenv_var(char * env_var_name,
         }
         else
         {
-            env_var = NULL;
+            env_var = GLOBUS_NULL;
         }
     }
 
@@ -2557,7 +2584,7 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
                 user_proxy_path);
             globus_libc_free(unique_file_name);
             req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_OPENING_USER_PROXY;
-            return(NULL);
+            return(GLOBUS_NULL);
         }
 
         if ((new_proxy_fd = open(cache_user_proxy_filename,
