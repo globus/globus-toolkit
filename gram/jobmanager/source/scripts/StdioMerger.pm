@@ -39,7 +39,6 @@ sub add_file
     my $type = shift;
     my $array;
     my $index;
-    my $format = "\%s/std\%s\%03d";
     my $new_name;
 
     if($type eq 'out')
@@ -52,7 +51,18 @@ sub add_file
     }
     $index = scalar(@{$array});
 
-    $new_name = sprintf($format, $self->{DIR}, $type, $index);
+    if ($index == 0)
+    {
+        if ($type eq 'out') {
+            $new_name = $self->{STDOUT};
+        } else {
+            $new_name = $self->{STDERR};
+        }
+    }
+    else
+    {
+        $new_name = sprintf('%s/std%s.%03d', $self->{DIR}, $type, $index);
+    }
 
     if($new_name eq '')
     {
@@ -93,6 +103,9 @@ sub poll_list
 
     foreach my $record (@{$self->{$which . '_FILES'}})
     {
+        if ($record->[1] eq $self->{$which}) {
+            next;
+        }
         my @stat = CORE::stat($record->[1]);
         next if @stat == 0;
 
@@ -150,7 +163,7 @@ sub store_state
 {
     my $self = shift;
     my $tmp_filename = $self->{MERGE_FILENAME} . '.tmp';
-    my $format = '%s "%s" %s' . "\n";
+    my $format = "%s \"%s\" %s\n";
 
     local(*TMP);
     open(TMP, '>' . $tmp_filename);
@@ -190,32 +203,6 @@ sub load_state
     close IN;
 
     return 0;
-}
-
-sub pipe_out_cmd
-{
-    my @result;
-    local(*READ);
-
-    my $pid = open( READ, "-|" );
-    return undef unless defined $pid;
-
-    if ( $pid )
-    {
-        # parent
-        chomp(@result = <READ>);
-        close(READ);
-    } else {
-        # child
-        open( STDERR, '>>/dev/null' );
-        select(STDERR); $|=1;
-        select(STDOUT); $|=1;
-        if (!  exec { $_[0] } @_ )
-        {
-            exit(127);
-        }
-    }
-    wantarray ? @result : $result[0];
 }
 
 1;
