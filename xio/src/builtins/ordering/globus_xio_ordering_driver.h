@@ -31,11 +31,4 @@ typedef enum
 } globus_xio_ordering_cmd_t;	
 
 
-enum
-{
-    GLOBUS_XIO_ORDERING_READ_ERROR, 
-    GLOBUS_XIO_ORDERING_WRITE_ERROR,
-    GLOBUS_XIO_ORDERING_CNTL_ERROR 
-};
-
 #endif
