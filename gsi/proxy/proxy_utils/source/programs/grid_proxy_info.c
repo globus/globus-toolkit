@@ -132,8 +132,8 @@ main(
     globus_gsi_statcheck_t              status;
     char *                              subject;
     char *                              issuer;
-    globus_gsi_cert_utils_proxy_type_t  proxy_type;
-    char *                              proxy_type_name;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    char *                              cert_type_name;
     time_t                              lifetime;
     globus_gsi_cred_handle_t            proxy_cred = NULL;
     X509 *                              proxy_cert = NULL;
@@ -413,8 +413,8 @@ main(
     }
 
     /* type: restricted, limited or full */
-    result = globus_gsi_cred_check_proxy(proxy_cred,
-                                         &proxy_type);
+    result = globus_gsi_cred_get_cert_type(proxy_cred,
+                                           &cert_type);
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(
@@ -424,55 +424,50 @@ main(
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
     
-    switch(proxy_type)
+    switch(cert_type)
     {
-    case GLOBUS_FULL_PROXY:
-        proxy_type_name = "full";
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY:
+        cert_type_name = "Proxy draft compliant proxy";
         break;
-    case GLOBUS_LIMITED_PROXY:
-        proxy_type_name = "limited";
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY:
+        cert_type_name = "full globus proxy";
         break;
-    case GLOBUS_RESTRICTED_PROXY:
-        proxy_type_name = "restricted";
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY:
+        cert_type_name = "limited globus proxy";
         break;
-    case GLOBUS_NOT_PROXY:
-        proxy_type_name = "not a proxy";
-        break;
-    case GLOBUS_ERROR_PROXY:
-    default:
-
+      default:
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Invalid proxy type\n\n");
+            "\n\nERROR: Not a proxy\n\n");
         globus_module_deactivate_all();
         exit(1);
     }
     
     for (arg_index = 1; arg_index < argc; arg_index++)
     {
-        argp = argv[arg_index];
-        if (strcmp(argp,"-subject") == 0)
-        {
-            printf("%s\n", subject);
-        }
-        else if (strcmp(argp, "-issuer") == 0)
-        {
-            printf("%s\n", issuer);
-        }
-        else if (strcmp(argp, "-timeleft") == 0)
-        {
-            printf("%ld\n", (long) ((lifetime >= 0) ? lifetime : -1));
-        }
-        else if (strcmp(argp, "-type") == 0)
-        {
-            printf("%s\n", proxy_type_name);
-        }
-        else if (strcmp(argp, "-strength") == 0)
-        {
-            printf("%d\n", strength);
-        }
-        else if (strcmp(argp, "-text") == 0)
-        {
+	argp = argv[arg_index];
+	if (strcmp(argp,"-subject") == 0)
+	{
+	    printf("%s\n", subject);
+	}
+	else if (strcmp(argp, "-issuer") == 0)
+	{
+	    printf("%s\n", issuer);
+	}
+	else if (strcmp(argp, "-timeleft") == 0)
+	{
+	    printf("%ld\n", (long) ((lifetime >= 0) ? lifetime : -1));
+	}
+	else if (strcmp(argp, "-type") == 0)
+	{
+	    printf("%s\n", cert_type_name);
+	}
+	else if (strcmp(argp, "-strength") == 0)
+	{
+	    printf("%d\n", strength);
+	}
+	else if (strcmp(argp, "-text") == 0)
+	{
             X509_print_fp(stdout, proxy_cert);
         }
         else if (strcmp(argp, "-all") == 0)
@@ -482,11 +477,11 @@ main(
                    "type     : %s\n" 
                    "strength : %d bits\n"
                    "path     : %s\n"
-                   "timeleft : ",
-                   subject,
-                   issuer,
-                   proxy_type_name,
-                   strength,
+		   "timeleft : ",
+		   subject,
+		   issuer,
+		   cert_type_name,
+		   strength,
                    proxy_filename);
 
             if (lifetime <= 0)
@@ -524,7 +519,7 @@ main(
                "timeleft : ",
                subject,
                issuer,
-               proxy_type_name,
+               cert_type_name,
                strength);
         
         if (lifetime <= 0)

@@ -74,6 +74,15 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_openssl_module;
 
+/**
+ * Proxy Cert Info defines
+ * @ingroup globus_openssl_activation
+ */
+
+#define PROXYCERTINFO_OID               "1.3.6.1.4.1.3536.1.222"
+#define PROXYCERTINFO_SN                "PROXYCERTINFO"
+#define PROXYCERTINFO_LN                "Proxy Certificate Info Extension"
+
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_OPENSSL_H */
