@@ -3564,6 +3564,7 @@ globus_i_gsc_list_line(
     int                                 ctr;
     char *                              buf;
     char *                              tmp_ptr;
+    char *                              line;
     GlobusGridFTPServerName(globus_i_gsc_list_line);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -3571,11 +3572,16 @@ globus_i_gsc_list_line(
     buf = globus_libc_strdup("");
     for(ctr = 0; ctr < stat_count; ctr++)
     {
-        tmp_ptr = globus_common_create_string("%s%s\r\n",
-            buf,
-            globus_i_gsc_list_single_line(&stat_info[ctr]));
-        globus_free(buf);
-        buf = tmp_ptr;
+        line = globus_i_gsc_list_single_line(&stat_info[ctr]);
+        if(line != NULL)
+        {
+            tmp_ptr = globus_common_create_string(
+                "%s%s\r\n", buf, line);
+            
+            globus_free(line);
+            globus_free(buf);
+            buf = tmp_ptr;
+        }
     }
 
     GlobusGridFTPServerDebugInternalExit();

@@ -615,7 +615,6 @@ globus_l_gsc_cmd_cwd_cb(
     void *                                  user_arg)
 {
     int                                     code;
-    char *                                  l_path;
     char *                                  msg = NULL;
     char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_cmd_cwd_cb);
@@ -664,23 +663,13 @@ globus_l_gsc_cmd_cwd_cb(
         }
         else
         {
-            l_path = globus_i_gsc_concat_path(op->server_handle, path);
-            if(l_path == NULL)
+            if(op->server_handle->cwd != NULL)
             {
-                code = 550;
-                msg = globus_common_create_string(_FSMSL("Could not change directory."),
-                    path);
+                globus_free(op->server_handle->cwd);
             }
-            else
-            {
-                if(op->server_handle->cwd != NULL)
-                {
-                    globus_free(op->server_handle->cwd);
-                }
-                op->server_handle->cwd = globus_libc_strdup(path);
-                code = 250;
-                msg = globus_libc_strdup(_FSMSL("CWD command successful."));
-            }
+            op->server_handle->cwd = globus_libc_strdup(path);
+            code = 250;
+            msg = globus_libc_strdup(_FSMSL("CWD command successful."));
         }
     }
     if(msg == NULL)
@@ -703,10 +692,6 @@ globus_l_gsc_cmd_cwd_cb(
 
   err:
 
-    if(l_path != NULL)
-    {
-        globus_free(l_path);
-    }
     if(msg != NULL)
     {
         globus_free(msg);
@@ -1212,26 +1197,14 @@ globus_l_gsc_cmd_syst(
     int                                     argc,
     void *                                  user_arg)
 {
-    char *                                  msg;
-    struct utsname                          uname_info;
     GlobusGridFTPServerName(globus_l_gsc_cmd_syst);
 
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_OTHER);
-    uname(&uname_info);
-
-    msg = globus_common_create_string(_FSMSL("215 %s.\r\n"), uname_info.sysname);
-    if(msg == NULL)
-    {
-        goto err;
-    }
-    globus_gsc_959_finished_command(op, msg);
-    globus_free(msg);
+    
+    globus_gsc_959_finished_command(op, "215 UNIX Type: L8\r\n");
 
     return;
-
-  err:
-    globus_i_gsc_command_panic(op);
 }
 
 static void
