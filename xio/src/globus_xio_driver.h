@@ -159,6 +159,9 @@
 
 #include <stdarg.h>
 
+typedef globus_xio_operation_s *                globus_xio_operation_t;
+
+
 /**
  *  @ingroup driver_interface_grp  -- this is likely change
  *  give a caller a reference to the driver structure
@@ -295,40 +298,28 @@ typedef globus_result_t
 (*globus_xio_driver_server_accept_t)(
     void *                                      driver_server,
     void *                                      driver_attr,
-    globus_xio_driver_accept_request_t          accept_req);
-
-typedef void
-(*globus_xio_driver_accept_callback_t)(
-    globus_xio_driver_server_t                  server_handle,
-    globus_result_t                             result,
-    void *                                      user_arg);
+    globus_xio_driver_operation_t               accept_op);
 
 globus_result_t
 globus_xio_driver_pass_accept(
-    globus_xio_driver_server_t                  server_handle,
-    globus_xio_driver_accept_callback_t         cb,
+    globus_xio_driver_accpet_operation_t        accept_op,
+    globus_xio_driver_callback_t                cb,
     void *                                      user_arg);
 
-void
-globus_xio_driver_finished_accept(
-    globus_xio_accepted_handle_t                accepted_handle,
-    void *                                      driver_target,
-    globus_result_t                             result);
-
 typedef void
-(*globus_xio_driver_accept_cancel_callback_t)(
-    globus_xio_driver_accept_request_t          accept_req,
+(*globus_xio_driver_cancel_callback_t)(
+    globus_xio_driver_operation_t               op,
     void *                                      user_arg);
  
 void
-globus_xio_server_enable_cancel(
-    globus_xio_driver_accept_request_t          accept_req,
-    globus_xio_driver_accept_cancel_callback_t  cancel_cb,
+globus_xio_driver_enable_cancel(
+    globus_xio_driver_operation_t               accept_op,
+    globus_xio_driver_cancel_callback_t         cancel_cb,
     void *                                      user_arg);
 
 void
 globus_xio_server_disable_cancel(
-    globus_xio_driver_accept_request_t          accept_req);
+    globus_xio_driver_operation_t               op);
 
 /**
  *  Driver API finished accept
