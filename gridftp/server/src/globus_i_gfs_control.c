@@ -1109,6 +1109,7 @@ globus_l_gfs_request_passive_data(
         data_info->subject = attr.dcau.subject.subject;
         data_info->dcau = attr.dcau.mode;
         data_info->pathname = globus_libc_strdup(pathname);
+        data_info->max_cs = max;
         
     result = globus_i_gfs_data_request_passive(
         NULL,

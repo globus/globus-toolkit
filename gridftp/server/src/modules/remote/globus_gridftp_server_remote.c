@@ -64,7 +64,7 @@ globus_l_gfs_ipc_finished_cb(
 typedef struct globus_l_gfs_remote_stripe_info_s
 {
     globus_gfs_ipc_handle_t             ipc_handle;
-    globus_gfs_data_finished_info_t *   data_info;
+    char *                              cs;
 } globus_l_gfs_remote_stripe_info_t;
 
 
@@ -89,7 +89,7 @@ globus_l_gfs_ipc_data_cb(
     stripe_info = (globus_l_gfs_remote_stripe_info_t *)
         globus_calloc(1, sizeof(globus_l_gfs_remote_stripe_info_t));
     stripe_info->ipc_handle = ipc_handle;
-    stripe_info->data_info = &reply->info.data;
+    stripe_info->cs = globus_libc_strdup(reply->info.data.contact_strings[0]);
     
     bounce_info->stripes_pending--;
     
@@ -126,7 +126,7 @@ globus_l_gfs_ipc_data_cb(
                 globus_list_first(list);
             /* XXX handle case where cs_count > 1 */
             finished_info->info.data.contact_strings[ndx] =
-                globus_libc_strdup(stripe_info->data_info->contact_strings[0]);
+                globus_libc_strdup(stripe_info->cs);
         }        
         globus_gridftp_server_operation_finished(
             bounce_info->op,
@@ -398,12 +398,38 @@ globus_l_gfs_remote_recv(
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
+    globus_l_gfs_remote_stripe_info_t * stripe_info;
+    globus_list_t *                     stripe_list;
+    int                                 request_id;
+    globus_list_t *                     list;
     GlobusGFSName(globus_l_gfs_remote_recv);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
-    
+
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, transfer_info, my_handle);
+    
+    stripe_list = (globus_list_t *) transfer_info->data_handle_id;
+        
+    for(list = stripe_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        stripe_info = (globus_l_gfs_remote_stripe_info_t *) 
+            globus_list_first(list);
+        
+        bounce_info->stripes_pending++;
+        
+        result = globus_gfs_ipc_request_recv(
+            stripe_info->ipc_handle,
+            &request_id,
+            transfer_info,
+            globus_l_gfs_ipc_finished_cb,
+            globus_l_gfs_ipc_event_cb,
+            bounce_info); 
+    }
+
+/*
             
     result = globus_gfs_ipc_handle_get(
         my_handle->user_id,
@@ -413,7 +439,7 @@ globus_l_gfs_remote_recv(
         bounce_info,
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info);        
-                    
+*/                    
     return result;
 }
 
@@ -453,13 +479,37 @@ globus_l_gfs_remote_send(
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
+    globus_l_gfs_remote_stripe_info_t * stripe_info;
+    globus_list_t *                     stripe_list;
+    int                                 request_id;
+    globus_list_t *                     list;
     GlobusGFSName(globus_l_gfs_remote_send);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
-    
+
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, transfer_info, my_handle);
-            
+    
+    stripe_list = (globus_list_t *) transfer_info->data_handle_id;
+        
+    for(list = stripe_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        stripe_info = (globus_l_gfs_remote_stripe_info_t *) 
+            globus_list_first(list);
+        
+        bounce_info->stripes_pending++;
+        
+        result = globus_gfs_ipc_request_send(
+            stripe_info->ipc_handle,
+            &request_id,
+            transfer_info,
+            globus_l_gfs_ipc_finished_cb,
+            globus_l_gfs_ipc_event_cb,
+            bounce_info); 
+    }
+/*            
     result = globus_gfs_ipc_handle_get(
         my_handle->user_id,
         transfer_info->pathname,
@@ -468,7 +518,7 @@ globus_l_gfs_remote_send(
         bounce_info,
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info);        
-                    
+*/                    
     return result;
 }
 
@@ -575,7 +625,11 @@ globus_l_gfs_remote_passive(
         my_handle->user_id,
         NULL,
         &stripe_count);
-        
+    
+    if(data_info->max_cs != -1 && stripe_count > data_info->max_cs)
+    {
+        stripe_count = data_info->max_cs;
+    } 
     for(stripe_ndx = 0; stripe_ndx < stripe_count; stripe_ndx++)
     {        
         result = globus_gfs_ipc_handle_get(

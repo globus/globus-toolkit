@@ -275,9 +275,11 @@ typedef struct globus_gfs_data_info_s
     /** pathname that will be transferred (or NULL if not delayed PASV) */
     char *                              pathname;
 
-    /** number of contact strings */
+    /** max number of contact strings to return (for PASV) */
+    int                                 max_cs;
+    /** number of contact strings (PORT) */
     int                                 cs_count;
-    /** array of contact strings */
+    /** array of contact strings (PORT) */
     const char **                       contact_strings;
 } globus_gfs_data_info_t;
 

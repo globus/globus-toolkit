@@ -310,9 +310,26 @@ globus_l_gfs_ipc_open_kickout(
     {
         switch(ipc->state)
         {
-            case GLOBUS_GFS_IPC_STATE_GETTING:
             case GLOBUS_GFS_IPC_STATE_OPENING:
-                ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
+                if(!ipc->local)
+                {
+                    new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+                    res = globus_xio_register_read(
+                        ipc->xio_handle,
+                        new_buf,
+                        GFS_IPC_HEADER_SIZE,
+                        GFS_IPC_HEADER_SIZE,
+                        NULL,
+                        globus_l_gfs_ipc_read_header_cb,
+                        ipc);
+                    if(res != GLOBUS_SUCCESS && ipc->error_cb)
+                    {
+                        ipc->error_cb(ipc, res, ipc->error_arg);
+                        globus_free(new_buf);
+                    }
+                }
+            case GLOBUS_GFS_IPC_STATE_GETTING:
+                ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
                 break;
 
             default:
@@ -320,23 +337,6 @@ globus_l_gfs_ipc_open_kickout(
                 break;
         }
 
-        if(!ipc->local)
-        {
-            new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
-            res = globus_xio_register_read(
-                ipc->xio_handle,
-                new_buf,
-                GFS_IPC_HEADER_SIZE,
-                GFS_IPC_HEADER_SIZE,
-                NULL,
-                globus_l_gfs_ipc_read_header_cb,
-                ipc);
-            if(res != GLOBUS_SUCCESS && ipc->error_cb)
-            {
-                ipc->error_cb(ipc, res, ipc->error_arg);
-                globus_free(new_buf);
-            }
-        }
     }
     globus_mutex_unlock(&ipc->mutex);
 
@@ -489,16 +489,16 @@ globus_l_gfs_ipc_open(
             NULL,
             globus_l_gfs_ipc_open_kickout,
             ipc);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
     }
     /* do xio open */
     else
     {
         ipc->local = GLOBUS_FALSE;
 
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
         res = globus_xio_attr_init(&xio_attr);
         if(res != GLOBUS_SUCCESS)
         {
@@ -529,7 +529,6 @@ globus_l_gfs_ipc_open(
         }
         
         globus_xio_attr_destroy(xio_attr);
-        globus_xio_stack_destroy(xio_stack);
     }
 
     return GLOBUS_SUCCESS;
@@ -607,6 +606,11 @@ globus_gfs_ipc_handle_create(
         goto err;
     }
 
+    res = globus_xio_attr_init(&xio_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
     res = globus_xio_attr_cntl(xio_attr, globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
     if(res != GLOBUS_SUCCESS)
@@ -634,7 +638,6 @@ globus_gfs_ipc_handle_create(
         goto err;
     }
     globus_xio_attr_destroy(xio_attr);
-    globus_xio_stack_destroy(xio_stack);
 
     ipc = (globus_i_gfs_ipc_handle_t *)
         globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
@@ -1052,6 +1055,7 @@ globus_l_gfs_ipc_unpack_data(
     GFSDecodeUInt32(buffer, len, data_info->blocksize);
     GFSDecodeChar(buffer, len, data_info->prot);
     GFSDecodeChar(buffer, len, data_info->dcau);
+    GFSDecodeUInt32(buffer, len, data_info->max_cs);
 
     GFSDecodeUInt32(buffer, len, data_info->cs_count);
     data_info->contact_strings = (const char **) 
@@ -2942,6 +2946,7 @@ globus_l_gfs_ipc_pack_data(
 
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->prot);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->dcau);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->max_cs);
 
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->cs_count);
     for(ctr = 0; ctr < data_info->cs_count; ctr++)
@@ -3531,8 +3536,7 @@ globus_l_gfs_ipc_handle_get(
             goto err;
         }
     }
-    ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
-
+    
     return GLOBUS_SUCCESS;
 
   err:
