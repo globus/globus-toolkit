@@ -199,7 +199,7 @@ listem ()
 cleanup ()
 {
     if [ ${docleanup} = true ]; then
-#        ${GLOBUS_SH_RM-rm} -rf ${scratch}
+        ${GLOBUS_SH_RM-rm} -rf ${scratch}
 	docleanup=false
     fi
 }
@@ -291,6 +291,7 @@ stderr_log,local_cred - ${libexecdir}/globus-job-manager globus-job-manager -con
 EOF
 
     ${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
+-x509_cert_dir ${X509_CERT_DIR-/etc/grid-security/certificates}
 -gridmap ${scratch}/gridmap
 -home ${GLOBUS_LOCATION}
 -e libexec
@@ -324,6 +325,11 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 EOF
 
 docleanup=false
+ 
+if [ -z "$X509_CERT_DIR" ]; then
+    X509_CERT_DIR=/etc/grid-security/certificates
+    export X509_CERT_DIR
+fi
 
 ${sbindir}/globus-gatekeeper -c ${scratch}/gatekeeper.conf -test \
     1>/dev/null 2>/dev/null
