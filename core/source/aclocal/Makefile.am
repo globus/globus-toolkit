@@ -7,21 +7,28 @@ POST_FILES =
 PRE_TOP_FILES =
 POST_TOP_FILES = automake_top_rules
 
-aclocal_DATA = globus_package.m4 \
-	globus_automake_pre \
-	globus_automake_post \
-	globus_automake_pre_top \
-	globus_automake_post_top \
+AUTOMAKE_MACROS = \
+	globus_package.m4 \
 	acnetworking.m4 \
-	acdoxygen.m4 \
+	acdoxygen.m4
+
+DOXYGEN_FILES = \
 	doxygen_Makefile.am \
 	Doxyfile.in \
 	Doxyfile-internal.in
+	
+aclocal_DATA = $(AUTOMAKE_MACROS) \
+	globus_automake_pre \
+	globus_automake_post \
+	globus_automake_pre_top \
+	globus_automake_post_top
 
 EXTRA_DIST = $(PRE_FILES) \
 	$(POST_FILES) \
 	$(PRE_TOP_FILES) \
-	$(POST_TOP_FILES)
+	$(POST_TOP_FILES) \
+	$(AUTOMAKE_MACROS) \
+	$(DOXYGEN_FILES)
 
 globus_automake_pre: $(PRE_FILES)
 	file="globus_automake_pre"; \

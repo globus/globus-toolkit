@@ -99,6 +99,7 @@ AC_OUTPUT(Makefile
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+	GPT_LOCATION=$GPT_LOCATION
 	)
 
 
