@@ -1,13 +1,79 @@
 #define OUTSTANDING_READ_COUNT                      4
 
-globus_ftp_control_handle_t                         g_data_handle;
+
+#if defined(USE_GLOBUS_DATA_CODE)
+
+/************************************************************
+ * local function prototypes
+ ************************************************************/
+void
+connect_callback(
+    void *                                      callback_arg,
+    struct globus_ftp_control_handle_s *        handle,
+    unsigned int                                stripe_ndx,
+    globus_object_t *                           error);
 
 void
-passive()
+data_read_callback(
+    void *                                      callback_arg,
+    globus_ftp_control_handle_t *               handle,
+    globus_object_t *                           error,
+    globus_byte_t *                             buffer,
+    globus_size_t                               length,
+    globus_size_t                               offset,
+    globus_bool_t                               eof);
+
+void
+data_write_callback(
+    void *                                      callback_arg,
+    globus_ftp_control_handle_t *               handle,
+    globus_object_t *                           error,
+    globus_byte_t *                             buffer,
+    globus_size_t                               length,
+    globus_size_t                               offset,
+    globus_bool_t                               eof);
+
+/*************************************************************
+ *   global vairables 
+ ************************************************************/
+static globus_bool_t                            g_timeout_occured;
+globus_ftp_control_handle_t                     g_data_handle;
+
+
+void
+g_passive()
 {
+    globus_result_t                             res;
+    globus_ftp_control_host_port_t              host_port;
+    int                                         hi;
+    int                                         low;
+
+    if (!logged_in)   
+    {
+        reply(530, "Login with USER first.");
+        return;
+    }
+
+    res = globus_ftp_control_data_local_pasv(
+              &g_data_handle,
+              &host_port);
+    if(res != GLOBUS_SUCCESS)
+    {
+        perror_reply(425, "Can't open passive connection");
+    }
+
+    hi = host_port.port / 256;
+    low = host_port.port % 256;
+
+    reply(227, "Entering Passive Mode (%d,%d,%d,%d,%d,%d)", 
+          host_port.host[0],
+          host_port.host[1],
+          host_port.host[2],
+          host_port.host[3],
+          hi,
+          low);
 }
 
-static globus_bool_t                                g_timeout_occured;
 
 /*
  *  what to do if it times out
@@ -26,12 +92,20 @@ g_alarm_signal(
  *  globusified send data routine
  */
 int
+#ifdef THROUGHPUT
 g_send_data(
     char *                                          name,
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           blksize,
     off_t                                           length)
+#else
+g_send_data(
+    FILE *                                          instr,
+    globus_ftp_control_handle_t *                   handle,
+    off_t                                           blksize,
+    off_t                                           length)
+#endif
 {
     int                                             jb_count;
     int                                             jb_i;
@@ -53,7 +127,7 @@ g_send_data(
     throughput_calc(name, &bps, &bpsmult);
 #endif
 
-    res = globus_ftp_control_data_connect_read(
+    res = globus_ftp_control_data_connect_write(
               handle,
               connect_read_callback,
               (void *)monitor);
@@ -559,7 +633,7 @@ data_write_callback(
  *  --------------------------
  */
 int 
-receive_data(
+g_receive_data(
     globus_ftp_control_handle_t *            handle,
     FILE *                                   outstr)
 {
@@ -810,3 +884,5 @@ data_read_callback(
     }
     globus_mutex_unlock(&monitor->mutex);
 }
+
+#endif /* USE_GLOBUS_DATA_CODE */

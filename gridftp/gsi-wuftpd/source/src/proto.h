@@ -63,6 +63,29 @@ void pr_mesg(int, char *);
 void access_init(void);
 int access_ok(int);
 
+/******************************************************************
+ *            globus code function prototypes
+ *****************************************************************/
+#if defined(USE_GLOBUS_DATA_CODE)
+
+int
+g_send_data(
+    char *                                          name,
+    FILE *                                          instr,
+    globus_ftp_control_handle_t *                   handle,
+    off_t                                           blksize,
+    off_t                                           length);
+
+int
+g_receive_data(
+    globus_ftp_control_handle_t *                   handle,
+    FILE *                                          outstr);
+
+void
+g_passive();
+
+#endif /* USE_GLOBUS_DATA_CODE */
+
 /*
    ** acl.c
  */
