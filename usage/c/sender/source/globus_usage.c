@@ -310,7 +310,7 @@ globus_usage_stats_handle_init(
     {
         globus_l_usage_stats_split_targets(targets, &new_handle->targets);
     }
-    else if((targets_env = globus_libc_getenv("GLOBUS_USAGE_STATS_TARGETS")) 
+    else if((targets_env = globus_libc_getenv("GLOBUS_USAGE_TARGETS")) 
             != NULL)
     {
         globus_l_usage_stats_split_targets(
