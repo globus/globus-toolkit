@@ -1386,11 +1386,15 @@ globus_l_globusrun_gramrun(char * request_string,
 
     globus_mutex_lock(&monitor.mutex);
 
-    while((!monitor.done) ||
-          ((options & GLOBUSRUN_ARG_BATCH) &&
-           (monitor.job_state == 0 ||
-           monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED ||
-           monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN)))
+    if((options & GLOBUSRUN_ARG_BATCH) &&
+       (monitor.job_state != 0 &&
+        monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+        monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+    {
+        monitor.done = GLOBUS_TRUE;
+    }
+
+    while(!monitor.done)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
 	if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
@@ -1403,6 +1407,13 @@ globus_l_globusrun_gramrun(char * request_string,
 	    globus_gram_client_job_cancel(job_contact);
 	    globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
 	}
+        if((options & GLOBUSRUN_ARG_BATCH) &&
+           (monitor.job_state != 0 &&
+            monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+            monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+        {
+            monitor.done = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&monitor.mutex);
 
