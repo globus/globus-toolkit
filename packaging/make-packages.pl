@@ -70,13 +70,13 @@ my ($install, $installer, $anonymous, $force,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
     $autotools, $deps, $graph, $listpack, $listbun,
-    $cvsuser ) =
+    $cvsuser, $gpt ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
     1, 0, 0, 0, 0,
-    "");
+    "", 1);
 
 my @user_bundles;
 my @user_packages;
@@ -105,6 +105,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'inplace!' => \$inplace,
 	    'doxygen!' => \$doxygen,
 	    'autotools!' => \$autotools,
+	    'gpt!' => \$gpt,
 	    'd|deps!' => \$deps,
 	    'graph!' => \$graph,
 	    'lp|list-packages!' => \$listpack,
@@ -649,7 +650,7 @@ sub populate_package_build_hash()
 sub build_prerequisites()
 # --------------------------------------------------------------------
 {
-    install_gpt();
+    install_gpt() if $gpt;
 
     if ( $cvs_build_hash{'autotools'} eq 1 or
 	 $cvs_build_hash{'gt2'} eq 1 or
@@ -726,15 +727,23 @@ sub install_gpt()
 {
     my $gpt_ver = "gpt-3.0.1";
     my $gpt_dir = $top_dir . "/$gpt_ver";
+    my $target;
 
-    $ENV{'GPT_LOCATION'}=$gpt_dir;
+    if ( $install )
+    {
+        $target=$install;
+    } else {
+        $target=$gpt_dir;
+    }
     
-    if ( -e "${gpt_dir}/sbin/gpt-build" )
+    $ENV{'GPT_LOCATION'} = $target;
+
+    if ( -e "$target/sbin/gpt-build" )
     {
 	print "GPT is already built, skipping.\n";
-	print "\tDelete $gpt_dir to force rebuild.\n";
+	print "\tDelete $target to force rebuild.\n";
     } else {
-	print "Installing $gpt_ver\n";
+	print "Installing $gpt_ver to $target\n";
 	print "Logging to ${log_dir}/$gpt_ver.log\n";
 	chdir $top_dir;
 	system("tar xzf fait_accompli/${gpt_ver}-src.tar.gz");
@@ -1572,10 +1581,13 @@ Options:
     --skipbundle           Don't create source bundles
     --install=<dir>        Install into <dir>
     --anonymous            Use anonymous cvs checkouts
+    --cvsuser=<user>       Use "user" as account on CVS server
     --no-updates           Don't update CVS checkouts
+    --noautotools	   Don't build autotools
+    --nogpt		   Don't build gpt
     --force                Force
     --faster               Don't repackage if packages exist already
-    --flavor               Set flavor base.  Default gcc32dbg
+    --flavor=<flv>         Set flavor base.  Default gcc32dbg
     --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
     --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
     --gt2-dir (-d2)        Set GT2 and autotools CVS directory.
@@ -1583,7 +1595,8 @@ Options:
     --verbose              Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
-    --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,cbindings"
+    --deps		   Automatically include dependencies
+    --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
     --noparanoia           Don't exit at first error.
     --help                 Print usage message
     --man                  Print verbose usage page
@@ -1611,6 +1624,11 @@ version is "-i=".
 Use anonymous cvs checkouts.  Otherwise it defaults to using
 CVS_RSH=ssh.  Short version is "-a"
 
+=item B<--cvsuser=user>
+
+Use "user@" as the prefix in the remote CVSROOT.  Useful if
+your local account name is different than the CVS account name.
+
 =item B<--no-updates>
 
 Don't update CVS checkouts.  This is useful if you have local
@@ -1618,6 +1636,16 @@ modifications.  Note, however, that make-packages won't
 check that your CVS tags match the requested CVS tags.
 Short version is "-n"
  
+=item B<--noautotools>
+
+Don't build the GT2 autotools.  You must have the autotools
+already on your PATH for this to work.
+
+=item B<--nogpt>
+
+Don't build GPT.  You must have the correct version of GPT
+on your PATH already for this to work.
+
 =item B<--faster>
 
 Faster doesn't work correctly.  It is supposed to not try 
@@ -1649,10 +1677,15 @@ etc/*/bundles
 Create packages p1,p2,....  Packages are defined under
 etc/*/package-list
 
-=item B<--paranoia>
+=item B<--deps>
 
-Exit at first error.  This can save you a lot of time
-and debugging effort.  Disable with --noparanoia.
+Automatically pull in dependencies.  Useful if you
+want to build one package or bundle, and only want to
+build the packages that it requires.
+
+=item B<--noparanoia>
+
+Don't exit at first error.  Strongly discouraged.
 
 =back
 
