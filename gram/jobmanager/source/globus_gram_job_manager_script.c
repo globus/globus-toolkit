@@ -374,7 +374,7 @@ globus_gram_job_manager_script_submit(
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_submit()\n" );
 
-    request->poll_frequency = 30;
+    request->poll_frequency = 10;
 
     /*
      * create a file that will be used to pass all parameters to and

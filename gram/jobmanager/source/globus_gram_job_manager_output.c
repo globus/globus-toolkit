@@ -924,35 +924,53 @@ globus_gram_job_manager_output_write_state(
 					info;
     globus_l_gram_job_manager_output_destination_t *
 					dest;
+    int                                 rc;
 
     info = request->output;
 
-    fprintf(fp, "%d\n", globus_list_size(info->stdout_destinations));
+    rc = fprintf(fp, "%d\n", globus_list_size(info->stdout_destinations));
+
+    if(rc < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list = info->stdout_destinations;
     while(!globus_list_empty(tmp_list))
     {
 	dest = globus_list_first(tmp_list);
 	tmp_list = globus_list_rest(tmp_list);
 
-	fprintf(fp,
+	rc = fprintf(fp,
 		"%s\n%s\n%"GLOBUS_OFF_T_FORMAT"\n",
 		dest->url,
 		dest->tag ? dest->tag : "",
 		dest->position);
+        if(rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
     }
 
-    fprintf(fp, "%d\n", globus_list_size(info->stderr_destinations));
+    rc = fprintf(fp, "%d\n", globus_list_size(info->stderr_destinations));
+    if(rc < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list = info->stderr_destinations;
     while(!globus_list_empty(tmp_list))
     {
 	dest = globus_list_first(tmp_list);
 	tmp_list = globus_list_rest(tmp_list);
 
-	fprintf(fp,
+	rc = fprintf(fp,
 		"%s\n%s\n%"GLOBUS_OFF_T_FORMAT"\n",
 		dest->url,
 		dest->tag ? dest->tag : "",
 		dest->position);
+        if(rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
     }
     return 0;
 }
@@ -986,18 +1004,27 @@ globus_gram_job_manager_output_read_state(
 
     bufsize = sizeof(buffer);
 
-    fscanf(fp, "%d\n", &count);
+    if(fscanf(fp, "%d\n", &count) < 1)
+    {
+        return GLOBUS_FAILURE;
+    }
 
     for(i = 0; i < count; i++)
     {
 	destination = globus_libc_malloc(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
 
-	fgets(buffer, bufsize, fp);
+	if (fgets(buffer, bufsize, fp) == NULL)
+        {
+            return GLOBUS_FAILURE;
+        }
 	destination->request = request;
 	destination->url = globus_libc_strdup(buffer); 
 
-	fgets(buffer, bufsize, fp);
+	if (fgets(buffer, bufsize, fp) == NULL)
+        {
+            return GLOBUS_FAILURE;
+        }
 	if(strlen(buffer) != 0)
 	{
 	    destination->tag = globus_libc_strdup(buffer);
@@ -1006,7 +1033,10 @@ globus_gram_job_manager_output_read_state(
 	{
 	    destination->tag = NULL;
 	}
-	fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position);
+	if (fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW;
 	destination->which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT;
 
@@ -1017,17 +1047,26 @@ globus_gram_job_manager_output_read_state(
 	globus_list_insert(&request->output->stdout_destinations, destination);
     }
 
-    fscanf(fp, "%d\n", &count);
+    if(fscanf(fp, "%d\n", &count) < 1)
+    {
+        return GLOBUS_FAILURE;
+    }
     for(i = 0; i < count; i++)
     {
 	destination = globus_libc_malloc(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
 
-	fgets(buffer, bufsize, fp);
+	if (fgets(buffer, bufsize, fp) == NULL)
+        {
+            return GLOBUS_FAILURE;
+        }
 	destination->request = request;
 	destination->url = globus_libc_strdup(buffer); 
 
-	fgets(buffer, bufsize, fp);
+	if (fgets(buffer, bufsize, fp) == NULL)
+        {
+            return GLOBUS_FAILURE;
+        }
 	if(strlen(buffer) != 0)
 	{
 	    destination->tag = globus_libc_strdup(buffer);
@@ -1036,13 +1075,16 @@ globus_gram_job_manager_output_read_state(
 	{
 	    destination->tag = NULL;
 	}
-	fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position);
+	if(fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW;
 	destination->which = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDERR;
 
 	globus_list_insert(&request->output->stderr_destinations, destination);
     }
-    return 0;
+    return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_output_read_state() */
 
@@ -1422,7 +1464,7 @@ globus_l_gram_job_manager_output_destination_flush(
 	 */
 	if(destination->callback_count == 0 &&
 	   request->output->close_flag &&
-	   destination->position == size)
+	   destination->position >= size)
 	{
 	    globus_l_gram_job_manager_output_destination_close(
 		    request,

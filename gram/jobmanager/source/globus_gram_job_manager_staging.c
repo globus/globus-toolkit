@@ -217,8 +217,14 @@ globus_gram_job_manager_staging_write_state(
     globus_gram_job_manager_staging_info_t *
 					info;
     char *				tmp_str;
+    int                                 rc;
 
-    fprintf(fp, "%d\n", globus_list_size(request->stage_in_todo));
+    rc = fprintf(fp, "%d\n", globus_list_size(request->stage_in_todo));
+
+    if (rc < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
 
     tmp_list = request->stage_in_todo;
     while(!globus_list_empty(tmp_list))
@@ -227,14 +233,26 @@ globus_gram_job_manager_staging_write_state(
 	tmp_list = globus_list_rest(tmp_list);
 
 	tmp_str = globus_rsl_value_unparse(info->from);
-	fprintf(fp, "%s\n", tmp_str);
+	rc = fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
 
 	tmp_str = globus_rsl_value_unparse(info->to);
-	fprintf(fp, "%s\n", tmp_str);
+	rc = fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
     }
-    fprintf(fp, "%d\n", globus_list_size(request->stage_in_shared_todo));
+    rc = fprintf(fp, "%d\n", globus_list_size(request->stage_in_shared_todo));
+    if (rc < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list = request->stage_in_shared_todo;
     while(!globus_list_empty(tmp_list))
     {
@@ -242,14 +260,26 @@ globus_gram_job_manager_staging_write_state(
 	tmp_list = globus_list_rest(tmp_list);
 
 	tmp_str = globus_rsl_value_unparse(info->from);
-	fprintf(fp, "%s\n", tmp_str);
+	rc = fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
 
 	tmp_str = globus_rsl_value_unparse(info->to);
-	fprintf(fp, "%s\n", tmp_str);
+	rc = fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
     }
-    fprintf(fp, "%d\n", globus_list_size(request->stage_out_todo));
+    rc = fprintf(fp, "%d\n", globus_list_size(request->stage_out_todo));
+    if (rc < 0)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list = request->stage_out_todo;
     while(!globus_list_empty(tmp_list))
     {
@@ -257,12 +287,21 @@ globus_gram_job_manager_staging_write_state(
 	tmp_list = globus_list_rest(tmp_list);
 
 	tmp_str = globus_rsl_value_unparse(info->from);
-	fprintf(fp, "%s\n", tmp_str);
+	rc = fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
 
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
+
 	tmp_str = globus_rsl_value_unparse(info->to);
-	fprintf(fp, "%s\n", tmp_str);
+	rc = fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
+        if (rc < 0)
+        {
+            return GLOBUS_FAILURE;
+        }
     }
     return GLOBUS_SUCCESS;
 }
@@ -279,7 +318,10 @@ globus_gram_job_manager_staging_read_state(
     globus_gram_job_manager_staging_info_t *
 					info;
 
-    fscanf(fp, "%[^\n]%*c", buffer);
+    if (fscanf(fp, "%[^\n]%*c", buffer) < 1)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list_size = atoi(buffer);
 
     for(i = 0; i < tmp_list_size; i++)
@@ -290,10 +332,16 @@ globus_gram_job_manager_staging_read_state(
 
         info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN;
 
-	fscanf(fp, "%[^\n]%*c", buffer);
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
-	fscanf(fp, "%[^\n]%*c", buffer);
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
 
 	globus_gram_job_manager_rsl_evaluate_value(
@@ -307,7 +355,10 @@ globus_gram_job_manager_staging_read_state(
 
         globus_list_insert(&request->stage_in_todo, info);
     }
-    fscanf(fp, "%[^\n]%*c", buffer);
+    if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list_size = atoi(buffer);
 
     for(i = 0; i < tmp_list_size; i++)
@@ -317,10 +368,16 @@ globus_gram_job_manager_staging_read_state(
 		sizeof(globus_gram_job_manager_staging_info_t));
         info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED;
 
-	fscanf(fp, "%[^\n]%*c", buffer);
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
-	fscanf(fp, "%[^\n]%*c", buffer);
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
 
 	globus_gram_job_manager_rsl_evaluate_value(
@@ -334,7 +391,10 @@ globus_gram_job_manager_staging_read_state(
 
         globus_list_insert(&request->stage_in_shared_todo, info);
     }
-    fscanf(fp, "%[^\n]%*c", buffer);
+    if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+    {
+        return GLOBUS_FAILURE;
+    }
     tmp_list_size = atoi(buffer);
 
     for(i = 0; i < tmp_list_size; i++)
@@ -344,10 +404,16 @@ globus_gram_job_manager_staging_read_state(
 		sizeof(globus_gram_job_manager_staging_info_t));
 	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
 
-	fscanf(fp, "%[^\n]%*c", buffer);
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
-	fscanf(fp, "%[^\n]%*c", buffer);
+	if(fscanf(fp, "%[^\n]%*c", buffer) < 1)
+        {
+            return GLOBUS_FAILURE;
+        }
 	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
 
 	globus_gram_job_manager_rsl_evaluate_value(

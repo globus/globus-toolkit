@@ -317,6 +317,10 @@ main(
                  && (i + 1 < argc))
         {
 	    request->job_state_file_dir = globus_libc_strdup(argv[++i]);
+            globus_libc_setenv("GLOBUS_SPOOL_DIR",
+                               request->job_state_file_dir,
+                               GLOBUS_TRUE);
+
         }
         else if ((strcmp(argv[i], "-x509-cert-dir") == 0)
                  && (i + 1 < argc))
@@ -387,9 +391,12 @@ main(
 	globus_libc_usleep(sleeptime * 1000 * 1000);
     }
 
-    globus_libc_setenv("GLOBUS_LOCATION",
-		       request->globus_location,
-		       GLOBUS_TRUE);
+    if(request->globus_location != NULL)
+    {
+        globus_libc_setenv("GLOBUS_LOCATION",
+                           request->globus_location,
+                           GLOBUS_TRUE);
+    }
     GlobusTimeReltimeSet(delay, 0, 0);
 
     globus_callback_register_oneshot(

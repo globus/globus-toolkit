@@ -107,15 +107,56 @@ globus_gram_job_manager_state_file_write(
 	return GLOBUS_FAILURE;
     }
 
-    fprintf(fp, "%s\n", request->job_contact ? request->job_contact : " ");
-    fprintf(fp, "%4d\n", (int) request->jobmanager_state);
-    fprintf(fp, "%4d\n", (int) request->status);
-    fprintf(fp, "%4d\n", request->failure_code);
-    fprintf(fp, "%s\n", request->job_id ? request->job_id : " ");
-    fprintf(fp, "%s\n", request->rsl_spec);
-    fprintf(fp, "%s\n", request->cache_tag);
-    fprintf(fp, "%d\n", request->two_phase_commit);
-    fprintf(fp, "%s\n", request->scratchdir ? request->scratchdir : " ");
+    rc = fprintf(fp, "%s\n", request->job_contact ? request->job_contact : " ");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%4d\n", (int) request->jobmanager_state);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%4d\n", (int) request->status);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%4d\n", request->failure_code);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n", request->job_id ? request->job_id : " ");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n", request->rsl_spec);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n", request->cache_tag);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n", request->jobmanager_type);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%d\n", request->two_phase_commit);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%s\n", request->scratchdir ? request->scratchdir : " ");
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
 
     globus_gram_job_manager_output_write_state(request, fp);
     globus_gram_job_manager_staging_write_state(request,fp);
@@ -132,6 +173,11 @@ globus_gram_job_manager_state_file_write(
     }
 
     return GLOBUS_SUCCESS;
+
+error_exit:
+    fclose(fp);
+    remove(tmp_file);
+    return GLOBUS_FAILURE;
 }
 /* globus_gram_job_manager_state_file_write() */
 
@@ -143,6 +189,7 @@ globus_gram_job_manager_state_file_read(
     char				buffer[8192];
     struct stat				statbuf;
     int					rc;
+    int					i;
 
     globus_gram_job_manager_request_log(
 	    request,
@@ -208,31 +255,71 @@ globus_gram_job_manager_state_file_read(
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
-    fgets( buffer, sizeof(buffer), fp );
+    if(fgets( buffer, sizeof(buffer), fp )  == NULL)
+    {
+        goto error_exit;
+    }
     /* job contact string */
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     request->restart_state = atoi( buffer );
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     request->status = atoi( buffer );
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     request->failure_code = atoi( buffer );
 
-    fgets( buffer, sizeof(buffer), fp );
+    if(fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
 	request->job_id = globus_libc_strdup( buffer );
     }
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     buffer[strlen(buffer)-1] = '\0';
     request->rsl_spec = globus_libc_strdup( buffer );
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     buffer[strlen(buffer)-1] = '\0';
     request->cache_tag = globus_libc_strdup( buffer );
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     buffer[strlen(buffer)-1] = '\0';
+    if((sscanf(buffer,"%d",&i)) < 1)
+    {
+	/* The last line we grabbed was the jobmanager_type. Now we
+	 * need to grab the two_phase_commit number. Older jobmanagers
+	 * don't print the jobmanager_type to the state file, hence
+	 * the check above.
+	 */
+	if(fgets( buffer, sizeof(buffer), fp ) == NULL)
+        {
+            goto error_exit;
+        }
+	buffer[strlen(buffer)-1] = '\0';
+    }
     request->two_phase_commit = atoi(buffer);
-    fgets( buffer, sizeof(buffer), fp );
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)
     {
@@ -247,12 +334,23 @@ globus_gram_job_manager_state_file_read(
 		request->scratchdir);
     }
 
-    globus_gram_job_manager_output_read_state(request, fp);
-    globus_gram_job_manager_staging_read_state(request,fp);
+    rc = globus_gram_job_manager_output_read_state(request, fp);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    rc = globus_gram_job_manager_staging_read_state(request,fp);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
 
     fclose(fp);
 
     return GLOBUS_SUCCESS;
+error_exit:
+    fclose(fp);
+    return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
 }
 
 static
