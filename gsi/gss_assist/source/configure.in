@@ -15,8 +15,9 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 #AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 
-
 GPT_SET_LIBS(-lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME)
+
+GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
@@ -29,4 +30,13 @@ AC_OUTPUT(
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
 
 )
+
+
+
+
+
+
+
+
+
 

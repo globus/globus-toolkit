@@ -37,6 +37,8 @@ fi
 
 GPT_SET_LIBS("-lglobus_ssl_utils_$GLOBUS_FLAVOR_NAME")
 
+GLOBUS_FINALIZE
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
