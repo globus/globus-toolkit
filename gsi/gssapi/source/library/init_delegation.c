@@ -270,11 +270,7 @@ GSS_CALLCONV gss_init_delegation(
             goto mutex_unlock;
         }
 
-        if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
-        {
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
-        }
-        else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_CA)
+        if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_CA)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
@@ -282,6 +278,24 @@ GSS_CALLCONV gss_init_delegation(
             major_status = GSS_S_FAILURE;
             context->delegation_state = GSS_DELEGATION_DONE;
             goto mutex_unlock;            
+        }
+        else if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+        {
+            if(cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+            { 
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else
+            {
+                major_status = GSS_S_FAILURE;
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    ("Can't delegate a legacy globus limited"
+                     " proxy from a draft compliant proxy"));
+                context->delegation_state = GSS_DELEGATION_DONE;
+                goto mutex_unlock;
+            }
         }
         else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC)
         {

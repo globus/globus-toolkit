@@ -368,6 +368,7 @@ GSS_CALLCONV gss_init_sec_context(
         local_result = globus_gsi_cred_get_cert_type(
             context->cred_handle->cred_handle,
             &cert_type);
+        
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -378,22 +379,33 @@ GSS_CALLCONV gss_init_sec_context(
             goto error_exit;
         }
 
-        if((cert_type ==  GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
-            cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY) &&
-           context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+        if(context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
         {
-            local_result =
-                globus_gsi_proxy_handle_set_type(
-                    context->proxy_handle,
-                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
-            if(local_result != GLOBUS_SUCCESS)
+            if(cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+            { 
+                local_result =
+                    globus_gsi_proxy_handle_set_type(
+                        context->proxy_handle,
+                        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    major_status = GSS_S_FAILURE;
+                    context->gss_state = GSS_CON_ST_DONE;
+                    goto exit;
+                }
+            }
+            else
             {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_result,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
                 major_status = GSS_S_FAILURE;
-                context->gss_state = GSS_CON_ST_DONE;
-                goto exit;
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    ("Can't delegate a legacy globus limited"
+                     " proxy from a draft compliant proxy"));
+                goto error_exit;
             }
         }
         else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY)
