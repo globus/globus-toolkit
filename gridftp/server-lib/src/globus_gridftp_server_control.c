@@ -3515,6 +3515,7 @@ globus_gridftp_server_control_finished_transfer(
     globus_mutex_lock(&op->server_handle->mutex);
     {
         globus_i_gsc_event_end(op);
+        globus_i_gsc_restart_destroy(op->restart_marker);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 

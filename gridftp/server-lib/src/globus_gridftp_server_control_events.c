@@ -87,8 +87,8 @@ globus_i_gsc_event_end(
             globus_l_gsc_unreg_perf_marker,
             op,
             NULL);
+
     }
-    globus_i_gsc_restart_destroy(op->restart_marker);
 }
 
 int
@@ -254,11 +254,17 @@ globus_l_gsc_unreg_perf_marker(
     void *                                  user_arg)
 {
     globus_i_gsc_op_t *                     op;
+    globus_i_gsc_event_data_t *             event;
 
     op = (globus_i_gsc_op_t *) user_arg;
+    event = &op->event;
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        if(event->stripe_total_bytes != NULL)
+        {
+            globus_free(event->stripe_total_bytes);
+        }
         globus_i_gsc_op_destroy(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -276,7 +282,7 @@ globus_l_gsc_send_perf_marker_cb(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        if(!event->perf_running)
+        if(event->perf_running)
         {
             globus_l_gsc_send_perf_marker(op);
         }
@@ -304,12 +310,14 @@ globus_l_gsc_send_perf_marker(
                 " Stripe Bytes Transferred: %"GLOBUS_OFF_T_FORMAT"\r\n"
                 " Total Stripe Count: %d\r\n"
                 "112 End.\r\n",
-                    now.tv_sec, now.tv_usec / 100000,
+                    now.tv_sec, now.tv_usec / 100000, 
                     ctr,
-                    event->stripe_total_bytes[ctr],
+                    event->stripe_total_bytes[ctr], 
                     event->stripe_count);
         globus_i_gsc_intermediate_reply(op, msg); 
+        globus_free(msg);
     }
+
 }
 
 globus_result_t
