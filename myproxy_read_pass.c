@@ -5,6 +5,7 @@
  */
 
 #include "myproxy_read_pass.h"
+#include "verror.h"
 
 #include <des.h>	/* From SSLeay */
 
