@@ -30,3 +30,5 @@ globus_source () {
 
   . "$1"
 }
+
+globus_source ${libexecdir}/globus-sh-tools.sh
