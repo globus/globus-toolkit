@@ -5,8 +5,10 @@
 #include "globus_ftp_control.h"
 #include "globus_i_gfs_acl.h"
 
-void
-globus_i_gfs_server_closed();
+
+typedef void
+(*globus_i_gfs_server_close_cb_t)(
+    void *                              user_arg);
 
 typedef struct
 {
@@ -16,24 +18,15 @@ typedef struct
     int                             transfer_id;
     globus_gridftp_server_control_op_t op;
 
+    globus_i_gfs_server_close_cb_t  close_func;
+    void *                          close_arg;
+    
     /* XXX: is this a good place ? */
     void *                          user_data_handle;
     globus_i_gfs_acl_handle_t       acl_handle;
     int                             session_id;
 
-    union
-    {
-        struct
-        {
-            globus_gridftp_server_control_t server;
-            
-        } control;
-        
-        struct
-        {
-             void * nothing;  
-        } data;
-    } u;
+    globus_gridftp_server_control_t server_handle;
 } globus_i_gfs_server_instance_t;
 
 typedef struct

@@ -74,7 +74,7 @@ globus_l_gfs_get_full_path(
     else
     {
         result = globus_gridftp_server_control_get_cwd(
-            instance->u.control.server, &cwd);
+            instance->server_handle, &cwd);
         if(result != GLOBUS_SUCCESS || cwd == GLOBUS_NULL)
         {
             result = GlobusGFSErrorGeneric("invalid cwd");
@@ -107,6 +107,7 @@ globus_l_gfs_channel_close_cb(
 {
     globus_i_gfs_server_instance_t *    instance;
     
+    
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     globus_i_gfs_log_message(
@@ -115,9 +116,12 @@ globus_l_gfs_channel_close_cb(
         instance->remote_contact);
 
     globus_i_gfs_data_session_stop(NULL, instance->session_id);
+    if(instance->close_func)
+    {
+        instance->close_func(instance->close_arg);
+    }
     globus_free(instance->remote_contact);
     globus_free(instance);
-    globus_i_gfs_server_closed();
 }
 
 static
@@ -147,7 +151,7 @@ globus_l_gfs_done_cb(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-    globus_gridftp_server_control_destroy(instance->u.control.server);
+    globus_gridftp_server_control_destroy(instance->server_handle);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -777,7 +781,7 @@ globus_l_gfs_data_event_cb(
         if(mode != 'E')
         {
 /*            globus_gridftp_server_control_disconnected(
-                instance->u.control.server, data);
+                instance->server_handle, data);
 */
         }
         break;
@@ -1507,7 +1511,9 @@ globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
     globus_xio_system_handle_t          system_handle,
-    const char *                        remote_contact)
+    const char *                        remote_contact,
+    globus_i_gfs_server_close_cb_t      close_func,
+    void *                              close_arg)
 {
     GlobusGFSName(globus_i_gfs_control_start);
     globus_result_t                     result;
@@ -1526,6 +1532,8 @@ globus_i_gfs_control_start(
         goto error_malloc;
     }
     
+    instance->close_func = close_func;
+    instance->close_arg = close_arg;
     instance->xio_handle = handle;
     instance->rnfr_pathname = GLOBUS_NULL;
     instance->remote_contact = globus_libc_strdup(remote_contact);
@@ -1658,27 +1666,27 @@ globus_i_gfs_control_start(
         goto error_attr_setup;
     }
 
-    result = globus_gridftp_server_control_init(&instance->u.control.server);
+    result = globus_gridftp_server_control_init(&instance->server_handle);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_init;
     }
 
-    result = globus_l_gfs_add_commands(instance, instance->u.control.server);
+    result = globus_l_gfs_add_commands(instance, instance->server_handle);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_add_commands;
     }
 
     result = globus_gridftp_server_control_start(
-        instance->u.control.server, 
+        instance->server_handle, 
         attr, 
         system_handle, 
         globus_l_gfs_done_cb, 
         instance);
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_gfs_done_cb(instance->u.control.server, result, instance);
+        globus_l_gfs_done_cb(instance->server_handle, result, instance);
         globus_gridftp_server_control_attr_destroy(attr);
         goto error_start;
     }

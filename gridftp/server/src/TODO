@@ -27,6 +27,8 @@ Verify Proper protocol responses
 
 IPC security
 
+Portability issues
+-- stop int<->void* conversions
 
 Other Stuff
 ------------

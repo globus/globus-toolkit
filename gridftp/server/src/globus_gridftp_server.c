@@ -33,6 +33,11 @@ globus_l_gfs_open_new_server(
 
 static
 void
+globus_l_gfs_server_closed(
+    void *                              user_arg);
+
+static
+void
 globus_l_gfs_bad_signal_handler(
     int                                 signum)
 {
@@ -376,14 +381,17 @@ globus_l_gfs_new_server_cb(
     
     if(globus_i_gfs_config_bool("data_node"))
     {
-        /* here is where I would start a new 'data node server' */
         result = globus_i_gfs_data_node_start(
             handle, system_handle, remote_contact);
     }
     else
     {        
         result = globus_i_gfs_control_start(
-            handle, system_handle, remote_contact);
+            handle, 
+            system_handle, 
+            remote_contact, 
+            globus_l_gfs_server_closed,
+            NULL);
     }
     
     if(result != GLOBUS_SUCCESS)
@@ -400,7 +408,7 @@ error_start:
     
 error_peername:
 error_cb:
-    globus_i_gfs_server_closed();
+    globus_l_gfs_server_closed(NULL);
     if(!globus_l_gfs_xio_server)
     {
         /* I am the only one expected to run, die */
@@ -437,7 +445,7 @@ globus_l_gfs_open_new_server(
     return GLOBUS_SUCCESS;
 
 error_open:
-    globus_i_gfs_server_closed();
+    globus_l_gfs_server_closed(NULL);
     return result;
 }
 
@@ -767,9 +775,10 @@ globus_l_gfs_terminate_server(
     globus_mutex_unlock(&globus_l_gfs_mutex);
 }
 
-
+static
 void
-globus_i_gfs_server_closed()
+globus_l_gfs_server_closed(
+    void *                              user_arg)
 {
     globus_result_t                     result;
     

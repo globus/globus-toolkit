@@ -22,7 +22,7 @@ globus-gridftp-server <args>
 
 
 ***
-as a daemon:
+Daemon mode:
 
 The server should generally be run as root in daemon mode, though it is
 possible to run it as a user.  In that case only that user will be able
@@ -31,13 +31,13 @@ When run as a user you will need a proxy as above.
 When run as root you will need to have a host certificate.
 
 globus-gridftp-server < -s | -S > <args>
--s runs in the foreground, and allows logging to stdout/stderr
+-s runs in the foreground
 -S detaches from the terminal and runs in the background
 
 
 
 ***
-under xinetd/inetd:
+Under xinetd/inetd:
 
 here is a sample gridftp xinetd config entry:
 -------------------------------
@@ -146,8 +146,14 @@ Note that commandline options and configuration file options may both be used
 ***
 Known issues:
 
+there are numerous known memory leaks
+
+threaded builds are not expected to work properly
+
+error resonses are unclear and inconsistent
+
 running as a daemon (-s or -S) sometimes triggers a bug that causes 
-an assertion. that do not come up when running as a single process.
+an assertion that does not come up when running as a single process.
 
 the server will leak a socket (and the child process will hang in 
 daemon mode) when the client sends a PASV and then RETR or STOR and
@@ -155,4 +161,12 @@ then terminating.
 
 the server running in inetd mode may not automatically load the
 config file from $GLOBUS_LOCATION/etc/gridftp.conf.  use the
--c <configfile> parameter to specify the config file. 
+-c <configfile> parameter to specify the config file.
+
+when running a striped transfer with more parallelism of more than 1, the
+transfer may hang when finished, but before eof.  this is more likely as
+parallelism increases and the size of the transfer decreases.
+
+an assertion or other failure may occur when the connection between
+a data node and front-end is closed unexpectedly
+
