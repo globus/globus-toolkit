@@ -156,9 +156,9 @@ test1(int argc, char **argv)
 	GLOBUS_FALSE);
 */
 #ifndef TARGET_ARCH_WIN32
-    while (( c = getopt(argc, argv, "brgscvz:i:I:")) != EOF)
+    while (( c = getopt(argc, argv, "brgscvz:i:I:P:")) != EOF)
 #else
-    while (( c = getoptWin(argc, argv, "rgscz:i:I:")) != EOF)
+    while (( c = getoptWin(argc, argv, "rgscz:i:I:P:")) != EOF)
 #endif
     {
         switch(c)
@@ -208,6 +208,53 @@ test1(int argc, char **argv)
                 goto exit;
             }
 	    break;
+          case 'P':
+            if(!strcmp(optarg, "none"))
+            {
+                result = globus_io_attr_set_secure_protection_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_PROTECTION_MODE_NONE);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    err = globus_error_get(result);
+                    errstring = globus_object_printable_to_string(err);
+                    globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                       errstring);
+                    rc = -1;
+                    goto exit;
+                }
+            }
+            else if(!strcmp(optarg, "integrity"))
+            {
+                result = globus_io_attr_set_secure_protection_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_PROTECTION_MODE_SAFE);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    err = globus_error_get(result);
+                    errstring = globus_object_printable_to_string(err);
+                    globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                       errstring);
+                    rc = -1;
+                    goto exit;
+                }
+            }
+            else if(!strcmp(optarg, "privacy"))
+            {
+                result = globus_io_attr_set_secure_protection_mode(
+                    &attr,
+                    GLOBUS_IO_SECURE_PROTECTION_MODE_PRIVATE);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    err = globus_error_get(result);
+                    errstring = globus_object_printable_to_string(err);
+                    globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                       errstring);
+                    rc = -1;
+                    goto exit;
+                }
+            }
+            break;
 	  case 'z':
             result = globus_io_secure_authorization_data_set_callback(
                 &auth_data,
