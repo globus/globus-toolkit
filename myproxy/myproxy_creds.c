@@ -556,7 +556,7 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
     
 
     mydsn = strdup (dbase_name);
-    myuid = strdup ("root");
+    myuid = strdup ("postgres");
     mypwd = strdup ("");
    /*
     * connect to MySQL server
@@ -1027,7 +1027,7 @@ char *read_from_database_for_info()
   char *data;
 
     mydsn = strdup (dbase_name);
-    myuid = strdup ("root");
+    myuid = strdup ("postgres");
     mypwd = strdup ("");
    /*
     * connect to MySQL server
@@ -1100,7 +1100,7 @@ int retrieve_from_database_given_username_credname(char *username, char *crednam
 	//char credential[MAX_TEXT_LEN];
 
 	mydsn = strdup (dbase_name);
-	myuid = strdup ("root");
+	myuid = strdup ("postgres");
 	mypwd = strdup ("");
 	/*
 	 * connect to MySQL server
@@ -1180,7 +1180,7 @@ int write_to_database()
   int retcode = -1;
 
     mydsn = strdup (dbase_name); // connect to default database
-    myuid = strdup ("root");
+    myuid = strdup ("postgres");
     mypwd = strdup ("");
 
    
@@ -1585,7 +1585,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
   int retcode = -1;
 
   mydsn = strdup (dbase_name); // connect to default database
-  myuid = strdup ("root");
+  myuid = strdup ("postgres");
   mypwd = strdup ("");
 
   mydbase.credname = strdup (creds->credname); 
