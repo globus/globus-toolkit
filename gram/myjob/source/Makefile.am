@@ -12,6 +12,8 @@ Sources = \
 
 INCLUDES += $(GPT_INCLUDES)
 
+include_HEADERS=globus_gram_myjob.h
+
 lib_LTLIBRARIES = libglobus_gram_myjob_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_gram_myjob___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
