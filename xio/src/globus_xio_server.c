@@ -604,7 +604,7 @@ globus_l_xio_server_register_accept(
     int                                     ctr;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_bool_t                           free_server = GLOBUS_FALSE;
-    GlobusXIOName(globus_xio_server_register_accept);
+    GlobusXIOName(globus_l_xio_server_register_accept);
 
     GlobusXIODebugInternalEnter();
 
@@ -629,12 +629,16 @@ globus_l_xio_server_register_accept(
         xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
         xio_op->ndx = 0;
         xio_op->stack_size = xio_server->stack_size;
+        xio_op->entry[0].prev_ndx = -1;
 
         xio_server->op = xio_op;
         /* get all the driver specific attrs and put htem in the 
             correct place */
         for(ctr = 0; ctr < xio_op->stack_size; ctr++)
         {
+            xio_op->entry[ctr].driver = 
+                    xio_server->entry[ctr].driver;
+
             xio_op->entry[ctr].accept_attr = NULL;
             GlobusIXIOAttrGetDS(driver_attr,
                 accept_attr, xio_server->entry[ctr].driver);

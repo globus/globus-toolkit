@@ -264,11 +264,11 @@ globus_xio_driver_open_delivered(
             case GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING:
                 GlobusXIOContextStateChange(my_context,
                     GLOBUS_XIO_CONTEXT_STATE_CLOSING);
-                close_kickout = GLOBUS_TRUE;
                 if(!my_context->close_started &&
                     my_context->outstanding_operations == 0 &&
                     my_context->close_op != NULL)
                 {
+                    close_kickout = GLOBUS_TRUE;
                     my_context->close_started = GLOBUS_TRUE;
                     close_op = my_context->close_op;
                 }
@@ -279,6 +279,7 @@ globus_xio_driver_open_delivered(
 
             case GLOBUS_XIO_CONTEXT_STATE_CLOSING:
                 if(!my_context->close_started &&
+                    my_context->outstanding_operations == 0 &&
                     my_context->close_op != NULL)
                 {
                     my_context->close_started = GLOBUS_TRUE;
@@ -1326,6 +1327,7 @@ globus_xio_driver_client_target_pass(
 {
     globus_i_xio_op_entry_t *               my_op;
     globus_result_t                         res;
+    int                                     prev_ndx;
     GlobusXIOName(globus_xio_driver_client_target_pass);
 
     GlobusXIODebugInternalEnter();
@@ -1345,7 +1347,8 @@ globus_xio_driver_client_target_pass(
         res = GlobusXIOErrorParameter("target_op");
         goto err;
     }
-    
+
+    prev_ndx = target_op->ndx;
     do
     {
         my_op = &target_op->entry[target_op->ndx];
@@ -1366,6 +1369,7 @@ globus_xio_driver_client_target_pass(
             goto err;
         }
     }
+    target_op->ndx = prev_ndx;
 
     GlobusXIODebugInternalExit();
 

@@ -259,12 +259,12 @@ globus_l_xio_hande_pre_close(
     switch(handle->state)
     {
         case GLOBUS_XIO_HANDLE_STATE_OPENING:
+        case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
 
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING);
             break;
 
-        case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
         case GLOBUS_XIO_HANDLE_STATE_OPEN:
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_CLOSING);
@@ -914,6 +914,11 @@ globus_l_xio_read_write_callback_kickout(
 
     op = (globus_i_xio_op_t *) user_arg;
     handle = op->_op_handle;
+
+    if(op->is_user_dd)
+    {
+        op->type = GLOBUS_XIO_OPERATION_TYPE_DD;
+    }
 
     /* call the users callback */
     if(op->_op_data_cb != NULL)

@@ -1187,7 +1187,7 @@ globus_i_xio_driver_dd_cntl(
     int                                     cmd,
     va_list                                 ap)
 {
-    globus_result_t                         res;
+    globus_result_t                         res = GLOBUS_SUCCESS;
     int                                     ndx;
     int                                     ctr;
     void *                                  in_attr = NULL;
