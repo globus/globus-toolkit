@@ -52,8 +52,8 @@ static char * globus_l_gass_transfer_http_debug_level="";
     {\
         printf fmt;\
     }
-#undef globus_l_gass_transfer_http_lock()
-#undef globus_l_gass_transfer_http_unlock()
+#undef globus_l_gass_transfer_http_lock
+#undef globus_l_gass_transfer_http_unlock
 static int globus_l_gass_lock_line=0;
 static int globus_l_gass_lock_tmp=0;
 #define MYNAME(x) static char * myname=#x
@@ -1956,7 +1956,7 @@ globus_l_gass_transfer_http_authorization_callback(
     globus_io_handle_t *			handle,
     globus_result_t				result,
     char *					identity,
-    gss_ctx_id_t *				context_handle)
+    gss_ctx_id_t  				context_handle)
 {
     globus_gass_transfer_http_listener_proto_t *proto;
     int						rc;
@@ -4360,6 +4360,45 @@ globus_l_gass_transfer_http_register_read(
 
 static
 char *
+globus_l_gass_transfer_http_hex_escape(
+    const unsigned char *               url)
+{
+    unsigned char *                     new_url;
+    const unsigned char *               tmp_in;
+    unsigned char *                     tmp_out;
+    char                                hex[3];
+
+    new_url = globus_libc_malloc(strlen(url)*3+1);
+
+    if (new_url == NULL)
+    {
+        return NULL;
+    }
+
+    tmp_in = url;
+    tmp_out = new_url;
+
+    while ((*tmp_in) != '\0')
+    {
+        if (isspace(*tmp_in))
+        {
+            sprintf(hex, "%2x", (unsigned int) *(tmp_in++));
+            *(tmp_out++) = '%';
+            *(tmp_out++) = hex[0];
+            *(tmp_out++) = hex[1];
+        }
+        else
+        {
+            *(tmp_out++) = *(tmp_in++);
+        }
+    }
+    *tmp_out = '\0';
+    return new_url;
+}
+/* globus_l_gass_transfer_http_hex_escape() */
+
+static
+char *
 globus_l_gass_transfer_http_construct_request(
     globus_gass_transfer_http_request_proto_t *		proto)
 {
@@ -4373,13 +4412,24 @@ globus_l_gass_transfer_http_construct_request(
     cmd_len += strlen(proto->url.host); /* Required for http/1.1*/
     if(proto->proxy_connect)
     {
-	cmd_len += strlen(proto->url_string);
-	url = proto->url_string;
+        url = globus_l_gass_transfer_http_hex_escape(proto->url_string);
+
+        if (url == NULL)
+        {
+            return NULL;
+        }
+
+	cmd_len += strlen(url);
     }
     else
     {
-	cmd_len += strlen(proto->url.url_path); /* What we want */
-	url = proto->url.url_path;
+        url = globus_l_gass_transfer_http_hex_escape(proto->url.url_path);
+
+        if (url == NULL)
+        {
+            return NULL;
+        }
+	cmd_len += strlen(url);
     }
 
     switch(proto->type)
@@ -4390,6 +4440,8 @@ globus_l_gass_transfer_http_construct_request(
 
 	if(cmd == GLOBUS_NULL)
 	{
+            globus_libc_free(url);
+
 	    return GLOBUS_NULL;    
 	}
 	
@@ -4401,6 +4453,7 @@ globus_l_gass_transfer_http_construct_request(
 	strcat(cmd,
 	       CRLF);
 	
+        globus_libc_free(url);
 	return cmd;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT:
@@ -4435,6 +4488,7 @@ globus_l_gass_transfer_http_construct_request(
 
 	    if(cmd == GLOBUS_NULL)
 	    {
+                globus_libc_free(url);
 		return GLOBUS_NULL;
 	    }
 	    
@@ -4466,6 +4520,7 @@ globus_l_gass_transfer_http_construct_request(
 
 	    if(cmd == GLOBUS_NULL)
 	    {
+                globus_libc_free(url);
 		return GLOBUS_NULL;
 	    }
 	    
@@ -4490,6 +4545,7 @@ globus_l_gass_transfer_http_construct_request(
 	strcat(cmd,
 	       CRLF);
 
+        globus_libc_free(url);
 	return cmd;
       case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND:
 	cmd_len += strlen(GLOBUS_L_APPEND_COMMAND);
@@ -4523,6 +4579,7 @@ globus_l_gass_transfer_http_construct_request(
 
 	    if(cmd == GLOBUS_NULL)
 	    {
+                globus_libc_free(url);
 		return GLOBUS_NULL;
 	    }
 	    
@@ -4553,6 +4610,7 @@ globus_l_gass_transfer_http_construct_request(
 
 	    if(cmd == GLOBUS_NULL)
 	    {
+                globus_libc_free(url);
 		return GLOBUS_NULL;
 	    }
 	    
@@ -4577,12 +4635,14 @@ globus_l_gass_transfer_http_construct_request(
 	strcat(cmd,
 	       CRLF);
 
+        globus_libc_free(url);
 	return cmd;
       case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID:
       default:
 	globus_assert(proto->type !=
 		      GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID);
 	globus_assert(GLOBUS_FALSE);
+        globus_libc_free(url);
 
 	return GLOBUS_NULL;
     }    
