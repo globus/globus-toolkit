@@ -14,8 +14,8 @@
 #endif
 
 #include "globus_i_gass_transfer.h"
-#include "globus_l_gass_transfer_http.h"
 #include "globus_io.h"
+#include "globus_l_gass_transfer_http.h"
 
 #include <stdlib.h>
 #include <ctype.h>

@@ -17,12 +17,7 @@
 #endif
 #endif
 
-#define GLOBUS_GASS_TRANSFER 1
-
 #include "globus_common.h"
-#include "globus_handle_table.h"
-#include "globus_gass_common.h"
-#include "globus_io.h"
 
 EXTERN_C_BEGIN
 
@@ -47,9 +42,9 @@ EXTERN_C_BEGIN
  *
  * The GASS Transfer API is easily extensible to support different remote
  * data access protocols. The standard Globus distribution includes client-side
- * support for the ftp, gsiftp, http, and https protocols, as well as
- * server-side support for the http and https protocols.  Some Grid-FTP
- * extensions are also supported. An application which requires additional
+ * support for the http, and https protocols, as well as
+ * server-side support for the http and https protocols. 
+ * An application which requires additional
  * protocol support may add this through the @link
  * globus_gass_transfer_protocol protocol module interface @endlink.
  *
@@ -241,6 +236,78 @@ typedef enum
     GLOBUS_GASS_TRANSFER_LISTENER_CLOSED       /* listener is closed */
 } globus_gass_transfer_listener_status_t;
 
+/**
+ * GASS error codes
+ * @ingroup globus_gass_constants
+ */
+enum
+{
+    /** Invalid port in URL */
+    GLOBUS_GASS_TRANSFER_ERROR_BAD_PORT = 2,
+    /** Something bad occurred while processing the request */
+    GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR,
+    /** Unparsable URL */
+    GLOBUS_GASS_TRANSFER_ERROR_BAD_URL,
+    /** Invalid file open mode in the GASS File library */
+    GLOBUS_GASS_TRANSFER_ERROR_NOT_SUPPORTED,
+    /** Operation not supported by GASS for this type of URL */
+    GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED,
+    /** Out of memory */
+    GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED,
+    /** Uninitialized or invalid handle */
+    GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED,
+    /** NULL pointer passed as parameter */
+    GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER,
+    /** GASS Server not yet registered */
+    GLOBUS_GASS_TRANSFER_ERROR_NOT_REGISTERED,
+    /** URL not in cache */
+    GLOBUS_GASS_TRANSFER_ERROR_NOT_FOUND,
+    /** Invalid use of a GASS handle */
+    GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE,
+    /** Bytes array exceeds GASS request size */
+    GLOBUS_GASS_TRANSFER_ERROR_TOO_LARGE,
+    /** GASS Transfer request did not complete successfully */
+    GLOBUS_GASS_TRANSFER_ERROR_REQUEST_FAILED,
+    /** GASS handle already closed before this operation began*/
+    GLOBUS_GASS_TRANSFER_ERROR_DONE,
+    /** GASS handle already registered for processing */
+    GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED,
+    /** Could not open local file */
+    GLOBUS_GASS_TRANSFER_ERROR_OPEN_FAILED,
+    /** A protocol error or client-initiated failure has occurred */
+    GLOBUS_GASS_TRANSFER_ERROR_TRANSFER_FAILED
+};
+
+/**
+ * @ingroup globus_gass_constants
+ *
+ * Default buffer length for the globus_gass_transfer_assist library.
+ *
+ * @hideinitializer
+ */
+enum
+{
+    GLOBUS_GASS_TRANSFER_DEFAULT_BUFFER_LENGTH = 1024
+};
+
+/**
+ * @ingroup globus_gass_constants
+ *
+ * Value for files we don't know the length of.
+ *
+ * @hideinitializer
+ */
+#define GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN 0UL
+
+/**
+ * @ingroup globus_gass_constants
+ *
+ * Value for timestamps we don't know the value of.
+ *
+ * @hideinitializer
+ */
+#define GLOBUS_GASS_TRANSFER_TIMESTAMP_UNKNOWN 0UL
+
 typedef void
 (* globus_gass_transfer_callback_t)(
     void *					arg,
@@ -253,7 +320,7 @@ typedef void
  * One mode of using the GASS Transfer API is to initiate
  * file transfers. The operations supported by the GASS Transfer API
  * are file get, put, and append. These operations are provided for
- * FTP, GSIFTP, HTTP, and HTTPS file servers. The @link
+ * HTTP, and HTTPS file servers. The @link
  * globus_gass_transfer_protocol protocol module interface @endlink
  * allows support for additional protocols to be added
  * easily.
@@ -478,7 +545,7 @@ globus_gass_transfer_fail(
  * a client has requested of a server.  Referrals may span multiple protocol
  * schemes, though not all protocols may be able to generate referrals.
  * For example, an HTTP server may refer a client to another HTTP server,
- * an HTTPS server, and a FTP server.
+ * an HTTPS server.
  *
  * Upon receiving a referred response from a server, a client should query
  * the request handle to determine from where the file can be retrieved.

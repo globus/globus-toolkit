@@ -198,9 +198,9 @@ globus_gass_transfer_requestattr_initialize(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully initialized.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         Either @a attr or @a url_scheme was GLOBUS_NULL.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol module currently registered with GASS Transfer
  *         Library handles URLs with the specified @a url_scheme.
  */
@@ -214,7 +214,7 @@ globus_gass_transfer_requestattr_init(
     if(attr == GLOBUS_NULL ||
        url_scheme == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     globus_i_gass_transfer_lock();
@@ -224,12 +224,12 @@ globus_gass_transfer_requestattr_init(
     if(protocol == GLOBUS_NULL)
     {
 	globus_i_gass_transfer_unlock();
-	return GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
     }
     if(protocol->new_requestattr == GLOBUS_NULL)
     {
 	globus_i_gass_transfer_unlock();
-	return GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
     }
     *attr = protocol->new_requestattr(url_scheme);
     globus_i_gass_transfer_unlock();
@@ -249,7 +249,7 @@ globus_gass_transfer_requestattr_init(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully destroyed.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -258,7 +258,7 @@ globus_gass_transfer_requestattr_destroy(
 {
     if(attr == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     else if (*attr == GLOBUS_NULL)
     {
@@ -292,7 +292,7 @@ globus_gass_transfer_requestattr_destroy(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -308,12 +308,12 @@ globus_gass_transfer_requestattr_set_proxy_url(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(instance->proxy_url)
     {
@@ -345,16 +345,16 @@ globus_gass_transfer_requestattr_get_proxy_url(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(proxy_url == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *proxy_url = instance->proxy_url;
 
@@ -383,7 +383,7 @@ globus_gass_transfer_requestattr_get_proxy_url(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -400,12 +400,12 @@ globus_gass_transfer_requestattr_set_block_size(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->block_size = block_size;
 
@@ -426,16 +426,16 @@ globus_gass_transfer_requestattr_get_block_size(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(block_size == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *block_size = instance->block_size;
 
@@ -462,7 +462,7 @@ globus_gass_transfer_requestattr_get_block_size(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -478,12 +478,12 @@ globus_gass_transfer_requestattr_set_file_mode(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->file_mode = file_mode;
 
@@ -504,16 +504,16 @@ globus_gass_transfer_requestattr_get_file_mode(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(file_mode == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *file_mode = instance->file_mode;
 
@@ -541,7 +541,7 @@ globus_gass_transfer_requestattr_get_file_mode(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -557,12 +557,12 @@ globus_gass_transfer_requestattr_set_connection_reuse(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->connection_reuse = connection_reuse;
 
@@ -583,16 +583,16 @@ globus_gass_transfer_requestattr_get_connection_reuse(
 			       GLOBUS_GASS_OBJECT_TYPE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(connection_reuse == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *connection_reuse = instance->connection_reuse;
 
@@ -679,7 +679,7 @@ globus_gass_transfer_socket_requestattr_initialize(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -695,12 +695,12 @@ globus_gass_transfer_requestattr_set_socket_sndbuf(
 			       GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->sndbuf = sndbuf;
 
@@ -721,16 +721,16 @@ globus_gass_transfer_requestattr_get_socket_sndbuf(
 			       GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(sndbuf == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *sndbuf = instance->sndbuf;
 
@@ -758,7 +758,7 @@ globus_gass_transfer_requestattr_get_socket_sndbuf(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -774,12 +774,12 @@ globus_gass_transfer_requestattr_set_socket_rcvbuf(
 			       GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->rcvbuf = rcvbuf;
 
@@ -800,16 +800,16 @@ globus_gass_transfer_requestattr_get_socket_rcvbuf(
 			       GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(rcvbuf == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *rcvbuf = instance->rcvbuf;
 
@@ -837,7 +837,7 @@ globus_gass_transfer_requestattr_get_socket_rcvbuf(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -853,12 +853,12 @@ globus_gass_transfer_requestattr_set_socket_nodelay(
 			       GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->nodelay = nodelay;
 
@@ -879,16 +879,16 @@ globus_gass_transfer_requestattr_get_socket_nodelay(
 			       GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(nodelay == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *nodelay = instance->nodelay;
 
@@ -983,7 +983,7 @@ globus_gass_transfer_secure_requestattr_initialize(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -1000,12 +1000,12 @@ globus_gass_transfer_secure_requestattr_set_authorization(
 			       GLOBUS_GASS_OBJECT_TYPE_SECURE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->authorization = mode;
     if(instance->subject)
@@ -1039,17 +1039,17 @@ globus_gass_transfer_secure_requestattr_get_authorization(
 			       GLOBUS_GASS_OBJECT_TYPE_SECURE_REQUESTATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(mode == GLOBUS_NULL ||
        subject == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *mode = instance->authorization;
     *subject = instance->subject;
@@ -1115,9 +1115,9 @@ globus_gass_transfer_listenerattr_initialize(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully initialized.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         Either @a attr or @a url_scheme was GLOBUS_NULL.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol module currently registered with GASS Transfer
  *         Library handles URLs with the specified @a url_scheme.
  */
@@ -1130,7 +1130,7 @@ globus_gass_transfer_listenerattr_init(
 
     if(attr == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     globus_i_gass_transfer_lock();
@@ -1140,12 +1140,12 @@ globus_gass_transfer_listenerattr_init(
     if(protocol == GLOBUS_NULL)
     {
 	globus_i_gass_transfer_unlock();
-	return GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
     }
     if(protocol->new_listenerattr == GLOBUS_NULL)
     {
 	globus_i_gass_transfer_unlock();
-	return GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
     }
     *attr = protocol->new_listenerattr(url_scheme);
     globus_i_gass_transfer_unlock();
@@ -1172,7 +1172,7 @@ globus_gass_transfer_listenerattr_init(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -1188,12 +1188,12 @@ globus_gass_transfer_listenerattr_set_backlog(
 			       GLOBUS_GASS_OBJECT_TYPE_LISTENERATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->backlog = backlog;
 
@@ -1214,16 +1214,16 @@ globus_gass_transfer_listenerattr_get_backlog(
 			       GLOBUS_GASS_OBJECT_TYPE_LISTENERATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(backlog == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *backlog = instance->backlog;
 
@@ -1250,7 +1250,7 @@ globus_gass_transfer_listenerattr_get_backlog(
  *
  * @retval GLOBUS_SUCCESS
  *         The attribute was succesfully updated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a attr was GLOBUS_NULL.
  */
 int
@@ -1266,12 +1266,12 @@ globus_gass_transfer_listenerattr_set_port(
 			       GLOBUS_GASS_OBJECT_TYPE_LISTENERATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance->port = port;
 
@@ -1292,16 +1292,16 @@ globus_gass_transfer_listenerattr_get_port(
 			       GLOBUS_GASS_OBJECT_TYPE_LISTENERATTR);
     if(obj == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     instance = globus_object_get_local_instance_data(obj);
     if(instance == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(port == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     *port = instance->port;
 

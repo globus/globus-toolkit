@@ -61,14 +61,14 @@ globus_l_gass_transfer_monitor_callback(
  *
  * @retval GLOBUS_SUCCESS
  *         The get was successfully initiated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         One of request, attr, or callback was GLOBUS_NULL. The get
  *         could not be processed.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         An internal resource was not available to process the get.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing a get on this URL type is implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  *
  * @see globus_gass_transfer_get()
@@ -85,15 +85,15 @@ globus_gass_transfer_register_get(
 
     if(request == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(url == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(callback == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     /* Initialize request structure, and obtain a handle to it */
@@ -105,7 +105,7 @@ globus_gass_transfer_register_get(
 					user_arg);
     if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
     {
-	return GLOBUS_GASS_ERROR_INTERNAL_ERROR;
+	return GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
     }
 
     /*
@@ -149,14 +149,14 @@ globus_gass_transfer_register_get(
  *
  * @retval GLOBUS_SUCCESS
  *         The get was successfully initiated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         One of request or attr was GLOBUS_NULL. The get
  *         could not be processed.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         An internal resource was not available to process the get.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing a get on this URL type is implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  *
  * @see globus_gass_transfer_register_get()
@@ -238,14 +238,14 @@ globus_gass_transfer_get(
  *
  * @retval GLOBUS_SUCCESS
  *         The put was successfully initiated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         One of request, attr, or callback was GLOBUS_NULL. The put
  *         could not be processed.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         An internal resource was not available to process the put.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing a put on this URL type is implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  *
  * @see globus_gass_transfer_put()
@@ -263,15 +263,15 @@ globus_gass_transfer_register_put(
 
     if(request == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(url == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(callback == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     /* Initialize request structure, and obtain a handle to it */
@@ -284,7 +284,7 @@ globus_gass_transfer_register_put(
 
     if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
     {
-	return GLOBUS_GASS_ERROR_INTERNAL_ERROR;
+	return GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
     }
 
     globus_gass_transfer_request_set_length(*request,
@@ -333,14 +333,14 @@ globus_gass_transfer_register_put(
  *
  * @retval GLOBUS_SUCCESS
  *         The get was successfully initiated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         One of request or attr was GLOBUS_NULL. The get
  *         could not be processed.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         An internal resource was not available to process the get.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing a put on this URL type is implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  *
  * @see globus_gass_transfer_register_put()
@@ -424,15 +424,15 @@ globus_gass_transfer_put(
  *
  * @retval GLOBUS_SUCCESS
  *         The put was successfully initiated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         One of request, attr, or callback was GLOBUS_NULL. The put
  *         could not be processed.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         An internal resource was not available to process the put.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing a append on this URL type is
  *         implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  *
  * @see globus_gass_transfer_append()
@@ -450,15 +450,15 @@ globus_gass_transfer_register_append(
 
     if(request == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(url == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(callback == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     /* Initialize request structure, and obtain a handle to it */
@@ -471,7 +471,7 @@ globus_gass_transfer_register_append(
 
     if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
     {
-	return GLOBUS_GASS_ERROR_INTERNAL_ERROR;
+	return GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
     }
 
     globus_gass_transfer_request_set_length(*request,
@@ -525,15 +525,15 @@ globus_gass_transfer_register_append(
  *
  * @retval GLOBUS_SUCCESS
  *         The put was successfully initiated.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         One of request, attr, or callback was GLOBUS_NULL. The put
  *         could not be processed.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         An internal resource was not available to process the put.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing a append on this URL type is
  *         implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  *
  * @see globus_gass_transfer_register_append()
@@ -590,10 +590,10 @@ globus_gass_transfer_append(
  * @param request
  *        A pointer to the request handle to process.
  *
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         No protocol handler for doing the desired operation on this URL
  *         type is implemented.
- * @retval GLOBUS_GASS_ERROR_BAD_URL
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_BAD_URL
  *         The URL could not be parsed.
  */
 int
@@ -614,7 +614,7 @@ globus_i_gass_transfer_client_request(
 		          &url);
     if(rc != GLOBUS_SUCCESS)
     {
-	return GLOBUS_GASS_ERROR_BAD_URL;
+	return GLOBUS_GASS_TRANSFER_ERROR_BAD_URL;
     }
 
     globus_i_gass_transfer_lock();
@@ -627,7 +627,7 @@ globus_i_gass_transfer_client_request(
     /* verify that the operation is supported by the protocol module */
     if(protocol == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
     }
 

@@ -62,17 +62,26 @@ globus_l_gass_transfer_activate(void)
     globus_handle_table_init(&globus_i_gass_transfer_listener_handles);
 
     globus_module_activate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
+
+#if 0
+    /* we don't want to build this in
+     */
     globus_module_activate(GLOBUS_I_GASS_TRANSFER_FTP_MODULE);
+#endif
     
     globus_gass_transfer_proto_register_protocol(
 	&globus_i_gass_transfer_http_descriptor);
     globus_gass_transfer_proto_register_protocol(
 	&globus_i_gass_transfer_https_descriptor);
 
+#if 0
+    /* we don't want to build this in
+     */
     globus_gass_transfer_proto_register_protocol(
 	&globus_i_gass_transfer_ftp_descriptor);
     globus_gass_transfer_proto_register_protocol(
 	&globus_i_gass_transfer_gsiftp_descriptor);
+#endif
     
     globus_mutex_init(&globus_i_gass_transfer_mutex,
                       GLOBUS_NULL);
@@ -157,10 +166,14 @@ globus_l_gass_transfer_deactivate(void)
 			 &globus_i_gass_transfer_mutex);	 
     }
 
+#if 0
+    /* we don't want to build this in
+     */
     globus_gass_transfer_proto_unregister_protocol(
 	&globus_i_gass_transfer_ftp_descriptor);
     globus_gass_transfer_proto_unregister_protocol(
 	&globus_i_gass_transfer_gsiftp_descriptor);
+#endif
     
     globus_gass_transfer_proto_unregister_protocol(
 	&globus_i_gass_transfer_http_descriptor);
@@ -168,7 +181,11 @@ globus_l_gass_transfer_deactivate(void)
 	&globus_i_gass_transfer_https_descriptor);
 
     
+#if 0
+    /* we don't want to build this in
+     */
     globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_FTP_MODULE);
+#endif
  
     globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
  
