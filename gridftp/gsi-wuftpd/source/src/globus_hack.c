@@ -773,22 +773,6 @@ g_abort()
 }
 
 void
-g_passive(globus_bool_t spas)
-{
-	if( g_delayed_passive)
-	{
-		//must wait until later to alloc the port
-		//XXX must find out what code to really return here!
-        reply(000, "Delayed passive mode on, will return port later");
-	}
-	else 
-	{
-		g_passive_port_alloc(spas);
-	}
-	
-}
-
-void
 g_passive_port_alloc(globus_bool_t spas)
 {
     globus_result_t                             res;
@@ -849,6 +833,21 @@ g_passive_port_alloc(globus_bool_t spas)
     }
 }
 
+void
+g_passive(globus_bool_t spas)
+{
+	if( g_delayed_passive)
+	{
+		//must wait until later to alloc the port
+		//XXX must find out what code to really return here!
+        reply(000, "Delayed passive mode on, will return port later");
+	}
+	else 
+	{
+		g_passive_port_alloc(spas);
+	}
+	
+}
 
 /*
  *  what to do if it times out
