@@ -17,7 +17,7 @@
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
 
-#define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.222"
+#define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.1.1.8"
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_SN  "GENERICPOLICY"
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_LN  "Generic Policy Object"
 
@@ -38,15 +38,16 @@ static char *  LONG_USAGE = \
 "    -pwstdin                  Allows passphrase from stdin\n" \
 "    -limited                  Creates a limited legacy globus proxy\n" \
 "    -old                      Creates a full legacy globus proxy\n" \
-"    -valid H:M                Proxy is valid for H hours and M \n" \
+"    -valid <h:m>              Proxy is valid for h hours and m \n" \
 "                              minutes (default:12:00)\n" \
-"    -hours H                  Deprecated support of hours option\n" \
-"    -bits  B                  Number of bits in key {512|1024|2048|4096}\n" \
-"    -policy   <policyfile>    File containing policy to store in the\n" \
+"    -hours <hours>            Deprecated support of hours option\n" \
+"    -bits  <bits>             Number of bits in key {512|1024|2048|4096}\n" \
+"    -policy <policyfile>      File containing policy to store in the\n" \
 "                              ProxyCertInfo extension\n" \
 "    -pl <oid>,                OID string for the policy language\n" \
 "    -policy-language <oid>    used in the policy file\n" \
-"\n" \
+"    -path-length <l>          Allow a chain of at most l proxies to be \n" \
+"                              generated from this one\n" \
 "    -cert     <certfile>      Non-standard location of user certificate\n" \
 "    -key      <keyfile>       Non-standard location of user key\n" \
 "    -certdir  <certdir>       Non-standard location of trusted cert dir\n" \
@@ -161,6 +162,7 @@ main(
     char *                              policy_filename = NULL;
     char *                              policy_language = NULL;
     int                                 policy_NID;
+    int                                 path_length = -1;
     int                                 (*pw_cb)() = NULL;
     int                                 return_value = 0;
     
@@ -323,6 +325,12 @@ main(
             args_verify_next(arg_index, argp, "policy language missing");
             policy_language = argv[++arg_index];
         }
+        else if(strcmp(argp, "-path-length") == 0)
+        {
+            args_verify_next(arg_index, argp, "integer argument missing");
+            path_length = atoi(argv[arg_index + 1]);
+            arg_index++;
+        }
         else
         {
             args_error(arg_index, argp, "unrecognized option");
@@ -339,11 +347,13 @@ main(
         exit(1);
     }
 
-    if(policy_filename && cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+    if((policy_filename || path_length != -1)
+       && cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
     {
         globus_libc_fprintf(stderr, 
                             "\n\nERROR: Globus legacy proxies are"
-                            "not able to carry policy data\n");
+                            " not able to carry policy data or path"
+                            " length contraints\n");
         exit(1);
     }
     
@@ -735,6 +745,21 @@ main(
         exit(1);
     }
 
+    /* add path length constraint */
+
+    if(path_length >= 0)
+    {
+        result = globus_gsi_proxy_handle_set_pathlen(proxy_handle,
+                                                     path_length);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(stderr,
+                                "\n\nERROR: Can't set the path "
+                                "length in the proxy handle\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+    }
+    
     /* add policys now */
 
     if(policy_filename)
@@ -807,7 +832,7 @@ main(
             {
                 globus_libc_fprintf(stderr,
                                     "\n\nERROR: Can't set the policy "
-                                    "policy in the proxy handle\n");
+                                    "in the proxy handle\n");
                 GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
             }
         }   
