@@ -100,6 +100,11 @@ typedef struct
      * Host name to connecting to.
      */
     char *                              host;
+
+    /**
+     * Port connecting to
+     */
+    unsigned short                      port;
     /**
      * URI path to access.
      */
@@ -414,6 +419,12 @@ globus_i_xio_http_attr_destroy(
 
 /* globus_xio_http_client.c */
 extern
+globus_result_t
+globus_i_xio_http_client_write_request(
+    globus_xio_operation_t              op,
+    globus_i_xio_http_handle_t *        http_handle);
+
+extern
 void
 globus_i_xio_http_client_open_callback(
     globus_xio_operation_t              op,
@@ -427,6 +438,13 @@ globus_i_xio_http_handle_init(
     globus_i_xio_http_handle_t *        http_handle,
     globus_i_xio_http_attr_t *          attr,
     globus_i_xio_http_target_t *        target);
+
+extern
+globus_result_t
+globus_i_xio_http_handle_reinit(
+    globus_i_xio_http_handle_t *        http_handle,
+    globus_i_xio_http_attr_t *          http_attr,
+    globus_i_xio_http_target_t *        http_target);
 
 extern
 void
@@ -507,7 +525,7 @@ globus_i_xio_http_target_destroy(
     void *                              driver_target);
 
 extern
-globus_result_t
+void
 globus_i_xio_http_target_destroy_internal(
     globus_i_xio_http_target_t *        target);
 
@@ -542,6 +560,14 @@ globus_i_xio_http_response_destroy(
 
 /* globus_xio_http_server.c */
 extern
+void
+globus_i_xio_http_server_read_request_callback(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
+
+extern
 globus_result_t
 globus_i_xio_http_accept(
     void *                              driver_server,
@@ -563,6 +589,11 @@ globus_i_xio_http_server_write_response(
     int                                 iovec_count,
     globus_xio_operation_t              op);
 
+extern
+globus_result_t
+globus_i_xio_http_server_read_next_request(
+    globus_i_xio_http_handle_t *        http_handle);
+
 /* globus_xio_http_target.c */ 
 extern
 globus_result_t
@@ -579,6 +610,9 @@ globus_i_xio_http_target_copy(
     const globus_i_xio_http_target_t *  src);
 
 /* globus_xio_http_transform.c */
+extern globus_list_t *                  globus_i_xio_http_cached_handles;
+extern globus_mutex_t                   globus_i_xio_http_cached_handle_mutex;
+
 extern
 globus_result_t
 globus_i_xio_http_open(

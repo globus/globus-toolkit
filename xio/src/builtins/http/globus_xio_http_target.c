@@ -102,12 +102,25 @@ globus_i_xio_http_target_init(
             && (strcmp(new_contact_info.scheme, "http")==0))
     {
         new_contact_info.port = "80";
+        target->port = 80;
     }
     else if (new_contact_info.port == 0
             && (strcmp(new_contact_info.scheme, "https")==0))
     {
         new_contact_info.port = "443";
+        target->port = 443;
     }
+    else if (new_contact_info.port != 0)
+    {
+        target->port = (unsigned short) atoi(new_contact_info.port);
+    }
+    else
+    {
+        res = GlobusXIOErrorParameter("port");
+
+        goto free_target_exit;
+    }
+
     res = globus_xio_driver_client_target_pass(target_op, &new_contact_info);
 
     if (res != GLOBUS_SUCCESS)
@@ -179,6 +192,8 @@ globus_i_xio_http_target_copy(
         }
     }
 
+    dest->port = src->port;
+
     return res;
 
 free_host_exit:
@@ -216,7 +231,7 @@ globus_i_xio_http_target_destroy(
 /* globus_i_xio_http_target_destroy() */
 
 extern
-globus_result_t
+void
 globus_i_xio_http_target_destroy_internal(
     globus_i_xio_http_target_t *        target)
 {
@@ -231,7 +246,5 @@ globus_i_xio_http_target_destroy_internal(
     {
         globus_libc_free(http_target->uri);
     }
-
-    return GLOBUS_SUCCESS;
 }
 /* globus_i_xio_http_target_destroy_internal() */

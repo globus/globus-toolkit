@@ -90,7 +90,7 @@ globus_i_xio_http_request_copy(
     const globus_i_xio_http_request_t * src)
 {
     globus_result_t                     res = GLOBUS_SUCCESS;
-    GlobusXIOName(globus_i_xio_http_request_init);
+    GlobusXIOName(globus_i_xio_http_request_copy);
 
     if (src->uri == NULL)
     {
