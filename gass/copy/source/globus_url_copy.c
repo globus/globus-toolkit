@@ -30,13 +30,14 @@ const char * oneline_usage
     = "globus-url-copy [-help] [-usage] [-version] [-binary|-ascii] sourceURL destURL";*/
 
 const char * long_usage
-    =   "\nglobus-url-copy [options] sourceURL destURL\n" \
-        "OPTIONS\n" \
-        "\t -help             : Print this message \n" \
-        "\t -usage            : Print a short usage description message\n" \
-        "\t -version          : Print the version of this program\n" \
-        "\t -ascii            : NOT available yet; convert the file to/from netASCII format to/from local file representation\n" \
-        "\t -binary           : Do not aply any conversion to the files\n" \
+    =   "\nglobus-url-copy [options] sourceURL destURL\n"
+        "OPTIONS\n"
+        "\t -help             : Print this message \n" 
+        "\t -usage            : Print a short usage description message\n"
+        "\t -version          : Print the version of this program\n"
+        "\t -ascii            : NOT available yet; convert the file to/from\n"
+        "\t                     netASCII format to/from local file format\n"
+        "\t -binary           : Do not aply any conversion to the files\n"
         "\t                     -binary is used by default\n\n";
 
 #define binary_id   1
