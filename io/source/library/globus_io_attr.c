@@ -311,7 +311,7 @@ globus_netlogger_write(
 #   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     {
         outstr_len = strlen(s_nl_handle->main_str) + 1 +
-                     strlen("LVL=18446744073709551616") + 1;
+                     strlen("LVL=18446744073709551616") + 1);
         if(tag != GLOBUS_NULL)
         {
             outstr_len += strlen(tag);
