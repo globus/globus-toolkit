@@ -259,6 +259,7 @@ main(
     {
         res = globus_gridftp_server_control_start(
             ftp_server, ftp_attr, xio_handle, FTP_USER_ARG);
+        test_res(res, __LINE__);
 
         while(!globus_l_done)
         {
