@@ -117,11 +117,13 @@ while(<IN>)
   { 
     my $copy=$_;
 
-    if($copy !~ m!([A-Z]+)_([A-Z]+)!) #if copy does NOT an uppercase letter followed by a _ then another uppercase letter 
+    if($copy !~ m!^GLOBUS_!) #if copy does NOT begin with GLOBUS_
     {
       if (!($copy =~ m/^PERL/ )){  #skip PERL, 'cause it's defined in sh-tools too
          push @temp_header, "GLOBUS_".$copy;            #prepend GLOBUS_ to the lines of globus-build-env-$flavor.sh
       }
+    }else{
+	   push @temp_header, $copy;
     }
   }   
 }
