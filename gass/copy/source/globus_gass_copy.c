@@ -182,11 +182,13 @@ globus_gass_copy_handle_init(
 
     if(handle != GLOBUS_NULL)
     {
-        result = globus_ftp_client_handle_init(&handle->ftp_source_handle);
+        result = globus_ftp_client_handle_init(&handle->ftp_source_handle,
+                                               GLOBUS_NULL);
         if (result != GLOBUS_SUCCESS)
             return result;
 
-        result = globus_ftp_client_handle_init(&handle->ftp_dest_handle);
+        result = globus_ftp_client_handle_init(&handle->ftp_dest_handle,
+                                               GLOBUS_NULL);
         if (result != GLOBUS_SUCCESS)
             return result;
     

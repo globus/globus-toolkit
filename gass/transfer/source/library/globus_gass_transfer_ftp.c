@@ -705,7 +705,7 @@ globus_l_gass_transfer_ftp_new_request(
 	goto error_exit;
     }
 
-    result = globus_ftp_client_handle_init(&proto->handle);
+    result = globus_ftp_client_handle_init(&proto->handle, GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
 	goto proto_error;
