@@ -216,7 +216,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
                         pw = getpwnam(user);
                         if (pw && allowed_user(pw)) {
                                 olduser = authctxt->user;
-                                authctxt->user = user;
+                                authctxt->user = xstrdup(user);
                                 authctxt->pw = pwcopy(pw);
                                 authctxt->valid = 1;
                                 changeuser = 1;
@@ -233,6 +233,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
                 struct passwd *pw = NULL;
                 pw = getpwnam(user);
                 if (pw && allowed_user(pw)) {
+		    	xfree(authctxt->user);
                         authctxt->user = olduser;
                         authctxt->pw = pwcopy(pw);
                         authctxt->valid = 1;
