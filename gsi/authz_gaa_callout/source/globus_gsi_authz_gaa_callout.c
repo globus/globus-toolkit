@@ -248,12 +248,15 @@ globus_gsi_authz_gaa_handle_init_callout(
 
     for (i = 0; i < data_set->count; i++)
     {
-	if ((assertion = data_set->elements[i].value))
-	    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF2(
-		GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE,
-		"%s: found assertion\n",
-		_function_name_);
+	if (data_set->elements[i].length && data_set->elements[i].value)
+	{
+	    assertion = malloc(data_set->elements[i].length+1);
+	    strncpy(assertion,
+		    data_set->elements[i].value,
+		    data_set->elements[i].length);
+	    assertion[data_set->elements[i].length] = '\0';
 	    break;
+	}
     }
 
     if (! assertion)
@@ -363,6 +366,10 @@ globus_gsi_authz_gaa_handle_init_callout(
 	
  end:
 
+    if (data_set)
+    {
+	(void)gss_release_buffer_set(&minor_status, &data_set);
+    }
     if(result == GLOBUS_SUCCESS)
     { 
         callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_gaa_cb_arg_t));
