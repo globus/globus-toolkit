@@ -26,17 +26,17 @@ static char *rcsid = "$Header$";
 #include "config.h"
 
 #ifndef DEFAULT_SECURE_TMP_DIR
-#ifndef WIN32
-#define DEFAULT_SECURE_TMP_DIR "/tmp"
-#else
-#define DEFAULT_SECURE_TMP_DIR "c:\\tmp"
-#endif /* WIN32 */
+#   ifndef WIN32
+#       define DEFAULT_SECURE_TMP_DIR "/tmp"
+#   else
+#       define DEFAULT_SECURE_TMP_DIR "c:\\tmp"
+#   endif /* WIN32 */
 #endif /* DEFAULT_SECURE_TMP_DIR */
 
 #ifndef WIN32
-#define FILE_SEPERATOR "/"
+#   define FILE_SEPERATOR "/"
 #else
-#define FILE_SEPERATOR "\\"
+#   define FILE_SEPERATOR "\\"
 #endif
 
 #include "sslutils.h"
@@ -285,7 +285,6 @@ main(
             args_error(argnum,argval,errmsg); \
     }
 
-
     for (i=1; i<argc; i++)
     {
         argp = argv[i];
@@ -410,7 +409,7 @@ main(
         goto err;
 
     pcd->type = CRED_TYPE_PERMANENT;
-
+printf("bresnaha: here 1.4\n");
     if ( proxy_get_filenames(pcd,
                              0,
                              &certcafile,
@@ -419,6 +418,7 @@ main(
                              &certfile,
                              &keyfile) )
         goto err;
+printf("bresnaha: here 1.6\n");
 
     if (debug)
     {
@@ -661,6 +661,7 @@ main(
         fflush(stdout);
     }
 
+	printf("bresnaha: here 1.9\n");
     if (proxy_create_local(pcd,
                            outfile,
                            hours,
@@ -671,7 +672,7 @@ main(
     {
         goto err;
     }
-        
+    printf("bresnaha: here 2\n");    
     if (!quiet)
     {
         printf(" Done\n");
