@@ -67,6 +67,16 @@ globus_gram_protocol_setup_attr(
 
 
 /*
+ * authorizes the remote party if the remote party is the same as the
+ * local party
+ */
+
+globus_bool_t
+globus_gram_protocol_authorize_self(
+    gss_ctx_id_t                        context);
+
+
+/*
  * replaces all credentials used in this module with the given ones
  */
 int
