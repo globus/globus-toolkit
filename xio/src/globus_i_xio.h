@@ -183,7 +183,7 @@ typedef struct globus_i_xio_dd_s
     globus_i_xio_attr_ent_t                     entry[1];
 } globus_i_xio_dd_t;
 
-struct globus_i_xio_stack_s
+typedef struct globus_i_xio_stack_s
 {
     int                                         size;
     globus_list_t *                             driver_stack;
@@ -480,6 +480,7 @@ globus_i_xio_timer_register_timeout(
 
 globus_bool_t
 globus_i_xio_timer_unregister_timeout(
+    globus_i_xio_timer_t *                      timer,
     void *                                      datum);
 
 globus_i_xio_context_t *

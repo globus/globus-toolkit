@@ -5,14 +5,10 @@ typedef struct globus_i_xio_timer_entry_s
     void *                                          datum;
     globus_bool_t *                                 progress_ptr;
     globus_i_xio_timer_cb_t                         timer_cb;
-    globus_reltime_t *                              rel_timeout;
-    globus_abstime_t *                              abs_timeout;
+    globus_reltime_t                                rel_timeout;
+    globus_abstime_t                                abs_timeout;
 } globus_i_xio_timer_entry_t;
 
-
-typedef globus_bool_t
-(*globus_i_xio_timer_cb_t)(
-    void *                                      datum);
 
 void
 globus_i_xio_timer_poller_callback(
@@ -24,14 +20,14 @@ globus_i_xio_timer_init(
 {
     globus_mutex_init(&timer->mutex, NULL);
     globus_cond_init(&timer->cond, NULL);
-    timer->list = NULL;
+    timer->op_list = NULL;
     timer->running = GLOBUS_FALSE;
 
     globus_callback_space_register_periodic(
         &timer->periodic_handle,
-        INFINITY,
-        NEVER,
-        globus_i_xio_op_timer_poller_callback,
+        &globus_i_reltime_infinity,
+        &globus_i_reltime_infinity,
+        globus_i_xio_timer_poller_callback,
         (void *)timer,
         GLOBUS_CALLBACK_GLOBAL_SPACE);
 }
@@ -66,7 +62,8 @@ globus_i_xio_timer_destroy(
         res = globus_callback_unregister(
                 timer->periodic_handle,
                 globus_l_xio_timer_unregister_cb,
-                (void *)tiemr);
+                (void *)timer,
+                NULL);
         if(res != GLOBUS_SUCCESS)
         {
             while(timer->running)
@@ -78,7 +75,7 @@ globus_i_xio_timer_destroy(
     globus_mutex_unlock(&timer->mutex);
 
     /* if the list is not empty i am not gonna complain */
-    globus_mutex_destroy(timer->mutex, NULL);
+    globus_mutex_destroy(&timer->mutex);
 }
 
 
@@ -98,12 +95,12 @@ globus_i_xio_timer_register_timeout(
     entry->progress_ptr = progress_ptr;
     GlobusTimeReltimeCopy(entry->rel_timeout, *timeout);
     GlobusTimeAbstimeGetCurrent(entry->abs_timeout);
-    GlobusTimeAbstimeInc(entry->abs_timeout, *timerout);
+    GlobusTimeAbstimeInc(entry->abs_timeout, *timeout);
 
     globus_mutex_lock(&timer->mutex);
     {
         if(!timer->running || 
-            globus_reltime_cmp(entry->rel_timeout, timer->minimal_delay) < 0)
+            globus_reltime_cmp(&entry->rel_timeout, &timer->minimal_delay) < 0)
         {
             GlobusTimeReltimeCopy(timer->minimal_delay, entry->rel_timeout);
             res = globus_callback_adjust_period(
@@ -121,6 +118,7 @@ globus_i_xio_timer_register_timeout(
 
 globus_bool_t
 globus_i_xio_timer_unregister_timeout(
+    globus_i_xio_timer_t *                          timer,
     void *                                          datum)
 {
     globus_list_t *                                 list;
@@ -183,9 +181,9 @@ globus_i_xio_timer_poller_callback(
                 /* if progress was made up the expiration point and flip
                  * the progress flag 
                  */
-                if(*entry->progress)
+                if(*entry->progress_ptr)
                 {
-                    *entry->progress = GLOBUS_FALSE;
+                    *entry->progress_ptr = GLOBUS_FALSE;
                     GlobusTimeReltimeDiff(tmp_rel, entry->rel_timeout, \
                                           timer->minimal_delay);
                     GlobusTimeAbstimeInc(entry->abs_timeout, tmp_rel);
@@ -194,24 +192,18 @@ globus_i_xio_timer_poller_callback(
                 else
                 {
                     globus_list_insert(&call_list, entry);
-                    if(entry->timer_cb(entry->datum))
-                    {
-                        done = GLOBUS_TRUE;
-                        globus_list_insert(&remove_list, list);
-                    }
+                    /* TODO: remove from main list */
                 }
             }
         }
-
     }
     globus_mutex_unlock(&timer->mutex);
 
     /* remove from the list all that were canceled */
-    for(!globus_list_empty(remove_list))
+    while(!globus_list_empty(call_list))
     {
         entry = (globus_i_xio_timer_entry_t *)globus_list_remove(
                     &call_list, call_list);
-        globus_list_remove(&timer->op_list, list);
 
         /* 
          * call the users function 

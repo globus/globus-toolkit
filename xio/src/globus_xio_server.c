@@ -29,12 +29,12 @@
  *  
  */
 
-#define GlobusIXIOServerDec(free, s)                                    \
+#define GlobusIXIOServerDec(free, _in_s)                                \
 do                                                                      \
 {                                                                       \
     globus_i_xio_server_t *                         _s;                 \
                                                                         \
-    _s = (s);                                                           \
+    _s = (_in_s);                                                       \
     _s->ref--;                                                          \
     if(_s->ref == 0)                                                    \
     {                                                                   \
@@ -51,12 +51,12 @@ do                                                                      \
     }                                                                   \
 } while (0)
 
-#define GlobusIXIOServerDestroy(s)                                      \
+#define GlobusIXIOServerDestroy(_in_s)                                  \
 do                                                                      \
 {                                                                       \
     globus_i_xio_server_t *                         _s;                 \
                                                                         \
-    _s = (s);                                                           \
+    _s = (_in_s);                                                       \
     globus_mutex_destroy(&_s->mutex);                                   \
     globus_free(_s);                                                    \
 } while (0)
@@ -71,7 +71,8 @@ void
 globus_l_xio_server_accept_kickout(
     globus_i_xio_op_t *                         xio_op)
 {
-    globus_i_xio_target_t                       xio_target = NULL;
+    int                                         ctr;
+    globus_i_xio_target_t *                     xio_target = NULL;
     globus_bool_t                               destroy_server = GLOBUS_FALSE;
 
     /* create the structure if successful, otherwise the target is null */
@@ -82,7 +83,8 @@ globus_l_xio_server_accept_kickout(
                             (xio_op->stack_size - 1)));
         if(xio_target == NULL)
         {
-            xio_op->cached_res = MallocFailed();
+            xio_op->cached_res = GlobusXIOErrorMemoryAlloc(             \
+                "globus_l_xio_server_accept_kickout");
         }
         /* initialize the target structure */
         xio_target->stack_size = xio_op->stack_size;
@@ -166,7 +168,7 @@ globus_i_xio_server_accept_callback(
     void *                                      user_arg)
 {
     globus_i_xio_server_t *                     xio_server;
-    globus_i_xio_op_entry_t *                   xio_op;
+    globus_i_xio_op_t *                         xio_op;
     globus_bool_t                               accept = GLOBUS_TRUE;
 
     xio_op = op;
@@ -642,7 +644,7 @@ globus_xio_server_cancel_accept(
         {
             res = ThereIsNothingToCancel("globus_xio_server_cancel_accept");
         }
-        else if(xio_server->xio_op->canceled)
+        else if(xio_server->op->canceled)
         {
             res = AlreadyCacneled("globus_xio_server_cancel_accept");
         }
@@ -651,10 +653,10 @@ globus_xio_server_cancel_accept(
             /* the callback is called locked.  within it the driver is
                 allowed limited functionality.  by calling this locked
                 can more efficiently pass the operation down the stack */
-            xio_server->xio_op->canceled = GLOBUS_TRUE;
-            if(xio_server->xio_op->cancel_cb)
+            xio_server->op->canceled = GLOBUS_TRUE;
+            if(xio_server->op->cancel_cb)
             {
-                xio_server->xio_op->cancel_cb(xio_server);
+                xio_server->op->cancel_cb(xio_server);
             }            
         }
     }
@@ -674,6 +676,7 @@ globus_xio_server_destroy(
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_result_t                             tmp_res;
     globus_bool_t                               destroy_server = GLOBUS_FALSE;
+    int                                         ctr;
 
     if(server == NULL)
     {
@@ -730,6 +733,7 @@ globus_xio_target_destroy(
     globus_i_xio_server_t *                     xio_server;
     globus_result_t                             res;
     globus_result_t                             tmp_res;
+    int                                         ctr;
 
     /*
      *  parameter checking 
@@ -747,9 +751,7 @@ globus_xio_target_destroy(
 
     if(ctr = 0; ctr < xio_target->stack_size; ctr++)
     {
-        GlobusXIODriverTargetDestroy(
-            tmp_res,
-            xio_target->entry[ndx].driver,
+        tmp_res = xio_target->entry[ndx].driver->target_destroy_func(
             xio_target->entry[ndx].target);
         /* this will effectively report the last error detected */
         if(tmp_res != GLOBUS_SUCCESS)
@@ -839,7 +841,12 @@ globus_xio_target_init(
     const char *                                contact_string,
     globus_xio_stack_t                          stack)
 {
-    globus_i_xio_target_t                       xio_target;
+    globus_result_t                             res;
+    globus_i_xio_target_t *                     xio_target;
+    int                                         stack_size;
+    int                                         ctr;
+    int                                         ndx;
+    globus_list_t *                             list;
 
     /*
      *  parameter checking 
@@ -861,7 +868,7 @@ globus_xio_target_init(
     if(stack_size == 0)
     {
         res = GlobusXIOErrorInvalidStack("globus_xio_target_init");
-        goto err;
+        return res;
     }
 
     /* TODO: check stack, make sure it meets requirements */
@@ -869,7 +876,7 @@ globus_xio_target_init(
                     globus_malloc(sizeof(globus_i_xio_target_t) +
                         (sizeof(globus_i_xio_target_entry_t) * 
                             (stack_size - 1)));
-    if(xio_op == NULL)
+    if(xio_target == NULL)
     {
         return GlobusXIOErrorMemoryAlloc("globus_xio_target_init");
     }

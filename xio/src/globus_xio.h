@@ -356,8 +356,7 @@ globus_xio_stack_init(
 globus_result_t
 globus_xio_stack_push_driver(
     globus_xio_stack_t                          stack,
-    globus_xio_driver_t                         driver,
-    globus_xio_attr_t                           driver_attr);
+    globus_xio_driver_t                         driver);
 
 /**
  *  Destroy a stack object.

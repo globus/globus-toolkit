@@ -106,7 +106,7 @@ globus_xio_attr_init(
  */
 globus_result_t
 globus_xio_attr_cntl(
-    globus_xio_attr_t                           attr,
+    globus_xio_attr_t                           user_attr,
     globus_xio_driver_t                         driver,
     int                                         cmd,
     ...)
@@ -114,16 +114,18 @@ globus_xio_attr_cntl(
     va_list                                     ap;
     globus_result_t                             res;
     void *                                      ds;
+    globus_i_xio_attr_t *                       attr;
 
-    if(attr == NULL)
+    if(user_attr == NULL)
     {
         return GlobusXIOErrorBadParameter("globus_xio_attr_cntl");
     }
 
+    attr = user_attr;
 
     if(driver != NULL)
     {
-        GlobusIXIOAttrGetDS(ds, attr, driver);
+        //GlobusIXIOAttrGetDS(ds, attr, driver);
         if(ds == NULL)
         {
             res = driver->attr_init_func(&ds);
@@ -241,8 +243,8 @@ globus_xio_attr_copy(
         return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
     }
 
-    memset(xio_attri_dst, 0, sizeof(globus_i_xio_attr_t));
-    memset(xio_attri_dst->entry, 0, 
+    memset(xio_attr_dst, 0, sizeof(globus_i_xio_attr_t));
+    memset(xio_attr_dst->entry, 0, 
         sizeof(globus_i_xio_attr_ent_t) * GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
 
     /* copy all general attrs */
@@ -254,12 +256,10 @@ globus_xio_attr_copy(
         xio_attr_dst->entry[ctr].driver = xio_attr_src->entry[ctr].driver;
 
         res = xio_attr_dst->entry[ctr].driver->attr_copy_func(
-                &xio_attr_dst->entry[ctr].drivers_data,
-                xio_attr_src->entry[ctr].drivers_data);
+                &xio_attr_dst->entry[ctr].driver_data,
+                xio_attr_src->entry[ctr].driver_data);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_result_t                     res2;
-
             for(ctr2 = 0; ctr2 < ctr; ctr2++)
             {
                 /* ignore result here */
@@ -297,6 +297,7 @@ globus_xio_data_descriptor_init(
     globus_xio_handle_t                         handle)
 {
     globus_i_xio_dd_t *                         xio_dd;
+    int                                         ctr;
 
     if(data_desc == NULL)
     {
@@ -334,18 +335,21 @@ globus_xio_data_descriptor_destroy(
     int                                         ctr;
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_result_t                             tmp_res;
+    globus_i_xio_dd_t *                         dd;
 
     if(data_desc == NULL)
     {
         return GlobusXIOErrorBadParameter("globus_xio_data_descriptor_init");
     }
 
-    for(ctr = 0; ctr < data_desc->stack_size; ctr++)
+    dd = (globus_i_xio_dd_t *) data_desc;
+
+    for(ctr = 0; ctr < dd->stack_size; ctr++)
     {
-        if(l_dd->drivers_data[ctr] != NULL)
+        if(dd->entry[ctr].driver_data != NULL)
         {
-            tmp_res = data_desc->entry[ctr].attr_destroy_func(
-                        data_desc->entry[ctr].driver_data);
+            tmp_res = dd->entry[ctr].driver->attr_destroy_func(
+                        dd->entry[ctr].driver_data);
             if(tmp_res != GLOBUS_SUCCESS)
             {
                 res = tmp_res;
@@ -353,7 +357,7 @@ globus_xio_data_descriptor_destroy(
         }
     }
 
-    globus_free(data_desc);
+    globus_free(dd);
 
     return res;
 }
@@ -367,6 +371,8 @@ globus_xio_data_descriptor_cntl(
 {
     globus_result_t                             res;
     int                                         ndx;
+    int                                         ctr;
+    va_list                                     ap;
 
     if(data_desc == NULL)
     {
@@ -464,13 +470,13 @@ globus_xio_data_descriptor_copy(
     /* copy all general attrs */
     xio_dd_dst->stack_size = xio_dd_src->stack_size;
  
-    for(ctr = 0; ctr < xio_attr_dst->stack_size; ctr++)
+    for(ctr = 0; ctr < xio_dd_dst->stack_size; ctr++)
     {
         xio_dd_dst->entry[ctr].driver = xio_dd_src->entry[ctr].driver;
 
         res = xio_dd_dst->entry[ctr].driver->attr_copy_func(
-                &xio_dd_dst->entry[ctr].drivers_data,
-                xio_dd_src->entry[ctr].drivers_data);
+                &xio_dd_dst->entry[ctr].driver_data,
+                xio_dd_src->entry[ctr].driver_data);
         if(res != GLOBUS_SUCCESS)
         {
             for(ctr2 = 0; ctr2 < ctr; ctr2++)
@@ -535,7 +541,7 @@ globus_xio_stack_push_driver(
     globus_list_insert(&xio_stack->driver_stack, driver);
     if(xio_stack->size == 1)
     {
-        xio_transport_driver = driver;
+        xio_stack->transport_driver = driver;
     }
 
     return GLOBUS_SUCCESS;
@@ -550,7 +556,31 @@ globus_xio_stack_destroy(
         return GlobusXIOErrorBadParameter("globus_xio_stack_destroy");
     }
 
-    globus_list_free(&stack->driver_stack)
+    globus_list_free(stack->driver_stack);
 
     return GLOBUS_SUCCESS;
 }
+
+void
+AttrGetDS(void * _out_ds, globus_i_xio_attr_t * _in_attr, globus_xio_driver_t _in_driver) 
+{                                                                           
+    int                                         _ctr;                       
+    globus_i_xio_attr_t *                       _attr;                      
+    globus_xio_driver_t                         _driver;                    
+    globus_i_xio_attr_ent_t *                   _entry;                     
+    void *                                      _ds = NULL;                 
+                                                                            
+    _attr = (_in_attr);                                                     
+    _driver = (_in_driver);                                                 
+                                                                            
+    _entry = _attr->entry;                                                  
+    for(_ctr = 0; _ctr < _attr->ndx && _ds == NULL; _ctr++)                 
+    {                                                                       
+        if(_entry[_ctr].driver == _driver)                                  
+        {                                                                   
+            _ds = _entry[_ctr].driver_data;                                 
+        }                                                                   
+    }                                                                       
+    _out_ds = _ds;                                                          
+} 
+
