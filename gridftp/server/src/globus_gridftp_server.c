@@ -18,7 +18,6 @@ static globus_xio_attr_t                globus_l_gfs_xio_attr;
 static globus_bool_t                    globus_l_gfs_exit = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALSE;
 
-
 static
 globus_result_t
 globus_l_gfs_open_new_server(
@@ -949,6 +948,10 @@ main(
     if(globus_i_gfs_config_bool("cas"))
     {
         globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
+    }
+    if(globus_libc_getenv("GLOBUS_GFS_ACL_TEST_FAIL"))
+    {
+        globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
     }
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
