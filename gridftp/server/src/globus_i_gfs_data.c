@@ -4872,11 +4872,11 @@ globus_gridftp_server_get_block_size(
 }
 
 void
-globus_gridftp_server_get_process_uid(
+globus_gridftp_server_get_session_uid(
     globus_gfs_operation_t              op,
     uid_t *                             uid)
 {
-    GlobusGFSName(globus_gridftp_server_get_process_uid);
+    GlobusGFSName(globus_gridftp_server_get_session_uid);
     GlobusGFSDebugEnter();
 
     *uid = op->session_handle->uid;
