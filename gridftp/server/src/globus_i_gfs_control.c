@@ -1178,6 +1178,7 @@ globus_l_gfs_request_passive_data(
         data_info->dcau = attr.dcau.mode;
         data_info->pathname = globus_libc_strdup(pathname);
         data_info->max_cs = max;
+    data_info->del_cred = attr.delegated_cred;
         
     result = globus_i_gfs_data_request_passive(
         NULL,
@@ -1277,7 +1278,8 @@ globus_l_gfs_request_active_data(
         data_info->dcau = attr.dcau.mode;
     data_info->contact_strings = cs;
     data_info->cs_count = cs_count;
-    
+    data_info->del_cred = attr.delegated_cred;
+
     result = globus_i_gfs_data_request_active(
         NULL,
         instance->session_id,
