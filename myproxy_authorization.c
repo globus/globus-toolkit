@@ -319,7 +319,7 @@ authorization_init_server(authorization_data_t ***data,
    for (i = 0; methods[i] != AUTHORIZETYPE_NULL; i++) {
        for (j = 0; j < num_funcs; j++) {
 	   if (authorization_funcs[j]->method == methods[i]) {
-	       auth_data[num_methods] = malloc(sizeof(auth_data));
+	       auth_data[num_methods] = malloc(sizeof(authorization_data_t));
 	       if (auth_data[num_methods] == NULL) {
 		   verror_put_string("malloc() failed");
 		   verror_put_errno(errno);
