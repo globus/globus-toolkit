@@ -345,7 +345,6 @@ globus_l_gfs_data_auth_init_cb(
             result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
             goto error_import;
         }
-        
     }
 
     if(op->session_handle->dsi->init_func != NULL)

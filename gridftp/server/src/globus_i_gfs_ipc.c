@@ -1474,6 +1474,7 @@ globus_gfs_ipc_handle_create(
     ipc->iface = iface;
     ipc->state = GLOBUS_GFS_IPC_STATE_SERVER_OPENING;
     ipc->cached_res = GLOBUS_SUCCESS;
+    ipc->open_cb = cb;
     ipc->error_cb = error_cb;
     ipc->error_arg = error_arg;
     ipc->user_arg = user_arg;
