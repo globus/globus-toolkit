@@ -35,8 +35,11 @@ BUNDLE gt3-extras
 BUNDLE mmjfs
 	globus_core
 	grim
+	globus_grim_setup
 	mjs
+	globus_mjs_setup
 	mmjfs
+	globus_mmjfs_setup
 
 BUNDLE mmjfs-static NOTHREADS -static
 	globus_libxml2
