@@ -903,21 +903,19 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
         goto error;
     }
    
-    if (retrieved_creds.retrievers == NULL )
-       creds->retrievers = NULL;
-    else
-	if (strlen (retrieved_creds.renewers) == 0)
-       		creds->retrievers = NULL;
-    	else
-       		creds->retrievers = mystrdup(retrieved_creds.retrievers);
+    if (retrieved_creds.retrievers == NULL ||
+	retrieved_creds.retrievers[0] == '\0') {
+	creds->retrievers = NULL;
+    } else {
+	creds->retrievers = mystrdup(retrieved_creds.retrievers);
+    }
 
-    if (retrieved_creds.renewers == NULL )
-       creds->renewers = NULL;
-	else 
-	  if (strlen (retrieved_creds.renewers) == 0)
-       		creds->renewers = NULL;
-    		else
-       			creds->renewers = mystrdup(retrieved_creds.renewers);
+    if (retrieved_creds.renewers == NULL ||
+	retrieved_creds.renewers[0] == '\0') {
+	creds->renewers = NULL;
+    } else {
+	creds->renewers = mystrdup(retrieved_creds.renewers);
+    }
  
     /* Success */
     return_code = 0;
