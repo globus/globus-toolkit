@@ -538,7 +538,7 @@ cipher_get_keyiv(CipherContext *cc, u_char *iv, u_int len)
 		if (evplen == 0)
 			return;
 		if (evplen != len)
-			fatal("%s: wrong iv length %d != %d", __FUNCTION__,
+			fatal("cipher_get_keyiv: wrong iv length %d != %d",
 			    evplen, len);
 
 		if (strncmp(c->name, "aes", 3) == 0) {
@@ -546,7 +546,7 @@ cipher_get_keyiv(CipherContext *cc, u_char *iv, u_int len)
 
 			aesc = EVP_CIPHER_CTX_get_app_data(&cc->evp);
 			if (aesc == NULL)
-				fatal("%s: no rijndael context", __FUNCTION__);
+				fatal("cipher_get_keyiv: no rijndael context");
 			civ = aesc->r_iv;
 		} else {
 			civ = cc->evp.iv;
@@ -555,18 +555,18 @@ cipher_get_keyiv(CipherContext *cc, u_char *iv, u_int len)
 	case SSH_CIPHER_3DES: {
 		struct ssh1_3des_ctx *desc;
 		if (len != 24)
-			fatal("%s: bad 3des iv length: %d", __FUNCTION__, len);
+			fatal("cipher_get_keyiv: bad 3des iv length: %d", len);
 		desc = EVP_CIPHER_CTX_get_app_data(&cc->evp);
 		if (desc == NULL)
-			fatal("%s: no 3des context", __FUNCTION__);
-		debug3("%s: Copying 3DES IV", __FUNCTION__);
+			fatal("cipher_get_keyiv: no 3des context");
+		debug3("cipher_get_keyiv: Copying 3DES IV");
 		memcpy(iv, desc->k1.iv, 8);
 		memcpy(iv + 8, desc->k2.iv, 8);
 		memcpy(iv + 16, desc->k3.iv, 8);
 		return;
 	}
 	default:
-		fatal("%s: bad cipher %d", __FUNCTION__, c->number);
+		fatal("cipher_get_keyiv: bad cipher %d", c->number);
 	}
 	memcpy(iv, civ, len);
 }
@@ -591,7 +591,7 @@ cipher_set_keyiv(CipherContext *cc, u_char *iv)
 
 			aesc = EVP_CIPHER_CTX_get_app_data(&cc->evp);
 			if (aesc == NULL)
-				fatal("%s: no rijndael context", __FUNCTION__);
+				fatal("cipher_set_keyiv: no rijndael context");
 			div = aesc->r_iv;
 		}else {
 			div = cc->evp.iv;
@@ -601,15 +601,15 @@ cipher_set_keyiv(CipherContext *cc, u_char *iv)
 		struct ssh1_3des_ctx *desc;
 		desc = EVP_CIPHER_CTX_get_app_data(&cc->evp);
 		if (desc == NULL)
-			fatal("%s: no 3des context", __FUNCTION__);
-		debug3("%s: Installed 3DES IV", __FUNCTION__);
+			fatal("cipher_set_keyiv: no 3des context");
+		debug3("cipher_set_keyiv: Installed 3DES IV");
 		memcpy(desc->k1.iv, iv, 8);
 		memcpy(desc->k2.iv, iv + 8, 8);
 		memcpy(desc->k3.iv, iv + 16, 8);
 		return;
 	}
 	default:
-		fatal("%s: bad cipher %d", __FUNCTION__, c->number);
+		fatal("cipher_set_keyiv: bad cipher %d", c->number);
 	}
 	memcpy(div, iv, evplen);
 }
@@ -632,7 +632,7 @@ cipher_get_keycontext(CipherContext *cc, u_char *dat)
 		struct ssh1_3des_ctx *desc;
 		desc = EVP_CIPHER_CTX_get_app_data(&cc->evp);
 		if (desc == NULL)
-			fatal("%s: no 3des context", __FUNCTION__);
+			fatal("cipher_get_keycontext: no 3des context");
 		plen = EVP_X_STATE_LEN(desc->k1);
 		if (dat == NULL)
 			return (3*plen);
@@ -661,7 +661,7 @@ cipher_set_keycontext(CipherContext *cc, u_char *dat)
 		struct ssh1_3des_ctx *desc;
 		desc = EVP_CIPHER_CTX_get_app_data(&cc->evp);
 		if (desc == NULL)
-			fatal("%s: no 3des context", __FUNCTION__);
+			fatal("cipher_set_keycontext: no 3des context");
 		plen = EVP_X_STATE_LEN(desc->k1);
 		memcpy(EVP_X_STATE(desc->k1), dat, plen);
 		memcpy(EVP_X_STATE(desc->k2), dat + plen, plen);
