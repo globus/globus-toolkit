@@ -1164,7 +1164,7 @@ globus_l_gsc_user_close_kickout(
     void *                                  user_arg)
 {
     globus_i_gsc_data_t *                   data_object;
-    globus_list_t *                         data_conn_list;
+    globus_list_t *                         data_conn_list = NULL;
     globus_i_gsc_server_handle_t *          server_handle;
     globus_gridftp_server_control_cb_t      done_cb = NULL;
 
@@ -1238,30 +1238,32 @@ globus_i_guc_data_object_destroy(
     globus_result_t                     res;
     GlobusGridFTPServerName(globus_i_guc_data_object_destroy);
 
-    globus_hashtable_remove(
-        &server_handle->data_object_table, 
-        data_object->user_handle);
-
-    if(server_handle->funcs.data_destroy_cb != NULL)
+    if(data_object)
     {
-        server_handle->ref++;
-        res = globus_callback_space_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_gsc_user_data_destroy_cb_kickout,
-            (void *)data_object,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
-        if(res != GLOBUS_SUCCESS)
+        globus_hashtable_remove(
+            &server_handle->data_object_table, 
+            data_object->user_handle);
+    
+        if(server_handle->funcs.data_destroy_cb != NULL)
         {
-            globus_panic(&globus_i_gsc_module, res, "one shot failed.");
+            server_handle->ref++;
+            res = globus_callback_space_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gsc_user_data_destroy_cb_kickout,
+                (void *)data_object,
+                GLOBUS_CALLBACK_GLOBAL_SPACE);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_panic(&globus_i_gsc_module, res, "one shot failed.");
+            }
+            rc = GLOBUS_TRUE;
         }
-        rc = GLOBUS_TRUE;
+        else
+        {
+            globus_free(data_object);
+        }
     }
-    else
-    {
-        globus_free(data_object);
-    }
-
     return rc;
 }
 
