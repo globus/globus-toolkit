@@ -8,14 +8,16 @@ binary bundles but if you do, you must run
   $GPT_LOCATION/sbin/gpt-build gcc32dbg -nosrc
 
 after you complete the installation, as documented in the Globus
-Toolkit installation instructions.
+Toolkit installation instructions.  (Replace gcc32dbg with the flavor
+of your Globus Toolkit installation.)
 
 Install the tools at
 <ftp://ftp.ncsa.uiuc.edu/aces/gpt/releases/gpt-2.1/support/>.  GPT
 requires these modified versions of the GNU autotools.  They must be
 in your PATH when you run the commands below.
 
-To build in a CVS workspace:
+To build in a CVS workspace (replacing gcc32dbg with the flavor of
+your Globus Toolkit installation):
 $ ./bootstrap
 $ ./configure --with-flavor=gcc32dbg
 $ make
