@@ -147,7 +147,7 @@ globus_gram_job_manager_state_machine(
     globus_callout_handle_t             authz_handle;
     char *                              filename;
     globus_object_t *                   error;
-
+    globus_gram_jobmanager_state_t      next_state;
 
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "entering");
 
@@ -1650,6 +1650,17 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
+        if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
+        {
+            next_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+        }
+        else
+        {
+            next_state = GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2;
+        }
+
 	/*
 	 * timer cancelled since last poll, because we may have some
 	 * queries to process
@@ -1668,16 +1679,14 @@ globus_gram_job_manager_state_machine(
 	    if(!query->rsl)
 	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		break;
 	    }
 	    rc = globus_rsl_assist_attributes_canonicalize(query->rsl);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		break;
 	    }
 	    original_rsl = request->rsl;
@@ -1688,8 +1697,7 @@ globus_gram_job_manager_state_machine(
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		request->rsl = original_rsl;
 		break;
 	    }
@@ -1698,8 +1706,7 @@ globus_gram_job_manager_state_machine(
 	    {
 		query->failure_code =
 		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-		request->jobmanager_state =
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		request->rsl = original_rsl;
 		break;
 	    }
@@ -1712,19 +1719,28 @@ globus_gram_job_manager_state_machine(
 	    {
 		request->rsl = original_rsl;
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		break;
 	    }
 
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE;
+            if (next_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE;
 
-	    rc = globus_gram_job_manager_output_close(request);
-	    if(rc == GLOBUS_SUCCESS)
-	    {
-		event_registered = GLOBUS_TRUE;
-	    }
+                rc = globus_gram_job_manager_output_close(request);
+                if(rc == GLOBUS_SUCCESS)
+                {
+                    event_registered = GLOBUS_TRUE;
+                }
+            }
+            else
+            {
+                /* When STDIO_UPDATE occurs before commit, we don't need
+                 * to open/close any files
+                 */
+	        request->jobmanager_state = next_state;
+            }
 	    break;
 	}
 	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
@@ -1741,8 +1757,17 @@ globus_gram_job_manager_state_machine(
 	}
 	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH)
 	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
+            if (request->jobmanager_state ==
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
+            }
+            else
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH;
+            }
 	    rc = globus_gram_protocol_accept_delegation(
 		    query->handle,
 		    GSS_C_NO_OID_SET,
@@ -1761,8 +1786,7 @@ globus_gram_job_manager_state_machine(
 	}
 	if(rc == GLOBUS_SUCCESS)
 	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	    request->jobmanager_state = next_state;
 
 	    event_registered = GLOBUS_TRUE;
 	}
@@ -1779,6 +1803,38 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 	    }
 	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
+	query = globus_fifo_dequeue(&request->pending_queries);
+
+	/* Frees the query */
+	globus_gram_job_manager_query_reply(
+		request,
+		query);
+
+	if(globus_fifo_empty(&request->pending_queries))
+	{
+            GlobusTimeReltimeSet(delay_time,
+                                 request->two_phase_commit,
+                                 0);
+
+            globus_callback_register_oneshot(
+                    &request->poll_timer,
+                    &delay_time,
+                    globus_gram_job_manager_state_machine_callback,
+                    request);
+
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
+
+            event_registered = GLOBUS_TRUE;
+	}
+        else
+        {
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1;
+        }
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
@@ -1808,12 +1864,23 @@ globus_gram_job_manager_state_machine(
 	break;
     
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
 	query = globus_fifo_peek(&request->pending_queries);
 
 	globus_assert(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH);
 
-	request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+        if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+        }
+        else if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2;
+        }
 
 	if(query->delegated_credential != GSS_C_NO_CREDENTIAL)
 	{
@@ -2761,7 +2828,9 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT)
-
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH)
 	/* Don't put a default case here. */
     }
     return "UNKNOWN";
