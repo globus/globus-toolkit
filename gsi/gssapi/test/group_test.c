@@ -20,8 +20,8 @@ gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_
  */
 
 
-#include "gssapi.h"
-#include "gssapi_ssleay.h"
+#include <gssapi.h>
+#include "../source/library/gssapi_ssleay.h"
 
 static int establish_context(
     gss_cred_id_t                       initiator_cred,
@@ -82,6 +82,12 @@ int main()
 
     ERR_load_prxyerr_strings(0);
 
+    /* case 0 */
+
+    printf("\n%s:%d:\n\tcert1 , cert2 don't have any groups\n\tSecurity context establishment should succeed\n",__FILE__,__LINE__);
+
+    establish_context(orig_cred,
+                      orig_cred);
     /* case 1 */
 
     printf("\n%s:%d:\n\tcert1 has trusted group, cert2 doesn't have any groups\n\tSecurity context establishment should succeed\n",__FILE__,__LINE__);

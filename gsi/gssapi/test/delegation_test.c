@@ -7,8 +7,13 @@ gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_
 
 
 #define EXT_SIZE 16
-#include "gssapi.h"
-#include "gssapi_ssleay.h"
+#include <gssapi.h>
+#include "../source/library/gssapi_ssleay.h"
+
+
+int verify_cred(
+    gss_cred_id_t                       credential);
+
 
 int main()
 {
@@ -512,6 +517,39 @@ int main()
 
 
 
+int verify_cred(
+    gss_cred_id_t                       credential)
+{
+    gss_cred_id_desc *                  cred_handle;
+    X509 *                              cert;
+    X509 *                              previous_cert;
+    int                                 cert_count;
 
+    cert_count = 1;
+    cred_handle = (gss_cred_id_desc *) credential;
+    
+    if(cred_handle->pcd->cert_chain)
+    {
+        cert_count += sk_X509_num(cred_handle->pcd->cert_chain);
+    }
 
+    cert = cred_handle->pcd->ucert;
+    previous_cert=NULL;
+    cert_count--;
+
+    do
+    {
+        if(previous_cert != NULL)
+        {
+            if(!X509_verify(previous_cert,X509_get_pubkey(cert)))
+            {
+                return 0;
+            }
+        }
+        previous_cert = cert;
+    } while(cert_count-- &&
+            (cert = sk_X509_value(cred_handle->pcd->cert_chain,cert_count)));
+
+    return 1;
+}
 
