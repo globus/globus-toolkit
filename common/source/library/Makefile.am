@@ -86,6 +86,7 @@ include_HEADERS = \
 	globus_timeq.h \
 	globus_memory.h \
 	globus_print.h \
+	globus_priority_q.h \
 	globus_tilde_expand.h \
 	globus_libc.h \
 	globus_debug.h \
