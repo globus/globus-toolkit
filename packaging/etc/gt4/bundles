@@ -128,6 +128,7 @@ BUNDLE gt4-gram
         globus_wsrf_gram_common_java
         globus_wsrf_gram_common_schema
         globus_wsrf_gram_job_monitoring_common_java
+        globus_wsrf_gram_service_java_usage
         globus_wsrf_gram_service_java
         globus_wsrf_gram_service_java_setup_common
         globus_wsrf_gram_service_java_setup_fork
