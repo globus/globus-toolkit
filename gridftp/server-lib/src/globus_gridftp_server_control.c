@@ -2614,9 +2614,9 @@ globus_i_gsc_authenticate(
     {
         op->server_handle->funcs.auth_cb(
             op,
+            op->server_handle->subject,
             op->username,
-            op->password,
-            op->server_handle->subject);
+            op->password);
     }
     /* just always authenticate... so just call the callback */
     else
