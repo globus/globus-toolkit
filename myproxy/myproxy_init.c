@@ -383,6 +383,7 @@ init_arguments(int argc,
 #if defined (MULTICRED_FEATURE)
 	case 'k':  /*credential name*/
 	    request->credname = strdup (gnu_optarg);
+	    /* XXX: Need input validation here. */
 	    break;
 	case 'K':  /*credential description*/
 	    request->creddesc = strdup (gnu_optarg);
