@@ -56,7 +56,9 @@ void complete_callback(
 }
 
 		   
-int main() 
+int main(
+    int                                 argc,
+    char **                             argv) 
 {
     char * feature_names[20]={
         "GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE",
@@ -82,8 +84,14 @@ int main()
 
     globus_ftp_client_handle_t handle;
     globus_ftp_client_handleattr_t attr;
-
-    char* url="gsiftp://localhost/etc/passwd";
+    
+    if(argc < 2)
+    {
+        fprintf(stderr, "missing url\n");
+	exit(-1);
+    }
+    
+    char* url=argv[1];
     globus_ftp_client_tristate_t answer;
     int i;
     globus_ftp_client_features_t  features;
