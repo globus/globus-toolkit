@@ -192,15 +192,14 @@ typedef struct globus_gfs_data_state_s
     int                                 tcp_bufsize;
     globus_size_t                       blocksize;
 
-    int                                 min;
-    int                                 max;
-    int                                 best;
-        
-    globus_ftp_control_protection_t     prot;
-    globus_ftp_control_dcau_t           dcau;
-    const char **                       contact_strings;
-    int                                 cs_count;
+    char                                prot;
+    char                                dcau;
+    char *                              subject;
+
     globus_gridftp_server_control_network_protocol_t net_prt; /* gag */
+
+    int                                 cs_count;
+    const char **                       contact_strings;
 } globus_gfs_data_state_t;
 
 typedef struct globus_gfs_resource_state_s
