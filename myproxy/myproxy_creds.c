@@ -720,7 +720,7 @@ clean_up:
     if (return_code == -1)
     {
         unlink(data_path);
-        unlink(creds_path);
+        ssl_proxy_file_destroy(creds_path);
     }
 
 error:
@@ -873,8 +873,8 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     DIR *dir;
     struct dirent *de;
     int return_code = -1;
-    char *username = NULL;
-    time_t end_time = 0, now;
+    char *username = NULL, *credname = NULL;
+    time_t end_time = 0, start_time = 0, now;
 
     now = time(0);
 
@@ -897,9 +897,18 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     new_cred = creds; /* new_cred is what we're filling in */
 
     if (creds->username) {
-	username = strdup(creds->username);
-	free(creds->username);
+	username = creds->username;
 	creds->username = NULL;
+    }
+
+    if (creds->credname) {
+	credname = creds->credname;
+	creds->credname = NULL;
+    }
+
+    if (creds->start_time) {
+	start_time = creds->start_time;
+	creds->start_time = 0;
     }
 
     if (creds->end_time) {
@@ -917,7 +926,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 
     while ((de = readdir(dir)) != NULL) {
 	if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
-	    char *credname = NULL, *dot, *dash;
+	    char *cname = NULL, *dot, *dash;
 
 	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
 
@@ -925,7 +934,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 	    *dot = '\0';
 
 	    if (dash) /*Credential with a name */
-	    	credname = dash+1;
+	    	cname = dash+1;
 
 	    if (new_cred->username) free(new_cred->username);
 	    if (new_cred->credname) free(new_cred->credname);
@@ -935,17 +944,23 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 
 	    new_cred->username = strdup(de->d_name);
 
+	    if (cname)
+	    	new_cred->credname = strdup(cname);
+	    else
+		new_cred->credname = NULL;
+
 	    if (username)	/* use username to query if specified */
 		if (strcmp(username, new_cred->username))
 			continue;
 
 	    if (credname)
-	    	new_cred->credname = strdup(credname);
-	    else
-		new_cred->credname = NULL;
+		if (new_cred->credname == NULL ||
+		    strcmp(credname, new_cred->credname))
+			continue;
 
 	    if (myproxy_creds_retrieve(new_cred) == 0) {
-		if (end_time == 0 || end_time < new_cred->end_time) {
+		if ((start_time == 0 || start_time < new_cred->end_time) &&
+		    (end_time == 0 || end_time >= new_cred->end_time)) {
 			if (cur_cred) cur_cred->next = new_cred;
 			cur_cred = new_cred;
 			new_cred = malloc(sizeof(struct myproxy_creds));
@@ -1103,18 +1118,17 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
         goto error;
     }
 
-    if (unlink(creds_path) == -1) {
-        verror_put_errno(errno);
-        verror_put_string("deleting credentials file %s", creds_path);
-        goto error;
-    }
-    
     if (unlink(data_path) == -1) {
         verror_put_errno(errno);
-        verror_put_string("deleting credentials data file %s", creds_path);
+        verror_put_string("deleting credentials data file %s", data_path);
         goto error;
     }
 
+    if (ssl_proxy_file_destroy(creds_path) != SSL_SUCCESS) {
+	verror_put_string("deleting credentials file %s", creds_path);
+        goto error;
+    }
+    
     /* Success */
     return_code = 0;
     
