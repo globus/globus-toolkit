@@ -1443,13 +1443,13 @@ globus_l_gfs_data_transfer_event_kickout(
     {    
         switch(bounce_info->event_type)
         {
-          case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
+          case GLOBUS_GFS_EVENT_BYTES_RECVD:
                 event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
                 bounce_info->op->recvd_bytes = 0;
                 event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
             break;
             
-          case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
+          case GLOBUS_GFS_EVENT_RANGES_RECVD:
                 event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
                 event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
             break;
@@ -1470,7 +1470,7 @@ globus_l_gfs_data_transfer_event_kickout(
                 event_reply);
         }
         if(bounce_info->event_type == 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART)
+            GLOBUS_GFS_EVENT_RANGES_RECVD)
         {
             globus_range_list_remove(
                 bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);

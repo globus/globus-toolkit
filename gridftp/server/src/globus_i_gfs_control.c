@@ -677,18 +677,33 @@ error_data:
 static
 void
 globus_l_gfs_request_transfer_event(
-    globus_gridftp_server_control_op_t      op,
-    int                                     event_type,
-    void *                                  user_arg)
+    globus_gridftp_server_control_op_t  op,
+    int                                 event_type,
+    void *                              user_arg)
 {
-    globus_i_gfs_server_instance_t *        instance;
+    globus_i_gfs_server_instance_t *    instance;
+    globus_gfs_event_type_t             event;
+    GlobusGFSName(globus_l_gfs_request_transfer_event);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+
+    switch(event_type)
+    {
+          case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
+                event = GLOBUS_GFS_EVENT_BYTES_RECVD;
+            break;
+          case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
+                event = GLOBUS_GFS_EVENT_RANGES_RECVD;
+            break;
+          default:
+            break;
+    }  
     
     globus_i_gfs_data_request_transfer_event(
         NULL, 
         instance->session_id,
-        instance->transfer_id, event_type);
+        instance->transfer_id,
+        event);
     
     return;
 }
