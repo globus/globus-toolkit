@@ -2,12 +2,29 @@
 
 use strict;
 use IO::Handle;
+use Getopt::Long;
 
-my $startCount = scalar($ARGV[0]);
-my $endCount = scalar($ARGV[1]);
-my $verbose = 0;
-if (($ARGV[2] eq "-v") or ($ARGV[2] eq "--verbose")) {
-    $verbose = 1;
+my ($verbose,   $host,  $port,  $startCount,    $endCount) =
+   (1,          "",     8080,   1,              1);
+
+GetOptions(
+    "v|verbose!"        => \$verbose,
+    "h|host=s"          => \$host,
+    "p|port=s"          => \$port,
+    "s|startcount=s"    => \$startCount,
+    "e|endcount=s"      => \$endCount)
+    or pod2usage(2);
+
+if (!length($host)) {
+    print "ERROR: no host specified\n";
+    exit 1;
+}
+
+if ($verbose) {
+    print   "Host: $host\n"
+          . "Port: $port\n"
+          . "Start Count: $startCount\n"
+          . "End Count: $endCount\n";
 }
 
 STDOUT->autoflush(1);
@@ -16,7 +33,12 @@ TIMINGSLOG->autoflush(1);
 
 for (my $index=$startCount; $index<=$endCount; $index*=2) {
     my $testOutputFile = "throughput-test-" . $index . ".log";
-    my $testExec = "ant -Djob.count=" . $index . " runTestApp";
+    my $testExec = "ant "
+                 . "-Dservice.host=$host "
+                 . "-Dservice.port=$port "
+                 . "-Djob.count=$index "
+                 . "-Dogsa.root=$ENV{GLOBUS_LOCATION} "
+                 . "runTestApp";
 
     open TESTLOG, ">$testOutputFile" or die "Error: unable to open file "
         . $testOutputFile . "for writing";

@@ -39,6 +39,13 @@
     <dirname property="absolute.ogsa.root.parent.path" file="${ogsa.root}"/>
     <property   name="absolute.ogsa.root"
                 value="${absolute.ogsa.root.parent.path}/${ogsa.root.base}"/>
+    <echo message="ogsa.root: ${absolute.ogsa.root}"/>
+
+    <basename property="cwd.base" file="./"/>
+    <dirname property="cwd.parent.path" file="./"/>
+    <property   name="cwd"
+                value="${cwd.parent.path}/${cwd.base}"/>
+    <echo message="cwd: ${cwd}"/>
 
     <path id="classpath">
         <pathelement location="."/>
@@ -277,16 +284,21 @@
    </java>
   </target>
 
-  <target name="runTestApp" depends="setenv,copySchemaDir">
+  <target name="runTestApp" depends="compile,copySchemaDir">
     <echo message="running Throughput Tester"/>
+
+    <copy tofile="./date.xml" file="./date.xml.in"/>
+    <replace file="./date.xml"
+             token="GLOBUS_LOCATION"
+             value="${absolute.ogsa.root}"/>
+    <replace file="./date.xml" token="CWD" value="${cwd}"/>
 
     <java classname="org.globus.ogsa.base.gram.testing.throughput.ThroughputTester"
           fork="yes"
           classpathref="classpath" failonerror="true" >
 
-      <arg value="http://140.221.36.12:31415/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
-      <!--<arg value="./date.xml"/>-->
-      <arg value="./sleep.xml"/>
+      <arg value="http://$service.host:$service.port/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
+      <arg value="./date.xml"/>
       <arg value="${job.count}"/>
     </java>
   </target>
