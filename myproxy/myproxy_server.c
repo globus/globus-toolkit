@@ -80,7 +80,7 @@ int init_arguments(int argc,
                    myproxy_socket_attrs_t *server_attrs, 
                    myproxy_server_context_t *server_context);
 
-int myproxy_init_server(myproxy_socket_attrs_t *server_attrs, int port_number);
+int myproxy_init_server(myproxy_socket_attrs_t *server_attrs);
 
 int handle_client(myproxy_socket_attrs_t *server_attrs, 
                   myproxy_server_context_t *server_context);
@@ -181,7 +181,7 @@ main(int argc, char *argv[])
     my_signal(SIGINT,  sig_exit); 
 
     /* Set up server socket attributes */
-    listenfd = myproxy_init_server(socket_attrs, MYPROXY_SERVER_PORT);
+    listenfd = myproxy_init_server(socket_attrs);
 
     /* Set up concurrent server */
     while (1) {
@@ -444,6 +444,11 @@ init_arguments(int argc, char *argv[],
     char *last_directory_seperator;
     char directory_seperator = '/';
     
+    /* Could do something smarter to get FQDN */
+    attrs->pshost = strdup("localhost");
+    
+    attrs->psport = MYPROXY_SERVER_PORT;
+
     /* Get my name, removing any preceding path */
     last_directory_seperator = strrchr(argv[0], directory_seperator);
     
@@ -501,15 +506,11 @@ init_arguments(int argc, char *argv[],
  * returns the listener fd on success 
  */
 int 
-myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number) 
+myproxy_init_server(myproxy_socket_attrs_t *attrs) 
 {
     int on = 1;
     int listen_sock;
     struct sockaddr_in sin;
-
-    /* Could do something smarter to get FQDN */
-    attrs->pshost = strdup("localhost");
-    attrs->psport = port_number;
     
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 
