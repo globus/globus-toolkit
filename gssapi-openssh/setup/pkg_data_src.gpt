@@ -10,7 +10,7 @@
 
   <src_pkg >
 
-    <Version_Label>GSI-OpenSSH 2.3 / OpenSSH 3.6.1p1</Version_Label>
+    <Version_Label>GSI-OpenSSH 2.3 / OpenSSH 3.6.1p2</Version_Label>
 
     <With_Flavors build="no" />
 
