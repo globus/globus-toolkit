@@ -2346,7 +2346,7 @@ globus_l_io_poll(
             globus_l_io_handle_events(&time_left);
     }
     while(events_handled == 0 &&
-        globus_l_io_fd_num_set > 0
+        globus_l_io_fd_num_set > 0 &&
 	  !globus_l_io_shutdown_called &&
           !globus_callback_get_timeout(&time_left));
 
