@@ -163,5 +163,5 @@ globus_scheduler_event_generator_lsf_setup ws-gram/job_monitoring/lsf/c/setup di
 globus_scheduler_event_generator_pbs_setup ws-gram/job_monitoring/pbs/c/setup dirt.sh
 globus_wsrf_resource wsrf/c/resource/source dirt.sh
 globus_wsrf_resource_test wsrf/c/resource/test dirt.sh
-globus_scheduler_provider_fork ws-gram/discovery/provider/setup/fork dirt.sh
-globus_scheduler_provider_pbs ws-gram/discovery/provider/setup/pbs dirt.sh
+globus_scheduler_provider_setup_fork ws-gram/discovery/provider/setup/fork dirt.sh
+globus_scheduler_provider_setup_pbs ws-gram/discovery/provider/setup/pbs dirt.sh
