@@ -204,59 +204,38 @@ Returns:
 
 ******************************************************************************/
 int
-globus_gss_assist_userok(char *		globusid,
-			 char *		userid)
+globus_gss_assist_userok(
+    char *                              globusid,
+    char *                              userid)
 {
-    gridmap_line_t *			gline;
-    char **				useridp;
-    int					authorized = 0;
+    gridmap_line_t *            gline;
+    char **             useridp;
+    int                 authorized = 0;
 
 
     /* Check arguments */
     if ((globusid == NULL) ||
-	(userid == NULL))
-	return(-1);
+        (userid == NULL))
+        return(-1);
 
     if (gridmap_find_dn(globusid, &gline) != 0)
     {
-	struct passwd *			pw;
-
-	/*
-	 * We failed to open the gridmap file.
-	 * If we are not running as root, then allow user to become
-	 * themselves. This allows someone to run a daemon as themselves
-	 * without having to have a gridmap file.
-	 */
-
-	if ((geteuid() == 0) ||
-	    (getuid() == 0))
-	    return(1);
-
-	pw = getpwuid(getuid());
-
-	if ((pw == NULL) ||
-	    (pw->pw_name == NULL))
-	    return(1);
-
-	if (strcmp(pw->pw_name, userid) != 0)
-	    return 1;
-
-	return 0;
+        return 1;
     }
 
     if (gline == NULL)
-	return 1;		/* No entry found in gridmap file */
+        return 1;       /* No entry found in gridmap file */
 
     if (gline->user_ids == NULL)
-	return 1;		/* Broken code or misformated gridmap file */
+        return 1;       /* Broken code or misformated gridmap file */
 
     for (useridp = gline->user_ids; *useridp != NULL; useridp++)
     {
-	if (strcmp(*useridp, userid) == 0)
-	{
-	    authorized = 1;
-	    break;
-	}
+        if (strcmp(*useridp, userid) == 0)
+        {
+            authorized = 1;
+            break;
+        }
     }
 
     gridmap_free_gridmap_line(gline);
