@@ -426,6 +426,8 @@ globus_gfs_ipc_handle_create(
 {
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
     globus_result_t                     res;
+    globus_byte_t *                     read_buf;
+    
     GlobusGFSName(globus_gfs_ipc_handle_create);
 
     if(ipc_handle == NULL)
@@ -451,6 +453,7 @@ globus_gfs_ipc_handle_create(
     ipc->error_arg = error_arg;
     ipc->local = GLOBUS_FALSE;
     ipc->buffer_size = GFS_IPC_DEFAULT_BUFFER_SIZE;
+    ipc->xio_handle = xio_handle;
 
     globus_hashtable_init(
         &ipc->call_table,
@@ -458,6 +461,21 @@ globus_gfs_ipc_handle_create(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
     globus_mutex_init(&ipc->mutex, NULL);
+
+    read_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+    res = globus_xio_register_read(
+        ipc->xio_handle,
+        read_buf,
+        GFS_IPC_HEADER_SIZE,
+        GFS_IPC_HEADER_SIZE,
+        NULL,
+        globus_l_gfs_ipc_read_header_cb,
+        ipc);
+    if(res != GLOBUS_SUCCESS && ipc->error_cb)
+    {
+        ipc->error_cb(ipc, res, ipc->error_arg);
+        globus_free(read_buf);
+    }
 
     *ipc_handle = ipc;
     return GLOBUS_SUCCESS;
@@ -989,7 +1007,10 @@ globus_l_gfs_ipc_read_header_cb(
     {
         globus_free(buffer);
     }
-    ipc->error_cb(ipc, res, ipc->error_arg);
+    if(ipc->error_cb != NULL)
+    {
+        ipc->error_cb(ipc, res, ipc->error_arg);
+    }
 }
 
 /************************************************************************
