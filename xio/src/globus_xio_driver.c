@@ -992,33 +992,30 @@ globus_xio_driver_operation_create(
     globus_i_xio_op_t *                     op;
     globus_i_xio_op_entry_t *               my_op;
     globus_result_t                         res;
-    globus_i_xio_context_entry_t *          my_context;
-    globus_i_xio_context_t *                l_context;
-    int                                     index = -1;
-    int                                     ctr;
-    globus_bool_t                           done = GLOBUS_FALSE;
+    globus_i_xio_context_t *                context;
+    int                                     index;
     GlobusXIOName(globus_xio_driver_operation_create);
 
     GlobusXIODebugEnter();
 
-    my_context = driver_handle;
-    l_context = my_context->whos_my_daddy;
-    for(ctr = 0; ctr < l_context->stack_size && !done; ctr++)
+    context = driver_handle->whos_my_daddy;
+    for(index = 0;
+        index < context->stack_size &&
+            &context->entry[index] != driver_handle;
+        index++)
     {
-        if(my_context == &l_context->entry[ctr])
-        {
-            index = ctr;
-            done = GLOBUS_TRUE;
-        }
     }
-
-    if(index == -1)
+    
+    if(index == context->stack_size)
     {
-        res = GlobusXIOErrorParameter("context");
+        res = GlobusXIOErrorParameter("driver_handle");
         goto err;
     }
-
-    GlobusXIOOperationCreate(op, l_context);
+    
+    /* driver_handles are to the drivers below the current one */
+    index--;
+    
+    GlobusXIOOperationCreate(op, context);
     if(op == NULL)
     {
         res = GlobusXIOErrorMemory("op");
@@ -1030,7 +1027,7 @@ globus_xio_driver_operation_create(
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->ref = 1;
     op->_op_handle = NULL;
-    op->_op_context = l_context;
+    op->_op_context = context;
     op->_op_handle_timeout_cb = NULL;
 
     my_op = &op->entry[index];
@@ -1039,7 +1036,7 @@ globus_xio_driver_operation_create(
     my_op->prev_ndx = -1;
     my_op->type = GLOBUS_XIO_OPERATION_TYPE_DRIVER;
 
-    l_context->ref++;
+    context->ref++;
 
     *operation = op;
 
