@@ -1365,26 +1365,29 @@ globus_i_gsi_gss_cred_read(
     if(desired_subject != NULL)
     {
         local_desired_subject = strdup(desired_subject);
-        actual_subject = strrchr(local_desired_subject, '/');
-        if(actual_subject == NULL)
+        actual_subject = strstr(local_desired_subject, "/CN=");
+        if(actual_subject == local_desired_subject)
         {
-            actual_subject = local_desired_subject;
-        }
-        else
-        {
-            local_desired_subject[actual_subject - 
-                                 local_desired_subject] = '\0';
-            service_name = strchr(local_desired_subject, '=');
-            if(!service_name)
+            /* assume its a host or service cert */
+            local_desired_subject += 4;
+
+            actual_subject = strrchr(local_desired_subject, '/');
+            if(!actual_subject)
             {
-                service_name = local_desired_subject;
+                actual_subject = local_desired_subject;
             }
-            actual_subject++;
+            else
+            {
+                local_desired_subject[actual_subject - 
+                                     local_desired_subject] = '\0';
+                service_name = local_desired_subject;
+                actual_subject++;
+            }
         }
     }
-
+    
     local_result = globus_gsi_cred_read(local_cred_handle, 
-                                        actual_subject,
+                                        (char *) desired_subject,
                                         service_name);
     if(local_result != GLOBUS_SUCCESS)
     {
@@ -1393,6 +1396,12 @@ globus_i_gsi_gss_cred_read(
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL);
         major_status = GSS_S_FAILURE;
         goto exit;
+    }
+
+    if(local_desired_subject)
+    {
+        free(local_desired_subject);
+        local_desired_subject = NULL;
     }
 
     major_status = globus_i_gsi_gss_create_cred(&local_minor_status,

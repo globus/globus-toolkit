@@ -476,6 +476,18 @@ globus_result_t globus_gsi_cred_read(
 
             if(desired_subject != NULL)
             {
+                char *                  tmp_hostname = NULL;
+                char *                  hostname_subject = NULL;
+                if(strstr(desired_subject, "/CN=host/"))
+                {
+                    tmp_hostname = strrchr(desired_subject, '/');
+                    tmp_hostname++;
+                    
+                    hostname_subject = 
+                        globus_gsi_cert_utils_create_string(
+                            "/CN=%s", tmp_hostname);
+                }
+                
                 results[result_index] = globus_gsi_cred_get_subject_name(
                     handle, 
                     &found_subject);
@@ -486,25 +498,32 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
                     goto exit;
                 }
-
-                if(!strstr(found_subject, desired_subject))
+                
+                if(!strstr(found_subject, desired_subject) &&
+                   !strstr(found_subject, hostname_subject))
                 {
                     GLOBUS_GSI_CRED_ERROR_RESULT(
                         results[result_index],
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED,
                         ("Desired subject and actual subject"
                          " of host certificate: %s do not match.\n"
-                         "     Desired subject: %s\n"
-                         "     Actual subject:  %s\n",
+                         "%s%s%s%s%s%s%s",
                          cert,
+                         "     Desired subject",
+                         hostname_subject ? "s: " : ": ",
                          desired_subject,
+                         hostname_subject ? 
+                         "\n                     : " : "",
+                         hostname_subject ? hostname_subject : "",
+                         "\n     Actual subject:  ",
                          found_subject));
                     free(found_subject);
                     found_subject = NULL;
                     break;
                 }
-                
+
                 free(found_subject);
+                free(hostname_subject);
                 found_subject = NULL;
             }
             

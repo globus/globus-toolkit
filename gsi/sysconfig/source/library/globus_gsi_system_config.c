@@ -4063,12 +4063,12 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-            ("The user cert could not be found in: \n"
+            ("The host cert could not be found in: \n"
              "1) env. var. X509_USER_CERT=%s\n"
-             "2) %s\n3) %s4) %s\n\n"
-             "The user key could not be found in:\n,"
+             "2) %s\n3) %s\n4) %s\n\n"
+             "The host key could not be found in:\n,"
              "1) env. var. X509_USER_KEY=%s\n"
-             "2) %s\n3) %s4) %s\n",
+             "2) %s\n3) %s\n4) %s\n",
              env_host_cert,
              default_host_cert,
              installed_host_cert,
@@ -4259,11 +4259,11 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 service_cert,
                 & default_service_cert,
                 & status,
-                service_name == "host" ? "%s%s%s%s" : "%s%s%s%s%s%s",
+                "%s%s%s%s%s%s",
                 X509_DEFAULT_CERT_DIR,
                 FILE_SEPERATOR,
-                service_name == "host" ? "" : service_name,
-                service_name == "host" ? "" : FILE_SEPERATOR,
+                service_name,
+                FILE_SEPERATOR,
                 service_name,
                 X509_CERT_SUFFIX);
             if(result != GLOBUS_SUCCESS)
@@ -4279,11 +4279,11 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 service_key,
                 & default_service_key,
                 & status,
-                service_name == "host" ? "%s%s%s%s" : "%s%s%s%s%s%s",
+                "%s%s%s%s%s%s",
                 X509_DEFAULT_CERT_DIR,
                 FILE_SEPERATOR,
-                service_name == "host" ? "" : service_name,
-                service_name == "host" ? "" : FILE_SEPERATOR,
+                service_name,
+                FILE_SEPERATOR,
                 service_name,
                 X509_KEY_SUFFIX);
             if(result != GLOBUS_SUCCESS)
@@ -4334,13 +4334,13 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 service_cert,
                 & installed_service_cert,
                 & status,
-                service_name == "host" ? "%s%s%s%s%s%s" : "%s%s%s%s%s%s%s%s",
+                "%s%s%s%s%s%s%s%s",
                 globus_location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_CERT_DIR,
                 FILE_SEPERATOR,
-                service_name == "host" ? "" : service_name,
-                service_name == "host" ? "" : FILE_SEPERATOR,
+                service_name,
+                FILE_SEPERATOR,
                 service_name,
                 X509_CERT_SUFFIX);
             if(result != GLOBUS_SUCCESS)
@@ -4356,13 +4356,13 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 service_key,
                 & installed_service_key,
                 & status,
-                service_name == "host" ? "%s%s%s%s%s%s" : "%s%s%s%s%s%s%s%s",
+                "%s%s%s%s%s%s%s%s",
                 globus_location,
                 FILE_SEPERATOR,
                 X509_INSTALLED_CERT_DIR,
                 FILE_SEPERATOR,
-                service_name == "host" ? "" : service_name,
-                service_name == "host" ? "" : FILE_SEPERATOR,
+                service_name,
+                FILE_SEPERATOR,
                 service_name,
                 X509_KEY_SUFFIX);
             if(result != GLOBUS_SUCCESS)
@@ -4419,13 +4419,13 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 service_cert,
                 & local_service_cert,
                 & status,
-                service_name == "host" ? "%s%s%s%s%s" : "%s%s%s%s%s%s%s",
+                "%s%s%s%s%s%s%s",
                 home,
                 FILE_SEPERATOR,
                 X509_LOCAL_CERT_DIR,
                 FILE_SEPERATOR,
-                service_name == "host" ? "" : service_name,
-                service_name == "host" ? "" : FILE_SEPERATOR,
+                service_name,
+                FILE_SEPERATOR,
                 service_name,
                 X509_CERT_SUFFIX);
             if(result != GLOBUS_SUCCESS)
@@ -4441,13 +4441,13 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 service_key,
                 & local_service_key,
                 & status,
-                service_name == "host" ? "%s%s%s%s%s%s" : "%s%s%s%s%s%s%s%s",
+                "%s%s%s%s%s%s%s%s",
                 home,
                 FILE_SEPERATOR,
                 X509_LOCAL_CERT_DIR,
                 FILE_SEPERATOR,
-                service_name == "host" ? "" : service_name,
-                service_name == "host" ? "" : FILE_SEPERATOR,
+                service_name,
+                FILE_SEPERATOR,
                 service_name,
                 X509_KEY_SUFFIX);
             if(result != GLOBUS_SUCCESS)
@@ -4502,12 +4502,12 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-            ("The user cert could not be found in: \n"
+            ("\nThe service cert could not be found in: \n"
              "1) env. var. X509_USER_CERT=%s\n"
-             "2) %s\n3) %s4) %s\n\n"
-             "The user key could not be found in:\n,"
+             "2) %s\n3) %s\n4) %s\n\n"
+             "The service key could not be found in:\n"
              "1) env. var. X509_USER_KEY=%s\n"
-             "2) %s\n3) %s4) %s\n",
+             "2) %s\n3) %s\n4) %s\n",
              env_service_cert,
              default_service_cert,
              installed_service_cert,
