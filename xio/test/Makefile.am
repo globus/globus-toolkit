@@ -5,20 +5,21 @@ SUBDIRS= \
 	pkgdata 
 
 Sources=                                \
-    test_common.c                       \
-    driver_stack.c                      \
-    blocking_dd_test.c                  \
-    unload_test.c                       \
-    framework_test.c                    \
-    space_test.c                        \
-    timeout_test.c                      \
-    close_barrier_test.c                \
-    close_cancel_test.c                 \
-    cancel_test.c                       \
-    server2_test.c                      \
-    attr_test.c                         \
-    block_barrier_test.c                \
-    read_barrier_test.c
+	test_common.h                   \
+	test_common.c                   \
+	driver_stack.c                  \
+	blocking_dd_test.c              \
+	unload_test.c                   \
+	framework_test.c                \
+	space_test.c                    \
+	timeout_test.c                  \
+	close_barrier_test.c            \
+	close_cancel_test.c             \
+	cancel_test.c                   \
+	server2_test.c                  \
+	attr_test.c                     \
+	block_barrier_test.c            \
+	read_barrier_test.c
 
 INCLUDES += $(GPT_INCLUDES)
 
@@ -29,14 +30,16 @@ test_PROGRAMS=                          \
 	http_put_test			\
 	http_get_test
 
-pkgdata_DATA =				\
+Data =                                  \
 	headers				\
 	multi-line-header		\
 	long-headers			\
 	multi-headers			\
 	large-file
 
-test_SCRIPTS =				\
+pkgdata_DATA =$(Data)
+
+Scripts = 				\
 	basic-test.pl                   \
 	close-barrier-test.pl           \
 	close-cancel-test.pl            \
@@ -62,7 +65,11 @@ test_SCRIPTS =				\
 	run-xio-tests.pl                \
 	run-all-tests.pl                \
 	TESTS.pl
-		
+
+test_SCRIPTS = $(Scripts)
+
+EXTRA_DIST = $(Scripts) $(Data) 
+
 LDADD = $(GPT_PGM_LINKS)
 
 framework_test_SOURCES = $(Sources)

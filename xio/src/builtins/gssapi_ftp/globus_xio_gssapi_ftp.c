@@ -2142,7 +2142,7 @@ globus_l_xio_gssapi_ftp_open(
 
     attr = (globus_l_xio_gssapi_attr_t *) driver_attr;
     
-    if(!contact_info->host)
+    if(!(driver_link || contact_info->host))
     {
         res = GlobusXIOErrorContactString("missing host");
         goto err;

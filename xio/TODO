@@ -1,9 +1,13 @@
 
-make drivers use their own error macros
-
 CLEAN UP DOC
 
 --------------------
+
+in_register looks like it needs to be a counter and inc/decr under locks.
+-- probably not high priority as very few drivers even finish in_register let
+alone in a way that would cause a problem
+
+repass should oneshot if in register (and it should set in register itself)
 
 make sure test suite deals with close correctly (on failed opens)
 
