@@ -1245,6 +1245,7 @@ globus_l_gsc_final_reply(
 
     server_handle->reply_outstanding = GLOBUS_TRUE;
     tmp_ptr = globus_libc_strdup(message);
+    globus_assert(tmp_ptr != NULL); /* XXX remove this */
     /*TODO: check state */
     res = globus_xio_register_write(
             server_handle->xio_handle,
