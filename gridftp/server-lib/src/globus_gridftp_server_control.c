@@ -665,8 +665,10 @@ void
 globus_l_gsc_terminate(
     globus_i_gsc_server_handle_t *      server_handle)
 {
+    globus_bool_t                       dh_to_abort;
     GlobusGridFTPServerName(globus_l_gsc_terminate);
 
+    dh_to_abort = GLOBUS_FALSE;
     if(server_handle->data_object)
     {
         globus_i_gsc_data_t *               data_obj;
@@ -687,6 +689,7 @@ globus_l_gsc_terminate(
                                                                                 
             case GLOBUS_L_GSC_DATA_OBJ_INUSE:
                 /* start an abort event */
+                dh_to_abort = GLOBUS_TRUE;
                 data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT;
                 break;
                                                                                 
@@ -726,8 +729,7 @@ globus_l_gsc_terminate(
                     GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT &&
                     /* this last codition make deal with a race of an
                         abort and a finished transfer */
-                    server_handle->data_object->state == 
-                        GLOBUS_L_GSC_DATA_OBJ_INUSE)
+                    dh_to_abort)
                 {
                     server_handle->outstanding_op->event.user_cb(
                         server_handle->outstanding_op,
