@@ -2720,4 +2720,22 @@ void ftp_authorization_cleanup(void)
     globus_authorization_handle_destroy(&globus_auth_handle);
 }
 
+char *
+ftp_authorization_client_authorization_identity()
+{
+    return(globus_auth_get_authorization_identity(globus_auth_handle));
+}
+
+char *
+ftp_authorization_client_audit_identity()
+{
+    return(globus_auth_get_audit_identity(globus_auth_handle));
+}
+
+char *
+ftp_authorization_client_policy_string()
+{
+    return(globus_auth_get_policy_string(globus_auth_handle));
+}
+
 #endif /* GLOBUS_AUTHORIZATION */

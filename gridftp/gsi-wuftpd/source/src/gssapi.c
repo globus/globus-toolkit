@@ -71,7 +71,9 @@ static gss_cred_id_t server_creds = GSS_C_NO_CREDENTIAL;
 static gss_ctx_id_t gcontext = GSS_C_NO_CONTEXT;
 
 /* Identity of authenticated client */
+#ifndef GLOBUS_AUTHORIZATION
 static gss_buffer_desc client_name = { 0, NULL };
+#endif
 
 static char * group_info = NULL;
 
@@ -287,7 +289,11 @@ gssapi_remove_delegation(void)
 char *
 gssapi_identity()
 {
+#ifdef GLOBUS_AUTHORIZATION
+    return (ftp_authorization_client_authorization_identity());
+#else    
     return (char *)client_name.value;
+#endif
 }
 
 
@@ -532,7 +538,7 @@ gssapi_wrap_message(
     
 
     in_buf.value = message;
-    in_buf.length = strlen(message);
+    in_buf.length = strlen(message) + 1;
 
     if (debug)
     {
@@ -789,6 +795,11 @@ gssapi_handle_auth_data(char *data, int length)
     gss_OID_set subgroup_types = GSS_C_NO_OID_SET;
 #endif /* !GSSAPI_GLOBUS */
 
+#ifdef GLOBUS_AUTHORIZATION
+    gss_buffer_desc cl_name;
+#endif
+    char *client_name_string = 0;
+
     OM_uint32 accept_maj;
     OM_uint32 accept_min;
     OM_uint32 stat_maj;
@@ -818,33 +829,6 @@ gssapi_handle_auth_data(char *data, int length)
     chan.application_data.value = 0;
     pchan = &chan;
 #endif /* !GSSAPI_GLOBUS */
-
-#ifdef GLOBUS_AUTHORIZATION
-    /*
-     * Need to set option in context before first call to inform
-     * GSSAPI libraries we wil handle any restrictions in GSI
-     * credentials used to authenticate.
-     */
-    if (gcontext == GSS_C_NO_CONTEXT)
-    {
-        stat_maj = globus_gss_assist_will_handle_restrictions(&stat_min,
-                                                          &gcontext);
-    
-        if (stat_maj != GSS_S_COMPLETE) 
-        {
-            /*
-             * Don't need to fail here, since if there are no restrictions
-             * in the credentials used to authenticate, we're fine. And if
-             * there are we'll fail later anyways. But we should make a note
-             * of this error to help someone figure out what's going on.
-             */
-            syslog(LOG_NOTICE,
-                   "Warning: globus_gss_assist_will_handle_restrictions() failed"
-                   " (major status = %x minor_status = %x)",
-                   stat_maj, stat_min);
-        }
-    }
-#endif /* GLOBUS_AUTHORIZATION */
 
     rc = gssapi_acquire_server_credentials();
 
@@ -919,7 +903,15 @@ gssapi_handle_auth_data(char *data, int length)
 	if (debug)
 	    syslog(LOG_INFO, "GSSAPI authentication succeeed");
 
+#ifdef GLOBUS_AUTHORIZATION
+	cl_name.length = 0;
+	cl_name.value = 0;
+	stat_maj = gss_display_name(&stat_min, client, &cl_name, &mechid);
+	client_name_string = cl_name.value;
+#else
 	stat_maj = gss_display_name(&stat_min, client, &client_name, &mechid);
+	client_name_string = client_name.value;
+#endif
 
 	if (stat_maj != GSS_S_COMPLETE) {
 	    gssapi_reply_error(535, stat_maj, stat_min,
@@ -927,9 +919,9 @@ gssapi_handle_auth_data(char *data, int length)
 	    syslog(LOG_ERR, "gssapi error extracting identity");
 	    return -1;
 	}
-        
+       
 	if (debug)
-	    syslog(LOG_INFO, "Client identity is: %s", client_name.value);
+	    syslog(LOG_INFO, "Client identity is: %s", client_name_string);
 
 #ifdef GSSAPI_GLOBUS
         stat_maj = gss_get_group(&stat_min, client,
@@ -939,6 +931,9 @@ gssapi_handle_auth_data(char *data, int length)
 	    gssapi_reply_error(535, stat_maj, stat_min,
 			       "extracting GSSAPI group");
 	    syslog(LOG_ERR, "gssapi error extracting group");
+#ifdef GLOBUS_AUTHORIZATION
+	    (void) gss_release_buffer(&stat_min, &cl_name);
+#endif
 	    return -1;
 	}
         
@@ -946,7 +941,7 @@ gssapi_handle_auth_data(char *data, int length)
         {
             syslog(LOG_INFO,
                    "Client identity %s is in the following group:",
-                   client_name.value);
+                   client_name_string);
 
             for(i=0;i<client_group->count;i++)
             {
@@ -966,6 +961,11 @@ gssapi_handle_auth_data(char *data, int length)
             }
 
         }
+
+#ifdef GLOBUS_AUTHORIZATION
+	(void) gss_release_buffer(&stat_min, &cl_name);
+#endif
+
 #endif
         
 	/* If the server accepts the security data, but does
