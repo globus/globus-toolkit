@@ -127,27 +127,8 @@ globus_gss_assist_gridmap(char * 	globusidp,
 
     if (gridmap_find_dn(globusidp, &gline) != 0)
     {
-	struct passwd *			pw;
-
-	/*
-	 * We failed to open the gridmap file.
-	 * If we are not running as root, then return our own username.
-	 * This allows someone to run a daemon as themselves without
-	 * having to have a gridmap file.
-	 */
-
-	if ((geteuid() == 0) ||
-	    (getuid() == 0))
-	    return(1);
-
-	pw = getpwuid(getuid());
-
-	if ((pw == NULL) ||
-	    (pw->pw_name == NULL))
-	    return(1);
-
-	*useridp = strdup(pw->pw_name);
-	return 0;
+        /* no gridmap file found -> fail */
+	return 1;
     }
 
     if (gline != NULL)
