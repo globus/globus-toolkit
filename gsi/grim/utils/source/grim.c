@@ -32,9 +32,9 @@
  *
  *  g_username: the user name running the program (not the privledged user).
  */
-static globus_bool_t                            g_quiet = GLOBUS_FALSE;
-static FILE *                                   g_logfile = NULL;
-static char *                                   g_username = NULL;
+static globus_bool_t                        g_quiet = GLOBUS_FALSE;
+static FILE *                               g_logfile = NULL;
+static char *                               g_username = NULL;
 /************************************************************************
  *                     function signatures
  ***********************************************************************/
@@ -750,7 +750,7 @@ grim_write_proxy(
     globus_gsi_cred_handle_t                    proxy_cred_handle;
     time_t                                      goodtill;
     time_t                                      lifetime;
-    char *                                      subject;
+    char *                                      issuer;
     globus_grim_assertion_t                     assertion;
     char *                                      assertion_string;
     char *                                      tmp_s2;
@@ -798,12 +798,12 @@ grim_write_proxy(
         return 1;
     }
 
-    res = globus_gsi_cred_get_subject_name(
+    res = globus_gsi_cred_get_issuer_name(
               cred_handle,
-              &subject);
+              &issuer);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("ERROR: coulnd not get subject name.\n");
+        grim_write_log("ERROR: coulnd not get issuer name.\n");
         return 1;
     }
 
@@ -817,8 +817,8 @@ grim_write_proxy(
     }
     x509_name = X509_get_subject_name(x509_var);
     tmp_s1 = X509_NAME_oneline(x509_name, 0, 0);
-    tmp_s2 = malloc(strlen(subject) + strlen(tmp_s1) + 1);
-    sprintf(tmp_s2, "%s%s", subject, tmp_s1);
+    tmp_s2 = malloc(strlen(issuer) + strlen(tmp_s1) + 1);
+    sprintf(tmp_s2, "%s%s", issuer, tmp_s1);
 
     /*
      *  build the serialized assertion string
@@ -943,6 +943,11 @@ grim_write_proxy(
     globus_gsi_proxy_handle_destroy(proxy_handle);
     globus_gsi_cred_handle_destroy(proxy_cred_handle);
     globus_grim_assertion_destroy(assertion);
+
+    /*
+     * TODO: provide command line options for formating the output
+     */
+    fprintf(stdout, "%s,%d\n", proxy_out_filename, goodtill);
 
     return rc;
 }
