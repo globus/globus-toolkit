@@ -116,8 +116,8 @@ grami_ggg_k5_globuskmap( char * globusid, char ** command)
 
 	FILE * fd;
 	char   line[BUFSIZ];
-	char   globuskmap[80] ;
-	char   f_globusid[80]; 
+	char   globuskmap[256] ;
+	char   f_globusid[256]; 
 	int    rc;
 	int	   i;
     int    offset;
@@ -128,20 +128,28 @@ grami_ggg_k5_globuskmap( char * globusid, char ** command)
    * globusfile.c. Since it is almost the same logic.
    * of the globusmap file. 
    */
-  if (getuid() == 0) {
-	strcpy(globuskmap, "/etc/globuskmap");
-  } else {
-    char *char_p, filename[80];
+  {
+    char *char_p, filename[256];
     if ( ((char_p = (char*) getenv("GLOBUSKMAP")) != NULL) ) {
+	  if (strlen(char_p) > 255) {
+		fprintf(stderr,"GLOBUSKMAP file name to long\n");
+		return (-1);
+	  }
       strcpy(filename, char_p) ;
       strcpy(globuskmap, filename) ;
     } else 
-    if ( ((char_p = (char*) getenv("HOME")) != NULL) ) {
-
+    if ( getuid() && ((char_p = (char*) getenv("HOME")) != NULL) ) {
+      if (strlen(char_p) > 255-12) {
+	    fprintf(stderr,"HOME to long for globuskmap\n");
+		return (-1);
+	  }
       strcpy(filename, char_p) ;
       strcat(filename, "/") ;
       strcat(filename, ".globuskmap") ;
       strcpy(globuskmap, filename) ;
+	} else
+	if (getuid == 0) {
+	  strcpy(globuskmap, "/etc/globuskmap");
 	} else {
 	  return(-1);   /* no file return */
     }
@@ -428,6 +436,8 @@ main(int argc, char *argv[])
 
 
  done:
+    unsetenv("GLOBUSKMAP"); /* dont pass on */
+
 	/* before continuing on, if we were run as root, 
 	 * we will seteuid
 	 */
