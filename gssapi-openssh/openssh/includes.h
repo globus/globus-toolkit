@@ -53,6 +53,11 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #endif
 #ifndef HAVE_GETOPT_OPTRESET
 #define getopt(ac, av, o)  BSDgetopt(ac, av, o)
+#define opterr BSDopterr
+#define optind BSDoptind
+#define optopt BSDoptopt
+#define optreset BSDoptreset
+#define optarg BSDoptarg
 #endif
 #ifdef HAVE_BSTRING_H
 # include <bstring.h>
