@@ -153,7 +153,6 @@ public class RFTClient {
             transferRequest.setTransferArray(transfers1);
             if(concurrency>transfers1.length) {
                 System.out.println("Concurrency should be less than the number of transfers in the request");
-            //    System.exit(0);
             }
 
             transferRequest.setRftOptions( multirftOptions );

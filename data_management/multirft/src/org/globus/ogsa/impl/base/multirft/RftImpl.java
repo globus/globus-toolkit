@@ -863,7 +863,6 @@ extends GridServiceImpl {
                             } catch ( InterruptedException ie ) {
                             }
                         }
-                        int tempConc = 0;
                         TransferJob newTransferJob1 = 
                             dbAdapter.getTransferJob(requestId);
                         if ( newTransferJob1 == null ) {
@@ -874,7 +873,7 @@ extends GridServiceImpl {
                                 logger.error("Error closing connections",ioe);
                             } 
                         } else {
-                            while (numberActive < concurrency) {
+                            while (numberActive-1< concurrency) {
                                 TransferJob tempTransferJob2 = 
                                 dbAdapter.getTransferJob(requestId);
                                 if ( tempTransferJob2 != null) {
