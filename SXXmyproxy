@@ -1,0 +1,70 @@
+#!/bin/sh
+######################################################################
+#
+# start the Myproxy server used to store user's proxies
+#
+######################################################################
+
+# Path to where your host certificate and key is stored
+# Should be machine specific
+gridsecurity_dir=/etc/grid-security
+
+# Path to the globus/gsi certificate directory
+cert_dir=${gridsecurity_dir}/share/certificates
+
+# Path to the grid-mapfile
+gridmap=${gridsecurity_dir}/etc/grid-mapfile
+
+# Path to the myproxy binary
+myproxyserver=/usr/local/myproxy-server/sbin/myproxy-server
+
+# Any options you want myproxy-server started with
+myproxyserver_opts="-c /usr/local/myproxy-server/etc/myproxy-server.config"
+
+######################################################################
+
+# Exit on any error
+set -e
+
+# Make this script work in SYSV
+if [ $# -eq 0 ]; then
+  action="start"
+else
+  action="$1"
+fi
+
+# Set up environment for ssh with GSI
+
+X509_USER_CERT=$cert_dir/hostcert.pem
+export X509_USER_CERT
+
+X509_USER_KEY=$cert_dir/hostkey.pem
+export X509_USER_KEY
+
+X509_CERT_DIR=$cert_dir
+export X509_CERT_DIR
+
+GRIDMAP=$gridmap
+export GRIDMAP
+
+# And do it
+case "X$action" in
+  Xstart)
+    echo "Starting Myproxy server..."
+
+    $myproxyserver  $myproxyserver_opts 
+    ;;
+
+  Xdebug)
+    echo "Running Myproxy server in debug mode..."
+
+    $myproxyserver $myproxyserver_opts -d 
+    ;;
+
+  *)
+    echo "Unknown action: $action"
+    exit 1
+esac
+
+exit 0
+

@@ -116,13 +116,13 @@ static int become_daemon(myproxy_server_context_t *server_context);
 
 static int debug = 0;
 
-int numclients = 0;
-
 int
 main(int argc, char *argv[]) 
 {    
     int   listenfd;
     pid_t childpid;  
+    struct sockaddr_in client_addr;
+    int client_addr_len = sizeof(client_addr);
 
     myproxy_socket_attrs_t         *socket_attrs;
     myproxy_server_context_t       *server_context;
@@ -143,7 +143,7 @@ main(int argc, char *argv[])
 
     if (server_context->config_file == NULL)
     {
-	server_context->config_file = strdup(default_config_file);
+        server_context->config_file = strdup(default_config_file);
 
 	if (server_context->config_file == NULL)
 	{
@@ -159,14 +159,27 @@ main(int argc, char *argv[])
 	exit(1);
     }
 
-    if (server_context->run_as_daemon)
+    /* 
+     * Test to see if we're run out of inetd 
+     * If so, then stdin will be connected to a socket,
+     * so getpeername() will succeed.
+     */
+    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) == 0) 
     {
-	if (become_daemon(server_context) < 0) {
-	    fprintf(stderr, "Error starting daemon\n");
-	    exit(1);
-	}
+       server_context->run_as_daemon = 0;
+    } 
+    else 
+    { 
+       if (!debug) 
+       {
+	  if (become_daemon(server_context) < 0) 
+	  {
+	     fprintf(stderr, "Error starting daemon\n");
+	     exit(1);
+	  }
+       }
     }
-
+    
     /* Initialize Logging */
     if (debug) {
 	myproxy_debug_set_level(1);
@@ -190,58 +203,66 @@ main(int argc, char *argv[])
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
 
-    /* Set up server socket attributes */
+    /* Running out of inetd is straightforward */
+    if (!server_context->run_as_daemon) 
+    {
+       close(1);
+       (void) open("/dev/null",O_WRONLY);
+       myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
+       socket_attrs->socket_fd = fileno(stdin);
+       if (handle_client(socket_attrs, server_context) < 0) {
+	  my_failure("error in handle_client()");
+       } 
+       exit(0);
+    } 
+    
+    /* Run as a daemon */
     listenfd = myproxy_init_server(socket_attrs);
-
+    
     /* Set up concurrent server */
     while (1) {
-	struct sockaddr_in client_addr;
-	int client_addr_len = sizeof(client_addr);
-	
-        socket_attrs->socket_fd = accept(listenfd,
-					 (struct sockaddr *) &client_addr,
-					 &client_addr_len);
-	numclients++;
-	myproxy_log("Connection from %s, total clients=%d", inet_ntoa(client_addr.sin_addr), numclients);
-        if (socket_attrs->socket_fd < 0) {
-            if (errno == EINTR) {
-                continue; 
-            } else {
-                myproxy_log_perror("Error in accept()");
-            }
-        }
-	if (!debug)
-	{
-	    childpid = fork();
-        
-	    if (childpid < 0) {              /* check for error */
-		myproxy_log_perror("Error in fork");
-		close(socket_attrs->socket_fd);
-	    }
-	    else if (childpid != 0)
-	    {
-		/* Parent */
-		/* parent closes connected socket */
-		close(socket_attrs->socket_fd);
-
-		continue;	/* while(1) */
-	    }
-
-	    /* child process */
-	    close(0);
-	    close(1);
-	    if (!debug) {
-		close(2);
-	    }
-	    close(listenfd);
-	}
-	if (handle_client(socket_attrs, server_context) < 0) {
-	    my_failure("error in handle_client()");
-	} 
-	_exit(0);
+       socket_attrs->socket_fd = accept(listenfd,
+					(struct sockaddr *) &client_addr,
+					&client_addr_len);
+       myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
+       if (socket_attrs->socket_fd < 0) {
+	  if (errno == EINTR) {
+	     continue; 
+	  } else {
+	     myproxy_log_perror("Error in accept()");
+	  }
+       }
+       if (!debug)
+       {
+	  childpid = fork();
+	  
+	  if (childpid < 0) {              /* check for error */
+	     myproxy_log_perror("Error in fork");
+	     close(socket_attrs->socket_fd);
+	  }
+	  else if (childpid != 0)
+	  {
+	     /* Parent */
+	     /* parent closes connected socket */
+	     close(socket_attrs->socket_fd);	     
+	     continue;	/* while(1) */
+	  }
+	  
+	  /* child process */
+	  close(0);
+	  close(1);
+	  if (!debug) {
+	     close(2);
+	  }
+	  close(listenfd);
+       }
+       if (handle_client(socket_attrs, server_context) < 0) {
+	  my_failure("error in handle_client()");
+       } 
+       _exit(0);
     }
     exit(0);
-}
+}   
 
 int
 handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context) 
@@ -407,7 +428,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	    myproxy_creds_is_owner(client_request->username,
 				   client_name);
 	
-    } else 
+    }
+    else 
     {
 	client_owns_credentials = 0;
     }
@@ -501,7 +523,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     send_response(attrs, server_response, client_name);
 
     /* Log request */
-    myproxy_log("Client %s disconnected total clients=%d", client_name, numclients);
+    myproxy_log("Client %s disconnected", client_name);
    
     /* free stuff up */
     if (client_creds != NULL) {
@@ -586,7 +608,6 @@ init_arguments(int argc, char *argv[],
             break;
         case 'd':
             debug = 1;
-	    context->run_as_daemon = 0;
             break;
         default: /* ignore unknown */ 
             arg_error = -1;
@@ -812,7 +833,6 @@ sig_chld(int signo) {
     pid_t pid;
     int   stat;
     
-    numclients--;
     while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
         myproxy_debug("child %d terminated", pid);
     return;
