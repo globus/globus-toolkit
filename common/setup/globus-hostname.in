@@ -3,16 +3,23 @@
 # This is a simple shell script that acts like 
 # the hostname command.  But is returns the FQN
 # in all cases.
+
+prefix=@prefix@
+libexecdir=@libexecdir@
  
 LOCALDOMAIN=@LOCALDOMAIN@
  
-FULLNAME=`@SYS_HOSTNAME@`
-BASENAME=`@SYS_HOSTNAME@ | @CUT@ -d. -f1`
- 
-if [ $FULLNAME = $BASENAME ] ; then
-  # Its not fully qualified
-  echo $BASENAME.${LOCALDOMAIN}
+if [ -x ${libexecdir}/globus-libc-hostname ]; then
+    ${libexecdir}/globus-libc-hostname;
 else
-  echo $FULLNAME
+    FULLNAME=`@SYS_HOSTNAME@`
+    BASENAME=`@SYS_HOSTNAME@ | @CUT@ -d. -f1`
+ 
+    if [ $FULLNAME = $BASENAME ] ; then
+    # Its not fully qualified
+        echo $BASENAME.${LOCALDOMAIN}
+    else
+        echo $FULLNAME
+   fi
 fi
 
