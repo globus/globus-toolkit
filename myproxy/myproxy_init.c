@@ -10,11 +10,14 @@
 #include "version.h"
 #include "verror.h"
 #include "myproxy_read_pass.h"
+#include "ssl_utils.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 /* Location of default proxy */
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
