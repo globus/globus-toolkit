@@ -112,6 +112,12 @@ globus_l_gass_cache_mangle_md5(const char	*string,
 			       char		*mangled,
 			       int		*length );
 
+/* Other prototypes */
+static
+int
+globus_l_gass_cache_make_dirtree( const char *filepath );
+
+
 /* Structure for storing directory paths & other info */
 typedef struct cache_names_s
 {
@@ -1449,28 +1455,56 @@ static void TODOgu( const char *g, const char *u, const char *msg )
 static
 int
 globus_l_gass_cache_create( const char	*filepath,
+			    const char	*dir,
 			    int		mode,
 			    const char	*buf,
 			    int		buflen )
 {
     int		fd;
+    int		mkdir_try = 0;
+
+    /* Try to create the file... */
     while ( ( fd = creat( filepath, mode ) ) < 0 )
     {
-	if (errno != EINTR)
+	/* Interrupted? Go try again */
+	if ( EINTR == errno )
 	{
-	    if (errno == ENOSPC)
-            {
-		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_SPACE );
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED );
-            }
-            else
-            {
-	        CACHE_TRACE2("Error creat()ing '%s'", filepath );
-		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
-            }
+	    continue;
+	}
+
+	/* ENOENT?  Directory went away.. */
+	if ( ENOENT == errno )
+	{
+	    /* If the app gave us a directory, try again... */
+	    if (  ( GLOBUS_NULL != dir ) && ( ++mkdir_try < 20 ) )
+	    {
+		int	rc = globus_l_gass_cache_make_dirtree( dir );
+		if ( GLOBUS_SUCCESS != rc )
+		{
+		    RET_ERROR( rc );
+		}
+		continue;	/* Try again.. */
+	    }
+	    /* No dir specified or time to give up */
+	    else
+	    {
+		RET_ERROR( GLOBUS_L_ENOENT );
+	    }
+	}
+
+	/* Handle other errors */
+	if ( ENOSPC == errno)
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_SPACE );
+	}
+	else if (IS_QUOTA_ERROR(errno))
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED );
+	}
+	else
+	{
+	    CACHE_TRACE2("Error creat()ing '%s'", filepath );
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
 	}
     }
 
@@ -1546,6 +1580,7 @@ globus_l_gass_cache_link( const char *oldfile,
 	{
 	    RET_ERROR( GLOBUS_L_EEXISTS );
 	}
+	/*else if (  ( ENOENT == errno ) || ( EINVAL == errno )  ) */
 	else if ( ENOENT == errno )
 	{
 	    int		rc;
@@ -1559,8 +1594,9 @@ globus_l_gass_cache_link( const char *oldfile,
 		rc = globus_l_gass_cache_stat( oldfile, GLOBUS_NULL );
 		if ( GLOBUS_SUCCESS == rc )
 		{
-		    CACHE_TRACE2( "LINK: link bug encountered; try %d",
-				  link_retry );
+		    CACHE_TRACE3( 
+			"LINK: link bug encountered; try %d, errno %d",
+			link_retry, errno );
 		    globus_libc_usleep( LINKBUG_SLEEP_USEC );
 		    continue;
 		}
@@ -1578,6 +1614,8 @@ globus_l_gass_cache_link( const char *oldfile,
 	}
 	else
 	{
+	    MARK_ERRORMSG( GLOBUS_L_EOTHER, oldfile );
+	    MARK_ERRORMSG( GLOBUS_L_EOTHER, newfile );
 	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
 	}
     }
@@ -1670,21 +1708,40 @@ static
 int
 globus_l_gass_cache_unlink( const char *filepath )
 {
+    int		tries = 0;
 
     /* Loop til unlink fails w/o EINTR or 'til link succeeds */
     while ( unlink( filepath ) < 0 )
     {
+	/* EINTR; just try again */
+	if ( EINTR == errno )
+	{
+	    if ( ++tries > 20 )
+	    {
+		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	    }
+	    continue;
+	}
+
 	/* If it's already gone, then we'll consider it a success */
 	if ( ENOENT == errno )
 	{
 	    return GLOBUS_SUCCESS;
 	}
 
-	/* Otherwise, if it's not EINTR, something bad happened. */
-	if ( EINTR != errno )
+	/* If it's "busy" wait a bit & try again.. */
+	else if ( EBUSY == errno )
 	{
-	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	    if ( ++tries > 20 )
+	    {
+		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	    }
+	    globus_libc_usleep( EBUSY_SLEEP_USEC );
+	    continue;
 	}
+
+	/* Otherwise, something bad happened. */
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
     }
 
     /* Return ok */
@@ -1924,7 +1981,8 @@ globus_l_gass_cache_calc_timeskew( const char		*tmp_file,
 
     /* Create the file. */
     rc = globus_l_gass_cache_create(
-	tmp_file, GLOBUS_L_GASS_CACHE_SKEWFILE_MODE, GLOBUS_NULL, 0 );
+	tmp_file, GLOBUS_NULL, GLOBUS_L_GASS_CACHE_SKEWFILE_MODE,
+	GLOBUS_NULL, 0 );
     if ( rc != GLOBUS_SUCCESS )
     {
 	RET_ERROR( rc );
@@ -2297,8 +2355,11 @@ globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
 
     /* Create my uniq file */
     rc = globus_l_gass_cache_create( 
-	names->global_uniq_file, GLOBUS_L_GASS_CACHE_UNIQFILE_MODE,
+	names->global_uniq_file, names->global_dir,
+	GLOBUS_L_GASS_CACHE_UNIQFILE_MODE,
 	GLOBUS_NULL, 0 );
+
+    /* Other error */
     if ( rc < 0 )
     {
 	RET_ERROR( rc );
@@ -2426,7 +2487,7 @@ globus_l_gass_cache_create_global_url_file( cache_names	*names )
 
     /* Write the file */
     rc = globus_l_gass_cache_create( 
-	uniq_filename, GLOBUS_L_GASS_CACHE_URLFILE_MODE,
+	uniq_filename, names->global_dir, GLOBUS_L_GASS_CACHE_URLFILE_MODE,
 	names->url, strlen( names->url )  );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -2590,14 +2651,30 @@ globus_l_gass_cache_make_ready( cache_names	*names,
 	    RET_ERROR( GLOBUS_L_EOTHER );
 	}
 
+	/* Set the uniq file's timestamp */
+	rc = globus_l_gass_cache_set_timestamp(
+	    names->global_uniq_file, timestamp );
+	if ( GLOBUS_L_ENOENT == rc )
+	{
+	    continue;	/* Do nothing, loop back to top, should fail stat() */
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
+	}
+
 	/* Create a link between uniq and data */
 	rc = globus_l_gass_cache_link( names->global_uniq_file,
 				       names->global_data_file );
+
+	/* If successful, exit the loop */
 	if ( GLOBUS_SUCCESS == rc )
 	{
 	    break;
 	}
-	else if ( GLOBUS_L_EEXISTS == rc )
+
+	/* Handle errors from link() */
+	if ( GLOBUS_L_EEXISTS == rc )
 	{
 	    /* Other process beat us to it; no harm done, though... */
 	    CACHE_TRACE2( "MAKE_READY: Lost, unlinking '%s'",
@@ -2613,14 +2690,6 @@ globus_l_gass_cache_make_ready( cache_names	*names,
 	{
 	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
 	}
-    }
-
-    /* Finally, set it's time stamp */
-    rc = globus_l_gass_cache_set_timestamp( 
-	names->global_uniq_file, timestamp );
-    if ( rc < 0 )
-    {
-	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
     }
 
     /* And, unlink the "uniq" version, leaving behind only the global */
@@ -2719,7 +2788,9 @@ globus_l_gass_cache_make_unready( cache_names	*names )
 	/* Some other error from link().  Bomb out */
 	else if ( GLOBUS_L_EEXISTS != rc )
 	{
-	    RET_ERROR( rc );
+	    MARK_ERRORMSG( rc, names->global_data_file );
+	    MARK_ERRORMSG( rc, names->globaldir_lock_file );
+	    RET_ERRORMSG( rc, "Unready: unknown link error" );
 	}
 
 	/* Lock file already exists */
@@ -2921,7 +2992,7 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	 */
 	if ( 0 == uniq_num_recent )
 	{
-	    RET_ERROR( GLOBUS_L_ENOENT );
+	    RET_ERROR( GLOBUS_L_ENODATA );
 	}
 
 	/* Otherwise, just sleep a bit, then go try the whole thing over.. */
@@ -3037,8 +3108,8 @@ globus_l_gass_cache_lock_delay( int tryno )
  */
 static
 int
-globus_l_gass_cache_lock_local_dir( const char *existing_file,
-				    const char *lock_file )
+globus_l_gass_cache_lock_local_dir( cache_names	*names,
+				    const char	*existing_file )
 {
     int			rc;
     struct stat		statbuf;
@@ -3046,13 +3117,26 @@ globus_l_gass_cache_lock_local_dir( const char *existing_file,
     int			tryno = 0;
     int			lock_age;
 
+    /* Build the lock file name */
+    rc = globus_l_gass_cache_build_filename(
+	names->local_dir, LOCK_FILE, GLOBUS_NULL,
+	GLOBUS_FALSE, &names->localdir_lock_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+    CACHE_TRACE2( "Locking local dir '%s'", names->local_dir );
+
     /* Run til we're done */
     while( 1 )
     {
 	/* Link to the lock file.  If it works, we're done */
-	rc = globus_l_gass_cache_link( existing_file, lock_file );
+	rc = globus_l_gass_cache_link( existing_file, 
+				       names->localdir_lock_file );
 	if ( GLOBUS_SUCCESS == rc )
 	{
+	    CACHE_TRACE3( "Lock on %s ok after %d retries",
+			  names->local_dir, tryno );
 	    return GLOBUS_SUCCESS;
 	}
 	/* If it's not EEXISTS, bad... */
@@ -3063,7 +3147,7 @@ globus_l_gass_cache_lock_local_dir( const char *existing_file,
 	CLR_ERROR;
 
 	/* EEXISTS; check the lock file time stamp */
-	rc = globus_l_gass_cache_stat( lock_file, &statbuf );
+	rc = globus_l_gass_cache_stat( names->localdir_lock_file, &statbuf );
 	if ( GLOBUS_L_ENOENT == rc )
 	{
 	    CLR_ERROR;
@@ -3083,7 +3167,7 @@ globus_l_gass_cache_lock_local_dir( const char *existing_file,
 	if ( lock_age > LOCK_MAX_SECONDS )
 	{
 	    /* Kill the file and start over */
-	    rc = globus_l_gass_cache_unlink( lock_file );
+	    rc = globus_l_gass_cache_unlink( names->localdir_lock_file );
 	    if ( GLOBUS_SUCCESS != rc )
 	    {
 		RET_ERROR( rc );
@@ -3096,6 +3180,74 @@ globus_l_gass_cache_lock_local_dir( const char *existing_file,
     }
 
 } /* globus_l_gass_cache_lock_local_dir() */
+
+/*
+ * globus_l_gass_cache_unlock_local_dir()
+ *
+ * Unlock the local directory
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_unlock_local_dir( cache_names	*names,
+				      const char	*target_name )
+{
+    int		rc = GLOBUS_SUCCESS;
+
+    /* Build the lock file name (should be valid already, but doesn't hurt */
+    rc = globus_l_gass_cache_build_filename(
+	names->local_dir, LOCK_FILE, GLOBUS_NULL,
+	GLOBUS_FALSE, &names->localdir_lock_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* If the target name is valid, rename to it.. */
+    if ( GLOBUS_NULL != target_name )
+    {
+	CACHE_TRACE3( "Unlocking local dir '%s' -> '%s'",
+		      names->local_dir, target_name );
+	rc = globus_l_gass_cache_rename( names->localdir_lock_file,
+					 target_name );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+
+	/* Huh? */
+	if ( globus_l_gass_cache_stat( names->localdir_lock_file, GLOBUS_NULL )
+	     == GLOBUS_SUCCESS )
+	{
+	    CACHE_TRACE2( "Unlock: '%s' stats ok\n", 
+			  names->localdir_lock_file );
+	}
+	if ( globus_l_gass_cache_stat( target_name, GLOBUS_NULL )
+	     != GLOBUS_SUCCESS )
+	{
+	    CACHE_TRACE2( "Unlock: '%s' stats ok\n", target_name );
+	}
+    }
+    /* Otherwise, just kill the lock file */
+    else
+    {
+	CACHE_TRACE2( "Unlocking local dir '%s' via unlink",
+		      names->local_dir );
+	rc = globus_l_gass_cache_unlink( names->localdir_lock_file );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+
+    /* All ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_unlock_local_dir() */
 
 /*
  * globus_l_gass_cache_create_local_tag_file()
@@ -3130,7 +3282,7 @@ globus_l_gass_cache_create_local_tag_file( cache_names	*names )
 
     /* Write the file */
     rc = globus_l_gass_cache_create( 
-	uniq_filename, GLOBUS_L_GASS_CACHE_TAGFILE_MODE,
+	uniq_filename, names->local_dir, GLOBUS_L_GASS_CACHE_TAGFILE_MODE,
 	names->tag, strlen( names->tag )  );
     if ( GLOBUS_SUCCESS != rc )
     {
@@ -3180,13 +3332,7 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
     int		rc = GLOBUS_SUCCESS;
     char	*global_file = GLOBUS_NULL;
 
-    /* Build the lock & uniq file names */
-    if ( GLOBUS_SUCCESS == rc )
-    {
-	rc = globus_l_gass_cache_build_filename(
-	    names->local_dir, LOCK_FILE, GLOBUS_NULL,
-	    GLOBUS_FALSE, &names->localdir_lock_file );
-    }
+    /* Build the uniq file name */
     if ( GLOBUS_SUCCESS == rc )
     {
 	rc = globus_l_gass_cache_build_filename(
@@ -3247,8 +3393,7 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
     }
 
     /* Get a lock on the local directory (use data to link from; its easy) */
-    rc = globus_l_gass_cache_lock_local_dir( names->local_data_file,
-					     names->localdir_lock_file );
+    rc = globus_l_gass_cache_lock_local_dir( names, names->local_data_file );
     if ( GLOBUS_SUCCESS != rc )
     {
 	/* Failed to get lock for some reason.  Bail out. */
@@ -3256,8 +3401,10 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
     }
 
     /* Release the lock & create a uniq "link count" file in one op */
-    rc = globus_l_gass_cache_rename( names->localdir_lock_file,
-				     names->local_uniq_file );
+    rc = globus_l_gass_cache_link( names->localdir_lock_file,
+				   names->local_uniq_file );
+    rc = globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+    /* 				       names->local_uniq_file );*/
     if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3286,17 +3433,8 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
     int		uniq_count;
     int		rc = GLOBUS_SUCCESS;
 
-    /* Build the names of the lock file... */
-    if ( GLOBUS_SUCCESS == rc )
-    {
-	rc = globus_l_gass_cache_build_filename(
-	    names->local_dir, LOCK_FILE, GLOBUS_NULL, GLOBUS_FALSE,
-	    &names->localdir_lock_file );
-    }
-
     /* Lock the target tag directory */
-    rc = globus_l_gass_cache_lock_local_dir( names->local_data_file,
-					     names->localdir_lock_file );
+    rc = globus_l_gass_cache_lock_local_dir( names, names->local_data_file );
     if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3308,7 +3446,7 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
 					&uniq_count );
     if ( GLOBUS_SUCCESS != rc )
     {
-	(void) globus_l_gass_cache_unlink( names->localdir_lock_file );
+	(void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
 	RET_ERROR( rc );
     }
 
@@ -3323,14 +3461,14 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
 	uniq_file = GLOBUS_NULL;
 	if ( GLOBUS_SUCCESS != rc )
 	{
-	    (void) globus_l_gass_cache_unlink( names->localdir_lock_file );
+	    (void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
 	    RET_ERROR( rc );
 	}
 	rc = globus_l_gass_cache_unlink( uniq_filepath );
 	globus_free( uniq_filepath );	/* We're done with this now */
 	if ( GLOBUS_SUCCESS != rc )
 	{
-	    (void) globus_l_gass_cache_unlink( names->localdir_lock_file );
+	    (void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
 	    RET_ERROR( rc );
 	}
     }
@@ -3348,14 +3486,14 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
 	if (  ( GLOBUS_SUCCESS != rc ) && 
 	      ( GLOBUS_L_ENOENT != rc ) )
 	{
-	    (void) globus_l_gass_cache_unlink( names->localdir_lock_file );
+	    (void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
 	    RET_ERROR( rc );
 	}
 	CLR_ERROR;
     }
 
     /* Release the lock */
-    rc = globus_l_gass_cache_unlink( names->localdir_lock_file );
+    rc = globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
     if (  ( GLOBUS_SUCCESS != rc ) && ( GLOBUS_L_ENOENT != rc ) )
     {
 	RET_ERROR( rc );
@@ -3631,7 +3769,7 @@ globus_l_gass_cache_delete( cache_names		*names,
 	rc = globus_l_gass_cache_wait_ready( names, GLOBUS_NULL );
 
 	/* It got blown away by somebody else */
-	if ( GLOBUS_L_ENODATA == rc )
+	if ( ( GLOBUS_L_ENODATA == rc ) || ( GLOBUS_L_ENOENT == rc ) )
 	{
 	    return GLOBUS_SUCCESS;	    /* Nothing to do */
 	}

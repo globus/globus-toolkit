@@ -62,6 +62,7 @@ CVS Information:
 #define NOTREADY_MAX_SECONDS	300	/* mtime age before NR "broken" */
 #define NOTREADY_CHECK_SECONDS	10	/* Seconds between NR lock checks. */
 #define SKEWCALC_SECONDS	3600	/* Seconds between skew calcs. */
+#define EBUSY_SLEEP_USEC	10000	/* Retry delay after EBUSY */
 
 /*
  * RedHat 6.2 link seems to return ENOENT sometimes even though it
