@@ -3,6 +3,9 @@ This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.6.2
+  - fixed GT 2.2 incompatibility introduced in v0.6.1.
+
 v0.6.1 30 Mar 2004 (GPT package version 1.13)
   - fixed bug where myproxy-server would always delegate new-style
     proxy credentials from end-entity credentials in repository.
@@ -12,6 +15,7 @@ v0.6.1 30 Mar 2004 (GPT package version 1.13)
     delegate a proxy of the same type as stored in the repository
     irrespective of the certificate request, because new-style
     and old-style proxies can't be mixed.
+    this bug fix resulted in an incompatibility with GT 2.2.
 
 v0.6.0 22 Mar 2004 (GPT package version 1.12)
   - added max_proxy_lifetime server configuration option for limiting
