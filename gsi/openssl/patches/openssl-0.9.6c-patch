@@ -32,30 +32,6 @@ diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
  
  #
  # Cray T90 (SDSC)
-@@ -839,6 +845,23 @@
- my $shlib_version_history = "unknown";
- my $shlib_major = "unknown";
- my $shlib_minor = "unknown";
-+
-+# Check to see if gcc's linker is actually using gnu's linker.
-+if ($cc eq 'gcc') {
-+  my $ld = `$cc -print-prog-name=ld`;
-+  my $result = `$ld -v 2>&1`;
-+  chomp($ld);
-+  if ($result =~ m!(?:GNU)|(?:with BFD)!) {
-+    $shared_target = 'gnu-shared';
-+  } else {
-+    my $cctarget = $target;
-+    $cctarget =~ s!-gcc!-cc!;
-+    my ( $duncc, $duncflags, $dununistd, $dunthread_cflag, $dunlflags, $dunbn_ops, $dunbn_obj, $dundes_obj, $dunbf_obj,$dunmd5_obj,$dunsha1_obj, $duncast_obj, $dunrc4_obj,$dunrmd160_obj, $dunrc5_obj, $dundso_scheme, $dunshared_target, $dunshared_cflag, $dunshared_extension, $dunranlib)=
-+       split(/\s*:\s*/,$table{$cctarget} . ":" x 30 , -1);
-+    
-+    $shared_target = $dunshared_target;
-+  }
-+}
- 
- open(IN,'<crypto/opensslv.h') || die "unable to read opensslv.h:$!\n";
- while (<IN>)
 diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 --- openssl-0.9.6c/Makefile.org	Wed Nov 14 04:44:11 2001
 +++ openssl-0.9.6c-patched/Makefile.org	Mon Feb 25 16:51:51 2002
