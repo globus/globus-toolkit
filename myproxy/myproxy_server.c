@@ -120,7 +120,7 @@ int
 main(int argc, char *argv[]) 
 {    
     int   listenfd;
-    pid_t childpid;  
+    pid_t childpid;
     struct sockaddr_in client_addr;
     int client_addr_len = sizeof(client_addr);
 
@@ -164,12 +164,11 @@ main(int argc, char *argv[])
      * If so, then stdin will be connected to a socket,
      * so getpeername() will succeed.
      */
-    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) == 0) 
+#ifdef USE_INETD
+    if (getsockname(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) 
     {
-       server_context->run_as_daemon = 0;
-    } 
-    else 
-    { 
+       server_context->run_as_daemon = 1;
+#endif
        if (!debug) 
        {
 	  if (become_daemon(server_context) < 0) 
@@ -178,8 +177,15 @@ main(int argc, char *argv[])
 	     exit(1);
 	  }
        }
+#ifdef USE_INETD
+    } 
+    else 
+    { 
+       server_context->run_as_daemon = 0;
+       close(1);
+       (void) open("/dev/null",O_WRONLY);
     }
-    
+#endif    
     /* Initialize Logging */
     if (debug) {
 	myproxy_debug_set_level(1);
@@ -202,66 +208,69 @@ main(int argc, char *argv[])
     /* If process is killed or Ctrl-C */
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
-
+#ifdef USE_INETD
+    myproxy_log("Daemon = %d\n", server_context->run_as_daemon);
     /* Running out of inetd is straightforward */
     if (!server_context->run_as_daemon) 
     {
-       close(1);
-       (void) open("/dev/null",O_WRONLY);
        myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
        socket_attrs->socket_fd = fileno(stdin);
        if (handle_client(socket_attrs, server_context) < 0) {
 	  my_failure("error in handle_client()");
        } 
        exit(0);
-    } 
-    
-    /* Run as a daemon */
-    listenfd = myproxy_init_server(socket_attrs);
-    
-    /* Set up concurrent server */
-    while (1) {
-       socket_attrs->socket_fd = accept(listenfd,
-					(struct sockaddr *) &client_addr,
-					&client_addr_len);
-       myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
-       if (socket_attrs->socket_fd < 0) {
-	  if (errno == EINTR) {
-	     continue; 
-	  } else {
-	     myproxy_log_perror("Error in accept()");
-	  }
-       }
-       if (!debug)
-       {
-	  childpid = fork();
-	  
-	  if (childpid < 0) {              /* check for error */
-	     myproxy_log_perror("Error in fork");
-	     close(socket_attrs->socket_fd);
-	  }
-	  else if (childpid != 0)
-	  {
-	     /* Parent */
-	     /* parent closes connected socket */
-	     close(socket_attrs->socket_fd);	     
-	     continue;	/* while(1) */
-	  }
-	  
-	  /* child process */
-	  close(0);
-	  close(1);
-	  if (!debug) {
-	     close(2);
-	  }
-	  close(listenfd);
-       }
-       if (handle_client(socket_attrs, server_context) < 0) {
-	  my_failure("error in handle_client()");
-       } 
-       _exit(0);
     }
-    exit(0);
+    else
+    {    
+#endif
+       /* Run as a daemon */
+       listenfd = myproxy_init_server(socket_attrs);
+       /* Set up concurrent server */
+       while (1) {
+	  socket_attrs->socket_fd = accept(listenfd,
+					   (struct sockaddr *) &client_addr,
+					   &client_addr_len);
+	  myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
+	  if (socket_attrs->socket_fd < 0) {
+	     if (errno == EINTR) {
+		continue; 
+	     } else {
+		myproxy_log_perror("Error in accept()");
+	     }
+	  }
+	  if (!debug)
+	  {
+	     childpid = fork();
+	     
+	     if (childpid < 0) {              /* check for error */
+		myproxy_log_perror("Error in fork");
+		close(socket_attrs->socket_fd);
+	  }
+	     else if (childpid != 0)
+	     {
+		/* Parent */
+		/* parent closes connected socket */
+		close(socket_attrs->socket_fd);	     
+	     continue;	/* while(1) */
+	     }
+	     
+	     /* child process */
+	     close(0);
+	     close(1);
+	     if (!debug) {
+		close(2);
+	     }
+	     close(listenfd);
+	  }
+	  if (handle_client(socket_attrs, server_context) < 0) {
+	     my_failure("error in handle_client()");
+	  } 
+	  _exit(0);
+       }
+       exit(0);
+#ifdef USE_INETD
+    }
+#endif
 }   
 
 int
