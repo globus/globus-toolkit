@@ -156,7 +156,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    xfree(user);
 		    user = lname;
 		    debug("set username to %s from gssapi context", user);
-		} else if (authctxt->valid) {
+		} else {
 		    debug("failed to set username from gssapi context");
 		}
 	    }
@@ -170,7 +170,6 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
-	;
 	/* If first time or username changed or implicit username,
 	   setup/reset authentication context. */
 	if ((authctxt->attempt++ == 0) ||
@@ -189,15 +188,16 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    xfree(authctxt->style);
 		    authctxt->style = NULL;
 		}
+		authctxt->pw = NULL;
+		authctxt->valid = 0;
 #ifdef GSSAPI
-		/* We'll verify the username after we set it from the
-		   GSSAPI context. */
-		if ((strcmp(user, "") == 0) &&
-		    ((strcmp(method, "gssapi") == 0) ||
-		     (strcmp(method, "external-keyx") == 0))) {
-		    authctxt->pw = NULL;
-		    authctxt->valid = 1;
-		} else {
+		/* If we're going to set the username based on the
+		   GSSAPI context later, then wait until then to
+		   verify it. */
+		if ((strcmp(user, "") != 0) ||
+		    ((strcmp(method, "gssapi") != 0) &&
+		     (strcmp(method, "gssapi-with-mic") != 0) &&
+		     (strcmp(method, "external-keyx") != 0))) {
 #endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		authctxt->user = xstrdup(user);
@@ -217,7 +217,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 		}
 #ifdef GSSAPI
-		}
+		} /* endif for setting username based on GSSAPI context */
 #endif
 		setproctitle("%s%s", authctxt->pw ? user : "unknown",
 		    use_privsep ? " [net]" : "");
