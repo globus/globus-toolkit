@@ -1,4 +1,10 @@
 #!/bin/sh
+#
+# Init file for OpenSSH server daemon
+#
+# chkconfig: 2345 55 25
+# description: OpenSSH server daemon
+#
 
 GLOBUS_LOCATION="@GLOBUS_LOCATION@"
 export GLOBUS_LOCATION
