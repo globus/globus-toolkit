@@ -29,6 +29,11 @@ static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
 static int                                      g_window_size;
 
+#ifdef GLOBUS_AUTHORIZATION
+static globus_authorization_handle_t globus_auth_handle;
+extern char chroot_path[];   /* From ftpd.c */
+#endif /* GLOBUS_AUTHORIZATION */
+
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
 
 #ifdef BUFFER_SIZE
