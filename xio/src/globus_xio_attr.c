@@ -36,13 +36,12 @@ globus_xio_attr_init(
    
     /* allocate the attr */ 
     xio_attr = (globus_i_xio_attr_t *)
-                globus_malloc(sizeof(globus_i_xio_attr_t));
+                globus_calloc(sizeof(globus_i_xio_attr_t), 1);
     if(xio_attr == NULL)
     {
         res = GlobusXIOErrorMemory("attr");
         goto err;
     }
-    memset(xio_attr, '\0', sizeof(globus_i_xio_attr_t));
 
     xio_attr->entry = (globus_i_xio_attr_ent_t *)
         globus_malloc(sizeof(globus_i_xio_attr_ent_t) *

@@ -2302,7 +2302,6 @@ globus_l_xio_gssapi_ftp_client_read_cb(
         {
             out_length = nbytes;
         }
-                GlobusXIOGssapiftpDebugFinishRead();
         globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, out_length);
     }
     globus_mutex_unlock(&handle->mutex);
@@ -2310,7 +2309,6 @@ globus_l_xio_gssapi_ftp_client_read_cb(
     return;
 
  err:
-                GlobusXIOGssapiftpDebugFinishRead();
     globus_xio_driver_finished_read(op, res, 0);
     globus_mutex_unlock(&handle->mutex);
 
@@ -2400,6 +2398,37 @@ err:
     return res;
 }
 
+static globus_result_t
+globus_l_xio_gssapi_ftp_handle_cntl(
+    void *                              handle,
+    int                                 cmd,
+    va_list                             ap)
+{
+    gss_cred_id_t *                     out_cred;
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    globus_l_xio_gssapi_ftp_handle_t *  ds_handle;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_handle_cntl);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    ds_handle = (globus_l_xio_gssapi_ftp_handle_t *) handle;
+
+    switch(cmd)
+    {
+        case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED:
+            out_cred = va_arg(ap, gss_cred_id_t *);
+            *out_cred = ds_handle->delegated_cred_handle;
+            break;
+
+        default:
+            res = GlobusXIOGssapiBadParameter();
+            break;
+    }
+
+    GlobusXIOGssapiftpDebugExit();
+    return res;
+}
+
 /************************************************************************
  *                  load and activate
  *                  -----------------
@@ -2435,7 +2464,7 @@ globus_l_xio_gssapi_ftp_load(
         globus_l_xio_gssapi_ftp_close,
         globus_l_xio_gssapi_ftp_read,
         globus_l_xio_gssapi_ftp_write,
-        NULL,
+        globus_l_xio_gssapi_ftp_handle_cntl,
         globus_l_xio_gssapi_ftp_push_driver);
 
     globus_xio_driver_set_attr(

@@ -303,19 +303,21 @@ globus_l_xio_handle_pre_close(
         case GLOBUS_XIO_HANDLE_STATE_OPENING:
             globus_assert(handle->open_op != NULL);
 
-            globus_mutex_lock(&handle->context->cancel_mutex);
+            if(!attr->no_cancel)
             {
-                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                    ("[%s] : canceling open op @ 0x%x\n", 
-                    _xio_name, handle->open_op));
-                /* we delay the pass close until the open callback */
-                globus_i_xio_operation_cancel(handle->open_op, -1);
+                globus_mutex_lock(&handle->context->cancel_mutex);
+                {
+                    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                        ("[%s] : canceling open op @ 0x%x\n", 
+                        _xio_name, handle->open_op));
+                    /* we delay the pass close until the open callback */
+                    globus_i_xio_operation_cancel(handle->open_op, -1);
 
-                /* cancel any data ops */
-                globus_l_xio_cancel_data_ops(handle);
+                    /* cancel any data ops */
+                    globus_l_xio_cancel_data_ops(handle);
+                }
+                globus_mutex_unlock(&handle->context->cancel_mutex);
             }
-            globus_mutex_unlock(&handle->context->cancel_mutex);
-
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING);
             break;
@@ -329,12 +331,15 @@ globus_l_xio_handle_pre_close(
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_CLOSING);
 
-            /* cancel any data ops */
-            globus_mutex_lock(&handle->context->cancel_mutex);
+            if(!attr->no_cancel)
             {
-                globus_l_xio_cancel_data_ops(handle);
+                /* cancel any data ops */
+                globus_mutex_lock(&handle->context->cancel_mutex);
+                {
+                    globus_l_xio_cancel_data_ops(handle);
+                }
+                globus_mutex_unlock(&handle->context->cancel_mutex);
             }
-            globus_mutex_unlock(&handle->context->cancel_mutex);
             break;
             
         case GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING:

@@ -1174,6 +1174,10 @@ globus_i_xio_driver_attr_cntl(
                 globus_callback_space_destroy(attr->space);
                 attr->space = space;
                 break;
+
+            case GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL:
+                attr->no_cancel = va_arg(ap, globus_bool_t);
+                break;
         }
 
         res = GLOBUS_SUCCESS;

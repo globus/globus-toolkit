@@ -12,6 +12,22 @@ typedef enum
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE
 } globus_xio_gssapi_attr_type_t;
 
+typedef enum globus_xio_gssapi_handle_cntl_type_e
+{
+    GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED,
+} globus_xio_gssapi_handle_cntl_type_t;
+
+
+#define GlobusXIOGssapiBadParameter()                                       \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_GSSAPI_FTP_BAD_PARAMETER,                            \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Bad Parameter"))
 
 #define GlobusXIOGssapiFTPOutstandingOp()                                   \
     globus_error_put(                                                       \
@@ -74,6 +90,7 @@ typedef enum
 
 enum
 {
+    GLOBUS_XIO_GSSAPI_FTP_BAD_PARAMETER,
     GLOBUS_XIO_GSSAPI_FTP_OUTSTANDING_OP,
     GLOBUS_XIO_GSSAPI_FTP_ERROR_ENCODING,
     GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,
