@@ -252,6 +252,7 @@ globus_ftp_client_register_read(
 
 		GlobusTimeReltimeSet(reltime, 0, 0);
 		globus_callback_register_oneshot(
+		    GLOBUS_NULL,
 		    &reltime,
 		    globus_l_ftp_client_complete_kickout,
 		    (void *) handle,
@@ -461,6 +462,7 @@ globus_ftp_client_register_write(
 
 		GlobusTimeReltimeSet(reltime, 0, 0);
 		globus_callback_register_oneshot(
+		    GLOBUS_NULL,
 		    &reltime,
 		    globus_l_ftp_client_complete_kickout,
 		    (void *) handle,
