@@ -3554,12 +3554,7 @@ globus_l_xio_gsi_authorized_host_name(
     GlobusXIOName(globus_l_xio_authorized_host_name);
     GlobusXIOGSIDebugInternalEnter();
 
-    realhostname = (char *) malloc(133 * sizeof(char));
-    realhostname[0] = 'h';
-    realhostname[1] = 'o';
-    realhostname[2] = 's';
-    realhostname[3] = 't';
-    realhostname[4] = '@';
+    realhostname = (char *) malloc(128 * sizeof(char));
     
     if(realhostname == NULL)
     {
@@ -3589,12 +3584,12 @@ globus_l_xio_gsi_authorized_host_name(
 
     if(globus_libc_addr_is_loopback(addrinfo->ai_addr) == GLOBUS_TRUE)
     {
-        globus_libc_gethostname(&realhostname[5], 128);
+        globus_libc_gethostname(realhostname, 128);
     }
     else
     {
-        strncpy(&realhostname[5], addrinfo->ai_canonname, 127);
-        realhostname[132] = '\0';
+        strncpy(realhostname, addrinfo->ai_canonname, 127);
+        realhostname[127] = '\0';
     }
 
     globus_libc_freeaddrinfo(addrinfo);
@@ -3605,7 +3600,7 @@ globus_l_xio_gsi_authorized_host_name(
      * request uppercase name certificates.
      */
 	    
-    for (i = 5; realhostname[i] && (i < 133); i++)
+    for (i = 0; realhostname[i] && (i < 128); i++)
     {
         realhostname[i] = tolower(realhostname[i]);
     }
