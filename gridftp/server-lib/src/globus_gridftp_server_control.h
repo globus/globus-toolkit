@@ -20,11 +20,18 @@ typedef time_t                              globus_time_t;
 typedef enum globus_gsc_error_type_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PANIC,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_DATA_CONNECTION,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,
+
+    /* user command errors */
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ACTION_FAILED,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_PATH_INVALID,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_INVALID_FILE_TYPE,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ACCESS_DENINED,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_CONN_TERMINATED,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_CONN_FAILED,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_CONN_AUTH
 } globus_gridftp_server_control_error_type_t;
 
 #ifdef __GNUC__
@@ -89,27 +96,82 @@ typedef enum globus_gsc_error_type_e
             __LINE__,                                                       \
             "Sytem resource error"))
 
-#define GlobusGridFTPServerControlErrorDataConnection()                     \
+#define GlobusGridFTPServerErrorAction(msg)                                 \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_DATA_CONNECTION,            \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ACTION_FAILED,                    \
             __FILE__,                                                       \
             _gridftp_server_name,                                           \
             __LINE__,                                                       \
-            "data connection error"))
+            msg == NULL ? "": msg))
 
-#define GlobusGridFTPServerControlErrorPath()                               \
+#define GlobusGridFTPServerErrorPath(msg)                                   \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_PATH_INVALID,                     \
             __FILE__,                                                       \
             _gridftp_server_name,                                           \
             __LINE__,                                                       \
-            "path error"))
+            msg == NULL ? "": msg))
+
+#define GlobusGridFTPServerErrorFileType(msg)                               \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_INVALID_FILE_TYPE,                \
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            msg == NULL ? "": msg))
+
+#define GlobusGridFTPServerErrorAccess(msg)                                 \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ACCESS_DENINED,                   \
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            msg == NULL ? "": msg))
+
+#define GlobusGridFTPServerErrorDataTerminated(msg)                         \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_CONN_TERMINATED,             \
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            msg == NULL ? "": msg))
+
+#define GlobusGridFTPServerErrorDataConnection(msg)                         \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_CONN_FAILED,                 \
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            msg == NULL ? "": msg))
+
+#define GlobusGridFTPServerErrorDataAuth(msg)                               \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_CONN_AUTH,                   \
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            msg == NULL ? "": msg))
 
 /*
  *  globus_gridftp_server_control_security_type_t
@@ -200,6 +262,7 @@ typedef enum globus_gridftp_server_control_event_type_e
 typedef void
 (*globus_gridftp_server_control_auth_cb_t)(
     globus_gridftp_server_control_op_t      op,
+    globus_gridftp_server_control_security_type_t secure_type,
     const char *                            subject,
     const char *                            user_name,
     const char *                            pw);

@@ -231,11 +231,12 @@ globus_l_gsc_deactivate()
 {
     int                                     rc;
 
-    globus_xio_driver_unload(globus_l_gsc_gssapi_ftp_driver);
-    globus_xio_driver_unload(globus_l_gsc_ftp_cmd_driver);
-    globus_xio_driver_unload(globus_l_gsc_tcp_driver);
-
     globus_gridftp_server_control_attr_destroy(globus_l_gsc_default_attr);
+
+    globus_xio_driver_unload(globus_l_gsc_tcp_driver);
+    globus_xio_driver_unload(globus_l_gsc_ftp_cmd_driver);
+    globus_xio_driver_unload(globus_l_gsc_gssapi_ftp_driver);
+
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
 
     return rc;
@@ -711,13 +712,12 @@ globus_l_gsc_finished_op(
 
     server_handle = op->server_handle;
 
-    globus_i_gsc_op_destroy(op);
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_PROCESSING:
             if(reply_msg == NULL && op->cmd_list == NULL)
             {
-                reply_msg = "500 Command not supported\r\n";
+                reply_msg = "500 Command not supported.\r\n";
             }
             if(reply_msg == NULL)
             {
@@ -725,6 +725,7 @@ globus_l_gsc_finished_op(
             }
             else
             {
+                globus_i_gsc_op_destroy(op);
                 res = globus_l_gsc_final_reply(
                         server_handle,
                         reply_msg);
@@ -737,9 +738,10 @@ globus_l_gsc_finished_op(
 
         case GLOBUS_L_GSC_STATE_ABORTING:
 
+            globus_i_gsc_op_destroy(op);
             if(reply_msg == NULL)
             {
-                reply_msg = "426 Command Aborted\r\n";
+                reply_msg = "426 Command Aborted.\r\n";
             }
 
             server_handle->abort_cnt = globus_fifo_size(&server_handle->read_q);
@@ -754,7 +756,7 @@ globus_l_gsc_finished_op(
             }
             res = globus_l_gsc_flush_reads(
                     server_handle,
-                    "426 Command Aborted\r\n");
+                    "426 Command Aborted.\r\n");
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
@@ -769,12 +771,14 @@ globus_l_gsc_finished_op(
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+            globus_i_gsc_op_destroy(op);
             server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
             server_handle->ref--;
             globus_l_gsc_server_ref_check(server_handle);
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
+            globus_i_gsc_op_destroy(op);
             server_handle->ref--;
             globus_l_gsc_server_ref_check(server_handle);
             break;
@@ -2234,7 +2238,7 @@ globus_gsc_959_command_add(
     cmd_ent->min_argc = min_argc;
     cmd_ent->max_argc = max_argc;
 
-    list = (globus_list_t *) globus_hashtable_lookup(
+    list = (globus_list_t *) globus_hashtable_remove(
         &server_handle->cmd_table, (char *)command_name);
     globus_list_insert(&list, cmd_ent);
     globus_hashtable_insert(
@@ -2833,6 +2837,7 @@ globus_i_gsc_authenticate(
     globus_i_gsc_auth_cb_t                  cb,
     void *                                  user_arg)
 {
+    int                                     type;
     GlobusGridFTPServerName(globus_i_gsc_authenticate);
 
     if(op == NULL)
@@ -2860,16 +2865,26 @@ globus_i_gsc_authenticate(
         globus_xio_handle_cntl(
             op->server_handle->xio_handle,
             globus_l_gsc_gssapi_ftp_driver,
-            GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED,
+            GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH,
+            &type,
             &op->server_handle->cred,
             &op->server_handle->del_cred,
             &op->server_handle->subject);
+        if(type == GLOBUS_XIO_GSSAPI_FTP_SECURE)
+        {
+            type = GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI;
+        }
+        else
+        {
+            type = GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE;
+        }
     }
     /* call out to user */
     if(op->server_handle->funcs.auth_cb != NULL)
     {
         op->server_handle->funcs.auth_cb(
             op,
+            type,
             op->server_handle->subject,
             op->username,
             op->password);
