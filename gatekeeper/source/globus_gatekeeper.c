@@ -895,10 +895,23 @@ main(int xargc,
             }
 
             globusid = get_globusid();
-            printf("GRAM contact: %s:%d:%s\n",
-                    fqdn, daemon_port, globusid);
-            notice4(LOG_INFO, "GRAM contact: %s:%d:%s\n",
-                    fqdn, daemon_port, globusid);
+	    
+	    /* ajr,vs --changed printf to sprintf, and added grami_setenv
+	     * This is considered to be a temporary change */
+	    if (strlen(fqdn) + strlen(globusid) + 7 < 512)
+	    {
+		char contact_string[512];
+		
+		sprintf(contact_string, "%s:%d:%s",
+			fqdn, daemon_port, globusid);
+		printf("GRAM contact: %s\n", contact_string);
+		grami_setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
+			     contact_string,
+			     1);
+	    }
+	    
+	    notice4(LOG_INFO, "GRAM contact: %s:%d:%s\n",
+		    fqdn, daemon_port, globusid);
             free(globusid);
         }
 
