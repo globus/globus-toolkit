@@ -5,7 +5,7 @@
 #include "globus_common.h"
 #include "globus_gss_assist.h"
 
-typedef struct globus_i_gsc_server_s *      
+typedef struct globus_i_gsc_server_handle_s *
     globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *        
     globus_gridftp_server_control_attr_t;
@@ -247,6 +247,11 @@ typedef void
     const char *                                    mod_name,
     const char *                                    mod_parms);
 
+typedef void
+(*globus_gridftp_server_control_abort_func_t)(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          user_arg);
+
 /*
  *  action callbacks
  */
@@ -470,6 +475,7 @@ globus_gridftp_server_control_start(
     globus_gridftp_server_control_t                 server,
     globus_gridftp_server_control_attr_t            attr,
     globus_xio_handle_t                             xio_handle,
+    globus_gridftp_server_control_callback_t        done_cb,
     void *                                          user_arg);
 
 /**
@@ -482,9 +488,7 @@ globus_gridftp_server_control_start(
  */
 globus_result_t
 globus_gridftp_server_control_stop(
-    globus_gridftp_server_control_t                 server,
-    globus_gridftp_server_control_callback_t        done_callback,
-    void *                                          user_arg);
+    globus_gridftp_server_control_t                 server);
 
 /*
  *  setters and getters

@@ -1982,7 +1982,7 @@ globus_l_gs_pmod_959_ls_line(
 }
 
 void
-globus_i_gsc_pmod_959_add_commands(
+globus_i_gsc_add_commands(
     globus_i_gsc_server_handle_t *          server_handle)
 {
     globus_result_t                         res;
