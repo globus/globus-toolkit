@@ -11,7 +11,7 @@ globus_l_xio_null_pass_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t              globus_i_xio_null_pass_module =
+globus_module_descriptor_t              globus_i_xio_null_pass_module =
 {
     "globus_xio_null_pass",
     globus_l_xio_null_pass_activate,

@@ -11,7 +11,7 @@ globus_l_xio_stack_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_stack_module =
+globus_module_descriptor_t  globus_i_xio_stack_module =
 {
     "globus_xio_stack",
     globus_l_xio_stack_activate,

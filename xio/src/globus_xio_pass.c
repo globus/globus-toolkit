@@ -271,7 +271,6 @@ globus_xio_driver_open_delivered(
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
-        globus_assert(my_context->outstanding_operations > 0);
         my_context->outstanding_operations--;
         switch(my_context->state)
         {
@@ -875,7 +874,6 @@ globus_xio_driver_write_delivered(
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
-        globus_assert(my_context->outstanding_operations > 0);
         my_context->outstanding_operations--;
 
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
@@ -1299,7 +1297,6 @@ globus_xio_driver_read_delivered(
             _xio_name, my_context, my_context->state,
             my_context->outstanding_operations,
             my_context->close_started));
-        globus_assert(my_context->outstanding_operations >= 0);
 
         if((my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
             my_context->state ==

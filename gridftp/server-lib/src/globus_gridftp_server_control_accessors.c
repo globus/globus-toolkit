@@ -30,17 +30,14 @@ globus_gridftp_server_control_get_buffer_size(
     globus_size_t *                         out_recv_bs,
     globus_size_t *                         out_send_bs)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_buffer_size);
-
     if(op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_recv_bs = op->server_handle->opts.receive_buf;
-        *out_send_bs = op->server_handle->opts.send_buf;
+        *out_recv_bs = op->server_handle->receive_buf;
+        *out_send_bs = op->server_handle->send_buf;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -52,16 +49,13 @@ globus_gridftp_server_control_get_parallelism(
     globus_gridftp_server_control_op_t      op,
     int *                                   out_parallelism)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_parallelism);
-
     if(op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_parallelism = op->server_handle->opts.parallelism;
+        *out_parallelism = op->server_handle->parallelism;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -73,11 +67,8 @@ globus_gridftp_server_control_get_mode(
     globus_gridftp_server_control_op_t      op,
     char *                                  out_mode)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_mode);
-
     if(op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -94,11 +85,8 @@ globus_gridftp_server_control_get_type(
     globus_gridftp_server_control_op_t      op,
     char *                                  out_type)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_type);
-
     if(op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -111,36 +99,12 @@ globus_gridftp_server_control_get_type(
 }
 
 globus_result_t
-globus_gridftp_server_control_get_list_type(
-    globus_gridftp_server_control_op_t      op,
-    int *                                   out_type)
-{
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_list_type);
-
-    if(op == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("op");
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        *out_type = op->type;
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_cwd);
-
     if(server == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("server");
     }
 
     globus_mutex_lock(&server->mutex);
@@ -152,48 +116,3 @@ globus_gridftp_server_control_get_cwd(
     return GLOBUS_SUCCESS;
 }
 
-globus_result_t
-globus_gridftp_server_control_get_data_auth(
-    globus_gridftp_server_control_op_t      op,
-    char **                                 subject,
-    char *                                  dcau,
-    char *                                  prot,
-    gss_cred_id_t *                         del_cred)
-{
-    GlobusGridFTPServerName(globus_gridftp_server_control_get_data_auth);
-
-    if(op == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("op");
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        if(subject != NULL)
-        {
-            if(op->server_handle->dcau_subject != NULL)
-            {
-                *subject = globus_libc_strdup(op->server_handle->dcau_subject);
-            }
-            else
-            {
-                *subject = NULL;
-            }
-        }
-        if(dcau != NULL)
-        {
-            *dcau = op->server_handle->dcau;
-        }
-        if(prot != NULL)
-        {
-            *prot = op->server_handle->prot;
-        }
-        if(del_cred != NULL)
-        {
-            *del_cred = op->server_handle->del_cred;
-        }        
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-}

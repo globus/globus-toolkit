@@ -40,4 +40,7 @@ enum
     GLOBUS_XIO_TEST_RANDOM
 };
 
+globus_module_descriptor_t              globus_i_xio_test_module;
+#define GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE &globus_i_xio_test_module
+
 #endif

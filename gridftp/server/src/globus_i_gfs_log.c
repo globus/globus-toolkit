@@ -28,11 +28,7 @@ globus_i_gfs_log_message(
     va_list                             ap;
     
     va_start(ap, format);
-    
-    if(!globus_i_gfs_config_bool("inetd") && !globus_i_gfs_config_bool("fork"))
-    {
-        globus_libc_vfprintf(stderr, format, ap);
-    }
+    globus_libc_vfprintf(stderr, format, ap);
     va_end(ap);
 }
 

@@ -14,7 +14,7 @@ globus_l_xio_bounce_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t              globus_i_xio_bounce_module =
+globus_module_descriptor_t              globus_i_xio_bounce_module =
 {
     "globus_xio_bounce",
     globus_l_xio_bounce_activate,

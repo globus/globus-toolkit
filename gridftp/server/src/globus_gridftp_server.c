@@ -1,6 +1,7 @@
 
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
+#include "globus_xio_ftp_cmd.h"
 #include "globus_i_gridftp_server.h"
 
 static globus_cond_t                    globus_l_gfs_cond;
@@ -8,6 +9,7 @@ static globus_mutex_t                   globus_l_gfs_mutex;
 static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
 static int                              globus_l_gfs_open_count = 0;
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
+static globus_xio_driver_t              globus_l_gfs_ftp_cmd_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
 static globus_xio_attr_t                globus_l_gfs_xio_attr;
@@ -21,7 +23,11 @@ static
 void
 globus_l_gfs_terminate_server(
     globus_bool_t                       immediately);
-        
+    
+static
+void
+globus_l_gfs_server_closed(void);
+    
 /* now have an open channel (when we get here, we hand off to the
  * control or data server code)
  * XXX all thats left for process management is to setuid iff this is an inetd
@@ -34,7 +40,6 @@ globus_l_gfs_new_server_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_system_handle_t          system_handle;
     char *                              remote_contact;
     
     if(result != GLOBUS_SUCCESS)
@@ -63,23 +68,11 @@ globus_l_gfs_new_server_cb(
     }
     else
     {
-        result = globus_xio_handle_cntl(
-            handle,
-            globus_l_gfs_tcp_driver,
-            GLOBUS_XIO_TCP_GET_HANDLE,
-            &system_handle);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_peername;
-        }
-        
-        result = globus_i_gfs_control_start(
-            handle, system_handle, remote_contact);
+        result = globus_i_gfs_control_start(handle, remote_contact);
     }
     
     if(result != GLOBUS_SUCCESS)
     {
-        globus_i_gfs_log_result(NULL, result);
         goto error_start;
     }
     
@@ -91,7 +84,7 @@ error_start:
     
 error_peername:
 error_cb:
-    globus_i_gfs_server_closed();
+    globus_l_gfs_server_closed();
     if(!globus_l_gfs_xio_server)
     {
         /* I am the only one expected to run, die */
@@ -128,7 +121,7 @@ globus_l_gfs_open_new_server(
     return GLOBUS_SUCCESS;
 
 error_open:
-    globus_i_gfs_server_closed();
+    globus_l_gfs_server_closed();
     return result;
 }
 
@@ -144,7 +137,13 @@ globus_l_gfs_prepare_stack(
     
     result = globus_xio_stack_push_driver(*stack, globus_l_gfs_tcp_driver);
     globus_l_gfs_check_log_and_die(result);
-
+    
+    if(!globus_i_gfs_config_bool("data_node"))
+    {
+        result = globus_xio_stack_push_driver(
+            *stack, globus_l_gfs_ftp_cmd_driver);
+        globus_l_gfs_check_log_and_die(result);
+    }
 }
 
 /* begin a server instance from the channel already connected on stdin */
@@ -329,7 +328,7 @@ main(
     
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
-    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
+    /* globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE); */
 /* XXX */
 globus_l_gfs_file_activate();
     
@@ -340,10 +339,22 @@ globus_l_gfs_file_activate();
     
     result = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
     globus_l_gfs_check_log_and_die(result);
+    result = globus_xio_driver_load("ftp_cmd", &globus_l_gfs_ftp_cmd_driver);
+    globus_l_gfs_check_log_and_die(result);
     
     result = globus_xio_attr_init(&globus_l_gfs_xio_attr);
     globus_l_gfs_check_log_and_die(result);
-        
+    
+    if(!globus_i_gfs_config_bool("data_node"))
+    {
+        result = globus_xio_attr_cntl(
+            globus_l_gfs_xio_attr,
+            globus_l_gfs_ftp_cmd_driver,
+            GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER,
+            GLOBUS_TRUE);
+        globus_l_gfs_check_log_and_die(result);
+    }
+    
     if(globus_i_gfs_config_bool("inetd"))
     {
         globus_l_gfs_convert_inetd_handle();
@@ -368,6 +379,7 @@ globus_l_gfs_file_activate();
     }
     
     globus_xio_attr_destroy(globus_l_gfs_xio_attr);
+    globus_xio_driver_unload(globus_l_gfs_ftp_cmd_driver);
     globus_xio_driver_unload(globus_l_gfs_tcp_driver);
     globus_i_gfs_log_close();
     
@@ -402,9 +414,9 @@ globus_l_gfs_terminate_server(
     globus_mutex_unlock(&globus_l_gfs_mutex);
 }
 
-
+static
 void
-globus_i_gfs_server_closed()
+globus_l_gfs_server_closed()
 {
     globus_result_t                     result;
     

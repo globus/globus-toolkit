@@ -302,8 +302,6 @@ typedef struct globus_i_xio_attr_s
     globus_bool_t                       cancel_read;
     globus_bool_t                       cancel_write;
 
-    globus_bool_t                       no_cancel;
-
     globus_callback_space_t             space;
 
     int                                 max;

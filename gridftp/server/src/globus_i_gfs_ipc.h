@@ -2,12 +2,6 @@
 #define GLOBUS_I_GFS_IPC_H
 
 typedef void
-(*globus_i_gfs_ipc_command_cb_t)(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    void *                              user_arg);
-
-typedef void
 (*globus_i_gfs_ipc_resource_cb_t)(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
@@ -39,7 +33,6 @@ typedef void
 globus_result_t
 globus_i_gfs_ipc_recv_request(
     globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *            op_attr,
     globus_i_gfs_ipc_data_handle_t *    data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -51,7 +44,6 @@ globus_i_gfs_ipc_recv_request(
 globus_result_t
 globus_i_gfs_ipc_send_request(
     globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *            op_attr,
     globus_i_gfs_ipc_data_handle_t *    data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -60,22 +52,6 @@ globus_i_gfs_ipc_send_request(
     globus_i_gfs_ipc_transfer_event_cb_t event_callback,
     void *                              user_arg);
 
-globus_result_t
-globus_i_gfs_ipc_list_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_ipc_data_handle_t *    data_handle,
-    const char *                        pathname,
-    globus_i_gfs_ipc_transfer_cb_t      callback,
-    globus_i_gfs_ipc_transfer_event_cb_t event_callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_i_gfs_ipc_command_request(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_cmd_attr_t *           cmd_attr,
-    globus_i_gfs_ipc_command_cb_t       callback,
-    void *                              user_arg);
-    
 typedef void
 (*globus_i_gfs_ipc_passive_data_cb_t)(
     globus_i_gfs_server_instance_t *    instance,

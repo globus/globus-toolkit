@@ -7,8 +7,7 @@ SUBDIRS=\
 Sources= \
     globus_gridftp_server_control.c                     \
 	globus_gridftp_server_control_attr.c                \
-    globus_gridftp_server_control_accessors.c           \
-    globus_gridftp_server_control_events.c              \
+    globus_gridftp_server_control_accessors.c        \
     globus_gridftp_server_control_commands.c
 
 flavorinclude_HEADERS =                         \

@@ -40,11 +40,6 @@ globus_gridftp_server_finished_resource(
     int                                 stat_count);
 
 void
-globus_gridftp_server_finished_command(
-    globus_gridftp_server_operation_t   op,
-    globus_result_t                     result);
-
-void
 globus_gridftp_server_finished_transfer(
     globus_gridftp_server_operation_t   op,
     globus_result_t                     result);
@@ -97,34 +92,17 @@ globus_gridftp_server_flush_queue(
 void
 globus_gridftp_server_update_bytes_written(
     globus_gridftp_server_operation_t   op,
-    int                                 stripe_ndx,
-    globus_off_t                        offset,
-    globus_off_t                        length);
+    globus_size_t                       nbytes);
 
 void
-globus_gridftp_server_get_optimal_concurrency(
+globus_gridftp_server_optimal_concurrency(
     globus_gridftp_server_operation_t   op,
     int *                               count);
 
 void
-globus_gridftp_server_get_block_size(
+globus_gridftp_server_block_size(
     globus_gridftp_server_operation_t   op,
     globus_size_t *                     block_size);
-
-void
-globus_gridftp_server_get_partial_offset(
-    globus_gridftp_server_operation_t   op,
-    globus_off_t *                      offset,
-    globus_off_t *                      length);
-
-void
-globus_gridftp_server_get_restart_offset(
-    globus_gridftp_server_operation_t   op,
-    globus_off_t *                      offset,
-    globus_off_t *                      length);
-
-void
-globus_i_gfs_server_closed();
    
 typedef enum
 {
