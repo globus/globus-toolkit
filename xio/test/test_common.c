@@ -23,6 +23,8 @@ test_info_t                                 globus_l_test_info;
 static globus_hashtable_t                   globus_l_test_hash;
 static int                                  globus_l_test_count = 0;
 
+static globus_xio_driver_t                  globus_l_base_driver;
+
 void
 failed_exit(
     char *                                  fmt,
@@ -60,9 +62,9 @@ test_res(
     {
         /* XXX this sort of bumbs */
         if(location != GLOBUS_XIO_TEST_FAIL_NONE &&
-            globus_error_match(
+            globus_xio_driver_error_match(
+                globus_l_base_driver,
                 globus_error_peek(res),
-                GLOBUS_XIO_MODULE,
                 location))
         {
             fprintf(stdout, "Success: failed in the correct spot.\n");
@@ -102,19 +104,18 @@ parse_parameters(
     int                                     total_write_bytes = 2048 * 10;
     int                                     total_read_bytes = 2048 * 10;
     globus_xio_driver_t                     driver;
-    globus_xio_driver_t                     base_driver;
     int                                     seed = 0;
 
     globus_l_argc = argc;
     globus_l_argv = argv;
 
     /* get the transport driver, and put it on the stack */
-    res = globus_xio_driver_load("test", &base_driver);
+    res = globus_xio_driver_load("test", &globus_l_base_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
-    res = globus_xio_stack_push_driver(stack, base_driver);
+    res = globus_xio_stack_push_driver(stack, globus_l_base_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    globus_list_insert(&globus_l_driver_list, base_driver);
+    globus_list_insert(&globus_l_driver_list, globus_l_base_driver);
 
     optind = 0;
     /* parse the parameters */
@@ -203,35 +204,35 @@ parse_parameters(
     /* set up the attr */
     res = globus_xio_attr_cntl(
             attr,
-            base_driver,
+            globus_l_base_driver,
             GLOBUS_XIO_TEST_SET_INLINE,
             inline_finish);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
-            base_driver,
+            globus_l_base_driver,
             GLOBUS_XIO_TEST_SET_FAILURES,
             failure);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
-            base_driver,
+            globus_l_base_driver,
             GLOBUS_XIO_TEST_SET_USECS,
             delay);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
-            base_driver,
+            globus_l_base_driver,
             GLOBUS_XIO_TEST_CHUNK_SIZE,
             chunk_size);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(
             attr,
-            base_driver,
+            globus_l_base_driver,
             GLOBUS_XIO_TEST_READ_EOF_BYTES,
             eof_bytes);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
@@ -240,7 +241,7 @@ parse_parameters(
     {
         res = globus_xio_attr_cntl(
                 attr,
-                base_driver,
+                globus_l_base_driver,
                 GLOBUS_XIO_TEST_RANDOM,
                 seed);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
