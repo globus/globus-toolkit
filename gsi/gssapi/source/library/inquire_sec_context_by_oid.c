@@ -32,6 +32,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     OM_uint32                           tmp_minor_status;
     gss_ctx_id_desc *                   context;
     int                                 i;
+    int                                 k;
     int                                 cert_count;
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
@@ -96,9 +97,9 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto err;
     }
     
-    while(cert_count-- &&
-          (cert = sk_X509_value(context->pvd.cert_chain,cert_count)))
+    for(k=0;k<cert_count;k++)
     {
+        cert = sk_X509_value(context->pvd.cert_chain,k);
         extensions = cert->cert_info->extensions;
         data_set_buffer.value = NULL;
         data_set_buffer.length = 0;
@@ -145,6 +146,10 @@ err:
 
     
 }
+
+
+
+
 
 
 
