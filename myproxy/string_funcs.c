@@ -62,6 +62,37 @@ concatenate_strings(char			*destination,
     return appended_chars;
 }
 
+/*
+ * strip_char()
+ *
+ * strips a string of a given character
+ */
+void strip_char (char *buf, char ch)
+{
+   int len,i, k = 0;
+   char *tmp;
+
+   tmp = strdup (buf); // creates a storage
+
+   len = strlen (buf);
+
+   for (i = 0; i < len; i ++)
+   {
+      if (buf[i] == ch)
+      	continue;
+	
+      tmp[k++] = buf[i];
+   }
+
+  for (i = 0; i < k; i ++) //copy back
+  	buf[i] = tmp[i];
+
+  buf[i] = '\0';
+}
+   
+     
+   
+
 
 int
 concatenate_string(char				*destination,

@@ -378,9 +378,11 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     //credential name
     if (request->credname!= NULL)
-    { 
+    {
+	char *buf = strdup (request->credname);
+	strip_char ( buf, '\n');
       len = concatenate_strings(data, datalen, MYPROXY_CRED_NAME_STRING,
-			      request->credname, "\n", NULL); 
+			      buf, "\n", NULL); 
       if (len < 0)
         return -1;
 
@@ -391,8 +393,10 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     //credential description
     if (request->cred_desc != NULL)
     { 
+	char *buf = strdup (request->cred_desc);
+	strip_char ( buf, '\n');
       len = concatenate_strings(data, datalen, MYPROXY_CRED_DESC_STRING,
-			      request->cred_desc, "\n", NULL); 
+			      buf, "\n", NULL); 
       if (len < 0)
         return -1;
 
@@ -700,6 +704,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
     const char *response_type_string;
     authorization_data_t **p;
     char date[64];
+    char *buf = NULL;
     
     assert(data != NULL);
     assert(response != NULL);
@@ -730,33 +735,44 @@ myproxy_serialize_response(const myproxy_response_t *response,
     /* Only add response if necessary */
     if (strcmp(response->response_string, "") != 0) {
 	int response_size = strlen (response->response_string);
-	char buf[10];
+	char tmp[10];
 	
     if (encode_integer(response_size,
-			buf,
+			tmp,
 			sizeof(buf)) == -1)
     {
 	return -1;
     }
 	len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_SIZE_STRING,
-				  buf, "\n", NULL);
+				  tmp, "\n", NULL);
 	if (len < 0)
 	  return -1;
 
 	totlen += len;
 
+
+	if (buf != NULL) 
+		free (buf);	
+
+	buf = strdup (response->response_string);
+	strip_char  (buf, '\n');
         len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_STRING,
-				  response->response_string, "\n", NULL);
+				  buf, "\n", NULL);
         if (len < 0)
 	  return -1;
 
         totlen += len;
     }
-
+	
     /* Only add error string if necessary */
     if (strcmp(response->error_string, "") != 0) {
+	if (buf != NULL)
+		free (buf);
+
+	buf = strdup (response->error_string);
+	strip_char (buf, '\n');
         len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
-				  response->error_string, "\n", NULL);
+				  buf, "\n", NULL);
         if (len < 0)
 	  return -1;
 
@@ -860,43 +876,51 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	return -1;
     }
 
-    len = convert_message(data, datalen,		// response string length
+    if (response->response_type == MYPROXY_OK_RESPONSE)
+    {
+       	len = convert_message(data, datalen,	// response string length
 			  MYPROXY_RESPONSE_SIZE_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  buf, sizeof(response_size));
 
-    if (len == -1)
-    {
-	verror_prepend_string("Error_parsing response size from server response");
-	return -1;
-    }
+    	if (len == -1)
+    	{
+		verror_prepend_string("Error_parsing response size from server response");
+		return -1;
+    	}
 
         if (parse_string(buf, &response_size) == -1)
         {
  	   return -1;
         }
 
-    response_str = (char *) malloc (response_size+2);
+	response_str = (char *) malloc (response_size+2);
 
-    len = convert_message(data, datalen,	//Response string
+    	len = convert_message(data, datalen,	//Response string
 			  MYPROXY_RESPONSE_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  response_str, response_size+2);
 
-    if (len == -1)
-    {
-	verror_prepend_string("Error_parsing response string from server response");
-	return -1;
-    }
+    	if (len == -1)
+    	{
+		verror_prepend_string("Error_parsing response string from server response");
+		return -1;
+    	}
 
-    response->response_string = strdup (response_str);
+    	response->response_string = strdup (response_str);
+    }
     
+    if (response->response_type == MYPROXY_ERROR_RESPONSE)
+    {
     /* It's ok if ERROR not present */
+   
     len = convert_message(data, datalen,
 			  MYPROXY_ERROR_STRING, 
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
                           response->error_string,
 			  sizeof(response->error_string));
+	return -1;
+    }
 
     len = convert_message(data, datalen,
 	                  MYPROXY_AUTHORIZATION_STRING,
@@ -944,6 +968,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	     return -1;
        }
     }
+
 
     len = convert_message(data, datalen,
 	                  MYPROXY_CRED_OWNER_STRING,

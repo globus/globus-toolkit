@@ -332,6 +332,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_creds->credname = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
     client_creds->cred_desc = strdup ("This is the default credential description");
 
+    server_response->response_string = strdup (""); 
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
@@ -451,7 +452,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
-       myproxy_log(DBG_LO, debug_level,"authorization failed - server-wide policy failure");
+       myproxy_log(DBG_LO, debug_level,"authorization failed - server-wide policy ");
+       verror_put_string ("%s", "- Server-wide policy");
        respond_with_error_and_die(attrs, verror_get_string());
     }
     
@@ -788,9 +790,11 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     char			response_buffer[2048];
     
 
+    memset (&response, 0, sizeof (response));
     response.version = strdup(MYPROXY_VERSION);
     response.response_type = MYPROXY_ERROR_RESPONSE;
     response.authorization_data = NULL;
+    response.response_string = strdup ("");
     my_strncpy(response.error_string, error, sizeof(response.error_string));
     
     responselen = myproxy_serialize_response(&response,
@@ -1129,7 +1133,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        if (get_client_authdata(attrs, client_request, client_name,
 			       &auth_data) < 0) {
 	   myproxy_log_verror();
-	   verror_put_string("Unable to get client authorization data");
+	   verror_put_string("%s", "Unable to get client authorization data");
 	   goto end;
        }
        switch (auth_data.method) {
@@ -1150,7 +1154,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	// get information about credential
        if (myproxy_creds_fetch_entry(client_request->username, client_request->credname, &creds) < 0) {
 	   myproxy_log_verror();
-	   verror_put_string("Unable to retrieve credential information.\n");
+	   verror_put_string("%s", "Unable to retrieve credential information");
 	   goto end;
        }
 	 
@@ -1170,14 +1174,14 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        credentials_exist = myproxy_creds_exist(client_request->username);
        if (credentials_exist == -1) {
 	   myproxy_log_verror();
-	   verror_put_string("Error checking credential existence");
+	   verror_put_string("%s","Error checking credential existence");
 	   goto end;
        }
 
        if (credentials_exist == 1) {
 	   client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_name);
 	   if (client_owns_credentials == -1) {
-	       verror_put_string("Error checking credential ownership");
+	       verror_put_string("%s","Error checking credential ownership");
 	       goto end;
 	   }
        }
@@ -1185,7 +1189,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        if (credentials_exist && !client_owns_credentials) {
 	   myproxy_log(DBG_IN, debug_level, "Username \"%s\" in use by another client",
 		       client_request->username);
-	   verror_put_string("Username in use by another client");
+	   verror_put_string("%s","Username in use by another client");
 	   goto end;
        }
        break;
@@ -1193,12 +1197,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    }
    if (authorization_ok == -1) {
       myproxy_log_verror();
-      verror_put_string("Error checking authorization");
+      verror_put_string("%s","Error checking authorization");
       goto end;
    }
 
    if (authorization_ok != 1) {
-      verror_put_string("Authorization failed");
+      verror_put_string("%s", "Authorization failed");
       goto end;
    }
 
@@ -1265,7 +1269,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
    auth_data->server_data = strdup(client_auth_data->server_data);
    auth_data->client_data = malloc(client_auth_data->client_data_len);
    if (auth_data->client_data == NULL) {
-      verror_put_string("malloc() failed");
+      verror_put_string("%s", "malloc() failed");
       verror_put_errno(errno);
       goto end;
    }
