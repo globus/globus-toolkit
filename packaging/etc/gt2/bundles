@@ -40,6 +40,7 @@ BUNDLE globus-resource-management-server
 	globus_duct_control
 	globus_gass_copy
 	globus_gass_cache_program
+        globus_gram_job_manager_callout_error
 	globus_gram_job_manager
 
 BUNDLE globus-resource-management-sdk
