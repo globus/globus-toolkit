@@ -118,6 +118,11 @@ MyProxyv2 protocol
     USERNAME=<username>
     PASSPHRASE=<pass phrase>
     LIFETIME=<lifetime>
+
+    and optional strings
+
+    RETRIEVER=<retriever_dn>
+    RENEWER=<renewer_dn>
  
     The intent of the VERSION string is to allow the server to know
     if it is dealing with an outdated or newer client.
@@ -125,7 +130,8 @@ MyProxyv2 protocol
     <username> and <pass phrase> are the strings supplied by the
     user to be used for retrieval by the portal. <lifetime> is the
     ASCII representation of the lifetime of the proxy to be delegated
-    to the portal, in seconds.
+    to the portal, in seconds. <retriever_dn> and <renewer_dn> are strings 
+    specifying the retriever DN and renewer DN respectively.
  
  4) MyProxyServer will then respond with either a OK or an ERROR message.
     See I.7 for details.
@@ -139,7 +145,8 @@ MyProxyv2 protocol
     See section I.8 for details of the certificate chain message.
 
  6) MyProxyServer will read the individual certificates, chain them back
-    up together into a new delegated credentials and store them. 
+    up together into a new delegated credentials and store them. The server 
+    also stores the retriever and renewer DN strings if they are specified.
 
  7) MyProxyServer will then respond with either a OK message if it
     successfully stored the proxy or an ERROR message if an error occurred. 
