@@ -1004,7 +1004,7 @@ static void doit()
 	int					service_option_local_cred = 0;
 	int					service_option_stderr_log = 0;
     unsigned char       int_buf[4];
-    char                tmp_version[1];
+    char                tmp_version[64];
     struct stat         statbuf;
 	char *				service_line = NULL;
     char *              service_path;
@@ -1216,13 +1216,13 @@ static void doit()
      * for the job manager or other service.
      */
 
-    *tmp_version = GLOBUS_GRAM_PROTOCOL_VERSION;
+	sprintf(tmp_version,"VERSION=%d\n\0",GLOBUS_GRAM_PROTOCOL_VERSION);
 
 	
     major_status = globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
 					tmp_version,
-					1,
+					strlen(tmp_version)+1,
 					&token_status,
         			globus_gss_assist_token_send_fd,
 					fdout,

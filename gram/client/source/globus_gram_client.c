@@ -398,7 +398,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 								  gss_ctx_id_t * pcontext_handle)
 {
     int                          rc;
-    globus_byte_t                tmp_version;
+    int                          tmp_version;
     char *                       gatekeeper_host;
     char *                       gatekeeper_princ;
 	char * 						 gatekeeper_service = "jobmanager";
@@ -535,7 +535,10 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
-    if (auth_msg_buf_size > 1 )
+	if (auth_msg_buf_size < 9 
+			|| strncmp(auth_msg_buf,"VERSION=",8)
+			|| ((auth_msg_buf[auth_msg_buf_size-1] != '\0')
+				&& auth_msg_buf[auth_msg_buf_size-1] != '\n'))
     { 
         grami_fprintf(globus_l_print_fp,
               "authorization buffer = %s\n", auth_msg_buf);
@@ -557,7 +560,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     }
     else
     {
-        tmp_version =  *auth_msg_buf;
+        tmp_version =  atoi(auth_msg_buf+8);
         if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
         {
 			free(gatekeeper_host);
@@ -616,7 +619,10 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
-    if (auth_msg_buf_size > 1 )
+	if (auth_msg_buf_size < 9 
+			|| strncmp(auth_msg_buf,"VERSION=",8)
+			|| ((auth_msg_buf[auth_msg_buf_size-1] != '\0')
+				&& auth_msg_buf[auth_msg_buf_size-1] != '\n'))
     { 
         grami_fprintf(globus_l_print_fp,
               "service error buffer = %s\n", auth_msg_buf);
@@ -628,7 +634,15 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
-	/*DEE This could also be a job manager version number */
+    else
+    {
+        tmp_version =  atoi(auth_msg_buf+8);
+        if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+        {
+			free(gatekeeper_host);
+            return (GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
+        }
+    }
 
 #else
     grami_fprintf(globus_l_print_fp,

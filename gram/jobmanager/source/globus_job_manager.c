@@ -347,7 +347,7 @@ main(int argc,
 	OM_uint32			minor_status = 0;
 	int					token_status = 0;
 	gss_ctx_id_t		context_handle = GSS_C_NO_CONTEXT;
-	char				tmp_version[1];
+	char				tmp_version[64];
 	
 	char *				jrbuf;
 	size_t				jrbuf_size;
@@ -825,11 +825,12 @@ main(int argc,
 		/* context loaded */
 		/* Send the version number */
 
-		*tmp_version = GLOBUS_GRAM_PROTOCOL_VERSION;
+		sprintf(tmp_version,"VERSION=%d\n\0",
+					GLOBUS_GRAM_PROTOCOL_VERSION);
         if (globus_gss_assist_wrap_send( &minor_status,
                                 context_handle,
                                 tmp_version,
-                                1,
+                                strlen(tmp_version)+1,
                                 &token_status,
                                 globus_gss_assist_token_send_fd,
                                 stdout,
