@@ -1,4 +1,4 @@
-# Three different line formats are valid:
+#Three different line formats are valid:
 #	key	-a    aliases...
 #	key [options] directory
 #	key [options] directory files...
@@ -61,7 +61,8 @@ all -a \
         ogsa_client\
         ogsa-c\
         ogsa_messaging\
-        program_execution
+        program_execution\
+	icu4c
 
 gp -a \
         archive_compress\
@@ -90,7 +91,8 @@ gp -a \
 	bundles\
         utp\
         xio \
-        callout
+        callout\
+	icu4c
 
 gs -a \
         data_management\
