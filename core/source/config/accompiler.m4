@@ -151,14 +151,11 @@ lac_LDFLAGS="$LDFLAGS "
 lac_LIBS="$LIBS "
 lac_F77FLAGS="$F77FLAGS "
 lac_F90FLAGS="$F90FLAGS "
-lac_STATIC_LDFLAGS="$STATIC_LDFLAGS " 
 unset lac_cflags_opt
 unset lac_cxxflags_opt
 case ${host}--$1 in
     *solaris2*)
         dnl On Solaris, avoid the pre-ansi BSD compatibility compiler
-
-	lac_STATIC_LDFLAGS=" -Bstatic -Bdynamic [$(GPT_EXTERNAL_LIBS)] -Bstatic " 
 
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
@@ -512,11 +509,9 @@ fi
 
 CC="$lac_cv_CC"
 LD="$lac_cv_LD"
-STATIC_LDFLAGS="$lac_STATIC_LDFLAGS" 
 CFLAGS="$lac_cv_CFLAGS"
 AC_PROG_CC
 CROSS="$cross_compiling"
-AC_SUBST(STATIC_LDFLAGS)
 AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
 dnl Note that if RANLIB is set appropriately
