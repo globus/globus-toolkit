@@ -510,6 +510,11 @@ userauth_gssapi(Authctxt *authctxt)
 	OM_uint32 min;
 	int ok=0;
 
+	if (!options.gss_authentication) {
+		verbose("GSSAPI authentication disabled.");
+		return 0;
+	}
+
 	/* Things work better if we send one mechanism at a time, rather
 	 * than them all at once. This means that if we fail at some point
 	 * in the middle of a negotiation, we can come back and try something
