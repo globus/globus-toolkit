@@ -82,10 +82,11 @@ typedef struct
 } globus_io_secure_read_info_t;
 
 static
-globus_bool_t
+void
 globus_l_io_oneshot_auth_callback(
-    globus_abstime_t *                  time_stop,
-    void *              callback_arg);
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args);
 
 static
 globus_bool_t
@@ -321,13 +322,13 @@ globus_i_io_securesocket_register_accept(
 
             info->err = err;
             GlobusTimeReltimeSet(delay_time, 0, 0);
-            globus_callback_register_oneshot(
-                GLOBUS_NULL /* callback handle */,
+            globus_callback_space_register_oneshot(
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
                 GLOBUS_NULL /* wakeup func */,
-                GLOBUS_NULL /* wakeup arg */);
+                GLOBUS_NULL /* wakeup arg */,
+                handle->space);
             return GLOBUS_SUCCESS;
         }
     }
@@ -359,13 +360,13 @@ globus_i_io_securesocket_register_accept(
 
             info->err = err;
             GlobusTimeReltimeSet(delay_time, 0, 0);
-            globus_callback_register_oneshot(
-                GLOBUS_NULL /* callback handle */,
+            globus_callback_space_register_oneshot(
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
                 GLOBUS_NULL /* wakeup func */,
-                GLOBUS_NULL /* wakeup arg */);
+                GLOBUS_NULL /* wakeup arg */,
+                handle->space);
             return GLOBUS_SUCCESS;
         }
     }
@@ -2613,21 +2614,20 @@ error_exit:
 /* globus_l_io_secure_accept_callback() */
 
 static
-globus_bool_t
+void
 globus_l_io_oneshot_auth_callback(
-    globus_abstime_t *                  time_stop,
-    void *              callback_arg)
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
 {
     globus_i_io_callback_info_t *   info;
 
-    info = (globus_i_io_callback_info_t *) callback_arg;
+    info = (globus_i_io_callback_info_t *) user_args;
 
     info->callback(info->callback_arg,
                    info->handle,
                    globus_error_put(info->err));
     globus_free(info);
-
-    return GLOBUS_TRUE;
 }
 /* globus_l_io_oneshot_auth_callback() */
 

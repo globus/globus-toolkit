@@ -876,7 +876,7 @@ struct globus_io_handle_s
     globus_io_handle_type_t			type;
 
     /* some handle state information */
-    volatile globus_io_handle_state_t		state;
+    globus_io_handle_state_t		        state;
     void *					user_pointer;
 
     /* 
