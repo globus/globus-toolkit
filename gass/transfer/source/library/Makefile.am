@@ -11,7 +11,6 @@ Sources= \
 	globus_gass_transfer.h \
 	globus_gass_transfer_attribute.c \
 	globus_gass_transfer_client.c \
-	globus_gass_transfer_ftp.c \
 	globus_gass_transfer_http.c \
 	globus_gass_transfer_keyvalue.c \
 	globus_gass_transfer_proto.c \
@@ -23,7 +22,6 @@ Sources= \
 	globus_gass_transfer_text.c \
 	globus_i_gass_transfer.h \
 	globus_i_gass_transfer_keyvalue.h \
-	globus_l_gass_transfer_ftp.h \
 	globus_l_gass_transfer_http.h
 
 # INCLUDES is an automake macro which contains 
@@ -40,7 +38,6 @@ include_HEADERS= \
 	globus_gass_transfer_proto.h \
 	globus_i_gass_transfer.h \
 	globus_i_gass_transfer_keyvalue.h \
-	globus_l_gass_transfer_ftp.h \
 	globus_l_gass_transfer_http.h
 
 # lib_LTLIBRARIES is an automake macro which contains
