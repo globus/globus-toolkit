@@ -1198,6 +1198,9 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     int				return_status = SSL_ERROR;
     globus_result_t		local_result;
     BIO	      			*bio = NULL;
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
+    char                        *GT_PROXY_MODE = NULL;
+#endif
 
     my_init();
     
@@ -1213,6 +1216,17 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
     }
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
+    GT_PROXY_MODE = getenv("GT_PROXY_MODE");
+    if (GT_PROXY_MODE && strcmp(GT_PROXY_MODE, "old") == 0) {
+	local_result = globus_gsi_proxy_handle_set_type((*new_creds)->proxy_req,
+			      GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
+	if (local_result != GLOBUS_SUCCESS) {
+	    verror_put_string("globus_gsi_proxy_handle_set_type() failed");
+	    goto error;
+	}
+    }
+#endif
     bio = BIO_new(BIO_s_mem());
     if (bio == NULL) {
 	verror_put_string("BIO_new() failed");
