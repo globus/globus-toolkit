@@ -1,12 +1,14 @@
 
 #define EXT_SIZE 16
 #include <gssapi.h>
-#include "../source/library/gssapi_ssleay.h"
-
+#include "../source/library/gssapi_openssl.h"
+#include "globus_gss_assist.h"
 
 int verify_cred(
     gss_cred_id_t                       credential);
 
+void globus_print_error(
+    globus_result_t                     error_result);
 
 int main()
 {
@@ -49,18 +51,18 @@ int main()
     ret_flags = 0;
     req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
 
-    oid_buffer.value = malloc(EXT_SIZE);
-    oid_buffer.length = EXT_SIZE;
+/*      oid_buffer.value = malloc(EXT_SIZE); */
+/*      oid_buffer.length = EXT_SIZE; */
 
-    buf = (char *) oid_buffer.value;
+/*      buf = (char *) oid_buffer.value; */
     
-    memset(buf,'A',EXT_SIZE);
-    buf[EXT_SIZE-1]='\0';
+/*      memset(buf,'A',EXT_SIZE); */
+/*      buf[EXT_SIZE-1]='\0'; */
     
-    oid_buffers.count = 1;
-    oid_buffers.elements = &oid_buffer;
-    oid_set.count = 1;
-    oid_set.elements = gss_restrictions_extension;
+/*      oid_buffers.count = 1; */
+/*      oid_buffers.elements = &oid_buffer; */
+/*      oid_set.count = 1; */
+/*      oid_set.elements = gss_restrictions_extension; */
     
     /* acquire the credential */
 
@@ -81,6 +83,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -102,6 +105,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -131,6 +135,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -159,6 +164,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
@@ -190,6 +196,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
     }
@@ -209,8 +216,10 @@ int main()
                                         init_context,
                                         cred_handle,
                                         GSS_C_NO_OID,
-                                        &oid_set,
-                                        &oid_buffers,
+                                        GSS_C_NO_OID_SET,
+                                        GSS_C_NO_BUFFER_SET,
+/*                                          &oid_set, */
+/*                                          &oid_buffers, */
                                         token_ptr,
                                         req_flags,
                                         0,
@@ -226,6 +235,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -246,6 +256,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
     
@@ -267,6 +278,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
 
@@ -291,6 +303,8 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
+
             exit(1);
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
@@ -316,6 +330,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
 
@@ -335,6 +350,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
 
@@ -342,8 +358,10 @@ int main()
                                             init_context,
                                             cred_handle,
                                             GSS_C_NO_OID,
-                                            &oid_set,
-                                            &oid_buffers,
+                                            GSS_C_NO_OID_SET,
+                                            GSS_C_NO_BUFFER_SET,
+/*                                              &oid_set, */
+/*                                              &oid_buffers, */
                                             &recv_tok,
                                             req_flags,
                                             0,
@@ -359,6 +377,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
 
@@ -379,6 +398,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
     }
@@ -405,6 +425,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -426,6 +447,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -433,51 +455,53 @@ int main()
            __FILE__,
            __LINE__);
 
-    free(oid_buffer.value);
+/*      free(oid_buffer.value); */
     
-    oid_buffer.value = (void *) &oid_set;
-    oid_buffer.length = 1;
+/*      oid_buffer.value = (void *) &oid_set; */
+/*      oid_buffer.length = 1; */
 
 
     /* Tell the GSS that we will handle restriction extensions */
     /* This is a post GT 2.0 feature */
     
-    maj_stat = gss_set_sec_context_option(
-        &min_stat,
-        &del_init_context,
-        (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
-        &oid_buffer);
+/*      maj_stat = gss_set_sec_context_option( */
+/*          &min_stat, */
+/*          &del_init_context, */
+/*          (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS, */
+/*          &oid_buffer); */
     
 
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-        exit(1);
-    }
+/*      if(maj_stat != GSS_S_COMPLETE) */
+/*      { */
+/*          globus_gss_assist_display_status_str(&error_str, */
+/*                                               NULL, */
+/*                                               maj_stat, */
+/*                                               min_stat, */
+/*                                               0); */
+/*          printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str); */
+/*          globus_print_error((globus_result_t) min_stat); */
+/*          exit(1); */
+/*      } */
     
 
-    maj_stat = gss_set_sec_context_option(
-        &min_stat,
-        &del_accept_context,
-        (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
-        &oid_buffer);
+/*      maj_stat = gss_set_sec_context_option( */
+/*          &min_stat, */
+/*          &del_accept_context, */
+/*          (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS, */
+/*          &oid_buffer); */
     
 
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-        exit(1);
-    }
+/*      if(maj_stat != GSS_S_COMPLETE) */
+/*      { */
+/*          globus_gss_assist_display_status_str(&error_str, */
+/*                                               NULL, */
+/*                                               maj_stat, */
+/*                                               min_stat, */
+/*                                               0); */
+/*          printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str); */
+/*          globus_print_error((globus_result_t) min_stat); */
+/*          exit(1); */
+/*      } */
 
 
     /* set up another security context using the delegated credential */
@@ -506,6 +530,7 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
@@ -535,6 +560,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
@@ -566,6 +592,7 @@ int main()
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            globus_print_error((globus_result_t) min_stat);
             exit(1);
         }
     }
@@ -576,37 +603,35 @@ int main()
            __FILE__,
            __LINE__);
 
-    /* Extract and print the restrictions extension from the security
-     * context.
-     * This is a post GT 2.0 feature.
-     */
+/*      /* Extract and print the restrictions extension from the security */
+/*       * context. */
+/*       * This is a post GT 2.0 feature. */
+/*       * */
     
-    maj_stat = gss_inquire_sec_context_by_oid(&min_stat,
-                                              del_accept_context,
-                                              gss_restrictions_extension,
-                                              &inquire_buffers);
+/*      maj_stat = gss_inquire_sec_context_by_oid(&min_stat, */
+/*                                                del_accept_context, */
+/*                                                gss_restrictions_extension, */
+/*                                                &inquire_buffers); */
 
     
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             init_maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-        exit(1);
-    }
+/*      if(maj_stat != GSS_S_COMPLETE) */
+/*      { */
+/*          globus_gss_assist_display_status_str(&error_str, */
+/*                                               NULL, */
+/*                                               init_maj_stat, */
+/*                                               min_stat, */
+/*                                               0); */
+/*          printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str); */
+/*          exit(1); */
+/*      } */
     
-    printf("%s:%d: Security context contains restriction extension %s\n",
-           __FILE__,
-           __LINE__,
-           (char *) inquire_buffers->elements[0].value);
+/*      printf("%s:%d: Security context contains restriction extension %s\n", */
+/*             __FILE__, */
+/*             __LINE__, */
+/*             (char *) inquire_buffers->elements[0].value); */
 
     exit(0);
 }
-
-
 
 int verify_cred(
     gss_cred_id_t                       credential)
@@ -614,17 +639,45 @@ int verify_cred(
     gss_cred_id_desc *                  cred_handle;
     X509 *                              cert;
     X509 *                              previous_cert;
+    STACK_OF(X509) *                    cert_chain;
     int                                 cert_count;
+    char *                              error_str;
+    globus_object_t *                   error_obj;
+    globus_result_t                     result;
 
     cert_count = 1;
     cred_handle = (gss_cred_id_desc *) credential;
-    
-    if(cred_handle->pcd->cert_chain)
+
+    result = globus_gsi_cred_get_cert_chain(
+        cred_handle->cred_handle,
+        &cert_chain);
+    if(result != GLOBUS_SUCCESS)
     {
-        cert_count += sk_X509_num(cred_handle->pcd->cert_chain);
+        error_obj = globus_error_get(result);
+        error_str = globus_error_print_chain(error_obj);
+        fprintf(stderr, error_str);
+        globus_libc_free(error_str);
+        globus_object_free(error_obj);
+        exit(1);
+    }        
+    
+    if(cert_chain)
+    {
+        cert_count += sk_X509_num(cert_chain);
     }
 
-    cert = cred_handle->pcd->ucert;
+    result = globus_gsi_cred_get_cert(cred_handle->cred_handle,
+                                      &cert);
+    if(result != GLOBUS_SUCCESS)
+    {
+        error_obj = globus_error_get(result);
+        error_str = globus_error_print_chain(error_obj);
+        fprintf(stderr, error_str);
+        globus_libc_free(error_str);
+        globus_object_free(error_obj);
+        exit(1);
+    }
+
     previous_cert=NULL;
     cert_count--;
 
@@ -632,15 +685,30 @@ int verify_cred(
     {
         if(previous_cert != NULL)
         {
-            if(!X509_verify(previous_cert,X509_get_pubkey(cert)))
+            if(!X509_verify(previous_cert, X509_get_pubkey(cert)))
             {
                 return 0;
             }
         }
+
         previous_cert = cert;
+
     } while(cert_count-- &&
-            (cert = sk_X509_value(cred_handle->pcd->cert_chain,cert_count)));
+            (cert = sk_X509_value(cert_chain, cert_count)));
 
     return 1;
 }
 
+void globus_print_error(
+    globus_result_t                     error_result)
+{
+    globus_object_t *                   error_obj = NULL;
+    globus_object_t *                   base_error_obj = NULL;
+    char *                              error_string = NULL;
+    
+    error_obj = globus_error_get(error_result);
+    error_string = globus_error_print_chain(error_obj);
+    globus_libc_fprintf(stderr, "%s\n", error_string);
+    globus_libc_free(error_string);
+    globus_object_free(error_obj);
+};

@@ -1,5 +1,4 @@
-gssapi_delegation_test.c:198: Successfully established initial security context
-gssapi_delegation_test.c:288: Successfully delegated credential
-gssapi_delegation_test.c:334: Successfully exported/imported the delegated credential
-gssapi_delegation_test.c:477: Successfully established security context with delegated credential
-gssapi_delegation_test.c:503: Security context contains restriction extension AAAAAAAAAAAAAAA
+gssapi_delegation_test.c:205: Successfully established initial security context
+gssapi_delegation_test.c:302: Successfully delegated credential
+gssapi_delegation_test.c:350: Successfully exported/imported the delegated credential
+gssapi_delegation_test.c:498: Successfully established security context with delegated credential
