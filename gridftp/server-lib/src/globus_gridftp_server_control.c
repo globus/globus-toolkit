@@ -1127,7 +1127,6 @@ globus_l_gsc_finished_op(
     globus_bool_t                           stopping = GLOBUS_FALSE;
     GlobusGridFTPServerName(globus_l_gsc_finished_op);
 
-    op->type = GLOBUS_L_GSC_OP_TYPE_DONE;
     server_handle = op->server_handle;
 
     switch(server_handle->state)
@@ -1477,6 +1476,7 @@ globus_gridftp_server_control_start(
         /* default options */
         strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQ");
         server_handle->opts.send_buf = -1; 
+        server_handle->opts.perf_frequency = 5;
         server_handle->opts.receive_buf = -1;
         server_handle->opts.parallelism = 1;
         server_handle->opts.packet_size = -1;
@@ -2698,28 +2698,6 @@ globus_i_gsc_send(
     return GLOBUS_SUCCESS;
 }
 
-void 
-globus_i_gsc_trev_cb(
-    void *                                  user_arg)
-{
-    globus_i_gsc_op_t *                     op;
-
-    op = (globus_i_gsc_op_t *) user_arg;
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        if(op->type == GLOBUS_L_GSC_OP_TYPE_DONE)
-        {
-
-        }
-        else
-        {
-
-        }
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-}
-
 globus_result_t
 globus_i_gsc_recv(
     globus_i_gsc_op_t *                     op,
@@ -3111,6 +3089,7 @@ globus_gridftp_server_control_begin_transfer(
         {
             globus_reltime_t                delay;
 
+            op->done = GLOBUS_FALSE;
             op->ref++;
             op->event.stripe_total_bytes = (globus_off_t *)
                 globus_calloc(sizeof(globus_off_t *) * 
@@ -3161,7 +3140,7 @@ globus_gridftp_server_control_finished_transfer(
         {
             globus_l_gsc_send_perf_marker(op);
             /* cancel callback send last one */
-            op->type = GLOBUS_L_GSC_OP_TYPE_DONE;
+            op->done = GLOBUS_TRUE;
             globus_callback_unregister(
                 op->event.periodic_handle,
                 globus_l_gsc_unreg_perf_marker,
@@ -3398,7 +3377,7 @@ globus_l_gsc_send_perf_marker_cb(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        if(op->type != GLOBUS_L_GSC_OP_TYPE_DONE)
+        if(!op->done)
         {
             globus_l_gsc_send_perf_marker(op);
         }

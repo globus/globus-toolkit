@@ -281,6 +281,7 @@ typedef struct globus_i_gsc_op_s
     globus_result_t                         res;
 
     globus_list_t *                         cmd_list;
+    globus_bool_t                           done;
 
     /* stuff for auth */
     globus_bool_t                           authenticated;
