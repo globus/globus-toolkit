@@ -1,0 +1,26 @@
+#include "globus_xio_load.h"
+
+extern globus_xio_driver_hook_t *       @XIO_BUILTIN_HOOKS@;
+
+static globus_xio_driver_hook_t *       builtins[] = 
+{
+    @XIO_BUILTIN_HOOKS@, GLOBUS_NULL;
+}
+
+globus_result_t
+globus_xio_driver_load(
+    const char *                        name,
+    globus_xio_driver_t *               out_driver,
+    ...)
+{
+    
+    
+}
+
+globus_result_t
+globus_xio_driver_unload(
+    globus_xio_driver_t                 driver)
+{
+    
+    
+}

@@ -242,4 +242,8 @@ globus_bool_t
 globus_xio_error_is_eof(
     globus_result_t                             res);
 
+globus_bool_t
+globus_xio_error_is_canceled(
+    globus_result_t                             res);
+
 #endif

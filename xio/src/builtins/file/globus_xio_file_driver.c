@@ -311,27 +311,36 @@ globus_l_xio_file_handle_destroy(
     globus_free(handle);
 }
 
+typedef struct
+{
+    globus_xio_operation_t              op;
+    globus_l_handle_t *                 handle;
+} globus_l_open_info_t;
+
 static
 void
 globus_l_xio_file_system_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_operation_t              op;
-    globus_xio_driver_context_t         context;
-    globus_l_handle_t *                 handle;
+    globus_l_open_info_t *              open_info;
     GlobusXIOName(globus_l_xio_file_system_open_cb);
     
-    op = (globus_xio_operation_t) user_arg;
+    open_info = (globus_l_open_info_t *) user_arg;
     
-    context = GlobusXIOOperationGetContext(op);
-    handle = GlobusXIOOperationGetDriverHandle(op);
-    
-    globus_xio_driver_finished_open(context, op, result);
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_xio_file_handle_destroy(handle);
+        globus_l_xio_file_handle_destroy(open_info->handle);
+        open_info->handle = GLOBUS_NULL;
     }
+    
+    GlobusXIODriverFinishedOpen(
+        GlobusXIOOperationGetContext(open_info->op),
+        open_info->handle,
+        open_info->op,
+        result);
+    
+    globus_free(open_info);
 }
 
 /*
@@ -340,16 +349,16 @@ globus_l_xio_file_system_open_cb(
 static
 globus_result_t
 globus_l_xio_file_open(
-    void **                             out_handle,
     void *                              driver_attr,
     void *                              driver_target,
-    globus_xio_driver_context_t         context,
+    globus_xio_context_t                context,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     const globus_l_target_t *           target;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
+    globus_l_open_info_t *              open_info;
     GlobusXIOName(globus_l_xio_file_open);
     
     target = (globus_l_target_t *) driver_target;
@@ -364,9 +373,19 @@ globus_l_xio_file_open(
         goto error_handle;
     }
     
-    *out_handle = handle;
     if(target->handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
     {
+        open_info = (globus_l_open_info_t *)
+            globus_malloc(sizeof(globus_l_open_info_t));
+        if(!open_info)
+        {
+            result = GlobusXIOErrorMemory("open_info");
+            goto error_info;
+        }
+        
+        open_info->op = op;
+        open_info->handle = handle;
+        
         result = globus_xio_system_register_open(
             op,
             target->pathname,
@@ -374,7 +393,7 @@ globus_l_xio_file_open(
             attr->mode,
             &handle->handle,
             globus_l_xio_file_system_open_cb,
-            op);
+            open_info);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -385,12 +404,15 @@ globus_l_xio_file_open(
     else
     {
         handle->handle = target->handle;
-        globus_xio_driver_finished_open(context, op, GLOBUS_SUCCESS);
+        GlobusXIODriverFinishedOpen(context, handle, op, GLOBUS_SUCCESS);
     }
 
     return GLOBUS_SUCCESS;
     
 error_register:
+    globus_free(open_info);
+    
+error_info:
     globus_l_xio_file_handle_destroy(handle);
 
 error_handle:
@@ -404,7 +426,7 @@ globus_l_xio_file_system_close_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
-    globus_xio_driver_context_t         context;
+    globus_xio_context_t                context;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_system_close_cb);
     
@@ -413,7 +435,7 @@ globus_l_xio_file_system_close_cb(
     context = GlobusXIOOperationGetContext(op);
     handle = GlobusXIOOperationGetDriverHandle(op);
     
-    globus_xio_driver_finished_close(op, result);
+    GlobusXIODriverFinishedClose(op, result);
     globus_xio_driver_context_close(context);
     globus_l_xio_file_handle_destroy(handle);
 }
@@ -425,7 +447,8 @@ static
 globus_result_t
 globus_l_xio_file_close(
     void *                              driver_handle,
-    globus_xio_driver_context_t         context,
+    void *                              attr,
+    globus_xio_context_t                context,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -466,7 +489,7 @@ globus_l_xio_file_system_read_cb(
     GlobusXIOName(globus_l_xio_file_system_read_cb);
     
     op = (globus_xio_operation_t) user_arg;
-    globus_xio_driver_finished_read(op, result, nbytes);
+    GlobusXIODriverFinishedRead(op, result, nbytes);
 }
 
 /*
@@ -485,14 +508,14 @@ globus_l_xio_file_read(
 
     handle = (globus_l_handle_t *) driver_handle;
     
-    if(GlobusXIOOperationMinimumRead(op) == 0)
+    if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
         globus_size_t                       nbytes;
         globus_result_t                     result;
         
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
-        globus_xio_driver_finished_read(op, result, nbytes);
+        GlobusXIODriverFinishedRead(op, result, nbytes);
         /* dont want to return error here mainly because error could be eof, 
          * which is against our convention to return an eof error on async
          * calls.  Other than that, the choice is arbitrary
@@ -506,7 +529,7 @@ globus_l_xio_file_read(
             handle->handle,
             iovec,
             iovec_count,
-            GlobusXIOOperationMinimumRead(op),
+            GlobusXIOOperationGetWaitFor(op),
             globus_l_xio_file_system_read_cb,
             op);
     }
@@ -523,7 +546,7 @@ globus_l_xio_file_system_write_cb(
     GlobusXIOName(globus_l_xio_file_system_write_cb);
     
     op = (globus_xio_operation_t) user_arg;
-    globus_xio_driver_finished_write(op, result, nbytes);
+    GlobusXIODriverFinishedWrite(op, result, nbytes);
 }
 
 /*
@@ -542,14 +565,14 @@ globus_l_xio_file_write(
 
     handle = (globus_l_handle_t *) driver_handle;
     
-    if(GlobusXIOOperationMinimumWrite(op) == 0)
+    if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
         globus_size_t                       nbytes;
         globus_result_t                     result;
         
         result = globus_xio_system_try_write(
             handle->handle, iovec, iovec_count, &nbytes);
-        globus_xio_driver_finished_write(op, result, nbytes);
+        GlobusXIODriverFinishedWrite(op, result, nbytes);
         /* Since I am finishing the request in the callstack,
          * the choice to pass the result in the finish instead of below
          * is arbitrary.
@@ -563,7 +586,7 @@ globus_l_xio_file_write(
             handle->handle,
             iovec,
             iovec_count,
-            GlobusXIOOperationMinimumWrite(op),
+            GlobusXIOOperationGetWaitFor(op),
             globus_l_xio_file_system_write_cb,
             op);
     }
@@ -602,42 +625,35 @@ globus_l_xio_file_cntl(
     return GLOBUS_SUCCESS;
 }
 
-static globus_xio_driver_t globus_l_xio_file_info =
+static struct globus_i_xio_driver_s     globus_l_xio_file_info =
 {
     /*
      *  main io interface functions
      */
-    globus_l_xio_file_open,                      /* open_func           */
-    globus_l_xio_file_close,                     /* close_func          */
-    globus_l_xio_file_read,                      /* read_func           */
-    globus_l_xio_file_write,                     /* write_func          */
-    globus_l_xio_file_cntl,                      /* handle_cntl_func    */
+    GLOBUS_NULL,                        /* transform_open_func */
+    globus_l_xio_file_open,             /* transport_open_func */
+    globus_l_xio_file_close,            /* close_func          */
+    globus_l_xio_file_read,             /* read_func           */
+    globus_l_xio_file_write,            /* write_func          */
+    globus_l_xio_file_cntl,             /* handle_cntl_func    */
 
-    globus_l_xio_file_target_init,               /* target_init_func    */
-    NULL,                                        /* target_cntl_func    */
-    globus_l_xio_file_target_destory,            /* target_destroy_finc */
+    globus_l_xio_file_target_init,      /* target_init_func    */
+    GLOBUS_NULL,                        /* target_cntl_func    */
+    globus_l_xio_file_target_destroy,   /* target_destroy_finc */
 
     /*
      *  No server functions.
      */
-    NULL,                                        /* server_init_func    */
-    NULL,                                        /* server_accept_func  */
-    NULL,                                        /* server_destroy_func */
-    NULL,                                        /* server_cntl_func    */
+    GLOBUS_NULL,                        /* server_init_func    */
+    GLOBUS_NULL,                        /* server_accept_func  */
+    GLOBUS_NULL,                        /* server_destroy_func */
+    GLOBUS_NULL,                        /* server_cntl_func    */
 
     /*
      *  driver attr functions.  All or none may be NULL
      */
-    globus_l_xio_file_attr_init,                 /* attr_init_func      */
-    globus_l_xio_file_attr_copy,                 /* attr_copy_func      */
-    globus_l_xio_file_attr_cntl,                 /* attr_cntl_func      */
-    globus_l_xio_file_attr_destroy,              /* attr_destroy_func   */
-
-    /*
-     *  No need for data descriptors.
-     */
-    NULL,                                        /* dd_init             */
-    NULL,                                        /* dd_copy             */
-    NULL,                                        /* dd_destroy          */
-    NULL                                         /* dd_cntl             */
+    globus_l_xio_file_attr_init,        /* attr_init_func      */
+    globus_l_xio_file_attr_copy,        /* attr_copy_func      */
+    globus_l_xio_file_attr_cntl,        /* attr_cntl_func      */
+    globus_l_xio_file_attr_destroy      /* attr_destroy_func   */
 };

@@ -867,6 +867,7 @@ globus_l_xio_system_handle_wakeup(void)
     globus_l_xio_system_wakeup_pending = GLOBUS_FALSE;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_read(
     int                                 fd,
@@ -910,6 +911,7 @@ error_eof:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_readv(
     int                                 fd,
@@ -953,6 +955,7 @@ error_eof:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_recv(
     int                                 fd,
@@ -997,6 +1000,7 @@ error_eof:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_recvfrom(
     int                                 fd,
@@ -1050,6 +1054,7 @@ error_eof:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_recvmsg(
     int                                 fd,
@@ -1093,6 +1098,7 @@ error_eof:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_write(
     int                                 fd,
@@ -1130,6 +1136,7 @@ error_errno:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_writev(
     int                                 fd,
@@ -1167,6 +1174,7 @@ error_errno:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_send(
     int                                 fd,
@@ -1205,6 +1213,7 @@ error_errno:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_sendto(
     int                                 fd,
@@ -1250,6 +1259,7 @@ error_errno:
     return result;
 }
 
+static
 globus_result_t
 globus_l_xio_system_try_sendmsg(
     int                                 fd,

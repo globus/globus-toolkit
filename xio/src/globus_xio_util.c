@@ -6,22 +6,14 @@ globus_bool_t
 globus_xio_error_is_eof(
     globus_result_t                             res)
 {
-    globus_object_t *                           obj;
-    int                                         type;
-    globus_module_descriptor_t *                mod;
-
-    obj = globus_error_peek(res);
-
-    type = globus_error_get_type(obj);
-    if(type == GLOBUS_XIO_ERROR_EOF)
-    {
-        mod = globus_error_get_source(obj);
-        if(mod == GLOBUS_XIO_MODULE)
-        {
-            return GLOBUS_TRUE;
-        }
-    }
-
-    return GLOBUS_FALSE;
+    return globus_error_match(
+        globus_error_peek(res), GLOBUS_XIO_MODULE, GLOBUS_XIO_ERROR_EOF);
 }
-/* not sure yet */
+
+globus_bool_t
+globus_xio_error_is_canceled(
+    globus_result_t                             res)
+{
+    return globus_error_match(
+        globus_error_peek(res), GLOBUS_XIO_MODULE, GLOBUS_XIO_ERROR_CANCELED);
+}

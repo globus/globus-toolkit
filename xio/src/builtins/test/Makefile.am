@@ -10,7 +10,7 @@ flavorinclude_HEADERS = \
 
 noinst_LTLIBRARIES = libglobus_xio_test_driver_$(GLOBUS_FLAVOR_NAME).la 
 
-INCLUDES = $(GPT_INCLUDES) -I../../
+INCLUDES = -I$(top_srcdir) $(GPT_INCLUDES)
 
 libglobus_xio_test_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_xio_test_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
