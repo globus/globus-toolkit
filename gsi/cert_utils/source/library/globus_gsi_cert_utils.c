@@ -563,59 +563,37 @@ globus_gsi_cert_utils_get_x509_name(
 /* @{ */
 /**
  * Ge the base name of a proxy certificate.  Given an X509 name, strip
- * off the /CN=proxy component (can be "limited proxy" or "restricted proxy")
- * to get the base name of the certificate's subject
+ * off the proxy related /CN components to get the base name of the
+ * certificate's subject
  *
  * @param subject
  *        Pointer to an X509_NAME object which gets stripped
- *
+ * @param proxy_depth
+ *        Number of components to strip
  * @return
  *        GLOBUS_SUCCESS
  */
 globus_result_t
 globus_gsi_cert_utils_get_base_name(
-    X509_NAME *                     subject)
+    X509_NAME *                         subject,
+    int                                 proxy_depth)
 {
-    X509_NAME_ENTRY *                  ne;
-    ASN1_STRING *                      data;
-
+    X509_NAME_ENTRY *                   ne;
+    int                                 i;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_base_name";
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
     
     /* 
-     * drop all the /CN=proxy entries 
+     * drop all the proxy related /CN=* entries 
      */
-    for(;;)
+    for(i=0;i<proxy_depth;i++)
     {
-        ne = X509_NAME_get_entry(subject,
-                                 X509_NAME_entry_count(subject)-1);
-        if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName)))
+        ne = X509_NAME_delete_entry(subject,
+                                    X509_NAME_entry_count(subject)-1);
+        if(ne)
         {
-            data = X509_NAME_ENTRY_get_data(ne);
-            if ((data->length == 5 && 
-                 !memcmp(data->data,"proxy",5)) ||
-                (data->length == 13 && 
-                 !memcmp(data->data,"limited proxy",13)) ||
-                (data->length == 16 &&
-                 !memcmp(data->data,"restricted proxy",16)))
-            {
-                ne = X509_NAME_delete_entry(subject,
-                                            X509_NAME_entry_count(subject)-1);
-                if(ne)
-                {
-                    X509_NAME_ENTRY_free(ne);
-                    ne = NULL;
-                }
-            }
-            else
-            {
-                break;
-            }
-        }
-        else
-        {
-            break;
+            X509_NAME_ENTRY_free(ne);
         }
     }
 

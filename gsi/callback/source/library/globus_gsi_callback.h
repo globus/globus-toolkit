@@ -149,6 +149,16 @@ globus_gsi_callback_set_cert_depth(
     int                                 cert_depth);
 
 globus_result_t
+globus_gsi_callback_get_proxy_depth(
+    globus_gsi_callback_data_t          callback_data,
+    int *                               proxy_depth);
+
+globus_result_t
+globus_gsi_callback_set_proxy_depth(
+    globus_gsi_callback_data_t          callback_data,
+    int                                 proxy_depth);
+
+globus_result_t
 globus_gsi_callback_set_cert_type(
     globus_gsi_callback_data_t          callback_data,
     globus_gsi_cert_utils_cert_type_t   cert_type);

@@ -600,6 +600,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
     numcerts = sk_X509_num(cert_chain);
 
     handle->cert_chain = sk_X509_new_null();
+
     if(!handle->cert_chain)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -608,59 +609,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
             ("Couldn't initialize credential's cert chain"));
         goto error_exit;
     }
-
-    if(handle->cert != NULL)
-    {
-        prev_cert = handle->cert;
-        tmp_cert  = sk_X509_value(cert_chain, 0);
-        i = 1;
-    }
-    else
-    {
-        if(numcerts > 1)
-        {
-            prev_cert = sk_X509_value(cert_chain, 0);
-            tmp_cert = sk_X509_value(cert_chain, 1);
-        }
-        i = 2;
-    }
-
-    if(numcerts > 1)
-    {
-        do
-        {
-            if(prev_cert != NULL)
-            {
-                EVP_PKEY *              tmp_pkey;
-
-                tmp_pkey = X509_get_pubkey(tmp_cert);
-                if(!tmp_pkey)
-                {
-                    GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                        result,
-                        GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-                        ("Could not get private key of cert"));
-                    goto error_exit;
-                }
-
-                if(!X509_verify(prev_cert, tmp_pkey))
-                {
-                    EVP_PKEY_free(tmp_pkey);
-                    GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                        result,
-                        GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-                        ("Error verifying X509 cert in cert chain"));
-                    goto error_exit;
-                }
-
-                EVP_PKEY_free(tmp_pkey);
-            }
-            
-            prev_cert = tmp_cert;
-            tmp_cert = sk_X509_value(cert_chain, i); 
-        } while(i++ < numcerts);
-    }
-
+    
     for(i = 0; i < numcerts; ++i)
     {
         if((tmp_cert = X509_dup(sk_X509_value(cert_chain, i))) == NULL)

@@ -979,8 +979,7 @@ globus_i_gsi_gss_retrieve_peer(
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     X509 *                              peer_cert = NULL;
     STACK_OF(X509) *                    peer_cert_chain = NULL;
-    int                                 cert_depth;
-    int                                 peer_index;
+    int                                 proxy_depth;
     static char *                       _function_name_ =
         "globus_i_gsi_gss_retrieve_peer";
     
@@ -1029,36 +1028,13 @@ globus_i_gsi_gss_retrieve_peer(
             goto exit;
         }
 
-        /* figure out which end the peer cert is at 
-         * in the cert chain and remove it from the chain
-         */
-        for(peer_index = 0; 
-            peer_index < sk_X509_num(peer_cert_chain);
-            ++peer_index)
-        {
-            X509 *                      chain_cert
-                = sk_X509_value(peer_cert_chain, peer_index);
-            if(!X509_NAME_cmp(X509_get_subject_name(peer_cert),
-                              X509_get_subject_name(chain_cert)))
-            {
-                sk_X509_delete(peer_cert_chain, peer_index);
-                /* needs to be freed here since 
-                 * sk_X509_delete doesn't do it 
-                 */
-                X509_free(chain_cert);
-                break;
-            }
-        }
+        X509_free(sk_X509_shift(peer_cert_chain));
 
         local_result = globus_gsi_cred_set_cert_chain(
             context_handle->peer_cred_handle->cred_handle, 
             peer_cert_chain);
 
-        if(peer_cert_chain)
-        {
-            sk_X509_pop_free(peer_cert_chain, X509_free);
-            peer_cert_chain = NULL;
-        }
+        sk_X509_pop_free(peer_cert_chain, X509_free);
 
         if(local_result != GLOBUS_SUCCESS)
         {
@@ -1092,8 +1068,22 @@ globus_i_gsi_gss_retrieve_peer(
             goto exit;
         }
 
+        local_result = globus_gsi_callback_get_proxy_depth(
+            context_handle->callback_data,
+            &proxy_depth);
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
         local_result = globus_gsi_cert_utils_get_base_name(
-            context_handle->peer_cred_handle->globusid->x509n);
+            context_handle->peer_cred_handle->globusid->x509n,
+            proxy_depth);
 
         if(local_result != GLOBUS_SUCCESS)
         {
@@ -1117,26 +1107,9 @@ globus_i_gsi_gss_retrieve_peer(
             globus_libc_free(subject);
         }
 
-        local_result = globus_gsi_callback_get_cert_depth(
-            context_handle->callback_data,
-            &cert_depth);
-
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
     }
 
  exit:
-
-    if(peer_cert_chain)
-    {
-        sk_X509_pop_free(peer_cert_chain, X509_free);
-    }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
@@ -1510,7 +1483,8 @@ globus_i_gsi_gss_create_cred(
     OM_uint32                           local_minor_status;
     globus_result_t                     local_result;
     gss_cred_id_desc *                  newcred = NULL;
-
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    
     static char *                       _function_name_ =
         "globus_i_gsi_gss_create_cred";
 
@@ -1591,16 +1565,79 @@ globus_i_gsi_gss_create_cred(
         goto error_exit;
     }
 
-    /* now strip off any /CN=proxy entries */
-    local_result = globus_gsi_cert_utils_get_base_name(
-        newcred->globusid->x509n);
-    if(local_result != GLOBUS_SUCCESS)
+    local_result = globus_gsi_cred_get_cert_type(
+        newcred->cred_handle, 
+        &cert_type);
+    
+    if (local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
         goto error_exit;
+    }
+
+    if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
+    {
+        int                             proxy_depth = 1;
+        STACK_OF(X509) *                cert_chain;
+        
+        /* figure out how many entries to strip */
+    
+        local_result = globus_gsi_cred_cert_chain(
+            newcred->cred_handle, 
+            &cert_chain);
+        if (local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto error_exit;
+        }
+
+        for(i=0;i<sk_X509_num(cert_chain);i++)
+        {
+            local_result = globus_gsi_cert_utils_get_cert_type(
+                sk_X509_value(cert_chain,i),
+                &cert_type);
+
+            if (local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+                major_status = GSS_S_FAILURE;
+                sk_X509_pop_free(cert_chain, X509_free);
+                goto error_exit;
+            }
+
+            if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
+            {
+                proxy_depth++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        sk_X509_pop_free(cert_chain, X509_free);
+        
+        /* now strip off any /CN=proxy entries */
+        local_result = globus_gsi_cert_utils_get_base_name(
+            newcred->globusid->x509n,
+            proxy_depth);
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto error_exit;
+        }
     }
     
     *output_cred_handle = newcred;

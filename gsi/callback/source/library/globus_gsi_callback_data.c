@@ -294,6 +294,71 @@ globus_gsi_callback_set_cert_depth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+
+globus_result_t
+globus_gsi_callback_get_proxy_depth(
+    globus_gsi_callback_data_t          callback_data,
+    int *                               proxy_depth)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_get_proxy_depth";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    if(!callback_data)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            ("NULL parameter callback_data passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+
+    if(!proxy_depth)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            ("NULL parameter proxy_depth passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+
+    *proxy_depth = callback_data->proxy_depth;
+
+ exit:
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_gsi_callback_set_proxy_depth(
+    globus_gsi_callback_data_t          callback_data,
+    int                                 proxy_depth)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_set_proxy_depth";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    if(!callback_data)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            ("NULL parameter callback_data passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+
+    callback_data->proxy_depth = proxy_depth;
+
+ exit:
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
     
 globus_result_t
 globus_gsi_callback_get_cert_type(
