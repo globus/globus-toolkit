@@ -101,41 +101,6 @@ typedef enum globus_l_gsp_959_state_e
     GLOBUS_L_GSP_959_STATE_PANIC_STOPPING,
 } globus_l_gsp_state_t;
 
-/*
- *  command types
- *  -------------
- *  Each command is mapped to an enum via the hastable
- */
-enum
-{
-    GLOBUS_L_GSP_959_ABOR,
-    GLOBUS_L_GSP_959_CDUP,
-    GLOBUS_L_GSP_959_CWD,
-    GLOBUS_L_GSP_959_DELE,
-    GLOBUS_L_GSP_959_FEAT,
-    GLOBUS_L_GSP_959_HELP,
-    GLOBUS_L_GSP_959_LIST,
-    GLOBUS_L_GSP_959_MKD,
-    GLOBUS_L_GSP_959_MODE,
-    GLOBUS_L_GSP_959_NLST,
-    GLOBUS_L_GSP_959_NOOP,
-    GLOBUS_L_GSP_959_PASS,
-    GLOBUS_L_GSP_959_PASV,
-    GLOBUS_L_GSP_959_PWD,
-    GLOBUS_L_GSP_959_QUIT,
-    GLOBUS_L_GSP_959_RETR,
-    GLOBUS_L_GSP_959_RMD,
-    GLOBUS_L_GSP_959_SITE,
-    GLOBUS_L_GSP_959_SIZE,
-    GLOBUS_L_GSP_959_SPAS,
-    GLOBUS_L_GSP_959_STAT,
-    GLOBUS_L_GSP_959_STOR,
-    GLOBUS_L_GSP_959_STOU,
-    GLOBUS_L_GSP_959_SYST,
-    GLOBUS_L_GSP_959_TYPE,
-    GLOBUS_L_GSP_959_USER,
-};
-
 typedef struct globus_l_gsp_959_handle_s 
 {
     globus_gridftp_server_t                 server;
@@ -146,6 +111,7 @@ typedef struct globus_l_gsp_959_handle_s
     globus_fifo_t                           read_q;
     int                                     abort_cnt;
     globus_gridftp_server_stop_cb_t         stop_cb; 
+    globus_hashtable_t                      cmd_table;
 } globus_l_gsp_959_handle_t;
 
 typedef struct globus_l_gsp_959_cmd_ent_s
@@ -153,7 +119,6 @@ typedef struct globus_l_gsp_959_cmd_ent_s
     int                                     cmd;
     char                                    cmd_name[16]; /* only 5 needed */
     globus_gs_pmod_959_command_func_t       cmd_func;
-    globus_gs_pmod_959_reply_format_func_t  format_func;
     void *                                  user_arg;
 } globus_l_gsp_959_cmd_ent_t;
 
@@ -379,45 +344,18 @@ globus_l_gsp_959_command_kickout(
     void *                                  user_arg)
 {
     globus_l_gsp_959_read_ent_t *           read_ent;
-    globus_result_t                         res;
-    int                                     reply_code;
-    char *                                  reply_msg;
 
     read_ent = (globus_l_gsp_959_read_ent_t *) user_arg;
 
     /*
      *  call out to the users command
      */
-    res = read_ent->cmd_ent->cmd_func(
+    read_ent->cmd_ent->cmd_func(
         read_ent->handle,
         read_ent,
+        read_ent->cmd_ent->cmd_name,
         read_ent->command,
         read_ent->cmd_ent->user_arg);
-    if(res != GLOBUS_SUCCESS)
-    {
-        globus_mutex_lock(&read_ent->handle->mutex);
-        {
-            read_ent->cmd_ent->format_func(
-                read_ent->handle,
-                res,
-                read_ent->cmd_ent->user_arg,
-                &reply_code,
-                &reply_msg);
-            res = globus_l_gsp_959_reply(
-                    read_ent->handle,
-                    reply_code,
-                    reply_msg);
-            if(res != GLOBUS_SUCCESS)
-            {
-                read_ent->handle->ref--; /* CALLBACK RETURN ?? */
-                globus_l_gsp_959_panic(read_ent->handle, res);
-            }
-            /* not much error checking here, we trust user to return a
-                globus_free()able string */
-            globus_free(reply_msg);
-        }
-        globus_mutex_unlock(&read_ent->handle->mutex);
-    }
 }
 
 /*
@@ -429,51 +367,47 @@ void
 globus_l_gsp_959_process_next_cmd(
     globus_l_gsp_959_handle_t *             handle)
 {
-    int                                     reply_code;
-    char *                                  reply_msg;
     globus_result_t                         res;
     globus_l_gsp_959_read_ent_t *           read_ent;
     GlobusGridFTPServerName(globus_l_gsp_959_process_next_cmd);
 
-    globus_assert(handle->state == GLOBUS_L_GSP_959_STATE_PROCESSING);
+    globus_assert(handle->state == GLOBUS_L_GSP_959_STATE_OPEN);
 
     if(!globus_fifo_empty(&handle->read_q))
     {
+        handle->state = GLOBUS_L_GSP_959_STATE_PROCESSING;
+
         read_ent = (globus_l_gsp_959_read_ent_t *)
             globus_fifo_dequeue(&handle->read_q);
 
         /* increment the reference, will be deced in reply_cb */
         handle->ref++; 
 
-        res = globus_callback_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_gsp_959_command_kickout,
-            (void *) read_ent);
-
-        /* this will never happen ever, but why not account for it anyway? */
-        if(res != GLOBUS_SUCCESS)
+        if(read_ent->cmd_ent == NULL)
         {
-            read_ent->cmd_ent->format_func(
-                handle,
-                res,
-                read_ent->cmd_ent->user_arg,
-                &reply_code,
-                &reply_msg);
-            
             res = globus_l_gsp_959_reply(
                     handle,
-                    reply_code,
-                    reply_msg);
+                    500,
+                    "Command not implemented.");
             if(res != GLOBUS_SUCCESS)
             {
-                handle->ref--; /* if failed we will have no callback */
-                globus_l_gsp_959_panic(handle, res);
+                handle->ref--;
             }
+        }
+        else
+        {
+            res = globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gsp_959_command_kickout,
+                (void *) read_ent);
 
-            /* not much error checking here, we trust user to return a
-                globus_free()able string */
-            globus_free(reply_msg);
+            /* this will never happen ever, but why not account 
+                for it anyway? */
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_l_gsp_959_panic(read_ent->handle, res);
+            }
         }
     }
 }
@@ -535,7 +469,45 @@ globus_l_gsp_959_read_callback(
                                 &globus_l_gsp_959_command_table,
                                 command_name);
 
-                if(cmd_ent == GLOBUS_L_GSP_959_ABOR)
+                /*
+                 *  If NULL we don't suport this command.  Just add it
+                 *  to the q anyway
+                 */
+                if(cmd_ent == NULL || 
+                    strcmp(cmd_ent->cmd_name, "ABOR") != 0)
+                {
+                    read_ent = globus_l_gsp_959_read_ent_create(
+                        cmd_ent, buffer, handle);
+                    if(read_ent == NULL)
+                    {
+                        globus_l_gsp_959_panic(handle, res);
+                        globus_mutex_unlock(&handle->mutex);
+                        goto exit;
+                    }
+
+                    globus_fifo_enqueue(&handle->read_q, read_ent);
+                    if(handle->state == GLOBUS_L_GSP_959_STATE_OPEN)
+                    {
+                        globus_l_gsp_959_process_next_cmd(handle);
+                    }
+                    /* allow outstanding commands, just queue them up */
+                    res = globus_xio_register_read(
+                            xio_handle,
+                            globus_l_gsp_959_fake_buffer,
+                            globus_l_gsp_959_fake_buffer_len,
+                            1,
+                            NULL,
+                            globus_l_gsp_959_read_callback,
+                            (void *) handle);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        globus_l_gsp_959_panic(handle, res);
+                        globus_mutex_unlock(&handle->mutex);
+                        goto exit;
+                    }
+                    handle->ref++;
+                }
+                else
                 {
                     /* if we are in the open state then there is no
                        outstanding operation to cancel and we can just
@@ -571,41 +543,6 @@ globus_l_gsp_959_read_callback(
                         globus_mutex_unlock(&handle->mutex);
                         goto exit;
                     }
-                }
-                else
-                {
-                    read_ent = globus_l_gsp_959_read_ent_create(
-                        cmd_ent, buffer, handle);
-                    if(read_ent == NULL)
-                    {
-                        globus_l_gsp_959_panic(handle, res);
-                        globus_mutex_unlock(&handle->mutex);
-                        goto exit;
-                    }
-
-                    globus_fifo_enqueue(&handle->read_q, read_ent);
-                    if(handle->state == GLOBUS_L_GSP_959_STATE_OPEN)
-                    {
-                        globus_assert(globus_fifo_empty(&handle->read_q));
-                        handle->state = GLOBUS_L_GSP_959_STATE_PROCESSING;
-                        globus_l_gsp_959_process_next_cmd(handle);
-                    }
-                    /* allow outstanding commands, just queue them up */
-                    res = globus_xio_register_read(
-                            xio_handle,
-                            globus_l_gsp_959_fake_buffer,
-                            globus_l_gsp_959_fake_buffer_len,
-                            1,
-                            NULL,
-                            globus_l_gsp_959_read_callback,
-                            (void *) handle);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        globus_l_gsp_959_panic(handle, res);
-                        globus_mutex_unlock(&handle->mutex);
-                        goto exit;
-                    }
-                    handle->ref++;
                 }
 
                 globus_free(command_name);
@@ -785,26 +722,17 @@ globus_l_gsp_959_stop(
 void
 globus_gs_pmod_959_finished_op(
     globus_gs_pmod_959_op_t                 op,
-    globus_result_t                         result)
+    int                                     reply_code,
+    char *                                  reply_msg)
 {
-    int                                     reply_code;
-    char *                                  reply_msg;
     globus_l_gsp_959_read_ent_t *           read_ent;
     globus_l_gsp_959_handle_t *             handle;
     globus_result_t                         res;
     globus_bool_t                           stopping = GLOBUS_FALSE;
     GlobusGridFTPServerName(globus_gs_pmod_959_finished_op);
 
-    if(op == NULL)
-    {
-
-    }
-
     read_ent = (globus_l_gsp_959_read_ent_t *) op;
     handle = read_ent->handle;
-
-    read_ent->cmd_ent->format_func(
-        handle, result, read_ent->cmd_ent->user_arg, &reply_code, &reply_msg);
 
     globus_mutex_lock(&handle->mutex);
     {
@@ -1039,6 +967,7 @@ globus_l_gsp_959_reply(
             res = GlobusGridFTPServerErrorMemory("code_str");
             goto err;
         }
+        sprintf(code_str, "%d ", code);
         iov = (globus_xio_iovec_t *) 
             globus_malloc(sizeof(globus_xio_iovec_t) * 2);
         if(iov == NULL)
@@ -1050,11 +979,10 @@ globus_l_gsp_959_reply(
         }
         iov[0].iov_base = (globus_byte_t *) code_str;
         iov[0].iov_len = strlen(code_str);
-        iov[1].iov_len = strlen(message);
-        iov[1].iov_base = globus_malloc(iov[1].iov_len + 2);
-        strcpy((char *)iov[1].iov_len, message);
-        strcat((char *)iov[1].iov_len, "\r\n");
-        sprintf(code_str, "%d", code);
+        iov[1].iov_len = strlen(message) + 2;
+        iov[1].iov_base = globus_malloc(iov[1].iov_len);
+        strcpy((char *)iov[1].iov_base, message);
+        strcat((char *)iov[1].iov_base, "\r\n");
         res = globus_xio_register_writev(
                 handle->xio_handle,
                 iov,
@@ -1079,60 +1007,46 @@ globus_l_gsp_959_reply(
     return res;
 }
 
-
-/************************************************************************
- *                        command functions
- *                        -----------------
- *
- ***********************************************************************/
 globus_result_t
-globus_l_gsp_959_parse_port(
-    globus_gridftp_server_t                 server,
-    int                                     cmd,
-    const char *                            command)
+globus_gs_pmod_959_command_add(
+    globus_gs_pmod_959_handle_t             handle,
+    const char *                            command_name,
+    globus_gs_pmod_959_command_func_t       command_func,
+    void *                                  user_arg)
 {
-    int                                     count = 0;
-    int                                     ctr;
-    int                                     sc;
-    unsigned int                            h_p[6];
-    char *                                  tmp_ptr;
     globus_result_t                         res;
+    globus_l_gsp_959_cmd_ent_t *            cmd_ent;
+    GlobusGridFTPServerName(globus_gs_pmod_959_command_add);
 
-    /* skip past inital spaces and command name */
-    tmp_ptr = (char *) command;
-    /* skip any leading spaces */
-    while(isspace(*tmp_ptr)) tmp_ptr++;
-    /* skip the first command */
-    while(!isspace(*tmp_ptr)) tmp_ptr++;
-    /* skip sspaces until next start */
-    while(isspace(*tmp_ptr)) tmp_ptr++;
-
-    while(*tmp_ptr != '\0')
+    if(handle == NULL)
     {
-        sc = sscanf(tmp_ptr, "%u,%u,%u,%u,%u,%u",
-                &h_p[0],
-                &h_p[1],
-                &h_p[2],
-                &h_p[3],
-                &h_p[4],
-                &h_p[5]);
-        if(sc < 6)
-        {
-            goto err;
-        }
-        for(ctr = 0; ctr < 6; ctr++)
-        {
-            if(h_p[ctr] > 255)
-            {
-                goto err;
-            }
-        }
-        /* skip the current port */
-        while(*tmp_ptr != '\0' && !isspace(*tmp_ptr)) tmp_ptr++;
-        /* skip spaces until next start */
-        while(*tmp_ptr != '\0' && isspace(*tmp_ptr)) tmp_ptr++;
-        count++;
+        res = GlobusGridFTPServerErrorParameter("handle");
+        goto err;
     }
+    if(command_name == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("command_name");
+        goto err;
+    }
+    if(strlen(command_name) > 5)
+    {
+        res = GlobusGridFTPServerErrorParameter("command_name");
+        goto err;
+    }
+
+    cmd_ent = (globus_l_gsp_959_cmd_ent_t *)globus_malloc(
+        sizeof(globus_l_gsp_959_cmd_ent_t));
+    if(cmd_ent == NULL)
+    {
+        res = GlobusGridFTPServerErrorMemory("cmd_ent");
+        goto err;
+    }
+
+    strcpy(cmd_ent->cmd_name, command_name);
+    cmd_ent->cmd_func = command_func;
+    cmd_ent->user_arg = user_arg;
+
+    globus_hashtable_insert(&handle->cmd_table, command_name, cmd_ent);
 
     return GLOBUS_SUCCESS;
 
@@ -1145,9 +1059,15 @@ globus_l_gsp_959_parse_port(
 /* 
  *  set up the command table.
  */
-static globus_result_t
+globus_result_t
 globus_l_gsp_959_init()
 {
+    globus_hashtable_init(
+        &globus_l_gsp_959_command_table,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+
     return GLOBUS_SUCCESS;
 };
 

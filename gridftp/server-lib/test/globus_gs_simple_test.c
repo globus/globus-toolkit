@@ -1,9 +1,10 @@
 #include "globus_xio.h"
 #include "globus_gridftp_server.h"
 #include "globus_xio_tcp_driver.h"
+#include "globus_xio_ftp_cmd.h"
 
 #define REPLY_220 "220 Hello there\r\n"
-#define FTP_USER_ARG 0x15
+#define FTP_USER_ARG (void*)0x15
 
 static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
@@ -33,6 +34,9 @@ globus_l_done_cb(
     globus_result_t                         res,
     void *                                  user_arg)
 {
+    fprintf(stdout, "Done callback received\n");
+    test_res(res, __LINE__);
+
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_l_done = GLOBUS_TRUE;
@@ -59,16 +63,19 @@ main(
     globus_gridftp_server_t                 ftp_server;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
 
     /*
      *  set up the xio handle
      */
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
-    res = globus_xio_driver_load("gssapi_ftp", &ftp_driver);
+    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
+    test_res(res, __LINE__);
+    res = globus_xio_stack_push_driver(stack, ftp_driver);
     test_res(res, __LINE__);
 
     res = globus_xio_server_create(&server, NULL, stack);
@@ -84,6 +91,10 @@ main(
     fprintf(stdout, "%s\n", cs);
 
     res = globus_xio_server_accept(&target, server, NULL);
+    test_res(res, __LINE__);
+
+    res = globus_xio_target_cntl(
+        target, ftp_driver, GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
     test_res(res, __LINE__);
 
     fprintf(stdout, "opening handle\n");
@@ -126,6 +137,7 @@ main(
     res = globus_xio_close(xio_handle, NULL);
     test_res(res, __LINE__);
 
+    globus_module_deactivate(GLOBUS_GRIDFTP_SERVER_MODULE);
     globus_module_deactivate(GLOBUS_XIO_MODULE);
 
     return 0;

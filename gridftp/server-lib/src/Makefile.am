@@ -8,7 +8,8 @@ Sources= \
     globus_gridftp_server.c                     \
     globus_gridftp_server_cmd.c                 \
 	globus_gridftp_server_attr.c                \
-    globus_gridftp_server_pmod_959.c
+    globus_gridftp_server_pmod_959.c            \
+    globus_gridftp_server_pmod_959_cmd.c
 
 flavorinclude_HEADERS = \
     globus_gridftp_server.h

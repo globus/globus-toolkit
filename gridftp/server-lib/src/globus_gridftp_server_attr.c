@@ -1,4 +1,5 @@
 #include "globus_i_gridftp_server.h"
+#include "globus_gridftp_server_pmod_959.h"
 
 globus_result_t
 globus_gridftp_server_attr_init(
@@ -43,6 +44,10 @@ globus_gridftp_server_attr_init(
 
     attr->resource_func = NULL;
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
+    attr->pmod = &globus_i_gsp_959_proto_mod;
+    attr->start_state = GLOBUS_L_GS_STATE_AUTH;
+
+    *in_attr = attr;
 
     GlobusGridFTPServerDebugExit();
 

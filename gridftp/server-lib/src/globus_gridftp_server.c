@@ -1,6 +1,7 @@
 #include "globus_i_gridftp_server.h"
 
 #include "version.h"
+#include "globus_gridftp_server_pmod_959.h"
 
 #define GlobusGSProtoCmdKickout(op)                                     \
 do                                                                      \
@@ -121,6 +122,7 @@ globus_l_gs_activate()
     /* add all the default command handlers */
 
     globus_gridftp_server_attr_init(&globus_l_gs_default_attr);
+    globus_l_gsp_959_init();
 
     return rc;
 }
