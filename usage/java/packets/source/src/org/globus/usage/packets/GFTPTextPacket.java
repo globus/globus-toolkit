@@ -137,6 +137,7 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 	catch (Exception e) {
 	    //do logger error output when I get a packet I totally can't parse, and
 	    //dump out its whole string for analysis.
+	    e.printStackTrace();
 	    log.error(e.getMessage());
 	    log.error(contents);
 	}
