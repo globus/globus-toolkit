@@ -66,28 +66,40 @@ gssapi_anonymous_test_LDFLAGS = $(GPT_LDFLAGS)
 gssapi_anonymous_test_LDADD = $(GPT_PGM_LINKS)
 
 
-#gssapi_group_test_SOURCES = gssapi_group_test.c
+#gssapi_group_test_SOURCES = \
+#			gssapi_group_test.c \
+#			gssapi_openssl.h \
+#			globus_gsi_gss_constants.h
 
 #gssapi_group_test_LDFLAGS = $(GPT_LDFLAGS)
 
 #gssapi_group_test_LDADD = $(GPT_PGM_LINKS)
 
 
-gssapi_delegation_test_SOURCES = gssapi_delegation_test.c
+gssapi_delegation_test_SOURCES = \
+				gssapi_delegation_test.c \
+				gssapi_openssl.h \
+				globus_gsi_gss_constants.h
 
 gssapi_delegation_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_delegation_test_LDADD = $(GPT_PGM_LINKS)
 
 
-gssapi_limited_delegation_test_SOURCES = gssapi_limited_delegation_test.c
+gssapi_limited_delegation_test_SOURCES = \
+				gssapi_limited_delegation_test.c \
+				gssapi_openssl.h \
+				globus_gsi_gss_constants.h
 
 gssapi_limited_delegation_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_limited_delegation_test_LDADD = $(GPT_PGM_LINKS)
 
 
-gssapi_delegation_compat_test_SOURCES = gssapi_delegation_compat_test.c
+gssapi_delegation_compat_test_SOURCES = \
+				gssapi_delegation_compat_test.c \
+				gssapi_openssl.h \
+				globus_gsi_gss_constants.h
 
 gssapi_delegation_compat_test_LDFLAGS = $(GPT_LDFLAGS)
 
