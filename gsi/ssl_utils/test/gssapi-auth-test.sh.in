@@ -20,10 +20,12 @@ CA_CERTDIR=@CA_CERTDIR@
 #
 # Binaries
 #
+GSSAPI_SSLEAY_BUILD_DIR=@GSSAPI_SSLEAY_BUILD_DIR@
+
 GSS_SERVER=./gss-server
 GSS_CLIENT=./gss-client
 GSS_ASSIST_CLIENT=./gss-assist-client
-GRID_PROXY_INIT=grid-proxy-init
+GRID_PROXY_INIT=${GSSAPI_SSLEAY_BUILD_DIR}/grid-proxy-init
 
 ######################################################################
 #

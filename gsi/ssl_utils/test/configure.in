@@ -37,6 +37,10 @@ TEST_SCRIPTS="set-perms.sh gssapi-auth-test.sh"
 TEST_EXECS="$TEST_SCRIPTS"
 AC_SUBST(TEST_EXECS)
 
+GSSAPI_SSLEAY_BUILD_DIR=${topbuilddir}/Security/gssapi_ssleay
+
+AC_SUBST(GSSAPI_SSLEAY_BUILD_DIR)
+
 LAC_MAKEFILES(makefile_header, Makefile)
 
 AC_OUTPUT(Makefile run-tests $TEST_SCRIPTS $lac_makefiles
