@@ -64,6 +64,7 @@ globus_gram_job_manager_request_init(
     r->validation_records = NULL;
     r->relocated_proxy = GLOBUS_FALSE;
     r->proxy_timeout = 60;
+    r->cache_tag = GLOBUS_NULL;
     r->job_state_file_dir = GLOBUS_NULL;
     r->job_state_file = GLOBUS_NULL;
     r->job_state_lock_file = GLOBUS_NULL;
@@ -109,6 +110,14 @@ globus_gram_job_manager_request_destroy(
         globus_libc_free(request->local_stdout);
     if (request->local_stderr)
         globus_libc_free(request->local_stderr);
+    if (request->cache_tag)
+	globus_libc_free(request->cache_tag);
+    if (request->job_state_file_dir)
+	globus_libc_free(request->job_state_file_dir);
+    if (request->job_state_file)
+	globus_libc_free(request->job_state_file);
+    if (request->job_state_lock_file)
+	globus_libc_free(request->job_state_lock_file);
 
     globus_libc_free(request);
 

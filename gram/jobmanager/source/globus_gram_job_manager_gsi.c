@@ -362,7 +362,7 @@ globus_gram_job_manager_gsi_relocate_proxy(
 
     rc = sprintf(cred_url,
 	         "%sx509_user_proxy",
-		 request->job_contact);
+		 request->cache_tag);
 
     if(rc < 0)
     {
@@ -442,7 +442,7 @@ globus_gram_job_manager_gsi_relocate_proxy(
 
 	rc = sprintf(temp_cred_url,
 		     "%sx509_deleg_proxy",
-		     request->job_contact);
+		     request->cache_tag);
 	if(rc < 0)
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
