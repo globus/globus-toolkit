@@ -47,14 +47,10 @@ auth_passwd_create_client_data(authorization_data_t *data,
 int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name)
 { 
-   char *tmp1;
-
-   if (creds->passphrase != NULL &&
-       client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
-       client_auth_data->client_data != NULL && 
-       (tmp1 = (char *)des_crypt(client_auth_data->client_data,
-		    &creds->owner_name[strlen(creds->owner_name)-3])) != NULL &&
-       strcmp(creds->passphrase, tmp1) == 0) {
+   if (client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
+       client_auth_data->client_data != NULL &&
+       myproxy_creds_verify_passphrase(creds,
+				       client_auth_data->client_data) == 1) {
       return 1;
    }
    else 
