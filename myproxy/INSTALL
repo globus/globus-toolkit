@@ -8,26 +8,24 @@ INSTALL		myproxy installation directions
  4.  Installing the myproxy-server
  4a. Installing the myproxy-server using a non-host certificate
  5.  The myproxy-server.config file
- 6.  Installing the portal software
- 7.  Providing access from the portal
+ 6.  Using myproxy-get-delegation from a trusted service
+ 7.  Setting up sample CGI script on a web portal
 
 
 1. Prerequisites for building
 -----------------------------
 
-In order to build the myproxy software you will need a special
-version of the Grid Security Infrastructure (GSI) that has been
-modified to support encrypted user sessions, available from
-<ftp://ftp.globus.org/pub/gsi/gsi-041701.tar.gz>.
+In order to build the myproxy software you will need a version of the
+Grid Security Infrastructure (GSI) that supports encrypted user
+sessions, included in the Grid API bundle in Globus 2.0.
 
-You can build the encryption-enabled GSI package using the
-directions for building standard GSI package:
+Alternatively, you can get a standalone version of GSI with encryption
+support from <ftp://ftp.globus.org/pub/gsi/gsi-041701.tar.gz> and
+build it by following the directions at
+<http://www.globus.org/security/v1.1/installation.html>.
 
-http://www.globus.org/security/v1.1/installation.html
-
-NOTE that you only need the encryption-enabled GSI for building
-myproxy, you can use the myproxy binaries with any recent GSI
-or Globus distribution.
+NOTE: This prerequisite applies only for building myproxy.  You can
+use the myproxy binaries with any recent GSI or Globus distribution.
 
 2. Building the myproxy software
 --------------------------------
@@ -36,9 +34,15 @@ The myproxy software is built using the standard configure/make
 paradigm:
 
 Step 1: Run './configure'
-   You will need to provide the following argument(s):
+   You will need to provide one of the following arguments:
 
-	--with-gsi=<path to gsi installation>
+	--with-gsi=<path to standalone gsi installation>
+		Use this option when building with a standalone
+		version of the GSI.
+
+        --with-globus-flavor=<Globus Grid API bundle flavor>
+		The GLOBUS_LOCATION environment variable must also be
+		set when building with the Globus Grid API bundle.
 
    You may also want to provide one or more of the following
    arguments:
