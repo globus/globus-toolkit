@@ -540,6 +540,4 @@ static globus_module_descriptor_t globus_gass_cache_module =
 };
 
 
-#endif
-
 #endif   /* _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H */
