@@ -14,7 +14,6 @@
 #include "globus_module.h"
 #include "globus_error.h"
 #include "globus_error_generic.h"
-#include "globus_libc.h"
 #include <string.h>
 
 /**
@@ -94,7 +93,7 @@ globus_error_initialize_errno_error(
 {
     int *                               instance_data;
 
-    instance_data = (int *) globus_malloc(sizeof(int));
+    instance_data = (int *) malloc(sizeof(int));
 
     *instance_data = system_errno;
 
@@ -255,8 +254,6 @@ globus_error_wrap_errno_error(
     globus_object_t *                   causal_error;
     globus_object_t *                   error;
     va_list                             ap;
-    char *                              fmt = GLOBUS_NULL;
-    char *                              sys_error;
 
     causal_error = globus_error_construct_errno_error(
         base_source,
@@ -270,36 +267,15 @@ globus_error_wrap_errno_error(
     
     va_start(ap, short_desc_format);
     
-    sys_error = strerror(system_errno);
-    if(sys_error)
-    {
-        fmt = (char *) globus_malloc(                       /* ': \0' */
-            strlen(short_desc_format) + strlen(sys_error) + 3);
-        if(fmt)
-        {
-            sprintf(fmt, "%s: %s", short_desc_format, sys_error);
-        }
-    }
-    
-    if(!fmt)
-    {
-        fmt = (char *) short_desc_format;
-    }
-    
     error = globus_error_v_construct_error(
         base_source,
         causal_error,
         type,
-        fmt,
+        short_desc_format,
         ap);
 
     va_end(ap);
-    
-    if(fmt != short_desc_format)
-    {
-        globus_free(fmt);
-    }
-    
+
     if(error == GLOBUS_NULL)
     {
         globus_object_free(causal_error);

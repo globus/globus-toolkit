@@ -6,657 +6,369 @@
  ********************************************************************/
 
 #include "globus_hashtable.h"
+#include "globus_list.h"
 #include "globus_libc.h"
-#include "globus_memory.h"
 
-#define GlobusLInsertNodeBefore(_node, _before)                             \
-    do                                                                      \
-    {                                                                       \
-        (_node)->prev = (_before)->prev;                                    \
-        if((_before)->prev)                                                 \
-        {                                                                   \
-            (_node)->prev->next = (_node);                                  \
-        }                                                                   \
-                                                                            \
-        (_node)->next = (_before);                                          \
-        (_before)->prev = (_node);                                          \
-    } while(0)
+struct globus_hashtable_s
+{
+    int                                 size;
+    globus_list_t **                    chains;
+    globus_hashtable_hash_func_t        hash_func;
+    globus_hashtable_keyeq_func_t       keyeq_func;
+};
 
-typedef struct globus_l_hashtable_bucket_entry_s
+typedef struct hashtsearchargs 
+{
+    struct globus_hashtable_s *         s_table;
+    void *                              key;
+} globus_hashtable_search_args_t;
+
+typedef struct hashtentry 
 {
     void *                              key;
     void *                              datum;
-    struct globus_l_hashtable_bucket_entry_s * prev;
-    struct globus_l_hashtable_bucket_entry_s * next;
-} globus_l_hashtable_bucket_entry_t;
+} globus_hashtable_entry_t;
 
-typedef struct globus_l_hashtable_bucket_s
+static int
+globus_hashtable_s_chain_pred(
+    void *                              datum, 
+    void *                              vargs)
 {
-    globus_l_hashtable_bucket_entry_t * first;
-    globus_l_hashtable_bucket_entry_t * last;
-} globus_l_hashtable_bucket_t;
+    globus_hashtable_entry_t *          element;
+    globus_hashtable_search_args_t *    args;
 
-typedef struct globus_l_hashtable_s
-{
-    int                                 size;
-    int                                 load;
-    globus_l_hashtable_bucket_t *       buckets;
-    globus_l_hashtable_bucket_entry_t * first;
-    globus_l_hashtable_bucket_entry_t * last;
-    globus_l_hashtable_bucket_entry_t * current;
-    globus_hashtable_hash_func_t        hash_func;
-    globus_hashtable_keyeq_func_t       keyeq_func;
-    globus_memory_t                     memory;
-} globus_l_hashtable_t;
+    element = (globus_hashtable_entry_t *) datum;
+    args = (globus_hashtable_search_args_t *) vargs;
 
-int
-globus_hashtable_init(
-    globus_hashtable_t *                table,
-    int                                 size,
-    globus_hashtable_hash_func_t        hash_func,
-    globus_hashtable_keyeq_func_t       keyeq_func)
-{
-    globus_l_hashtable_t *              itable;
-    
-    if(table == GLOBUS_NULL || 
-        hash_func == GLOBUS_NULL || 
-        keyeq_func == GLOBUS_NULL || 
-        size <= 0)
-    {
-        goto error_parm;
-    }
-    
-    itable = (globus_l_hashtable_t *)   
-        globus_malloc(sizeof(globus_l_hashtable_t));
-    if(!itable)
-    {
-        goto error_malloc_table;
-    }
-    
-    itable->buckets = (globus_l_hashtable_bucket_t *)
-        globus_malloc(sizeof(globus_l_hashtable_bucket_t) * size);
-    if(!itable->buckets)
-    {
-        goto error_malloc_buckets;
-    }
-    
-    if(!globus_memory_init(
-        &itable->memory, sizeof(globus_l_hashtable_bucket_entry_t), 16))
-    {
-        goto error_memory_init;
-    }
-    
-    itable->size = size;
-    itable->load = 0;
-    itable->first = GLOBUS_NULL;
-    itable->last = GLOBUS_NULL;
-    itable->current = GLOBUS_NULL;
-    itable->hash_func = hash_func;
-    itable->keyeq_func = keyeq_func;
-    
-    while(size--)
-    {
-        itable->buckets[size].first = GLOBUS_NULL;
-        itable->buckets[size].last = GLOBUS_NULL;
-    }
-    
-    *table = itable;
-    return GLOBUS_SUCCESS;
-
-error_memory_init:
-    globus_free(itable->buckets);
-    
-error_malloc_buckets:
-    globus_free(itable);
-    
-error_malloc_table:
-error_parm:
-    if(table)
-    {
-        *table = GLOBUS_NULL;
-    }
-    globus_assert(0 && "globus_hashtable_init failed");
-    return GLOBUS_FAILURE;
-}
-
-static
-globus_l_hashtable_bucket_entry_t *
-globus_l_hashtable_search_bucket(
-    globus_l_hashtable_bucket_t *       bucket,
-    globus_hashtable_keyeq_func_t       keyeq_func,
-    void *                              key)
-{
-    globus_l_hashtable_bucket_entry_t * i;
-    globus_l_hashtable_bucket_entry_t * end;
-    
-    if(bucket->first)
-    {
-        i = bucket->first;
-        end = bucket->last->next;
-        
-        do
-        {
-            if(keyeq_func(i->key, key))
-            {
-                return i;
-            }
-            
-            i = i->next;
-        } while(i != end);
-    }
-    
-    return GLOBUS_NULL;
-}
-
-int
-globus_hashtable_insert(
-    globus_hashtable_t *                table,
-    void *                              key,
-    void *                              datum)
-{
-    globus_l_hashtable_t *              itable;
-    globus_l_hashtable_bucket_t *       bucket;
-    globus_l_hashtable_bucket_entry_t * entry;
-    
-    if(!table || !*table || !datum)
-    {
-        globus_assert(0 && "globus_hashtable_insert bad parms");
-        goto error_param;
-    }
-    
-    itable = *table;
-    bucket = &itable->buckets[itable->hash_func(key, itable->size)];
-    
-    /* make sure it doesn't already exist */
-    if(globus_l_hashtable_search_bucket(bucket, itable->keyeq_func, key))
-    {
-        goto error_exists;
-    }
-    
-    entry = (globus_l_hashtable_bucket_entry_t *)
-        globus_memory_pop_node(&itable->memory);
-    if(!entry)
-    {
-        goto error_alloc;
-    }
-    
-    entry->key = key;
-    entry->datum = datum;
-    
-    if(bucket->first)
-    {
-        if(bucket->first == itable->first)
-        {
-            itable->first = entry;
-        }
-        GlobusLInsertNodeBefore(entry, bucket->first);
-    }
-    else
-    {
-        if(itable->first)
-        {
-            GlobusLInsertNodeBefore(entry, itable->first);
-        }
-        else
-        {
-            entry->prev = GLOBUS_NULL;
-            entry->next = GLOBUS_NULL;
-            itable->last = entry;
-        }
-        
-        itable->first = entry;
-        bucket->last = entry;
-    }
-    
-    bucket->first = entry;
-    itable->load++;
-    
-    return GLOBUS_SUCCESS;
-
-error_alloc:
-error_exists:
-error_param:
-    return GLOBUS_FAILURE;
-}
-
-void *
-globus_hashtable_update(
-    globus_hashtable_t *                table,
-    void *                              key,
-    void *                              datum)
-{
-    globus_l_hashtable_t *              itable;
-    globus_l_hashtable_bucket_t *       bucket;
-    globus_l_hashtable_bucket_entry_t * entry;
-    void *                              old_datum;
-    
-    if(!table || !*table || !datum)
-    {
-        globus_assert(0 && "globus_hashtable_update bad parms");
-        goto error_param;
-    }
-    
-    itable = *table;
-    bucket = &itable->buckets[itable->hash_func(key, itable->size)];
-    
-    entry = globus_l_hashtable_search_bucket(bucket, itable->keyeq_func, key);
-    if(!entry)
-    {
-        goto error_notfound;
-    }
-    
-    old_datum = entry->datum;
-    entry->datum = datum;
-    entry->key = key;
-    
-    return old_datum;
-    
-error_notfound:
-error_param:
-    return GLOBUS_NULL;
+    return args->s_table->keyeq_func(element->key, args->key);
 }
 
 void *
 globus_hashtable_lookup(
-    globus_hashtable_t *                table,
+    globus_hashtable_t *                table, 
     void *                              key)
 {
-    globus_l_hashtable_t *              itable;
-    globus_l_hashtable_bucket_t *       bucket;
-    globus_l_hashtable_bucket_entry_t * entry;
+    struct globus_hashtable_s *         s_table;
+    int                                 chainno;
+    globus_list_t *                     found_link;
+    globus_hashtable_search_args_t      search_args;   
+
+    globus_assert(table != GLOBUS_NULL);
+    s_table = *table;
+    globus_assert(s_table != GLOBUS_NULL);
     
-    if(!table || !*table)
+    chainno = s_table->hash_func(key, s_table->size);
+    search_args.s_table = s_table;
+    search_args.key = key;
+
+    found_link = globus_list_search_pred(
+        s_table->chains[chainno], globus_hashtable_s_chain_pred, &search_args);
+    if(!found_link) 
     {
-        globus_assert(0 && "globus_hashtable_lookup bad parms");
-        goto error_param;
+        return GLOBUS_NULL;
     }
+    else 
+    {    
+        /* return datum */
+        globus_hashtable_entry_t *      entry;
+        
+        entry = (globus_hashtable_entry_t *) globus_list_first(found_link);
+
+        return entry->datum;
+    }
+}
+
+int 
+globus_hashtable_insert(
+    globus_hashtable_t *                table, 
+    void *                              key, 
+    void *                              datum)
+{
+    struct globus_hashtable_s *         s_table;
     
-    itable = *table;
-    bucket = &itable->buckets[itable->hash_func(key, itable->size)];
+    globus_assert(table != GLOBUS_NULL);
+    s_table = *table;
+    globus_assert(s_table != GLOBUS_NULL);
     
-    entry = globus_l_hashtable_search_bucket(bucket, itable->keyeq_func, key);
-    if(!entry)
+    if(globus_hashtable_lookup(table, key)) 
     {
-        goto error_notfound;
+        /* this key already in table! */
+        return -1;
     }
-    
-    return entry->datum;
-    
-error_notfound:
-error_param:
-    return GLOBUS_NULL;
+    else 
+    {
+        int                             chainno;
+        globus_hashtable_entry_t *      new_entry;
+
+        chainno = s_table->hash_func(key, s_table->size);
+        new_entry = (globus_hashtable_entry_t *)
+            globus_malloc(sizeof(globus_hashtable_entry_t));
+            
+        if(!new_entry)
+        {
+            return -2;
+        }
+        
+        new_entry->key = key;
+        new_entry->datum = datum;
+        return globus_list_insert(&s_table->chains[chainno], new_entry);
+    }
 }
 
 void *
 globus_hashtable_remove(
-    globus_hashtable_t *                table,
+    globus_hashtable_t *                table, 
     void *                              key)
 {
-    globus_l_hashtable_t *              itable;
-    globus_l_hashtable_bucket_t *       bucket;
-    globus_l_hashtable_bucket_entry_t * entry;
-    void *                              datum;
+    struct globus_hashtable_s *         s_table;
+    int                                 chainno;
+    globus_list_t *                     found_link;
+    globus_hashtable_search_args_t      search_args;
+
+    globus_assert(table != GLOBUS_NULL);
+    s_table = *table;
+    globus_assert(s_table != GLOBUS_NULL);
     
-    if(!table || !*table)
+    chainno = s_table->hash_func(key, s_table->size);
+    search_args.s_table = s_table;
+    search_args.key = key;
+    found_link = globus_list_search_pred(
+        s_table->chains[chainno], globus_hashtable_s_chain_pred, &search_args);
+    if(!found_link) 
     {
-        globus_assert(0 && "globus_hashtable_remove bad parms");
-        goto error_param;
+        return GLOBUS_NULL;
     }
-    
-    itable = *table;
-    bucket = &itable->buckets[itable->hash_func(key, itable->size)];
-    
-    entry = globus_l_hashtable_search_bucket(bucket, itable->keyeq_func, key);
-    if(!entry)
+    else 
     {
-        goto error_notfound;
-    }
-    
-    if(entry == bucket->first)
-    {
-        if(entry == bucket->last)
+        /* remove entry */
+        globus_hashtable_entry_t *      entry;
+        entry = (globus_hashtable_entry_t *)  
+            globus_list_remove(&s_table->chains[chainno], found_link);
+        if(entry) 
         {
-            bucket->first = GLOBUS_NULL;
-            bucket->last = GLOBUS_NULL;
+            void *                      datum;
             
+            datum = entry->datum;
+            globus_free(entry);
+            return datum;
         }
-        else
+        else 
         {
-            bucket->first = entry->next;
+            return GLOBUS_NULL;
         }
     }
-    else if(entry == bucket->last)
-    {
-        bucket->last = entry->prev;
-    }
-    
-    if(entry->prev)
-    {
-        entry->prev->next = entry->next;
-    }
-    else
-    {
-        itable->first = entry->next;
-    }
-    
-    if(entry->next)
-    {
-        entry->next->prev = entry->prev;
-    }
-    else
-    {
-        itable->last = entry->prev;
-    }
-    
-    if(entry == itable->current)
-    {
-        itable->current = entry->next;
-    }
-    
-    datum = entry->datum;
-    globus_memory_push_node(&itable->memory, entry);
-    itable->load--;
-    
-    return datum;
-
-error_notfound:
-error_param:
-    return GLOBUS_NULL;
 }
 
-int
-globus_hashtable_to_list(
-    globus_hashtable_t *                table,
-    globus_list_t **                    list)
+int 
+globus_hashtable_init(
+    globus_hashtable_t *                table, 
+    int                                 size,
+    globus_hashtable_hash_func_t        hash_func,
+    globus_hashtable_keyeq_func_t       keyeq_func)
 {
-    globus_l_hashtable_t *              itable;
-    globus_l_hashtable_bucket_entry_t * entry;
+    int                                 i;
+    struct globus_hashtable_s *         s_table;
     
-    if(!table || !*table || !list)
+    globus_assert(table != GLOBUS_NULL);
+    
+    s_table = (struct globus_hashtable_s *)
+        globus_malloc(sizeof(struct globus_hashtable_s));
+    globus_assert(s_table != GLOBUS_NULL);
+    *table = s_table;    
+    
+    globus_assert(size > 0);
+    s_table->size = size;
+    s_table->chains = (globus_list_t **)
+        globus_malloc(sizeof(globus_list_t *) * size);
+    if(!s_table->chains) 
     {
-        globus_assert(0 && "globus_hashtable_to_list bad parms");
-        goto error_param;
+        return -1; 
     }
     
-    itable = *table;
-    entry = itable->first;
-    *list = GLOBUS_NULL;
-    
-    while(entry)
+    for (i = 0; i < size; i++) 
     {
-        globus_list_insert(list, entry->datum);
-        entry = entry->next;
+        s_table->chains[i] = GLOBUS_NULL;
     }
-
-    return GLOBUS_SUCCESS;
+    s_table->hash_func = hash_func;
+    s_table->keyeq_func = keyeq_func;
     
-error_param:
-    return GLOBUS_FAILURE;   
+    return 0;
 }
 
-globus_bool_t
-globus_hashtable_empty(
-    globus_hashtable_t *                table)
+static
+void
+globus_hashtable_list_destroy_all_cb(
+    void *                              element)
 {
-    return ((!table || !*table || 
-        (*table)->first == GLOBUS_NULL) ? GLOBUS_TRUE : GLOBUS_FALSE);
+    globus_free(element);
 }
 
-int
-globus_hashtable_size(
-    globus_hashtable_t *                table)
-{
-    if(!table || !*table)
-    {
-        globus_assert(0 && "globus_hashtable_size bad parms");
-        return 0;
-    }
-    
-    return (*table)->load;
-}
-
-/* set iterator to first entry and return datum, NULL if empty */
-void *
-globus_hashtable_first(
-    globus_hashtable_t *                table)
-{
-    globus_l_hashtable_t *              itable;
-    
-    if(!table || !*table)
-    {
-        globus_assert(0 && "globus_hashtable_first bad parms");
-        goto error_param;
-    }
-    
-    itable = *table;
-    itable->current = itable->first;
-    
-    return (itable->current ? itable->current->datum : GLOBUS_NULL);
-    
-error_param:
-    return GLOBUS_NULL;
-}
-
-/* set iterator to next entry and return datum, NULL if at end */
-void *
-globus_hashtable_next(
-    globus_hashtable_t *                table)
-{
-    globus_l_hashtable_t *              itable;
-    
-    if(!table || !*table)
-    {
-        globus_assert(0 && "globus_hashtable_next bad parms");
-        goto error_param;
-    }
-    
-    itable = *table;
-    if(itable->current)
-    {
-        itable->current = itable->current->next;
-    }
-    
-    return (itable->current ? itable->current->datum : GLOBUS_NULL);
-    
-error_param:
-    return GLOBUS_NULL;
-}
-
-/* set iterator to last entry and return datum, NULL if empty */
-void *
-globus_hashtable_last(
-    globus_hashtable_t *                table)
-{
-    globus_l_hashtable_t *              itable;
-    
-    if(!table || !*table)
-    {
-        globus_assert(0 && "globus_hashtable_last bad parms");
-        goto error_param;
-    }
-    
-    itable = *table;
-    itable->current = itable->last;
-    
-    return (itable->current ? itable->current->datum : GLOBUS_NULL);
-    
-error_param:
-    return GLOBUS_NULL;
-}
-
-/* set iterator to prev entry and return datum, NULL if at beginning */
-void *
-globus_hashtable_prev(
-    globus_hashtable_t *                table)
-{
-    globus_l_hashtable_t *              itable;
-    
-    if(!table || !*table)
-    {
-        globus_assert(0 && "globus_hashtable_prev bad parms");
-        goto error_param;
-    }
-    
-    itable = *table;
-    if(itable->current)
-    {
-        itable->current = itable->current->prev;
-    }
-    
-    return (itable->current ? itable->current->datum : GLOBUS_NULL);
-    
-error_param:
-    return GLOBUS_NULL;
-}
-
-int
+int 
 globus_hashtable_destroy(
     globus_hashtable_t *                table)
 {
-    globus_l_hashtable_t *              itable;
-    
-    if(!table || !*table)
+    int                                 i;
+    struct globus_hashtable_s *         s_table;
+
+    if(table == GLOBUS_NULL || *table == GLOBUS_NULL)
     {
-        globus_assert(0 && "globus_hashtable_destroy bad parms");
-        goto error_param;
+        return GLOBUS_FAILURE;
+    }
+
+    s_table = *table;
+
+    for(i = 0; i < s_table->size; i++) 
+    {
+        if(!globus_list_empty(s_table->chains[i]))
+        {
+            globus_list_destroy_all(
+                s_table->chains[i], globus_hashtable_list_destroy_all_cb);
+            s_table->chains[i] = GLOBUS_NULL;
+        }
+    }
+
+    s_table->size = 0;
+    if(s_table->chains)
+    {
+        globus_free(s_table->chains);
     }
     
-    itable = *table;
-    
-    globus_memory_destroy(&itable->memory);
-    globus_free(itable->buckets);
-    globus_free(itable);
-    *table = GLOBUS_NULL;
-    
-    return GLOBUS_SUCCESS;
-    
-error_param:
-    return GLOBUS_FAILURE;
+    globus_free(s_table);
+
+    return 0;
 }
 
 void
 globus_hashtable_destroy_all(
     globus_hashtable_t *                table,
-    globus_hashtable_destructor_func_t  element_free)
+    void                                (*element_free)(void * element))
 {
-    globus_l_hashtable_t *              itable;
-    globus_l_hashtable_bucket_entry_t * entry;
-    
-    if(!table || !*table || !element_free)
+    int                                 i;
+    struct globus_hashtable_s *         s_table;
+
+    if(table == GLOBUS_NULL || *table == GLOBUS_NULL)
     {
-        globus_assert(0 && "globus_hashtable_destroy_all bad parms");
-        goto error_param;
+        return;
     }
-    
-    itable = *table;
-    entry = itable->first;
-    
-    while(entry)
+
+    s_table = *table;
+
+    for (i = 0; i < s_table->size; i++) 
     {
-        element_free(entry->datum);
-        entry = entry->next;
-    }
-    
-    globus_hashtable_destroy(table);
-    return;
-    
-error_param:
-    return;
-}
-
-/**
- * hashpjw() is derived from an algorithm found in Aho, Sethi and Ullman's
- * {Compilers: Principles, Techniques and Tools}, published by Addison-Wesley. 
- * This algorithm comes from P.J. Weinberger's C compiler. 
- */
-int
-globus_hashtable_string_hash(
-    void *                              string,
-    int                                 limit)
-{
-    unsigned long                       h = 0;
-    unsigned long                       g;
-    char *                              key;
-
-    key = (char *) string;
-
-    while(*key)
-    {
-        h = (h << 4) + *key++;
-        if((g = (h & 0xF0UL)))
+        while(!globus_list_empty(s_table->chains[i]))
         {
-            h ^= g >> 24;
-            h ^= g;
+            globus_hashtable_entry_t *  entry;
+            
+            entry = (globus_hashtable_entry_t *) globus_list_remove(
+                &s_table->chains[i], s_table->chains[i]);
+            
+            element_free(entry->datum);
+            globus_free(entry);
         }
     }
+
+    s_table->size = 0;
+    if(s_table->chains)
+    {
+        globus_free(s_table->chains);
+    }
     
-    return h % limit;
+    globus_free(s_table);
+
+    return;
 }
 
-int
+int 
+globus_hashtable_string_hash(
+    void *                              string, 
+    int                                 limit)
+{
+    int                                 accum = 0;
+    char *                              chars;
+    int                                 i = 0;
+
+    chars = (char *)string;
+    while (chars[i]!='\0') 
+    {
+        /* bitwise xor of char and barrel-shifted accumulator */
+        accum = chars[i] 
+            ^ (accum << sizeof(char) * 8)
+            ^ (accum >> ((sizeof(int) - sizeof(char)) * 8));
+        i++;
+    }
+
+    return accum % limit;
+}
+
+int 
 globus_hashtable_string_keyeq(
-    void *                              string1,
+    void *                              string1, 
     void *                              string2)
 {
-    if(string1 == string2 || 
-        (string1 && string2 && strcmp(string1, string2) == 0))
+    if (string1 == string2) 
     {
         return 1;
     }
-
+    else if((string1 == GLOBUS_NULL) || (string2 == GLOBUS_NULL)) 
+    {
+        return 0;
+    }
+    else if (strcmp(string1,string2) == 0) 
+    {
+        return 1;
+    }
+    
     return 0;
 }
 
-int
+int 
 globus_hashtable_voidp_hash(
-    void *                              voidp,
+    void *                              voidp, 
     int                                 limit)
 {
-    unsigned long                       key;
-    
-    key = (unsigned long) voidp;
-    
     /* swap left and right halves portably */
-    return (key << ((sizeof(unsigned long) * 4)) ^ 
-        (key >> (sizeof(unsigned long) * 4))) % limit;
+    return (int) (((((unsigned long) voidp) << (sizeof(unsigned long)*4))
+                        ^ (((unsigned long) voidp) >> (sizeof(unsigned long)*4))) 
+                    % limit);
 }
 
-int
+int 
 globus_hashtable_voidp_keyeq(
-    void *                              voidp1,
+    void *                              voidp1, 
     void *                              voidp2)
 {
-    return (voidp1 == voidp2);
+    return voidp1==voidp2;
 }
 
-int
+int 
 globus_hashtable_int_hash(
-    void *                              integer,
+    void *                              integer, 
     int                                 limit)
 {
-    return (long) integer % limit;
+    return ((int) (long) integer) % limit;
 }
 
-int
+int 
 globus_hashtable_int_keyeq(
-    void *                              integer1,
+    void *                              integer1, 
     void *                              integer2)
 {
-    return (integer1 == integer2);
+    return ((int) (long) integer1) == ((int) (long) integer2);
 }
 
-int
+int 
 globus_hashtable_ulong_hash(
-    void *                              integer,
+    void *                              integer, 
     int                                 limit)
 {
-    return (unsigned long) integer % limit;
+    return (int) (((unsigned long) integer) % limit);
 }
 
-int
+int 
 globus_hashtable_ulong_keyeq(
-    void *                              integer1,
+    void *                              integer1, 
     void *                              integer2)
 {
-    return (integer1 == integer2);
+    return ((unsigned long) integer1) == ((unsigned long) integer2);
 }
+

@@ -190,8 +190,8 @@ globus_l_callback_requeue(
 static
 void
 globus_l_callback_blocked_cb(
-    globus_thread_callback_index_t      index,
     globus_callback_space_t             space,
+    globus_thread_callback_index_t      index,
     void *                              user_args)
 {
     globus_l_callback_restart_info_t *  restart_info;
@@ -373,8 +373,8 @@ globus_l_callback_register(
             globus_memory_push_node(
                 &globus_l_callback_info_memory, callback_info);
 
-            return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(
-                "globus_l_callback_register");
+            return GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
+                "globus_l_callback_register", "i_space");
         }
 
         globus_handle_table_increment_reference(
@@ -422,31 +422,13 @@ globus_l_callback_register(
     
     if(start_time)
     {
-        if(globus_time_abstime_is_infinity(start_time))
-        {
-            /* this will never run... must be a periodic that will be
-             * restarted with globus_callback_adjust_period()
-             */
-            callback_info->in_queue = GLOBUS_L_CALLBACK_QUEUE_NONE;
-            
-            /* if the user didnt pass a handle in for this, then
-             * this will cause the callback_info to be freed
-             * -- user doesnt know what they're doing, but no harm
-             * done
-             */
-            globus_handle_table_decrement_reference(
-               &globus_l_callback_handle_table, callback_info->handle);
-        }
-        else
-        {
-            GlobusTimeAbstimeCopy(callback_info->start_time, *start_time);
-            callback_info->in_queue = GLOBUS_L_CALLBACK_QUEUE_TIMED;
-            
-            globus_priority_q_enqueue(
-                &callback_info->my_space->timed_queue,
-                callback_info,
-                &callback_info->start_time);
-        }
+        GlobusTimeAbstimeCopy(callback_info->start_time, *start_time);
+        callback_info->in_queue = GLOBUS_L_CALLBACK_QUEUE_TIMED;
+        
+        globus_priority_q_enqueue(
+            &callback_info->my_space->timed_queue,
+            callback_info,
+            &callback_info->start_time);
     }
     else
     {
@@ -481,11 +463,6 @@ globus_callback_space_register_oneshot(
         if(globus_reltime_cmp(delay_time, &globus_i_reltime_zero) <= 0)
         {
             delay_time = GLOBUS_NULL;
-        }
-        else if(globus_time_reltime_is_infinity(delay_time))
-        {
-            /* user is being goofy here, but I'll allow it */
-            GlobusTimeAbstimeCopy(start_time, globus_i_abstime_infinity);
         }
         else
         {
@@ -535,23 +512,11 @@ globus_callback_space_register_periodic(
         {
             delay_time = GLOBUS_NULL;
         }
-        else if(globus_time_reltime_is_infinity(delay_time))
-        {
-            GlobusTimeAbstimeCopy(start_time, globus_i_abstime_infinity);
-        }
         else
         {
             GlobusTimeAbstimeGetCurrent(start_time);
             GlobusTimeAbstimeInc(start_time, *delay_time);
         }
-    }
-    
-    if(globus_time_reltime_is_infinity(period))
-    {
-        /* infinite periods start life out as a oneshot,
-         * globus_callback_adjust_period() is used to revive them
-         */
-        period = GLOBUS_NULL;
     }
     
     return globus_l_callback_register(
@@ -1110,7 +1075,6 @@ globus_callback_space_poll(
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t *  last_restart_info;
     globus_l_callback_restart_info_t    restart_info;
-    globus_thread_callback_index_t      idx;
 
     i_space = GLOBUS_NULL;
 
@@ -1127,7 +1091,7 @@ globus_callback_space_poll(
     globus_thread_blocking_callback_push(
         globus_l_callback_blocked_cb,
         &restart_info,
-        &idx);
+        GLOBUS_NULL);
     
     if(!timestop)
     {
@@ -1275,7 +1239,7 @@ globus_callback_space_poll(
     
     globus_l_callback_restart_info = last_restart_info;
     
-    globus_thread_blocking_callback_pop(&idx);
+    globus_thread_blocking_callback_pop(GLOBUS_NULL);
 }
 
 void

@@ -7,11 +7,6 @@
 
 #include "globus_config.h"
 
-/** GET IPv6 compatible types (at least with GNU) **/
-#ifndef __USE_POSIX
-#define __USE_POSIX
-#endif
-
 /*
  * include system files if we have them
  */
@@ -126,13 +121,6 @@
 /*
  * Various macro definitions for assertion checking
  */
-#if 0
-	void globus_dump_stack();
-	#define GLOBUS_DUMP_STACK() globus_dump_stack() 
-#else
-	#define GLOBUS_DUMP_STACK()
-#endif
-
 #if defined(BUILD_DEBUG)
 #   define globus_assert(assertion)					    \
     do {							            	    \
@@ -141,8 +129,7 @@
             fprintf(stderr, "Assertion " #assertion 	\
 		    " failed in file %s at line %d\n",			\
 		    __FILE__, __LINE__);				        \
-	    GLOBUS_DUMP_STACK();						    \
-	    abort();                                        \
+	    abort();						            	\
          }								                \
     } while(0)
 
@@ -153,8 +140,7 @@
     	    fprintf(stderr, "Assertion " #assertion		\
 		    " failed in file %s at line %d: %s",    	\
 		    __FILE__, __LINE__, string);			    \
-	    GLOBUS_DUMP_STACK();						    \
-	    abort();                                        \
+	    abort();							            \
     	}								                \
     } while(0)
 #else /* BUILD_DEBUG */
@@ -206,10 +192,8 @@ typedef GLOBUS_OFF_T                                    globus_off_t;
 
 #if !defined(TARGET_ARCH_WIN32)
     typedef size_t                                      globus_size_t;
-    typedef ssize_t                                     globus_ssize_t;
 #else
-    typedef unsigned long                               globus_size_t;
-    typedef long                                        globus_ssize_t;
+    typedef long                                        globus_size_t;
 #endif
 
 #if !defined(HAVE_STRUCT_IOVEC)
@@ -233,6 +217,13 @@ typedef GLOBUS_OFF_T                                    globus_off_t;
 	//#define uint32_t unsigned __int32 -- this might work?
 	#define uint32_t ULONG32
 #define vsnprintf _vsnprintf
+#endif
+
+#if 0
+	void globus_dump_stack();
+	#define GLOBUS_DUMP_STACK() globus_dump_stack() 
+#else
+	#define GLOBUS_DUMP_STACK()
 #endif
 
 #endif  /* GLOBUS_COMMON_INCLUDE_H */

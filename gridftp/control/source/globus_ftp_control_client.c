@@ -596,7 +596,7 @@ globus_l_ftp_control_connect_cb(
         {
             if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_CONNECTING)
             {
-                cc_handle->cc_state = GLOBUS_FTP_CONTROL_CLOSING;
+                cc_handle->cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
             }
             error=globus_error_get(result);
             globus_mutex_unlock(&(cc_handle->mutex));

@@ -33,6 +33,7 @@ extern globus_module_descriptor_t       globus_i_thread_common_module;
 			     Include header files
 ******************************************************************************/
 
+typedef int                                   globus_thread_result_t;
 typedef int                                   globus_thread_callback_index_t;
 
 /**************************************************************************
@@ -41,40 +42,35 @@ typedef int                                   globus_thread_callback_index_t;
 typedef
 void
 (*globus_thread_blocking_func_t)(
+    int                                 space,
     globus_thread_callback_index_t      ndx,
-    globus_callback_space_t             space,
     void *                              user_args);
 
-#define globus_thread_blocking_callback_push(f, u, i)                       \
-    globus_thread_blocking_space_callback_push(                             \
-        (f), (u), GLOBUS_CALLBACK_GLOBAL_SPACE, (i))
-        
-int
-globus_thread_blocking_space_callback_push(
-    globus_thread_blocking_func_t       func,
-    void *                              user_args,
-    globus_callback_space_t             space,
-    globus_thread_callback_index_t *    i);
+globus_thread_result_t
+globus_thread_blocking_callback_push(
+    globus_thread_blocking_func_t        func,
+    void *                               user_args,
+    globus_thread_callback_index_t *     i);
 
-int
+globus_thread_result_t
 globus_thread_blocking_callback_pop(
-    globus_thread_callback_index_t *    i);
+    globus_thread_callback_index_t *     i);
 
-int 
+globus_thread_result_t 
 globus_thread_blocking_callback_enable(
-    globus_thread_callback_index_t *    i);
+    globus_thread_callback_index_t *  i);
 
 
-int 
+globus_thread_result_t 
 globus_thread_blocking_callback_disable(
-    globus_thread_callback_index_t *    i);
+    globus_thread_callback_index_t *  i);
 
 #define globus_thread_blocking_will_block()                             \
     globus_thread_blocking_space_will_block(GLOBUS_CALLBACK_GLOBAL_SPACE)
 
-int 
+globus_thread_result_t 
 globus_thread_blocking_space_will_block(
-    globus_callback_space_t             blocking_space);
+    int                                 blocking_space);
 
 void
 globus_thread_prefork();

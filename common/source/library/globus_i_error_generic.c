@@ -35,30 +35,18 @@ globus_l_error_copy_globus(
     void *                              src,
     void **                             dst)
 {
-    globus_l_error_data_t *             source;
-    globus_l_error_data_t *             dest;
-    
     if(src == NULL || dst == NULL) return;
-    
-    source = (globus_l_error_data_t *) src;
-    dest = (globus_l_error_data_t *) malloc(sizeof(globus_l_error_data_t));
-    if(dest)
-    {
-        memset(dest, 0 ,sizeof(globus_l_error_data_t));
-        dest->type = source->type;
-        
-        if(source->short_desc)
-        {
-            dest->short_desc = globus_libc_strdup(source->short_desc);
-        }
-        
-        if(source->long_desc)
-        {
-            dest->long_desc = globus_libc_strdup(source->long_desc);
-        }
-    }
-    
-    *dst = dest;
+    (*dst) = (void *) malloc(sizeof(globus_l_error_data_t));
+    ((globus_l_error_data_t *) *dst)->type =
+        ((globus_l_error_data_t *) src)->type;
+
+    memset(*dst,0,sizeof(globus_l_error_data_t));
+
+    ((globus_l_error_data_t *) *dst)->short_desc =
+            globus_libc_strdup(((globus_l_error_data_t *) src)->short_desc);
+
+    ((globus_l_error_data_t *) *dst)->short_desc =
+        globus_libc_strdup(((globus_l_error_data_t *) src)->long_desc);
 }/* globus_l_error_copy_globus */
 /*@}*/
 
