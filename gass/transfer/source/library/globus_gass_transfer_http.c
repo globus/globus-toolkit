@@ -3925,7 +3925,9 @@ globus_l_gass_transfer_http_register_read(
      */
     if(proto->text_mode == GLOBUS_FALSE &&
 	    (
-		(proto->chunked && proto->chunk_left > 0) ||
+		(proto->chunked &&
+		 proto->chunk_left > 0 &&
+		 proto->recv_state == GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_CHUNK_BODY) ||
 		(proto->chunked == GLOBUS_FALSE)
 	    )
            )
