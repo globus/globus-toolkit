@@ -7,9 +7,9 @@
 #include <sys/file.h>
 
 #define TIME_DELAY_112  5
-
+/*
 #define PROXY_BACKEND   1
-
+*/
 extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
