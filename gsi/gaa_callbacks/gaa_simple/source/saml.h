@@ -60,7 +60,7 @@ assertionPtr
 parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion);
 
 assertionPtr
-parseSAMLassertion(char *filename);
+parseSAMLassertion(char *filename, int check_signature);
 
 void
 printSAMLassertion(assertionPtr as);

@@ -8,7 +8,7 @@
  *
  * @ingroup gaa_simple
  *
- * Create a GAA policy from an extended access control list.  This function
+ * Create a GAA policy from a signed saml assertion.  This function
  * is meant to be used as a GAA getpolicy callback function.
  *
  * @param gaa
@@ -16,9 +16,9 @@
  * @param policy
  *        output policy pointer
  * @param object
- *        name of the object that the policy is associated with
+ *        name of the object whose policies are being queried.
  * @param params
- *        input (char **) pointer to name of SAML assertion file with full path name.
+ *        input (char **) pointer to a signed saml assertion
  *
  * @retval GAA_S_SUCCESS
  *         success
@@ -47,7 +47,7 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
   int					num = -1;
   int         valid = 0;
   char        *saml_assertion = 0;
-
+  int f = 0;
   assertionPtr Assertion = 0;
   adsPtr cur_ads = 0;
   actionPtr cur_action = 0;
@@ -62,8 +62,11 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
     return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
   }
 
-printf("%s\n", saml_assertion);
-  Assertion = parseSAMLassertion(saml_assertion);
+  f = fopen("/tmp/assertion", "w");
+  fprintf(f, "%s", saml_assertion);
+  fclose(f);
+
+  Assertion = parseSAMLassertion(saml_assertion, 1);
 
   if (!Assertion) {
       if ((eptr = malloc(strlen(saml_assertion) + 60)) == 0) {

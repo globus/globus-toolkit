@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "gaa.h"
 #include "saml.h"
+#include "xml_sig.h"
 
 assertionPtr
 getConditions(xmlNodePtr cur, assertionPtr Assertion)
@@ -182,7 +184,7 @@ parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion)
 
 
 assertionPtr
-parseSAMLassertion(char *saml_assertion) {
+parseSAMLassertion(char *saml_assertion, int verify_signature) {
   xmlDocPtr doc;
   xmlNsPtr ns;
   xmlNodePtr cur;
@@ -199,8 +201,15 @@ parseSAMLassertion(char *saml_assertion) {
   /*
    * build an XML tree from a saml file;
    */
+  xmlInitParser();
   doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
   if (doc == NULL) return(NULL);
+
+  if (verify_signature) {
+      if (gaa_simple_i_verify_xml_sig(doc) != GAA_S_SUCCESS) {
+	  return(0);
+      }
+  }
 
   /*
    * Check the document is of the right kind
