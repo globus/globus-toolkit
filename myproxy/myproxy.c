@@ -654,16 +654,19 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  MYPROXY_FORCE_DBASE_WRITE_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
                           buf, sizeof(buf));
-    if (len <= -1)
+    if (len == -1)
     {
 	verror_prepend_string("Error parsing force_database_write from client request");
 	return -1;
     }
-    
-    if (parse_string(buf, &request->force_dbase_write) == -1)  
-    {
-	return -1;
-    }
+    else
+      if (len == -2) // string not found
+         request->force_dbase_write = 0;
+      else
+    	if (parse_string(buf, &request->force_dbase_write) == -1)  
+    	{
+		return -1;
+    	}
 #endif
 
     //authorization service
@@ -741,7 +744,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	
     if (encode_integer(response_size,
 			tmp,
-			sizeof(buf)) == -1)
+			sizeof(tmp)) == -1)
     {
 	return -1;
     }

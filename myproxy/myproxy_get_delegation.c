@@ -45,7 +45,7 @@ static char usage[] = \
 "                                         credential as the default username\n"
 "                                         instead of the LOGNAME env. var.\n"
 #if defined (MULTICRED_FEATURE)
-"	-k | --credname	<name>    Specify credential name\n"
+"	 -k | --credname	<name>    Specify credential name\n"
 #endif
 "\n";
 

@@ -159,16 +159,10 @@ int myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt)
     myenv(*henv,rc);    
 
     printf(" connecting to '%s' with user name '%s'...\n",mydsn,myuid);
-    //rc = SQLConnect(*hdbc, mydsn, SQL_NTS, myuid, SQL_NTS,  mypwd, SQL_NTS);
-    //mycon(*hdbc,rc);
-
-    rc = SQLDriverConnect (*hdbc, 0, "DSN=mydbase", SQL_NTS, (UCHAR *) buf, sizeof (buf), &buflen, SQL_DRIVER_COMPLETE);   
-
-  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO && rc != SQL_NO_DATA)
-      return -1;
-      
+    rc = SQLConnect(*hdbc, mydsn, SQL_NTS, myuid, SQL_NTS,  mypwd, SQL_NTS);
+    mycon(*hdbc,rc);
     rc = SQLSetConnectAttr(*hdbc,SQL_ATTR_AUTOCOMMIT,(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
-  //  mycon(*hdbc,rc);
+    mycon(*hdbc,rc);
 
     rc = SQLAllocHandle(SQL_HANDLE_STMT,*hdbc,hstmt);
     mycon(*hdbc,rc);

@@ -64,11 +64,6 @@
 #define MAX_NAME_LEN 95
 #define MAX_COLUMNS 255
 #define MAX_ROW_DATA_LEN 255
-/*
-SQLCHAR *mydsn = "myodbc3";
-SQLCHAR *myuid = "venu";
-SQLCHAR *mypwd = "venu";
-*/
 /* PROTOTYPE */
 int myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
 

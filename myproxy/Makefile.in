@@ -10,6 +10,8 @@ MYPROXY_SERVER_ETC_DIR	=	@MYPROXY_SERVER_ETC_DIR@
 MYPROXY_SERVER_STORE_DIR=	@MYPROXY_SERVER_STORE_DIR@
 MYPROXY_CLIENT_DIR	=	@MYPROXY_CLIENT_DIR@
 MYPROXY_TOOLS_DIR	=	@MYPROXY_TOOLS_DIR@
+MULTICRED_FEATURE_ENABLED = @MULTICRED_FEATURE_ENABLED@
+MYODBC_INSTALL_PATH	= 	@MYODBC_INSTALL_PATH@
 
 LINK		=	$(CC)
 
@@ -33,6 +35,11 @@ TEST_PROGS	=	gsi-socket-test
 MYPROXY_LIB     =       libmyproxy.a
 MYPROXY_HEADERS =       myproxy.h myproxy_delegation.h gsi_socket.h myproxy_authorization.h myproxy_creds.h version.h verror.h
 
+ifeq ($(MULTICRED_FEATURE_ENABLED), YES)
+	LIBMYODBC3 = $(MYODBC_INSTALL_PATH)/libmyodbc3.so
+	MYUTILITY = my_utility.o
+	MYSQLCLIENT = -lmysqlclient
+endif
 
 LIB_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
 			verror.o ssl_utils.o string_funcs.o \
@@ -42,12 +49,10 @@ INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
 INFO_OBJS	= myproxy_info.o $(MYPROXY_LIB)
 DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
-SERVER_OBJS	= myproxy_server.o myproxy_creds.o my_utility.o \
+SERVER_OBJS	= myproxy_server.o myproxy_creds.o  $(MYUTILITY) \
 			vparse.o myproxy_server_config.o \
-			.libs/libiodbc.so \
+			$(LIBMYODBC3) \
 			$(MYPROXY_LIB)
-
-#			libmyodbc3.so 
 
 default:	clients server tools library
 
@@ -94,7 +99,7 @@ myproxy-get-delegation: $(GET_OBJS)
 
 myproxy-server: $(SERVER_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(SERVER_OBJS) $(GLOBUS_PKG_LIBS) -lmysqlclient -lz -Wl,--rpath -Wl,/usr/local/lib \
+		-o $@ $(SERVER_OBJS) $(GLOBUS_PKG_LIBS) $(MYSQLCLIENT) -lz -Wl,--rpath -Wl,/usr/local/lib \
 		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 libmyproxy.a: $(LIB_OBJS)

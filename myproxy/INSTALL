@@ -98,6 +98,10 @@ Step 1: Run './configure'
 		and destroy any of the credentials. This support requires
 		a backend database.
 
+	--with-myodbc=<PATH>
+		Specifies the path where myodbc libraries are installed.
+		Usually the directory /usr/local/lib
+
 Step 2: Run 'make'
 
 Step 3: After a hopefully successful make you are ready to install. You

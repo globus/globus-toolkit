@@ -37,7 +37,16 @@ AC_ARG_WITH(myproxy-tools-path,
 AC_MSG_RESULT($MYPROXY_TOOLS_DIR)
 AC_SUBST(MYPROXY_TOOLS_DIR)
 
+MYODBC_INSTALL_PATH=""
+AC_MSG_CHECKING(for myodbc installation path)
+dnl --with-myodbc
+AC_ARG_WITH(myodbc,
+	[  --with-myodbc=PATH specify myodbc path],
+		MYODBC_INSTALL_PATH=$withval),
+AC_MSG_RESULT($MYODBC_INSTALL_PATH)
+AC_SUBST(MYODBC_INSTALL_PATH)
 
+		
 AC_MSG_CHECKING(for myproxy client install prefix)
 dnl The default:
 MYPROXY_CLIENT_DIR="\$(prefix)"
@@ -128,10 +137,18 @@ AC_ARG_ENABLE(multicred-feature,
 		if test "$enableval" = yes ; then
 			AC_MSG_RESULT([Multiple credentials feature enabled])
 			AC_DEFINE(MULTICRED_FEATURE)
+                        if test -z "${MYODBC_INSTALL_PATH}"; then
+                               AC_MSG_ERROR(Must specify --with-myodbc)
+                        fi
+			MULTICRED_FEATURE_ENABLED="YES"
 		else
+			MULTICRED_FEATURE_ENABLED=""
 			AC_MSG_RESULT([Multiple credentials feature disabled])
 		fi,
-		AC_MSG_RESULT([Multiple credentials feature disabled]))
+                MULTICRED_FEATURE_ENABLED=""
+                AC_MSG_RESULT([Multiple credentials feature disabled3]))
+
+AC_SUBST(MULTICRED_FEATURE_ENABLED)
 		
 AC_ARG_ENABLE(anonymous-auth,
 	[  --disable-anonymous-auth  Disable support for SSL anonymous authentication],
@@ -213,3 +230,4 @@ dnl
 dnl
 dnl
 AC_OUTPUT(Makefile myproxy.cron)
+AC_MSG_RESULT(***** Run 'make clean' before running 'make' ******)

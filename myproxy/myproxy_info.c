@@ -183,6 +183,7 @@ main(int argc, char *argv[])
 	if (server_response->cred_owner && strlen(server_response->cred_owner))
 	   printf("proxy owned by : %s\n", server_response->cred_owner); 
 
+#if defined (MULTICRED_FEATURE)
 	printf ("\n\n=================== Credentials Present ==============");
 	if (server_response->response_string)
 	{
@@ -205,6 +206,8 @@ main(int argc, char *argv[])
 			printf ("%c", server_response->response_string[i]);
 	    }
 	}
+#endif
+	
 			
 	   //printf ("%s\n", server_response->response_string);
 	if (server_response->cred_end_time == 0)
