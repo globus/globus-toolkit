@@ -575,7 +575,7 @@ nested_wait_handler(
     static int                            count = 0;
     static globus_bool_t                  signaled = GLOBUS_FALSE;
 
-   verbose_printf(3, "nested_wait_handler() : entering\n");
+   verbose_printf(10, "nested_wait_handler() : entering\n");
     count++;
     if(count == 5)
     {
