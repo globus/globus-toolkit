@@ -12,6 +12,8 @@
 #include "verror.h"
 #include "string_funcs.h"
 
+#include "sslutil.h"
+
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -24,8 +26,6 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <md5global.h>
-#include <md5.h>
 
 /*
  * Doesn't always seem to be define in <unistd.h>
