@@ -523,8 +523,16 @@ main(int xargc,
         }
         else if (strcmp(argv[i], "-inetd") == 0)
         {
-            run_from_inetd = 1;
-            foreground = 0;
+            if(!run_from_inetd)
+	    {
+		fprintf(stderr, "Gatekeeper running as daemon, ignoring -inetd!\n");
+	    }
+	    else
+	    {
+		run_from_inetd = 1;
+		foreground = 0;
+	    }
+	    
         }
         else if ((strcmp(argv[i], "-p") == 0)
                  && (i + 1 < argc))
@@ -661,11 +669,14 @@ main(int xargc,
         }
         else if (strcmp(argv[i], "-f") == 0)
         {
-            /* make the daemon run in the Foreground */
-
-            foreground = 1;
-            run_from_inetd = 0;
-        }
+	    if(!run_from_inetd)
+	    {
+		/* make the daemon run in the Foreground */
+		
+		foreground = 1;
+		run_from_inetd = 0;
+	    }
+	}
         else
         {
 
