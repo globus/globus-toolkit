@@ -854,6 +854,11 @@ reregister_read:
     return;
 
 error_exit:
+    globus_libc_free(http_handle->read_operation.iov);
+    http_handle->read_operation.iov = NULL;
+    http_handle->read_operation.iovcnt = 0;
+    http_handle->read_operation.operation = NULL;
+    http_handle->read_operation.nbytes = 0;
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_read(op, result, 0);

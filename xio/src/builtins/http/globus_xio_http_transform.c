@@ -1755,6 +1755,8 @@ globus_i_xio_http_close_callback(
     http_handle->close_operation = NULL;
 
     globus_i_xio_http_handle_destroy(user_arg);
+
+    globus_libc_free(user_arg);
 }
 /* globus_i_xio_http_close_callback() */
 

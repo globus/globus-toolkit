@@ -465,9 +465,20 @@ globus_l_xio_http_client_write_request_callback(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
+    int                                 i;
     GlobusXIOName(globus_l_xio_http_client_write_request_callback);
 
     globus_mutex_lock(&http_handle->mutex);
+
+    /* Free up headers */
+    for (i = 0; i < http_handle->header_iovcnt; i++)
+    {
+        globus_libc_free(http_handle->header_iovec[i].iov_base);
+    }
+    globus_libc_free(http_handle->header_iovec);
+
+    http_handle->header_iovec = NULL;
+    http_handle->header_iovcnt = 0;
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -720,6 +731,9 @@ globus_l_xio_http_client_read_response_callback(
         }
     }
 
+    globus_xio_driver_operation_destroy(http_handle->response_read_operation);
+    http_handle->response_read_operation = NULL;
+
     globus_mutex_unlock(&http_handle->mutex);
 
     if (finish_read)
@@ -794,6 +808,8 @@ error_exit:
                     &http_handle->response_info);
         }
     }
+    globus_xio_driver_operation_destroy(http_handle->response_read_operation);
+    http_handle->response_read_operation = NULL;
 
     globus_mutex_unlock(&http_handle->mutex);
 
