@@ -1584,15 +1584,23 @@ if test "x$ac_cv_have_pw_change_in_struct_passwd" = "xyes" ; then
 	AC_DEFINE(HAVE_PW_CHANGE_IN_PASSWD)
 fi
 
+dnl make sure we're using the real structure members and not defines
 AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
 		ac_cv_have_accrights_in_msghdr, [
-	AC_TRY_COMPILE(
+	AC_TRY_RUN(
 		[
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+int main() {
+#ifdef msg_accrights
+exit(1);
+#endif
+struct msghdr m;
+m.msg_accrights = 0;
+exit(0);
+}
 		],
-		[ struct msghdr m; m.msg_accrights = 0; ],
 		[ ac_cv_have_accrights_in_msghdr="yes" ],
 		[ ac_cv_have_accrights_in_msghdr="no" ]
 	)
@@ -1603,13 +1611,20 @@ fi
 
 AC_CACHE_CHECK([for msg_control field in struct msghdr],
 		ac_cv_have_control_in_msghdr, [
-	AC_TRY_COMPILE(
+	AC_TRY_RUN(
 		[
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+int main() {
+#ifdef msg_control
+exit(1);
+#endif
+struct msghdr m;
+m.msg_control = 0;
+exit(0);
+}
 		],
-		[ struct msghdr m; m.msg_control = 0; ],
 		[ ac_cv_have_control_in_msghdr="yes" ],
 		[ ac_cv_have_control_in_msghdr="no" ]
 	)
@@ -2109,6 +2124,21 @@ main()
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ],
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ]
 	)
+	fi ]
+)
+if test "$USES_LOGIN_CONF" != "yes" ; then
+	AC_DEFINE_UNQUOTED(USER_PATH, "$user_path")
+	AC_SUBST(user_path)
+fi
+
+# Set superuser path separately to user path
+AC_ARG_WITH(superuser-path,
+	[  --with-superuser-path=  Specify different path for super-user],
+	[
+		if test "x$withval" != "xno" ; then
+			AC_DEFINE_UNQUOTED(SUPERUSER_PATH, "$withval")
+			superuser_path=$withval
+		fi
 	fi ]
 )
 if test "$USES_LOGIN_CONF" != "yes" ; then

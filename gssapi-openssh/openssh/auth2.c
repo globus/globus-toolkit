@@ -53,6 +53,7 @@ RCSID("$OpenBSD: auth2.c,v 1.91 2002/05/13 02:37:39 itojun Exp $");
 #include "match.h"
 #include "monitor_wrap.h"
 #include "atomicio.h"
+#include "misc.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"

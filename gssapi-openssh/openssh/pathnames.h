@@ -142,6 +142,11 @@ extern char *_PATH_SFTP_SERVER;
 #define _PATH_PRIVSEP_CHROOT_DIR	"/var/empty"
 #endif
 
+/* chroot directory for unprivileged user when UsePrivilegeSeparation=yes */
+#ifndef _PATH_PRIVSEP_CHROOT_DIR
+#define _PATH_PRIVSEP_CHROOT_DIR	"/var/empty"
+#endif
+
 #ifndef _PATH_LS
 #define _PATH_LS			"ls"
 #endif

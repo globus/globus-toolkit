@@ -651,10 +651,31 @@ to use IPv6 addresses only.
 .Nm
 obtains configuration data from the following sources in
 the following order:
-command line options, user's configuration file
+command line options, 
+feature-specific user configuration file(s) (see below),
+user's configuration file
 .Pq Pa $HOME/.ssh/config ,
 and system-wide configuration file
 .Pq Pa /etc/ssh/ssh_config .
+For compatibility with other
+.Nm
+versions, the following feature-specific user configuration files
+will be processed after the command line options but before the user's 
+main configuration file, so options that other
+.Nm
+versions may not support don't need to go in the main configuration file:
+.Bl -tag -width Ds
+.It Pa $HOME/.ssh/config.gssapi
+Read if GSSAPI authentication is supported.  This is a good place for
+the GssapiAuthentication and GssapiDelegateCredentials options.
+.It Pa $HOME/.ssh/config.krb
+Read if Kerberos authentication is supported.  This is a good place
+for the KerberosAuthentication and KerberosTgtPassing options.
+.It Pa $HOME/.ssh/config.afs
+Read if AFS token passing is supported.  This is a good place for the
+AfsTokenPassing option.
+.El
+.Pp
 For each parameter, the first obtained value
 will be used.
 The configuration files contain sections bracketed by
@@ -893,6 +914,17 @@ The default is
 Specifies a file to use for the global
 host key database instead of
 .Pa /etc/ssh/ssh_known_hosts .
+.It Cm GssapiAuthentication
+Specifies whether authentication based on GSSAPI may be used, either using
+the result of a successful key exchange, or using GSSAPI user
+authentication.
+The default is 
+.Dq yes .
+.It Cm GssapiDelegateCredentials
+Specifies whether GSSAPI credentials will be delegated (forwarded) to
+the server.
+The default is
+.Dq yes .
 .It Cm HostbasedAuthentication
 Specifies whether to try rhosts based authentication with public key
 authentication.

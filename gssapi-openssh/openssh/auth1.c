@@ -507,8 +507,8 @@ do_authentication(void)
 	packet_check_eom();
 
 #ifdef GSSAPI
-  /* Parse GSSAPI identity from userstring */
-  user = ssh1_gssapi_parse_userstring(user);
+	/* Parse GSSAPI identity from userstring */
+	user = ssh1_gssapi_parse_userstring(user);
 #endif /* GSSAPI */
 
 	if ((style = strchr(user, ':')) != NULL)

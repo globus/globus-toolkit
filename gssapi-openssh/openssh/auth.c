@@ -159,7 +159,7 @@ allowed_user(struct passwd * pw)
 	/* Return false if AllowUsers isn't empty and user isn't listed there */
 	if (options.num_allow_users > 0) {
 		for (i = 0; i < options.num_allow_users; i++)
- 			if (match_user(pw->pw_name, hostname, ipaddr,
+			if (match_user(pw->pw_name, hostname, ipaddr,
 			    options.allow_users[i]))
 				break;
 		/* i < options.num_allow_users iff we break for loop */
