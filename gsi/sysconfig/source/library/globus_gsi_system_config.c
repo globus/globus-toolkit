@@ -185,6 +185,13 @@ globus_l_gsi_sysconfig_activate(void)
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
+    result = globus_module_activate(GLOBUS_COMMON_MODULE);
+
+    if(result != 0)
+    {
+        return result;
+    }
+    
     /* OpenSSL's random generator is fed with random
      * information, which requires system dependant information
      * (path names)
@@ -243,6 +250,8 @@ globus_l_gsi_sysconfig_deactivate(void)
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     RAND_cleanup();
+
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
