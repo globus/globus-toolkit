@@ -32,8 +32,6 @@
             </Dependency>
         </Source_Dependencies>
 
-        </Source_Dependencies>
-
         <Source_Dependencies Type="pgm_runtime" >
             <Dependency Name="globus_gram_job_manager_test" Package="data" >
         	<Version >
