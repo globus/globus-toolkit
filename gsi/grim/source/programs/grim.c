@@ -5,8 +5,24 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
+#include <expat.h>
+#include <grp.h>
+#include <pwd.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+
+
+#define GrimFreeNull(a)                                     \
+{                                                           \
+    int __ctr = 0;                                          \
+    while(a[__ctr] != NULL)                                 \
+    {                                                       \
+        free(a[__ctr]);                                     \
+        __ctr++;                                            \
+    }                                                       \
+    free(a);                                                \
+}
 
 /**
  *  Default values:
@@ -36,10 +52,14 @@
 #define DEFAULT_CA_CERT_DIR         "/etc/grid-security/certificates/"
 #define DEFAULT_KEY_FILENAME        "/etc/grid-security/hostkey.pem"
 #define DEFAULT_CERT_FILENAME       "/etc/grid-security/hostcert.pem"
+#define DEFAULT_PORT_TYPE_FILENAME  "/etc/grid-security/port_type.xml"
+#define DEFAULT_CONF_FILENAME       "/etc/grid-security/grim-conf.xml"
 #define DEFAULT_MAX_TIME            24*60
 #define DEFAULT_TIME                12*60
 #define DEFAULT_KEY_BITS            512
 /* default proxy location: /tmp/x509_u<user id> */
+
+#define GRIM_STRING_MAX             512
 
 
 /*
@@ -60,40 +80,58 @@ static char *                                   g_username = NULL;
  ***********************************************************************/
 static int
 grim_pw_stdin_callback(
-    char *                                      buf, 
-    int                                         num, 
-    int                                         w);
+    char *                                  buf, 
+    int                                     num, 
+    int                                     w);
 
 int
 grim_verify_proxy(
-    char *                                      proxy_out_filename);
+    char *                                  proxy_out_filename);
 
 int
 grim_privedged_code(
-    globus_gsi_cred_handle_t *                  cred_handle,
-    char *                                      ca_cert_dir,
-    char *                                      user_cert_filename,
-    char *                                      user_key_filename,
-    char *                                      dns[],
-    int                                         dn_count);
+    globus_gsi_cred_handle_t *              cred_handle,
+    char *                                  ca_cert_dir,
+    char *                                  user_cert_filename,
+    char *                                  user_key_filename,
+    char *                                  dns[],
+    int                                     dn_count);
 
 int
 grim_parse_input(
-    int                                         argc,
-    char *                                      argv[],
-    int *                                       out_valid,
-    int *                                       out_key_bits,
-    char **                                     out_user_cert_filename,
-    char **                                     out_ca_cert_dir,
-    char **                                     out_proxy_out_filename,
-    char **                                     out_user_key_filename);
+    int                                     argc,
+    char *                                  argv[],
+    int *                                   out_valid,
+    int *                                   out_key_bits,
+    char *                                  out_user_cert_filename,
+    char *                                  out_ca_cert_dir,
+    char **                                 out_proxy_out_filename,
+    char *                                  out_user_key_filename,
+    char *                                  out_port_type_filename);
 
 int
 grim_write_proxy(
-    globus_gsi_cred_handle_t                    cred_handle,
-    int                                         valid,
-    int                                         key_bits,
-    char *                                      proxy_out_filename);
+    globus_gsi_cred_handle_t                cred_handle,
+    int                                     valid,
+    int                                     key_bits,
+    char *                                  proxy_out_filename);
+
+int
+grim_parse_port_type_file(
+    char *                                  port_type_filename,
+    char *                                  username,
+    char ***                                port_types);
+
+int
+grim_parse_conf_file(
+    int *                                   out_max_time,
+    int *                                   out_default_time,
+    int *                                   out_key_bits,
+    char *                                  out_ca_cert_dir,
+    char *                                  out_cert_filename,
+    char *                                  out_key_filename,
+    char *                                  out_gridmap_filename,
+    char *                                  out_port_type_filename);
 
 /*
  *  like printf for the log messages.
@@ -103,12 +141,12 @@ grim_write_proxy(
  */
 int
 grim_write_log(
-    const char *                                format, 
+    const char *                            format, 
     ...)
 {
-    va_list                                     ap;
-    int                                         rc;
-    char                                        buf[128];
+    va_list                                 ap;
+    int                                     rc;
+    char                                    buf[128];
 
     if(g_quiet)
     {
@@ -158,24 +196,27 @@ static char *  LONG_USAGE = \
  */
 int 
 main(
-    int                                         argc,
-    char **                                     argv)
+    int                                     argc,
+    char **                                 argv)
 {
-    int                                         rc;
-    int                                         valid;
-    globus_result_t                             res;
+    int                                     rc;
+    int                                     valid;
+    globus_result_t                         res;
     /* default proxy to 512 bits */
-    int                                         key_bits    = 512;
+    int                                     key_bits    = 512;
     /* dont restrict the proxy */
-    char *                                      user_cert_filename = NULL;
-    char *                                      user_key_filename = NULL;
-    char *                                      proxy_out_filename = NULL;
-    char *                                      ca_cert_dir = NULL;
-    globus_gsi_cred_handle_t                    cred_handle;
-    uid_t                                       user_id;
-    struct passwd *                             pw_ent;
-    char **                                     globus_dns;
-    int                                         dn_count;
+    char                                    user_cert_filename[GRIM_STRING_MAX];
+    char                                    user_key_filename[GRIM_STRING_MAX];
+    char *                                  proxy_out_filename;
+    char                                    ca_cert_dir[GRIM_STRING_MAX];
+    char                                    port_type_filename[GRIM_STRING_MAX];
+    globus_gsi_cred_handle_t                cred_handle;
+    uid_t                                   user_id;
+    struct passwd *                         pw_ent;
+    char **                                 globus_dns;
+    char **                                 port_types;
+    int                                     dn_count;
+    FILE *                                  port_type_fptr;
 
     /***** BEGIN PRIVLEDGES *****/
     /*
@@ -217,12 +258,22 @@ main(
               argv,
               &valid,
               &key_bits,
-              &user_cert_filename,
-              &ca_cert_dir,
+              user_cert_filename,
+              ca_cert_dir,
               &proxy_out_filename,
-              &user_key_filename);
+              user_key_filename,
+              port_type_filename);
     /* if parse told us not to continue */
     if(rc != 0)
+    {
+        goto exit;
+    }
+
+    /*
+     *  open port type file will still maintaining privledges
+     */
+    port_type_fptr = fopen(port_type_filename, "r");
+    if(port_type_fptr == NULL)
     {
         goto exit;
     }
@@ -259,10 +310,6 @@ main(
     }
 
     /*
-     * TODO: look up port types.
-     */
-
-    /*
      *  drop privledges
      */
     user_id = getuid();
@@ -272,11 +319,18 @@ main(
     /*
      *  at this point we no loner have special privledges
      */
-
     /*
-     *  clean up memory
+     * if the file successfully opened look up port types.
      */
-    GlobusGssAssistFreeDNArray(globus_dns);
+    rc = grim_parse_port_type_file(
+            port_type_fptr,
+            "bresnaha",
+            &port_types);
+    if(rc != 0)
+    {
+        goto exit;
+    }
+
 
     /*
      * if no proxy out file is detected find it
@@ -312,12 +366,19 @@ main(
             cred_handle,
             valid,
             key_bits,
-            proxy_out_filename);
+            proxy_out_filename,
+            globus_dns,
+            port_types);
     if(rc != 0)
     {
         goto cred_exit;
     }
 
+    /*
+     *  clean up memory
+     */
+    GlobusGssAssistFreeDNArray(globus_dns);
+    GrimFreeNull(port_types);
 
   cred_exit:
     globus_gsi_cred_handle_destroy(cred_handle);
@@ -358,22 +419,29 @@ grim_parse_input(
     char *                                      argv[],
     int *                                       out_valid,
     int *                                       out_key_bits,
-    char **                                     out_user_cert_filename,
-    char **                                     out_ca_cert_dir,
+    char *                                      out_user_cert_filename,
+    char *                                      out_ca_cert_dir,
     char **                                     out_proxy_out_filename,
-    char **                                     out_user_key_filename)
+    char *                                      out_user_key_filename,
+    char *                                      out_port_type_filename)
 {
-    /* default to a 12 hour cert */
-    int                                         max_valid = DEFAULT_MAX_TIME;
-    int                                         valid = DEFAULT_TIME;
+    int                                         max_valid;
+    int                                         valid;
     int                                         ctr;
-    int                                         key_bits = DEFAULT_KEY_BITS;
-    char *                                      gridmap = DEFAULT_GRIDMAP;
-    char *                                      ca_cert_dir = DEFAULT_CA_CERT_DIR;
-    char *                                      proxy_out_filename = NULL;
-    char *                                      user_key_filename = DEFAULT_KEY_FILENAME;
-    char *                                      user_cert_filename = DEFAULT_CERT_FILENAME;
-
+    int                                         key_bits;
+    char                                        gridmap[GRIM_STRING_MAX];
+    /*
+     *  initialize values from conf file
+     */
+    grim_parse_conf_file(
+        &max_valid,
+        &valid,
+        &key_bits,
+        out_ca_cert_dir,
+        out_user_cert_filename,
+        out_user_key_filename,
+        gridmap,
+        out_port_type_filename);
     /* 
      * parse the arguments 
      */
@@ -394,7 +462,7 @@ grim_parse_input(
         else if(strcmp(argv[ctr], "-out") == 0 && ctr + 1 < argc)
         {
             ctr++;
-            proxy_out_filename = argv[ctr];
+            *out_proxy_out_filename = argv[ctr];
         }
         else if(strcmp(argv[ctr], "-valid") == 0 && ctr + 1 < argc)
         {
@@ -473,6 +541,7 @@ grim_parse_input(
      *
      * Pull max out of file.
      */
+
     if(valid > max_valid)
     {
         valid = max_valid;
@@ -494,22 +563,6 @@ grim_parse_input(
     if(out_key_bits)
     {
         *out_key_bits = key_bits;
-    }
-    if(out_user_cert_filename)
-    {
-        *out_user_cert_filename = user_cert_filename;
-    }
-    if(out_ca_cert_dir)
-    {
-        *out_ca_cert_dir = ca_cert_dir;
-    }
-    if(out_proxy_out_filename)
-    {
-        *out_proxy_out_filename = proxy_out_filename;
-    }
-    if(out_user_key_filename)
-    {
-        *out_user_key_filename = user_key_filename;
     }
 
     return 0;
@@ -847,28 +900,330 @@ grim_write_proxy(
     return 0;
 }
 
+/***************************************************************************
+ *                   xml parsing code for port type file
+ **************************************************************************/
+struct grim_port_type_info_s
+{
+    int                                     found;
+    char *                                  username;
+    char **                                 groups;
+    globus_list_t *                         list;
+};
+
+static void
+grim_port_type_start(
+    void *                                  data, 
+    const char *                            el, 
+    const char **                           attr)
+{
+    struct grim_port_type_ent_s *           ent;
+    struct grim_port_type_info_s *          info;
+    int                                     ctr;
+
+    info = (struct grim_port_type_info_s *) data;
+
+    info->found = 0;
+    if(strcmp(el, "port_type") == 0)
+    {
+        if(strcmp(attr[0], "username") == 0 &&
+           strcmp(info->username, attr[1]) == 0)
+        {
+            info->found = 1;
+        }
+        else if(strcmp(attr[0], "group") == 0)
+        {
+            for(ctr = 0; 
+                info->groups != NULL && info->groups[ctr] != NULL; 
+                ctr++)
+            {
+                if(strcmp(info->groups[ctr], attr[1]) == 0)
+                {
+                    info->found = 1;
+                }
+            }
+        }
+        else
+        {
+            info->found = 0;
+            globus_free(ent);
+        }
+    }
+}
+
+static void
+grim_port_type_end(
+    void *                                  data, 
+    const char *                            el)
+{
+}
+
+static void
+grim_port_type_cdata(
+    void *                                  data,
+    const XML_Char *                        s,
+    int                                     len)
+{
+    struct grim_port_type_info_s *          info;
+    char *                                  tmp_s;
+
+    info = (struct grim_port_type_info_s *) data;
+
+    if(info->found)
+    {
+        tmp_s = malloc(sizeof(char) * (len + 1));
+        strncpy(tmp_s, s, len);
+        globus_list_insert(&info->list, tmp_s);
+        info->found = 0;
+    }
+}
 
 int
 grim_parse_port_type_file(
-    char *                                  port_type_filename,
+    FILE *                                  fptr,
     char *                                  username,
-    char *                                  groups,
-    char ***                                port_types,
-    int *                                   port_type_count)
+    char ***                                port_types)
 {
     FILE *                                  fptr;
-    char                                    line[1024];
+    char                                    buffer[512];
+    size_t                                  len;
+    XML_Parser                              p;  
+    int                                     done;
+    int                                     rc = 0;
+    struct grim_port_type_info_s            info;
+    char *                                  port_type;
+    char **                                 pt_rc;
+    int                                     ctr;
+    char **                                 groups;
+    int                                     groups_max = 16;
+    int                                     groups_ndx;
+    struct group *                          grp_ent;
 
-    fptr = fopen(port_type_filename, "r");
-    if(fptr == NULL)
+    p = XML_ParserCreate(NULL);
+    if(p == NULL)
     {
+        fclose(fptr);
         return 1;
     }
 
-    while(fgets(line, sizeof(line), fptr) != NULL)
+    /*
+     *  get group list
+     */
+    groups_ndx = 0;
+    groups = (char **) globus_malloc(sizeof(char *) * groups_max);
+    while((grp_ent = getgrent()) != NULL)
     {
-        
+        for(ctr = 0; grp_ent->gr_mem[ctr] != NULL; ctr++)
+        {
+            if(strcmp(username, grp_ent->gr_mem[ctr]) == 0)
+            {
+                groups[groups_ndx] = strdup(grp_ent->gr_name);
+                groups_ndx++;
+                if(groups_ndx >= groups_max)
+                {   
+                    groups_max *= 2;
+                    groups = (char **) 
+                        globus_malloc(sizeof(char *) * groups_max);
+                }
+            }
+        }
+    }
+    groups[groups_ndx] = NULL;
+
+    XML_SetElementHandler(p, grim_port_type_start, grim_port_type_end);
+    info.list = NULL;
+    info.found = 0;
+    info.username = username;
+    info.groups = groups;
+    XML_SetUserData(p, &info);
+    XML_SetCharacterDataHandler(p, grim_port_type_cdata);
+
+    done = 0;
+    while(!done)
+    {
+        len = fread(buffer, 1, sizeof(buffer), fptr);
+        done = len < sizeof(buffer);
+        if(XML_Parse(p, buffer, len, len < done) == XML_STATUS_ERROR) 
+        {
+            rc = 1;
+            goto exit;
+        }
     }
 
-    return 0;
+    pt_rc = (char **)
+              globus_malloc((globus_list_size(info.list) + 1) * sizeof(char *));
+
+    ctr = 0;
+    while(!globus_list_empty(info.list))
+    {
+        port_type = (char *) globus_list_remove(&info.list, info.list);
+        pt_rc[ctr] = port_type;
+        printf("%s.\n", pt_rc[ctr]);
+        ctr++;
+    }
+    pt_rc[ctr] = NULL;
+
+    if(port_types != NULL)
+    {
+        *port_types = pt_rc;
+    }
+
+  exit:
+    fclose(fptr);
+    XML_ParserFree(p);
+
+    return rc;;
+}
+
+/************************************************************************
+ *                 xml parsing code for conf file
+ ***********************************************************************/
+struct grim_conf_info_s
+{
+    int                                     max_time;
+    int                                     default_time;
+    int                                     key_bits;
+    char *                                  ca_cert_dir;
+    char *                                  cert_filename;
+    char *                                  key_filename;
+    char *                                  gridmap_filename;
+    char *                                  port_type_filename;
+};
+
+
+static void
+grim_conf_end(
+    void *                                  data,
+    const char *                            el)
+{
+}
+
+static void
+grim_conf_start(
+    void *                                  data, 
+    const char *                            el, 
+    const char **                           attr)
+{
+    struct grim_conf_info_s *               info;
+
+    info = (struct grim_conf_info_s *) data;
+
+    if(strcmp(el, "conf") == 0)
+    {
+        if(strcmp(attr[0], "max_time") == 0)
+        {
+            info->max_time = atoi(attr[1]);
+        }
+        else if(strcmp(attr[0], "default_time") == 0)
+        {
+            info->default_time = atoi(attr[1]);
+        }
+        else if(strcmp(attr[0], "key_bits") == 0)
+        {
+            info->key_bits = atoi(attr[1]);
+        }
+        else if(strcmp(attr[0], "cert_filename") == 0)
+        {
+            free(info->cert_filename);
+            info->cert_filename = strdup(attr[1]);
+        }
+        else if(strcmp(attr[0], "key_filename") == 0)
+        {
+            free(info->key_filename);
+            info->key_filename = strdup(attr[1]);
+        }
+        else if(strcmp(attr[0], "gridmap_filename") == 0)
+        {
+            free(info->gridmap_filename);
+            info->gridmap_filename = strdup(attr[1]);
+        }
+        else if(strcmp(attr[0], "port_type_filename") == 0)
+        {
+            free(info->port_type_filename);
+            info->port_type_filename = strdup(attr[1]);
+        }
+    }
+}
+
+int
+grim_parse_conf_file(
+    int *                                   out_max_time,
+    int *                                   out_default_time,
+    int *                                   out_key_bits,
+    char *                                  out_ca_cert_dir,
+    char *                                  out_cert_filename,
+    char *                                  out_key_filename,
+    char *                                  out_gridmap_filename,
+    char *                                  out_port_type_filename)
+{
+    FILE *                                  fptr;    
+    struct grim_conf_info_s                 info;
+    int                                     rc = 0;
+    int                                     done;
+    char                                    buffer[512];
+    size_t                                  len;
+    XML_Parser                              p = NULL;  
+
+    info.max_time = DEFAULT_MAX_TIME;
+    info.default_time = DEFAULT_TIME;
+    info.key_bits = DEFAULT_KEY_BITS;
+    info.cert_filename = strdup(DEFAULT_CERT_FILENAME);
+    info.key_filename = strdup(DEFAULT_KEY_FILENAME);
+    info.gridmap_filename = strdup(DEFAULT_GRIDMAP);
+    info.port_type_filename = strdup(DEFAULT_PORT_TYPE_FILENAME);
+    info.ca_cert_dir = strdup(DEFAULT_CA_CERT_DIR);
+
+    fptr = fopen(DEFAULT_CONF_FILENAME, "r");
+    if(fptr == NULL)
+    {
+        goto exit;
+    }
+
+    p = XML_ParserCreate(NULL);
+    if(p == NULL)
+    {
+        rc = 1;
+        goto exit;
+    }
+
+    XML_SetElementHandler(p, grim_conf_start, grim_conf_end);
+    XML_SetUserData(p, &info);
+
+    done = 0;
+    while(!done)
+    {
+        len = fread(buffer, 1, sizeof(buffer), fptr);
+        done = len < sizeof(buffer);
+        if(XML_Parse(p, buffer, len, len < done) == XML_STATUS_ERROR)
+        {
+            rc = 1;
+            goto exit;
+        }
+    }
+
+  exit:
+    *out_max_time = info.max_time;
+    *out_default_time = info.default_time;
+    *out_key_bits = info.key_bits;
+    strcpy(out_cert_filename, info.cert_filename);
+    strcpy(out_key_filename, info.key_filename);
+    strcpy(out_gridmap_filename, info.gridmap_filename);
+    strcpy(out_port_type_filename, info.port_type_filename);
+    strcpy(out_ca_cert_dir, info.ca_cert_dir);
+
+    free(info.cert_filename);
+    free(info.key_filename);
+    free(info.gridmap_filename);
+    free(info.port_type_filename);
+    free(info.ca_cert_dir);
+
+    if(fptr != NULL)
+    {
+        fclose(fptr);
+    }
+    if(p != NULL)
+    {
+        XML_ParserFree(p);
+    }
+    return rc;
 }
