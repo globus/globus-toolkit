@@ -70,7 +70,8 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 if test "x$GPT_LOCATION" = "x"; then
-    export GPT_LOCATION=$GLOBUS_LOCATION
+    GPT_LOCATION=$GLOBUS_LOCATION
+    export GPT_LOCATION
 fi
 
 # get the environment scripts
