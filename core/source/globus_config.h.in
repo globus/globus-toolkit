@@ -109,6 +109,7 @@
 #undef HAVE_ATEXIT
 #undef TIME_WITH_SYS_TIME
 #undef HAVE_ALLOCA_H
+#undef HAVE_SOCKLEN_T
 
 #undef GLOBUS_OFF_T
 #undef GLOBUS_OFF_T_FORMAT 
@@ -127,4 +128,3 @@
 #ifndef _LARGE_FILES
 #undef _LARGE_FILES
 #endif
-

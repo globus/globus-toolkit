@@ -216,6 +216,12 @@ extern const char * _globus_func_name;
     typedef long                                        globus_ssize_t;
 #endif
 
+#ifdef HAVE_SOCKLEN_T
+    typedef socklen_t                                   globus_socklen_t;
+#else
+    typedef int                                         globus_socklen_t;
+#endif
+
 #if !defined(HAVE_STRUCT_IOVEC)
     struct  iovec  
     {

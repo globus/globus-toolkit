@@ -1225,7 +1225,7 @@ globus_l_xio_system_try_recvfrom(
 {
     globus_ssize_t                      rc;
     globus_result_t                     result;
-    globus_size_t                       len;
+    globus_socklen_t                    len;
     GlobusXIOName(globus_l_xio_system_try_recvfrom);
 
     GlobusXIOSystemDebugEnterFD(fd);
@@ -1812,7 +1812,7 @@ globus_l_xio_system_handle_write(
       case GLOBUS_L_OPERATION_CONNECT:
         {
             int                         err;
-            globus_size_t               errlen;
+            globus_socklen_t            errlen;
 
             errlen = sizeof(err);
             if(getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0)

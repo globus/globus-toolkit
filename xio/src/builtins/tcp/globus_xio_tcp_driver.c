@@ -777,7 +777,7 @@ globus_l_xio_tcp_contact_string(
 {
     globus_result_t                     result;
     globus_sockaddr_t                   sock_name;
-    globus_size_t                       sock_len;
+    globus_socklen_t                    sock_len;
     int                                 flags;
     GlobusXIOName(globus_l_xio_tcp_contact_string);
     
@@ -2156,7 +2156,7 @@ globus_l_xio_tcp_cntl(
     globus_bool_t *                     out_bool;
     int                                 in_int;
     int                                 fd;
-    globus_size_t                       len;
+    globus_socklen_t                    len;
     char **                             out_string;
     globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_cntl);
