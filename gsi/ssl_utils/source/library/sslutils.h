@@ -384,8 +384,8 @@ proxy_create_local(
     int                                 bits,
     int                                 limited_proxy,
     int                                 (*kpcallback)(),
-    char *                              buffer,
-    int                                 length);
+    char *                              restriction_buf,
+    int                                 restriction_len);
 
 
 int

@@ -4227,8 +4227,8 @@ proxy_create_local(
     int                                 bits,
     int                                 limit_proxy,
     int                                 (*kpcallback)(),
-    char *                              class_add_buf,
-    int                                 class_add_buf_len)
+    char *                              restriction_buf,
+    int                                 restriction_len)
 {
         
     int                                 status = -1;
@@ -4276,27 +4276,42 @@ proxy_create_local(
 #endif
     if ((extensions = sk_X509_EXTENSION_new_null()) == NULL)
     {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
+        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
         goto err;
     }
         
-#ifdef CLASS_ADD
-    if (class_add_buf && class_add_buf_len > 0)
+    if (restriction_buf && restriction_len > 0)
     {
-        if ((ex = proxy_extension_class_add_create(class_add_buf,
-                                                   class_add_buf_len)) == NULL)
+        X509_EXTENSION *                    ex = NULL;
+        ASN1_OBJECT *                       asn1_obj = NULL;
+        ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
+
+        asn1_obj = OBJ_txt2obj("RESTRICTEDRIGHTS",0);   
+        
+        if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
         {
-            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
+            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
             goto err;
         }
-                
+
+        asn1_oct_string->data = restriction_buf;
+        asn1_oct_string->length = restriction_len;
+
+        if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
+                                                1, asn1_oct_string)))
+        {
+            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
+            goto err;
+        }
+        
+        asn1_oct_string = NULL;
+
         if (!sk_X509_EXTENSION_push(extensions, ex))
         {
-            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
+            PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_EXT_ADD);
             goto err;
         }
     }
-#endif
 
     if (proxy_sign(pcd->ucert,
                    pcd->upkey,
@@ -4338,6 +4353,7 @@ err:
     {
         sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
     }
+
     if (ex)
     {
         X509_EXTENSION_free(ex);
