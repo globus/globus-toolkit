@@ -3843,9 +3843,9 @@ globus_i_gfs_data_request_transfer_event(
                         {
                             globus_i_gfs_log_result("force_close", result);
                             globus_l_gfs_data_fc_return(op);
-                            op->state = GLOBUS_L_GFS_DATA_COMPLETING;
                             pass = GLOBUS_TRUE;
                         }
+                        op->state = GLOBUS_L_GFS_DATA_COMPLETING;
                         break;
 
                     default:
