@@ -105,10 +105,10 @@ globus_i_gfs_data_node_start(
     globus_xio_system_handle_t          system_handle,
     const char *                        remote_contact);
 
-globus_result_t
+void
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               id,
+    int                                 id,
     const char *                        user_dn,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);

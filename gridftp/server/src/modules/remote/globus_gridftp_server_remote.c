@@ -992,11 +992,12 @@ globus_l_gfs_remote_set_cred(
 static
 globus_result_t
 globus_l_gfs_remote_init(
-    const char *                        user_id,
-    void **                             out_user_arg)
+    globus_gfs_operation_t              op,
+    const char *                        user_id)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_gfs_remote_handle_t *      my_handle;
+    globus_gfs_finished_info_t *        finished_info;            
     GlobusGFSName(globus_l_gfs_remote_init);
     
     my_handle = (globus_l_gfs_remote_handle_t *) 
@@ -1004,8 +1005,17 @@ globus_l_gfs_remote_init(
         
     my_handle->user_id = globus_libc_strdup(user_id);
     my_handle->ipc_handle = NULL;
-    
-    *out_user_arg = my_handle;
+                                                              
+    finished_info = (globus_gfs_finished_info_t *)            
+        globus_calloc(1, sizeof(globus_gfs_finished_info_t)); 
+                                                              
+    finished_info->type = GLOBUS_GFS_OP_SESSION_START;          
+    finished_info->session_id = (int) my_handle;                          
+                                                              
+    globus_gridftp_server_operation_finished(                 
+        op,                                                   
+        result,                                               
+        finished_info);                                       
     
     return result;
 }

@@ -2424,7 +2424,7 @@ globus_i_gfs_data_node_start(
     return res;
 }
 
-globus_result_t
+void
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -2437,7 +2437,6 @@ globus_i_gfs_data_session_start(
     globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_data_session_start);
 
-    dsi_handle = (globus_l_gfs_dsi_handle_t *) session_id;
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -2454,13 +2453,15 @@ globus_i_gfs_data_session_start(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    result = dsi->init_func(op, user_dn);
-    if(result != GLOBUS_SUCCESS)
+    if(dsi->init_func != NULL)
     {
-        result = GlobusGFSErrorWrapFailed("hook", result);
-        goto error_hook;
-    }
-    
+        result = dsi->init_func(op, user_dn);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed("hook", result);
+            goto error_hook;
+        }
+    }    
     globus_mutex_lock(&op->lock);
     {
         if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
@@ -2470,13 +2471,13 @@ globus_i_gfs_data_session_start(
     }
     globus_mutex_unlock(&op->lock);
     
-    return GLOBUS_SUCCESS;
+    return;
 
 error_hook:
     globus_l_gfs_data_operation_destroy(op);
     
 error_op:
-    return result;
+    return;
 }
 
 void
