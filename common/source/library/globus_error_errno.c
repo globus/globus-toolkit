@@ -228,12 +228,11 @@ globus_error_errno_match(
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
  *        local to the originating module.
- * @param short_desc
- *        Short context sensitive string giving a succinct description
+ * @param short_desc_format
+ *        Short format string giving a succinct description
  *        of the error. To be passed on to the user.
- * @param long_desc
- *        Longer context sensitive string giving a more detailed
- *        explanation of the error.
+ * @param ...
+ *        Arguments for the format string.
  * @return
  *        The resulting error object. It is the user's responsibility
  *        to eventually free this object using globus_object_free(). A
