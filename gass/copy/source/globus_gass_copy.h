@@ -488,6 +488,18 @@ globus_gass_copy_attr_set_secure_channel(
  * Get Attribute functions
  */
 
+
+
+
+globus_result_t 
+globus_gass_copy_glob_expand_url( 
+     globus_gass_copy_handle_t *         handle, 
+     const char *                        url, 
+     globus_gass_copy_attr_t *           attr, 
+     globus_fifo_t *                     url_list); 
+
+
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 EXTERN_C_END
