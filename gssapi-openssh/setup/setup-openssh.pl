@@ -844,12 +844,12 @@ sub copySSHDConfigFile
 
     $data = readFile($fileInput);
 
-    #
-    # alter the PidFile config
-    #
-
-    $text = "PidFile\t$gpath/var/sshd.pid";
-    $data =~ s:^[\s|#]*PidFile.*$:$text:gm;
+    # #
+    # # alter the PidFile config
+    # #
+    # 
+    # $text = "PidFile\t$gpath/var/sshd.pid";
+    # $data =~ s:^[\s|#]*PidFile.*$:$text:gm;
 
     #
     # set the sftp directive
