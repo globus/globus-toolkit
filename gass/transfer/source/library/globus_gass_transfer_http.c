@@ -101,6 +101,7 @@ globus_l_gass_transfer_http_activate(void)
     
     debug_printf(1, ("Entering %s()\n",myname));
     globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
 
     globus_mutex_init(&globus_l_gass_transfer_http_mutex,
@@ -174,6 +175,7 @@ globus_l_gass_transfer_http_deactivate(void)
     }
     globus_l_gass_transfer_http_unlock();
     globus_module_deactivate(GLOBUS_IO_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 
     globus_mutex_destroy(&globus_l_gass_transfer_http_mutex);
     globus_cond_destroy(&globus_l_gass_transfer_http_cond);
