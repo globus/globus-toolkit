@@ -2204,12 +2204,14 @@ globus_l_io_read_auth_token(
 	return;
     }
 
+    globus_i_io_mutex_lock();
     result = globus_i_io_register_read_func(
 	handle,
 	globus_l_io_read_auth_token,
 	(void *) init_info,
 	GLOBUS_NULL,
 	GLOBUS_TRUE);
+    globus_i_io_mutex_unlock();
 
     if(result != GLOBUS_SUCCESS)
     {
