@@ -972,7 +972,7 @@ globus_l_gfs_file_dispatch_read(
             monitor->op,
             &monitor->restart_offset,
             &monitor->restart_length);
-        if(monitor->restart_offset == -1)
+        if(monitor->restart_offset == -1 || monitor->partial_length == 0)
         {
             monitor->eof = GLOBUS_TRUE;
         }
@@ -1188,7 +1188,8 @@ globus_l_gfs_file_read_cb(
                 monitor->partial_length -= nbytes;
             }
         }
-        else
+        
+        if(monitor->partial_length == 0 || monitor->restart_length == 0)
         {
             monitor->first_read = GLOBUS_TRUE;
         }

@@ -77,6 +77,7 @@ globus_l_gfs_new_server_cb(
     }
     
     globus_free(remote_contact);
+    globus_l_gfs_server_closed();
     return;
 
 error_start:
