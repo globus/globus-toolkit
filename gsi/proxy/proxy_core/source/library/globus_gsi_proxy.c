@@ -701,8 +701,6 @@ globus_gsi_proxy_sign_req(
     EVP_PKEY *                          req_pubkey = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 res;
-    EVP_MD *                            sha1 = EVP_sha1();
-    unsigned char                       md[sha1->md_size];
     ASN1_INTEGER *                      serial_number = NULL;
     
     static char *                       _function_name_ =
@@ -768,6 +766,8 @@ globus_gsi_proxy_sign_req(
     
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
+        EVP_MD *                        sha1 = EVP_sha1();
+        unsigned char                   md[SHA_DIGEST_LENGTH];
         long                            sub_hash;
         unsigned int                    len;
         
