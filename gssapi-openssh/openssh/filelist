@@ -1,12 +1,10 @@
 bin/ssh
 bin/scp
-bin/scp.real
 bin/ssh-add
 bin/ssh-agent
 bin/ssh-keygen
 bin/ssh-keyscan
 bin/sftp
-bin/sftp.real
 sbin/sshd
 man/man1/ssh.1
 man/man1/scp.1
