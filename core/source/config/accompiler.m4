@@ -77,7 +77,7 @@ AC_ARG_ENABLE(debug,
 	[lac_cv_debug=${lac_cv_debug='no'}])
 
 AC_ARG_ENABLE(64bit,
-	[  --enable-64bit                build 64-bit objects (SGI Irix 6.x and HP HPUX 11.x only)],
+	[  --enable-64bit                build 64-bit objects (SGI Irix 6.x, HP HPUX 11.x, IA-64 only)],
 	[lac_cv_build_64bit="$enableval"],
 	[lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
 
@@ -320,6 +320,16 @@ case ${host}--$1 in
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
 	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
 	;;
+    *ia64-*linux* )
+        if test "$lac_cv_build_64bit" = "no"; then
+            AC_MSG_ERROR(32 bits not supported on this platform)
+            exit 1
+        fi 
+	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        ;;
     *-hp-hpux11* )
            case $lac_cv_build_64bit in
                yes )  lac_64bit_flag="+DA2.0W"
