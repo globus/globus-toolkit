@@ -19,13 +19,15 @@ sub new {
         debug       => $ENV{TEST_DEBUG},
         color       => $ENV{TEST_COLOR},
         starttime   => $ENV{TEST_STARTTIME},
-        globus      => $ENV{TEST_GLOBUS_LOCATION},
+        last_globus => $ENV{GLOBUS_PATH},
+        globus      => $ENV{GLOBUS_LOCATION},
         remote      => $ENV{TEST_REMOTE},
         hostname    => `hostname`,
         username    => getpwuid($<)
     };
 
     bless $self, $class;
+    $self->setup_env();
     return $self;
 }
 
@@ -50,7 +52,8 @@ sub globus {
     my $self = shift;
     if (@_) { 
         $self->{globus} = shift; 
-        $ENV{TEST_GLOBUS_LOCATION} = $self->{globus};
+        $ENV{GLOBUS_LOCATION} = $self->{globus};
+        $self->setup_env();
     }
     return $self->{globus};
 }
@@ -335,5 +338,120 @@ sub debug {
         system("echo -en \"\\033[0;39m\"") if $self->{'color'};
     }
 }
+
+# --------------------------------------------------------------------
+# Setup the environment
+# --------------------------------------------------------------------
+
+sub setup_env
+{
+    my $self = shift;
+    my $globus_location = $self->{'globus'};
+    my $globus_path = $self->{'last_globus'};
+    my $path = $ENV{PATH};
+    my $ld_library_path = $ENV{LD_LIBRARY_PATH};
+    my $ld_libraryn32_path = $ENV{LD_LIBRARYN32_PATH};
+    my $ld_libraryn64_path = $ENV{LD_LIBRARYN64_PATH};
+    my $libpath = $ENV{LIBPATH};
+    my $shlib_path = $ENV{SHLIB_PATH};
+    my $sasl_path = $ENV{SASL_PATH};
+    my $delim;
+
+    if($globus_location)
+    {
+        if($globus_path)
+        {
+            $path =~ s%:$globus_path[^:]*%%g;
+            $path =~ s%^$globus_path[^:]*:\{0,1\}%%;
+            $ld_library_path =~ s%:$globus_path[^:]*%%g;
+            $ld_library_path =~ s%^$globus_path[^:]*:\{0,1\}%%;
+            $ld_libraryn32_path =~ s%:$globus_path[^:]*%%g;
+            $ld_libraryn32_path =~ s%^$globus_path[^:]*:\{0,1\}%%;
+            $ld_libraryn64_path =~ s%:$globus_path[^:]*%%g;
+            $ld_libraryn64_path =~ s%^$globus_path[^:]*:\{0,1\}%%;
+            $libpath =~ s%:$globus_path[^:]*%%g;
+            $libpath =~ s%^$globus_path[^:]*:\{0,1\}%%;
+            $shlib_path =~ s%:$globus_path[^:]*%%g;
+            $shlib_path =~ s%^$globus_path[^:]*:\{0,1\}%%;
+            $sasl_path =~ s%:$globus_path[^:]*%%g;
+            $sasl_path =~ s%^$globus_path[^:]*:\{0,1\}%%;
+        }
+
+        $path =~ s%:$globus_location[^:]*%%g;
+        $path =~ s%^$globus_location[^:]*:\{0,1\}%%;
+        $ld_library_path =~ s%:$globus_location[^:]*%%g;
+        $ld_library_path =~ s%^$globus_location[^:]*:\{0,1\}%%;
+        $ld_libraryn32_path =~ s%:$globus_location[^:]*%%g;
+        $ld_libraryn32_path =~ s%^$globus_location[^:]*:\{0,1\}%%;
+        $ld_libraryn64_path =~ s%:$globus_location[^:]*%%g;
+        $ld_libraryn64_path =~ s%^$globus_location[^:]*:\{0,1\}%%;
+        $libpath =~ s%:$globus_location[^:]*%%g;
+        $libpath =~ s%^$globus_location[^:]*:\{0,1\}%%;
+        $shlib_path =~ s%:$globus_location[^:]*%%g;
+        $shlib_path =~ s%^$globus_location[^:]*:\{0,1\}%%;
+        $sasl_path =~ s%:$globus_location[^:]*%%g;
+        $sasl_path =~ s%^$globus_location[^:]*:\{0,1\}%%;
+
+        $self->{'globus_path'} = $globus_location;
+        $ENV{PATH} = "$globus_location/bin:$globus_location/sbin:$path";
+
+        if(defined($ld_library_path))
+        {
+            $delim = ":";
+        }
+ 
+        $ENV{LD_LIBRARY_PATH} = "$globus_location/lib$delim$ld_library_path";
+        
+        $delim = "";
+
+        if(defined($ld_libraryn32_path))
+        {
+            $delim = ":";
+        }
+ 
+        $ENV{LD_LIBRARYN32_PATH} = 
+            "$globus_location/lib$delim$ld_libraryn32_path";
+        
+        $delim = "";
+
+        if(defined($ld_libraryn64_path))
+        {
+            $delim = ":";
+        }
+ 
+        $ENV{LD_LIBRARYN64_PATH} = 
+            "$globus_location/lib$delim$ld_libraryn64_path";
+        
+        $delim = "";
+
+        if(defined($libpath))
+        {
+            $delim = ":";
+        }
+ 
+        $ENV{LIBPATH} = "$globus_location/lib$delim$libpath";
+        
+        $delim = "";
+
+        if(defined($shlib_path))
+        {
+            $delim = ":";
+        }
+ 
+        $ENV{SHLIB_PATH} = "$globus_location/lib$delim$shlib_path";
+        
+        $delim = "";
+
+        if(defined($sasl_path))
+        {
+            $delim = ":";
+        }
+ 
+        $ENV{SASL_PATH} = "$globus_location/lib$delim$sasl_path";
+        
+        $delim = "";
+    }
+}
+
 
 1;
