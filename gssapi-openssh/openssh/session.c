@@ -1670,7 +1670,7 @@ do_child(Session *s, const char *command)
 		/* Execute the shell. */
 		argv[0] = argv0;
 		argv[1] = NULL;
-		execve(shell, argv, env);
+		execve(shell, argv, environ);
 
 		/* Executing the shell failed. */
 		perror(shell);
@@ -1684,7 +1684,7 @@ do_child(Session *s, const char *command)
 	argv[1] = "-c";
 	argv[2] = (char *) command;
 	argv[3] = NULL;
-	execve(shell, argv, env);
+	execve(shell, argv, environ);
 	perror(shell);
 	exit(1);
 }
