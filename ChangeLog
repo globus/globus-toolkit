@@ -1,3 +1,11 @@
+2000-11-12  Jason Novotny <novotny@george.lbl.gov>
+
+	* myproxy_server.c: Added support for running myproxy server
+	out of inetd. This is done by testing getpeername successful
+
+	* INSTALL: added instructions on modifying /etc/services and 
+	/etc/inetd.conf
+	
 2000-10-11  Von Welch  <vwelch@ncsa.uiuc.edu>
 
 	* version.h (MYPROXY_VERSION_DATE): v0.2alpha3 11 Oct 2000
