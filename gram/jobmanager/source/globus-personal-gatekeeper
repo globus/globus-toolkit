@@ -222,25 +222,10 @@ host=`${bindir}/globus-hostname`
 file_location="$HOME/.globus"
 file_prefix="personal-gatekeeper.$host"
 log=on_error
+startargs=''
 
 while [ -n "$1" ]; do
     case "$1" in
-    -jmtype)
-    jmtype="$2"
-    shift
-    ;;
-    -log)
-    if test "$2" = "on_error" -o "$2" = "always" -o "$2" = "never"; then
-	log=$2
-    else
-	globus_args_unrecognized_option "$1"
-    fi
-    shift
-    ;;
-    -port)
-    port="$2"
-    shift
-    ;;
     -kill)
     verify_setup
     killem "$2"
@@ -261,6 +246,33 @@ while [ -n "$1" ]; do
     ;;
     -start)
     startnew=true
+    shift
+    while [ -n "$1" ]; do
+        case $1 in
+	    -jmtype)
+		jmtype="$2"
+		shift
+		;;
+	-log)
+		if test "$2" = "on_error" -o "$2" = "always" -o "$2" = "never"
+                then
+		    log=$2
+		else
+		    globus_args_unrecognized_option "$1"
+		fi
+		shift
+		;;
+	-port)
+		port="$2"
+		shift
+		;;
+	*)
+		startargs="$startargs $1"
+		;;
+	esac
+	shift
+    done
+    break
     ;;
     -debug)
     debug=echo
@@ -338,6 +350,7 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 -globus-host-osversion ${host_osversion}
 -save-logfile ${log}
 -machine-type unknown
+${startargs}
 EOF
 
 docleanup=false
