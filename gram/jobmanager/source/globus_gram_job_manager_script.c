@@ -1170,7 +1170,8 @@ globus_gram_job_manager_script_proxy_relocate(
 
 int 
 globus_gram_job_manager_script_proxy_update(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *	request,
+    globus_gram_job_manager_query_t *	query)
 {
     char *				script_cmd = "proxy_update";
     int					rc;
@@ -1208,8 +1209,8 @@ globus_gram_job_manager_script_proxy_update(
                 script_cmd,
 		script_arg_file,
 		GLOBUS_HANDLE_TABLE_NO_HANDLE,
-		globus_l_gram_job_manager_default_done,
-		NULL);
+		globus_l_gram_job_manager_query_done,
+		query);
 
     if (rc != GLOBUS_SUCCESS)
     {

@@ -725,7 +725,8 @@ globus_gram_job_manager_script_proxy_relocate(
 
 int 
 globus_gram_job_manager_script_proxy_update(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *	request,
+    globus_gram_job_manager_query_t *	query);
 
 EXTERN_C_END
 

@@ -642,7 +642,7 @@ sub proxy_relocate
     if($local_name ne "")
     {
 	# Already have a proxy in cache, need to replace it
-	copy($path, $local_name);
+	File::Copy::copy($path, $local_name);
     }
     else
     {

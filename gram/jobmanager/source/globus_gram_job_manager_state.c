@@ -707,8 +707,11 @@ globus_gram_job_manager_state_machine(
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	    request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
+	    if(request->failure_code == GLOBUS_SUCCESS)
+	    {
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH;
+	    }
 	    break;
 	}
 
@@ -779,10 +782,13 @@ globus_gram_job_manager_state_machine(
 	if(request->remote_io_url != NULL &&
 	   request->remote_io_url_file == NULL)
 	{
-	    request->failure_code = 
-		GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
 	    request->jobmanager_state = 
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    if(request->failure_code == GLOBUS_SUCCESS)
+	    {
+		request->failure_code = 
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+	    }
 	    break;
 	}
 	/*
@@ -895,8 +901,11 @@ globus_gram_job_manager_state_machine(
 		/* failed to relocated proxy! */
 		request->jobmanager_state = 
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-		request->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_REPLY;
+		if(request->failure_code == GLOBUS_SUCCESS)
+		{
+		    request->failure_code =
+			GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_REPLY;
+		}
 		break;
 	    }
 
@@ -1040,8 +1049,11 @@ globus_gram_job_manager_state_machine(
 	    /* Didn't successfully stage in everything. */
 	    request->jobmanager_state = 
 		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-	    request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED;
+	    if(request->failure_code == GLOBUS_SUCCESS)
+	    {
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED;
+	    }
 	    break;
 	}
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
@@ -1387,7 +1399,8 @@ globus_gram_job_manager_state_machine(
 	     * to a job execution host(s))
 	     */
 	    rc = globus_gram_job_manager_script_proxy_update(
-		    request);
+		    request,
+		    query);
 	    if(rc == GLOBUS_SUCCESS)
 	    {
 		event_registered = GLOBUS_TRUE;
@@ -1429,7 +1442,7 @@ globus_gram_job_manager_state_machine(
 	if(!globus_list_empty(request->stage_out_todo))
 	{
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-	    if(request->failure_code == 0)
+	    if(request->failure_code == GLOBUS_SUCCESS)
 	    {
 		request->failure_code =
 		    GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED;
