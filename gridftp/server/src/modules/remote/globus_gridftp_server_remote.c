@@ -111,7 +111,7 @@ globus_l_gfs_ipc_passive_cb(
         finished_info->code = reply->code;
         finished_info->msg = reply->msg;
         finished_info->result = reply->result;
-        
+                
         finished_info->info.data.bi_directional = 
             reply->info.data.bi_directional;
         finished_info->info.data.ipv6 = reply->info.data.ipv6;
@@ -531,6 +531,7 @@ globus_l_gfs_remote_recv(
     int                                 request_id;
     globus_list_t *                     list;
     globus_gfs_transfer_info_t *        new_transfer_info;
+    int                                 stripe_count;
     GlobusGFSName(globus_l_gfs_remote_recv);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
@@ -539,6 +540,8 @@ globus_l_gfs_remote_recv(
         &bounce_info, op, transfer_info, my_handle);
     
     bounce_info->stripe_list = (globus_list_t *) transfer_info->data_handle_id;
+    
+    stripe_count = globus_list_size(bounce_info->stripe_list);
         
     for(list = bounce_info->stripe_list;
         !globus_list_empty(list);
@@ -560,6 +563,9 @@ globus_l_gfs_remote_recv(
         new_transfer_info->partial_length = transfer_info->partial_length;
         new_transfer_info->range_list = transfer_info->range_list;
         new_transfer_info->data_handle_id = stripe_info->data_handle_id;
+        new_transfer_info->node_count = stripe_count;
+        new_transfer_info->stripe_count = stripe_count;
+        new_transfer_info->node_ndx = bounce_info->stripes_pending;
 
         bounce_info->stripes_pending++;
         bounce_info->event_pending++;
@@ -617,6 +623,7 @@ globus_l_gfs_remote_send(
     int                                 request_id;
     globus_list_t *                     list;
     globus_gfs_transfer_info_t *        new_transfer_info;
+    int                                 stripe_count;
     GlobusGFSName(globus_l_gfs_remote_send);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
@@ -625,6 +632,8 @@ globus_l_gfs_remote_send(
         &bounce_info, op, transfer_info, my_handle);
     
     bounce_info->stripe_list = (globus_list_t *) transfer_info->data_handle_id;
+
+    stripe_count = globus_list_size(bounce_info->stripe_list);
 
     for(list = bounce_info->stripe_list;
         !globus_list_empty(list);
@@ -646,6 +655,9 @@ globus_l_gfs_remote_send(
         new_transfer_info->partial_length = transfer_info->partial_length;
         new_transfer_info->range_list = transfer_info->range_list;
         new_transfer_info->data_handle_id = stripe_info->data_handle_id;
+        new_transfer_info->node_count = stripe_count;
+        new_transfer_info->stripe_count = stripe_count;
+        new_transfer_info->node_ndx = bounce_info->stripes_pending;
                             
         bounce_info->stripes_pending++;
         bounce_info->event_pending++;
@@ -670,16 +682,29 @@ globus_l_gfs_remote_active_kickout(
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     int                                 request_id;
+    globus_gfs_data_info_t *            tmp_data_info;
     GlobusGFSName(globus_l_gfs_remote_active_kickout);
     
     bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
+    
+    if(bounce_info->stripes_pending == 0)
+    {
+        tmp_data_info = (globus_gfs_data_info_t *)
+            globus_calloc(1, sizeof(globus_gfs_data_info_t));
+        
+        memcpy(tmp_data_info, bounce_info->state, sizeof(globus_gfs_data_info_t));
+    }
+    else
+    {
+        tmp_data_info = (globus_gfs_data_info_t *) bounce_info->state;
+    }
     
     bounce_info->stripes_pending++;
     
     result = globus_gfs_ipc_request_active_data(
         ipc_handle,
         &request_id,
-        (globus_gfs_data_info_t *) bounce_info->state,
+        tmp_data_info,
         globus_l_gfs_ipc_active_cb,
         bounce_info); 
 
@@ -704,7 +729,7 @@ globus_l_gfs_remote_active(
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, data_info, my_handle);
             
-    num_stripes = data_info->cs_count;            
+    num_stripes = data_info->cs_count;
     result = globus_gfs_ipc_handle_get(
         &num_stripes,
         my_handle->user_id,

@@ -38,6 +38,7 @@ typedef struct
     globus_off_t                        transfer_delta;
     globus_size_t                       block_size;
     int                                 optimal_count;
+    int                                 node_ndx;
     globus_object_t *                   error;
     globus_bool_t                       eof;
     globus_byte_t                       buffer_block[1];
@@ -646,7 +647,6 @@ globus_l_gfs_file_write_cb(
         monitor->pending_write--;
         globus_gridftp_server_update_bytes_written(
             monitor->op, 
-            0,
             monitor->file_offset + monitor->transfer_delta,
             nbytes);
         monitor->file_offset += nbytes;
@@ -1388,7 +1388,7 @@ globus_l_gfs_file_read_cb(
                 buffer,
                 nbytes,
                 monitor->file_offset + monitor->write_delta,
-                0,
+                -1,
                 globus_l_gfs_file_server_write_cb,
                 monitor);
             if(result != GLOBUS_SUCCESS)

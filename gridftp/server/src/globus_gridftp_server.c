@@ -616,7 +616,7 @@ main(
     if(globus_i_gfs_config_bool("version"))
     {
         globus_version_print(
-            globus_l_gfs_gpt_name,
+            local_package_name,
             &local_version,
             stderr,
             GLOBUS_TRUE);
@@ -626,7 +626,7 @@ main(
     if(globus_i_gfs_config_bool("versions"))
     {
         globus_version_print(
-            globus_l_gfs_gpt_name,
+            local_package_name,
             &local_version,
             stderr,
             GLOBUS_TRUE);

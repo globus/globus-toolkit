@@ -696,7 +696,7 @@ globus_l_gfs_data_event_cb(
 
       case GLOBUS_GFS_EVENT_BYTES_RECVD:
         globus_gridftp_server_control_event_send_perf(
-            op, reply->stripe_ndx, reply->recvd_bytes);
+            op, reply->node_ndx, reply->recvd_bytes);
         break;
             
       case GLOBUS_GFS_EVENT_RANGES_RECVD:

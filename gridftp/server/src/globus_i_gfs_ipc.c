@@ -954,7 +954,7 @@ globus_l_gfs_ipc_unpack_event_reply(
     }
 
     GFSDecodeChar(buffer, len, reply->type);
-    GFSDecodeUInt32(buffer, len, reply->stripe_ndx);
+    GFSDecodeUInt32(buffer, len, reply->node_ndx);
 
     /* encode the specific types */
     switch(reply->type)
@@ -1057,6 +1057,10 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeUInt64(buffer, len, trans_info->partial_offset);
     GFSDecodeUInt64(buffer, len, trans_info->partial_length);
     GFSDecodeUInt32(buffer, len, trans_info->data_handle_id);
+    GFSDecodeUInt32(buffer, len, trans_info->eof_count);
+    GFSDecodeUInt32(buffer, len, trans_info->stripe_count);
+    GFSDecodeUInt32(buffer, len, trans_info->node_count);
+    GFSDecodeUInt32(buffer, len, trans_info->node_ndx);
 
     /* unpack range list */
     GFSDecodeUInt32(buffer, len, range_size);
@@ -2017,7 +2021,7 @@ globus_gfs_ipc_reply_event(
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, reply->type);
             GFSEncodeUInt32(
-                buffer, ipc->buffer_size, ptr, reply->stripe_ndx);
+                buffer, ipc->buffer_size, ptr, reply->node_ndx);
 
             /* encode the specific types */
             switch(reply->type)
@@ -2475,6 +2479,10 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_offset);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_length);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->data_handle_id);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->eof_count);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->stripe_count);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
 
     /* pack range list */
     range_size = globus_range_list_size(trans_info->range_list);

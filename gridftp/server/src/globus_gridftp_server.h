@@ -185,8 +185,8 @@ typedef struct globus_gfs_event_info_s
 {
     /** type of event */
     globus_gfs_event_type_t             type;
-    /** stripe index that event is on */
-    int                                 stripe_ndx;
+    /** node that event is from */
+    int                                 node_ndx;
     /** unique key of transfer request that event is related to */
     int                                 id;
     /** unique key of transfer op that event is related to */
@@ -220,6 +220,14 @@ typedef struct globus_gfs_transfer_info_s
     globus_range_list_t                 range_list;
     /** unique key that identifies the associated data_handle */
     int                                 data_handle_id;
+    /** number of eof that sender should send  xxx might need to be array here */
+    int                                 eof_count;
+    /** total number of local stripes that will be involved */
+    int                                 stripe_count;    
+    /** total number of nodes that will be involved */
+    int                                 node_count;    
+    /** node index */
+    int                                 node_ndx;    
 } globus_gfs_transfer_info_t;
 
 /*
@@ -642,7 +650,6 @@ globus_gridftp_server_flush_queue(
 void
 globus_gridftp_server_update_bytes_written(
     globus_gfs_operation_t              op,
-    int                                 stripe_ndx,
     globus_off_t                        offset,
     globus_off_t                        length);
 

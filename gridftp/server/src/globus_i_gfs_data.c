@@ -137,11 +137,13 @@ typedef struct globus_l_gfs_data_operation_s
     const char *                        list_type;
 
     globus_off_t                        max_offset;
-    globus_off_t                        recvd_bytes[1];
+    globus_off_t                        recvd_bytes;
     globus_range_list_t                 recvd_ranges;
     
     int                                 stripe_count;
     int *                               eof_count;
+    int                                 node_count;
+    int                                 node_ndx;
     
     /* command stuff */
     globus_gfs_command_type_t           command;
@@ -189,7 +191,7 @@ globus_l_gfs_data_operation_init(
     globus_mutex_init(&op->lock, GLOBUS_NULL);
     op->recvd_ranges = GLOBUS_NULL;
     globus_range_list_init(&op->recvd_ranges);
-    op->recvd_bytes[0] = 0;
+    op->recvd_bytes = 0;
     op->max_offset = -1;
     
     *u_op = op;
@@ -1057,6 +1059,7 @@ globus_i_gfs_data_request_active(
     int                                 i;
     globus_l_gfs_data_active_bounce_t * bounce_info;
     globus_l_gfs_data_operation_t *     op;
+    globus_ftp_control_layout_t         layout;
     GlobusGFSName(globus_i_gfs_data_request_active);
 
     if(dsi->active_func != NULL)
@@ -1121,8 +1124,13 @@ globus_i_gfs_data_request_active(
         }
         else
         {
+            layout.mode = GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
+            layout.round_robin.block_size = data_info->blocksize;
+
             result = globus_ftp_control_local_spor(
                 &handle->data_channel, addresses, data_info->cs_count);
+            result = globus_ftp_control_local_layout(
+                &handle->data_channel, &layout, 0);
         }
         if(result != GLOBUS_SUCCESS)
         {
@@ -1199,6 +1207,7 @@ globus_i_gfs_data_request_recv(
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        data_handle;
+    int                                 i;
     GlobusGFSName(globus_i_gfs_data_recv_request);
 
     data_handle = (globus_i_gfs_data_handle_t *)
@@ -1234,6 +1243,14 @@ globus_i_gfs_data_request_recv(
     op->callback = cb;
     op->event_callback = event_cb;
     op->user_arg = user_arg;
+    op->node_ndx = recv_info->node_ndx;
+    op->node_count = recv_info->node_count;    
+    op->stripe_count = recv_info->stripe_count;
+    op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
+    for(i = 0; i < op->stripe_count; i++)
+    {
+        op->eof_count[i] = op->node_count;
+    }
     
     /* XXX */
     result = dsi->recv_func(op, recv_info, dsi_user_arg);
@@ -1275,6 +1292,7 @@ globus_i_gfs_data_request_send(
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        data_handle;
+    int                                 i;
     GlobusGFSName(globus_i_gfs_data_send_request);
 
     data_handle = (globus_i_gfs_data_handle_t *)
@@ -1310,6 +1328,15 @@ globus_i_gfs_data_request_send(
     op->callback = cb;
     op->event_callback = event_cb;
     op->user_arg = user_arg;
+    op->node_ndx = send_info->node_ndx;
+    op->node_count = send_info->node_count;    
+    op->stripe_count = send_info->stripe_count;
+    op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
+    for(i = 0; i < op->stripe_count; i++)
+    {
+        op->eof_count[i] = op->node_count;
+    }
+
     
     /* XXX */
     result = dsi->send_func(op, send_info, dsi_user_arg);
@@ -1544,25 +1571,16 @@ globus_gridftp_server_begin_transfer(
         {
             goto error_connect;
         }
-
-        result = globus_ftp_control_data_send_eof(
-            &op->data_handle->data_channel,
-            op->eof_count,
-            op->stripe_count,
-            GLOBUS_FALSE,
-            globus_l_gfs_data_send_eof_cb,
-            op);
     }
     else
     {
         result = globus_ftp_control_data_connect_read(
             &op->data_handle->data_channel, GLOBUS_NULL, GLOBUS_NULL);
-    }
-    
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_connect;
-    }
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_connect;
+        }
+    }    
 
     {
     globus_gfs_ipc_event_reply_t *            event_reply;   
@@ -1690,6 +1708,20 @@ globus_gridftp_server_finished_transfer(
         
         if(result == GLOBUS_SUCCESS && op->sending)
         {
+                result = globus_ftp_control_data_send_eof(
+                    &op->data_handle->data_channel,
+                    op->eof_count,
+                    op->stripe_count,
+                    (op->node_count > 0) ? GLOBUS_TRUE : GLOBUS_FALSE,
+                    globus_l_gfs_data_send_eof_cb,
+                    op);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    //goto error_connect;
+                }
+
+        }
+        /*
             result = globus_ftp_control_data_write(
                 &op->data_handle->data_channel,
                 "",
@@ -1698,7 +1730,8 @@ globus_gridftp_server_finished_transfer(
                 GLOBUS_TRUE,
                 globus_l_gfs_data_write_eof_cb,
                 op);
-        }
+                */
+
         
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
@@ -1710,7 +1743,7 @@ globus_gridftp_server_finished_transfer(
                 globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
          
             event_reply->id = op->id;
-            event_reply->recvd_bytes = op->recvd_bytes[0];
+            event_reply->recvd_bytes = op->recvd_bytes;
             event_reply->recvd_ranges = op->recvd_ranges;
             
             event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
@@ -2055,14 +2088,13 @@ globus_gridftp_server_flush_queue(
 
 void
 globus_gridftp_server_update_bytes_written(
-    globus_gfs_operation_t   op,
-    int                                 stripe_ndx,
+    globus_gfs_operation_t              op,
     globus_off_t                        offset,
     globus_off_t                        length)
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
 
-    op->recvd_bytes[stripe_ndx] += length;
+    op->recvd_bytes += length;
     globus_range_list_insert(op->recvd_ranges, offset, length);
 
     return;
@@ -2231,8 +2263,9 @@ globus_l_gfs_data_transfer_event_kickout(
         globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
          
     event_reply->id = bounce_info->op->id;
-    event_reply->recvd_bytes = bounce_info->op->recvd_bytes[0];
+    event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
     event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
+    event_reply->node_ndx = bounce_info->op->node_ndx;
                 
     switch(bounce_info->event_type)
     {
