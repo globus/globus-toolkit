@@ -17,6 +17,8 @@
 #define PROXY_NAME             "proxy"
 
 #include "globus_i_gsi_proxy.h"
+#include "version.h"
+#include "globus_error_openssl.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -31,7 +33,9 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module =
     "globus_gsi_proxy",
     globus_l_gsi_proxy_activate,
     globus_l_gsi_proxy_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /**
@@ -41,7 +45,7 @@ static
 int
 globus_l_gsi_proxy_activate(void)
 {
-    return GLOBUS_SUCCESS;
+    return globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 }
 
 /**
@@ -52,7 +56,7 @@ static
 int
 globus_l_gsi_proxy_deactivate(void)
 {
-    return GLOBUS_SUCCESS;
+    return globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 }
 /* globus_l_gsi_proxy_deactivate() */
 #endif
@@ -96,13 +100,14 @@ globus_gsi_proxy_create_req(
     int                                 init_prime;
     RSA *                               rsa_key = NULL;
     BIO *                               stdout_bio = NULL;
+    globus_result_t                     result;
 
 #define GLOBUS_GSI_PROXY_CREATE_REQ_FREE \
-    BIO_free(stdout_bio); \
-    RSA_free(rsa_key); \
-    X509_EXTENSION_free(pci_ext); \
-    sk_X509_EXTENSION_free(extensions); \
-    ASN1_OCTET_STRING_free(pci_DER_string);
+    BIO_free(stdout_bio); stdout_bio = NULL; \
+    RSA_free(rsa_key); rsa_key = NULL; \
+    X509_EXTENSION_free(pci_ext); pci_ext = NULL; \
+    sk_X509_EXTENSION_free(extensions); extensions = NULL; \
+    ASN1_OCTET_STRING_free(pci_DER_string); pci_DER_string = NULL; 
 
     /* create a stdout bio for sending key generation 
      * progress information */
@@ -115,18 +120,27 @@ globus_gsi_proxy_create_req(
 
     BIO_set_fp(stdout_bio, stdout, BIO_NOCLOSE);
 
-    globus_gsi_proxy_handle_attrs_get_keybits(handle->attrs, &key_bits);
-    globus_gsi_proxy_handle_attrs_get_init_prime(handle->attrs, &init_prime);
+    if(result = globus_gsi_proxy_handle_attrs_get_keybits(
+        handle->attrs, &key_bits) != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_CREATE_REQ_FREE;
+        return result;
+    }
+
+    if(result = globus_gsi_proxy_handle_attrs_get_init_prime(
+        handle->attrs, &init_prime) != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_CREATE_REQ_FREE;
+        return result;
+    }
 
     /* First, generate and setup private/public key pair */
-    ;
-
     if((rsa_key = RSA_generate_key(key_bits, init_prime, 
                                    (void (*)()) 
                                    globus_i_gsi_proxy_create_private_key_cb, 
                                    (char *) stdout_bio)) == NULL)
     {
-        /* ERROR: RSA_generate_key errored - probably ran out of memory */
+        /* ERROR: RSA_generate_key errored */
         GLOBUS_GSI_PROXY_CREATE_REQ_FREE;
         return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_GENERATING_RSA_KEYS);
@@ -261,11 +275,11 @@ globus_gsi_proxy_inquire_req(
     ASN1_OCTET_STRING *                 ext_data = NULL;
 
 #define GLOBUS_GSI_PROXY_INQUIRE_REQ_FREE \
-    X509_REQ_free(request); \
-    sk_X509_EXTENSION_free(extensions); \
-    X509_EXTENSION_free(tmp_ext); \
-    PROXYCERTINFO_free(pci); \
-    ASN1_OCTET_STRING_free(ext_data);
+    X509_REQ_free(request); request = NULL; \
+    sk_X509_EXTENSION_free(extensions); extensions = NULL; \
+    X509_EXTENSION_free(tmp_ext); tmp_ext = NULL; \
+    PROXYCERTINFO_free(pci); pci = NULL; \
+    ASN1_OCTET_STRING_free(ext_data); ext_data = NULL;
 
 
     if(d2i_X509_REQ_bio(input_bio, & request) == NULL)
@@ -367,13 +381,13 @@ globus_gsi_proxy_sign_req(
     int                                 res;
     
 #define GLOBUS_GSI_PROXY_SIGN_REQ_FREE \
-    EVP_MD_free(signing_algorithm); \
-    X509_free(new_pc); \
-    sk_X509_EXTENSION_free(pc_req_extensions); \
-    sk_X509_EXTENSION_free(pc_extensions); \
-    ASN1_UTCTIME_free(pc_notAfter); \
-    X509_EXTENSION_free(tmp_ext); \
-    EVP_PKEY_free(issuer_pkey);
+    EVP_MD_free(signing_algorithm); signing_algorithm = NULL; \
+    X509_free(new_pc); new_pc = NULL; \
+    sk_X509_EXTENSION_free(pc_req_extensions); pc_req_extensions = NULL; \
+    sk_X509_EXTENSION_free(pc_extensions); pc_extensions = NULL; \
+    ASN1_UTCTIME_free(pc_notAfter); pc_notAfter = NULL; \
+    X509_EXTENSION_free(tmp_ext); tmp_ext = NULL; \
+    EVP_PKEY_free(issuer_pkey); issuer_pkey = NULL;
     
     if((res = 
         X509_REQ_verify(handle->req, X509_REQ_get_pubkey(handle->req)) == 0)
@@ -517,6 +531,59 @@ globus_gsi_proxy_assemble_cred(
     globus_gsi_cred_handle_t *          proxy_credential,
     BIO *                               input_bio)
 {
+    X509 *                              signed_cert = NULL;
+    RSA *                               private_key = NULL;
+    X509 *                              tmp_cert = NULL;
+    STACK_OF(X509) *                    issuer_certs = NULL;
+
+    globus_gsi_cred_handle_attrs_t *    cred_handle_attrs = NULL;
+    globus_result_t                     result = NULL;
+
+#define GLOBUS_GSI_PROXY_ASSEMBLE_CRED_FREE \
+    X509_free(signed_cert); signed_cert = NULL; \
+    RSA_free(private_key); private_key = NULL; \
+    X509_free(tmp_cert); tmp_cert = NULL; \
+    sk_X509_free(issuer_certs); issuer_certs = NULL;
+
+
+    /* get the signed proxy cert from the BIO */
+    if(!d2i_X509_bio(input_bio, &signed_cert))
+    {
+        GLOBUS_GSI_PROXY_ASSEMBLE_CRED_FREE;
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_CONVERTING_TO_INTERNAL_FORM);
+    }
+
+    /* get all the signing certificates in the chain from the BIO */
+    if(!BIO_eof(input_bio))
+    {
+        if(!d2i_X509_bio(input_bio, &tmp_cert))
+        {
+            GLOBUS_GSI_PROXY_ASSEMBLE_CRED_FREE;
+            return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                GLOBUS_GSI_PROXY_ERROR_CONVERTING_TO_INTERNAL_FORM);
+        }
+        
+        sk_X509_push(issuer_certs, tmp_cert);
+        X509_free(tmp_cert);
+    }
+    
+    /* SLANG: what do i set the values of the handle attrs to ? */
+    
+    if(result = globus_gsi_cred_handle_attrs_init(
+        &cred_handle_attrs) != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ASSEMBLE_CRED_FREE;
+        return result;
+    }
+        
+    globus_gsi_cred_handle_init(credential, cred_handle_attrs);
+    
+    credential->cert = signed_cert;
+    credential->key  = handle->proxy_key;
+    credential->cert_chain = issuer_certs;
+    
+    GLOBUS_GSI_PROXY_ASSEMBLE_CRED_FREE;
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_assemble_cred */
@@ -580,7 +647,6 @@ globus_i_gsi_proxy_set_pc_times(
         }
     }
     
-
     if(X509_set_notAfter(new_pc, pc_notAfter) == NULL)
     {
         ASN1_UTCTIME_free(pc_notAfter);

@@ -135,6 +135,7 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 #ifndef DOXYGEN
 
 #include <globus_error_generic.h>
+#include "globus_error_openssl.h"
 
 #define GLOBUS_GSI_PROXY_ERROR_CONSTRUCT(_ERRORTYPE_) \
     globus_error_construct_error(
@@ -147,10 +148,11 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 #define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_) \
     globus_error_put(GLOBUS_GSI_PROXY_ERROR_CONSTRUCT(_ERRORTYPE_))
 
-#define OPENSSL_ERROR_STRING_CONSTRUCT ("OpenSSL Error: "__FILE__":"__LINE__)
+#define OPENSSL_ERROR_STRING_CONSTRUCT \
+    ("GSI Proxy Error: "__FILE__":"__LINE__)
 
 #define GLOBUS_GSI_PROXY_OPENSSL_ERROR_CONSTRUCT(_ERRORTYPE_) \
-    globus_error_get_openssl_error( \
+    globus_error_wrap_openssl_error( \
         GLOBUS_GSI_PROXY_MODULE, \
         OPENSSL_ERROR_STRING_CONSTRUCT, \
         _ERRORTYPE_, \
