@@ -161,12 +161,6 @@ globus_bool_t
 random_stress_test();
 
 void
-random_stress_own_thread_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
-    void *                              user_arg);
-
-void
 random_stress_queued_handler(
     const globus_abstime_t *            time_now,
     const globus_abstime_t *            time_stop, 
@@ -1087,12 +1081,6 @@ random_stress_test()
                 random_stress_queued_handler,
                 GLOBUS_NULL);
 
-    globus_callback_register_oneshot(
-                GLOBUS_NULL,
-                &delay,
-                random_stress_own_thread_handler,
-                GLOBUS_NULL);
-
     for(ctr = 0; ctr < RANDOM_STRESS_TIMES_TO_TEST; ctr++)
     {
     verbose_printf(1, "start of loop\n");
@@ -1134,15 +1122,6 @@ random_stress_test()
 }
 
 void
-random_stress_own_thread_handler(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop, 
-    void *                              user_arg)
-{
-        globus_libc_usleep(1000);
-}
-
-void
 random_stress_queued_handler(
     const globus_abstime_t *            time_now,
     const globus_abstime_t *            time_stop, 
@@ -1159,6 +1138,10 @@ random_stress_count_handler(
 {
     int *             x;
 
+    x = (int *)user_arg;
+
+    (*x)++;
+    
     globus_mutex_lock(&random_stress_registered_mutex);
     {
         if(!random_stress_registered)
@@ -1166,12 +1149,13 @@ random_stress_count_handler(
             verbose_printf(0, "***ERROR*** random_stress_count_handler() : callback should not be registered\n");
             random_stress_success = GLOBUS_FALSE;
         }
+        else if(*x == 50)
+        {
+            globus_callback_unregister(stress_callback_handle, GLOBUS_NULL, GLOBUS_NULL);
+            random_stress_registered = GLOBUS_FALSE;
+        }
     }
     globus_mutex_unlock(&random_stress_registered_mutex);
-
-    x = (int *)user_arg;
-
-    (*x)++;
 
     if(*x == 50)
     {
@@ -1181,8 +1165,7 @@ random_stress_count_handler(
             random_stress_done = GLOBUS_TRUE;
             globus_cond_signal(&random_stress_cond);
             
-            globus_callback_unregister(stress_callback_handle, GLOBUS_NULL, GLOBUS_NULL);
-            random_stress_registered = GLOBUS_FALSE;
+            
         }
         globus_mutex_unlock(&random_stress_mutex);
     } 
