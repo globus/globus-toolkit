@@ -138,6 +138,12 @@ in progress (credential load, passphrase change) to fail with the error
 message provided by the program's stdout.
 Note: You must specify the full path to the external program.
 $GLOBUS_LOCATION can't be used in the myproxy-server.config file.
+.TP
+.BI max_proxy_lifetime " hours"
+This line specifies a server-wide maximum lifetime for retrieved proxy
+credentials.  By default, no server-wide maximum is enforced.
+However, if this option is specified, the server will limit the
+lifetime of any retrieved proxy credentials to the value given.
 .SH FILES
 .TP
 .I /etc/myproxy-server.config
