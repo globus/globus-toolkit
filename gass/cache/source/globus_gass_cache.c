@@ -1493,8 +1493,8 @@ globus_l_gass_cache_lock_file(
                                 {
                                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                                 }
-                                else
-                                {
+				else if (errno != EINTR )
+				{
 	                            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
                                 }
 			    }
