@@ -377,7 +377,7 @@ ssh_gssapi_cleanup_creds(void *ignored)
 
 	if (gssapi_cred_store.filename!=NULL) {
 		/* Unlink probably isn't sufficient */
-		debug("removing gssapi cred file\"%s\"",gssapi_cred_store.filename);
+		debug("removing gssapi cred file \"%s\"",gssapi_cred_store.filename);
 		unlink(gssapi_cred_store.filename);
 	}
 	/* DK ?? 
@@ -468,7 +468,7 @@ ssh_gssapi_storecreds()
 	if (strncmp(p, "FILE:", 5) == 0) {
 	    p += 5;
 	}
-	if (access(p, R_OK)) {
+	if (access(p, R_OK) == 0) {
 	    gssapi_cred_store.filename = strdup(p);
 	}
 	gss_release_buffer(&min_stat, &export_cred);
