@@ -5,6 +5,13 @@
 #   define OPENSSL_UNISTD <unistd.h>
 #endif
 
+#ifdef HEADER_CRYPTLIB_H
+#   ifndef OPENSSLDIR
+#       undef OPENSSLDIR 
+#   endif
+#endif
+
+
 #ifdef HEADER_BN_H
 #   ifndef SIXTY_FOUR_BIT_LONG
 #       undef SIXTY_FOUR_BIT_LONG
