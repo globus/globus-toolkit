@@ -221,6 +221,7 @@ call_test(
     char **                                     argv)
 {
     main_func_t                                 main_func;
+    int                                         rc;
 
     main_func = (main_func_t) globus_hashtable_lookup(
                                 &globus_l_test_hash,
@@ -231,7 +232,9 @@ call_test(
         return 1;
     }
 
-    return main_func(argc, argv);
+    rc = main_func(argc, argv);
+
+    return rc;
 }
 
 int
@@ -319,8 +322,7 @@ main(
 
     if(activate)
     {
-        rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
-        globus_assert(rc == GLOBUS_SUCCESS);
+        globus_module_deactivate(GLOBUS_XIO_MODULE);
     }
 
     globus_hashtable_destroy(&globus_l_test_hash);

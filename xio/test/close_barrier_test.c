@@ -110,7 +110,7 @@ open_cb(
 {
     globus_result_t                             res;
     int                                         ctr;
-    globus_byte_t *                             buffer;
+    globus_byte_t *                             buffer = 0x10;
     globus_size_t                               buffer_length = 1024;
 
     for(ctr = 0; ctr < OP_COUNT; ctr++)

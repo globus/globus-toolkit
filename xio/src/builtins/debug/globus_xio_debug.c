@@ -43,7 +43,7 @@ debug_driver_log(
 
 #   ifdef HAVE_STDARG_H
     {
-        va_start(ap, cmd);
+        va_start(ap, fmt);
     }
 #   else
     {

@@ -7,7 +7,23 @@ static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
-#define USEC_THRESHHOLD  4000000
+#define USEC_THRESHHOLD  3000000
+
+static globus_bool_t
+result_is_timeout(
+    globus_result_t                             res)
+{
+    if(res == GLOBUS_SUCCESS ||
+        !globus_error_match(
+            globus_error_peek(res),
+            GLOBUS_XIO_MODULE,
+            GLOBUS_XIO_ERROR_TIMEDOUT))
+    {
+        return GLOBUS_FALSE;
+    }
+
+    return GLOBUS_TRUE;
+}
 
 static globus_bool_t
 timeout_cb(
@@ -29,11 +45,7 @@ close_cb(
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "C") == 0)
     {
-        if(result == GLOBUS_SUCCESS ||
-            !globus_error_match(
-                globus_error_peek(result),
-                GLOBUS_XIO_MODULE,
-                GLOBUS_XIO_ERROR_TIMEDOUT))
+        if(!result_is_timeout(result))
         {
             failed_exit("Read/Write did not timeout.");
         }
@@ -63,11 +75,7 @@ data_cb(
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "D") == 0)
     {
-        if(result == GLOBUS_SUCCESS ||
-            !globus_error_match(
-                globus_error_peek(result),
-                GLOBUS_XIO_MODULE,
-                GLOBUS_XIO_ERROR_TIMEDOUT))
+        if(!result_is_timeout(result))
         {
             failed_exit("Read/Write did not timeout.");
         }
@@ -92,18 +100,14 @@ open_cb(
     void *                                      user_arg)
 {
     globus_result_t                             res;
-    globus_byte_t *                             buffer;
+    globus_byte_t *                             buffer = 0x10;
     globus_size_t                               buffer_length = 1024;
     char *                                      timeout_type;
 
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "O") == 0)
     {
-        if(result == GLOBUS_SUCCESS ||
-            !globus_error_match(
-                globus_error_peek(result),
-                GLOBUS_XIO_MODULE,
-                GLOBUS_XIO_ERROR_TIMEDOUT))
+        if(!result_is_timeout(result))
         {
             failed_exit("Open did not timeout.");
         }
@@ -186,7 +190,7 @@ timeout_main(
         return 1;
     }
 
-    GlobusTimeReltimeSet(delay, secs / 4, usecs / 4);
+    GlobusTimeReltimeSet(delay, secs / 3, usecs / 3);
     /* set up timeouts */
     if(strcmp(argv[opt_offset], "O") == 0)
     {

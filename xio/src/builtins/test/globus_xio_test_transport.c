@@ -16,6 +16,9 @@
     ow->nbytes = nb;                                                    \
 }
 
+static globus_mutex_t                   globus_l_mutex;
+static globus_cond_t                    globus_l_cond;
+
 static int
 globus_l_xio_test_activate();
 
@@ -100,17 +103,21 @@ static void
 test_inline_blocker(
     globus_reltime_t *                          delay)
 {
+    globus_abstime_t                            timeout;
     globus_reltime_t                            zero;
-    int                                         sec;
-    int                                         usec;
+    int                                         rc;
 
     GlobusTimeReltimeSet(zero, 0, 0);
     if(globus_reltime_cmp(delay, &zero) != 0)
     {
-        globus_thread_blocking_will_block();
-        GlobusTimeReltimeGet(*delay, sec, usec);
-        sleep(sec);
-        globus_libc_usleep(usec);
+        GlobusTimeAbstimeGetCurrent(timeout);
+        GlobusTimeAbstimeInc(timeout, *delay);
+        globus_mutex_lock(&globus_l_mutex);
+        do
+        {
+            rc = globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &timeout);
+        } while (rc != ETIMEDOUT);
+        globus_mutex_unlock(&globus_l_mutex);
     }
 }
 
@@ -738,6 +745,9 @@ globus_l_xio_test_activate(void)
     {
         return rc;
     }
+
+    globus_cond_init(&globus_l_cond, NULL);
+    globus_mutex_init(&globus_l_mutex, NULL);
 
     attr = &globus_l_default_attr;
 

@@ -283,6 +283,7 @@ framework_main(
     }
 
 
+    globus_l_test_info.buffer = 0x10;
     res = globus_xio_register_open(
             &handle,
             attr,
