@@ -23,16 +23,26 @@ done_cb(
 {
     char * tmpstr;
 
-    if(err) tmpstr = " an";
-    else    tmpstr = "out";
+    if(err)
+    { 
+        tmpstr = " an";
+    }
+    else
+    {
+        tmpstr = "out";
+    }
 
-    if(err) { printf("done with%s error\n", tmpstr); 
-              error = GLOBUS_TRUE; }
+    if(err)
+    {
+        printf("done with%s error\n", tmpstr);
+        fprintf(stderr, "%s\n", globus_object_printable_to_string(err));
+        error = GLOBUS_TRUE;
+    }
+
     globus_mutex_lock(&lock);
     done = GLOBUS_TRUE;
     globus_cond_signal(&cond);
-    globus_mutex_unlock(&lock);
-       
+    globus_mutex_unlock(&lock);   
 }
 
 static
@@ -106,9 +116,9 @@ int main(int argc, char **argv)
     else
     {
 	int rc;
-
+        
 	rc = read(0, buffer, buffer_length);
-	globus_ftp_client_register_write(
+	result = globus_ftp_client_register_write(
 	    &handle,
 	    buffer,
 	    rc,
@@ -116,6 +126,14 @@ int main(int argc, char **argv)
 	    rc == 0,
 	    data_cb,
 	    0);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_object_t * err;
+            err = globus_error_get(result);
+            fprintf(stderr, "%s", globus_object_printable_to_string(err));
+            done = GLOBUS_TRUE;
+        }
     }
     globus_mutex_lock(&lock);
     while(!done)
@@ -123,7 +141,7 @@ int main(int argc, char **argv)
 	globus_cond_wait(&cond, &lock);
     }
     globus_mutex_unlock(&lock);
-
+    
     globus_ftp_client_handle_destroy(&handle);
     globus_module_deactivate_all();
     

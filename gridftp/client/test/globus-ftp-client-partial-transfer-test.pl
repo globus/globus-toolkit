@@ -24,6 +24,9 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
+my ($dest_host, $dest_file) = setup_remote_dest();
+
 # Test #1-3. Basic functionality: create a dummy file in /tmp; modify
 # that file remotely using partial file put; make sure the file is
 # what it should be.
@@ -77,13 +80,13 @@ sub basic_func
     substr($dest_data, $offset, 100, substr($source_data, $offset, 100));
 
     my $cmd = "$test_exec -R $offset " .int(100+$offset).
-           " -s gsiftp://localhost$tmpname2 -d gsiftp://localhost$tmpname";
+           " -s gsiftp://$source_host$tmpname2 -d gsiftp://$dest_host$tmpname";
     print `$cmd`;
 
     $rc = $? >> 8;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc.";
     }
     if(-r 'core')
     {
@@ -111,34 +114,34 @@ sub basic_func
     unlink($tmpname, $tmpname2);
 }
 
-if(source_is_remote())
+if(source_is_remote() || dest_is_remote())
 {
     print "using remote source, skipping basic_func()\n";
 }
 else
 {
     
-push(@tests, "basic_func(0);");
-push(@tests, "basic_func(100);");
-push(@tests, "basic_func(5000);");
+    push(@tests, "basic_func(0);");
+    push(@tests, "basic_func(100);");
+    push(@tests, "basic_func(5000);");
 
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
-
-    foreach (@ARGV)
+    if(@ARGV)
     {
-        eval "&$tests[$_-1]";
+        plan tests => scalar(@ARGV);
+        
+        foreach (@ARGV)
+        {
+            eval "&$tests[$_-1]";
+        }
     }
-}
-else
-{
-    plan tests => scalar(@tests), todo => \@todo;
-
-    foreach (@tests)
+    else
     {
-        eval "&$_";
+        plan tests => scalar(@tests), todo => \@todo;
+        
+        foreach (@tests)
+        {
+            eval "&$_";
+        }
     }
-}
-
+    
 }

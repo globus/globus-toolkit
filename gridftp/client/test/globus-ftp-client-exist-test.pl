@@ -2,7 +2,7 @@
 
 =head1 globus-ftp-client-exist-test
 
-Tests to exercise the existence checking of the client library.
+    Tests to exercise the existence checking of the client library.
 
 =cut
 
@@ -18,10 +18,12 @@ my $gpath = $ENV{GLOBUS_LOCATION};
 
 if (!defined($gpath))
 {
-    die "GLOBUS_LOCATION needs to be set before running this script"
+    die "GLOBUS_LOCATION needs to be set before running this script";
 }
 
 @INC = (@INC, "$gpath/lib/perl");
+
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 sub check_existence
 {
@@ -60,35 +62,35 @@ if(source_is_remote())
 }
 else
 {
-my $emptydir = POSIX::tmpnam();
+    my $emptydir = POSIX::tmpnam();
 
-mkdir $emptydir, 0755;
+    mkdir $emptydir, 0755;
 
-foreach('/etc/group', '/', '/etc', '/no-such-file', $emptydir)
-{
-    my $exists_rc = stat($_) ? 0 : 1;
-
-    push(@tests, "check_existence('gsiftp://localhost$_', $exists_rc);");
-}
-
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
-
-    foreach (@ARGV)
+    foreach('/etc/group', '/', '/etc', '/no-such-file', $emptydir)
     {
-        eval "&$tests[$_-1]";
+        my $exists_rc = stat($_) ? 0 : 1;
+        
+        push(@tests, "check_existence('gsiftp://$source_host$_', $exists_rc);");
     }
-}
-else
-{
-    plan tests => scalar(@tests);
 
-    foreach (@tests)
+    if(@ARGV)
     {
-        eval "&$_";
+        plan tests => scalar(@ARGV);
+        
+        foreach (@ARGV)
+        {
+            eval "&$tests[$_-1]";
+        }
     }
-}
+    else
+    {
+        plan tests => scalar(@tests);
+        
+        foreach (@tests)
+        {
+            eval "&$_";
+        }
+    }
 
-rmdir $emptydir
+    rmdir $emptydir;
 }

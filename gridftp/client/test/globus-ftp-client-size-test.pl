@@ -23,6 +23,8 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
+
 sub check_size
 {
     my ($errors,$rc) = ("",0);
@@ -76,7 +78,7 @@ foreach('/etc/group', '/bin/sh', '/adsfadsfa')
 	$size = -1;
     }
 
-    push(@tests, "check_size('gsiftp://localhost/$_', $size);");
+    push(@tests, "check_size('gsiftp://$source_host$_', $size);");
 }
 if(@ARGV)
 {

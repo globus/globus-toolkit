@@ -5,12 +5,13 @@ require Exporter;
 @ISA = qw(Exporter);
 
 @EXPORT = qw( setup_remote_source 
-            setup_local_source 
-            setup_remote_dest 
-            source_is_remote 
-            clean_remote_file 
-            get_remote_file 
-            compare_local_files );            # symbols to export by default
+              setup_local_source 
+              setup_remote_dest 
+              source_is_remote 
+              dest_is_remote 
+              clean_remote_file 
+              get_remote_file 
+              compare_local_files );            # symbols to export by default
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 
@@ -227,6 +228,13 @@ sub source_is_remote()
 {
     return ($ENV{FTP_TEST_SOURCE_HOST} and !($ENV{FTP_TEST_SOURCE_HOST} =~ m/localhost/))
 }
+
+#bool = dest_is_remote()
+sub dest_is_remote()
+{
+    return ($ENV{FTP_TEST_DEST_HOST} and !($ENV{FTP_TEST_DEST_HOST} =~ m/localhost/))
+}
+
 
 #void clean_remote_file($host, $file);
 sub clean_remote_file($$)

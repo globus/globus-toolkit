@@ -25,6 +25,8 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($dest_host, $dest_file) = setup_remote_dest();
+
 # Test #1-3. Basic functionality: create a dummy file in /tmp; modify
 # that file remotely using partial file put; make sure the file is
 # what it should be.
@@ -34,16 +36,15 @@ if (!defined($gpath))
 # is generated.
 sub basic_func
 {
-    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
     my $newfile = new FileHandle;
     my $offset = shift;
     my $data = "";
-    unlink('core', $tmpname);
+    unlink('core', $dest_file);
 
     # Create a file of known contents, for the partial update.
-    open($newfile, ">$tmpname");
+    open($newfile, ">$dest_file");
     for(my $i = 0; $i < 4096; $i++)
     {
 	$data .= $i % 10;
@@ -52,7 +53,7 @@ sub basic_func
     print $newfile $data;
     close $newfile;
     
-    my $command = "$test_exec -R $offset -d gsiftp://localhost$tmpname -p >/dev/null 2>&1";
+    my $command = "$test_exec -R $offset -d gsiftp://$dest_host$dest_file -p >/dev/null 2>&1";
     open($newfile, "|$command");
     my $i = $offset;
     if($offset > 4096)
@@ -79,7 +80,7 @@ sub basic_func
         $errors .= "\n# Core file generated.";
     }
 
-    open($newfile, "|diff - $tmpname");
+    open($newfile, "|diff - $dest_file");
     print $newfile $data;
     close($newfile);
     $rc = $? >> 8;
@@ -97,7 +98,7 @@ sub basic_func
         $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    unlink($tmpname);
+    unlink($dest_file);
 }
 
 if(source_is_remote())
