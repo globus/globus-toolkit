@@ -1,6 +1,32 @@
 
 #include "globus_i_gridftp_server.h"
 #include "globus_gridftp_server.h"
+#include "globus_i_gfs_ipc.h"
+
+static globus_mutex_t                   globus_l_ipc_cache_mutex;
+static globus_hashtable_t               globus_l_ipc_handle_table;
+static int                              globus_l_ipc_handle_table_size = 256;
+static int                              globus_l_ipc_handle_open_count = 0;
+static int                              globus_l_ipc_handle_max = 256;
+
+typedef struct globus_l_gfs_ipc_cache_entry_s
+{
+    globus_gfs_ipc_handle_t             ipc_handle;
+    globus_gfs_ipc_open_close_callback_t cb;
+    globus_gfs_ipc_error_callback_t     error_cb;
+    void *                              user_arg;
+    void *                              error_user_arg;
+    globus_result_t                     res;
+    char *                              user_id;
+    globus_bool_t                       in_use;
+} globus_l_gfs_ipc_cache_entry_t;
+
+static void
+globus_l_gfs_ipc_cache_error_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
 
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_driver_t              globus_l_gfs_queue_driver = GLOBUS_NULL;
@@ -14,6 +40,7 @@ static globus_xio_driver_t              globus_l_gfs_queue_driver = GLOBUS_NULL;
 #define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t) + sizeof(uint32_t) + 1)
 #define GFS_IPC_HEADER_SIZE_OFFSET  (sizeof(uint32_t) + 1)
 #define GFS_IPC_DEFAULT_BUFFER_SIZE 1024 * 1024
+#define GFS_IPC_VERSION             '\1'
 
 #define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
 do                                                                      \
@@ -221,32 +248,6 @@ typedef struct
     void *                              user_arg;
 } globus_l_gfs_ipc_bounce_t;
 
-typedef struct globus_i_gfs_ipc_handle_s
-{
-    uid_t                               uid;
-    const char *                        contact_string;
-    globus_xio_handle_t                 xio_handle;
-    globus_bool_t                       local;
-
-    globus_hashtable_t                  call_table;
-    globus_gfs_ipc_iface_t *            iface;
-
-    globus_bool_t                       writing;
-    globus_fifo_t                       write_q;
-
-    globus_mutex_t                      mutex;
-    globus_gfs_ipc_state_t              state;  
-    
-    globus_gfs_ipc_open_close_callback_t open_cb;
-    globus_gfs_ipc_open_close_callback_t close_cb;   
-    globus_gfs_ipc_error_callback_t     error_cb;
-    void *                              open_arg;    
-    void *                              close_arg;    
-    void *                              error_arg;
-
-    globus_size_t                       buffer_size;
-} globus_i_gfs_ipc_handle_t;
-
 /* callback and id relation */
 typedef struct globus_gfs_ipc_request_s
 {
@@ -260,6 +261,34 @@ typedef struct globus_gfs_ipc_request_s
     globus_gfs_ipc_event_reply_t *      event_reply;
     void *                              state_struct;
 } globus_gfs_ipc_request_t;
+
+typedef struct globus_i_gfs_ipc_handle_s
+{
+    uid_t                               uid;
+    const char *                        contact_string;
+    globus_xio_handle_t                 xio_handle;
+    globus_bool_t                       local;
+                                                                                
+    globus_hashtable_t                  call_table;
+    globus_gfs_ipc_iface_t *            iface;
+                                                                                
+    globus_bool_t                       writing;
+    globus_fifo_t                       write_q;
+                                                                                
+    globus_mutex_t                      mutex;
+    globus_gfs_ipc_state_t              state;
+                                                                                
+    globus_gfs_ipc_open_close_callback_t open_cb;
+    globus_gfs_ipc_open_close_callback_t close_cb;
+    globus_gfs_ipc_error_callback_t     error_cb;
+    void *                              open_arg;
+    void *                              close_arg;
+    void *                              error_arg;
+                                                                                
+    globus_size_t                       buffer_size;
+                                                                                
+    void *                              ipc_cache_ptr;
+} globus_i_gfs_ipc_handle_t;
 
 static void
 globus_l_gfs_ipc_read_header_cb(
@@ -3214,4 +3243,244 @@ globus_gfs_ipc_close(
 
     return res;
 }
+/*
+ *   caching stuff
+ */
+void
+globus_gfs_ipc_cache_init()
+{
+    globus_hashtable_init(
+        &globus_l_ipc_handle_table, 
+        globus_l_ipc_handle_table_size,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
 
+   globus_mutex_init(&globus_l_ipc_cache_mutex, NULL); 
+}
+
+void
+globus_gfs_ipc_cache_destroy()
+{
+    globus_hashtable_destroy(&globus_l_ipc_handle_table);
+    globus_mutex_destroy(&globus_l_ipc_cache_mutex);
+}
+
+static void
+globus_l_gfs_ipc_cache_kickout(
+    void *                              user_arg)
+{
+    globus_l_gfs_ipc_cache_entry_t *    entry;
+
+    entry = (globus_l_gfs_ipc_cache_entry_t *) user_arg;
+
+    entry->cb(entry->ipc_handle, entry->res, entry->user_arg);
+}
+
+static void
+globus_l_gfs_ipc_cache_open_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    
+    globus_l_gfs_ipc_cache_entry_t *    entry;
+
+    entry = (globus_l_gfs_ipc_cache_entry_t *) user_arg;
+    entry->res = result;
+    globus_l_gfs_ipc_cache_kickout(entry);
+    /* if the open failed set to not in use and call through regual error
+        mechanism */
+    if(result != GLOBUS_SUCCESS)
+    {
+        entry->in_use = GLOBUS_FALSE;
+        globus_l_gfs_ipc_cache_error_cb(
+            entry->ipc_handle, entry->res, entry);
+    }
+}
+
+static void
+globus_l_gfs_ipc_cache_close_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_gfs_ipc_cache_entry_t *    entry;
+
+    entry = (globus_l_gfs_ipc_cache_entry_t *) user_arg;
+    globus_free(entry->user_id);
+    globus_free(entry);
+}
+
+static void
+globus_l_gfs_ipc_cache_error_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_gfs_ipc_error_callback_t     error_cb = NULL;
+    globus_l_gfs_ipc_cache_entry_t *    entry;
+    globus_list_t *                     list;
+    globus_list_t *                     tmp_list;
+
+    entry = (globus_l_gfs_ipc_cache_entry_t *) user_arg;
+    globus_mutex_lock(&globus_l_ipc_cache_mutex);
+    {
+        globus_l_ipc_handle_open_count--;
+        /* if in use we need to notify the user */
+        if(entry->in_use)
+        {
+            error_cb = entry->error_cb;
+        }
+        else
+        {
+            list = (globus_list_t *) globus_hashtable_lookup(
+                &globus_l_ipc_handle_table, entry->user_id);
+
+            tmp_list = globus_list_search(list, entry);
+            globus_list_remove(&list, tmp_list);
+            globus_hashtable_insert(
+                &globus_l_ipc_handle_table, 
+                entry->user_id,
+                list);
+        }
+    }
+    globus_mutex_unlock(&globus_l_ipc_cache_mutex);
+
+    if(error_cb != NULL)
+    {
+        error_cb(entry->ipc_handle, result, entry->error_user_arg);
+    }
+
+    globus_gfs_ipc_close(
+        entry->ipc_handle,
+        globus_l_gfs_ipc_cache_close_cb,
+        entry);
+}
+
+globus_result_t
+globus_gfs_ipc_cache_handle_request(
+    const char *                        user_id,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg)
+{
+    char *                              remote_cs;
+    globus_result_t                     res;
+    globus_list_t *                     list;
+    globus_l_gfs_ipc_cache_entry_t *    entry = NULL;
+
+    globus_mutex_lock(&globus_l_ipc_cache_mutex);
+    {
+        list = (globus_list_t *)
+            globus_hashtable_lookup(&globus_l_ipc_handle_table, (void*)user_id);
+
+        /* if none available for that user open another one */
+        if(globus_list_empty(list))
+        {
+            /* if too many are open error out */
+            if(globus_l_ipc_handle_open_count > globus_l_ipc_handle_max)
+            {
+                res = globus_error_put(GLOBUS_ERROR_NO_INFO);
+                goto err;
+            }
+
+            remote_cs = globus_i_gfs_config_string("remote");
+            entry = (globus_l_gfs_ipc_cache_entry_t *)
+                globus_calloc(sizeof(globus_l_gfs_ipc_cache_entry_t), 1);
+            if(entry == NULL)
+            {
+                res = globus_error_put(GLOBUS_ERROR_NO_INFO);
+                goto err;
+            }
+            entry->cb = cb;
+            entry->user_arg = user_arg;
+            entry->error_cb = error_cb;
+            entry->error_user_arg = error_user_arg;
+            entry->user_id = strdup(remote_cs);
+            entry->res = GLOBUS_SUCCESS;
+
+            res = globus_gfs_ipc_open(
+                &entry->ipc_handle,
+                &globus_gfs_ipc_default_iface,
+                remote_cs,
+                globus_l_gfs_ipc_cache_open_cb,
+                entry,
+                globus_l_gfs_ipc_cache_error_cb,
+                entry);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+            entry->ipc_handle->ipc_cache_ptr = entry;
+            globus_l_ipc_handle_open_count++;
+        }
+        /* if there is one just kick it out */
+        else
+        {
+            entry = (globus_l_gfs_ipc_cache_entry_t *)
+                globus_list_remove(&list, list);
+            /* update callback info */
+            entry->cb = cb;
+            entry->user_arg = user_arg;
+            entry->error_cb = error_cb;
+            entry->error_user_arg = error_user_arg;
+            entry->res = GLOBUS_SUCCESS;
+            /* reinsert in case head pointer of list changed */
+            globus_hashtable_insert(
+                &globus_l_ipc_handle_table, 
+                entry->user_id,
+                list);
+
+            res = globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_cache_kickout,
+                entry);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+        entry->in_use = GLOBUS_TRUE;
+    }
+    globus_mutex_unlock(&globus_l_ipc_cache_mutex);
+
+    return GLOBUS_SUCCESS;
+
+  err:
+    globus_mutex_unlock(&globus_l_ipc_cache_mutex);
+
+    if(entry != NULL)
+    {
+        globus_free(entry);
+    }
+    return res;
+}
+
+globus_result_t
+globus_gfs_ipc_cache_handle_release(
+    globus_gfs_ipc_handle_t             ipc_handle)
+{
+    globus_list_t *                     list;
+    globus_l_gfs_ipc_cache_entry_t *    entry = NULL;
+
+    globus_mutex_lock(&globus_l_ipc_cache_mutex);
+    {
+        entry = ipc_handle->ipc_cache_ptr;
+
+        list = (globus_list_t *)
+            globus_hashtable_lookup(&globus_l_ipc_handle_table, entry->user_id);
+        globus_list_insert(&list, entry);
+        entry->res = GLOBUS_SUCCESS;
+        entry->in_use = GLOBUS_FALSE;
+        /* reinsert in case head pointer of list changed */
+        globus_hashtable_insert(
+            &globus_l_ipc_handle_table, 
+            entry->user_id,
+            list);
+    }
+    globus_mutex_unlock(&globus_l_ipc_cache_mutex);
+
+    return GLOBUS_SUCCESS;
+}
