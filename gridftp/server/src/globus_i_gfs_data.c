@@ -1285,6 +1285,13 @@ globus_gridftp_server_finished_transfer(
         
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
+            globus_i_gfs_data_kickoff_event(
+                op->instance,
+                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF);
+            globus_i_gfs_data_kickoff_event(
+                op->instance,
+                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART);
+
             /* XXX mode s only */
             op->event_callback(
                 op->instance,
@@ -1296,7 +1303,7 @@ globus_gridftp_server_finished_transfer(
                 op->instance,
                 result,
                 op->user_arg);
-        
+            
             globus_l_gfs_data_operation_destroy(op);
         }
         break;
