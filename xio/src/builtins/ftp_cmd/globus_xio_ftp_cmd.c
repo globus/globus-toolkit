@@ -434,6 +434,8 @@ globus_l_xio_ftp_cmd_close_cb(
     GlobusXIODriverFinishedClose(op, result);
 
     globus_free(handle->buffer);
+    globus_fifo_destroy(&handle->read_q);
+    globus_mutex_destroy(&handle->mutex);
     globus_free(handle);
 }
 
