@@ -160,7 +160,9 @@ public class JobStateMonitor {
     public void registerJobID(String localId, ResourceKey resourceKey)
             throws AlreadyRegisteredException
     {
-        logger.debug("Entering registerJobID");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Entering registerJobID: " + localId);
+        }
         synchronized (mapping) {
             if (mapping.containsKey(localId)) {
                 throw new AlreadyRegisteredException(localId);
@@ -362,7 +364,9 @@ public class JobStateMonitor {
     public void unregisterJobID(String localId)
         throws NotRegisteredException
     {
-        logger.debug("Entering unregisterJobID()");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Entering unregisterJobID: " + localId);
+        }
 
         synchronized (mapping) {
             Object result = mapping.remove(localId);
