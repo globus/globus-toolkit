@@ -1,9 +1,9 @@
-This is MyProxy v0.5.8 23 Sep 2003
+This is MyProxy v0.5.9 28 Jan 2003
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v0.5.9 XX XXX 200X (GPT package version 1.11)
+v0.5.9 28 Jan 2004 (GPT package version 1.11)
   - removed requirement for /dev/urandom and instead let OpenSSL seed
     its random number generator itself using its standard methods
   - added myproxy-admin-change-pass command
