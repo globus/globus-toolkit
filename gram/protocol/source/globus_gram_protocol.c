@@ -1575,7 +1575,6 @@ globus_gram_http_unpack_job_request_reply(
 	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
 	goto globus_gram_http_unpack_job_request_done;
     }	
-
     if (p)
     {
 	if (sscanf( p,
@@ -1604,16 +1603,21 @@ globus_gram_http_pack_status_request(
     globus_byte_t **    query,
     globus_size_t *     querysize )
 {
+    globus_size_t     len;
+
     *query = my_malloc(globus_byte_t,
 		       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
 		       strlen(GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE) +
-		       strlen(status_request));
+		       2*strlen(status_request));
 
-    globus_libc_sprintf( (char *) *query,	
-			 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-			 GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE,
-			 GLOBUS_GRAM_PROTOCOL_VERSION,
-			 status_request );
+    len = globus_libc_sprintf( (char *) *query,	
+			       GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
+			       GLOBUS_GRAM_PROTOCOL_VERSION );
+
+    len += globus_gram_http_quote_string( status_request,
+					  (*query) + len );
+
+    globus_libc_sprintf( (char *)(*query)+len, CRLF);	
     
     *querysize = (globus_size_t)(strlen((char*)*query) + 1);
 
@@ -1627,26 +1631,43 @@ globus_gram_http_unpack_status_request(
     globus_size_t      querysize,
     char **            status_request )
 {
-    int       rc;
-    int       protocol_version;
-    char *    p;
+    int             rc;
+    int             protocol_version;
+    char *          p;
+    globus_size_t   msgsize;
 
-    *status_request = my_malloc(char, querysize);   
+    p = strstr((char *) query, CRLF);
+    if (!p)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	goto error_exit;
+    }
+
+    p+=2;
+    msgsize = querysize - (globus_size_t)(p-(char *)query);
+    *status_request = my_malloc(char, msgsize);
     rc = GLOBUS_SUCCESS;
 
     if (sscanf( (char *) query,
 		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE,
-		&protocol_version,
-		*status_request) != 2 )
+		&protocol_version) != 1 )
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	goto error_exit;
     }
     else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	goto error_exit;
     }	
 
+    rc = globus_l_gram_http_unquote_string(
+	          (globus_byte_t*) p,
+		  msgsize,
+		  *status_request );
+    
+
+error_exit:
     if (rc != GLOBUS_SUCCESS)
     {
 	my_free(*status_request);
