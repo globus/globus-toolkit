@@ -1689,6 +1689,34 @@ buffer_error:
 
     return;
 }
+
+static 
+globus_bool_t
+globus_l_gfs_ipc_timeout_cb(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    switch(type)
+    {
+        case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+            /* cancel open */
+            break;
+        case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+            /* close handle */
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+
+
 /*
  *  get a handle with the given info.  perhaps it is cached,
  *  perhaps a connection needs to be made, perhaps we wait for
@@ -1711,6 +1739,8 @@ globus_l_gfs_ipc_handle_connect(
     globus_gfs_ipc_request_t *          request;
     globus_list_t *                     list;
     globus_xio_attr_t                   attr;
+    int                                 time;
+    globus_reltime_t                    timeout;
     GlobusGFSName(globus_l_gfs_ipc_handle_connect);
 
     ipc = (globus_i_gfs_ipc_handle_t *)
@@ -1759,6 +1789,30 @@ globus_l_gfs_ipc_handle_connect(
                 attr, globus_l_gfs_gsi_driver,
                 GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
                 GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY);
+        }
+        time = globus_i_gfs_config_int("ipc_connect_timeout");
+        if(time > 0)
+        {
+            GlobusTimeReltimeSet(timeout, time, 0);
+            globus_xio_attr_cntl(
+                attr,
+                NULL,
+                GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
+                globus_l_gfs_ipc_timeout_cb,
+                &timeout,
+                ipc);
+        }
+        time = globus_i_gfs_config_int("ipc_idle_timeout");
+        if(time > 0 && 0) /* should set this when it enters cache */
+        {
+            GlobusTimeReltimeSet(timeout, time, 0);
+            globus_xio_attr_cntl(
+                attr,
+                NULL,
+                GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
+                globus_l_gfs_ipc_timeout_cb,
+                &timeout,
+                ipc);
         }
         result = globus_xio_handle_create(
             &ipc->xio_handle, globus_l_gfs_ipc_xio_stack);
