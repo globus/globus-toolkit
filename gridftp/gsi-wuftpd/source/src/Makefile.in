@@ -80,7 +80,7 @@ OBJS   = ${UTIL_OBJS} mlsx.o mlsx_facts.o ftpd.o ftpcmd.o glob.o logwtmp.o popen
 	extensions.o realpath.o acl.o private.o authenticate.o conversions.o \
 	rdservers.o paths.o hostacc.o sigfix.o auth.o routevector.o \
 	restrict.o domain.o wu_fnmatch.o timeout.o getpwnam.o globus_hack.o \
-	$(GSSAPI_OBJS) $(AFS_OBJS)
+	cksmcmd.o $(GSSAPI_OBJS) $(AFS_OBJS)
 
 .c.o:
 	$(COMPILE) $(CFLAGS) -I. -I.. -I$(srcdir) -I$(srcdir)/.. -I../support -c -o $@ $<

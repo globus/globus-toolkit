@@ -80,11 +80,11 @@ globus_list_t *					host_port_list = NULL;
 globus_ftp_control_layout_t			g_layout;
 globus_size_t                                   g_striped_file_size;
 globus_ftp_control_parallelism_t		g_parallelism;
-globus_ftp_control_delay_passive_t                    g_delayed_passive;
+globus_ftp_control_delay_passive_t              g_delayed_passive;
 globus_ftp_control_dcau_t			g_dcau;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
-
+int                                             g_list_mode;
 extern gss_cred_id_t                            g_deleg_cred;
 #endif
 
@@ -218,7 +218,7 @@ extern int port_allowed(const char *remoteaddr);
     ABOR    DELE    CWD     LIST    NLST    SITE
     STAT_CMD    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
-    FAULT   MLST    MLSX    MLSD
+    FAULT   MLST    MLSD
 
     AUTH    ADAT    PROT    PBSZ    CCC     DCAU
 
@@ -1612,13 +1612,55 @@ cmd: USER SP username CRLF
                 dologout(0);
             }
             if (log_commands)
-             /*   syslog(LOG_INFO, "CKSM %"GLOBUS_OFF_T_FORMAT " %s", CHECKNULL ($3), CHECKNULL($5)); */
-            if ($4 && $6 && !restrict_check($6))
+                syslog(LOG_INFO, "CKSM %s", CHECKNULL($6)); 
+            if (!restrict_check($6))
             {
-                cksmcmd($6,$4,0,0);
+                cksmcmd($6,$4,0,-1);
             }
+            else
+            {
+                reply(550, "Cannot access %s", $6);
+            }            
             if ($6 != NULL)
                 free($6);
+        }
+    | CKSM check_login SP STRING SP OFFSET SP pathname CRLF
+        =       {
+            if(exit_at == CKSM)
+            {   
+                dologout(0);
+            }
+            if (log_commands)
+                syslog(LOG_INFO, "CKSM %s", CHECKNULL($8)); 
+            if (!restrict_check($8))
+            {
+                cksmcmd($8,$4,$6,-1);
+            }
+            else
+            {
+                reply(550, "Cannot access %s", $8);
+            }
+            if ($8 != NULL)
+                free($8);
+        }
+    | CKSM check_login SP STRING SP OFFSET SP LENGTH SP pathname CRLF
+        =       {
+            if(exit_at == CKSM)
+            {   
+                dologout(0);
+            }
+            if (log_commands)
+                syslog(LOG_INFO, "CKSM %s", CHECKNULL($10)); 
+            if (!restrict_check($10))
+            {
+                cksmcmd($10,$4,$6,$8);
+            }
+            else
+            {
+                reply(550, "Cannot access %s", $10);
+            }
+            if ($10 != NULL)
+                free($10);
         }
 	/*
 	 * MDTM is not in RFC959, but Postel has blessed it and
@@ -1943,15 +1985,17 @@ byte_size: NUMBER
     ;
 
 opts: 
-    SP MLSX SP STRING
+    SP MLST SP STRING
     {
         mlsx_options($4);
     }
     |
-    SP MLSX
+    SP MLST
     {
         mlsx_options(NULL);
     }
+    |
+    SP LIST SP list_option_list
     |
     SP RETR SP retr_option_list 
     ;
@@ -1970,6 +2014,29 @@ byte_range:
 				     (globus_size_t) ($3-$1));
 	}
 #       endif
+    }
+    ;
+
+list_option_list: 
+    list_option list_option_list
+    | list_option
+    ;
+
+list_option:
+    MODE EQUALS STRING SEMICOLON
+    {
+        if(strcasecmp($3, "e") == 0)
+        {
+            g_list_mode = GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
+        }
+        else if(strcasecmp($3, "s") == 0)
+        {
+            g_list_mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
+        }
+        else
+        {
+            reply(500,"'%s': invalid LIST MODE", $3);
+        }
     }
     ;
 
@@ -2377,13 +2444,14 @@ extern jmp_buf errcatch;
 #define NEWARGS 19		/* miscellaneous word/number
 				 * arguments, with punctuation */
 #define OPTSARGS 20             /* a command token, followed by newargs */
-#define CKSMARGS 21		/* SP STRING SP STRING optional SP o
-				   optional NUMBER opt SP opt NUMBER */
+#define CKSMARGS 21		/* SP STRING SP optional OFFSET SP 
+				   optional LENGTH SP STRING */
 #define CARGS1 22
 #define CARGS2 23
 #define CARGS3 24
 #define CARGS4 25
 #define CARGS5 26
+#define CARGS6 27
 
 struct tab cmdtab[] =
 {				/* In order defined in RFC 765 */
@@ -2435,7 +2503,7 @@ struct tab cmdtab[] =
     {"XCUP", CDUP, ARGS, 1, "(change to parent directory)"},
     {"STOU", STOU, STR1, 1, "<sp> file-name"},
     {"SIZE", SIZE, OSTR, 1, "<sp> path-name"},
-    {"CKSM", CKSM, CKSMARG, 1, "<sp> path-name"},
+    {"CKSM", CKSM, CKSMARGS, 1, "<sp> cksm-alg [ <sp> offset [ <sp> length ]] <sp> path-name"},
 #ifdef FTP_SECURITY_EXTENSIONS
     { "AUTH", AUTH, STR1, 1,	"<sp> auth-type" },
     { "ADAT", ADAT, STR1, 1,	"<sp> auth-data" },
@@ -2482,7 +2550,8 @@ struct tab sitetab[] =
 struct tab optstab[] =
 {
     {"RETR", RETR, NEWARGS, 1, "<sp> <retr_opts>"},
-    {"MLSX", MLSX, OSTR, 1, "[ <sp> <fact list> ]"},
+    {"MLST", MLST, OSTR, 1, "[ <sp> <fact list> ]"},
+    {"LIST", LIST, NEWARGS, 1, "[ <sp> <list_opts> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
@@ -2642,7 +2711,7 @@ static void toolong(int a) /* signal that caused this function to be called */
 
 int yylex(void)
 {
-    static int cpos, state;
+    static int cpos, state, start_cpos;
     register char *cp, *cp2;
     register struct tab *p;
     int n;
@@ -2789,6 +2858,7 @@ int yylex(void)
 	    /* FALLTHROUGH */
 
 	case STR2:
+	  dostr2:
 	    cp = &cbuf[cpos];
 	    n = strlen(cp);
 	    cpos += n - 1;
@@ -2998,30 +3068,50 @@ int yylex(void)
 
 	    case CKSMARGS:
 	    case CARGS2:
+	    case CARGS4:
+	    case CARGS6:
 		 if (cbuf[cpos] == ' ') {
                     cpos++;
-                    state++;
+                    if(state == CARGS6)
+                    {
+                        state = STR2;
+                    }
+                    else
+                    {
+                        state++;
+                    }
                     return (SP);
                 }
                 break;
-	    case CARGS4:
-		if (cbuf[cpos] == '\n') {
-                state = CMD;
-                return (CRLF);
-                }
- 		if (cbuf[cpos] == ' ') {
-                    cpos++;
-                    state++;
-                    return (SP);
-                }
-            /* FALLTHROUGH */
 
+	    case CARGS1:
+	     /* must be a word of some sort */
+            	cp = &cbuf[cpos];
+            	
+            	while(isalnum(cbuf[++cpos]));
+
+            	c = cbuf[cpos];
+            	cbuf[cpos] = '\0';
+     		yylval.String = copy(cp);
+                cbuf[cpos] = c;
+                state++;
+                return STRING;
+              break;
+
+	    case CARGS3:
 	    case CARGS5:
 	 	/* pull of a number,  */
                 if (isdigit(cbuf[cpos])) {
+                    start_cpos = cpos;
                     cp = &cbuf[cpos];
                     while (isdigit(cbuf[++cpos]));
                     c = cbuf[cpos];
+                    if(c != ' ')
+                    {
+                        cpos = start_cpos;
+                        state = STR2;
+                        goto dostr2;
+                    }
                     cbuf[cpos] = '\0';
 #ifdef USE_GLOBUS_DATA_CODE
                     sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
@@ -3030,45 +3120,39 @@ int yylex(void)
 #endif
                     cbuf[cpos] = c; 
 
-                    state = CARGS4;
+                    state++;
     
 #ifdef USE_GLOBUS_DATA_CODE 
                     return (BIGNUM);
 #else               
                     return(NUMBER);
 #endif                    
-                }         
+                }
+                else if(cbuf[cpos] == '-' &&
+                        cbuf[cpos + 1] == '1' &&
+                        cbuf[cpos + 2] == ' ')
+                {
+#ifdef USE_GLOBUS_DATA_CODE
+                    yylval.Bignum = -1;
+#else
+                    yylval.Number = -1;
+#endif
+                    state++;
+                    cpos += 2;
+    
+#ifdef USE_GLOBUS_DATA_CODE 
+                    return (BIGNUM);
+#else               
+                    return(NUMBER);
+#endif                                        
+                }
+                else
+                {
+                    state = STR2;
+                    goto dostr2;
+                }
                 break;	
-	    case CARGS1:
-	    case CARGS3:
-            	/*cp = &cbuf[cpos];
-            	cp2 = strpbrk(cp, " \n");
-            	if (cp2 != NULL) {
-                	c = *cp2;
-                	*cp2 = '\0';
-            	}
-            	n = strlen(cp);
-            	cpos += n; */
-            	/*
-             	* Make sure the string is nonempty and SP terminated.
-             	*/
-            	/*if ((cp2 - cp) > 1) {
-                	yylval.String = copy(cp);
-                	cbuf[cpos] = c;
-                	state++;
-                	return (STRING);
-            	}*/
- /* must be a word of some sort */
-            	cp = &cbuf[cpos];
-            	while(isalnum(cbuf[++cpos]));
-
-            	c = cbuf[cpos];
-            	cbuf[cpos] = '\0';
-     		yylval.String = copy(cp);
-                cbuf[cpos] = c;
-                return STRING;
-              break;
-
+                             
 
 	    case OPTSARGS:
 		if (cbuf[cpos] == ' ') {
@@ -3139,7 +3223,12 @@ int yylex(void)
 	    c = cbuf[cpos];
 	    cbuf[cpos] = '\0';
 
-	    if(strcasecmp(cp, "stripelayout") == 0)
+	    if(strcasecmp(cp, "mode") == 0)
+	    {
+		cbuf[cpos] = c;
+		return MODE;
+	    }
+	    else if(strcasecmp(cp, "stripelayout") == 0)
 	    {
 		cbuf[cpos] = c;
 		return STRIPELAYOUT;
