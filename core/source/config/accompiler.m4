@@ -703,9 +703,9 @@ case ${host}--$1 in
 	
 	# for now assume fink is installed in /sw
 
-        lac_CFLAGS="$lac_CFLAGS -I/sw/include"
+        lac_CFLAGS="$lac_CFLAGS -I/sw/include -DBIND_8_COMPAT"
         lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
-        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include -no-cpp-precomp"
+        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include"
         lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
       ;;
     * )
