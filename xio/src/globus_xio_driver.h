@@ -285,11 +285,6 @@ typedef globus_result_t
  *         If a driver specific attribute was set this will point to it.
  *         Ths parameter may be NULL.
  *
- *  @param out_target
- *         When the operation completes the driver should point this 
- *         out parameter to an area of memory that will be used as a 
- *         handle to this target.
- *
  *  @param op
  *         The reuqested operation.  When the driver is finished acepting
  *         the server connection it uses this structure to signal globus_xio 
@@ -300,6 +295,26 @@ typedef globus_result_t
     void *                                      driver_server,
     void *                                      driver_attr,
     globus_xio_driver_operation_t               op);
+
+/**
+ *  Driver API finished accept
+ *  @ingroup driver_api_grp
+ *
+ *  This function should be called to signal globus_xio that it has 
+ *  completed the accept operation requested of it.  It will free up 
+ *  resources associated with the accept_op and potientially cause xio
+ *  to pop the signal up the driver stack.
+ *
+ *  @param accept_op
+ *          The requested accept operation that has completed.
+ *
+ *  @param driver_target
+ *          This is the initialized driver target that is required on success
+ *          of this operation (if result != GLOBUS_SUCCESS, NULL ok)
+ * 
+ *  @param result
+ *          Return status of the completed operation
+ */
 
 globus_result_t
 globus_xio_driver_finished_accept(

@@ -41,17 +41,22 @@ globus_module_descriptor_t              globus_i_xio_tcp_module =
  */
 typedef struct
 {
+    /* target/server attrs */
     globus_xio_system_handle_t          handle;
+    
+    /* handle/server attrs */
     char *                              bind_address;
-    char *                              listener_serv;
-    int                                 listener_port;
-    int                                 listener_backlog;
     globus_bool_t                       restrict_port;
     /* XXX i need to separate these for listeners and connectors, otherwise
      * port range env will apply to both
      */
     int                                 min_port;
     int                                 max_port;
+    
+    /* server attrs */
+    char *                              listener_serv;
+    int                                 listener_port;
+    int                                 listener_backlog;
 } globus_l_attr_t;
 
 /* default attr */
@@ -59,12 +64,12 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
 {
     GLOBUS_XIO_TCP_INVALID_HANDLE,      /* handle   */ 
     GLOBUS_NULL,                        /* bind_address */
-    GLOBUS_NULL,                        /* listener_serv */
-    0,                                  /* listener_port */
-    -1,                                 /* listener_backlog (SOMAXCONN) */
     GLOBUS_TRUE,                        /* restrict_port */
     0,                                  /* min_port */
-    0                                   /* max_port */
+    0,                                  /* max_port */
+    GLOBUS_NULL,                        /* listener_serv */
+    0,                                  /* listener_port */
+    -1                                  /* listener_backlog (SOMAXCONN) */
 };
 
 /*
@@ -592,7 +597,7 @@ static
 globus_result_t
 globus_l_xio_tcp_server_init(
     void **                             out_server,
-    void *                              server_attr)
+    void *                              driver_attr)
 {
     globus_l_server_t *                 server;
     globus_l_attr_t *                   attr;
@@ -637,11 +642,51 @@ static
 globus_result_t
 globus_l_xio_tcp_server_accept(
     void *                              driver_server,
-    void *                              target_attr,
+    void *                              driver_attr,
     void **                             out_target,
     globus_xio_driver_operation_t       op)
 {
+    globus_l_server_t *                 server;
+    globus_l_attr_t *                   attr;
+    globus_l_target_t *                 target;
+    globus_result_t                     result;
+
+    server = (globus_l_server_t *) driver_server;
+    attr = (globus_l_attr_t *) driver_attr;
     
+     /* create the target structure and copy the contact string into it */
+    target = (globus_l_target_t *) globus_malloc(sizeof(globus_l_target_t));
+    if(!target)
+    {
+        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
+            "globus_l_xio_tcp_server_accept", "target");
+        goto error_target;
+    }
+    
+    target->handle = GLOBUS_XIO_TCP_INVALID_HANDLE;
+    target->contact_string = GLOBUS_NULL;
+    
+    if(attr && attr->handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
+    {
+        target->handle = attr->handle;
+    }
+    else
+    {
+        target->handle = attr->handle;
+    }
+    
+globus_result_t
+globus_xio_system_register_accept(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          listener_handle,
+    globus_xio_system_handle_t *        out_handle,
+    globus_xio_system_callback_t        callback,
+    void *                              user_arg);
+    
+    return GLOBUS_SUCCESS;
+    
+error_target:
+    return result;
 }
 
 static
@@ -651,9 +696,6 @@ globus_l_xio_tcp_server_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_l_server_t *                 server;
-    
-    server = (globus_l_server_t *)
     
 }
 
@@ -662,12 +704,30 @@ globus_result_t
 globus_l_xio_tcp_server_destroy(
     void *                              driver_server)
 {
-            _fd = (fd);                                                         \
-        do                                                                  \
-        {                                                                   \
-            _rc = close(_fd);                                               \
-        } while(_rc < 0 && errno == EINTR);                                 \
-
+    globus_result_t                     result;
+    globus_l_server_t *                 server;
+    int                                 rc;
+    
+    server = (globus_l_server_t *) driver_server;
+    
+    do                                                                  
+    {                                                                   
+        rc = close(server->listener_handle);                             
+    } while(rc < 0 && errno == EINTR);       
+    
+    if(rc < 0)
+    {
+        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
+            "globus_l_xio_tcp_server_destroy", errno);
+        goto error_close;
+    }                          
+    
+    globus_free(server);
+    return GLOBUS_SUCCESS;
+    
+error_close:
+    globus_free(server);
+    return result;
 }
 
 static
