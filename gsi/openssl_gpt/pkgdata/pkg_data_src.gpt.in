@@ -10,6 +10,8 @@
 
     <src_pkg>
 
+        <Version_Label>0.9.7b</Version_Label>
+
         <Source_Dependencies Type="compile" >
             <Dependency Name="globus_core">
                 <Version>
