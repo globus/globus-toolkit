@@ -5,7 +5,7 @@
  * $RCSfile$
  * $Revision$
  * $Date$
- * $Id$
+ * $Author$
  */
 
 #include "globus_ftp_client_perf_plugin.h"

@@ -7,7 +7,7 @@
  * $RCSfile$
  * $Revision$
  * $Date$
- * $Id$
+ * $Author$
  */
 #endif
 
