@@ -444,10 +444,9 @@ public class TransferClient {
                 this.urlExpander = new URLExpander
                         ( this.sourceHost, this.destinationHost, sourceGlobusURL, destinationGlobusURL );
                 this.urlExpander.start();
-            } else {
-                if ( this.status !=2 ) {
-                    size = sourceHost.getSize( sourcePath );
-                    this.markerListener = new MyMarkerListener( transferProgress,
+            } else if ( this.status !=2 ) {
+                size = sourceHost.getSize( sourcePath );
+                this.markerListener = new MyMarkerListener( transferProgress,
                         serviceData,
                         transferProgressData, size,
                         restartMarkerServiceData,
@@ -456,12 +455,8 @@ public class TransferClient {
                         gridFTPRestartMarkerElement,
                         gridFTPPerfMarkerSD,
                         gridFTPPerfMarkerElement );
-                    this.markerListener.setTransferId( transferid );
-                    logger.debug( "Transfer Id in TransferClient : " + transferid );
-                } else {
-                    throw new RemoteException("Error in transferClient");
-                }
-
+                this.markerListener.setTransferId( transferid );
+                logger.debug( "Transfer Id in TransferClient : " + transferid );
             }
         } catch ( MalformedURLException mue ) {
             setStatus ( 2 );
