@@ -270,6 +270,7 @@ globus_l_gfs_file_stat(
         while(globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry)
         {
             stat_count++;
+            globus_free(dir_entry);
         }
         
         globus_libc_rewinddir(dir);
