@@ -74,8 +74,12 @@ typedef enum
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH = 24,
     /** Invalid argument */
     GLOBUS_GSI_SYSCONFIG_INVALID_ARG = 25,
+    /** File has more than one link */
+    GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_LINKS = 26,
+    /** File has changed in the meantime */
+    GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_CHANGED = 27,
     /** Last marker - never used */
-    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 26
+    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 28
 }
 globus_gsi_sysconfig_error_t;
 

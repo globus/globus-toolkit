@@ -44,7 +44,9 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 22 */  "File is not owned by current user",
 /* 23 */  "File is a directory",
 /* 24 */  "File has zero length",
-/* 25 */  "Invalid argument"
+/* 25 */  "Invalid argument",
+/* 26 */  "File has more than one link, i.e. file may be a hard link",
+/* 27 */  "File changed while trying to set permissions"
 };
 /* @} */ 
 

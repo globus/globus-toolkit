@@ -2342,7 +2342,7 @@ globus_gsi_sysconfig_get_gridmap_filename_win32(
  */
 /* @{ */
 /**
- * Set the file permissions of a file to read only by the user
+ * Set the file permissions of a file to read-write only by the user
  * which are the permissions that should be set for all private keys.
  *
  * @param filename
@@ -2355,12 +2355,26 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     char *                              filename)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    struct stat                         stx;
+    int					fd = -1;
+    struct stat                         stx, stx2;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_set_key_permissions_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if(lstat(filename, &stx) != 0)
+    if((fd = open(filename, 0)) < 0)
+    {
+        result = globus_error_put(
+            globus_error_wrap_errno_error(
+                GLOBUS_GSI_SYSCONFIG_MODULE,
+                errno,
+                GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__":%d:%s: Error opening keyfile for reading\n",
+                __LINE__,
+                _function_name_));
+        goto exit;
+    }
+
+    if(lstat(filename, &stx) != 0 || fstat(fd, &stx2) != 0)
     {
         result = globus_error_put(
             globus_error_wrap_errno_error(
@@ -2395,8 +2409,24 @@ globus_gsi_sysconfig_set_key_permissions_unix(
             ("File: %s", filename));
         goto exit;
     }
+    else if(stx.st_nlink != 1)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_LINKS,
+            ("File: %s", filename));
+        goto exit;
+    }
+    else if(stx.st_ino != stx2.st_ino || stx.st_dev != stx2.st_dev)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_CHANGED,
+            ("File: %s", filename));
+        goto exit;
+    }
 
-    if(chmod(filename, S_IRUSR|S_IWUSR) < 0)
+    if(fchmod(fd, S_IRUSR|S_IWUSR) < 0)
     {
         result = globus_error_put(
             globus_error_wrap_errno_error(
@@ -2412,6 +2442,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     }
 
  exit:
+    if (fd >= 0)
+    {
+	close(fd);
+    }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
