@@ -67,8 +67,8 @@
 #define MAX_ROW_DATA_LEN 255
 
 SQLCHAR *mydsn = "myodbc3";
-SQLCHAR *myuid = "venu";
-SQLCHAR *mypwd = "venu";
+SQLCHAR *myuid = "postgres";
+SQLCHAR *mypwd = "";
 
 /* PROTOTYPE */
 int myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
@@ -162,7 +162,7 @@ int myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt)
     //rc = SQLConnect(*hdbc, mydsn, SQL_NTS, myuid, SQL_NTS,  mypwd, SQL_NTS);
     //mycon(*hdbc,rc);
 
-    rc = SQLDriverConnect (*hdbc, 0, "DSN=mydbase", SQL_NTS, (UCHAR *) buf, sizeof (buf), &buflen, SQL_DRIVER_COMPLETE);   
+    rc = SQLDriverConnect (*hdbc, 0, "DSN=myodbc3", SQL_NTS, (UCHAR *) buf, sizeof (buf), &buflen, SQL_DRIVER_COMPLETE);   
 
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
       return -1;

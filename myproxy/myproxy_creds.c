@@ -229,11 +229,11 @@ int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
     
    printf ("mpi-1");
 
-   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.owner, strlen(mydbase.owner) , NULL);
+   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, /*SQL_C_CHAR*/ SQL_CHAR, 255, 0, mydbase.owner, strlen(mydbase.owner) , NULL);
    mystmt (hstmt, rc);
     
    printf ("mpi-2");
-   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.passphrase, strlen (mydbase.passphrase), NULL);
+   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.passphrase, strlen (mydbase.passphrase), NULL);
    mystmt (hstmt, rc);
 
    printf ("mpi-3");
@@ -242,42 +242,42 @@ int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
 
    printf ("mpi-4");
    if (mydbase.retrievers == NULL)
-        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
+        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
    else
-        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.retrievers, strlen (mydbase.retrievers), NULL);
+        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.retrievers, strlen (mydbase.retrievers), NULL);
 
    mystmt (hstmt, rc);
 
    printf ("mpi-5");
    if (mydbase.renewers == NULL)
-       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "",0, NULL);
+       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, "",0, NULL);
    else
-       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.renewers, strlen (mydbase.renewers), NULL);
+       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.renewers, strlen (mydbase.renewers), NULL);
 
    mystmt (hstmt, rc);
 
    printf ("mpi-6");
    if (mydbase.credname == NULL)
-       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
+       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
    else
-       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.credname, strlen (mydbase.credname), NULL);
+       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.credname, strlen (mydbase.credname), NULL);
    mystmt (hstmt, rc);
 
    printf ("mpi-7");
    if (mydbase.cred_desc == NULL)
-       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, "", 0, NULL);
+       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, "", 0, NULL);
    else
-       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.cred_desc, strlen(mydbase.cred_desc), NULL);
+       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, mydbase.cred_desc, strlen(mydbase.cred_desc), NULL);
    mystmt (hstmt, rc);
 
    printf ("mpi-8");
    if (mydbase.credentials == NULL)
-       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, "",0, NULL);
+       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, "",0, NULL);
    else
-       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.credentials, strlen (mydbase.credentials), NULL);
+       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, mydbase.credentials, strlen (mydbase.credentials), NULL);
    mystmt (hstmt, rc);
 
-       rc = SQLBindParameter (hstmt, 9, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.username, strlen (mydbase.username), NULL);
+       rc = SQLBindParameter (hstmt, 9, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, mydbase.username, strlen (mydbase.username), NULL);
 
    printf ("mpi-9");
    rc = SQLExecute (hstmt);
@@ -570,9 +570,9 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
 
    rc = SQLPrepare (hstmt, "Select credentials from main where username=? and cred_name=?", SQL_NTS);
    mystmt (hstmt,rc);
-   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, creds->username, strlen(creds->username), NULL);
+   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, creds->username, strlen(creds->username), NULL);
    mystmt (hstmt, rc);
-   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, creds->credname, strlen(creds->credname), NULL);
+   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, creds->credname, strlen(creds->credname), NULL);
    mystmt (hstmt, rc);
 
    rc = SQLExecute (hstmt);
@@ -1118,9 +1118,9 @@ int retrieve_from_database_given_username_credname(char *username, char *crednam
    rc = SQLPrepare(hstmt, "Select owner, lifetime, retrievers, renewers, passphrase from main where (username=? and cred_name=?)", SQL_NTS);
    mystmt (hstmt,rc);
 
-   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, username, strlen(username), NULL);
+   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, username, strlen(username), NULL);
    mystmt (hstmt, rc);
-   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, credname, strlen(credname), NULL);
+   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, credname, strlen(credname), NULL);
    mystmt (hstmt, rc);
 
    rc = SQLExecute (hstmt);
@@ -1550,7 +1550,7 @@ int my_delete (SQLHDBC hdbc, SQLHSTMT hstmt)
   rc = SQLPrepare(hstmt,"DELETE FROM main where cred_name = ?", SQL_NTS);
   mystmt(hstmt,rc);
 
-  rc = SQLBindParameter (hstmt,1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.credname, \
+  rc = SQLBindParameter (hstmt,1, SQL_PARAM_INPUT, SQL_CHAR, SQL_C_CHAR, 255, 0, mydbase.credname, \
   			 strlen (mydbase.credname), NULL);
   mystmt (hstmt, rc);
 
