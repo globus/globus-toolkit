@@ -4,7 +4,7 @@
 @globus_script_initializer@
 
 
-progname=`echo "$0" | @SED@ -e 's|.*/||'`
+progname=`echo "$0" | ${GLOBUS_SH_SED-sed} -e 's|.*/||'`
 
 if [ "$#" -ne 1 ]; then
    echo "$progname server_url"

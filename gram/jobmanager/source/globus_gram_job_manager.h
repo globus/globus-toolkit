@@ -195,8 +195,8 @@ globus_jobmanager_request_check(
 /******************************************************************************
                                Define constants
 ******************************************************************************/
-#define GLOBUS_MPIRUN_PATH "@MPIRUN@"
-#define GLOBUS_POE_PATH "@POE@"
+#define GLOBUS_MPIRUN_PATH "${GLOBUS_SH_MPIRUN-mpirun}"
+#define GLOBUS_POE_PATH "${GLOBUS_SH_POE-poe}"
 
 /******************************************************************************
  *                    Module Definition

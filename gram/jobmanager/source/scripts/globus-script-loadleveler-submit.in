@@ -30,13 +30,13 @@ default_us_requirements="(Arch == "'"R6000"'") && (Adapter == "'"hps_user"'")"
 ################################################
 # Site-specific settings
 ################################################
-llsubmit=@LLSUBMIT@
-grep=@GREP@
-awk=@AWK@
-cat=@CAT@
-sed=@SED@
-rm=@RM@
-date=@DATE@
+llsubmit=${GLOBUS_SH_LLSUBMIT-llsubmit}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
+cat=${GLOBUS_SH_CAT-cat}
+sed=${GLOBUS_SH_SED-sed}
+rm=${GLOBUS_SH_RM-rm}
+date=${GLOBUS_SH_DATE-date}
 ################################################
 
 arg_file=$1

@@ -29,9 +29,9 @@
 # Therefore, the job will be considered completed.
 
 
-qstat=@QSTAT@
-grep=@GREP@
-awk=@AWK@
+qstat=${GLOBUS_SH_QSTAT-qstat}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
 
 
 arg_file=$1

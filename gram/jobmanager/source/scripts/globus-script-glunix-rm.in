@@ -15,7 +15,7 @@ fi
 if [ $grami_logfile = "/dev/null" ] ; then
     DEBUG_ECHO=:
 else
-    DEBUG_ECHO=@ECHO@
+    DEBUG_ECHO=${GLOBUS_SH_ECHO-echo}
 fi
 
 $DEBUG_ECHO "GRAMI_JM: in glunix_rm" >> $grami_logfile

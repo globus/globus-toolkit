@@ -14,9 +14,9 @@
 # C       Completed				DONE
 # X       Removed				FAILED
 
-condor_q=@CONDOR_Q@
-awk=@AWK@
-grep=@GREP@
+condor_q=${GLOBUS_SH_CONDOR_Q-condor_q}
+awk=${GLOBUS_SH_AWK-awk}
+grep=${GLOBUS_SH_GREP-grep}
 
 arg_file=$1
 # check for the argument file if it does not exist

@@ -70,4 +70,20 @@ deployed='FALSE'              # This line is overwritten during deployment
     tmpdir=@tmpdir@
     secure_tmpdir=@secure_tmpdir@
     local_tmpdir=@local_tmpdir@
+
+    if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
+        if [ ! -r ${sysconfdir}/globus-sh-commands.sh ] ; then
+	    echo "ERROR: cannot read ${sysconfdir}/globus-sh-commands.sh" 1>&2
+	    exit 1
+	fi
+	. ${sysconfdir}/globus-sh-commands.sh
+	for _var in `${GLOBUS_SH_SED} -n '/^GLOBUS_SH/s/=.*$//p' \
+		     ${sysconfdir}/globus-sh-commands.sh`
+	do
+	    export ${_var}
+	done
+	GLOBUS_SH_VARIABLES_SET="Y"
+	export GLOBUS_SH_VARIABLES_SET
+    fi
+
     ################# END    Inserted by configure #############

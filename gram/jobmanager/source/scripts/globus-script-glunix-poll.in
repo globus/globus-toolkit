@@ -16,7 +16,7 @@ fi
 if [ $grami_logfile = "/dev/null" ] ; then
     DEBUG_ECHO=:
 else
-    DEBUG_ECHO=@ECHO@
+    DEBUG_ECHO=${GLOBUS_SH_ECHO-echo}
 fi
 
 $DEBUG_ECHO "JM_SCRIPT: in glunix_poll" >> $grami_logfile
@@ -34,6 +34,6 @@ fi
 
 $DEBUG_ECHO "JM_SCRIPT: returning success, job state: ${gram_job_state}"\
             >> $grami_logfile
-@ECHO@ "GRAM_SCRIPT_SUCCESS:${gram_job_state}"
+${GLOBUS_SH_ECHO-echo} "GRAM_SCRIPT_SUCCESS:${gram_job_state}"
 
 $DEBUG_ECHO "JM_SCRIPT: exiting glunix" >> $grami_logfile

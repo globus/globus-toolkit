@@ -20,11 +20,11 @@
 # the end of this script. 
 
 	
-bsub=@BSUB@
-bqueues=@BQUEUES@
-awk=@AWK@
-mpirun=@MPIRUN@
-rm=@RM@
+bsub=${GLOBUS_SH_BSUB-bsub}
+bqueues=${GLOBUS_SH_BQUEUES-bqueues}
+awk=${GLOBUS_SH_AWK-awk}
+mpirun=${GLOBUS_SH_MPIRUN-mpirun}
+rm=${GLOBUS_SH_RM-rm}
 SH=@SH@
 
 #        File name to be used for temporary job script

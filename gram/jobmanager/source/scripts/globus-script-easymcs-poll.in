@@ -35,10 +35,10 @@
 # ST      Starting				PENDING
 # H       Hog (Job held, too many requests)	PENDING
 
-llq=@LLQ@
-spq=@SPQ@
-awk=@AWK@
-grep=@GREP@
+llq=${GLOBUS_SH_LLQ-llq}
+spq=${GLOBUS_SH_SPQ-spq}
+awk=${GLOBUS_SH_AWK-awk}
+grep=${GLOBUS_SH_GREP-grep}
 
 arg_file=$1
 # check for the argument file if it does not exist

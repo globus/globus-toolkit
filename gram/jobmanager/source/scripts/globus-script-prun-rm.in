@@ -13,10 +13,10 @@
 ################################################
 # Site-specific settings
 ################################################
-preserve=@PRESERVE@
-pkill=@PKILL@
-rm=@RM@
-awk=@AWK@
+preserve=${GLOBUS_SH_PRESERVE-preserve}
+pkill=${GLOBUS_SH_PKILL-pkill}
+rm=${GLOBUS_SH_RM-rm}
+awk=${GLOBUS_SH_AWK-awk}
 ################################################  
 
 arg_file=$1

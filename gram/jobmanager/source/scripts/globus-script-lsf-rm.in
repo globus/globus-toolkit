@@ -12,7 +12,7 @@
 # is determined the LSF bkill command is used to delete the job.
 
 
-bkill=@BKILL@
+bkill=${GLOBUS_SH_BKILL-bkill}
 
 arg_file=$1
 

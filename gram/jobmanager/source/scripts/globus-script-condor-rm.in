@@ -1,7 +1,7 @@
 #! @SH@
 
-condor_rm=@CONDOR_RM@
-awk=@AWK@
+condor_rm=${GLOBUS_SH_CONDOR_RM-condor_rm}
+awk=${GLOBUS_SH_AWK-awk}
 
 arg_file=$1
 # check for the argument file if it does not exist

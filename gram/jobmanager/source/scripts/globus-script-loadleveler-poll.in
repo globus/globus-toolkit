@@ -3,9 +3,9 @@
 #######################
 # Site specfic values:
 #######################
-llq=@LLQ@
-grep=@GREP@
-awk=@AWK@
+llq=${GLOBUS_SH_LLQ-llq}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
 #######################
 #
 # Extract the 'ST' (status) column from the LoadLeveler Queue output

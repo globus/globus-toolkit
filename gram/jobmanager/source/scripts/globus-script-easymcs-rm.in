@@ -1,6 +1,6 @@
 #! @SH@
 
-llcancel=@LLCANCEL@
+llcancel=${GLOBUS_SH_LLCANCEL-llcancel}
 
 arg_file=$1
 # check for the argument file if it does not exist

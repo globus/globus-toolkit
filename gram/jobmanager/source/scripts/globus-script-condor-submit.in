@@ -22,10 +22,10 @@ condor_opsys=SOLARIS251
 ################################################
 # Site-specific settings
 ################################################
-condor_submit=@CONDOR_SUBMIT@
-grep=@GREP@
-awk=@AWK@
-rm=@RM@
+condor_submit=${GLOBUS_SH_CONDOR_SUBMIT-condor_submit}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
+rm=${GLOBUS_SH_RM-rm}
 ################################################
 
 arg_file=$1

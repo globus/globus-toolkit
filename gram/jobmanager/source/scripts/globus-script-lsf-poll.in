@@ -27,9 +27,9 @@
 # ZOMBI		Unknown state			FAILED 
 
 
-bjobs=@BJOBS@
-grep=@GREP@
-awk=@AWK@
+bjobs=${GLOBUS_SH_BJOBS-bjobs}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
 
 
 arg_file=$1

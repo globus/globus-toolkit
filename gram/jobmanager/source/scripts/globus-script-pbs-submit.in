@@ -19,11 +19,11 @@
 # at the end of this script. 
 
 	
-qsub=@QSUB@
-qstat=@QSTAT@
-awk=@AWK@
-mpirun=@MPIRUN@
-rm=@RM@
+qsub=${GLOBUS_SH_QSUB-qsub}
+qstat=${GLOBUS_SH_QSTAT-qstat}
+awk=${GLOBUS_SH_AWK-awk}
+mpirun=${GLOBUS_SH_MPIRUN-mpirun}
+rm=${GLOBUS_SH_RM-rm}
 
 	# File name to be used for temporary job script
 PBS_JOB_SCRIPT="${local_tmpdir}/pbs_job_script."$$

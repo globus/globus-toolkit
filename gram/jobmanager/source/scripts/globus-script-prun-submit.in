@@ -16,12 +16,12 @@
 ################################################
 # Site-specific settings
 ################################################
-preserve=@PRESERVE@
-prun=@PRUN@
-ps=@PS@
-awk=@AWK@
-rm=@RM@
-grep=@GREP@
+preserve=${GLOBUS_SH_PRESERVE-preserve}
+prun=${GLOBUS_SH_PRUN-prun}
+ps=${GLOBUS_SH_PS-ps}
+awk=${GLOBUS_SH_AWK-awk}
+rm=${GLOBUS_SH_RM-rm}
+grep=${GLOBUS_SH_GREP-grep}
 ################################################
 
 arg_file=$1

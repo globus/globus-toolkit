@@ -13,11 +13,11 @@
 ################################################
 # Site-specific settings
 ################################################
-preserve=@PRESERVE@
-ps=@PS@
-awk=@AWK@
-grep=@GREP@
-rm=@RM@
+preserve=${GLOBUS_SH_PRESERVE-preserve}
+ps=${GLOBUS_SH_PS-ps}
+awk=${GLOBUS_SH_AWK-awk}
+grep=${GLOBUS_SH_GREP-grep}
+rm=${GLOBUS_SH_RM-rm}
 ################################################  
 
 arg_file=$1

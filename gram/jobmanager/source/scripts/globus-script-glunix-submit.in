@@ -3,10 +3,10 @@
 ################################################
 # Site-specific settings
 ################################################
-glurun=@GLURUN@
-grep=@GREP@
-awk=@AWK@
-printenv=@PRINTENV@
+glurun=${GLOBUS_SH_GLURUN-glurun}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
+printenv=${GLOBUS_SH_PRINTENV-printenv}
 GLUNIX_NODES=npaci
 export GLUNIX_NODES
 
@@ -27,7 +27,7 @@ fi
 if [ $grami_logfile = "/dev/null" ] ; then
     DEBUG_ECHO=:
 else
-    DEBUG_ECHO=@ECHO@
+    DEBUG_ECHO=${GLOBUS_SH_ECHO-echo}
 fi
 
 $DEBUG_ECHO "JM_SCRIPT: in glunix_submit">> $grami_logfile

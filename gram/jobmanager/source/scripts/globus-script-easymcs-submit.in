@@ -3,15 +3,15 @@
 ################################################
 # Site-specific settings
 ################################################
-spsubmit=@SPSUBMIT@
-grep=@GREP@
-awk=@AWK@
+spsubmit=${GLOBUS_SH_SPSUBMIT-spsubmit}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
 
 #spsubmit calls llsubmit which if running out of inetd is not in our path.
 #So, we use the path to the llsubmit command and append it to the path.
-llcmd=@LLSUBMIT@
+llcmd=${GLOBUS_SH_LLSUBMIT-llsubmit}
 # strip off everything from the end of the path until a slash is found
-llpath=`echo $llcmd | @SED@ -e 's:/[^/]*$::'`
+llpath=`echo $llcmd | ${GLOBUS_SH_SED-sed} -e 's:/[^/]*$::'`
 PATH=${PATH}:$llpath; export PATH
 ################################################
 
@@ -60,12 +60,12 @@ fi
 
 new_grami_args="${grami_args}"
 # Handle single quote escaping
-new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
-new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
+new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/'/'\\\\\"'\\\\\"'/g"`
+new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/'/'\\\\\"'\\\\\"'/g"`
 # Handle \ escaping
-new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\\/\\\\\/g"`
+new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\\\\/\\\\\/g"`
 # Handle $ escaping
-new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\$/$/g"`
+new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\\\$/$/g"`
 
 # 4 jobtypes exist               easymcs progtype
 # -----------------              -------------------

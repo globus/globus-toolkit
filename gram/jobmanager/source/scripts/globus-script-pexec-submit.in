@@ -3,10 +3,10 @@
 ################################################
 # Site-specific settings
 ################################################
-pexec=@PEXEC@
-grep=@GREP@
-awk=@AWK@
-printenv=@PRINTENV@
+pexec=${GLOBUS_SH_PEXEC-pexec}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
+printenv=${GLOBUS_SH_PRINTENV-printenv}
 
 ################################################
 

@@ -12,7 +12,7 @@
 # is determined the PBS qdel command is used to delete the job.
 
 
-qdel=@QDEL@
+qdel=${GLOBUS_SH_QDEL-qdel}
 
 arg_file=$1
 
