@@ -2286,7 +2286,10 @@ globus_xio_system_register_read(
     GlobusXIOName(globus_xio_system_register_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2369,7 +2372,10 @@ globus_xio_system_register_read_ex(
     GlobusXIOName(globus_xio_system_register_read_ex);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     if(!flags && !from)
     {
         return globus_xio_system_register_read(
@@ -2485,7 +2491,10 @@ globus_xio_system_register_write(
     GlobusXIOName(globus_xio_system_register_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2569,7 +2578,10 @@ globus_xio_system_register_write_ex(
     GlobusXIOName(globus_xio_system_register_write_ex);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        
     if(!flags && !u_to)
     {
         return globus_xio_system_register_write(
