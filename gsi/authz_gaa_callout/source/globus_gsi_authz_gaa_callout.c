@@ -213,13 +213,15 @@ globus_gsi_authz_gaa_handle_init_callout(
 
     if (handle == 0)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
-				       "null handle");	
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+            ("null handle"));	
 	goto end;
     }
 
-    if ((*handle = globus_libc_calloc(1, sizeof(struct globus_i_gsi_authz_handle_s))) == 0)
+    if ((*handle = globus_libc_calloc(
+             1, sizeof(struct globus_i_gsi_authz_handle_s))) == 0)
     {
 	GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
 	goto end;
@@ -231,9 +233,10 @@ globus_gsi_authz_gaa_handle_init_callout(
 					(gss_OID) saml_extension,
 					&data_set)) != GSS_S_COMPLETE)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR,
-				       "error checking for authz extension");	
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR,
+            ("error checking for authz extension"));	
 	goto end;
     }
 
@@ -261,9 +264,10 @@ globus_gsi_authz_gaa_handle_init_callout(
 
     if (! assertion)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR,
-				       "authz extension found, but no assertion");
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR,
+            ("authz extension found, but no assertion"));
 	goto end;
     }
 
@@ -275,7 +279,9 @@ globus_gsi_authz_gaa_handle_init_callout(
     if ((status = gaa_initialize(&gaa,
 	 (void *)gaa_state->gaa_config_file_name)) != GAA_S_SUCCESS)
     {
-	GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(result, "gaa_initialize", status);
+	GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(result,
+                                               "gaa_initialize",
+                                               status);
 
 	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF4(
 	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE,
@@ -292,10 +298,13 @@ globus_gsi_authz_gaa_handle_init_callout(
 	"%s: gaa_init succeeded\n",
 	_function_name_);
 
-    if ((status = gaa_x_get_getpolicy_param(gaa, &getpolicy_param)) != GAA_S_SUCCESS) {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
-				       "No GAA getpolicy parameter configured");
+    if ((status = gaa_x_get_getpolicy_param(gaa, &getpolicy_param))
+        != GAA_S_SUCCESS)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
+            ("No GAA getpolicy parameter configured"));
 	goto end;
     }
 
@@ -303,10 +312,13 @@ globus_gsi_authz_gaa_handle_init_callout(
 	*((char **)getpolicy_param) = assertion;
 
 
-    if ((status = gaa_x_get_get_authorization_identity_param(gaa, &get_authorization_identity_param)) != GAA_S_SUCCESS) {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
-				       "No GAA get_authorization_identity parameter configured");
+    if ((status = gaa_x_get_get_authorization_identity_param(
+             gaa, &get_authorization_identity_param)) != GAA_S_SUCCESS)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
+            ("No GAA get_authorization_identity parameter configured"));
 	goto end;
     }
 
@@ -319,12 +331,14 @@ globus_gsi_authz_gaa_handle_init_callout(
 	_function_name_,
 	assertion);
 
-    if ((status = gaa_new_sc(&sc)) != GAA_S_SUCCESS) {
+    if ((status = gaa_new_sc(&sc)) != GAA_S_SUCCESS)
+    {
 	GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(result, "gaa_new_sc", status);
 	goto end;
     }
 
-    if ((gaa_gss_param = globus_libc_malloc(sizeof(gaa_gss_generic_param_s))) == 0)
+    if ((gaa_gss_param = globus_libc_malloc(sizeof(gaa_gss_generic_param_s)))
+        == NULL)
     {
 	GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
 	goto end;
@@ -357,7 +371,7 @@ globus_gsi_authz_gaa_handle_init_callout(
     {
 	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
 				       GLOBUS_GSI_AUTHZ_CALLOUT_SYSTEM_ERROR,
-				       "globus_libc_strdup failed");
+				       ("globus_libc_strdup failed"));
 	goto end;
     }
 
@@ -444,24 +458,27 @@ globus_gsi_authz_gaa_authorize_async_callout(
 
     if (handle == 0)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
-				       "null handle");	
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+            ("null handle"));	
 	goto end;
     }
 
     if (action == 0)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
-				       "null action");	
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+            ("null action"));	
 	goto end;
     }
     if (object == 0)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
-				       "null object");	
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+            result,
+            GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+            ("null object"));	
 	goto end;
     }
 
@@ -478,9 +495,10 @@ globus_gsi_authz_gaa_authorize_async_callout(
     {
 	if (handle->gaa == 0)
 	{
-	    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-					   GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
-					   "bad handle");	
+	    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+                result,
+                GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+                ("bad handle"));	
 	    goto end;
 	}
 
@@ -496,18 +514,20 @@ globus_gsi_authz_gaa_authorize_async_callout(
 					handle->gaa,
 					&policy)) != GAA_S_SUCCESS)
 	{
-	    GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(result,
-						   "gaa_get_object_policy_info",
-						   status);
+	    GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(
+                result,
+                "gaa_get_object_policy_info",
+                status);
 	    goto end;
 	}
 
 	list = gaa_new_req_rightlist();
 	if (list == 0)
 	{
-	    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-					   GLOBUS_GSI_AUTHZ_CALLOUT_SYSTEM_ERROR,
-					   "gaa_new_req_rightlist failed");
+	    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+                result,
+                GLOBUS_GSI_AUTHZ_CALLOUT_SYSTEM_ERROR,
+                ("gaa_new_req_rightlist failed"));
 	    goto end;
 	}
 
