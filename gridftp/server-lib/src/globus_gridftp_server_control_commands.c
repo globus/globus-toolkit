@@ -801,6 +801,7 @@ globus_l_gsc_cmd_opts(
 {
     int                                     tmp_i;
     char *                                  msg;
+    char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_cmd_opts);
 
     if(argc != 3)
@@ -908,6 +909,43 @@ globus_l_gsc_cmd_opts(
     else if(strcasecmp("MLST", cmd_a[1]) == 0 || 
         strcasecmp("MLSD", cmd_a[1]) == 0)
     {
+        tmp_ptr = op->server_handle->mlsx_fact_str;
+        if(strstr(cmd_a[2], "type"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_TYPE;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "modify"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_MODIFY;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "charset"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_CHARSET;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "size"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_SIZE;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "perm"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_PERM;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.mode"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXMODE;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unique"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIQUE;
+            tmp_ptr++;
+        }
+        msg = "200 OPTS Command Successful.\r\n";
     }
     else if(strcasecmp("LIST", cmd_a[1]) == 0)
     {
@@ -1799,7 +1837,7 @@ globus_l_gsc_cmd_stor_retr(
     {
         wrapper->type = GLOBUS_L_GSC_OP_TYPE_NLST;
     }
-    else if(strcmp(cmd_a[0], "NLSD") == 0)
+    else if(strcmp(cmd_a[0], "MLSD") == 0)
     {
         wrapper->type = GLOBUS_L_GSC_OP_TYPE_MLSD;
     }

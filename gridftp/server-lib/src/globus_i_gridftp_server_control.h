@@ -409,7 +409,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_result_t                         cached_res;
     globus_list_t *                         feature_list;
 
-    char *                                  mlsx_fact_str;
+    char                                    mlsx_fact_str[8];
     /* 
      *  read.c members 
      */

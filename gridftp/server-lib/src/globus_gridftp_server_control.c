@@ -971,14 +971,16 @@ globus_l_gsc_command_callout(
     globus_bool_t                           done = GLOBUS_FALSE;
     globus_i_gsc_op_t *                     op;
     globus_gsc_command_cb_t                 cmd_cb = NULL;
+    globus_i_gsc_server_handle_t *          server_handle;
 
     op = (globus_i_gsc_op_t *) user_arg;
 
-    globus_mutex_lock(&op->server_handle->mutex);
+    server_handle = op->server_handle;
+    globus_mutex_lock(&server_handle->mutex);
     {
         globus_assert(
-            op->server_handle->state == GLOBUS_L_GSC_STATE_PROCESSING);
-        auth = op->server_handle->authenticated;
+            server_handle->state == GLOBUS_L_GSC_STATE_PROCESSING);
+        auth = server_handle->authenticated;
 
         msg = "500 Invalid command.\r\n";
         while(!done)
@@ -987,8 +989,9 @@ globus_l_gsc_command_callout(
                 the command does not exist */
             if(op->cmd_list == NULL)
             {
-                res = globus_l_gsc_final_reply(op->server_handle, msg);
+                res = globus_l_gsc_final_reply(server_handle, msg);
                 done = GLOBUS_TRUE;
+                globus_l_gsc_op_destroy(op);
             }
             else
             {
@@ -1013,7 +1016,7 @@ globus_l_gsc_command_callout(
             }
         }
     }
-    globus_mutex_unlock(&op->server_handle->mutex);
+    globus_mutex_unlock(&server_handle->mutex);
 
     if(cmd_cb != NULL)
     {
@@ -1184,8 +1187,7 @@ globus_l_gsc_finished_op(
 
     }
 
-    globus_free(op->command);
-    globus_free(op);
+    globus_l_gsc_op_destroy(op);
 }
 
 static globus_result_t
@@ -1291,6 +1293,7 @@ globus_gridftp_server_control_init(
     globus_mutex_init(&server_handle->mutex, NULL);
 
     server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
+    strcpy(server_handle->mlsx_fact_str, "TMSPUQ");
     server_handle->reply_outstanding = GLOBUS_FALSE;
     server_handle->pre_auth_banner = 
         globus_libc_strdup(GLOBUS_L_GSC_DEFAULT_220);
