@@ -165,9 +165,6 @@ int main(int argc, char * argv[])
                           (char **) & my_x509,
                           NULL, NULL);
 
-            /* stupid X509 struct doesn't even contain */
-            /* an X509_SIG - instead, its got an X509_ALGOR */
-            /* and an ASN1_BIT_STRING */
             signature = X509_SIG_new();
             signature->algor = my_x509->sig_alg;
             signature->digest = (ASN1_OCTET_STRING *) my_x509->signature;

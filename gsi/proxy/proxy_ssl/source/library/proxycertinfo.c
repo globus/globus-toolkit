@@ -502,7 +502,9 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
  * that it won't be included in the encoding.
  *
  * @param cert_info the PROXYCERTINFO to set the path length of
- * @param path_length the path length to set it to
+ * @param path_length the path length to set it to (this is a pointer
+ *        so that NULL can be passed in, which sets the PROXYCERTINFO
+ *        to not include the path length in the DER encoding
  *
  * @return 1 on success, 0 on error
  */
