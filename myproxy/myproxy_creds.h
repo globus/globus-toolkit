@@ -142,6 +142,16 @@ int myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 				    const char *new_passphrase);
  
 /*
+ * myproxy_creds_verify_passphrase()
+ *
+ * Verify the given passphrase against the myproxy_creds structure.
+ *
+ * Returns 1 on verify, 0 on failure, and -1 on error.
+ */
+int myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
+				    const char *new_passphrase);
+ 
+/*
  * myproxy_creds_exist()
  *
  * Check to see if the given user already has credentials stored.
