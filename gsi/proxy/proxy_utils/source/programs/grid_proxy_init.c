@@ -580,42 +580,6 @@ main(
         globus_libc_fprintf(stderr, "\nOutput File: %s\n", proxy_out_filename);
     }
 
-    if(verify)
-    {
-        result = globus_gsi_callback_data_init(&callback_data);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_libc_fprintf(stderr,
-                                "\n\nERROR: Couldn't initialize callback data "
-                                "for credential verification\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
-
-        result = globus_gsi_callback_set_cert_dir(
-            callback_data,
-            ca_cert_dir);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_libc_fprintf(stderr,
-                                "\n\nERROR: Couldn't set the trusted "
-                                "certificate directory in the callback "
-                                "data\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
-
-        result = globus_gsi_cred_verify_cert_chain(
-            cred_handle,
-            callback_data);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Couldn't verify the authenticity of the user's "
-                "credential to generate a proxy from.\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
-    }
-
     result = globus_gsi_cred_handle_attrs_init(&cred_handle_attrs);
     if(result != GLOBUS_SUCCESS)
     {
@@ -858,6 +822,51 @@ main(
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
+    if (!quiet)
+    {
+        fprintf(stdout, " Done\n");
+    }
+
+    if(verify)
+    {
+        result = globus_gsi_callback_data_init(&callback_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(stderr,
+                                "\n\nERROR: Couldn't initialize callback data "
+                                "for credential verification\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        result = globus_gsi_callback_set_cert_dir(
+            callback_data,
+            ca_cert_dir);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(stderr,
+                                "\n\nERROR: Couldn't set the trusted "
+                                "certificate directory in the callback "
+                                "data\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        result = globus_gsi_cred_verify_cert_chain(
+            proxy_cred_handle,
+            callback_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\n\nERROR: Couldn't verify the authenticity of the user's "
+                "credential to generate a proxy from.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        globus_libc_fprintf(
+            stdout,
+            "Proxy Verify OK\n");
+    }
+
     result = globus_gsi_cred_write_proxy(proxy_cred_handle,
                                          proxy_out_filename);
     if(result != GLOBUS_SUCCESS)
@@ -867,11 +876,6 @@ main(
             "\n\nERROR: The proxy credential could not be "
             "written to the output file.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-    }
-
-    if (!quiet)
-    {
-        fprintf(stdout, " Done\n");
     }
 
     result = globus_gsi_cred_get_lifetime(

@@ -97,7 +97,7 @@ globus_result_t globus_gsi_cred_handle_init(
         goto error_exit;
     }
 
-    result = globus_i_gsi_cred_goodtill(*handle, &(*handle)->goodtill);
+    (*handle)->goodtill = 0;
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -1736,6 +1736,8 @@ globus_gsi_cred_verify_cert_chain(
         X509_LOOKUP_add_dir(lookup, 
                             cert_dir, 
                             X509_FILETYPE_PEM);
+        
+        store_context = X509_STORE_CTX_new();
         X509_STORE_CTX_init(store_context, cert_store, cert, NULL);
 
         /* override the check_issued with our version */
@@ -1757,9 +1759,21 @@ globus_gsi_cred_verify_cert_chain(
                 ("Failed to verify new proxy certificate"));
             goto exit;
         }
+
+        X509_STORE_CTX_free(store_context);
     } 
 
  exit:
+
+    if(cert_store)
+    {
+        X509_STORE_free(cert_store);
+    }
+
+    if(store_context)
+    {
+        X509_STORE_CTX_free(store_context);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
