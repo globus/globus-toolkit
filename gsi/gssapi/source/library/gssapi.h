@@ -161,9 +161,13 @@ typedef struct gss_channel_bindings_struct {
  * input - Dont accept limited proxy for auth
  * output- Limited proxy received. 
  * 
+ * GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG
+ * input - Accept proxies signed by limited proxies
+ *
  * Since gss_accept_sec_context does not 
  * provide a req_flag as input, we will 
  * pass in  our GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+ * and GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG
  * using the ret_flag
  *  
  */
@@ -171,7 +175,7 @@ typedef struct gss_channel_bindings_struct {
 #define GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG  4096
 #define GSS_C_GLOBUS_LIMITED_PROXY_FLAG        8192
 #define GSS_C_GLOBUS_SSL_COMPATABLE           16384
-
+#define GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG  32768
 /*
  * Credential usage options
  */

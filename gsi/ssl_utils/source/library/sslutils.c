@@ -1639,6 +1639,7 @@ proxy_verify_init(
     pvd->cert_depth = 0;
     pvd->cert_chain = NULL;
     pvd->limited_proxy = 0;
+    pvd->multiple_limited_proxy_ok = 0;
 }
 
 /**********************************************************************
@@ -2114,7 +2115,7 @@ proxy_verify_callback(
 
             pvd->limited_proxy = 1; /* its a limited proxy */
 
-            if (ctx->error_depth)
+            if (ctx->error_depth && !pvd->multiple_limited_proxy_ok)
             {
                 /* tried to sign a cert with a limited proxy */
                 /* i.e. there is still another cert on the chain */

@@ -324,6 +324,7 @@ struct proxy_verify_desc_struct {
     int                                 cert_depth;
     int                                 limited_proxy;
     STACK_OF(X509) *                    cert_chain; /*  X509 */
+    int                                 multiple_limited_proxy_ok;
 };
 
 /**********************************************************************

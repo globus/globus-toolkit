@@ -132,6 +132,15 @@ gss_create_and_fill_context(
     proxy_verify_ctx_init(&(context->pvxd));
     proxy_verify_init(&(context->pvd), &(context->pvxd));
 
+    /* 
+     * set if its OK to accept proxies signed by limited proxies
+     */
+    
+    if ( context->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG)
+    {
+        context->pvd.multiple_limited_proxy_ok = 1;
+    }
+
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
         OM_uint32 minor_status;
