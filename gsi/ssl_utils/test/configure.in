@@ -31,7 +31,9 @@ if test "$globus_cv_nexus_enable" = "yes"; then
 fi
 AC_SUBST(BUILD_TARGETS)
 
-TEST_SCRIPTS="gssapi-auth-test.sh"
+# set-perms must come before any other test that expects the
+# permissions on the client and server keys to be set correctly
+TEST_SCRIPTS="set-perms.sh gssapi-auth-test.sh"
 TEST_EXECS="$TEST_SCRIPTS"
 AC_SUBST(TEST_EXECS)
 
