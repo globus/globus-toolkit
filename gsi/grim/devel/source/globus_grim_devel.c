@@ -104,6 +104,48 @@ globus_module_descriptor_t globus_i_grim_devel_module =
     info = (struct globus_l_grim_assertion_s *) assertion;                  \
 }
 
+globus_result_t
+globus_grim_get_default_configuration_filename(
+    char **                                 conf_filename)
+{
+    globus_result_t                         res;
+    char *                                  home_dir = NULL;
+    char *                                  tmp_s;
+    globus_gsi_statcheck_t                  status;
+
+    /* if i am root */
+    if(geteuid() == 0)
+    {
+        *conf_filename = strdup(GLOBUS_GRIM_DEFAULT_CONF_FILENAME);
+        return GLOBUS_SUCCESS;
+    }
+
+    res = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir, &status);
+    if(home_dir == NULL || status != GLOBUS_FILE_DIR || res != GLOBUS_SUCCESS)
+    {
+        *conf_filename = strdup(GLOBUS_GRIM_DEFAULT_CONF_FILENAME);
+        return GLOBUS_SUCCESS;
+    }
+
+    tmp_s = globus_gsi_cert_utils_create_string(
+                "%s/.globus/%s",
+                home_dir,
+                "grim-conf.xml");
+    if(tmp_s == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: failed to create string."));
+    }
+                
+    *conf_filename = tmp_s;
+
+    return GLOBUS_SUCCESS;
+
+}
+
 /*
  *  Assertion parsing
  */
@@ -1178,7 +1220,6 @@ globus_l_grim_devel_parse_port_type_file(
     {
         port_type = (char *) globus_list_remove(&info.list, info.list);
         pt_rc[ctr] = port_type;
-        printf("%s.\n", pt_rc[ctr]);
         ctr++;
     }
     pt_rc[ctr] = NULL;

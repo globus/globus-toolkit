@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-
 #define GrimFreeNull(a)                                     \
 {                                                           \
     int __ctr = 0;                                          \
@@ -145,6 +144,7 @@ main(
     /* default proxy to 512 bits */
     int                                     key_bits    = 512;
     /* dont restrict the proxy */
+    char *                                  conf_filename;
     char *                                  user_cert_filename;
     char *                                  user_key_filename;
     char *                                  ca_cert_dir;
@@ -200,13 +200,26 @@ main(
      *  open the default location of the conf file.
      *  If it successuflly opens parse out options
      */
-    fptr = fopen(GLOBUS_GRIM_DEFAULT_CONF_FILENAME, "r");
+    res = globus_grim_get_default_configuration_filename(&conf_filename);
+    if(res != GLOBUS_SUCCESS)
+    {
+        rc = 1;
+        goto exit;
+    }
+
+    fptr = fopen(conf_filename, "r");
     if(fptr != NULL)
     {
         /*
          *  if this fails we are left with default values
          */
-        globus_grim_config_load_from_file(config, fptr);
+        res = globus_grim_config_load_from_file(config, fptr);
+        if(res != GLOBUS_SUCCESS)
+        {
+            grim_write_log(
+                "WARNING: Did not sucessfully parse config file: %s.\n",
+                conf_filename);
+        }
         fclose(fptr);
     }
 
@@ -648,7 +661,7 @@ grim_privedged_code(
     res = globus_gsi_cred_handle_init(cred_handle, cred_handle_attrs);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("\n\nERROR: Couldn't initialize credential handle\n");
+        grim_write_log("ERROR: Couldn't initialize credential handle\n");
         return 1;
     }
 
@@ -656,8 +669,7 @@ grim_privedged_code(
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log(
-                            "\n\nERROR: Couldn't destroy credential "
-                            "handle attributes.\n");
+            "ERROR: Couldn't destroy credential handle attributes.\n");
         return 1;
     }
 
@@ -673,7 +685,7 @@ grim_privedged_code(
         if(res != GLOBUS_SUCCESS)
         {
             grim_write_log(
-                "\n\nERROR: Couldn't read in PKCS12 credential "
+                "ERROR: Couldn't read in PKCS12 credential "
                 "from file: %s\n", user_cert_filename);
             return 1;
         }
@@ -686,7 +698,7 @@ grim_privedged_code(
         if(res != GLOBUS_SUCCESS)
         {
             grim_write_log(
-                "\n\nERROR: Couldn't read user certificate\n"
+                "ERROR: Couldn't read user certificate\n"
                 "cert file location: %s\n\n", 
                 user_cert_filename);
             return 1;
@@ -698,10 +710,8 @@ grim_privedged_code(
                   grim_pw_stdin_callback);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Couldn't read user key\n"
-                "key file location: %s\n\n", 
+            grim_write_log(
+                "ERROR: Couldn't read user key: %s.\n",
                 user_key_filename);
             return 1;
         }
@@ -749,6 +759,7 @@ grim_write_proxy(
     X509_NAME *                                 x509_name;
     int                                         grim_NID;
     int                                         rc = 0;
+    PROXYCERTINFO *                             pci;
 
     res = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     if(res != GLOBUS_SUCCESS)
@@ -845,19 +856,29 @@ grim_write_proxy(
 
     /*
      *  set the policy in the cert
+     */
+    pci = PROXYCERTINFO_new();
+    res = globus_gsi_proxy_handle_set_proxy_cert_info(
+              proxy_handle,
+              pci);
+    if(res != GLOBUS_SUCCESS)
+    {
+        grim_write_log("ERROR: could not set cert info.\n");
+        free(assertion_string);
+        return 1;
+    }
     globus_grim_devel_get_NID(&grim_NID);
     res = globus_gsi_proxy_handle_set_policy(
               proxy_handle,
               assertion_string,
-              strlen(assertion),
+              strlen(assertion_string),
               grim_NID);
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log("ERROR could not set the assertion.\n");
-        free(assertion);
+        free(assertion_string);
         return 1;
     }
-     */
  
     /*
      *  create signed proxy
@@ -868,7 +889,7 @@ grim_write_proxy(
               &proxy_cred_handle);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("\n\nERROR: Couldn't create proxy certificate\n");
+        grim_write_log("ERROR: Couldn't create proxy certificate\n");
         return 1;
     }
 
@@ -877,20 +898,19 @@ grim_write_proxy(
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log(
-            "\n\nERROR: The proxy credential could not be "
-            "written to the output file.\n");
+            "ERROR: The proxy credential could not be to %s\n.",
+            proxy_out_filename);
         free(assertion);
         return 1;
     }
 
-//    free(assertion);
+    free(assertion_string);
 
     res = globus_gsi_cred_get_lifetime(cred_handle, &lifetime);
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log(
-                            "\n\nERROR: Can't get the lifetime of the proxy "
-                            "credential.\n");
+            "ERROR: Can't get the lifetime of the proxy credential.\n");
         return 1;
     }
 
@@ -898,8 +918,7 @@ grim_write_proxy(
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log(
-                            "\n\nERROR: Can't get the expiration date of the "
-                            "proxy credential.\n");
+            "ERROR: Can't get the expiration date of the proxy credential.\n");
         return 1;
     }
 
@@ -913,13 +932,12 @@ grim_write_proxy(
     else if(lifetime < (valid * 60))
     {
         grim_write_log(
-            "\nWarning: your certificate and proxy will expire %s "
-            "which is within the requested lifetime of the proxy\n",
-            asctime(localtime(&goodtill)));
+            "Warning: cert and proxy will export before time requested.\n");
         return 1;
     }
     grim_write_log(
-        "Your proxy is valid until: %s", 
+        "proxy successfully writen to :%s: valid until :%s:\n", 
+        proxy_out_filename,
         asctime(localtime(&goodtill)));
 
     globus_gsi_proxy_handle_destroy(proxy_handle);

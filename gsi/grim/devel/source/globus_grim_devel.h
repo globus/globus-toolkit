@@ -41,6 +41,10 @@ typedef void * globus_grim_assertion_t;
  *                   external api functions
  ************************************************************************/
 
+globus_result_t
+globus_grim_get_default_configuration_filename(
+    char **                                 conf_filename);
+
 /**
  *
  */
