@@ -36,6 +36,8 @@ help()
         "options:\n"
         "-c <contact_string> : use this contact string (required for client)\n"
         "-s : be a server\n"
+        "-l : print read data to stdout as server, do not listen for echo\n"
+        "     as client \n"
         "-p : server port\n"
         "-D <driver> : add this driver to the stack\n");
 }
@@ -54,6 +56,7 @@ main(
     globus_result_t                         res;
     int                                     ctr;
     globus_bool_t                           be_server = GLOBUS_FALSE;
+    globus_bool_t                           print_reads = GLOBUS_FALSE;
     int                                     rc;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
@@ -89,6 +92,10 @@ main(
         else if(strcmp(argv[ctr], "-s") == 0)
         {
             be_server = GLOBUS_TRUE;
+        }
+        else if(strcmp(argv[ctr], "-l") == 0)
+        {
+            print_reads = GLOBUS_TRUE;
         }
         else if(strcmp(argv[ctr], "-p") == 0 && ctr + 1 < argc)
         {
@@ -144,14 +151,22 @@ main(
                 dd);
             test_res(res);
             
-            res = globus_xio_write(
-                xio_handle,
-                buffer,
-                nbytes,
-                nbytes,
-                &nbytes,
-                dd);
-            test_res(res);
+            if(print_reads)
+            {
+                buffer[nbytes] = '\0';
+                fprintf(stdout, "%s\n", (char *) buffer);
+            }
+            else
+            {
+                res = globus_xio_write(
+                    xio_handle,
+                    buffer,
+                    nbytes,
+                    nbytes,
+                    &nbytes,
+                    dd);
+                test_res(res);
+            }
             
             if(nbytes == 5 && strncmp(buffer, "EXIT\n", 5) == 0)
             {
@@ -180,16 +195,19 @@ main(
                 NULL);
             test_res(res);
             
-            res = globus_xio_read(
-                xio_handle,
-                buffer,
-                sizeof(buffer),
-                nbytes,
-                &nbytes,
-                NULL);
-            test_res(res);
+            if(!print_reads)
+            {
+                res = globus_xio_read(
+                    xio_handle,
+                    buffer,
+                    sizeof(buffer),
+                    nbytes,
+                    &nbytes,
+                    NULL);
+                test_res(res);
             
-            fputs(buffer, stdout);
+                fputs(buffer, stdout);
+            }
         }
     }
     
