@@ -457,7 +457,7 @@ globus_ftp_control_connect(
         element->callback = callback;
         element->arg = callback_arg;
     
-        result = globus_libc_gethostname(localhost,MAXHOSTNAMELEN);
+        result = globus_libc_gethostname(localhost, MAXHOSTNAMELEN);
     
         globus_assert(result == 0);
     
