@@ -135,22 +135,42 @@ file_exists(const char *path)
 void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
+
   printf("\nmy_init_table:\n");
 
-    /* drop table 'main' if it already exists */
-    printf(" creating table 'main'\n");
+#ifdef CREATE_DATABASE
+  printf ("\ncreating database:\n");
+  rc = SQLPrepare (hstmt, "create database if not exists ?", SQL_NTS);
+  mystmt (hstmt, rc);
 
-#ifdef NOTREQ
-    rc = SQLExecDirect(hstmt,"DROP TABLE if exists main",SQL_NTS);
-    mystmt(hstmt,rc);
+  rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "mydsn", strlen ("mydsn") , NULL);
+  mystmt (hstmt, rc);
 
+   rc = SQLExecute (hstmt);
+  mycon(hdbc,rc);
 
-    /* commit the transaction */
-    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-    mycon(hdbc,rc);
+  /* commit the transaction */
+  rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+  mycon(hdbc,rc);
+
+  /* use database*/
+  rc = SQLPrepare (hstmt, "USE DATABASE ?", SQL_NTS);
+  mystmt (hstmt, rc);
+
+  rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, dbase_name, strlen (dbase_name) , NULL);
+  mystmt (hstmt, rc);
+
+   rc = SQLExecute (hstmt);
+  mycon(hdbc,rc);
+
+  /* commit the transaction */
+  rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+  mycon(hdbc,rc);
 #endif
 
     /* create the table 'main' */
+  printf(" creating table 'main'\n");
+
     rc = SQLExecDirect(hstmt,"CREATE TABLE IF NOT EXISTS main(\
                                 owner VARCHAR(255) NOT NULL,\
                                 passphrase VARCHAR(255),\
@@ -1004,14 +1024,17 @@ void write_to_database()
   SQLHSTMT   hstmt;
   SQLINTEGER narg;
 
-    mydsn = strdup (dbase_name);
+    mydsn = strdup (dbase_name); // connect to default database
     myuid = strdup ("root");
     mypwd = strdup ("");
+
+   
    /*
     * connect to MySQL server
     */ 
     myconnect(&henv,&hdbc,&hstmt);
 
+    mydsn = strdup (dbase_name); //set dsn to actual database
     /* 
      * initialize table
     */
