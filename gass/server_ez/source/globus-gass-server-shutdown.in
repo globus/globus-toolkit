@@ -1,8 +1,8 @@
 #! @SH@
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-bindir=@bindir@
+# Inserted by configure.
+@globus_script_initializer@
+
 
 progname=`@ECHO@ "$0" | @SED@ -e 's|.*/||'`
 

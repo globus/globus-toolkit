@@ -1,4 +1,7 @@
 #! @SH@
+
+# Inserted by configure.
+@globus_script_initializer@
  
 # This is a simple shell script that acts like 
 # the hostname command.  But is returns the FQN
@@ -6,43 +9,6 @@
 
 PROGRAM_NAME=`@ECHO@ $0 | @SED@ -e 's|.*/||g'`
 PROGRAM_VERSION=`@ECHO@ '$Revision$' | @CUT@ -d' ' -f2`
-
-
-# Configure directory locations
-prefix=@prefix@
-deploy_prefix=@deploy_prefix@    # This line is overwritten during deployment
-deployed='FALSE'                 # This line is overwritten during deployment
-globus_hostname=''               # This line is overwritten during deployment
-  
-
-
-if [ "X${deployed}" = "XFALSE" ] ; then
-   # User level code
-   exec_prefix=@exec_prefix@
-   sbindir=@sbindir@
-   bindir=@bindir@
-   libdir=@libdir@
-   libexecdir=@libexecdir@
-   datadir=@datadir@
-   sysconfdir=@sysconfdir@
-   localstatedir=@localstatedir@
-   tmpdir=@tmpdir@
-else
-   # Globus System code
-   exec_prefix="${deploy_prefix}"
-   sbindir=${deploy_prefix}/sbin
-   bindir=${deploy_prefix}/bin
-   libexecdir=${deploy_prefix}/libexec
-   datadir=${deploy_prefix}/share
-   sysconfdir=${deploy_prefix}/etc
-   localstatedir=${deploy_prefix}/var
-   tmpdir=${deploy_prefix}/tmp
-   if [ -n "${globus_hostname}" ]; then
-       GLOBUS_HOSTNAME="${globus_hostname}"
-       export GLOBUS_HOSTNAME
-   fi
-fi
-
 
 LOCALDOMAIN=@LOCALDOMAIN@
  

@@ -1,4 +1,8 @@
-#! @SH@ -f
+#! @SH@
+
+# Inserted by configure.
+@globus_script_initializer@
+
 #
 # This script will submit a loadleveler request and return information to 
 # the GRAM job manager about success/failure and status/error code
@@ -22,12 +26,6 @@ default_ip_requirements="(Arch == "'"R6000"'") && (Adapter == "'"hps_ip"'")"
 default_us_requirements="(Arch == "'"R6000"'") && (Adapter == "'"hps_user"'")" 
 #------------------------------------------------------------------
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-tmpdir=@tmpdir@
-localstatedir=@localstatedir@
-
-deploy_prefix=@deploy_prefix@
 deploy_sbin=${deploy_prefix}/sbin
 deploy_tmp=${deploy_prefix}/tmp
 

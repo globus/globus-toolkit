@@ -1,4 +1,8 @@
 #! @SH@
+
+# Inserted by configure.
+@globus_script_initializer@
+
 #
 # Globus Job Manager prun/preserve interface script for reporting job status
 # Author:               Alexander Adams (TU Delft)
