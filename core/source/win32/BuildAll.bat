@@ -47,28 +47,28 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 
 echo .
 echo . Create And Execute Build For Static Release Threaded Libraries (win32relmtthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmtthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32relmtthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 
 echo .
 echo . Create And Execute Build For Dynamic Debug Threaded Libraries (win32dbgmddthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 
 echo .
 echo . Create And Execute Build For Dynamic Release Threaded Libraries (win32relmdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmdthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32relmdthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 
