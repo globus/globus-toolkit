@@ -197,7 +197,7 @@ globus_l_gsc_cmd_dcau(
                     globus_free(op->server_handle->dcau_subject);
                 }
                 op->server_handle->dcau_subject = strdup(cmd_a[2]);
-                globus_i_guc_data_object_destroy(op->server_handle);
+                globus_i_guc_command_data_destroy(op->server_handle);
                 globus_gsc_959_finished_command(op, "200 DCAU S.\r\n");
             }
             break;
@@ -220,7 +220,7 @@ globus_l_gsc_cmd_dcau(
             {
                 msg = globus_common_create_string("200 DCAU %c.\r\n", *tmp_ptr);
                 op->server_handle->dcau = *tmp_ptr;
-                globus_i_guc_data_object_destroy(op->server_handle);
+                globus_i_guc_command_data_destroy(op->server_handle);
                 globus_gsc_959_finished_command(op, msg);
                 globus_free(msg);
             }
@@ -314,7 +314,7 @@ globus_l_gsc_cmd_prot(
             msg = globus_common_create_string(
                 "200 Protection level set to %c.\r\n", *tmp_ptr);
             op->server_handle->prot = *tmp_ptr;
-            globus_i_guc_data_object_destroy(op->server_handle);
+            globus_i_guc_command_data_destroy(op->server_handle);
             break;
 
         default:

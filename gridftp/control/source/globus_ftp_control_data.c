@@ -9487,6 +9487,7 @@ globus_l_ftp_eb_send_eof_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
+        globus_assert(eof_ent->dc_handle->transfer_handle != NULL);
         if(result != GLOBUS_SUCCESS)
         {
             error = globus_error_get(result);
@@ -9551,7 +9552,7 @@ globus_l_ftp_eb_send_eof_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        globus_l_ftp_control_dc_dec_ref(eof_ent->dc_handle->transfer_handle);
+        globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 

@@ -1163,6 +1163,8 @@ static void
 globus_l_gsc_user_close_kickout(
     void *                                  user_arg)
 {
+    globus_i_gsc_data_t *                   data_object;
+    globus_list_t *                         data_conn_list;
     globus_i_gsc_server_handle_t *          server_handle;
     globus_gridftp_server_control_cb_t      done_cb = NULL;
 
@@ -1175,20 +1177,26 @@ globus_l_gsc_user_close_kickout(
             server_handle->state == GLOBUS_L_GSC_STATE_STOPPED);
         done_cb = server_handle->funcs.done_cb;
         server_handle->state = GLOBUS_L_GSC_STATE_NONE;
+        globus_hashtable_to_list(
+            &server_handle->data_object_table, &data_conn_list);
     }
     globus_mutex_unlock(&server_handle->mutex);
 
-    if(server_handle->data_object != NULL)
+    /* call destroy on all the data connections, if not in the list 
+        then a call is already pending on it */
+    while(!globus_list_empty(data_conn_list))
     {
+        data_object = (globus_i_gsc_data_t *) 
+            globus_list_remove(&data_conn_list, data_conn_list);
         if(server_handle->funcs.data_destroy_cb != NULL)
         {
             server_handle->funcs.data_destroy_cb(
-                server_handle->data_object->user_handle,
+                data_object->user_handle,
                 server_handle->funcs.data_destroy_arg);
         }
         else
         {
-            globus_free(server_handle->data_object);
+            globus_free(data_object);
         }
     }
 
@@ -1220,39 +1228,52 @@ globus_l_gsc_close_cb(
  *                         -----------------
  *
  ***********************************************************************/
+static
 globus_bool_t
 globus_i_guc_data_object_destroy(
-    globus_i_gsc_server_handle_t *      server_handle)
+    globus_i_gsc_server_handle_t *      server_handle,
+    globus_i_gsc_data_t *               data_object)
 {
     globus_bool_t                       rc = GLOBUS_FALSE;
     globus_result_t                     res;
     GlobusGridFTPServerName(globus_i_guc_data_object_destroy);
 
-    if(server_handle->data_object != NULL)
+    if(server_handle->funcs.data_destroy_cb != NULL)
     {
-        if(server_handle->funcs.data_destroy_cb != NULL)
+        server_handle->ref++;
+        res = globus_callback_space_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gsc_user_data_destroy_cb_kickout,
+            (void *)data_object,
+            GLOBUS_CALLBACK_GLOBAL_SPACE);
+        if(res != GLOBUS_SUCCESS)
         {
-            server_handle->ref++;
-            res = globus_callback_space_register_oneshot(
-                NULL,
-                NULL,
-                globus_l_gsc_user_data_destroy_cb_kickout,
-                (void *)server_handle->data_object,
-                GLOBUS_CALLBACK_GLOBAL_SPACE);
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_panic(&globus_i_gsc_module, res, "one shot failed.");
-            }
-            rc = GLOBUS_TRUE;
+            globus_panic(&globus_i_gsc_module, res, "one shot failed.");
         }
-        else
-        {
-            globus_free(server_handle->data_object);
-        }
-        server_handle->data_object = NULL;
+        rc = GLOBUS_TRUE;
+    }
+    else
+    {
+        globus_free(data_object);
     }
 
     return rc;
+}
+
+void
+globus_i_guc_command_data_destroy(
+    globus_i_gsc_server_handle_t *      server_handle)
+{
+
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        globus_i_guc_data_object_destroy(
+            server_handle, server_handle->data_object);
+        server_handle->data_object = NULL;
+    }
+    globus_mutex_unlock(&server_handle->mutex);
+
 }
 
 static void
@@ -1896,6 +1917,12 @@ globus_gridftp_server_control_init(
         128,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
+
+    globus_hashtable_init(
+        &server_handle->data_object_table,
+        256,
+        globus_hashtable_voidp_hash,
+        globus_hashtable_voidp_keyeq);
     
     globus_i_gsc_add_commands(server_handle);
 
@@ -3203,7 +3230,30 @@ globus_i_gsc_port(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        globus_i_guc_data_object_destroy(op->server_handle);
+        if(op->server_handle->data_object != NULL)
+        {
+            switch(op->server_handle->data_object->state)
+            {
+                case GLOBUS_L_GSC_DATA_OBJ_READY:
+                    op->server_handle->data_object->state = 
+                        GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
+                    globus_i_guc_data_object_destroy(
+                        op->server_handle, op->server_handle->data_object);
+                    op->server_handle->data_object = NULL;
+                    break;
+                                                                                
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+                    /* do nuttin */
+                    break;
+                                                                                
+                case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+                default:
+                    globus_assert(0 && "possible memory corruption");
+                    break;
+            }
+            op->server_handle->data_object = NULL;
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -3256,7 +3306,30 @@ globus_i_gsc_passive(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        globus_i_guc_data_object_destroy(op->server_handle);
+        if(op->server_handle->data_object != NULL)
+        {
+            switch(op->server_handle->data_object->state)
+            {
+                case GLOBUS_L_GSC_DATA_OBJ_READY:
+                    op->server_handle->data_object->state = 
+                        GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
+                    globus_i_guc_data_object_destroy(
+                        op->server_handle, op->server_handle->data_object);
+                    op->server_handle->data_object = NULL;
+                    break;
+                                                                                
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+                    /* do nuttin */
+                    break;
+                                                                                
+                case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+                default:
+                    globus_assert(0 && "possible memory corruption");
+                    break;
+            }
+            op->server_handle->data_object = NULL;
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -3309,6 +3382,22 @@ globus_i_gsc_list(
         {
             globus_mutex_unlock(&op->server_handle->mutex);
             return GlobusGridFTPServerErrorParameter("op");
+        }
+
+        switch(op->server_handle->data_object->state)
+        {
+            /* the state we want */
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+                op->server_handle->data_object->state = 
+                    GLOBUS_L_GSC_DATA_OBJ_INUSE;
+                break;
+
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+            default:
+                globus_mutex_unlock(&op->server_handle->mutex);
+                return GlobusGridFTPServerErrorParameter("op");
         }
         user_cb = op->server_handle->funcs.list_cb;
     }
@@ -3379,6 +3468,21 @@ globus_i_gsc_send(
         {
             globus_mutex_unlock(&op->server_handle->mutex);
             return GlobusGridFTPServerErrorParameter("op");
+        }
+        switch(op->server_handle->data_object->state)
+        {
+            /* the state we want */
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+                op->server_handle->data_object->state = 
+                    GLOBUS_L_GSC_DATA_OBJ_INUSE;
+                break;
+
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+            default:
+                globus_mutex_unlock(&op->server_handle->mutex);
+                return GlobusGridFTPServerErrorParameter("op");
         }
         if(mod_name == NULL)
         {
@@ -3471,6 +3575,21 @@ globus_i_gsc_recv(
         {
             globus_mutex_unlock(&op->server_handle->mutex);
             return GlobusGridFTPServerErrorParameter("op");
+        }
+        switch(op->server_handle->data_object->state)
+        {
+            /* the state we want */
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+                op->server_handle->data_object->state = 
+                    GLOBUS_L_GSC_DATA_OBJ_INUSE;
+                break;
+
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+            default:
+                globus_mutex_unlock(&op->server_handle->mutex);
+                return GlobusGridFTPServerErrorParameter("op");
         }
         if(mod_name == NULL)
         {
@@ -3735,9 +3854,15 @@ globus_gridftp_server_control_finished_active_connect(
     data_obj->dir = data_dir;
     data_obj->user_handle = user_data_handle;
     data_obj->server_handle = op->server_handle;
+    data_obj->state = GLOBUS_L_GSC_DATA_OBJ_READY;
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+         globus_hashtable_insert(
+            &op->server_handle->data_object_table,
+            user_data_handle,
+            data_obj);
+
         op->server_handle->data_object = data_obj;
         op->server_handle->stripe_count = op->max_cs;
     }
@@ -3780,6 +3905,7 @@ globus_gridftp_server_control_finished_passive_connect(
     data_obj->dir = data_dir;
     data_obj->user_handle = user_data_handle;
     data_obj->server_handle = op->server_handle;
+    data_obj->state = GLOBUS_L_GSC_DATA_OBJ_READY;
 
     op->cs = (char **) globus_malloc(sizeof(char *) * (cs_count + 1));
     for(ctr = 0; ctr < cs_count; ctr++)
@@ -3798,6 +3924,11 @@ globus_gridftp_server_control_finished_passive_connect(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+         globus_hashtable_insert(
+            &op->server_handle->data_object_table,
+            user_data_handle,
+            data_obj);
+
         op->server_handle->data_object = data_obj;
         op->server_handle->stripe_count = cs_count;
     }
@@ -3813,7 +3944,8 @@ globus_gridftp_server_control_disconnected(
     globus_gridftp_server_control_t     server,
     void *                              user_data_handle)
 {
-    globus_gridftp_server_control_data_destroy_cb_t destroy_cb = NULL;
+    globus_result_t                     result;
+    globus_i_gsc_data_t *               data_obj;
     GlobusGridFTPServerName(globus_gridftp_server_control_disconnected);
 
     if(server == NULL)
@@ -3827,16 +3959,43 @@ globus_gridftp_server_control_disconnected(
 
     globus_mutex_lock(&server->mutex);
     {
-        globus_i_guc_data_object_destroy(server);
+        data_obj = (globus_i_gsc_data_t *) globus_hashtable_remove(
+            &server->data_object_table, user_data_handle);
+        if(data_obj == NULL)
+        {
+            result = GlobusGridFTPServerErrorParameter("user_data_handle");
+            goto error;
+        }
+        switch(data_obj->state)
+        {
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+                data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
+                globus_i_guc_data_object_destroy(server, data_obj);
+                break;
+
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+                /* do nuttin */
+                break;
+
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+                /* start an abort event */
+                data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT;
+                break;
+
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
     }
     globus_mutex_unlock(&server->mutex);
 
-    if(destroy_cb != NULL)
-    {
-        destroy_cb(user_data_handle, server->funcs.data_destroy_arg);
-    }
-
     return GLOBUS_SUCCESS;
+
+error:
+    globus_mutex_unlock(&server->mutex);
+
+    return result;
 }
 
                                                                                 
@@ -3900,6 +4059,30 @@ globus_gridftp_server_control_finished_transfer(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        globus_assert(op->server_handle->data_object != NULL);
+
+        switch(op->server_handle->data_object->state)
+        {
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+                op->server_handle->data_object->state = 
+                    GLOBUS_L_GSC_DATA_OBJ_READY;
+                break;
+
+            /* is already removed from the hashtable */
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+                /* kick out the callback */
+                globus_i_guc_data_object_destroy(
+                    op->server_handle, op->server_handle->data_object);
+                op->server_handle->data_object = NULL;
+                break;
+
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
+
         if(op->range_list != NULL)
         {
             globus_range_list_destroy(op->range_list);

@@ -79,6 +79,14 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q'
 } globus_i_gsc_mlsx_fact_t;
 
+typedef enum
+{
+    GLOBUS_L_GSC_DATA_OBJ_READY = 1,
+    GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT,
+    GLOBUS_L_GSC_DATA_OBJ_DESTROYING,
+    GLOBUS_L_GSC_DATA_OBJ_INUSE
+} globus_l_gsc_data_obj_state_t;
+
 typedef void
 (*globus_i_gsc_auth_cb_t)(
     struct globus_i_gsc_op_s *              op,
@@ -122,6 +130,7 @@ typedef void
 
 typedef struct globus_i_gsc_data_s
 {
+    globus_l_gsc_data_obj_state_t           state;
     struct globus_i_gsc_server_handle_s *   server_handle;
     int                                     stripe_count;
     void *                                  user_handle;
@@ -144,6 +153,7 @@ typedef enum globus_i_gsc_op_type_e
 
 typedef struct globus_i_gsc_event_data_s
 {
+    globus_l_gsc_data_obj_state_t           state;
     globus_callback_handle_t                periodic_handle;
     int                                     stripe_count;
     globus_bool_t                           perf_running;
@@ -367,6 +377,7 @@ typedef struct globus_i_gsc_server_handle_s
     int                                 abort_cnt;
     globus_hashtable_t                  cmd_table;
     globus_hashtable_t                  site_cmd_table;
+    globus_hashtable_t                  data_object_table;
     struct globus_i_gsc_op_s *          outstanding_op;
 } globus_i_gsc_server_handle_t;
 
@@ -511,8 +522,8 @@ globus_i_gsc_string_to_959(
     int                                 code,
     const char *                        in_str);
 
-globus_bool_t
-globus_i_guc_data_object_destroy(
+void
+globus_i_guc_command_data_destroy(
     globus_i_gsc_server_handle_t *      server_handle);
 
 void
