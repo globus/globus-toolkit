@@ -41,7 +41,7 @@
       </Build_Step>
 
       <Build_Step>
-        MAKE_GPTMACRO DESTDIR_GPTMACRO install
+        MAKE_GPTMACRO install
       </Build_Step>
 
     </Build_Instructions>
