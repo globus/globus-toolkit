@@ -38,10 +38,10 @@ libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES =\
 	$(NULL)
 
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	$(GPT_LIB_LINKS) \
+	@GPT_LIB_LINKS@ \
 	$(OPENSSL_LIBS) \
 	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
+#	$(LIBXML_LIBS) \
 	$(NULL)
 
 
