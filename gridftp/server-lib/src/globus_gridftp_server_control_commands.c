@@ -2058,6 +2058,7 @@ globus_l_gsc_cmd_stor_retr(
                 return;
             }
             mod_parm = globus_libc_strdup(cmd_a[2]);
+            tmp_ptr = mod_parm;
             while(isdigit(*tmp_ptr)) tmp_ptr++;
             while(isspace(*tmp_ptr)) tmp_ptr++;
             while(isdigit(*tmp_ptr)) tmp_ptr++;
@@ -2085,6 +2086,7 @@ globus_l_gsc_cmd_stor_retr(
                 return;
             }
             mod_parm = globus_libc_strdup(cmd_a[2]);
+            tmp_ptr = mod_parm;
             while(isdigit(*tmp_ptr)) tmp_ptr++;
             /* up until here the scanf gauentess safety */
             while(isspace(*tmp_ptr) && *tmp_ptr != '\0') tmp_ptr++;
