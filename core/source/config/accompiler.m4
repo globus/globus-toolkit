@@ -241,8 +241,8 @@ case ${host}--$1 in
             LAC_PROG_CC_GNU($lac_cv_CC,
                             [ lac_CFLAGS="$lac_CFLAGS -m64"
                               lac_CXXFLAGS="$lac_CXXFLAGS -m64" ],
-                            [ lac_CFLAGS="$lac_CFLAGS -xcode=pic32 -xarch=v9"
-                              lac_CXXFLAGS="$lac_CXXFLAGS -xcode=pic32 -xarch=v9" ])
+                            [ lac_CFLAGS="$lac_CFLAGS -xarch=v9 -KPIC"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v9 -KPIC" ])
         else
             LAC_PROG_CC_GNU($lac_cv_CC,
                             [ lac_CFLAGS="$lac_CFLAGS -m32"
