@@ -20,7 +20,7 @@ protocol:
 ** define reply errors properly for going over ipc
 
 signal handling:
-** SIGINT needs to handle data-node shutdown
+-- SIGINT needs to handle data-node shutdown
 
 striping:
 -- verify eofc handling, should move out of remote into data.c
@@ -33,6 +33,7 @@ striping:
 ipc:
 ** encryption
 XX connect backwards
+** use handle_tables for psuedo-passing void *
 
 logging:
 -- instrument code
@@ -43,7 +44,7 @@ logging:
 -- produce netlogger output based on perf marker info ( -Z option in wu )
 
 data:
-** dynamic adjust listening parallelism
+** dynamic adjust recieving server parallelism
     query data channel for number of streams, use that as reply to 
     _get_optimal_concurrency
 -- sync() before each transfer stat update (by option)
@@ -61,5 +62,9 @@ threads:
 
 cleanup:
 -- verify test suite
-** clean majority of memory leaks
+-- clean majority of memory leaks
+
+-----------------------------------------------------------------------
+known bugs:
+
 
