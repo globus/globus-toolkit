@@ -7,6 +7,13 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
+EXTRA_DIST= \
+	globus_io_authorization_test.pl.in \
+        globus_io_file_test.pl.in \
+        globus_io_tcp_test.pl.in \
+        globus_io_udp_test.pl.in \
+        run-io-tests.pl.in
+
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
 # for them and include them in a source distribution.
@@ -41,6 +48,13 @@ test_PROGRAMS= \
 	globus_io_udp_test_client \
 	globus_io_udp_test \
 	globus_io_authorization_test
+
+test_SCRIPTS= \
+        globus_io_authorization_test.pl \
+        globus_io_file_test.pl \
+        globus_io_tcp_test.pl \
+        globus_io_udp_test.pl \
+        run-io-tests.pl
 
 globus_io_tcp_test_SOURCES = globus_io_tcp_test.c
 globus_io_tcp_test_LDFLAGS = $(GPT_LDFLAGS)
