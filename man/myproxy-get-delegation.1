@@ -1,4 +1,4 @@
-.TH myproxy-get-delegation 1 "2003-4-29" "NCSA" "MyProxy"
+.TH myproxy-get-delegation 1 "2003-5-1" "NCSA" "MyProxy"
 .SH NAME
 myproxy-get-delegation \- retrieve a credential
 .SH SYNOPSIS
@@ -56,7 +56,7 @@ server.
 The MyProxy username need not correspond to a real Unix username.
 .TP
 .B -d, --dn_as_username
-Use the proxy certificate subject (DN) as the default username, instead
+Use the certificate subject (DN) as the default username, instead
 of the 
 .B LOGNAME 
 environment variable.
@@ -68,7 +68,7 @@ using the stored credential.  The resulting lifetime is the shorter of
 the requested lifetime and the lifetime specified when the credential
 was stored using
 .BR myproxy-init (1).
-Default: 2 hours
+Default: 12 hours
 .TP
 .BI -o " file, " --out " file"
 Specifies where the retrieved proxy credential should be stored.  If
@@ -84,6 +84,13 @@ specify the existing, valid credential that you want to renew.
 Renewing a credential generally requires two certificate-based
 authentications.  The client authenticates with its identity, using
 the credential in the standard location or specified by
+.B X509_USER_PROXY
+or
+.B X509_USER_CERT
+and
+.B X509_USER_KEY
+in addition to authenticating with the existing credential, in the
+location specified by this option, that it wants to renew.
 .TP
 .BI -k " name, " --credname " name"
 Specifies the name of the credential that is to be retrieved or renewed.
@@ -104,13 +111,15 @@ Specifies the hostname where the
 is running.  This environment variable can be used in place of the 
 .B -s
 option.
+.TP
 .B MYPROXY_SERVER_DN
 Specifies the distinguished name (DN) of the 
 .BR myproxy-server (8).
 All MyProxy client programs authenticate the server's identity.
 By default, MyProxy servers run with host credentials, so the MyProxy
 client programs expect the server to have a distinguished name of the
-form "host/<fqhn>" (where <fqhn> is the fully-qualified hostname of
+form "host/<fqhn>" or "myproxy/<fqhn>"
+(where <fqhn> is the fully-qualified hostname of
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
