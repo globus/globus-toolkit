@@ -3,22 +3,21 @@
 #include "gaa_util.h"
 
 #define MAX_WORD_LEN        200
-#define MYSERVICE           "ftp://"
-#define MY_AUTHORITY        "file"
-#define CONDITION_NAME      "cond_local_access"
 
 
 static gaa_status
-gaa_l_add_file_policy_right(gaa_ptr gaa,
-			    gaa_policy_right **right,
-			    gaa_right_type right_type,
-			    char *authority,
-			    char *val,
-			    gaa_policy *policy);
+gaa_simple_l_add_policy_right(
+    gaa_ptr                             gaa,
+    gaa_policy_right **                 right,
+    gaa_right_type                      right_type,
+    char *                              authority,
+    char *                              val,
+    gaa_policy *                        policy);
 
 
 /*Strips off leading and trailing white spaces from string
  *Returns pointer to cleaned up string*/
+
 static char *cleanup(char *line)
 {
     int i, j;
@@ -49,7 +48,8 @@ static char *cleanup(char *line)
  * @param object
  *        input object (filename or dirname) to get policy for
  * @param params
- *        input (char *) pointer to restrictions string.
+ *        structure containing the restrictions, the actions and
+ *        potentially a url base string.
  *
  * @retval GAA_S_SUCCESS
  *         success
@@ -60,99 +60,83 @@ static char *cleanup(char *line)
  */
 
 gaa_status
-gaasimple_parse_restrictions(gaa_ptr		gaa,
-		    gaa_policy **	policy,
-		    gaa_string_data	in_object,
-		    void *		params)
+gaa_simple_parse_restrictions(
+    gaa_ptr                             gaa,
+    gaa_policy **                       policy,
+    gaa_string_data                     in_object,
+    void *                              params)
 {
-    gaa_status				status = GAA_S_SUCCESS;
-    char				    ebuf[2048];
-    gaa_policy_right *		right = 0;
-    char *				    restrictions;
-    char                    lval[MAX_WORD_LEN],
-                            rval[MAX_WORD_LEN];
-    char                    object_name_type[MAX_WORD_LEN];
-    char                    object_name[MAX_WORD_LEN];
-    char *                  clean_obj_name_type;
-    char *                  clean_obj_name;
-    char *                  clean_service_type;
-    char *                  clean_service_action;
-    char *                  object;
-    char                    service_type[MAX_WORD_LEN];
-    char                    service_action[MAX_WORD_LEN];
-    char *                  line;
-    char *                  token;
-    int                     linelen;
-    int                     open = 0;
-    int                     linecount;
-    int                     found_obj = 0, found_st = 0;
-    int                     policycount = 0;
-    int			            i;
-
-    /*
-     * TODO -- modify the handling of the "params" arg.  Currently it's a
-     * single string that's supposed to represent the policies of all certs
-     * in the cert chain.  It should be a structure that contains each
-     * cert's policy as a separate string plus the urlbase information
-     * (i.e. the urlbase and urlbase_len static variables and MYSERVICE define
-     * should also go away.  The list of actions should also be passed in
-     * (and the static array should go away).
-     */
-    static char urlbase[2048];
-    static int urlbase_len = 0;
-    static char *actions[] = {
-	"create",
-	"read",
-	"lookup",
-	"write",
-	"delete",
-	0,
-    }; 
-
-    /*urlbase should be set to the base url (eg "file://spinetta.mcs.anl.gov")*/
-    if (urlbase_len == 0)
-    {
-	strcpy(urlbase, MYSERVICE);
-	if (gethostname(urlbase + sizeof(MYSERVICE) - 1,
-			sizeof(urlbase) - sizeof(MYSERVICE)))
-	{
-	    gaa_set_callback_err("gaasimple_parse_restrictions: gethostname failed");
-	    return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
-	}
-	urlbase_len = strlen(urlbase);
-    }
+    gaa_status                          status = GAA_S_SUCCESS;
+    gaa_simple_callback_arg_t *          cb_arg;
+    char                                ebuf[2048];
+    gaa_policy_right *                  right = 0;
+    char *                              restrictions;
+    char                                lval[MAX_WORD_LEN];
+    char                                rval[MAX_WORD_LEN];
+    char                                object_name_type[MAX_WORD_LEN];
+    char                                object_name[MAX_WORD_LEN];
+    char *                              clean_obj_name_type;
+    char *                              clean_obj_name;
+    char *                              clean_service_type;
+    char *                              clean_service_action;
+    char *                              object;
+    char                                service_type[MAX_WORD_LEN];
+    char                                service_action[MAX_WORD_LEN];
+    char *                              line;
+    char *                              token;
+    int                                 linelen;
+    int                                 open = 0;
+    int                                 linecount;
+    int                                 found_obj = 0;
+    int                                 found_st = 0;
+    int                                 policycount = 0;
+    int                                 i;
+    int                                 urlbase_len = 0;
+    
     /*Check for null input values*/
-    if (gaa == 0 || policy == 0 || in_object == 0) {
-         gaa_set_callback_err("gaasimple_parse_restrictions: called with null gaa, policy, or objectname");
-	    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+    if (gaa == NULL || policy == NULL ||
+        in_object == NULL || params == NULL)
+    {
+        gaa_set_callback_err("gaasimple_parse_restrictions: called with null gaa, policy, or objectname");
+        return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
+
+    cb_arg = (gaa_simple_callback_arg_t *) params;
+    
     /*create and initialize a new policy structure*/
-    if ((status = gaa_new_policy(policy)) != GAA_S_SUCCESS){
+    if ((status = gaa_new_policy(policy)) != GAA_S_SUCCESS)
+    {
         snprintf(ebuf, sizeof(ebuf),
             "gaasimple_read_eacl: failed to create policy structure: %s\n",
             gaa_x_majstat_str(status));
         gaa_set_callback_err(ebuf);
-	    return(status);
+        return(status);
     }
 
-    /*if no restrictions were passed in, allow all operations --
+    /* if no restrictions were passed in, allow all operations --
      * ie build policy containing all rights*/
-    if ((restrictions = (char *)params) == 0)
+    if ((restrictions = cb_arg->restrictions) == 0)
     {
-	/*
-	 * TODO - should simply have one "can do everything" entry, and should
-	 * install valmatch callbacks to understand it.
-	 */
-	for (i = 0; actions[i]; i++)
-	    if ((status =
-		 gaa_l_add_file_policy_right(gaa,
-					     &right,
-					     pos_access_right,
-					     MY_AUTHORITY,
-					     actions[i],
-					     *policy)) != GAA_S_SUCCESS)
-		break;
-	return(status);
+        /*
+         * TODO - should simply have one "can do everything" entry, and should
+         * install valmatch callbacks to understand it.
+         */
+        for (i = 0; cb_arg->actions[i]; i++)
+        {
+            status = gaa_simple_l_add_policy_right(
+                gaa,
+                &right,
+                gaa_pos_access_right,
+                cb_arg->service_type,
+                cb_arg->actions[i],
+                *policy);
+            
+            if (status != GAA_S_SUCCESS)
+            {
+                break;
+            }
+        }
+        return(status);
     }
 
     /*remove leading and trailing white spaces from input object*/
@@ -161,13 +145,16 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
     fprintf(stderr, "Checking for object: %s\n", object);
 #endif /* DEBUG */    
     line = NULL;
+
     open = 0;
+    
     while(*restrictions != '\0')
     {
         linecount++;
         /*how many chars before the first \n*/
         linelen = strcspn(restrictions,"\n");
-        if(line) {
+        if(line)
+        {
             free(line);
             line = NULL;
         }
@@ -184,8 +171,10 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
 #ifdef DEBUG
         fprintf(stderr,"Processing: <%s>\n",token);
 #endif /* DEBUG */
-        if(*token == '{') {
-            if(open) {
+        if(*token == '{')
+        {
+            if(open)
+            {
                 /*we have encountered an opening brace before this*/
                 snprintf(ebuf, sizeof(ebuf),
                     "gaasimple_parse_restrictions: bad token (unbalanced brace) on line %d\n",linecount); 
@@ -195,8 +184,10 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
             found_obj = found_st = 0;
             open = 1;
         }
-        else if(*token == '}') {
-            if(!open) { 
+        else if(*token == '}')
+        {
+            if(!open)
+            {
                 /*we have not seen an open brace before this*/
                 snprintf(ebuf, sizeof(ebuf),
                     "gaasimple_parse_restrictions: bad token (unbalanced brace) on line %d\n",linecount); 
@@ -207,8 +198,10 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
             open = 0;
         }
         else if(*token == 0)
+        {
             /*blank line*/
             continue;
+        }
         else
         {   /*Token is of the form <lval>=<rval>
              *lval and rval are 200 bytes long,
@@ -239,10 +232,15 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
                 /*remove leading white chars from object name*/
                 clean_obj_name = cleanup(object_name);
                 
-                if (strncmp(clean_obj_name, urlbase, urlbase_len) == 0)
-                {   /* object name in policy file is url-encoded*/
-                    clean_obj_name += urlbase_len;
+                if (cb_arg->urlbase)
+                {
+                    urlbase_len = strlen(cb_arg->urlbase);
+                    if(strncmp(clean_obj_name, cb_arg->urlbase, urlbase_len) == 0)
+                    {   /* object name in policy file is url-encoded*/
+                        clean_obj_name += urlbase_len;
+                    }
                 }
+                
                 /*Strip off trailing /'s before compare 
                   Assumes that object name is an absolute path,
                   ie the first char is a '/' */
@@ -312,12 +310,12 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
                     
                     /*Add a policy right*/
                     status =
-                        gaa_l_add_file_policy_right(gaa,
-                                                    &right,
-                                                    pos_access_right,
-                                                    clean_service_type,
-                                                    clean_service_action,
-                                                    *policy);
+                        gaa_simple_l_add_policy_right(gaa,
+                                                      &right,
+                                                      gaa_pos_access_right,
+                                                      clean_service_type,
+                                                      clean_service_action,
+                                                      *policy);
 
                     if (status != GAA_S_SUCCESS)
                     {
@@ -354,53 +352,31 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
 }
 
 static gaa_status
-gaa_l_add_file_policy_right(gaa_ptr gaa,
-			    gaa_policy_right **right,
-			    gaa_right_type right_type,
-			    char *authority,
-			    char *val,
-			    gaa_policy *policy)
+gaa_simple_l_add_policy_right(
+    gaa_ptr                             gaa,
+    gaa_policy_right **                 right,
+    gaa_right_type                      right_type,
+    char *                              authority,
+    char *                              val,
+    gaa_policy *                        policy)
 {
-    gaa_condition_ptr       cond = 0;
-    int			    pri = 0;
-    static int			    num = 0;
-    char		    ebuf[2048];
+    int			                pri = 0;
+    static int			        num = 0;
+    char		                ebuf[2048];
 
     gaa_status status = GAA_S_SUCCESS;
 
-    *right = 0;
+    *right = NULL;
 
     /*create and initialize a new policy right*/
     if((status = gaa_new_policy_right(gaa, 
 				      right,
 				      right_type,
 				      authority,
-				      val)) != GAA_S_SUCCESS){
+				      val)) != GAA_S_SUCCESS)
+    {
 	snprintf(ebuf, sizeof(ebuf),
 		 "gaasimple_parse_restrictions: failed to create right: %s\n",
-		 gaa_x_majstat_str(status));
-	gaa_set_callback_err(ebuf);
-	return(status);
-    }
-    /*Add an extra condition to enable checking the user's
-     * permission to access the file
-     */
-    if((status = gaa_new_condition(&cond,
-				   CONDITION_NAME,
-				   authority,
-				   val)) != GAA_S_SUCCESS)
-    {
-	snprintf(ebuf, sizeof(ebuf),
-		 "gaasimple_parse_restrictions: failed to create condition for policy: %s\n",
-		 gaa_x_majstat_str(status));
-	gaa_set_callback_err(ebuf);
-	return(status);
-    }
-    if((status = gaa_add_condition((*right),
-				   cond)) != GAA_S_SUCCESS)
-    {
-	snprintf(ebuf, sizeof(ebuf),
-		 "gaasimple_parse_restrictions: failed to add condition to policy: %s\n",
 		 gaa_x_majstat_str(status));
 	gaa_set_callback_err(ebuf);
 	return(status);
@@ -415,6 +391,7 @@ gaa_l_add_file_policy_right(gaa_ptr gaa,
 	gaa_set_callback_err(ebuf);
 	return(status);
     }
+
     return(status);
 }
 

@@ -2,7 +2,7 @@
 #include "gaa_simple.h"
 #include "gaa_util.h"
 
-/** gaasimple_read_eacl()
+/** gaa_simple_read_eacl()
  *
  * @ingroup gaa_simple
  *
@@ -27,7 +27,7 @@
  *         syntax error in policy file.
  */
 gaa_status
-gaasimple_read_eacl(gaa_ptr		gaa,
+gaa_simple_read_eacl(gaa_ptr		gaa,
 		    gaa_policy **	policy,
 		    gaa_string_data	object,
 		    void *		params)
@@ -51,26 +51,26 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 
     if (gaa == 0 || policy == 0 || object == 0 || params == 0)
     {
-	gaa_set_callback_err("gaasimple_read_eacl: called with null gaa, policy, or eacldir pointer");
+	gaa_set_callback_err("gaa_simple_read_eacl: called with null gaa, policy, or eacldir pointer");
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
 
     if ((dirname = *(char **)params) == 0)
     {
-	gaa_set_callback_err("gaasimple_read_eacl: called with null eacldir");
+	gaa_set_callback_err("gaa_simple_read_eacl: called with null eacldir");
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
 
     if (strlen(dirname) + strlen(object) + 2 >= sizeof(buf))
     {
-	gaa_set_callback_err("gaasimple_read_eacl: object name too long");
+	gaa_set_callback_err("gaa_simple_read_eacl: object name too long");
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
 
     sprintf(buf, "%s/%s", dirname, object);
     if ((infile = fopen(buf, "r")) == 0)
     {
-	snprintf(ebuf, sizeof(ebuf), "gaasimple_read_eacl: can't open %s\n",
+	snprintf(ebuf, sizeof(ebuf), "gaa_simple_read_eacl: can't open %s\n",
 		 buf);
 	gaa_set_callback_err(ebuf);
 	return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
@@ -111,7 +111,7 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 		    else
 		    {
 			snprintf(ebuf, sizeof(ebuf),
-				 "gaasimple_read_eacl: bad token (unbalanced quote) on line %d\n", i);
+				 "gaa_simple_read_eacl: bad token (unbalanced quote) on line %d\n", i);
 			gaa_set_callback_err(ebuf);
 			continue;
 		    }
@@ -132,7 +132,7 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 						   num)) != GAA_S_SUCCESS)
 		{
 		    snprintf(ebuf, sizeof(ebuf),
-			     "gaasimple_read_eacl: failed to add right at line %d: %s\n",
+			     "gaa_simple_read_eacl: failed to add right at line %d: %s\n",
 			     i, gaa_x_majstat_str(status));
 		    gaa_set_callback_err(ebuf);
 		    goto end;
@@ -142,11 +142,11 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 	    if (auth == 0 || val == 0)
 	    {
 		snprintf(ebuf, sizeof(ebuf),
-			 "gaasimple_read_eacl: missing auth or val for right at line %d", i);
+			 "gaa_simple_read_eacl: missing auth or val for right at line %d", i);
 		gaa_set_callback_err(ebuf);
 		continue;
 	    }
-	    gaa_new_policy_right(gaa, &right, pos_access_right, auth, val);
+	    gaa_new_policy_right(gaa, &right, gaa_pos_access_right, auth, val);
 #ifdef TEST_ORDER
 	    pri = num = -1;
 #else /* TEST_ORDER */
@@ -161,7 +161,7 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 						   num)) != GAA_S_SUCCESS)
 		{
 		    snprintf(ebuf, sizeof(ebuf),
-			     "gaasimple_read_eacl: failed to add right at line %d: %s\n",
+			     "gaa_simple_read_eacl: failed to add right at line %d: %s\n",
 			     i, gaa_x_majstat_str(status));
 		    gaa_set_callback_err(ebuf);
 		    goto end;
@@ -171,11 +171,11 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 	    if (auth == 0 || val == 0)
 	    {
 		snprintf(ebuf, sizeof(ebuf),
-			 "gaasimple_read_eacl: missing auth or val for right at line %d", i);
+			 "gaa_simple_read_eacl: missing auth or val for right at line %d", i);
 		gaa_set_callback_err(ebuf);
 		continue;
 	    }
-	    gaa_new_policy_right(gaa, &right, neg_access_right, auth, val);
+	    gaa_new_policy_right(gaa, &right, gaa_neg_access_right, auth, val);
 #ifdef TEST_ORDER
 	    pri = num = -1;
 #else /* TEST_ORDER */
@@ -198,7 +198,7 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 	else if (right == 0)
 	{
 	    snprintf(ebuf, sizeof(ebuf),
-		     "gaasimple_read_eacl: conditions come before rights on line %d\n", i);
+		     "gaa_simple_read_eacl: conditions come before rights on line %d\n", i);
 	    gaa_set_callback_err(ebuf);
 	    status = GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0);
 	    goto end;
@@ -216,7 +216,7 @@ gaasimple_read_eacl(gaa_ptr		gaa,
 					   num)) != GAA_S_SUCCESS)
 	{
 	    snprintf(ebuf, sizeof(ebuf),
-		     "gaasimple_read_eacl: failed to add right at line %d: %s\n", i,
+		     "gaa_simple_read_eacl: failed to add right at line %d: %s\n", i,
 		     gaa_x_majstat_str(status));
 	    gaa_set_callback_err(ebuf);
 	    goto end;

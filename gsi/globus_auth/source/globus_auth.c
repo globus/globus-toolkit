@@ -1,6 +1,6 @@
 #include "globus_auth.h"
 #include "globus_auth_error.h"
-#include "gaa_simple.h"
+
 
 /** globus_authorization_handle_init()
  *
@@ -10,6 +10,14 @@
  *        output authorization handle
  * @param configfile
  *        input configfile contains plugin information
+ * @param actions
+ *        A NULL terminated array of strings specifying the actions
+ *        which we want to manage authorization for.
+ * @param urlbase
+ *        A string which will be prepended to any object string for
+ *        which we seek authorization. May be NULL.
+ * @param service_type
+ *        The type of service the actions are related to (e.g. file)
  *
  * @retval GLOBUS_SUCCESS
  *         success
@@ -17,6 +25,8 @@
  *         an error occurred in the underlying mechanism (GAA)
  * @retval GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR
  *         authorization handle memory allocation error
+ * @retval GLOBUS_AUTH_INVALID_ARGUMENT
+ *         a invalid argument was passed to the function
  *              
  * @note
  * An authorization handle created with this function should be 
@@ -25,11 +35,15 @@
 
 globus_auth_result_t
 globus_authorization_handle_init(
-    globus_authorization_handle_t *handle, 
-    char * configfile)
+    globus_authorization_handle_t *     handle, 
+    char *                              configfile,
+    char *                              actions[],
+    char *                              urlbase,
+    char *                              service_type)
 {
-    int status;
-
+    int                                 status;
+    int                                 i;
+    
     *handle = (globus_authorization_handle_t)
         malloc(sizeof(globus_authorization_t));
 
@@ -40,7 +54,9 @@ globus_authorization_handle_init(
                     "failed to allocate memory for handle : globus_authorization_handle_init"
                 ));
     }
-       
+
+    memset(*handle,0,sizeof(globus_authorization_t));    
+    
     /* configfile contains callback routines */
     if (configfile == NULL)
     {
@@ -52,17 +68,58 @@ globus_authorization_handle_init(
     
     if(status != GAA_S_SUCCESS)
     {
+        free(*handle);
         return(globus_result_set(
                    GLOBUS_AUTH_INTERNAL_GAA_ERROR,
                    "initialization failed : %s (%s)",
                    gaacore_majstat_str(status),
                    gaa_get_err()));
     }
+    
+    if(urlbase != NULL)
+    {
+        (*handle)->gaa_cb_arg.urlbase = strdup(urlbase);
+    }
 
+    if(service_type != NULL)
+    {
+        (*handle)->gaa_cb_arg.service_type = strdup(service_type);
+    }
+    
+    if(actions != NULL)
+    {
+        i=0;
+        while(actions[i])
+        {
+            i++;
+        }
+
+        (*handle)->gaa_cb_arg.actions = (char **)
+            malloc(sizeof(char *)*i);
+        
+        i=0;
+
+        while(actions[i])
+        {
+            (*handle)->gaa_cb_arg.actions[i] = strdup(actions[i]);
+            i++;
+        }
+
+        (*handle)->gaa_cb_arg.actions[i] = NULL;
+        
+    }
+    else
+    {
+        free(*handle);
+        return(globus_result_set(
+                   GLOBUS_AUTH_INVALID_ARGUMENT,
+                   "You must specify a set of actions"));
+    }
+    
     (*handle)->gaa_sc = 0;
     (*handle)->gss_context = 0;
     (*handle)->policy_source = 0;
-
+    
 #ifdef DEBUG
     (*handle)->debug_answer = 0; 
 #endif /* DEBUG */
@@ -87,8 +144,10 @@ globus_authorization_handle_init(
 
 globus_auth_result_t
 globus_authorization_handle_destroy(
-    globus_authorization_handle_t *handle)
+    globus_authorization_handle_t *     handle)
 {
+    int                                 i;
+    
     if (!(*handle))
     {
         return(globus_result_set(
@@ -102,35 +161,54 @@ globus_authorization_handle_destroy(
         gaa_cleanup(&((*handle)->gaa),0);
     }
     
-    (*handle)->gaa = NULL;
-
-    /*globus_libc_free?*/
     if ((*handle)->policy_source)
     {
         free((*handle)->policy_source);
     }
     
-    (*handle)->policy_source = NULL;
-
     if ((*handle)->gaa_sc)
     {
         gaa_free_sc((*handle)->gaa_sc);
     }
-    
-    (*handle)->gaa_sc = NULL;
-    
-    /*gss_delete_sec_context?*/
-    (*handle)->gss_context = NULL;
 
+    if((*handle)->gaa_cb_arg.restrictions)
+    {
+        free((*handle)->gaa_cb_arg.restrictions);
+    }
+
+    if((*handle)->gaa_cb_arg.urlbase)
+    {
+        free((*handle)->gaa_cb_arg.urlbase);
+    }
+
+    if((*handle)->gaa_cb_arg.service_type)
+    {
+        free((*handle)->gaa_cb_arg.service_type);
+    }
+    
+    if((*handle)->gaa_cb_arg.actions)
+    {
+        i = 0;
+
+        while((*handle)->gaa_cb_arg.actions[i])
+        {
+            free((*handle)->gaa_cb_arg.actions[i]);
+        }
+        
+        free((*handle)->gaa_cb_arg.actions);
+    }
+
+    
 #ifdef DEBUG
     if ((*handle)->debug_answer)
     {
         gaa_free_answer((*handle)->debug_answer);
     }
     
-    (*handle)->debug_answer = NULL;
 #endif /* DEBUG */
 
+    free(*handle);
+    
     return GLOBUS_SUCCESS;
 }
 
@@ -167,7 +245,6 @@ globus_authorization_handle_set_gss_ctx(
     OM_uint32               maj_stat, 
                             min_stat;
     gss_buffer_set_desc     restrictions;
-    char *                  params;
     int                     ii,len_so_far, old_len;
          
     if (!handle) 
@@ -246,7 +323,7 @@ globus_authorization_handle_set_gss_ctx(
                 "failed to get restrictions from gss context"));
 
     }
-    params = NULL;
+
     len_so_far = 0;
     old_len = 0;
     
@@ -258,24 +335,27 @@ globus_authorization_handle_set_gss_ctx(
             /*the cert at this level contains restrictions*/
             old_len = len_so_far;
             len_so_far += restrictions.elements[ii].length;
-            if(!params)
+            if(!handle->gaa_cb_arg.restrictions)
             {
-                params = (char *)malloc(len_so_far+1);
-                memcpy(params,
+                handle->gaa_cb_arg.restrictions =
+                    (char *)malloc(len_so_far+1);
+                memcpy(handle->gaa_cb_arg.restrictions,
                        (char *)restrictions.elements[ii].value,
                        len_so_far);
             
-                params[len_so_far] = 0;
+                handle->gaa_cb_arg.restrictions[len_so_far] = 0;
                 gss_release_buffer(&min_stat, &restrictions.elements[ii]);
             }
             else
             {
-                params = (char *)realloc(params,len_so_far+1);
+                handle->gaa_cb_arg.restrictions =
+                    (char *)realloc(handle->gaa_cb_arg.restrictions,
+                                    len_so_far+1);
                 /*don't overwrite prreviously extracted restrictions*/
-                memcpy(params+old_len, 
+                memcpy(handle->gaa_cb_arg.restrictions+old_len, 
                        (char *)restrictions.elements[ii].value,
                        restrictions.elements[ii].length);
-                params[len_so_far] = 0;
+                handle->gaa_cb_arg.restrictions[len_so_far] = 0;
                 gss_release_buffer(&min_stat, &restrictions.elements[ii]);
            }
         }/*end if restrictions.elements[i].length*/
@@ -284,9 +364,9 @@ globus_authorization_handle_set_gss_ctx(
     
     /*establish the getpolicy callback*/
     status = gaa_set_getpolicy_callback(
-        handle->gaa,                       /*the gaa ptr*/ 
-        gaasimple_parse_restrictions,      /*name of getpolicy callback*/
-        params,                            /*restrictions (param to callback*/ 
+        handle->gaa,                       /* the gaa ptr */ 
+        gaa_simple_parse_restrictions,     /* name of getpolicy callback */
+        &handle->gaa_cb_arg,               /* restrictions, actions, etc */
         0);
     
 

@@ -8,7 +8,7 @@ Sources= \
 	sslutils.c \
 	sslutils.h
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	scutils.h \
 	sslutils.h
 

@@ -18,7 +18,7 @@ Sources= \
 	wrap.c \
 	set_sec_context_opts.c
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	globus_gss_assist.h
 
 

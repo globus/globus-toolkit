@@ -21,8 +21,8 @@ typedef enum {
 } gaa_cred_type;
 
 typedef enum {
-    pos_access_right,
-    neg_access_right
+    gaa_pos_access_right,
+    gaa_neg_access_right
 } gaa_right_type;
 
 /************************** GAA-API data structures ************************/

@@ -372,8 +372,8 @@ char *
 gaacore_right_type_to_string(gaa_right_type rtype)
 {
     static strtbl stbl[] = {
-	{pos_access_right, "pos_access_right"},
-	{neg_access_right, "neg_access_right"},
+	{gaa_pos_access_right, "pos_access_right"},
+	{gaa_neg_access_right, "neg_access_right"},
 	{0, 0},
     };
     static gaaint_strinfo sinfo = {{0, 0}, 32, 0};

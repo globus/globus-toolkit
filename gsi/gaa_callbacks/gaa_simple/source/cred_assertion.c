@@ -2,7 +2,7 @@
 #include "gaa_simple.h"
 #include <string.h>
 
-/** gaasimple_assert_cred_pull()
+/** gaa_simple_assert_cred_pull()
  *
  * @ingroup gaa_simple
  *
@@ -29,7 +29,7 @@
  * Assertion credentials are probably useful only for testing.
  */
 gaa_status
-gaasimple_assert_cred_pull(gaa_ptr	gaa,
+gaa_simple_assert_cred_pull(gaa_ptr	gaa,
 			   gaa_sc_ptr	sc,
 			   gaa_cred_type which,
 			   void *	params)
@@ -59,7 +59,7 @@ gaasimple_assert_cred_pull(gaa_ptr	gaa,
     return(status);
 }
 
-/** gaasimple_assert_cred_eval()
+/** gaa_simple_assert_cred_eval()
  *
  * @ingroup gaa_simple
  *
@@ -86,7 +86,7 @@ gaasimple_assert_cred_pull(gaa_ptr	gaa,
  *         success
  */
 gaa_status
-gaasimple_assert_cred_eval(gaa_ptr	gaa,
+gaa_simple_assert_cred_eval(gaa_ptr	gaa,
 			   gaa_sc_ptr	sc,
 			   gaa_cred *	cred,
 			   void *	raw,
@@ -116,7 +116,7 @@ gaasimple_assert_cred_eval(gaa_ptr	gaa,
     return(status);
 }
 
-/** gaasimple_assert_cred_verify()
+/** gaa_simple_assert_cred_verify()
  *
  * @ingroup gaa_simple
  *
@@ -132,7 +132,7 @@ gaasimple_assert_cred_eval(gaa_ptr	gaa,
  *         success
  */
 gaa_status
-gaasimple_assert_cred_verify(gaa_cred *cred, void *params)
+gaa_simple_assert_cred_verify(gaa_cred *cred, void *params)
 {
     return(GAA_S_SUCCESS);
 }

@@ -20,7 +20,7 @@ const int trivial_no = (GAA_COND_FLG_EVALUATED);
 const int trivial_maybe = 0;
 
 static gaa_status
-gaasimple_l_check_id_cond(gaa_ptr		gaa,
+gaa_simple_l_check_id_cond(gaa_ptr		gaa,
 			  gaa_sc_ptr		sc,
 			  gaa_condition *	cond,
 			  gaa_time_period *	valid_time,
@@ -30,7 +30,7 @@ gaasimple_l_check_id_cond(gaa_ptr		gaa,
 			  int			matchcase);
 
 
-/** gaasimple_check_id_cond()
+/** gaa_simple_check_id_cond()
  *
  * @ingroup gaa_simple
  *
@@ -64,7 +64,7 @@ gaasimple_l_check_id_cond(gaa_ptr		gaa,
  * @retval standard gaa error returns
  */
 gaa_status
-gaasimple_check_id_cond(gaa_ptr		gaa,
+gaa_simple_check_id_cond(gaa_ptr		gaa,
 			gaa_sc_ptr	sc,
 			gaa_condition *	cond,
 			gaa_time_period *valid_time,
@@ -72,15 +72,15 @@ gaasimple_check_id_cond(gaa_ptr		gaa,
 			gaa_status *    output_flags,
 			void *		params)
 {
-    return(gaasimple_l_check_id_cond(gaa, sc, cond, valid_time,
+    return(gaa_simple_l_check_id_cond(gaa, sc, cond, valid_time,
 				    req_options, output_flags, params, 1));
 }
 
-/** gaasimple_check_id_cond_nocase()
+/** gaa_simple_check_id_cond_nocase()
  *
  * @ingroup gaa_simple
  *
- * Case-insensitive version of gaasimple_check_id_cond().
+ * Case-insensitive version of gaa_simple_check_id_cond().
  * Checks an identity condition.  Finds any credentials in the security
  * context with the same principal name and credential type, then calls
  * their cred_verify callbacks and checks any associated conditions.
@@ -111,7 +111,7 @@ gaasimple_check_id_cond(gaa_ptr		gaa,
  * @retval standard gaa error returns
  */
 gaa_status
-gaasimple_check_id_cond_nocase(gaa_ptr		gaa,
+gaa_simple_check_id_cond_nocase(gaa_ptr		gaa,
 			       gaa_sc_ptr 	sc,
 			       gaa_condition *	cond,
 			       gaa_time_period *valid_time,
@@ -119,17 +119,17 @@ gaasimple_check_id_cond_nocase(gaa_ptr		gaa,
 			       gaa_status *	output_flags,
 			       void *		params)
 {
-    return(gaasimple_l_check_id_cond(gaa, sc, cond, valid_time,
+    return(gaa_simple_l_check_id_cond(gaa, sc, cond, valid_time,
 				    req_options, output_flags, params, 0));
 }
 
 #ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaasimple_l_check_id_cond()
+/** gaa_simple_l_check_id_cond()
  *
  * @ingroup gaa_simple_conditions_static
  *
- * Does the work of gaasimple_check_id_cond() and
- * gaasimple_check_id_cond_nocase().
+ * Does the work of gaa_simple_check_id_cond() and
+ * gaa_simple_check_id_cond_nocase().
  * Checks an identity condition.  Finds any credentials in the security
  * context with the same principal name and credential type, then calls
  * their cred_verify callbacks and checks any associated conditions.
@@ -164,7 +164,7 @@ gaasimple_check_id_cond_nocase(gaa_ptr		gaa,
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 
 static gaa_status
-gaasimple_l_check_id_cond(gaa_ptr		gaa,
+gaa_simple_l_check_id_cond(gaa_ptr		gaa,
 			  gaa_sc_ptr		sc,
 			  gaa_condition *	cond,
 			  gaa_time_period *	valid_time,
@@ -188,14 +188,14 @@ gaasimple_l_check_id_cond(gaa_ptr		gaa,
 
     if ((idtype = (gaa_cred_type *)params) == 0)
     {
-	gaa_set_callback_err("gaasimple_check_id_cond: null params");
+	gaa_set_callback_err("gaa_simple_check_id_cond: null params");
 	return(GAA_STATUS(GAA_S_FAILURE, 0));
     }
     if (*idtype != GAA_IDENTITY &&
 	*idtype != GAA_GROUP_MEMB &&
 	*idtype != GAA_GROUP_NON_MEMB)
     {
-	gaa_set_callback_err("gaasimple_check_id_cond: bad cred type");
+	gaa_set_callback_err("gaa_simple_check_id_cond: bad cred type");
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
     if (matchcase)
@@ -310,7 +310,7 @@ gaasimple_l_check_id_cond(gaa_ptr		gaa,
 }
 
 
-/** gaasimple_check_group_cond()
+/** gaa_simple_check_group_cond()
  *
  * @ingroup gaa_simple
  *
@@ -346,7 +346,7 @@ gaasimple_l_check_id_cond(gaa_ptr		gaa,
  */
 
 gaa_status
-gaasimple_check_group_cond(gaa_ptr gaa, gaa_sc_ptr sc, gaa_condition *cond, gaa_time_period *valid_time, gaa_list_ptr req_options, gaa_status *output_flags, void *params)
+gaa_simple_check_group_cond(gaa_ptr gaa, gaa_sc_ptr sc, gaa_condition *cond, gaa_time_period *valid_time, gaa_list_ptr req_options, gaa_status *output_flags, void *params)
 {
     char *dirname;
     FILE *groupfile = 0;
@@ -399,7 +399,7 @@ gaasimple_check_group_cond(gaa_ptr gaa, gaa_sc_ptr sc, gaa_condition *cond, gaa_
 }
 
 gaa_status
-gaasimple_check_trivial_cond(gaa_ptr		gaa,
+gaa_simple_check_trivial_cond(gaa_ptr		gaa,
 			     gaa_sc_ptr		sc,
 			     gaa_condition *	cond,
 			     gaa_time_period *  valid_time,
@@ -411,14 +411,14 @@ gaasimple_check_trivial_cond(gaa_ptr		gaa,
 
     if (result_ptr == 0)
     {
-	gaa_set_callback_err("gaasimple_check_trivial_cond: don't know what answer you want");
+	gaa_set_callback_err("gaa_simple_check_trivial_cond: don't know what answer you want");
 	return(GAA_S_CONFIG_ERR);
     }
     *output_flags = *result_ptr;
     return(GAA_S_SUCCESS);
 }
 
-/* gaasimple_check_local_access
+/* gaa_simple_check_local_access
  * 
  * Checks if the user has permissions to perform the requested action 
  * (in the condition) on the object (in the options). It maps the possible
@@ -452,7 +452,7 @@ gaasimple_check_trivial_cond(gaa_ptr		gaa,
  */
 
 gaa_status
-gaasimple_check_local_access (gaa_ptr		gaa,
+gaa_simple_check_local_access (gaa_ptr		gaa,
 			     gaa_sc_ptr		sc,
 			     gaa_condition *	cond,
 			     gaa_time_period *  valid_time,
@@ -469,7 +469,7 @@ gaasimple_check_local_access (gaa_ptr		gaa,
     
     *output_flags = GAA_COND_FLG_EVALUATED;
 #ifdef DEBUG
-    fprintf(stderr,"Inside gaasimple_check_local_access\n");
+    fprintf(stderr,"Inside gaa_simple_check_local_access\n");
     fprintf(stderr,"COND: Type = %s\n",cond->type);
     fprintf(stderr,"COND: Authority = %s\n",cond->authority);
     fprintf(stderr,"COND: value = %s\n",cond->value);
@@ -501,14 +501,14 @@ gaasimple_check_local_access (gaa_ptr		gaa,
 
     if(!found)
     {
-	    gaa_set_callback_err("gaasimple_check_local_access: unable to \
+	    gaa_set_callback_err("gaa_simple_check_local_access: unable to \
                               find object name in options list");
 	    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
     
     if((filename = (char *)malloc(strlen(opt->value)+1)) == 0)
     {
-	    gaa_set_callback_err("gaasimple_check_local_access: memory allocation error");
+	    gaa_set_callback_err("gaa_simple_check_local_access: memory allocation error");
 	    return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
     }
     
@@ -543,7 +543,7 @@ gaasimple_check_local_access (gaa_ptr		gaa,
         extern int errno;
         if(!(stat(filename, &buf) && errno == ENOENT))
         {
-	        gaa_set_callback_err("gaasimple_check_local_access: \
+	        gaa_set_callback_err("gaa_simple_check_local_access: \
                             invalid access mode");
 	        return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
         }
@@ -556,7 +556,7 @@ gaasimple_check_local_access (gaa_ptr		gaa,
     }    
     else /*invalid access mode*/
     {
-	    gaa_set_callback_err("gaasimple_check_local_access: \
+	    gaa_set_callback_err("gaa_simple_check_local_access: \
                             invalid access mode");
 	    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }

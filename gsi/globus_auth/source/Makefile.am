@@ -14,7 +14,7 @@ Sources = \
 
 INCLUDES += $(GPT_INCLUDES)
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	globus_auth.h \
 	globus_auth_error.h 
 

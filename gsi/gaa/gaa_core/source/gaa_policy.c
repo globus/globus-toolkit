@@ -945,7 +945,7 @@ gaa_l_check_one_right(gaa_ptr		 gaa,
 	    if (condstat & GAA_COND_FLG_MET)
 	    {
 		/* Matched a positive or negative right -- we're done */
-		*ynm = ((p_ent->right->type == pos_access_right) ?
+		*ynm = ((p_ent->right->type == gaa_pos_access_right) ?
 			GAA_C_YES : GAA_C_NO);
 		break;
 	    }
@@ -961,7 +961,7 @@ gaa_l_check_one_right(gaa_ptr		 gaa,
 	    else
 	    {
 		*ynm = GAA_C_MAYBE;
-		if (p_ent->right->type == pos_access_right)
+		if (p_ent->right->type == gaa_pos_access_right)
 		    had_pos_maybe = 1;
 		else
 		    had_neg_maybe = 1;

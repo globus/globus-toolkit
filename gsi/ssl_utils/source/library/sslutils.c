@@ -1512,13 +1512,13 @@ proxy_marshal_tmp(
         return 1;
     }
 
-    if ((envstr = (char *)malloc(strlen(X509_USER_DELEG_PROXY) +
+    if ((envstr = (char *)malloc(strlen(X509_USER_PROXY) +
                                  strlen(filename) + 2)) == NULL)
     {
         PRXYerr(PRXYERR_F_PROXY_TMP, PRXYERR_R_OUT_OF_MEMORY);
         return 1;
     }
-    strcpy(envstr,X509_USER_DELEG_PROXY);
+    strcpy(envstr,X509_USER_PROXY);
     strcat(envstr,"=");
     strcat(envstr,filename);
 
@@ -2014,7 +2014,7 @@ proxy_verify_callback(
     
     
     /*
-     * If we are being called recursivly to check delegate
+     * If we are being called recursivly to check delegated
      * cert chains, or being called by the grid-proxy-init,
      * a pointer to a proxy_verify_desc will be 
      * pased in the store.  If we are being called by SSL,
@@ -2047,7 +2047,7 @@ proxy_verify_callback(
      * handle. If not, we have an internal error, SSL may have changed
      * how the callback and app_data are handled
      */
-
+    
     if(pvd->magicnum != PVD_MAGIC_NUMBER)
     {
         PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_BAD_MAGIC);

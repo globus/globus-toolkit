@@ -20,7 +20,7 @@ Sources = \
 
 INCLUDES += $(GPT_INCLUDES)
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	gaa.h \
 	gaa_constants.h \
 	gaa_core.h

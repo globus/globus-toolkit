@@ -79,9 +79,14 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto err;
     }
     
-    data_set->count = sk_X509_num(context->pvd.cert_chain);
+    data_set->count = context->pvd.cert_depth;
 
-    cert_count=data_set->count;
+    cert_count = data_set->count;
+
+    if(cert_count == 0)
+    {
+        return major_status;
+    }
     
     data_set->elements = (gss_buffer_desc *) malloc(
         sizeof(gss_buffer_desc) *

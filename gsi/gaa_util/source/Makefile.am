@@ -11,7 +11,7 @@ Sources = \
 
 INCLUDES += $(GPT_INCLUDES)
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	gaa_util.h
 
 lib_LTLIBRARIES = libglobus_gaa_util_$(GLOBUS_FLAVOR_NAME).la
