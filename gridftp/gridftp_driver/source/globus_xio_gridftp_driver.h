@@ -73,7 +73,7 @@
  * @ingroup gridftp_driver
  *
  * The errors reported by the GRIDFTP driver include GLOBUS_XIO_ERROR_EOF, 
- * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_GRIDFTP_READ_ERROR, 
+ * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_GRIDFTP_IO_ERROR, 
  * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR, 
  * @ref GLOBUS_XIO_GRIDFTP_SEEK_ERROR, 
  * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,
@@ -92,9 +92,9 @@
 typedef enum
 {
     /**
-     * Indicates that an error occured while reading data
+     * Indicates that an error occured while reading/writing data
      */
-    GLOBUS_XIO_GRIDFTP_READ_ERROR,
+    GLOBUS_XIO_GRIDFTP_IO_ERROR,
     /**
      * Indicates that a seek has been called while there is an outstanding io
      */
