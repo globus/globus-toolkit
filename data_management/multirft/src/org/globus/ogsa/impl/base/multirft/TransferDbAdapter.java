@@ -405,7 +405,12 @@ public class TransferDbAdapter {
             query.append(
                     "INSERT into transfer(request_id,source_url,dest_url," );
             query.append( "dcau,parallel_streams,tcp_buffer_size," );
-            query.append( "block_size,notpt,binary_mode) VALUES(" );
+            if (!old) {
+                query.append( 
+                        "block_size,notpt,binary_mode,source_subject,dest_subject) VALUES(" );
+            } else {
+                query.append( "block_size,notpt,binary_mode) VALUES(" );
+            }
             query.append( this.requestId ).
                 append( ",'" ).append( transferJob.getSourceUrl() );
             query.append( "','" ).
@@ -420,8 +425,15 @@ public class TransferDbAdapter {
                 append( this.globalRFTOptions.getBlockSize() ).
                 append( "," ).append( this.globalRFTOptions.isNotpt() )
                 .append( "," ).
-                append( this.globalRFTOptions.isBinary() ).
-                append( ")" );
+                append( this.globalRFTOptions.isBinary() );
+                if(!old) {
+                    query.append(",'")
+                    .append(this.globalRFTOptions.getSourceSubjectName())
+                    .append("','")
+                    .append(this.globalRFTOptions.getDestinationSubjectName())
+                    .append("'");
+                }
+                query.append( ")" );
             logger.debug( "Query in storeTransfer: " );
             logger.debug( query.toString() );
             int returnInt = st.executeUpdate( query.toString() );
@@ -431,42 +443,7 @@ public class TransferDbAdapter {
         }
         returnDBConnection( c );
     }
-	public int storeTransferJobs( Vector transferJobVector )
-             throws RftDBException {
-        Connection c = getDBConnection();
-		TransferJob transferJob;
-		int returnInt = -1;
-		for( int i=0;i<transferJobVector.size();i++) {
-			transferJob = (TransferJob) transferJobVector.elementAt(i);
-        	try {
-        		    Statement st = c.createStatement();
-            		StringBuffer query = new StringBuffer();
-            		query.append(
-                    "INSERT into transfer(request_id,source_url,dest_url," );
-            		query.append( "dcau,parallel_streams,tcp_buffer_size," );
-            		query.append( "block_size,notpt,binary_mode) VALUES(" );
-            		query.append( this.requestId ).append( ",'" )
-					.append( transferJob.getSourceUrl() );
-            		query.append( "','" ).append( transferJob.getDestinationUrl() )
-					.append( "'," );
-            		query.append( this.globalRFTOptions.isDcau() )
-					.append( "," ).append( this.globalRFTOptions.getParallelStreams() )
-                	.append( "," ).append( this.globalRFTOptions.getTcpBufferSize() )
-					.append("," ).append( this.globalRFTOptions.getBlockSize() )
-					.append( "," ).append( this.globalRFTOptions.isNotpt() )
-               		.append( "," ).append( this.globalRFTOptions.isBinary() ).append( ")" );
-            		logger.debug( "Query in storeTransferJobs: " );
-            		logger.debug( query.toString() );
-            		returnInt = st.executeUpdate( query.toString() );
-        		} catch ( SQLException e ) {
-            	logger.error( "Unable to insert transferJob into transfer table" + e.toString(), e );
-            	throw new RftDBException( "Failed to insert transferJob into DB", e );
-        	}
-		}
-        returnDBConnection( c );
-		return returnInt;
-    }
-
+	
 
 
     /**
@@ -678,6 +655,7 @@ public class TransferDbAdapter {
                 rftOptions.setBlockSize( rs.getInt( 10 ) );
                 rftOptions.setNotpt( rs.getBoolean( 11 ) );
                 rftOptions.setBinary( rs.getBoolean( 12 ) );
+                logger.debug("old:" + old);
                 if(!old) {
                     rftOptions.setSourceSubjectName(rs.getString(13));
                     rftOptions.setDestinationSubjectName(rs.getString(14));

@@ -16,6 +16,7 @@ import org.globus.ftp.GridFTPSession;
 import org.globus.ftp.HostPort;
 import org.globus.ftp.MlsxEntry;
 import org.globus.ogsa.base.multirft.TransferType;
+import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.impl.base.multirft.TransferDbAdapter;
 import org.globus.ogsa.impl.base.multirft.TransferJob;
 import org.globus.ogsa.impl.base.multirft.RftDBException;
@@ -43,6 +44,7 @@ public class URLExpander extends Thread {
     GlobusURL sourceGlobusUrl, destinationGlobusUrl;
     TransferDbAdapter dbAdapter;
     boolean done = false;
+    RFTOptionsType rftOptions = null;
     // This transferJob should include directory in source and dest
     private static Logger logger = Logger.getLogger( URLExpander.class.getName() );
 
@@ -57,7 +59,8 @@ public class URLExpander extends Thread {
      *@exception  RemoteException
      */
     public URLExpander( GridFTPClient sourceHost, GridFTPClient destinationHost,
-            GlobusURL sourceGlobusUrl, GlobusURL destinationGlobusUrl )
+            GlobusURL sourceGlobusUrl, GlobusURL destinationGlobusUrl
+            ,RFTOptionsType rftOptions )
              throws RemoteException {
         try {
             this.sourceHost = sourceHost;
@@ -67,6 +70,7 @@ public class URLExpander extends Thread {
             this.sourcePath = "/" + sourceGlobusUrl.getPath();
             this.destinationPath = "/" + destinationGlobusUrl.getPath();
             this.fileSystemUtil = new FileSystemUtil();
+            this.rftOptions = rftOptions;
             processURLs = new Vector();
             this.sourceUrlsEx = new Vector();
             this.sourceUrlsEx.add( this.sourcePath );
@@ -165,6 +169,7 @@ public class URLExpander extends Thread {
                         transferType.setDestinationUrl( newDestinationUrl );
                         TransferJob transferJob = new
                                 TransferJob( transferType, 0, 4 );
+                        transferJob.setRftOptions(this.rftOptions);
 				//		this.transferJobVector.add( transferJob );
                         this.dbAdapter.storeTransferJob( transferJob );
                     }
@@ -185,18 +190,7 @@ public class URLExpander extends Thread {
         }
         if ( this.sourceUrlsEx.size() == 0 ) {
             System.out.println( "UrlExpander is done" );
-			try {
-				//int storeSuccess=this.dbAdapter.storeTransferJobs( transferJobVector );
-			} catch(Exception ee) {
-			logger.debug("Exception while storing transfer jobs",ee);
-			}
             this.done = true;
-    //        this.transferJob.setStatus(TransferJob.STATUS_FINISHED);
-           /* try {
-                //this.dbAdapter.update(this.transferJob);
-            } catch (RftDBException rfe) {
-                logger.error("Error updating transferJob",rfe);
-            }*/
         }
     }
 }

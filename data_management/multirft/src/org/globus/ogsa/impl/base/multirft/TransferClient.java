@@ -460,7 +460,7 @@ public class TransferClient {
                 this.setStatus( TransferJob.STATUS_EXPANDING );
                 this.urlExpander = new URLExpander
                         ( this.sourceHost, this.destinationHost, sourceGlobusURL
-                        , destinationGlobusURL );
+                        , destinationGlobusURL,this.rftOptions );
                 this.urlExpander.start();
             } else if ( this.status != TransferJob.STATUS_FAILED ) {
                 size = sourceHost.getSize( sourcePath );
