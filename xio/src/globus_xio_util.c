@@ -26,4 +26,3 @@ globus_xio_error_match(
     return globus_error_match(
         globus_error_peek(result), GLOBUS_XIO_MODULE, type);
 }
-   
