@@ -920,8 +920,15 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
     globus_i_gass_copy_monitor_t * dest_monitor
 	= &(handle->state->dest.data.ftp.monitor);
     
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "wait_for_ftp_callback(): starting\n");
+#endif
+
     if(handle->state->source.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
     {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "wait_for_ftp_callback(): waiting on source\n");
+#endif
 	globus_mutex_lock(&(source_monitor->mutex));
 	while(!source_monitor->done)
 	{
@@ -932,6 +939,9 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
 
     if(handle->state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
     {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "wait_for_ftp_callback(): waiting on dest\n");
+#endif
 	globus_mutex_lock(&(dest_monitor->mutex));
 	while(!dest_monitor->done)
 	{
@@ -939,6 +949,9 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
 	}
 	globus_mutex_unlock(&(dest_monitor->mutex));
     }
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "wait_for_ftp_callback(): exiting\n");
+#endif
 }/* globus_l_gass_copy_wait_for_ftp_callbacks() */
 
 
@@ -2228,7 +2241,6 @@ globus_l_gass_copy_ftp_get_done_callback(
     fprintf(stderr, "ftp_get_done_callback(): starting\n");
 #endif
 
-
     if ((copy_handle->status == GLOBUS_GASS_COPY_STATUS_CANCEL) ||
         (copy_handle->status == GLOBUS_GASS_COPY_STATUS_FAILURE))
     {
@@ -2728,7 +2740,6 @@ globus_l_gass_copy_generic_write_callback(
         globus_gass_copy_cancel(handle, NULL, NULL);
 	return;
     }
-      
     
     buffer_entry->bytes  = bytes;
     globus_mutex_lock(&(state->source.mutex));
@@ -2744,7 +2755,6 @@ globus_l_gass_copy_generic_write_callback(
 	fprintf(stderr,
             "generic_write_callback(): handle->state == GLOBUS_NULL\n");
 #endif
-	
 	
     /* if there are more writes to do, register the next write */
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -2824,6 +2834,7 @@ globus_l_gass_copy_write_from_queue(
 		fprintf(stderr, "write_from_queue(): there was an ERROR trying to register a write, call cancel\n");
 #endif
                 globus_gass_copy_cancel(handle, NULL, NULL);
+                return;
 	    }
 	}  /* if(do_the_write) */
 	else
@@ -3131,10 +3142,21 @@ globus_l_gass_copy_io_write_callback(
     globus_byte_t *       bytes,
     globus_size_t         nbytes)
 {
+    globus_object_t * err;
+
     globus_gass_copy_handle_t * handle
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_gass_copy_state_t * state = handle->state;
 
+/** 
+ * used this to simulate a io write error
+ *
+    err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[STU]: STU, forcing io write callback fault");
+    result=globus_error_put(err);
+*/
 
     if(result==GLOBUS_SUCCESS)
     {
@@ -4382,8 +4404,10 @@ globus_gass_copy_cancel(
 	        result = globus_l_gass_copy_target_cancel(dest_cancel_info);
             }
         }
+/*
         globus_libc_free(dest_cancel_info);
         globus_libc_free(source_cancel_info);
+*/
     }
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -4549,6 +4573,9 @@ globus_l_gass_copy_generic_cancel(
 
     if (cancel_info->canceling_source)
     {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "_generic_cancel() source\n");
+#endif
 	handle->state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
         if (handle->state->dest.status == GLOBUS_I_GASS_COPY_TARGET_DONE ||
 	    handle->state->dest.status == GLOBUS_I_GASS_COPY_TARGET_INITIAL)
@@ -4558,6 +4585,9 @@ globus_l_gass_copy_generic_cancel(
     }
     else
     {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "_generic_cancel() dest\n");
+#endif
 	handle->state->dest.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
         if (handle->state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE ||
 	    handle->state->source.status == GLOBUS_I_GASS_COPY_TARGET_INITIAL)
@@ -4565,9 +4595,11 @@ globus_l_gass_copy_generic_cancel(
            all_done = GLOBUS_TRUE; 
         }
     }
-    globus_libc_free(cancel_info);
 
     globus_mutex_unlock(&(handle->state->mutex));
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "_generic_cancel() before all done\n");
+#endif
 
     if (all_done)
     {
