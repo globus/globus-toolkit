@@ -39,7 +39,7 @@ typedef enum {
     GASSL_CLEANUP_TAG,
     GASSL_CLEANUP_URL,
     GASSL_LIST,
-    GASSL_QUERY_URL,
+    GASSL_QUERY_URL
 } globus_l_cache_op_t;
 
 /******************************************************************************
