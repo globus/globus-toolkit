@@ -575,7 +575,20 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	bufferlen -= chars;
     }
 
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
+#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
+    {
+	unsigned long sslerror;
+
+	while ((sslerror = ERR_get_error()) != 0 && bufferlen > 120) {
+	    ERR_error_string(sslerror, buffer);
+	    chars = strlen(buffer);
+	    total_chars += chars;
+	    buffer = &buffer[chars];
+	    bufferlen -= chars;
+	}
+    }
+    
+#else
     if (self->major_status)
     {
 	chars = append_gss_status(buffer, bufferlen, 
@@ -1044,7 +1057,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 int
 GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 {
-    int				return_value = GSI_SOCKET_ERROR;
+    int				return_value = GSI_SOCKET_ERROR, tmp;
     char			*certdir = NULL, deleg_flag;
 #ifdef GSI_NEW
     proxy_verify_ctx_desc	verify_ctx_area;
@@ -1090,8 +1103,42 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 
     SSL_set_accept_state(self->ssl);
     SSL_set_fd(self->ssl, self->sock);
-    if (SSL_accept(self->ssl) < 0) {
-	self->error_string = strdup("SSL_accept() failed");
+    tmp = SSL_accept(self->ssl);
+    if (tmp < 0) {
+	int err;
+	unsigned long errcode;
+	err = SSL_get_error(self->ssl, tmp);
+	switch (err) {
+	case SSL_ERROR_NONE:
+	    self->error_string = strdup("SSL_accept() failed: no error");
+	    break;
+	case SSL_ERROR_ZERO_RETURN:
+	    self->error_string =
+		strdup("SSL_accept() failed: connection closed");
+	    break;
+	case SSL_ERROR_WANT_READ:
+	case SSL_ERROR_WANT_WRITE:
+	case SSL_ERROR_WANT_CONNECT:
+/*	case SSL_ERROR_WANT_ACCEPT: */
+	    self->error_string =
+		strdup("SSL_accept() failed: data not ready");
+	    break;
+	case SSL_ERROR_WANT_X509_LOOKUP:
+	    self->error_string =
+		strdup("SSL_accept() failed: x509 lookup error");
+	    break;
+	case SSL_ERROR_SYSCALL:
+	    self->error_string =
+		strdup("SSL_accept() failed: x509 lookup error");
+	    break;
+	case SSL_ERROR_SSL:
+	    self->error_string =
+		strdup("SSL_accept() failed: protocol error");
+	    break;
+	default:
+	    self->error_string = strdup("SSL_accept() failed");
+	    break;
+	}
 	return GSI_SOCKET_ERROR;
     }
 
