@@ -79,16 +79,42 @@ globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
 #include "globus_error_openssl.h"
 #include "globus_gsi_cert_utils_constants.h"
 
+#define GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+
+
+#define GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY)
+
+#define GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+
+
+#define GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+
+
 globus_result_t globus_gsi_cert_utils_make_time(
     ASN1_UTCTIME *                      ctm,
     time_t *                            newtime);
 
 globus_result_t globus_gsi_cert_utils_get_base_name(
-    X509_NAME *                         subject);
+    X509_NAME *                         subject,
+    STACK_OF(X509) *                    cert_chain);
 
-globus_result_t globus_gsi_cert_utils_check_proxy_name(
-    X509 *                                 cert,
-    globus_gsi_cert_utils_proxy_type_t *   type);
+globus_result_t globus_gsi_cert_utils_get_cert_type(
+    X509 *                              cert,
+    globus_gsi_cert_utils_cert_type_t * type);
 
 globus_result_t globus_gsi_cert_utils_get_x509_name(
     char *                              subject_string,

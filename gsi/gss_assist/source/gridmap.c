@@ -1223,4 +1223,128 @@ globus_i_gss_assist_xdigit_to_value(
 /* xdigit_to_value() */
 /* @} */
 
+/**
+ * Look up all globus ids associated with a given user id.
+ *
+ * @param username
+ *        The local username on which we are preforming the lookup.
+ *
+ * @param dns
+ *        a pointer to an array of strings.  On entrance it should be
+ *        unitialized.  Upon return from this function it will point
+ *        to an array of strings.  The user should use the macro
+ *        GlobusGssAssistFreeDNArray to clean up this memory.
+ *
+ * @param dn_count
+ *        The number of globus_ids returned in dns.
+ *
+ * @return
+ *        the value in the xdigit, or -1 if error
+ */
+globus_result_t
+globus_gss_assist_lookup_all_globusid(
+    char *                                      username,
+    char **                                     dns[],
+    int *                                       dn_count)
+{
+    char                                        line[1024];
+    int                                         max_ndx = 512;
+    int                                         ndx = 0;
+    char **                                     l_dns;
+    globus_i_gss_assist_gridmap_line_t *        gline;
+    char *                                      gridmap_filename = NULL;
+    globus_result_t                             res = GLOBUS_SUCCESS;
+    FILE *                                      gmap_stream = NULL;
+    static char *                       _function_name_ =
+        "globus_gss_assist_lookup_all_globusid";
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+
+    /* Check arguments */
+    if(dns == NULL ||
+       username == NULL ||
+       dn_count == NULL)
+    {
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            res,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
+            ("An argument passed to function is NULL."));
+
+        goto exit;
+    }
+
+    res = GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
+    if(res != GLOBUS_SUCCESS)
+    {
+        gridmap_filename = NULL;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            res,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
+
+        goto exit;
+    }
+
+    gmap_stream = fopen(gridmap_filename, "r");
+
+    if (gmap_stream == NULL)
+    {
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            res,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
+            ("Couldn't open gridmap file: %s for reading.",
+             gridmap_filename));
+
+        goto exit;
+    }
+
+    ndx = 0;
+    l_dns = (char **)globus_malloc(sizeof(char *) * max_ndx);
+
+    while(fgets(line, sizeof(line), gmap_stream) != NULL)
+    {
+        res = globus_i_gss_assist_gridmap_parse_line(line, &gline);
+
+        if(res == GLOBUS_SUCCESS &&
+           gline != NULL &&
+           gline->user_ids != NULL &&
+           gline->user_ids[0] != NULL)
+        {
+            if(strcmp(gline->user_ids[0], username) == 0)
+            {
+                l_dns[ndx] = strdup(gline->dn);
+                ndx++;
+                if(ndx >= max_ndx)
+                {
+                    max_ndx *= 2;
+                    l_dns = (char **)globus_libc_realloc(l_dns,
+                                         sizeof(char *) * max_ndx);
+                }
+            }
+        }
+    }
+    l_dns[ndx] = NULL;
+    *dns = l_dns;
+    *dn_count = ndx;
+
+    fclose(gmap_stream);
+    gmap_stream = NULL;
+
+ exit:
+
+    if(gridmap_filename != NULL)
+    {
+        free(gridmap_filename);
+    }
+
+    if(gmap_stream)
+    {
+        fclose(gmap_stream);
+    }
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
+
+    return res;
+}
+/* globus_gss_assist_lookup_all_globusid() */
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -453,7 +453,8 @@ globus_i_gsi_callback_cred_verify(
         goto exit;
     }
 
-    if(callback_data->proxy_type == GLOBUS_NOT_PROXY)
+    if(callback_data->cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC ||
+       callback_data->cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_CA)
     {
         /* only want to check that the cert isn't revoked if its not
          * a proxy, since proxies don't ever get revoked
@@ -523,8 +524,8 @@ globus_i_gsi_callback_check_proxy(
     X509_STORE_CTX *                    x509_context,
     globus_gsi_callback_data_t          callback_data)
 {
-    globus_gsi_cert_utils_proxy_type_t  proxy_type;
-    globus_result_t                     result;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_i_gsi_callback_check_proxy";
 
@@ -534,8 +535,8 @@ globus_i_gsi_callback_check_proxy(
      * look at the certificate to verify the proxy rules, 
      * and ca-signing-policy rules. We will also do a CRL check
      */
-    result = globus_gsi_cert_utils_check_proxy_name(x509_context->current_cert,
-                                                    &proxy_type);
+    result = globus_gsi_cert_utils_get_cert_type(x509_context->current_cert,
+                                                    &cert_type);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
@@ -544,23 +545,30 @@ globus_i_gsi_callback_check_proxy(
         goto exit;
     }
 
-    if(proxy_type == GLOBUS_ERROR_PROXY)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_INVALID_PROXY,
-            ("Invalid proxy: subject of proxy cert contains "
-             "proxy name, but subject does not "
-             "match issuer's subject name"));
-        x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
-        goto exit;
-    }
-    else if(proxy_type != GLOBUS_NOT_PROXY)
+    if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
     {  
-        /* gotta be a proxy */
-        callback_data->proxy_type = proxy_type;
+        /* it is a proxy */
 
-        if (proxy_type == GLOBUS_LIMITED_PROXY)
+        /* a legacy globus proxy may only be followed by another legacy globus
+         * proxy or a limited legacy globus_proxy.
+         * a limited legacy globus proxy may only be followed by another
+         * limited legacy globus proxy or a full legacy globus proxy
+         * a draft compliant proxy may only be followed by another draft
+         * compliant proxy
+         */
+        
+        if((GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(callback_data->cert_type) &&
+            !GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) ||
+           (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(callback_data->cert_type) &&
+            !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)))
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_MIXING_DIFFERENT_PROXY_TYPES);
+            goto exit;
+        }
+
+        if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
         {
             /*
              * If its a limited proxy, it means its use has been limited 
@@ -597,9 +605,17 @@ globus_i_gsi_callback_check_proxy(
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Passed proxy test\n");
 
         callback_data->proxy_depth++;
-    }
 
-    result = GLOBUS_SUCCESS;
+        if(callback_data->max_proxy_depth != -1 &&
+           callback_data->max_proxy_depth < callback_data->proxy_depth)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_PROXY_PATH_LENGTH_EXCEEDED);
+            goto exit;
+        }
+    }
+    callback_data->cert_type = cert_type;
   
  exit:
 
@@ -1044,10 +1060,14 @@ globus_i_gsi_callback_check_critical_extensions(
 {
     ASN1_OBJECT *                       extension_object = NULL;
     X509_EXTENSION *                    extension = NULL;
+    ASN1_OCTET_STRING *                 ext_data = NULL;
+    PROXYCERTINFO *                     proxycertinfo = NULL;
+    PROXYPOLICY *                       policy = NULL;
     int                                 nid;
     int                                 pci_NID;
     int                                 critical_position = -1;
-    globus_result_t                     result;
+    long                                path_length;
+    globus_result_t                     result = GLOBUS_SUCCESS;
    static char *                       _function_name_ =
         "globus_i_gsi_callback_check_extensions";
 
@@ -1082,25 +1102,72 @@ globus_i_gsi_callback_check_critical_extensions(
         }
 
         nid = OBJ_obj2nid(extension_object);
-        if(nid == NID_undef)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                ("Couldn't get NID from the ASN1_OBJECT extension "
-                 "contained in the certificate being verified."));
-            x509_context->error = X509_V_ERR_CERT_REJECTED;
-        }
 
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
 
-        if(nid != NID_basic_constraints &&
-           nid != NID_key_usage &&
-           nid != NID_ext_key_usage &&
-           nid != NID_netscape_cert_type &&
-           nid != NID_subject_key_identifier &&
-           nid != NID_authority_key_identifier &&
-           nid != pci_NID)
+        if(nid == pci_NID)
+        {
+            /* check for path length constraint */
+            if((ext_data = X509_EXTENSION_get_data(extension)) == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Can't get DER encoded extension "
+                     "data from X509 extension object"));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;
+            }
+
+            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Failed to copy extension data."));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;                
+            }
+
+            if((d2i_PROXYCERTINFO(
+                    &proxycertinfo,
+                    &ext_data->data,
+                    ext_data->length)) == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form"));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;
+            }
+
+            path_length = PROXYCERTINFO_get_path_length(proxycertinfo);
+
+            /* ignore negative values */
+            
+            if(path_length > -1)
+            {
+                if(callback_data->max_proxy_depth == -1 ||
+                   callback_data->max_proxy_depth >
+                   callback_data->proxy_depth + path_length)
+                {
+                    callback_data->max_proxy_depth =
+                        callback_data->proxy_depth + path_length;
+                }
+            }
+
+            policy = PROXYCERTINFO_get_policy(proxycertinfo);
+        }
+        
+        if((nid != NID_basic_constraints &&
+            nid != NID_key_usage &&
+            nid != NID_ext_key_usage &&
+            nid != NID_netscape_cert_type &&
+            nid != NID_subject_key_identifier &&
+            nid != NID_authority_key_identifier &&
+            nid != pci_NID) || (policy && policy->policy))
         {
             if(callback_data->extension_cb)
             {
@@ -1111,7 +1178,7 @@ globus_i_gsi_callback_check_critical_extensions(
                         GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                         ("Certificate has unknown critical extension "
                          "with numeric ID: %d, "
-                         "rejected during verification", nid));
+                         "rejected during validation", nid));
                     x509_context->error = X509_V_ERR_CERT_REJECTED;
                     goto exit;
                 }
@@ -1123,16 +1190,19 @@ globus_i_gsi_callback_check_critical_extensions(
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                     ("Certificate has unknown critical extension, "
                      "with numeric ID: %d, "
-                     "rejected during verification", nid));
+                     "rejected during validation", nid));
                 x509_context->error = X509_V_ERR_CERT_REJECTED;
                 goto exit;
             }
         }
     }
 
-    result = GLOBUS_SUCCESS;
-
  exit:
+
+    if(proxycertinfo != NULL)
+    {
+        PROXYCERTINFO_free(proxycertinfo);
+    }
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
@@ -1159,7 +1229,7 @@ globus_i_gsi_callback_check_path_length(
      * know how many are proxies, so we can do the 
      * path length check now. 
      * See x509_vfy.c check_chain_purpose
-     * all we do is substract off the proxy_dpeth 
+     * all we do is substract off the proxy_depth 
      */
 
     if(x509_context->current_cert == x509_context->cert)
@@ -1199,7 +1269,7 @@ int globus_gsi_callback_check_issued(
     globus_result_t                     result;
     int                                 return_value;
     int                                 return_code = 1;
-    globus_gsi_cert_utils_proxy_type_t  cert_type;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     static char *                       _function_name_ =
         "globus_gsi_callback_check_issued";
     
@@ -1218,15 +1288,14 @@ int globus_gsi_callback_check_issued(
               * So check if its a proxy, and ignore
               * the error if so. 
               */
-            result = globus_gsi_cert_utils_check_proxy_name(cert, &cert_type);
+            result = globus_gsi_cert_utils_get_cert_type(cert, &cert_type);
             if(result != GLOBUS_SUCCESS)
             {
                 return_code = 0;
                 break;
             }
             
-            if(cert_type != GLOBUS_NOT_PROXY &&
-               cert_type != GLOBUS_ERROR_PROXY)
+            if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
             {
                 /* its a proxy! */
                 return_code = 1;

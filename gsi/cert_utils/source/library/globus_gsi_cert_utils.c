@@ -1,8 +1,10 @@
 
 #include "globus_i_gsi_cert_utils.h"
+#include "proxycertinfo.h"
 #include "globus_openssl.h"
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include "version.h"
 #include "config.h"
 #include <ctype.h>
@@ -200,23 +202,45 @@ globus_gsi_cert_utils_make_time(
 }
 
 globus_result_t
-globus_gsi_cert_utils_check_proxy_name(
-    X509 *                                    cert,
-    globus_gsi_cert_utils_proxy_type_t *      type)
+globus_gsi_cert_utils_get_cert_type(
+    X509 *                              cert,
+    globus_gsi_cert_utils_cert_type_t * type)
 {
     X509_NAME *                         subject = NULL;
     X509_NAME *                         name = NULL;
     X509_NAME_ENTRY *                   ne = NULL;
     X509_NAME_ENTRY *                   new_ne = NULL;
+    X509_EXTENSION *                    pci_ext = NULL;
+    ASN1_OCTET_STRING *                 ext_data = NULL;
     ASN1_STRING *                       data = NULL;
-    globus_result_t                     result;
+    PROXYCERTINFO *                     pci = NULL;
+    PROXYPOLICY *                       policy = NULL;
+    ASN1_OBJECT *                       policy_lang = NULL;
+    int                                 policy_nid;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 index;
+    int                                 critical;
+    BASIC_CONSTRAINTS *                 x509v3_bc;
     static char *                       _function_name_ =
-        "globus_i_gsi_cred_X509_check_proxy_name";
+        "globus_gsi_cert_utils_get_cert_type";
     
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
-    *type = GLOBUS_NOT_PROXY;
+    /* assume it is a EEC if nothing else matches */
+    
+    *type = GLOBUS_GSI_CERT_UTILS_TYPE_EEC;
+    
+    if((x509v3_bc = X509_get_ext_d2i(cert,
+                                     NID_basic_constraints,
+                                     &critical,
+                                     &index)) && x509v3_bc->ca)
+    {
+        *type = GLOBUS_GSI_CERT_UTILS_TYPE_CA;
+        goto exit;
+    }
+    
     subject = X509_get_subject_name(cert);
+    
     if((ne = X509_NAME_get_entry(subject, X509_NAME_entry_count(subject)-1))
        == NULL)
     {
@@ -231,21 +255,105 @@ globus_gsi_cert_utils_check_proxy_name(
     {
         /* the name entry is of the type: common name */
         data = X509_NAME_ENTRY_get_data(ne);
-        if (data->length == 5 && !memcmp(data->data,"proxy",5))
+        if(data->length == 5 && !memcmp(data->data,"proxy",5))
         {
-            *type = GLOBUS_FULL_PROXY;
+            *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
         }
-        else if (data->length == 13 && !memcmp(data->data,"limited proxy",13))
+        else if(data->length == 13 && !memcmp(data->data,"limited proxy",13))
         {
-            *type = GLOBUS_LIMITED_PROXY;
+            *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
-        else if (data->length == 16 && 
-                 !memcmp(data->data,"restricted proxy",16))
+        else if((index = X509_get_ext_by_NID(cert,
+                                             OBJ_sn2nid(PROXYCERTINFO_SN),
+                                             -1)) != -1 &&
+                (pci_ext = X509_get_ext(cert,index)) &&
+                X509_EXTENSION_get_critical(pci_ext))
         {
-	    *type = GLOBUS_RESTRICTED_PROXY;
-        } 
+            if((ext_data = X509_EXTENSION_get_data(pci_ext)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't get DER encoded extension "
+                     "data from X509 extension object"));
+                goto exit;
+            }
 
-        if(*type != GLOBUS_NOT_PROXY)
+            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Failed to copy extension data."));
+                goto exit;                
+            }
+
+            if((d2i_PROXYCERTINFO(
+                    &pci,
+                    &ext_data->data,
+                    ext_data->length)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form"));
+                pci = NULL;
+                goto exit;
+            }
+            
+            if((policy = PROXYCERTINFO_get_policy(pci)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't get policy from PROXYCERTINFO extension"));
+                goto exit;
+            }
+
+            if((policy_lang = PROXYPOLICY_get_policy_language(policy))
+               == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Can't get policy language from"
+                     " PROXYCERTINFO extension"));
+                goto exit;
+            }
+
+            policy_nid = OBJ_obj2nid(policy_lang);
+            
+            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+            }
+            else
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+            }
+            
+            if((index = X509_get_ext_by_NID(cert,
+                                            OBJ_sn2nid(PROXYCERTINFO_SN),
+                                            index)) != -1)
+            { 
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Found more than one PCI extension"));
+                goto exit;
+            }
+        }
+
+        if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(*type))
         {
             /* its some kind of proxy - now we check if the subject
              * matches the signer, by adding the proxy name entry CN
@@ -301,7 +409,11 @@ globus_gsi_cert_utils_check_proxy_name(
                  * Reject this certificate, only the user
                  * may sign the proxy
                  */
-                *type = GLOBUS_ERROR_PROXY;
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Issuer name + proxy CN entry does not equal subject name"));
+                goto exit;
             }
 
             if(name)
@@ -324,6 +436,11 @@ globus_gsi_cert_utils_check_proxy_name(
     if(name)
     {
         X509_NAME_free(name);
+    }
+
+    if(pci)
+    {
+        PROXYCERTINFO_free(pci);
     }
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
@@ -527,62 +644,69 @@ globus_gsi_cert_utils_get_x509_name(
 /* @{ */
 /**
  * Ge the base name of a proxy certificate.  Given an X509 name, strip
- * off the /CN=proxy component (can be "limited proxy" or "restricted proxy")
- * to get the base name of the certificate's subject
+ * off the proxy related /CN components to get the base name of the
+ * certificate's subject
  *
  * @param subject
  *        Pointer to an X509_NAME object which gets stripped
- *
+ * @param proxy_depth
+ *        Number of components to strip
  * @return
  *        GLOBUS_SUCCESS
  */
 globus_result_t
 globus_gsi_cert_utils_get_base_name(
-    X509_NAME *                     subject)
+    X509_NAME *                         subject,
+    STACK_OF(X509) *                    cert_chain)
 {
-    X509_NAME_ENTRY *                  ne;
-    ASN1_STRING *                      data;
-
+    X509_NAME_ENTRY *                   ne;
+    int                                 i;
+    int                                 depth = 0;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_base_name";
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-    
-    /* 
-     * drop all the /CN=proxy entries 
-     */
-    for(;;)
+
+    for(i=0;i<sk_X509_num(cert_chain);i++)
     {
-        ne = X509_NAME_get_entry(subject,
-                                 X509_NAME_entry_count(subject)-1);
-        if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName)))
+        result = globus_gsi_cert_utils_get_cert_type(
+            sk_X509_value(cert_chain,i),
+            &cert_type);
+
+        if (result != GLOBUS_SUCCESS)
         {
-            data = X509_NAME_ENTRY_get_data(ne);
-            if ((data->length == 5 && 
-                 !memcmp(data->data,"proxy",5)) ||
-                (data->length == 13 && 
-                 !memcmp(data->data,"limited proxy",13)) ||
-                (data->length == 16 &&
-                 !memcmp(data->data,"restricted proxy",16)))
-            {
-                ne = X509_NAME_delete_entry(subject,
-                                            X509_NAME_entry_count(subject)-1);
-                if(ne)
-                {
-                    X509_NAME_ENTRY_free(ne);
-                    ne = NULL;
-                }
-            }
-            else
-            {
-                break;
-            }
+            GLOBUS_GSI_CERT_UTILS_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CERT_UTILS_ERROR_DETERMINING_CERT_TYPE);
+            goto exit;
+        }
+
+        if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type) &&
+           cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY)
+        {
+            depth++;
         }
         else
         {
             break;
         }
     }
+    
+    /* 
+     * drop all the proxy related /CN=* entries 
+     */
+    for(i=0;i<depth;i++)
+    {
+        ne = X509_NAME_delete_entry(subject,
+                                    X509_NAME_entry_count(subject)-1);
+        if(ne)
+        {
+            X509_NAME_ENTRY_free(ne);
+        }
+    }
 
+ exit:
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
 }

@@ -87,7 +87,7 @@ GSS_CALLCONV gss_delete_sec_context(
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
-                "delete_sec_context: output_token->length=%d\n",
+                "delete_sec_context: output_token->length=%u\n",
                 output_token->length));
     }
 

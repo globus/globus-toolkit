@@ -64,9 +64,6 @@ globus_i_gsi_gss_copy_name_to_name(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_name_desc *                     output_name;
     X509_NAME *                         x509n = NULL;
-    STACK *                             group = NULL;
-    ASN1_BIT_STRING *                   group_types = NULL;
-    int                                 i;
 
     static char *                       _function_name_ =
         "globus_i_gsi_gss_copy_name_to_name";
@@ -96,26 +93,8 @@ globus_i_gsi_gss_copy_name_to_name(
         }
     }
 
-    if(input->group != NULL &&
-       input->group_types != NULL)
-    {
-        group_types = ASN1_BIT_STRING_new();
-        group = sk_new_null();
-
-        for(i=0;i<sk_num(input->group);i++)
-        {
-            sk_insert(group,strdup(sk_value(input->group,i)),i);
-            if(ASN1_BIT_STRING_get_bit(input->group_types,i))
-            {
-                ASN1_BIT_STRING_set_bit(group_types,i,1);
-            }
-        }
-    }
-    
     output_name->name_oid = input->name_oid;
     output_name->x509n = x509n;
-    output_name->group = group;
-    output_name->group_types = group_types;
     
     *output = output_name;
 
@@ -681,7 +660,7 @@ globus_i_gsi_gss_put_token(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "input token: length = %d\n"
+                    "input token: length = %u\n"
                     "              value  = \n",
                     input_token->length);
         
@@ -697,13 +676,13 @@ globus_i_gsi_gss_put_token(
     {
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             3, (globus_i_gsi_gssapi_debug_fstream,
-                "input_token: length = %d\n", input_token->length));
+                "input_token: length = %u\n", input_token->length));
 
         major_status = GSS_S_DEFECTIVE_TOKEN;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The input token has an invalid length of: %d", 
+            ("The input token has an invalid length of: %u", 
              input_token->length));
         goto exit;
     }
@@ -797,7 +776,7 @@ globus_i_gsi_gss_get_token(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "output token: length = %d\n"
+                    "output token: length = %u\n"
                     "              value  = \n",
                     output_token->length);
         
@@ -1000,8 +979,7 @@ globus_i_gsi_gss_retrieve_peer(
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     X509 *                              peer_cert = NULL;
     STACK_OF(X509) *                    peer_cert_chain = NULL;
-    int                                 cert_depth;
-    int                                 peer_index;
+    int                                 proxy_depth;
     static char *                       _function_name_ =
         "globus_i_gsi_gss_retrieve_peer";
     
@@ -1047,26 +1025,10 @@ globus_i_gsi_gss_retrieve_peer(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
             major_status = GSS_S_FAILURE;
+            peer_cert_chain = NULL;
             goto exit;
         }
         
-        X509_free(sk_X509_shift(peer_cert_chain));
-        
-        local_result = globus_gsi_cred_set_cert_chain(
-            context_handle->peer_cred_handle->cred_handle, 
-            peer_cert_chain);
-        
-        sk_X509_pop_free(peer_cert_chain, X509_free);
-        
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-
         local_result = globus_gsi_cred_get_X509_subject_name(
             context_handle->peer_cred_handle->cred_handle,
             &context_handle->peer_cred_handle->globusid->x509n);
@@ -1091,7 +1053,23 @@ globus_i_gsi_gss_retrieve_peer(
         }
 
         local_result = globus_gsi_cert_utils_get_base_name(
-            context_handle->peer_cred_handle->globusid->x509n);
+            context_handle->peer_cred_handle->globusid->x509n,
+            peer_cert_chain);
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+        
+        X509_free(sk_X509_shift(peer_cert_chain));
+        
+        local_result = globus_gsi_cred_set_cert_chain(
+            context_handle->peer_cred_handle->cred_handle, 
+            peer_cert_chain);
 
         if(local_result != GLOBUS_SUCCESS)
         {
@@ -1115,35 +1093,14 @@ globus_i_gsi_gss_retrieve_peer(
             globus_libc_free(subject);
         }
 
-        local_result = globus_gsi_callback_get_cert_depth(
-            context_handle->callback_data,
-            &cert_depth);
-
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-
-        local_result = globus_gsi_cred_get_group_names(
-            context_handle->peer_cred_handle->cred_handle,
-            & context_handle->peer_cred_handle->globusid->group,
-            & context_handle->peer_cred_handle->globusid->group_types);
-    
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
     }
 
  exit:
+
+    if(peer_cert_chain)
+    { 
+        sk_X509_pop_free(peer_cert_chain, X509_free);
+    }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
@@ -1218,10 +1175,6 @@ globus_i_gsi_gss_create_anonymous_cred(
 
     newcred->globusid->x509n = NULL;
 
-    newcred->globusid->group = NULL;
-
-    newcred->globusid->group_types = NULL;
- 
     major_status = globus_i_gsi_gssapi_init_ssl_context(
         &local_minor_status,
         (gss_cred_id_t) newcred,
@@ -1527,7 +1480,8 @@ globus_i_gsi_gss_create_cred(
     OM_uint32                           local_minor_status;
     globus_result_t                     local_result;
     gss_cred_id_desc *                  newcred = NULL;
-
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    
     static char *                       _function_name_ =
         "globus_i_gsi_gss_create_cred";
 
@@ -1599,10 +1553,11 @@ globus_i_gsi_gss_create_cred(
         goto error_exit;
     }
 
-    /* now strip off any /CN=proxy entries */
-    local_result = globus_gsi_cert_utils_get_base_name(
-        newcred->globusid->x509n);
-    if(local_result != GLOBUS_SUCCESS)
+    local_result = globus_gsi_cred_get_cert_type(
+        newcred->cred_handle, 
+        &cert_type);
+    
+    if (local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
@@ -1611,19 +1566,56 @@ globus_i_gsi_gss_create_cred(
         goto error_exit;
     }
 
-    local_result = globus_gsi_cred_get_group_names(
-        newcred->cred_handle,
-        &newcred->globusid->group,
-        &newcred->globusid->group_types);
-    if(local_result != GLOBUS_SUCCESS)
+    if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto error_exit;
-    }
+        STACK_OF(X509) *                cert_chain;
+        X509 *                          proxy;
+        
+        local_result = globus_gsi_cred_get_cert_chain(
+            newcred->cred_handle, 
+            &cert_chain);
+        if (local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto error_exit;
+        }
 
+        local_result = globus_gsi_cred_get_cert(
+            newcred->cred_handle, 
+            &proxy);
+        if (local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            sk_X509_pop_free(cert_chain, X509_free);
+            goto error_exit;
+        }
+        
+        sk_X509_unshift(cert_chain,proxy);
+        
+        /* now strip off any /CN=proxy entries */
+        local_result = globus_gsi_cert_utils_get_base_name(
+            newcred->globusid->x509n,
+            cert_chain);
+        
+        sk_X509_pop_free(cert_chain, X509_free);
+        
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto error_exit;
+        }
+    }
+    
     *output_cred_handle = newcred;
     goto exit;
 
@@ -2089,7 +2081,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
-    cred_handle->ssl_context = SSL_CTX_new(SSLv3_method());
+    cred_handle->ssl_context = SSL_CTX_new(SSLv23_method());
     if(cred_handle->ssl_context == NULL)
     {
         major_status = GSS_S_FAILURE;
@@ -2099,6 +2091,8 @@ globus_i_gsi_gssapi_init_ssl_context(
             ("Can't initialize the SSL_CTX"));
         goto exit;
     }
+
+    SSL_CTX_set_options(cred_handle->ssl_context,SSL_OP_NO_SSLv2);
             
     SSL_CTX_set_cert_verify_callback(cred_handle->ssl_context,
                                      globus_gsi_callback_X509_verify_cert,

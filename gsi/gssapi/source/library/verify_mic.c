@@ -149,7 +149,7 @@ GSS_CALLCONV gss_verify_mic(
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
-                "verify_mic: len=%d mic:",
+                "verify_mic: len=%u mic:",
                 token_buffer->length));
         debug_token_value = token_buffer->value;
 

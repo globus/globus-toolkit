@@ -47,7 +47,7 @@ GSS_CALLCONV gss_init_sec_context(
     globus_result_t                     callback_error;
     int                                 rc;
     char                                cbuf[1];
-    globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
 
     static char *                       _function_name_ = 
         "gss_init_sec_context";
@@ -221,9 +221,9 @@ GSS_CALLCONV gss_init_sec_context(
             break;
         }
 
-        local_result = globus_gsi_callback_get_proxy_type(
+        local_result = globus_gsi_callback_get_cert_type(
             context->callback_data,
-            &proxy_type);
+            &cert_type);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -241,7 +241,7 @@ GSS_CALLCONV gss_init_sec_context(
          */
         if ((context->req_flags & 
              GSS_C_GLOBUS_DONT_ACCEPT_LIMITED_PROXY_FLAG)
-            && (proxy_type == GLOBUS_LIMITED_PROXY))
+            && GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
         {
             major_status = GSS_S_UNAUTHORIZED;
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
@@ -298,7 +298,7 @@ GSS_CALLCONV gss_init_sec_context(
             | GSS_C_REPLAY_FLAG
             | GSS_C_SEQUENCE_FLAG
             | GSS_C_ANON_FLAG;
-        if (proxy_type == GLOBUS_LIMITED_PROXY)
+        if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
         {
             context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
         }
@@ -364,9 +364,10 @@ GSS_CALLCONV gss_init_sec_context(
             goto error_exit;
         }
         
-        local_result = globus_gsi_cred_check_proxy(
+        local_result = globus_gsi_cred_get_cert_type(
             context->cred_handle->cred_handle,
-            &proxy_type);
+            &cert_type);
+        
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -377,12 +378,47 @@ GSS_CALLCONV gss_init_sec_context(
             goto error_exit;
         }
 
-        if(proxy_type != GLOBUS_RESTRICTED_PROXY &&
-           context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+        if(context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+        {
+            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
+            { 
+                local_result =
+                    globus_gsi_proxy_handle_set_type(
+                        context->proxy_handle,
+                        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    major_status = GSS_S_FAILURE;
+                    context->gss_state = GSS_CON_ST_DONE;
+                    goto exit;
+                }
+            }
+            else
+            {
+                local_result =
+                    globus_gsi_proxy_handle_set_type(
+                        context->proxy_handle,
+                        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    major_status = GSS_S_FAILURE;
+                    context->gss_state = GSS_CON_ST_DONE;
+                    goto exit;
+                }
+            }
+        }
+        else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY)
         {
             local_result =
-                globus_gsi_proxy_handle_set_is_limited(context->proxy_handle,
-                                                       GLOBUS_TRUE);
+                globus_gsi_proxy_handle_set_type(
+                    context->proxy_handle,
+                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
             if(local_result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -391,7 +427,7 @@ GSS_CALLCONV gss_init_sec_context(
                 major_status = GSS_S_FAILURE;
                 context->gss_state = GSS_CON_ST_DONE;
                 goto exit;
-            }
+            }            
         }
 
         local_result = globus_gsi_proxy_sign_req(

@@ -49,7 +49,9 @@ globus_gsi_callback_data_init(
 
     memset(*callback_data, (int) NULL, sizeof(globus_i_gsi_callback_data_t));
 
-    (*callback_data)->proxy_type = GLOBUS_NOT_PROXY;
+    (*callback_data)->max_proxy_depth = -1;
+    
+    (*callback_data)->cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_EEC;
 
     (*callback_data)->cert_chain = sk_X509_new_null();
 
@@ -132,7 +134,7 @@ globus_gsi_callback_data_copy(
 
     (*dest)->cert_depth = source->cert_depth;
     (*dest)->proxy_depth = source->proxy_depth;
-    (*dest)->proxy_type = source->proxy_type;
+    (*dest)->cert_type = source->cert_type;
     (*dest)->cert_chain = sk_X509_new_null();
 
     for(index = 0; index < sk_X509_num(source->cert_chain); ++index)
@@ -291,11 +293,76 @@ globus_gsi_callback_set_cert_depth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+
+globus_result_t
+globus_gsi_callback_get_proxy_depth(
+    globus_gsi_callback_data_t          callback_data,
+    int *                               proxy_depth)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_get_proxy_depth";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    if(!callback_data)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            ("NULL parameter callback_data passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+
+    if(!proxy_depth)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            ("NULL parameter proxy_depth passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+
+    *proxy_depth = callback_data->proxy_depth;
+
+ exit:
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_gsi_callback_set_proxy_depth(
+    globus_gsi_callback_data_t          callback_data,
+    int                                 proxy_depth)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_set_proxy_depth";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    if(!callback_data)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
+            ("NULL parameter callback_data passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+
+    callback_data->proxy_depth = proxy_depth;
+
+ exit:
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
     
 globus_result_t
-globus_gsi_callback_get_proxy_type(
-    globus_gsi_callback_data_t              callback_data,
-    globus_gsi_cert_utils_proxy_type_t *    proxy_type)
+globus_gsi_callback_get_cert_type(
+    globus_gsi_callback_data_t          callback_data,
+    globus_gsi_cert_utils_cert_type_t * cert_type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -312,17 +379,17 @@ globus_gsi_callback_get_proxy_type(
         goto exit;
     }
 
-    if(!proxy_type)
+    if(!cert_type)
     {
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter proxy_type passed to function: %s",
+            ("NULL parameter cert_type passed to function: %s",
              _function_name_));
         goto exit;
     }
 
-    *proxy_type = callback_data->proxy_type;
+    *cert_type = callback_data->cert_type;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -330,13 +397,13 @@ globus_gsi_callback_get_proxy_type(
 }
 
 globus_result_t
-globus_gsi_callback_set_proxy_type(
+globus_gsi_callback_set_cert_type(
     globus_gsi_callback_data_t          callback_data,
-    globus_gsi_cert_utils_proxy_type_t  proxy_type)
+    globus_gsi_cert_utils_cert_type_t   cert_type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_gsi_callback_set_proxy_type";
+        "globus_gsi_callback_set_cert_type";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
@@ -350,7 +417,7 @@ globus_gsi_callback_set_proxy_type(
         goto exit;
     }
 
-    callback_data->proxy_type = proxy_type;
+    callback_data->cert_type = cert_type;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;

@@ -344,7 +344,7 @@ for file in gridmap services.conf gatekeeper.conf jobmanager.conf gatekeeper.log
     ${GLOBUS_SH_RM-rm} -f ${scratch}/${file}
 done
 
-subject=`${bindir}/grid-proxy-info -subject|sed 's!/CN=proxy!!g'`
+subject=`${bindir}/grid-proxy-info -identity`
 
     ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}

@@ -53,16 +53,6 @@ GSS_CALLCONV gss_release_name(
         X509_NAME_free((*name)->x509n);
     }
 
-    if((*name)->group)
-    {
-        sk_pop_free((*name)->group, free);
-    }
-
-    if((*name)->group_types)
-    {
-        ASN1_BIT_STRING_free((*name)->group_types); 
-    }
-    
     free(*name);
     *name = GSS_C_NO_NAME;
     

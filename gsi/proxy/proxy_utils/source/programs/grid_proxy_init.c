@@ -17,7 +17,7 @@
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
 
-#define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.222"
+#define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.1.1.8"
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_SN  "GENERICPOLICY"
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_LN  "Generic Policy Object"
 
@@ -36,26 +36,24 @@ static char *  LONG_USAGE = \
 "    -q                        Quiet mode, minimal output\n" \
 "    -verify                   Verifies certificate to make proxy for\n" \
 "    -pwstdin                  Allows passphrase from stdin\n" \
-"    -limited                  Creates a limited proxy\n" \
-"    -valid H:M                Proxy is valid for H hours and M " \
-                               "minutes (default:12:00)\n" \
-"    -hours H                  Deprecated support of hours option\n" \
-"    -bits  B                  Number of bits in key {512|1024|2048|4096}\n" \
-"\n" \
+"    -limited                  Creates a limited globus proxy\n" \
+"    -independent              Creates a independent globus proxy\n" \
+"    -old                      Creates a legacy globus proxy\n" \
+"    -valid <h:m>              Proxy is valid for h hours and m \n" \
+"                              minutes (default:12:00)\n" \
+"    -hours <hours>            Deprecated support of hours option\n" \
+"    -bits  <bits>             Number of bits in key {512|1024|2048|4096}\n" \
+"    -policy <policyfile>      File containing policy to store in the\n" \
+"                              ProxyCertInfo extension\n" \
+"    -pl <oid>,                OID string for the policy language\n" \
+"    -policy-language <oid>    used in the policy file\n" \
+"    -path-length <l>          Allow a chain of at most l proxies to be \n" \
+"                              generated from this one\n" \
 "    -cert     <certfile>      Non-standard location of user certificate\n" \
 "    -key      <keyfile>       Non-standard location of user key\n" \
 "    -certdir  <certdir>       Non-standard location of trusted cert dir\n" \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
 "\n" ;
-/*
-"    -restriction <file>       Insert a restriction extension into the\n" \
-"                              generated proxy.\n" \
-"    -trusted-subgroup <grp>   Insert a trusted group extension into the\n" \
-"                              generated proxy.\n" \
-"    -untrusted-subgroup <grp> Insert a untrusted group extension into the\n" \
-"                              generated proxy.\n" \
-"\n";
-*/
 
 #   define args_show_version() \
     { \
@@ -159,23 +157,18 @@ main(
     globus_gsi_cred_handle_attrs_t      cred_handle_attrs = NULL;
     globus_gsi_cred_handle_t            cred_handle = NULL;
     globus_gsi_cred_handle_t            proxy_cred_handle = NULL;
-    globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
+    globus_gsi_cert_utils_cert_type_t   cert_type =
+        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
     BIO *                               pem_proxy_bio = NULL;
     time_t                              goodtill;
     time_t                              lifetime;
-/*
-    char *                              restriction_buf = NULL;
-    size_t                              restriction_buf_len = 0;
-    char *                              restriction_filename = NULL;
+    char *                              policy_buf = NULL;
+    size_t                              policy_buf_len = 0;
+    char *                              policy_filename = NULL;
     char *                              policy_language = NULL;
     int                                 policy_NID;
-*/
+    int                                 path_length = -1;
     int                                 (*pw_cb)() = NULL;
-/*
-    char *                              trusted_subgroup = NULL;
-    char *                              untrusted_subgroup = NULL;
-    char *                              subgroup = NULL;
-*/
     int                                 return_value = 0;
     
     if(globus_module_activate(GLOBUS_GSI_PROXY_MODULE) != (int)GLOBUS_SUCCESS)
@@ -308,8 +301,30 @@ main(
         }
         else if(strcmp(argp, "-limited") == 0)
         {
-            proxy_type = GLOBUS_LIMITED_PROXY;
+            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
+            { 
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else
+            {
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+            }
         }
+        else if(strcmp(argp, "-independent") == 0)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+        }
+        else if(strcmp(argp, "-old") == 0)
+        {
+            if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
+            { 
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else
+            {
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+            }
+        }        
         else if(strcmp(argp, "-verify") == 0)
         {
             verify++;
@@ -322,71 +337,59 @@ main(
         {
             pw_cb = globus_i_gsi_proxy_utils_pwstdin_callback;
         }
-/*
         else if(strcmp(argp, "-policy") == 0)
         {
             args_verify_next(arg_index, argp, 
-                             "restriction file name missing");
-            restriction_filename = argv[++arg_index];
-            proxy_type = GLOBUS_RESTRICTED_PROXY;
+                             "policy file name missing");
+            policy_filename = argv[++arg_index];
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
         }
-        else if(strcmp(argp, "-pl") == 0 &&
+        else if(strcmp(argp, "-pl") == 0 ||
                 strcmp(argp, "-policy-language") == 0)
         {
             args_verify_next(arg_index, argp, "policy language missing");
             policy_language = argv[++arg_index];
-            proxy_type = GLOBUS_RESTRICTED_PROXY;
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
         }
-        else if(strcmp(argp, "-trusted-subgroup") == 0)
+        else if(strcmp(argp, "-path-length") == 0)
         {
-            args_verify_next(arg_index, argp, "subgroup name missing");
-            if(untrusted_subgroup != NULL ||
-               trusted_subgroup != NULL)
-            {
-                args_error(arg_index, argp, 
-                           "You may only specify one subgroup.");
-            }
-            trusted_subgroup = argv[++arg_index];
-            proxy_type = GLOBUS_RESTRICTED_PROXY;
+            args_verify_next(arg_index, argp, "integer argument missing");
+            path_length = atoi(argv[arg_index + 1]);
+            arg_index++;
         }
-        else if (strcmp(argp, "-untrusted-subgroup") == 0)
-        {
-            args_verify_next(arg_index, argp, "subgroup name missing");
-            if(untrusted_subgroup != NULL ||
-               trusted_subgroup != NULL)
-            {
-                args_error(arg_index, argp, 
-                           "You may only specify one subgroup.");
-            }
-            untrusted_subgroup = argv[++arg_index];
-            proxy_type = GLOBUS_RESTRICTED_PROXY;
-        }
-*/
         else
         {
             args_error(arg_index, argp, "unrecognized option");
         }
     }
 
-    result = globus_gsi_proxy_handle_attrs_init(
-        &proxy_handle_attrs);
+    /* A few sanity checks */
+
+    if(policy_language && !policy_filename)
+    {
+        globus_libc_fprintf(stderr, 
+                            "\n\nERROR: If you specify a policy language "
+                            "you also need to specify a policy file.\n");
+        exit(1);
+    }
+
+    if((policy_filename || path_length != -1)
+       && !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type))
+    {
+        globus_libc_fprintf(stderr, 
+                            "\n\nERROR: Globus legacy proxies are"
+                            " not able to carry policy data or path"
+                            " length contraints\n");
+        exit(1);
+    }
+    
+    result = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
+    
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr, 
                             "\n\nERROR: Couldn't initialize "
                             "the proxy handle attributes.\n");
-    }
-
-    /* set the time valid in the proxy handle attributes
-     * used to be hours - now the time valid needs to be set in minutes 
-     */
-    result = globus_gsi_proxy_handle_attrs_set_time_valid(
-        proxy_handle_attrs, valid);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't set the validity time "
-                            "of the proxy cert to %d minutes.\n", valid);
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -423,6 +426,31 @@ main(
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
+    /* set the time valid in the proxy handle
+     * used to be hours - now the time valid needs to be set in minutes 
+     */
+    result = globus_gsi_proxy_handle_set_time_valid(proxy_handle, valid);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(stderr,
+                            "\n\nERROR: Couldn't set the validity time "
+                            "of the proxy cert to %d minutes.\n", valid);
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+
+    /* set the type of proxy to be generated
+     */
+    result = globus_gsi_proxy_handle_set_type(proxy_handle, cert_type);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(stderr,
+                            "\n\nERROR: Couldn't set the type"
+                            "of the proxy cert\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+    
     if(!user_cert_filename || !user_key_filename)
     {
         result = GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(
@@ -735,53 +763,68 @@ main(
         }
     }
 
-    /* add restrictions now */
-/** PROXY RESTRICTIONS/GROUPS DISABLED CURRENTLY
-    if(restriction_filename)
+    /* add path length constraint */
+
+    if(path_length >= 0)
     {
-        int                             restriction_buf_size = 0;
-        FILE *                          restriction_fp = NULL;
+        result = globus_gsi_proxy_handle_set_pathlen(proxy_handle,
+                                                     path_length);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(stderr,
+                                "\n\nERROR: Can't set the path "
+                                "length in the proxy handle\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+    }
+    
+    /* add policys now */
+
+    if(policy_filename)
+    {
+        int                             policy_buf_size = 0;
+        FILE *                          policy_fp = NULL;
         
-        restriction_fp = fopen(restriction_filename, "r");
-        if(!restriction_fp)
+        policy_fp = fopen(policy_filename, "r");
+        if(!policy_fp)
         {
             fprintf(stderr, 
-                    "\n\nERROR: Unable to open restrictions "
-                    " file: %s\n\n", restriction_filename);
+                    "\n\nERROR: Unable to open policys "
+                    " file: %s\n\n", policy_filename);
             exit(1);
         }
 
         do 
         {
-            restriction_buf_size += 512;
+            policy_buf_size += 512;
             
-            * First time through this is a essentially a malloc() *
-            restriction_buf = realloc(restriction_buf,
-                                      restriction_buf_size);
+            /* First time through this is a essentially a malloc() */
+            policy_buf = realloc(policy_buf,
+                                      policy_buf_size);
 
-            if (restriction_buf == NULL)
+            if (policy_buf == NULL)
             {
                 fprintf(stderr, 
                         "\nAllocation of space for "
-                        "restriction buffer failed\n\n");
+                        "policy buffer failed\n\n");
                 exit(1);
             }
 
-            restriction_buf_len += 
-                fread(&restriction_buf[restriction_buf_len], 1, 
-                      512, restriction_fp);
+            policy_buf_len += 
+                fread(&policy_buf[policy_buf_len], 1, 
+                      512, policy_fp);
 
-            *
-             * If we read 512 bytes then restriction_buf_len and
-             * restriction_buf_size will be equal and there is
+            /*
+             * If we read 512 bytes then policy_buf_len and
+             * policy_buf_size will be equal and there is
              * probably more to read. Even if there isn't more
              * to read, no harm is done, we just allocate 512
              * bytes we don't end up using.
-             *
+             */
         }
-        while (restriction_buf_len == restriction_buf_size);
+        while (policy_buf_len == policy_buf_size);
         
-        if (restriction_buf_len > 0)
+        if (policy_buf_len > 0)
         {
             if(!policy_language)
             {
@@ -800,39 +843,21 @@ main(
 
             result = globus_gsi_proxy_handle_set_policy(
                 proxy_handle,
-                restriction_buf,
-                restriction_buf_len,
+                policy_buf,
+                policy_buf_len,
                 policy_NID);
             if(result != GLOBUS_SUCCESS)
             {
                 globus_libc_fprintf(stderr,
-                                    "\n\nERROR: Can't set the restriction "
-                                    "policy in the proxy handle\n");
+                                    "\n\nERROR: Can't set the policy "
+                                    "in the proxy handle\n");
                 GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
             }
         }   
 
-        fclose(restriction_fp);
+        fclose(policy_fp);
     }
-
-    subgroup = trusted_subgroup ? trusted_subgroup : untrusted_subgroup;
-
-    if(subgroup)
-    {
-        result = globus_gsi_proxy_handle_set_group(
-            proxy_handle,
-            subgroup,
-            trusted_subgroup ? 1 : 0);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_libc_fprintf(stderr,
-                                "\n\nERROR: Can't set the group of the proxy "
-                                "credential\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
-    }
-** PROXY RESTRICTIONS/GROUPS currently DISABLED **/
-
+    
     if (!quiet)
     {
         printf("Creating proxy ");

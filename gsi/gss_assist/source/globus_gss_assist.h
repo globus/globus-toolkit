@@ -346,6 +346,25 @@ globus_gss_assist_map_local_user(
     char *                              local_user,
     char **                             globusidp);
 
+globus_result_t
+globus_gss_assist_lookup_all_globusid(
+    char *                                      username,
+    char **                                     dns[],
+    int *                                       dn_count);
+
+
+#define GlobusGssAssistFreeDNArray(dn_a)                    \
+{                                                           \
+    int __ctr = 0;                                          \
+    while(dn_a[__ctr] != NULL)                              \
+    {                                                       \
+        free(dn_a[__ctr]);                                  \
+        __ctr++;                                            \
+    }                                                       \
+    free(dn_a);                                             \
+}
+
+
 EXTERN_C_END
 
 #endif /* _GLOBUS_GSS_ASSIST_H */

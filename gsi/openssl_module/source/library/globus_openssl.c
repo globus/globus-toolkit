@@ -9,6 +9,7 @@
  */
 
 #include "globus_openssl.h"
+#include "proxycertinfo.h"
 #include "version.h"
 #include "openssl/crypto.h"
 
@@ -51,6 +52,8 @@ int
 globus_l_openssl_activate(void)
 {
     int                                 i;
+    int                                 pci_NID;
+    X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
@@ -65,6 +68,27 @@ globus_l_openssl_activate(void)
     CRYPTO_set_id_callback(globus_l_openssl_thread_id);
 
     OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
+
+    OBJ_create(IMPERSONATION_PROXY_OID,
+               IMPERSONATION_PROXY_SN,
+               IMPERSONATION_PROXY_LN);
+
+    OBJ_create(INDEPENDENT_PROXY_OID,
+               INDEPENDENT_PROXY_SN,
+               INDEPENDENT_PROXY_LN);
+
+    OBJ_create(LIMITED_PROXY_OID,
+               LIMITED_PROXY_SN,
+               LIMITED_PROXY_LN);
+    
+    pci_NID = OBJ_create(PROXYCERTINFO_OID,PROXYCERTINFO_SN,PROXYCERTINFO_LN);
+
+    pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
+
+    /* this sets the pci NID in the static X509V3_EXT_METHOD struct */
+    pci_x509v3_ext_meth->ext_nid = pci_NID;
+    
+    X509V3_EXT_add(pci_x509v3_ext_meth);
     
     return GLOBUS_SUCCESS;
 }
@@ -83,6 +107,8 @@ globus_l_openssl_deactivate(void)
     OBJ_cleanup();
 
     ERR_clear_error();
+
+    X509V3_EXT_cleanup();
     
     CRYPTO_set_id_callback(NULL);
     CRYPTO_set_locking_callback(NULL);

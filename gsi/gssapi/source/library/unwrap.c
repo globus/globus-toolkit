@@ -150,7 +150,7 @@ GSS_CALLCONV gss_unwrap(
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
-                "gss_unwrap input_len=%d mic_len=%d data_len=%d\n",
+                "gss_unwrap input_len=%u mic_len=%u data_len=%u\n",
                 input_message_buffer->length,
                 mic_buf->length,
                 data_buf->length));
@@ -287,7 +287,7 @@ GSS_CALLCONV gss_unwrap(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "output message: length = %d\n"
+                    "output message: length = %u\n"
                     "                value  = \n",
                     output_message_buffer->length);
         
