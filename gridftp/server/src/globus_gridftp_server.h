@@ -333,7 +333,14 @@ typedef struct globus_gfs_stat_info_s
     char *                              pathname;
 } globus_gfs_stat_info_t;
 
-
+typedef struct globus_gfs_session_info_s
+{
+    gss_cred_id_t                       del_cred;
+    char *                              username;
+    char *                              password;
+    char *                              subject;
+    char *                              ipaddr;
+} globus_gfs_session_info_t;
 
 
 /**************************************************************************
@@ -368,8 +375,7 @@ typedef struct globus_l_gfs_data_operation_s *  globus_gfs_operation_t;
 typedef void
 (*globus_gfs_storage_init_t)(
     globus_gfs_operation_t              op,
-    const char *                        user_id,
-    gss_cred_id_t                       del_cred);
+    globus_gfs_session_info_t *         session_info);
     
 /*
  * This will be called when the client session ends.  Final cleanup 

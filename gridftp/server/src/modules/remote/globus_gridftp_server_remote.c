@@ -4,8 +4,8 @@
 
 typedef struct globus_l_gfs_remote_handle_s
 {
-    const char *                        user_id;
-    gss_cred_id_t                       del_cred;
+    void *                              state;
+    globus_gfs_session_info_t           session_info;
     globus_list_t *                     cached_stripe_list;
 } globus_l_gfs_remote_handle_t;
 
@@ -42,6 +42,7 @@ typedef struct globus_l_gfs_remote_request_s
     globus_l_gfs_remote_stripe_cb       callback;
     void *                              user_arg;
     int                                 stripes_created;
+    void *                              state;
 } globus_l_gfs_remote_request_t;
               
 #define GlobusGFSErrorOpFinished(_op, _result)                              \
@@ -128,12 +129,11 @@ globus_l_gfs_remote_stripe_request_kickout(
     GlobusGFSName(globus_l_gfs_remote_stripe_request_kickout);
 
     bounce_info = (globus_l_gfs_remote_request_t *) user_arg;
-        
+
     result = globus_gfs_ipc_start_session(
         ipc_handle,
         &request_id,
-        bounce_info->my_handle->user_id,
-        bounce_info->my_handle->del_cred,
+        &bounce_info->my_handle->session_info,
         globus_l_gfs_ipc_stripe_request_cb,
         bounce_info);
     if(result != GLOBUS_SUCCESS)
@@ -169,7 +169,7 @@ globus_l_gfs_remote_stripe_request(
     if(num_stripes == 0)
     {
         globus_gfs_ipc_handle_get_max_available_count(
-            my_handle->user_id, pathname, &num_stripes);
+            my_handle->session_info.username, pathname, &num_stripes);
     }
     if(current_stripe_count >= num_stripes)
     {
@@ -188,10 +188,9 @@ globus_l_gfs_remote_stripe_request(
     }
     else
     {                                   
-            
         result = globus_gfs_ipc_handle_get(
             &bounce_info->stripes_created,
-            my_handle->user_id,
+            my_handle->session_info.username,
             pathname,
             &globus_gfs_ipc_default_iface,
             globus_l_gfs_remote_stripe_request_kickout,
@@ -1035,8 +1034,7 @@ static
 void
 globus_l_gfs_remote_session_start(
     globus_gfs_operation_t              op,
-    const char *                        user_id,
-    gss_cred_id_t                       del_cred)
+    globus_gfs_session_info_t *         session_info)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
@@ -1046,11 +1044,23 @@ globus_l_gfs_remote_session_start(
     
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
-        
-    my_handle->user_id = globus_libc_strdup(user_id);
-    
+
+    if(session_info->username == NULL)
+    {
+        my_handle->session_info.username = strdup(session_info->username);
+    }
+    if(session_info->password == NULL)
+    {
+        my_handle->session_info.password = strdup(session_info->password);
+    }
+    if(session_info->subject == NULL)
+    {
+        my_handle->session_info.subject = strdup(session_info->subject);
+    }
+    my_handle->session_info.del_cred = session_info->del_cred;
+
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, del_cred, my_handle);
+        &bounce_info, op, &my_handle->session_info, my_handle);
                 
     num_stripes = 1;
 

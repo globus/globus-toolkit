@@ -691,3 +691,22 @@ globus_i_gfs_config_get(
 
     return value;
 }
+
+globus_bool_t
+globus_i_gfs_config_is_anonymous(
+    const char *                        userid)
+{
+    if(strcmp(userid, "ftp") == 0)
+    {
+        return GLOBUS_TRUE;
+    }
+    if(strcmp(userid, "anonymous") == 0)
+    {
+        return GLOBUS_TRUE;
+    }
+    if(strcmp(userid, ":globus-mapping:") == 0)
+    {
+        return GLOBUS_TRUE;
+    }
+    return GLOBUS_FALSE;
+}

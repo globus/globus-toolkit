@@ -298,9 +298,9 @@ typedef void
 typedef void
 (*globus_gfs_ipc_iface_session_start_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
+    const gss_ctx_id_t                  context,
     int                                 id,
-    const char *                        user_dn,
-    gss_cred_id_t                       del_cred,
+    globus_gfs_session_info_t *         session_info,
     globus_i_gfs_ipc_data_callback_t    cb,
     void *                              user_arg);
 
@@ -308,8 +308,7 @@ globus_result_t
 globus_gfs_ipc_start_session(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
-    const char *                        user_dn,
-    gss_cred_id_t                       del_cred,
+    globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 

@@ -17,5 +17,9 @@ globus_i_gfs_config_get(
 int
 globus_i_gfs_config_int(
     const char *                        option_name);
+
+globus_bool_t
+globus_i_gfs_config_is_anonymous(
+    const char *                        userid);
     
 #endif

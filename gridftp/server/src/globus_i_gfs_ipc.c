@@ -1233,17 +1233,45 @@ globus_l_gfs_ipc_unpack_event_request(
     return -1;
 }
 
-static char *
+static
+globus_gfs_session_info_t *
 globus_l_gfs_ipc_unpack_session_start(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
-    char *                              user_dn;
+    globus_gfs_session_info_t *         session_info;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+    OM_uint32                           time_rec;
+    gss_buffer_desc                     gsi_buffer;
 
-    GFSDecodeString(buffer, len, user_dn);
-                                                                                
-    return user_dn;
+    session_info = (globus_gfs_session_info_t *) calloc(1,
+        sizeof(globus_gfs_session_info_t));
+    if(session_info == NULL)
+    {
+        goto decode_err;
+    }
+    GFSDecodeUInt32(buffer, len, gsi_buffer.length);
+    if(gsi_buffer.length > 0)
+    {
+        gsi_buffer.value = buffer;
+
+        maj_stat = gss_import_cred(
+            &min_stat, &session_info->del_cred,
+            GSS_C_NO_OID, 0, &gsi_buffer, 0, &time_rec);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            goto decode_err;
+        }
+        buffer += gsi_buffer.length;
+    }
+
+    GFSDecodeString(buffer, len, session_info->username);
+    GFSDecodeString(buffer, len, session_info->password);
+    GFSDecodeString(buffer, len, session_info->subject);
+
+    return session_info;
 
   decode_err:
 
@@ -1328,6 +1356,7 @@ globus_l_gfs_ipc_read_body_cb(
     globus_gfs_transfer_info_t *        trans_info;
     globus_gfs_data_info_t *            data_info;
     globus_gfs_stat_info_t *            stat_info;
+    globus_gfs_session_info_t *         session_info;
     globus_gfs_ipc_reply_t *            reply;
     globus_byte_t *                     user_buffer;
     globus_size_t                       user_buffer_length;
@@ -1335,7 +1364,6 @@ globus_l_gfs_ipc_read_body_cb(
     int                                 rc;
     int                                 data_connection_id;
     gss_cred_id_t                       cred;
-    char *                              user_dn;
     int                                 event_type;
     int                                 transfer_id;
     GlobusGFSName(globus_l_gfs_ipc_read_body_cb);
@@ -1388,8 +1416,9 @@ globus_l_gfs_ipc_read_body_cb(
             break;
 
         case GLOBUS_GFS_OP_SESSION_START:
-            user_dn = globus_l_gfs_ipc_unpack_session_start(ipc, buffer, len);
-            if(user_dn == NULL)
+            session_info = globus_l_gfs_ipc_unpack_session_start(
+                ipc, buffer, len);
+            if(session_info == NULL)
             {
                 res = GlobusGFSErrorIPC();
                 goto err;
@@ -1402,7 +1431,9 @@ globus_l_gfs_ipc_read_body_cb(
             }
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->session_start_func(
-                ipc, request->id, user_dn, NULL, NULL, NULL);
+                ipc, NULL, request->id, session_info, NULL, NULL);
+            /* XXX TODO XXX give a proper ipc context, if special server
+                cert give null, if user del cred give context */
             break;
 
         case GLOBUS_GFS_OP_AUTH:
@@ -1643,7 +1674,6 @@ globus_l_gfs_ipc_read_handshake_header_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_gfs_ipc_request_t *          request;
     char                                type;
     int                                 id;
     int                                 session_id;
@@ -1653,7 +1683,6 @@ globus_l_gfs_ipc_read_handshake_header_cb(
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_result_t                     res;
     globus_size_t                       size;
-    globus_bool_t                       read = GLOBUS_TRUE;
     GlobusGFSName(globus_l_gfs_ipc_read_header_cb);
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
@@ -2430,7 +2459,7 @@ globus_gfs_ipc_set_cred(
     globus_size_t                       msg_size;
     GlobusGFSName(globus_gfs_ipc_set_cred);
 
-    /* sreialize the cred */
+    /* serialize the cred */
     maj_rc = gss_export_cred(&min_rc, del_cred, NULL, 0, &gsi_buffer);
     if(maj_rc != GSS_S_COMPLETE)
     {
@@ -2724,8 +2753,7 @@ globus_result_t
 globus_gfs_ipc_start_session(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
-    const char *                        user_dn,
-    gss_cred_id_t                       del_cred,
+    globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
 {
@@ -2735,6 +2763,9 @@ globus_gfs_ipc_start_session(
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
+    gss_buffer_desc                     gsi_buffer;
+    int                                 maj_rc;
+    int                                 min_rc;
     GlobusGFSName(globus_gfs_ipc_start_session);
 
     ipc = ipc_handle;
@@ -2771,8 +2802,38 @@ globus_gfs_ipc_start_session(
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
             /* pack body */
+            if(session_info->del_cred == NULL)
+            {
+                GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, 0);
+            }
+            else
+            {
+                /* serialize the cred */
+                maj_rc = gss_export_cred(
+                    &min_rc, session_info->del_cred, NULL, 0, &gsi_buffer);
+                if(maj_rc != GSS_S_COMPLETE)
+                {
+                    res = GlobusGFSErrorParameter("del_cred");
+                    goto err;
+                }
+                GFSEncodeUInt32(
+                    buffer, ipc->buffer_size, ptr, gsi_buffer.length);
+                if(gsi_buffer.length > 0)
+                {
+                    if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
+                    {
+                        ipc->buffer_size += gsi_buffer.length;
+                        buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+                    }
+                    memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
+                }
+            }
             GFSEncodeString(
-                buffer, ipc->buffer_size, ptr, user_dn);
+                buffer, ipc->buffer_size, ptr, session_info->username);
+            GFSEncodeString(
+                buffer, ipc->buffer_size, ptr, session_info->password);
+            GFSEncodeString(
+                buffer, ipc->buffer_size, ptr, session_info->subject);
 
             msg_size = ptr - buffer;
             /* now that we know size, add it in */
@@ -2804,9 +2865,9 @@ globus_gfs_ipc_start_session(
     {
         ipc_handle->iface->session_start_func(
             ipc_handle,
+            NULL, /* XXX TODO XXX :: make this proper context */
             request->id,
-            user_dn,
-            NULL,
+            session_info,
             NULL, 
             NULL);
     }

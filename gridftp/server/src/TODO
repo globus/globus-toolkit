@@ -1,8 +1,3 @@
-DONEuse globus_ftp_control_data_set_interface to make the data interface the 
-same as the control channel connection
-
-DONEsend 125 instead of 150 on cached connections 
-
 disable perf markers in mode S
 
 errors
@@ -34,8 +29,6 @@ Protocol
 -- verify messages
 
 striping
-remote
-eret loads modiule
 netlogger output
 
 sync(2)

@@ -3,6 +3,8 @@
 /* provides local_extensions */
 #include "extensions.h"
 
+#define FTP_SERVICE_NAME "file"
+
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
 globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
@@ -56,6 +58,7 @@ typedef struct
 
 typedef struct
 {
+    globus_i_gfs_acl_handle_t           acl_handle;
     gss_cred_id_t                       del_cred;   
     void *                              session_arg;
     void *                              data_handle;
@@ -289,6 +292,253 @@ globus_i_gfs_monitor_signal(
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
+}
+
+static
+void
+globus_l_gfs_data_auth_init_cb(
+    const char *                        resource_id,
+    void *                              user_arg,
+    globus_result_t                     result)
+{
+    globus_gfs_finished_info_t          finished_info; 
+    gss_buffer_desc                     buffer;
+    int                                 maj_stat;
+    int                                 min_stat;    
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_session_info_t *         session_info;
+    GlobusGFSName(globus_l_gfs_data_auth_init_cb);
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+    session_info = (globus_gfs_session_info_t *) op->info_struct;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    if(session_info->del_cred != NULL)
+    {    
+        maj_stat = gss_export_cred(
+            &min_stat, session_info->del_cred, NULL, 0, &buffer);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_export_cred", min_stat);
+            goto error;
+        }
+        maj_stat = gss_import_cred(
+            &min_stat, 
+            &session_info->del_cred, 
+            GSS_C_NO_OID, 
+            0, 
+            &buffer, 
+            0, 
+            NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
+            goto error_import;
+        }
+        maj_stat = gss_release_buffer(&min_stat, &buffer);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
+            goto error_import;
+        }
+        
+    }
+
+    if(op->session_handle->dsi->init_func != NULL)
+    {
+        op->session_handle->dsi->init_func(op, session_info);
+    }
+    else
+    {
+        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t)); 
+        finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
+        finished_info.session_id = (int) op->session_handle;
+        globus_gridftp_server_operation_finished(                 
+            op,                                                   
+            GLOBUS_SUCCESS,                                               
+            &finished_info);                                       
+    }    
+
+    return;
+
+error_import:
+    gss_release_buffer(&min_stat, &buffer);
+
+error:
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t)); 
+    finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
+    finished_info.session_id = (int) op->session_handle;
+
+    globus_gridftp_server_operation_finished(
+        op,
+        result,
+        &finished_info);
+}
+
+
+static
+void
+globus_l_gfs_data_authorize(
+    globus_l_gfs_data_operation_t *     op,
+    globus_gfs_session_info_t *         session_info)
+{
+    int                                 rc;
+    globus_result_t                     res;
+    int                                 gid;
+    char *                              pw_file;
+    char *                              usr;
+    char *                              grp;
+    struct passwd *                     pwent;
+    struct group *                      grent = NULL;
+    globus_gfs_finished_info_t          finished_info;
+
+    /* if there is a del cred we are using gsi, look it up in the gridmap */
+    if(session_info->del_cred != NULL)
+    {
+        rc = globus_gss_assist_gridmap((char *) session_info->username, &usr);
+        if(rc != 0)
+        {
+            goto pwent_error;
+        }
+        pwent = getpwnam(usr);
+        if(pwent == NULL)
+        {
+            goto pwent_error;
+        }
+        grent = getgrgid(pwent->pw_gid);
+        if(grent == NULL)
+        {
+            goto pwent_error;
+        }
+    }
+    /* if anonymous use and we are allowing it */
+    else if(globus_i_gfs_config_bool("allow_anonymous") &&
+        globus_i_gfs_config_is_anonymous(session_info->username))
+    {
+        /* if we are root, set to anon user */
+        if(getuid() == 0)
+        {
+            usr = globus_i_gfs_config_string("anonymous_user");
+            if(usr == NULL)
+            {
+                goto pwent_error;
+            }
+            pwent = getpwnam(usr);
+            if(pwent == NULL)
+            {
+                goto pwent_error;
+            }
+            grp = globus_i_gfs_config_string("anonymous_group");
+            if(grp == NULL)
+            {
+                grent = getgrgid(pwent->pw_gid);
+            }
+            else
+            {
+                grent = getgrnam(grp);
+            }
+            if(grent == NULL)
+            {
+                goto pwent_error;
+            }
+        }
+        /* if not root, jsut run as is */
+        else
+        {
+            pwent = getpwuid(getuid());
+            if(pwent == NULL)
+            {
+                goto pwent_error;
+            }
+            gid = pwent->pw_gid;
+            grent = getgrgid(pwent->pw_gid);
+            if(grent == NULL)
+            {
+                goto pwent_error;
+            }
+        }
+        /* since this is anonymous change the user name */
+        pwent->pw_name = "anonymous";
+        grent->gr_name = "anonymous";
+    }
+    else if(globus_i_gfs_config_bool("allow_clear_text"))
+    {
+        pw_file = (char *)globus_i_gfs_config_string("pw_file");
+        if(pw_file != NULL)
+        {
+            FILE * pw = fopen(pw_file, "r");
+            if(pw == NULL)
+            {
+                goto pwent_error;
+            }
+            pwent = fgetpwent(pw);
+            fclose(pw);
+            if(pwent == NULL)
+            {
+                goto pwent_error;
+            }
+            grent = getgrgid(pwent->pw_gid);
+            if(grent == NULL)
+            {
+                goto pwent_error;
+            }
+        }
+        else
+        {
+            goto pwent_error;
+        }
+    }
+    else
+    {
+        goto pwent_error;
+    }
+
+    /* change process ids */
+    rc = setgid(gid);
+    if(rc != 0)
+    {
+        goto uid_error;
+    }
+    rc = setuid(pwent->pw_uid);
+    if(rc != 0)
+    {
+        goto uid_error;
+    }
+    rc = globus_i_gfs_acl_init(
+        &op->session_handle->acl_handle,
+        pwent,
+        grent,
+        session_info->password,
+        session_info->ipaddr,
+        FTP_SERVICE_NAME,
+        &res,
+        globus_l_gfs_data_auth_init_cb,
+        op);
+    if(rc < 0)
+    {
+        goto acl_error;
+    }
+    else if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_data_auth_init_cb(NULL, op, res);
+    }
+
+    return;
+
+acl_error:
+uid_error:
+pwent_error:
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t)); 
+    finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
+    finished_info.session_id = (int) op->session_handle;
+    globus_gridftp_server_operation_finished(
+        op,
+        res,
+        &finished_info);
 }
 
 void
@@ -2854,19 +3104,15 @@ globus_i_gfs_data_node_start(
 void
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
+    const gss_ctx_id_t                  context,
     int                                 id,
-    const char *                        user_dn,
-    gss_cred_id_t                       del_cred,
+    globus_gfs_session_info_t *         session_info,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
-    globus_gfs_finished_info_t          finished_info; 
     globus_l_gfs_data_session_t *       session_handle;    
-    gss_buffer_desc                     buffer;
-    int                                 maj_stat;
-    int                                 min_stat;    
     GlobusGFSName(globus_i_gfs_data_session_start);
 
     result = globus_l_gfs_data_operation_init(&op);
@@ -2882,6 +3128,7 @@ globus_i_gfs_data_session_start(
     {
         /* XXX deal with this */
     }
+    session_handle->dsi = globus_l_gfs_dsi;
     globus_mutex_init(&session_handle->mutex, NULL);
     session_handle->ref = 1;
     op->session_handle = session_handle;
@@ -2891,73 +3138,9 @@ globus_i_gfs_data_session_start(
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->callback = cb;
     op->user_arg = user_arg;
+    op->info_struct = session_info;
 
-    if(del_cred != NULL)
-    {    
-        maj_stat = gss_export_cred(
-            &min_stat, del_cred, NULL, 0, &buffer);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_export_cred", min_stat);
-            goto error_cred;
-        }
-        maj_stat = gss_import_cred(
-            &min_stat, 
-            &session_handle->del_cred, 
-            GSS_C_NO_OID, 
-            0, 
-            &buffer, 
-            0, 
-            NULL);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
-            goto error_import;
-        }
-        maj_stat = gss_release_buffer(&min_stat, &buffer);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
-            goto error_import;
-        }
-        
-    }
-    session_handle->dsi = globus_l_gfs_dsi;
-    
-    if(session_handle->dsi->init_func != NULL)
-    {
-        session_handle->dsi->init_func(op, user_dn, del_cred);
-    }
-    else
-    {
-        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t)); 
-        finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
-        finished_info.session_id = (int) session_handle;
-
-        globus_gridftp_server_operation_finished(                 
-            op,                                                   
-            GLOBUS_SUCCESS,                                               
-            &finished_info);                                       
-    }    
-    
-    return;
-
-error_import:
-    gss_release_buffer(&min_stat, &buffer);
-    
-error_cred:
-    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t)); 
-    finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
-    finished_info.session_id = (int) session_handle;
-    finished_info.result = result;                          
-                                                              
-    globus_gridftp_server_operation_finished(                 
-        op,                                                   
-        result,                                               
-        &finished_info);
-    globus_l_gfs_data_operation_destroy(op);
-
-    return;
+    globus_l_gfs_data_authorize(op, session_info);
 }
 
 void
@@ -3449,7 +3632,6 @@ globus_l_gfs_operation_finished_kickout(
 {
     globus_l_gfs_data_bounce_t *        bounce;
     globus_l_gfs_data_operation_t *     op;
-    globus_bool_t                       destroy_op = GLOBUS_FALSE;
 
     bounce = (globus_l_gfs_data_bounce_t *) user_arg;
     op = bounce->op;
@@ -3567,7 +3749,7 @@ globus_gridftp_server_operation_event(
     {
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
             globus_gridftp_server_begin_transfer(
-                op, event_info->event_mask, event_info->transfer_id);
+                op, event_info->event_mask, (void *)event_info->transfer_id);
             break;
         default:
             if(op->event_callback != NULL)

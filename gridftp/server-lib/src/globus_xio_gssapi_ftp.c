@@ -2655,46 +2655,58 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     gss_cred_id_t *                     out_del_cred;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_l_xio_gssapi_ftp_handle_t *  ds_handle;
+    gss_buffer_desc                     gsi_buffer;
+    int                                 maj_stat;
+    int                                 min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_handle_cntl);
 
     GlobusXIOGssapiftpDebugEnter();
 
     ds_handle = (globus_l_xio_gssapi_ftp_handle_t *) handle;
 
-    switch(cmd)
+    globus_mutex_lock(&ds_handle->mutex);
     {
-        case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH:
-            out_type = va_arg(ap, int *);
-            out_context = va_arg(ap, gss_ctx_id_t *);
-            out_cred = va_arg(ap, gss_cred_id_t *);
-            out_del_cred = va_arg(ap, gss_cred_id_t *);
-            out_subject = va_arg(ap, char **);
+        switch(cmd)
+        {
+            case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH:
+                out_type = va_arg(ap, int *);
+                out_context = va_arg(ap, gss_ctx_id_t *);
+                out_cred = va_arg(ap, gss_cred_id_t *);
+                out_del_cred = va_arg(ap, gss_cred_id_t *);
+                out_subject = va_arg(ap, char **);
 
-            switch(ds_handle->state)
-            {
-                case GSSAPI_FTP_STATE_OPEN:
-                    *out_type = GLOBUS_XIO_GSSAPI_FTP_SECURE;
-                    break;
-                case GSSAPI_FTP_STATE_OPEN_CLEAR:
-                    *out_type = GLOBUS_XIO_GSSAPI_FTP_CLEAR;
-                    break;
-                default:
-                    *out_type = GLOBUS_XIO_GSSAPI_FTP_NONE;
-                    break;
-            }
+                switch(ds_handle->state)
+                {
+                    case GSSAPI_FTP_STATE_OPEN:
+                        *out_type = GLOBUS_XIO_GSSAPI_FTP_SECURE;
+                        break;
+                    case GSSAPI_FTP_STATE_OPEN_CLEAR:
+                        *out_type = GLOBUS_XIO_GSSAPI_FTP_CLEAR;
+                        break;
+                    default:
+                        *out_type = GLOBUS_XIO_GSSAPI_FTP_NONE;
+                        break;
+                }
 
-            *out_context = ds_handle->gssapi_context;
-            *out_cred = ds_handle->cred_handle;
-            *out_del_cred = ds_handle->delegated_cred_handle;
-            *out_subject = ds_handle->auth_gssapi_subject;
-            break;
+                *out_context = ds_handle->gssapi_context;
+                *out_cred = ds_handle->cred_handle;
+                *out_del_cred = ds_handle->delegated_cred_handle;
+                *out_subject = ds_handle->auth_gssapi_subject;
+                break;
 
-        default:
-            res = GlobusXIOGssapiBadParameter();
-            break;
+            default:
+                res = GlobusXIOGssapiBadParameter();
+                goto error;
+                break;
+        }
     }
+    globus_mutex_unlock(&ds_handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
+    return GLOBUS_SUCCESS;
+
+error:
+    globus_mutex_unlock(&ds_handle->mutex);
     return res;
 }
 

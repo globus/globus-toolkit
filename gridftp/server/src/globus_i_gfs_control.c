@@ -3,8 +3,6 @@
 #include "globus_i_gridftp_server.h"
 #include <grp.h>
 
-#define FTP_SERVICE_NAME "file"
-
 typedef struct
 {
     globus_xio_handle_t                 xio_handle;
@@ -16,8 +14,6 @@ typedef struct
     globus_i_gfs_server_close_cb_t      close_func;
     void *                              close_arg;
 
-    globus_bool_t                       acl_handle_valid;
-    globus_i_gfs_acl_handle_t           acl_handle;
     int                                 session_id;
 
     globus_gridftp_server_control_t     server_handle;
@@ -36,13 +32,7 @@ typedef struct globus_l_gfs_auth_info_s
 {
     globus_l_gfs_server_instance_t *    instance;
     globus_gridftp_server_control_op_t  control_op;
-    uid_t                               uid;
-    const char *                        username;
-    const char *                        password;
-    const char *                        subject;
-    globus_gridftp_server_control_response_t response;
-    char *                              msg;
-    int                                 id;
+    globus_gfs_session_info_t *         session_info;
 } globus_l_gfs_auth_info_t;
 
 static globus_bool_t                    globus_l_gfs_control_active = GLOBUS_FALSE;
@@ -234,10 +224,6 @@ globus_l_gfs_done_cb(
             GLOBUS_I_GFS_LOG_INFO,
             "Control connection closed\n");
     }
-    if(instance->acl_handle_valid)
-    {
-        globus_i_gfs_acl_destroy(&instance->acl_handle);
-    }
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -249,30 +235,6 @@ globus_l_gfs_done_cb(
             instance->xio_handle,
             GLOBUS_SUCCESS,
             instance);
-    }
-}
-
-
-static
-void
-globus_l_gfs_auth_info_destroy(
-    globus_l_gfs_auth_info_t *          auth_info)
-{
-    if(auth_info)
-    {
-        if(auth_info->username)
-        {
-            globus_free((void *) auth_info->username);
-        }
-        if(auth_info->password)
-        {
-            globus_free((void *) auth_info->password);
-        }
-        if(auth_info->subject)
-        {
-            globus_free((void *) auth_info->subject);
-        }
-        globus_free(auth_info);
     }
 }
 
@@ -300,68 +262,21 @@ globus_l_gfs_auth_session_cb(
     {
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
-            auth_info->username,
+            auth_info->session_info->username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
     }
-    
-    globus_l_gfs_auth_info_destroy(auth_info);
+    globus_free(auth_info->session_info->username);
+    globus_free(auth_info->session_info->password);
+    globus_free(auth_info->session_info);
+    globus_free(auth_info);
 }
 
-
-static
-void
-globus_l_gfs_auth_data_cb(
-    const char *                        resource_id,
-    void *                              user_arg,
-    globus_result_t                     result)
-{
-    globus_l_gfs_auth_info_t *          auth_info;
-    gss_cred_id_t                       delegated_cred;
-    auth_info = (globus_l_gfs_auth_info_t *) user_arg;
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-
-    auth_info->instance->acl_handle_valid = GLOBUS_TRUE;
-
-    result = globus_gridftp_server_control_get_data_auth(
-        auth_info->control_op,
-        NULL,
-        NULL,
-        NULL,
-        &delegated_cred);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-
-    globus_i_gfs_data_session_start(
-        NULL,
-        0,
-        auth_info->username,
-        delegated_cred,
-        globus_l_gfs_auth_session_cb,
-        auth_info);
-
-    return;
-
-  err:
-    globus_gridftp_server_control_finished_auth(
-        auth_info->control_op,
-        NULL,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC,
-        "internal error");
-        
-    globus_l_gfs_auth_info_destroy(auth_info);
-}
 
 static
 void
 globus_l_gfs_request_auth(
-    globus_gridftp_server_control_op_t  op,
+    globus_gridftp_server_control_op_t  control_op,
     globus_gridftp_server_control_security_type_t secure_type,
     gss_ctx_id_t                        context,
     const char *                        subject,
@@ -369,174 +284,73 @@ globus_l_gfs_request_auth(
     const char *                        pw,
     void *                              user_arg)
 {
-    int                                 rc;
-    char *                              local_name;
-    struct passwd *                     pwent;
-    struct group *                      group;
-    char *                              anon_usr;
-    char *                              anon_grp;
-    uid_t                               current_uid;
-    gid_t                               gid;
-    char *                              err_msg = GLOBUS_NULL;
-    globus_result_t                     res;
+    globus_result_t                     result;
+    globus_gfs_session_info_t *         session_info;
     globus_l_gfs_auth_info_t *          auth_info;
     globus_l_gfs_server_instance_t *    instance;
-    char *                              remote_cs;
-
-/* XXX add error responses */
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
-    current_uid = getuid();
 
-    auth_info = (globus_l_gfs_auth_info_t *)
-        globus_calloc(1, sizeof(globus_l_gfs_auth_info_t));
+    session_info = (globus_gfs_session_info_t *)
+        calloc(1, sizeof(globus_gfs_session_info_t));
+    if(session_info == NULL)
+    {
+        goto session_error;
+    }
 
-    auth_info->control_op = op;
+    result = globus_gridftp_server_control_get_data_auth(
+        control_op,
+        NULL,
+        NULL,
+        NULL,
+        &session_info->del_cred);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto del_error;
+    }
+    session_info->username = strdup(user_name);
+    if(session_info->username == NULL)
+    {
+        goto del_error;
+    }
+    session_info->password = strdup(pw);
+    if(session_info->password == NULL)
+    {
+        goto user_error;
+    }
+
+    auth_info = (globus_l_gfs_auth_info_t *) calloc(1,
+        sizeof(globus_l_gfs_auth_info_t));
+    if(auth_info == NULL)
+    {
+        goto pw_error;
+    }
     auth_info->instance = instance;
-    auth_info->subject = globus_libc_strdup(subject);
-    auth_info->username = globus_libc_strdup(user_name);
-    auth_info->password = globus_libc_strdup(pw);
+    auth_info->control_op = control_op;
+    auth_info->session_info = session_info;
 
-    remote_cs = globus_i_gfs_config_string("remote");
-
-    if(secure_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
-    {
-        rc = globus_gss_assist_gridmap((char *) subject, &local_name);
-        if(rc != 0)
-        {
-            err_msg = globus_common_create_string(
-                "No local mapping for Globus ID");
-            goto error;
-        }
-
-        pwent = getpwnam(local_name);
-        if(pwent == NULL)
-        {
-            err_msg = globus_common_create_string(
-                "Local user %s not found", local_name);
-            globus_free(local_name);
-            goto error;
-        }
-        globus_free(local_name);
-
-        if(globus_i_gfs_config_bool("inetd") ||
-            globus_i_gfs_config_bool("daemon"))
-        {
-            rc = setgid(pwent->pw_gid);
-            if(rc != 0)
-            {
-                err_msg = globus_common_create_string(
-                    "Could not set user or group");
-                goto error;
-            }
-            rc = setuid(pwent->pw_uid);
-            if(rc != 0)
-            {
-                err_msg = globus_common_create_string(
-                    "Could not set user or group");
-                goto error;
-            }
-        }
-        auth_info->username = globus_libc_strdup(pwent->pw_name);
-    }
-    else if(globus_i_gfs_config_bool("allow_anonymous") && current_uid == 0)
-    {
-        if(globus_i_gfs_config_bool("inetd") ||
-            globus_i_gfs_config_bool("daemon"))
-        {
-            anon_usr = globus_i_gfs_config_string("anonymous_user");
-            anon_grp = globus_i_gfs_config_string("anonymous_group");
-            if(anon_usr)
-            {
-                pwent = getpwnam(anon_usr);
-                if(pwent == NULL)
-                {
-                    err_msg = globus_common_create_string(
-                        "Anonymous user not found");
-                    goto error;
-                }
-            }
-            else
-            {
-                err_msg = globus_common_create_string(
-                    "Anonymous user not found");
-                goto error;
-            }
-            if(anon_grp)
-            {
-                group = getgrnam(anon_grp);
-                if(group == NULL)
-                {
-                    err_msg = globus_common_create_string(
-                        "Anonymous group not found");
-                    goto error;
-                }
-                gid = group->gr_gid;
-            }
-            else
-            {
-                gid = pwent->pw_gid;
-            }
-
-        rc = setgid(gid);
-            if(rc != 0)
-            {
-               err_msg = globus_common_create_string(
-                    "Could not set anonymous user or group");
-                goto error;
-            }
-            rc = setuid(pwent->pw_uid);
-            if(rc != 0)
-            {
-               err_msg = globus_common_create_string(
-                    "Could not set anonymous user or group");
-                goto error;
-            }
-        }
-        else
-        {
-           err_msg = globus_common_create_string(
-                "Invalid authentication method");
-            goto error;
-        }
-
-    }
-
-    auth_info->response =
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
-
-    instance->acl_handle_valid = GLOBUS_FALSE;
-    rc = globus_i_gfs_acl_init(
-        &instance->acl_handle,
+    globus_i_gfs_data_session_start(
+        NULL,
         context,
-        FTP_SERVICE_NAME,
-        user_name,
-        &res,
-        globus_l_gfs_auth_data_cb,
+        0,
+        session_info,
+        globus_l_gfs_auth_session_cb,
         auth_info);
-    if(rc < 0)
-    {
-        err_msg = globus_common_create_string("acl init failed");
-        goto error;
-    }
-    else if(rc == GLOBUS_GFS_ACL_COMPLETE)
-    {
-        globus_l_gfs_auth_data_cb(NULL, auth_info, res);
-    }
 
     return;
 
-error:
+pw_error:
+    globus_free(session_info->password);
+user_error:
+    globus_free(session_info->username);
+del_error:
+    globus_free(session_info);
+session_error:
     globus_gridftp_server_control_finished_auth(
-        op,
+        control_op,
         NULL,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-        err_msg);
-    if(err_msg != NULL)
-    {
-        globus_free(err_msg);
-    }
-    globus_l_gfs_auth_info_destroy(auth_info);    
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC,
+        "internal error: session_cb");
 }
 
 static
