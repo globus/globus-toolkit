@@ -22,9 +22,18 @@ package Globus::GRAM::JobManager::fork;
 @ISA = qw(Globus::GRAM::JobManager);
 
 my ($mpirun);
+my %signo;
 
 BEGIN
 {
+    my $name;
+    my $i = 0;
+    
+    foreach (split(' ', $Config::Config{sig_name})) 
+    {
+	$signo{$_} = $i++;
+    }  
+
     $mpirun = '@MPIRUN@';
 }
 
@@ -56,6 +65,7 @@ sub submit
     my $self = shift;
     my $cmd;
     my $pid;
+    my $pgid;
     my @job_id;
     my $count;
     my $multi_output = 0;
@@ -91,7 +101,7 @@ sub submit
 	    return Globus::GRAM::Error::RSL_LIBRARY_PATH();
 	}
 	$self->append_path(\%CHILD_ENV, 'LD_LIBRARY_PATH', $_);
-	if($Config{osname} eq 'irix')
+	if($Config::Config{osname} eq 'irix')
 	{
 	    $self->append_path(\%CHILD_ENV, 'LD_LIBRARYN32_PATH', $_);
 	    $self->append_path(\%CHILD_ENV, 'LD_LIBRARY64_PATH', $_);
@@ -189,6 +199,9 @@ sub submit
 	    open(STDOUT, ">>$job_stdout");
 	    open(STDERR, ">>$job_stderr");
 	    
+            # the below should never fail since we just forked
+            setpgrp(0,$$);
+
 	    exec (@cmdline);
 	    $pipe->print('X');
 	    $pipe->close();
@@ -205,11 +218,16 @@ sub submit
 		# exec failed. kill rest of job and return an error
 		foreach(@job_id)
 		{
-		    kill(SIGTERM, $_);
+                    $pgid = getpgrp($_);
+                    
+                    $pgid == -1 ? kill($signo{TERM}, $_) :
+                        kill(-$signo{TERM}, $pgid);
+                    
+                    sleep(5);
+                    
+                    $pgid == -1 ? kill($signo{KILL}, $_) :
+                        kill(-$signo{KILL}, $pgid);
 
-		    sleep(5);
-		    
-		    kill(SIGKILL, $_);
 		}
 		return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
 	    }
@@ -252,14 +270,22 @@ sub cancel
 {
     my $self = shift;
     my $description = $self->{JobDescription};
+    my $pgid;
 
     $self->log("cancel job " . $description->jobid());
 
-    kill(SIGTERM, split(/,/, $description->jobid()));
+    foreach (split(/,/,$description->jobid()))
+    {
+        $pgid = getpgrp($_);
+        
+        $pgid == -1 ? kill($signo{TERM}, $_) :
+            kill(-$signo{TERM}, $pgid);
 
-    sleep(5);
-    
-    kill(SIGKILL, split(/,/, $description->jobid()));
+        sleep(5);
+        
+        $pgid == -1 ? kill($signo{KILL}, $_) :
+            kill(-$signo{KILL}, $pgid);
+    }
 
     return { JOB_STATE => Globus::GRAM::JobState::FAILED };
 }
