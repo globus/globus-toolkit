@@ -577,12 +577,23 @@ else
     password_option=""
 fi
 
+# create CA certificate
+
+if test -n "${verbose}"; then
+    ${openssl_cmd} req ${openssl_options} ${password_option} -config "${grid_ca_conf}" \
+        -x509 -days ${CA_CERT_DAYS} \
+        -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
+        -out ${CA_CERT_FILE} < ${CA_REQ_INPUT}
+    RET=$?
+else
 # create CA certificate request
-${openssl_cmd} req ${openssl_options} ${password_option} -config "${grid_ca_conf}" \
-                   -x509 -days ${CA_CERT_DAYS} \
-                   -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
-                   -out ${CA_CERT_FILE} < ${CA_REQ_INPUT} 
-RET=$?
+    ${openssl_cmd} req ${openssl_options} ${password_option} -config "${grid_ca_conf}" \
+        -x509 -days ${CA_CERT_DAYS} \
+        -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
+        -out ${CA_CERT_FILE} < ${CA_REQ_INPUT} > openssl_req.log 2>&1
+    RET=$?
+fi
+
 
 ${GLOBUS_SH_RM-rm} -f ${CA_REQ_INPUT}
 
@@ -629,6 +640,11 @@ certificates from this CA.
 
 CA setup complete.
 
+EOF
+
+if test -z "${nobuild}"; then
+
+${GLOBUS_SH_CAT-cat} <<EOF
 The following commands will now be run to setup the security
 configuration files for this CA:
 
@@ -636,7 +652,11 @@ configuration files for this CA:
 ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
 \$GPT_LOCATION/sbin/gpt-postinstall
+EOF
 
+fi
+
+${GLOBUS_SH_CAT-cat} <<EOF
 -------------------------------------------------------------------
 
 
@@ -664,14 +684,17 @@ install_security_config() {
 	buildcmd=${GLOBUS_LOCATION}/sbin/globus-build
     fi
 
-    ${buildcmd} -force ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
+    if test -n "$verbose"; then
+        ${buildcmd} -force ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
+    else
+        ${buildcmd} -force ${GRID_CA_DIR}/${CA_UTILS_PACKAGE} > build.log 2>&1
+    fi
+    
     
     if [ ! $? -eq 0 ]; then
 	echo "ERROR:  could not run build command: ${buildcmd} -force ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}"
 	exit 1;
     fi
-
-    finish_simple_ca_setup
 
     SIMPLE_CA_SETUP_TMP_WORKING_DIR=$PWD
     cd ${GLOBUS_LOCATION}/setup/globus/
@@ -693,7 +716,7 @@ use Getopt::Long; \
 use English; \
 \
 require Grid::GPT::Setup; \
-my \$metadata = new Grid::GPT::Setup(package_name => \"globus_simple_ca_setup\"); \
+my \$metadata = new Grid::GPT::Setup(package_name => \"simple_ca_setup\"); \
 \$metadata->finish();"
 
 }
@@ -788,16 +811,31 @@ CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.17
 CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 
 #./bootstrap
-./configure
-if test $? -ne 0; then
+
+if test -n "$verbose"; then
+    ./configure $outlog
+    RES=$?
+else
+    ./configure $outlog > configure.log 2>&1
+    RES=$?
+fi
+
+if test $RES -ne 0; then
     echo ""
     echo "ERROR: Unable to configure the simple_ca ${CA_CERT_HASH} setup package"
     echo ""
     exit 1
 fi
 
-make distdir
-if test $? -ne 0; then
+if test -n "$verbose"; then
+    make distdir
+    RES=$?
+else
+    make distdir > make.log 2>&1
+    RES=$?
+fi
+
+if test $RES -ne 0; then
     echo ""
     echo "ERROR: Unable to create simple_ca ${CA_CERT_HASH} setup package distribution directory"
     echo ""
@@ -805,16 +843,32 @@ if test $? -ne 0; then
 fi
 
 ${GLOBUS_SH_CHMOD-chmod} -R a+r ${CA_UTILS_PACKAGE_DIR}
-${GLOBUS_SH_TAR-tar} cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR
-if test $? -ne 0; then 
+
+if test -n "$verbose"; then
+    ${GLOBUS_SH_TAR-tar} cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR
+    RES=$?
+else
+    ${GLOBUS_SH_TAR-tar} cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR > tar.log 2>&1
+    RES=$?
+fi
+
+if test $RES -ne 0; then 
 	echo ""
 	echo "SETUP FAILED: Could not create tarball of setup package."
 	echo ""
 	exit 1;
 fi
 
-${GLOBUS_SH_GZIP-gzip} -f9 $CA_UTILS_PACKAGE_DIR.tar
-if test $? -ne 0; then
+
+if test -n "$verbose"; then
+    ${GLOBUS_SH_GZIP-gzip} -f9 $CA_UTILS_PACKAGE_DIR.tar
+    RES=$?
+else
+    ${GLOBUS_SH_GZIP-gzip} -f9 $CA_UTILS_PACKAGE_DIR.tar > gzip.log 2>&1
+    RES=$?
+fi
+
+if test $RES -ne 0; then
 	echo ""
 	echo "SETUP FAILED: Could not create gzip of setup package."
 	echo ""
@@ -823,7 +877,7 @@ fi
 
 if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""
-    echo "Building the CA package failed."
+    echo "Creation of  the CA setup package: ${CA_UTILS_PCKAGE} failed."
     echo ""
     exit 1;
 fi
@@ -872,6 +926,13 @@ if test -z "${GLOBUS_LOCATION}"; then
     exit 1
 fi
 
+if test -z "${GPT_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GPT_LOCATION to a valid install of gpt"
+    echo ""
+    exit 1
+fi
+
 if test ! -f ${GLOBUS_LOCATION}/libexec/globus-script-initializer; then
     echo ""
     echo "ERROR: Your globus install has not been setup correctly"
@@ -907,16 +968,17 @@ ${short_usage}
         its not clear what to do, let the interactive prompts guide you.
 
   Options:
-    -help               : shows this help message
+    -help                 : shows this help message
     -?
     -h
     -usage
+    -verbose              : Show verbose output
     -dir <loc>            : Will put the Simple CA in <loc>
     -force                : Overwite existing CA install if one exists
     -subject <CA subject> : Subject of the CA.  
                             If not specified the default is used.
-                            Format: "cn=Globus,ou=Globus,o=Grid"
-                            Notice no spaces!  
+                            Format: "cn=Globus, ou=Globus, o=Grid"
+                            dashes in the subject must be escaped (\-) 
     -email <address>      : The email of the CA.  Default is empty.
     -days <num>           : Expiration of CA certificate 
                             (default: 1852 days or 5 years)
@@ -978,9 +1040,11 @@ readCommandLine () {
          shift
          ;;
      -subject)
-         request_subject="${2}"
-         echo "REQS: ${request_subject}"
-         shift ; shift
+         shift
+         while test "`echo ${1} | ${GLOBUS_SH_CUT-cut} -c1`" != "-"; do
+             request_subject="${request_subject} ${1}"
+             shift
+         done
          ;;
      -email)
          request_email="${2}"
@@ -1001,6 +1065,10 @@ readCommandLine () {
      -noint)
          noint="yes"
          force="yes"
+         shift
+         ;;
+     -verbose)
+         verbose="yes"
          shift
          ;;
      -openssl-help)
@@ -1043,7 +1111,12 @@ save_ca_settings
 generate_ca_certificate
 generate_utils_package
 emit_directions
-install_security_config
+
+if test -z "$nobuild"; then
+    install_security_config
+fi
+
+#finish_simple_ca_setup
 
 
 exit
