@@ -15,6 +15,7 @@ striping:
 
 ipc:
 XX connect backwards!! 0
+XX ipc local mode doesn't work (besides no way to initiate it)
 
 logging:
 -- instrument code
@@ -49,16 +50,13 @@ control_events.c:249
 --------------------------------end message--------------------------------
 -----------------------------------------------------------------------
 known bugs:
--- ipc local mode doesn't work (besides no way to initiate it)
 -- not calling _finish() in data.c for some request funcs that fail before
     the dsi call. 
--- in server_lib globus_gsc_959_finished_command chain the message gets freed
-    in instances that it should not be, everyone that calls into it frees their
-    own messages.
--- "pasv/port followed by retr/stor /invalidpath (fails) retr/stor /anything"
-    causes an assertion... i think data.c is destroying the data chan on the
-    transfer_finished error, but maybe not sending disconnected? (either way, 
-    data chan should be fine on transfer errors, just not data chan errors).
+-- reply_msg has a mixed means of neing freed in globus_l_gsc_finished_op()
+    or by the caller.  look at lines server_control.c:930, and then
+    995.
+-- force_close after transfer_complete when an error is passed to 
+   finished_transfer().
 -- error out of option parsing properly
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other

@@ -379,7 +379,7 @@ globus_i_gfs_connection_closed()
     globus_result_t                     result;
 
     globus_l_gfs_open_count--;
-    if(globus_l_gfs_terminated || globus_i_gfs_config_bool("inetd"))
+    if(globus_l_gfs_terminated || globus_i_gfs_config_bool("single"))
     {
         if(globus_l_gfs_open_count == 0)
         {

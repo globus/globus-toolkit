@@ -34,6 +34,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"versions", "versions", NULL, "versions", "V", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL,
     "Show version information for all loaded globus libraries and exit."},
 {NULL, "Modes of Operation", NULL, NULL, NULL, 0, 0, NULL, NULL},
+ {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, "run 1 instance then end"},
  {"inetd", "inetd", NULL, "inetd", "i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Run under an inetd service."},
  {"daemon", "daemon", NULL, "daemon", "s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
@@ -850,6 +851,7 @@ globus_l_gfs_config_misc()
     }
     if(globus_i_gfs_config_bool("inetd"))
     {
+        globus_l_gfs_config_set("single", GLOBUS_TRUE, NULL);
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
     }
@@ -1006,6 +1008,14 @@ globus_l_gfs_config_misc()
         {
             globus_l_gfs_config_set("auth_level", 3, NULL);
         }
+    }
+
+    /* make sure root running process that does not fork can only run
+        once */
+    if(globus_i_gfs_config_bool("daemon") && getuid() == 0)
+    {
+        globus_l_gfs_config_set("connections_max", 1, NULL);
+        globus_l_gfs_config_set("single", 1, NULL);
     }
     
     return GLOBUS_SUCCESS;
