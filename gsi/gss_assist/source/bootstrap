@@ -1,0 +1,40 @@
+#! /bin/sh
+
+# check for autotools
+
+for program in automake aclocal autoconf autoheader
+    do
+    ($program --version ) > /dev/null 2>&1 || { 
+    echo "ERROR: $program not found" >&2
+    exit 1
+    }
+done
+
+# checking for the GLOBUS_INSTALL_PATH
+
+if test "x$GLOBUS_INSTALL_PATH" = "x"; then
+    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
+    exit 1
+fi
+
+echo "running aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal"
+aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal
+
+echo "running autoheader"
+autoheader
+
+if test ! -L globus_automake_targets; then
+    echo "installing extra automake files"
+    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_targets \
+    globus_automake_targets
+    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_rules \
+    globus_automake_rules
+	ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_top_rules \
+    globus_automake_top_rules
+fi
+
+echo "running automake -c -a --foreign"
+automake -c -a --foreign
+
+echo "running autoconf"
+autoconf

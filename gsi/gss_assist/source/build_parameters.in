@@ -1,0 +1,13 @@
+#globus_gss_assist_flavor information=
+
+globus_gss_assist_version="@VERSION@"
+
+globus_gss_assist_provides=
+
+globus_gss_assist_requires_build="@GLOBUS_BUILD_DEPS@"
+
+globus_gss_assist_requires_runtime=
+
+globus_gss_assist_libraries=  " -lglobus_gss_assist @GLOBUS_XTRA_LIBS@"
+
+

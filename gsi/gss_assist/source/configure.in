@@ -1,0 +1,29 @@
+dnl
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+
+AM_INIT_AUTOMAKE(globus_gss_assist, 2.0)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+# add any packages names that you depend on here
+GLOBUS_SET_BUILD_DEPS()
+
+# Add any ldflags ie. system  libraries that are need to link with your
+# libraries here.
+GLOBUS_ADD_XTRA_LIBS()
+
+
+GLOBUS_GENERATE
+
+AC_OUTPUT(
+	assist_config.h.in
+	build_parameters.in
+	Makefile
+	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
+)
+
