@@ -79,6 +79,33 @@ done
 } #====================================
 
 #=====================================
+fake_qstat_f () {
+
+job_id=$1
+
+for some_job_id in ${job_list} ; do
+
+    if [ ${some_job_id} = ${job_id} ]; then
+
+cat <<EOF
+Job Id: ${job_id}
+Job_Name = pbs_job
+Job_Owner = ${my_username}@dg0n20.mcs.anl.gov
+job_state = R
+EOF
+
+exit 0
+
+    fi
+
+done
+
+echo "Unknown job Id $2" 1>&2
+exit 153
+
+} #====================================
+
+#=====================================
 #MAIN
 #=====================================
 if [ $# -gt 0 ]; then
@@ -89,8 +116,7 @@ if [ $# -gt 0 ]; then
     elif [ $1 = "-a" ] ; then
       fake_qstat_a
     elif [ $1 = "-f" ]; then
-      echo "Unknown job Id $2" 1>&2
-      exit 153
+      fake_qstat_f $2
     else
       echo "bad argument: first arg must be -x -q or -a"
     fi
