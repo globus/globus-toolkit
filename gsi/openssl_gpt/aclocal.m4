@@ -11,6 +11,299 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
+AC_DEFUN([OPENSSL_INIT], [
+
+AM_MAINTAINER_MODE
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+    export GPT_LOCATION
+fi
+
+#extract whether the package is built with flavors from the src metadata
+$GPT_LOCATION/sbin/gpt_extract_data --build $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
+
+. ./tmpfile.gpt
+rm ./tmpfile.gpt
+
+if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
+        GLOBUS_FLAVOR_NAME="noflavor"
+fi
+
+AC_ARG_WITH(flavor,
+	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
+
+	[
+	case $withval in
+	no)
+		NO_FLAVOR="yes"
+		;;
+	yes)
+		echo "Please specify a globus build flavor" >&2
+		exit 1
+		;;
+	*)
+        if test "x$GLOBUS_FLAVOR_NAME" = "xnoflavor"; then
+	        echo "Warning: package doesn't build with flavors $withval ignored" >&2
+	        echo "Warning: $withval ignored" >&2
+        else
+		GLOBUS_FLAVOR_NAME=$withval
+                if test ! -f "$GLOBUS_LOCATION/etc/globus_core/flavor_$GLOBUS_FLAVOR_NAME.gpt"; then
+	                echo "ERROR: Flavor $GLOBUS_FLAVOR_NAME has not been installed" >&2
+	                exit 1
+                fi 
+
+        fi
+		;;
+	esac
+	],
+
+	[ 
+        if test "x$GLOBUS_FLAVOR_NAME" = "x"; then
+	        echo "Please specify a globus build flavor" >&2
+	        exit 1
+        fi
+	]
+)
+
+
+GPT_INIT
+
+
+
+AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
+AC_SUBST(GLOBUS_FLAVOR_NAME)
+
+
+# get the environment scripts
+
+if test "x$GLOBUS_FLAVOR_NAME" != "xnoflavor" ; then
+	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+
+AC_SUBST(CC)
+AC_SUBST(CPP)
+AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LD)
+AC_SUBST(LDFLAGS)
+AC_SUBST(LIBS)
+AC_SUBST(CXX)
+AC_SUBST(CXXCPP)
+AC_SUBST(CXXFLAGS)
+AC_SUBST(INSURE)
+AC_SUBST(DOXYGEN)
+AC_SUBST(F77)
+AC_SUBST(F77FLAGS)
+AC_SUBST(F90)
+AC_SUBST(F90FLAGS)
+AC_SUBST(AR)
+AC_SUBST(ARFLAGS)
+AC_SUBST(RANLIB)
+AC_SUBST(PERL)
+AC_SUBST(CROSS)
+AC_SUBST(cross_compiling)
+AC_SUBST(OBJEXT)
+AC_SUBST(EXEEXT)
+
+
+dnl define FILELIST_FILE variable
+FILELIST_FILE=`pwd`;
+FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
+AC_SUBST(FILELIST_FILE)
+
+dnl export version information
+dnl branch id 99999 means that timestamp refers to build time
+if test -f $srcdir/dirt.sh ; then
+    . $srcdir/dirt.sh
+else
+    DIRT_TIMESTAMP=`perl -e 'print time'`
+    DIRT_BRANCH_ID=99999
+fi
+
+dnl GPT_MAJOR_VERSION and GPT_MINOR_VERSION provided by GPT_INIT
+AC_SUBST(GPT_MAJOR_VERSION)
+AC_SUBST(GPT_MINOR_VERSION)
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
+
+
+
+dnl END OF GLOBUS_INIT
+])
+
+# Add --enable-maintainer-mode option to configure.
+# From Jim Meyering
+
+# serial 1
+
+AC_DEFUN([AM_MAINTAINER_MODE],
+[AC_MSG_CHECKING([whether to enable maintainer-specific portions of Makefiles])
+  dnl maintainer-mode is disabled by default
+  AC_ARG_ENABLE(maintainer-mode,
+[  --enable-maintainer-mode enable make rules and dependencies not useful
+                          (and sometimes confusing) to the casual installer],
+      USE_MAINTAINER_MODE=$enableval,
+      USE_MAINTAINER_MODE=no)
+  AC_MSG_RESULT([$USE_MAINTAINER_MODE])
+  AM_CONDITIONAL(MAINTAINER_MODE, [test $USE_MAINTAINER_MODE = yes])
+  MAINT=$MAINTAINER_MODE_TRUE
+  AC_SUBST(MAINT)dnl
+]
+)
+
+# serial 3
+
+# AM_CONDITIONAL(NAME, SHELL-CONDITION)
+# -------------------------------------
+# Define a conditional.
+#
+# FIXME: Once using 2.50, use this:
+# m4_match([$1], [^TRUE\|FALSE$], [AC_FATAL([$0: invalid condition: $1])])dnl
+AC_DEFUN([AM_CONDITIONAL],
+[ifelse([$1], [TRUE],
+        [errprint(__file__:__line__: [$0: invalid condition: $1
+])dnl
+m4exit(1)])dnl
+ifelse([$1], [FALSE],
+       [errprint(__file__:__line__: [$0: invalid condition: $1
+])dnl
+m4exit(1)])dnl
+AC_SUBST([$1_TRUE])
+AC_SUBST([$1_FALSE])
+if $2; then
+  $1_TRUE=
+  $1_FALSE='#'
+else
+  $1_TRUE='#'
+  $1_FALSE=
+fi])
+
+dnl GPT_INIT()
+AC_DEFUN(GPT_INIT, [
+        if test "x$GPT_LOCATION" = "x"; then
+                echo "ERROR Please specify GPT_LOCATION" >&2
+                exit 1
+        fi
+
+        AC_SUBST(GPT_LOCATION)
+
+	#extract the name and version of the package from the src metadata
+	$GPT_LOCATION/sbin/gpt_extract_data --name --version $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
+	. ./tmpfile.gpt
+	rm ./tmpfile.gpt
+	GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
+
+	#Default to shared, before checking static-only
+	GPT_LINKTYPE="shared"
+	# We have to figure out if we're linking only static before build_config
+	AC_ARG_ENABLE(static-only,
+	[ --enable-static-only     Don't do any dynamic linking],
+
+	[
+	case $enableval in
+	no)
+		GPT_LINKTYPE="shared"
+		;;
+	yes)
+		GPT_LINKTYPE="static"
+dnl		if test "$STATIC_LDFLAGS" = ""; then
+dnl		GPT_LDFLAGS=" -all-static $GPT_LDFLAGS"
+dnl		else
+dnl		GPT_LDFLAGS=" $STATIC_LDFLAGS $GPT_LDFLAGS"
+dnl		fi
+		;;
+	*)
+		echo "--enable-static-only has no arguments" >&2
+		exit 1
+		;;
+	esac
+	]
+	)
+
+	#extract the cumulative build environment from the installed development tree
+	[
+	if $GPT_LOCATION/sbin/gpt_build_config -src $srcdir/pkgdata/pkg_data_src.gpt.in -f $GLOBUS_FLAVOR_NAME -link $GPT_LINKTYPE; then 
+		echo "Dependencies Complete";
+	else 
+		exit 1;
+	fi
+	]
+
+# The following variables are used to manage the build enviroment
+# GPT_CFLAGS, GPT_INCLUDES, GPT_PGM_LINKS, GPT_LIB_LINKS, and GPT_LDFLAGS
+# are the variables used in the Makefile.am's
+# GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored as build data in 
+# the packaging metadata file.
+# GPT_CONFIG_FLAGS, GPT_CONFIG_INCLUDES, GPT_CONFIG_PGM_LINKS, and 
+# GPT_CONFIG_LIB_LINKS are returned by gpt_build_config and contain build
+# environment data from the dependent packages.
+
+
+
+	. ./gpt_build_temp.sh  
+	rm ./gpt_build_temp.sh
+	GPT_CFLAGS="$GPT_CONFIG_CFLAGS"
+	GPT_INCLUDES="-I$GLOBUS_LOCATION/include/$GLOBUS_FLAVOR_NAME $GPT_CONFIG_INCLUDES"
+	GPT_LIBS="$GPT_CONFIG_PKG_LIBS $GPT_CONFIG_LIBS"
+	GPT_LDFLAGS="$GPT_CONFIG_STATIC_LINKLINE -L$GLOBUS_LOCATION/lib $GPT_LDFLAGS"
+	GPT_PGM_LINKS="$GPT_CONFIG_PGM_LINKS $GPT_CONFIG_LIBS"
+	GPT_LIB_LINKS="$GPT_CONFIG_LIB_LINKS $GPT_CONFIG_LIBS"
+
+
+
+	AC_SUBST(GPT_CFLAGS)
+	AC_SUBST(GPT_INCLUDES)
+	AC_SUBST(GPT_EXTERNAL_INCLUDES)
+	AC_SUBST(GPT_EXTERNAL_LIBS)
+	AC_SUBST(GPT_LIBS)
+	AC_SUBST(GPT_LDFLAGS)
+	AC_SUBST(GPT_CONFIG_CFLAGS)
+	AC_SUBST(GPT_CONFIG_INCLUDES)
+	AC_SUBST(GPT_CONFIG_LIBS)
+	AC_SUBST(GPT_CONFIG_PKG_LIBS)
+	AC_SUBST(GPT_PGM_LINKS)
+	AC_SUBST(GPT_LIB_LINKS)
+	AC_SUBST(GPT_LINKTYPE)
+	builddir=`pwd`
+	AC_SUBST(builddir)
+])
+
+AC_DEFUN(GPT_SET_CFLAGS, [
+	GPT_CFLAGS_TMP=$1
+	GPT_CFLAGS="$GPT_CFLAGS_TMP $GPT_CFLAGS"
+])
+
+AC_DEFUN(GPT_SET_INCLUDES, [
+
+	GPT_INCLUDES_TMP=$1
+	GPT_EXTERNAL_INCLUDES="$GPT_EXTERNAL_INCLUDES $GPT_INCLUDES_TMP"
+	GPT_INCLUDES="$GPT_INCLUDES_TMP $GPT_INCLUDES"
+])
+
+AC_DEFUN(GPT_SET_LIBS, [
+
+	GPT_LIBS_TMP=$1
+	GPT_EXTERNAL_LIBS="$GPT_EXTERNAL_LIBS $GPT_LIBS_TMP"
+	GPT_LIB_LINKS=" $GPT_LIB_LINKS $GPT_LIBS_TMP"
+])
+
+AC_DEFUN(GPT_SET_LDFLAGS, [
+ 
+         GPT_LDFLAGS_TMP=$1
+	 GPT_EXTERNAL_LDFLAGS="$GPT_EXTERNAL_LDFLAGS $GPT_LDFLAGS_TMP"
+	 GPT_LDFLAGS=" $GPT_LDFLAGS_TMP $GPT_LDFLAGS"
+])
+
 # Do all the work for Automake.  This macro actually does too much --
 # some checks are only needed if your package does certain things.
 # But this isn't really a big deal.
@@ -464,33 +757,6 @@ AC_MSG_RESULT($_am_result)
 rm -f confinc confmf
 ])
 
-# serial 3
-
-# AM_CONDITIONAL(NAME, SHELL-CONDITION)
-# -------------------------------------
-# Define a conditional.
-#
-# FIXME: Once using 2.50, use this:
-# m4_match([$1], [^TRUE\|FALSE$], [AC_FATAL([$0: invalid condition: $1])])dnl
-AC_DEFUN([AM_CONDITIONAL],
-[ifelse([$1], [TRUE],
-        [errprint(__file__:__line__: [$0: invalid condition: $1
-])dnl
-m4exit(1)])dnl
-ifelse([$1], [FALSE],
-       [errprint(__file__:__line__: [$0: invalid condition: $1
-])dnl
-m4exit(1)])dnl
-AC_SUBST([$1_TRUE])
-AC_SUBST([$1_FALSE])
-if $2; then
-  $1_TRUE=
-  $1_FALSE='#'
-else
-  $1_TRUE='#'
-  $1_FALSE=
-fi])
-
 # Like AC_CONFIG_HEADER, but automatically create stamp file.
 
 # serial 3
@@ -558,67 +824,659 @@ AC_DEFUN([_AM_DIRNAME],
 	      m4_patsubst([$1], [^\(.*[^/]\)//*[^/][^/]*/*$], [\1]))[]dnl
 ]) # _AM_DIRNAME
 
-
-
-AC_DEFUN(CHECK_NEED_LSOCKET, [
-
 dnl
-dnl Check whether we need -lsocket
+dnl ac_asm.m4
+dnl
+dnl
+dnl Set up assembler options 
+dnl
 dnl
 
-AC_MSG_CHECKING(for -lsocket)
 
-AC_TRY_LINK(
-    [
-        #include <sys/types.h>
-	#include <sys/socket.h>
-    ],
-    [
-	int fd;
-  	fd = socket(AF_INET,SOCK_STREAM,0);
-    ],
-    [
-	lac_cv_lsocket="no"	
-    ],
-    [
-	lac_cv_lsocket="yes"
-	EXTERNAL_LIBS="$EXTERNAL_LIBS -lsocket"
-    ]
-)
+dnl LAC_ASM_ARGS()
 
-AC_MSG_RESULT($lac_cv_lsocket)
+AC_DEFUN(LAC_ASM_ARGS,
+[
 
+    AC_ARG_ENABLE(asm,
+        [  --disable-asm                disable use of handcoded assembler],
+	    [lac_asm="$enableval"],
+	    [lac_asm=${lac_asm='yes'}])
+])
+
+dnl LAC_ASM()
+
+AC_DEFUN(LAC_ASM,
+[
+    AC_REQUIRE([AC_CANONICAL_HOST])
+    AC_REQUIRE([LAC_CPU])
+    LAC_ASM_ARGS
+    LAC_ASM_SET
+
+    LAC_SUBSTITUTE_VAR(BN_OBJ)
+    LAC_SUBSTITUTE_VAR(DES_OBJ)
+    LAC_SUBSTITUTE_VAR(BF_OBJ)
+    LAC_SUBSTITUTE_VAR(CAST_OBJ)
+    LAC_SUBSTITUTE_VAR(RC4_OBJ)
+    LAC_SUBSTITUTE_VAR(RC5_OBJ)
+    LAC_SUBSTITUTE_VAR(SHA1_OBJ)
+    LAC_SUBSTITUTE_VAR(MD5_OBJ)
+    LAC_SUBSTITUTE_VAR(RMD_OBJ)
+    LAC_SUBSTITUTE_VAR(CFLAGS)
+    AC_REQUIRE([LAC_PROG_AS])
+])
+
+dnl LAC_ASM_SET
+AC_DEFUN(LAC_ASM_SET,
+[
+    lac_CFLAGS="$CFLAGS "
+    lac_BN_OBJ="bn_asm.lo"
+    lac_BF_OBJ="bf_enc.lo"
+    lac_DES_OBJ="des_enc.lo fcrypt_b.lo"
+    lac_CAST_OBJ="c_enc.lo"
+    lac_RC4_OBJ="rc4_enc.lo"
+    lac_RC5_OBJ="rc5_enc.lo"
+    lac_SHA1_OBJ=" "
+    lac_MD5_OBJ=" "
+    lac_RMD_OBJ=" "
+
+    if test "$lac_asm" = "yes"; then
+        case ${host} in
+            *solaris*)
+                case ${lac_cv_CPU} in
+                    *sun4m*|*sun4d*)
+                        lac_BN_OBJ="asm/sparcv8.lo"
+                    ;;
+                    *sun4u*)
+                        lac_BN_OBJ="asm/sparcv8plus.lo"
+                        lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
+                    ;;
+                    *x86*)
+                            lac_BN_OBJ="asm/bn86-sol.lo asm/co86-sol.lo"
+                            lac_BF_OBJ="asm/bx86-sol.lo"
+                            lac_DES_OBJ="asm/dx86-sol.lo asm/yx86-sol.lo"
+                            lac_CAST_OBJ="asm/cx86-sol.lo"
+                            lac_RC4_OBJ="asm/rx86-sol.lo"
+                            lac_RC5_OBJ="asm/r586-sol.lo"
+                            lac_SHA1_OBJ="asm/sx86-sol.lo"
+                            lac_MD5_OBJ="asm/mx86-sol.lo"
+                            lac_RMD_OBJ="asm/rm86-sol.lo"
+                    ;;
+                esac
+            ;;   
+            *linux*)
+                case ${lac_cv_CPU} in
+                    *sun4m*|*sun4d*)
+                        lac_BN_OBJ="asm/sparcv8.lo"
+                    ;;
+                    *sun4u*)
+                        lac_BN_OBJ="asm/sparcv8plus.lo"
+                        lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
+                    ;;
+                    *x86*)
+                            lac_BN_OBJ="asm/bn86-elf.lo asm/co86-elf.lo"
+                            lac_BF_OBJ="asm/bx86-elf.lo"
+                            lac_DES_OBJ="asm/dx86-elf.lo asm/yx86-elf.lo"
+                            lac_CAST_OBJ="asm/cx86-elf.lo"
+                            lac_RC4_OBJ="asm/rx86-elf.lo"
+                            lac_RC5_OBJ="asm/r586-elf.lo"
+                            lac_SHA1_OBJ="asm/sx86-elf.lo"
+                            lac_MD5_OBJ="asm/mx86-elf.lo"
+                            lac_RMD_OBJ="asm/rm86-elf.lo"
+                    ;;
+                    *ia64*)
+                        lac_BN_OBJ="asm/ia64.lo"
+                    ;;
+                esac
+            ;;   
+            *irix6*)
+                case ${lac_cv_CPU} in
+                    *mips3*|*mips4*)
+                        dnl this needs testing
+                        dnl lac_BN_OBJ="asm/mips3.lo"
+                    ;;
+                esac
+            ;;
+        esac
+    else
+        lac_CFLAGS="-DNO_ASM $lac_CFLAGS"
+        AC_DEFINE(NO_ASM)
+    fi
 ])
 
 
-AC_DEFUN(CHECK_NEED_LNSL, [
 
-dnl
-dnl Check whether we need -lnsl
-dnl
 
-AC_MSG_CHECKING(for -lnsl)
 
-AC_TRY_LINK(
-    [
-	#include <netdb.h>
-    ],
-    [
-	struct hostent * host;
-  	host = gethostbyname("localhost");
-    ],
-    [
-	lac_cv_lnsl="no"	
-    ],
-    [
-	lac_cv_lnsl="yes"
-	EXTERNAL_LIBS="$EXTERNAL_LIBS -lnsl"
-    ]
-)
 
-AC_MSG_RESULT($lac_cv_lnsl)
 
+
+
+
+dnl LAC_CPU_SET
+AC_DEFUN(LAC_CPU_SET,
+[
+    AC_REQUIRE([AC_CANONICAL_HOST])
+
+    case $host in
+        *86*)
+            lac_cv_CPU="x86"
+        ;;        
+        *ia64*)
+            lac_cv_CPU="ia64"
+        ;;        
+        *solaris*)
+            lac_cv_CPU=`uname -m`
+        ;;
+        *hpux*)
+            lac_cv_CPU="parisc"
+        ;;
+        *-ibm-aix*)
+            lac_cv_CPU=`uname -m`
+        ;;
+        *-dec-osf*)
+            lac_cv_CPU=`uname -m`
+        ;;
+        *irix6*)
+            lac_tmp_CPU=`(hinv -t cpu) 2>/dev/null | head -1 |sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
+            lac_tmp_CPU=${lac_tmp_CPU:-0}
+            if [ $lac_tmp_CPU -ge 5000 ]; then
+                lac_cv_CPU=mips4
+            else
+                lac_cv_CPU=mips3
+            fi
+        ;;
+        *)
+            lac_cv_CPU="unknown"
+        ;;
+    esac
 ])
+
+
+dnl LAC_CPU
+AC_DEFUN(LAC_CPU,
+[
+    AC_CACHE_CHECK([CPU type],lac_cv_CPU,[LAC_CPU_SET])
+])
+
+
+
+
+
+dnl LAC_SUBSTITUTE_VAR
+
+AC_DEFUN([LAC_SUBSTITUTE_VAR],
+[
+    if test -n "[$]lac_$1"; then
+        $1=[$]lac_$1
+        AC_SUBST($1)
+    fi
+])
+
+
+dnl LAC_DEFINE_VAR
+
+AC_DEFUN([LAC_DEFINE_VAR],
+[
+    if test -n "[$]lac_$1"; then
+        $1=[$]lac_$1
+        AC_DEFINE_UNQUOTED($1,[$]lac_$1)
+    fi
+])
+
+dnl LAC_CHECK_DL_LIB
+AC_DEFUN([LAC_CHECK_DL_LIB],
+[
+    AC_CHECK_LIB([dl],[dlopen],
+    [
+        DL_LIB=-ldl
+    ],
+    [
+        AC_CHECK_LIB([dld],[dlopen],
+        [
+            DL_LIB=-ldld
+        ],
+        [
+            AC_CHECK_FUNC([dlopen],
+            [
+	        DL_LIB=
+            ],
+            [
+                AC_MSG_ERROR("Unable to find dynamic linking library")
+            ])
+        ])
+    ])
+])
+
+# Figure out how to run the assembler.
+
+# LAC_PROG_AS
+AC_DEFUN([LAC_PROG_AS],
+[# By default we simply use the C compiler to build assembly code.
+AC_REQUIRE([AC_PROG_CC])
+: ${AS="$CC"}
+# Set ASFLAGS if not already set.
+: ${ASFLAGS="$CFLAGS"}
+AC_SUBST(AS)
+AC_SUBST(ASFLAGS)])
+
+dnl
+dnl ac_crypto.m4
+dnl
+dnl
+dnl Set up crypto library options 
+dnl
+dnl
+
+
+dnl LAC_CRYPTO_ARGS()
+
+AC_DEFUN(LAC_CRYPTO_ARGS,
+[
+])
+
+dnl LAC_CRYPTO()
+
+AC_DEFUN(LAC_CRYPTO,
+[
+    AC_REQUIRE([AC_CANONICAL_HOST])
+    AC_REQUIRE([LAC_CPU])
+    AC_REQUIRE([AC_PROG_CC])
+    LAC_CRYPTO_ARGS
+    LAC_CRYPTO_SET
+
+    LAC_SUBSTITUTE_VAR(DATE)
+    LAC_DEFINE_VAR(OPENSSLDIR)
+    LAC_DEFINE_VAR(SIXTY_FOUR_BIT_LONG)
+    LAC_DEFINE_VAR(SIXTY_FOUR_BIT)
+    LAC_DEFINE_VAR(THIRTY_TWO_BIT)
+    LAC_DEFINE_VAR(DES_PTR)
+    LAC_DEFINE_VAR(DES_RISC1)
+    LAC_DEFINE_VAR(DES_RISC2)
+    LAC_DEFINE_VAR(DES_UNROLL)
+    LAC_DEFINE_VAR(DES_LONG)
+    LAC_DEFINE_VAR(BN_LLONG)
+    LAC_DEFINE_VAR(BF_PTR)
+    LAC_DEFINE_VAR(RC4_CHUNK)
+    LAC_DEFINE_VAR(RC4_INDEX)
+    LAC_DEFINE_VAR(RC4_INT)
+    LAC_DEFINE_VAR(RC2_INT)
+    LAC_DEFINE_VAR(MD2_INT)
+    LAC_DEFINE_VAR(IDEA_INT)
+])
+
+
+dnl LAC_CRYPTO_SET
+AC_DEFUN(LAC_CRYPTO_SET,
+[
+    # defaults:
+
+    lac_OPENSSLDIR="\"$GLOBUS_LOCATION\""
+    lac_DATE="`date`"
+    lac_SIXTY_FOUR_BIT_LONG=""
+    lac_SIXTY_FOUR_BIT=""
+    lac_THIRTY_TWO_BIT="1"
+    lac_DES_PTR=""
+    lac_DES_RISC1=""
+    lac_DES_RISC2=""
+    lac_DES_UNROLL=""
+    lac_DES_LONG="unsigned long"
+    lac_BN_LLONG=""
+    lac_BF_PTR=""
+    lac_RC4_CHUNK=""
+    lac_RC4_INDEX=""
+    lac_RC4_INT="unsigned int"
+    lac_RC2_INT="unsigned int"
+    lac_MD2_INT="unsigned int"
+    lac_IDEA_INT="unsigned int"
+
+    case ${host} in
+        *solaris*)
+            case ${lac_cv_CPU} in
+                *sun4m*|*sun4d*)
+                    if test "$GCC" = "1"; then
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
+                    else
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_PTR="1"
+                        lac_DES_RISC1="1"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
+                    fi
+                ;;
+                *sun4u*)
+                    if test "$GCC" = "1"; then
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
+                    else
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long long"
+                        lac_DES_PTR="1"
+                        lac_DES_RISC1="1"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
+                    fi
+                ;;
+                *x86*)
+                    if test "$GCC" = "1"; then
+                        lac_BN_LLONG="1"
+                        lac_RC4_INDEX="1"
+                        lac_DES_PTR="1"
+                        lac_DES_RISC1="1"
+                        lac_DES_UNROLL="1" 
+                    else
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_PTR="1"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
+                    fi
+                ;;
+            esac
+        ;;   
+        *linux*)
+            case ${lac_cv_CPU} in
+                *sun4m*|*sun4d*)
+                    # gcc
+                    lac_BN_LLONG="1"
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                    lac_DES_UNROLL="1" 
+                    lac_BF_PTR="1"
+                ;;
+                *sun4u*)
+                    # gcc
+                    lac_BN_LLONG="1"
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                    lac_DES_UNROLL="1" 
+                    lac_BF_PTR="1"
+                ;;
+                *x86*)
+                    # gcc
+                    lac_BN_LLONG="1"
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                    lac_DES_UNROLL="1" 
+                    lac_BF_PTR="1"
+                ;;
+                *ia64*)
+                    # gcc
+                    lac_SIXTY_FOUR_BIT_LONG="1"
+                    lac_THIRTY_TWO_BIT=""
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                ;;
+                *alpha*)
+                    if test "$GCC" = "1"; then
+                        lac_SIXTY_FOUR_BIT_LONG="1"
+                        lac_THIRTY_TWO_BIT=""
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_RISC1="1" 
+                        lac_DES_UNROLL="1" 
+                    else
+                        lac_SIXTY_FOUR_BIT_LONG="1"
+                        lac_THIRTY_TWO_BIT=""
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_RISC1="1" 
+                        lac_DES_UNROLL="1" 
+                    fi
+                ;;
+            esac
+        ;;
+        *irix64*)
+            # gcc and vendor
+            lac_RC4_INT="unsigned char"
+            lac_RC4_CHUNK="unsigned long"
+            lac_DES_RISC2="1"
+            lac_DES_PTR="1"
+            lac_DES_UNROLL="1"
+            lac_BF_PTR="1"
+            lac_SIXTY_FOUR_BIT_LONG="1"
+            lac_THIRTY_TWO_BIT=""
+        ;;
+        *irix6*)
+            case ${lac_cv_CPU} in
+                *mips3* | *mips4* )
+                    if test "$GCC" = "1"; then
+                        lac_MD2_INT="unsigned char"
+                        lac_RC4_INDEX="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long long"
+                        lac_DES_RISC2="1"
+                        lac_DES_PTR="1"
+                        lac_DES_UNROLL="1"
+                        lac_BF_PTR="1"
+                        lac_SIXTY_FOUR_BIT="1"
+                        lac_THIRTY_TWO_BIT=""
+                    else
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long long"
+                        lac_DES_RISC2="1"
+                        lac_DES_PTR="1"
+                        lac_DES_UNROLL="1"
+                        lac_BF_PTR="1"
+                        lac_SIXTY_FOUR_BIT="1"
+                        lac_THIRTY_TWO_BIT=""
+                    fi
+                ;;
+            esac
+        ;;
+        *hpux*)
+            if test "$GCC" = "1"; then
+                lac_BN_LLONG="1"
+                lac_DES_PTR="1"
+                lac_DES_UNROLL="1"
+                lac_DES_RISC1="1"
+            else
+                lac_MD2_INT="unsigned char"
+                lac_RC4_INDEX="1"
+                lac_RC4_INT="unsigned char"
+                lac_DES_RISC1="1"
+                lac_DES_LONG="unsigned int"
+                lac_DES_UNROLL="1"
+            fi
+        ;;
+        *-ibm-aix*)
+            # gcc and vendor
+            lac_BN_LLONG="1"
+            lac_RC4_INT="unsigned char"
+        ;;
+        *-dec-osf*)
+            if test "$GCC" = "1"; then
+                lac_SIXTY_FOUR_BIT_LONG="1"
+                lac_THIRTY_TWO_BIT=""
+                lac_RC4_CHUNK="unsigned long"
+                lac_DES_UNROLL="1"
+                lac_DES_RISC1="1"
+            else
+                lac_SIXTY_FOUR_BIT_LONG="1"
+                lac_THIRTY_TWO_BIT=""
+                lac_RC4_CHUNK="unsigned long"
+            fi
+        ;;
+    esac
+])
+
+
+
+
+
+
+
+
+dnl
+dnl ac_compiler.m4
+dnl
+dnl
+dnl Set up compiler flags
+dnl
+dnl
+
+
+dnl LAC_COMPILER_ARGS()
+
+AC_DEFUN(LAC_COMPILER_ARGS,
+[
+])
+
+dnl LAC_COMPILER()
+
+AC_DEFUN(LAC_COMPILER,
+[
+    AC_REQUIRE([AC_CANONICAL_HOST])
+    AC_REQUIRE([LAC_CPU])
+    AC_REQUIRE([AC_PROG_CC])
+    AC_REQUIRE([AC_PROG_LD])
+    LAC_COMPILER_ARGS
+    LAC_COMPILER_SET
+    LAC_SUBSTITUTE_VAR(CFLAGS)
+    LAC_SUBSTITUTE_VAR(LDFLAGS)
+    LAC_DEFINE_VAR(DSO_DLFCN)
+    LAC_DEFINE_VAR(HAVE_DLFCN_H)
+    LAC_DEFINE_VAR(THREADS)
+])
+
+
+dnl LAC_COMPILER_SET
+AC_DEFUN(LAC_COMPILER_SET,
+[
+    # defaults:
+
+    lac_CFLAGS="$CFLAGS -DDSO_DLFCN -DHAVE_DLFCN_H"
+    lac_LDFLAGS="$LDFLAGS"
+    lac_DSO_DLFCN="1"
+    lac_HAVE_DLFCN_H="1"
+    lac_THREADS=""
+
+    if test ! "$GLOBUS_THREADS" = "none"; then
+        lac_CFLAGS="$lac_CFLAGS -DTHREADS"
+        lac_THREADS="1"
+    fi
+
+    case ${host} in
+        *solaris*)
+            case ${lac_cv_CPU} in
+                *sun4m*|*sun4d*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mv8 -O3 -fomit-frame-pointer -Wall -DB_ENDIAN -DBN_DIV2W"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -xarch=v8 -xO5 -xstrconst -xdepend -Xa -DB_ENDIAN -DBN_DIV2W"
+                    fi
+                ;;
+                *sun4u*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall -DB_ENDIAN -DBN_DIV2W -DULTRASPARC"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -xtarget=ultra -xarch=v8plus -xO5 -xstrconst -xdepend -Xa -DB_ENDIAN -DBN_DIV2W -DULTRASPARC"
+                    fi
+                ;;
+                *x86*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -mcpu=i486 -Wall -DL_ENDIAN -DNO_INLINE_ASM"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -fast -O -Xa"
+                    fi
+                ;;
+            esac
+        ;;   
+        *linux*)
+            case ${lac_cv_CPU} in
+                *sun4m*|*sun4d*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -mv8 -DB_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall -DBN_DIV2W"
+                ;;
+                *sun4u*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -DB_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall -Wa,-Av8plus -DULTRASPARC -DBN_DIV2W"
+                ;;
+                *x86*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -mcpu=i486 -Wall"
+                ;;
+                *ia64*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall"
+                ;;
+                *alpha*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -O3 -DL_ENDIAN -DTERMIO"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -fast -readonly_strings -DL_ENDIAN -DTERMIO"
+                    fi
+                ;;
+            esac
+        ;;
+        *irix64*)
+            if test "$GCC" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -mabi=64 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN"
+            else
+                lac_CFLAGS="$lac_CFLAGS -64 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN"
+            fi
+        ;;   
+        *irix6*)
+            case ${lac_cv_CPU} in
+                *mips3*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mabi=n32 -mmips-as -O3 -DTERMIOS -DB_ENDIAN"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -n32 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN"
+                    fi
+                ;;
+                *mips4*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mabi=n32 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -n32 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN"
+                    fi
+                ;;
+            esac
+        ;;
+        *hpux*)
+            if test "$GCC" = "yes"; then
+                    lac_CFLAGS="$lac_CFLAGS -O3 -DB_ENDIAN -DBN_DIV2W"
+            else
+                    lac_CFLAGS="$lac_CFLAGS +O3 +Optrs_strongly_typed +Olibcalls -Ae +ESlit -DB_ENDIAN -DBN_DIV2W -DMD32_XARRAY"
+            fi
+        ;;
+        *-ibm-aix*)
+            if test "$GCC" = "yes"; then
+                    lac_CFLAGS="$lac_CFLAGS -O3 -DAIX -DB_ENDIAN"
+                    if test "$with_gnu_ld" = "no"; then
+                            lac_LDFLAGS="$lac_LDFLAGS -Wl,-brtl"
+                    fi
+            else
+                    lac_CFLAGS="$lac_CFLAGS -O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath"
+                    lac_LDFLAGS="$lac_LDFLAGS -brtl"
+            fi
+        ;;
+        *-dec-osf*)
+            if test "$GCC" = "yes"; then
+                    lac_CFLAGS="$lac_CFLAGS -O3"
+            else
+                    lac_CFLAGS="$lac_CFLAGS -std1 -tune host -fast -readonly_strings"
+            fi
+        ;;
+    esac
+])
+
+
+
+
+
+
 
 
 # libtool.m4 - Configure libtool for the host system. -*-Autoconf-*-
@@ -5895,121 +6753,68 @@ AC_DEFUN([LT_AC_PROG_RC],
 [AC_CHECK_TOOL(RC, windres, no)
 ])
 
-dnl GPT_INIT()
-AC_DEFUN(GPT_INIT, [
-        if test "x$GPT_LOCATION" = "x"; then
-                echo "ERROR Please specify GPT_LOCATION" >&2
-                exit 1
-        fi
-
-        AC_SUBST(GPT_LOCATION)
-
-	#extract the name and version of the package from the src metadata
-	$GPT_LOCATION/sbin/gpt_extract_data --name --version $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
-	. ./tmpfile.gpt
-	rm ./tmpfile.gpt
-	GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
-
-	#Default to shared, before checking static-only
-	GPT_LINKTYPE="shared"
-	# We have to figure out if we're linking only static before build_config
-	AC_ARG_ENABLE(static-only,
-	[ --enable-static-only     Don't do any dynamic linking],
-
-	[
-	case $enableval in
-	no)
-		GPT_LINKTYPE="shared"
-		;;
-	yes)
-		GPT_LINKTYPE="static"
-dnl		if test "$STATIC_LDFLAGS" = ""; then
-dnl		GPT_LDFLAGS=" -all-static $GPT_LDFLAGS"
-dnl		else
-dnl		GPT_LDFLAGS=" $STATIC_LDFLAGS $GPT_LDFLAGS"
-dnl		fi
-		;;
-	*)
-		echo "--enable-static-only has no arguments" >&2
-		exit 1
-		;;
-	esac
-	]
-	)
-
-	#extract the cumulative build environment from the installed development tree
-	[
-	if $GPT_LOCATION/sbin/gpt_build_config -src $srcdir/pkgdata/pkg_data_src.gpt.in -f $GLOBUS_FLAVOR_NAME -link $GPT_LINKTYPE; then 
-		echo "Dependencies Complete";
-	else 
-		exit 1;
-	fi
-	]
-
-# The following variables are used to manage the build enviroment
-# GPT_CFLAGS, GPT_INCLUDES, GPT_PGM_LINKS, GPT_LIB_LINKS, and GPT_LDFLAGS
-# are the variables used in the Makefile.am's
-# GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored as build data in 
-# the packaging metadata file.
-# GPT_CONFIG_FLAGS, GPT_CONFIG_INCLUDES, GPT_CONFIG_PGM_LINKS, and 
-# GPT_CONFIG_LIB_LINKS are returned by gpt_build_config and contain build
-# environment data from the dependent packages.
 
 
+AC_DEFUN(CHECK_NEED_LSOCKET, [
 
-	. ./gpt_build_temp.sh  
-	rm ./gpt_build_temp.sh
-	GPT_CFLAGS="$GPT_CONFIG_CFLAGS"
-	GPT_INCLUDES="-I$GLOBUS_LOCATION/include/$GLOBUS_FLAVOR_NAME $GPT_CONFIG_INCLUDES"
-	GPT_LIBS="$GPT_CONFIG_PKG_LIBS $GPT_CONFIG_LIBS"
-	GPT_LDFLAGS="$GPT_CONFIG_STATIC_LINKLINE -L$GLOBUS_LOCATION/lib $GPT_LDFLAGS"
-	GPT_PGM_LINKS="$GPT_CONFIG_PGM_LINKS $GPT_CONFIG_LIBS"
-	GPT_LIB_LINKS="$GPT_CONFIG_LIB_LINKS $GPT_CONFIG_LIBS"
+dnl
+dnl Check whether we need -lsocket
+dnl
 
+AC_MSG_CHECKING(for -lsocket)
 
+AC_TRY_LINK(
+    [
+        #include <sys/types.h>
+	#include <sys/socket.h>
+    ],
+    [
+	int fd;
+  	fd = socket(AF_INET,SOCK_STREAM,0);
+    ],
+    [
+	lac_cv_lsocket="no"	
+    ],
+    [
+	lac_cv_lsocket="yes"
+	EXTERNAL_LIBS="$EXTERNAL_LIBS -lsocket"
+    ]
+)
 
-	AC_SUBST(GPT_CFLAGS)
-	AC_SUBST(GPT_INCLUDES)
-	AC_SUBST(GPT_EXTERNAL_INCLUDES)
-	AC_SUBST(GPT_EXTERNAL_LIBS)
-	AC_SUBST(GPT_LIBS)
-	AC_SUBST(GPT_LDFLAGS)
-	AC_SUBST(GPT_CONFIG_CFLAGS)
-	AC_SUBST(GPT_CONFIG_INCLUDES)
-	AC_SUBST(GPT_CONFIG_LIBS)
-	AC_SUBST(GPT_CONFIG_PKG_LIBS)
-	AC_SUBST(GPT_PGM_LINKS)
-	AC_SUBST(GPT_LIB_LINKS)
-	AC_SUBST(GPT_LINKTYPE)
-	builddir=`pwd`
-	AC_SUBST(builddir)
+AC_MSG_RESULT($lac_cv_lsocket)
+
 ])
 
-AC_DEFUN(GPT_SET_CFLAGS, [
-	GPT_CFLAGS_TMP=$1
-	GPT_CFLAGS="$GPT_CFLAGS_TMP $GPT_CFLAGS"
+
+AC_DEFUN(CHECK_NEED_LNSL, [
+
+dnl
+dnl Check whether we need -lnsl
+dnl
+
+AC_MSG_CHECKING(for -lnsl)
+
+AC_TRY_LINK(
+    [
+	#include <netdb.h>
+    ],
+    [
+	struct hostent * host;
+  	host = gethostbyname("localhost");
+    ],
+    [
+	lac_cv_lnsl="no"	
+    ],
+    [
+	lac_cv_lnsl="yes"
+	EXTERNAL_LIBS="$EXTERNAL_LIBS -lnsl"
+    ]
+)
+
+AC_MSG_RESULT($lac_cv_lnsl)
+
 ])
 
-AC_DEFUN(GPT_SET_INCLUDES, [
-
-	GPT_INCLUDES_TMP=$1
-	GPT_EXTERNAL_INCLUDES="$GPT_EXTERNAL_INCLUDES $GPT_INCLUDES_TMP"
-	GPT_INCLUDES="$GPT_INCLUDES_TMP $GPT_INCLUDES"
-])
-
-AC_DEFUN(GPT_SET_LIBS, [
-
-	GPT_LIBS_TMP=$1
-	GPT_EXTERNAL_LIBS="$GPT_EXTERNAL_LIBS $GPT_LIBS_TMP"
-	GPT_LIB_LINKS=" $GPT_LIB_LINKS $GPT_LIBS_TMP"
-])
-
-AC_DEFUN(GPT_SET_LDFLAGS, [
- 
-         GPT_LDFLAGS_TMP=$1
-	 GPT_EXTERNAL_LDFLAGS="$GPT_EXTERNAL_LDFLAGS $GPT_LDFLAGS_TMP"
-	 GPT_LDFLAGS=" $GPT_LDFLAGS_TMP $GPT_LDFLAGS"
-])
 
 AC_DEFUN(GLOBUS_INIT, [
 
@@ -6160,24 +6965,4 @@ fi
 
 ])
 
-
-# Add --enable-maintainer-mode option to configure.
-# From Jim Meyering
-
-# serial 1
-
-AC_DEFUN([AM_MAINTAINER_MODE],
-[AC_MSG_CHECKING([whether to enable maintainer-specific portions of Makefiles])
-  dnl maintainer-mode is disabled by default
-  AC_ARG_ENABLE(maintainer-mode,
-[  --enable-maintainer-mode enable make rules and dependencies not useful
-                          (and sometimes confusing) to the casual installer],
-      USE_MAINTAINER_MODE=$enableval,
-      USE_MAINTAINER_MODE=no)
-  AC_MSG_RESULT([$USE_MAINTAINER_MODE])
-  AM_CONDITIONAL(MAINTAINER_MODE, [test $USE_MAINTAINER_MODE = yes])
-  MAINT=$MAINTAINER_MODE_TRUE
-  AC_SUBST(MAINT)dnl
-]
-)
 
