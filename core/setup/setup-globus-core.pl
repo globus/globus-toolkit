@@ -26,7 +26,12 @@ for my $setupfile ('globus-script-initializer', 'globus-sh-tools.sh')
 {
     $result = system("cp $setupdir/$setupfile $globusdir/libexec");
     $result = system("chmod 0755 $globusdir/libexec/$setupfile");
+
 }
+print "creating globus-makefile-header\n";
+
+$result = system("cp $setupdir/globus-makefile-header $globusdir/sbin");
+$result = system("chmod 0755 $globusdir/sbin/globus-makefile-header");
 
 print "Done\n";
 

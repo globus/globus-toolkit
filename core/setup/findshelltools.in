@@ -225,4 +225,5 @@ AC_PATH_PROG(GLOBUS_SH_PRUN, prun)
 AC_PATH_PROG(GLOBUS_SH_PS, ps)
 
 AC_OUTPUT(globus-sh-tools.sh
+	  globus-makefile-header
 	)
