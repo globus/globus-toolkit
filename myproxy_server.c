@@ -59,6 +59,9 @@ static char short_options[] = "dhc:p:vu";
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+static char default_config_file[] =
+MYPROXY_SERVER_DIR "/etc/myproxy-server.config";
+
 /* Signal handling */
 typedef void Sigfunc(int);  
 
@@ -127,7 +130,7 @@ main(int argc, char *argv[])
 
     /* Set context defaults */
     server_context->run_as_daemon = 1;
-    server_context->config_file = MYPROXY_SERVER_DIR "/myproxy-server.config";
+    server_context->config_file = default_config_file;
     
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
