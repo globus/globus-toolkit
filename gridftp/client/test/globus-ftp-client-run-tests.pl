@@ -116,13 +116,14 @@ sub setup_server()
     my $server_host = "localhost";
     my $server_port = 0;
     my $server_nosec = "";
+    my $server_env = "";
     my $subject;
     if(defined($nogsi))
     {
         $server_nosec = "-aa";
     }
 
-    my $server_args = "-s -no-chdir -d 0 -p $server_port $server_nosec";
+    my $server_args = "-nofork -no-chdir -d 0 -p $server_port $server_nosec";
     
     if(!defined($nogsi))
     {
@@ -130,6 +131,9 @@ sub setup_server()
         {
             $ENV{X509_CERT_DIR} = cwd();
             $ENV{X509_USER_PROXY} = cwd() . "/testcred.pem";
+            $server_env = "env "
+                . "X509_USER_CERT=$ENV{X509_USER_PROXY} "
+                . "X509_USER_KEY=$ENV{X509_USER_PROXY} "
         }
     
         system('chmod go-rw testcred.pem');
@@ -138,19 +142,15 @@ sub setup_server()
         chomp($subject);
         
         $ENV{GRIDMAP}= cwd() . "/gridmap";
-    
-        if( ! -f $ENV{GRIDMAP} )
+        system('mv $GRIDMAP $GRIDMAP.old');       
+        if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
         {
-            if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
-            {
-       
-                print "Unable to create gridmap file\n";
-                exit 1;
-            }
+            print "Unable to create gridmap file\n";
+            exit 1;
         }
     }
 
-    $server_pid = open(SERVER, "$server_prog $server_args |");
+    $server_pid = open(SERVER, "$server_env $server_prog $server_args |");
      
     if($server_pid == -1)
     {

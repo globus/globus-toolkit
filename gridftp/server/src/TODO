@@ -49,7 +49,7 @@ known bugs:
 -- we don't chdir to the users home directory on successful auth, which 
     should at least be an option.  There is no way to set a cwd in the 
     server-lib though?
-
+-- -s option (non-detached fork) has a problem where children don't die
 
 
 DONE
