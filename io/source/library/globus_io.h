@@ -878,7 +878,15 @@ struct globus_io_handle_s
     /* some handle state information */
     globus_io_handle_state_t		        state;
     void *					user_pointer;
-
+    
+    /* blocking call indicators, necessary to deliver callbacks to correct
+     * space durring blocking calls
+     */
+    globus_bool_t                               blocking_read;
+    globus_bool_t                               blocking_write;
+    globus_bool_t                               blocking_except;
+    globus_bool_t                               blocking_cancel;
+    
     /* 
      *  NETLOGGER
      */

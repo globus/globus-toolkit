@@ -1771,10 +1771,16 @@ globus_l_io_kickout_cancel_cb(
 {
     globus_io_cancel_info_t *           cancel_info;
     globus_object_t *                   err;
+    globus_io_handle_t                  handle;
+    globus_io_callback_t                read_callback;
+    globus_io_callback_t                write_callback;
+    globus_io_callback_t                except_callback;
+    globus_bool_t                       clean_up;
+    globus_callback_space_t             space;
+    globus_result_t                     result;
     
     cancel_info = (globus_io_cancel_info_t *) user_args;
     
-    /* first remove from cancel pending list */
     globus_i_io_mutex_lock();
     {
         globus_io_cancel_info_t **          ci;
@@ -1788,7 +1794,69 @@ globus_l_io_kickout_cancel_cb(
             cancel_info->callback_handle,
             GLOBUS_NULL,
             GLOBUS_NULL);
+        
+        /* need to see if a two phase cancel is going to be necessary */
+        clean_up = GLOBUS_TRUE;
+        handle = cancel_info->handle;
+        globus_callback_space_get(&space);
+        
+        /* if this were a blocking cancel, the first phase callback would be
+         * registered to global space regardless of user's space
+         */
+        if(space != handle->socket_attr.space)
+        {
+            read_callback = GLOBUS_NULL;
+            write_callback = GLOBUS_NULL;
+            except_callback = GLOBUS_NULL;
             
+            if(cancel_info->read_callback)
+            {
+                /* blocking calls are registered to global space too */
+                if(handle->blocking_read)
+                {
+                    read_callback = cancel_info->read_callback;
+                    cancel_info->read_callback = GLOBUS_NULL;
+                }
+                else
+                {
+                    clean_up = GLOBUS_FALSE;
+                }
+            }
+            
+            if(cancel_info->write_callback)
+            {
+                if(handle->blocking_write)
+                {
+                    write_callback = cancel_info->write_callback;
+                    cancel_info->write_callback = GLOBUS_NULL;
+                }
+                else
+                {
+                    clean_up = GLOBUS_FALSE;
+                }
+            }
+            
+            if(cancel_info->except_callback)
+            {
+                if(handle->blocking_except)
+                {
+                    except_callback = cancel_info->except_callback;
+                    cancel_info->except_callback = GLOBUS_NULL;
+                }
+                else
+                {
+                    clean_up = GLOBUS_FALSE;
+                }
+            }
+        }
+        else
+        {
+            read_callback = cancel_info->read_callback;
+            write_callback = cancel_info->write_callback;
+            except_callback = cancel_info->except_callback;
+        }
+        
+        /* remove from pending list */
         ci = &globus_l_io_cancel_pending_list;
         while(*ci && *ci != cancel_info)
         {
@@ -1802,42 +1870,42 @@ globus_l_io_kickout_cancel_cb(
     }
     globus_i_io_mutex_unlock();
     
-    if(cancel_info->read_callback)
+    if(read_callback)
     {
         err = globus_io_error_construct_io_cancelled(
             GLOBUS_IO_MODULE,
             GLOBUS_NULL,
-            cancel_info->handle);
+            handle);
 
-        cancel_info->read_callback(
+        read_callback(
             cancel_info->read_arg,
-            cancel_info->handle,
+            handle,
             globus_error_put(err));
     }
     
-    if(cancel_info->write_callback)
+    if(write_callback)
     {
         err = globus_io_error_construct_io_cancelled(
             GLOBUS_IO_MODULE,
             GLOBUS_NULL,
-            cancel_info->handle);
+            handle);
 
-        cancel_info->write_callback(
+        write_callback(
             cancel_info->write_arg,
-            cancel_info->handle,
+            handle,
             globus_error_put(err));
     }
     
-    if(cancel_info->except_callback)
+    if(except_callback)
     {
         err = globus_io_error_construct_io_cancelled(
             GLOBUS_IO_MODULE,
             GLOBUS_NULL,
-            cancel_info->handle);
+            handle);
 
-        cancel_info->except_callback(
+        except_callback(
             cancel_info->except_arg,
-            cancel_info->handle,
+            handle,
             globus_error_put(err));
     }
     
@@ -1845,16 +1913,46 @@ globus_l_io_kickout_cancel_cb(
     {
         cancel_info->cancel_callback(
             cancel_info->cancel_arg,
-            cancel_info->handle,
+            handle,
             GLOBUS_SUCCESS);
+        
+        cancel_info->cancel_callback = GLOBUS_NULL;
     }
     
     /* push cancel info */
     globus_i_io_mutex_lock();
     {
-        cancel_info->next = globus_l_io_cancel_free_list;
-        globus_l_io_cancel_free_list = cancel_info;
-
+        if(clean_up)
+        {
+            cancel_info->next = globus_l_io_cancel_free_list;
+            globus_l_io_cancel_free_list = cancel_info;
+        }
+        else if(!globus_l_io_shutdown_called)
+        {
+            /* need to register for second phase of this cancel... this will
+             * provide callbacks to reads/writes registered to a user's space
+             */
+            cancel_info->next = globus_l_io_cancel_pending_list;
+            globus_l_io_cancel_pending_list = cancel_info;
+            
+            globus_l_io_pending_count++;
+            
+            result = globus_callback_space_register_oneshot(
+                &cancel_info->callback_handle,
+                globus_i_reltime_zero,
+                globus_l_io_kickout_cancel_cb,
+                cancel_info,
+                handle->socket_attr.space);
+            globus_assert(result == GLOBUS_SUCCESS);
+        }
+        else
+        {
+            /* we're shutting down, put this on cancel list so destructors can
+             * be called
+             */
+            cancel_info->next = globus_l_io_cancel_list;
+            globus_l_io_cancel_list = cancel_info;
+        }
 exit:
         globus_l_io_pending_count--;
         if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
@@ -1964,7 +2062,9 @@ globus_l_io_handle_events(
                 &time_now,
                 globus_l_io_kickout_read_cb,
                 select_info,
-                handle->socket_attr.space);
+                handle->blocking_read
+                    ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                    : handle->socket_attr.space);
 	    globus_assert(result == GLOBUS_SUCCESS);
 	    
 	    /* We've handled an event, so we don't need to
@@ -1997,7 +2097,9 @@ globus_l_io_handle_events(
                 &time_now,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
-                cancel_info->handle->socket_attr.space);
+                cancel_info->handle->blocking_cancel
+                    ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                    : cancel_info->handle->socket_attr.space);
             globus_assert(result == GLOBUS_SUCCESS);
 	    
             if(!time_left_is_zero)
@@ -2176,7 +2278,9 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_read_cb,
                             select_info,
-                            handle->socket_attr.space);
+                            handle->blocking_read
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
                     }
 
@@ -2208,7 +2312,9 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_write_cb,
                             select_info,
-                            handle->socket_attr.space);
+                            handle->blocking_write
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
 		    
@@ -2240,7 +2346,9 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_except_cb,
                             select_info,
-                            handle->socket_attr.space);
+                            handle->blocking_except
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
 

@@ -2943,13 +2943,17 @@ globus_io_register_init_delegation(
     init_info->iteration = globus_l_io_init_delegation;
     init_info->any_token_received = GLOBUS_FALSE;
     
+    globus_i_io_mutex_lock();
+    
     globus_i_io_register_read_func(
                 handle,
                 globus_l_io_init_delegation,
                 init_info,
                 GLOBUS_NULL,
                 GLOBUS_FALSE);
-                
+    
+    globus_i_io_mutex_unlock();
+    
     return GLOBUS_SUCCESS;
 } /* globus_io_register_init_delegation */
 
@@ -2999,13 +3003,16 @@ globus_io_init_delegation(
     globus_result_t                     rc;
 
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
-
+    
+    handle->blocking_read = GLOBUS_TRUE;
+    handle->blocking_write = GLOBUS_TRUE;
+    
     rc = globus_io_register_init_delegation(handle,
                                             cred_handle,
                                             restriction_oids,
@@ -3028,6 +3035,9 @@ globus_io_init_delegation(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    handle->blocking_write = GLOBUS_FALSE;
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -3166,13 +3176,17 @@ globus_io_register_accept_delegation(
     accept_info->iteration = globus_l_io_accept_delegation;
     accept_info->any_token_received = GLOBUS_FALSE;
     
+    globus_i_io_mutex_lock();
+    
     globus_i_io_register_read_func(
                 handle,
                 globus_l_io_accept_delegation,
                 accept_info,
                 GLOBUS_NULL,
                 GLOBUS_FALSE);
-                
+    
+    globus_i_io_mutex_unlock();
+    
     return GLOBUS_SUCCESS;
 }
 
@@ -3241,12 +3255,15 @@ globus_io_accept_delegation(
     
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
+    
+    handle->blocking_read = GLOBUS_TRUE;
+    handle->blocking_write = GLOBUS_TRUE;
     
     rc = globus_io_register_accept_delegation(handle,
                                               restriction_oids,
@@ -3269,6 +3286,9 @@ globus_io_accept_delegation(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    handle->blocking_write = GLOBUS_FALSE;
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);

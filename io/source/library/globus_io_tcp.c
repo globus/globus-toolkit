@@ -384,12 +384,22 @@ globus_io_tcp_connect(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
+    globus_callback_space_t             saved_space;
 
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_i_io_setup_cond_space_from_attr(attr, &monitor.cond);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.use_err = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
+    
+    /* we're going to poll on global space, save users space */
+    if(attr)
+    {
+        globus_io_attr_get_callback_space(attr, &saved_space);
+        /* need to hold a reference to that space for new handle */
+        globus_callback_space_reference(saved_space);
+        globus_io_attr_set_callback_space(attr, GLOBUS_CALLBACK_GLOBAL_SPACE);
+    }
 
     result = globus_io_tcp_register_connect(host,
 					    port,
@@ -412,6 +422,20 @@ globus_io_tcp_connect(
     }
     globus_mutex_unlock(&monitor.mutex);
     
+    if(attr)
+    {
+        globus_io_attr_set_callback_space(attr, saved_space);
+        
+        if(handle)
+        {
+            globus_i_io_set_callback_space(handle, saved_space);
+        }
+        else
+        {
+            globus_callback_space_destroy(saved_space);
+        }
+    }
+
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     
@@ -1019,19 +1043,28 @@ globus_io_tcp_accept(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
+    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    if(attr)
-    {
-        globus_i_io_setup_cond_space_from_attr(attr, &monitor.cond);
-    }
-    else
-    {
-        globus_i_io_setup_cond_space_from_handle(listener_handle, &monitor.cond);
-    }
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.use_err = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
+    
+    /* we're going to poll on global space, save users space */
+    if(attr)
+    {
+        globus_io_attr_get_callback_space(attr, &saved_space);
+        /* need to hold a reference to that space for new handle */
+        globus_callback_space_reference(saved_space);
+        globus_io_attr_set_callback_space(attr, GLOBUS_CALLBACK_GLOBAL_SPACE);
+    }
+    else
+    {
+        globus_i_io_get_callback_space(listener_handle, &saved_space);
+        globus_i_io_set_callback_space(
+            listener_handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+    }
     
     result = globus_io_tcp_register_accept(listener_handle,
 					   attr,
@@ -1053,7 +1086,32 @@ globus_io_tcp_accept(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-    
+
+    /* restore user attr */
+    if(attr)
+    {
+        globus_io_attr_set_callback_space(attr, saved_space);
+        
+        if(handle)
+        {
+            globus_i_io_set_callback_space(handle, saved_space);
+        }
+        else
+        {
+            globus_callback_space_destroy(saved_space);
+        }
+    }
+    else
+    {
+        globus_i_io_set_callback_space(listener_handle, saved_space);
+        
+        if(handle)
+        {
+            globus_callback_space_reference(saved_space);
+            globus_i_io_set_callback_space(handle, saved_space);
+        }
+    }
+
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     

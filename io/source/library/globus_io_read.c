@@ -479,12 +479,14 @@ globus_io_read(
     }
     try_read = *nbytes_read;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
+    handle->blocking_read = GLOBUS_TRUE;
+    
     result = globus_io_register_read(handle,
 				     buf + try_read,
 				     max_nbytes - try_read,
@@ -510,7 +512,9 @@ globus_io_read(
     }
 
     globus_mutex_unlock(&monitor.mutex);
-
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    
     if(nbytes_read)
     {
 	*nbytes_read = monitor.nbytes + try_read;
