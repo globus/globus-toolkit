@@ -160,3 +160,4 @@ globus_scheduler_event_generator_condor_setup ws-gram/job_monitoring/condor/c/se
 globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup dirt.sh
 globus_scheduler_event_generator_lsf_setup ws-gram/job_monitoring/lsf/c/setup dirt.sh
 globus_scheduler_event_generator_pbs_setup ws-gram/job_monitoring/pbs/c/setup dirt.sh
+globus_wsrf_resource wsrf/c/resource/source
