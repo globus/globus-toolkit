@@ -2,7 +2,7 @@ AC_INIT(myproxy_server.c)
 
 AC_MSG_CHECKING(for myproxy-server installation prefix)
 dnl The default:
-MYPROXY_SERVER_DIR="/usr/local/myproxy-server"
+MYPROXY_SERVER_DIR="${prefix}/myproxy-server"
 AC_ARG_WITH(myproxy-server-path,
 	[  --with-myproxy-server-path=PATH  Specify myproxy-server install prefix],
 	MYPROXY_SERVER_DIR=$withval)
@@ -11,7 +11,7 @@ AC_SUBST(MYPROXY_SERVER_DIR)
 
 AC_MSG_CHECKING(for myproxy tools install prefix)
 dnl The default:
-MYPROXY_TOOLS_DIR="/usr/local"
+MYPROXY_TOOLS_DIR=${prefix}
 AC_ARG_WITH(myproxy-tools-path,
 	[  --with-myproxy-tools-path=PATH   Specify myproxy tools install prefix],
 	MYPROXY_TOOLS_DIR=$withval)
@@ -21,7 +21,7 @@ AC_SUBST(MYPROXY_TOOLS_DIR)
 
 AC_MSG_CHECKING(for myproxy client install prefix)
 dnl The default:
-MYPROXY_CLIENT_DIR="/usr/local"
+MYPROXY_CLIENT_DIR=${prefix}
 AC_ARG_WITH(myproxy-client-path,
 	[  --with-myproxy-client-path=PATH  Specify myproxy client intall prefix],
 	MYPROXY_CLIENT_DIR=$withval)
