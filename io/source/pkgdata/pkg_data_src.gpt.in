@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_io" Format_Version="0.02">
 
-  <Aging_Version Major="2" Minor="4" Age="0"/>
+  <Aging_Version Major="2" Minor="5" Age="0"/>
   <Description>uniform I/O interface to stream and datagram style communications</Description>
   <Functional_Group >Communication</Functional_Group>
   <Version_Stability Release="Beta2" />

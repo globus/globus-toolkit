@@ -3440,64 +3440,77 @@ globus_l_io_securesocket_call_auth_callback(
 	globus_io_handle_t *		handle)
 {
     globus_result_t			result;
-    gss_name_t				target;
-    gss_buffer_desc			target_name_buffer;
+    gss_name_t				peer;
+    gss_buffer_desc			peer_name_buffer;
     OM_uint32				maj_stat;
     OM_uint32				min_stat;
+    int                                 initiator;
 
-    target_name_buffer.length = (size_t) 0;
-    target_name_buffer.value = GLOBUS_NULL;
+    peer_name_buffer.length = (size_t) 0;
+    peer_name_buffer.value = GLOBUS_NULL;
 
     maj_stat = gss_inquire_context(&min_stat,
-				   handle->context,
-				   GLOBUS_NULL,
-				   &target,
-				   GLOBUS_NULL,
-				   GLOBUS_NULL,
-				   GLOBUS_NULL,
-				   GLOBUS_NULL,
-				   GLOBUS_NULL);
+                                   handle->context,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   &initiator,
+                                   GLOBUS_NULL);
+
+    globus_assert(maj_stat == GSS_S_COMPLETE);
+
+    maj_stat = gss_inquire_context(&min_stat,
+                                   handle->context,
+                                   initiator ? GLOBUS_NULL : &peer,
+                                   initiator ? &peer : GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL);
 
     if(maj_stat == GSS_S_COMPLETE)
     {
-	maj_stat = gss_display_name(&min_stat,
-				    target,
-				    &target_name_buffer,
-				    GLOBUS_NULL);
-	if(maj_stat != GSS_S_COMPLETE)
-	{
-	    /* Error creating name string */
-	    target_name_buffer.length = (size_t) 0;
-	    target_name_buffer.value = GLOBUS_NULL;
-	}
-	gss_release_name(&min_stat, &target);
+        maj_stat = gss_display_name(&min_stat,
+                                    peer,
+                                    &peer_name_buffer,
+                                    GLOBUS_NULL);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            /* Error creating name string */
+            peer_name_buffer.length = (size_t) 0;
+            peer_name_buffer.value = GLOBUS_NULL;
+        }
+        gss_release_name(&min_stat, &peer);
     }
 
     if(! handle->securesocket_attr.auth_callback(
-	handle->securesocket_attr.auth_callback_arg,
-	handle,
-	GLOBUS_SUCCESS,
-	(char *) target_name_buffer.value,
-	handle->context))
+           handle->securesocket_attr.auth_callback_arg,
+           handle,
+           GLOBUS_SUCCESS,
+           (char *) peer_name_buffer.value,
+           handle->context))
     {
-	/* not authorized */
-	result = globus_error_put(
-		globus_io_error_construct_authorization_failed(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle,
-		    0,
-		    0,
-		    0));
+        /* not authorized */
+        result = globus_error_put(
+            globus_io_error_construct_authorization_failed(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                0,
+                0,
+                0));
     }
     else
     {
-	result = GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
     }
 
-    if(target_name_buffer.value)
+    if(peer_name_buffer.value)
     {
-	gss_release_buffer(&min_stat, &target_name_buffer);
+        gss_release_buffer(&min_stat, &peer_name_buffer);
     }
 
     return result;
