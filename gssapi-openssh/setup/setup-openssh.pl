@@ -414,6 +414,13 @@ print "\n";
 print "    \t\$ LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; \\\n";
 print "    \t     export LD_LIBRARY_PATH\n";
 print "\n";
+print "    If you wish, you may run, e.g.:\n";
+print "\n";
+print "    \t\$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
+print "\n";
+print "    to prepare your environment for running the gsi_openssh\n";
+print "    executables.\n";
+print "\n";
 print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
