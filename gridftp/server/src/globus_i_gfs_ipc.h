@@ -124,7 +124,30 @@ globus_i_gfs_ipc_transfer_event(
 
 
 
-#if 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
  *  replying
@@ -138,14 +161,26 @@ globus_i_gfs_ipc_transfer_event(
  */
 typedef struct globus_gfs_ipc_passive_reply_s
 {
+    const char **                       contact_strings;
+    int                                 cs_count;
+    globus_bool_t                       bi_directional;
+    globus_gridftp_server_control_network_protocol_t net_prt; /* gag */
+    
+    /* this don't belong in the koolade */
+    globus_i_gfs_ipc_data_handle_t      data_handle;
 } globus_gfs_ipc_passive_reply_t;
 
 typedef struct globus_gfs_ipc_command_reply_s
 {
+    /* XXX not too sure bout these yet */
+    char *                              checksum;
+    char *                              created_dir;
 } globus_gfs_ipc_command_reply_t;
 
 typedef struct globus_gfs_ipc_resource_reply_s
 {
+    globus_gridftp_server_stat_t *      stat_info;
+    int                                 stat_count;
 } globus_gfs_ipc_resource_reply_t;
 
 typedef struct globus_gfs_ipc_reply_s
@@ -431,5 +466,3 @@ globus_gfs_ipc_init(
     globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_handle_t                 xio_handle);
-
-#endif
