@@ -299,9 +299,14 @@ typedef globus_result_t
 (*globus_xio_driver_server_accept_t)(
     void *                                      driver_server,
     void *                                      driver_attr,
-    void **                                     out_target,
     globus_xio_driver_operation_t               op);
 
+globus_result_t
+globus_xio_driver_finished_accept(
+    globus_xio_driver_operation_t               accept_op,
+    void *                                      driver_target,
+    globus_result_t                             result);
+    
 /**
  *  @ingroup driver_interface_grp
  *  Query a server for information.
