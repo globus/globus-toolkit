@@ -545,9 +545,7 @@ globus_i_gsi_callback_check_proxy(
         goto exit;
     }
 
-    if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
-       cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
-       cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+    if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
     {  
         /* it is a proxy */
 
@@ -559,15 +557,10 @@ globus_i_gsi_callback_check_proxy(
          * compliant proxy
          */
         
-        if(((callback_data->cert_type ==
-             GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
-             callback_data->cert_type ==
-             GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY) &&
-            (cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY &&
-             cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)) ||
-           (callback_data->cert_type ==
-            GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY &&
-            cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY))
+        if((GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(callback_data->cert_type) &&
+            !GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) ||
+           (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(callback_data->cert_type) &&
+            !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)))
         {
             GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
                 result,
@@ -1299,9 +1292,7 @@ int globus_gsi_callback_check_issued(
                 break;
             }
             
-            if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
-               cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
-               cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+            if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
             {
                 /* its a proxy! */
                 return_code = 1;

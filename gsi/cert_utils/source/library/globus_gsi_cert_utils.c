@@ -298,6 +298,7 @@ globus_gsi_cert_utils_get_cert_type(
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
                     ("Can't convert DER encoded PROXYCERTINFO "
                      "extension to internal form"));
+                pci = NULL;
                 goto exit;
             }
             
@@ -435,6 +436,11 @@ globus_gsi_cert_utils_get_cert_type(
     if(name)
     {
         X509_NAME_free(name);
+    }
+
+    if(pci)
+    {
+        PROXYCERTINFO_free(pci);
     }
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;

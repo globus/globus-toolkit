@@ -196,14 +196,14 @@ globus_gsi_proxy_handle_set_time_valid(
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
-    unsigned char *                     policy,
+    unsigned char *                     policy_data,
     int                                 policy_length,
     int                                 policy_NID);
 
 globus_result_t
 globus_gsi_proxy_handle_get_policy(
     globus_gsi_proxy_handle_t           handle,
-    unsigned char **                    policy,
+    unsigned char **                    policy_data,
     int *                               policy_length,
     int *                               policy_NID);
 

@@ -565,7 +565,6 @@ globus_result_t globus_gsi_cred_set_cert_chain(
     int                                 i = 0;
     int                                 numcerts;
     X509 *                              tmp_cert  = NULL;
-    X509 *                              prev_cert = NULL;
     globus_result_t                     result;
 
     static char *                       _function_name_ = 
@@ -1007,7 +1006,7 @@ globus_gsi_cred_get_policies(
     char *                              policy_string = NULL;
     char *                              final_policy_string = NULL;
     int                                 policy_string_length = 0;
-    PROXYRESTRICTION *                  restriction;
+    PROXYPOLICY *                       policy;
     PROXYCERTINFO *                     pci;
     globus_result_t                     result;
     static char *                       _function_name_ =
@@ -1057,7 +1056,7 @@ globus_gsi_cred_get_policies(
         }
 
         if(pci == NULL || 
-           (restriction = PROXYCERTINFO_get_restriction(pci)) == NULL)
+           (policy = PROXYCERTINFO_get_policy(pci)) == NULL)
         {
             /* no proxycertinfo extension = so no policy for this cert */
             policy_string = GLOBUS_NULL_POLICY;
@@ -1065,7 +1064,7 @@ globus_gsi_cred_get_policies(
         }
         else
         {
-            policy_string = PROXYRESTRICTION_get_policy(restriction, 
+            policy_string = PROXYPOLICY_get_policy(policy, 
                                                         &policy_string_length);
         }
 
@@ -1160,7 +1159,7 @@ globus_gsi_cred_get_policy_languages(
 {
     int                                 index = 0;
     ASN1_OBJECT *                       policy_language = NULL;
-    PROXYRESTRICTION *                  restriction;
+    PROXYPOLICY *                       policy;
     PROXYCERTINFO *                     pci;
     globus_result_t                     result;
     static char *                       _function_name_ =
@@ -1210,7 +1209,7 @@ globus_gsi_cred_get_policy_languages(
         }
 
         if(pci == NULL || 
-           (restriction = PROXYCERTINFO_get_restriction(pci)) == NULL)
+           (policy = PROXYCERTINFO_get_policy(pci)) == NULL)
         {
             /* no proxycertinfo extension, so no policy 
              * language for this cert */
@@ -1218,8 +1217,7 @@ globus_gsi_cred_get_policy_languages(
         }
         else
         {
-            policy_language = PROXYRESTRICTION_get_policy_language(
-                restriction);
+            policy_language = PROXYPOLICY_get_policy_language(policy);
         }
 
         if(sk_ASN1_OBJECT_push(*policy_languages, 

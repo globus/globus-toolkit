@@ -343,7 +343,7 @@ globus_gsi_proxy_create_req(
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509_REQ, handle->req);
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END X509_REQ  ******\n");
 
-    if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
         /* write the PCI to the BIO */
         if(i2d_PROXYCERTINFO_bio(output_bio, handle->proxy_cert_info) == 0)
@@ -416,7 +416,11 @@ globus_gsi_proxy_inquire_req(
     BIO *                               input_bio)
 {
     globus_result_t                     result;
+    PROXYPOLICY *                       policy = NULL;
+    ASN1_OBJECT *                       policy_lang = NULL;
+    int                                 policy_nid;
 
+    
     static char *                       _function_name_ =
         "globus_gsi_proxy_inquire_req";
 
@@ -464,7 +468,7 @@ globus_gsi_proxy_inquire_req(
 
     if(BIO_pending(input_bio) > 0)
     {
-        if(d2i_PROXYCERTINFO_bio(input_bio, & handle->proxy_cert_info) == NULL)
+        if(d2i_PROXYCERTINFO_bio(input_bio, &handle->proxy_cert_info) == NULL)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -474,7 +478,45 @@ globus_gsi_proxy_inquire_req(
             goto done;
         }
 
-        handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
+        if((policy = PROXYCERTINFO_get_policy(handle->proxy_cert_info))
+           == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Can't get policy from PROXYCERTINFO extension"));
+            goto done;
+        }
+        
+        if((policy_lang = PROXYPOLICY_get_policy_language(policy))
+           == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Can't get policy language from"
+                 " PROXYCERTINFO extension"));
+            goto done;
+        }
+        
+        policy_nid = OBJ_obj2nid(policy_lang);
+        
+        if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+        {
+            handle->type= GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+        }
+        else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+        {
+            handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+        }
+        else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+        {
+            handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+        }
+        else
+        {
+            handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+        }
     }
     else
     {
@@ -609,7 +651,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
     
-    if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
         long                            sub_hash;
         unsigned int                    len;
@@ -871,7 +913,7 @@ globus_gsi_proxy_sign_req(
     }
 
  done:  
-    if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
         if(serial_number)
         {

@@ -125,7 +125,7 @@ globus_gsi_proxy_handle_init(
         }
     }
 
-    handle_i->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
+    handle_i->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
 
     result = GLOBUS_SUCCESS;
     goto exit;
@@ -585,11 +585,11 @@ globus_gsi_proxy_handle_set_type(
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
-    unsigned char *                     policy,
+    unsigned char *                     policy_data,
     int                                 policy_length,
     int                                 policy_language_NID)
 {
-    PROXYRESTRICTION *                  restriction;
+    PROXYPOLICY *                       policy;
     ASN1_OBJECT *                       policy_object;
     globus_result_t                     result;
     static char *                       _function_name_ =
@@ -606,10 +606,10 @@ globus_gsi_proxy_handle_set_policy(
         goto exit;
     }
 
-    restriction = PROXYCERTINFO_get_restriction(handle->proxy_cert_info);
-    if(!restriction)
+    policy = PROXYCERTINFO_get_policy(handle->proxy_cert_info);
+    if(!policy)
     {
-        restriction = PROXYRESTRICTION_new();
+        policy = PROXYPOLICY_new();
     }
 
     policy_object = OBJ_nid2obj(policy_language_NID);
@@ -617,22 +617,22 @@ globus_gsi_proxy_handle_set_policy(
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYRESTRICTION,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
             ("Invalid numeric ID: %d", policy_language_NID));
         goto exit;
     }
 
-    if(!PROXYRESTRICTION_set_policy_language(restriction, policy_object) ||
-       !PROXYRESTRICTION_set_policy(restriction, policy, policy_length))
+    if(!PROXYPOLICY_set_policy_language(policy, policy_object) ||
+       !PROXYPOLICY_set_policy(policy, policy, policy_length))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYRESTRICTION,
-            ("PROXYRESTRICTION of proxy handle could not be initialized"));
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
+            ("PROXYPOLICY of proxy handle could not be initialized"));
         goto exit;
     }
 
-    PROXYCERTINFO_set_restriction(handle->proxy_cert_info, restriction);
+    PROXYCERTINFO_set_policy(handle->proxy_cert_info, policy);
     
     result = GLOBUS_SUCCESS;
 
@@ -669,7 +669,7 @@ globus_gsi_proxy_handle_set_policy(
 globus_result_t
 globus_gsi_proxy_handle_get_policy(
     globus_gsi_proxy_handle_t           handle,
-    unsigned char **                    policy,
+    unsigned char **                    policy_data,
     int *                               policy_length,
     int *                               policy_NID)
 {
@@ -688,12 +688,12 @@ globus_gsi_proxy_handle_get_policy(
         goto exit;
     }
 
-    *policy = PROXYRESTRICTION_get_policy(
-        PROXYCERTINFO_get_restriction(handle->proxy_cert_info),
+    *policy_data = PROXYPOLICY_get_policy(
+        PROXYCERTINFO_get_policy(handle->proxy_cert_info),
         policy_length);
     
-    *policy_NID = OBJ_obj2nid(PROXYRESTRICTION_get_policy_language(
-        PROXYCERTINFO_get_restriction(handle->proxy_cert_info)));
+    *policy_NID = OBJ_obj2nid(PROXYPOLICY_get_policy_language(
+        PROXYCERTINFO_get_policy(handle->proxy_cert_info)));
     
     result = GLOBUS_SUCCESS;
 

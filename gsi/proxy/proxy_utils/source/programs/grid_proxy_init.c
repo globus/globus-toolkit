@@ -157,7 +157,7 @@ main(
     globus_gsi_cred_handle_t            cred_handle = NULL;
     globus_gsi_cred_handle_t            proxy_cred_handle = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type =
-        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
+        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
     BIO *                               pem_proxy_bio = NULL;
     time_t                              goodtill;
     time_t                              lifetime;
@@ -353,7 +353,7 @@ main(
     }
 
     if((policy_filename || path_length != -1)
-       && cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+       && !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type))
     {
         globus_libc_fprintf(stderr, 
                             "\n\nERROR: Globus legacy proxies are"
