@@ -26,11 +26,6 @@ AC_DEFUN([GSSAPI_CONFIG],
 
 AC_MSG_CHECKING(for type of gssapi support)
 
-AC_ARG_ENABLE(gssapi,
-[  --enable-gssapi=<type>      Specify type of GSSAPI
-                              Options are: krb5, globus, gsi],
-[gssapi_type=$enableval], [gssapi_type="none"])
-
 AC_ARG_WITH(gssapi,
 [  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.],
 [gssapi_type=$withval],
@@ -38,15 +33,31 @@ AC_ARG_WITH(gssapi,
      gssapi_type="none"
 fi])
 
+AC_ARG_ENABLE(gssapi,
+[  --enable-gssapi=<type>     Specify type of GSSAPI
+                              Options are: none, krb5, globus, gsi],
+[gssapi_type=$enableval], [gssapi_type="none"])
 
-AC_ARG_WITH(gridmap-dir,
-[  --with-gridmap-dir=<DIR> With krb5, use gridmap from globus or gsi],
-[gridmap_dir=$withval], 
-[if test -z "$gridmap_dir"; then
-	gridmap_dir="no"
+AC_ARG_ENABLE(authorization,
+[  --enable-authorization=<type>  Type of authorization : krb5 or gridmap
+                              gridmap always used with globus or gsi
+                              and can be used with krb5],
+[authorization_type=$enableval], [authorization_type="krb5"])
+
+
+AC_ARG_WITH(krb5-dir,
+[  --with-krb5-dir=<DIR> Location of krb5],
+[krb5_dir=$withval], 
+[if test -z "$krb5_dir"; then
+	krb5_dir="no"
 fi])
 
-AC_MSG_CHECKING(girdmap-dir $gridmap_dir)
+AC_ARG_WITH(globus-dir,
+	[  --with-globus-dir=<DIR>  Location of globus or gsi],
+	globus_dir=$withval,
+	globus_dir="none"
+)
+
 
 case $gssapi_type in
   no|none)	# No support
@@ -60,6 +71,7 @@ case $gssapi_type in
 		AC_MSG_RESULT([Globus/GSI SSLeay])
 		# Make sure it is "globus" and not "gsi"
 		gssapi_type="globus"
+		authorization_type="gridmap"
 		;;
   *)	# Unrecognized type
 		gssapi_type="none"
@@ -72,12 +84,6 @@ if test "$gssapi_type" != "none" ; then
 	# Do stuff here for any GSSAPI library
 	AC_DEFINE(GSSAPI)
 
-	AC_ARG_WITH(gssapi-dir,
-		[  --with-gssapi-dir=<DIR>  Specify install directory for GSSAPI package],
-		gssapi_dir=$withval,
-		gssapi_dir="none"
-	)
-
 fi
 
 if test "$gssapi_type" = "globus" ; then
@@ -85,7 +91,7 @@ if test "$gssapi_type" = "globus" ; then
 	AC_DEFINE(GSSAPI_GLOBUS)
 
 	# Find GLOBUS/GSI installation Directory
-	globus_install_dir="$gssapi_dir"
+	globus_install_dir="$globus_dir"
 	CHECK_GLOBUS_DEVELOPMENT_PATH(true)
 
         if test "$globus_install_dir" != "$globus_dev_dir"; then
@@ -136,7 +142,7 @@ elif test "$gssapi_type" = "krb5" ; then
 	# Find Kerberos 5 installation directory
 	AC_MSG_CHECKING(for Krb5 installation directory)
 
-	krb5_install_dir=$gssapi_dir
+	krb5_install_dir=$krb5_dir
 
 	if test "$krb5_install_dir" = "none" ; then
 		if test -d /usr/local/krb5 ; then
@@ -168,13 +174,13 @@ elif test "$gssapi_type" = "krb5" ; then
 	# For <gssapi.h>
 	GSSAPI_CFLAGS="-I${krb5_install_dir}/include/gssapi $GSSAPI_CFLAGS"
 	
-	if test "$gridmap_dir" != "no" ; then 
+	if test "$authorization_type" = "gridmap" ; then 
 
 		AC_MSG_CHECKING(Using gridmap with Kerberos)
 		AC_DEFINE(GRIDMAP_WITH_KRB5)
 
 		# Find GLOBUS/GSI installation Directory
-		globus_install_dir="$gridmap_dir"
+		globus_install_dir="$globus_dir"
 		CHECK_GLOBUS_DEVELOPMENT_PATH(true)
 
         if test "$globus_install_dir" != "$globus_dev_dir"; then
@@ -408,7 +414,7 @@ GLOBUS_DATA_LIBS=""
 
 if test $globus_data = yes; then
 	AC_DEFINE(USE_GLOBUS_DATA_CODE)
-	globus_install_dir="$gssapi_dir"
+	globus_install_dir="$globus_dir"
 	CHECK_GLOBUS_DEVELOPMENT_PATH(false)
 	GLOBUS_DATA_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_FTP_CONTROL_CFLAGS) $(BASE_CFLAGS)'
 	GLOBUS_DATA_LDFLAGS='$(GLOBUS_FTP_CONTROL_LDFLAGS) $(BASE_LDFLAGS)'
