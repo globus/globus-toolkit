@@ -19,11 +19,15 @@
  * @ref globus_xio_handle_create()
  * 
  * If there is no handle set on the attr passed to the 
- * @ref globus_xio_register_open() call, it performs the equivalent of an
- * asynchronous open() call.  In this case, the contact string must contain
+ * @ref globus_xio_open() call, it performs the equivalent of an
+ * open() call.  In this case, the contact string must contain
  * either a pathname or one of stdin://, stdout://, or stderr://.  If a
  * pathname is used, that path is opened.  If one of the schemes are used
  * the corresponding stdio handle is used (retrieved with fileno()).
+ * 
+ * In either of the above cases, it is most efficient to call the blocking
+ * version of globus_xio_open().  It is also safe to call within a locked
+ * critical section.
  * 
  * When the XIO handle is closed, the file driver will destroy its internal
  * resources and close the fd (unless this fd was set on an attr or converted

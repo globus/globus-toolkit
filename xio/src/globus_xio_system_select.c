@@ -2244,11 +2244,11 @@ typedef struct
 
 static
 void
-globus_l_xio_system_open_close_kickout(
+globus_l_xio_system_close_kickout(
     void *                              user_arg)
 {
     globus_l_xio_system_open_close_info_t * info;
-    GlobusXIOName(globus_l_xio_system_open_close_kickout);
+    GlobusXIOName(globus_l_xio_system_close_kickout);
 
     GlobusXIOSystemDebugEnter();
 
@@ -2259,73 +2259,6 @@ globus_l_xio_system_open_close_kickout(
     globus_free(info);
 
     GlobusXIOSystemDebugExit();
-}
-
-globus_result_t
-globus_xio_system_register_open(
-    globus_xio_operation_t              op,
-    const char *                        pathname,
-    int                                 flags,
-    int                                 mode,
-    globus_xio_system_handle_t *        out_fd,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    int                                 fd;
-    globus_result_t                     result;
-    globus_l_xio_system_open_close_info_t *  open_info;
-    GlobusXIOName(globus_xio_system_register_open);
-
-    GlobusXIOSystemDebugEnter();
-
-    do
-    {
-        fd = open(pathname, flags | O_NONBLOCK, mode);
-    } while(fd < 0 && errno == EINTR);
-
-    if(fd < 0)
-    {
-        result = GlobusXIOErrorSystemError("open", errno);
-        goto error_open;
-    }
-
-    open_info = (globus_l_xio_system_open_close_info_t *)
-        globus_malloc(sizeof(globus_l_xio_system_open_close_info_t));
-    if(!open_info)
-    {
-        result = GlobusXIOErrorMemory("open_info");
-        goto error_open_info;
-    }
-
-    open_info->callback = callback;
-    open_info->user_arg = user_arg;
-
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_xio_system_open_close_kickout,
-        open_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_callback_register_oneshot", result);
-        goto error_register;
-    }
-
-    *out_fd = fd;
-
-    GlobusXIOSystemDebugExitFD(fd);
-    return GLOBUS_SUCCESS;
-
-error_register:
-    globus_free(open_info);
-
-error_open_info:
-    GlobusIXIOSystemCloseFd(fd);
-
-error_open:
-    GlobusXIOSystemDebugExitWithError();
-    return result;
 }
 
 globus_result_t
@@ -2943,7 +2876,7 @@ globus_xio_system_register_close(
     result = globus_callback_register_oneshot(
         GLOBUS_NULL,
         GLOBUS_NULL,
-        globus_l_xio_system_open_close_kickout,
+        globus_l_xio_system_close_kickout,
         close_info);
     if(result != GLOBUS_SUCCESS)
     {
