@@ -6471,7 +6471,8 @@ globus_l_ftp_control_command_flush_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        if(entry->direction == GLOBUS_FTP_DATA_STATE_CONNECT_READ)
+        if(entry->direction == GLOBUS_FTP_DATA_STATE_CONNECT_READ ||
+            dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
         {
             cb_ent = entry;
             callback = cb_ent->callback;
