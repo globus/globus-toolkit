@@ -24,11 +24,13 @@ OM_uint32
 GSS_CALLCONV gss_accept_delegation(
     OM_uint32 *                         minor_status,
     const gss_ctx_id_t                  context_handle,
-    gss_cred_id_t *                     delegated_cred_handle,
-    gss_OID *                           mech_type, 
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
     const gss_buffer_t                  input_token,
+    OM_uint32                           time_req,
+    OM_uint32 *                         time_rec,
+    gss_cred_id_t *                     delegated_cred_handle,
+    gss_OID *                           mech_type, 
     gss_buffer_t                        output_token)
 {
     OM_uint32 		                major_status = 0;
@@ -192,7 +194,7 @@ GSS_CALLCONV gss_accept_delegation(
                                                 cert_chain,
                                                 NULL);
         sk_X509_pop_free(cert_chain, X509_free);
-
+        
         /* reset state machine */
         
         context->delegation_state = GS_DELEGATION_START;
@@ -202,6 +204,23 @@ GSS_CALLCONV gss_accept_delegation(
             X509_free(dcert);
             EVP_PKEY_free(context->dpkey);
             goto err;
+        }
+
+
+        if (time_rec != NULL)
+        {
+            time_t                time_after;
+            time_t                time_now;
+            ASN1_UTCTIME *        asn1_time = NULL;
+            
+            asn1_time = ASN1_UTCTIME_new();
+            X509_gmtime_adj(asn1_time,0);
+            time_now = ASN1_UTCTIME_mktime(asn1_time);
+            time_after = ASN1_UTCTIME_mktime(
+                X509_get_notAfter(
+                    ((gss_cred_id_desc *) delegated_cred_handle)->pcd->ucert));
+            *time_rec = (OM_uint32) time_after - time_now;
+            ASN1_UTCTIME_free(asn1_time);
         }
     }
 

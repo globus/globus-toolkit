@@ -64,9 +64,9 @@ GSS_CALLCONV gss_import_cred(
     gss_cred_id_t *                     output_cred_handle,
     const gss_OID                       desired_mech,
     OM_uint32                           option_req,
+    const gss_buffer_t                  import_buffer,
     OM_uint32                           time_req,
-    OM_uint32 *                         time_rec,
-    const gss_buffer_t                  import_buffer)
+    OM_uint32 *                         time_rec)
 {
     OM_uint32                           major_status = 0;
     BIO *                               bp = NULL;
@@ -179,8 +179,6 @@ GSS_CALLCONV gss_import_cred(
         ASN1_UTCTIME_free(asn1_time);
     }
         
-
-
 err:
     if (bp) 
     {

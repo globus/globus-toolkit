@@ -34,8 +34,8 @@ GSS_CALLCONV gss_init_delegation(
     const gss_OID                       desired_mech,
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
     const gss_buffer_t                  input_token,
+    OM_uint32                           time_req,
     gss_buffer_t                        output_token)
 {
     OM_uint32 		                major_status = GSS_S_COMPLETE;

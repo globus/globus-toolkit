@@ -845,9 +845,9 @@ typedef struct gss_buffer_set_desc_struct {
                gss_cred_id_t *,    /* cred to be exported */
                const gss_OID,      /* desired mech*/
                OM_uint32,          /* option req */
+               const gss_buffer_t, /* import buffer */
                OM_uint32,          /* time req */
-               OM_uint32 *,        /* time rec */
-               const gss_buffer_t  /* import buffer */
+               OM_uint32 *         /* time rec */
               );
 
    GSS_MAKE_TYPEDEF
@@ -865,29 +865,31 @@ typedef struct gss_buffer_set_desc_struct {
    GSS_MAKE_TYPEDEF
    OM_uint32
    GSS_CALLCONV GSS_FUNC(gss_init_delegation)
-              (OM_uint32 *,
-               const gss_ctx_id_t,
-               const gss_cred_id_t,
-               const gss_OID,
-               const gss_OID_set,
-               const gss_buffer_set_t,
-               OM_uint32,        /* time_req */
-               const gss_buffer_t,
-               gss_buffer_t
+              (OM_uint32 *,            /* minor_status */
+               const gss_ctx_id_t,     /* context_handle */
+               const gss_cred_id_t,    /* cred_handle */
+               const gss_OID,          /* desired_mech */
+               const gss_OID_set,      /* restriction_oids */
+               const gss_buffer_set_t, /* restriction_buffers */
+               const gss_buffer_t,     /* input_token */
+               OM_uint32,              /* time_req */
+               gss_buffer_t            /* output_token */
               );
 
 
    GSS_MAKE_TYPEDEF
    OM_uint32
    GSS_CALLCONV GSS_FUNC(gss_accept_delegation)
-              (OM_uint32 *,
-               const gss_ctx_id_t,
-               gss_cred_id_t *,
-               gss_OID *, 
-               const gss_OID_set,
-               const gss_buffer_set_t,
-               const gss_buffer_t,
-               gss_buffer_t
+              (OM_uint32 *,            /* minor_status */
+               const gss_ctx_id_t,     /* context_handle */
+               const gss_OID_set,      /* restriction_oids */
+               const gss_buffer_set_t, /* restriction_buffers */
+               const gss_buffer_t,     /* input_token */
+               OM_uint32,              /* time_req */
+               OM_uint32 *,            /* time_rec */
+               gss_cred_id_t *,        /* cred_handle */
+               gss_OID *,              /* desired_mech */
+               gss_buffer_t            /* output_token */
               );
 
    GSS_MAKE_TYPEDEF
