@@ -119,9 +119,9 @@ checkout_cvs() {
 
 checkout_cvs_gt2() {
 	if [ x${gt2tag} != "x" ]; then
-		mytag = $gt2tag
+		mytag=$gt2tag
 	else
-		mytag = "$tag"
+		mytag="$tag"
 	fi
 
 	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-cvs all $mytag
