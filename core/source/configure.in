@@ -1,6 +1,7 @@
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE(globus_core, 2.0.0,0)
 AM_CONFIG_HEADER(globus_config.h)
 
@@ -61,7 +62,6 @@ AC_EXEEXT
 AC_OUTPUT(Makefile
        	scripts/globus-build-env-${globus_cv_flavor}.sh:scripts/globus-build-env.sh.in
 	scripts/globus-sh-tools.sh
-	scripts/globus-args-parser-header
 	scripts/Makefile
 	scripts/globus_build_config.pl
 	aclocal/Makefile

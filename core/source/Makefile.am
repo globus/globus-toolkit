@@ -1,6 +1,5 @@
 sbin_SCRIPTS = \
-	libtool-$(GLOBUS_FLAVOR_NAME) \
-	config.guess
+	libtool-$(GLOBUS_FLAVOR_NAME)
 
 flavorincludedir = $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)
 
