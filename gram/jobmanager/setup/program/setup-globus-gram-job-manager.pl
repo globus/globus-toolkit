@@ -79,15 +79,14 @@ sub setup_state_dir
 	{
 	    my $fs_type;
 
-	    chomp($fs_type = (split(/\n/, `df $last_built_path`))[1]);
+	    chomp($fs_type = (split(/\n/, `df $last_built_path`))[-1]);
 
 	    if($fs_type !~ m%(/dev/|swap)%)
 	    {
-		print STDERR "$built_path must be on a local filesystem\n";
-
-		exit(1);
+		print STDERR "WARNING: It looks like $built_path may not be on a local filesystem. WARNING: The test for local file systems is not 100% reliable. Ignore the below if this is a false positive.\n WARNING: The jobmanager requires state dir to be on a local filesystem\n WARNING: Rerun the jobmanager setup script with the -state-dir=<state dir> option.";
 	    }
-	    mkdir $built_path, 0777;
+	    mkdir($built_path, 0755) ||
+                die "Unable to create directory $built_path\n";
 	    chmod(0755, $built_path) ||
 	        die "Can't set permissions on $built_path\n";
 	}
