@@ -1432,6 +1432,7 @@ globus_i_xio_http_close_callback(
         globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_operation_destroy(http_handle->close_operation);
     }
+    http_handle->close_operation = NULL;
     globus_xio_driver_handle_close(driver_handle);
 
     globus_i_xio_http_handle_destroy(user_arg);
