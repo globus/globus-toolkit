@@ -387,27 +387,27 @@ globus_libc_malloc(
 
     do
     {
-	globus_libc_lock();
-	{
-	    ptr = (void *) malloc(bytes);
-	    save_errno = errno;
-	}
-	globus_libc_unlock();
+		globus_libc_lock();
+		{
+			ptr = (void *) malloc(bytes);
+			save_errno = errno;
+		}
+		globus_libc_unlock();
 
-	if (ptr == GLOBUS_NULL &&
-	    (save_errno == EINTR ||
-	     save_errno == EAGAIN ||
-	     save_errno == EWOULDBLOCK))
-	{
-	    done = GLOBUS_FALSE;
-	    globus_thread_yield();
-	}
-	else
-	{
-	    done = GLOBUS_TRUE;
-	}
+		if (ptr == GLOBUS_NULL &&
+			(save_errno == EINTR ||
+			save_errno == EAGAIN ||
+			save_errno == EWOULDBLOCK))
+		{
+			done = GLOBUS_FALSE;
+			globus_thread_yield();
+		}
+		else
+		{
+			done = GLOBUS_TRUE;
+		}
     }
-    while (!done);
+	while (!done);
     
     errno = save_errno;
     return(ptr);
@@ -2205,7 +2205,11 @@ globus_libc_vprintf_length(const char * fmt, va_list ap)
     globus_libc_lock();
     if(devnull == GLOBUS_NULL)
     {
+#ifndef TARGET_ARCH_WIN32
 	devnull = fopen("/dev/null", "w");
+#else
+	devnull = fopen("NUL", "w");
+#endif
     }
     globus_libc_unlock();
 

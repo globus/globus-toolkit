@@ -48,7 +48,12 @@ globus_l_thread_common_deactivate(void);
 static void 
 globus_l_thread_blocking_callback_destroy(void* p);
 
+#if !defined(TARGET_ARCH_WIN32) || defined(BUILD_LITE)
 static globus_thread_key_t              l_thread_stack_key  = GLOBUS_NULL;
+#else
+static globus_thread_key_t              l_thread_stack_key  =
+{ 0, NULL }; // is this type of initialization necessary for Windows???
+#endif
 static globus_bool_t                    globus_l_mod_active = GLOBUS_FALSE;
 
 globus_module_descriptor_t              globus_i_thread_common_module =

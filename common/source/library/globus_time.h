@@ -103,6 +103,15 @@ typedef struct timeval  globus_reltime_t;
 }
 
 /**
+ *  Convert a relative time into a long in millisec units
+ */
+#define  GlobusTimeReltimeToMilliSec( Milliseconds, Reltime)  \
+{                                                         \
+    Milliseconds = ((Reltime).tv_sec * 1000) +            \
+                              ((Reltime).tv_usec)/ 1000;   \
+}
+
+/**
  *  Add reltime to abstime
  */
 #define  GlobusTimeAbstimeInc(Abstime, Reltime)           \

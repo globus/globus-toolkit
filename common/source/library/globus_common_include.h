@@ -10,11 +10,11 @@
 /*
  * include system files if we have them
  */
-#ifdef HAVE_SYS_STAT_H
-#   include <sys/stat.h>
-#endif
 #ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#   include <sys/stat.h>
 #endif
 #ifdef HAVE_IO_H
 #   include <io.h>
@@ -57,6 +57,7 @@
 #   include <io.h>
 #   include <sys/timeb.h>
 #   include <signal.h>
+#   include <malloc.h>
 #endif
 
 /*
@@ -107,6 +108,7 @@
 
 #include <limits.h>
 #include <assert.h>
+
 
 /******************************************************************************
 				 Define macros
@@ -169,6 +171,10 @@
 
 #ifdef HAVE_SPROC
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_sproc.h"
+#endif
+
+#ifdef HAVE_WINDOWS_THREADS
+#   define GLOBUS_THREAD_INCLUDE "globus_thread_windows.h"
 #endif
 
 #ifdef BUILD_LITE

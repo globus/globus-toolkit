@@ -82,7 +82,14 @@ static void
 globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
 {
     globus_libc_sprintf(fmt, "t%lu:p%lu%s%s%s%s%s%s",
-			(unsigned long) globus_thread_self(),
+/* The following line was changed to preserve the encapsulation of the 
+ *  globus_thread_t datatype.  This change was necessary because this datatype maps
+ *  to different implementations on different platforms, and the UNIX implementation 
+ *  conflicted with the Windows implementation.
+ *    Michael Lebman 2-8-02
+ */
+/*			(unsigned long) globus_thread_self(), */
+			(unsigned long) globus_thread_get_threadID_as_long(),
 			(unsigned long) globus_libc_getpid(),
 			(s1 ? ": " : ""),
 			(s1 ? s1 : ""),

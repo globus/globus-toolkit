@@ -60,7 +60,11 @@ globus_error_initialize_string(
     globus_libc_lock();
     if(f == NULL)
     {
+#ifndef TARGET_ARCH_WIN32
 	f = fopen("/dev/null", "w");
+#else
+	f = fopen("NUL", "w");
+#endif
     }
 
     len = vfprintf(f, fmt, ap) + 1;
