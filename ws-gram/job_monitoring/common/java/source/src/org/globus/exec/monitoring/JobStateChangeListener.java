@@ -16,6 +16,9 @@ public interface JobStateChangeListener {
      *
      * @param resourceKey
      *     Resource key associated with the job that changed state.
+     * @param localJobId
+     *     Local Job ID for the job which changed state. There may be multiple
+     *     local job IDs for a single job for some schedulers.
      * @param timestamp
      *     Time when the job state change occurred.
      * @param state
@@ -26,6 +29,7 @@ public interface JobStateChangeListener {
      */
     public void jobStateChanged(
             ResourceKey                     resourceKey,
+            String                          localJobId,
             java.util.Date                  timestamp,
             StateEnumeration                state,
             int                             exitCode);
