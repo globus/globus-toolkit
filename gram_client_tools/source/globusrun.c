@@ -151,7 +151,7 @@ enum
     GLOBUSRUN_ARG_BATCH                 = 512,
     GLOBUSRUN_ARG_STATUS                = 1024,
     GLOBUSRUN_ARG_LIST                  = 2048,
-    GLOBUSRUN_ARG_BATCH_FAST            = 4096,
+    GLOBUSRUN_ARG_BATCH_FAST            = 4096
 };
 
 static globus_byte_t globus_l_globusrun_file_version=1;
@@ -441,7 +441,7 @@ static int arg_f_mode = O_RDONLY;
 	globus_gass_transfer_listenerattr_t * attr		 =GLOBUS_NULL;
 	char *                             scheme		 =GLOBUS_NULL;
 	globus_gass_transfer_requestattr_t * reqattr	 =GLOBUS_NULL;
-	char *                             activation_err    = GLOBUS_NULL;
+	const char *                             activation_err  = GLOBUS_NULL;
 
 	err = globus_module_activate(GLOBUS_COMMON_MODULE);
 	if ( err != GLOBUS_SUCCESS )
