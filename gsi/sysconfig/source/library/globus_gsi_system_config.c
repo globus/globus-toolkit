@@ -4830,7 +4830,8 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         goto exit;
     }
 
-    while(globus_libc_readdir_r(dir_handle,&tmp_entry) == 0)
+    while(globus_libc_readdir_r(dir_handle,&tmp_entry) == 0 &&
+          tmp_entry != NULL)
     {
         file_length = strlen(tmp_entry->d_name);
         /* check the following:
@@ -4866,10 +4867,10 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
                 goto exit;
             }
 
-            globus_free(tmp_entry);
-            
             globus_fifo_enqueue(ca_cert_list, (void *)full_filename_path);
         }
+
+        globus_free(tmp_entry);    
     }
 
  exit:
@@ -4913,7 +4914,8 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
         goto exit;
     }
 
-    while(globus_libc_readdir_r(secure_tmp_dir, &dir_entry) == 0)
+    while(globus_libc_readdir_r(secure_tmp_dir, &dir_entry) == 0 &&
+          tmp_entry != NULL)
     {
         if((default_filename && 
             !strcmp(dir_entry->d_name, default_filename)) ||
