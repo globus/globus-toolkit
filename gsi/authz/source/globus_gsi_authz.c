@@ -51,7 +51,7 @@ static int globus_l_gsi_authz_activate(void)
     /* should define some standard errors for this callout */
 
     int		                        result = (int) GLOBUS_SUCCESS;
-    char *                              filename = 0;
+    char *                              filename = NULL;
     char *                              tmp_string;
     static char *                       _function_name_ =
         "globus_l_gsi_authz_activate";
@@ -103,7 +103,7 @@ static int globus_l_gsi_authz_activate(void)
         goto exit;
     }
 
-    result = (int)GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_LIB_CONF_FILENAME(&filename);
+    result = (int)GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
 
     /* initialize a globus callout handle */
     result = (int)globus_callout_handle_init(&callout_handle);
