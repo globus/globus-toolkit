@@ -1100,7 +1100,6 @@ globus_l_gsc_user_data_destroy_cb_kickout(
             data_object->user_handle, server_handle->funcs.data_destroy_arg);
     }
     globus_free(data_object);
-    server_handle->data_object = NULL;
 
     globus_mutex_lock(&server_handle->mutex);
     {
@@ -1129,7 +1128,19 @@ globus_l_gsc_user_close_kickout(
     }
     globus_mutex_unlock(&server_handle->mutex);
 
-    /* set state to stopped */
+    if(server_handle->data_object != NULL)
+    {
+        if(server_handle->funcs.data_destroy_cb != NULL)
+        {
+            globus_l_gsc_user_data_destroy_cb_kickout(
+                server_handle->data_object);
+        }
+        else
+        {
+            globus_free(server_handle->data_object);
+        }
+    }
+
     if(done_cb != NULL)
     {
         server_handle->funcs.done_cb(
@@ -1205,11 +1216,6 @@ globus_l_gsc_server_ref_check(
 
     if(server_handle->ref == 0)
     {
-        if(globus_i_guc_data_object_destroy(server_handle))
-        {
-            return;
-        }
-
         server_handle->state = GLOBUS_L_GSC_STATE_STOPPED;
         globus_xio_attr_init(&close_attr);
         globus_xio_attr_cntl(
