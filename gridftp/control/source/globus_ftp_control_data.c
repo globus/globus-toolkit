@@ -8731,7 +8731,8 @@ globus_l_ftp_eb_read_callback(
             buffer = transfer_handle->big_buffer;
         }
 
-        if(result != GLOBUS_SUCCESS)
+        if(result != GLOBUS_SUCCESS ||
+            dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
         {
             error = globus_error_get(result);
             eof = GLOBUS_TRUE;
