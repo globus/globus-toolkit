@@ -33,9 +33,9 @@ EXTERN_C_BEGIN
                              Include header files
 ******************************************************************************/
 
+#include "gssapi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "gssapi.h"
 
 /******************************************************************************
                                Define constants

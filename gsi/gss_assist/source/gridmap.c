@@ -14,10 +14,10 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "globus_gss_assist.h"
 #include <stdio.h>
 #include <string.h>
 #include <pwd.h>
-#include "globus_gss_assist.h"
 
 /******************************************************************************
                                Type definitions
