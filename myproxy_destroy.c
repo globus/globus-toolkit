@@ -185,7 +185,7 @@ init_arguments(int argc,
         switch(arg) 
         {  
         case 's': 	/* pshost name */
-	    attrs->pshost = strdup(gnu_opt_arg);
+	    attrs->pshost = strdup(gnu_optarg);
             break;
         case 'p': 	/* psport */
             attrs->psport = atoi(gnu_optarg);
@@ -199,7 +199,7 @@ init_arguments(int argc,
             exit(1);
             break;
         case 'l':	/* username */
-	    request->username = strdup(gnu_opt_arg);
+	    request->username = strdup(gnu_optarg);
             break;
         case 'v':       /* print version and exit */
             fprintf(stderr, version);
