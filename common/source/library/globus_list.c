@@ -5,9 +5,9 @@
  *
  ********************************************************************/
 
-#include <assert.h>
-
 #include "globus_common.h"
+
+#include <assert.h>
 
 #define GLOBUS_L_LIST_INIT_MEM_COUNT       512
 

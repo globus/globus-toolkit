@@ -1,8 +1,8 @@
+#include "globus_common.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <sys/time.h>
-
-#include "globus_common.h"
 
 const globus_abstime_t        globus_i_abstime_infinity = 
 {

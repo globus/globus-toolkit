@@ -36,7 +36,7 @@ extern void
 globus_fifo_destroy (globus_fifo_t * fifo);
 
 extern int 
-globus_fifo_empty (globus_fifo_t * fifo);
+globus_fifo_empty (const globus_fifo_t * fifo);
 
 extern int 
 globus_fifo_size (globus_fifo_t *fifo);

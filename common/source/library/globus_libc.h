@@ -162,7 +162,6 @@ extern int globus_libc_read(int fd, char *buf, int nbytes);
 extern int globus_libc_write(int fd, char *buf, int nbytes);
 extern int globus_libc_writev(int fd, struct iovec *iov, int iovcnt);
 extern int globus_libc_fstat(int fd, struct stat *buf);
-extern int globus_libc_lseek(int fd, off_t offset, int whence);
 
 extern DIR *globus_libc_opendir(char *filename);
 extern long globus_libc_telldir(DIR *dirp);
@@ -183,7 +182,6 @@ extern void globus_libc_closedir(DIR *dirp);
 	    write(fd,iov[0].iov_base,iov[0].iov_len)
 #endif
 #define globus_libc_fstat fstat
-#define globus_libc_lseek lseek
 
 #define globus_libc_opendir opendir
 #define globus_libc_telldir telldir
@@ -228,12 +226,20 @@ extern void *globus_libc_alloca(size_t bytes);
 extern void *alloca(size_t bytes);
 #endif /* TARGET_ARCH_CRAYT3E */
 
+/* Never a macro because globus_off_t must match largefile definition */
+extern int globus_libc_lseek(int fd, globus_off_t offset, int whence);
+
 /* Miscellaneous libc functions (formerly md_unix.c) */
 int globus_libc_gethostname(char *name, int len);
 int globus_libc_getpid(void);
 int globus_libc_fork(void);
 int globus_libc_usleep(long usec);
 double globus_libc_wallclock(void);
+
+/* returns # of characters printed to s */
+extern int globus_libc_sprint_off_t(char * s, globus_off_t off);
+/* returns 1 if scanned succeeded */
+extern int globus_libc_scan_off_t(char *s, globus_off_t *off, int *consumed);
 
 /* single interface to reentrant libc functions we use*/
 struct hostent *globus_libc_gethostbyname_r(char *name,

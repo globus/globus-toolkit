@@ -283,6 +283,8 @@ globus_libc_fstat(int fd,
     return(rc);
 } /* globus_libc_fstat() */
  
+#endif /* !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE) */
+
  
 /******************************************************************************
 Function: globus_libc_lseek()
@@ -296,7 +298,7 @@ Returns:
 #undef globus_libc_lseek
 int
 globus_libc_lseek(int fd,
-		  off_t offset,
+		  globus_off_t offset,
 		  int whence)
 {
     int rc;
@@ -310,8 +312,6 @@ globus_libc_lseek(int fd,
     return(rc);
 } /* globus_libc_lseek() */
  
-#endif /* !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE) */
-
 #if !defined(BUILD_LITE)
 /******************************************************************************
 Function: globus_libc_malloc()
@@ -655,6 +655,39 @@ globus_libc_vsprintf(char *s, const char *format, va_list ap)
 } /* globus_libc_vsprintf() */
 
 #endif /* !defined(BUILD_LITE)*/
+
+/*
+ * Print a globus_off_t to a string. The format for the off_t depends
+ * on the size of the data type, which may vary with flavor and
+ * architecture.
+ */
+int
+globus_libc_sprint_off_t(char * s, globus_off_t off)
+{
+    return globus_libc_sprintf(s, "%" GLOBUS_OFF_T_FORMAT, off);
+}
+
+/*
+ * Scan a globus_off_t from a string. Equivalent to 
+ * sscanf("%d%n", off, consumed) (with %d replaced with the
+ * appropriately-sized integer type.
+ */
+int
+globus_libc_scan_off_t(char * s, globus_off_t * off, int * consumed)
+{
+    int rc;
+    int dummy;
+
+    if(consumed == GLOBUS_NULL)
+    {
+	consumed = &dummy;
+    }
+    globus_libc_lock();
+
+    rc = sscanf(s, "%" GLOBUS_OFF_T_FORMAT "%n", off, consumed);
+    globus_libc_unlock();
+    return rc;
+}
 
 /******************************************************************************
 Function: globus_libc_gethostname()

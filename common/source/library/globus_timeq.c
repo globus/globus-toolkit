@@ -1,8 +1,9 @@
+#include "globus_common.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "globus_common.h"
 #include "globus_timeq.h"
 #include "globus_list.h"
 

@@ -18,6 +18,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common.h"
+
 #include <assert.h>
 
 globus_mutex_t                     globus_i_memory_mutex;

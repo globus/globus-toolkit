@@ -5,10 +5,10 @@
  *
  ********************************************************************/
 
+#include "globus_common.h"
+
 #include <assert.h>
 #include <stdlib.h>
-
-#include "globus_common.h"
 
 #include "globus_fifo.h"
 
@@ -37,7 +37,7 @@ globus_fifo_destroy (globus_fifo_t * fifo)
 }
 
 extern int 
-globus_fifo_empty (globus_fifo_t * fifo)
+globus_fifo_empty (const globus_fifo_t * fifo)
 {
   assert (fifo!=GLOBUS_NULL);
 

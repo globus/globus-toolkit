@@ -5,10 +5,10 @@
  *
  ********************************************************************/
 
+#include "globus_common.h"
+
 #include <assert.h>
 #include <stdlib.h>
-
-#include "globus_common.h"
 
 #include "globus_fifo.h"
 #include "globus_cfifo.h"
@@ -65,16 +65,16 @@ globus_cfifo_size (globus_cfifo_t * fifo)
   }
   else if ( blockcount == 1 ) {
     block = (globus_cfifo_block_t *) globus_fifo_peek (fifo);
-    return (block->head - block->tail);
+    return (block->tail - block->head);
   }
   else {
     int headsize, tailsize;
 
     block = (globus_cfifo_block_t *) globus_fifo_peek (fifo);
-    headsize = (block->head - block->tail);
+    headsize = (block->tail - block->head);
 
     block = (globus_cfifo_block_t *) globus_fifo_tail_peek (fifo);
-    tailsize = (block->head - block->tail);
+    tailsize = (block->tail - block->head);
 
     return (headsize + tailsize 
 	    + ((blockcount - 2) * GLOBUS_CFIFO_BLOCKSIZE));

@@ -13,12 +13,12 @@ Description:
                              Include header files
 ******************************************************************************/
 
+#include "globus_common.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-
-#include "globus_common.h"
 
 /******************************************************************************
 		      Module specific prototypes
