@@ -77,6 +77,8 @@ CVS Information:
 
 #define GSSERR_F_IMPORT_CRED		121
 #define GSSERR_F_EXPORT_CRED		122
+#define GSSERR_F_READ			123
+#define GSSERR_F_WRITE			124
 
 /* 
  * defines for reasons 
@@ -84,11 +86,11 @@ CVS Information:
  * These are also used for the minor_status codes 
  */
 
-#define GSSERR_R_HANDSHAKE				100
+#define GSSERR_R_HANDSHAKE			100
 #define GSSERR_R_NO_GLOBUSID       	 	101
 #define GSSERR_R_PROCESS_CERT      	 	102
 #define GSSERR_R_MUTUAL_AUTH			103
-#define GSSERR_R_WRAP_BIO				104
+#define GSSERR_R_WRAP_BIO			104
 #define GSSERR_R_PROXY_VIOLATION		105
 #define GSSERR_R_PROXY_NOT_RECEIVED		106
 #define GSSERR_R_IMPEXP_BAD_PARMS  		107
@@ -98,6 +100,11 @@ CVS Information:
 #define GSSERR_R_CLASS_ADD_EXT			111
 #define GSSERR_R_EXPORT_FAIL 			112
 #define GSSERR_R_IMPORT_FAIL			113
+#define GSSERR_R_READ_BIO			114
+#define GSSERR_R_WRITE_BIO			115
+#define GSSERR_R_PASSED_NULL_PARAMETER		116
+#define GSSERR_R_UNEXPECTED_FORMAT		117
+
 
 /*
  * we need to distinguish between a token
