@@ -1,4 +1,23 @@
+/******************************************************************************
+globus_gram_myjob_duct.c
 
+Description:
+
+  Implementation of GRAM_MyJob API on top of "duct" API.  See
+  gram_myjob.h for generic descriptions of the routines.
+
+CVS Information:
+
+  $Source$
+  $Date$
+  $Revision$
+  $State$
+  $Author$
+******************************************************************************/
+
+/******************************************************************************
+			     Include header files
+******************************************************************************/
 #include <assert.h>
 #include <stdlib.h>
 
@@ -8,8 +27,9 @@
 #include "nexus.h"
 #include "globus_duct_runtime.h"
 
-/* make sure this is consistent with that in gram-job-manager... */
-#define DUCT_CONTACT "GLOBUS_GRAM_MYJOB_DUCT_CONTACT"
+/******************************************************************************
+		       Define module specific variables
+******************************************************************************/
 
 static globus_duct_runtime_t s_duct;
 static globus_fifo_t s_incoming_msgs;
@@ -20,6 +40,11 @@ typedef struct globus_gram_myjob_msg_s {
   int size;
   globus_byte_t *msg;
 } globus_gram_myjob_msg_t;
+
+
+/******************************************************************************
+			 Module activation definitions
+******************************************************************************/
 
 
 static void
@@ -63,8 +88,20 @@ s_myjob_init ()
   err = nexus_mutex_init (&s_mutex, NULL);
   assert (!err);
 
-  duct_contact = getenv (DUCT_CONTACT);
-
+  duct_contact = getenv (MYJOB_DUCT_CONTACT);
+  /*
+  if (duct_contact == GLOBUS_NULL)
+  {
+      fprintf(stderr,"globus_gram_myjob_duct: Contact Environment Variable (%s) not defined\n",MYJOB_DUCT_CONTACT);
+  }
+  else
+  {
+      if (strlen(duct_contact) == 0)
+      {
+	  fprintf(stderr,"globus_gram_myjob_duct: Contact Environment Variable (%s)  defined empty\n",MYJOB_DUCT_CONTACT);
+      }
+  }
+  */
   err = globus_duct_runtime_init (&s_duct,
 				  duct_contact,
 				  0,
@@ -133,7 +170,7 @@ s_myjob_activate ()
 
 
 activate_duct_runtime_module_error:
-  globus_module_deativate (GLOBUS_NEXUS_MODULE);
+  globus_module_deactivate (GLOBUS_NEXUS_MODULE);
 
 activate_nexus_module_error:
   globus_module_deactivate (GLOBUS_COMMON_MODULE);
