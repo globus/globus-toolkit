@@ -36,6 +36,35 @@ globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_t *         handle,
     globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
+    if(handle != NULL)
+    {
+        /* ERROR */
+    }
+
+    handle = (globus_proxy_req_handle_t *) globus_malloc(sizeof(globus_proxy_req_handle_s));
+    /* initialize the private key */
+    handle->proxy_key = EVP_PKEY_new();
+    if(handle.proxy_key == NULL)
+    {
+        /* ERROR */
+    }
+
+    /* initialize the X509 request structure */
+    handle->req = X509_REQ_new();
+    if(handle->req == NULL)
+    {
+        /* ERROR */
+    }
+
+    /* initialize the handle attributes */
+    globus_gsi_proxy_handle_attrs_init(handle->attrs);
+
+    handle->proxy_cert_info = PROXYCERTINFO_new();
+    if(handle->proxy_cert_info == NULL)
+    {
+        /* ERROR */
+    }
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_init() */
@@ -60,6 +89,19 @@ globus_result_t
 globus_gsi_proxy_handle_destroy(
     globus_gsi_proxy_handle_t *         handle)
 {
+    if(handle != NULL)
+    {
+        /* free each of the pointers in the handle struct */
+        X509_REQ_free(handle->req);
+        EVP_KEY_free(handle->proxy_key);
+        globus_gsi_proxy_handle_attrs_destroy(handle->attrs);
+        PROXYCERTINFO_free(handle->proxy_cert_info);
+
+        /* free the handle struct memory */
+        globus_free(handle);
+        handle = NULL;
+    }
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_destroy */
@@ -94,6 +136,12 @@ globus_gsi_proxy_handle_set_policy(
     unsigned char *                     policy,
     int                                 policy_NID)
 {
+    PROXYRESTRICTION *                  restriction;
+    
+    restriction = PROXYCERTINFO_get_restriction(handle->proxy_cert_info);
+    PROXYRESTRICTION_set_policy_language(restriction, OBJ_nid2obj(policy_NID));
+    PROXYRESTRICTION_set_policy(restriction, policy, strlen(policy));
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_set_policy */
@@ -128,6 +176,12 @@ globus_gsi_proxy_handle_get_policy(
     unsigned char **                    policy,
     int *                               policy_NID)
 {
+    *policy = PROXYRESTRICTION_get_policy(
+        PROXYCERTINFO_get_restriction(handle->proxy_cert_info));
+
+    *policy_NID = PROXYRESTRICTION_get_policy_language(
+        PROXYCERTINFO_get_restriction(handle->proxy_cert_info));
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_get_policy */
@@ -161,6 +215,12 @@ globus_gsi_proxy_handle_set_group(
     unsigned char *                     group,
     int                                 attached)
 {
+    PROXYGROUP *                        proxygroup;
+    
+    proxygroup = PROXYCERTINFO_get_group(handle->proxy_cert_info);
+    PROXYGROUP_set_name(proxygroup, group);
+    PROXYGROUP_set_attached(proxygroup, attached);
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_set_group */
@@ -195,6 +255,9 @@ globus_gsi_proxy_handle_get_group(
     unsigned char **                    group,
     int *                               attached)
 {
+    *group = PROXYGROUP_get_name(PROXYCERTINFO_get_group(handle->proxy_cert_info));
+    *attached = PROXYGROUP_get_attached(PROXYCERTINFO_get_group(handle->proxy_cert_info));
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_get_group */
@@ -224,8 +287,10 @@ globus_gsi_proxy_handle_get_group(
 globus_result_t
 globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
-    int                                 pathlen)
+    long                                 pathlen)
 {
+    PROXYCERTINFO_set_path_length(handle->proxy_cert_info, &pathlen);
+    
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_set_pathlen */
@@ -257,6 +322,7 @@ globus_gsi_proxy_handle_get_pathlen(
     globus_gsi_proxy_handle_t           handle,
     int *                               pathlen)
 {
+    *pathlen = PROXYCERTINFO_get_path_length(handle->proxy_cert_info);
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_get_pathlen */
@@ -285,9 +351,9 @@ globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle)
 {
+    PROXYCERTINFO_free(handle->proxy_cert_info);
+    handle->proxy_cert_info = PROXYCERTINFO_new();
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_clear_cert_info */
 /*@}*/
-
-

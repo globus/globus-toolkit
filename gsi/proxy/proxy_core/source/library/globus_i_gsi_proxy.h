@@ -9,6 +9,7 @@
  */
 
 #include "globus_gsi_proxy.h"
+#include "proxycertinfo.h"
 
 #ifndef GLOBUS_L_INCLUDE_GSI_PROXY_H
 #define GLOBUS_L_INCLUDE_GSI_PROXY_H
@@ -58,6 +59,9 @@ typedef struct globus_l_proxy_handle_attrs_s
 {
 }
 globus_l_proxy_handle_attrs_t;
+
+/* used for printing the status of a private key generating algorithm */
+void globus_i_gsi_proxy_create_private_key_cb(BIO *);
 
 EXTERN_C_END
 

@@ -245,6 +245,7 @@ globus_gsi_proxy_assemble_cred(
     BIO *                               input_bio);
 
 #endif
+
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H */
