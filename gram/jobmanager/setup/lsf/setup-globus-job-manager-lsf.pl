@@ -47,7 +47,7 @@ mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager";
 print `./find-lsf-tools --cache-file=/dev/null`;
 if($? != 0)
 {
-    print STDERR "Error locating PBS commands, aborting!\n";
+    print STDERR "Error locating LSF commands, aborting!\n";
     exit 2;
 }
 

@@ -16,7 +16,7 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
 
-autoconf find-fork-tools.in > find-fork-tools
-chmod 755 find-fork-tools
+autoconf find-lsf-tools.in > find-lsf-tools
+chmod 755 find-lsf-tools
 
 exit 0

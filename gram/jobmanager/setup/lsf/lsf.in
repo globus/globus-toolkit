@@ -35,7 +35,6 @@ sub submit
     my $description = $self->{JobDescription};
     my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $status;
-	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
     my $lsf_job_script;
     my $lsf_job_script_name;
     my $errfile = "";
@@ -112,7 +111,6 @@ sub submit
 #
 # LSF batch job script built by Globus Job Manager
 #
-#BSUB -L /bin/sh
 EOF
 
     if(defined($queue))
@@ -150,6 +148,8 @@ EOF
     }
     $lsf_job_script->print("#BSUB -i " . $description->stdin() . "\n");
     $lsf_job_script->print("#BSUB -e " . $description->stderr() . "\n");
+    $lsf_job_script->print("#BSUB -o " . $description->stdout() . "\n");
+    $lsf_job_script->print("#BSUB -N\n");
     $lsf_job_script->print("#BSUB -n " . $description->count() . "\n");
 
     foreach my $tuple ($description->environment())
@@ -159,7 +159,7 @@ EOF
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
 	}
 	$lsf_job_script->print($tuple->[0] . "=" . $tuple->[1]
-	                       . "; export " . $tuple->[1] . "\n");
+	                       . "; export " . $tuple->[0] . "\n");
     }
 
     $lsf_job_script->print("\n#Change to directory requested by user\n");
@@ -193,21 +193,20 @@ EOF
     {
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
-	    $lsf_job_script->print($description->executable() . " $args >" .
-	                           $description->stdout() . "&\n");
+	    $lsf_job_script->print($description->executable() . " $args &\n");
 	}
 	$lsf_job_script->print("wait\n");
     }
     else
     {
-	$lsf_job_script->print($description->executable() . " $args >" .
-	                       $description->stdout() . "\n");
+	$lsf_job_script->print($description->executable() . " $args\n");
     }
     $lsf_job_script->close();
+    chmod 0755, $lsf_job_script_name;
 
     if($description->logfile() ne "")
     {
-        $errfile = "2>" . $description->stderr();
+        $errfile = "2>" . $description->logfile();
     }
 
     $job_id = (grep(/is submitted/,
@@ -256,7 +255,7 @@ sub poll
     $_ = (grep(/$job_id/, `$bjobs $job_id 2>/dev/null`))[0];
 
     # Get 3th field (status)
-    $_ = (split(/\s+/))[3];
+    $_ = (split(/\s+/))[2];
 
     if(/PEND/)
     {
