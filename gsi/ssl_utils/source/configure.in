@@ -76,6 +76,7 @@ AC_OUTPUT(
 	library/Makefile
 	library/oldgaa/Makefile
 	programs/Makefile
+	programs/grid-cert-info
 )
 
 

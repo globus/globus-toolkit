@@ -11,11 +11,20 @@ Admin_Scripts = \
 	grid-mapfile-delete-entry \
 	grid-mapfile-check-consistency
 
+Dist_Scripts = \
+	grid-cert-info.in \
+	grid-cert-renew \
+	grid-change-pass-phrase \
+	grid-cert-request \
+	grid-mapfile-add-entry \
+	grid-mapfile-delete-entry \
+	grid-mapfile-check-consistency
+
 bin_SCRIPTS = $(User_Scripts)
 
 sbin_SCRIPTS = $(Admin_Scripts)
 
-EXTRA_DIST = $(User_Scripts) $(Admin_Scripts)
+EXTRA_DIST = $(Dist_Scripts)
 
 bin_PROGRAMS = grid-proxy-init grid-proxy-destroy grid-proxy-info
 
