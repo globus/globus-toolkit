@@ -1,0 +1,18 @@
+#! @SH@
+ 
+# This is a simple shell script that acts like 
+# the hostname command.  But is returns the FQN
+# in all cases.
+ 
+LOCALDOMAIN=@LOCALDOMAIN@
+ 
+FULLNAME=`@SYS_HOSTNAME@`
+BASENAME=`@SYS_HOSTNAME@ | @CUT@ -d. -f1`
+ 
+if [ $FULLNAME = $BASENAME ] ; then
+  # Its not fully qualified
+  echo $BASENAME.${LOCALDOMAIN}
+else
+  echo $FULLNAME
+fi
+
