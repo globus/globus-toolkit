@@ -872,6 +872,7 @@ struct globus_io_handle_s
     /* blocking call indicators for picking correct space to register to */
     globus_bool_t                               blocking_read;
     globus_bool_t                               blocking_write;
+    globus_bool_t                               blocking_cancel;
     
     /* buffer for reading GSSAPI wrapped data */
     globus_fifo_t 				wrapped_buffers;

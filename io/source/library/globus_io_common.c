@@ -251,7 +251,6 @@ globus_io_cancel(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
-    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -260,9 +259,8 @@ globus_io_cancel(
     monitor.use_err = GLOBUS_FALSE;
     
     /* we're going to poll on global space, save users space */
-    globus_i_io_get_callback_space(handle, &saved_space);
-    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
-
+    handle->blocking_cancel = GLOBUS_TRUE;
+    
     result = globus_io_register_cancel(handle,
 				      perform_callbacks,
 				      globus_i_io_monitor_callback,
@@ -282,7 +280,7 @@ globus_io_cancel(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    globus_i_io_set_callback_space(handle, saved_space);
+    handle->blocking_cancel = GLOBUS_FALSE;
     
     globus_mutex_destroy(&monitor.mutex);
 
@@ -337,7 +335,6 @@ globus_io_close(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
-    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -346,8 +343,7 @@ globus_io_close(
     monitor.use_err = GLOBUS_FALSE;
 
     /* we're going to poll on global space, save users space */
-    globus_i_io_get_callback_space(handle, &saved_space);
-    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+    handle->blocking_cancel = GLOBUS_TRUE;
     
     result = globus_io_register_close(handle,
 				      globus_i_io_monitor_callback,
@@ -367,7 +363,7 @@ globus_io_close(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    globus_i_io_set_callback_space(handle, saved_space);
+    handle->blocking_cancel = GLOBUS_FALSE;
 
     globus_mutex_destroy(&monitor.mutex);
 
@@ -507,10 +503,7 @@ globus_io_listen(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    if(handle)
-    {
-        handle->blocking_read = GLOBUS_TRUE;
-    }
+    handle->blocking_read = GLOBUS_TRUE;
         
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
@@ -531,10 +524,7 @@ globus_io_listen(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    if(handle)
-    {
-        handle->blocking_read = GLOBUS_FALSE;
-    }
+    handle->blocking_read = GLOBUS_FALSE;
 
     globus_mutex_destroy(&monitor.mutex);
 
@@ -862,6 +852,7 @@ globus_i_io_initialize_handle(
     
     handle->blocking_read = GLOBUS_FALSE;
     handle->blocking_write = GLOBUS_FALSE;
+    handle->blocking_cancel = GLOBUS_FALSE;
     
     return GLOBUS_SUCCESS;
 }

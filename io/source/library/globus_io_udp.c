@@ -697,7 +697,6 @@ globus_io_udp_recvfrom(
 {
     globus_i_io_udp_monitor_t *         monitor;
     globus_result_t                     result;
-    globus_callback_space_t             saved_space;
 
     monitor = (globus_i_io_udp_monitor_t *) 
                    globus_malloc(sizeof(globus_i_io_udp_monitor_t));

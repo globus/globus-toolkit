@@ -467,7 +467,6 @@ globus_io_read(
     globus_i_io_monitor_t		monitor;
     globus_result_t			result; 
     globus_size_t			try_read;
-    globus_callback_space_t             saved_space;
 
     result = globus_io_try_read(handle, buf, max_nbytes, nbytes_read);
     if(result != GLOBUS_SUCCESS)

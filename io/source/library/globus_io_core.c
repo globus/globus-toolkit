@@ -1999,7 +1999,9 @@ globus_l_io_handle_events(
                 &time_now,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
-                cancel_info->handle->socket_attr.space);
+                cancel_info->handle->blocking_cancel
+                    ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                    : cancel_info->handle->socket_attr.space);
             globus_assert(result == GLOBUS_SUCCESS);
 	    
             if(!time_left_is_zero)

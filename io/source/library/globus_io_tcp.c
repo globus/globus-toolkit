@@ -1045,7 +1045,6 @@ globus_io_tcp_accept(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
-    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
