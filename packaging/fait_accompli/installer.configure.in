@@ -60,6 +60,9 @@ if test "x$AIX" = "xyes"; then
         *64*)
             aixargs="export OBJECT_MODE=64"
             ;;
+        *32*)
+            aixargs="export OBJECT_MODE=32"
+            ;;
     esac
 fi
 AC_SUBST(aixargs,$aixargs)
