@@ -52,7 +52,7 @@ if($? != 0)
 }
 
 # Create service
-$cmd = "$libexecdir/globus-job-manager-service-add -m lsf -s \"$name\"";
+$cmd = "$libexecdir/globus-job-manager-service -add -m lsf -s \"$name\"";
 system("$cmd >/dev/null 2>/dev/null");
 if($? != 0)
 {

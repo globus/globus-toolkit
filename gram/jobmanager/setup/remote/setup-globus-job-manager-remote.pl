@@ -49,7 +49,7 @@ if($? != 0)
 }
 
 # Create service
-$cmd = "$libexecdir/globus-job-manager-service-add -m remote -s \"$name\"";
+$cmd = "$libexecdir/globus-job-manager-service -add -m remote -s \"$name\"";
 system("$cmd >/dev/null 2>/dev/null");
 
 if($? == 0)

@@ -38,7 +38,7 @@ chmod 0755, 'globus-condor-print-config';
 my $condor_jm_config = `globus-condor-print-config`;
 chomp($condor_jm_config);
 
-$cmd = "$libexecdir/globus-job-manager-service-add -m condor -s \"$name\"";
+$cmd = "$libexecdir/globus-job-manager-service -add -m condor -s \"$name\"";
 system("$cmd -extra-config='$condor_jm_config' >/dev/null 2>/dev/null");
 
 if($? == 0)
