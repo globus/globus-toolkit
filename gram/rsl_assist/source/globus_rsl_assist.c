@@ -591,14 +591,14 @@ globus_i_rsl_assist_get_user_job_list(
     globus_list_t ** job_contact_list)
 {
     char *     search_string;
-    char *     format = "(&(objectclass=GlobusQueueEntry)(globaluserid=%s))";
+    char *     format = "(&(objectclass=GlobusQueueEntry)(globalusername=%s))";
 
     search_string = globus_libc_malloc(strlen(format) + strlen(globaluserid));
 
     globus_libc_sprintf(search_string,format,globaluserid);
 
     return globus_l_rsl_assist_simple_query_ldap(
-	"specification",
+	"globaljobid",
 	-1,
 	search_string,
 	job_contact_list);
