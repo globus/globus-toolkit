@@ -730,7 +730,7 @@ main(
         exit(1);
     }
 
-    if (iterations > 0 && version == GLOBUS_XIO_HTTP_VERSION_1_0)
+    if (iterations > 1 && version == GLOBUS_XIO_HTTP_VERSION_1_0)
     {
         fprintf(stderr,
                 "Can't have multiple iterations with HTTP/1.0 server\n");
