@@ -16,7 +16,11 @@ CVS Information:
 ******************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include <pwd.h>
+
+#if defined (HAVE_PWD_H)
+#   include <pwd.h>
+#endif
+
 #include "globus_gss_assist.h"
 
 /******************************************************************************
@@ -1005,6 +1009,3 @@ xdigit_to_value(
     /* Illegal digit */
     return -1;
 } /* xdigit_to_value() */
-
-
-

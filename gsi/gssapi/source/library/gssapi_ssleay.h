@@ -21,6 +21,10 @@ CVS Information:
                              Include header files
 **********************************************************************/
 
+#if defined(WIN32)
+#   include "windows.h"
+#endif
+
 #include "gssapi.h"
 #include "sslutils.h"
 #include <stdio.h>
