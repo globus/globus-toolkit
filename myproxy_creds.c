@@ -1271,8 +1271,7 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     int return_code = -1;
     SSL_CREDENTIALS *ssl_creds;
     
-    if ((creds == NULL) || (creds->username == NULL) ||
-	(creds->passphrase == NULL)) {
+    if ((creds == NULL) || (creds->username == NULL)) {
 	verror_put_errno(EINVAL);
 	goto error;
     }
@@ -1310,7 +1309,8 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     }
 
     /* overwrite old passphrase with new */
-    tmp_creds.passphrase = strdup(new_passphrase);
+    if (new_passphrase)
+	tmp_creds.passphrase = strdup(new_passphrase);
 
     if (write_data_file(&tmp_creds, data_path, data_file_mode) == -1) {
 	verror_put_string ("Error writing data file");
