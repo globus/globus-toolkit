@@ -15,8 +15,9 @@
 #define MIN_PASS_LEN  5
 
 /* Define default myproxy-server */
-#define MYPROXYSERVER_PORT     7512
-#define MYPROXYSERVER_HOST     "localhost"
+#define MYPROXYSERVER_PORT        7512
+#define MYPROXYSERVER_HOST        "localhost"
+#define MYPROXYSERVER_CONFIG_FILE "/usr/local/myproxy/myproxyserver.config"
 
 /* Default proxy lifetime */
 #define MYPROXY_DEFAULT_HOURS  84
@@ -76,7 +77,7 @@ typedef struct
 {
   char                          *version;
   myproxy_proto_response_type_t response_type;
-  char                          *error_string;
+  char                          error_string[2048];
 } myproxy_response_t;
 
 
@@ -92,13 +93,11 @@ int myproxy_init_client(myproxy_socket_attrs_t *attrs);
 /*
  * myproxy_init_server()
  *
- * Create a generic server socket listening on the given port, ready
- * to accept.
+ * Create a generic server socket ready on the given port ready to accept.
  *
- * returns 0 on success or -1 if an error occurred  
+ * returns the listener fd on success or -1 if an error occurred  
  */
-int myproxy_init_server(myproxy_socket_attrs_t *attrs,
-			int port_number);
+int myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number);
 
 /*
  * myproxy_authenticate_init()
@@ -107,7 +106,7 @@ int myproxy_init_server(myproxy_socket_attrs_t *attrs,
  *
  * returns -1 if unable to authenticate, 0 if authentication successful
  */ 
-int myproxy_authenticate_init(myproxy_socket_attrs_t *attr);
+int myproxy_authenticate_init(myproxy_socket_attrs_t *attr, const char *proxyfile);
 
 /*
  * myproxy_authenticate_accept()
@@ -209,21 +208,6 @@ int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const i
  * Frees up memory used for creating request, response and socket objects 
  */
 void myproxy_destroy(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myproxy_response_t *response);
-
-/*---------------------------- Helper functions ----------------------------*/ 
-
-/*
- * convert_message()
- *
- * Searches a buffer and locates varname. Stores contents of varname into line
- * e.g. convert_message(buf, "VERSION=", version, sizeof(version));
- * If multiple varnames exist, the contents are concatenated following a newline
- *
- * return the number of characters copied into the line 
- * (not including the terminating '\0'), or -1 if varname not found or error
- */
-int  convert_message(const char *buffer, const char *varname, 
-		     char *line, const int linelen); 
 
 
 #endif /* __MYPROXY_H */
