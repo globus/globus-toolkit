@@ -129,17 +129,33 @@ main(
 
     res = globus_xio_open(&xio_handle, attr, target);
     test_res(res);
-    fprintf(stdout, "Successfully opened.\n");
-/*
-    res = globus_xio_register_read(xio_handle, read_buffer, 
-            LINE_LEN, 1, NULL, 
-            globus_l_xio_read_cb, NULL);
-    test_res(res);
-*/
+
     while(!done)
     {
         globus_poll();
-        if(fgets(line, LINE_LEN, stdin) == NULL)
+        ndx = 0;
+        reading = GLOBUS_TRUE;
+        while(reading)
+        {
+            res = globus_xio_read(
+                xio_handle, &read_buffer[ndx], LINE_LEN-ndx, 1, &nbytes, NULL);
+            test_res(res);
+            ndx += nbytes;
+            read_buffer[ndx] = '\0';
+            if(strstr(read_buffer, "\r\n") != NULL)
+            {
+                reading = GLOBUS_FALSE;
+            }
+        }
+        for(ctr = 0; ctr < ndx; ctr++)
+        {
+            if(isprint(read_buffer[ctr]) || read_buffer[ctr] == '\n')
+            {
+                fprintf(stdout, "%c", read_buffer[ctr]);
+            }
+        }
+        if(strcasecmp(line, "QUIT\r\n") == 0 || 
+            fgets(line, LINE_LEN, stdin) == NULL)
         {
             done = GLOBUS_TRUE;
         }
@@ -161,41 +177,12 @@ main(
                 line[ndx-1] = '\r'; /* overwrite '\n' */
                 line[ndx] = '\n';
                 line[ndx+1] = '\0';
-                fprintf(stdout, "Sending:%s:\n", line);
                 res = globus_xio_write(xio_handle, line, 
                         strlen(line), strlen(line), NULL, NULL);
                 test_res(res);
             }
-
-            if(strcmp(line, "QUIT\r\n") == 0)
-            {
-                done = GLOBUS_TRUE;
-            }
         }
 
-        ndx = 0;
-        reading = GLOBUS_TRUE;
-        while(reading)
-        {
-                fprintf(stdout, "globus_xio_read\n");
-            res = globus_xio_read(
-                xio_handle, &read_buffer[ndx], LINE_LEN-ndx, 1, &nbytes, NULL);
-                fprintf(stdout, "done globus_xio_read\n");
-            test_res(res);
-            ndx += nbytes;
-            read_buffer[ndx] = '\0';
-            if(strstr(read_buffer, "\r\n") != NULL)
-            {
-                reading = GLOBUS_FALSE;
-            }
-        }
-        for(ctr = 0; ctr < ndx; ctr++)
-        {
-            if(isprint(read_buffer[ctr]) || read_buffer[ctr] == '\n')
-            {
-                fprintf(stdout, "%c", read_buffer[ctr]);
-            }
-        }
         fflush(stdout);
     }
 
