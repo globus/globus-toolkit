@@ -31,13 +31,22 @@ static int globusl_url_get_scheme(const char **stringp,
 static int globusl_url_get_user_password(const char **stringp,
 					char **user,
 					char **password);
+
 static int globusl_url_get_host_port(const char **stringp,
 				    char **host,
 				    unsigned short *port);
+
 static int globusl_url_get_path(const char **stringp,
 			       char **url_path,
 			       globus_url_scheme_t scheme_type);
 
+static int globusl_url_get_path_rfc1738(const char **stringp,
+			       char **url_path,
+			       globus_url_scheme_t scheme_type);
+
+static int globusl_url_get_path_loose(const char **stringp,
+			       char **url_path,
+			       globus_url_scheme_t scheme_type);
 
 static int globusl_url_get_ldap_specific(const char **stringp,
 					char **dn,
@@ -45,14 +54,18 @@ static int globusl_url_get_ldap_specific(const char **stringp,
 					char **scope,
 					char **filter);
 	
-static int
-globusl_url_get_file_specific(const char **stringp,
-			      char ** host,
-			      char ** path);
+static int globusl_url_get_file_specific(const char **stringp,
+			       char ** host,
+			       char ** path);
+
+static int globusl_url_get_file_specific_loose(const char **stringp,
+			       char ** host,
+			       char ** path);
 
 static int globusl_url_issafe(char x);
 static int globusl_url_isextra(char x);
 static int globusl_url_isscheme_special(char x);
+static int globusl_url_isglob(char x);
 #endif
 
 /**
@@ -286,6 +299,490 @@ parse_error:
     return rc;
 }
 /* globus_url_parse() */
+
+
+/**
+ * Parse a string containing a URL into a globus_url_t
+ * @ingroup globus_url
+ *
+ * @param url_string
+ *        String to parse
+ * @param url
+ *        Pointer to globus_url_t to be filled with the fields of the url
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The string was successfully parsed.
+ * @retval GLOBUS_URL_ERROR_NULL_STRING
+ *         The url_string was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_NULL_URL
+ *         The URL pointer was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_BAD_SCHEME 
+ *         The URL scheme (protocol) contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_USER 
+ *         The user part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PASSWORD
+ *         The password part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_HOST
+ *         The host part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PORT
+ *         The port part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PATH
+ *         The path part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_DN -9
+ *         The DN part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_ATTRIBUTES -10
+ *         The attributes part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_SCOPE -11
+ *         The scope part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_FILTER -12
+ *         The filter part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_OUT_OF_MEMORY -13
+ *         The library was unable to allocate memory to create the
+ *         the globus_url_t contents.
+ * @retval GLOBUS_URL_ERROR_INTERNAL_ERROR -14
+ *         Some unexpected error occurred parsing the URL.
+ */
+int
+globus_url_parse_rfc1738(const char *url_string,
+		 globus_url_t *url)
+{
+    const char *substring;		/* where we are in the parse */
+    int rc;			/* return code from helper functions */
+    
+    if(url == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_URL;
+    }
+
+    url->scheme = NULL;
+    url->host = NULL;
+    url->port = 0;
+    url->user = NULL;
+    url->password = NULL;
+    url->url_path = NULL;
+    url->url_specific_part = NULL;
+    url->dn = NULL;
+    url->attributes = NULL;
+    url->scope = NULL;
+    url->filter = NULL;
+
+    if(url_string == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_STRING;
+    }
+    
+    substring = url_string;
+
+    rc = globusl_url_get_scheme(&substring, 
+			       &(url->scheme),
+			       &(url->scheme_type));
+    if(rc != GLOBUS_SUCCESS)
+    {
+	goto parse_error;
+    }
+
+    if(strncmp(substring, "://", 3) != 0 &&
+       url->scheme_type != GLOBUS_URL_SCHEME_FILE)
+    {
+	rc = GLOBUS_URL_ERROR_BAD_SCHEME;
+	goto parse_error;
+    }
+    else if(url->scheme_type == GLOBUS_URL_SCHEME_FILE)
+    {
+	substring++;
+    }
+    else
+    {
+	substring+=3;
+    }
+    switch(url->scheme_type)
+    {
+    case GLOBUS_URL_SCHEME_FTP:
+    case GLOBUS_URL_SCHEME_GSIFTP:
+	/* optional part of an ftp scheme, password is
+	   only set if user is set
+	*/
+	rc = globusl_url_get_user_password(&substring,
+					  &(url->user),
+					  &(url->password));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	rc=globusl_url_get_host_port(&substring,
+				    &(url->host),
+				    &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_PORT;
+	    goto parse_error;
+	}
+	rc=globusl_url_get_path_rfc1738(&substring,
+			       &(url->url_path),
+			       url->scheme_type);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+	/* fall through here */
+    case GLOBUS_URL_SCHEME_HTTP:
+    case GLOBUS_URL_SCHEME_HTTPS:
+	/* port not http or ftp */
+	rc=globusl_url_get_host_port(&substring,
+				    &(url->host),
+				    &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_PORT;
+	    goto parse_error;
+	}
+
+	rc=globusl_url_get_path(&substring,
+			       &(url->url_path),
+			       url->scheme_type);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+
+    case GLOBUS_URL_SCHEME_X_NEXUS:
+	/* port required for x-nexus URL */
+	rc=globusl_url_get_host_port(&substring,
+				 &(url->host),
+				 &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	if(url->port == 0)
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_PORT;
+	    goto parse_error;
+	}
+	break;
+    case GLOBUS_URL_SCHEME_LDAP:
+	rc = globusl_url_get_host_port(&substring,
+				      &(url->host),
+				      &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	if(*substring != '/')
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_DN;
+	    goto parse_error;
+	}
+	else
+	{
+	    substring++;
+	}
+	rc = globusl_url_get_ldap_specific(&substring,
+					  &(url->dn),
+					  &(url->attributes),
+					  &(url->scope),
+					  &(url->filter));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+
+    case GLOBUS_URL_SCHEME_FILE:
+	rc = globusl_url_get_file_specific(&substring,
+					   &(url->host),
+					   &(url->url_path));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+
+    case GLOBUS_URL_SCHEME_X_GASS_CACHE:
+	rc = globusl_url_get_substring(substring,
+				      &(url->url_specific_part),
+				      strlen(substring));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}	
+	break;
+	
+    default:
+	rc = globusl_url_get_host_port(&substring,
+				      &(url->host),
+				      &(url->port));
+	if(rc == GLOBUS_URL_ERROR_INTERNAL_ERROR)
+	{
+	    goto parse_error;
+	}
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    rc = globusl_url_get_path(&substring,
+				     &(url->url_path),
+				     url->scheme_type);
+	    if(rc == GLOBUS_URL_ERROR_INTERNAL_ERROR)
+	    {
+		goto parse_error;
+	    }
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		break;
+	    }
+	}
+	rc = globusl_url_get_substring(substring,
+				      &(url->url_specific_part),
+				      strlen(substring));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+    }
+    return rc;
+
+parse_error:
+    globus_url_destroy(url);
+
+    return rc;
+}
+/* globus_url_parse_rfc1738() */
+
+
+/**
+ * Parse a string containing a URL into a globus_url_t
+ * Looser restrictions on characters allowed in the path
+ * part of the URL.
+ * @ingroup globus_url
+ *
+ * @param url_string
+ *        String to parse
+ * @param url
+ *        Pointer to globus_url_t to be filled with the fields of the url
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The string was successfully parsed.
+ * @retval GLOBUS_URL_ERROR_NULL_STRING
+ *         The url_string was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_NULL_URL
+ *         The URL pointer was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_BAD_SCHEME 
+ *         The URL scheme (protocol) contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_USER 
+ *         The user part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PASSWORD
+ *         The password part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_HOST
+ *         The host part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PORT
+ *         The port part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PATH
+ *         The path part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_DN -9
+ *         The DN part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_ATTRIBUTES -10
+ *         The attributes part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_SCOPE -11
+ *         The scope part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_FILTER -12
+ *         The filter part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_OUT_OF_MEMORY -13
+ *         The library was unable to allocate memory to create the
+ *         the globus_url_t contents.
+ * @retval GLOBUS_URL_ERROR_INTERNAL_ERROR -14
+ *         Some unexpected error occurred parsing the URL.
+ */
+int
+globus_url_parse_loose(const char *url_string,
+		 globus_url_t *url)
+{
+    const char *substring;		/* where we are in the parse */
+    int rc;			/* return code from helper functions */
+    
+    if(url == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_URL;
+    }
+
+    url->scheme = NULL;
+    url->host = NULL;
+    url->port = 0;
+    url->user = NULL;
+    url->password = NULL;
+    url->url_path = NULL;
+    url->url_specific_part = NULL;
+    url->dn = NULL;
+    url->attributes = NULL;
+    url->scope = NULL;
+    url->filter = NULL;
+
+    if(url_string == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_STRING;
+    }
+    
+    substring = url_string;
+
+    rc = globusl_url_get_scheme(&substring, 
+			       &(url->scheme),
+			       &(url->scheme_type));
+    if(rc != GLOBUS_SUCCESS)
+    {
+	goto parse_error;
+    }
+
+    if(strncmp(substring, "://", 3) != 0 &&
+       url->scheme_type != GLOBUS_URL_SCHEME_FILE)
+    {
+	rc = GLOBUS_URL_ERROR_BAD_SCHEME;
+	goto parse_error;
+    }
+    else if(url->scheme_type == GLOBUS_URL_SCHEME_FILE)
+    {
+	substring++;
+    }
+    else
+    {
+	substring+=3;
+    }
+    switch(url->scheme_type)
+    {
+    case GLOBUS_URL_SCHEME_FTP:
+    case GLOBUS_URL_SCHEME_GSIFTP:
+	/* optional part of an ftp scheme, password is
+	   only set if user is set
+	*/
+	rc = globusl_url_get_user_password(&substring,
+					  &(url->user),
+					  &(url->password));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	/* fall through here */
+    case GLOBUS_URL_SCHEME_HTTP:
+    case GLOBUS_URL_SCHEME_HTTPS:
+	/* port not http or ftp */
+	rc=globusl_url_get_host_port(&substring,
+				    &(url->host),
+				    &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_PORT;
+	    goto parse_error;
+	}
+
+	rc=globusl_url_get_path_loose(&substring,
+			       &(url->url_path),
+			       url->scheme_type);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+
+    case GLOBUS_URL_SCHEME_X_NEXUS:
+	/* port required for x-nexus URL */
+	rc=globusl_url_get_host_port(&substring,
+				 &(url->host),
+				 &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	if(url->port == 0)
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_PORT;
+	    goto parse_error;
+	}
+	break;
+    case GLOBUS_URL_SCHEME_LDAP:
+	rc = globusl_url_get_host_port(&substring,
+				      &(url->host),
+				      &(url->port));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	if(*substring != '/')
+	{
+	    rc = GLOBUS_URL_ERROR_BAD_DN;
+	    goto parse_error;
+	}
+	else
+	{
+	    substring++;
+	}
+	rc = globusl_url_get_ldap_specific(&substring,
+					  &(url->dn),
+					  &(url->attributes),
+					  &(url->scope),
+					  &(url->filter));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+
+    case GLOBUS_URL_SCHEME_FILE:
+	rc = globusl_url_get_file_specific_loose(&substring,
+					   &(url->host),
+					   &(url->url_path));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+	break;
+
+    case GLOBUS_URL_SCHEME_X_GASS_CACHE:
+	rc = globusl_url_get_substring(substring,
+				      &(url->url_specific_part),
+				      strlen(substring));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}	
+	break;
+	
+    default:
+	rc = globusl_url_get_host_port(&substring,
+				      &(url->host),
+				      &(url->port));
+	if(rc == GLOBUS_URL_ERROR_INTERNAL_ERROR)
+	{
+	    goto parse_error;
+	}
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    rc = globusl_url_get_path(&substring,
+				     &(url->url_path),
+				     url->scheme_type);
+	    if(rc == GLOBUS_URL_ERROR_INTERNAL_ERROR)
+	    {
+		goto parse_error;
+	    }
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		break;
+	    }
+	}
+	rc = globusl_url_get_substring(substring,
+				      &(url->url_specific_part),
+				      strlen(substring));
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto parse_error;
+	}
+    }
+    return rc;
+
+parse_error:
+    globus_url_destroy(url);
+
+    return rc;
+}
+/* globus_url_parse_loose() */
 
 /**
  * Destroy a globus_url_t structure.
@@ -999,6 +1496,89 @@ globusl_url_get_file_specific(const char **stringp,
 }
 
 /******************************************************************************
+Function: globusl_url_get_file_specific_loose()
+
+Description: Look for properly formatted file scheme-specific information:
+		/some/path
+		//hostname/some/path
+		(Note: only the second form is valid in the RFC definition
+		of file URLS; however, the first and is used in common
+		practice)
+		loose restrictions on characters allowed for globbing purposes
+
+Parameters: 
+
+Returns: GLOBUS_SUCCESS if the parsing turns out OK, GLOBUS_URL_ERROR_*
+         otherwise
+******************************************************************************/
+static int
+globusl_url_get_file_specific_loose(const char **stringp,
+			      char ** host,
+			      char ** path)
+{
+    int    rc;
+    size_t pos = 0;
+
+    while((*stringp)[pos] == '/')
+    {
+	pos++;
+    }
+
+    if(pos == 0)
+    {
+	return GLOBUS_URL_ERROR_BAD_PATH;
+    }
+    if(pos == 2)
+    {
+	(*stringp) += pos;
+
+	pos = 0;
+	/* Parse host name */
+	while(isalnum((*stringp)[pos]) ||
+	      (*stringp)[pos] == '-' ||
+	      (*stringp)[pos] == '.')
+	{
+	    pos++;
+	} 
+
+	if((*stringp)[pos] == '/' && pos != 0)
+	{
+	    rc = globusl_url_get_substring(*stringp, host, pos);
+	    (*stringp) += pos;
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		return rc;
+	    }
+	}
+	pos = 0;
+    }
+    /* We've consumed the host name, now consume any leading /'s,
+     * except for the last one */
+    while((*stringp)[pos] == '/')
+    {
+	pos++;
+    }
+
+    if(pos > 1)
+    {
+	(*stringp) += (pos - 1);
+    }
+    pos = 0;
+
+    if((*stringp)[pos] != '/')
+    {
+        rc = GLOBUS_URL_ERROR_BAD_PATH;
+    }
+    else
+    {
+        rc = globusl_url_get_path_loose(stringp,
+			          path,
+				  GLOBUS_URL_SCHEME_FILE);
+    }
+    return rc;
+}
+
+/******************************************************************************
 Function: globusl_url_get_path()
 
 Description: look for a path in the specified string.
@@ -1077,6 +1657,197 @@ globusl_url_get_path(const char **stringp,
 }
 
 /******************************************************************************
+Function: globusl_url_get_path_rfc1738()
+
+Description: look for a path in the specified string.
+
+Parameters: 
+
+Returns: GLOBUS_TRUE if in the character class, GLOBUS_FALSE otherwise
+******************************************************************************/
+static int
+globusl_url_get_path_rfc1738(const char **stringp,
+		    char **url_path,
+		    globus_url_scheme_t scheme_type)
+{
+    int rc;
+    size_t pos = 0;
+    size_t tmppos = 0;
+    size_t lastpos;
+    size_t former=0;
+    char * tmpbuf;
+
+    tmpbuf=globus_malloc(strlen((*stringp)));
+    if(tmpbuf == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_STRING;
+    }
+    
+    do
+    {
+	lastpos = pos;
+
+	while((*stringp)[pos] == '/')
+	{
+	    /*if (pos>strcspn(*stringp, "/")) */
+	    if (pos>0)
+	    {
+	        if ((*stringp)[pos]!=(*stringp)[pos-1])   /*no strings of / */
+		{
+		    tmpbuf[tmppos]=(*stringp)[pos];
+		    pos++;
+		    tmppos++;
+		}
+		else
+		{
+		    pos++;
+		}
+	    }
+	    else
+	    {
+		pos++;
+	    }
+	}
+
+	if(isalnum((*stringp)[pos]) ||
+	   globusl_url_issafe((*stringp)[pos]) ||
+	   globusl_url_isextra((*stringp)[pos]) ||
+	   globusl_url_isscheme_special((*stringp)[pos]) ||
+	   (*stringp)[pos] == '~' || /* incorrect, but de facto */
+	   (*stringp)[pos] == ' ') /* to be nice */
+	{
+	    tmpbuf[tmppos]=(*stringp)[pos];
+	    tmppos++;
+	    pos++;
+	}
+
+	if((*stringp)[pos] == '%')
+	{
+	    tmpbuf[tmppos]=(*stringp)[pos];
+	    tmppos++;
+	    pos++;
+	    if(isxdigit((*stringp)[pos]))
+	    {
+		tmpbuf[tmppos]=(*stringp)[pos];
+		tmppos++;
+		pos++;
+		if(isxdigit((*stringp)[pos]))
+		{
+		    tmpbuf[tmppos]=(*stringp)[pos];
+		    tmppos++;
+		    pos++;
+		}
+		else
+		{
+		    return GLOBUS_URL_ERROR_BAD_PATH;
+		}
+	    }
+	    else
+	    {
+		return GLOBUS_URL_ERROR_BAD_PATH;
+	    }
+	}
+    } while((*stringp)[pos] != '\0' &&
+	    lastpos != pos);
+    
+    tmpbuf[tmppos] = '\0';
+
+    if(pos == 0)
+    {
+	return GLOBUS_SUCCESS;
+    }
+    if(pos != strlen(*stringp))
+    {
+	return GLOBUS_URL_ERROR_BAD_PATH;
+    }
+
+    rc = globusl_url_get_substring(tmpbuf, url_path, tmppos);
+
+    free(tmpbuf);
+
+    return rc;
+}
+
+/******************************************************************************
+Function: globusl_url_get_path_loose()
+
+Description: look for a path in the specified string, loose restrictions on its
+             contents.
+
+Parameters: 
+
+Returns: GLOBUS_TRUE if in the character class, GLOBUS_FALSE otherwise
+******************************************************************************/
+static int
+globusl_url_get_path_loose(const char **stringp,
+		    char **url_path,
+		    globus_url_scheme_t scheme_type)
+{
+    int rc;
+    size_t pos = 0;
+    size_t lastpos;
+    
+    do
+    {
+	lastpos = pos;
+	if(isalnum((*stringp)[pos]) ||
+	   globusl_url_issafe((*stringp)[pos]) ||
+	   globusl_url_isextra((*stringp)[pos]) ||
+	   globusl_url_isscheme_special((*stringp)[pos]) ||
+	   globusl_url_isglob((*stringp)[pos]) ||
+	   (*stringp)[pos] == '~' || /* incorrect, but de facto */
+	   (*stringp)[pos] == ' ') /* to be nice */
+	{
+	    pos++;
+	}
+
+	if((*stringp)[pos] == '%')
+	{
+	    pos++;
+	    if(isxdigit((*stringp)[pos]))
+	    {
+		pos++;
+		if(isxdigit((*stringp)[pos]))
+		{
+		    pos++;
+		}
+		else
+		{
+		    return GLOBUS_URL_ERROR_BAD_PATH;
+		}
+	    }
+	    else
+	    {
+		return GLOBUS_URL_ERROR_BAD_PATH;
+	    }
+	}
+    } while((*stringp)[pos] != '\0' &&
+	    lastpos != pos);
+
+    if(pos == 0)
+    {
+	return GLOBUS_SUCCESS;
+    }
+    if(pos != strlen(*stringp))
+    {
+	return GLOBUS_URL_ERROR_BAD_PATH;
+    }
+
+    /* reduce /~ to ~ if FTP */
+
+    if((scheme_type == GLOBUS_URL_SCHEME_FTP ||
+	scheme_type == GLOBUS_URL_SCHEME_GSIFTP) &&
+	pos > 1 && **stringp == '/' && *(*stringp + 1) == '~')
+    {
+	*stringp = *stringp + 1;
+    }
+
+    rc = globusl_url_get_substring(*stringp, url_path, pos);
+
+    return rc;
+}
+
+/******************************************************************************
 Function: globusl_url_issafe()
 
 Description: predicate returns true if the specified character is in the
@@ -1094,6 +1865,40 @@ globusl_url_issafe(char x)
        x == '_' ||
        x == '.' ||
        x == '+')
+    {
+	return GLOBUS_TRUE;
+    }
+    else
+    {
+	return GLOBUS_FALSE;
+    }
+}
+
+/******************************************************************************
+Function: globusl_url_issafe()
+
+Description: predicate returns true if the specified character is in the
+             'safe' character class from RFC 1738
+
+Parameters: 
+
+Returns: GLOBUS_TRUE if in the character class, GLOBUS_FALSE otherwise
+******************************************************************************/
+static int
+globusl_url_isglob(char x)
+{
+    if(x == '*' ||
+       x == '?' ||
+       x == '[' ||
+       x == ']' ||
+       x == '{' ||
+       x == '}' ||
+       x == '!' ||
+       x == '?' ||
+       x == '=' ||
+       x == ',' ||
+       x == ':' ||
+       x == '-')
     {
 	return GLOBUS_TRUE;
     }
