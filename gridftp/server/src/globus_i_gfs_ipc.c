@@ -606,8 +606,34 @@ globus_gfs_ipc_reply(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_reply_t *            reply)
 {
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    globus_gfs_ipc_call_entry_t *       call_entry = NULL;
 
-    return GLOBUS_SUCCESS;
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_hashtable_lookup(
+            &ipc_handle->call_table,
+            (void *) reply->id);
+    
+    if(call_entry == NULL)
+    {
+        res = GLOBUS_FAILURE; /* XXX */
+        goto err_lookup;
+    }
+
+    if(call_entry->cb != NULL)
+    {
+        res = call_entry->cb(
+            ipc_handle, 
+            reply, 
+            call_entry->user_arg);
+    }
+
+    /* event cb here too? */
+
+    return res;
+    
+err_lookup:
+    return res;
 }
 
 
