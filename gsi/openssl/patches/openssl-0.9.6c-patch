@@ -1,6 +1,6 @@
 diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
 --- openssl-0.9.6c/Configure	Thu Dec  6 07:11:39 2001
-+++ openssl-0.9.6c-patched/Configure	Sun Feb  3 14:26:45 2002
++++ openssl-0.9.6c-patched/Configure	Mon Feb  4 10:05:01 2002
 @@ -329,8 +329,8 @@
  # The intel boxes :-), It would be worth seeing if bsdi-gcc can use the
  # bn86-elf.o file file since it is hand tweaked assembler.
@@ -58,7 +58,7 @@ diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
  while (<IN>)
 diff -u -r openssl-0.9.6c/Makefile openssl-0.9.6c-patched/Makefile
 --- openssl-0.9.6c/Makefile	Thu Dec 20 20:54:43 2001
-+++ openssl-0.9.6c-patched/Makefile	Sun Feb  3 14:26:45 2002
++++ openssl-0.9.6c-patched/Makefile	Tue Feb 12 18:24:45 2002
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -111,8 +111,13 @@ diff -u -r openssl-0.9.6c/Makefile openssl-0.9.6c-patched/Makefile
  		libs="$$libs -l$$i"; \
  		done; \
  	fi
-@@ -323,9 +324,9 @@
+@@ -321,11 +322,14 @@
+ 	if ${DETECT_GNU_LD}; then \
+ 		$(MAKE) do_gnu-shared; \
  	else \
++		if [ ${CC} = "gcc" ]; then \
++			CC = `${CC} -print-prog-name=ld`; \
++		fi \
  		libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
  		( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
 -		  set -x; ${CC}  -G -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
@@ -126,7 +131,7 @@ diff -u -r openssl-0.9.6c/Makefile openssl-0.9.6c-patched/Makefile
  	fi
 diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 --- openssl-0.9.6c/Makefile.org	Wed Nov 14 04:44:11 2001
-+++ openssl-0.9.6c-patched/Makefile.org	Sun Feb  3 14:26:45 2002
++++ openssl-0.9.6c-patched/Makefile.org	Mon Feb  4 10:05:01 2002
 @@ -231,33 +231,42 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -237,7 +242,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  	libs="$$libs -l$$i"; \
 diff -u -r openssl-0.9.6c/Makefile.ssl openssl-0.9.6c-patched/Makefile.ssl
 --- openssl-0.9.6c/Makefile.ssl	Thu Dec 20 20:54:43 2001
-+++ openssl-0.9.6c-patched/Makefile.ssl	Sun Feb  3 14:26:45 2002
++++ openssl-0.9.6c-patched/Makefile.ssl	Mon Feb  4 10:05:01 2002
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -318,7 +323,7 @@ diff -u -r openssl-0.9.6c/Makefile.ssl openssl-0.9.6c-patched/Makefile.ssl
  	fi
 diff -u -r openssl-0.9.6c/config openssl-0.9.6c-patched/config
 --- openssl-0.9.6c/config	Wed Dec 19 13:37:41 2001
-+++ openssl-0.9.6c-patched/config	Sun Feb  3 14:26:45 2002
++++ openssl-0.9.6c-patched/config	Mon Feb  4 10:05:01 2002
 @@ -349,9 +349,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -437,7 +442,7 @@ diff -u -r openssl-0.9.6c/config openssl-0.9.6c-patched/config
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
 diff -u -r openssl-0.9.6c/crypto/asn1/a_bitstr.c openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c
 --- openssl-0.9.6c/crypto/asn1/a_bitstr.c	Sat Aug  5 20:35:03 2000
-+++ openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c	Sun Feb  3 14:48:38 2002
++++ openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c	Mon Feb  4 10:05:01 2002
 @@ -230,7 +230,7 @@
  	if (a == NULL) return(0);
  	if ((a->length < (w+1)) || (a->data == NULL))
@@ -463,7 +468,7 @@ diff -u -r openssl-0.9.6c/crypto/asn1/a_bitstr.c openssl-0.9.6c-patched/crypto/a
  	return(1);
 diff -u -r openssl-0.9.6c/crypto/asn1/a_d2i_fp.c openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c
 --- openssl-0.9.6c/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
-+++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Sun Feb  3 14:26:45 2002
++++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Mon Feb  4 10:05:01 2002
 @@ -169,13 +169,17 @@
  					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
  					goto err;
