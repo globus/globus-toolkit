@@ -4268,8 +4268,10 @@ globus_i_ftp_control_client_deactivate(void)
 		globus_mutex_unlock(&(cc_handle->mutex));
 	    }
 	    
-	    
-	    globus_libc_free(cc_handle->response.response_buffer);
+	    if(cc_handle->response.response_buffer)
+	    {
+	        globus_libc_free(cc_handle->response.response_buffer);
+	    }
 	    globus_i_ftp_control_auth_info_destroy(&(cc_handle->auth_info));
 	    globus_mutex_destroy(&(cc_handle->mutex));
 	    globus_cond_destroy(&(cc_handle->cond));

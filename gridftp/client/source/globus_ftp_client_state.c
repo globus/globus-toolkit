@@ -3402,6 +3402,7 @@ globus_l_ftp_client_parallelism_string(
 /**
  * faked force close oneshot wrapper
  */
+static
 void
 globus_i_ftp_client_faked_force_close_callback(
     const globus_abstime_t *            time_now,
