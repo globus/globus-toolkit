@@ -457,13 +457,8 @@ globus_ftp_control_command_init(
     int                                         i;
     int                                         j;
     int                                         length;
-    char *                                      start;
-    int                                         arg_start;
-    unsigned int                                port[2];
-    char                                        tmp[16];
     char                                        cmd[5];
     char *                                      decoded_cmd = GLOBUS_NULL;
-    char *                                      tmp_ptr;
     globus_result_t                             rc;
     globus_ftp_l_command_hash_entry_t *         command_hash_entry;
     
@@ -478,8 +473,7 @@ globus_ftp_control_command_init(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_init: malloc failed")
-            );
+                "globus_ftp_control_command_init: malloc failed"));
     }
 
     j=0;
@@ -1082,7 +1076,6 @@ globus_l_ftp_control_accept_cb(
     globus_object_t *                         error = GLOBUS_NULL;
     globus_ftp_cc_handle_t *                  cc_handle;
     globus_ftp_control_handle_t *             c_handle;
-    globus_result_t                           rc;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
 
     
@@ -1177,7 +1170,6 @@ globus_ftp_control_server_authenticate(
     globus_result_t                           rc;
     globus_result_t                           rc2;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
-    char *                                    reply;
 
     cc_handle=&(handle->cc_handle);
 
@@ -1231,7 +1223,6 @@ globus_ftp_control_server_authenticate(
                                handle);
     if(rc != GLOBUS_SUCCESS)
     {
-        globus_libc_free(reply);
         error=globus_error_get(rc);
         goto error_std;
     }
@@ -3034,14 +3025,16 @@ globus_i_ftp_control_decode_command(
         goto decode_error;
     }
     
-    globus_assert(strlen(cmd) >= unwrapped_token.length);
+    globus_assert(strlen(cmd) > unwrapped_token.length);
                     
     memcpy(tmp,
            unwrapped_token.value,
            unwrapped_token.length);
 
+    tmp[unwrapped_token.length] = '\0';
+    
     gss_release_buffer(&min_stat, &unwrapped_token);
-
+    
     globus_libc_free(*decoded_cmd);
     
     *decoded_cmd=tmp;
