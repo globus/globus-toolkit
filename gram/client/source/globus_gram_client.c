@@ -413,7 +413,7 @@ globus_l_gram_client_authenticate(
 			delegation_mode))
 	 || (res = globus_io_attr_set_secure_channel_mode(
 	                &attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP)) )
+			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
     {
 	globus_object_t *  err = globus_error_get(res);
 
@@ -525,6 +525,66 @@ globus_gram_client_job_request(char * gatekeeper_url,
 			       const char * callback_url,
 			       char ** job_contact)
 {
+#if 0
+    
+    int                          rc;
+    int                          version;
+    char                         query[GLOBUS_GRAM_HTTP_BUFSIZE];
+    globus_size_t                querysize;
+    globus_gram_http_monitor_t   monitor;
+
+    GLOBUS_L_LOCK;
+
+    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
+    globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
+    monitor.done = GLOBUS_FALSE;
+
+    rc = globus_l_gram_pack_http_job_request (
+		       query,
+		       &query_size,
+		       job_state_mask /* integer */,
+		       callback_url /* user's state listener URL */,
+		       description /* user's RSL */);
+
+    rc = globus_gram_http_post_and_get(
+	    gatekeeper_url,
+	    (globus_byte_t *) query,
+	    &querysize,
+	    &monitor);
+
+    if (rc!=GLOBUS_SUCCESS)
+	goto globus_gram_client_job_request_done;
+
+    GLOBUS_L_UNLOCK;
+
+    globus_mutex_lock(&monitor.mutex);
+    while (!monitor.done)
+    {
+	globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    rc = monitor.errorcode;
+    globus_mutex_unlock(&monitor.mutex);
+
+    GLOBUS_L_LOCK;
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+	if (3 != sscanf(query, "%d %d %d", &version, job_status, failure_code))
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	else if (version != GLOBUS_GRAM_PROTOCOL_VERSION)
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }
+
+globus_gram_client_job_request_done:
+    
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+    
+    GLOBUS_L_UNLOCK;
+    return rc;
+
+
+
     int                             size;
     int                             count;
     int                             rc;
@@ -548,9 +608,6 @@ globus_gram_client_job_request(char * gatekeeper_url,
      * mutual authentication, delegation.
      * We might also want sequence, and integraty.
      */
-
-#if 0
-    
     globus_mutex_init(&job_request_monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&job_request_monitor.cond, (globus_condattr_t *) NULL);
     job_request_monitor.done = GLOBUS_FALSE;
@@ -583,13 +640,6 @@ globus_gram_client_job_request(char * gatekeeper_url,
 			     (void *) &job_request_monitor);
 
     GLOBUS_L_LOCK;
-
-    rc = globus_l_gram_pack_http_job_request (
-		       &request_buffer,
-		       &request_buffer_size,
-		       description /* user's RSL */,
-		       job_state_mask /* integer */,
-		       callback_url /* user's state listener URL */);
 
     if (rc != GLOBUS_SUCCESS)
 	goto globus_l_gram_client_job_request_pack_error;
@@ -646,8 +696,8 @@ globus_l_gram_client_job_request_authenticate_error:
     globus_mutex_destroy(&job_request_monitor.mutex);
     globus_cond_destroy(&job_request_monitor.cond);
 
-#endif
     return rc;
+#endif
 } /* globus_gram_client_job_request() */
 
 

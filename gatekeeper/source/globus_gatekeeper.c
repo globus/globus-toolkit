@@ -1147,6 +1147,9 @@ static void doit()
 	ret_flags = 0;
 #endif
 
+	/* enable SSL compatability so we can talk https */
+	ret_flags |= GSS_C_GLOBUS_SSL_COMPATABLE;
+
     major_status = globus_gss_assist_accept_sec_context(&minor_status,
                        &context_handle,
                        credential_handle,
@@ -1228,13 +1231,13 @@ static void doit()
 
 #endif /* GSS_AUTHENTICATION */
 
+#if 0 /* version checking is no longer handled by gatekeeper messages */
     /* client will check version # sent here with it's own.  If they match
      * then the client will continue and send the service name
      * for the job manager or other service.
      */
-
-	sprintf(tmp_version,"VERSION=%d\n\0",GLOBUS_GRAM_PROTOCOL_VERSION);
-
+    
+    sprintf(tmp_version,"VERSION=%d\n\0",GLOBUS_GRAM_PROTOCOL_VERSION);
 	
     major_status = globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
@@ -1245,19 +1248,20 @@ static void doit()
 					fdout,
 					logging_usrlog?usrlog_fp:NULL);
 
-   	if (major_status != GSS_S_COMPLETE)
-   	{
-		failure4("Sending Version:GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-					major_status,minor_status,token_status);
-	}
- 	
-	/* 
-	 * Read from the client the service it would like to use
-	 * For now this is a null terminated string which has been
-	 * wrapped.
-	 */
+    if (major_status != GSS_S_COMPLETE) {
+      failure4("Sending Version:GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+	       major_status,minor_status,token_status);
+    }
+#endif /* version checking is no longer handled by gatekeeper messages */
 
-	major_status = globus_gss_assist_get_unwrap(&minor_status,
+
+    /* 
+     * Read from the client the service it would like to use
+     * For now this is a null terminated string which has been
+     * wrapped.
+     */
+
+    major_status = globus_gss_assist_get_unwrap(&minor_status,
 				 		context_handle,
 						&service_name,
 						&length,
@@ -1265,87 +1269,87 @@ static void doit()
 						globus_gss_assist_token_get_fd,
 						stdin,
 						logging_usrlog?usrlog_fp:NULL);
+    
+    if (major_status != GSS_S_COMPLETE)
+      {
+	failure4("Reading service GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+		 major_status,minor_status,token_status);
+      }
+    
+    /*DEE should do sanity check on length, and null term */
+    if (length > 256 || service_name[length-1] != '\0')
+      {
+	failure("Service name malformed");
+      }
+    
+    notice2(LOG_NOTICE,"Requested service:%s", service_name);
 
-   	if (major_status != GSS_S_COMPLETE)
-   	{
-		failure4("Reading service GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-					major_status,minor_status,token_status);
-	}
- 	
-	/*DEE should do sanity check on length, and null term */
-	if (length > 256 || service_name[length-1] != '\0')
-	{
-		failure("Service name malformed");
-	}
-
-	notice2(LOG_NOTICE,"Requested service:%s", service_name);
-
-	if ((rc = globus_gatekeeper_util_globusxmap(
-	            genfilename(gatekeeperhome,grid_services,NULL), 
-				service_name, 
-				&service_line)) != 0)
-	{
-		/*
-		 *DEE For an easier transition, if -jmconf -jm are given and 
-		 * this is the jobmanager, and the grid_services file was 
-		 * not found, simulate the service and the args
-		 * This should be removed at some time.
-		 */
-
-		if ((rc == -2) && jm_conf_path && job_manager_exe 
-					&& !strncmp("jobmanager",service_name,10))
-				
-		{
-			service_line = (char *)malloc(BUFSIZ);
-			sprintf(service_line,
-			"local_cred,stderr_log - %s jobmanager -conf ${JM_CONF_PATH}",
-					job_manager_exe);
-			notice(LOG_INFO,
-			   "grid_services not found, using default for jobmanager");
-		} /* end of the easier transition */
-		else
-		{
-			failure3("Failed to find requested service: %s: %d", 
-					service_name, rc);
-		}
-	}
-
-	/* 
-	 * Parse the command line.
-	 */ 
-
-	if (globus_gatekeeper_util_tokenize(service_line,
-							service_args, 
-							&num_service_args,
-							" \t\n"))
-	{
-		notice(LOG_ERR, "ERROR:Tokenize failed for services");
-		failure("ERROR: gatekeeper misconfigured");
-	}
-
-	if (num_service_args < SERVICE_ARG0_INDEX)
-	{
-		notice(LOG_ERR, "ERROR:To few service arguments");
-		failure("ERROR: gatekeeper misconfigured");
-	}
-
-
+    if ((rc = globus_gatekeeper_util_globusxmap(
+		genfilename(gatekeeperhome,grid_services,NULL), 
+		service_name, 
+		&service_line)) != 0)
+      {
 	/*
-	 * Either run as the userid from the globus map,
-	 *  or from grid_service as a selected user
+	 *DEE For an easier transition, if -jmconf -jm are given and 
+	 * this is the jobmanager, and the grid_services file was 
+	 * not found, simulate the service and the args
+	 * This should be removed at some time.
 	 */
 	
-	if (strcmp(service_args[SERVICE_USER_INDEX],"-"))
-	{
-		userid = service_args[SERVICE_USER_INDEX];
-	}
+	if ((rc == -2) && jm_conf_path && job_manager_exe 
+	    && !strncmp("jobmanager",service_name,10))
+	  
+	  {
+	    service_line = (char *)malloc(BUFSIZ);
+	    sprintf(service_line,
+		    "local_cred,stderr_log - %s jobmanager -conf ${JM_CONF_PATH}",
+		    job_manager_exe);
+	    notice(LOG_INFO,
+		   "grid_services not found, using default for jobmanager");
+	  } /* end of the easier transition */
+	else
+	  {
+	    failure3("Failed to find requested service: %s: %d", 
+		     service_name, rc);
+	  }
+      }
+    
+    /* 
+     * Parse the command line.
+     */ 
+    
+    if (globus_gatekeeper_util_tokenize(service_line,
+					service_args, 
+					&num_service_args,
+					" \t\n"))
+      {
+	notice(LOG_ERR, "ERROR:Tokenize failed for services");
+	failure("ERROR: gatekeeper misconfigured");
+      }
+    
+    if (num_service_args < SERVICE_ARG0_INDEX)
+      {
+	notice(LOG_ERR, "ERROR:To few service arguments");
+	failure("ERROR: gatekeeper misconfigured");
+      }
 
+
+    /*
+     * Either run as the userid from the globus map,
+     *  or from grid_service as a selected user
+     */
+    
+    if (strcmp(service_args[SERVICE_USER_INDEX],"-"))
+      {
+	userid = service_args[SERVICE_USER_INDEX];
+      }
+    
     notice2(LOG_NOTICE, "Authorized as local user: %s", userid);
-
+    
     if ((pw = getpwnam(userid)) == NULL)
-    {
+      {
         failure2("getpwname() failed to find %s",userid);
-    }
+      }
 
     service_uid = pw->pw_uid;
 #   if defined(TARGET_ARCH_CRAYT3E)
