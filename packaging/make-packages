@@ -45,6 +45,7 @@ setup_environment() {
 		fi
 	fi
 
+	mkdir -p logs
 }
 
 # checkout_cvs_generic cvsdir checkoutdir module [ tag ] 
@@ -76,18 +77,18 @@ checkout_cvs_generic() {
 	fi
 
 	if [ ! -d $checkoutdir ]; then
-		echo Making fresh CVS checkout.
+		echo Making fresh CVS checkout of $1
 		mkdir $checkoutdir
 		cd $checkoutdir
-		cvs co $cvs_opts $module
+		cvs co $cvs_opts $module > ../logs/$2.log 2>&1
 		cd ..
 	elif [ $update = 1 ]; then
-		echo "Updating CVS checkout."
+		echo "Updating CVS checkout of $1"
 		# cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
 		cd $checkoutdir
 		for f in *; do
 			cd $f
-			cvs -z3 -qq up 
+			cvs -z3 -qq up > ../../logs/$2-$f.log 2>&1
 			cd ..
 		done
 		cd ..
@@ -119,8 +120,11 @@ build_gt2_autotools() {
 	if [ ! -d gt2-autotools ]; then
 		checkout_cvs_gt2_autotools
 		cd gt2-autotools
-		./side_tools/build-autotools
+
+		echo Building GT2 autotools now
+		./side_tools/build-autotools > ../logs/gt2-autotools.log 2>&1
 	else
+		echo Using existing GT2 autotools installation
 		cd gt2-autotools
 	fi
 
@@ -146,7 +150,7 @@ install_gpt_generic() {
 		tar xzf $bundle
 		cd $installdir
 		export GPT_LOCATION=`pwd`
-		./build_gpt
+		./build_gpt > ../logs/$1.log
 		cd ..
 	fi
 	echo
@@ -181,7 +185,8 @@ install_gt2_source() {
 		echo Delete gt2-installation to force a rebuild.
 	else
 		cd side_tools
-        	./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor
+		echo Building GT2 using ./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor
+        	./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor > ../../logs/gt2-installation.log 2>&1
 		cd ..
 	fi
 
@@ -221,7 +226,8 @@ install_cdeps() {
 make_source_package() {
 	if [ "$build" = "custom" ]; then
 		echo Following custom build instructions for $name
-		$1/custom-build ogsa-cvs/$subdir $GPT_LOCATION $GLOBUS_LOCATION gcc32dbg
+		pwd
+		$1/custom-build ogsa-cvs/$subdir $GPT_LOCATION $GLOBUS_LOCATION gcc32dbg > logs/${name}.log 2>&1
 		echo
 		return;
 	fi
@@ -240,12 +246,10 @@ make_source_package() {
 
 		# most packages
 		if [ -f build.xml ]; then
-			echo Running ant cleanAll ...
-			ant cleanAll
+			ant cleanAll > /dev/null
 		# for core
 		elif [ -f impl/java/build.xml ]; then
-			echo Running ant cleanAll ...
-			ant -f impl/java/build.xml cleanAll
+			ant -f impl/java/build.xml cleanAll > /dev/null
 		fi
 
 		popd
@@ -255,12 +259,10 @@ make_source_package() {
 		cp -Rp ogsa-cvs/$subdir $destdir/${name}
 
 		if [ -f package-list/$name/pkg_data_src.gpt ]; then
-			echo Copying in source metadata
 			cp package-list/$name/pkg_data_src.gpt $destdir
 		fi
 
 		if [ -f package-list/$name/filelist ]; then
-			echo Copying in filelist
 			cp package-list/$name/filelist $destdir
 		fi
 
@@ -286,6 +288,7 @@ iter_generic() {
 		unset_env
 	else
 		echo "Couldn't find $1/build-info"
+		echo
 	fi
 }
 
@@ -316,6 +319,7 @@ collate_packages() {
 	fi
 
 	for f in *-src; do
+		echo Creating output package package-output/$f.tar.gz
 		tar czf package-output/$f.tar.gz $f
 	done
 
@@ -474,7 +478,9 @@ if [ x"$package" != "x" ]; then
 	mkdir -p package-output
 
 	for f in $package; do
-		tar czf package-output/${f}-${version}.tar.gz ${f}*-src
+		if [ -d ${f}*-src ]; then
+			tar czf package-output/${f}-${version}.tar.gz ${f}*-src
+		fi
 	done
 
 	if [ x$dir != "x" ]; then
@@ -509,6 +515,11 @@ if [ $buildjava = 1 ]; then
 	echo Building Java-only packages
 	dir_iter package-list
 	echo
+
+	collate_packages
+	if [ $install = 1 ]; then
+		install_bundle
+	fi
 fi
 
 if [ $buildc = 1 ]; then
@@ -521,10 +532,4 @@ if [ $buildc = 1 ]; then
 	echo Building C-dependent packages
 	install_cdeps
 	dir_iter package-list-cdeps
-fi
-
-collate_packages
-
-if [ $install = 1 ]; then
-	install_bundle
 fi
