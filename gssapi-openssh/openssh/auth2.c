@@ -40,11 +40,6 @@ RCSID("$OpenBSD: auth2.c,v 1.93 2002/05/31 11:35:15 markus Exp $");
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
-#ifdef GSI
-#include "globus_gss_assist.h"
-char* olduser;
-int  changeuser = 0;
-#endif
 #endif
 
 /* import */
@@ -165,44 +160,20 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	method = packet_get_string(NULL);
 
 #ifdef GSSAPI
-#ifdef GSI
-        if(changeuser == 0 && (strcmp(method,"external-keyx") == 0 || strcmp(method,"gssapi") ==0) && strcmp(user,"") == 0) {
-                char *gridmapped_name = NULL;
-                struct passwd *pw = NULL;
-                if(globus_gss_assist_gridmap(gssapi_client_name.value,
-                                     &gridmapped_name) == 0) {
-                        user = gridmapped_name;
-                        debug("I gridmapped and got %s", user);
-                        pw = getpwnam(user);
-                        if (pw && allowed_user(pw)) {
-                                olduser = authctxt->user;
-                                authctxt->user = xstrdup(user);
-                                authctxt->pw = pwcopy(pw);
-                                authctxt->valid = 1;
-                                changeuser = 1;
-                        }
-
-                } else {
-		    debug("I gridmapped and got null, reverting to %s",
-			  authctxt->user);
-		    xfree(user);
-		    user = xstrdup(authctxt->user);
-                }
-        }
-        else if(changeuser) {
-                struct passwd *pw = NULL;
-                pw = getpwnam(user);
-                if (pw && allowed_user(pw)) {
-		    	xfree(authctxt->user);
-                        authctxt->user = olduser;
-                        authctxt->pw = pwcopy(pw);
-                        authctxt->valid = 1;
-                        changeuser = 0;
-                }
-        }
-
-#endif  /* GSI */
-#endif /* GSSAPI */
+	if (strcmp(user, "") == 0) {
+	    char *lname = NULL;
+	    debug("gssapi received empty username");
+	    PRIVSEP(ssh_gssapi_localname(&lname));
+	    if (lname && lname[0] != '\0') {
+		xfree(user);
+		user = lname;
+		debug("gssapi successfully set username to %s", user);
+	    } else if (authctxt->valid) {
+		debug("failed to set username from gssapi context");
+		goto finish;
+	    }
+	}
+#endif
 
 	debug("userauth-request for user %s service %s method %s", user, service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
@@ -210,8 +181,21 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
-	if (authctxt->attempt++ == 0) {
+	if (!authctxt->user ||
+	    strcmp(user, authctxt->user) != 0) {
 		/* setup auth context */
+		if (authctxt->user) {
+		    xfree(authctxt->user);
+		    authctxt->user = NULL;
+		}
+		if (authctxt->service) {
+		    xfree(authctxt->service);
+		    authctxt->service = NULL;
+		}
+		if (authctxt->style) {
+		    xfree(authctxt->style);
+		    authctxt->style = NULL;
+		}
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;
@@ -232,11 +216,6 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		authctxt->style = style ? xstrdup(style) : NULL;
 		if (use_privsep)
 			mm_inform_authserv(service, style);
-	} else if (strcmp(user, authctxt->user) != 0 ||
-	    strcmp(service, authctxt->service) != 0) {
-		packet_disconnect("Change of username or service not allowed: "
-		    "(%s,%s) -> (%s,%s)",
-		    authctxt->user, authctxt->service, user, service);
 	}
 	/* reset state */
 	auth2_challenge_stop(authctxt);
@@ -254,6 +233,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		debug2("input_userauth_request: try method %s", method);
 		authenticated =	m->userauth(authctxt);
 	}
+finish:
 	userauth_finish(authctxt, authenticated, method);
 
 	xfree(service);
@@ -294,12 +274,11 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 	if (authenticated == 1) {
 		/* turn off userauth */
 		dispatch_set(SSH2_MSG_USERAUTH_REQUEST, &dispatch_protocol_ignore);
-		if (!compat20)
-		packet_start(SSH_SMSG_SUCCESS);
-		else
+		if (compat20) {
 		packet_start(SSH2_MSG_USERAUTH_SUCCESS);
 		packet_send();
 		packet_write_wait();
+		}
 		/* now we can break out */
 		authctxt->success = 1;
 	} else {

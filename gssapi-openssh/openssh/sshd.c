@@ -1670,14 +1670,12 @@ do_ssh1_kex(void)
 	if (options.afs_token_passing)
 		auth_mask |= 1 << SSH_PASS_AFS_TOKEN;
 #endif
+#ifdef GSSAPI
+	if (options.gss_authentication)
+		auth_mask |= 1 << SSH_AUTH_GSSAPI;
+#endif
 	if (options.challenge_response_authentication == 1)
 		auth_mask |= 1 << SSH_AUTH_TIS;
-
-#ifdef GSSAPI
-  	if (options.gss_authentication)
-    		auth_mask |= 1 << SSH_AUTH_GSSAPI;
-#endif
-
 	if (options.password_authentication)
 		auth_mask |= 1 << SSH_AUTH_PASSWORD;
 	packet_put_int(auth_mask);
@@ -1781,7 +1779,7 @@ do_ssh1_kex(void)
     Buffer buf;
     unsigned char *data;
     unsigned int data_len;
-    extern unsigned char ssh1_key_digest[];      /* in gss-serv.c */
+    extern unsigned char ssh1_key_digest[16];   /* in gss-genr.c */
 
 
     debug("Calculating MD5 hash of server and host keys...");

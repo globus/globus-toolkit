@@ -507,15 +507,15 @@ userauth_gssapi(Authctxt *authctxt)
 
 	if (datafellows & SSH_OLD_GSSAPI) return 0;
 	
-        gssctxt=xmalloc(sizeof(Gssctxt));
-
 	/* Initialise as much of our context as we can, so failures can be
 	 * trapped before sending any packets.
 	 */
-	ssh_gssapi_build_ctx(gssctxt);
+	ssh_gssapi_build_ctx(&gssctxt);
+
 	if (ssh_gssapi_import_name(gssctxt,authctxt->host)) {
 		return(0);
 	}
+	
 	authctxt->methoddata=(void *)gssctxt;
 		
 	packet_start(SSH2_MSG_USERAUTH_REQUEST);
