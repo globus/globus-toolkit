@@ -8,3 +8,4 @@ flavorinclude_HEADERS = \
 
 SUBDIRS = aclocal config scripts tests
 
+EXTRA_DIST = bootstrap
