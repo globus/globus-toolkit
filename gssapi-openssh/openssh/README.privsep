@@ -28,7 +28,7 @@ If you are on UnixWare 7 or OpenUNIX 8 do this additional step.
 configure supports the following options to change the default
 privsep user and chroot directory:
 
-  --with-privsep-path=xxx Path for privilege seperation chroot
+  --with-privsep-path=xxx Path for privilege separation chroot
   --with-privsep-user=user Specify non-privileged user for privilege separation
 
 Privsep requires operating system support for file descriptor passing

@@ -865,7 +865,7 @@ Optional Packages:
   --with-kerberos4=PATH   Enable Kerberos 4 support
   --with-afs=PATH         Enable AFS support
   --with-rsh=PATH         Specify path to remote shell program 
-  --with-privsep-path=xxx Path for privilege seperation chroot 
+  --with-privsep-path=xxx Path for privilege separation chroot 
   --with-xauth=PATH       Specify path to xauth program 
   --with-mantype=man|cat|doc  Set man page type
   --with-md5-passwords    Enable use of MD5 passwords
@@ -15897,7 +15897,6 @@ _ACEOF
 fi
 
 # Set superuser path separately to user path
-MD5_MSG="no" 
 
 # Check whether --with-superuser-path or --without-superuser-path was given.
 if test "${with_superuser_path+set}" = set; then

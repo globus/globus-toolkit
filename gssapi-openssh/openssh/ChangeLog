@@ -1,3 +1,21 @@
+20020522
+ - (djm) Fix spelling mistakes, spotted by Solar Designer i
+   <solar@openwall.com>
+ - Sync scard/ (not sure when it drifted)
+ - (djm) OpenBSD CVS Sync:
+   [auth.c]
+   Fix typo/thinko.  Pass in as to auth_approval(), not NULL.
+   Closes PR 2659.
+ - Crank version
+ - Crank RPM spec versions
+
+20020521
+ - (stevesk) [sshd.c] bug 245; disable setsid() for now
+ - (stevesk) [sshd.c] #ifndef HAVE_CYGWIN for setgroups()
+
+20020517
+ - (tim) [configure.ac] remove extra MD5_MSG="no" line.
+
 20020515
  - (bal) CVS ID fix up on auth-passwd.c
  - (bal) OpenBSD CVS Sync
