@@ -1521,7 +1521,6 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
     SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
     unsigned char             *input_buffer       = NULL;
     unsigned char             *output_buffer      = NULL;
-    int                        output_buffer_length;
 
     if (self == NULL)
     {
@@ -1596,7 +1595,7 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
     SSL_PROXY_RESTRICTIONS      *proxy_restrictions = NULL;
     unsigned char               *input_buffer       = NULL;
     unsigned char               *output_buffer      = NULL;
-    int                          input_buffer_length;
+    size_t                       input_buffer_length;
     int                          output_buffer_length;
 
 
