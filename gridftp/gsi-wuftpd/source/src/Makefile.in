@@ -31,12 +31,13 @@ VPATH = @srcdir@
 # Generic Makefile for autoconf'ed build
 #
 
-CC=@GLOBUS_LIBTOOL@ @CC@
+CC=@CC@
 
+@INCLUDE_GLOBUS_MAKEFILE_HEADER@
+ 
 GLOBUS_DATA_CFLAGS=@GLOBUS_DATA_CFLAGS@
 GLOBUS_DATA_LDFLAGS=@GLOBUS_DATA_LDFLAGS@
 GLOBUS_DATA_LIBS=@GLOBUS_DATA_LIBS@
-
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -Wall -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wmissing-prototypes 
 
@@ -46,11 +47,9 @@ CFLAGS=$(WARNINGS)                          \
        @AFS_CFLAGS@                         \
        $(GLOBUS_DATA_CFLAGS)
 LDFLAGS=@LDFLAGS@                           \
-        @GPT_LDFLAGS@			    \
         @GSSAPI_LDFLAGS@                    \
         @AFS_LDFLAGS@                       \
         $(GLOBUS_DATA_LDFLAGS)
-
 YACC=@YACC@
 LIBS=@LIBS@                                 \
      @GSSAPI_LDFLAGS@                       \

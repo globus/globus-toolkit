@@ -72,16 +72,7 @@
  *  globus code added by JB
  */
 #ifdef USE_GLOBUS_DATA_CODE
-extern globus_ftp_control_handle_t              g_data_handle;
-globus_list_t *					host_port_list = NULL;
-globus_ftp_control_layout_t			g_layout;
-globus_size_t                                   g_striped_file_size;
-globus_ftp_control_parallelism_t		g_parallelism;
-globus_ftp_control_dcau_t			g_dcau;
-globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
-globus_fifo_t					g_restarts;
-
-extern gss_cred_id_t                            g_deleg_cred;
+extern globus_ftp_control_handle_t               g_data_handle;
 #endif
 
 extern int dolreplies;
@@ -98,7 +89,6 @@ extern int logging;
 extern int log_commands;
 extern int log_security;
 extern int type;
-extern int mode;
 extern int form;
 extern int debug;
 extern unsigned int timeout_idle;
@@ -116,7 +106,6 @@ extern char tmpline[];
 extern int data;
 extern int errno;
 extern char *home;
-int exit_at=0;
 
 off_t restart_point;
 int yyerrorcalled;
@@ -162,6 +151,7 @@ static struct in_addr cliaddr;
 static int cmd_type;
 static int cmd_form;
 static int cmd_bytesz;
+
 #ifndef FTP_BUFSIZE
 #define FTP_BUFSIZE	512
 #endif /* FTP_BUFSIZE */
@@ -185,10 +175,9 @@ struct tab {
 
 extern struct tab cmdtab[];
 extern struct tab sitetab[];
-extern char * feattab[];
+
 static void toolong(int);
 void help(struct tab *ctab, char *s);
-void feat(char *tab[]);
 struct tab *lookup(register struct tab *p, char *cmd);
 int yylex(void);
 
@@ -203,9 +192,7 @@ extern int port_allowed(const char *remoteaddr);
     A   B   C   E   F   I
     L   N   P   R   S   T
 
-    SP  CRLF    COMMA  SEMICOLON EQUALS HYPHEN
-    
-    STRING  NUMBER   BIGNUM
+    SP  CRLF    COMMA   STRING  NUMBER   BIGNUM
 
     USER    PASS    ACCT    REIN    QUIT    PORT
     PASV    TYPE    STRU    MODE    RETR    STOR
@@ -214,18 +201,14 @@ extern int port_allowed(const char *remoteaddr);
     ABOR    DELE    CWD     LIST    NLST    SITE
     STAT    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
-    FAULT
 
-    AUTH    ADAT    PROT    PBSZ    CCC     DCAU
+    AUTH    ADAT    PROT    PBSZ    CCC
 
-    ESTO    ERET    SPAS    SPOR    FEAT    OPTS
+    ESTO    ERET
 
     UMASK   IDLE    CHMOD   GROUP   GPASS   NEWER
     MINFO   INDEX   EXEC    ALIAS   CDPATH  GROUPS
-    CHECKMETHOD     CHECKSUM        BUFSIZE PSIZE
-
-    STRIPELAYOUT    PARTITIONED BLOCKED BLOCKSIZE
-    PARALLELISM
+    CHECKMETHOD     CHECKSUM        BUFSIZE
 
     LEXERR
 
@@ -233,25 +216,21 @@ extern int port_allowed(const char *remoteaddr);
     char *String;
     int Number;
     struct {
-	char mode;
-	off_t offset;
-	off_t length;
+	int mode;
+	long long offset;
+	long long length;
     } estor_eret;
-    struct {
-	struct in_addr addr;
-	unsigned short port;
-    } address;
+
     long long Bignum;
 }
 
 %type <String>  STRING password pathname pathstring username method
-%type <Number>  NUMBER byte_size check_login form_code
+%type <Number>  NUMBER byte_size check_login form_code 
 %type <Number>  struct_code mode_code octal_number
 %type <Number>  prot_code bufsize
 %type <estor_eret> esto_mode eret_mode
 %type <Bignum>	BIGNUM OFFSET LENGTH
-%type <address> host_port
-%type <Number>  byte_range byte_range_list
+
 %start  cmd_list
 
 %%
@@ -267,10 +246,6 @@ cmd_list:	/* empty */
 
 cmd: USER SP username CRLF
 	=	{
-	    if(exit_at == USER)
-	    {
-		dologout(0);
-	    }
 	    user($3);
 	    if (log_commands)
 		syslog(LOG_INFO, "USER %s", $3);
@@ -278,10 +253,6 @@ cmd: USER SP username CRLF
 	}
     | PASS SP password CRLF
 	=	{
-	    if(exit_at == PASS)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		if (anonymous)
 		    syslog(LOG_INFO, "PASS %s", $3);
@@ -293,10 +264,6 @@ cmd: USER SP username CRLF
 	}
     | PORT check_login SP host_port CRLF
 	=	{
-	    if(exit_at == PORT)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "PORT");
 /* H* port fix, part B: admonish the twit.
@@ -315,9 +282,9 @@ cmd: USER SP username CRLF
                     {
                         globus_result_t                   res = GLOBUS_SUCCESS;
                         globus_ftp_control_host_port_t    host_port;
-                        unsigned char *                   a;
+                        char *                            a;
 
-                        a = (unsigned char *)&cliaddr;
+                        a = (char *)&cliaddr;
                         host_port.host[0] = (int)a[0];
                         host_port.host[1] = (int)a[1];
                         host_port.host[2] = (int)a[2];
@@ -362,71 +329,8 @@ cmd: USER SP username CRLF
 #endif
 	    }
 	}
-    | SPOR check_login host_port_list CRLF
-	=	{
-	    if(exit_at == SPOR)
-	    {
-		dologout(0);
-	    }
-#if defined(USE_GLOBUS_DATA_CODE)
-	    if (log_commands)
-		syslog(LOG_INFO, "SPOR");
-	    if ($2) 
-            {
-#ifndef DISABLE_PORT
-		globus_list_t * tmp;
-		globus_ftp_control_host_port_t * hp;
-		int i,size;
-		globus_result_t                   res = GLOBUS_SUCCESS;
-
-		tmp = host_port_list;
-		size = globus_list_size(tmp);
-
-		hp = globus_libc_malloc(size * 
-					sizeof(globus_ftp_control_host_port_t));
-		for(i = 0; i < size; i++)
-		{
-		    memcpy(&hp[i], globus_list_first(tmp), 
-			   sizeof(globus_ftp_control_host_port_t));
-		    globus_libc_free(globus_list_first(tmp));
-		    tmp = globus_list_rest(tmp);
-		}
-		globus_list_free(host_port_list);
-		host_port_list = GLOBUS_NULL;
-		
-
-		res = globus_ftp_control_local_spor( &g_data_handle,
-						     hp,
-						     size);
-		globus_libc_free(hp);
-		if(res != GLOBUS_SUCCESS)
-		{
-		    memset(&data_dest, 0, sizeof(data_dest));
-		    syslog(LOG_WARNING, "refused SPOR %s,%d from %s",
-			   inet_ntoa(cliaddr), ntohs(cliport), remoteident);
-		    reply(500, "Illegal SPOR Command");
-		}
-#endif
-	    }
-	    usedefault = 0;
-	    if (pdata >= 0) 
-	    {
-		(void) close(pdata);
-		pdata = -1;
-	    }
-	    data_dest.sin_family = AF_INET;
-	    data_dest.sin_addr = cliaddr;
-	    data_dest.sin_port = cliport;
-	    reply(200, "SPOR command successful.");
-#endif
-	}
-
     | PASV check_login CRLF
 	=	{
-	    if(exit_at == PASV)
-	    {
-		dologout(0);
-	    }
 /* Require login for PASV, too.  This actually fixes a bug -- telnet to an
    unfixed wu-ftpd and type PASV first off, and it crashes! */
 	    if (log_commands)
@@ -439,7 +343,7 @@ cmd: USER SP username CRLF
                  */
 #               if defined(USE_GLOBUS_DATA_CODE)
                 {
-		    g_passive(GLOBUS_FALSE);
+		    g_passive();
                 }
 #               else
                 {
@@ -451,82 +355,26 @@ cmd: USER SP username CRLF
 		reply(425, "Cannot open passive connection");
 #endif
 	}
-    | SPAS check_login CRLF
-	=	{
-	    if(exit_at == SPAS)
-	    {
-		dologout(0);
-	    }
-#if defined(USE_GLOBUS_DATA_CODE)
-	    if (log_commands)
-		syslog(LOG_INFO, "SPAS");
-	    if ($2)
-#if (defined (DISABLE_PORT) || !defined (DISABLE_PASV))
-
-                /*
-                 *  globus code added by JB
-                 */
-                {
-		    g_passive(GLOBUS_TRUE);
-                }
-#else
-		reply(425, "Cannot open passive connection");
-#endif
-#endif
-	}
     | PROT SP prot_code CRLF
         =       {
-	    if(exit_at == PROT)
-	    {
-		dologout(0);
-	    }
 #ifdef FTP_SECURITY_EXTENSIONS
 	    set_prot_level($3);
 #endif /* FTP_SECURITY_EXTENSIONS */
-#           if USE_GLOBUS_DATA_CODE
-	    {
-		switch($3)
-		{
-		  case PROT_C:
-		    globus_ftp_control_local_prot(&g_data_handle,
-		         GLOBUS_FTP_CONTROL_PROTECTION_CLEAR);
-		    break;
-		  case PROT_P:
-		    globus_ftp_control_local_prot(&g_data_handle,
-		         GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
-		  case PROT_S:
-		    globus_ftp_control_local_prot(&g_data_handle,
-		         GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
-		}
-	    }
-#           endif
 	}
 	|	CCC CRLF
 	=   	{
-	    if(exit_at == CCC)
-	    {
-		dologout(0);
-	    }
 #ifdef FTP_SECURITY_EXTENSIONS
 	    clear_cmd_channel();
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
 	|	PBSZ SP STRING CRLF
 	=	{
-	    if(exit_at == PBSZ)
-	    {
-		dologout(0);
-	    }
 #ifdef FTP_SECURITY_EXTENSIONS
 	    (void) pbsz($3);
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
     | TYPE check_login SP type_code CRLF
 	=	{
-	    if(exit_at == TYPE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "TYPE %s", typenames[cmd_type]);
 	    if ($2)
@@ -591,10 +439,6 @@ cmd: USER SP username CRLF
 	}
     | STRU check_login SP struct_code CRLF
 	=	{
-	    if(exit_at == STRU)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "STRU %s", strunames[$4]);
 	    if ($2)
@@ -611,40 +455,15 @@ cmd: USER SP username CRLF
 	}
     | MODE check_login SP mode_code CRLF
 	=	{
-#           if defined(USE_GLOBUS_DATA_CODE)
             globus_result_t                            res;
-	    g_send_restart_info = GLOBUS_FALSE;
-#           endif
-	    
-	    if(exit_at == MODE)
-	    {
-		dologout(0);
-	    }
+
 	    if (log_commands)
 		syslog(LOG_INFO, "MODE %s", modenames[$4]);
 	    if ($2)
 		switch ($4) {
 
 		case MODE_S:
-#                   if defined(USE_GLOBUS_DATA_CODE)
-			res = globus_ftp_control_local_mode(
-				  &g_data_handle,
-				  GLOBUS_FTP_CONTROL_MODE_STREAM);
-			if(res == GLOBUS_SUCCESS)
-			{
-			    g_send_restart_info = GLOBUS_FALSE;
-			    mode = $4;
-			    reply(200, "MODE S ok.");
-			    
-			}
-			else
-			{
-			    reply(502, "Failure setting MODE S.");
-			}
-#		    else
-			reply(200, "MODE S ok.");
-			mode = $4;
-#                   endif
+		    reply(200, "MODE S ok.");
 		    break;
 
 #               if defined(USE_GLOBUS_DATA_CODE)
@@ -655,10 +474,7 @@ cmd: USER SP username CRLF
                               GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
                     if(res == GLOBUS_SUCCESS)
                     {
-			g_send_restart_info = GLOBUS_TRUE;
-			mode = $4;
 		        reply(200, "MODE E ok.");
-			
                     }
                     else
                     {
@@ -675,10 +491,6 @@ cmd: USER SP username CRLF
 	}
     | ALLO check_login SP NUMBER CRLF
 	=	{
-	    if(exit_at == ALLO)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "ALLO %d", $4);
 	    if ($2)
@@ -686,10 +498,6 @@ cmd: USER SP username CRLF
 	}
     | ALLO check_login SP NUMBER SP R SP NUMBER CRLF
 	=	{
-	    if(exit_at == ALLO)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "ALLO %d R %d", $4, $8);
 	    if ($2)
@@ -697,10 +505,6 @@ cmd: USER SP username CRLF
 	}
     | RETR check_login SP pathname CRLF
 	=	{
-	    if(exit_at == RETR)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "RETR %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4)) {
@@ -712,80 +516,36 @@ cmd: USER SP username CRLF
 	}
     | STOR check_login SP pathname CRLF
 	=	{
-	    if(exit_at == STOR)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "STOR %s", CHECKNULL($4));
-#ifdef USE_GLOBUS_DATA_CODE
-	    if ($2 && $4 != NULL && !restrict_check($4))
-	    {
-	        if(! globus_fifo_empty(&g_restarts))
-		{
-		    store($4, "r+", 0, 0);
-		}
-		else
-		{
-		    store($4, "w", 0, -1);
-		}
-	    }
-#else
 	    if ($2 && $4 != NULL && !restrict_check($4))
 		store($4, "w", 0, -1);
-#endif
 	    if ($4 != NULL)
 		free($4);
 	}
     | ERET check_login SP eret_mode SP pathname CRLF
 	=	{
-	    if(exit_at == ERET)
-	    {
-		dologout(0);
-	    }
-#ifdef USE_GLOBUS_DATA_CODE
 	    if (log_commands)
-	        syslog(
-		    LOG_INFO,
-		    "ERET %c %" GLOBUS_OFF_T_FORMAT " %" GLOBUS_OFF_T_FORMAT " %s",
-		    $4.mode,
-		    $4.offset,
-		    $4.length,
-		    CHECKNULL($6));
-#endif
+		syslog(LOG_INFO, "ERET %c %d %d %s", $4.mode,
+		       $4.offset, $4.length, CHECKNULL($6));
 	    if ($2 && $6 != NULL && !restrict_check($6)) {
 		retrieve_is_data = 1;
-		retrieve((char *) NULL, $6, $4.offset, $4.length);
+		retrieve((char *) NULL, $6, (int) $4.offset, (int) $4.length);
 	    }
 	    if ($6 != NULL)
 		free($6);
 	}
     | ESTO check_login SP esto_mode SP pathname CRLF
         =	{
-	    if(exit_at == ESTO)
-	    {
-		dologout(0);
-	    }
-#ifdef USE_GLOBUS_DATA_CODE
 	    if (log_commands)
-		syslog(
-		    LOG_INFO,
-		    "ESTO %c %" GLOBUS_OFF_T_FORMAT " %s",
-		    $4.mode,
-		    $4.offset,
-		    CHECKNULL($6));
-#endif
+		syslog(LOG_INFO, "ESTO %c %d %s", $4.mode, $4.offset, CHECKNULL($6));
 	    if ($2 && $6 != NULL && !restrict_check($6))
-		store($6, "r+", 0, $4.offset);
+		store($6, "r+", 0, (int) $4.offset);
 	    if ($6 != NULL)
 		free($6);
 	}
     | APPE check_login SP pathname CRLF
 	=	{
-	    if(exit_at == APPE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "APPE %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
@@ -795,63 +555,22 @@ cmd: USER SP username CRLF
 	}
     | NLST check_login CRLF
 	=	{
-	    if(exit_at == NLST)
-	    {
-		dologout(0);
-	    }
-#if USE_GLOBUS_DATA_CODE
-	    if (log_commands)
-		syslog(LOG_INFO, "NLST");
-	    if ($2 && !restrict_check(".")) 
-            {
-		retrieve_is_data = 0;
-#ifndef INTERNAL_LS
-                retrieve("/bin/ls -c1", "", -1, -1);
-#else
-		ls(NULL, 0);
-#endif
-            }
-#else /* USE_GLOBUS_DATA_CODE */
 	    if (log_commands)
 		syslog(LOG_INFO, "NLST");
 	    if ($2 && !restrict_check("."))
 		send_file_list("");
-#endif
 	}
     | NLST check_login SP STRING CRLF
 	=	{
-
-	    if(exit_at == NLST)
-	    {
-		dologout(0);
-	    }
-#if USE_GLOBUS_DATA_CODE
-	    if (log_commands)
-		syslog(LOG_INFO, "NLST %s", $4);
-	    if ($2 && $4 && !restrict_check($4))
-            {
-		retrieve_is_data = 0;
-#ifndef INTERNAL_LS
-                retrieve("/bin/ls -c1 %s", $4, -1, -1);
-#else
-		ls($4, 0);
-#endif
-            }
-#else /* USE_GLOBUS_DATA_CODE */
 	    if (log_commands)
 		syslog(LOG_INFO, "NLST %s", $4);
 	    if ($2 && $4 && !restrict_check($4))
 		send_file_list($4);
 	    if ($4 != NULL)
 		free($4);
-#endif
 	}
     | LIST check_login CRLF
 	=	{
-	    if(exit_at == LIST)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "LIST");
 	    if ($2 && !restrict_check(".")) {
@@ -868,10 +587,6 @@ cmd: USER SP username CRLF
 	}
     | LIST check_login SP pathname CRLF
 	=	{
-	    if(exit_at == LIST)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "LIST %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_list_check($4)) {
@@ -890,10 +605,6 @@ cmd: USER SP username CRLF
 	}
     | STAT check_login SP pathname CRLF
 	=	{
-	    if(exit_at == STAT)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "STAT %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
@@ -903,10 +614,6 @@ cmd: USER SP username CRLF
 	}
     | STAT check_login CRLF
 	=	{
-	    if(exit_at == STAT)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "STAT");
 	    if ($2)
@@ -914,10 +621,6 @@ cmd: USER SP username CRLF
 	}
     | DELE check_login SP pathname CRLF
 	=	{
-	    if(exit_at == DELE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "DELE %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
@@ -927,10 +630,6 @@ cmd: USER SP username CRLF
 	}
     | RNTO check_login SP pathname CRLF
 	=	{
-	    if(exit_at == RNTO)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "RNTO %s", CHECKNULL($4));
 	    if ($2 && $4 && !restrict_check($4)) {
@@ -948,10 +647,6 @@ cmd: USER SP username CRLF
 	}
     | ABOR check_login CRLF
 	=	{
-	    if(exit_at == ABOR)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "ABOR");
 	    if ($2)
@@ -959,10 +654,6 @@ cmd: USER SP username CRLF
 	}
     | CWD check_login CRLF
 	=	{
-	    if(exit_at == CWD)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "CWD");
 	    if ($2 && !restrict_check(home))
@@ -970,10 +661,6 @@ cmd: USER SP username CRLF
 	}
     | CWD check_login SP pathname CRLF
 	=	{
-	    if(exit_at == CWD)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "CWD %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
@@ -983,10 +670,6 @@ cmd: USER SP username CRLF
 	}
     | HELP check_login CRLF
 	=	{
-	    if(exit_at == HELP)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "HELP");
 	    if ($2)
@@ -996,10 +679,6 @@ cmd: USER SP username CRLF
 	=	{
 	    register char *cp = (char *) $4;
 
-	    if(exit_at == HELP)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "HELP %s", $4);
 	    if ($2)
@@ -1017,68 +696,8 @@ cmd: USER SP username CRLF
 	    if ($4 != NULL)
 		free($4);
 	}
-    | FEAT check_login CRLF
-	=	{
-	    if(exit_at == FEAT)
-	    {
-		dologout(0);
-	    }
-	    if (log_commands)
-		syslog(LOG_INFO, "FEAT");
-	    if ($2)
-		feat(feattab);
-	}
-    | DCAU check_login SP STRING CRLF
-        =	{
-	    if(exit_at == DCAU)
-	    {
-		dologout(0);
-	    }
-	    if (log_commands)
-		syslog(LOG_INFO, "DCAU");
-	    if($2)
-	    {
-#               if defined(USE_GLOBUS_DATA_CODE)
-                {
-		    globus_result_t                            res;
-		    if(g_dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT)
-		    {
-			globus_libc_free(g_dcau.subject.subject);
-		    }
-		    if($4[0] == 'N')
-		    {
-			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
-		    }
-		    else if($4[0] == 'A')
-		    {
-			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
-		    }
-		    else if($4[0] == 'S')
-		    {
-			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SUBJECT;
-			g_dcau.subject.subject = globus_libc_strdup($4+2);
-		    }
-		    res = globus_ftp_control_local_dcau(&g_data_handle,
-		                                        &g_dcau,
-                                                        g_deleg_cred);
-		    if(res != GLOBUS_SUCCESS)
-		    {
-		        reply(432, "Data channel authentication failed");
-		    }
-		    else
-		    {
-		        reply(200, "DCAU %c", $4[0]);
-		    }
-                }
-#               endif
-	    }
-	}
     | NOOP check_login CRLF
 	=	{
-	    if(exit_at == NOOP)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "NOOP");
 	    if ($2)
@@ -1086,10 +705,6 @@ cmd: USER SP username CRLF
 	}
     | MKD check_login SP pathname CRLF
 	=	{
-	    if(exit_at == MKD)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "MKD %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
@@ -1099,10 +714,6 @@ cmd: USER SP username CRLF
 	}
     | RMD check_login SP pathname CRLF
 	=	{
-	    if(exit_at == RMD)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "RMD %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
@@ -1112,10 +723,6 @@ cmd: USER SP username CRLF
 	}
     | PWD check_login CRLF
 	=	{
-	    if(exit_at == PWD)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "PWD");
 	    if ($2)
@@ -1123,10 +730,6 @@ cmd: USER SP username CRLF
 	}
     | CDUP check_login CRLF
 	=	{
-	    if(exit_at == CDUP)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "CDUP");
 	    if ($2)
@@ -1135,21 +738,9 @@ cmd: USER SP username CRLF
 		else
 		    ack("CWD");
 	}
-    | SITE check_login SP PSIZE SP bufsize CRLF
-	=	{
-#if defined(STRIPED_SERVER_BACKEND)
-            g_striped_file_size = $6;
-            reply(200, "PSIZE command received.");
-#else
-            reply(200, "PSIZE command not understood.");
-#endif
-	}
+
     | SITE check_login SP HELP CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE HELP");
 	    if ($2)
@@ -1157,10 +748,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP HELP SP STRING CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE HELP %s", $6);
 	    if ($2)
@@ -1172,10 +759,6 @@ cmd: USER SP username CRLF
 	=	{
 	    mode_t oldmask;
 
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE UMASK");
 	    if ($2) {
@@ -1190,10 +773,6 @@ cmd: USER SP username CRLF
 	    struct aclmember *entry = NULL;
 	    int ok = 1;
 
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE UMASK %03o", $6);
 	    if ($2) {
@@ -1221,10 +800,6 @@ cmd: USER SP username CRLF
 	    struct aclmember *entry = NULL;
 	    int ok = (anonymous ? 0 : 1);
 
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE CHMOD %03o %s", $6, CHECKNULL($8));
 	    if ($2 && $8) {
@@ -1272,10 +847,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP IDLE CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE IDLE");
 	    if ($2)
@@ -1285,10 +856,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP IDLE SP NUMBER CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE IDLE %d", $6);
 	    if ($2)
@@ -1304,10 +871,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP GROUP SP username CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 #ifndef NO_PRIVATE
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE GROUP %s", $6);
@@ -1318,10 +881,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP GPASS SP password CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 #ifndef NO_PRIVATE
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE GPASS password");
@@ -1332,10 +891,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP GPASS CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 #ifndef NO_PRIVATE
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE GPASS");
@@ -1345,10 +900,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP NEWER SP STRING CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE NEWER %s", $6);
 #ifdef SITE_NEWER
@@ -1361,10 +912,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP NEWER SP STRING SP pathname CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE NEWER %s %s", $6,
 		       CHECKNULL($8));
@@ -1380,10 +927,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP MINFO SP STRING CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE MINFO %s", $6);
 #ifdef SITE_NEWER
@@ -1396,10 +939,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP MINFO SP STRING SP pathname CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE MINFO %s %s", $6,
 		       CHECKNULL($8));
@@ -1415,10 +954,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP INDEX SP STRING CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    /* this is just for backward compatibility since we
 	     * thought of INDEX before we thought of EXEC
 	     */
@@ -1434,10 +969,6 @@ cmd: USER SP username CRLF
 	}
     | SITE check_login SP EXEC SP STRING CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (!restricted_user && $2 != 0 && $6 != NULL) {
 		(void) site_exec((char *) $6);
 	    }
@@ -1447,10 +978,6 @@ cmd: USER SP username CRLF
 
     | STOU check_login SP pathname CRLF
 	=	{
-	    if(exit_at == STOU)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "STOU %s", CHECKNULL($4));
 	    if ($2 && $4 && !restrict_check($4))
@@ -1460,10 +987,6 @@ cmd: USER SP username CRLF
 	}
     | SYST check_login CRLF
 	=	{
-	    if(exit_at == SYST)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SYST");
 	    if ($2)
@@ -1488,23 +1011,10 @@ cmd: USER SP username CRLF
 	 */
     | SIZE check_login SP pathname CRLF
 	=	{
-	    if(exit_at == SIZE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SIZE %s", CHECKNULL($4));
-	    if ($2 && $4 && !restrict_check($4)) 
-            {
-#               if defined(STRIPED_SERVER_BACKEND)
-                {
-                    stripd_server_size($4);
-                }
-#               else
-                {
-		    sizecmd($4);
-                }
-#               endif
+	    if ($2 && $4 && !restrict_check($4)) {
+		sizecmd($4);
 	    }
 	    if ($4 != NULL)
 		free($4);
@@ -1521,10 +1031,6 @@ cmd: USER SP username CRLF
 	 */
     | MDTM check_login SP pathname CRLF
 	=	{
-	    if(exit_at == MDTM)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "MDTM %s", CHECKNULL($4));
 	    if ($2 && $4 && !restrict_check($4)) {
@@ -1550,36 +1056,19 @@ cmd: USER SP username CRLF
 	}
     |	AUTH SP STRING CRLF
     =	{
-	    if(exit_at == AUTH)
-	    {
-		dologout(0);
-	    }
 #ifdef FTP_SECURITY_EXTENSIONS
 	auth((char *) $3);
 #endif /* FTP_SECURITY_EXTENSIONS */
     }
     |	ADAT SP STRING CRLF
     =	{
-	    if(exit_at == ADAT)
-	    {
-		dologout(0);
-	    }
 #ifdef FTP_SECURITY_EXTENSIONS 
 	auth_data((char *) $3);
 #endif /* FTP_SECURITY_EXTENSIONS */
 	free((char *) $3);
     }
-    | OPTS check_login opts CRLF
-    =
-    {
-	reply(200, "Opts successful.");
-    }
     | QUIT CRLF
 	=	{
-	    if(exit_at == QUIT)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "QUIT");
 #ifdef TRANSFER_COUNT
@@ -1601,18 +1090,10 @@ cmd: USER SP username CRLF
 rcmd: RNFR check_login SP pathname CRLF
 	=	{
 
-	    if(exit_at == RNFR)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "RNFR %s", CHECKNULL($4));
-	    if ($2) {
+	    if ($2)
 		restart_point = (off_t) 0;
-#               if USE_GLOBUS_DATA_CODE
-		globus_i_wu_free_ranges(&g_restarts);
-#               endif
-	    }
 	    if ($2 && $4 && !restrict_check($4)) {
 		fromname = renamefrom($4);
 	    }
@@ -1621,71 +1102,18 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | REST check_login SP byte_size CRLF
 	=	{
-	    if(exit_at == REST)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "REST %d", (int) $4);
-	    if ($2)
-	    {
-#           if USE_GLOBUS_DATA_CODE
-		if(mode == MODE_E)
-		{
-		    fromname = 0;
-		    restart_point = $4;
-		    globus_i_wu_free_ranges(&g_restarts);
-		    reply(550, "Invalid MODE E restart Marker");
-		}
-	    else
-#           endif
-		{
-		    fromname = 0;
-		    restart_point = $4;
-		    reply(350, "Restarting at %ld. %s", (long) restart_point,
-			  "Send STORE or RETRIEVE to initiate transfer.");
-		}
-	    }
-	}
-    | REST check_login SP byte_range_list CRLF
-        =       
-	{
-#       if USE_GLOBUS_DATA_CODE
-	    if(exit_at == REST)
-	    {
-		dologout(0);
-	    }
-	    if(log_commands)
-	        syslog(LOG_INFO, "REST [byte ranges]");
+		syslog(LOG_INFO, "REST %d", (int) restart_point);
 	    if ($2) {
 		fromname = 0;
-		restart_point = 0;
-
-		if(mode == MODE_S)
-		{
-		    reply(550, "Invalid MODE S restart Marker");
-		    globus_i_wu_free_ranges(&g_restarts);
-		}
-		else
-		{
-		    reply(350, 
-			  "Restart Marker OK. "
-			  "Send STORE or RETRIEVE to initiate transfer.");
-		}
+		restart_point = $4;
+		reply(350, "Restarting at %ld. %s", (long) restart_point,
+		      "Send STORE or RETRIEVE to initiate transfer.");
 	    }
-#       else
-	    if(log_commands)
-	        syslog(LOG_INFO, "REST [byte ranges] (invalid)");
-	    reply(500, "'REST': invalid restart offset.");
-
-#	endif
 	}
+
     | SITE check_login SP ALIAS CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE ALIAS");
 	    if ($2)
@@ -1693,10 +1121,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP ALIAS SP STRING CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE ALIAS %s", $6);
 	    if ($2)
@@ -1706,10 +1130,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP GROUPS CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE GROUPS");
 	    if ($2)
@@ -1717,10 +1137,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP CDPATH CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE CDPATH");
 	    if ($2)
@@ -1728,10 +1144,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP CHECKMETHOD SP method CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE CHECKMETHOD %s", CHECKNULL($6));
 	    if (($2) && ($6 != NULL))
@@ -1741,10 +1153,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP CHECKMETHOD CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE CHECKMETHOD");
 	    if ($2)
@@ -1752,10 +1160,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP CHECKSUM SP pathname CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE CHECKSUM %s", CHECKNULL($6));
 	    if (($2) && ($6 != NULL) && (!restrict_check($6)))
@@ -1765,10 +1169,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP CHECKSUM CRLF
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE CHECKSUM");
 	    if ($2)
@@ -1776,45 +1176,15 @@ rcmd: RNFR check_login SP pathname CRLF
 	}
     | SITE check_login SP BUFSIZE CRLF   
 	=	{
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
 	    if (log_commands) syslog(LOG_INFO, "SITE BUFSIZE");
 	    print_bufsize ();
  	}
     | SITE check_login SP BUFSIZE SP bufsize CRLF
 	=	{	
 	    int size = $6;
-	    if(exit_at == SITE)
-	    {
-		dologout(0);
-	    }
  
 	    if (log_commands) syslog(LOG_INFO, "SITE BUFSIZE %d", size);
 	    set_bufsize (size);
-	}
-    | SITE check_login SP FAULT SP STRING CRLF
-        =	{
-	    struct tab * cmd;
-
-	    if (log_commands)
-		syslog(LOG_INFO, "SITE FAULT %s", $6);
-	    if ($2)
-	    {
-	        cmd = lookup(cmdtab, $6);
-		if(cmd)
-		{
-		    exit_at = cmd->token;
-	  	    reply(200, "FAULT %s command accepted.", $6);
-	        }
-		else
-		{
-		    reply(500, "Invalid SITE FAULT command.");
-		}
-	    }
-	    if ($6 != NULL)
-		free($6);
 	}
     ;
         
@@ -1832,115 +1202,10 @@ password: /* empty */
 byte_size: NUMBER
     ;
 
-opts: SP RETR SP retr_option_list 
-    ;
-
-byte_range_list:
-    byte_range COMMA byte_range_list
-    | byte_range 
-    ;
-byte_range:
-    NUMBER HYPHEN NUMBER
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    globus_i_wu_insert_range(&g_restarts,
-				     (globus_size_t) $1,
-				     (globus_size_t) ($3-$1));
-	}
-#       endif
-    }
-    ;
-
-retr_option_list: 
-    retr_option retr_option_list
-    | retr_option
-    ;
-
-retr_option:
-    STRIPELAYOUT EQUALS PARTITIONED SEMICOLON
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
-	}
-#       endif
-    }
-    | STRIPELAYOUT EQUALS BLOCKED SEMICOLON
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
-	}
-#       endif
-    }
-    | BLOCKSIZE EQUALS NUMBER SEMICOLON
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    g_layout.round_robin.block_size = $3;
-	}
-#       endif
-    }
-    | PARALLELISM EQUALS NUMBER COMMA NUMBER COMMA NUMBER SEMICOLON
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
-	    g_parallelism.fixed.size = $3;
-	}
-#       endif
-    }
-    ;
-host_port_list:
-    SP host_port host_port_list =
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    globus_ftp_control_host_port_t * host_port;
-	    unsigned char * a;
-	    
-	    host_port = globus_libc_malloc(sizeof(globus_ftp_control_host_port_t));
-	    a = (unsigned char*) &$2.addr;
-	    
-	    host_port->host[0] = (int)a[0];
-	    host_port->host[1] = (int)a[1];
-	    host_port->host[2] = (int)a[2];
-	    host_port->host[3] = (int)a[3];
-	    host_port->port = ntohs($2.port);
-	    
-	    globus_list_insert(&host_port_list, host_port);
-	}
-#       endif
-    }
-    | SP host_port =
-    {
-#       if USE_GLOBUS_DATA_CODE
-	{
-	    globus_ftp_control_host_port_t * host_port;
-	    unsigned char * a;
-	    
-	    host_port_list = NULL;
-	    
-	    host_port = globus_libc_malloc(sizeof(globus_ftp_control_host_port_t));
-	    a = (unsigned char *) &$2.addr;
-	    
-	    host_port->host[0] = (int)a[0];
-	    host_port->host[1] = (int)a[1];
-	    host_port->host[2] = (int)a[2];
-	    host_port->host[3] = (int)a[3];
-	    host_port->port = ntohs($2.port);
-	    
-	    globus_list_insert(&host_port_list, host_port);
-	}
-#       endif
-    }
-    ;
-
 host_port: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER
 	=	{
 	    register char *a, *p;
-		   
+
 	    a = (char *) &cliaddr;
 	    a[0] = $1;
 	    a[1] = $3;
@@ -1949,9 +1214,6 @@ host_port: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMB
 	    p = (char *) &cliport;
 	    p[0] = $9;
 	    p[1] = $11;
-
-	    $$.addr = cliaddr;
-	    $$.port = cliport;
 	}
     ;
 
@@ -2197,14 +1459,14 @@ bufsize: NUMBER
 
 esto_mode: A SP OFFSET
     =	        {
-	$$.mode = 'A';
+	$$.mode = A;
 	$$.offset = $3;
     }
     ;
 
 eret_mode: P SP OFFSET SP LENGTH
     =	        {
-	$$.mode = 'P';
+	$$.mode = P;
 	$$.offset = $3;
 	$$.length = $5;
     }
@@ -2237,9 +1499,7 @@ extern jmp_buf errcatch;
 #define EARGS4 15		/* NUMBER SP NUMBER SP STRING */
 #define EARGS5 17		/* SP NUMBER SP STRING */
 #define EARGS6 18		/* NUMBER SP STRING */
-#define NEWARGS 19		/* miscellaneous word/number
-				 * arguments, with punctuation */
-#define OPTSARGS 20             /* a command token, followed by newargs */
+
 struct tab cmdtab[] =
 {				/* In order defined in RFC 765 */
     {"USER", USER, STR1, 1, "<sp> username"},
@@ -2264,7 +1524,7 @@ struct tab cmdtab[] =
     {"MRSQ", MRSQ, OSTR, 0, "(mail recipient scheme question)"},
     {"MRCP", MRCP, STR1, 0, "(mail recipient)"},
     {"ALLO", ALLO, ARGS, 1, "allocate storage (vacuously)"},
-    {"REST", REST, NEWARGS, 1, "(restart command)"},
+    {"REST", REST, ARGS, 1, "(restart command)"},
     {"RNFR", RNFR, STR1, 1, "<sp> file-name"},
     {"RNTO", RNTO, STR1, 1, "<sp> file-name"},
     {"ABOR", ABOR, ARGS, 1, "(abort operation)"},
@@ -2298,13 +1558,7 @@ struct tab cmdtab[] =
     {"MDTM", MDTM, OSTR, 1, "<sp> path-name"},
     { "ESTO", ESTO, ESTOARGS, 1, "<sp> A <sp> <offset> <sp> <filename>" },
     { "ERET", ERET, ERETARGS, 1, "<sp> P <sp> <offset> <sp> size <sp> <filename>" },
-#ifdef USE_GLOBUS_DATA_CODE
-    { "SPAS", SPAS, ARGS, 1, "(set server in striped passive mode"},
-    { "SPOR", SPOR, ARGS, 1, "<sp> h1,h2,h2,h3,p1,p2..."},
-    { "DCAU", DCAU, STR1, 1, "<sp> N|A|S <subject>"},
-#endif
-    { "FEAT", FEAT, ARGS, 1, "(return list of FTP extensions supported)"},
-    { "OPTS", OPTS, OPTSARGS, 1, "(set operation-specific options)"},
+
     {NULL, 0, 0, 0, 0}
 };
 
@@ -2326,24 +1580,9 @@ struct tab sitetab[] =
     {"CHECKMETHOD", CHECKMETHOD, OSTR, 1, "[ <sp> method ]"},
     {"CHECKSUM", CHECKSUM, OSTR, 1, "[ <sp> file-name ]"},
     {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <socket buffer size in bytes> ]"},
-    {"PSIZE", PSIZE, ARGS, 1, "[ <sp> <set file size for partitioned file> ]"},
-    {"FAULT", FAULT, STR1, 1, "<sp> command" },
     {NULL, 0, 0, 0, 0}
 };
 
-char * feattab[] =
-{
-    "REST STREAM",
-    "ESTO",
-    "ERET",
-    "MDTM",
-    "SIZE",
-#ifdef USE_GLOBUS_DATA_CODE
-    "PARALLEL",
-    "DCAU",
-#endif
-    NULL
-};
 struct tab *lookup(register struct tab *p, char *cmd)
 {
     for (; p->name != NULL; p++)
@@ -2600,7 +1839,7 @@ int yylex(void)
 		state = p->state;
 		yylval.String = p->name;
 		return (p->token);
-		}
+	    }
 	    state = CMD;
 	    break;
 
@@ -2799,19 +2038,12 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-#ifdef USE_GLOBUS_DATA_CODE
-		    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
-#else
-                    yylval.Number = atoi(cp);
-#endif
+		    yylval.Bignum = atoll(cp);
 		    cbuf[cpos] = c;
 
 		    state = EARGS5;
-#ifdef USE_GLOBUS_DATA_CODE
+
 		    return (BIGNUM);
-#else
-                    return(NUMBER);
-#endif                    
 		}
 		break;
 
@@ -2822,117 +2054,14 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-#ifdef USE_GLOBUS_DATA_CODE
-		    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
-#else
-                    yylval.Number = atoi(cp);
-#endif
+		    yylval.Bignum = atoll(cp);
 		    cbuf[cpos] = c;
 
 		    state = STR1;
 
-#ifdef USE_GLOBUS_DATA_CODE
 		    return (BIGNUM);
-#else
-                    return(NUMBER);
-#endif                    
 		}
 		break;
-	    case OPTSARGS:
-		if (cbuf[cpos] == ' ') {
-		    cpos++;
-		    return (SP);
-		}
-		cp = &cbuf[cpos];
-		if ((cp2 = strpbrk(cp, " \n")))
-		    cpos = cp2 - cbuf;
-		c = cbuf[cpos];
-		cbuf[cpos] = '\0';
-		upper(cp);
-		p = lookup(cmdtab, cp);
-		cbuf[cpos] = c;
-		if (p != 0) {
-		    state = NEWARGS;
-		    /* NOTREACHED */
-		}
-		state = NEWARGS;
-		yylval.String = p->name;
-		return (p->token);
-	
-	    case NEWARGS:
-	    if (isdigit(cbuf[cpos])) {
-		cp = &cbuf[cpos];
-		while (isdigit(cbuf[++cpos]));
-		c = cbuf[cpos];
-		cbuf[cpos] = '\0';
-		yylval.Number = atoi(cp);
-		cbuf[cpos] = c;
-		return (NUMBER);
-	    }
-
-	    switch (cbuf[cpos]) {
-
-	    case '\n':
-		state = CMD;
-		cpos++;
-		return (CRLF);
-
-	    case ' ':
-		cpos++;
-		return (SP);
-
-	    case ',':
-		cpos++;
-		return (COMMA);
-	    case ';':
-		cpos++;
-		return (SEMICOLON);
-	    case '-':
-		cpos++;
-		return (HYPHEN);
-	    case '=':
-		cpos++;
-		return EQUALS;
-	    }
-	    /* must be a word of some sort */
-	    cp = &cbuf[cpos];
-	    while(isalnum(cbuf[++cpos]));
-
-	    c = cbuf[cpos];
-	    cbuf[cpos] = '\0';
-
-	    if(strcasecmp(cp, "stripelayout") == 0)
-	    {
-		cbuf[cpos] = c;
-		return STRIPELAYOUT;
-	    }
-	    else if(strcasecmp(cp, "partitioned") == 0)
-	    {
-		cbuf[cpos] = c;
-		return PARTITIONED;
-	    }
-	    else if(strcasecmp(cp, "blocked") == 0)
-	    {
-		cbuf[cpos] = c;
-		return BLOCKED;
-	    }
-	    else if(strcasecmp(cp, "blocksize") == 0)
-	    {
-		cbuf[cpos] = c;
-		return BLOCKSIZE;
-	    }
-	    else if(strcasecmp(cp, "parallelism") == 0)
-	    {
-		cbuf[cpos] = c;
-		return PARALLELISM;
-	    }
-	    else
-	    {
-		yylval.String = copy(cp);
-		cbuf[cpos] = c;
-		return STRING;
-	    }
-
 	default:
 	    fatal("Unknown state in scanner.");
 	}
@@ -3045,23 +2174,6 @@ void help(struct tab *ctab, char *s)
 	      c->name, c->help);
 }
 
-void feat(char *tab[])
-{
-    int i;
-
-    if(tab[0] == NULL)
-    {
-	reply(211, "No features supported");
-	return;
-    }
-    lreply(211, "Extensions supported:");
-    for(i = 0; tab[i] != NULL; i++)
-    {
-	lreply(0, " %s", feattab[i]);
-    }
-    reply(211, "END");
-}
-
 void sizecmd(char *filename)
 {
     switch (type) {
@@ -3070,49 +2182,31 @@ void sizecmd(char *filename)
 	    struct stat stbuf;
 	    if (stat(filename, &stbuf) < 0 ||
 		(stbuf.st_mode & S_IFMT) != S_IFREG)
-#               if defined(HAVE_BROKEN_STAT)
-                {
-		    int fd;
-		    off_t size;
-		    fd = open(filename, O_RDONLY);
-		    if(fd >= 0)
-		    {
-			size = lseek(fd, 0, SEEK_END);
-			close(fd);
-		    }
-		    if(fd < 0 || size < 0)
-			reply(550, "%s: not a plain file.", filename);
-		    else
-			reply(213, "%"L_FORMAT, size);
-		}
-#               else
-		    reply(550, "%s: not a plain file.", filename);
-#               endif
+		reply(550, "%s: not a plain file.", filename);
 	    else
-		reply(213, "%" L_FORMAT, stbuf.st_size);
+#if OFFSET_SIZE == 8
+		reply(213, "%qu", stbuf.st_size);
+#else
+#ifdef _AIX42
+		reply(213, "%llu", stbuf.st_size);
+#else
+		reply(213, "%lu", stbuf.st_size);
+#endif
+#endif
 	    break;
 	}
     case TYPE_A:{
 	    FILE *fin;
 	    register int c;
-	    register off_t count;
+	    register long count;
 	    struct stat stbuf;
 	    fin = fopen(filename, "r");
 	    if (fin == NULL) {
 		perror_reply(550, filename);
 		return;
 	    }
-
-            /* with a broken stat, we can still detect non-plain files--
-	     * we just can't trust that stat returning -1 is a bad file.
-	     */
-#           if defined(HAVE_BROKEN_STAT)
-		if ((fstat(fileno(fin), &stbuf) == 0) &&
-		    (stbuf.st_mode & S_IFMT) != S_IFREG) {
-#           else
-		if ((fstat(fileno(fin), &stbuf) < 0) ||
-		    (stbuf.st_mode & S_IFMT) != S_IFREG) {
-#           endif
+	    if (fstat(fileno(fin), &stbuf) < 0 ||
+		(stbuf.st_mode & S_IFMT) != S_IFREG) {
 		reply(550, "%s: not a plain file.", filename);
 		(void) fclose(fin);
 		return;
@@ -3126,7 +2220,7 @@ void sizecmd(char *filename)
 	    }
 	    (void) fclose(fin);
 
-	    reply(213, "%"L_FORMAT, count);
+	    reply(213, "%ld", count);
 	    break;
 	}
     default:
@@ -3279,18 +2373,15 @@ void print_groups(void)
 set_bufsize(int size)
 {
     TCPwindowsize = size;
-#ifdef USE_GLOBUS_DATA_CODE
-    g_set_tcp_buffer(size);
-#endif
     
-    reply(214, "TCP window size set to %d bytes.",
+    reply(214, "TCP window size set to %d kilobytes.",
 	 TCPwindowsize);
 }
  
 print_bufsize()
 {
     if (TCPwindowsize > 0)
-	reply(214, "TCP window size is %d bytes.",
+	reply(214, "TCP window size is %d kilobytes.",
 	      TCPwindowsize);
     else
 	reply(214, "TCP window size is the system default.");

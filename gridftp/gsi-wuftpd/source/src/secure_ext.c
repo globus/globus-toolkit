@@ -49,12 +49,10 @@ int protection_level_reply_codes[] = { 0,		/* Undefined */
 unsigned int max_pbuf_size = 0;			/* Used in secure.c */
 static unsigned int actual_pbuf_size = 0;
 
-static unsigned char *cleartext_buffer = NULL;
+static char *cleartext_buffer = NULL;
 
 
-#if USE_GLOBUS_DATA_CODE
-#   define DATA_CHANNEL_PROTECTION 1
-#endif
+
 /*
  * setlevel()
  *
@@ -65,7 +63,8 @@ static unsigned char *cleartext_buffer = NULL;
  * implement this.
  */
 int
-set_prot_level(int prot_level)
+set_prot_level(prot_level)
+     int prot_level;
 {
     if (debug)
 	syslog(LOG_DEBUG, "Attempting to set protection level to %s",
@@ -86,6 +85,10 @@ set_prot_level(int prot_level)
 	
 
     case PROT_P:
+
+#ifndef NOENCRYPTION
+	break;
+#endif /* NOCENCRYPTION */
 
 #ifdef DATA_CHANNEL_PROTECTION
 #ifdef GSSAPI
@@ -142,7 +145,8 @@ clear_cmd_channel()
 
 
 int
-auth(char * type)
+auth(type)
+char *type;
 {
 	if (auth_type)
 		reply(534, "Authentication type already set to %s", auth_type);
@@ -167,7 +171,8 @@ auth(char * type)
 }
 
 int
-pbsz(char * size_string)
+pbsz(size_string)
+     char *size_string;
 {
     unsigned int requested_pbuf_size;
     
@@ -227,7 +232,8 @@ pbsz(char * size_string)
 
 
 int
-auth_data(char * data)
+auth_data(data)
+     char *data;
 {
     int radix_err;
     char decoded_data[LARGE_BUFSIZE];
@@ -283,10 +289,10 @@ auth_data(char * data)
 }
 
 int
-send_adat_reply(int code, unsigned char * data, int length)
+send_adat_reply(code, data, length)
 {
     int radix_err;
-    unsigned char encoded_data[LARGE_BUFSIZE];
+    char encoded_data[LARGE_BUFSIZE];
     
 
     radix_err = radix_encode(data, encoded_data, &length, 0);
@@ -469,9 +475,12 @@ encode_secure_message(char *message, char *smessage, int smessage_size)
 #ifdef GSSAPI
     if (strcmp(auth_type, "GSSAPI") == 0) {
 
-	/* Always wrap messages with integrity checking */
+	/* GSSAPI doesn't support confidential, use private */
+	if (msg_prot_level == PROT_E)
+	    msg_prot_level = PROT_P;
+	
 	if (gssapi_wrap_message(unwrapped_buf, wrapped_buf, &wrapped_buf_size,
-				PROT_S) < 0) {
+				msg_prot_level) < 0) {
 	    *smessage = '\0';
 	    return -1;
 	}
