@@ -1,6 +1,6 @@
 /****************************************************************************  
  
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
@@ -352,6 +352,13 @@ int data_limit_raw_total = 0;
 int data_limit_data_in = 0;
 int data_limit_data_out = 0;
 int data_limit_data_total = 0;
+#ifdef RATIO /* 1998/08/04 K.Wakui */
+#define TRUNC_KB(n)   ((n)/1024+(((n)%1024)?1:0))
+off_t   total_free_dl = 0;
+int     upload_download_rate = 0;
+int     freefile;
+int     is_downloadfree( char * );
+#endif /* RATIO */
 #endif
 #endif
 
@@ -475,7 +482,7 @@ int ultrix_check_pass(char *passwd, char *xpasswd);
 #endif
 
 #ifdef USE_PAM
-#if defined(ULTRIX_AUTH) || defined(SHADOW_PASSWORD) || defined(SECUREOSF) || defined(KERBEROS) || defined(SKEY) || defined (OPIE) || defined (BSD_AUTH)
+#if defined(ULTRIX_AUTH) || defined(SECUREOSF) || defined(KERBEROS) || defined(SKEY) || defined (OPIE) || defined (BSD_AUTH)
 #error No other auth methods are allowed with PAM.
 #endif
 static int pam_check_pass(char *user, char *passwd);
@@ -494,6 +501,19 @@ int daemon_port = 0;
 void do_daemon(int argc, char **argv, char **envp);
 #endif
 int Bypass_PID_Files = 0;
+
+#ifdef OTHER_PASSWD
+#include "getpwnam.h"
+char _path_passwd[MAXPATHLEN];
+#ifdef SHADOW_PASSWORD
+char _path_shadow[MAXPATHLEN];
+#endif
+#endif
+#if defined(USE_PAM) && defined(OTHER_PASSWD)
+int use_pam = 1;
+#else
+int use_pam = 0;
+#endif
 
 void end_login(void);
 void print_copyright(void);
@@ -963,12 +983,24 @@ int main(int argc, char **argv, char **envp)
     virtual_banner[0] = '\0';
 #endif
 
+<<<<<<< ftpd.c
 #ifdef GSSAPI
     gssapi_setup_environment();
 #endif /* GSSAPI */
 
 
     setup_paths();
+=======
+    setup_paths();
+
+#ifdef OTHER_PASSWD
+    strcpy(_path_passwd, "/etc/passwd");
+#ifdef SHADOW_PASSWORD
+    strcpy(_path_shadow, "/etc/shadow");
+#endif
+#endif
+
+>>>>>>> 1.1.1.2
     access_init();
 
 #ifdef DAEMON
@@ -1136,6 +1168,24 @@ int main(int argc, char **argv, char **envp)
 			strncpy(virtual_email, ARG2, sizeof(virtual_email));
 			virtual_email[sizeof(virtual_email) - 1] = '\0';
 		    }
+#ifdef OTHER_PASSWD
+		    if (!strcasecmp(ARG1, "passwd")) {
+			strncpy(_path_passwd, ARG2, sizeof(_path_passwd));
+			_path_passwd[sizeof(_path_passwd) - 1] = '\0';
+#ifdef USE_PAM
+			use_pam = 0;
+#endif
+		    }
+#ifdef SHADOW_PASSWORD
+		    if (!strcasecmp(ARG1, "shadow")) {
+			strncpy(_path_shadow, ARG2, sizeof(_path_shadow));
+			_path_shadow[sizeof(_path_shadow) - 1] = '\0';
+#ifdef USE_PAM
+			use_pam = 0;
+#endif
+		    }
+#endif
+#endif
 #ifdef MAIL_ADMIN
 		    if (mailfrom == NULL)
 			if (!strcasecmp(ARG1, "mailfrom")) {
@@ -1524,14 +1574,22 @@ struct passwd *sgetpwnam(char *name)
     if ((pr = getprpwnam(name)) == NULL)
 	goto DONE;
 #endif /* SecureWare || HPUX_10_TRUSTED */
+#ifdef OTHER_PASSWD
+    if ((p = bero_getpwnam(name, _path_passwd)) == NULL)
+#else
     if ((p = getpwnam(name)) == NULL)
+#endif
 	goto DONE;
 #else /* M_UNIX */
 #if defined(SecureWare) || defined(HPUX_10_TRUSTED)
     if ((pr = getprpwnam(name)) == NULL)
 	return ((struct passwd *) pr);
 #endif /* SecureWare || HPUX_10_TRUSTED */
+#ifdef OTHER_PASSWD
+    if ((p = bero_getpwnam(name, _path_passwd)) == NULL)
+#else
     if ((p = getpwnam(name)) == NULL)
+#endif
 	return (p);
 #endif /* M_UNIX */
 
@@ -1561,10 +1619,14 @@ struct passwd *sgetpwnam(char *name)
     save.pw_passwd = sgetsave(p->pw_passwd);
 #endif
 #ifdef SHADOW_PASSWORD
-    if (p) {
+    if (p && (p->pw_passwd==NULL || strlen(p->pw_passwd)<8)) {
 	struct spwd *spw;
+#ifdef OTHER_PASSWD
+	if ((spw = bero_getspnam(p->pw_name, _path_shadow)) != NULL) {
+#else
 	setspent();
 	if ((spw = getspnam(p->pw_name)) != NULL) {
+#endif
 	    int expired = 0;
 	    /*XXX Does this work on all Shadow Password Implementations? */
 	    /* it is supposed to work on Solaris 2.x */
@@ -1592,7 +1654,9 @@ struct passwd *sgetpwnam(char *name)
 	}
 #endif
 /* marekm's fix for linux proc file system shadow passwd exposure problem */
+#ifndef OTHER_PASSWD
 	endspent();
+#endif
     }
 #endif
     save.pw_gecos = sgetsave(p->pw_gecos);
@@ -1999,7 +2063,10 @@ void user(char *name)
 	    return;
 	}
 
-#ifndef USE_PAM			/* PAM should be doing these checks, not ftpd */
+#if !defined(USE_PAM) || (defined(USE_PAM) && defined(OTHER_PASSWD))	/* PAM should be doing these checks, not ftpd */
+#ifdef USE_PAM
+	if(!use_pam) {
+#endif
 	if ((shell = pw->pw_shell) == NULL || *shell == 0)
 	    shell = _PATH_BSHELL;
 	while ((cp = getusershell()) != NULL)
@@ -2020,11 +2087,14 @@ void user(char *name)
 		syslog(LOG_NOTICE, "FTP LOGIN REFUSED (shell not in /etc/shells) FROM %s, %s", remoteident, name);
 	    else
 		syslog(LOG_NOTICE, "FTP LOGIN REFUSED (username in %s) FROM %s, %s", _PATH_FTPUSERS, remoteident, name);
-#endif
+#endif /* HELP_CRACKERS */
 	    pw = (struct passwd *) NULL;
 	    return;
 	}
-#endif /* USE_PAM */
+#ifdef USE_PAM
+	} /* if(!use_pam) */
+#endif
+#endif /* !USE_PAM || (USE_PAM && OTHER_PASSWD) */
 	/* if user is a member of any of the guestgroups, cause a chroot() */
 	/* after they log in successfully                                  */
 	if (use_accessfile) {	/* see above.  _H */
@@ -2093,9 +2163,9 @@ void user(char *name)
 	    s = strsep(&cp, "\n");
 	    if (cp == NULL || *cp == '\0')
 		break;
-	    lreply(331, s);
+	    lreply(331, "%s", s);
 	}
-	reply(331, s);
+	reply(331, "%s", s);
     }
     else {
 #endif
@@ -2216,7 +2286,11 @@ int denieduid(uid_t uid)
 		}
 	    }
 	    else {
+#ifdef OTHER_PASSWD
+		pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 		pw = getpwnam(ARG[which]);
+#endif
 		if (pw && (uid == pw->pw_uid))
 		    return (1);
 	    }
@@ -2265,7 +2339,11 @@ int alloweduid(uid_t uid)
 		}
 	    }
 	    else {
+#ifdef OTHER_PASSWD
+		pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 		pw = getpwnam(ARG[which]);
+#endif
 		if (pw && (uid == pw->pw_uid))
 		    return (1);
 	    }
@@ -2479,7 +2557,7 @@ static int DenyVirtualAnonymous(void)
 void pass(char *passwd)
 {
 
-#ifndef USE_PAM
+#if !defined(USE_PAM) || (defined(USE_PAM) && defined(OTHER_PASSWD))
     char *xpasswd, *salt;
 #endif
 
@@ -2552,6 +2630,9 @@ void pass(char *passwd)
 	if (*passwd == '-')
 	    passwd++;
 #ifdef USE_PAM
+#ifdef OTHER_PASSWD
+	if (use_pam) {
+#endif
 	/* PAM authentication
 	 * If PAM authenticates a user we know nothing about on the local
 	 * system, use the generic guest account credentials. We should make
@@ -2576,7 +2657,11 @@ void pass(char *passwd)
 		}
 	    }
 	}
-#else /* !USE_PAM */
+#ifdef OTHER_PASSWD
+	} else {
+#endif
+#endif /* USE_PAM */
+#if !defined(USE_PAM) || (defined(USE_PAM) && defined(OTHER_PASSWD))
 #ifdef BSD_AUTH
 	if (ext_auth) {
 	    if ((salt = check_auth(the_user, passwd))) {
@@ -2584,7 +2669,7 @@ void pass(char *passwd)
 #ifdef LOG_FAILED		/* 27-Apr-93      EHK/BM          */
 		syslog(LOG_INFO, "failed login from %s",
 		       remoteident);
-#endif
+#endif /* LOG_FAILED */
 		acl_remove();
 		pw = NULL;
 		if (++login_attempts >= lgi_failure_threshold) {
@@ -2596,7 +2681,7 @@ void pass(char *passwd)
 	    }
 	}
 	else {
-#endif
+#endif /* BSD_AUTH */
 	    *guestpw = '\0';
 	    if (pw == NULL)
 		salt = "xx";
@@ -2631,7 +2716,7 @@ void pass(char *passwd)
 	    else
 		xpasswd = crypt(passwd, salt);
 #endif
-#else
+#else /* !SKEY */
 	    xpasswd = crypt(passwd, salt);
 #endif /* SKEY */
 #else /* OPIE */
@@ -2714,7 +2799,10 @@ void pass(char *passwd)
 		}
 #endif /* DCE_AUTH */
 	    }
-#endif /* !USE_PAM */
+#ifdef USE_PAM
+	    }
+#endif
+#endif /* !USE_PAM  || (USE_PAM && OTHER_PASSWD) */
 	    if (rval) {
 		reply(530, "Login incorrect.");
 
@@ -3033,7 +3121,11 @@ void pass(char *passwd)
 				    }
 				}
 				else {
+#ifdef OTHER_PASSWD
+				    struct passwd *guest_pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 				    struct passwd *guest_pw = getpwnam(ARG[which]);
+#endif
 				    if (guest_pw && (pw->pw_uid == guest_pw->pw_uid))
 					root_path = ARG0;
 				}
@@ -3071,7 +3163,11 @@ void pass(char *passwd)
 		    reply(530, "Can't set guest privileges.");
 		    goto bad;
 		}
+#ifdef OTHER_PASSWD
+		if ((chroot_pw = bero_getpwuid(pw->pw_uid, _path_passwd)) != NULL)
+#else
 		if ((chroot_pw = getpwuid(pw->pw_uid)) != NULL)
+#endif
 		    if (chdir(chroot_pw->pw_dir) >= 0)
 			home = sgetsave(chroot_pw->pw_dir);
 		goto slimy_hack;	/* onea these days I'll make this structured code, honest ... */
@@ -3343,7 +3439,11 @@ int restricteduid(uid_t uid)
 		}
 	    }
 	    else {
+#ifdef OTHER_PASSWD
+		pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 		pw = getpwnam(ARG[which]);
+#endif
 		if (pw && (uid == pw->pw_uid))
 		    return (1);
 	    }
@@ -3392,7 +3492,11 @@ int unrestricteduid(uid_t uid)
 		}
 	    }
 	    else {
+#ifdef OTHER_PASSWD
+		pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 		pw = getpwnam(ARG[which]);
+#endif
 		if (pw && (uid == pw->pw_uid))
 		    return (1);
 	    }
@@ -3521,7 +3625,7 @@ char *rpad(char *s, unsigned int len)
 {
     char *a;
     a = (char *) malloc(len + 1);
-    memset(a, ' ', len);
+    memset(a, ' ', len-1);
     a[len] = 0;
     if (strlen(s) <= len)
 	memcpy(a, s, strlen(s));
@@ -3550,9 +3654,8 @@ char *ls_file(const char *file, int nameonly, char remove_path, char classify)
     link = NULL;
     owner = NULL;
     ownerg = NULL;
-    if (lstat(file, &s) != 0) {	/* File doesn't exist, or is not readable by user */
+    if (lstat(file, &s) != 0)	/* File doesn't exist, or is not readable by user */
 	return NULL;
-    }
     ls_entry = (char *) malloc(312);
     memset(ls_entry, 0, 312);
     permissions = strdup("----------");
@@ -3632,7 +3735,11 @@ char *ls_file(const char *file, int nameonly, char remove_path, char classify)
 #endif
     t = localtime(&s.st_mtime);
 #ifndef LS_NUMERIC_UIDS
+#ifdef OTHER_PASSWD
+    pw = bero_getpwuid(s.st_uid, _path_passwd);
+#else
     pw = getpwuid(s.st_uid);
+#endif
     if (pw != NULL)
 	owner = strdup(pw->pw_name);
     gr = getgrgid(s.st_gid);
@@ -3646,9 +3753,9 @@ char *ls_file(const char *file, int nameonly, char remove_path, char classify)
 	    owner = (char *) malloc(9);
 	    memset(owner, 0, 9);
 #ifdef SOLARIS_2
-	    sprintf(owner, "%lu", s.st_uid);
+	    snprintf(owner, 8, "%lu", s.st_uid);
 #else
-	    sprintf(owner, "%u", s.st_uid);
+	    snprintf(owner, 8, "%u", s.st_uid);
 #endif
 	}
     }
@@ -3659,9 +3766,9 @@ char *ls_file(const char *file, int nameonly, char remove_path, char classify)
 	    ownerg = (char *) malloc(9);
 	    memset(ownerg, 0, 9);
 #ifdef SOLARIS_2
-	    sprintf(ownerg, "%lu", s.st_gid);
+	    snprintf(ownerg, 8, "%lu", s.st_gid);
 #else
-	    sprintf(ownerg, "%u", s.st_gid);
+	    snprintf(ownerg, 8, "%u", s.st_gid);
 #endif
 	}
     }
@@ -3704,16 +3811,16 @@ char *ls_file(const char *file, int nameonly, char remove_path, char classify)
     else {
 	if ((time(NULL) - s.st_mtime) > 6307200) {	/* File is older than 6 months */
 	    if (link == NULL)
-		sprintf(ls_entry, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %5u %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, 1900 + t->tm_year, file);
+		snprintf(ls_entry, 311, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %5u %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, 1900 + t->tm_year, file);
 	    else {
-		sprintf(ls_entry, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %5u %s -> %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, 1900 + t->tm_year, file, link);
+		snprintf(ls_entry, 311, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %5u %s -> %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, 1900 + t->tm_year, file, link);
 		free(link);
 	    }
 	}
 	else if (link == NULL)
-	    sprintf(ls_entry, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %02u:%02u %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min, file);
+	    snprintf(ls_entry, 311, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %02u:%02u %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min, file);
 	else {
-	    sprintf(ls_entry, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %02u:%02u %s -> %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min, file, link);
+	    snprintf(ls_entry, 311, "%s %3" N_FORMAT " %s %s %8" S_FORMAT " %s %2u %02u:%02u %s -> %s", permissions, s.st_nlink, rpowner, rpownerg, (long) s.st_size, month[t->tm_mon], t->tm_mday, t->tm_hour, t->tm_min, file, link);
 	    free(link);
 	}
     }
@@ -3777,6 +3884,7 @@ void ls_dir(char *d, char ls_a, char ls_F, char ls_l, char ls_R, char omit_total
 		    (void) signal(SIGALRM, draconian_alarm_signal);
 		    alarm(timeout_data);
 		    fputs(lsentry, out);
+		    (void) signal(SIGALRM, SIG_DFL);
 		}
 		free(lsentry);
 	    }
@@ -3786,6 +3894,7 @@ void ls_dir(char *d, char ls_a, char ls_F, char ls_l, char ls_R, char omit_total
 		(void) signal(SIGALRM, draconian_alarm_signal);
 		alarm(timeout_data);
 		fputs(realdir, out);
+		(void) signal(SIGALRM, SIG_DFL);
 	    }
 	}
 	free(realdir);
@@ -3840,8 +3949,11 @@ void ls_dir(char *d, char ls_a, char ls_F, char ls_l, char ls_R, char omit_total
 		else {
 		    int flag;
 		    lsentry = ls_file(c, 1, 1, ls_F);
-		    flag = snprintf(dirlist + dl_used, dl_size - dl_used, "%s", lsentry);
-		    dl_used += (flag == -1 ? dl_size - dl_used : flag);
+		    if (lsentry != NULL) {
+		        flag = snprintf(dirlist + dl_used, dl_size - dl_used, "%s", lsentry);
+		        dl_used += (flag == -1 ? dl_size - dl_used : flag);
+			free(lsentry);
+		    }
 		}
 		if ((ls_R != 0) && (S_ISDIR(s.st_mode))
 		    && (strcmp(c, "..") != 0) && (strcmp(c, ".") != 0)
@@ -3993,40 +4105,6 @@ void retrieve(char *cmd, char *name)
 
     wu_realpath(name, realname, chroot_path);
 
-#ifdef TRANSFER_COUNT
-#ifdef TRANSFER_LIMIT
-    if (retrieve_is_data)
-	if (((file_limit_data_out > 0) && (file_count_out >= file_limit_data_out))
-	    || ((file_limit_data_total > 0) && (file_count_total >= file_limit_data_total))
-	    || ((data_limit_data_out > 0) && (data_count_out >= data_limit_data_out))
-	    || ((data_limit_data_total > 0) && (data_count_total >= data_limit_data_total))) {
-	    if (log_security)
-		if (anonymous)
-		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
-			   guestpw, remoteident, realname);
-		else
-		    syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
-			   pw->pw_name, remoteident, realname);
-	    reply(553, "Permission denied on server. (Transfer limits exceeded)");
-	    return;
-	}
-    if (((file_limit_raw_out > 0) && (xfer_count_out >= file_limit_raw_out))
-	|| ((file_limit_raw_total > 0) && (xfer_count_total >= file_limit_raw_total))
-     || ((data_limit_raw_out > 0) && (byte_count_out >= data_limit_raw_out))
-	|| ((data_limit_raw_total > 0) && (byte_count_total >= data_limit_raw_total))) {
-	if (log_security)
-	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
-		       guestpw, remoteident, realname);
-	    else
-		syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
-		       pw->pw_name, remoteident, realname);
-	reply(553, "Permission denied on server. (Transfer limits exceeded)");
-	return;
-    }
-#endif
-#endif
-
     if (cmd == NULL && (stat_ret = stat(name, &st)) == 0)
 	/* there isn't a command and the file exists */
 	if (use_accessfile && checknoretrieve(name)) {	/* see above.  _H */
@@ -4039,6 +4117,58 @@ void retrieve(char *cmd, char *name)
 			   pw->pw_name, remoteident, realname);
 	    return;
 	}
+
+#ifdef TRANSFER_COUNT
+#ifdef TRANSFER_LIMIT
+    if (retrieve_is_data)
+	if (((file_limit_data_out > 0) && (file_count_out >= file_limit_data_out))
+	    || ((file_limit_data_total > 0) && (file_count_total >= file_limit_data_total))
+	    || ((data_limit_data_out > 0) && ( (data_count_out + st.st_size) >= data_limit_data_out))
+	    || ((data_limit_data_total > 0) && ( (data_count_total + st.st_size) >= data_limit_data_total))) {
+	    if (log_security)
+		if (anonymous)
+		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
+			   guestpw, remoteident, realname);
+		else
+		    syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
+			   pw->pw_name, remoteident, realname);
+	    reply(553, "Permission denied on server. (Transfer limits exceeded)");
+	    return;
+	}
+    if (((file_limit_raw_out > 0) && (xfer_count_out >= file_limit_raw_out))
+	|| ((file_limit_raw_total > 0) && (xfer_count_total >= file_limit_raw_total))
+	|| ((data_limit_raw_out > 0) && (byte_count_out >= data_limit_raw_out))
+	|| ((data_limit_raw_total > 0) && (byte_count_total >= data_limit_raw_total))) {
+	if (log_security)
+	    if (anonymous)
+		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
+		       guestpw, remoteident, realname);
+	    else
+		syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
+		       pw->pw_name, remoteident, realname);
+	reply(553, "Permission denied on server. (Transfer limits exceeded)");
+	return;
+    }
+#ifdef RATIO
+    if (retrieve_is_data && (upload_download_rate > 0) )
+	if( freefile = is_downloadfree(name) ) {
+	    syslog(LOG_INFO, "%s is download free.", name );
+	}
+	else {
+	    if( cmd == NULL ) {
+		off_t credit = ( data_count_in * upload_download_rate ) - (data_count_out - total_free_dl);
+		if( st.st_size > credit  ) {
+		    reply( 550, "%s: file size %d exceed credit %d.",
+			name, st.st_size, credit );
+		    goto done;
+		}
+	    }
+	}
+#endif /* RATIO */
+#endif
+#endif
+
+
     logname = (char *) NULL;
     if (cmd == NULL && stat_ret != 0) {		/* file does not exist */
 	char *ptr;
@@ -4210,6 +4340,7 @@ void retrieve(char *cmd, char *name)
 	    goto done;
 	}
     }
+
     dout = dataconn(name, st.st_size, "w");
     if (dout == NULL)
 	goto done;
@@ -5030,6 +5161,11 @@ int
 	    byte_count += cnt;
 #ifdef TRANSFER_COUNT
 	    if (retrieve_is_data) {
+#ifdef RATIO
+		if( freefile ) {
+		    total_free_dl += cnt;
+		}
+#endif /* RATIO */
 		data_count_total += cnt;
 		data_count_out += cnt;
 	    }
@@ -6378,6 +6514,7 @@ void send_file_list(char *whichfiles)
 
     register char **dirlist, *dirname;
     int simple = 0;
+    int statret;
     /* This is ANSI/ISO C .. strpbrk should be in <string.h> which we've 
        ** already included so we don't need the following line.  'sides, it 
        ** breaks the GNU EGCS C compiler
@@ -6417,16 +6554,20 @@ void send_file_list(char *whichfiles)
 	    }
 	    whichfiles = wildcard;
 	}
-	else if (stat(whichfiles, &st) >= 0) {
-	    if ((st.st_mode & S_IFMT) == S_IFDIR) {
-		wildcard = malloc(strlen(whichfiles) + 3);
-		if (wildcard == NULL) {
-		    reply(550, "Memory allocation error");
-		    goto globfree;
-		}
-		strcpy(wildcard, whichfiles);
-		strcat(wildcard, "/*");
-		whichfiles = wildcard;
+	else {
+	    if (statret=stat(whichfiles, &st) < 0)
+	       statret=lstat(whichfiles, &st); /* Check if it's a dangling symlink */
+	    if (statret >= 0) {
+	       if ((st.st_mode & S_IFMT) == S_IFDIR) {
+		   wildcard = malloc(strlen(whichfiles) + 3);
+		   if (wildcard == NULL) {
+		       reply(550, "Memory allocation error");
+		       goto globfree;
+		   }
+		   strcpy(wildcard, whichfiles);
+		   strcat(wildcard, "/*");
+		   whichfiles = wildcard;
+	       }
 	    }
 	}
     }
@@ -6461,7 +6602,10 @@ void send_file_list(char *whichfiles)
 	goto globfree;
     }
     while ((dirname = *dirlist++) != NULL) {
-	if (stat(dirname, &st) < 0) {
+	statret=stat(dirname, &st);
+	if (statret < 0)
+	   statret=lstat(dirname, &st); /* Could be a dangling symlink */
+	if (statret < 0) {
 	    /* If user typed "ls -l", etc, and the client used NLST, do what
 	     * the user meant. */
 	    if (dirname[0] == '-' && *dirlist == NULL && transflag == 0) {
@@ -7203,13 +7347,75 @@ void do_daemon(int argc, char **argv, char **envp)
 
 #endif /* DAEMON */
 
+#ifdef RATIO
+int is_downloadfree(char *fname)
+{
+    char        rpath[MAXPATHLEN];
+    char	class[1024];
+    char        *cp;
+    int		which;
+    struct aclmember *entry = NULL;
+
+    if( wu_realpath(fname,rpath,chroot_path) == NULL )
+        return 0;
+
+    (void) acl_getclass(class);
+
+    syslog(LOG_INFO, "class: %s, fname: %s, rpath: %s", class, fname, rpath);
+
+    while( getaclentry("dl-free-dir",&entry) ) {
+        if( ARG0 == NULL )
+            continue;
+        if( strncmp(rpath,ARG0,strlen(ARG0)) == 0 ) {
+	    if( ARG1 == NULL )
+		return 1;
+	    else for(which = 1; (which < MAXARGS) && ARG[which]; which++) {
+		if( strcmp(class,ARG[which]) == 0 )
+		    return 1;
+	    }
+        }
+    }
+    while( getaclentry("dl-free",&entry) ) {
+        if( ARG0 == NULL )
+            continue;
+        if( *(ARG0) != '/' ) {  /* compare basename */
+            if( (cp = strrchr(rpath,'/')) == NULL ) {
+                cp = rpath;
+            }
+            else {
+                ++cp;
+            }
+            if( strcmp(cp,ARG0) == 0 ) {
+		if( ARG1 == NULL )
+		    return 1;
+		else for(which = 1; (which < MAXARGS) && ARG[which]; which++) {
+		    if( strcmp(class,ARG[which]) == 0 )
+		    return 1;
+		}
+            }
+        }
+        else {  /* compare real path */
+            if( strcmp(rpath,ARG0) == 0 ) {
+		if( ARG1 == NULL )
+		    return 1;
+		else for(which = 1; (which < MAXARGS) && ARG[which] ; which++) {
+		    if( strcmp(class,ARG[which]) == 0 )
+		    return 1;
+		}
+            }
+        }
+    }
+    return 0;
+}
+#endif /* RATIO */
+
 int pasv_allowed(char *remoteaddr)
 {
     char class[MAXPATHLEN];
     int which;
     struct aclmember *entry = NULL;
     (void) acl_getclass(class);
-    while (getaclentry("pasv-allow", &entry)) {
+    while (getaclentry("port-allow", &entry)) {
 	if ((ARG0 != NULL) && (strcasecmp(class, ARG0) == 0))
 	    for (which = 1; (which < MAXARGS) && (ARG[which] != NULL); which++) {
 		if (hostmatch(ARG[which], remoteaddr, NULL))
@@ -7225,7 +7431,7 @@ int port_allowed(char *remoteaddr)
     int which;
     struct aclmember *entry = NULL;
     (void) acl_getclass(class);
-    while (getaclentry("pasv-allow", &entry)) {
+    while (getaclentry("port-allow", &entry)) {
 	if ((ARG0 != NULL) && (strcasecmp(class, ARG0) == 0))
 	    for (which = 1; (which < MAXARGS) && (ARG[which] != NULL); which++) {
 		if (hostmatch(ARG[which], remoteaddr, NULL))

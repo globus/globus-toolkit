@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1999 WU-FTPD Development Group.
+# Copyright (c) 1999,2000 WU-FTPD Development Group.
 # All rights reserved.
 # 
 # Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994 
@@ -49,12 +49,14 @@ AFS_OBJS = $(AFS_SRC:.c=.o)
 SRCS   = ${UTIL_OBJS} ftpd.c ftpcmd.c glob.c logwtmp.c popen.c access.c \
 	extensions.c realpath.c acl.c private.c authenticate.c conversions.c \
 	rdservers.c paths.c hostacc.c sigfix.c auth.c routevector.c \
-	restrict.c domain.c wu_fnmatch.c timeout.c $(GSSAPI_SRC) $(AFS_SRC)
+	restrict.c domain.c wu_fnmatch.c timeout.c getpwnam.c \
+	$(GSSAPI_SRC) $(AFS_SRC)
 
 OBJS   = ${UTIL_OBJS} ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
 	extensions.o realpath.o acl.o private.o authenticate.o conversions.o \
 	rdservers.o paths.o hostacc.o sigfix.o auth.o routevector.o \
-	restrict.o domain.o wu_fnmatch.o timeout.o $(GSSAPI_OBJS) $(AFS_OBJS)
+	restrict.o domain.o wu_fnmatch.o timeout.o getpwnam.o \
+	$(GSSAPI_OBJS) $(AFS_OBJS)
 
 .c.o:
 	$(CC) $(CFLAGS) -I.. -I../support -c -o $@ $<
