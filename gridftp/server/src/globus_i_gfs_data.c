@@ -1553,17 +1553,43 @@ globus_l_gfs_data_complete_fc_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_gfs_event_info_t             event_info;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_data_complete_fc_cb);
     GlobusGFSDebugEnter();
 
     op = (globus_l_gfs_data_operation_t *) callback_arg;
 
+    memset(&event_info, '\0', sizeof(globus_gfs_event_info_t));
+
     globus_mutex_lock(&op->session_handle->mutex);
     {
         globus_l_gfs_data_fc_return(callback_arg);
+
+        op->ref--;
+        if(op->ref == 0)
+        {
+            globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING);
+            destroy_op = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
+
+    if(destroy_op)
+    {
+        if(op->session_handle->dsi->trev_func &&
+            op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+        {   /* XXX should make our own */
+            event_info.type = GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
+            event_info.event_arg = op->event_arg;
+            op->session_handle->dsi->trev_func(
+                &event_info,
+                op->session_handle->session_arg);
+        }
+        /* destroy the op */
+        globus_l_gfs_data_operation_destroy(op);
+    }
 
     GlobusGFSDebugExit();
 }
@@ -3817,9 +3843,9 @@ globus_i_gfs_data_request_transfer_event(
                         {
                             globus_i_gfs_log_result("force_close", result);
                             globus_l_gfs_data_fc_return(op);
+                            op->state = GLOBUS_L_GFS_DATA_COMPLETING;
+                            pass = GLOBUS_TRUE;
                         }
-                        op->state = GLOBUS_L_GFS_DATA_COMPLETING;
-                        pass = GLOBUS_TRUE;
                         break;
 
                     default:
