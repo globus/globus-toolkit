@@ -19,6 +19,7 @@ Sources = \
 	init_sec_context.c \
 	inquire_cred.c \
 	inquire_context.c \
+	oid_functions.c \
 	release_cred.c \
 	release_name.c \
 	unwrap.c \
