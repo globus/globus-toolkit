@@ -58,6 +58,7 @@ Include header files
 #include <malloc.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include "grami_ggg.h"
 
 /******************************************************************************
                                Type definitions
@@ -305,7 +306,7 @@ grami_ggg_k5_kinit(char * globus_client)
   }
   while(stat(ccname+5,&stx) == 0);
 
-  setenv("KRB5CCNAME", ccname, 1);
+  grami_setenv("KRB5CCNAME", ccname, 1);
 
   rc = grami_ggg_k5_exec(args);
 
@@ -436,7 +437,7 @@ main(int argc, char *argv[])
 
 
  done:
-    unsetenv("GLOBUSKMAP"); /* dont pass on */
+    grami_unsetenv("GLOBUSKMAP"); /* dont pass on */
 
 	/* before continuing on, if we were run as root, 
 	 * we will seteuid
