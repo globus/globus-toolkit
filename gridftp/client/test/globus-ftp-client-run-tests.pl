@@ -122,6 +122,10 @@ sub setup_server()
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
+
+    # sleep 5 seconds, some hosts are slow....
+
+    sleep 5;
     
     return $server_pid;
 }
