@@ -19,10 +19,8 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#ifndef SUPPORT_SSL_ANONYMOUS_AUTH
 #include <gssapi.h>
 #include <globus_gss_assist.h>
-#endif
 
 struct _gsi_socket 
 {
@@ -32,15 +30,9 @@ struct _gsi_socket
     /* All these variables together indicate the last error we saw */
     char			*error_string;
     int				error_number;
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    SSL_CTX			*ssl_context;
-    SSL				*ssl;
-    proxy_cred_desc		*cred_handle;
-#else
     gss_ctx_id_t		gss_context;
     OM_uint32			major_status;
     OM_uint32			minor_status;
-#endif
     char			*expected_peer_name;
     char			*peer_name;
     /* Buffer to hold unread, unwrapped data */
@@ -58,7 +50,6 @@ struct _gsi_socket
  */
 
 
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
 /*
  * append_gss_status()
  *
@@ -110,7 +101,6 @@ append_gss_status(char *buffer,
     
     return total_chars;
 }
-#endif
 
 /*
  * read_all()
@@ -118,11 +108,7 @@ append_gss_status(char *buffer,
  * Read all the requested bytes into the requested buffer.
  */
 static int
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-read_all(SSL *ssl,
-#else
 read_all(const int sock,
-#endif
 	 char *buffer,
 	 const int nbytes)
 {
@@ -133,11 +119,7 @@ read_all(const int sock,
     
     while (total_bytes_read < nbytes)
     {
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-	bytes_read = SSL_read(ssl, &buffer[total_bytes_read], 
-#else
 	bytes_read = read(sock, &buffer[total_bytes_read], 
-#endif
 			  nbytes - total_bytes_read);
 	
 	if (bytes_read == -1)
@@ -164,11 +146,7 @@ read_all(const int sock,
  * Write all the requested bytes to the given socket.
  */
 static int
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-write_all(SSL *ssl,
-#else
 write_all(const int sock,
-#endif
 	  const char *buffer,
 	  const int nbytes)
 {
@@ -179,11 +157,7 @@ write_all(const int sock,
     
     while (total_bytes_written < nbytes)
     {
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-	bytes_written = SSL_write(ssl, (char *)&buffer[total_bytes_written], 
-#else
 	bytes_written = write(sock, &buffer[total_bytes_written], 
-#endif
 			      nbytes - total_bytes_written);
 	
 	if (bytes_written == -1)
@@ -211,17 +185,10 @@ write_all(const int sock,
  * Read and allocate a token from the given socket.
  */
 static int
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-read_token(SSL *ssl,
-#else
 read_token(const int sock,
-#endif
 	   char **p_buffer,
 	   size_t *p_buffer_size)
 {
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    char *bufferp, c;
-#else
     enum header_fields 
     {
 	flag                            = 0,
@@ -232,7 +199,6 @@ read_token(const int sock,
     };
 
     char *bufferp;
-#endif
     unsigned char header[5];
     int data_len;
     int buffer_len;
@@ -241,20 +207,6 @@ read_token(const int sock,
     assert(p_buffer != NULL);
     assert(p_buffer_size != NULL);
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    /* 
-     * Get the packet length from SSL so we know how big a buffer to alloc.
-     * First, call SSL_peek() to force SSL to read in the message and then
-     * get the length with SSL_pending.  If we don't call SSL_peek() first,
-     * SSL_pending() will return 0. 
-    */
-    if (SSL_peek(ssl, &c, 1) < 0 || (data_len = SSL_pending(ssl)) < 0) 
-    {
-	return -1;
-    }
-
-    buffer_len = data_len;
-#else
     if (read_all(sock, header, sizeof(header)) < 0) 
     {
 	return -1;
@@ -274,7 +226,6 @@ read_token(const int sock,
     data_len = (header[length_high_byte] << 8) + header[length_low_byte];
 
     buffer_len = data_len + sizeof(header);
-#endif
 
     *p_buffer = malloc(buffer_len);
 
@@ -285,15 +236,11 @@ read_token(const int sock,
 
     bufferp = *p_buffer;
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    if (read_all(ssl, bufferp, data_len) < 0)
-#else
     memcpy(bufferp, header, sizeof(header));
 
     bufferp += sizeof(header);
     
     if (read_all(sock, bufferp, data_len) < 0)
-#endif
     {
 	free(*p_buffer);
 	*p_buffer = NULL;
@@ -305,7 +252,6 @@ read_token(const int sock,
     return buffer_len;
 }
 
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
 /*
  * assist_read_token()
  *
@@ -330,7 +276,6 @@ assist_read_token(void *p_sock,
 
     return (return_value == -1 ? -1 : 0);
 }
-#endif
 
 /*
  * write_token()
@@ -340,11 +285,7 @@ assist_read_token(void *p_sock,
  * Returns 0 on success, -1 on error.
  */
 static int
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-write_token(SSL *ssl,
-#else
 write_token(const int sock,
-#endif
 	    const char *buffer,
 	    const size_t buffer_size)
 {
@@ -352,17 +293,12 @@ write_token(const int sock,
 
     assert(buffer != NULL);
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    return_value = write_all(ssl, buffer, buffer_size);
-#else
     return_value = write_all(sock, buffer, buffer_size);
-#endif
 
     return (return_value == -1 ? -1 : 0);
 }
 
 
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
 static int
 assist_write_token(void *sock,
 		   void *buffer,
@@ -373,7 +309,6 @@ assist_write_token(void *sock,
     
     return write_token(*((int *) sock), (char *) buffer, buffer_size);
 }
-#endif
 
 /*
  * Wrapper around setenv() function
@@ -463,15 +398,7 @@ GSI_SOCKET_new(int sock)
 
     memset(self, 0, sizeof(GSI_SOCKET));
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    ERR_load_prxyerr_strings(0);
-    SSLeay_add_ssl_algorithms();
-    self->ssl_context = NULL;
-    self->ssl = NULL;
-    self->cred_handle = NULL;
-#else
     self->gss_context = GSS_C_NO_CONTEXT;
-#endif
     self->sock = sock;
 
     return self;
@@ -486,17 +413,6 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 	return;
     }
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    if (self->cred_handle)
-    {
-	proxy_cred_desc_free((proxy_cred_desc *)self->cred_handle);
-    }
-
-    if (self->ssl)
-    {
-	SSL_free(self->ssl);
-    }
-#else
     if (self->gss_context != GSS_C_NO_CONTEXT)
     {
 	gss_buffer_desc output_token_desc  = GSS_C_EMPTY_BUFFER;
@@ -508,7 +424,6 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 	/* XXX Should deal with output_token_desc here */
 	gss_release_buffer(&self->minor_status, &output_token_desc);
     }
-#endif
 
     if (self->input_buffer != NULL)
     {
@@ -582,20 +497,6 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	bufferlen -= chars;
     }
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    {
-	unsigned long sslerror;
-
-	while ((sslerror = ERR_get_error()) != 0 && bufferlen > 120) {
-	    ERR_error_string(sslerror, buffer);
-	    chars = strlen(buffer);
-	    total_chars += chars;
-	    buffer = &buffer[chars];
-	    bufferlen -= chars;
-	}
-    }
-    
-#else
     if (self->major_status)
     {
 	chars = append_gss_status(buffer, bufferlen, 
@@ -642,7 +543,6 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	buffer = &buffer[chars];
 	bufferlen -= chars;
     }
-#endif
 
     if (total_chars == 0)
     {
@@ -670,10 +570,8 @@ GSI_SOCKET_clear_error(GSI_SOCKET *self)
 	self->error_string = NULL;
     }
     self->error_number = 0;
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
     self->major_status = 0;
     self->minor_status = 0;
-#endif
 }
 
 
@@ -757,134 +655,6 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
     return return_code;
 }
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-static SSL_CTX *
-create_minimal_context(char *certdir)
-{
-   SSL_CTX *ctx;
-
-   ctx = SSL_CTX_new(SSLv3_method()); /* same as gssapi_ssleay */
-   if (ctx != NULL) {
-      SSL_CTX_set_options(ctx, 0); /* no options */
-      SSL_CTX_sess_set_cache_size(ctx, 5); /* set small session-id cache */
-      SSL_CTX_load_verify_locations(ctx, NULL, certdir);
-   }
-   return ctx;
-}
-
-static void *
-my_ssl_init(int verify, int peer_has_proxy, int allow_anonymous)
-{
-    char			*certfile = NULL, *keyfile = NULL;
-    char			*certdir = NULL, *userproxy = NULL;
-    int 			(*pw_cb)() = NULL;
-    int				load_err = 0;
-    proxy_cred_desc		*cred_handle;
-
-    myproxy_get_filenames(NULL,1,NULL,&certdir,&userproxy,&certfile,&keyfile);
-    cred_handle = proxy_cred_desc_new();
-
-    /* load credentials if they're available */
-     pw_cb = proxy_password_callback_no_prompt;
-#ifdef GSI_NEW
-    if (certfile!=NULL)
-	load_err = proxy_load_user_cert(cred_handle,certfile,NULL,
-					NULL);
-    if (keyfile!=NULL && !load_err)
-	load_err = proxy_load_user_key(cred_handle,keyfile,pw_cb,
-				       NULL);
-    if (!load_err) {
-	if (!strcmp(certfile, keyfile)) {
-	    if (cred_handle->cert_chain == NULL) {
-		cred_handle->cert_chain = sk_new_null();
-	    }
-	    proxy_load_user_proxy(cred_handle->cert_chain,certfile,
-					     NULL);
-	}
-	proxy_init_cred(cred_handle,pw_cb,NULL);
-    }
-	
-#else
-    if ((certfile!=NULL) && (keyfile!=NULL)) {
-	load_err = proxy_load_user_cert(cred_handle,certfile,NULL);
-	if (!load_err)
-	    load_err = proxy_load_user_key(cred_handle,keyfile,pw_cb);
-    }
-    else
-	if (userproxy==NULL) {
-	    if (certfile!=NULL)
-		load_err = proxy_load_user_cert(cred_handle,certfile,
-						NULL);
-	    if (keyfile!=NULL && !load_err)
-		load_err = proxy_load_user_key(cred_handle,keyfile,
-					       pw_cb);
-	}
-    if (!load_err)
-	proxy_init_cred(cred_handle);
-#endif
-
-
-    /* if we failed to load a credential above */
-    if ((cred_handle->gs_ctx == NULL || 
-	 !SSL_CTX_check_private_key(cred_handle->gs_ctx) ||
-	 load_err)) {
-	if (cred_handle->ucert != NULL) {
-	    X509_free(cred_handle->ucert);
-	    cred_handle->ucert = NULL;
-	}
-	if (cred_handle->upkey != NULL) {
-	    EVP_PKEY_free(cred_handle->upkey);
-	    cred_handle->upkey = NULL;
-	}
-	if (cred_handle->gs_ctx != NULL) {
-	    SSL_CTX_free(cred_handle->gs_ctx);
-	    cred_handle->gs_ctx = NULL;
-	}
-
-	if (allow_anonymous) {
-	    cred_handle->gs_ctx = create_minimal_context(certdir);
-	} else {
-	    verror_put_string("Failed to load credential.");
-	    if (peer_has_proxy) {
-		verror_put_string("A valid service credential is required.");
-	    } else {
-		verror_put_string("Run grid-proxy-init or myproxy-get-delegation first.");
-	    }
-	}
-    }
-
-    if (cred_handle->gs_ctx != NULL) {
-	SSL_CTX_set_verify(cred_handle->gs_ctx,verify,
-			   (peer_has_proxy==0)?NULL:proxy_verify_callback);
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-	SSL_CTX_set_purpose(cred_handle->gs_ctx,X509_PURPOSE_ANY);
-	SSL_CTX_set_session_id_context(cred_handle->gs_ctx,
-				       "MYPROXY",
-				       strlen("MYPROXY"));
-#endif
-    }
-
-    if (certfile) free(certfile);
-    if (keyfile) free(keyfile);
-    if (certdir) free(certdir);
-    if (userproxy) free(userproxy);
-    return cred_handle;
-}
-
-static int
-my_memccmp(unsigned char *s1, unsigned char *s2, unsigned int n)
-{
-    int i;
-
-    for (i=0; i < n; i++, s1++, s2++) {
-	if (toupper(*s1) != toupper(*s2)) {
-	    return 1;
-	}
-    }
-    return 0;
-}
-#endif
-
 int
 GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 {
@@ -893,12 +663,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     struct sockaddr_in		server_addr;
     int				server_addr_len = sizeof(server_addr);
     struct hostent		*server_info;
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    X509			*peer = NULL;
-#else
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
     OM_uint32			req_flags = 0, ret_flags = 0;
-#endif
     int				return_value = GSI_SOCKET_ERROR;
     
     if (self == NULL)
@@ -906,51 +672,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	return GSI_SOCKET_ERROR;
     }
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    self->cred_handle = my_ssl_init(SSL_VERIFY_PEER, 0, self->allow_anonymous);
-
-    if (self->cred_handle == NULL || self->cred_handle->gs_ctx == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    self->ssl_context = ((proxy_cred_desc *)self->cred_handle)->gs_ctx;
-    self->ssl = SSL_new(self->ssl_context);
-    if (self->ssl == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    /* Set method same as gssapi_ssleay. */
-    SSL_set_ssl_method(self->ssl,SSLv3_method());
-
-    SSL_set_fd(self->ssl, self->sock);
-    if (SSL_connect(self->ssl) <= 0)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-#if 0
-    /* TODO: Display this message when running in debug mode. */
-    {
-	char *cipher;
-	cipher = SSL_get_cipher(self->ssl);
-	if (cipher) {
-	    fprintf(stderr, "SSL encrypting with cipher %s.\n", cipher);
-	} else {
-	    fprintf(stderr, "Warning: SSL_get_cipher() failed!\n");
-	}
-    }
-#endif
-
-    /*
-     * For compatibility with Globus GSSAPI: send "0" indicating we don't
-     * want to perform delegation.
-     */
-    if (SSL_write(self->ssl, "0", 1) != 1) {
-	return GSI_SOCKET_ERROR;
-    }
-#else
     if (self->gss_context != GSS_C_NO_CONTEXT)
     {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
@@ -968,7 +689,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	    goto error;
 	}
     }
-#endif
 
     if (self->expected_peer_name == NULL)
     {
@@ -1005,11 +725,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	    goto error;
 	}
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-	sprintf(server_name, "%s/%s", DEFAULT_SERVICE_NAME,
-#else
 	sprintf(server_name, "%s@%s", DEFAULT_SERVICE_NAME,
-#endif
 		server_info->h_name);
     }
     else 
@@ -1026,81 +742,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	}
     }
 	
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-	/* Written with reference to compare_name.c in Globus GSSAPI
-	   library. */
-    peer = SSL_get_peer_certificate(self->ssl);
-    if (peer != NULL) {
-	X509_NAME * subject = NULL;
-	char cn[1024], *ce1, *ce2;
-	int le1, le2, name_equal = 0;;
-
-	subject = X509_get_subject_name(peer);
-	if (X509_NAME_get_text_by_NID(subject, NID_commonName, cn, sizeof(cn))<= 0) {
-	   self->error_string = strdup("Cannot find CN field in server's certificate");
-	   return GSI_SOCKET_ERROR;
-	}
-
-	ce1 = cn;
-	le1 = strlen(ce1);
-	if (le1 > 5 && !my_memccmp(ce1, (unsigned char *)"host/", 5)) {
-	    ce1 += 5;
-	    le1 -= 5;
-	}
-	ce2 = server_name;
-	le2 = strlen(ce2);
-	if (le2 > 5 && !my_memccmp(ce2, (unsigned char *)"host/", 5)) {
-	    ce2 += 5;
-	    le2 -= 5;
-	}
-	if (le1 == le2 && !my_memccmp(ce1,ce2,le1)) {
-	    name_equal = 1;
-	} else {
-	    while (le1 > 0 && le2 > 0 && 
-		   toupper(*ce1) == toupper(*ce2)) {
-		le1--;
-		le2--;
-		ce1++;
-		ce2++;
-	    }
-	    if (le1 >0 && le2 > 0) {
-		if ( *ce1 == '.' && *ce2 == '-' ) {
-		    while( le2 > 0  && *ce2 != '.') {
-			le2--;
-			ce2++;
-		    }
-		    if (le1 == le2 && !my_memccmp(ce1,ce2,le1)) {
-			name_equal = 1;
-		    }
-		} else 
-		    if (*ce2 == '.' && *ce1 == '-') {
-			while(le1 > 0 && *ce1 != '.') { 
-			    le1--;
-			    ce1++; 
-			}
-			if (le1 == le2 && !my_memccmp(ce1,ce2,le1)) {
-			    name_equal = 1;
-			}
-		    }
-	    }
-	}
-	
-	if (!name_equal) {
-	    self->error_string =
-		my_snprintf("Server authentication failed.\n"
-			    "Expected target subject name=\"%s\"\n"
-			    "Target returned subject name=\"%s\"\n"
-			    "If target name is acceptable, set MYPROXY_SERVER_DN environment variable\n"
-			    "to \"%s\" and try again.",
-			    server_name, cn, cn);
-	    return GSI_SOCKET_ERROR;
-	}
-
-    } else {
-	self->error_string = strdup("Server authentication failed");
-	return GSI_SOCKET_ERROR;
-    }
-#else
     req_flags |= GSS_C_REPLAY_FLAG;
     req_flags |= GSS_C_MUTUAL_FLAG;
     if (self->encryption) {
@@ -1134,7 +775,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	strdup("GSI_SOCKET requested service not supported");
       goto error;
     }
-#endif
 
     /* Success */
     self->peer_name = server_name;
@@ -1148,142 +788,17 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	free(server_name);
     }
     
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
     if (creds != GSS_C_NO_CREDENTIAL)
     {
 	OM_uint32 minor_status;
 	
 	gss_release_cred(&minor_status, &creds);
     }
-#endif
     
     return return_value;
 }
 
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-int
-GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
-{
-    int				return_value = GSI_SOCKET_ERROR, tmp;
-    char			*certdir = NULL, deleg_flag;
-#ifdef GSI_NEW
-    proxy_verify_ctx_desc	verify_ctx_area;
-#endif
-    proxy_verify_desc		verify_area;
-    X509			*peer = NULL;
-
-
-    if (self == NULL)
-    {	
-	return GSI_SOCKET_ERROR;
-    }
-
-    self->cred_handle = my_ssl_init(SSL_VERIFY_PEER, 1, 0);
-
-    if (self->cred_handle == NULL || self->cred_handle->gs_ctx == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    self->ssl_context = ((proxy_cred_desc *)self->cred_handle)->gs_ctx;
-    self->ssl = SSL_new(self->ssl_context);
-    if (self->ssl == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    /* Set method & options same as gssapi_ssleay */
-    SSL_set_ssl_method(self->ssl,SSLv23_method());
-    SSL_set_options(self->ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
-    
-    myproxy_get_filenames(NULL,1,NULL,&certdir,NULL,NULL,NULL);
-#ifdef GSI_NEW
-    proxy_verify_ctx_init(&verify_ctx_area);
-    proxy_verify_init(&verify_area,&verify_ctx_area);
-    SSL_set_ex_data(self->ssl, PVD_SSL_EX_DATA_IDX, (char *)&verify_area);
-    if (certdir!=NULL) verify_ctx_area.certdir=strdup(certdir);
-#else
-    proxy_init_verify(&verify_area);
-    SSL_set_app_data(self->ssl,(char *)&verify_area);
-    if (certdir!=NULL) verify_area.certdir=strdup(certdir);
-#endif
-
-    SSL_set_accept_state(self->ssl);
-    SSL_set_fd(self->ssl, self->sock);
-    tmp = SSL_accept(self->ssl);
-    if (tmp < 0) {
-	int err;
-	unsigned long errcode;
-	err = SSL_get_error(self->ssl, tmp);
-	switch (err) {
-	case SSL_ERROR_NONE:
-	    self->error_string = strdup("SSL_accept() failed: no error");
-	    break;
-	case SSL_ERROR_ZERO_RETURN:
-	    self->error_string =
-		strdup("SSL_accept() failed: connection closed");
-	    break;
-	case SSL_ERROR_WANT_READ:
-	case SSL_ERROR_WANT_WRITE:
-	case SSL_ERROR_WANT_CONNECT:
-/*	case SSL_ERROR_WANT_ACCEPT: */
-	    self->error_string =
-		strdup("SSL_accept() failed: data not ready");
-	    break;
-	case SSL_ERROR_WANT_X509_LOOKUP:
-	    self->error_string =
-		strdup("SSL_accept() failed: x509 lookup error");
-	    break;
-	case SSL_ERROR_SYSCALL:
-	    self->error_string =
-		strdup("SSL_accept() failed: x509 lookup error");
-	    break;
-	case SSL_ERROR_SSL:
-	    self->error_string =
-		strdup("SSL_accept() failed: protocol error");
-	    break;
-	default:
-	    self->error_string = strdup("SSL_accept() failed");
-	    break;
-	}
-	return GSI_SOCKET_ERROR;
-    }
-
-    /*
-     * For compatibility with Globus GSSAPI: receive the delegation flag
-     * message.  From myproxy clients, the flag should be "0", indicating
-     * no delegation.
-     */
-    if (SSL_read(self->ssl, &deleg_flag, 1) != 1) {
-	self->error_string = strdup("SSL_read() failed.  Client disconnected during SSL negotiation?");
-	return GSI_SOCKET_ERROR;
-    }
-
-    peer = SSL_get_peer_certificate(self->ssl);
-    if (peer != NULL) {
-	char buf[1024];
-	X509_NAME *subject;
-	subject = X509_NAME_dup(X509_get_subject_name(peer));
-	proxy_get_base_name(subject); /* drop /CN-proxy entries */
-	X509_NAME_oneline(subject, buf, sizeof(buf));
-	X509_NAME_free(subject);
-	self->peer_name = strdup(buf);
-    } else {
-	self->peer_name = strdup("anonymous");
-    }
-
-#if GSI_NEW
-    proxy_verify_release(&verify_area);
-    proxy_verify_ctx_release(&verify_ctx_area);
-#else
-    proxy_release_verify(&verify_area);
-#endif
-
-    if (certdir) free(certdir);
-    return GSI_SOCKET_SUCCESS;
-}
-#else
 int
 GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 {
@@ -1346,7 +861,6 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     
     return return_value;
  }
-#endif
 
 int
 GSI_SOCKET_get_client_name(GSI_SOCKET *self,
@@ -1405,14 +919,6 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	return 0;
     }
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    if (self->ssl == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-
-    return write_token(self->ssl, buffer, buffer_len);
-#else
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
 	/* No context established, just send in the clear */
@@ -1464,7 +970,6 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	
 	gss_release_buffer(&self->minor_status, &wrapped_buffer);
     }
-#endif
   error:
     return return_value;
 }
@@ -1481,13 +986,6 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 	return GSI_SOCKET_ERROR;
     }
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    if (self->ssl == NULL)
-    {
-	return GSI_SOCKET_ERROR;
-    }
-#endif
-
     if (buffer == NULL)
     {
 	self->error_number = EINVAL;
@@ -1498,11 +996,7 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
     {
 	/* No data in input buffer, so read it */
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-	return_value = read_token(self->ssl,
-#else
 	return_value = read_token(self->sock,
-#endif
 				  &(self->input_buffer),
 				  (size_t *)&(self->input_buffer_length));
 	
@@ -1512,7 +1006,6 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 	    goto error;
 	}
 
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
 	if (self->gss_context != GSS_C_NO_CONTEXT)
 	{
 	    /* Need to unwrap read data */
@@ -1543,7 +1036,6 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 	    self->input_buffer = unwrapped_buffer.value;
 	    self->input_buffer_length = unwrapped_buffer.length;
 	}
-#endif
 
 	self->input_buffer_index = self->input_buffer;
     }
@@ -1587,11 +1079,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     int			buffer_len;
     int			return_status = GSI_SOCKET_ERROR;
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    bytes_read = read_token(self->ssl,
-#else
     bytes_read = read_token(self->sock,
-#endif
 			    (char **) &buffer,
 			    &buffer_len);
     
@@ -1601,7 +1089,6 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 	goto error;
     }
     
-#if !defined(SUPPORT_SSL_ANONYMOUS_AUTH)
     if (self->gss_context != GSS_C_NO_CONTEXT)
     {
 	/* Need to unwrap read data */
@@ -1630,7 +1117,6 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 	buffer = unwrapped_buffer.value;
 	buffer_len = unwrapped_buffer.length;
     }
-#endif
 
     /* Success */
     *pbuffer = buffer;
@@ -1668,11 +1154,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	goto error;
     }
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    if (self->ssl_context == NULL)
-#else
     if (self->gss_context == GSS_C_NO_CONTEXT)
-#endif
     {
 	self->error_string = strdup("GSI_SOCKET not authenticated");
 	goto error;
@@ -1808,11 +1290,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	goto error;
     }
     
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-    if (self->ssl_context == NULL)
-#else
     if (self->gss_context == GSS_C_NO_CONTEXT)
-#endif
     {
 	self->error_string = strdup("GSI_SOCKET not authenticated");
 	return GSI_SOCKET_ERROR;

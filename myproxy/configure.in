@@ -15,17 +15,6 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 dnl These switches are provided for users who manually build myproxy.
 dnl gpt-build will use the default values for these switches.
 
-AC_ARG_ENABLE(anonymous-auth,
-	[  --disable-anonymous-auth  Disable support for SSL anonymous authentication],
-	if test "$enableval" = yes ; then
-	   AC_MSG_RESULT([SSL anonymous authentication support enabled])
-	   AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
-	else
-	   AC_MSG_RESULT([SSL anonymous authentication support disabled])
-	fi,
-#	AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
-	AC_MSG_RESULT([SSL anonymous authentication support disabled]))
-
 AC_ARG_ENABLE(conditional-encryption,
 	[  --enable-conditional-encryption  Only encrypt when sending passphrase],
 	if test "$enableval" = yes ; then
