@@ -423,6 +423,9 @@ main(int argc, char **argv)
 
 	    if (num_streams > 1)
 	    {
+		globus_ftp_client_attr_set_mode(
+		    source_ftp_attr,
+		    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
 		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 		parallelism.fixed.size = num_streams;
 		globus_ftp_client_attr_set_parallelism(source_ftp_attr,
@@ -517,6 +520,9 @@ main(int argc, char **argv)
 
 	    if (num_streams > 1)
 	    {
+		globus_ftp_client_attr_set_mode(
+		    dest_ftp_attr,
+		    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
 		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 		parallelism.fixed.size = num_streams;
 		globus_ftp_client_attr_set_parallelism(dest_ftp_attr,
