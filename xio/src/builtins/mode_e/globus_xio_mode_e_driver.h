@@ -139,6 +139,7 @@ typedef enum
      *      Specifies the stack to use for the connection(s).
      *      Note: this stack will not be destroyed.
      */
+    /* globus_xio_stack_t 			stack */
     GLOBUS_XIO_MODE_E_SET_STACK,
 
     /** GlobusVarArgEnum(attr)
@@ -149,6 +150,7 @@ typedef enum
      *      The stack will be stored here. If none is set, GLOBUS_NULL will be 
      *      set.
      */
+    /* globus_xio_stack_t *			stack_out */
     GLOBUS_XIO_MODE_E_GET_STACK,
 
     /** GlobusVarArgEnum(attr)
@@ -159,6 +161,7 @@ typedef enum
      * @param num_streams
      *      Specifies the number of streams to use.
      */
+    /* int					max_connection_count */
     GLOBUS_XIO_MODE_E_SET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
@@ -168,6 +171,7 @@ typedef enum
      * @param num_streams_out
      *      The stream count will be stored here.
      */
+    /* int *					max_connection_count_out */
     GLOBUS_XIO_MODE_E_GET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
@@ -181,7 +185,9 @@ typedef enum
      * @param attr_cntl_cb
      *      Specifies the function pointer.
      */
+    /* globus_xio_mode_e_attr_cntl_callback_t 	attr_cntl_cb */
     GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
+
     /** GlobusVarArgEnum(attr)
      * Set flag to indicate whether the data read from user would always be 
      * preceded by an offset read or not. The user can do a read with 
@@ -193,6 +199,7 @@ typedef enum
      *      GLOBUS_TRUE to enable offset reads, GLOBUS_FALSE to disable 
      * offset reads (default).
      */
+    /* globus_bool_t				offset_reads */
     GLOBUS_XIO_MODE_E_SET_OFFSET_READS,
 
     /** GlobusVarArgEnum(attr)
@@ -202,6 +209,7 @@ typedef enum
      * @param offset_reads_out
      *      The OFFSET_READS flag will be stored here.
      */
+    /* globus_bool_t *				offset_reads_out */
     GLOBUS_XIO_MODE_E_GET_OFFSET_READS,
 
     /** GlobusVarArgEnum(attr)
@@ -214,6 +222,7 @@ typedef enum
      * @param eod_count
      *      Specifies the number of EODs that must be received by the server.
      */
+    /* globus_bool_t				manual_eodc */
     GLOBUS_XIO_MODE_E_SET_MANUAL_EODC,
 
     /** GlobusVarArgEnum(attr)
@@ -223,6 +232,7 @@ typedef enum
      * @param eof_out
      *      The MANUAL_EODC flag will be stored here.
      */
+    /* globus_bool_t *				manual_eodc_out */
     GLOBUS_XIO_MODE_E_GET_MANUAL_EODC,
 
     /** GlobusVarArgEnum(dd)
@@ -233,6 +243,7 @@ typedef enum
      * @param send_eod
      *	    GLOBUS_TRUE to send EOD, GLOBUS_FALSE to not send EOD (default).
      */
+    /* globus_bool_t				send_eod */
     GLOBUS_XIO_MODE_E_SEND_EOD,
 
     /** GlobusVarArgEnum(handle)
@@ -243,6 +254,7 @@ typedef enum
      * @param eod_count
      *      specifies the eod count 
      */
+    /* int					eod_count */
     GLOBUS_XIO_MODE_E_SET_EODC,
 
     /** GlobusVarArgEnum(dd)
@@ -253,6 +265,7 @@ typedef enum
      * @param offset_out
      *      offset will be stored here
      */
+    /* globus_off_t *				offset_out */
     GLOBUS_XIO_MODE_E_DD_GET_OFFSET
 
 } globus_xio_mode_e_cmd_t;	

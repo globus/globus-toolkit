@@ -3382,8 +3382,8 @@ globus_l_xio_mode_e_attr_cntl(
         }
         case GLOBUS_XIO_MODE_E_GET_STACK:
         {
-            globus_xio_stack_t * stack = va_arg(ap, globus_xio_stack_t *);
-            *stack = attr->stack;
+            globus_xio_stack_t * stack_out = va_arg(ap, globus_xio_stack_t *);
+            *stack_out = attr->stack;
             break;
         }
         case GLOBUS_XIO_MODE_E_SET_NUM_STREAMS:
@@ -3391,8 +3391,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;
         case GLOBUS_XIO_MODE_E_GET_NUM_STREAMS:
         {
-            int * max_connection_count = va_arg(ap, int*);
-            *max_connection_count = attr->max_connection_count;
+            int * max_connection_count_out = va_arg(ap, int*);
+            *max_connection_count_out = attr->max_connection_count;
             break;
         }
         case GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS:
@@ -3407,8 +3407,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;
         case GLOBUS_XIO_MODE_E_GET_OFFSET_READS:
         {
-            globus_bool_t * offset_reads = va_arg(ap, globus_bool_t*);
-            *offset_reads = attr->offset_reads;
+            globus_bool_t * offset_reads_out = va_arg(ap, globus_bool_t*);
+            *offset_reads_out = attr->offset_reads;
             break;
         }
         case GLOBUS_XIO_MODE_E_SET_MANUAL_EODC:
@@ -3416,8 +3416,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;      
         case GLOBUS_XIO_MODE_E_GET_MANUAL_EODC:
         {
-            globus_bool_t * manual_eodc = va_arg(ap, globus_bool_t*);
-            *manual_eodc = attr->manual_eodc;
+            globus_bool_t * manual_eodc_out = va_arg(ap, globus_bool_t*);
+            *manual_eodc_out = attr->manual_eodc;
             break;
         }
         case GLOBUS_XIO_MODE_E_SEND_EOD:
@@ -3428,9 +3428,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;
         case GLOBUS_XIO_MODE_E_DD_GET_OFFSET:
         {
-            globus_off_t * offset;
-            offset = va_arg(ap, globus_off_t *);
-            *offset = attr->offset;
+            globus_off_t * offset_out = va_arg(ap, globus_off_t *);
+            *offset_out = attr->offset;
         }
         default:
            result = GlobusXIOErrorInvalidCommand(cmd);

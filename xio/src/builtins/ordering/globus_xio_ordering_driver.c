@@ -1398,9 +1398,8 @@ globus_l_xio_ordering_attr_cntl(
             break;
         case GLOBUS_XIO_ORDERING_GET_MAX_READ_COUNT:
 	{
-	    int * out_max_read_count;
-	    out_max_read_count = va_arg(ap, int *);
-	    *out_max_read_count = attr->max_read_count;
+	    int * max_read_count_out = va_arg(ap, int *);
+	    *max_read_count_out = attr->max_read_count;
             break;
 	}
         case GLOBUS_XIO_ORDERING_SET_BUFFERING:
@@ -1408,9 +1407,8 @@ globus_l_xio_ordering_attr_cntl(
 	    break;
         case GLOBUS_XIO_ORDERING_GET_BUFFERING:
 	{
-	    globus_bool_t * out_buffering;
-	    out_buffering = va_arg(ap, globus_bool_t *);
-	    *out_buffering = attr->buffering;
+	    globus_bool_t * buffering_out = va_arg(ap, globus_bool_t *);
+	    *buffering_out = attr->buffering;
 	    break;
 	}
         case GLOBUS_XIO_ORDERING_SET_BUF_SIZE:
@@ -1418,9 +1416,8 @@ globus_l_xio_ordering_attr_cntl(
 	    break;
         case GLOBUS_XIO_ORDERING_GET_BUF_SIZE:
 	{
-	    globus_size_t * out_buf_size;
-	    out_buf_size = va_arg(ap, globus_size_t *);
-	    *out_buf_size = attr->buf_size;
+	    globus_size_t * buf_size_out = va_arg(ap, globus_size_t *);
+	    *buf_size_out = attr->buf_size;
 	    break;
 	}
         case GLOBUS_XIO_ORDERING_SET_MAX_BUF_COUNT:
