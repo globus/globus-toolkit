@@ -102,17 +102,17 @@ AC_ARG_ENABLE(wsgram, AC_HELP_STRING([--disable-wsgram],\
 AC_SUBST(wsgram, $wsgram)
 wsgramcondor=" "
 AC_ARG_ENABLE(wsgram-condor, AC_HELP_STRING([--enable-wsgram-condor],\
-   [Build GRAM Condor schduler interface.  Default is disabled.]),
+   [Build GRAM Condor scheduler interface.  Default is disabled.]),
    [if test $enableval = "yes"; then wsgramcondor="gt4-gram-condor"; fi], [])
 AC_SUBST(wsgramcondor, $wsgramcondor)
 wsgramlsf=" "
 AC_ARG_ENABLE(wsgram-lsf, AC_HELP_STRING([--enable-wsgram-lsf],\
-   [Build GRAM LSF schduler interface.  Default is disabled.]),
+   [Build GRAM LSF scheduler interface.  Default is disabled.]),
    [if test $enableval = "yes"; then wsgramlsf="gt4-gram-lsf"; fi], [])
 AC_SUBST(wsgramlsf, $wsgramlsf)
 wsgrampbs=" "
 AC_ARG_ENABLE(wsgram-pbs, AC_HELP_STRING([--enable-wsgram-pbs],\
-   [Build GRAM PBS schduler interface.  Default is disabled.]),
+   [Build GRAM PBS scheduler interface.  Default is disabled.]),
    [if test $enableval = "yes"; then wsgrampbs="gt4-gram-pbs"; fi], [])
 AC_SUBST(wsgrampbs, $wsgrampbs)
 
