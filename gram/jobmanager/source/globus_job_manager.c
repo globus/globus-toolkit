@@ -81,8 +81,13 @@ int  gram_print_debug = 0;
 ******************************************************************************/
 static nexus_handler_t handlers[] =
 { 
+#ifdef BUILD_LITE
     {NEXUS_HANDLER_TYPE_NON_THREADED, graml_cancel_handler},
     {NEXUS_HANDLER_TYPE_NON_THREADED, graml_start_time_handler},
+#else
+    {NEXUS_HANDLER_TYPE_THREADED, graml_cancel_handler},
+    {NEXUS_HANDLER_TYPE_THREADED, graml_start_time_handler},
+#endif  /* BUILD_LITE */
 };
 
 static char     tmpbuf[1024];
