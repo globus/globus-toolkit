@@ -89,15 +89,6 @@ void
     globus_callback_space_register_abstime_oneshot((a),(b),(c),(d),(e),     \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
-#define globus_i_callback_register_cancel(x,y,z)                            \
-    globus_callback_register_cancel(*(x),(y),(z))
-
-#define globus_callback_unregister(handle)                                  \
-    globus_callback_register_cancel(handle, GLOBUS_NULL, GLOBUS_NULL)
-
-#define globus_i_callback_blocking_cancel(handle)                           \
-    globus_callback_blocking_cancel(*(handle))
-
 globus_result_t
 globus_callback_space_register_oneshot(
     const globus_reltime_t *            delay_time,
@@ -187,7 +178,7 @@ globus_callback_get_space(
     
 globus_bool_t
 globus_callback_get_timeout(
-    globus_reltime_t *                  time_left)
+    globus_reltime_t *                  time_left);
 
 globus_bool_t
 globus_callback_get_timestop(
