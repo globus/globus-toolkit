@@ -25,7 +25,7 @@ static void
 globus_l_openssl_locking_cb(
     int                                 mode,
     int                                 type,
-    char *                              file,
+    const char *                        file,
     int                                 line);
 
 static globus_mutex_t *                 mutex_pool;
@@ -102,7 +102,7 @@ static void
 globus_l_openssl_locking_cb(
     int                                 mode,
     int                                 type,
-    char *                              file,
+    const char *                        file,
     int                                 line)
 {
     if (mode & CRYPTO_LOCK)

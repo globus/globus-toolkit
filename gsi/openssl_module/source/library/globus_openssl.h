@@ -1,6 +1,8 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_OPENSSL_H
 #define GLOBUS_INCLUDE_GLOBUS_OPENSSL_H
 
+#include "globus_common.h"
+
 /**
  * @anchor globus_openssl
  * @mainpage Globus OpenSSL activation/deactivation
@@ -75,6 +77,11 @@ globus_module_descriptor_t		globus_i_openssl_module;
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_OPENSSL_H */
+
+
+
+
+
 
 
 

@@ -9,7 +9,7 @@ flavorinclude_HEADERS = \
 
 lib_LTLIBRARIES = libglobus_openssl_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = @GPT_INCLUDES@
+INCLUDES = -I.. @GPT_INCLUDES@ 
 
 libglobus_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
