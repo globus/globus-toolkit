@@ -165,7 +165,8 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 146 */     "the provided RSL 'scratch_dir' parameter is invalid",
 /* 147 */     "the provided scheduler-specific RSL parameter is invalid",
 /* 148 */     "a required RSL attribute was not defined in the RSL spec",
-/* 149 */     "the gass_cache attribute points to an invalid cache directory"
+/* 149 */     "the gass_cache attribute points to an invalid cache directory",
+/* 150 */     "the provided RSL 'save_state' parameter has an invalid value",
 };
 
 static char *
