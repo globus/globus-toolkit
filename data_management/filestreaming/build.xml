@@ -114,20 +114,24 @@ Southern California. All Rights Reserved.
    <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
     <property name="build.schema.dir" value="${streaming.schema.dir}"/>
     <property name="wsdl.root" value="file_stream_factory_port_type"/>
+    <reference refid="classpath"/>
    </ant>
    <ant antfile="${ogsa.root}/${build.services}" target="generateBinding">
     <property name="binding.root" value="file_stream_factory"/>
     <property name="build.schema.dir" value="${streaming.schema.dir}"/>
     <property name="porttype.wsdl" value="file_stream_factory_port_type.wsdl"/>
+    <reference refid="classpath"/>
    </ant>
    <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
     <property name="build.schema.dir" value="${streaming.schema.dir}"/>
     <property name="wsdl.root" value="file_stream_port_type"/>
+    <reference refid="classpath"/>
    </ant>
    <ant antfile="${ogsa.root}/${build.services}" target="generateBinding">
     <property name="binding.root" value="file_stream"/>
     <property name="build.schema.dir" value="${streaming.schema.dir}"/>
     <property name="porttype.wsdl" value="file_stream_port_type.wsdl"/>
+    <reference refid="classpath"/>
    </ant>
   </target>
 

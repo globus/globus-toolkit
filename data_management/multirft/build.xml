@@ -45,17 +45,6 @@ Southern California. All Rights Reserved.
 
   <!-- Properties for bindings genertion -->
   <property name="multirft.schema.dir" value="base/multirft"/>
-  
-  <!-- Prepare build environment -->
-  <target name="setenv">
-    <mkdir dir="${build.dest}"/>
-
-    <uptodate property="javadoc.notrequired"
-              targetfile="${build.javadocs}/index.html">
-      <srcfiles dir="${src.dir}" includes="**/*.java" />
-    </uptodate>
-    <available property="stubs.present" file="${stubs.dir}" type="dir"/>
-     </target>
 
   <!-- Set claspath -->
   <path id="classpath">
@@ -73,6 +62,17 @@ Southern California. All Rights Reserved.
 
     <pathelement path="${java.class.path}"/>
   </path>
+  
+  <!-- Prepare build environment -->
+  <target name="setenv">
+    <mkdir dir="${build.dest}"/>
+
+    <uptodate property="javadoc.notrequired"
+              targetfile="${build.javadocs}/index.html">
+      <srcfiles dir="${src.dir}" includes="**/*.java" />
+    </uptodate>
+    <available property="stubs.present" file="${stubs.dir}" type="dir"/>
+     </target>
 
   <target name="copySchemaDir">
    <copy toDir="${schema.dir}">
@@ -89,12 +89,14 @@ Southern California. All Rights Reserved.
    <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
     <property name="build.schema.dir" value="${multirft.schema.dir}"/>
     <property name="wsdl.root" value="multirft_port_type"/> 
+    <reference refid="classpath"/>
    </ant>
    <ant antfile="${ogsa.root}/${build.services}" target="generateBinding">
     <property name="binding.root" value="multirft"/>
 
     <property name="build.schema.dir" value="${multirft.schema.dir}"/>
     <property name="porttype.wsdl" value="multirft_port_type.wsdl"/>
+    <reference refid="classpath"/>
    </ant>
      </target>
 
@@ -111,6 +113,7 @@ Southern California. All Rights Reserved.
     <property name="schema.file" value="multirft_service.wsdl"/>
     <!-- Command run from within schema dir -->
     <property name="stubs.dest" value="../src"/>
+    <reference refid="classpath"/>
    </ant>
    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
    
@@ -119,6 +122,7 @@ Southern California. All Rights Reserved.
     <property name="schema.file" value="multirft_types.wsdl"/>
     <!-- Command run from within schema dir -->
     <property name="stubs.dest" value="../src"/>
+    <reference refid="classpath"/>
    </ant>
 
   </target>
