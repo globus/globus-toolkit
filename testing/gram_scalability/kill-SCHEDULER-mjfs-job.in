@@ -24,6 +24,6 @@ if [ -z $job_id ]; then
     exit
 fi
 
-factory="http://$host:$port/ogsa/services/base/gram/CondorIntelLinuxManagedJobFactoryService"
+factory="http://$host:$port/ogsa/services/base/gram/SCHEDULERManagedJobFactoryService"
 
 ./kill-job.sh -u $factory/$job_id $verbose

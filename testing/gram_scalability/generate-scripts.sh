@@ -10,10 +10,18 @@ for scheduler in $schedulers; do
         rm $filename
     fi
     echo "generating $filename"
-    cat $template | sed "s/$keyword/$scheduler/" > $filename
+    #cat $template | sed "s/$keyword/$scheduler/" > $filename
 
     template="stress-SCHEDULER-mmjfs-test.in"
     filename="stress-$scheduler-mmjfs-test.sh"
+    if [ -r $filename ]; then
+        rm $filename
+    fi
+    echo "generating $filename"
+    #cat $template | sed "s/$keyword/$scheduler/" > $filename
+
+    template="kill-SCHEDULER-mjfs-job.in"
+    filename="kill-$scheduler-mjfs-job.sh"
     if [ -r $filename ]; then
         rm $filename
     fi
