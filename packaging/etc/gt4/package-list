@@ -5,6 +5,7 @@ globus_wsrf_rft_client_java_source          ws-transfer/reliable/client/java/sou
 globus_wsrf_gram_service_java_source        ws-gram/service/java/source 
 
 globus_wsrf_gram_service_java_fork_setup    ws-gram/service/java/fork-setup gpt
+globus_wsrf_gram_service_java_multi_setup   ws-gram/service/java/multi-setup gpt
 globus_wsrf_gram_utils_java_source          ws-gram/utils/java/source                       
 
 globus_wsrf_gram_common_java_source         ws-gram/common/java/source                      
