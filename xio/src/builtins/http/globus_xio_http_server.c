@@ -284,7 +284,7 @@ globus_i_xio_http_server_write_response(
     globus_result_t                     result;
     globus_fifo_t                       iovecs;
     const char *                        str;
-    char                                code_str[4];
+    char                                code_str[5];
     globus_xio_iovec_t *                iov;
     int                                 rc;
     int                                 i;
