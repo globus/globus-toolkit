@@ -91,7 +91,7 @@ int myproxy_init_client(myproxy_socket_attrs_t *attrs);
 /*
  * myproxy_authenticate_init()
  * 
- * Uses gssapi to perform client-side authentication
+ * Perform client-side authentication
  *
  * returns -1 if unable to authenticate, 0 if authentication successful
  */ 
@@ -100,7 +100,7 @@ int myproxy_authenticate_init(myproxy_socket_attrs_t *attr, const char *proxyfil
 /*
  * myproxy_authenticate_accept()
  * 
- * Uses gssapi to perform server-side authentication and retrieve the client's DN
+ * Perform server-side authentication and retrieve the client's DN
  *
  * returns -1 if unable to authenticate, 0 if authentication successful
  */ 
@@ -193,11 +193,11 @@ int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile
 int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int datalen);
 
 /*
- * myproxy_destroy()
+ * myproxy_free()
  * 
  * Frees up memory used for creating request, response and socket objects 
  */
-void myproxy_destroy(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myproxy_response_t *response);
+void myproxy_free(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myproxy_response_t *response);
 
 
 #endif /* __MYPROXY_H */
