@@ -284,23 +284,23 @@ globus_l_gsc_send_restart(
     int                                 size;
     globus_off_t                        offset;
     globus_off_t                        length;
-    globus_size_t                       len;
 
     size = globus_range_list_size(range_list);
-    msg = globus_common_create_string("111 Range Marker ");
+    msg = globus_common_create_string("111 Range Marker");
     for(ctr = 0; ctr < size; ctr++)
     {
         globus_range_list_at(range_list, ctr, &offset, &length);
 
-        tmp_msg = globus_common_create_string("%s%"
-            GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT", ",
-             msg, offset, offset + length);
+        tmp_msg = globus_common_create_string("%s%c%"
+            GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT,
+             msg, ctr ? ',' : ' ', offset, offset + length);
         globus_free(msg);
         msg = tmp_msg;
     }
-    len = strlen(msg);
-    msg[len - 2] = '\r';
-    msg[len - 1] = '\n';
+    tmp_msg = globus_common_create_string("%s%s", msg, "\r\n");
+    globus_free(msg);
+    msg = tmp_msg;
+    
     globus_i_gsc_intermediate_reply(op, msg);
     globus_free(msg);
 }
