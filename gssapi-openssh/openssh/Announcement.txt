@@ -1,12 +1,12 @@
-The GSI-OpenSSH development team announces the release of version 3.1 of
-the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.1 is based
+The GSI-OpenSSH development team announces the release of version 3.2 of
+the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.2 is based
 on OpenSSH 3.8p1 and NCSA's latest GSI patch for that version of
 OpenSSH.  A summary of the major changes found in this version is given
 at the end of this document.
 
-GSI-OpenSSH 3.1 is available for download from
+GSI-OpenSSH 3.2 is available for download from
 
-  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.1/>
+  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.2/>
 
 For installation instructions, please see
 
@@ -18,20 +18,10 @@ team.  This bugzilla system is located at:
 
    <https://bugzilla.ncsa.uiuc.edu/index.cgi>
 
-GSI-OpenSSH 3.1 Major changes
-
-   New features
-
-      * Moved to OpenSSH 3.8p1 codebase, including support for new
-        'gssapi-with-mic' authentication method.  Compatibility with
-        the older 'gssapi' authentication method is retained.
-
-      * Updated GPT packaging for Globus Toolkit 3.2 beta
-        compatibility.
+GSI-OpenSSH 3.2 Major changes
 
    Bugs fixed
 
-      * Fixed bug in GSI code for handling case when PAM support is
-        built in but 'UsePam yes' is not set in the sshd_config file.
+      * Provided workaround for AIX 5.2 platform build error.
 
-      * Fixed shell syntax error in configure script.
+      * Fixed problem in proper creation of man pages.
