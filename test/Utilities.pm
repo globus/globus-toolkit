@@ -11,6 +11,7 @@ use Carp;
 use File::Find;
 use Cwd;
 use Config;
+use FileHandle;
 
 sub new {
     my $class = shift;
@@ -184,7 +185,7 @@ sub command_blocking()
 {
     my $self = shift;
     my $command = shift;
-    my $output;
+    my $output = new FileHandle;
     my $cmd_pid;
 
     $self->debug("command -> $command");
@@ -199,7 +200,7 @@ sub command_blocking()
     # run actual command
     # ------------------
 
-    $cmd_pid = open($output,"$command 2>&1 |");
+    $cmd_pid = $output->open("$command 2>&1 |");
 
     if(defined($cmd_pid))
     {
@@ -246,7 +247,7 @@ sub wait_command()
             print $_ ;
             $output .= $_ ;
         }
-        close($fd);
+        $fd->close();
         $rc = waitpid($pid,0);
     }
     else
@@ -279,7 +280,7 @@ sub wait_command()
             print $_;
             $output .= $_;
         }
-        close($fd);
+        $fd->close();
     }
 
     
