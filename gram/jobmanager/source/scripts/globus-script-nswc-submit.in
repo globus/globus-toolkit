@@ -40,6 +40,22 @@ fi
 $DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
 $DEBUG_ECHO ""                                            >> $grami_logfile
 
+if [ ! -z "${grami_env}" ] ; then
+   eval set -- ${grami_env}
+   x=0
+   while [ "$#" -ne 0 ]; do
+      if [ $x = 0 ] ; then
+         save_variable=$1
+         x=1
+      else
+         x=0
+         eval ${save_variable}=$1; export ${save_variable};
+      fi
+
+      shift
+   done
+fi
+
 grami_args=`eval echo ${grami_args}`
 
 $grami_program $grami_args 1>$grami_stdout 2>$grami_stderr &
@@ -50,8 +66,7 @@ if [ "$?" -eq "0" ]; then
    echo "GRAM_SCRIPT_JOB_ID:$job_id"
    $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
    $DEBUG_ECHO "returning job state: 1" >> $grami_logfile
-   echo "GRAM_SCRIPT_JOB_ID:$job_id"
-   echo "GRAM_SCRIPT_SUCCESS:$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING"
+   echo "GRAM_SCRIPT_SUCCESS:$GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE"
 else
    $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
