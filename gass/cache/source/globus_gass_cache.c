@@ -57,8 +57,12 @@ CVS Information:
  * If compilled with LOCK_TOUT defined, the lock will timeout after
  *    LOCK_TOUT try to get the lock, if the file to lock is older than
  *    LOCK_TOUT*LOOP_TIME
+ *    LOOPTIME is currently define as 500000 (1/2 second)
+ *    If I define  LOCK_TOUT 60, I will wait the file is older than 30 seconds
+ *    loked before I break the lock
  */
-#define LOCK_TOUT 
+#define LOCK_TOUT 60
+
 
 /******************************************************************************
                           Module specific variables
