@@ -19,10 +19,6 @@
  */
 void init_pathnames();
 
-#ifndef _PATH_SSH_PIDDIR
-#define _PATH_SSH_PIDDIR		"/var/run"
-#endif
-
 /*
  * System-wide file containing host keys of known hosts.  This file should be
  * world-readable.
@@ -50,7 +46,7 @@ extern char *_PATH_SSH_PROGRAM;
  * The process id of the daemon listening for connections is saved here to
  * make it easier to kill the correct daemon when necessary.
  */
-#define _PATH_SSH_DAEMON_PID_FILE	_PATH_SSH_PIDDIR "/sshd.pid"
+extern char *_PATH_SSH_DAEMON_PID_FILE;
 
 /*
  * The directory in user\'s home directory in which the files reside. The

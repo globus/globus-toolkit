@@ -2538,31 +2538,6 @@ AC_ARG_WITH(bsd-auth,
 	]
 )
 
-# Where to place sshd.pid
-piddir=/var/run
-# make sure the directory exists
-if test ! -d $piddir ; then	
-	piddir=`eval echo ${sysconfdir}`
-	case $piddir in
- 		NONE/*) piddir=`echo $piddir | sed "s~NONE~$ac_default_prefix~"` ;;
-	esac
-fi
-
-AC_ARG_WITH(pid-dir,
-	[  --with-pid-dir=PATH     Specify location of ssh.pid file],
-	[
-		if test "x$withval" != "xno" ; then	
-			piddir=$withval
-			if test ! -d $piddir ; then	
-			AC_MSG_WARN([** no $piddir directory on this system **])
-			fi
-		fi
-	]
-)
-
-AC_DEFINE_UNQUOTED(_PATH_SSH_PIDDIR, "$piddir")
-AC_SUBST(piddir)
-
 dnl allow user to disable some login recording features
 AC_ARG_ENABLE(lastlog,
 	[  --disable-lastlog       disable use of lastlog even if detected [no]],
@@ -2810,7 +2785,6 @@ C=`eval echo ${sbindir}` ; C=`eval echo ${C}`
 D=`eval echo ${sysconfdir}` ; D=`eval echo ${D}`
 E=`eval echo ${libexecdir}/ssh-askpass` ; E=`eval echo ${E}`
 F=`eval echo ${mandir}/${mansubdir}X` ; F=`eval echo ${F}`
-G=`eval echo ${piddir}` ; G=`eval echo ${G}`
 H=`eval echo ${PRIVSEP_PATH}` ; H=`eval echo ${H}`
 I=`eval echo ${user_path}` ; I=`eval echo ${I}`
 J=`eval echo ${superuser_path}` ; J=`eval echo ${J}`
@@ -2822,7 +2796,6 @@ echo "                   System binaries: $C"
 echo "               Configuration files: $D"
 echo "                   Askpass program: $E"
 echo "                      Manual pages: $F"
-echo "                          PID file: $G"
 echo "  Privilege separation chroot path: $H"
 if test "$USES_LOGIN_CONF" = "yes" ; then
 echo "   At runtime, sshd will use the path defined in /etc/login.conf"
