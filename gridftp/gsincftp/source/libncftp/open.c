@@ -553,9 +553,6 @@ okay:
 	/* When a new site is opened, Authenticate only protection is assumed
 	 * (by protocol).
 	 */
-#if HAVE_GSSAPI
-	cip->curProtectionLevel = kProtectionLevelAuthenticated;
-#endif
 
 	PrintF(cip, "Logged in to %s as %s.\n", cip->host, cip->user);
 
@@ -736,6 +733,7 @@ FTPQueryFeatures(const FTPCIPtr cip)
 					cip->hasDCAU = kCommandAvailable;
 					cip->hasPROT = kCommandAvailable;
 					cip->hasPBSZ = kCommandAvailable;
+					cip->curProtectionLevel = kProtectionLevelAuthenticated;
 #endif
 				} else if (ISTRNCMP(cp, "Compliance Level: ", 18) == 0) {
 					/* Probably only NcFTPd will ever implement this.
@@ -1339,7 +1337,7 @@ FTPInitConnectionInfo(const FTPLIPtr lip, const FTPCIPtr cip, size_t bufSize)
 	cip->hasPBSZ = kCommandAvailabilityUnknown;
 	cip->connectionContext = GSS_C_NO_CONTEXT;
 	cip->protectionLevel = kProtectionLevelClear;
-	cip->curProtectionLevel = kProtectionLevelAuthenticated;
+	cip->curProtectionLevel = kProtectionLevelClear;
 
 	(void) STRNCPY(cip->magic, kLibraryMagic);
 	(void) STRNCPY(cip->user, "anonymous");
