@@ -1153,6 +1153,10 @@ sub query_boolean
 
         $bar = $default;
     }
+    elsif ($bar eq '')
+    {
+        $bar = $default;
+    }
     elsif ($bar ne $default)
     {
         # everything else means 'nondefault'.
