@@ -35,11 +35,6 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>  
-            <Dependency Name="globus_gsi_cert_utils">
-                <Version>
-                    <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="lib_link">
@@ -63,11 +58,6 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>  
-            <Dependency Name="globus_gsi_cert_utils">
-                <Version>
-                    <Simple_Version Major="0"/>
-                </Version>
-            </Dependency>
         </Source_Dependencies>
 
         <Source_Setup_Dependency PkgType="rtl">

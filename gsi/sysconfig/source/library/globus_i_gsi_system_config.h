@@ -40,7 +40,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
         if (GLOBUS_I_GSI_SYSCONFIG_DEBUG(_LEVEL_)) \
         { \
            char *                          _tmp_str_ = \
-               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+               globus_common_create_nstring _MESSAGE_; \
            globus_libc_fprintf(globus_i_gsi_sysconfig_debug_fstream, \
                                _tmp_str_); \
            globus_libc_free(_tmp_str_); \
@@ -91,7 +91,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
                                                   _ERRSTR_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_openssl_error_result(_ERRORTYPE_,  \
                                                           __FILE__, \
                                                           _function_name_, \
@@ -104,7 +104,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
 #define GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_, \
                                                   __FILE__, \
                                                   _function_name_, \
@@ -129,7 +129,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
                                                        _LONG_DESC_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_openssl_error_result(_ERRORTYPE_, \
                                                           __FILE__, \
                                                           _function_name_, \
@@ -145,7 +145,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
                                                _LONG_DESC_) \
     { \
         char *                          _tmp_str_ = \
-            globus_gsi_cert_utils_create_string _ERRSTR_; \
+            globus_common_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_, \
                                                        __FILE__, \
                                                        _function_name_, \

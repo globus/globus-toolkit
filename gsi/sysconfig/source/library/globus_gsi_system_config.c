@@ -185,8 +185,6 @@ globus_l_gsi_sysconfig_activate(void)
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
-
     /* OpenSSL's random generator is fed with random
      * information, which requires system dependant information
      * (path names)
@@ -247,7 +245,6 @@ globus_l_gsi_sysconfig_deactivate(void)
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     RAND_cleanup();
-    globus_module_deactivate(GLOBUS_GSI_CERT_UTILS_MODULE);
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
