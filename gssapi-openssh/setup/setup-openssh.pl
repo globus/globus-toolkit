@@ -186,7 +186,10 @@ if ( !getPrivilegeSeparation() )
     print "    From the file README.privsep, included as a part of the OpenSSH\n";
     print "    distribution:\n";
     print "\n";
-    print "        sshd is a pseudo-account that should not be used by other\n";
+    print "        When privsep is enabled, during the pre-authentication\n";
+    print "        phase sshd will chroot(2) to \"/var/empty\" and change its\n";
+    print "        privileges to the \"sshd\" user and its primary group.  sshd\n";
+    print "        is a pseudo-account that should not be used by other\n";
     print "        daemons, and must be locked and should contain a \"nologin\"\n";
     print "        or invalid shell.\n";
     print "\n";
@@ -795,7 +798,7 @@ sub copySSHDConfigFile
     # check to see whether we should enable privilege separation
     #
 
-    if ( userExists("sshd") && ( -d "/var/empty" ) && ( getMode("/var/empty") eq "0700" ) )
+    if ( userExists("sshd") && ( -d "/var/empty" ) && ( getOwnerID("/var/empty") eq 0 ) )
     {
         setPrivilegeSeparation(1);
     }
@@ -1148,6 +1151,25 @@ sub absolutePath
     $file = "$startd/$file" if $file !~ m!^\s*/!;
     $file = abs_path($file);
     return $file;
+}
+
+### getOwnerID( $file )
+#
+# return the uid containing the owner ID of the given file.
+#
+
+sub getOwnerID
+{
+    my($file) = @_;
+    my($uid);
+
+    #
+    # call stat() to get the mode of the file
+    #
+
+    $uid = (stat($file))[4];
+
+    return $uid;
 }
 
 ### getMode( $file )
