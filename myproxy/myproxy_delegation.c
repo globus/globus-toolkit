@@ -275,7 +275,6 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
 	       verror_put_string("Internal buffer too small");
 	       goto end;
 	 }
-	 /* XXX hton */
 	 (*buffer) = d->method;
 	 bufferlen = d->client_data_len + sizeof(int);
 
