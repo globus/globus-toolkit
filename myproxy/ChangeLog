@@ -1,5 +1,8 @@
 2000-10-10  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* myproxy_server.c: Move include of <netinet/in.h> before
+	<arpa/inet.h> as some Solaris 2.5.1 systems require this order.
+
 	* gsi_socket.c, gsi_socket_test.c, myproxy.c, myproxy_creds.c,
 	myproxy_server.c, myproxy_server_config.c: Replaced snprintf()
 	calles with functions from string_func.c because of snprintf()
