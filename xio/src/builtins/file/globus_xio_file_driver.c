@@ -621,8 +621,8 @@ globus_l_xio_file_read(
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
-        globus_size_t                       nbytes;
-        globus_result_t                     result;
+        globus_size_t                   nbytes;
+        globus_result_t                 result;
         
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
@@ -686,8 +686,8 @@ globus_l_xio_file_write(
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
-        globus_size_t                       nbytes;
-        globus_result_t                     result;
+        globus_size_t                   nbytes;
+        globus_result_t                 result;
         
         result = globus_xio_system_try_write(
             handle->handle, iovec, iovec_count, &nbytes);

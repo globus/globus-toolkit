@@ -1006,7 +1006,7 @@ globus_l_xio_system_try_read(
             goto error_errno;
         }
     }
-    else if(rc == 0)
+    else if(rc == 0) /* what about UDP? */
     {
         result = GlobusXIOErrorEOF();
         goto error_eof;
@@ -1524,14 +1524,11 @@ globus_l_xio_system_handle_read(
     {
       case GLOBUS_L_OPERATION_ACCEPT:
         {
-            globus_sockaddr_t           addr;
-            globus_size_t               addrlen;
             int                         new_fd;
 
             do
             {
-                addrlen = sizeof(globus_sockaddr_t);
-                new_fd = accept(fd, (struct sockaddr *) &addr, &addrlen);
+                new_fd = accept(fd, GLOBUS_NULL, GLOBUS_NULL);
             } while(new_fd < 0 && errno == EINTR);
 
             if(new_fd < 0)
@@ -1541,7 +1538,11 @@ globus_l_xio_system_handle_read(
             else
             {
                 int                     rc;
-
+                
+                /* XXX it is possible to get ECONNABORTED,
+                 * need to set listener non-blocking and deal with this error
+                 * and EAGAIN
+                 */
                 GlobusIXIOSystemAddNonBlocking(new_fd, rc);
                 if(rc < 0)
                 {
@@ -2210,6 +2211,7 @@ globus_xio_system_register_accept(
 
     GlobusXIOSystemDebugEnterFD(listener_fd);
     
+    /* XXX  need to set this fd non-blocking */
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2245,6 +2247,7 @@ error_op_info:
     return result;
 }
 
+/* XXX should modify these read calls to set the lo watermark opt */
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_operation_t              op,
@@ -2443,6 +2446,7 @@ error_op_info:
     return result;
 }
 
+/* XXX should modify these write calls to set the lo watermark opt */
 globus_result_t
 globus_xio_system_register_write(
     globus_xio_operation_t              op,

@@ -1357,7 +1357,7 @@ globus_l_xio_tcp_bind_local(
     GlobusXIOName(globus_l_xio_tcp_bind_local);
     
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
-    addrinfo_hints.ai_flags = AI_PASSIVE;
+    addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
     addrinfo_hints.ai_family = PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_STREAM;
     addrinfo_hints.ai_protocol = 0;
@@ -1664,7 +1664,7 @@ globus_l_xio_tcp_connect(
         goto error_connect_next;
     }
     
-    free(host);
+    globus_free(host);
     
     return GLOBUS_SUCCESS;
 
@@ -1843,8 +1843,8 @@ globus_l_xio_tcp_read(
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
-        globus_size_t                       nbytes;
-        globus_result_t                     result;
+        globus_size_t                   nbytes;
+        globus_result_t                 result;
         
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
@@ -1902,8 +1902,8 @@ globus_l_xio_tcp_write(
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
-        globus_size_t                       nbytes;
-        globus_result_t                     result;
+        globus_size_t                   nbytes;
+        globus_result_t                 result;
         
         if(attr && attr->send_flags)
         {
