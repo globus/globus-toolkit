@@ -1010,10 +1010,14 @@ globus_gram_job_manager_state_machine(
 
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    if(request->failure_code != GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN)
+	    request->failure_code = rc;
+	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+
+	    if(!request->dry_run)
 	    {
 		request->jobmanager_state = 
 			GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+		request->unsent_status_change = GLOBUS_TRUE;
 	    }
 	}
 	else

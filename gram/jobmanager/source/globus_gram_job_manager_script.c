@@ -349,9 +349,9 @@ globus_l_gram_job_manager_script_read(
  *        The request containing the job description and related information.
  *
  * @return
- * This function returns GLOBUS_SUCCESS or GLOBUS_FAILURE. This
- * function has side affects which may affect the job_id, status, and
- * failure_code fields of the request structure.
+ * This function returns GLOBUS_SUCCESS or a failure code if the
+ * job could not be submitted. If successful, this function will call
+ * into the state machine once the job submission result has happened.
  */
 int
 globus_gram_job_manager_script_submit(
@@ -369,8 +369,10 @@ globus_gram_job_manager_script_submit(
     if (!request)
         return(GLOBUS_FAILURE);
 
-    if (globus_l_gram_request_validate(request) != GLOBUS_SUCCESS)
-        return(GLOBUS_FAILURE);
+    rc = globus_l_gram_request_validate(request);
+
+    if (rc != GLOBUS_SUCCESS)
+        return rc;
 
     globus_gram_job_manager_request_log(request,
           "JMI: in globus_gram_job_manager_submit()\n" );
@@ -432,9 +434,7 @@ globus_gram_job_manager_script_submit(
     {
         globus_gram_job_manager_request_log(request,
                 "JMI: This is a dry run!!\n");
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
     }
 
     rc = globus_l_gram_job_manager_script_run(
@@ -449,9 +449,6 @@ globus_gram_job_manager_script_submit(
     {
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         return rc;
     }
@@ -1602,6 +1599,12 @@ globus_l_gram_job_manager_script_write_description(
 		",\n    'logfile' => [ '%s' ]",
 		request->jobmanager_logfile);
     }
+    if(request->uniq_id)
+    {
+	fprintf(fp,
+		",\n    'uniqid' => [ '%s' ]",
+		request->uniq_id);
+    }
     if(request->job_id)
     {
 	fprintf(fp,
@@ -1704,18 +1707,17 @@ globus_l_gram_request_validate(
     struct stat				statbuf;
     char				script_path[512];
     char *				location;
+    int					rc = GLOBUS_SUCCESS;
 
     if (! request->jobmanager_type)
     {
 	globus_gram_job_manager_request_log(request,
             "JMI: job manager type is not specified, cannot continue.\n");
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_MANAGER_TYPE;
-        return(GLOBUS_FAILURE);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_MANAGER_TYPE;
     }
     if(globus_location(&location) != GLOBUS_SUCCESS)
     {
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-	return GLOBUS_FAILURE;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
     }
 
    /*
@@ -1738,7 +1740,7 @@ globus_l_gram_request_validate(
 		"JMI: ERROR: script %s was not found.\n",
 		script_path);
 	
-	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
 	
 	goto free_location_exit;
    }
@@ -1750,7 +1752,7 @@ globus_l_gram_request_validate(
 	       "JMI: ERROR: Not permitted to execute script %s.\n",
 	       script_path);
 
-       request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
+       rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
 
        goto free_location_exit;
    }
@@ -1769,7 +1771,7 @@ globus_l_gram_request_validate(
 		"JMI: ERROR: script %s was not found.\n",
 		script_path);
 	
-	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
 
 	goto free_location_exit;
     }
@@ -1781,7 +1783,7 @@ globus_l_gram_request_validate(
 
 free_location_exit:
     globus_libc_free(location);
-    return(GLOBUS_SUCCESS);
+    return rc;
 }
 /* globus_l_gram_request_validate() */
 
