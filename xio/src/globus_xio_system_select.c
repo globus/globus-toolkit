@@ -317,7 +317,7 @@ globus_l_xio_system_activate(void)
     char *                              block;
     GlobusXIOName(globus_l_xio_system_activate);
 
-    if(globus_module_activate(GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS)
+    if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
     {
         goto error_activate;
     }
@@ -430,7 +430,7 @@ error_fdsets:
     globus_mutex_destroy(&globus_l_xio_system_cancel_mutex);
     globus_mutex_destroy(&globus_l_xio_system_fdset_mutex);
     globus_cond_destroy(&globus_l_xio_system_cond);
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
     
 error_activate:
     return GLOBUS_FAILURE;
@@ -487,7 +487,7 @@ globus_l_xio_system_deactivate(void)
     globus_mutex_destroy(&globus_l_xio_system_fdset_mutex);
     globus_cond_destroy(&globus_l_xio_system_cond);
     
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
 
 static
