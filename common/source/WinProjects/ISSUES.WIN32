@@ -1,3 +1,7 @@
+
+HAVE_PWD_H not working on unix
+-------------
+
 Need an understanding how windows fits with signals and all of this.
 
 
