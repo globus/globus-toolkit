@@ -49,6 +49,13 @@ else
   AC_MSG_WARN([No support for regular expression matching])
 fi
 dnl
+dnl Check for Globus GRIM
+dnl
+AC_CHECK_HEADER(globus_ogsa_security_grim.h,
+	[ AC_DEFINE(HAVE_GRIM)
+	  LIBS="$LIBS -lglobus_ogsa_security_grim_$GLOBUS_FLAVOR_NAME" ]
+)
+dnl
 dnl Check for vsnprintf()
 dnl
 AC_CHECK_FUNCS(vsnprintf)

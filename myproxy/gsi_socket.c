@@ -403,6 +403,11 @@ GSI_SOCKET_new(int sock)
     self->gss_context = GSS_C_NO_CONTEXT;
     self->sock = sock;
 
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+#ifdef HAVE_GRIM
+    globus_module_activate(GLOBUS_OGSA_SECURITY_GRIM_MODULE);
+#endif    
+
     return self;
 }
 
@@ -438,6 +443,11 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
     }
 
     free(self);
+
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+#ifdef HAVE_GRIM
+    globus_module_deactivate(GLOBUS_OGSA_SECURITY_GRIM_MODULE);
+#endif
 }
 
 
@@ -704,6 +714,13 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	goto error;
     }
     
+#ifdef HAVE_GRIM
+    if (globus_ogsa_security_grim_setup_gss_context(&self->gss_context)
+                                                        != GLOBUS_SUCCESS) {
+	myproxy_debug("globus_ogsa_security_grim_setup_gss_context() failed");
+    }
+#endif
+    
     self->major_status =
 	globus_gss_assist_init_sec_context(&self->minor_status,
 					   creds,
@@ -866,6 +883,13 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	goto error;
     }
     
+#ifdef HAVE_GRIM
+    if (globus_ogsa_security_grim_setup_gss_context(&self->gss_context)
+                                                        != GLOBUS_SUCCESS) {
+	myproxy_debug("globus_ogsa_security_grim_setup_gss_context() failed");
+    }
+#endif
+
     self->major_status =
 	globus_gss_assist_accept_sec_context(&self->minor_status,
 					     &self->gss_context,

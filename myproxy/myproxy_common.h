@@ -38,6 +38,10 @@
 #include <globus_gss_assist.h>
 #include <gssapi.h>
 
+#ifdef HAVE_GRIM
+#include <globus_ogsa_security_grim.h>
+#endif
+
 #include "myproxy.h" /* public headers */
 #include "gsi_socket.h"
 #include "gnu_getopt.h"
