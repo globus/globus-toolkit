@@ -774,7 +774,8 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         goto error;
     }
 
-    if (stat (data_path, &buf) == -1)  // file is not present
+    if (stat (data_path, &buf) == -1 || creds->force_credential_overwrite)  // file is not present or 
+									    // force_credential_overwrite enabled
     {
     	if (write_data_file(creds, data_path, data_file_mode) == -1) // info about credential
     	{
@@ -789,11 +790,10 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     	}
     }
     else
-	if (!creds->force_credential_overwrite)
-	{
-		verror_put_string("Credential already present. Force credential overwrite");
-		goto error;
-	}
+    {
+	verror_put_string("Credential already present. Force credential overwrite");
+	goto error;
+    }
 	
     /* Success */
     return_code = 0;
