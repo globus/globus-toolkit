@@ -208,6 +208,13 @@ GSS_CALLCONV gss_unwrap(
                 GSSerr(GSSERR_F_UNWRAP, GSSERR_R_OUT_OF_MEMORY);
                 *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
+
+                /* free allocated mem */
+                if(output_message_buffer->value)
+                { 
+                    free(output_message_buffer->value);
+                }
+
                 goto err;
                 
             }
@@ -238,6 +245,13 @@ GSS_CALLCONV gss_unwrap(
                 ERR_add_error_data(1,errbuf);
                 *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
+
+                /* free allocated mem */
+                if(output_message_buffer->value)
+                { 
+                    free(output_message_buffer->value);
+                }
+                
                 goto err;
             }
         }
@@ -259,14 +273,7 @@ err:
     /* unlock the context mutex */
     
     globus_mutex_unlock(&context->mutex);
-
-    /* free allocated mem */
     
-    if(output_message_buffer->value)
-    { 
-        free(output_message_buffer->value);
-    }
-
     return major_status;
 }
 
