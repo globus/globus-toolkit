@@ -46,7 +46,7 @@ typedef struct
 
     int                                 running_count;
 
-    globus_callback_unregister_func_t   unregister_callback;
+    globus_callback_func_t              unregister_callback;
     void *                              unreg_args;
 
     globus_l_callback_space_t *         my_space;
@@ -539,7 +539,7 @@ globus_l_callback_cancel_kickout_cb(
 globus_result_t
 globus_callback_unregister(
     globus_callback_handle_t            callback_handle,
-    globus_callback_unregister_func_t   unregister_callback,
+    globus_callback_func_t              unregister_callback,
     void *                              unreg_args)
 {
     globus_l_callback_info_t *          callback_info;
