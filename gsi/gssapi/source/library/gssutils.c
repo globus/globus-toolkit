@@ -26,20 +26,20 @@ static char *rcsid = "$Header$";
 #include <string.h>
 #include <stdlib.h>
 
-/**********************************************************************
-Function: gss_copy_name_to_name() 
-
-Description:
-	Copy a gssapi name to a new name. This should be
-	 gss_duplicate_name
-
-Parameters:
-	pointer to a pointer to a name descriptor
-    pointer to source name descriptor
-   
-Returns:
-**********************************************************************/
-
+/**
+ * Copy a gss_name_t
+ *
+ * Copy a gssapi name to a new name. This should be
+ * gss_duplicate_name. 
+ *
+ * @param output
+ *        Target name.
+ * @param input
+ *        Source name
+ * @return
+ *        GSS_S_COMPLETE - successful copy
+ *        GSS_F_FAILURE - failed to copy
+ */
 OM_uint32 
 gss_copy_name_to_name(
     gss_name_desc **                    output,
@@ -94,18 +94,19 @@ gss_copy_name_to_name(
     return  GSS_S_COMPLETE;
 }
 
-/**********************************************************************
-Function:  gss_create_and_fill_context
-
-Description:
-	Called by init_sec_context and accept_sec_context to 
-	setup the initial context. This includes establishing the
-	SSL session control blocks
-
-Parameters:
-   
-Returns:
-**********************************************************************/
+/**
+ * Initialize a security context structure.
+ *
+ * Called by init_sec_context and accept_sec_context to 
+ * setup the initial context. This includes establishing the
+ * SSL session control blocks
+ *
+ * @param context_handle_P
+ * @param cred_handle
+ * @param cred_usage
+ * @param req_flags
+ * @return
+ */
 
 OM_uint32 
 gss_create_and_fill_context(
