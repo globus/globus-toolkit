@@ -107,6 +107,7 @@ globus_l_xio_file_activate(void)
 
 error_activate:
     GlobusXIOFileDebugExitWithError();
+    GlobusDebugDestroy(GLOBUS_XIO_FILE);
     return rc;
 }
 
