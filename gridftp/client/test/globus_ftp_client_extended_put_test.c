@@ -49,7 +49,7 @@ data_cb(
     if(!eof)
     {
 	int rc;
-
+        globus_mutex_lock(&lock);
     	rc = read(0, buffer, MYSIZE);
 	globus_ftp_client_register_write(
 	    handle,
@@ -60,6 +60,7 @@ data_cb(
 	    data_cb,
 	    0);
 	global_offset += rc;
+	globus_mutex_unlock(&lock);
     }
     else
     {
@@ -131,6 +132,7 @@ int main(int argc, char **argv)
 				   GLOBUS_NULL,
 				   done_cb,
 				   0);
+    globus_mutex_lock(&lock);
     if(result != GLOBUS_SUCCESS)
     {
 	globus_object_t * err;
@@ -159,7 +161,6 @@ int main(int argc, char **argv)
 	    global_offset += rc;
 	}
     }
-    globus_mutex_lock(&lock);
     while(!done)
     {
 	globus_cond_wait(&cond, &lock);

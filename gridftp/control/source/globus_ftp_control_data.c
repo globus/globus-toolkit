@@ -7267,7 +7267,6 @@ globus_l_ftp_io_close_callback(
                 transfer_handle->eof_cb_ent = GLOBUS_NULL;
             }
         }
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -7291,6 +7290,7 @@ globus_l_ftp_io_close_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
+        globus_l_ftp_control_dc_dec_ref(transfer_handle);
         /*
          *  decrement the reference the callbacks had
          */

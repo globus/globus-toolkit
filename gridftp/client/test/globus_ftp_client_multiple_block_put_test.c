@@ -55,6 +55,7 @@ data_cb(
     if(!eof && !once)
     {
 	once=1;
+	globus_mutex_lock(&lock);
 	result = globus_ftp_client_register_write(handle,
 					buffer,
 					BUFSIZE,
@@ -64,6 +65,7 @@ data_cb(
 					0);
 	if(result) printf("registration failed\n");
 	else offset += BUFSIZE;
+	globus_mutex_unlock(&lock);
     }
 }
 
@@ -101,6 +103,7 @@ int main(int argc, char **argv)
 				   GLOBUS_NULL,
 				   done_cb,
 				   0);
+    globus_mutex_lock(&lock);
     if(result != GLOBUS_SUCCESS)
     {
 	done = GLOBUS_TRUE;
@@ -122,7 +125,7 @@ int main(int argc, char **argv)
 	    offset += BUFSIZE;
 	}
     }
-    globus_mutex_lock(&lock);
+    
     while(!done)
     {
 	globus_cond_wait(&cond, &lock);

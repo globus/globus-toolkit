@@ -192,7 +192,9 @@ globus_ftp_client_register_read(
 	goto unlock_error;
     }
     if((i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
-        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST)
+        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST) &&
+        (i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
+        i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)
         && globus_priority_q_empty(&i_handle->stalled_blocks))
     {
 	/*

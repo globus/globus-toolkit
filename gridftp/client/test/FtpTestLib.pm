@@ -29,7 +29,7 @@ use Cwd;
 use Config;
 defined $Config{sig_name} || die "No sigs?";
 my $name;
-my $i;
+my $i = 0;
 my @signame;
 foreach $name (split(' ', $Config{sig_name}))
 {
