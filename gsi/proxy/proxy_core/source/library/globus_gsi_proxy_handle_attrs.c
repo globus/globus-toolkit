@@ -120,7 +120,7 @@ globus_gsi_proxy_handle_attrs_destroy(
 
     if(handle_attrs != NULL)
     {
-        globus_libc_free(handle_attrs);
+        free(handle_attrs);
         handle_attrs = NULL;
     }
 
