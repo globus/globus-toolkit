@@ -6,11 +6,7 @@
 # adapted from 'fixpath', located in the openssh-3.0.2p1 package
 #
 
-require Grid::GPT::Setup;
-
-my $metadata = new Grid::GPT::Setup(package_name => "gsi-openssh-setup");
-
-$gpath = $ENV{GLOBUS_LCATION};
+$gpath = $ENV{GLOBUS_LOCATION};
 if (!defined($gpath))
 {
     die "GLOBUS_LOCATION needs to be set before running this script"
@@ -23,11 +19,13 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+require Grid::GPT::Setup;
+
 my $globusdir = $gpath;
 my $setupdir = "$globusdir/setup/globus";
 my $myname = "setup-openssh.pl";
 
-print "$myname: Configuring gsi-openssh package\n";
+print "$myname: Configuring gsi-openssh package";
 
 #
 # Set up path prefixes for use in the path translations
@@ -84,7 +82,7 @@ sub fixpaths
         "${mandir}/${mansubdir}1/sftp.1",
         );
 
-    print "\nTranslating strings in config/man files..\n";
+    print "Translating strings in config/man files...\n";
     for $f (@files)
     {
         $f =~ /(.*\/)*(.*)$/;
@@ -123,7 +121,7 @@ sub fixpaths
 
 sub runkeygen
 {
-    print "\nGenerating ssh keys (if necessary)..\n";
+    print "Generating ssh keys (if necessary)...\n";
     if ( -e "${sysconfdir}/ssh_host_key" )
     {
         print "${sysconfdir}/ssh_host_key already exists, skipping.\n";
@@ -159,5 +157,7 @@ sub runkeygen
 
 fixpaths();
 runkeygen();
+
+my $metadata = new Grid::GPT::Setup(package_name => "gsi-openssh-setup");
 
 $metadata->finish();
