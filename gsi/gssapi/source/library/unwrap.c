@@ -221,7 +221,7 @@ GSS_CALLCONV gss_unwrap(
 
             output_message_buffer->value = realloc_ptr;
 
-            memcpy(output_message_buffer->value +
+            memcpy( ((char *)output_message_buffer->value) +
                    output_message_buffer->length,
                    readarea,
                    rc);
