@@ -543,79 +543,66 @@ int main(int argc,
                  && (i + 1 < argc))
         {
             conf.condor_arch = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-condor-os") == 0)
                  && (i + 1 < argc))
         {
             conf.condor_os = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-org-dn") == 0)
                  && (i + 1 < argc))
         {
             conf.org_dn = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-host") == 0)
                  && (i + 1 < argc))
         {
             conf.gate_host = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-port") == 0)
                  && (i + 1 < argc))
         {
             conf.gate_port = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-subject") == 0)
                  && (i + 1 < argc))
         {
             conf.gate_subject = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-rdn") == 0)
                  && (i + 1 < argc))
         {
             conf.rdn = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-host-dn") == 0)
                  && (i + 1 < argc))
         {
             conf.host_dn = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-host-manufacturer") == 0)
                  && (i + 1 < argc))
         {
             conf.host_manufacturer = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-host-cputype") == 0)
                  && (i + 1 < argc))
         {
             conf.host_cputype = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-host-osname") == 0)
                  && (i + 1 < argc))
         {
             conf.host_osname = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-host-osversion") == 0)
                  && (i + 1 < argc))
         {
             conf.host_osversion = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcmp(argv[i], "-globus-install-path") == 0)
                  && (i + 1 < argc))
         {
             conf.install_path = globus_libc_strdup(argv[i+1]); i++;
-            conf.num_env_adds++;
         }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
@@ -798,7 +785,6 @@ int main(int argc,
     grami_fprintf( request->jobmanager_log_fp,
         "JM: GLOBUS_DEPLOY_PATH = %s\n",
         (conf.deploy_path) ? (conf.deploy_path) : "NULL");
-    conf.num_env_adds++;
 
     if (!conf.install_path)
     {
@@ -811,7 +797,6 @@ int main(int argc,
 		   "JM: failed to get GLOBUS_INSTALL_PATH from config file\n");
 	    return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
 	}
-        conf.num_env_adds++;
     }
 
     grami_fprintf( request->jobmanager_log_fp,
@@ -833,7 +818,6 @@ int main(int argc,
 		       "JM: globus_common_tools_path failed\n");
 	return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
     }
-    conf.num_env_adds++;
     
     error = globus_common_services_path( &conf.services_path );
     if (error != GLOBUS_SUCCESS)
@@ -842,7 +826,6 @@ int main(int argc,
 		       "JM: globus_common_services_path failed\n");
 	return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
     }
-    conf.num_env_adds++;
 
     if (libexecdir)
     {
@@ -2742,102 +2725,6 @@ globus_l_gram_request_environment_append(globus_gram_jobmanager_request_t * req,
     {
         req->environment[x] = "GLOBUS_GRAM_JOB_CONTACT";   ++x;
         req->environment[x] = graml_job_contact;           ++x;
-    }
-
-    if (conf->condor_arch)
-    {
-        req->environment[x] = "GLOBUS_CONDOR_ARCH";        ++x;
-        req->environment[x] = conf->condor_arch;           ++x;
-    }
-
-    if (conf->condor_os)
-    {
-        req->environment[x] = "GLOBUS_CONDOR_OS";          ++x;
-        req->environment[x] = conf->condor_os;             ++x;
-    }
-
-    if (conf->org_dn)
-    {
-        req->environment[x] = "GLOBUS_ORG_DN";             ++x;
-        req->environment[x] = conf->org_dn;                ++x;
-    }
-
-    if (conf->rdn)
-    {
-        req->environment[x] = "GLOBUS_GRAM_RDN";           ++x;
-        req->environment[x] = conf->rdn;                   ++x;
-    }
-
-    if (conf->host_dn)
-    {
-        req->environment[x] = "GLOBUS_HOST_DN";            ++x;
-        req->environment[x] = conf->host_dn;               ++x;
-    }
-
-    if (conf->host_manufacturer)
-    {
-        req->environment[x] = "GLOBUS_HOST_MANUFACTURER";  ++x;
-        req->environment[x] = conf->host_manufacturer;     ++x;
-    }
-
-    if (conf->host_cputype)
-    {
-        req->environment[x] = "GLOBUS_HOST_CPUTYPE";       ++x;
-        req->environment[x] = conf->host_cputype;          ++x;
-    }
-
-    if (conf->host_osname)
-    {
-        req->environment[x] = "GLOBUS_HOST_OSNAME";        ++x;
-        req->environment[x] = conf->host_osname;           ++x;
-    }
-
-    if (conf->host_osversion)
-    {
-        req->environment[x] = "GLOBUS_HOST_OSVERSION";     ++x;
-        req->environment[x] = conf->host_osversion;        ++x;
-    }
-
-    if (conf->gate_host)
-    {
-        req->environment[x] = "GLOBUS_GATEKEEPER_HOST";    ++x;
-        req->environment[x] = conf->gate_host;             ++x;
-    }
-
-    if (conf->gate_port)
-    {
-        req->environment[x] = "GLOBUS_GATEKEEPER_PORT";    ++x;
-        req->environment[x] = conf->gate_port;             ++x;
-    }
-
-    if (conf->gate_subject)
-    {
-        req->environment[x] = "GLOBUS_GATEKEEPER_SUBJECT"; ++x;
-        req->environment[x] = conf->gate_subject;          ++x;
-    }
-
-    if (conf->deploy_path)
-    {
-        req->environment[x] = "GLOBUS_DEPLOY_PATH";        ++x;
-        req->environment[x] = conf->deploy_path;           ++x;
-    }
-
-    if (conf->install_path)
-    {
-        req->environment[x] = "GLOBUS_INSTALL_PATH";       ++x;
-        req->environment[x] = conf->install_path;          ++x;
-    }
-
-    if (conf->tools_path)
-    {
-        req->environment[x] = "GLOBUS_TOOLS_PATH";         ++x;
-        req->environment[x] = conf->tools_path;            ++x;
-    }
-
-    if (conf->services_path)
-    {
-        req->environment[x] = "GLOBUS_SERVICES_PATH";      ++x;
-        req->environment[x] = conf->services_path;         ++x;
     }
 
     req->environment[x] = GLOBUS_NULL;
