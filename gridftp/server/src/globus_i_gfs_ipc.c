@@ -142,27 +142,37 @@ typedef struct
 typedef struct globus_i_gfs_ipc_handle_s
 {
     globus_xio_handle_t                 xio_handle;
-                                                                                
+
     globus_hashtable_t                  call_table;
     globus_gfs_ipc_iface_t              iface;
-                                                                                
+
     globus_bool_t                       writing;
     globus_fifo_t                       write_q;
-                                                                                
+
     globus_mutex_t                      mutex;
-                                                                                
 } globus_i_gfs_ipc_handle_t;
 
 
 /************************************************************************
  *   open
  *
- *  in connectioncase of ipc the user calls open.  when the connection
- *  is esstablished the open callback is called.  if no error occurs
- *  the handle is set to the open state and the user open cb is called.
- *  If and error does occur the error callback is called and the user
- *  is expected to close. 
+ *  open, on error call open_cb with an error, not error_cb
  ***********************************************************************/
+static void
+globus_l_gfs_ipc_open_kickout(
+    void *                              user_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
+    if(ipc->open_cb != NULL)
+    {
+        ipc->open_cb(ipc, GLOBUS_SUCCESS, ipc->open_arg);
+    }
+}
+
 static void
 globus_l_gfs_ipc_open_cb(
     globus_xio_handle_t                 handle,
@@ -173,26 +183,161 @@ globus_l_gfs_ipc_open_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    globus_mutex_lock(&ipc->mutex);
-    {
-        /* if success the we jsut move to open, else user needs to close */
-        if(result == GLOBUS_SUCCESS)
-        {
-            ipc->state = GLOBUS_GFS_IPC_STATE_OPENED;
-        }
-    }
-    globus_mutex_unlock(&ipc->mutex);
-
-    globus_assert(ipc->cb != NULL && ipc->error_cb != NULL);
-
     if(result == GLOBUS_SUCCESS)
     {
-        ipc->open_cb(ipc, ipc->open_user_arg);
+        globus_l_gfs_ipc_open_kickout(ipc);
     }
     else
     {
-        ipc->error_cb(ipc, result, ipc->user_arg);
+        ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
+        ipc->open_cb(ipc, result, ipc->open_arg);
     }
+}
+
+/*
+ *  create ipc handle with active connection
+ */
+globus_result_t
+globus_gfs_ipc_open(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    const char *                        contact_string,
+    globus_gfs_ipc_callback_t           open_cb,
+    void *                              open_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc = NULL;
+
+    if(ipc_handle == NULL)
+    {
+        res = BAD_PARAM;
+        goto err;
+    }
+    if(iface == BAD_PARAM)
+    {
+        res = BAD_PARAM;
+        goto err;
+    }
+
+    ipc = (globus_i_gfs_ipc_handle_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_handle_t));
+    if(ipc == NULL)
+    {
+        res = MALLOC_ERROR;
+        goto err;
+    }
+    ipc->iface = iface;
+    ipc->open_cb = cb;
+    ipc->error_cb = error_cb;
+    ipc->open_arg = open_arg;
+    ipc->error_arg = error_arg;
+    ipc->state = GLOBUS_GFS_IPC_STATE_OPENNING;
+    globus_hashtable_init(
+        &ipc->call_table,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    globus_mutex_init(ipc->mutex, NULL);
+
+    /* if local fake the callback */
+    if(ipc->contact_string == NULL)
+    {
+        ipc->local = GLOBUS_FALSE;
+        res = globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_ipc_open_kickout,
+            ipc);
+    }
+    /* do xio open */
+    else
+    {
+        res = globus_xio_handle_create(&ipc->xio_handle, globus_l_gfs_ipc_stack);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_register_open(
+            &ipc->xio_handle,
+            contact_string,
+            NULL,
+            globus_l_gfs_ipc_open_cb,
+            ipc);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+    }
+
+    *ipc_handle = ipc;
+    
+    return GLOBUS_SUCCESS;
+
+  err:
+    if(ipc != NULL)
+    {
+        globus_hashtable_destroy(&ipc->call_table);
+        globus_mutex_destroy(&ipc->mutex);
+        globus_free(ipc);
+    }
+    return res;
+}
+
+/*
+ *  convert an xio handle into IPC.  this is used for passively (server
+ *  socket) created connections.  This cannot create local connection types
+ */
+globus_result_t
+globus_gfs_ipc_handle_create(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_xio_handle_t                 xio_handle,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc = NULL;
+
+    if(ipc_handle == NULL)
+    {
+        res = BAD_PARAM;
+        goto err;
+    }
+    if(iface == BAD_PARAM)
+    {
+        res = BAD_PARAM;
+        goto err;
+    }
+    if(user_dn == BAD_PARAM)
+    {
+        res = BAD_PARAM;
+        goto err;
+    }
+
+    ipc = (globus_i_gfs_ipc_handle_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_handle_t));
+    if(ipc == NULL)
+    {
+        res = MALLOC_ERROR;
+        goto err;
+    }
+    ipc->iface = iface;
+    ipc->error_cb = error_cb;
+    ipc->error_arg = error_arg;
+    ipc->local = GLOBUS_TRUE;
+    globus_hashtable_init(
+        &ipc->call_table,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    globus_mutex_init(ipc->mutex, NULL);
+
+    *ipc_handle = ipc;
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
 }
 
 /************************************************************************
@@ -611,45 +756,100 @@ globus_l_gfs_ipc_write_cb(
     }
 }
 
-/*
- *  call the remote function
- */
 globus_result_t
-globus_gfs_ipc_set_state(
+globus_gfs_ipc_set_user(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_server_state_t *         server_state,
+    const char *                        user_dn,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
 {
-    globus_result_t                     result;
     globus_gfs_ipc_call_entry_t *       call_entry;
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_result_t                     res;
+    globus_byte_t *                     buffer = NULL;
 
-    call_entry = (globus_gfs_ipc_call_entry_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t));
-    call_entry->id = (int) call_entry;
-    call_entry->cb = cb;
-    call_entry->user_arg = user_arg;
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
 
-    globus_hashtable_insert(
-        &ipc_handle->call_table,
-        call_entry->id,
-        (void *) call_entry);
-    
-    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    globus_mutex_lock(&ipc->mutex);
     {
-        result = ipc_handle->iface->state_func(
-            ipc_handle,
-            call_entry->id,
-            server_state);
+        call_entry = (globus_gfs_ipc_call_entry_t *) 
+            globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t));
+        if(call_entry == NULL)
+        {
+            res = MALLOC;
+            goto err;
+        }
+        call_entry->id = (int) call_entry;
+        call_entry->cb = cb;
+        call_entry->user_arg = user_arg;
+
+        ipc->state = GLOBUS_GFS_IPC_STATE_AUTHENTICATING;
+
+        if(ipc->local)
+        {
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_reply_kickout,
+                call_entry);
+        }
+        else
+        {
+            globus_hashtable_insert(
+                &ipc_handle->call_table,
+                call_entry->id,
+                (void *) call_entry);
+
+            buffer = globus_malloc(ipc->buffer_size);
+            ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_MSG_TYPE_AUTH);
+            /* bs id, no response */
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, call_entry->id);
+            size_ptr = ptr;
+            GFSEncodeUInt32(buffer, size, ptr, -1);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, strlen(ipc->user_dn));
+            GFSEncodeString(buffer, ipc->buffer_size, ptr, ipc->user_dn);
+
+            size = ptr - buffer;
+            GFSEncodeUInt32(buffer, size_ptr, ptr, size);
+
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                call_entry->buffer,
+                call_entry->buffer_len,
+                call_entry->buffer_len,
+                globus_l_gfs_ipc_write_cb,
+                call_entry);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
     }
-    else
+    globus_mutex_unlock(&ipc->mutex);
+
+    return GLOBUS_SUCCESS;
+
+  err:
+    globus_mutex_unlock(&ipc->mutex);
+    if(buffer != NULL)
     {
-        /* i like wires */
+        globus_free(buffer);
     }
-    
-    return result;
+
+    return res;
 }
 
+globus_result_t
+globus_gfs_ipc_set_cred(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    cred_thing,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg)
+{
+
+}
 
 /*
  *  receive
@@ -657,8 +857,9 @@ globus_gfs_ipc_set_state(
  *  tell the remote process to receive a file
  */
 globus_result_t
-globus_gfs_ipc_recv(
+globus_gfs_ipc_request_recv(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_transfer_state_t *       recv_state,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_callback_t           event_cb,
@@ -702,8 +903,9 @@ globus_gfs_ipc_recv(
  */
 
 globus_result_t
-globus_gfs_ipc_send(
+globus_gfs_ipc_request_send(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_callback_t           event_cb,
@@ -739,8 +941,9 @@ globus_gfs_ipc_send(
 }
 
 globus_result_t
-globus_gfs_ipc_list(
+globus_gfs_ipc_request_list(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_callback_t           event_cb,
@@ -803,8 +1006,9 @@ globus_gfs_ipc_list(
  *  tell remote side to execute the given command
  */
 globus_result_t
-globus_gfs_ipc_command(
+globus_gfs_ipc_request_command(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_command_state_t *        cmd_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
@@ -909,8 +1113,9 @@ globus_gfs_ipc_command(
  *  tell remote side to create an active data connection
  */
 globus_result_t
-globus_gfs_ipc_active_data(
+globus_gfs_ipc_request_active_data(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_data_state_t *           data_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
@@ -1009,8 +1214,9 @@ globus_gfs_ipc_active_data(
  */
 
 globus_result_t
-globus_gfs_ipc_passive_data(
+globus_gfs_ipc_request_passive_data(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_data_state_t *           data_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
@@ -1105,8 +1311,9 @@ globus_gfs_ipc_passive_data(
  */
 
 globus_result_t
-globus_gfs_ipc_resource_query(
+globus_gfs_ipc_request_resource_query(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     globus_gfs_resource_state_t *       resource_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
@@ -1221,86 +1428,10 @@ globus_gfs_ipc_data_destroy(
 }
 
 
-
-globus_result_t
-globus_gfs_ipc_open(
-    globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_iface_t *            iface,
-    char *                              user_name,
-    char *                              contact_string,
-    globus_bool_t                       passive,
-    globus_gfs_ipc_callback_t           cb,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              user_arg)
-{
-    globus_i_gfs_ipc_handle_t *         ipc;
-
-    ipc = (globus_i_gfs_ipc_handle_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_handle_t));
-    
-    ipc->iface = iface;
-    
-    globus_hashtable_init(
-        &ipc->call_table,
-        256,
-        globus_hashtable_string_hash,
-        globus_hashtable_string_keyeq);
-
-    globus_mutex_init(ipc->mutex, NULL);
-
-    /* if local punt on all the xio stuff */
-    if(cb == NULL)
-    {
-        ipc->local = GLOBUS_TRUE;
-        return GLOBUS_SUCCESS;
-    }
-
-    /* do xio open */
-    globus_mutex_lock(&ipc->mutex);
-    {
-        if(!passive)
-        {
-            res = globus_xio_handle_create(
-                &ipc->xio_handle, globus_l_gfs_ipc_stack);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
-
-            ipc->cb = cb;
-            ipc->user_arg = user_arg;
-            ipc->error_cb = error_cb;
-            ipc->state = GLOBUS_GFS_IPC_STATE_OPENNING;
-            res = globus_xio_register_open(
-                &ipc->xio_handle,
-                contact_string,
-                NULL,
-                globus_l_gfs_ipc_open_cb,
-                ipc);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
-        }
-    }
-    globus_mutex_unlock(&ipc->mutex);
-
-    *ipc_handle = ipc;
-    
-    return GLOBUS_SUCCESS;
-
-  err:
-    globus_hashtable_destroy(&ipc->call_table);
-    globus_mutex_destroy(&ipc->mutex);
-    globus_free(ipc);
-
-    return res;
-}
-
 globus_result_t
 globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t *           ipc_handle,
-    cb,
+    globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
