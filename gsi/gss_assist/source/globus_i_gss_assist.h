@@ -20,10 +20,10 @@ EXTERN_C_BEGIN
 
 /* DEBUG MACROS */
 
-#ifdef BUILD_DEBUG
-
 extern int                              globus_i_gsi_gss_assist_debug_level;
 extern FILE *                           globus_i_gsi_gss_assist_debug_fstream;
+
+#ifdef BUILD_DEBUG
 
 #define GLOBUS_I_GSI_GSS_ASSIST_DEBUG(_LEVEL_) \
     (globus_i_gsi_gss_assist_debug_level >= (_LEVEL_))
@@ -59,6 +59,7 @@ extern FILE *                           globus_i_gsi_gss_assist_debug_fstream;
 
 #else
 
+#define GLOBUS_I_GSI_GSS_ASSIST_DEBUG(_LEVEL_) 0
 #define GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_GSS_ASSIST_DEBUG_PRINT(_LEVEL, _MESSAGE_) {}
