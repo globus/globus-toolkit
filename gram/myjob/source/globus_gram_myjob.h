@@ -39,9 +39,29 @@ CVS Information:
 ******************************************************************************/
 
 
+
+
+
+
 /******************************************************************************
 			      Function prototypes
 ******************************************************************************/
+
+extern int 
+globus_gram_myjob_activate ();
+
+extern int
+globus_gram_myjob_deactivate ();
+
+#define GLOBUS_GRAM_MYJOB_MODULE (&globus_gram_myjob_module)
+
+static globus_module_descriptor_t globus_gram_myjob_module = 
+{
+  "globus_gram_myjob",
+  globus_gram_myjob_activate,
+  globus_gram_myjob_deactivate,
+  NULL
+};
 
 /******************************************************************************
 Function:	globus_gram_myjob_init()

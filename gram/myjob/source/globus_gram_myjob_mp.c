@@ -21,6 +21,7 @@ CVS Information:
 #include "gram_myjob.h"
 #include "globus_nexus.h"
 
+#include "globus_common.h"
 #include "globus_gram_myjob_mp.h"
 
 /******************************************************************************
@@ -47,6 +48,49 @@ static int				graml_myjob_rank;
 			  Module specific prototypes
 ******************************************************************************/
 
+
+int 
+globus_gram_myjob_activate ()
+{
+  int err;
+
+  if ( globus_module_activate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS ) 
+    goto activate_common_module_error;
+
+  {
+    int argc = 1;
+    char * arg1 = "dummy";
+    char ** argv;
+
+    argv = &arg1;
+    if ( globus_gram_myjob_init (&argc, &argv) ) 
+      goto activate_gram_myjob_init_error;
+  }
+
+  return GLOBUS_SUCCESS;
+
+activate_gram_myjob_init_error:
+  globus_module_deactivate (GLOBUS_COMMON_MODULE);
+
+activate_common_module_error:
+  return GLOBUS_FAILURE;
+}
+
+int
+globus_gram_myjob_deactivate ()
+{
+  int rc;
+
+  rc = GLOBUS_SUCCESS;
+
+  if ( globus_gram_myjob_done () )
+    rc = GLOBUS_FAILURE;
+
+  if ( globus_module_deactivate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS )
+    rc = GLOBUS_FAILURE;
+
+  return rc;
+}
 
 /******************************************************************************
 Function:	globus_gram_myjob_init()
