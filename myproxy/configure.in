@@ -1,5 +1,34 @@
 AC_INIT(myproxy_server.c)
 
+AC_MSG_CHECKING(for myproxy-server installation path)
+dnl The default:
+MYPROXY_SERVER_DIR="/usr/local/myproxy-server"
+AC_ARG_WITH(myproxy-server-path,
+	[  -with-myproxy-server-path=PATH  Speicify myproxy-server intall path],
+	MYPROXY_SERVER_DIR=$withval)
+AC_MSG_RESULT($MYPROXY_SERVER_DIR)
+AC_SUBST(MYPROXY_SERVER_DIR)
+
+AC_MSG_CHECKING(for myproxy tools install path)
+dnl The default:
+MYPROXY_TOOLS_DIR="/usr/local"
+AC_ARG_WITH(myproxy-tools-path,
+	[  -with-myproxy-tools-path=PATH  Speicify myproxy tools intall path],
+	MYPROXY_TOOLS_DIR=$withval)
+AC_MSG_RESULT($MYPROXY_TOOLS_DIR)
+AC_SUBST(MYPROXY_TOOLS_DIR)
+
+
+AC_MSG_CHECKING(for myproxy client install path)
+dnl The default:
+MYPROXY_CLIENT_DIR="/usr/local"
+AC_ARG_WITH(myproxy-client-path,
+	[  -with-myproxy-client-path=PATH  Speicify myproxy client intall path],
+	MYPROXY_CLIENT_DIR=$withval)
+AC_MSG_RESULT($MYPROXY_CLIENT_DIR)
+AC_SUBST(MYPROXY_CLIENT_DIR)
+
+
 AC_MSG_CHECKING(for Globus/GSI installation path)
 GLOBUS_INSTALL_PATH=""
 dnl --with-globus
