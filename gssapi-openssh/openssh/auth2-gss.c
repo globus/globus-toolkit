@@ -234,11 +234,11 @@ input_gssapi_errtok(int type, u_int32_t plen, void *ctxt)
 static void
 gssapi_set_implicit_username(Authctxt *authctxt)
 {
-    if ((authctxt->user == NULL) || (strcmp(authctxt->user, "") == 0)) {
+    if ((authctxt->user == NULL) || (authctxt->user[0] == '\0')) {
 	char *lname = NULL;
 	PRIVSEP(ssh_gssapi_localname(&lname));
 	if (lname && lname[0] != '\0') {
-	    xfree(authctxt->user);
+	    if (authctxt->user) xfree(authctxt->user);
 	    authctxt->user = lname;
 	    debug("set username to %s from gssapi context", lname);
 	    authctxt->pw = PRIVSEP(getpwnamallow(authctxt->user));
