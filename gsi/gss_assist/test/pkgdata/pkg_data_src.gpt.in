@@ -12,19 +12,19 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_core"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_common"><Version><Simple_Version Major="2" /></Version></Dependency>
+      <Dependency Name="globus_common"><Version><Simple_Version Major="3" /></Version></Dependency>
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0" /></Version></Dependency>
       <Dependency Name="globus_openssl_module"><Version><Simple_Version Major="0" /></Version></Dependency>
-      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_link" >
-      <Dependency Name="globus_common"><Version><Simple_Version Major="2" /></Version></Dependency>
+      <Dependency Name="globus_common"><Version><Simple_Version Major="3" /></Version></Dependency>
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0" /></Version></Dependency>
       <Dependency Name="globus_openssl_module"><Version><Simple_Version Major="0" /></Version></Dependency>
-      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
     </Source_Dependencies> 
 
     <With_Flavors build="yes" />
