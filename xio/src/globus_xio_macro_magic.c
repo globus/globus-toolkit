@@ -941,7 +941,7 @@ globus_xio_driver_pass_accept_DEBUG(
 void
 globus_xio_driver_finished_accept_DEBUG(
     globus_xio_operation_t                          _in_op,
-    globus_xio_target_t                             _in_target,
+    void *                                          _in_target,
     globus_result_t                                 _in_res)
 {                                                                           
     globus_i_xio_op_t *                             _op;                    

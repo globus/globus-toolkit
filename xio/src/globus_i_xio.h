@@ -486,7 +486,7 @@ extern globus_i_xio_timer_t                    globus_l_xio_timeout_timer;
     void
     globus_xio_driver_finished_accept_DEBUG(
         globus_xio_operation_t                      _in_op,
-        globus_xio_target_t                         _in_target,
+        void *                                      _in_target,
         globus_result_t                             _in_res);
 
     void

@@ -981,7 +981,7 @@
 1 void
 1 globus_xio_driver_finished_accept_DEBUG(
 1     globus_xio_operation_t                          _in_op,
-1     globus_xio_target_t                             _in_target,
+1     void *                                          _in_target,
 1     globus_result_t                                 _in_res)
 2 #define GlobusXIODriverFinishedAccept_DEBUG(_in_op, _in_target, _in_res)  \
 2 do                                                                        \
