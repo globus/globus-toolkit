@@ -16,7 +16,8 @@ test_PROGRAMS= \
 	globus-xio-ordering-file \
 	globus-xio-async-copy
 
-INCLUDES += $(GPT_INCLUDES)
+EXTRA_DIST =
+INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS)
 
 globus_xio_client_SOURCES = globus_xio_client.c
