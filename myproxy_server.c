@@ -36,7 +36,7 @@ struct option long_options[] =
 {
   {"help",             no_argument, NULL, 'u'},
   {"port",       required_argument, NULL, 'p'},
-  {"config",           no_argument, NULL, 'c'},       
+  {"config",     required_argument, NULL, 'c'},       
   {"usage",            no_argument, NULL, 'u'},
   {"version",          no_argument, NULL, 'v'},
   {0, 0, 0, 0}
@@ -283,7 +283,7 @@ init_arguments(int argc, char *argv[],
     int arg;
     int arg_error = 0;
 
-    while((arg = getopt_long(argc, argv, short_options, 
+    while((arg = gnu_getopt_long(argc, argv, short_options, 
 			     long_options, NULL)) != EOF) 
     {
 	switch(arg) 
