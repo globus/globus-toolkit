@@ -53,7 +53,7 @@ my_vsnprintf(const char *format, va_list ap)
 	return NULL;
     }
     
-#ifdef HAVE_VSNPRINTF
+#ifndef HAVE_VSNPRINTF
 
     while (string_len == -1)
     {
@@ -124,19 +124,29 @@ verror_put_string(const char *format, ...)
 	
     }
 
-    /* Make existing string buffer long enough */
-    new_string_len = strlen(string) +
-	(my_context.string == NULL ? 0 : strlen(my_context.string)) +
-	1 /* NUL */;
-    
-    new_string = realloc(my_context.string, new_string_len);
-    
-    if (new_string == NULL)
+    if (my_context.string == NULL)
     {
-	goto error;
+	my_context.string = string;
+
+	/* To avoide free() below */
+	string = NULL;
     }
+    else 
+    {
+	/* Make existing string buffer long enough */
+	new_string_len = strlen(string) +
+	    strlen(my_context.string) +
+	    1 /* NUL */;
     
-    my_context.string = strcat(new_string, string);
+	new_string = realloc(my_context.string, new_string_len);
+    
+	if (new_string == NULL)
+	{
+	    goto error;
+	}
+
+	my_context.string = strcat(new_string, string);
+    }
     
   error:
     if (string != NULL)
