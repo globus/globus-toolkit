@@ -1118,7 +1118,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 extern int alphasort();
 
 char *username;
-int file_select (struct direct *entry)
+int file_select (const struct direct *entry)
 {
 	char *str = strstr (entry->d_name, ".data");
 
