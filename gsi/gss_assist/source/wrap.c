@@ -91,7 +91,7 @@ globus_gss_assist_wrap_send(
         globus_object_t *               error_obj;
         globus_object_t *               error_copy;
 
-        error_obj = globus_error_get(local_minor_status);
+        error_obj = globus_error_get((globus_result_t) local_minor_status);
         error_copy = globus_object_copy(error_obj);
 
         local_minor_status = (OM_uint32) globus_error_put(error_obj);
