@@ -65,7 +65,6 @@ main(int argc, char *argv[])
     char *username, *pshost; 
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
-    char proxyfile[64];
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -100,22 +99,14 @@ main(int argc, char *argv[])
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
-
-    /* Run grid-proxy-init to create a proxy that will be destroyed right after */
-    if (grid_proxy_init(1, proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_init failed\n");
-        exit(1);
-    }
-
-    /* Allow user to provide a passphrase */
-    if (myproxy_read_passphrase(client_request->passphrase,
-				sizeof(client_request->passphrase)) == -1)
-    {
-        fprintf(stderr, "error in myproxy_read_passphrase()\n");
-        exit(1);
-    }
+    /*
+     * We don't need to send the real pass phrase to the server as it
+     * will just use our identity to authenticate and autorize us.
+     * But we need to send over a dummy pass phrase at least
+     * MIN_PASS_PHASE_LEN (currently 6) characters long.
+     */
+    strncpy(client_request->passphrase, "DUMMY-PASSPHRASE",
+	    sizeof(client_request->passphrase));
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
@@ -125,7 +116,7 @@ main(int argc, char *argv[])
     }
 
     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
+    if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
 		verror_get_string());
         exit(1);
@@ -180,12 +171,6 @@ main(int argc, char *argv[])
         break;
     }
     
-    /* Delete proxy file */
-    if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_destroy failed\n");
-        exit(1);
-    }
-
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
 
