@@ -89,8 +89,7 @@ make_package() {
 		mkdir -p $destdir
 		echo Moving to build directory
 		pushd ogsa-cvs/$subdir
-		echo
-		echo Executing build script
+		echo Executing build script:
 		echo ----------------------
 		echo $build
 		echo ----------------------
@@ -124,8 +123,24 @@ dir_iter() {
 	done
 }
 
+collate_packages() {
+	if [ ! -d package-output ]; then
+		mkdir package-output
+	fi
+
+	for f in gt3-*; do
+		tar czf package-output/$f.tar.gz $f
+	done
+
+	cp fait_accompli/* package-output
+	cp install-alpha package-output
+}
+
+
+#The one-package case.
 if [ "x"$1 != "x" ]; then
-	source $1
+	setup_environment
+	source package-list/$1
 	make_package
 	exit
 fi
@@ -145,3 +160,4 @@ install_gt2
 echo Building C-dependent packages
 dir_iter package-list-cdeps
 
+collate_packages
