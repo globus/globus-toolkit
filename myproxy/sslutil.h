@@ -40,6 +40,11 @@
 #  include <sslutils.h>
 #  include <openssl/x509.h>
 #  include <openssl/x509v3.h>
+
+/* Backwards compatibility with Globus 1.x.  See below. */
+#  define myproxy_get_filenames(pcd, a, b, c, d, e, f) \
+     proxy_get_filenames(pcd, a, b, c, d, e, f)
+
 #else
    /* not Globus 2.0 */
 
@@ -51,6 +56,13 @@
 #  if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #    include <x509v3.h>
 #  endif
+
+/* 
+ * The globus v 2.0 API adds a new parametr to proxy_get_filenames(), which is 
+ * removed here. In this way it is possible to simply use the older libraries 
+ */
+#  define myproxy_get_filenames(pcd, a, b, c, d, e, f) \
+     proxy_get_filenames(a, b, c, d, e, f)
 
 #  ifdef GSI_NEW
    /* Standalone GSI version 1.1.3a (beta) */
@@ -170,20 +182,6 @@ proxy_cred_desc_new();
 
 int
 proxy_cred_desc_free(proxy_cred_desc * pcd);
-
-int
-proxy_get_filenames(int proxy_in,
-                char ** p_cert_file,
-                char ** p_cert_dir,
-                char ** p_user_proxy,
-                char ** p_user_cert,
-                char ** p_user_key);
-/* This must be put _after_ the prototype of proxy_get_filenames(). 
- * The globus v 2.0 API adds a new parametr to proxy_get_filenames(), which is 
- * removed here. In this way it is possible to simply use the older libraries 
- */
-#define proxy_get_filenames(pcd, a, b, c, d, e, f) \
-     proxy_get_filenames(a, b, c, d, e, f)
 
 int
 proxy_get_base_name(X509_NAME *subject);
