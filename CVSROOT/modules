@@ -50,4 +50,5 @@ all -a \
         testing\
         user_env\
         tarfiles\
-	bundles
+	bundles\
+        utp
