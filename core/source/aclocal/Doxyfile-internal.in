@@ -34,7 +34,7 @@ PROJECT_NUMBER         = @VERSION@
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces. 
 
-INPUT                  = @srcdir@ \
+INPUT                  = @lac_doxygen_srcdirs@ \
                          @lac_doxygen_examples@
 
 # If the value of the INPUT tag contains directories, you can use the 
