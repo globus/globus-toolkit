@@ -1,35 +1,26 @@
 /******************************************************************************
-Project:	Globus
+gram_client.c
 
-Description:	gram_client.c - Resource Managemant Client API's
+Description:
+    Resource Managemant Client API's
 
-		This file contains the Resource Management Client API funtion
-		calls.  The resource management API provides functions for 
-		submitting a job request to a RM, for asking when a job
-		(submitted or not) might run, for cancelling a request,
-		for requesting notification of state changes for a request,
-		and for checking for pending notifications.
+    This file contains the Resource Management Client API funtion
+    calls.  The resource management API provides functions for 
+    submitting a job request to a RM, for asking when a job
+    (submitted or not) might run, for cancelling a request,
+    for requesting notification of state changes for a request,
+    and for checking for pending notifications.
 
-		The available calls are:
-			gram_job_request()
-			gram_job_check()
-			gram_job_cancel()
-			gram_job_start_time()
-			gram_job_contact_free()
-			gram_callback_allow()
-			gram_callback_check()
-	
-Author(s):	Steve Tuecke, Stuart Martin, Brian Toonen
+CVS Information:
 
-Date Created:	7/8/97
-
-Modifications:
-
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
 ******************************************************************************/
 
 /******************************************************************************
                              Include header files
-                             --------------------
 ******************************************************************************/
 #include <stdio.h>
 #include <malloc.h>
@@ -37,10 +28,11 @@ Modifications:
 #include <sys/time.h>
 #include <nexus.h>
 #include "gram.h"
+#include "grami_rsl.h"
+#include "gram_job_manager.h"
 
 /******************************************************************************
                                Type definitions
-                               ----------------
 ******************************************************************************/
 typedef struct
 {
@@ -60,81 +52,68 @@ typedef struct
     int start_time_interval_size;
 } graml_start_time_monitor_s;
 
-/* remove
-typedef void (*gram_callback_func_t)(char *job_contact,
-                                    int state,
-                                    int errorcode);
-*/
-
 typedef struct
 {
     gram_callback_func_t callback_func;
     nexus_endpoint_t endpoint;
 } callback_s;
 
-
-/******************************************************************************
-                       Define module specific variables
-                       --------------------------------
-******************************************************************************/
-static nexus_handler_t gram_job_request_reply_handler_table[] =
-{ \
-    {NEXUS_HANDLER_TYPE_NON_THREADED,
-       gram_job_request_reply_handler},
-};
-
-static nexus_handler_t callback_handler_table[] =
-{ \
-    {NEXUS_HANDLER_TYPE_NON_THREADED,
-       callback_handler},
-};
-
-static nexus_handler_t gram_start_time_handler_table[] =
-{ \
-    {NEXUS_HANDLER_TYPE_NON_THREADED,
-     start_time_callback_handler},
-};
-
-
 /******************************************************************************
                           Module specific prototypes
-                          --------------------------
 ******************************************************************************/
-static void graml_write_callback(void *arg,
+static void graml_write_callback(void * arg,
                                  int fd,
-                                 char *buf,
+                                 char * buf,
                                  size_t nbytes);
 
-static void graml_write_error_callback(void *arg,
+static void graml_write_error_callback(void * arg,
                                        int fd,
-                                       char *buf,
+                                       char * buf,
                                        size_t nbytes,
                                        int error);
 
-static int callback_attach_approval(void *user_arg,
-                                    char *url,
-                                    nexus_startpoint_t *sp);
+static int graml_callback_attach_approval(void * user_arg,
+                                          char * url,
+                                          nexus_startpoint_t * sp);
 
-static void graml_job_request_reply_handler(nexus_endpoint_t *endpoint,
-                                            nexus_buffer_t *buffer,
+static void graml_job_request_reply_handler(nexus_endpoint_t * endpoint,
+                                            nexus_buffer_t * buffer,
                                             nexus_bool_t is_non_threaded);
 
-static void callback_handler(nexus_endpoint_t *endpoint,
-			     nexus_buffer_t *buffer,
-			     nexus_bool_t is_non_threaded);
+static void graml_callback_handler(nexus_endpoint_t * endpoint,
+			           nexus_buffer_t * buffer,
+      			           nexus_bool_t is_non_threaded);
 
-static void start_time_callback_handler(nexus_endpoint_t *endpoint,
-                                        nexus_buffer_t *buffer,
-                                        nexus_bool_t is_non_threaded);
+static void graml_start_time_callback_handler(nexus_endpoint_t * endpoint,
+                                              nexus_buffer_t * buffer,
+                                              nexus_bool_t is_non_threaded);
+
+/******************************************************************************
+                       Define module specific variables
+******************************************************************************/
+static nexus_handler_t gram_job_request_reply_handler_table[] =
+{
+    {NEXUS_HANDLER_TYPE_NON_THREADED,
+       graml_job_request_reply_handler},
+};
+
+static nexus_handler_t callback_handler_table[] =
+{
+    {NEXUS_HANDLER_TYPE_NON_THREADED,
+       graml_callback_handler},
+};
+
+static nexus_handler_t gram_start_time_handler_table[] =
+{
+    {NEXUS_HANDLER_TYPE_NON_THREADED,
+     graml_start_time_callback_handler},
+};
 
 
 /******************************************************************************
 Function:	gram_job_request()
-
 Description:
-
 Parameters:
-
 Returns:
 ******************************************************************************/
 int gram_job_request(char * gatekeeper_url,
@@ -182,8 +161,8 @@ int gram_job_request(char * gatekeeper_url,
     size += nexus_sizeof_char(strlen(callback_url));
     size += nexus_sizeof_startpoint(&reply_sp, 1);
 
-    if (size >= GRM_MAX_MSG_SIZE)
-        return (GRM_ERROR_INVALID_REQUEST);
+    if (size >= GRAM_MAX_MSG_SIZE)
+        return (GRAM_ERROR_INVALID_REQUEST);
     /*
      * contact_msg_size includes the extra int added to the front of the 
      * message.
@@ -245,7 +224,7 @@ int gram_job_request(char * gatekeeper_url,
     if (rc != 0)
     {
         fprintf(stderr, "nexus_fd_register_for_write failed\n");
-        return (GRM_ERROR_PROTOCOL_FAILED);
+        return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
     nexus_mutex_lock(&job_request_monitor.mutex);
@@ -260,7 +239,10 @@ int gram_job_request(char * gatekeeper_url,
 
     if (job_request_monitor.job_status == 0)
     {
-        *job_contact = job_request_monitor.job_contact_str; 
+        *job_contact = (char *) 
+           malloc(strlen(job_request_monitor.job_contact_str) + 1);
+
+        strcpy(*job_contact, job_request_monitor.job_contact_str);
     }
 
     free(tmp_buffer);
@@ -271,22 +253,20 @@ int gram_job_request(char * gatekeeper_url,
 
 /******************************************************************************
 Function:	graml_write_error_callback()
-
 Description:
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-static void graml_write_error_callback(void *arg,
+static void graml_write_error_callback(void * arg,
                                        int fd,
-                                       char *buf,
+                                       char * buf,
                                        size_t nbytes,
                                        int error)
 {
-    graml_job_request_monitor_s *job_request_monitor = (graml_job_request_monitor_s *) arg;
+    graml_job_request_monitor_s *job_request_monitor = 
+      (graml_job_request_monitor_s *) arg;
 
-    job_request_monitor->job_status = GRM_ERROR_PROTOCOL_FAILED;
+    job_request_monitor->job_status = GRAM_ERROR_PROTOCOL_FAILED;
 
     nexus_mutex_lock(&job_request_monitor->mutex);
     job_request_monitor->done = NEXUS_TRUE;
@@ -296,16 +276,13 @@ static void graml_write_error_callback(void *arg,
 
 /******************************************************************************
 Function:	graml_write_callback()
-
 Description:
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-static void graml_write_callback(void *arg,
+static void graml_write_callback(void * arg,
                                  int fd,
-                                 char *buf,
+                                 char * buf,
                                  size_t nbytes)
 {
     printf("in graml_write_callback()\n");
@@ -313,15 +290,12 @@ static void graml_write_callback(void *arg,
 
 /******************************************************************************
 Function:	graml_job_request_reply_handler()
-
 Description:
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-static void graml_job_request_reply_handler(nexus_endpoint_t *endpoint,
-                                            nexus_buffer_t *buffer,
+static void graml_job_request_reply_handler(nexus_endpoint_t * endpoint,
+                                            nexus_buffer_t * buffer,
                                             nexus_bool_t is_non_threaded)
 {
     int              size;
@@ -336,7 +310,7 @@ static void graml_job_request_reply_handler(nexus_endpoint_t *endpoint,
     printf("in graml_job_request_reply_handler()\n");
 
     nexus_get_int(buffer, &job_request_monitor->job_status, 1);
-    if (job_status == 0)
+    if (job_request_monitor->job_status == 0)
     {
         nexus_get_int(buffer, &count, 1);
         nexus_get_char(buffer, job_request_monitor->job_contact_str, count);
@@ -353,16 +327,13 @@ static void graml_job_request_reply_handler(nexus_endpoint_t *endpoint,
 
 /******************************************************************************
 Function:	gram_job_check()
-
 Description:
-
 Parameters:
-
 Returns:
 ******************************************************************************/
 int gram_job_check(char * gatekeeper_url,
                    const char * description,
-                   const float required_confidence,
+                   float required_confidence,
                    gram_time_t * estimate,
                    gram_time_t * interval_size)
 {
@@ -371,14 +342,11 @@ int gram_job_check(char * gatekeeper_url,
 
 /******************************************************************************
 Function:	gram_job_cancel()
-
 Description:	sending cancel request to job manager
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-int gram_job_cancel(char *job_contact)
+int gram_job_cancel(char * job_contact)
 {
     int                rc;
     nexus_buffer_t     buffer;
@@ -403,22 +371,19 @@ int gram_job_cancel(char *job_contact)
 
     if (rc != 0)
     {
-        return (GRM_ERROR_PROTOCOL_FAILED);
+        return (GRAM_ERROR_PROTOCOL_FAILED);
     }
     else
     {
-        return (GRM_SUCCESS);
+        return (GRAM_SUCCESS);
     }
 
 } /* gram_job_cancel */ 
 
 /******************************************************************************
 Function:	gram_callback_allow()
-
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
 int gram_callback_allow(gram_callback_func_t callback_func,
@@ -429,7 +394,7 @@ int gram_callback_allow(gram_callback_func_t callback_func,
     char * 		  host;
     callback_s *	  callback;
     nexus_endpointattr_t  epattr;
-    char 		  tmp_contact[GRM_MAX_MSG_SIZE];
+    char * 		  tmp_contact;
 
     printf("in gram_callback_allow()\n");
 
@@ -441,7 +406,7 @@ int gram_callback_allow(gram_callback_func_t callback_func,
     nexus_endpoint_set_user_pointer(&(callback->endpoint), callback);
     
     rc = nexus_allow_attach(&port, &host,
-	     	            callback_attach_approval,
+	     	            graml_callback_attach_approval,
 		            (void *) callback);
        
     if (rc != 0)
@@ -450,7 +415,7 @@ int gram_callback_allow(gram_callback_func_t callback_func,
         return (1);
     }
 
-    /* + 13 because x-nexus://  :  plus 1 for the null */
+    /* add 13 for x-nexus stuff plus 1 for the null */
     tmp_contact = (char *) malloc(sizeof(port) + MAXHOSTNAMELEN + 13);
 
     sprintf(tmp_contact, "x-nexus://%s:%hu/", host, port);
@@ -462,37 +427,31 @@ int gram_callback_allow(gram_callback_func_t callback_func,
 
 
 /******************************************************************************
-Function:	callback_attach_approval()
-
+Function:	graml_callback_attach_approval()
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-static int callback_attach_approval(void * user_arg,
-				    char * url,
-				    nexus_startpoint_t * sp)
+static int graml_callback_attach_approval(void * user_arg,
+                                          char * url,
+                                          nexus_startpoint_t * sp)
 {
     callback_s * callback = (callback_s *) user_arg;
 
-    printf("in callback_attach_approval()\n");
+    printf("in graml_callback_attach_approval()\n");
 
     nexus_startpoint_bind(sp, &(callback->endpoint));
 
     return(0);
-} /* callback_attach_approval() */
+} /* graml_callback_attach_approval() */
 
 /******************************************************************************
-Function:	callback_handler()
-
+Function:	graml_callback_handler()
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-static void callback_handler(nexus_endpoint_t * endpoint,
+static void graml_callback_handler(nexus_endpoint_t * endpoint,
 			     nexus_buffer_t * buffer,
 			     nexus_bool_t is_non_threaded)
 {
@@ -500,9 +459,9 @@ static void callback_handler(nexus_endpoint_t * endpoint,
     int state;
     int errorcode;
     callback_s *callback;
-    char job_contact[GRM_MAX_MSG_SIZE];
+    char job_contact[GRAM_MAX_MSG_SIZE];
 
-    printf("in callback_handler()\n");
+    printf("in graml_callback_handler()\n");
 
     callback = (callback_s *) nexus_endpoint_get_user_pointer(endpoint);
     
@@ -513,15 +472,12 @@ static void callback_handler(nexus_endpoint_t * endpoint,
     nexus_get_int(buffer, &errorcode, 1);
     
     (*callback->callback_func)(job_contact, state, errorcode);
-} /* callback_handler() */
+} /* graml_callback_handler() */
 
 /******************************************************************************
 Function:	gram_job_start_time()
-
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
 int gram_job_start_time(char * job_contact,
@@ -559,7 +515,7 @@ int gram_job_start_time(char * job_contact,
     if (rc != 0)
     {
         printf("nexus_attach returned %d\n", rc);
-        return (GRM_ERROR_PROTOCOL_FAILED);
+        return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
     size  = nexus_sizeof_float(1);
@@ -578,7 +534,7 @@ int gram_job_start_time(char * job_contact,
     if (rc != 0)
     {
         printf("nexus_send_rsr returned %d\n", rc);
-        return (GRM_ERROR_PROTOCOL_FAILED);
+        return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
     nexus_startpoint_destroy(&sp_to_job_manager);
@@ -593,31 +549,28 @@ int gram_job_start_time(char * job_contact,
     nexus_mutex_destroy(&start_time_monitor.mutex);
     nexus_cond_destroy(&start_time_monitor.cond);
 
-    estimate->dumb_time = start_time_monitor->start_time_estimate;
-    interval_size->dumb_time = start_time_monitor->start_time_interval_size;
+    estimate->dumb_time = start_time_monitor.start_time_estimate;
+    interval_size->dumb_time = start_time_monitor.start_time_interval_size;
  
-    return (GRM_SUCCESS);
+    return (GRAM_SUCCESS);
 
 } /* gram_job_start_time() */
 
 /******************************************************************************
-Function:	start_time_callback_handler()
-
+Function:	graml_start_time_callback_handler()
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-static void start_time_callback_handler(nexus_endpoint_t * endpoint,
-                                        nexus_buffer_t * buffer,
-                                        nexus_bool_t is_non_threaded)
+static void graml_start_time_callback_handler(nexus_endpoint_t * endpoint,
+                                              nexus_buffer_t * buffer,
+                                              nexus_bool_t is_non_threaded)
 {
     graml_start_time_monitor_s *start_time_monitor;
 
     start_time_monitor = nexus_endpoint_get_user_pointer(endpoint);
 
-    printf("in start_time_callback_handler()\n");
+    printf("in graml_start_time_callback_handler()\n");
 
     nexus_get_int(buffer, &start_time_monitor->start_time_estimate, 1);
     nexus_get_int(buffer, &start_time_monitor->start_time_interval_size, 1);
@@ -627,15 +580,12 @@ static void start_time_callback_handler(nexus_endpoint_t * endpoint,
     nexus_cond_signal(&start_time_monitor->cond);
     nexus_mutex_unlock(&start_time_monitor->mutex);
 
-} /* start_time_callback_handler() */
+} /* graml_start_time_callback_handler() */
 
 /******************************************************************************
 Function:	gram_callback_check()
-
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
 int gram_callback_check()
@@ -650,16 +600,13 @@ int gram_callback_check()
 
 /******************************************************************************
 Function:	gram_job_contact_free()
-
 Description:	
-
 Parameters:
-
 Returns:
 ******************************************************************************/
-void gram_job_contact_free(char * job_contact)
+int gram_job_contact_free(char * job_contact)
 {
-    printf("in job_contact_free()\n");
+    printf("in gram_job_contact_free()\n");
 
     free(job_contact);
 } /* gram_job_contact_free() */

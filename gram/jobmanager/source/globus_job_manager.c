@@ -1,12 +1,20 @@
-/*
- * Nexus
- * Authors:     Stuart Martin
- *              Argonne National Laboratory
- *
- * grm_job_manager.c - Globus Resource Management Job Manager 
- *
- */
+/******************************************************************************
+gram_job_manager.c 
 
+Description:
+    Resource Allocation Job Manager
+
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+******************************************************************************/
+
+/******************************************************************************
+                             Include header files
+******************************************************************************/
 #include <stdio.h>
 #include <malloc.h>
 #include <sys/param.h>
@@ -14,43 +22,13 @@
 #include <string.h> /* for strdup() */
 #include <memory.h>
 #include <nexus.h>
-#include "grm.h"
-#include "gjm.h"
+#include "gram.h"
+#include "grami_jm.h"
+#include "gram_client.h"
 
-/* for print_tree() */
-#define INDENT(LVL) { \
-    int i; \
-    for (i = 0; i < (LVL); i ++) printf("   "); \
-    }
-
-/***************************/
-/*                         */
-/* Nexus Handler Functions */
-/*                         */
-/***************************/
-
-static void cancel_handler(nexus_endpoint_t *endpoint,
-                           nexus_buffer_t *buffer,
-                           nexus_bool_t is_non_threaded_handler);
-
-static void start_time_handler(nexus_endpoint_t *endpoint,
-                               nexus_buffer_t *buffer,
-                               nexus_bool_t is_non_threaded_handler);
-
-/*********************************/
-/*                               */
-/* Nexus Handler Functions Table */
-/*                               */
-/*********************************/
-
-#define REPLY_HANDLER_ID         0
-
-static nexus_handler_t handlers[] =
-{ 
-    {NEXUS_HANDLER_TYPE_NON_THREADED, cancel_handler},
-    {NEXUS_HANDLER_TYPE_NON_THREADED, start_time_handler},
-};
-
+/******************************************************************************
+                               Type definitions
+******************************************************************************/
 typedef struct _monitor_t
 {
     nexus_mutex_t mutex;
@@ -58,22 +36,44 @@ typedef struct _monitor_t
     nexus_bool_t done;
 } monitor_t;
 
-static monitor_t                Monitor;
-static nexus_endpointattr_t     EpAttr;
-static nexus_endpoint_t         GlobalEndpoint;
-static char                     callback_contact[GRM_MAX_MSG_SIZE];
-static char                     job_contact[GRM_MAX_MSG_SIZE];
+/******************************************************************************
+                          Module specific prototypes
+******************************************************************************/
+static void 
+graml_cancel_handler(nexus_endpoint_t *endpoint,
+                     nexus_buffer_t *buffer,
+                     nexus_bool_t is_non_threaded_handler);
 
-static void      dc_puts(char *msg_buf);
-FILE             *log_fp;
+static void 
+graml_start_time_handler(nexus_endpoint_t *endpoint,
+                         nexus_buffer_t *buffer,
+                         nexus_bool_t is_non_threaded_handler);
 
 static void allow_attachments(unsigned short *attach_port,
                               char *attach_url);
+
 static int attach_requested(void *arg,
                             char *url,
                             nexus_startpoint_t *sp);
-static void print_tree();
-static void free_tree();
+static void 
+tree_free();
+
+/******************************************************************************
+                       Define module specific variables
+******************************************************************************/
+static nexus_handler_t handlers[] =
+{ 
+    {NEXUS_HANDLER_TYPE_NON_THREADED, graml_cancel_handler},
+    {NEXUS_HANDLER_TYPE_NON_THREADED, graml_start_time_handler},
+};
+
+static monitor_t                Monitor;
+static nexus_endpointattr_t     EpAttr;
+static nexus_endpoint_t         GlobalEndpoint;
+static char                     callback_contact[GRAM_MAX_MSG_SIZE];
+static char                     job_contact[GRAM_MAX_MSG_SIZE];
+
+static FILE                     *log_fp;
 
 /*
  * NexusExit() (required of all Nexus programs)
@@ -108,30 +108,36 @@ int NexusBoot(nexus_startpoint_t *startpoint)
 
 } /* end NexusBoot() */
 
-/*
- * main()
- */
-int main(int argc, char **argv)
+/******************************************************************************
+Function:       main()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+main(int argc,
+     char **argv)
 {
-    int              size;
-    int              count, rc;
-    int              job_status;
-    int              job_state_mask;
-    nexus_byte_t     type;
-    char             description[GRM_MAX_MSG_SIZE];
-    int              format;
-    nexus_byte_t     bformat;
-    nexus_byte_t     buffer[GRM_MAX_MSG_SIZE];
-    unsigned short   my_port;
-    nexus_byte_t     *ptr;
-    FILE             *args_fp;
-    nexus_startpoint_t reply_sp;
-    nexus_buffer_t     reply_buffer;
-    nexus_node_t *nodes;
-    int n_nodes;
-    int message_handled;
-    grm_specification_t *description_tree;
-    char *tmp_ptr;
+    int                    size;
+    int                    rc;
+    int                    count;
+    int                    n_nodes;
+    int                    format;
+    int                    job_status;
+    int                    job_state_mask;
+    int                    message_handled;
+    char                   description[GRAM_MAX_MSG_SIZE];
+    char *                 tmp_ptr;
+    unsigned short         my_port;
+    FILE *                 args_fp;
+    nexus_byte_t           type;
+    nexus_byte_t *         ptr;
+    nexus_byte_t           bformat;
+    nexus_byte_t           buffer[GRAM_MAX_MSG_SIZE];
+    nexus_buffer_t         reply_buffer;
+    nexus_node_t *         nodes;
+    nexus_startpoint_t     reply_sp;
+    gram_specification_t * description_tree;
 
     /*
      * Open the logfile just for testing!
@@ -145,7 +151,7 @@ int main(int argc, char **argv)
     setbuf(log_fp, NULL);
 
     fprintf(log_fp,"-------------------------------------------------\n");
-    fprintf(log_fp,"entering grm_job_manager\n");
+    fprintf(log_fp,"entering gram_job_manager\n");
 
     nexus_init(&argc,
                 &argv,
@@ -167,7 +173,7 @@ int main(int argc, char **argv)
     /*
      * Open the test file
      */
-    if ((args_fp = fopen("grm_job.dat", "r")) == NULL)
+    if ((args_fp = fopen("gram_job.dat", "r")) == NULL)
     {
         printf("Cannot open test file.\n");
         exit(1);
@@ -223,19 +229,15 @@ int main(int argc, char **argv)
     allow_attachments(&my_port, job_contact);
 
     tmp_ptr = description;
-    description_tree = grm_specification_parse(tmp_ptr);
-
-    printf("====== Start User Spec\n");
-    print_tree(description_tree, 0);
-    printf("====== End User Spec\n");
+    description_tree = gram_specification_parse(tmp_ptr);
 
     /*
      * Start the job.  If successful reply with job_contact else
      * send error status.
      */
-    job_status = gjm_job_request(job_contact, description_tree);
+    job_status = grami_jm_job_request(job_contact, description_tree);
 
-    fprintf(log_fp,"after gjm_job_request\n");
+    fprintf(log_fp,"after grami_jm_job_request\n");
 
     if (job_status == 0)
     {
@@ -261,10 +263,6 @@ int main(int argc, char **argv)
                    NEXUS_TRUE,
                    NEXUS_FALSE);
 /*
-    nexus_poll();
-*/
-
-/*
     nexus_mutex_lock(&Monitor.mutex);
 */
     if (job_status == 0)
@@ -276,21 +274,21 @@ int main(int argc, char **argv)
             */
 	    nexus_usleep(1000000);
     	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, &message_handled);
-	    gjm_poll(); 
+	    grami_jm_poll(); 
         } /* endwhile */
 /*
         nexus_mutex_unlock(&Monitor.mutex);
 */
     }
 
-    free_tree(description_tree);
+    tree_free(description_tree);
 
     nexus_disallow_attach(my_port);
 
     nexus_mutex_destroy(&Monitor.mutex);
     nexus_cond_destroy(&Monitor.cond);
 
-    fprintf(log_fp,"exiting grm_job_request \n");
+    fprintf(log_fp,"exiting gram_job_request \n");
 
     nexus_shutdown_nonexiting();
 
@@ -299,19 +297,22 @@ int main(int argc, char **argv)
 } /* main() */
 
 
-/*
- * gjm_callback()
- *
- * int gjm_callback(char *callback_contact, char *job_contact, int state, int errorcode)
- */
-void gjm_callback(int state,
+/******************************************************************************
+Function:       grami_jm_callback()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+void 
+grami_jm_callback(int state,
                   int errorcode)
 {
+    int                size;
+    int                count;
     nexus_startpoint_t sp;
     nexus_buffer_t     reply_buffer;
-    int                size, count;
     
-    fprintf(log_fp, "in gjm_callback\n");
+    fprintf(log_fp, "in grami_jm_callback\n");
 
     nexus_attach(callback_contact, &sp);
     
@@ -335,60 +336,67 @@ void gjm_callback(int state,
 
     nexus_startpoint_destroy(&sp);
 
-/*
-    nexus_poll();
-*/
-
-} /* gjm_callback() */
+} /* grami_jm_callback() */
 
 
-/*
- * gjm_get_param()
- */
-void gjm_get_param(grm_specification_t *sp,
+/******************************************************************************
+Function:       grami_jm_param_get()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+void 
+grami_jm_param_get(gram_specification_t *sp,
                    char *param,
                    char *value)
 {
-    grm_specification_t *child;
+    gram_specification_t *child;
 
     if (sp)
     {
-        if (sp->type == GRM_SPECIFICATION_BOOLEAN)
+        if (sp->type == GRAM_SPECIFICATION_BOOLEAN)
         {
-            /* GRM_SPECIFICATION_BOOLEAN */
+            /* GRAM_SPECIFICATION_BOOLEAN */
 
             /* search thru children */
             for (child = sp->req.boolean.child_list;
                 *value == '\0' && child; child = child->next)
-                    gjm_get_param(child, param, value);
+                    grami_jm_param_get(child, param, value);
         }
         else
         {
-            /* GRM_SPECIFICATION_RELATION */
+            /* GRAM_SPECIFICATION_RELATION */
             if (strcmp(sp->req.relation.left_op, param) == 0)
                strcpy(value, sp->req.relation.right_op);
         } /* endif */
     } /* endif */
-} /* gjm_get_param() */
+} /* grami_jm_param_get() */
 
 
-/*
- * gjm_terminate()
- */
-gjm_terminate()
+/******************************************************************************
+Function:       grami_jm_terminate()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+grami_jm_terminate()
 {
     nexus_mutex_lock(&(Monitor.mutex));
     Monitor.done = NEXUS_TRUE;
     nexus_cond_signal(&(Monitor.cond));
     nexus_mutex_unlock(&(Monitor.mutex));
-} /* gjm_terminate() */
+} /* grami_jm_terminate() */
 
 
-/*
- * allow_attachments()
- */
-static void allow_attachments(unsigned short *attach_port,
-                              char *attach_url)
+/******************************************************************************
+Function:       allow_attachments()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void 
+allow_attachments(unsigned short *attach_port,
+                  char *attach_url)
 {
     int rc;
     char *attach_host;
@@ -415,10 +423,16 @@ static void allow_attachments(unsigned short *attach_port,
 
 } /* end allow_attachments() */
 
-/*
- * attach_requested()
- */
-static int attach_requested(void *arg, char *url, nexus_startpoint_t *sp)
+/******************************************************************************
+Function:       attach_requested()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int 
+attach_requested(void *arg,
+                 char *url,
+                 nexus_startpoint_t *sp)
 {
     fprintf(log_fp, "in attach_requested callback\n");
 
@@ -427,37 +441,45 @@ static int attach_requested(void *arg, char *url, nexus_startpoint_t *sp)
     return(0);
 } /* attach_requested() */
 
-/*
- * cancel_handler()
- */
-static void cancel_handler(nexus_endpoint_t *endpoint,
-                            nexus_buffer_t *buffer,
-                            nexus_bool_t is_non_threaded_handler)
+/******************************************************************************
+Function:       graml_cancel_handler()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void 
+graml_cancel_handler(nexus_endpoint_t *endpoint,
+                     nexus_buffer_t *buffer,
+                     nexus_bool_t is_non_threaded_handler)
 {
-    fprintf(log_fp, "in cancel_handler\n");
+    fprintf(log_fp, "in graml_cancel_handler\n");
 
     /* clean-up */
     nexus_buffer_destroy(buffer);
 
-    gjm_job_cancel();
+    grami_jm_job_cancel();
 
-} /* cancel_handler() */
+} /* graml_cancel_handler() */
 
-/*
- * start_time_handler()
- */
-static void start_time_handler(nexus_endpoint_t *endpoint,
-                               nexus_buffer_t *buffer,
-                               nexus_bool_t is_non_threaded_handler)
+/******************************************************************************
+Function:       graml_start_time_handler()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void 
+graml_start_time_handler(nexus_endpoint_t *endpoint,
+                         nexus_buffer_t *buffer,
+                         nexus_bool_t is_non_threaded_handler)
 {
     float                    confidence;
     nexus_startpoint_t       reply_sp;
     nexus_buffer_t           reply_buffer;
-    grm_time_t               estimate, interval_size;
+    gram_time_t               estimate, interval_size;
     int                      size;
     int message_handled;
 
-    fprintf(log_fp, "in start_time_handler\n");
+    fprintf(log_fp, "in graml_start_time_handler\n");
 
     nexus_get_float(buffer, &confidence, 1);
     nexus_get_startpoint(buffer, &reply_sp, 1);
@@ -467,7 +489,12 @@ static void start_time_handler(nexus_endpoint_t *endpoint,
 
     fprintf(log_fp, "confidence passed = %f\n", confidence);
 
-    gjm_job_start_time(callback_contact, confidence, &estimate, &interval_size);
+    grami_jm_job_start_time(callback_contact,
+                            confidence,
+                            &estimate,
+                            &interval_size);
+
+    fprintf(log_fp, "after grami_jm_job_start_time\n");
 
     size  = nexus_sizeof_int(1);
     size += nexus_sizeof_int(1);
@@ -482,78 +509,30 @@ static void start_time_handler(nexus_endpoint_t *endpoint,
                    NEXUS_TRUE,
                    NEXUS_FALSE);
 
-/*
-    nexus_poll();
-*/
+} /* graml_start_time_handler() */
 
-} /* start_time_handler() */
-
-
-/*
- * print_tree()
- */
-static void print_tree(grm_specification_t *sp,
-                       int lvl)
+/******************************************************************************
+Function:       tree_free()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static void 
+tree_free(gram_specification_t *sp)
 {
-    if (sp)
-    {
-        if (sp->type == GRM_SPECIFICATION_BOOLEAN)
-        {
-            /* GRM_SPECIFICATION_BOOLEAN */
-            INDENT(lvl) printf("BOOLEAN ");
-            switch (sp->req.boolean.operator)
-            {
-                case GRM_AND:      printf("&\n"); break;
-                case GRM_OR:       printf("|\n"); break;
-                case GRM_MULTIREQ: printf("+\n"); break;
-                default: 
-                    printf("unknown %d\n", sp->req.boolean.operator); 
-                    break;
-            } /* end switch() */
-            print_tree(sp->req.boolean.child_list, lvl+1);
-        }
-        else
-        {
-            /* GRM_SPECIFICATION_RELATION */
-            INDENT(lvl) printf("RELATION ");
-            printf("%s ", sp->req.relation.left_op);
-            switch (sp->req.relation.operator)
-            {
-                case GRM_EQ: printf("= ");  break;
-                case GRM_NE: printf("!= "); break;
-                case GRM_LT: printf("< ");  break;
-                case GRM_LE: printf("<= "); break;
-                case GRM_GT: printf("> ");  break;
-                case GRM_GE: printf(">= "); break;
-                default: 
-                    printf("unknown %d\n", sp->req.relation.operator); 
-                    break;
-            } /* end switch() */
-            printf("%s\n", sp->req.relation.right_op);
-        } /* endif */
-        print_tree(sp->next, lvl);
-    } /* endif */
-
-} /* end print_tree() */
-
-/*
- * free_tree()
- */
-static void free_tree(grm_specification_t *sp)
-{
-    grm_specification_t *child;
+    gram_specification_t *child;
 
     if (sp)
     {
-        if (sp->type == GRM_SPECIFICATION_BOOLEAN)
+        if (sp->type == GRAM_SPECIFICATION_BOOLEAN)
         {
-            /* GRM_SPECIFICATION_BOOLEAN */
+            /* GRAM_SPECIFICATION_BOOLEAN */
 
             /* freeing children */
             while (child = sp->req.boolean.child_list)
             {
                 sp->req.boolean.child_list = child->next;
-                free_tree(child);
+                tree_free(child);
             } /* endwhile */
 
             /* freeing myself */
@@ -561,9 +540,9 @@ static void free_tree(grm_specification_t *sp)
         }
         else
         {
-            /* GRM_SPECIFICATION_RELATION ... no children */
+            /* GRAM_SPECIFICATION_RELATION ... no children */
             free(sp);
         } /* endif */
     } /* endif */
 
-} /* end free_tree() */
+} /* end tree_free() */
