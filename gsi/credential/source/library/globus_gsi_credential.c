@@ -80,8 +80,27 @@ globus_l_gsi_credential_activate(void)
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+    result = globus_module_activate(GLOBUS_COMMON_MODULE);
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+    
+    result = globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
+    result = globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+    
     OpenSSL_add_all_algorithms();
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
@@ -107,7 +126,11 @@ globus_l_gsi_credential_deactivate(void)
 
     EVP_cleanup();
 
+    globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
+
     globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
+
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
 
