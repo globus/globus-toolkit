@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
+
 schedulers="CondorIntelLinux Fork Lsf Pbs"
 keyword="SCHEDULER"
 
