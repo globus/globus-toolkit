@@ -28,6 +28,10 @@
 #  14. Get info on stored renewable credentials (myproxy-info -d).
 #  15. Verify renewal policies (one accept, one deny).
 #  16. Verify correct lifetime of retrieved credentials.
+# CoG test cases are:
+#   1. CoG anonget of myproxy-init stored credential.
+#   2. CoG get of myproxy-init stored credential.
+#   3. (pending) Store a credential (CoG myproxy put).
 
 use Expect; # if missing, install with: perl -MCPAN -e 'install Expect'
 $Expect::Log_Stdout=0; # suppress output to STDOUT
@@ -363,13 +367,18 @@ sub runtest {
 
 sub docogtests {
 
+    $cogmyproxy = "$ENV{COG_INSTALL_PATH}/bin/myproxy -h $ENV{MYPROXY_SERVER}";
+    $ENV{"COG_OPTS"} = " -DX509_USER_PROXY=$ENV{X509_USER_PROXY}"
+                     . " -DX509_USER_CERT=$ENV{X509_USER_CERT}"
+                     . " -DX509_USER_KEY=$ENV{X509_USER_KEY}";
+
     ($exitstatus, $output) =
 	&runtest("myproxy-init -v -a -c 1 -t 1",
 		 $passphrase . "\n" . $passphrase . "\n");
     print "MyProxy CoG Test 1 (anonget of myproxy-init credential): ";
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
-	    &runtest("$ENV{COG_INSTALL_PATH}/bin/myproxy -h $ENV{MYPROXY_SERVER} anonget -o /tmp/myproxy-test.$$",
+	    &runtest("$cogmyproxy anonget -o /tmp/myproxy-test.$$",
 		     $passphrase . "\n");
     }
     if ($exitstatus == 0) {
@@ -381,6 +390,39 @@ sub docogtests {
     } else {
 	print "FAILED\n"; $FAILURES++; print STDERR $output;
     }
+
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -a -c 1 -t 1",
+		 $passphrase . "\n" . $passphrase . "\n");
+    print "MyProxy CoG Test 2 (get of myproxy-init credential): ";
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &runtest("$cogmyproxy get -o /tmp/myproxy-test.$$",
+		     $passphrase . "\n");
+    }
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+    }
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+
+#     This test is disabled for now, pending new Java CoG release
+#     with certificate chain support:
+#       (http://bugzilla.globus.org/globus/show_bug.cgi?id=1914)
+#
+#     ($exitstatus, $output) =
+# 	&runtest("$cogmyproxy put -a -c 1 -t 1",
+# 		 $passphrase . "\n");
+#     print "MyProxy CoG Test 3 (store credential with default name): ";
+#     if ($exitstatus == 0) {
+# 	print "SUCCEEDED\n"; $SUCCESSES++;
+#     } else {
+# 	print "FAILED\n"; $FAILURES++; print STDERR $output;
+#     }
 }
 
 #
