@@ -98,6 +98,7 @@ globus_c_wsrf_resource_test                 wsrf/c/resource/test gpt
 globus_c_ws_security                        wsrf/c/core/security/source gpt
 globus_globusrun_ws                         ws-gram/client/c/source gpt
 globus_c_rendezvous_client_bindings         ws-rendezvous/client/c/bindings tar
+globus_c_wsrf_rendezvous_test               ws-rendezvous/client/c/test gpt
 globus_c_gram_client_bindings               ws-gram/client/c/bindings tar
 globus_c_delegation_client_bindings         ws-delegation/client/c/bindings tar
 globus_c_delegation_client_util             ws-delegation/client/c/util gpt
