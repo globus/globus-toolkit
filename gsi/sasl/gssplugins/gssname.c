@@ -3,6 +3,8 @@
  * several routines are from Meyer's draft
  */
 
+#include <globus_config.h>
+
 #include <stdio.h>
 #include <openssl/md5.h>
 
