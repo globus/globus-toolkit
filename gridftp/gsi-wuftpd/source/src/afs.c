@@ -57,6 +57,8 @@ static int unlog_internal()
 
 #else /* !HAVE_LIBKRBAFS */
 
+#include <signal.h>
+
 /* XXX Do we always want this or just if we have POSIX_SETJMP? */
 #include <setjmp.h>
 
@@ -90,7 +92,7 @@ typedef struct sigaction handler;
 
 /* XXX - I think this code is broken VW 4/21/00 */
 
-typedef sigtype (*handler)();
+typedef RETSIGTYPE (*handler)();
 #define handler_init(H,F)		((H) = (F))
 #define handler_swap(S,NEW,OLD)		((OLD) = signal ((S), (NEW)))
 #define handler_set(S,OLD)		(signal ((S), (OLD)))
@@ -101,7 +103,7 @@ extern setpag(), ktc_ForgetAllTokens();
 
 static sigjmp_buf setpag_buf;
 
-static sigtype sigsys ()
+static RETSIGTYPE sigsys ()
 {
     siglongjmp(setpag_buf, 1);
 }

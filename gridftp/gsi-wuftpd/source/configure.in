@@ -229,6 +229,7 @@ if test "$with_afs" != "no"; then
 	dnl These checks needed for transarc AFS code in afs.c
 	CHECK_SIGNALS
 	CHECK_SETJMP
+	AC_TYPE_SIGNAL
 else
 	AFS_SRC=""
 fi

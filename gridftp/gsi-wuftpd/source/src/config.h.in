@@ -238,4 +238,9 @@
  */
 #undef POSIX_SETJMP
 
+/*
+ * What does signal() return?
+ */
+#undef RETSIGTYPE
+
 #include "../config.h"
