@@ -148,7 +148,7 @@ int main()
         {
             globus_gss_assist_display_status_str(&error_str,
                                                  NULL,
-                                                 init_maj_stat,
+                                                 accept_maj_stat,
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
