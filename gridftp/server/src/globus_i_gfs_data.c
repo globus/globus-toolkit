@@ -3037,6 +3037,10 @@ globus_gridftp_server_finished_transfer(
         {
             /* this is the normal case */
             case GLOBUS_L_GFS_DATA_CONNECTED:
+            /* we allow finishing in connecting state with no error since
+            it likely means a correct zero byte transfer.  errors on the 
+            connect will still be caught if the write eof here fails */
+            case GLOBUS_L_GFS_DATA_CONNECTING:
                 if(result != GLOBUS_SUCCESS)
                 {
                     op->cached_res = result;
@@ -3092,15 +3096,6 @@ globus_gridftp_server_finished_transfer(
                 to the finished state, when the force close callback comes
                 back it will continue the finish process */
             case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
-                break;
-
-            case GLOBUS_L_GFS_DATA_CONNECTING:
-                if(result != GLOBUS_SUCCESS)
-                {
-                    op->cached_res = result;
-                }
-                globus_l_gfs_data_force_close(op);
-                goto err_close; 
                 break;
 
             case GLOBUS_L_GFS_DATA_COMPLETING:
