@@ -79,12 +79,8 @@ void sig_exit(int signo);
 void sig_chld(int signo);
 void sig_ign(int signo);
 
-#if defined (MULTICRED_FEATURE)
 int myproxy_creds_info(struct myproxy_creds *creds,
 		       myproxy_response_t *response);
-#else
-int myproxy_creds_info(struct myproxy_creds *creds);
-#endif
 
 /* Function declarations */
 int init_arguments(int argc, 
@@ -417,7 +413,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	client_creds->renewers = strdup(client_request->renewers);
     }
 
-#if defined (MULTICRED_FEATURE)
     /* Copy credential name and description, if present */
     if (client_request->credname != NULL)
 	client_creds->credname = strdup (client_request->credname);
@@ -426,7 +421,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	client_creds->creddesc = strdup (client_request->creddesc);
 
     client_creds->force_credential_overwrite = client_request->force_credential_overwrite;
-#endif
 
     /* All authorization policies are enforced in this function. */
     if (myproxy_authorize_accept(context, attrs, 
@@ -773,11 +767,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-#if defined (MULTICRED_FEATURE)
     if (myproxy_creds_info(creds, response) < 0) {
-#else
-    if (myproxy_creds_info(creds) < 0) {
-#endif
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
        (response->data).error_str= strdup("Unable to check credential.\n");

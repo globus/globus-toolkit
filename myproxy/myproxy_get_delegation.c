@@ -46,9 +46,7 @@ static char usage[] = \
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential as the default username\n"
 "                                         instead of the LOGNAME env. var.\n"
-#if defined (MULTICRED_FEATURE)
 "	 -k | --credname	<name>    Specify credential name\n"
-#endif
 "\n";
 
 struct option long_options[] =
@@ -64,17 +62,11 @@ struct option long_options[] =
     {"version",                no_argument, NULL, 'V'},
     {"authorization",    required_argument, NULL, 'r'},
     {"dn_as_username",         no_argument, NULL, 'd'},
-#if defined (MULTICRED_FEATURE)
     {"credname",	 required_argument, NULL, 'k'},
-#endif
     {0, 0, 0, 0}
 };
 
-#if defined (MULTICRED_FEATURE)
 static char short_options[] = "hus:p:l:t:o:vVa:dk:";
-#else
-static char short_options[] = "hus:p:l:t:o:vVa:d";
-#endif
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -214,11 +206,9 @@ init_arguments(int argc,
 		       username instead of LOGNAME */
 	    dn_as_username = 1;
 	    break;
-#if defined (MULTICRED_FEATURE)
 	case 'k':   /* credential name */
 	    request->credname = strdup (gnu_optarg);
 	    break;
-#endif 
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
 	    exit(1);

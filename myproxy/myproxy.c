@@ -439,7 +439,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-#if defined (MULTICRED_FEATURE)
     //credential name
     if (request->credname!= NULL)
     {
@@ -484,7 +483,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
    
-#endif
     //authorized service string
     for (authorized_services = request->authorized_service_dns;
 	 authorized_services; authorized_services++) {
@@ -663,7 +661,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
          }
        }
 
-#if defined (MULTICRED_FEATURE)
     //credential name
     tmp[0] = '\0';
     len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", 
@@ -743,7 +740,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
     	{
 		return -1;
     	}
-#endif
 
     //authorization service
     len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,

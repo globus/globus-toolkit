@@ -222,7 +222,6 @@ line_parse_callback(void *context_arg,
 	}
     }
 
-#if defined (MULTICRED_FEATURE)
     if (strcmp (directive, "default_database_name") == 0)
     {
 	int index = 1; /* Skip directive */
@@ -236,16 +235,7 @@ line_parse_callback(void *context_arg,
 	}
 	context->dbase_name = strdup (tokens[index]);
     }
-#endif
    
-/*
-	// This was disabled to facilitate upward compatibility 
-    if (!matched)
-    {
-	verror_put_string("Unrecognized directive \"%s\" on line %d of configuration file",
-			  directive, line_number);
-    }
-*/
     return_code = 0;
     
   error:
