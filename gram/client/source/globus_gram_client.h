@@ -138,6 +138,8 @@ CVS Information:
 #define GLOBUS_GRAM_CLIENT_PARADYN_PARAM                  "paradyn"
 #define GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM                  "jobtype"
 #define GLOBUS_GRAM_CLIENT_MYJOB_PARAM                    "gram_myjob"
+#define GLOBUS_GRAM_CLIENT_QUEUE_PARAM                    "queue"
+#define GLOBUS_GRAM_CLIENT_PROJECT_PARAM                  "project"
 
 /*
  *  Job Default Constants
