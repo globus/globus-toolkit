@@ -14,7 +14,8 @@
 </BundleReleaseInfo>
 <PackageList >
 <IncludedPackages >
-<Package PackageFlavor="ANY" PackageName="gsi_openssh" PackageType="src" PackageVersion="2.2" />
+<Package PackageFlavor="ANY" PackageName="gsi_openssh" PackageType="src" />
+<Package PackageFlavor="ANY" PackageName="gsi_openssh_setup" PackageType="src" />
 </IncludedPackages>
 <ExcludedPackages >
 </ExcludedPackages>
