@@ -103,7 +103,8 @@ while [ $# -ge 1 ]; do
 done
 
 
-eval $CAT_TARGETS  | @EGREP@ '(fork|poe)' | @AWK@ -F: '{print $1}' | @SORT@ | @UNIQ@ | while read TARGET; do
+#eval $CAT_TARGETS  | @EGREP@ '(fork|poe)' | @AWK@ -F: '{print $1}' | @SORT@ | @UNIQ@ | while read TARGET; do
+eval $CAT_TARGETS  | @SED@ '/fork/ p;/poe/ p; d' | @AWK@ -F: '{print $1}' | @SORT@ | @UNIQ@ | while read TARGET; do
 
 
 TARGET_FORK=`${bindir}/globus-hostname2contacts -t fork,poe ${TARGET}`
