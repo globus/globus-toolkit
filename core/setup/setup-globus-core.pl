@@ -28,6 +28,10 @@ for my $setupfile ('globus-script-initializer', 'globus-sh-tools.sh')
     $result = system("chmod 0755 $globusdir/libexec/$setupfile");
 }
 
+print "creating Globus::Core::Paths\n";
+system("mkdir -p $globusdir/lib/perl/Globus/Core");
+system("cp $setupdir/Paths.pm $globusdir/lib/perl/Globus/Core/");
+
 print "Done\n";
 
 $metadata->finish();

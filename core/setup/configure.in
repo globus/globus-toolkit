@@ -35,6 +35,7 @@ AC_SUBST(secure_tmpdir)
 AC_OUTPUT(
         Makefile
 	globus-script-initializer
+	Paths.pm:Paths.in
         pkgdata/Makefile
         pkgdata/pkg_data_src.gpt
 )
