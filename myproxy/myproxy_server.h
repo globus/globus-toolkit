@@ -8,16 +8,12 @@
 
 #ifndef MYPROXY_SERVER_DIR
 #define MYPROXY_SERVER_DIR	"/usr/local/myproxy-server"
-#endif /* !MYPROXY_SERVER_DIR */
+#endif /* !MYPROXY_SERVER_DIR */ 
 
-/* Borrowed from globus_gatekeeper.c */
-static char tmpbuf[1024];
-#define message2(a,b) {sprintf(tmpbuf, a,b); message(tmpbuf);}
-#define message3(a,b,c) {sprintf(tmpbuf, a,b,c); message(tmpbuf);}
-#define message4(a,b,c,d) {sprintf(tmpbuf, a,b,c,d); message(tmpbuf);}
-#define failure2(a,b) {sprintf(tmpbuf, a,b); failure(tmpbuf);}
-#define failure3(a,b,c) {sprintf(tmpbuf, a,b,c); failure(tmpbuf);}
-#define failure4(a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(tmpbuf);} 
+/* Define default myproxy-server -- should probably be put in config file */
+#define MYPROXY_SERVER_PORT            7512
+#define MYPROXY_SERVER_MAX_CRED_HOURS   168 /* lifetime on myproxy-server */   
+#define MYPROXY_SERVER_MAX_DELEG_HOURS    1 /* lifetime on webserver */
 
 extern int errno;
 
