@@ -109,14 +109,11 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
         fprintf(stderr, "Error getting client name: %s\n", error_string);
         return -1;
     }
-
-    printf("Client is : %s\n", client_name);
-
     return 0;
 }
 
 int
-myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile)
+myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime)
 {
  
   char error_string[1024];
@@ -126,9 +123,9 @@ myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile)
 
   if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
 				     delegfile /* delegation file */,
-				     0 /* flags */,
-				     0 /* lifetime */,
-				     NULL /* restrictions */) == GSI_SOCKET_ERROR) {
+				     0         /* flags */,
+				     lifetime  /* lifetime */,
+				     NULL      /* restrictions */) == GSI_SOCKET_ERROR) {
     
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
@@ -151,8 +148,6 @@ myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int d
     fprintf(stderr, "Error accepting delegating credentials: %s\n", error_string);
     return -1;
   }
-
-  printf("Accepted delegation: %s\n", data); 
   return 0;
 }
 
@@ -191,14 +186,9 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
                  "%s%d\n", MYPROXY_LIFETIME_STRING, 3600*request->hours);
     if (len < 0)
       return -1;
-    
     totlen += len;
-
-#ifdef DEBUG    
-    printf("request data=\n----------\n%s\n----------\n", data);
-#endif
-
-    return totlen;
+    data[totlen] = '\0';
+    return totlen+1;
 }
 
 int 
@@ -288,16 +278,14 @@ myproxy_serialize_response(const myproxy_response_t *response,
         len = snprintf(&data[totlen], datalen - totlen, 
                        "%s%s\n", MYPROXY_ERROR_STRING, response->error_string);
         if (len < 0)
-            return -1;
+	  return -1;
 
         totlen += len;
     }
+    data[totlen] = '\0';
 
-#ifdef DEBUG    
-    printf("response data=\n----------\n%s\n----------\n", data);
-#endif
-
-    return totlen;
+    printf("RESPONSE: %s\n", data);
+    return totlen+1;
 }
 
 
@@ -328,7 +316,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
       return -1;
     }
 
-    /* It's ok if ERROR_STRING not present */
+    /* It's ok if ERROR not present */
     len = convert_message(data, MYPROXY_ERROR_STRING, 
                           response->error_string, sizeof(response->error_string));
     if (len > 0) {
@@ -374,7 +362,7 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
    } else if (readlen == GSI_SOCKET_TRUNCATED) {
        fprintf(stderr, "Response was truncated\n");
        return -2;
-   } 
+   }
    return readlen;
 } 
 
@@ -383,7 +371,7 @@ myproxy_destroy(myproxy_socket_attrs_t *attrs,
 		       myproxy_request_t *request, 
 		       myproxy_response_t *response)
 { 
-    if ((attrs == NULL) || (request == NULL)) 
+    if ((attrs == NULL) || (request == NULL) || (response == NULL)) 
       return;
   
     if (attrs->pshost != NULL) 
@@ -403,6 +391,7 @@ myproxy_destroy(myproxy_socket_attrs_t *attrs,
 
     free(attrs);
     free(request);
+    free(response);
 }
 
 /*--------- Helper functions ------------*/

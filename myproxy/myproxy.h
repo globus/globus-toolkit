@@ -21,7 +21,8 @@
 #define MYPROXY_SERVER_LOG_FILE   "/usr/local/myproxy/myproxyserver.log"
 
 /* Default proxy lifetime */
-#define MYPROXY_DEFAULT_HOURS  84
+#define MYPROXY_DEFAULT_HOURS        84      /* lifetime on myproxy-server */
+#define MYPROXY_DEFAULT_PROXY_HOURS  1       /* lifetime on webserver      */
 
 /* Location of default proxy */
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
@@ -179,11 +180,12 @@ int  myproxy_recv(myproxy_socket_attrs_t *attrs,
 /*
  * myproxy_init_delegation()
  *
- * Delegates a proxy based on the credentials found in file location delegfile
+ * Delegates a proxy based on the credentials found in file 
+ * location delegfile good for lifetime seconds
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile);
+int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime);
 
 /*
  * myproxy_accept_delegation()
