@@ -15,7 +15,8 @@ typedef struct
 {
   char *my_name;                 /* My name for logging and such */
   int run_as_daemon;             /* Run as a daemon? */
-  char  *config_file;            /* configuration file */     
+  char *config_file;             /* configuration file */
+  char *passphrase_policy_pgm;   /* external program for password check */
   char **accepted_credential_dns;/* List of creds that can be stored */
   char **authorized_retriever_dns;/* List of DNs we'll delegate to */
   char **default_retriever_dns;/* List of DNs we'll delegate to */
