@@ -755,7 +755,7 @@ main(int argc,
                                 (void *) jm_globus_host_osname);
         if (jm_globus_host_osversion)
             globus_symboltable_insert(symbol_table,
-                                (void *) "GLOBUS_HOST_VERSION",
+                                (void *) "GLOBUS_HOST_OSVERSION",
                                 (void *) jm_globus_host_osversion);
         globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_PREFIX",
