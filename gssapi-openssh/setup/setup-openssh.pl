@@ -1,8 +1,10 @@
+#!/usr/bin/perl
 #
-# setup-openssh.pl:
-#   Adapts the installed gsi-ssh environment to the current machine,
-#   performing actions that originally occurred during the package's
-#   'make install' phase.
+# setup-openssh.pl
+#
+# Adapts the installed gsi-ssh environment to the current machine,
+# performing actions that originally occurred during the package's
+# 'make install' phase.
 #
 # Parts adapted from 'fixpath', a tool found in openssh-3.0.2p1.
 #
@@ -376,6 +378,12 @@ print "  $gpath\n";
 print "\n";
 print "Remember to keep this variable set (correctly) when you want\n";
 print "to use the executables that came with this package.\n";
+print "\n";
+print "Additionally, you may need to set LD_LIBRARY_PATH to point to\n";
+print "the location in which your globus libraries reside.  For example:\n";
+print "\n";
+print "  export LD_LIBRARY_PATH=\"$gpath/lib\"\n";
+print "\n";
 print "---------------------------------------------------------------\n";
 
 #
