@@ -684,6 +684,7 @@ globus_i_gsi_callback_check_revoked(
     {
 	X509 *				issuer;
         time_t                          last_time;
+        int                             has_next_time;
         time_t                          next_time;
         EVP_PKEY *                      issuer_key;
 
@@ -691,9 +692,13 @@ globus_i_gsi_callback_check_revoked(
 
         crl =  x509_object.data.crl;
         crl_info = crl->crl;
+
+        has_next_time = (crl_info->nextUpdate != NULL);
         
         globus_gsi_cert_utils_make_time(crl_info->lastUpdate, &last_time);
-        globus_gsi_cert_utils_make_time(crl_info->nextUpdate, &next_time);
+        if (has_next_time) {
+            globus_gsi_cert_utils_make_time(crl_info->nextUpdate, &next_time);
+        }
 
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "CRL last Update: ");
         GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
@@ -702,7 +707,7 @@ globus_i_gsi_callback_check_revoked(
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\nCRL next Update: ");
         GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
             2, (globus_i_gsi_callback_debug_fstream,
-                "%s", asctime(gmtime(&next_time))));
+                "%s", has_next_time ? asctime(gmtime(&next_time)) : "<not set>" ));
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "\n");
 
         /* verify the signature on this CRL */
@@ -755,9 +760,30 @@ globus_i_gsi_callback_check_revoked(
 
         EVP_PKEY_free(issuer_key);
         
-        /* Check date see if expired */
-    
-        i = X509_cmp_current_time(crl_info->nextUpdate);
+        /* Check date */
+
+        i = X509_cmp_current_time(crl_info->lastUpdate);
+        if (i == 0)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                ("In the available CRL, the thisUpdate field is not valid"));
+            x509_context->error = X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD;
+            goto free_X509_object;
+        }
+
+        if (i > 0)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                ("The available CRL is not yet valid"));
+            x509_context->error = X509_V_ERR_CRL_NOT_YET_VALID;
+            goto free_X509_object;
+        }
+        
+        i = (has_next_time) ? X509_cmp_current_time(crl_info->nextUpdate) : 1;
         if (i == 0)
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
