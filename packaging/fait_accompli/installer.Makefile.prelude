@@ -12,7 +12,7 @@ THR=@thr@
 clean:
 	rm -f gpt-stamp
 distclean: clean
-	rm -f Makefile
+	rm -f Makefile config.status config.log
 
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_libtool globus_common globus_common_setup
