@@ -70,6 +70,7 @@ globus_gss_assist_authorization_host_name(
     {
         strncpy(&realhostname[5], addrinfo->ai_canonname, 
                 sizeof(realhostname) - 5);
+        realhostname[132] = '\0';
     }
 
     globus_libc_freeaddrinfo(addrinfo);
