@@ -133,6 +133,9 @@ struct addrinfo {
 #endif /* !HAVE_STRUCT_ADDRINFO */
 
 #ifndef HAVE_GETADDRINFO
+#ifdef getaddrinfo
+# undef getaddrinfo
+#endif
 #define getaddrinfo(a,b,c,d)	(ssh_getaddrinfo(a,b,c,d))
 int getaddrinfo(const char *, const char *, 
     const struct addrinfo *, struct addrinfo **);

@@ -131,6 +131,9 @@
 /* Define if your AIX loginfailed() function takes 4 arguments (AIX >= 5.2) */
 #undef AIX_LOGINFAILED_4ARG
 
+/* Define if your skeychallenge() function takes 4 arguments (eg NetBSD) */
+#undef SKEYCHALLENGE_4ARG
+
 /* Define if you have/want arrays (cluster-wide session managment, not C arrays) */
 #undef WITH_IRIX_ARRAY
 
@@ -201,6 +204,9 @@
 
 /* Define if you don't want to use lastlog in session.c */
 #undef NO_SSH_LASTLOG
+
+/* Define if have krb5_init_ets */
+#undef KRB5_INIT_ETS
 
 /* Define if you don't want to use utmp */
 #undef DISABLE_UTMP
@@ -359,6 +365,9 @@
 
 /* getaddrinfo is broken (if present) */
 #undef BROKEN_GETADDRINFO
+
+/* updwtmpx is broken (if present) */
+#undef BROKEN_UPDWTMPX
 
 /* Workaround more Linux IPv6 quirks */
 #undef DONT_TRY_OTHER_AF

@@ -76,6 +76,10 @@ ssh_gssapi_mech* supported_mechs[]= {
 	&gssapi_null_mech,
 };
 
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+static int limited = 0;
+#endif
+
 /* Unpriviledged */
 void
 ssh_gssapi_supported_oids(gss_OID_set *oidset)
@@ -86,7 +90,8 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
 	gss_OID_set supported;
 
 	gss_create_empty_oid_set(&min_status, oidset);
-	gss_indicate_mechs(&min_status, &supported);
+	/* Ask priviledged process what mechanisms it supports. */
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
 
 	while (supported_mechs[i]->name != NULL) {
 		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
@@ -136,6 +141,10 @@ ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *recv_tok,
 	    (*flags & GSS_C_INTEG_FLAG))) && (ctx->major == GSS_S_COMPLETE)) {
 		if (ssh_gssapi_getclient(ctx, &gssapi_client))
 			fatal("Couldn't convert client name");
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+		if (flags && (*flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG))
+			limited=1;
+#endif
 	}
 
 	return (status);
@@ -306,6 +315,12 @@ ssh_gssapi_userok(char *user)
 		debug("No suitable client data");
 		return 0;
 	}
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+	if (limited) {
+		debug("limited proxy not acceptable for remote login");
+		return 0;
+	}
+#endif
 	if (gssapi_client.mech && gssapi_client.mech->userok)
 		return ((*gssapi_client.mech->userok)(&gssapi_client, user));
 	else

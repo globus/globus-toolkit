@@ -37,7 +37,13 @@ RCSID("$OpenBSD: monitor.c,v 1.55 2004/02/05 05:37:17 dtucker Exp $");
 #include "auth.h"
 #include "kex.h"
 #include "dh.h"
+#ifdef TARGET_OS_MAC	/* XXX Broken krb5 headers on Mac */
+#undef TARGET_OS_MAC
 #include "zlib.h"
+#define TARGET_OS_MAC 1
+#else
+#include "zlib.h"
+#endif
 #include "packet.h"
 #include "auth-options.h"
 #include "sshpty.h"
@@ -781,7 +787,8 @@ mm_answer_skeyquery(int socket, Buffer *m)
 	char challenge[1024];
 	u_int success;
 
-	success = skeychallenge(&skey, authctxt->user, challenge) < 0 ? 0 : 1;
+	success = _compat_skeychallenge(&skey, authctxt->user, challenge,
+	    sizeof(challenge)) < 0 ? 0 : 1;
 
 	buffer_clear(m);
 	buffer_put_int(m, success);
@@ -825,16 +832,10 @@ mm_answer_skeyrespond(int socket, Buffer *m)
 int
 mm_answer_pam_start(int socket, Buffer *m)
 {
-	char *user;
-
 	if (!options.use_pam)
 		fatal("UsePAM not set, but ended up in %s anyway", __func__);
 
-	user = buffer_get_string(m, NULL);
-
-	start_pam(user);
-
-	xfree(user);
+	start_pam(authctxt);
 
 	monitor_permit(mon_dispatch, MONITOR_REQ_PAM_ACCOUNT, 1);
 
@@ -1891,11 +1892,13 @@ int
 mm_answer_gss_sign(int socket, Buffer *m) {
         gss_buffer_desc data,hash;
         OM_uint32 major,minor;
+	u_int len;
 
-        data.value = buffer_get_string(m,&data.length);
-        if (data.length != 16) {  /* HACK - i.e. we are using SSHv1 */
+        data.value = buffer_get_string(m, &len);
+	data.length = len;
         if (data.length != 20)
-                fatal("%s: data length incorrect: %d", __func__, data.length);
+		fatal("%s: data length incorrect: %d", __func__,
+		      (int)data.length);
 
         /* Save the session ID - only first time round */
         if (session_id2_len == 0) {
@@ -1903,7 +1906,6 @@ mm_answer_gss_sign(int socket, Buffer *m) {
                 session_id2 = xmalloc(session_id2_len);
                 memcpy(session_id2, data.value, session_id2_len);
         }
-        } /* HACK - end */
         major=ssh_gssapi_sign(gsscontext, &data, &hash);
 
         xfree(data.value);

@@ -17,11 +17,11 @@
 #old cvs stuff.  please update before use.  may be deprecated.
 %define use_stable	1
 %if %{use_stable}
-  %define version 	3.8p1
+  %define version 	3.8.1p1
   %define cvs		%{nil}
   %define release 	1
 %else
-  %define version 	3.8p1
+  %define version 	3.8.1p1
   %define cvs		cvs20011009
   %define release 	0r1
 %endif

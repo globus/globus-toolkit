@@ -206,6 +206,7 @@ display_loginmsg(void)
 		printf("%s\n", (char *)buffer_ptr(&loginmsg));
 		buffer_clear(&loginmsg);
 	}
+	fflush(stdout);
 }
 
 void
@@ -510,6 +511,13 @@ do_exec_no_pty(Session *s, const char *command)
 	/* We are the parent.  Close the child sides of the socket pairs. */
 	close(inout[0]);
 	close(err[0]);
+
+	/*
+	 * Clear loginmsg, since it's the child's responsibility to display
+	 * it to the user, otherwise multiple sessions may accumulate
+	 * multiple copies of the login messages.
+	 */
+	buffer_clear(&loginmsg);
 
 	/*
 	 * Enter the interactive session.  Note: server_loop must be able to
@@ -1159,9 +1167,6 @@ do_setup_env(Session *s, const char *shell)
 		 * needed for loading shared libraries. So the path better
 		 * remains intact here.
 		 */
-		if (getenv("LD_LIBRARY_PATH"))
-			child_set_env(&env, &envsize, "LD_LIBRARY_PATH",
-				      getenv("LD_LIBRARY_PATH"));
 #  ifdef HAVE_ETC_DEFAULT_LOGIN
 		read_etc_default_login(&env, &envsize, pw->pw_uid);
 		path = child_get_env(env, "PATH");
@@ -1184,10 +1189,23 @@ do_setup_env(Session *s, const char *shell)
 	if (getenv("TZ"))
 		child_set_env(&env, &envsize, "TZ", getenv("TZ"));
 
-#ifdef GSI
-	if (getenv("GLOBUS_LOCATION"))
-		child_set_env(&env, &envsize, "GLOBUS_LOCATION",
-			      getenv("GLOBUS_LOCATION"));
+#ifdef GSI /* GSI shared libs typically installed in non-system locations. */
+	{
+		char *cp;
+
+		if ((cp = getenv("LD_LIBRARY_PATH")) != NULL)
+			child_set_env(&env, &envsize, "LD_LIBRARY_PATH", cp);
+		if ((cp = getenv("LIBPATH")) != NULL)
+			child_set_env(&env, &envsize, "LIBPATH", cp);
+		if ((cp = getenv("SHLIB_PATH")) != NULL)
+			child_set_env(&env, &envsize, "SHLIB_PATH", cp);
+		if ((cp = getenv("LD_LIBRARYN32_PATH")) != NULL)
+			child_set_env(&env, &envsize, "LD_LIBRARYN32_PATH",cp);
+		if ((cp = getenv("LD_LIBRARY64_PATH")) != NULL)
+			child_set_env(&env, &envsize, "LD_LIBRARY64_PATH",cp);
+		if ((cp = getenv("GLOBUS_LOCATION")) != NULL)
+			child_set_env(&env, &envsize, "GLOBUS_LOCATION",cp);
+	}
 #endif
 
 	/* Set custom environment options from RSA authentication. */
@@ -1246,9 +1264,9 @@ do_setup_env(Session *s, const char *shell)
 	}
 #endif
 #ifdef KRB5
-	if (s->authctxt->krb5_ticket_file)
+	if (s->authctxt->krb5_ccname)
 		child_set_env(&env, &envsize, "KRB5CCNAME",
-		    s->authctxt->krb5_ticket_file);
+		    s->authctxt->krb5_ccname);
 #endif
 #ifdef USE_PAM
 	/*

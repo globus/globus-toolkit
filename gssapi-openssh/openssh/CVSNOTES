@@ -51,6 +51,28 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2004/06/29
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_3_8P1_GSSAPI_20040422
+        - new base: OPENSSH_3_8_P1_GSSAPI_20040629
+      Conflicts: 4
+        - ChangeLog
+	    Old log entries were trimmed in the 3.8.1p1 release.
+	    Not sure why this generated a conflict.
+        - configure.ac
+	    Copyright statement added to head of configure.ac, which
+	    generated a conflict due to nearby $Id$ evil.
+        - session.c
+	    We do child_set_env("GLOBUS_LOCATION") on the branch, and
+            this conflicted with the child_set_env("LIBPATH") changes
+            on the trunk.  Merged in child_set_env("GLOBUS_LOCATION")
+	    with the new code.
+        - version.h
+	    Should always get a conflict here on version changes.
+	    Bumped version to OpenSSH_3.8.1P1 NCSA_GSSAPI_GPT_3.3.
+
     2004/04/22
     ----------
       Action: Merge

@@ -49,6 +49,30 @@ extern ServerOptions options;
 #endif
 
 static krb5_context krb_context = NULL;
+static int ssh_gssapi_krb5_init();
+static int ssh_gssapi_krb5_userok(ssh_gssapi_client *client, char *name);
+static int ssh_gssapi_krb5_localname(ssh_gssapi_client *client, char **user);
+static void ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client);
+
+ssh_gssapi_mech gssapi_kerberos_mech = {
+	"toWM5Slw5Ew8Mqkay+al2g==",
+	"Kerberos",
+	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
+	NULL,
+	&ssh_gssapi_krb5_userok,
+	&ssh_gssapi_krb5_localname,
+	&ssh_gssapi_krb5_storecreds
+};
+
+ssh_gssapi_mech gssapi_kerberos_mech_old = {
+	"Se3H81ismmOC3OE+FwYCiQ==",
+	"Kerberos",
+	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
+	&ssh_gssapi_krb5_init,
+	&ssh_gssapi_krb5_userok,
+	&ssh_gssapi_krb5_localname,
+	&ssh_gssapi_krb5_storecreds
+};
 
 /* Initialise the krb5 library, for the stuff that GSSAPI won't do */
 
@@ -65,7 +89,9 @@ ssh_gssapi_krb5_init()
 		logit("Cannot initialize krb5 context");
 		return 0;
 	}
+#ifdef KRB5_INIT_ETS
 	krb5_init_ets(krb_context);
+#endif
 
 	return 1;
 }
@@ -234,26 +260,6 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 
 	return;
 }
-
-ssh_gssapi_mech gssapi_kerberos_mech = {
-	"toWM5Slw5Ew8Mqkay+al2g==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	NULL,
-	&ssh_gssapi_krb5_userok,
-	&ssh_gssapi_krb5_localname,
-	&ssh_gssapi_krb5_storecreds
-};
-
-ssh_gssapi_mech gssapi_kerberos_mech_old = {
-	"Se3H81ismmOC3OE+FwYCiQ==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	&ssh_gssapi_krb5_init,
-	&ssh_gssapi_krb5_userok,
-	&ssh_gssapi_krb5_localname,
-	&ssh_gssapi_krb5_storecreds
-};
 
 #endif /* KRB5 */
 
