@@ -67,6 +67,6 @@ deployed='FALSE'              # This line is overwritten during deployment
     sysconfdir=${prefix}/etc
     sharedstatedir=${prefix}/com
     localstatedir=${prefix}/var
-    tmpdir=${prefix}/tmp
+    tmpdir=@tmpdir@
     secure_tmpdir=@secure_tmpdir@
     ################# END    Inserted by configure #############
