@@ -104,11 +104,6 @@ tokenize(char * command, char ** args, int * n);
 static char *
 genfilename(char * prefix, char * path, char * sufix);
 
-/* comment out for now stuart martin 7/3/97
-extern char 
-*crypt(char *key, char *salt);
-*/
-
 /*
  * GSSAPI - credential handle for this process
  */
@@ -121,9 +116,6 @@ static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
 #define MAXARGS 256
 #define DEFAULT_PORT 754
 #define MAX_MESSAGE_LENGTH 100000
-#ifndef JOB_MANAGER_EXE
-#  define JOB_MANAGER_EXE "globus_gram_job_manager"
-#endif
 #ifndef GRAM_K5_EXE
 #	define GRAM_K5_EXE "globus-k5"
 #endif
@@ -159,8 +151,7 @@ static FILE *   usrlog_fp;
 static char *   logfile = LOGFILE;
 static FILE *   test_fp;
 static char     test_dat_file[1024];
-static int		gatekeeper_test;
-
+static int      gatekeeper_test;
 static int      gatekeeper_uid;
 static int      daemon_port;
 static int      logging_syslog;
@@ -169,23 +160,23 @@ static int      debug;
 static int      foreground;
 static int      krb5flag;
 static int      run_from_inetd;
-static char *	gatekeeperhome = NULL;
-static char *	libexecdir = GLOBUS_LIBEXECDIR;
-static char *	job_manager_exe = JOB_MANAGER_EXE;
+static char *   gatekeeperhome = NULL;
+static char *   libexecdir = GLOBUS_LIBEXECDIR;
+static char *   job_manager_exe = NULL;
 static char *   globusmap = "globusmap";
 static char *   globuskmap = "globuskmap";
 static char *   globuspwd = NULL;
 static char *   globuscertdir = "cert";
 static char *   globuskeydir = "key";
-static char *	x509_cert_dir = NULL;
-static char *	x509_cert_file = NULL;
-static char *	x509_user_proxy = NULL;
-static char *	x509_user_cert = NULL;
-static char *	x509_user_key = NULL;
-static char *	nickname = NULL;
+static char *   x509_cert_dir = NULL;
+static char *   x509_cert_file = NULL;
+static char *   x509_user_proxy = NULL;
+static char *   x509_user_cert = NULL;
+static char *   x509_user_key = NULL;
+static char *   nickname = NULL;
 static char **  jmargp;
-static int 		jmargc;
-static int 		ok_to_send_errmsg;
+static int      jmargc;
+static int      ok_to_send_errmsg = 0;
 static FILE *   fdout;
 
 /******************************************************************************
@@ -197,45 +188,47 @@ Returns:
 static char * 
 get_globusid()
 {
-	char *globusid;
-	char *globusid_tmp;
-	gss_name_t server_name = GSS_C_NO_NAME;
-	gss_buffer_desc server_buffer_desc = GSS_C_EMPTY_BUFFER;
-	gss_buffer_t server_buffer = &server_buffer_desc; 
-	OM_uint32 major_status = 0;
-	OM_uint32 minor_status = 0;
-	OM_uint32 minor_status2 = 0;
-	if (major_status = gss_inquire_cred(&minor_status,
-					 					credential_handle,
-					 					&server_name,
-					 					NULL,
-					 					NULL,
-					 					NULL) == GSS_S_COMPLETE) 					{
-		major_status = gss_export_name(&minor_status,
-										server_name,
-										server_buffer);
-		gss_release_name(&minor_status2, &server_name);
-	}
-	/*
-	 * The gssapi_cleartext does not implement gss_inquire_cred,
-	 * so fall back to using environment variable.
-	 */
-	if (major_status == GSS_S_COMPLETE) 
-	{
-		globusid = server_buffer_desc.value;
-	}
-	else 
-	{
-    	globusid = getenv("GLOBUSID");
-    	globusid = (globusid ? globusid : "GLOBUSID");
-	}
-	globusid_tmp = strdup(globusid);
+    char *            globusid;
+    char *            globusid_tmp;
+    gss_name_t        server_name = GSS_C_NO_NAME;
+    gss_buffer_desc   server_buffer_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t      server_buffer = &server_buffer_desc; 
+    OM_uint32         major_status = 0;
+    OM_uint32         minor_status = 0;
+    OM_uint32         minor_status2 = 0;
 
-	if (server_buffer_desc.value)
-	{
-		gss_release_buffer(&minor_status2, server_buffer);
-	}
-	return globusid_tmp;
+    if (major_status = gss_inquire_cred(&minor_status,
+                                        credential_handle,
+                                        &server_name,
+                                        NULL,
+                                        NULL,
+                                        NULL) == GSS_S_COMPLETE)
+    {
+        major_status = gss_export_name(&minor_status,
+                                       server_name,
+                                       server_buffer);
+        gss_release_name(&minor_status2, &server_name);
+    }
+    /*
+     * The gssapi_cleartext does not implement gss_inquire_cred,
+     * so fall back to using environment variable.
+     */
+    if (major_status == GSS_S_COMPLETE) 
+    {
+        globusid = server_buffer_desc.value;
+    }
+    else 
+    {
+        globusid = getenv("GLOBUSID");
+        globusid = (globusid ? globusid : "GLOBUSID");
+    }
+    globusid_tmp = strdup(globusid);
+
+    if (server_buffer_desc.value)
+    {
+        gss_release_buffer(&minor_status2, server_buffer);
+    }
+    return globusid_tmp;
 }
 
 /******************************************************************************
@@ -279,13 +272,14 @@ tokenize(char * command, char ** args, int * n)
   arg = args;
   i = *n - 1;
   
-  for (cp = strtok(command, " \t\n"); cp != 0; cp = next) {
-    *arg = cp;
-    i--;
-    if (i == 0)
-      return(-1); /* to many args */
-    arg++;
-    next = strtok(NULL, " \t\n");
+  for (cp = strtok(command, " \t\n"); cp != 0; cp = next)
+  {
+      *arg = cp;
+      i--;
+      if (i == 0)
+          return(-1); /* to many args */
+      arg++;
+      next = strtok(NULL, " \t\n");
   }
   *arg = (char *) 0;
   *n = *n - i - 1;
@@ -295,8 +289,8 @@ tokenize(char * command, char ** args, int * n)
 /******************************************************************************
 Function:       genfilename()
 Description:    generate an absolute file name given a starting prefix,
-				a relative or absolute path, and a sufix
-				Only use prefix if path is relative.
+                a relative or absolute path, and a sufix
+                Only use prefix if path is relative.
 Parameters:
 Returns:		a pointer to a string which could be freeded.
 ******************************************************************************/
@@ -304,35 +298,40 @@ Returns:		a pointer to a string which could be freeded.
 static char *
 genfilename(char * prefixp, char * pathp, char * sufixp)
 {
-	char * newfilename;
-	int    prefixl, pathl, sufixl;
-	char * prefix,  * path, * sufix;
+    char * newfilename;
+    int    prefixl, pathl, sufixl;
+    char * prefix,  * path, * sufix;
 
-	prefix = (prefixp) ? prefixp : "";
-	path   = (pathp) ? pathp : "";
-	sufix  = (sufixp) ? sufixp : "";
-	
-	prefixl = strlen(prefix);
-	pathl   =  strlen(path);
-	sufixl  =  strlen(sufix); 
+    prefix = (prefixp) ? prefixp : "";
+    path   = (pathp) ? pathp : "";
+    sufix  = (sufixp) ? sufixp : "";
 
-	newfilename = (char *) calloc(1, (prefixl + pathl + sufixl + 3));
-	if (newfilename) 
-	{
-	  if (*path != '/')
-	  {
-	    strcat(newfilename, prefix);
-	    if ((prefixl != 0) && (prefix[prefixl-1] != '/'))
-	      strcat(newfilename, "/");
-	  }
-	  strcat(newfilename, path);
-	  if ((pathl != 0) 
-	      && (sufixl != 0)
-	      && (path[pathl-1] != '/') && sufix[0] != '/')
-	    strcat(newfilename, "/");
-	  strcat(newfilename, sufix);
-	}
-	return newfilename;
+    prefixl = strlen(prefix);
+    pathl   =  strlen(path);
+    sufixl  =  strlen(sufix); 
+
+    newfilename = (char *) calloc(1, (prefixl + pathl + sufixl + 3));
+    if (newfilename) 
+    {
+        if (*path != '/')
+        {
+            strcat(newfilename, prefix);
+            if ((prefixl != 0) && (prefix[prefixl-1] != '/'))
+            {
+                strcat(newfilename, "/");
+            }
+        }
+        strcat(newfilename, path);
+        if ((pathl  != 0) &&
+            (sufixl != 0) && 
+            (path[pathl-1] != '/') && 
+             sufix[0] != '/')
+        {
+            strcat(newfilename, "/");
+        }
+        strcat(newfilename, sufix);
+    }
+    return newfilename;
 }
 
 /******************************************************************************
@@ -355,25 +354,25 @@ main(int xargc,
     int    listener_fd;
     struct sockaddr_in name;
 
-	/* GSSAPI status vaiables */
-	OM_uint32 major_status = 0;
-	OM_uint32 minor_status = 0;
+    /* GSSAPI status vaiables */
+    OM_uint32 major_status = 0;
+    OM_uint32 minor_status = 0;
 
     gatekeeper_uid = getuid();
     if (gatekeeper_uid == 0)
     {
-	/*
-	 * If root, use DEFAULT_PORT
-	 */
-	daemon_port = DEFAULT_PORT;
+        /*
+         * If root, use DEFAULT_PORT
+         */
+        daemon_port = DEFAULT_PORT;
     }
     else
     {
-	/*
-	 * If not root, let net_setup_listener call provide the port
+        /*
+         * If not root, let net_setup_listener call provide the port
          * (may be overridden by the "-p" option, see below)
-	 */
-	daemon_port = 0;
+         */
+        daemon_port = 0;
     }
 
     /*
@@ -385,44 +384,44 @@ main(int xargc,
     namelen = sizeof(name);
     if (getpeername(0, (struct sockaddr *) &name, &namelen) < 0)
     {
-	/* set current working directory as default for 
-	 * gatekeeperhome (-home path) when not run from inetd. 
-	 * otherwise it is NULL
-	 */
+        /* set current working directory as default for 
+         * gatekeeperhome (-home path) when not run from inetd. 
+         * otherwise it is NULL
+         */
 #ifdef HAVE_GETWD
-	{
-	    char tmppath[PATH_MAX];
+        {
+            char tmppath[PATH_MAX];
 
-	    if(getwd(tmppath))
-	    {
-		gatekeeperhome =  strdup(tmppath);
-	    }
-	}
+            if(getwd(tmppath))
+            {
+                gatekeeperhome =  strdup(tmppath);
+            }
+        }
 #else
-	{
-	    char *tmppath = NULL;
-	    int size = 1;
+        {
+            char *tmppath = NULL;
+            int size = 1;
 
-	    while ( (tmppath = getcwd (NULL, size)) == NULL )
-	    {
-		size++;
-	    }
-	    gatekeeperhome = tmppath;
-	}
+            while ( (tmppath = getcwd (NULL, size)) == NULL )
+            {
+                size++;
+            }
+            gatekeeperhome = tmppath;
+        }
 #endif /* HAVE_GETWD */
 
-	run_from_inetd = 0;
+        run_from_inetd = 0;
     }
     else
     {
-	run_from_inetd = 1;
-	gatekeeperhome = GLOBUS_GATEKEEPER_HOME;
-	/* 
-	 * cant have stdout pointing at socket, some of the
-	 * gssapi code writes to stdout so point at stderr
-	 */
-	close(1);
-	(void) open("/dev/null",O_WRONLY);
+        run_from_inetd = 1;
+        gatekeeperhome = GLOBUS_GATEKEEPER_HOME;
+        /* 
+         * cant have stdout pointing at socket, some of the
+         * gssapi code writes to stdout so point at stderr
+         */
+        close(1);
+        (void) open("/dev/null",O_WRONLY);
     }
 
     *test_dat_file = '\0';
@@ -437,273 +436,292 @@ main(int xargc,
      * args, in a buffer of BUFSIZ at the most. 
      */
 
-	/* But before that, check if there is a -test option
-	 * after the -c file. This will test the gatekeeper
-	 * -test can also be in the options file 
-	 * this will run in forground, and not inetd
-	 */
+    /* But before that, check if there is a -test option
+     * after the -c file. This will test the gatekeeper
+     * -test can also be in the options file 
+     * this will run in forground, and not inetd
+     */
 
-	if (argc == 4 && !strcmp(argv[3],"-test"))
-	{
-		gatekeeper_test++;
-		argc--;
-	}
+    if (argc == 4 && !strcmp(argv[3],"-test"))
+    {
+        gatekeeper_test++;
+        argc--;
+    }
 
     if (argc == 3 && !strcmp(argv[1],"-c"))
     {
-	char ** newargv;
-	char * newbuf; 	
-	int newargc = 52;
-	int  pfd;
+        char ** newargv;
+        char * newbuf; 	
+        int newargc = 52;
+        int  pfd;
 	  
-	newargv = (char**) malloc(newargc * sizeof(char *)); /* not freeded */
-	newbuf = (char *) malloc(BUFSIZ);  /* dont free */
-	newargv[0] = argv[0];
-	pfd = open(argv[2],O_RDONLY);
-	i = read(pfd, newbuf, BUFSIZ-1);
-	if (i < 0) 
-	    failure("Unable to read extra parameters");
-	newbuf[i] = '\0';
-	close(pfd);
+        newargv = (char**) malloc(newargc * sizeof(char *)); /* not freeded */
+        newbuf = (char *) malloc(BUFSIZ);  /* dont free */
+        newargv[0] = argv[0];
+        pfd = open(argv[2],O_RDONLY);
+        i = read(pfd, newbuf, BUFSIZ-1);
+        if (i < 0) 
+            failure("Unable to read extra parameters");
+        newbuf[i] = '\0';
+        close(pfd);
 
-	newargv[0] = argv[0];
-	newargc--;
-	tokenize(newbuf, &newargv[1], &newargc);
-	argv = newargv;
-	argc = newargc + 1;
+        newargv[0] = argv[0];
+        newargc--;
+        tokenize(newbuf, &newargv[1], &newargc);
+        argv = newargv;
+        argc = newargc + 1;
     }
 
     jmargc = 0; /* no extra args for job mnager */
 
     for (i = 1; i < argc; i++)
     {
-	if (strcmp(argv[i], "-jmargs") == 0)
-	{
-	    /* rest of the args are for the job manager stop scaning */
-	    i++;
-	    jmargp = &argv[i];
-	    jmargc = argc - i; 
-	    break;
-	}
-	if (strcmp(argv[i], "-d") == 0)
-	{
-	    debug = 1;
+        if (strcmp(argv[i], "-jmargs") == 0)
+        {
+            /* rest of the args are for the job manager stop scaning */
+            i++;
+            jmargp = &argv[i];
+            jmargc = argc - i; 
+            break;
+        }
+        if (strcmp(argv[i], "-d") == 0)
+        {
+            debug = 1;
             foreground = 1;   /* Run in the forground */
-	}
-	else if (strcmp(argv[i], "-inetd") == 0)
-	{
-	    run_from_inetd = 1;
-	    foreground = 0;
-	}
-	else if ((strcmp(argv[i], "-p") == 0)
-		 && (i + 1 < argc))
-	{
-	    daemon_port = atoi(argv[i+1]);
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-l") == 0)
-		 && (i + 1 < argc))
-	{
-	    logfile =  argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-home") == 0)
-		&& (i + 1 < argc))
-	{
-	    gatekeeperhome = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-e") == 0)
-		&& (i + 1 < argc))
-	{
-	    libexecdir = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-nickname") == 0)
-		&& (i + 1 < argc))
-	{
-	    nickname = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-jm") == 0)
-		 && (i + 1 < argc))
-	{
-	    job_manager_exe =  argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-t") == 0)
-		 && (i + 1 < argc))
-	{
-	    strncpy(test_dat_file, argv[i+1],sizeof(test_dat_file));
-	    i++;
-	}
-	else if (strcmp(argv[i], "-test") == 0)
-	{
-		gatekeeper_test++;
-	}
+        }
+        else if (strcmp(argv[i], "-inetd") == 0)
+        {
+            run_from_inetd = 1;
+            foreground = 0;
+        }
+        else if ((strcmp(argv[i], "-p") == 0)
+                 && (i + 1 < argc))
+        {
+            daemon_port = atoi(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-l") == 0)
+                && (i + 1 < argc))
+        {
+            logfile =  argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-home") == 0)
+                && (i + 1 < argc))
+        {
+            gatekeeperhome = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-e") == 0)
+                && (i + 1 < argc))
+        {
+            libexecdir = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-nickname") == 0)
+                && (i + 1 < argc))
+        {
+            nickname = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-jm") == 0)
+                 && (i + 1 < argc))
+        {
+            job_manager_exe =  argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-t") == 0)
+                 && (i + 1 < argc))
+        {
+            strncpy(test_dat_file, argv[i+1],sizeof(test_dat_file));
+            i++;
+        }
+        else if (strcmp(argv[i], "-test") == 0)
+        {
+            gatekeeper_test++;
+        }
 		
-	else if ((strcmp(argv[i], "-globusid") == 0)
-		&& (i + 1 < argc))
-	{
-	    grami_setenv("GLOBUSID", argv[i+1],1);
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-globusmap") == 0)
-		 && (i + 1 < argc))
-	{
-	    globusmap = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-globuspwd") == 0)
-		 && (i + 1 < argc))
-	{
-	    globuspwd = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-globuskeydir") == 0)
-		&& (i + 1 < argc))
-	{
-	    globuskeydir = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-globuscertdir") == 0)
-		&& (i + 1 < argc))
-	{
-	    globuscertdir = argv[i+1];
-	    i++;
-	}
+        else if ((strcmp(argv[i], "-globusid") == 0)
+                && (i + 1 < argc))
+        {
+            grami_setenv("GLOBUSID", argv[i+1],1);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globusmap") == 0)
+                 && (i + 1 < argc))
+        {
+            globusmap = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globuspwd") == 0)
+                 && (i + 1 < argc))
+        {
+            globuspwd = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globuskeydir") == 0)
+                && (i + 1 < argc))
+        {
+            globuskeydir = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globuscertdir") == 0)
+                && (i + 1 < argc))
+        {
+            globuscertdir = argv[i+1];
+            i++;
+        }
 	
-	/* set environment variables used by gssapi_ssleay */
+        /* set environment variables used by gssapi_ssleay */
 
-	else if ((strcmp(argv[i], "-x509_cert_dir") == 0)
-		&& (i + 1 < argc))
-	{
-	    x509_cert_dir = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-x509_cert_file") == 0)
-		&& (i + 1 < argc))
-	{
-	    x509_cert_file = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-x509_user_proxy") == 0)
-		&& (i + 1 < argc))
-	{
-	    x509_user_proxy = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-x509_user_cert") == 0)
-		&& (i + 1 < argc))
-	{
-	    x509_user_cert = argv[i+1];
-	    i++;
-	}
-	else if ((strcmp(argv[i], "-x509_user_key") == 0)
-		&& (i + 1 < argc))
-	{
-	    x509_user_key = argv[i+1];
-	    i++;
-	}
+        else if ((strcmp(argv[i], "-x509_cert_dir") == 0)
+                && (i + 1 < argc))
+        {
+            x509_cert_dir = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-x509_cert_file") == 0)
+                && (i + 1 < argc))
+        {
+            x509_cert_file = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-x509_user_proxy") == 0)
+                && (i + 1 < argc))
+        {
+            x509_user_proxy = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-x509_user_cert") == 0)
+                && (i + 1 < argc))
+        {
+            x509_user_cert = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-x509_user_key") == 0)
+                && (i + 1 < argc))
+        {
+            x509_user_key = argv[i+1];
+            i++;
+        }
+        
+        else if ((strcmp(argv[i], "-globuskmap") == 0)
+                && (i + 1 < argc))
+        {
+            globuskmap = argv[i+1];
+            krb5flag = 1;
+            i++;
+        }
+        else if (strcmp(argv[i], "-k") == 0)
+        {
+            krb5flag = 1;
+        }
+        else if (strcmp(argv[i], "-f") == 0)
+        {
+            /* make the daemon run in the Foreground */
 
-	else if ((strcmp(argv[i], "-globuskmap") == 0)
-		&& (i + 1 < argc))
-	{
-	    globuskmap = argv[i+1];
-	    krb5flag = 1;
-	    i++;
-	}
-	else if (strcmp(argv[i], "-k") == 0)
-	{
-	    krb5flag = 1;
-	}
-	else if (strcmp(argv[i], "-f") == 0)
-	{
-           /* make the daemon run in the Foreground */
-		foreground = 1;
-		run_from_inetd = 0;
-	}
-	else
-	{
-	    fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s \n ",
-		    argv[0], "{-c parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
-		    "[-home path] [-l logfile] [-e path] [-jm job_manager]",
-		    "[-globusid globusid] [-globusmap file] [-globuspwd file]",
-		  /*"[-globuskeydir path] [-globuscertdir path]", */
-			"[-x509_cert_dir path] [-x509_cert_file file]",
-			"[-x509_user_cert file] [-x509_user_key file]",
-			"[-x509_user_proxy file]",
-		    "[-k] [-globuskmap file]",
-			"[-test]",
-		    "[-jmargs job_manager_args ...]}"
-		);
-	    exit(1);
-	}
+            foreground = 1;
+            run_from_inetd = 0;
+        }
+        else
+        {
+
+            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s \n ",
+                    argv[0], 
+                    "{-c parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
+                    "[-home path] [-l logfile] [-e path] [-jm job_manager]",
+                    "[-globusid globusid] [-globusmap file] [-globuspwd file]",
+                    "[-x509_cert_dir path] [-x509_cert_file file]",
+                    "[-x509_user_cert file] [-x509_user_key file]",
+                    "[-x509_user_proxy file]",
+                    "[-k] [-globuskmap file]",
+                    "[-test]",
+                    "[-jmargs job_manager_args ...]}"
+                   );
+            exit(1);
+        }
     }
 
-	/*
-	 * Dont use default env proxy cert for gatekkeper if run as root
-	 * this mightr get left over. You can still use -x509_user_proxy
-	 */
+    /*
+     * Dont use default env proxy cert for gatekkeper if run as root
+     * this mightr get left over. You can still use -x509_user_proxy
+     */
 
-	if (!getuid()) 
-	{
-		grami_unsetenv("X509_USER_PROXY");
-	}
+    if (!getuid()) 
+    {
+    grami_unsetenv("X509_USER_PROXY");
+    }
 
-	if (gatekeeper_test)
-	{
-		fprintf(stderr,"Testing gatekeeper\n");
-		if (getuid()) 
-		{
-			fprintf(stderr,"Local user id (uid)      : %d\n",getuid());
-		}
-		else
-		{
-			fprintf(stderr,"Local user id (uid)      : root\n");
-		}
-		run_from_inetd = 0;
-		foreground = 1;
-	}
-		
+    if (gatekeeper_test)
+    {
+        fprintf(stderr,"Testing gatekeeper\n");
+        if (getuid()) 
+        {
+            fprintf(stderr,"Local user id (uid)      : %d\n",getuid());
+        }
+        else
+        {
+            fprintf(stderr,"Local user id (uid)      : root\n");
+        }
+        run_from_inetd = 0;
+        foreground = 1;
+    }
 
     grami_setenv("GLOBUSMAP", genfilename(gatekeeperhome,globusmap,NULL),1);
-	if (globuspwd) 
-	{
+    if (globuspwd) 
+    {
         grami_setenv("GLOBUSPWD", genfilename(gatekeeperhome,globuspwd,NULL),1);
-	}
-	/* following 2 need to be removed since not using gssapi_spkm */
-    grami_setenv("GLOBUSKEYDIR", genfilename(gatekeeperhome,globuskeydir,NULL),1);
-    grami_setenv("GLOBUSCERTDIR", genfilename(gatekeeperhome,globuscertdir,NULL),1);
-	if (x509_cert_dir)
-	{
-		grami_setenv("X509_CERT_DIR",genfilename(gatekeeperhome,x509_cert_dir,NULL),1);
-	}
-	if (x509_cert_file)
-	{
-		grami_setenv("X509_CERT_FILE",genfilename(gatekeeperhome,x509_cert_file,NULL),1);
-	}
-	if (x509_user_proxy)
-	{
-		grami_setenv("X509_USER_PROXY",genfilename(gatekeeperhome,x509_user_proxy,NULL),1);
-	}
-	if (x509_user_cert)
-	{
-		grami_setenv("X509_USER_CERT",genfilename(gatekeeperhome,x509_user_cert,NULL),1);
-	}
-	if (x509_user_key)
-	{
-		grami_setenv("X509_USER_KEY",genfilename(gatekeeperhome,x509_user_key,NULL),1);
-	}
-	if (krb5flag) 
-	{
-	    grami_setenv("GLOBUSKMAP", genfilename(gatekeeperhome,globuskmap,NULL),1);
-	}
+    }
+    /* following 2 need to be removed since not using gssapi_spkm */
+    grami_setenv("GLOBUSKEYDIR",
+                  genfilename(gatekeeperhome,globuskeydir,NULL),
+                  1);
+    grami_setenv("GLOBUSCERTDIR",
+                  genfilename(gatekeeperhome,globuscertdir,NULL),
+                  1);
+
+    if (x509_cert_dir)
+    {
+        grami_setenv("X509_CERT_DIR",
+                     genfilename(gatekeeperhome,x509_cert_dir,NULL),
+                     1);
+    }
+    if (x509_cert_file)
+    {
+        grami_setenv("X509_CERT_FILE",
+                     genfilename(gatekeeperhome,x509_cert_file,NULL),
+                     1);
+    }
+    if (x509_user_proxy)
+    {
+        grami_setenv("X509_USER_PROXY",
+                     genfilename(gatekeeperhome,x509_user_proxy,NULL),
+                     1);
+    }
+
+    if (x509_user_cert)
+    {
+        grami_setenv("X509_USER_CERT",
+                     genfilename(gatekeeperhome,x509_user_cert,NULL),
+                     1);
+    }
+    if (x509_user_key)
+    {
+        grami_setenv("X509_USER_KEY", 
+                     genfilename(gatekeeperhome,x509_user_key,NULL),
+                     1);
+    }
+    if (krb5flag) 
+    {
+        grami_setenv("GLOBUSKMAP",
+                     genfilename(gatekeeperhome,globuskmap,NULL),
+                     1);
+    }
 
     if (run_from_inetd)
     {
-	(void) close(2);  /* dont want messages. logging will use fd=2 */ 
-	(void) open("/dev/null",O_WRONLY);
+        (void) close(2);  /* dont want messages. logging will use fd=2 */ 
+        (void) open("/dev/null",O_WRONLY);
     }
 
     if (logging_startup() != 0)
@@ -712,7 +730,7 @@ main(int xargc,
     }
 
     notice4(LOG_INFO, "%s pid=%d starting at %s",
-	    argv[0], getpid(), timestamp());
+        argv[0], getpid(), timestamp());
 
     /*
      * Setup SIGCHLD signal handler to reap processes that we create
@@ -721,171 +739,173 @@ main(int xargc,
     signal(SIGCHLD, reaper);
 #else
     {
-	struct sigaction act;
-	act.sa_handler = reaper;
-	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask, SIGCHLD);
-	act.sa_flags = 0;
-	sigaction(SIGCHLD, &act, NULL);
+        struct sigaction act;
+        act.sa_handler = reaper;
+        sigemptyset(&act.sa_mask);
+        sigaddset(&act.sa_mask, SIGCHLD);
+        act.sa_flags = 0;
+        sigaction(SIGCHLD, &act, NULL);
     }
 #endif
 
     if (run_from_inetd)
     {
-	logging_phase2();
-	dup2(2,1); /* point stdout at log as well */
-	setbuf(stdout,NULL);
-	}
+        logging_phase2();
+        dup2(2,1); /* point stdout at log as well */
+        setbuf(stdout,NULL);
+    }
 
 #ifdef GSS_AUTHENTICATION
-	/* Get the GSS credential for the accepter
-	 * If not run_from_inetd we can prompt here.
-	 * If we are running as a deamon, and should not
-	 * have any prompts
-	 */
-	major_status = globus_gss_assist_acquire_cred(&minor_status,
-							GSS_C_ACCEPT,
-							&credential_handle);
+    /* Get the GSS credential for the accepter
+     * If not run_from_inetd we can prompt here.
+     * If we are running as a deamon, and should not
+     * have any prompts
+     */
+    major_status = globus_gss_assist_acquire_cred(&minor_status,
+                                                  GSS_C_ACCEPT,
+                                                  &credential_handle);
 
-	if (major_status != GSS_S_COMPLETE)
-	{
-		globus_gss_assist_display_status(stderr,
-					"GSS failed getting server credentials: ",
-					major_status,
-					minor_status,
-					0);
+    if (major_status != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status(stderr,
+                              "GSS failed getting server credentials: ",
+                              major_status,
+                              minor_status,
+                              0);
 
-	    failure("GSS failed to get server credentials\n");
-	}
+        failure("GSS failed to get server credentials\n");
+    }
 #endif /* GSS_AUTHENTICATION */
 
-	if (gatekeeper_test) 
-	{
-		fprintf(stderr,"Gatekeeper subject name  : \"%s\"\n",
-				get_globusid());
-		fprintf(stderr,"Gatekeeper test complete : Success!\n");
-		exit(0);
-	}
+    if (gatekeeper_test) 
+    {
+        fprintf(stderr,"Gatekeeper subject name  : \"%s\"\n",
+        get_globusid());
+        fprintf(stderr,"Gatekeeper test complete : Success!\n");
+        exit(0);
+    }
 
-	if (run_from_inetd)
-	{
-	doit();
+    if (run_from_inetd)
+    {
+        doit();
     }
     else
     {
 
-	logging_phase2(); /* now set stderr to logfile after gss prompts */
+        logging_phase2(); /* now set stderr to logfile after gss prompts */
 
-    net_setup_listener(2, &daemon_port, &listener_fd);
+        net_setup_listener(2, &daemon_port, &listener_fd);
 
-	{
-	    char hostname[255];
-	    char *globusid;
-        struct hostent *hp;
-        char *fqdn;
-
-	    gethostname(hostname, sizeof(hostname)-1);
-        if (hp = gethostbyname(hostname))
         {
-            fqdn = hp->h_name;
-        } else
-        {
-            fqdn = (hostname ? hostname : "HOSTNAME");
+            char hostname[255];
+            char *globusid;
+            struct hostent *hp;
+            char *fqdn;
+
+            gethostname(hostname, sizeof(hostname)-1);
+
+            if (hp = gethostbyname(hostname))
+            {
+                fqdn = hp->h_name;
+            }
+            else
+            {
+                fqdn = (hostname ? hostname : "HOSTNAME");
+            }
+
+            globusid = get_globusid();
+            printf("GRAM contact: %s:%d:%s\n",
+                    fqdn, daemon_port, globusid);
+            notice4(LOG_INFO, "GRAM contact: %s:%d:%s\n",
+                    fqdn, daemon_port, globusid);
+            free(globusid);
         }
-	   	globusid = get_globusid();
-	    printf("GRAM contact: %s:%d:%s\n",
-		    fqdn, daemon_port, globusid);
-	    notice4(LOG_INFO, "GRAM contact: %s:%d:%s\n",
-		    fqdn, daemon_port, globusid);
-		free(globusid);
-	}
 
-	if (!foreground)
-	{
-	    /*
-	     * Fork off a child, terminate the parent, and detach
-	     * the child from the tty.
-	     */
-	    if (fork())
-		exit(0);
+        if (!foreground)
+        {
+            /*
+             * Fork off a child, terminate the parent, and detach
+             * the child from the tty.
+             */
+            if (fork())
+                exit(0);
 
-  	    if (!logging_usrlog)
-	    {
-	        (void) close(2); /* close stderr as well */
-	        (void) open ("/dev/null",0);
-	    }
+            if (!logging_usrlog)
+            {
+                (void) close(2); /* close stderr as well */
+                (void) open ("/dev/null",0);
+            }
 
-	    (void) close(0);
-	    (void) close(1);
-	    
-	    
+            (void) close(0);
+            (void) close(1);
+
 #if defined(SYSV) || defined(__hpux) || defined(CRAY)
              
-	    fd = open ("/dev/console", O_RDWR);
-	    notice2(0, "open dev console fd = %d\n", fd);
-	    if (fd < 0)
-		fd = open ("/dev/tty", O_RDWR);
-	    notice2(0, "open dev tty fd = %d\n", fd);
-	    if (fd < 0)
-		fd = open ("/dev/null", O_RDWR);
-	    notice2(0, "open dev null fd = %d\n", fd);
-	    (void) dup2(2, 1); /* point out at stderr or log */
+            fd = open ("/dev/console", O_RDWR);
+            notice2(0, "open dev console fd = %d\n", fd);
+            if (fd < 0)
+                fd = open ("/dev/tty", O_RDWR);
+            notice2(0, "open dev tty fd = %d\n", fd);
+            if (fd < 0)
+                fd = open ("/dev/null", O_RDWR);
+            notice2(0, "open dev null fd = %d\n", fd);
+            (void) dup2(2, 1); /* point out at stderr or log */
 
-	    (void) setpgrp();
+            (void) setpgrp();
 #else
-	    (void) open("/dev/null", O_RDONLY);
-	    (void) dup2(2, 1); /* point stdout to stderr */
-	    fd = open("/dev/tty", O_RDWR);
-	    if (fd >= 0)
-	    {
-		ioctl(fd, TIOCNOTTY, 0);
-		(void) close(fd);
-	    }
+            (void) open("/dev/null", O_RDONLY);
+            (void) dup2(2, 1); /* point stdout to stderr */
+            fd = open("/dev/tty", O_RDWR);
+            if (fd >= 0)
+            {
+                ioctl(fd, TIOCNOTTY, 0);
+                (void) close(fd);
+            }
 #endif
-	}
+        }
 
-	/* stderr is either the logfile, the users stderr or the /dev/null */
-	/* stdout is either the logfile, the users stdout or the /dev/null */
+        /* stderr is either the logfile, the users stderr or the /dev/null */
+        /* stdout is either the logfile, the users stdout or the /dev/null */
 
-	while (1)
-	{
-	    fd = net_accept(listener_fd);
+        while (1)
+        {
+            fd = net_accept(listener_fd);
 
-	    pid = fork();
+            pid = fork();
 
-	    if (pid < 0)
-	    {
-		failure2("Fork failed: %s\n", sys_errlist[errno]);
-	    }
+            if (pid < 0)
+            {
+                failure2("Fork failed: %s\n", sys_errlist[errno]);
+            }
 
-	    if (pid == 0)
-	    {
+            if (pid == 0)
+            {
 #if defined(__hpux) || defined(TARGET_ARCH_SOLARIS)
-		(void) setpgrp();
+                (void) setpgrp();
 #else
-		ttyfd = open("/dev/tty",O_RDWR);
-		if (ttyfd >= 0)
-		{
+                ttyfd = open("/dev/tty",O_RDWR);
+                if (ttyfd >= 0)
+                {
 #    if !defined(CRAY)
-		    ioctl(ttyfd, TIOCNOTTY, 0);
+                    ioctl(ttyfd, TIOCNOTTY, 0);
 #    endif
-		    close(ttyfd);
-		}
+                    close(ttyfd);
+                }
 #endif
-		fclose(stdin); /* take care of stream buffers too */
-		close(0);
-		close(listener_fd);
-		
-		dup2(fd, 0);
-		/* this should work, but not sure !? */
-		/* Reports say it is needed on some systems */
-		*stdin = *fdopen(0,"r"); /* reopen stdin  we need this since */
+                fclose(stdin); /* take care of stream buffers too */
+                close(0);
+                close(listener_fd);
 
-		doit();
-		exit(0);
-	    }
-	    close(fd);
-	}
+                dup2(fd, 0);
+                /* this should work, but not sure !? */
+                /* Reports say it is needed on some systems */
+                *stdin = *fdopen(0,"r"); /* reopen stdin  we need this since */
+
+                doit();
+                exit(0);
+            }
+            close(fd);
+        }
     }
     return 0;
 }
@@ -902,56 +922,57 @@ Returns:
 ******************************************************************************/
 static void doit()
 {
-    int           p1[2];
-    int           p2[2];
-    int           pid;
-    int           n;
-    int 	      i;
-    int           job_manager_uid;
-    int           close_on_exec_read_fd;
-    int           close_on_exec_write_fd;
-    int           message_read_fd;
-    int           message_write_fd;
-    char          buf[1024];
-    char *        s;
-    char **       args;
-    char **		  argp;
-    char *		  argnp;
-    char * 		  execp;
-    char *        msg[MAX_MESSAGE_LENGTH];
-    unsigned int  msg_size;
-    unsigned char int_buf[4];
-    struct stat   statbuf;
-    char *		  job_manager_path; 
-    char *		  gram_k5_path; 
-    struct sockaddr_in   peer;
-    netlen_t           peerlen;
-    char *        peernum;
-	char *		  x509_delegate;
+    int                 p1[2];
+    int                 p2[2];
+    int                 pid;
+    int                 n;
+    int                 i;
+    int                 job_manager_uid;
+    int                 close_on_exec_read_fd;
+    int                 close_on_exec_write_fd;
+    int                 message_read_fd;
+    int                 message_write_fd;
+    char                buf[1024];
+    char *              s;
+    char **             args;
+    char **             argp;
+    char *              argnp;
+    char *              execp;
+    char *              msg[MAX_MESSAGE_LENGTH];
+    unsigned int        msg_size;
+    unsigned char       int_buf[4];
+    struct stat         statbuf;
+    char *              job_manager_path; 
+    char *              gram_k5_path; 
+    struct sockaddr_in  peer;
+    netlen_t            peerlen;
+    char *              peernum;
+    char *              x509_delegate;
 
 #ifdef GSS_AUTHENTICATION
-	/* GSSAPI assist variables */
-	OM_uint32                    major_status = 0;
-	OM_uint32                    minor_status = 0;
-	int                          token_status = 0;
-	OM_uint32                    ret_flags = 0;
-	gss_ctx_id_t                 context_handle = GSS_C_NO_CONTEXT;
+    /* GSSAPI assist variables */
+    OM_uint32           major_status = 0;
+    OM_uint32           minor_status = 0;
+    int                 token_status = 0;
+    OM_uint32           ret_flags = 0;
+    gss_ctx_id_t        context_handle = GSS_C_NO_CONTEXT;
 
-	/* Authorization variables */
-    int           rc;
-    char *        client_name;
-    char *        userid;
-    struct passwd *pw;
+    /* Authorization variables */
+    int                 rc;
+    char *              client_name;
+    char *              userid;
+    struct passwd *     pw;
 #endif
+
     (void) setbuf(stdout,NULL);
 
     peerlen = sizeof(peer);
     if (getpeername(0, (struct sockaddr *) &peer, &peerlen) == 0)
     {
-	if (peer.sin_family == AF_INET)
-	    peernum = inet_ntoa(peer.sin_addr);
-	else
-	    peernum = "";
+        if (peer.sin_family == AF_INET)
+            peernum = inet_ntoa(peer.sin_addr);
+        else
+            peernum = "";
     }
 
     fdout = fdopen(dup(0),"w"); /* establish an output stream */
@@ -966,36 +987,35 @@ static void doit()
     ok_to_send_errmsg = 1;
 
     /* We will use the assist functions here since we 
-	 * don't need any special processing
-	 */
+     * don't need any special processing
+     */
 
-	major_status = globus_gss_assist_accept_sec_context(&minor_status,
-					&context_handle,
-					credential_handle,
-					&client_name,
-					&ret_flags,
-					NULL,            /* don't need user_to_user */
-					&token_status,
+    major_status = globus_gss_assist_accept_sec_context(&minor_status,
+                       &context_handle,
+                       credential_handle,
+                       &client_name,
+                       &ret_flags,
+                       NULL,            /* don't need user_to_user */
+                       &token_status,
+                       globus_gss_assist_token_get_fd,
+                       (void *)stdin,
+                       globus_gss_assist_token_send_fd,
+                       (void *)fdout);
 
-			  globus_gss_assist_token_get_fd,
-			  (void *)stdin,
-			  globus_gss_assist_token_send_fd,
-			  (void *)fdout);
 
+    if (major_status != GSS_S_COMPLETE)
+    {
+        if (logging_usrlog) 
+        {
+            globus_gss_assist_display_status(usrlog_fp,
+                "GSS authentication failure ",
+                major_status,
+                minor_status,
+                token_status);
+        }
 
-	if (major_status != GSS_S_COMPLETE)
-	{
-		if (logging_usrlog) 
-		{
-			globus_gss_assist_display_status(usrlog_fp,
-					"GSS authentication failure ",
-					major_status,
-					minor_status,
-					token_status);
-		}
-
-		failure4("GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-					major_status,minor_status,token_status);
+        failure4("GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+            major_status,minor_status,token_status);
     }
 
     /* We still have the GSSAPI context setup and could use
@@ -1026,7 +1046,8 @@ static void doit()
 
     if (rc != 0)
     {
-	failure2("globus_gss_assist_globusmap() failed authorization. rc = %d", rc);
+        failure2("globus_gss_assist_globusmap() failed authorization."
+                 " rc = %d", rc);
  
     }
     
@@ -1034,7 +1055,7 @@ static void doit()
 
     if ((pw = getpwnam(userid)) == NULL)
     {
-	failure2("getpwname() failed to find %s",userid);
+        failure2("getpwname() failed to find %s",userid);
     }
 
     /* job_manager_uid will come out of gss calls */
@@ -1043,25 +1064,22 @@ static void doit()
 
     notice2(LOG_NOTICE, "Authorized as local uid: %d", job_manager_uid);
 
-	/* for gssapi_ssleay if we received delegated proxy certificate
-	 * they will be in a file in tmp pointed at by the 
-	 * X509_USER_DELEG_PROXY env variable. 
-	 * This will be owned by the current uid, we need this owned by
-	 * the user.
-	 * for other gss, this is a noop, since X509_USER_DELEG_PROXY 
-	 * should not be defined.
-	 */
+    /* for gssapi_ssleay if we received delegated proxy certificate
+     * they will be in a file in tmp pointed at by the 
+     * X509_USER_DELEG_PROXY env variable. 
+     * This will be owned by the current uid, we need this owned by
+     * the user.
+     * for other gss, this is a noop, since X509_USER_DELEG_PROXY 
+     * should not be defined.
+     */
 
-	{
-		char *proxyfile;
-		if ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL) {
-			chown(proxyfile,job_manager_uid,pw->pw_gid);
-		}
-	}
-
-    if (ok_to_send_errmsg)
-	globus_gss_assist_token_send_fd(fdout,"\0",1); /* send ok*/
-    ok_to_send_errmsg = 0;
+    {
+        char *proxyfile;
+        if ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
+        {
+            chown(proxyfile,job_manager_uid,pw->pw_gid);
+        }
+    }
 
     /* End of authentication/authorization portion */
 
@@ -1074,18 +1092,50 @@ static void doit()
      */
 
     if ((job_manager_uid = getuid()) == 0) 
-	failure("ERROR: Root requires authentication");
+        failure("ERROR: Root requires authentication");
     else
-	notice(LOG_ERR, "WARNING: No authentication done");
+        notice(LOG_ERR, "WARNING: No authentication done");
 
 #endif /* GSS_AUTHENTICATION */
+
+    /*
+     * Test the job manager executable to make sure we can run it
+     */
+    if (!job_manager_exe)
+    {
+        notice(LOG_ERR, "ERROR: globus job manager is not defined via"
+                        " -jm argument.");
+        failure("ERROR: gatekeeper misconfigured."
+                "  Globus site administration assistance required");
+    }
+
+    job_manager_path = genfilename(gatekeeperhome, libexecdir, job_manager_exe);
+    if (stat(job_manager_path, &statbuf) != 0)
+    {
+        notice2(LOG_ERR, "ERROR: Cannot stat globus job manager %s.",
+                          job_manager_path);
+        failure("ERROR: gatekeeper misconfigured."
+                "  Globus site administration assistance required");
+    }
+
+    if (!(statbuf.st_mode & 0111))
+    {
+        notice2(LOG_ERR, "ERROR: Cannot execute globus job manager %s.",
+                          job_manager_path);
+        failure("ERROR: gatekeeper misconfigured."
+                "  Globus site administration assistance required");
+    }
+
+    if (ok_to_send_errmsg)
+        globus_gss_assist_token_send_fd(fdout,"\0",1); /* send ok*/
+    ok_to_send_errmsg = 0;
 
     /*
      * Read the size of the data, as a 4 byte big-endian unsigned integer
      */
     if (fread(int_buf, 1, 4, stdin) == 0)
     {
-	notice(LOG_ERR,"message size of zero length, Pinged!!");
+        notice(LOG_ERR,"message size of zero length, Pinged!!");
         exit(0);
     }
 
@@ -1140,7 +1190,6 @@ static void doit()
      * we need absolute path, since we will do a chdir($HOME)
      */
 	
-    job_manager_path = genfilename( gatekeeperhome, libexecdir, job_manager_exe);
 
     gram_k5_path = genfilename( gatekeeperhome, libexecdir, GRAM_K5_EXE);
 
@@ -1159,15 +1208,6 @@ static void doit()
 	    failure2("Cannot execute %s", gram_k5_path);
 	*argp++ = gram_k5_path;
     }
-
-    /*
-     * Test the job manager executable to make sure we can run it
-     */
-
-    if (stat(job_manager_path, &statbuf) != 0)
-	failure2("Cannot stat %s", job_manager_path);
-    if (!(statbuf.st_mode & 0111))
-	failure2("Cannot execute %s", job_manager_path);
 
     *argp++ = job_manager_path;
 	
@@ -1251,15 +1291,17 @@ static void doit()
 	grami_unsetenv("X509_USER_KEY"); /* unset it */
 	grami_unsetenv("X509_USER_CERT"); /* unset it */
 	grami_unsetenv("X509_USER_PROXY"); /* unset it */
-	}
-	/* 
-	 * If the gssapi_ssleay did delegation, promote the
-	 * delegated proxy file to the user proxy file
-	 */
-	if (x509_delegate = getenv("X509_USER_DELEG_PROXY")) {
-		grami_setenv("X509_USER_PROXY",strdup(x509_delegate),1);
-		grami_unsetenv("X509_USER_DELEG_PROXY");
-	}
+    }
+
+    /* 
+     * If the gssapi_ssleay did delegation, promote the
+     * delegated proxy file to the user proxy file
+     */
+    if (x509_delegate = getenv("X509_USER_DELEG_PROXY"))
+    {
+        grami_setenv("X509_USER_PROXY",strdup(x509_delegate),1);
+        grami_unsetenv("X509_USER_DELEG_PROXY");
+    }
 
     if (gatekeeper_uid == 0)
     {
@@ -1549,18 +1591,17 @@ failure(char * s)
     {
 	globus_gss_assist_token_send_fd(fdout, s, strlen(s)+1);
     }
-	if (gatekeeper_test)
-	{
-		fprintf(stderr,"Gatekeeper test complete : Failure!\n");
-	}
+    if (gatekeeper_test)
+    {
+        fprintf(stderr,"Gatekeeper test complete : Failure!\n");
+    }
     exit(1);
 } /* failure() */
 
 /******************************************************************************
 Function:       notice()
 Description:    
-Parameters:
-	prty is the syslog priority, but if = 0, then dont syslog. 
+Parameters: prty is the syslog priority, but if = 0, then dont syslog. 
 Returns:
 ******************************************************************************/
 static void 
