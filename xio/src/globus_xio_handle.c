@@ -2675,7 +2675,7 @@ globus_xio_read(
         res = GlobusXIOErrorParameter("buffer");
         goto param_error;
     }
-    if(buffer_length <= 0)
+    if(buffer_length < 0)
     {
         res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
@@ -2795,12 +2795,12 @@ globus_xio_readv(
     }
     if(iovec == NULL)
     {
-        res = GlobusXIOErrorParameter("buffer");
+        res = GlobusXIOErrorParameter("iovec");
         goto param_error;
     }
     if(iovec_count <= 0)
     {
-        res = GlobusXIOErrorParameter("buffer_length");
+        res = GlobusXIOErrorParameter("iovec_count");
         goto param_error;
     }
     
@@ -2922,7 +2922,7 @@ globus_xio_write(
         res = GlobusXIOErrorParameter("buffer");
         goto param_error;
     }
-    if(buffer_length <= 0)
+    if(buffer_length < 0)
     {
         res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
@@ -3042,12 +3042,12 @@ globus_xio_writev(
     }
     if(iovec == NULL)
     {
-        res = GlobusXIOErrorParameter("buffer");
+        res = GlobusXIOErrorParameter("iovec");
         goto param_error;
     }
     if(iovec_count <= 0)
     {
-        res = GlobusXIOErrorParameter("buffer_length");
+        res = GlobusXIOErrorParameter("iovec_count");
         goto param_error;
     }
     

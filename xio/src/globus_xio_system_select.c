@@ -2008,15 +2008,11 @@ globus_l_xio_system_poll(
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
             ("[%s] After select\n", _xio_name));
-            
+        
         globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
         {
-            globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-            {
-                globus_l_xio_system_select_active = GLOBUS_FALSE;
-            }
-            globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
+            globus_l_xio_system_select_active = GLOBUS_FALSE;
+            
             if(nready > 0)
             {
                 fd = globus_l_xio_system_wakeup_pipe[0];

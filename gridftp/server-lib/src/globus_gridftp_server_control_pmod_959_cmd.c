@@ -740,6 +740,94 @@ globus_l_gsc_pmod_959_cmd_quit(
 }
 
 /*************************************************************************
+ *                          action commands
+ *                          ---------------
+ ************************************************************************/
+static void
+globus_l_gsc_pmod_959_cmd_chmod(
+    globus_gsc_pmod_959_op_t                op,
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_chmod);
+
+    cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
+
+}
+
+static void
+globus_l_gsc_pmod_959_cmd_delete(
+    globus_gsc_pmod_959_op_t                op,
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_delete);
+
+    cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
+
+}
+
+static void
+globus_l_gsc_pmod_959_cmd_mkdir(
+    globus_gsc_pmod_959_op_t                op,
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_mkdir);
+
+    cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
+
+}
+
+static void
+globus_l_gsc_pmod_959_cmd_rmdir(
+    globus_gsc_pmod_959_op_t                op,
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_rmdir);
+
+    cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
+
+}
+
+static void
+globus_l_gsc_pmod_959_cmd_rnto(
+    globus_gsc_pmod_959_op_t                op,
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_rnto);
+
+    cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
+
+}
+
+static void
+globus_l_gsc_pmod_959_cmd_rnfr(
+    globus_gsc_pmod_959_op_t                op,
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_rnfr);
+
+    cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
+
+}
+
+/*************************************************************************
  *                      authentication commands
  *                      -----------------------
  ************************************************************************/
@@ -2476,6 +2564,22 @@ globus_i_gsc_pmod_959_add_commands(
         globus_l_gsc_pmod_959_cmd_stor_retr,
         GLOBUS_GSC_959_COMMAND_POST_AUTH,
         "214 Syntax: RETR [<sp> pathname]\r\n",
+        cmd_handle);
+
+    globus_gsc_pmod_959_command_add(
+        handle,
+        "RNFR", 
+        globus_l_gsc_pmod_959_cmd_rnfr,
+        GLOBUS_GSC_959_COMMAND_POST_AUTH,
+        "214 Syntax: RNFR [<sp> pathname]\r\n",
+        cmd_handle);
+
+    globus_gsc_pmod_959_command_add(
+        handle,
+        "RNTO", 
+        globus_l_gsc_pmod_959_cmd_rnto,
+        GLOBUS_GSC_959_COMMAND_POST_AUTH,
+        "214 Syntax: RNTO [<sp> pathname]\r\n",
         cmd_handle);
 
     globus_gsc_pmod_959_command_add(

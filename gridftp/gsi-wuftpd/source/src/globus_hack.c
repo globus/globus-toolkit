@@ -2176,6 +2176,8 @@ copy_rest:
     {
 	globus_fifo_enqueue(ranges, globus_fifo_dequeue(&tmp));
     }
+    
+    globus_fifo_destroy(&tmp);
 }
 
 void

@@ -102,6 +102,9 @@ globus_ftp_client_restart_marker_copy(
 							  range->offset,
 							  range->end_offset);
 	}
+	
+	globus_fifo_destroy(tmp);
+	globus_free(tmp);
 	break;
     }
     return GLOBUS_SUCCESS;
@@ -145,6 +148,7 @@ globus_ftp_client_restart_marker_destroy(
 
 	    globus_libc_free(range);
 	}
+	globus_fifo_destroy(&marker->extended_block.ranges);
     /* FALLSTHROUGH */
     case GLOBUS_FTP_CLIENT_RESTART_NONE:
     case GLOBUS_FTP_CLIENT_RESTART_STREAM:
@@ -291,6 +295,8 @@ copy_rest:
 	globus_fifo_enqueue(&marker->extended_block.ranges,
 			    globus_fifo_dequeue(&tmp));
     }
+    globus_fifo_destroy(&tmp);
+    
     return err ? globus_error_put(err) : GLOBUS_SUCCESS;
 }
 /* globus_ftp_client_insert_range() */
@@ -346,6 +352,7 @@ globus_ftp_client_restart_marker_set_ascii_offset(
     }
     if(marker->type != GLOBUS_FTP_CLIENT_RESTART_STREAM)
     {
+        globus_ftp_client_restart_marker_destroy(marker);
 	marker->type = GLOBUS_FTP_CLIENT_RESTART_STREAM;
     }
     marker->stream.offset = offset;
@@ -399,6 +406,7 @@ globus_ftp_client_restart_marker_set_offset(
     }
     if(marker->type != GLOBUS_FTP_CLIENT_RESTART_STREAM)
     {
+        globus_ftp_client_restart_marker_destroy(marker);
 	marker->type = GLOBUS_FTP_CLIENT_RESTART_STREAM;
     }
     marker->stream.offset = marker->stream.ascii_offset = offset;
@@ -471,6 +479,7 @@ globus_ftp_client_restart_marker_get_total(
         }
 
         *total_bytes = total;
+        globus_fifo_destroy(tmp);
         globus_libc_free(tmp);
     }
 
@@ -604,6 +613,8 @@ globus_ftp_client_restart_marker_to_string(
         }
         buf[strlen(buf)-1] = '\0';
 	(*marker_string) = buf;
+	
+	globus_fifo_destroy(tmp);
         globus_libc_free(tmp);
     }
 

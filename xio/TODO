@@ -16,3 +16,13 @@ also, if something like target init or server accept fails somewhere along the w
 check thread id before doing oneshot due to in_register...  too many unnecessary ones in threaded builds
 
 should pass close respect cancel?  definitely not when TOP LEVEL op is open
+
+caching shit needs to be finished
+
+get rid of close attr
+
+blocking opt
+
+attr only on server init and open
+
+
