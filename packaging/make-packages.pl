@@ -73,13 +73,13 @@ my $thread = "pthr";
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
-    $binary, $deporder, $inplace, $gt2dir, $gt3dir, $doxygen,
+    $binary, $deporder, $inplace, $restart_package, $gt2dir, $gt3dir, $doxygen,
     $autotools, $deps, $graph, $listpack, $listbun,
     $cvsuser, $gpt, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
-    0, 0, "", "", 0,
+    0, 0, 0, 0, "", "", 0,
     1, 0, 0, 0, 0,
     "", 1, "");
 
@@ -109,6 +109,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'uncool!' => \$uncool,
 	    'inplace!' => \$inplace,
             'deporder!' => \$deporder,
+            'restart=s' => \$restart_package,
 	    'doxygen!' => \$doxygen,
 	    'autotools!' => \$autotools,
 	    'gpt!' => \$gpt,
@@ -1152,6 +1153,7 @@ sub package_sources()
 {
     my $build_default;
 
+    print "IN: package_sources\n\n";
     mkdir $pkglog;
     mkdir $source_output;
     mkdir $package_output;
@@ -1162,11 +1164,34 @@ sub package_sources()
     {
         my @plist = keys %package_build_hash;
         @package_list = dep_sort_packages(\@plist);
+
+        if($restart_package)
+        {
+            my $ind = 0;
+            for my $p (@package_list)
+            {
+                if($restart_package eq $p)
+                {
+                    last;
+                }
+                $ind++;
+            }
+
+            @package_list = splice(@package_list, $ind);
+            
+            if(scalar(@package_list) == 0)
+            {
+                print "ERROR: -restart option specified $restart_package, which is not in the package list\n\n";
+                exit 1;
+            }
+        }
     }
     else
     {
         @package_list = keys %package_build_hash;
     }
+
+    print "PL: " . join(":", @package_list) . "\n\n";
 
     for my $package ( @package_list )
     {
