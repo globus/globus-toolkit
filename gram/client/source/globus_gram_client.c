@@ -463,7 +463,6 @@ globus_gram_client_job_request(char * gatekeeper_url,
 			       const char * callback_url,
 			       char ** job_contact)
 {
-#if 0
     int                          rc;
     int                          version;
     globus_byte_t		 query = GLOBUS_NULL; /* MUST FREE */
@@ -545,7 +544,6 @@ globus_gram_client_job_request_done:
     globus_io_tcpattr_destroy (&attr);
 
     return rc;
-#endif
 } /* globus_gram_client_job_request() */
 
 
