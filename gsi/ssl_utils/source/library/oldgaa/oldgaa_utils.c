@@ -28,8 +28,6 @@ Description:
 #include "globus_oldgaa.h" 
 #include "oldgaa_utils.h"
 
-#include "gnu_regex.h"
-
 
 /**********************************************************************
                        Define module specific variables
