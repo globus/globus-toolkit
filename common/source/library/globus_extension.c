@@ -3,7 +3,11 @@
 #include GLOBUS_THREAD_INCLUDE
 #include "globus_thread_rmutex.h"
 #include "globus_libc.h"
+#ifdef WIN32
+#include "globus_libtool_windows.h"
+#else
 #include "ltdl.h"
+#endif
 
 /* provides local_version and build_flavor */
 #include "version.h"
