@@ -53,7 +53,7 @@ public class ExampleGFTPSender {
             pack.setGridFTPVersion(gftpVersion) ;
 
             pack.setComponentCode(GFTPMonitorPacket.COMPONENT_CODE);
-            pack.setComponentVersion(GFTPMonitorPacket.VERSION_CODE);
+            pack.setPacketVersion(GFTPMonitorPacket.VERSION_CODE);
             pack.setHostIP(InetAddress.getLocalHost());
             pack.setDateTime(new Date());
 
@@ -97,7 +97,7 @@ public class ExampleGFTPSender {
             outgoing.setDateTime(now);
             outgoing.setHostIP(InetAddress.getLocalHost());
             outgoing.setComponentCode((short)69);
-            outgoing.setComponentVersion((short)42);
+            outgoing.setPacketVersion((short)42);
             sendPacket(outgoing);
             
             //full-fledged GFTP packet:

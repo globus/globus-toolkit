@@ -181,7 +181,7 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
         return new String(
             " (component_code, version_code, send_time, ip_version, ip_address, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES('" +
             getComponentCode() + "','" +
-            getComponentVersion() + "','" +
+            getPacketVersion() + "','" +
             new Timestamp(timeSent).toString() + "','" +
             getIPVersion() + "','" +
             senderAddress.toString() + "','" +

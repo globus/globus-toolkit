@@ -83,7 +83,7 @@ public class DefaultPacketHandler implements PacketHandler {
         return new String(
             " (componentcode, versioncode, contents) VALUES('" +
             pack.getComponentCode() + "','" +
-            pack.getComponentVersion() + "','" +
+            pack.getPacketVersion() + "','" +
             pack.getBinaryContents() + "')");
     }
 }

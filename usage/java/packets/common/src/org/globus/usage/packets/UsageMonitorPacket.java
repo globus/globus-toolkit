@@ -49,11 +49,11 @@ public class UsageMonitorPacket {
         return this.componentCode;
     }
     
-    public void setComponentVersion(short v) {
+    public void setPacketVersion(short v) {
         this.packetVersion = v;
     }
     
-    public int getComponentVersion() {
+    public int getPacketVersion() {
         return this.packetVersion;
     }
     
