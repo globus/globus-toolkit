@@ -182,9 +182,10 @@ globus_i_ftp_client_response_callback(
     const char *				buffer_cmd = GLOBUS_NULL;
     char *					parallelism_opt = GLOBUS_NULL;
     char *					layout_opt = GLOBUS_NULL;
-    char *                  list_str = GLOBUS_NULL;    
+    char *                                      list_str = GLOBUS_NULL;    
     unsigned long				pbsz = 0;
     int						rc, oldrc, i;
+    char *                                      pathname;
     static char * myname = "globus_i_ftp_client_response_callback";
     
     target = (globus_i_ftp_client_target_t *) user_arg;
@@ -213,6 +214,9 @@ globus_i_ftp_client_response_callback(
     /* This redo is used to make a second run through the state
      * machine, which a few states will require.
      */
+    
+    pathname = target->url.url_path ? target->url.url_path : "";
+    
 redo:
     switch(target->state)
     {
@@ -716,7 +720,7 @@ redo:
 	    target->url_string,
 	    target->mask,
 	    "SIZE %s" CRLF,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -735,7 +739,7 @@ redo:
 	    "SIZE %s" CRLF,
 	    globus_i_ftp_client_response_callback,
 	    target,
-	    target->url.url_path);
+	    pathname);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2034,7 +2038,7 @@ redo:
 	    target->mask,
 	    "%s %s" CRLF,
 	    list_str,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2053,7 +2057,7 @@ redo:
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		list_str,
-		target->url.url_path);
+		pathname);
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -2071,7 +2075,7 @@ redo:
 	    target->url_string,
 	    target->mask,
 	    "DELE %s" CRLF,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2089,7 +2093,7 @@ redo:
 		"DELE %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		target->url.url_path);
+		pathname);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2108,7 +2112,7 @@ redo:
 	    target->url_string,
 	    target->mask,
 	    "RNFR %s" CRLF,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2126,7 +2130,7 @@ redo:
 		"RNFR %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		target->url.url_path);
+		pathname);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2197,7 +2201,7 @@ redo:
 	    target->url_string,
 	    target->mask,
 	    "MKD %s" CRLF,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2215,7 +2219,7 @@ redo:
 		"MKD %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		target->url.url_path);
+		pathname);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2234,7 +2238,7 @@ redo:
 	    target->url_string,
 	    target->mask,
 	    "RMD %s" CRLF,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2252,7 +2256,7 @@ redo:
 		"RMD %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		target->url.url_path);
+		pathname);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2271,7 +2275,7 @@ redo:
 	    target->url_string,
 	    target->mask,
 	    "MDTM %s" CRLF,
-	    target->url.url_path);
+	    pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2289,7 +2293,7 @@ redo:
 		"MDTM %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		target->url.url_path);
+		pathname);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2327,7 +2331,7 @@ redo:
 		target->mask,
 		"ERET %s %s" CRLF,
 		client_handle->eret_alg_str,
-		target->url.url_path);
+		pathname);
 	}
 	else
 	{
@@ -2336,7 +2340,7 @@ redo:
 		target->url_string,
 		target->mask,
 		"RETR %s" CRLF,
-		target->url.url_path);
+		pathname);
 	}
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2358,7 +2362,7 @@ redo:
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
 		    client_handle->eret_alg_str,
-		    target->url.url_path);
+		    pathname);
 	}
 	else
 	{
@@ -2368,7 +2372,7 @@ redo:
 		    "RETR %s" CRLF,
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
-		    target->url.url_path);
+		    pathname);
 	}
 
 	if(result != GLOBUS_SUCCESS)
@@ -2406,7 +2410,7 @@ redo:
 		target->mask,
 		"ESTO %s %s" CRLF,
 		client_handle->esto_alg_str,
-		target->url.url_path);
+		pathname);
 	}
 	else
 	{
@@ -2416,7 +2420,7 @@ redo:
 		target->mask,
 		"%s %s" CRLF,
 		target->attr->append ? "APPE" : "STOR",
-		target->url.url_path);
+		pathname);
 	}
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2437,7 +2441,7 @@ redo:
 			globus_i_ftp_client_response_callback,
 			user_arg,
 			client_handle->esto_alg_str,
-			target->url.url_path);
+			pathname);
 	}
 	else if(target->attr->append)
 	{
@@ -2447,7 +2451,7 @@ redo:
 		    "APPE %s" CRLF,
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
-		    target->url.url_path);
+		    pathname);
 	}
 	else
 	{
@@ -2457,7 +2461,7 @@ redo:
 		    "STOR %s" CRLF,
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
-		    target->url.url_path);
+		    pathname);
 	}
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -2485,7 +2489,7 @@ redo:
 		target->mask,
 		"ESTO %s %s" CRLF,
 		client_handle->esto_alg_str,
-		target->url.url_path);
+		pathname);
 	}
 	else
 	{
@@ -2494,7 +2498,7 @@ redo:
 		target->url_string,
 		target->mask,
 		"STOR %s" CRLF,
-		target->url.url_path);
+		pathname);
 	}
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
@@ -2517,7 +2521,7 @@ redo:
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		client_handle->esto_alg_str,
-		target->url.url_path);
+		pathname);
 	}
 	else
 	{
@@ -2526,7 +2530,7 @@ redo:
 		"STOR %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		    target->url.url_path);
+		    pathname);
 	}
 
 	if(result != GLOBUS_SUCCESS)
@@ -2572,7 +2576,7 @@ redo:
 		target->mask,
 		"ERET %s %s" CRLF,
 		client_handle->eret_alg_str,
-		target->url.url_path);
+		pathname);
 	}
 	else
 	{
@@ -2581,7 +2585,7 @@ redo:
 		target->url_string,
 		target->mask,
 		"RETR %s" CRLF,
-		target->url.url_path);
+		pathname);
 	}
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
@@ -2603,7 +2607,7 @@ redo:
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		client_handle->eret_alg_str,
-		target->url.url_path);
+		pathname);
 	}
 	else
 	{
@@ -2612,7 +2616,7 @@ redo:
 		"RETR %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		target->url.url_path);
+		pathname);
 	}
 	if(result != GLOBUS_SUCCESS)
 	{
