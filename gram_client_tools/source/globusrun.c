@@ -60,6 +60,7 @@ typedef struct globus_i_globusrun_gram_monitor_s
     globus_bool_t  verbose;
     unsigned long  job_state;
     int            failure_code;
+    char *         job_contact;
 } globus_i_globusrun_gram_monitor_t;
 
 /*****************************************************************************
@@ -1185,6 +1186,13 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 
     globus_mutex_lock(&monitor->mutex);
 
+    if(monitor->job_contact != NULL &&
+            (strcmp(monitor->job_contact, job_contact) != 0))
+    {
+        globus_mutex_unlock(&monitor->mutex);
+        return;
+    }
+
     monitor->job_state = state;
 
     switch(state)
@@ -1256,11 +1264,11 @@ globus_l_globusrun_gramrun(char * request_string,
 			   char *rm_contact)
 {
     char *callback_contact = GLOBUS_NULL;
-    char *job_contact = GLOBUS_NULL;
     globus_i_globusrun_gram_monitor_t monitor;
     int err;
     globus_bool_t verbose = !(options & GLOBUSRUN_ARG_QUIET);
     globus_bool_t send_commit = GLOBUS_FALSE;
+    int tmp1, tmp2;
 
     /* trap SIGINTs */
     if(!(options & GLOBUSRUN_ARG_IGNORE_CTRLC))
@@ -1287,6 +1295,7 @@ globus_l_globusrun_gramrun(char * request_string,
     monitor.failure_code = 0;
     monitor.verbose=verbose;
     monitor.job_state = 0;
+    monitor.job_contact = NULL;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
@@ -1325,17 +1334,18 @@ globus_l_globusrun_gramrun(char * request_string,
                            "successful\n");
     }
 
+    globus_mutex_lock(&monitor.mutex);
     err = globus_gram_client_job_request(rm_contact,
 					 request_string,
 					 GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 					 callback_contact,
-					 &job_contact);
+					 &monitor.job_contact);
+    globus_mutex_unlock(&monitor.mutex);
 
     if(err == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
-	int tmp1, tmp2;
 	send_commit = GLOBUS_TRUE;
-	err = globus_gram_client_job_signal(job_contact,
+	err = globus_gram_client_job_signal(monitor.job_contact,
 				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
 					    "commit",
 					    &tmp1,
@@ -1369,8 +1379,8 @@ globus_l_globusrun_gramrun(char * request_string,
 
 	}
 
-	if  ((options & GLOBUSRUN_ARG_BATCH) && job_contact)
-	    globus_libc_printf("%s\n",job_contact);
+	if  ((options & GLOBUSRUN_ARG_BATCH) && monitor.job_contact)
+	    globus_libc_printf("%s\n",monitor.job_contact);
 
 	goto hard_exit;
     }
@@ -1381,7 +1391,7 @@ globus_l_globusrun_gramrun(char * request_string,
 
     if  (options & GLOBUSRUN_ARG_BATCH)
     {
-	globus_libc_printf("%s\n",job_contact);
+	globus_libc_printf("%s\n",monitor.job_contact);
     }
 
     globus_mutex_lock(&monitor.mutex);
@@ -1404,7 +1414,7 @@ globus_l_globusrun_gramrun(char * request_string,
 		printf("Cancelling job...\n");
 	    }
 	    globus_l_globusrun_remove_cancel_poll();
-	    globus_gram_client_job_cancel(job_contact);
+	    globus_gram_client_job_cancel(monitor.job_contact);
 	    globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
 	}
         if((options & GLOBUSRUN_ARG_BATCH) &&
@@ -1419,12 +1429,20 @@ globus_l_globusrun_gramrun(char * request_string,
 
     if(send_commit == GLOBUS_TRUE)
     {
-	int tmp1, tmp2;
-	err = globus_gram_client_job_signal(job_contact,
+	err = globus_gram_client_job_signal(monitor.job_contact,
 				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
 					    "commit",
 					    &tmp1,
 					    &tmp2);
+    }
+
+    if (options & GLOBUSRUN_ARG_BATCH)
+    {
+        globus_gram_client_job_callback_unregister(
+                monitor.job_contact,
+                callback_contact,
+                &tmp1,
+                &tmp2);
     }
 
     globus_gram_client_callback_disallow(callback_contact);
@@ -1456,9 +1474,9 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 hard_exit:
 
-    if(job_contact != GLOBUS_NULL)
+    if(monitor.job_contact != GLOBUS_NULL)
     {
-	globus_gram_client_job_contact_free(job_contact);
+	globus_gram_client_job_contact_free(monitor.job_contact);
     }
 
     return err;
