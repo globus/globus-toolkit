@@ -2072,25 +2072,6 @@ globus_l_io_handle_events(
 	    globus_i_io_mutex_lock();
 	    globus_l_io_select_active = GLOBUS_FALSE;
             
-            /* see if we were woken up by pipe 
-	     * this needs to happen immediately and cant be 'registered' like
-	     * the rest of the callbacks
-	     */
-	    if(FD_ISSET(
-	        globus_l_io_wakeup_pipe_handle.fd, globus_l_io_active_read_fds))
-	    {
-	        FD_CLR(
-	            globus_l_io_wakeup_pipe_handle.fd,
-	            globus_l_io_active_read_fds);
-
-	        globus_l_io_wakeup_pipe_callback(
-	            GLOBUS_NULL,
-	            &globus_l_io_wakeup_pipe_handle,
-	            GLOBUS_SUCCESS);
-	        
-	        n_ready--;
-	    }
-	    
 	    /*
 	     * Increase the select() counter and signal any waiting threads
 	     * that the current select has completed.  The select() counter is
@@ -2122,7 +2103,27 @@ globus_l_io_handle_events(
 		break;
 	    }
 	}
-
+        
+        
+         /* see if we were woken up by pipe 
+         * this needs to happen immediately and cant be 'registered' like
+         * the rest of the callbacks
+         */
+        if(FD_ISSET(
+            globus_l_io_wakeup_pipe_handle.fd, globus_l_io_active_read_fds))
+        {
+            FD_CLR(
+                globus_l_io_wakeup_pipe_handle.fd,
+                globus_l_io_active_read_fds);
+        
+            globus_l_io_wakeup_pipe_callback(
+                GLOBUS_NULL,
+                &globus_l_io_wakeup_pipe_handle,
+                GLOBUS_SUCCESS);
+            
+            n_ready--;
+        }
+        
 	if (n_ready < 0)
 	{
 	    if (select_errno == EINTR)
