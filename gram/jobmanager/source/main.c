@@ -377,9 +377,7 @@ main(
 	    NULL,
 	    &delay,
 	    globus_gram_job_manager_state_machine_callback,
-	    request,
-	    NULL,
-	    NULL);
+	    request);
 
     while(request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_DONE &&
 	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE && 

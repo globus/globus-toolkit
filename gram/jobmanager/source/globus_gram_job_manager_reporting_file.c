@@ -8,9 +8,11 @@ enum
     GLOBUS_GRAM_JOB_MANAGER_REPORTING_CLEANUP_PERIOD = 60
 };
 
-globus_bool_t
+static
+void
 globus_l_gram_job_manager_reporting_file_cleaner(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *		time_now,
+    const globus_abstime_t *		time_stop,
     void *				callback_arg);
 
 int
@@ -169,9 +171,7 @@ globus_gram_job_manager_reporting_file_start_cleaner(
 	    &delay,
 	    &period,
 	    globus_l_gram_job_manager_reporting_file_cleaner,
-	    request,
-	    NULL,
-	    NULL);
+	    request);
 
     return GLOBUS_SUCCESS;
 }
@@ -181,22 +181,26 @@ int
 globus_gram_job_manager_reporting_file_stop_cleaner(
     globus_gram_jobmanager_request_t *	request)
 {
-    globus_callback_unregister(request->reporting_file_cleanup_timer);
+    globus_callback_unregister(request->reporting_file_cleanup_timer,
+                               NULL,
+			       NULL,
+			       NULL);
     request->reporting_file_cleanup_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_reporting_file_stop_cleaner() */
 
-globus_bool_t
+static
+void
 globus_l_gram_job_manager_reporting_file_cleaner(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *		time_now,
+    const globus_abstime_t *		time_stop,
     void *				callback_arg)
 {
     time_t				now;
     DIR *				status_dir;
     globus_gram_jobmanager_request_t *	request;
-    globus_bool_t			return_val = GLOBUS_FALSE;
     char *				query_str;
     struct dirent *			dir_entry = NULL;
     char *				stat_file_path;
@@ -263,9 +267,7 @@ globus_l_gram_job_manager_reporting_file_cleaner(
 				request,
                                 "JM: Removed old status file --> %s\n",
                                 stat_file_path);
-                        return_val = GLOBUS_TRUE;
                     }
-
 		}
 	    }
 	    globus_libc_free(stat_file_path);
@@ -279,7 +281,5 @@ globus_l_gram_job_manager_reporting_file_cleaner(
 
   error_exit:
     globus_mutex_unlock(&request->mutex);
-
-    return return_val;
 }
 /* globus_gram_job_manager_reporting_file_cleaner() */

@@ -74,9 +74,10 @@ globus_l_gram_job_manager_state_string(
  * handle two-phase commit timeouts, and delays between calls to the
  * poll script.
  */
-globus_bool_t
+void
 globus_gram_job_manager_state_machine_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *		time_now,
+    const globus_abstime_t *		time_stop,
     void *				user_arg)
 {
     globus_gram_jobmanager_request_t *	request;
@@ -91,8 +92,6 @@ globus_gram_job_manager_state_machine_callback(
     }
     while(!event_registered);
     globus_mutex_unlock(&request->mutex);
-
-    return GLOBUS_TRUE;
 }
 /* globus_gram_job_manager_state_machine_callback() */
 
@@ -996,9 +995,7 @@ globus_gram_job_manager_state_machine(
 			&request->two_phase_commit_timer,
 			&delay_time,
 			globus_gram_job_manager_state_machine_callback,
-			request,
-			GLOBUS_NULL,
-			GLOBUS_NULL);
+			request);
 
 		event_registered = GLOBUS_TRUE;
 	    }
@@ -1201,9 +1198,7 @@ globus_gram_job_manager_state_machine(
 			&request->poll_timer,
 			&delay_time,
 			globus_gram_job_manager_state_machine_callback,
-			request,
-			GLOBUS_NULL,
-			GLOBUS_NULL);
+			request);
 
 		event_registered = GLOBUS_TRUE;
 	    }
@@ -1801,9 +1796,7 @@ globus_gram_job_manager_state_machine(
 		    &request->two_phase_commit_timer,
 		    &delay_time,
 		    globus_gram_job_manager_state_machine_callback,
-		    request,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		    request);
 
 	    event_registered = GLOBUS_TRUE;
 	}
@@ -1841,9 +1834,7 @@ globus_gram_job_manager_state_machine(
 		&request->two_phase_commit_timer,
 		&delay_time,
 		globus_gram_job_manager_state_machine_callback,
-		request,
-		GLOBUS_NULL,
-		GLOBUS_NULL);
+		request);
 
 	request->commit_extend = 0;
 

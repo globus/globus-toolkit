@@ -3,9 +3,10 @@
 #include <string.h>
 
 static
-globus_bool_t
+void
 globus_l_gram_job_manager_proxy_expiration(
-    globus_abstime_t *      		time_stop,
+    const globus_abstime_t *   		time_now,
+    const globus_abstime_t *   		time_stop,
     void *				callback_arg);
 
 static
@@ -148,11 +149,15 @@ globus_gram_job_manager_gsi_update_proxy_timeout(
     globus_gram_jobmanager_request_t *	request,
     gss_cred_id_t			cred)
 {
-    int rc;
+    globus_bool_t			active;
+    globus_result_t			result;
 
-    rc = globus_callback_unregister(request->proxy_expiration_timer);
+    result = globus_callback_unregister(request->proxy_expiration_timer,
+					NULL,
+					NULL,
+					&active);
 
-    if(rc != GLOBUS_SUCCESS)
+    if(result != GLOBUS_SUCCESS || active)
     {
 	return GLOBUS_FAILURE;
     }
@@ -204,9 +209,7 @@ globus_l_gram_job_manager_gsi_register_proxy_timeout(
 		    &request->proxy_expiration_timer,
 		    &delay_time,
 		    globus_l_gram_job_manager_proxy_expiration,
-		    request,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		    request);
 	}
     }
     else
@@ -576,9 +579,10 @@ stat_failed:
 /* globus_gram_job_manager_gsi_relocate_proxy() */
 
 static
-globus_bool_t
+void
 globus_l_gram_job_manager_proxy_expiration(
-    globus_abstime_t *      		time_stop,
+    const globus_abstime_t *		time_now,
+    const globus_abstime_t *		time_stop,
     void *				callback_arg)
 {
     globus_gram_jobmanager_request_t *	request;
@@ -745,7 +749,5 @@ globus_l_gram_job_manager_proxy_expiration(
 
     }
     globus_mutex_unlock(&request->mutex);
-
-    return GLOBUS_TRUE;
 }
 /* globus_l_gram_job_manager_proxy_expiration() */

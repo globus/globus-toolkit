@@ -105,9 +105,10 @@ globus_l_gram_job_manager_output_get_positions(
     globus_list_t *			destinations);
 
 static
-globus_bool_t
+void
 globus_l_gram_job_manager_output_poll(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *		time_now,
+    const globus_abstime_t *		time_stop,
     void *				user_arg);
 
 static
@@ -488,9 +489,7 @@ error_exit:
 	    &delay,
 	    &period,
 	    globus_l_gram_job_manager_output_poll,
-	    request,
-	    NULL,
-	    NULL);
+	    request);
 
     if(request->output->pending_opens == 0)
     {
@@ -500,9 +499,7 @@ error_exit:
 		&request->poll_timer,
 		&delay,
 		globus_gram_job_manager_state_machine_callback,
-		request,
-		NULL,
-		NULL);
+		request);
     }
 
     globus_gram_job_manager_request_log(
@@ -595,9 +592,7 @@ globus_gram_job_manager_output_close(
 		&request->poll_timer,
 		&delay,
 		globus_gram_job_manager_state_machine_callback,
-		request,
-		NULL,
-		NULL);
+		request);
     }
     return GLOBUS_SUCCESS;
 }
@@ -782,15 +777,15 @@ globus_gram_job_manager_output_check_size(
  *
  */
 static
-globus_bool_t
+void
 globus_l_gram_job_manager_output_poll(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *		time_now,
+    const globus_abstime_t *		time_stop,
     void *				user_arg)
 {
     struct stat				file_status;
     globus_gram_jobmanager_request_t *	request;
     globus_list_t *			tmp_list;
-    globus_bool_t			handled = GLOBUS_FALSE;
     globus_l_gram_job_manager_output_destination_t *
 					destination;
 
@@ -863,7 +858,6 @@ globus_l_gram_job_manager_output_poll(
     }
     request->in_handler = GLOBUS_FALSE;
     globus_mutex_unlock(&request->mutex);
-    return handled;
 }
 /* globus_gram_job_manager_output_poll() */
 
@@ -2068,8 +2062,11 @@ globus_l_gram_job_manager_output_close_done(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT) &&
 	    request->output->pending_closes == 0)
 	{
-	    globus_callback_unregister(request->output->callback_handle);
-	    request->output->callback_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+	    globus_callback_unregister(request->output->callback_handle,
+	                               NULL,
+	                               NULL,
+				       NULL);
+	    request->output->callback_handle = GLOBUS_NULL_HANDLE;
 	    do
 	    {
 		event_registered =
