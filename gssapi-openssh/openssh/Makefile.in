@@ -229,7 +229,7 @@ catman-do:
 		echo -n "cat.." ; \
 		nroff -mandoc ./mdoc/$$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
 		echo -n "man.." ; \
-		$(DISTPERL) ./mdoc2man.pl < ./mdoc/$$f > ./man/$$f ; \
+		cat ./mdoc/$$f | $(AWK) -f ./mdoc2man.awk > ./man/$$f ; \
 		echo "done." ; \
 	done
 
