@@ -49,7 +49,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     context = (gss_ctx_id_desc *) context_handle;
     oid = (gss_oid_desc *) desired_object;
 
-    extension_data = (gss_buffer_set_desc *) extension_data;
+    extension_data = (gss_buffer_set_desc *) data_set;
 
     cert_count = 1 + sk_X509_num(context->pcd->cert_chain);
     
