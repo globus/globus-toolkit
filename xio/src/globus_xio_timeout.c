@@ -95,6 +95,7 @@ globus_i_xio_timer_register_timeout(
     globus_reltime_t *                              timeout)
 {
     globus_i_xio_timer_entry_t *                    entry;
+    globus_result_t                                 res;
 
     entry = globus_malloc(sizeof(globus_i_xio_timer_entry_t));
     entry->datum = datum;
@@ -109,9 +110,12 @@ globus_i_xio_timer_register_timeout(
             globus_reltime_cmp(entry->rel_timeout, timer->minimal_delay) < 0)
         {
             GlobusTimeReltimeCopy(timer->minimal_delay, entry->rel_timeout);
-            globus_callback_adjust_period(
-                timer->periodic_handle,
-                &timer->minimal_delay);
+            res = globus_callback_adjust_period(
+                    timer->periodic_handle,
+                    &timer->minimal_delay);
+
+            /* parms are good so should never fail */
+            assert(res == GLOBUS_SUCCESS);
             timer->running = GLOBUS_TRUE;
         }
         globus_list_insert(&timer->op_list, entry);
