@@ -17,7 +17,7 @@ if (!defined($gpath))
 require Grid::GPT::Setup;
 use Getopt::Long;
 
-my $path                = '/var/spool/pbs/server_logs';
+my $path                = '';
 my $help		= 0;
 
 GetOptions('path|p=s' => \$path,
@@ -25,6 +25,13 @@ GetOptions('path|p=s' => \$path,
 
 &usage if $help;
 
+if ($path eq '') {
+    if (exists $ENV{PBS_HOME}) {
+        $path = $ENV{PBS_HOME} . '/server_logs';
+    } else {
+        $path = '/var/spool/pbs/server_logs';
+    }
+}
 if (-e $path)
 {
     if (! -d $path)
@@ -40,7 +47,9 @@ if (-e $path)
 }
 else
 {
-    print STDERR "$path does not exist\n";
+    print STDERR "$path does not exist.\n";
+    print STDERR "Re-run this setup package with PBS_HOME environment variable\n";
+    print STDERR "pointing to the directory containing the PBS server-logs subdirectory\n";
     exit 1;
 }
 my $metadata =
