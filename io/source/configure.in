@@ -26,6 +26,8 @@ AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(string.h)
 AC_CHECK_HEADERS(dce/cma_ux.h)
 
+GLOBUS_FINALIZE
+
 LAC_DOXYGEN(["../library"])
 
 AC_OUTPUT(
