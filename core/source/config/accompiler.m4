@@ -31,6 +31,8 @@ dnl   F77
 dnl   F77FLAGS
 dnl   F90
 dnl   F90FLAGS
+dnl   OBJECT_MODE
+dnl   NM
 dnl
 dnl CXX_WORKS is set to "yes" or "no", depending of if the C++
 dnl             compiler works.
@@ -60,6 +62,8 @@ dnl   lac_cv_F77
 dnl   lac_cv_F77FLAGS
 dnl   lac_cv_F90
 dnl   lac_cv_F90FLAGS
+dnl   lac_cv_OBJECT_MODE
+dnl   lac_cv_NM
 dnl
 dnl
 
@@ -127,6 +131,8 @@ LAC_SUBSTITUTE_COMPILER_VAR(CROSS)
 LAC_SUBSTITUTE_COMPILER_VAR(F77FLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(F90)
 LAC_SUBSTITUTE_COMPILER_VAR(F90FLAGS)
+LAC_SUBSTITUTE_COMPILER_VAR(OBJECT_MODE)
+LAC_SUBSTITUTE_COMPILER_VAR(NM)
 ])
 
 dnl LAC_SUBSTITUTE_COMPILER_VAR
@@ -156,6 +162,8 @@ lac_LDFLAGS="$LDFLAGS -L$GLOBUS_LOCATION/lib"
 lac_LIBS="$LIBS "
 lac_F77FLAGS="$F77FLAGS "
 lac_F90FLAGS="$F90FLAGS "
+lac_NM=""
+lac_OBJECT_MODE=""
 unset lac_cflags_opt
 unset lac_cxxflags_opt
 case ${host}--$1 in
@@ -509,11 +517,6 @@ case ${host}--$1 in
         lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
       ;;
     *-ibm-aix*--pthreads )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc_r mpicc)
@@ -543,6 +546,25 @@ case ${host}--$1 in
             [],
             [
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_CC="/usr/bin/xlc -q64"
+                    lac_cv_AR="/usr/bin/ar -X64"
+                    lac_ARFLAGS="-X64 $lac_ARFLAGS"
+                    lac_CFLAGS="-q64 $lac_CFLAGS"
+                    lac_CXXFLAGS="-q64 $lac_CXXFLAGS"
+                    lac_LDFLAGS="-b64 $lac_LDFLAGS"
+                    lac_NM="/usr/bin/nm -X64 -B"
+                    lac_OBJECT_MODE="64"
+                else
+                    lac_cv_CC="/usr/bin/xlc -q32"
+                    lac_cv_AR="/usr/bin/ar -X32"
+                    lac_ARFLAGS="-X32 $lac_ARFLAGS"
+                    lac_CFLAGS="-q32 $lac_CFLAGS"
+                    lac_CXXFLAGS="-q32 $lac_CXXFLAGS"
+                    lac_LDFLAGS="-b32 $lac_LDFLAGS"
+                    lac_NM="/usr/bin/nm -X32 -B"
+                    lac_OBJECT_MODE="32"
+                fi
             ])
 
         lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
@@ -557,11 +579,6 @@ case ${host}--$1 in
         fi
       ;;
     *-ibm-aix*--no )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc mpicc)
@@ -591,6 +608,25 @@ case ${host}--$1 in
             [],
             [
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_CC="/usr/bin/xlc -q64"
+                    lac_cv_AR="/usr/bin/ar -X64"
+                    lac_ARFLAGS="-X64 $lac_ARFLAGS"
+                    lac_CFLAGS="-q64 $lac_CFLAGS"
+                    lac_CXXFLAGS="-q64 $lac_CXXFLAGS"
+                    lac_LDFLAGS="-b64 $lac_LDFLAGS"
+                    lac_NM="/usr/bin/nm -X64 -B"
+                    lac_OBJECT_MODE="64"
+                else
+                    lac_cv_CC="/usr/bin/xlc -q32"
+                    lac_cv_AR="/usr/bin/ar -X32"
+                    lac_ARFLAGS="-X32 $lac_ARFLAGS"
+                    lac_CFLAGS="-q32 $lac_CFLAGS"
+                    lac_CXXFLAGS="-q32 $lac_CXXFLAGS"
+                    lac_LDFLAGS="-b32 $lac_LDFLAGS"
+                    lac_NM="/usr/bin/nm -X32 -B"
+                    lac_OBJECT_MODE="32"
+                fi
             ])
 
         lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
@@ -821,8 +857,14 @@ dnl Note that if RANLIB is set appropriately
 dnl This line should do nothing
 AC_PATH_PROGS(lac_cv_RANLIB, $lac_cv_RANLIB ranlib true, true)
 
-AC_PATH_PROGS(lac_cv_AR, [ar], ar)
+dnl Only set AR if it has not been explicitly set earlier
+AR="$lac_cv_AR"
+if test "x$lac_cv_AR" = "x"; then
+    AC_PATH_PROGS(lac_cv_AR, [ar], ar)
+fi
 AC_CACHE_VAL(lac_cv_ARFLAGS, lac_cv_ARFLAGS="ruv")
+NM="$lac_NM"
+OBJECT_MODE="$lac_OBJECT_MODE"
 ])
 
 dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
