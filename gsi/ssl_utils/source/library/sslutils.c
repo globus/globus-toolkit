@@ -182,7 +182,8 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_OUT_OF_MEMORY,"out of memory"},
     {PRXYERR_R_BAD_ARGUMENT,"bad argument"},
     {PRXYERR_R_BAD_MAGIC,"bad magic number"},
-    {0,NULL},
+    {PRXYERR_R_UNKNOWN_CRIT_EXT,"unable to handle critical extension"},
+    {0,NULL}
 };
 
 /*********************************************************************
@@ -1937,6 +1938,8 @@ proxy_verify_callback(
     X509_CRL *                          crl;
     X509_CRL_INFO *                     crl_info;
     X509_REVOKED *                      revoked;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    ex;
     char *                              s = NULL;
     SSL *                               ssl = NULL;
     proxy_verify_desc *                 pvd;
@@ -2482,14 +2485,30 @@ proxy_verify_callback(
     sk_X509_push(pvd->cert_chain, X509_dup(ctx->current_cert));
 
     pvd->cert_depth++;
-#ifdef DEBUG 
-    fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
-#endif
+
     if (ca_policy_file_path != NULL)
     {
         free(ca_policy_file_path);
     }
-        
+
+    extensions = ctx->current_cert->cert_info->extensions;
+
+    for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
+    {
+        ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
+
+        if(X509_EXTENSION_get_critical(ex))
+        {
+            PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_UNKNOWN_CRIT_EXT);
+            ctx->error = X509_V_ERR_CERT_REJECTED;
+            goto fail_verify;
+        }
+    }
+
+#ifdef DEBUG 
+    fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
+#endif
+    
     return(ok);
 
 fail_verify:

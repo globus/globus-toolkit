@@ -268,6 +268,7 @@ ERR_set_continue_needed(void);
 #define PRXYERR_R_OUT_OF_MEMORY                PRXYERR_R_BASE + 60
 #define PRXYERR_R_BAD_ARGUMENT                 PRXYERR_R_BASE + 61
 #define PRXYERR_R_BAD_MAGIC                    PRXYERR_R_BASE + 62
+#define PRXYERR_R_UNKNOWN_CRIT_EXT             PRXYERR_R_BASE + 63
 /* NOTE: Don't go over 1500 here or will conflict with errors in scutils.h */
 
 /* constants for gsi error messages 
