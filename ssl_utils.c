@@ -1382,6 +1382,8 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
     
     assert(creds != NULL);
     assert(path != NULL);
+
+    my_init();
     
     /* 
      * Put pass phrase where the callback function can find it.
@@ -1518,6 +1520,8 @@ SSL_CREDENTIALS *
 ssl_credentials_new()
 {
     SSL_CREDENTIALS *creds = NULL;
+
+    my_init();
     
     creds = malloc(sizeof(*creds));
     
@@ -1650,6 +1654,8 @@ ssl_proxy_buffer_sign(SSL_CREDENTIALS		*creds,
     assert(request_buffer != NULL);
     assert(proxy_buffer != NULL);
     assert(proxy_buffer_length != NULL);
+
+    my_init();
     
     /* Get the request for the buffer */
     if (ssl_x509_request_from_buffer(request_buffer,
