@@ -6044,6 +6044,10 @@ globus_l_gass_copy_ftp_client_list_read_callback(
     globus_off_t                       offset,
     globus_bool_t                      eof);
 
+static
+globus_result_t
+globus_l_gass_copy_mkdir_file(
+    char *                              url);
 
 #define GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE 256*1024
 
@@ -6911,6 +6915,8 @@ globus_gass_copy_mkdir(
     globus_gass_copy_callback_t callback_func,
     void * callback_arg)
 {   
+    static char *   myname = "globus_gass_copy_mkdir";    
+
     globus_result_t                     result;
     globus_gass_copy_url_mode_t         url_mode;
     globus_l_gass_copy_glob_info_t      info;
@@ -6991,6 +6997,7 @@ globus_result_t
 globus_l_gass_copy_mkdir_file(
     char *                              url)
 {
+    static char *   myname = "globus_l_gass_copy_mkdir_file";    
     int                                 rc;
     globus_url_t                        parsed_url;
     globus_result_t                     result;
@@ -6999,12 +7006,26 @@ globus_l_gass_copy_mkdir_file(
     
     if(rc != 0)
     {
-        result = -1;
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url. "
+                "globus_url_parse returned %d",
+                myname,
+                rc));
         goto error_url;
     }
     
     if(parsed_url.url_path == GLOBUS_NULL)
     {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url. "
+                "url has no path",
+                myname));
         goto error_null_path;
     }
     
@@ -7012,7 +7033,14 @@ globus_l_gass_copy_mkdir_file(
 
     if(rc != 0)
     {
-        result = -1;
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error creating directory. "
+                "mkdir() returned %d",
+                myname,
+                rc));
         goto error_mkdir;
     }
     
@@ -7027,15 +7055,3 @@ error_url:
     return result;
     
 }
-
-/*
-
-globus_result_t
-globus_ftp_client_mkdir(
-    globus_ftp_client_handle_t *		handle,
-    const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_client_complete_callback_t	complete_callback,
-    void *					callback_arg);
-*/
-
