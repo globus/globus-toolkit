@@ -66,11 +66,11 @@ my $thread = "pthr";
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
-    $binary, $inplace, $gt2dir, $gt3dir) =
+    $binary, $inplace, $gt2dir, $gt3dir, $doxygen) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
-    0, 0, "", "");
+    0, 0, "", "", 0);
 
 my @user_bundles;
 my @user_packages;
@@ -97,6 +97,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'version=s' => \$version,
 	    'uncool!' => \$uncool,
 	    'inplace!' => \$inplace,
+	    'doxygen!' => \$doxygen,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -136,8 +137,11 @@ if ( not $noupdates )
 	$cvs_build_hash{'gt3'} eq 1 or
 	$cvs_build_hash{'cbindings'} eq 1)
     {
-	$cvs_build_hash{'autotools'} = 1;
-	push @cvs_build_list, 'autotools';
+	if ( $cvs_build_hash{'autotools'} ne 1)
+        {
+	    $cvs_build_hash{'autotools'} = 1;
+	    push @cvs_build_list, 'autotools';
+	}
     }
     get_sources();
 } else {
@@ -224,6 +228,13 @@ sub setup_environment()
 	$ENV{GLOBUS_LOCATION} = $install;
     } else {
 	$ENV{GLOBUS_LOCATION} = "$source_output/tmp_core";
+    }
+
+    if ( $doxygen )
+    {
+	$doxygen = "CONFIGOPT_GPTMACRO=--enable-doxygen";
+    } else {
+	$doxygen = "";
     }
 
     if ( $verbose )
@@ -786,7 +797,8 @@ sub cvs_checkout_generic ()
 	    }
 
 	    print "Logging to ${cvs_logs}/" . $tree . ".log\n";
-	    log_system("cvs -z3 up -dP @update_list", "${cvs_logs}/" . $tree . ".log");
+
+	    log_system("cvs -d $cvsroot -z3 up -dP @update_list", "${cvs_logs}/" . $tree . ".log");
 	    paranoia "Trouble with cvs up on tree $tree.";
 
 	}
@@ -868,7 +880,7 @@ sub package_sources()
 	} elsif ( $custom eq "tar" ) { 
 	    package_source_tar($package, $subdir);
 	} else {
-	    print "ERROR: Unknown custom packaging type '$custom' for $package.\n";
+	    die "ERROR: Don't know how to make package $package.\n";
 	}
     }
     
@@ -1279,7 +1291,7 @@ sub install_bundles
 	my ($flava, $flags, @packages) = @{$bundle_list{$bundle}};
 	
 	print "Installing $bundle to $install using flavor $flava, flags $flags.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose $flags ${bundle}-*.tar.gz $flava");
+	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $doxygen $force $verbose $flags ${bundle}-*.tar.gz $flava");
 	paranoia("Building of $bundle failed.\n");
     }
 
@@ -1294,7 +1306,7 @@ sub install_packages
     for my $pkg ( @user_packages )
     {
 	print "Installing user requested package $pkg to $install using flavor $flavor.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose ${pkg}-*.tar.gz $flavor");
+	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $doxygen $force $verbose ${pkg}-*.tar.gz $flavor");
 	paranoia("Building of $pkg failed.\n");
     }
 
