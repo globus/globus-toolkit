@@ -313,7 +313,7 @@ ${qstat} -q | while read entry ; do
     shift
 
 
-    firstchar=`echo $1 | cut -c1'`
+    firstchar=`echo $1 | cut -c1`
     if [ "$firstchar" = "E" ] ; then
     queueStatus="enabled"
     elif [ "$firstchar" = "D" ] ; then
