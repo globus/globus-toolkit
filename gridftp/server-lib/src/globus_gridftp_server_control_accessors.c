@@ -1,5 +1,4 @@
 #include "globus_i_gridftp_server_control.h"
-#include "version.h"
 #include <sys/utsname.h>
 
 /*************************************************************************
