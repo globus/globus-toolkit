@@ -662,10 +662,10 @@ globus_gsi_cert_utils_get_base_name(
         "globus_gsi_cert_utils_get_base_name";
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
-    for(i=sk_X509_num(cert_chain);i > 0;i--)
+    for(i = 0;i < sk_X509_num(cert_chain);i++)
     {
         result = globus_gsi_cert_utils_get_cert_type(
-            sk_X509_value(cert_chain,i - 1),
+            sk_X509_value(cert_chain, i),
             &cert_type);
 
         if (result != GLOBUS_SUCCESS)
