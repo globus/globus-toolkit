@@ -696,7 +696,7 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
 	}
 	else
 	{
-	    outpath = globus_malloc(strlen(inpath)+1);
+	    *outpath = globus_malloc(strlen(inpath)+1);
 	    strcpy(*outpath, inpath);
 	}
     }
