@@ -47,7 +47,7 @@ CVS Information:
                                        + sizeof(GLOBUS_L_GASS_CACHE_EXT_NOTREADY)
 
 /* Files are created with 777 and the access restriction is left to umask    */
-#define GLOBUS_L_GASS_CACHE_DIR_MODE            S_IRWXU|S_IRWXG|S_IRWXO 
+#define GLOBUS_L_GASS_CACHE_DIR_MODE            S_IRWXU
 #define GLOBUS_L_GASS_CACHE_STATE_MODE          S_IRWXU|S_IRWXG|S_IRWXO 
 
 /* sleeping time in the globus_l_gass_cache_lock_open() lock loop */

@@ -36,21 +36,9 @@ int globus_gass_fclose(FILE *f);
 /******************************************************************************
  *                    Module Definition
  *****************************************************************************/
-extern int
-globus_i_gass_file_activate(void);
+extern globus_module_descriptor_t globus_i_gass_file_module;
+#define GLOBUS_GASS_FILE_MODULE (&globus_i_gass_file_module)
 
-extern int
-globus_i_gass_file_deactivate(void);
-
-#define GLOBUS_GASS_FILE_MODULE (&globus_gass_file_module)
-
-static globus_module_descriptor_t globus_gass_file_module =
-{
-    "globus_gass_file",
-    globus_i_gass_file_activate,
-    globus_i_gass_file_deactivate,
-    GLOBUS_NULL
-};
 EXTERN_C_END
 
 #endif

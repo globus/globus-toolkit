@@ -39,26 +39,50 @@ typedef struct globus_l_gass_file_s
     int fd;
     unsigned long timestamp;
     unsigned long total_length;
+    FILE *fp;
 } globus_l_gass_file_t;
 
 /******************************************************************************
                           Module specific variables
 ******************************************************************************/
+#define GLOBUS_GASS_FILE_TABLE_SIZE 256
 static globus_bool_t globus_l_gass_file_inited = GLOBUS_FALSE;
 static globus_gass_cache_t globus_l_gass_file_cache_handle;
 static globus_mutex_t globus_l_gass_file_mutex;
 static char *globus_l_gass_file_tag;
-static globus_hashtable_t globus_l_gass_file_hash;
+static globus_l_gass_file_t *globus_l_gass_file_table[GLOBUS_GASS_FILE_TABLE_SIZE];
+
+/******************************************************************************
+                          Module definition
+******************************************************************************/
+static int
+globus_l_gass_file_activate(void);
+
+static int
+globus_l_gass_file_deactivate(void);
+
+globus_module_descriptor_t globus_i_gass_file_module =
+{
+    "globus_gass_file",
+    globus_l_gass_file_activate,
+    globus_l_gass_file_deactivate,
+    GLOBUS_NULL
+};
 
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
 #define globus_gass_file_enter() globus_mutex_lock(&globus_l_gass_file_mutex);
 #define globus_gass_file_exit()  globus_mutex_unlock(&globus_l_gass_file_mutex);
-static int globus_l_gass_add_and_trunc(globus_l_gass_file_t *file, int oflag, int mode);
-static int globus_l_gass_add_and_get(globus_l_gass_file_t *file, int oflag, int mode);
+static int globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
+				       int oflag,
+				       int mode);
+static int globus_l_gass_add_and_get(globus_l_gass_file_t *file,
+				     int oflag,
+				     int mode);
+
 /******************************************************************************
-Function: globus_gass_open()
+Function: globus_l_gass_file_activate()
 
 Description: 
 
@@ -66,13 +90,12 @@ Parameters:
 
 Returns:
 ******************************************************************************/
-
-
-int
-globus_i_gass_file_activate()
+static int
+globus_l_gass_file_activate(void)
 {
     char *tag;
-
+    int i;
+    
     globus_module_activate(GLOBUS_NEXUS_MODULE);
     globus_module_activate(GLOBUS_GASS_CLIENT_MODULE);
 
@@ -89,22 +112,45 @@ globus_i_gass_file_activate()
     {
 	globus_l_gass_file_tag = GLOBUS_NULL;
     }
-    globus_hashtable_init(&globus_l_gass_file_hash,
-			  256,
-			  globus_hashtable_int_hash,
-			  globus_hashtable_int_keyeq);
+    for(i = 0; i < GLOBUS_GASS_FILE_TABLE_SIZE; i++)
+    {
+	globus_l_gass_file_table[i]=GLOBUS_NULL;
+    }
 
     globus_l_gass_file_inited = GLOBUS_TRUE;
 
     return GLOBUS_SUCCESS;
-}
+} /* globus_l_gass_file_activate() */
 
-int
-globus_i_gass_file_deactivate()
+/******************************************************************************
+Function: globus_l_gass_file_deactivate()
+
+Description: 
+
+Parameters:
+
+Returns:
+******************************************************************************/
+static int
+globus_l_gass_file_deactivate(void)
 {
+    int i;
     globus_l_gass_file_inited = GLOBUS_FALSE;
 
-    globus_hashtable_destroy(&globus_l_gass_file_hash);
+    for(i = 0; i < GLOBUS_GASS_FILE_TABLE_SIZE; i++)
+    {
+	if(globus_l_gass_file_table[i] != GLOBUS_NULL)
+	{
+	    if(globus_l_gass_file_table[i]->fp != GLOBUS_NULL)
+	    {
+		globus_gass_fclose(globus_l_gass_file_table[i]->fp);
+	    }
+	    else
+	    {
+		globus_gass_close(globus_l_gass_file_table[i]->fd);
+	    }
+	}
+    }
 
     if(globus_l_gass_file_tag != GLOBUS_NULL)
     {
@@ -112,14 +158,24 @@ globus_i_gass_file_deactivate()
 	globus_l_gass_file_tag = GLOBUS_NULL;
     }
     globus_gass_cache_close(&globus_l_gass_file_cache_handle);
+
     globus_mutex_destroy(&globus_l_gass_file_mutex);
     
     globus_module_deactivate(GLOBUS_GASS_CLIENT_MODULE);
     globus_module_deactivate(GLOBUS_NEXUS_MODULE);
 
     return GLOBUS_SUCCESS;
-}
+} /* globus_l_gass_file_deactivate() */
 
+/******************************************************************************
+Function: globus_gass_open()
+
+Description: 
+
+Parameters:
+
+Returns:
+******************************************************************************/
 int
 globus_gass_open(char *url, int oflag, ...)
 {
@@ -178,6 +234,7 @@ globus_gass_open(char *url, int oflag, ...)
     strcpy(file->url, url);
     file->oflag = oflag;
     file->fd = -1;
+    file->fp = GLOBUS_NULL;
 
     switch(oflag & (O_RDONLY|O_WRONLY|O_RDWR|O_TRUNC|O_APPEND))
     {
@@ -245,9 +302,7 @@ globus_gass_open(char *url, int oflag, ...)
 	}
 	else
 	{
-	    globus_hashtable_insert(&globus_l_gass_file_hash,
-				    (void *) file->fd,
-				    (void *) file);
+	    globus_l_gass_file_table[file->fd] = file;
 	}
 	break;
     default:
@@ -262,21 +317,20 @@ failure:
     free(file);
     globus_gass_file_exit();
     return -1;
-}
+} /* globus_gass_open() */
 
 /******************************************************************************
 Function: globus_gass_fopen()
 
-Description: Open a file stream to a GASS-opened file, by URL
+Description:
 
-Parameters: filename -> the URL of the file to open
-            type -> The file open type (see fopen(3))
+Parameters: 
 
-Returns: a valid file stream pointer, or GLOBUS_NULL, if an error occurred
+Returns: 
 ******************************************************************************/
 FILE *
 globus_gass_fopen(char *filename,
-	   char *type)
+		  char *type)
 {
     int fd = -1;
     if(strcmp(type, "r") == 0 ||
@@ -319,16 +373,25 @@ globus_gass_fopen(char *filename,
 
     if(fd >= 0)
     {
-	/*globus_gass_file_diagnostics_printf("Opening FILE with fd = %i\n", fd);*/
-	return fdopen(fd, type);
+	globus_l_gass_file_table[fd]->fp = fdopen(fd, type);
+
+	return globus_l_gass_file_table[fd]->fp;
     }
     else
     {
 	return GLOBUS_NULL;
     }
-}
+} /* globus_gass_fopen() */
 
+/******************************************************************************
+Function: globus_gass_close()
 
+Description:
+
+Parameters: 
+
+Returns: 
+******************************************************************************/
 int
 globus_gass_close(int fd)
 {
@@ -340,8 +403,9 @@ globus_gass_close(int fd)
 	return -1;
     }
     globus_gass_file_enter();
-    file = globus_hashtable_remove(&globus_l_gass_file_hash,
-				   (void *) fd);
+
+    file = globus_l_gass_file_table[fd];
+    globus_l_gass_file_table[fd] = GLOBUS_NULL;
     
     if(file == GLOBUS_NULL)
     {
@@ -406,14 +470,31 @@ globus_gass_close(int fd)
     }
 }
 
+/******************************************************************************
+Function: globus_gass_fclose()
+
+Description:
+
+Parameters: 
+
+Returns: 
+******************************************************************************/
 int
 globus_gass_fclose(FILE *f)
 {
     fflush(f);
     return globus_gass_close(fileno(f));
-}
+} /* globus_gass_fclose() */
 
+/******************************************************************************
+Function: globus_l_gass_add_and_get()
 
+Description:
+
+Parameters: 
+
+Returns: 
+******************************************************************************/
 static int
 globus_l_gass_add_and_get(globus_l_gass_file_t *file,
 		  int oflag,
@@ -495,17 +576,25 @@ globus_l_gass_add_and_get(globus_l_gass_file_t *file,
 		    mode);
     if(file->fd >= 0)
     {
-	globus_hashtable_insert(&globus_l_gass_file_hash,
-				(void *) file->fd,
-				(void *) file);
+	globus_l_gass_file_table[file->fd] = file;
+
 	return GLOBUS_SUCCESS;
     }
     else
     {
 	return -1;
     }
-}
+} /* globus_l_gass_add_and_get() */
 
+/******************************************************************************
+Function: globus_l_gass_add_and_trunc()
+
+Description:
+
+Parameters: 
+
+Returns: 
+******************************************************************************/
 static int
 globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
 		    int oflag,
@@ -536,9 +625,8 @@ globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
 			    file->timestamp);
 	if(file->fd >= 0)
 	{
-	    globus_hashtable_insert(&globus_l_gass_file_hash,
-				    (void *) file->fd,
-				    (void *) file);
+	    globus_l_gass_file_table[file->fd] = file;
+
 	    return GLOBUS_SUCCESS;
 	}
 	else
@@ -546,4 +634,4 @@ globus_l_gass_add_and_trunc(globus_l_gass_file_t *file,
 	    return -1;
 	}
     }
-}
+} /* globus_l_gass_add_and_trunc() */
