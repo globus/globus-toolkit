@@ -18,6 +18,7 @@ import org.globus.ftp.MlsxEntry;
 import org.globus.ogsa.base.multirft.TransferType;
 import org.globus.ogsa.impl.base.multirft.TransferDbAdapter;
 import org.globus.ogsa.impl.base.multirft.TransferJob;
+import org.globus.ogsa.impl.base.multirft.RftDBException;
 import org.globus.ogsa.utils.MessageUtils;
 
 import org.globus.util.GlobusURL;
@@ -183,13 +184,19 @@ public class URLExpander extends Thread {
             logger.error( e.getMessage() );
         }
         if ( this.sourceUrlsEx.size() == 0 ) {
-            logger.debug( "UrlExpander is done" );
+            System.out.println( "UrlExpander is done" );
 			try {
 				//int storeSuccess=this.dbAdapter.storeTransferJobs( transferJobVector );
 			} catch(Exception ee) {
 			logger.debug("Exception while storing transfer jobs",ee);
 			}
             this.done = true;
+    //        this.transferJob.setStatus(TransferJob.STATUS_FINISHED);
+           /* try {
+                //this.dbAdapter.update(this.transferJob);
+            } catch (RftDBException rfe) {
+                logger.error("Error updating transferJob",rfe);
+            }*/
         }
     }
 }

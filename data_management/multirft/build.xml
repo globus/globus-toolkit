@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- ===================================================================
 
 Build script for building Community Authorization Service
@@ -6,16 +6,14 @@ Build script for building Community Authorization Service
 Copyright (c) 1999 University of Chicago and The University of 
 Southern California. All Rights Reserved.
 
-==================================================================== -->
-
-<project default="all" basedir=".">
+==================================================================== --><project basedir="." default="all">
 
   <!-- Properties file -->
   <property file="${user.home}/build.properties"/>
   <property file="build.properties"/>
 
   <!-- Set properties -->
-  <property name="ogsa.root" value="../../ogsa/impl/java"/>
+  <property name="ogsa.root" value="/Users/madduri/india/ogsa/impl/java"/>
   <property file="${ogsa.root}/ogsa.properties"/>
 
   <property name="schema.origin" value="${ogsa.root}/schema"/>
@@ -25,7 +23,7 @@ Southern California. All Rights Reserved.
   <property name="lib.dir" value="lib"/>
 
   <!-- Directories created during build -->
-  <property name="build.dir" value="build" />
+  <property name="build.dir" value="build"/>
   <property name="docs.dir" value="docs"/>
   <property name="share.dir" value="share"/>
   <property name="etc.dir" value="./etc"/>
@@ -70,16 +68,15 @@ Southern California. All Rights Reserved.
   <target name="setenv">
     <mkdir dir="${build.dest}"/>
 
-    <uptodate property="javadoc.notrequired"
-              targetfile="${build.javadocs}/index.html">
-      <srcfiles dir="${src.dir}" includes="**/*.java" />
+    <uptodate property="javadoc.notrequired" targetfile="${build.javadocs}/index.html">
+      <srcfiles dir="${src.dir}" includes="**/*.java"/>
     </uptodate>
-    <available property="stubs.present" file="${stubs.dir}" type="dir"/>
+    <available file="${stubs.dir}" property="stubs.present" type="dir"/>
      </target>
 
   <target name="copySchemaDir">
    <copy toDir="${schema.dir}">
-    <fileset dir="${schema.origin}" casesensitive="yes"/>
+    <fileset casesensitive="yes" dir="${schema.origin}"/>
    </copy>
   </target>
 <target name="all">
@@ -87,7 +84,7 @@ Southern California. All Rights Reserved.
 </target>
 
   <!-- Generate Bindings -->
-  <target name="bindings" depends="setenv">
+  <target depends="setenv" name="bindings">
    <antcall target="copySchemaDir"/>
    <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
     <property name="build.schema.dir" value="${multirft.schema.dir}"/>
@@ -104,10 +101,19 @@ Southern California. All Rights Reserved.
      </target>
 
   <!-- Generate Stubs -->
-  <target name="stubs" unless="stubs.present" depends="bindings"> 
+  <target depends="bindings" name="stubs" unless="stubs.present"> 
     <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
         <property name="mapping.file" value="./NStoPkg.properties.multirft"/>
     </ant>
+     <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
+   
+    <property name="schema.file.dir" value="${multirft.schema.dir}"/>
+
+    <property name="schema.file" value="multirft_types.wsdl"/>
+    <!-- Command run from within schema dir -->
+    <property name="stubs.dest" value="../src"/>
+    <reference refid="classpath"/>
+   </ant>
 
    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
    
@@ -118,16 +124,7 @@ Southern California. All Rights Reserved.
     <property name="stubs.dest" value="../src"/>
     <reference refid="classpath"/>
    </ant>
-   <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
-   
-    <property name="schema.file.dir" value="${multirft.schema.dir}"/>
-
-    <property name="schema.file" value="multirft_types.wsdl"/>
-    <!-- Command run from within schema dir -->
-    <property name="stubs.dest" value="../src"/>
-    <reference refid="classpath"/>
-   </ant>
-
+  
   </target>
     <!-- Compile source and tests -->
   <target name="compileAll">
@@ -137,58 +134,54 @@ Southern California. All Rights Reserved.
   </target>
 
   <!-- Compile source directory -->
-  <target name="compile" depends="stubs">
-   <javac srcdir="${src.dir}" destdir="${build.dest}" debug="${debug}"
-    deprecation="${deprecation}"
-    classpathref="classpath">
+  <target depends="stubs" name="compile">
+   <javac classpathref="classpath" debug="${debug}" deprecation="${deprecation}" destdir="${build.dest}" srcdir="${src.dir}">
     <exclude name="**/test/*"/> 
     <!-- FIXME -->
     <exclude name="**/client/*"/> 
    </javac>
-<copy todir="${build.dest}" >
-<fileset dir="${src.dir}" includes="**/*security-config.xml" />
+<copy todir="${build.dest}">
+<fileset dir="${src.dir}" includes="**/*security-config.xml"/>
 </copy>
   </target>
 
   <!-- Compile tests -->
-  <target name="compileTests" depends="compile">
-   <javac srcdir="${src.dir}" destdir="${build.dest}" debug="${debug}"
-    deprecation="${deprecation}"
-    classpathref="classpath">
+  <target depends="compile" name="compileTests">
+   <javac classpathref="classpath" debug="${debug}" deprecation="${deprecation}" destdir="${build.dest}" srcdir="${src.dir}">
     <include name="**/test/*"/> 
    </javac>
    <mkdir dir="${test.reports.dir}"/>
   </target>
 
   <!-- Run tests -->
-  <target name="test" depends="compileTests">
+  <target depends="compileTests" name="test">
    <mkdir dir="${test.reports.dir}"/>
-    <junit printsummary="yes" haltonfailure="yes" fork="yes">
+    <junit fork="yes" haltonfailure="yes" printsummary="yes">
       <classpath refid="classpath"/>
-      <formatter type="xml" />
+      <formatter type="xml"/>
       <batchtest todir="${test.reports.dir}">
         <fileset dir="${build.dir}/classes">
-          <include name="**/PackageTests.class" />
+          <include name="**/PackageTests.class"/>
         </fileset>
       </batchtest>
-      <jvmarg value="-DtestServiceMachine=${testServiceMachine}" />
-      <jvmarg value="-DtestServicePort=${testServicePort}" />
-      <jvmarg value="-DrftRequestFile=${rftRequestFile}" />
+      <jvmarg value="-DtestServiceMachine=${testServiceMachine}"/>
+      <jvmarg value="-DtestServicePort=${testServicePort}"/>
+      <jvmarg value="-DrftRequestFile=${rftRequestFile}"/>
       <jvmarg value="-DverifyTrue=${verifyTrue}"/>
     </junit>
   </target>
 
   <!-- Creates a jar of the relevant files -->
-  <target name="jar" depends="compile">
+  <target depends="compile" name="jar">
     <mkdir dir="${build.lib}"/>
-    <jar jarfile="${build.lib}/${jar.name}" basedir="${build.dest}">
+    <jar basedir="${build.dest}" jarfile="${build.lib}/${jar.name}">
      <exclude name="**/test/**"/>
      <exclude name="**/org/gridforum/**"/>
     </jar>
   </target>
 
  <!-- Creates a gar for the service-->
-  <target name="gar" depends="jar">
+  <target depends="jar" name="gar">
     <copy todir="${build.lib}">
       <fileset dir="${lib.dir}">
           <include name="*.jar"/>
@@ -209,8 +202,8 @@ Southern California. All Rights Reserved.
    </target>
 
   <!-- Deploys the gar file -->
-  <target name="deployGar" depends="gar">
-    <ant antfile="build-packages.xml" target="deployGar" dir="${ogsa.root}">
+  <target depends="gar" name="deployGar">
+    <ant antfile="build-packages.xml" dir="${ogsa.root}" target="deployGar">
       <property name="gar.name" value="${basedir}/${build.lib}/${gar.name}"/>
     </ant>
   </target>
@@ -251,12 +244,9 @@ Southern California. All Rights Reserved.
 </target>
 
   <!-- Generate java docs -->  
-  <target name="javaDocs" depends="setenv" unless="javadoc.notrequired">
+  <target depends="setenv" name="javaDocs" unless="javadoc.notrequired">
     <mkdir dir="${build.javadocs}"/>
-    <javadoc classpathref="classpath"
-             destdir="${build.javadocs}"
-             use="true"
-             windowtitle="Multi RFT API ">
+    <javadoc classpathref="classpath" destdir="${build.javadocs}" use="true" windowtitle="Multi RFT API ">
       <packageset dir="${src.dir}">
         <exclude name="**/databaseaccess/test/**"/>
         <exclude name="**/client/**"/>

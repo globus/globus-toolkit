@@ -38,6 +38,7 @@ import org.globus.ogsa.impl.security.authorization.NoAuthorization;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GetOpts;
 import org.globus.ogsa.utils.GridServiceFactory;
+import org.globus.ogsa.wsdl.GSR;
 import org.globus.ogsa.utils.MessageUtils;
 
 import org.gridforum.ogsi.ExtendedDateTimeType;
@@ -129,11 +130,13 @@ public class RFTClient {
             if (sourceSubjectName != null) {
                 multirftOptions.setSourceSubjectName(
                     sourceSubjectName);
+                System.out.println( sourceSubjectName);
             }
             String destinationSubjectName = (String)requestData.elementAt(i++);
             if (destinationSubjectName != null) {
                 multirftOptions.setDestinationSubjectName(
                     destinationSubjectName);
+                System.out.println( destinationSubjectName ); 
             }
             System.out.println(
                     "Request Data Size " + requestData.size() + " " +
@@ -150,7 +153,6 @@ public class RFTClient {
             transferRequest.setTransferArray(transfers1);
             if(concurrency>transfers1.length) {
                 System.out.println("Concurrency should be less than the number of transfers in the request");
-                System.exit(0);
             }
 
             transferRequest.setRftOptions( multirftOptions );
@@ -170,6 +172,10 @@ public class RFTClient {
             System.out.println("Created an instance of Multi-RFT");
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
+            GSR reference = GSR.newInstance(locator);
+            String location = reference.getHandle().toString();
+
+            System.out.println("  Handle: " + location);
             RFTPortType rftPort = loc.getMultiFileRFTPort(locator);
             ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
                                          NoAuthorization.getInstance());

@@ -36,5 +36,15 @@ Southern California. All Rights Reserved.
         <property name="default.jvm.options"
 	          value="-Dorg.globus.ogsa.server.webroot=$GLOBUS_LOCATION/"/>
     </ant>
+    <ant antfile="${build.client}" dir="${absolute.globus.location}"
+         target="generateLauncher">
+
+        <property name="launcher-name" value="rft-get-status"/>
+        <property name="class-name"
+                  value="org.globus.ogsa.gui.GetStatus"/>
+        <property name="default.jvm.options"
+	          value="-Dorg.globus.ogsa.server.webroot=$GLOBUS_LOCATION/"/>
+    </ant>
+
     </target>
 </project>

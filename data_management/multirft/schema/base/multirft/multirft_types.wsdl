@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wsdl:definitions name="MultiFileRFTTypes"
-  targetNamespace="http://multirft.base.ogsa.globus.org/rft_types"
+  targetNamespace="http://www.globus.org/namespaces/2004/04/rft/rft_types"
   xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
 
 <wsdl:types>
-<xsd:schema targetNamespace="http://multirft.base.ogsa.globus.org/rft_types"
-             xmlns:rft-types="http://multirft.base.ogsa.globus.org/rft_types"
+<xsd:schema targetNamespace="http://www.globus.org/namespaces/2004/04/rft/rft_types"
+             xmlns:rft-types="http://www.globus.org/namespaces/2004/04/rft/rft_types"
              attributeFormDefault="qualified"
              elementFormDefault="qualified"
 	     xmlns="http://www.w3.org/2001/XMLSchema">
@@ -75,6 +75,53 @@
 <xsd:complexType name="FileTransferRestartMarker">
     <xsd:sequence>
         <xsd:element name="restartMarkerRange" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersFinished">
+    <xsd:sequence>
+        <xsd:element name="numberFinished" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersActive">
+    <xsd:sequence>
+        <xsd:element name="numberActive" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersPending">
+    <xsd:sequence>
+        <xsd:element name="numberPending" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersFailed">
+    <xsd:sequence>
+        <xsd:element name="numberFailed" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersRestarted">
+    <xsd:sequence>
+        <xsd:element name="numberRestarted" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersCancelled">
+    <xsd:sequence>
+        <xsd:element name="numberCancelled" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="OverallStatus">
+    <xsd:sequence>
+        <xsd:element name="transfersFinished" type="rft-types:TransfersFinished"/>
+        <xsd:element name="transfersActive" type="rft-types:TransfersActive"/>
+        <xsd:element name="transfersPending" type="rft-types:TransfersPending"/>
+        <xsd:element name="transfersFailed" type="rft-types:TransfersFailed"/>
+        <xsd:element name="transfersRestarted" type="rft-types:TransfersRestarted"/>
+        <xsd:element name="transfersCancelled" type="rft-types:TransfersCancelled"/>
     </xsd:sequence>
 </xsd:complexType>
 

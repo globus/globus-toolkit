@@ -4,8 +4,8 @@
             xmlns:gsdl="http://www.gridforum.org/namespaces/2002/10/gridServices"
             xmlns:globus-notification="http://types.ogsa.globus.org/notification" 
             xmlns:globus-properties="http://types.ogsa.globus.org/properties_detail"
-            xmlns:rft-port-type="http://multirft.base.ogsa.globus.org" 
-            xmlns:rft-types="http://multirft.base.ogsa.globus.org/rft_types" 
+            xmlns:rft-port-type="http://www.globus.org/namespaces/2004/04/rft"
+            xmlns:rft-types="http://www.globus.org/namespaces/2004/04/rft/rft_types" 
             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
 <service name="base/multirft/MultiFileRFTFactoryService" provider="Handler" style="wrapped" use="literal">
@@ -31,7 +31,7 @@
     <parameter name="dbusername" value="globus"/>
     <parameter name="password" value="dummy"/>
     <parameter name="maxAttempts" value="10"/>
-    <parameter name="connection.pooling" value="false"/>
+    <parameter name="connection.pooling" value="true"/>
     <parameter name="instance-lifecycle" value="persistent"/>
     <parameter name="activateOnStartup" value="true"/>
 </service>

@@ -26,6 +26,8 @@ import org.apache.commons.pool.impl.GenericObjectPool;
 import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.base.multirft.TransferRequestType;
 import org.globus.ogsa.base.multirft.TransferType;
+import org.globus.ogsa.base.multirft.FileTransferJobStatusType;
+import org.globus.ogsa.base.multirft.TransferStatusType;
 import org.globus.ogsa.config.ContainerConfig;
 import org.globus.ogsa.impl.base.multirft.TransferDbOptions;
 import org.globus.ogsa.utils.MessageUtils;
@@ -359,7 +361,7 @@ public class TransferDbAdapter {
      *@return                     The transferCount value
      *@exception  RftDBException  Description of the Exception
      */
-    public int getTransferCount() throws RftDBException {
+    public int getTransferCount(int requestid) throws RftDBException {
         Connection c = getDBConnection();
         int transferCount = 0;
 
@@ -367,7 +369,8 @@ public class TransferDbAdapter {
 
             Statement st = c.createStatement();
             ResultSet rs = st.executeQuery(
-                    "select count(*) from transfer" );
+                    "select count(*) from transfer where request_id=" 
+                    + requestid);
 
             while ( rs != null && rs.next() ) {
                 transferCount = rs.getInt( 1 );
@@ -401,12 +404,22 @@ public class TransferDbAdapter {
                     "INSERT into transfer(request_id,source_url,dest_url," );
             query.append( "dcau,parallel_streams,tcp_buffer_size," );
             query.append( "block_size,notpt,binary_mode) VALUES(" );
-            query.append( this.requestId ).append( ",'" ).append( transferJob.getSourceUrl() );
-            query.append( "','" ).append( transferJob.getDestinationUrl() ).append( "'," );
-            query.append( this.globalRFTOptions.isDcau() ).append( "," ).append( this.globalRFTOptions.getParallelStreams() )
-                    .append( "," ).append( this.globalRFTOptions.getTcpBufferSize() ).append(
-                    "," ).append( this.globalRFTOptions.getBlockSize() ).append( "," ).append( this.globalRFTOptions.isNotpt() )
-                    .append( "," ).append( this.globalRFTOptions.isBinary() ).append( ")" );
+            query.append( this.requestId ).
+                append( ",'" ).append( transferJob.getSourceUrl() );
+            query.append( "','" ).
+                append( transferJob.getDestinationUrl() ).append( "'," );
+            query.append( this.globalRFTOptions.isDcau() ).
+                append( "," ).
+                append( this.globalRFTOptions.getParallelStreams() )
+                .append( "," ).
+                append( this.globalRFTOptions.getTcpBufferSize() ).
+                append(
+                        "," ).
+                append( this.globalRFTOptions.getBlockSize() ).
+                append( "," ).append( this.globalRFTOptions.isNotpt() )
+                .append( "," ).
+                append( this.globalRFTOptions.isBinary() ).
+                append( ")" );
             logger.debug( "Query in storeTransfer: " );
             logger.debug( query.toString() );
             int returnInt = st.executeUpdate( query.toString() );
@@ -484,7 +497,7 @@ public class TransferDbAdapter {
                 query.append(
                         "INSERT INTO transfer(request_id,source_url,dest_url," )
                         .append( "dcau,parallel_streams,tcp_buffer_size," ).append(
-                        "block_size,notpt,binary_mode) VALUES (" ).append(
+                        "block_size,notpt,binary_mode,source_subject,dest_subject) VALUES (" ).append(
                         requestId ).append( ",'" ).append( transfer.getSourceUrl() )
                         .append( "','" ).append( transfer.getDestinationUrl() ).append(
                         "'," );
@@ -497,7 +510,11 @@ public class TransferDbAdapter {
                 query.append( rftOptions.isDcau() ).append( "," ).append( rftOptions.getParallelStreams() )
                         .append( "," ).append( rftOptions.getTcpBufferSize() ).append(
                         "," ).append( rftOptions.getBlockSize() ).append( "," ).append( rftOptions.isNotpt() )
-                        .append( "," ).append( rftOptions.isBinary() ).append( ")" );
+                        .append( "," ).
+                        append( rftOptions.isBinary()).append(",'").
+                        append(rftOptions.getSourceSubjectName()).append("','")
+                        .append(rftOptions.getDestinationSubjectName())
+                        .append("'").append( ")" );
                 logger.debug(
                         "Query to insert into transfer table:" +
                         query.toString() );
@@ -591,7 +608,18 @@ public class TransferDbAdapter {
 
         return concurrency;
     }
-
+    
+    private void resetActiveTransfers(int requestId) 
+    throws RftDBException,SQLException {
+        Connection c = getDBConnection();
+        Statement st = c.createStatement();
+        StringBuffer query = new StringBuffer(5000);
+        query.append("UPDATE transfer SET status=4 where status=3");
+        query.append(" and request_id=");
+        query.append(requestId);
+        logger.debug("Updating transfer "+query.toString()); 
+        int update = st.executeUpdate(query.toString());
+    }
 
     /**
      *  Gets the activeTransfers attribute of the TransferDbAdapter object
@@ -600,7 +628,7 @@ public class TransferDbAdapter {
      *@return                     The activeTransfers value
      *@exception  RftDBException  Description of the Exception
      */
-    public Vector getActiveTransfers( int requestId )
+    public Vector getActiveTransfers( int requestId , int concurrency)
              throws RftDBException {
 
         Connection c = getDBConnection();
@@ -608,11 +636,14 @@ public class TransferDbAdapter {
         TransferJob transferJob = null;
 
         try {
+            resetActiveTransfers(requestId);
 
             Statement st = c.createStatement();
             StringBuffer query = new StringBuffer( 5000 );
+            st.setMaxRows( concurrency );
             query.append( "SELECT * FROM transfer where request_id=" );
             query.append( requestId );
+            query.append(" and (status=3 or status=4 )");
 
             logger.debug(
                     "Getting TransferJob from Database:" + query.toString() );
@@ -636,6 +667,8 @@ public class TransferDbAdapter {
                 rftOptions.setBlockSize( rs.getInt( 10 ) );
                 rftOptions.setNotpt( rs.getBoolean( 11 ) );
                 rftOptions.setBinary( rs.getBoolean( 12 ) );
+                rftOptions.setSourceSubjectName(rs.getString(13));
+                rftOptions.setDestinationSubjectName(rs.getString(14));
                 transfer.setRftOptions( rftOptions );
                 transferJob = new TransferJob( transfer, status, attempts );
                 activeTransfers.add( transferJob );
@@ -741,10 +774,11 @@ public class TransferDbAdapter {
         try {
 
             Statement st = c.createStatement();
+            st.setMaxRows(1);
             StringBuffer query = new StringBuffer( 5000 );
             query.append( "SELECT * FROM transfer where request_id=" );
             query.append( requestId );
-            query.append( " AND status=4 OR status=1 order by id" );
+            query.append( " AND (status=4 OR status=1 ) order by id" );
             logger.debug(
                     "Getting TransferJob from Database:" + query.toString() );
 
@@ -764,6 +798,160 @@ public class TransferDbAdapter {
         return transferJob;
     }
 
+    public FileTransferJobStatusType 
+        getStatus( int requestId, String sourceFile )
+            throws RftDBException {
+        Connection c = getDBConnection();
+        FileTransferJobStatusType statusType = null;
+        try {
+                Statement st = c.createStatement();
+                st.setMaxRows(1);
+                StringBuffer query = new StringBuffer( 5000 );
+                query.append("SELECT id,dest_url,status ");
+                query.append("from transfer where request_id=");
+                query.append(requestId);
+                query.append( " and source_url='");
+                query.append(sourceFile);
+                query.append("'");
+                logger.debug("Getting Status:" + query.toString());
+                ResultSet rs = st.executeQuery( query.toString() );
+                while ( rs != null && rs.next() ) {
+                    statusType = new FileTransferJobStatusType();
+                    statusType.setTransferId(rs.getInt(1));
+                    logger.debug("status of : " + statusType.getTransferId());
+                    statusType.setDestinationUrl(rs.getString(2));
+                    int status = rs.getInt(3);
+                    if (status==0) 
+                        statusType.setStatus(TransferStatusType.Finished);
+                    if (status==1) 
+                        statusType.setStatus(TransferStatusType.Retrying);
+                    if (status==2) 
+                        statusType.setStatus(TransferStatusType.Failed);
+                    if (status==3) 
+                        statusType.setStatus(TransferStatusType.Active);
+                    if (status==4) 
+                        statusType.setStatus(TransferStatusType.Pending);
+                    if (status==5) 
+                        statusType.setStatus(TransferStatusType.Cancelled);
+                    
+                    return statusType; 
+                }
+        } catch (SQLException e) {
+           logger.error(
+                    "Unable to retrieve status for requestid:" +
+                    requestId );
+            returnDBConnection( c );
+            throw new RftDBException( "Unable to retrieve status for requestid",
+                    e );
+        }
+
+        returnDBConnection( c );
+
+        return statusType; 
+    }
+
+    public Vector getStatusGroup( int requestId, int initial, int offset) 
+        throws RftDBException {
+        Connection c = getDBConnection();
+        Vector statusTypes = new Vector();
+        FileTransferJobStatusType statusType = null;
+        try {
+                Statement st = c.createStatement();
+                StringBuffer query = new StringBuffer( 5000 );
+                query.append("SELECT id,dest_url,status ");
+                query.append("from transfer where request_id=");
+                query.append(requestId);
+                logger.debug("Getting Status:" + query.toString());
+                ResultSet rs = st.executeQuery( query.toString() );
+                while ( rs != null && rs.next() ) {
+                    statusType = new FileTransferJobStatusType();
+                    statusType.setTransferId(rs.getInt(1));
+                    logger.debug("status of : " + statusType.getTransferId());
+                    statusType.setDestinationUrl(rs.getString(2));
+                    int status = rs.getInt(3);
+                    if (status==0) 
+                        statusType.setStatus(TransferStatusType.Finished);
+                    if (status==1) 
+                        statusType.setStatus(TransferStatusType.Retrying);
+                    if (status==2) 
+                        statusType.setStatus(TransferStatusType.Failed);
+                    if (status==3) 
+                        statusType.setStatus(TransferStatusType.Active);
+                    if (status==4) 
+                        statusType.setStatus(TransferStatusType.Pending);
+                    if (status==5) 
+                        statusType.setStatus(TransferStatusType.Cancelled);
+                    statusTypes.add( statusType );
+                }
+        } catch (SQLException e) {
+           logger.error(
+                    "Unable to retrieve status for requestid:" +
+                    requestId );
+            returnDBConnection( c );
+            throw new RftDBException( "Unable to retrieve status for requestid",
+                    e );
+        }
+
+        returnDBConnection( c );
+
+        return statusTypes; 
+    }
+
+                
+    public Vector getTransferJob( int requestId,int concurrency)
+             throws RftDBException {
+
+        Connection c = getDBConnection();
+        TransferJob transferJob = null;
+        Vector transferJobs = new Vector();
+
+        try {
+
+            Statement st = c.createStatement();
+            st.setMaxRows( concurrency );
+            StringBuffer query = new StringBuffer( 5000 );
+            query.append( "SELECT * FROM transfer where request_id=" );
+            query.append( requestId );
+            query.append(" order by id" );
+            logger.debug(
+                    "Getting TransferJob from Database:" + query.toString() );
+
+            ResultSet rs = st.executeQuery( query.toString() );
+            while ( rs != null && rs.next() ) {
+                TransferType transfer = new TransferType();
+                transfer.setTransferId( rs.getInt( 1 ) );
+                //TransferID
+                transfer.setSourceUrl( rs.getString( 3 ) );
+                transfer.setDestinationUrl( rs.getString( 4 ) );
+
+                int status = rs.getInt( 5 );
+                int attempts = rs.getInt( 6 );
+                RFTOptionsType rftOptions = new RFTOptionsType();
+                rftOptions.setDcau( rs.getBoolean( 7 ) );
+                rftOptions.setParallelStreams( rs.getInt( 8 ) );
+                rftOptions.setTcpBufferSize( rs.getInt( 9 ) );
+                rftOptions.setBlockSize( rs.getInt( 10 ) );
+                rftOptions.setNotpt( rs.getBoolean( 11 ) );
+                rftOptions.setBinary( rs.getBoolean( 12 ) );
+                rftOptions.setSourceSubjectName(rs.getString(13));
+                rftOptions.setDestinationSubjectName(rs.getString(14));
+                transfer.setRftOptions( rftOptions );
+                transferJob = new TransferJob( transfer, status, attempts );
+                transferJobs.add( transferJob );
+            }
+        } catch ( SQLException e ) {
+            logger.error(
+                    "Unable to retrieve transfers for requestid:" +
+                    requestId );
+            returnDBConnection( c );
+            throw new RftDBException( "Unable to retrieve transfers for requestid",
+                    e );
+        }
+
+        returnDBConnection( c );
+
+        return transferJobs;
+    }
 
     /**
      *  Sets the restartMarker attribute of the TransferDbAdapter object
@@ -896,6 +1084,7 @@ public class TransferDbAdapter {
                      .append (transferJob.getTransferId() );
             logger.debug("Updating transfer "+query.toString()); 
             int update = st.executeUpdate(query.toString());
+            //c.commit();
             st.close();
         } catch ( Exception e ) {
             returnDBConnection( c );

@@ -33,7 +33,9 @@ create table transfer
     tcp_buffer_size     int             default 0,
     block_size          integer                    ,
     notpt               boolean         default FALSE,
-    binary_mode         boolean         default TRUE
+    binary_mode         boolean         default TRUE,
+    source_subject      text,
+    dest_subject        text
 );
 
 create table restart

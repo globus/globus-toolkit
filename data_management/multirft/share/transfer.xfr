@@ -4,8 +4,8 @@ true
 false
 1
 true
-1
-/O=Grid/O=Globus/CN=host/wiggum.mcs.anl.gov
-/O=Grid/O=Globus/CN=host/arbat.mcs.anl.gov
-gsiftp://wiggum.mcs.anl.gov:8800/sandbox/madduri/
+2
+/DC=org/DC=doegrids/OU=Services/CN=wiggum.mcs.anl.gov
+/DC=org/DC=doegrids/OU=Services/CN=arbat.mcs.anl.gov
+gsiftp://wiggum.mcs.anl.gov:8888/sandbox/madduri/
 gsiftp://arbat.mcs.anl.gov/sandbox/madduri/

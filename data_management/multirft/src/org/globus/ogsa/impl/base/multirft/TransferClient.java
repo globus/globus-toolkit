@@ -413,24 +413,32 @@ public class TransferClient {
             this.rftOptions = rftOptions;
             subjectName = this.rftOptions.getSubjectName();
             sourceSubjectName = this.rftOptions.getSourceSubjectName();
+            logger.debug("source sub name "  + sourceSubjectName );
             destinationSubjectName = this.rftOptions.getDestinationSubjectName();
+            logger.debug("dest sub name "  + destinationSubjectName);
 
             if ( subjectName != null ) {
                 destinationHost.setAuthorization( new IdentityAuthorization(
                         subjectName ) );
+                logger.debug("subjectName : " + subjectName);
                 sourceHost.setAuthorization( new IdentityAuthorization(
                         subjectName ) );
             }
 
             if ( sourceSubjectName != null ) {
+                logger.debug("source sub name "  + sourceSubjectName );
                 sourceHost.setAuthorization( new IdentityAuthorization(
                         sourceSubjectName ) );
             }
 
             if ( destinationSubjectName != null ) {
+                logger.debug("setting dest sub name :  " + destinationSubjectName);
                 destinationHost.setAuthorization( new IdentityAuthorization(
                         destinationSubjectName ) );
+            } else {
+                logger.debug("dest sub is null");
             }
+
 
             try {
                 setTransferParams( destinationHost, this.credential );
@@ -470,9 +478,7 @@ public class TransferClient {
             setStatus( TransferJob.STATUS_FAILED );
             logger.error( "Error in TransferClient:Invalid URLs", mue );
         } catch ( Exception e ) {
-            setStatus( TransferJob.STATUS_FAILED );
             logger.error( "Error in TransferClient", e );
-            throw new RemoteException( MessageUtils.toString( e ) );
         }
 
     }
@@ -631,7 +637,7 @@ public class TransferClient {
      *
      *@param  sourcePath  DOCUMENT ME!
      */
-    public void setSourcePath( String sourcePath ) {
+    public synchronized void setSourcePath( String sourcePath ) {
         this.sourcePath = "/" + sourcePath;
         this.markerListener = null;
         try {
@@ -732,10 +738,13 @@ public class TransferClient {
         this.parallelism = parallel;
     }
 
-    public void close() 
-    throws IOException,ServerException {
-        this.sourceHost.close();
-        this.destinationHost.close();
+    public void close() {
+        try {
+            this.sourceHost.close();
+            this.destinationHost.close();
+        } catch (Exception e) {
+            logger.debug("Exception while closing client connection",e); 
+        }
     }
 
     /**
@@ -769,20 +778,29 @@ public class TransferClient {
         }
     }
 
-
+    private boolean checkSize() 
+    throws IOException,ServerException {
+        long destSize = this.destinationHost.getSize(this.destinationPath);
+        if ( this.size == destSize ) {
+            return true;
+        } else { 
+            return false;
+        }
+    }
+    
     /**
      *  Description of the Method
      */
     private void tptNonExtendedTransfer() {
 
         try {
-            logger.debug( "In NonExtended transfer" );
+            logger.debug( "In NonExtended transfer" + this.transferid );
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
             sourceHost.transfer( this.sourcePath,
                     this.destinationHost, this.destinationPath, false, this.markerListener );
-            logger.debug( "Transfer done" );
+            logger.debug( "Transfer done " + this.transferid );
             this.markerListener = null;
             setStatus( TransferJob.STATUS_FINISHED );
         } catch ( Exception e ) {
