@@ -5,6 +5,7 @@
 
 #include "oldgaa_gl_internal_err.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void
 oldgaa_gl__function_internal_error_helper(const char file[], int line, const char msg[])

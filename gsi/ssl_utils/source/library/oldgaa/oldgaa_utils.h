@@ -89,9 +89,4 @@ oldgaa_regex_matches_string(const char * const  string,
 char **
 oldgaa_parse_regex(char * str);
 
-static
-char *
-oldgaa_to_regex(const char * const glob_regex);
-
-
 #endif /* _OLDGAA_UTILS_H_ */

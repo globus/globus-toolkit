@@ -454,6 +454,9 @@ oldgaa_inquire_policy_info
 
 /************************* Allocation functions *******************************/
 
+oldgaa_error_code
+oldgaa_allocate_sec_attrb (oldgaa_sec_attrb_ptr* buffer_addr   /* IN  */);
+
 oldgaa_error_code  
 oldgaa_allocate_buffer (oldgaa_buffer_ptr*  buffer_addr   /* IN  */);
 
@@ -486,6 +489,12 @@ oldgaa_globus_allocate_sec_context(char *signer);
 
 oldgaa_rights_ptr
 oldgaa_globus_allocate_rights();
+
+oldgaa_error_code  
+oldgaa_allocate_options (oldgaa_options_ptr*  buffer_addr   /* IN  */);
+
+oldgaa_error_code  
+oldgaa_allocate_data(oldgaa_data_ptr* buffer_addr /* IN  */);
 
 
 /************************* Release functions *******************************/
@@ -548,6 +557,12 @@ oldgaa_release_data(uint32           *minor_status,
 oldgaa_error_code 
 oldgaa_release_sec_attrb(uint32             *minor_status,
                       oldgaa_sec_attrb_ptr   *attributes);
+
+int
+oldgaa_rfc1779_name_parse(
+  char *				rfc1779_string,
+  char **				imported_name,
+  char **				errstring);
 
 EXTERN_C_END
 

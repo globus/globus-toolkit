@@ -26,6 +26,291 @@ Description:
 
 #define STRING_LENGTH			80
 
+extern
+void
+oldgaa_gl__fout_of_memory(const char file[], int line); 
+
+
+
+/**********************************************************************
+             Helpers Static Functions         
+ **********************************************************************/
+
+/**********************************************************************
+
+Function: evaluate_condition() 
+
+Description:
+	Invokes apropriate evaluation function for each condition.
+
+Parameters:
+	security context, condition list and options
+
+Returns:
+	OLDGAA_YES   if condition is met.
+	OLDGAA_NO    if condition is not met.
+	OLDGAA_MAYBE if evaluation function was not found.
+
+**********************************************************************/
+
+static
+oldgaa_error_code
+evaluate_condition(oldgaa_sec_context_ptr sc, 
+                   oldgaa_conditions_ptr  condition,
+                   oldgaa_options_ptr     options)
+{  
+  oldgaa_error_code oldgaa_status = OLDGAA_MAYBE;
+ 
+#ifdef DEBUG
+fprintf(stderr, "evaluate_condition: %s %s %s\n", 
+        condition->type,
+        condition->authority,
+        condition->value);
+#endif /* DEBUG */
+ 
+
+  if(!strcmp(condition->type,      COND_SUBJECTS) && 
+     !strcmp(condition->authority, AUTH_GLOBUS))    
+     oldgaa_status = oldgaa_evaluate_regex_cond(condition, options);
+
+  if(!strcmp(condition->type,      COND_BANNED_SUBJECTS) && 
+     !strcmp(condition->authority, AUTH_GLOBUS))
+    {    
+     oldgaa_status = oldgaa_evaluate_regex_cond(condition, options);
+     if(oldgaa_status == OLDGAA_YES) oldgaa_status = OLDGAA_NO;
+    }
+
+#ifdef OLDGAA_COND_DAY
+     if(!strcmp(condition->type, COND_DAY))
+     oldgaa_status = oldgaa_evaluate_day_cond(condition, options);
+#endif
+
+#ifdef OLDGAA_COND_TIME
+     if(!strcmp(condition->type, COND_TIME))
+     oldgaa_status = oldgaa_evaluate_time_cond(condition, options);
+#endif
+
+#ifdef OLDGAA_COND_SEC_MECH
+     if(!strcmp(condition->type, COND_SEC_MECH))
+     oldgaa_status = oldgaa_evaluate_sech_mech_cond(sc->identity_cred->principal,
+                                              condition, options);
+#endif
+
+   /* check if condition evaluation function for upcall was passed in the security context */
+  if(sc->condition_evaluation) 
+    sc->condition_evaluation(sc, options, condition, &oldgaa_status);
+
+  if(oldgaa_status != OLDGAA_MAYBE)
+  condition->status |= COND_FLG_EVALUATED; /* evaluated */
+
+  if(oldgaa_status == OLDGAA_YES)
+  condition->status |= COND_FLG_MET;       /* met */ 
+
+return oldgaa_status;
+
+}
+
+/*****************************************************************************/
+static
+char *
+get_day()
+{
+  time_t     tt;
+  struct tm *t;
+  char      *str;
+
+  str = malloc(STRING_LENGTH + 1 /* for NUL */);
+  if (!str)
+      out_of_memory();
+
+  time(&tt); 
+  t = localtime(&tt); 
+  strftime(str,STRING_LENGTH,"%A",t);
+
+  return str; 
+}
+ 
+
+/*****************************************************************************/
+static
+char *
+get_hr_24()
+{
+  time_t     tt;
+  struct tm *t;
+  char      *str;
+
+  str = malloc(STRING_LENGTH + 1 /* for NUL */);
+  if (!str)
+      out_of_memory();
+
+  time(&tt); 
+  t = localtime(&tt); 
+  strftime(str,STRING_LENGTH,"%H",t);
+
+  return str; 
+} 
+
+/*****************************************************************************/
+char *
+get_hr_12()
+{
+  time_t     tt;
+  struct tm *t;
+  char      *str;
+
+  str = malloc(STRING_LENGTH + 1 /* for NUL */);
+  if (!str)
+      out_of_memory();
+
+  time(&tt); 
+  t = localtime(&tt); 
+  strftime(str,STRING_LENGTH,"%I",t);
+
+  return str; 
+}
+
+
+/*****************************************************************************/
+static
+char *
+get_minutes()
+{
+  time_t     tt;
+  struct tm *t;
+  char      *str;
+
+  str = malloc(STRING_LENGTH + 1 /* for NUL */);
+  if (!str)
+      out_of_memory();
+
+
+  time(&tt); 
+  t = localtime(&tt); 
+  strftime(str,STRING_LENGTH,"%M",t);
+
+  return str; 
+} 
+/*****************************************************************************/
+static
+char *
+get_seconds()
+{
+  time_t     tt;
+  struct tm *t;
+  char      *str;
+
+  str = malloc(STRING_LENGTH + 1 /* for NUL */);
+  if (!str)
+      out_of_memory();
+
+  time(&tt); 
+  t = localtime(&tt); 
+  strftime(str,STRING_LENGTH,"%S",t);
+
+  return str; 
+} 
+
+/*****************************************************************************/
+char *
+get_am_pm()
+{
+  time_t     tt;
+  struct tm *t;
+  char      *str;
+
+  str = malloc(STRING_LENGTH + 1 /* for NUL */);
+  if (!str)
+      out_of_memory();
+
+  time(&tt); 
+  t = localtime(&tt); 
+  strftime(str,STRING_LENGTH,"%p",t);
+
+  return str; 
+} 
+/*****************************************************************************/
+static
+int
+day_to_val(char *str)
+{ 
+ 
+ if (oldgaa_regex_matches_string(str, "Su") ||
+     oldgaa_regex_matches_string(str, "su")) return 1;
+
+ if (oldgaa_regex_matches_string(str, "Mo") || 
+     oldgaa_regex_matches_string(str, "mo")) return 2;
+
+ if (oldgaa_regex_matches_string(str, "Tu") ||
+     oldgaa_regex_matches_string(str, "tu")) return 3;
+  
+ if (oldgaa_regex_matches_string(str, "We") ||
+     oldgaa_regex_matches_string(str, "we")) return 4;
+        
+ if (oldgaa_regex_matches_string(str, "Th") ||
+     oldgaa_regex_matches_string(str, "th")) return 5;
+       
+ if (oldgaa_regex_matches_string(str, "Fr") ||
+     oldgaa_regex_matches_string(str, "fr")) return 6;
+     
+ if (oldgaa_regex_matches_string(str, "Sa") ||
+     oldgaa_regex_matches_string(str, "sa")) return 7;
+                     
+ return 0;
+}
+
+
+/*****************************************************************************/
+static
+int
+check_day(char *str1, char *str2, char *day)
+
+{
+ int val, val1, val2;
+
+ val  = day_to_val(day);  /* current day          */
+ val1 = day_to_val(str1); /* first day delimiter  */
+ val2 = day_to_val(str2); /* second day delimiter */
+
+ if (!val1) return -1;
+
+ if((val == val1) ||
+    (val == val2) ||
+    ((val1 < val2) && (val > val1) && (val < val2)) ||
+    ((val1 > val2) && val2 && ((val > val1) || (val < val2)))
+   ) return 1;
+ 
+ return 0;
+
+} 
+ 
+
+/*****************************************************************************/
+
+static
+char*
+get_value(int *jj, const char *cond, const char delimiter)
+ {
+  int  i,j  = *jj, length = strlen(cond);
+  char *str = NULL;
+
+  str = malloc(length + 1 /* for NUL */);
+  if(!str) out_of_memory();
+
+  for(i=0; j <= length; i++)
+	{ 
+          str[i] = cond[j];
+          j++; 
+          if((cond[j] == delimiter)) { j++; /* omit delimiter */ break; }   
+	}
+
+ str[i+1] = NUL; /* terminate the string */
+ *jj = j;
+ return str;
+  } 
+           
+/*****************************************************************************/
+
 /**********************************************************************
 
 Function: oldgaa_find_matching_entry
@@ -192,7 +477,6 @@ oldgaa_get_authorized_principals(oldgaa_sec_attrb_ptr *attributes,
 
 {
   oldgaa_policy_ptr    entry  = policy;
-  oldgaa_error_code    answer = OLDGAA_SUCCESS;
   int               was_anybody    = 0;
   int               was_neg_rights = 0;
   int               number_of_entries = 1;
@@ -404,7 +688,6 @@ oldgaa_evaluate_time_cond(oldgaa_conditions_ptr condition,
 
 {
    int   j = 0;
-   oldgaa_error_code oldgaa_status = OLDGAA_NO;
 
    int   hr, min, sec;
    int   cond_hr, cond_min, cond_sec;
@@ -521,288 +804,5 @@ oldgaa_evaluate_sech_mech_cond(oldgaa_principals_ptr  principal,
    return oldgaa_status; 
 
 }
-
-
-
-/**********************************************************************
-             Helpers Static Functions         
- **********************************************************************/
-
-
-/**********************************************************************
-
-Function: evaluate_condition() 
-
-Description:
-	Invokes apropriate evaluation function for each condition.
-
-Parameters:
-	security context, condition list and options
-
-Returns:
-	OLDGAA_YES   if condition is met.
-	OLDGAA_NO    if condition is not met.
-	OLDGAA_MAYBE if evaluation function was not found.
-
-**********************************************************************/
-
-static
-oldgaa_error_code
-evaluate_condition(oldgaa_sec_context_ptr sc, 
-                   oldgaa_conditions_ptr  condition,
-                   oldgaa_options_ptr     options)
-{  
-  oldgaa_error_code oldgaa_status = OLDGAA_MAYBE;
- 
-#ifdef DEBUG
-fprintf(stderr, "evaluate_condition: %s %s %s\n", 
-        condition->type,
-        condition->authority,
-        condition->value);
-#endif /* DEBUG */
- 
-
-  if(!strcmp(condition->type,      COND_SUBJECTS) && 
-     !strcmp(condition->authority, AUTH_GLOBUS))    
-     oldgaa_status = oldgaa_evaluate_regex_cond(condition, options);
-
-  if(!strcmp(condition->type,      COND_BANNED_SUBJECTS) && 
-     !strcmp(condition->authority, AUTH_GLOBUS))
-    {    
-     oldgaa_status = oldgaa_evaluate_regex_cond(condition, options);
-     if(oldgaa_status == OLDGAA_YES) oldgaa_status = OLDGAA_NO;
-    }
-
-#ifdef OLDGAA_COND_DAY
-     if(!strcmp(condition->type, COND_DAY))
-     oldgaa_status = oldgaa_evaluate_day_cond(condition, options);
-#endif
-
-#ifdef OLDGAA_COND_TIME
-     if(!strcmp(condition->type, COND_TIME))
-     oldgaa_status = oldgaa_evaluate_time_cond(condition, options);
-#endif
-
-#ifdef OLDGAA_COND_SEC_MECH
-     if(!strcmp(condition->type, COND_SEC_MECH))
-     oldgaa_status = oldgaa_evaluate_sech_mech_cond(sc->identity_cred->principal,
-                                              condition, options);
-#endif
-
-   /* check if condition evaluation function for upcall was passed in the security context */
-  if(sc->condition_evaluation) 
-    sc->condition_evaluation(sc, options, condition, &oldgaa_status);
-
-  if(oldgaa_status != OLDGAA_MAYBE)
-  condition->status |= COND_FLG_EVALUATED; /* evaluated */
-
-  if(oldgaa_status == OLDGAA_YES)
-  condition->status |= COND_FLG_MET;       /* met */ 
-
-return oldgaa_status;
-
-}
-
-/*****************************************************************************/
-static
-char *
-get_day()
-{
-  time_t     tt;
-  struct tm *t;
-  char      *str;
-
-  str = malloc(STRING_LENGTH + 1 /* for NUL */);
-  if (!str)
-      out_of_memory();
-
-  time(&tt); 
-  t = localtime(&tt); 
-  strftime(str,STRING_LENGTH,"%A",t);
-
-  return str; 
-}
- 
-
-/*****************************************************************************/
-static
-char *
-get_hr_24()
-{
-  time_t     tt;
-  struct tm *t;
-  char      *str;
-
-  str = malloc(STRING_LENGTH + 1 /* for NUL */);
-  if (!str)
-      out_of_memory();
-
-  time(&tt); 
-  t = localtime(&tt); 
-  strftime(str,STRING_LENGTH,"%H",t);
-
-  return str; 
-} 
-/*****************************************************************************/
-static
-char *
-get_hr_12()
-{
-  time_t     tt;
-  struct tm *t;
-  char      *str;
-
-  str = malloc(STRING_LENGTH + 1 /* for NUL */);
-  if (!str)
-      out_of_memory();
-
-  time(&tt); 
-  t = localtime(&tt); 
-  strftime(str,STRING_LENGTH,"%I",t);
-
-  return str; 
-}
-
-
-/*****************************************************************************/
-static
-char *
-get_minutes()
-{
-  time_t     tt;
-  struct tm *t;
-  char      *str;
-
-  str = malloc(STRING_LENGTH + 1 /* for NUL */);
-  if (!str)
-      out_of_memory();
-
-
-  time(&tt); 
-  t = localtime(&tt); 
-  strftime(str,STRING_LENGTH,"%M",t);
-
-  return str; 
-} 
-/*****************************************************************************/
-static
-char *
-get_seconds()
-{
-  time_t     tt;
-  struct tm *t;
-  char      *str;
-
-  str = malloc(STRING_LENGTH + 1 /* for NUL */);
-  if (!str)
-      out_of_memory();
-
-  time(&tt); 
-  t = localtime(&tt); 
-  strftime(str,STRING_LENGTH,"%S",t);
-
-  return str; 
-} 
-
-/*****************************************************************************/
-static
-char *
-get_am_pm()
-{
-  time_t     tt;
-  struct tm *t;
-  char      *str;
-
-  str = malloc(STRING_LENGTH + 1 /* for NUL */);
-  if (!str)
-      out_of_memory();
-
-  time(&tt); 
-  t = localtime(&tt); 
-  strftime(str,STRING_LENGTH,"%p",t);
-
-  return str; 
-} 
-/*****************************************************************************/
-static
-int
-day_to_val(char *str)
-{ 
- 
- if (oldgaa_regex_matches_string(str, "Su") ||
-     oldgaa_regex_matches_string(str, "su")) return 1;
-
- if (oldgaa_regex_matches_string(str, "Mo") || 
-     oldgaa_regex_matches_string(str, "mo")) return 2;
-
- if (oldgaa_regex_matches_string(str, "Tu") ||
-     oldgaa_regex_matches_string(str, "tu")) return 3;
-  
- if (oldgaa_regex_matches_string(str, "We") ||
-     oldgaa_regex_matches_string(str, "we")) return 4;
-        
- if (oldgaa_regex_matches_string(str, "Th") ||
-     oldgaa_regex_matches_string(str, "th")) return 5;
-       
- if (oldgaa_regex_matches_string(str, "Fr") ||
-     oldgaa_regex_matches_string(str, "fr")) return 6;
-     
- if (oldgaa_regex_matches_string(str, "Sa") ||
-     oldgaa_regex_matches_string(str, "sa")) return 7;
-                     
- return 0;
-}
-
-
-/*****************************************************************************/
-static
-int
-check_day(char *str1, char *str2, char *day)
-
-{
- int val, val1, val2;
-
- val  = day_to_val(day);  /* current day          */
- val1 = day_to_val(str1); /* first day delimiter  */
- val2 = day_to_val(str2); /* second day delimiter */
-
- if (!val1) return -1;
-
- if((val == val1) ||
-    (val == val2) ||
-    ((val1 < val2) && (val > val1) && (val < val2)) ||
-    ((val1 > val2) && val2 && ((val > val1) || (val < val2)))
-   ) return 1;
- 
- return 0;
-
-} 
- 
-
-/*****************************************************************************/
-
-static
-char*
-get_value(int *jj, const char *cond, const char delimiter)
- {
-  int  i,j  = *jj, length = strlen(cond);
-  char *str = NULL;
-
-  str = malloc(length + 1 /* for NUL */);
-  if(!str) out_of_memory();
-
-  for(i=0; j <= length; i++)
-	{ 
-          str[i] = cond[j];
-          j++; 
-          if((cond[j] == delimiter)) { j++; /* omit delimiter */ break; }   
-	}
-
- str[i+1] = NUL; /* terminate the string */
- *jj = j;
- return str;
-  } 
-           
-/*****************************************************************************/
 
 
