@@ -53,6 +53,13 @@ CVS Information:
 #include "globus_gass_cache.h"
 #include "globus_i_gass_cache.h"
 
+/*
+ * If compilled with LOCK_TOUT defined, the lock will timeout after
+ *    LOCK_TOUT try to get the lock, if the file to lock is older than
+ *    LOCK_TOUT*LOOP_TIME
+ */
+#define LOCK_TOUT 
+
 /******************************************************************************
                           Module specific variables
 ******************************************************************************/
