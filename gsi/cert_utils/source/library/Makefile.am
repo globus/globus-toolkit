@@ -1,6 +1,5 @@
 
 include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
 
 Sources= \
 	globus_gsi_cert_utils.h \
@@ -24,4 +23,3 @@ libglobus_gsi_cert_utils___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 libglobus_gsi_cert_utils___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
