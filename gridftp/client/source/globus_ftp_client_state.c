@@ -316,7 +316,7 @@ redo:
 
 	if(! tmpstr)
 	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SITE_HELP;
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_SITE_HELP;
 
 	    goto redo;
 	}
