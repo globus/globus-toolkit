@@ -168,7 +168,7 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
 #define GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT \
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_gssapi_debug_fstream, \
-                    "%s exiting", \
+                    "%s exiting\n", \
                     _function_name_))
 
 
