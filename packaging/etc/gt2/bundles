@@ -168,6 +168,8 @@ BUNDLE globus-data-management-server
 	gaa_gss_generic
 	gaa_simple
 	globus_authz_gaa_callout
+        globus_gaa_authz_callout_setup
+        globus_gridmap_callout_error
 
 BUNDLE globus-data-management-sdk
 	globus_core
