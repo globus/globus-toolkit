@@ -216,6 +216,7 @@ typedef void
 globus_result_t
 globus_gfs_ipc_set_user(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     const char *                        user_dn,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
@@ -229,6 +230,7 @@ typedef void
 globus_result_t
 globus_gfs_ipc_set_cred(
     globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               id,
     gss_cred_id_t                       cred_thing,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
