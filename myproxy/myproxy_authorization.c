@@ -14,6 +14,7 @@
 
 #include "myproxy_authorization.h"
 #include "myproxy_creds.h"
+#include "myproxy_server.h" /* for MIN_PASS_PHRASE_LEN */
 #include "verror.h"
 
 struct authorization_func {
@@ -66,7 +67,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
    char *tmp1;
 
    if (creds->pass_phrase != NULL &&
-       client_auth_data->client_data_len != 0 &&
+       client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
        client_auth_data->client_data != NULL && 
        (tmp1 = (char *)crypt(client_auth_data->client_data,
 		    &creds->owner_name[strlen(creds->owner_name)-3])) != NULL &&
