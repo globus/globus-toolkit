@@ -1545,7 +1545,7 @@ globus_l_guc_expand_single_url(
     char *                                       matched_dest_url;
     globus_result_t                              result;
     globus_bool_t                                dst_is_file;
-        
+    int						 files_matched;    
                 
     globus_fifo_init(&matched_url_list);
 
@@ -1574,11 +1574,7 @@ globus_l_guc_expand_single_url(
         dst_is_file = GLOBUS_TRUE;
     }
     
-    if(dst_is_file && globus_fifo_size(&matched_url_list) > 1)
-    {
-        goto error_too_many_matches;
-    }
-
+    files_matched = 0;
     base_url_len = strrchr(src_url, '/') - src_url + 1;
                                  
     while(!globus_fifo_empty(&matched_url_list))
@@ -1590,9 +1586,16 @@ globus_l_guc_expand_single_url(
         if(matched_src_url[strlen(matched_src_url) - 1] == '/' && 
             !guc_info->recurse)
         {
+	    globus_free(matched_src_url);
             continue;
         }
-                    
+            
+        if(dst_is_file && ++files_matched > 1)
+        {
+            	globus_free(matched_src_url);
+		goto error_too_many_matches;
+        }
+
         if(dst_is_file)
         {
             matched_dest_url = globus_libc_strdup(dst_url);
