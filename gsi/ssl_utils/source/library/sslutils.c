@@ -1864,7 +1864,7 @@ proxy_check_proxy_name(
             }
 	    else
             {
-                ret = GLOBUS_REGULAR_PROXY; /* its a proxy */
+                ret = GLOBUS_FULL_PROXY; /* its a proxy */
             }
 #ifdef DEBUG
 	    /* changed by slang: just using data->data since its been checked */

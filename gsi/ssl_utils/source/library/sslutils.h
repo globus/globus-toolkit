@@ -340,7 +340,7 @@ struct proxy_verify_desc_struct {
 typedef enum
 {
   GLOBUS_NOT_PROXY        = 0,
-  GLOBUS_REGULAR_PROXY    = 1,
+  GLOBUS_FULL_PROXY       = 1,
   GLOBUS_LIMITED_PROXY    = 2,
   GLOBUS_RESTRICTED_PROXY = 3
 } 

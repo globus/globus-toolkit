@@ -197,7 +197,7 @@ main(
     proxy_cred_desc *                   pcd         = NULL;
     proxy_verify_desc                   pvd;
     proxy_verify_ctx_desc               pvxd;
-    globus_proxy_type_t                 proxy_type = GLOBUS_REGULAR_PROXY;
+    globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
     BIO *                               bio_err;
     X509 *                              xcert;
     time_t                              time_after;
