@@ -188,7 +188,7 @@ g_start()
     assert(res == GLOBUS_SUCCESS);
 
     g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
-    g_parallelism.fixed.size = 1;
+    g_parallelism.fixed.size = 4;
     g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
 
     globus_ftp_control_local_parallelism(
@@ -1023,6 +1023,7 @@ data_read_callback(
 #           endif
         }
 
+#if 0
 	if(g_send_restart_info)
 	{
 	    struct timeval			tv;
@@ -1055,6 +1056,7 @@ data_read_callback(
 		monitor->last_update = t;
 	    }
 	}
+#endif
         if(eof)
         {
             monitor->count++;
