@@ -4,12 +4,6 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(globus_core, 2.0.0,0)
 AM_CONFIG_HEADER(globus_config.h)
 
-GPT_INIT
-dnl define FILELIST_FILE variable
-FILELIST_FILE=`pwd`;
-FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
-AC_SUBST(FILELIST_FILE)
-
 AC_ARG_WITH(
     flavor,
     [  --with-flavor                 Globus flavor string],
@@ -24,6 +18,13 @@ fi
 
 GLOBUS_FLAVOR_NAME=$globus_cv_flavor
 AC_SUBST(GLOBUS_FLAVOR_NAME)
+
+GPT_INIT
+dnl define FILELIST_FILE variable
+FILELIST_FILE=`pwd`;
+FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
+AC_SUBST(FILELIST_FILE)
+
 
 
 LAC_COMPILERS
