@@ -53,6 +53,7 @@ typedef struct
     char			 *credname;
     char			 *creddesc;
     char			 *authzcreds;
+    char 		         *keyretrieve;
 } myproxy_request_t;
 
 /* A server response object */
@@ -206,8 +207,8 @@ int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data,
  */
 int
 myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
-                           const char             *delegfile,
-                           const int               delegfile_len,
+                           char                   *delegfile,
+                           int                     delegfile_len,
                            char                   *passphrase);
 
 /*
@@ -283,9 +284,9 @@ void myproxy_resolve_hostname(char **host);
  * Stores an end-entity credential on the server
  *
  * returns 0 on success, -1 on error
- */
 int myproxy_endentity_store( myproxy_socket_attrs_t *attrs,
                              const char *delegfile,
                              char *passphrase);
+*/
 
 #endif /* __MYPROXY_PROTOCOL_H */

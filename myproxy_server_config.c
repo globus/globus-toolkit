@@ -201,6 +201,44 @@ line_parse_callback(void *context_arg,
 	    index++;
 	}
     }
+    
+    if (strcmp(directive, "authorized_key_retrievers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	while(tokens[index] != NULL)
+	{
+	    context->authorized_key_retrievers_dns =
+		add_entry(context->authorized_key_retrievers_dns,
+			  tokens[index]);
+	    
+	    if (context->authorized_key_retrievers_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
+    if (strcmp(directive, "default_key_retrievers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	while(tokens[index] != NULL)
+	{
+	    context->default_key_retrievers_dns =
+		add_entry(context->default_key_retrievers_dns,
+			  tokens[index]);
+	    
+	    if (context->default_key_retrievers_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
 
     if (strcmp(directive, "passphrase_policy_program") == 0)
     {
@@ -461,6 +499,9 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     context->authorized_renewer_dns = NULL;
     context->default_retriever_dns = NULL;
     context->default_renewer_dns = NULL;
+
+context->authorized_key_retrievers_dns = NULL;
+context->default_key_retrievers_dns    = NULL;
     
     /* Clear any outstanding error */
     verror_clear();

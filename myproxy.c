@@ -519,6 +519,18 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
       totlen += len;
 
     }
+   
+    /* key retrievers */
+    if (request->keyretrieve != NULL)
+    { 
+      len = concatenate_strings(data, datalen, MYPROXY_KEY_RETRIEVER_STRING,
+			      request->keyretrieve, "\n", NULL); 
+      if (len < 0)
+        return -1;
+
+      totlen += len;
+
+    }
 
     return totlen+1;
 }
@@ -655,7 +667,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     else
     {
       request->retrievers = strdup(buf);
-    
+
       if (request->retrievers == NULL)
       {
 	verror_put_errno(errno);
@@ -747,6 +759,31 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	  return -1;
          }
        }
+
+    /* key retriever */
+    len = convert_message(data, datalen,
+			  MYPROXY_KEY_RETRIEVER_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->keyretrieve = NULL;
+    else
+    if (len <= -1)
+    {
+	verror_prepend_string("Error parsing key retriever from client request");
+	return -1;
+    }
+    else
+    {
+      request->keyretrieve = strdup(buf);
+
+      if (request->keyretrieve == NULL)
+      {
+	verror_put_errno(errno);
+	return -1;
+      }
+    }
 
     /* Success */
     return 0;
@@ -889,6 +926,23 @@ myproxy_serialize_response(const myproxy_response_t *response,
 					      "_", cred->credname,
 					      "_", MYPROXY_RETRIEVER_STRING,
 					      cred->retrievers, "\n", NULL);
+		}
+		if (len == -1)
+		    goto error;
+		totlen += len;
+	    }	
+	    if (cred->keyretrieve) {
+		if (first_cred) {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", MYPROXY_KEY_RETRIEVER_STRING,
+					      cred->keyretrieve, "\n", NULL);
+		} else {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", cred->credname,
+					      "_", MYPROXY_KEY_RETRIEVER_STRING,
+					      cred->keyretrieve, "\n", NULL);
 		}
 		if (len == -1)
 		    goto error;
@@ -1122,7 +1176,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	if (len == -1) return -1;
 	if (len > 0)
 	    response->info_creds->creddesc = strdup(buffer);
-		
+
 	tmp[0] = '\0';
     	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
 				  "_", MYPROXY_CRED_OWNER_STRING, NULL);
@@ -1146,6 +1200,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
     	if (len == -1) return -1;
 	if (len >= 0)
 	    response->info_creds->retrievers = strdup(buffer); 
+
+	tmp[0] = '\0';
+    	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_KEY_RETRIEVER_STRING, NULL);
+    	if (len < 0) return -1;
+		
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+    	if (len == -1) return -1;
+	if (len >= 0)
+	    response->info_creds->keyretrieve = strdup(buffer); 
 
 	tmp[0] = '\0';
     	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
@@ -1283,6 +1349,21 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		
 		if (len >= 0)
 		    cred->retrievers = strdup(buffer);
+
+		tmp[0] = '\0';
+		len = concatenate_strings(tmp, sizeof(tmp),
+					  MYPROXY_CRED_PREFIX, "_", strs[i],
+					  "_", MYPROXY_KEY_RETRIEVER_STRING,
+					  NULL);
+		if (len == -1) return -1;
+
+		len = convert_message (data, datalen, tmp,
+				       CONVERT_MESSAGE_DEFAULT_FLAGS,
+				       buffer, sizeof (buffer));
+		if (len == -1) return -1;
+		
+		if (len >= 0)
+		    cred->keyretrieve = strdup(buffer);
 
 		tmp[0] = '\0';
 		len = concatenate_strings (tmp, sizeof(tmp),
@@ -1561,6 +1642,8 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
 	  free(request->retrievers);
        if (request->renewers != NULL)
 	  free(request->renewers);
+       if (request->keyretrieve != NULL)
+	  free(request->keyretrieve);
        free(request);
     }
     
@@ -2160,14 +2243,13 @@ myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
 }
 
 /*
-** send buffer credbuff to the server.  credbugg contains both the user
-** end-entity credential and the user key.  This information will be stored
-** in the myproxy database.
+** Accepts a credential and stores the information in a temp file
+** delegfile. 
 */
 int
 myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
-                           const char             *delegfile,
-                           const int               delegfile_len,
+                           char                   *delegfile,
+                           int                     delegfile_len,
                            char                   *passphrase)
 {
   char error_string[1024];
@@ -2190,9 +2272,7 @@ myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
 }
 
 /*
-** send buffer credbuff to the server.  credbugg contains both the user
-** end-entity credential and the user key.  This information will be stored
-** in the myproxy database.
+** Retrieves a credential from the repository and sends it to the client.  
 */
 int
 myproxy_get_credentials(myproxy_socket_attrs_t *attrs,

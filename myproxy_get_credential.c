@@ -6,10 +6,6 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
-#define MYPROXY_DEFAULT_USERCERT  "usercert.pem"
-#define MYPROXY_DEFAULT_USERKEY   "userkey.pem"
-#define MYPROXY_DEFAULT_DIRECTORY ".globus"
-
 static char usage[] = \
 "\n"
 "Syntax: myproxy-retrieve [-l username] ...\n"
@@ -71,17 +67,16 @@ init_arguments(int argc, char *argv[],
 int
 store_credential( char *delegfile,
                   char *certfile,
-                  char *keyfile,
-                  char *creddir );
+                  char *keyfile );
 
 int
 file2buf(const char   filename[],
          char       **buf);
 
 int
-buffer2file( const char *buffer,
-             int         size,
-             int         fd );
+buffer2file( char *buffer,
+             int   size,
+             int   fd );
 
 int
 write_cert( const char *path,
@@ -101,7 +96,6 @@ write_key( const char *path,
 static char *outputfile             = NULL;
 static char *certfile               = NULL;     /* certificate file name */
 static char *keyfile                = NULL;     /* key file name */
-static char *creddir                = NULL;     /* key file name */
 static int   dn_as_username         = 0;
 static int   read_passwd_from_stdin = 0;
 static int   use_empty_passwd       = 0;
@@ -148,12 +142,8 @@ main(int argc, char *argv[])
         socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
-    certfile = strdup(MYPROXY_DEFAULT_USERCERT);
-    keyfile = strdup(MYPROXY_DEFAULT_USERKEY);
-
-    creddir = malloc(strlen(getenv("HOME")) + 1 +
-                     strlen(MYPROXY_DEFAULT_DIRECTORY) + 1);
-    sprintf(creddir, "%s/%s", getenv("HOME"), MYPROXY_DEFAULT_DIRECTORY);
+    GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME( &certfile,
+                                                 &keyfile ); 
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
@@ -275,15 +265,19 @@ main(int argc, char *argv[])
         return(1);
     }
 
-    store_credential( delegfile, certfile, keyfile, creddir );
-    /* move delegfile to outputfile if specified */
+    if( store_credential( delegfile, certfile, keyfile ) < 0 )
+    {
+       fprintf( stderr, "Problem storing to: %s and %s\n", certfile, keyfile );
+       return(1);
+    }
 
+    /* move delegfile to outputfile if specified */
     if (outputfile != NULL) {
         ssl_proxy_file_destroy(delegfile);
     }
 
-    printf("Credentials for %s have been stored at %s in %s and %s\n",
-           client_request->username, creddir, certfile, keyfile);
+    printf("Credentials for %s have been stored in %s and %s\n",
+           client_request->username, certfile, keyfile);
     free(outputfile);
     verror_clear();
 
@@ -326,10 +320,6 @@ init_arguments(int argc,
         case 'l':	/* username */
             request->username = strdup(gnu_optarg);
             break;
-	case 'o':	/* output file */
-//	    outputfile = strdup(gnu_optarg);
-	    creddir = strdup(gnu_optarg);
-            break;    
 	case 'a':       /* special authorization */
 	    request->authzcreds = strdup(gnu_optarg);
 	    use_empty_passwd = 1;
@@ -379,20 +369,11 @@ init_arguments(int argc,
 int
 store_credential( char *delegfile, 
                   char *certfile, 
-                  char *keyfile, 
-                  char *creddir )
+                  char *keyfile )
 {
     char               *input_buffer       = NULL;
-    char               *certificate;
-    char               *key;
     int                 retval              = -1;
 
-
-    certificate = malloc( strlen(creddir) + 1 + strlen(certfile) + 1 );
-    sprintf( certificate, "%s/%s", creddir, certfile );
-
-    key = malloc( strlen(creddir) + 1 + strlen(keyfile) + 1 );
-    sprintf( key, "%s/%s", creddir, keyfile );
 
     if (file2buf(delegfile, &input_buffer) < 0)
     {
@@ -400,22 +381,20 @@ store_credential( char *delegfile,
       goto error;
     }
 
-    if (write_cert(certificate, input_buffer) < 0)
+    if (write_cert(certfile, input_buffer) < 0)
     {
-      fprintf(stderr, "open(%s) failed: %s\n", certificate, strerror(errno));
+      fprintf(stderr, "open(%s) failed: %s\n", certfile, strerror(errno));
       goto error;
     }
 
-    if (write_key(key, input_buffer) < 0)
+    if (write_key(keyfile, input_buffer) < 0)
     {
-      fprintf(stderr, "open(%s) failed: %s\n", key, strerror(errno));
+      fprintf(stderr, "open(%s) failed: %s\n", keyfile, strerror(errno));
       goto error;
     }
 
     retval = 0;
 error:
-    if( certificate ) free(certificate);
-    if( key ) free(key);
     return(retval);
 }
 
@@ -583,9 +562,9 @@ error:
 }
 
 int
-buffer2file( const char *buffer,
-             int         size,
-             int         fd )
+buffer2file( char *buffer,
+             int   size,
+             int   fd )
 {
     int   rval;
     char *certstart;

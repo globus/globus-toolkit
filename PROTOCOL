@@ -359,3 +359,110 @@ MyProxyChangePasswd <-> MyProxyServer protocol
     See section A.6 for details.
  
  5) At this point, both sides should close the connection.
+ 
+======
+
+Section G
+------- -
+
+MyProxyStoreCertificate <-> MyProxyServer protocol
+ 
+ The following illustrates a MyProxyStoreCertificate process connecting to a
+ MyProxyServer process and storing a proxy for later retrieval.
+ 
+ 1) MyProxyStoreCertificate will make a connection to the MyProxyServer at the
+    host and port as specified by its configuration or the user.
+ 
+ 2) MyProxyStoreCertificate will initiate the GSSAPI context setup loop, with
+    MyProxyServer accepting. See Section A.1. 
+ 
+ 3) MyProxyStoreCertificate will then send a message to MyProxyServer 
+    containing the following strings:
+ 
+    VERSION=MYPROXYv2
+    COMMAND=6
+    USERNAME=<username>
+    LIFETIME=<lifetime>
+
+    and optional strings
+
+    RETRIEVER=<retriever_dn>
+    RENEWER=<renewer_dn>
+    CRED_NAME=<credential name>
+    CRED_DESC=<credential description>
+    KEYRETRIEVER=<retriever_dn>
+
+    The intent of the VERSION string is to allow the server to know
+    if it is dealing with an outdated or newer client.
+ 
+    <username> is the strings supplied by the user to be used for retrieval 
+    by the portal. <lifetime> is the ASCII representation of the lifetime of 
+    the proxy to be delegated to the portal, in seconds. <retriever_dn> and 
+    <renewer_dn> are strings specifying the retriever and renewer policy 
+    regular expressions.  <key retriever dns> is a string specifying the key 
+    retriever policy regular expression.  <credential name> assigns a name to 
+    the credential, allowing multiple credentials to be stored for a given 
+    username.  <credential description> can provide additional descriptive 
+    text to be displayed in MyProxyInfo requests, for example.
+
+ 4) MyProxyServer will then respond with either a OK or an ERROR message.
+    See Section A.6 for details.
+
+ 5) Next, the client will send the users end-entity credentials to the
+    server. 
+
+ 6) MyProxyServer will read the individual certificates and store it. The 
+    server also stores the retriever, renewer, or key retriever DN strings if 
+    they are specified.
+
+ 7) MyProxyServer will then respond with either a OK message if it
+    successfully stored the proxy or an ERROR message if an error occurred. 
+    For example, an error might occur when the stored proxy already exists
+    for the same username but belongs to another user.
+    For the reply message details see section A.6.
+ 
+ 8) At this point, both sides should close the connection.
+ 
+ ====
+
+Section H
+------- -
+ 
+ MyProxyRetrieve <-> MyProxyServer protocol
+ 
+ The following illustrates a MyProxyRetrieve process connecting to
+ a MyProxyServer process and retrieving the end-entity credentials.
+ 
+ 1) MyProxyRetrieve makes a connection to the MyProxyServer as
+    indicated by its configuration or arguments.
+ 
+ 2) MyProxyRetrieve will initiate the GSSAPI context setup loop, with
+    MyProxyServer accepting. See Section A.1. 
+ 
+ 3) MyProxyRetrieve will then send a message to MyProxyServer containing
+    the following strings:
+ 
+    VERSION=MYPROXYv2
+    COMMAND=5
+    USERNAME=<username>
+    PASSPHRASE=<pass phrase>
+    LIFETIME=<requested lifetime>
+
+    The message can also contain an optional string :
+    CRED_NAME=<credential name>
+
+    The intent of the VERSION string is to allow the server to know
+    if it is dealing with an outdated or newer client.
+ 
+    <username> and <pass phrase> are the strings supplied by the
+    user to the portal to be used for retrieval by the portal.
+
+ 4) MyProxyServer will then respond with either a OK, ERROR, or
+    AUTHORIZATION message.  See Section A.6 for details.
+ 
+ 5) Next, the server will retrieve the user credential and send it to the 
+    client.
+
+ 6) MyProxyRetrieve will then send MyProxyServer a MyProxyContinue command.
+ 
+ 7) At this point, both sides should close the connection.

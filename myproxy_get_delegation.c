@@ -45,7 +45,7 @@ struct option long_options[] =
     {"username",         required_argument, NULL, 'l'},
     {"verbose",                no_argument, NULL, 'v'},
     {"version",                no_argument, NULL, 'V'},
-    {"authorization",    required_argument, NULL, 'r'},
+    {"authorization",    required_argument, NULL, 'a'},
     {"dn_as_username",         no_argument, NULL, 'd'},
     {"credname",	 required_argument, NULL, 'k'},
     {"stdin_pass",             no_argument, NULL, 'S'},
