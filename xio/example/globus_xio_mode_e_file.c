@@ -165,6 +165,7 @@ main(
         char                            buffer[CHUNK_SIZE + 1];
         int	                        nbytes;
         int				i,x;
+        globus_xio_data_descriptor_t    dd;
         res = globus_xio_handle_create(&xio_handle, stack);
         test_res(res);
         res = globus_xio_stack_destroy(stack);
@@ -186,14 +187,22 @@ main(
                 &nbytes,
                 NULL);
             test_res(res); 
-        } 
-	test_res(globus_xio_attr_init(&attr));
-	test_res(globus_xio_attr_cntl(
-	    attr,
+        }
+
+/*        test_res(globus_xio_data_descriptor_init(&dd, xio_handle));
+	test_res(globus_xio_data_descriptor_cntl(
+	    dd,
 	    mode_e_driver,
-	    GLOBUS_XIO_MODE_E_SET_EOF,
-	    GLOBUS_TRUE,
-	    num_streams));
+	    GLOBUS_XIO_MODE_E_SEND_EOD,
+	    GLOBUS_TRUE));
+        res = globus_xio_write(
+                xio_handle,
+                buffer,
+                nbytes,
+                nbytes,
+                &nbytes,
+                NULL);
+        test_res(res); */
         fclose(fp);
     }
     res = globus_xio_close(xio_handle, attr);

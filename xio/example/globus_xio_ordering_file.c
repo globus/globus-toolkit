@@ -8,7 +8,7 @@
 
 globus_xio_driver_t                     mode_e_driver;
 globus_xio_driver_t                     ordering_driver;
-int					y = 5;
+int					y = 12;
 globus_mutex_t				mutex;
 globus_cond_t				cond;
 
@@ -76,6 +76,16 @@ write_cb(
     void *                              user_arg)
 {
     globus_free(buffer);
+    globus_mutex_lock(&mutex);
+    if (--y == 0)
+    {
+        globus_mutex_unlock(&mutex);
+	globus_cond_signal(&cond);
+    }
+    else
+    {
+        globus_mutex_unlock(&mutex);
+    }
 }
 
 
@@ -90,8 +100,6 @@ read_cb(
     void *                              user_arg)
 {
     FILE * 				fp;
-    int 				rc;
-    globus_result_t			res;
     fp = (FILE*)user_arg;
     fputs(buffer, fp);
     globus_free(buffer);
@@ -208,7 +216,7 @@ main(
     if(be_server)
     {
 	globus_size_t size = CHUNK_SIZE + 1;
-	int i, x = 5;
+	int i, x = 12;
 	res = globus_xio_server_create(&server, attr, stack);
     	test_res(res);
         globus_xio_server_get_contact_string(server, &cs);
@@ -243,6 +251,8 @@ main(
 	}
 	globus_mutex_unlock(&mutex);
 	res = globus_xio_close(xio_handle, NULL);
+	test_res(res);
+        res = globus_xio_server_close(server);
 	test_res(res);
 	res = globus_xio_driver_unload(mode_e_driver);
 	test_res(res);
@@ -281,13 +291,26 @@ main(
             test_res(res); 
         } 
         fclose(fp);
-	test_res(globus_xio_attr_init(&attr));
-	test_res(globus_xio_attr_cntl(
-	    attr,
-	    mode_e_driver,
-	    GLOBUS_XIO_MODE_E_SET_EOF,
-	    GLOBUS_TRUE,
-	    num_streams));
+/*        test_res(globus_xio_data_descriptor_init(&dd, xio_handle));
+        test_res(globus_xio_data_descriptor_cntl(
+            dd,
+            mode_e_driver,
+            GLOBUS_XIO_MODE_E_SEND_EOD,
+            GLOBUS_TRUE));
+        res = globus_xio_write(
+                xio_handle,
+                buffer,
+                nbytes,
+                nbytes,
+                &nbytes,
+                NULL);
+        test_res(res); */
+	globus_mutex_lock(&mutex);
+	while(y)
+	{
+	    globus_cond_wait(&mutex, &cond);
+	}
+	globus_mutex_unlock(&mutex);
 	res = globus_xio_close(xio_handle, attr);
 	test_res(res);
 	res = globus_xio_driver_unload(mode_e_driver);
@@ -296,7 +319,7 @@ main(
 	globus_assert(rc == GLOBUS_SUCCESS);
 
     }
-	globus_mutex_destroy(&mutex);
-	globus_cond_destroy(&cond);
+    globus_mutex_destroy(&mutex);
+    globus_cond_destroy(&cond);
     return 0;
 }
