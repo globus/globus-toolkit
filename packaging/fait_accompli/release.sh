@@ -19,3 +19,8 @@ rm -fr *-output
 
 mkdir  $INSTALLER/schedulers
 cp bundle-output/*.tar.gz  $INSTALLER/schedulers
+
+./make-packages.pl -n --packages=globus_gram_reporter,globus_gram_reporter_setup_pbs,globus_gram_reporter_setup_lsf,globus_gram_reporter_setup_condor --version=gt3.2alpha
+
+mkdir  $INSTALLER/schedulers/gram-reporters
+cp package-output/globus_gram_reporter*.tar.gz  $INSTALLER/schedulers/gram-reporters
