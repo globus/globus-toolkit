@@ -4,6 +4,8 @@ VERSION=3.9.5
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt-3.2autotools2004-src.tar.gz
+# Pre-made tarfiles for gsi-openssh/myproxy
+TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-1.16.tar.gz"
 
 echo Making configure/make installer
 ./make-packages.pl --trees=autotools --skippackage --skipbundle $@
@@ -48,3 +50,7 @@ else
    cp -Rp source-trees/wsrf-cvs/* $INSTALLER/source-trees
    cp -Rp source-trees/gt2-cvs/* $INSTALLER/source-trees
 fi
+
+for f in $TARFILES; do
+   tar -C $INSTALLER/source-trees -xzf fait_accompli/$f
+done
