@@ -8,8 +8,11 @@ use Test;
 my $start = time();
 my $testtmp = &make_tmpdir();
 my @log_data;
-my $log_path = &get_log_path();
 my $skip_all = 0;
+my $gram_condor_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-condor.conf";
+my $gram_condor_conf_save = "$gram_condor_conf.save";
+
+my $log_path = &get_log_path();
 
 if (! defined($log_path))
 {
@@ -193,18 +196,23 @@ EOF
 }
 
 sub get_log_path {
-    my $gram_condor_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-condor.conf";
-    open(CONF, "<$gram_condor_conf") || return undef;
-    my $log;
+    rename($gram_condor_conf, $gram_condor_conf_save);
+
+    open(CONF, "<$gram_condor_conf_save") || return undef;
+    open(TMP_CONF, ">$gram_condor_conf") || return undef;
+    my $log = "$testtmp/globus-condor.log";
 
     while (<CONF>) {
         chomp;
         my ($var, $val) = split(/\s*=\s*/, $_);
         if ($var =~ m/^log_path$/) {
-            $log = $val;
+            print TMP_CONF "log_path=$log\n";
+        } else {
+            print TMP_CONF "$_\n";
         }
     }
     close(CONF);
+    close(TMP_CONF);
 
     return $log;
 }
@@ -252,6 +260,10 @@ END
     if(-d $testtmp and -o $testtmp)
     {
         File::Path::rmtree($testtmp);
+    }
+    if (-f $gram_condor_conf_save)
+    {
+        rename($gram_condor_conf_save, $gram_condor_conf);
     }
 }
 
