@@ -144,76 +144,38 @@ globus_i_gsi_sysconfig_create_key_string(
     ...);
 
 #ifdef WIN32
-#    define GLOBUS_I_GSI_SYSCONFIG_GET_HOME_DIR \
-            globus_i_gsi_sysconfig_get_home_dir_win32
 #    define GLOBUS_I_GSI_SYSCONFIG_GET_USER_ID_STRING \
             globus_i_gsI_sysconfig_get_user_id_string_win32
 #    define GLOBUS_I_GSI_SYSCONFIG_GET_PROC_ID_STRING \
             globus_i_gsi_sysconfig_get_proc_id_string_win32
-#    define GLOBUS_I_GSI_SYSCONFIG_CHECK_KEYFILE \
-            globus_i_gsi_sysconfig_check_keyfile_win32
-#    define GLOBUS_I_GSI_SYSCONFIG_CHECK_CERTFILE \
-            globus_i_gsi_sysconfig_check_certfile_win32
-#    define GLOBUS_I_GSI_SYSCONFIG_FILE_EXISTS \
-            globus_i_gsi_sysconfig_file_exists_win32
 #else
-#    define GLOBUS_I_GSI_SYSCONFIG_GET_HOME_DIR \
-            globus_i_gsi_sysconfig_get_home_dir_unix
 #    define GLOBUS_I_GSI_SYSCONFIG_GET_USER_ID_STRING \
             globus_i_gsi_sysconfig_get_user_id_string_unix
 #    define GLOBUS_I_GSI_SYSCONFIG_GET_PROC_ID_STRING \
             globus_i_gsi_sysconfig_get_proc_id_string_unix
-#    define GLOBUS_I_GSI_SYSCONFIG_CHECK_KEYFILE \
-            globus_i_gsi_sysconfig_check_keyfile_unix
-#    define GLOBUS_I_GSI_SYSCONFIG_CHECK_CERTFILE \
-            globus_i_gsi_sysconfig_check_certfile_unix
-#    define GLOBUS_I_GSI_SYSCONFIG_FILE_EXISTS \
-            globus_i_gsi_sysconfig_file_exists_unix
 #endif
 
 #ifdef WIN32
 
 globus_result_t
-globus_i_gsi_sysconfig_get_home_dir_win32(
-    char **                             home_dir);
+globus_i_gsi_sysconfig_get_user_id_string_unix(
+    char **                             user_id_string);
 
 globus_result_t
-globus_i_gsi_sysconfig_file_exists_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
-
-globus_result_t
-globus_i_gsi_sysconfig_check_keyfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
-
-globus_result_t
-globus_i_gsi_sysconfig_check_certfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+globus_i_gsi_sysconfig_get_proc_id_string_unix(
+    char **                             proc_id_string);
 
 #else
 
 globus_result_t
-globus_i_gsi_sysconfig_get_home_dir_unix(
-    char **                             home_dir);
+globus_i_gsi_sysconfig_get_user_id_string_win32(
+    char **                             user_id_string);
 
 globus_result_t
-globus_i_gsi_sysconfig_file_exists_unix(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+globus_i_gsi_sysconfig_get_proc_id_string_win32(
+    char **                             proc_id_string);
 
-globus_result_t
-globus_i_gsi_sysconfig_check_keyfile_unix(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
-
-globus_result_t
-globus_i_gsi_sysconfig_check_certfile_unix(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
-
-#endif /* not WIN32 */
+#endif
 
 globus_result_t
 globus_i_gsi_sysconfig_error_chain_result(

@@ -16,11 +16,26 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-static char * 
+char * 
 globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 {
 
 /* 0 */   "Success",
+/* 1 */   "Could not find a valid trusted CA certificates directory",
+/* 2 */   "Could not create the filename string "
+          "for the user's certificate filename",
+/* 3 */   "Could not create the filename string "
+          "for the user's key filename",
+/* 4 */   "Could not find a valid home directory for the current user",
+/* 5 */   "Error with system call",
+/* 6 */   "Error checking the status of a file",
+/* 7 */   "Could not find a valid user certificate file",
+/* 8 */   "Could not find a valid proxy certificate file location",
+/* 9 */   "Could not find a valid delegated proxy certificate file location",
+/* 10 */  "Error getting the list of trusted CA certificates",
+/* 11 */  "Error getting the current working directory",
+/* 12 */  "Error removing all owned files from secure tmp directory"
+
 };
 
 /* ERROR FUNCTIONS */
