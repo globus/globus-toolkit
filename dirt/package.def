@@ -19,7 +19,6 @@ globus_common                   common/source                   dirt.sh
 globus_common_setup             common/setup                    dirt.sh
 globus_common_test              common/test                     dirt.sh
 globus_core                     core/source                     dirt.sh
-globus_core_setup               core/setup                      dirt.sh
 globus_data_conversion          data_conversion/source          dirt.sh
 globus_duct_common              duct/common/source              dirt.sh
 globus_duct_control             duct/control/source             dirt.sh
