@@ -180,7 +180,7 @@ GSS_CALLCONV gss_wrap(
     {
         BIO *                           debug_bio;
         fprintf(globus_i_gsi_gssapi_debug_fstream,
-                "input message: length = %d\n"
+                "input message: length = %u\n"
                 "               value = \n",
                 input_message_buffer->length);
 

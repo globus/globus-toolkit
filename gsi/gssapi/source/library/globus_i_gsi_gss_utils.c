@@ -660,7 +660,7 @@ globus_i_gsi_gss_put_token(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "input token: length = %d\n"
+                    "input token: length = %u\n"
                     "              value  = \n",
                     input_token->length);
         
@@ -676,13 +676,13 @@ globus_i_gsi_gss_put_token(
     {
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             3, (globus_i_gsi_gssapi_debug_fstream,
-                "input_token: length = %d\n", input_token->length));
+                "input_token: length = %u\n", input_token->length));
 
         major_status = GSS_S_DEFECTIVE_TOKEN;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The input token has an invalid length of: %d", 
+            ("The input token has an invalid length of: %u", 
              input_token->length));
         goto exit;
     }
@@ -776,7 +776,7 @@ globus_i_gsi_gss_get_token(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "output token: length = %d\n"
+                    "output token: length = %u\n"
                     "              value  = \n",
                     output_token->length);
         
