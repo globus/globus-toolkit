@@ -5,21 +5,20 @@
 <Aging_Version Major="2" Minor="0" Age="0"/>
 <Description>
 </Description>
-<Version_Stability Release="experimental"/>
+<Version_Stability Release="alpha"/>
 <src_pkg>
 
 <Source_Dependencies Type="compile" >
 <Dependency Name="globus_core"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-<Dependency Name="globus_core"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-<Dependency Name="openssl"><Version><Version_Range Lower_Major="0" Lower_Minor="0" Upper_Major="1" Upper_Minor="9"></Version_Range></Version></Dependency>
+<Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
 </Source_Dependencies>
 
 <Source_Dependencies Type="pgm_link" >
-<Dependency Name="openssl"><Version><Version_Range Lower_Major="0" Lower_Minor="0" Upper_Major="0" Upper_Minor="9"></Version_Range></Version></Dependency>
+<Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
 </Source_Dependencies>
 
 <Source_Dependencies Type="lib_link" >
-<Dependency Name="openssl"><Version><Version_Range Lower_Major="0" Lower_Minor="0" Upper_Major="0" Upper_Minor="9"></Version_Range></Version></Dependency> 
+<Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
 </Source_Dependencies>
 
 <Source_Setup_Dependency PkgType="rtl">
@@ -29,15 +28,6 @@
 </Version>
 </Setup_Dependency>
 </Source_Setup_Dependency>
-
-<Source_Setup_Dependency PkgType="rtl">
-<Setup_Dependency Name="trusted_ca_setup">
-<Version >
-<Simple_Version Major="2" />
-</Version>
-</Setup_Dependency>
-</Source_Setup_Dependency>
-
 
 <With_Flavors build="yes" />
 <Build_Environment>
