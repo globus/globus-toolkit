@@ -366,74 +366,87 @@ typedef enum globus_l_gsc_state_e
 /* the server handle */
 typedef struct globus_i_gsc_server_handle_s
 {
-    int                                     version_ctl;
+    int                                 version_ctl;
 
-    globus_mutex_t                          mutex;
+    globus_mutex_t                      mutex;
 
     /*
      *  authentication information
      */
-    int                                     ref;
+    int                                 ref;
 
-    char *                                  username;
-    char *                                  pw;
-    char *                                  subject;
-    uid_t                                   uid;
-    char                                    dcau;
-    char *                                  dcau_subject;
-    char                                    prot;
-    globus_bool_t                           authenticated;
+    char *                              username;
+    char *                              pw;
+    char *                              subject;
+    uid_t                               uid;
+    char                                dcau;
+    char *                              dcau_subject;
+    char                                prot;
+    globus_bool_t                       authenticated;
 
-    char *                                  post_auth_banner;
-    char *                                  pre_auth_banner;
+    char *                              post_auth_banner;
+    char *                              pre_auth_banner;
 
-    gss_cred_id_t                           cred;
-    gss_cred_id_t                           del_cred;
+    gss_cred_id_t                       cred;
+    gss_cred_id_t                       del_cred;
     globus_gridftp_server_control_security_type_t   security_type;
 
     /*
      *  state information  
      */
-    char *                                  cwd;
-    char                                    type;
-    char                                    mode;
-    char *                                  modes;
-    char *                                  types;
-    int                                     stripe_count;
+    char *                              cwd;
+    char                                type;
+    char                                mode;
+    char *                              modes;
+    char *                              types;
+    int                                 stripe_count;
 
-    int                                     idle_timeout;
-    globus_callback_handle_t                idle_handle;
+    int                                 idle_timeout;
+    globus_callback_handle_t            idle_handle;
 
     /* opts state */
-    globus_i_gsc_handle_opts_t              opts;
+    globus_i_gsc_handle_opts_t          opts;
 
     /*
      *  user function pointers
      */
-    void *                                  user_arg;
-    void *                                  abort_arg;
+    void *                              user_arg;
+    void *                              abort_arg;
 
-    globus_i_gsc_restart_t *                restart_marker;
+    globus_i_gsc_restart_t *            restart_marker;
 
-    globus_i_gsc_user_funcs_t               funcs;
+    globus_i_gsc_user_funcs_t           funcs;
 
-    globus_i_gsc_data_t *                   data_object;
+    globus_i_gsc_data_t *               data_object;
 
-    globus_result_t                         cached_res;
-    globus_list_t *                         feature_list;
+    globus_result_t                     cached_res;
+    globus_list_t *                     feature_list;
 
     /* 
      *  read.c members 
      */
-    globus_bool_t                           reply_outstanding;
-    globus_xio_handle_t                     xio_handle;
-    globus_l_gsc_state_t                    state;
-    globus_fifo_t                           read_q;
-    globus_fifo_t                           reply_q;
-    int                                     abort_cnt;
-    globus_hashtable_t                      cmd_table;
-    struct globus_i_gsc_op_s *              outstanding_op;
+    globus_bool_t                       reply_outstanding;
+    globus_xio_handle_t                 xio_handle;
+    globus_l_gsc_state_t                state;
+    globus_fifo_t                       read_q;
+    globus_fifo_t                       reply_q;
+    int                                 abort_cnt;
+    globus_hashtable_t                  cmd_table;
+    struct globus_i_gsc_op_s *          outstanding_op;
 } globus_i_gsc_server_handle_t;
+
+void
+globus_i_gsc_op_destroy(
+    globus_i_gsc_op_t *                 op);
+
+void
+globus_i_gsc_event_start(
+    globus_i_gsc_op_t *                 op,
+    int                                 event_mask);
+
+void
+globus_i_gsc_event_end(
+    globus_i_gsc_op_t *                 op);
 
 void
 globus_i_gsc_terminate(

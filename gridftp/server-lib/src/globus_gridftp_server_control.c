@@ -7,6 +7,7 @@
 
 #include <version.h>
 
+#define GSC_MAX_COMMAND_NAME_LEN        4
 #define GLOBUS_L_GSC_DEFAULT_220   "220 GridFTP Server.\r\n"
 
 #define GlobusLRegisterDone(_h)                                         \
@@ -93,12 +94,6 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
-typedef struct globus_l_gsc_restart_ent_s
-{
-    globus_off_t                            offset;
-    globus_off_t                            length;
-} globus_l_gsc_restart_ent_t;
-
 typedef struct globus_l_gsc_cmd_ent_s
 {
     int                                     cmd;
@@ -156,18 +151,6 @@ static void
 globus_l_gsc_internal_cb_kickout(
     void *                                  user_arg);
 
-static void
-globus_l_gsc_send_perf_marker_cb(
-    void *                                  user_arg);
-
-static void
-globus_l_gsc_send_perf_marker(
-    globus_i_gsc_op_t *                     op);
-
-static void
-globus_l_gsc_unreg_perf_marker(
-    void *                                  user_arg);
-
 static globus_result_t
 globus_l_gsc_flush_reads(
     globus_i_gsc_server_handle_t *          server_handle,
@@ -181,6 +164,9 @@ static void
 globus_l_gsc_command_callout(
     void *                                  user_arg);
 
+static void 
+globus_l_gsc_free_command_array(
+    char **                                 cmd_a);
 /*************************************************************************
  *              globals
  *
@@ -283,15 +269,16 @@ globus_l_gsc_op_create(
         return NULL;
     }
     op->command = globus_libc_malloc(len + 1);
-    memcpy(op->command, command, len);
-    op->command[len] = '\0';
     if(op->command == NULL)
     {
         globus_free(op);
         return NULL;
     }
+    memcpy(op->command, command, len);
+    op->command[len] = '\0';
 
     server_handle->ref++;
+
     op->server_handle = server_handle;
     op->res = GLOBUS_SUCCESS;
     op->cmd_list = cmd_list;
@@ -302,8 +289,8 @@ globus_l_gsc_op_create(
     return op;
 }
 
-static void
-globus_l_gsc_op_destroy(
+void
+globus_i_gsc_op_destroy(
     globus_i_gsc_op_t *                     op)
 {
     int                                     ctr;
@@ -395,13 +382,13 @@ globus_l_gsc_read_cb(
     globus_xio_data_descriptor_t            data_desc,
     void *                                  user_arg)
 {
+    char *                                  tmp_ptr;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_i_gsc_server_handle_t *          server_handle;
     globus_list_t *                         cmd_list;
     globus_i_gsc_op_t *                     op;
     char *                                  command_name = NULL;
     int                                     sc;
-    int                                     ctr;
     GlobusGridFTPServerName(globus_l_gsc_read_cb);
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
@@ -440,12 +427,10 @@ globus_l_gsc_read_cb(
                 }
                 else
                 {
-                   /* convert to all upper for convience and such */
-                    for(ctr = 0; command_name[ctr] != '\0'; ctr++)
+                    for(tmp_ptr = command_name; *tmp_ptr != '\0'; tmp_ptr++)
                     {
-                        command_name[ctr] = toupper(command_name[ctr]);
+                        *tmp_ptr = toupper(*tmp_ptr);
                     }
-
                     cmd_list = (globus_list_t *) globus_hashtable_lookup(
                                 &server_handle->cmd_table, command_name);
                     /*  This may be NULL, if so  we don't suport this command.
@@ -707,7 +692,7 @@ globus_l_gsc_finished_op(
 
     server_handle = op->server_handle;
 
-    globus_l_gsc_op_destroy(op);
+    globus_i_gsc_op_destroy(op);
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_PROCESSING:
@@ -1173,15 +1158,17 @@ globus_l_gsc_close_cb(
  *                         -----------------
  *
  ***********************************************************************/
-static globus_result_t
+static int
 globus_l_gsc_parse_command(
     char *                                  command,
     char ***                                out_cmd_a,
     int                                     argc)
 {
+    globus_size_t                           command_len;
     char *                                  start_ptr;
     char *                                  tmp_ptr;
     char **                                 cmd_a = NULL;
+    int                                     argc_ndx;
     int                                     ctr;
     int                                     ndx;
     globus_bool_t                           done = GLOBUS_FALSE;
@@ -1189,58 +1176,103 @@ globus_l_gsc_parse_command(
 
     *out_cmd_a = NULL;
 
-    cmd_a = (char **) globus_malloc(sizeof(char *) * (argc+1));
-    if(cmd_a == NULL)
+    command_len = strlen(command);
+
+    /* verify that it ends properly */
+    if(command[command_len-1] != '\n' || command[command_len-2] != '\r')
     {
         return -1;
     }
 
-    start_ptr = command;
-    for(ctr = 0; ctr <= argc && !done; ctr++)
+    cmd_a = (char **) globus_calloc(sizeof(char *) * (argc+1), 1);
+    if(cmd_a == NULL)
+    {
+        return -1;
+    }
+    *out_cmd_a = cmd_a;
+
+    /* parse out the first command name, move to upper and verify length */
+    argc_ndx = 0;
+    tmp_ptr = globus_malloc(GSC_MAX_COMMAND_NAME_LEN+1);
+    cmd_a[0] = tmp_ptr;
+    ctr = 0;
+    for(start_ptr = command;*start_ptr!=' '&&*start_ptr!='\r';start_ptr++)
+    {
+        if(!isalpha(*start_ptr))
+        {
+            goto err;
+        }
+        if(ctr >= GSC_MAX_COMMAND_NAME_LEN)
+        {
+            goto err;
+        }
+        *tmp_ptr = toupper(*start_ptr);
+        tmp_ptr++;
+        ctr++;
+    }
+    *tmp_ptr = '\0';
+    argc_ndx++;
+
+    while(argc_ndx < argc && !done)
     {
         /* skip past all leading spaces */
         while(isspace(*start_ptr) && *start_ptr != '\r')
         {
             start_ptr++;
         }
-            for(ndx = 0; 
-                !isspace(start_ptr[ndx]) && start_ptr[ndx] != '\r' && 
-                    start_ptr[ndx] != '\0'; 
-                ndx++)
-            {
-            }
-            if(*start_ptr == '\0' || *start_ptr == '\r')
-            {
-                cmd_a[ctr] = NULL;
-                ctr--;
-                done = GLOBUS_TRUE;
-            }
-            else if(ctr == argc - 1)
-            {
-                cmd_a[ctr] = globus_libc_strdup(start_ptr);
-                tmp_ptr = strstr(cmd_a[ctr], "\r\n");
-                if(tmp_ptr != NULL)
-                {
-                    *tmp_ptr = '\0';
-                }
-            }
-            else
-            {
-                cmd_a[ctr] = globus_libc_strndup(start_ptr, ndx);
-            }
-            start_ptr += ndx;
-    }
-    if(ctr > 0)
-    {
-        for(start_ptr = cmd_a[0]; *start_ptr != '\0'; start_ptr++)
-        {
-            *start_ptr = toupper(*start_ptr);
-        }
-    }
-    cmd_a[ctr] = NULL;
-    *out_cmd_a = cmd_a;
 
-    return ctr;
+        /* if we hit the end just return the count */
+        if(*start_ptr == '\r')
+        {
+            cmd_a[argc_ndx] = NULL;
+            return argc_ndx-1;
+        }
+
+        /* reserve room for the next parameter */
+        cmd_a[argc_ndx] = globus_malloc(strlen(start_ptr));
+        tmp_ptr = cmd_a[argc_ndx];
+        /* move to the next blank, verify parameter is alpha numeric */
+        for(ndx = 0; !isspace(start_ptr[ndx]) && start_ptr[ndx] != '\r'; ndx++)
+        {
+            if(!isalnum(start_ptr[ndx]))
+            {
+                goto err;
+            }
+            *tmp_ptr = start_ptr[ndx];
+            tmp_ptr++;
+        }
+        if(start_ptr[ndx] == '\r')
+        {
+            done = GLOBUS_TRUE;
+        }
+        else if(argc_ndx == argc-1)
+        {
+            /* copy in the rest of the command */
+            while(start_ptr[ndx] != '\r')
+            {
+                if(!isprint(start_ptr[ndx]))
+                {
+                    goto err;
+                }
+                *tmp_ptr = start_ptr[ndx];
+                tmp_ptr++;
+                ndx++;
+            }
+            done = GLOBUS_TRUE;
+        }
+        start_ptr += ndx;
+        argc_ndx++;
+        *tmp_ptr = '\0';
+    }
+
+    cmd_a[argc_ndx] = NULL;
+    return argc_ndx;
+
+  err:
+
+    globus_l_gsc_free_command_array(cmd_a);
+
+    return -1;
 }
 
 static void 
@@ -1273,7 +1305,7 @@ globus_l_gsc_flush_reads(
         op = (globus_i_gsc_op_t *)
             globus_fifo_dequeue(&server_handle->read_q);
         globus_assert(op != NULL);
-        globus_l_gsc_op_destroy(op);
+        globus_i_gsc_op_destroy(op);
 
         tmp_res = globus_l_gsc_final_reply(server_handle, reply_msg);
         if(tmp_res != GLOBUS_SUCCESS)
@@ -3461,31 +3493,7 @@ globus_gridftp_server_control_begin_transfer(
     {
         /* TODO: determine if cached */
         res = globus_i_gsc_intermediate_reply(op, "150 Begining transfer.\r\n");
-        /* send the first perf marker, start timer */
-        if(op->type == GLOBUS_L_GSC_OP_TYPE_RECV &&
-            op->server_handle->opts.perf_frequency >= 0 &&
-            event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF)
-        {
-            globus_reltime_t                delay;
-
-            op->event.stripe_count = op->server_handle->stripe_count;
-            op->done = GLOBUS_FALSE;
-            op->ref++;
-            op->event.stripe_total_bytes = (globus_off_t *)
-                globus_calloc(sizeof(globus_off_t *) * 
-                    op->server_handle->stripe_count, 1);
-            globus_l_gsc_send_perf_marker(op);
-
-            GlobusTimeReltimeSet(delay, 
-                op->server_handle->opts.perf_frequency, 0);
-            op->event.perf_running = 1;
-            globus_callback_register_periodic(
-                &op->event.periodic_handle,
-                &delay,
-                &delay,
-                globus_l_gsc_send_perf_marker_cb,
-                op);
-        }
+        globus_i_gsc_event_start(op, event_mask);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -3516,18 +3524,7 @@ globus_gridftp_server_control_finished_transfer(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        if(op->event.perf_running)
-        {
-            globus_l_gsc_send_perf_marker(op);
-            /* cancel callback send last one */
-            op->done = GLOBUS_TRUE;
-            globus_callback_unregister(
-                op->event.periodic_handle,
-                globus_l_gsc_unreg_perf_marker,
-                op,
-                NULL);
-        }
-        globus_i_gsc_restart_destroy(op->restart_marker);
+        globus_i_gsc_event_end(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -3597,247 +3594,4 @@ globus_gridftp_server_control_list_buffer_free(
     globus_byte_t *                         buffer)
 {
     globus_free(buffer);
-}
-
-int
-globus_l_gsc_restart_q_cmp(
-    void *                                  p1,
-    void *                                  p2)
-{
-    globus_l_gsc_restart_ent_t *            ent1;
-    globus_l_gsc_restart_ent_t *            ent2;
-
-    ent1 = (globus_l_gsc_restart_ent_t *) p1;
-    ent2 = (globus_l_gsc_restart_ent_t *) p2;
-
-    if(ent1->offset == ent2->offset)
-    {
-        return 0;
-    }
-    else if(ent1->offset < ent2->offset)
-    {
-        return 1;
-    }
-    else
-    {
-        return -1;
-    }
-}
-
-globus_i_gsc_restart_t *
-globus_i_gsc_restart_create()
-{
-    globus_i_gsc_restart_t *                restart;
-
-    restart = (globus_i_gsc_restart_t *)
-        globus_calloc(sizeof(globus_i_gsc_restart_t), 1);
-    if(restart == NULL)
-    {
-        return NULL;
-    }
-    globus_priority_q_init(&restart->q, globus_l_gsc_restart_q_cmp);
-
-    return restart;
-}
-
-void
-globus_i_gsc_restart_add(
-    globus_i_gsc_restart_t *                restart,
-    globus_off_t                            start_off,
-    globus_off_t                            end_off)
-{
-    globus_l_gsc_restart_ent_t *            ent;
-
-    ent = (globus_l_gsc_restart_ent_t *)
-        globus_malloc(sizeof(globus_l_gsc_restart_ent_t));
-    ent->offset = start_off;
-    ent->length = end_off - start_off;
-
-    globus_priority_q_enqueue(&restart->q, ent, ent);
-}
-
-int
-globus_gridftp_server_control_restart_get(
-    globus_i_gsc_restart_t *                restart,
-    globus_off_t *                          offset,
-    globus_off_t *                          length)
-{
-    int                                     size;
-    int                                     ndx;
-    globus_l_gsc_restart_ent_t *            ent;
-
-    if(restart->offset_a == NULL)
-    {
-        size = globus_priority_q_size(&restart->q) + 1;
-        restart->offset_a = (globus_off_t *) 
-            globus_malloc(sizeof(globus_off_t) * size);
-        restart->length_a = (globus_off_t *) 
-            globus_malloc(sizeof(globus_off_t) * size);
-
-        if(size == 1)
-        {
-            restart->offset_a[0] = 0;
-            restart->length_a[0] = -1;
-            ndx++;
-        }
-        else
-        {
-            ndx = 0;
-            ent = (globus_l_gsc_restart_ent_t *)
-                globus_priority_q_first(&restart->q);
-            if(ent->offset != 0)
-            {
-                restart->offset_a[ndx] = 0;
-                restart->length_a[ndx] = ent->offset;
-                ndx++;
-            }
-            while(globus_priority_q_size(&restart->q) != 1)
-            {
-                ent = (globus_l_gsc_restart_ent_t *)
-                    globus_priority_q_dequeue(&restart->q);
-                restart->offset_a[ndx] = ent->offset + ent->length;
-                globus_free(ent);
-
-                ent = (globus_l_gsc_restart_ent_t *)
-                    globus_priority_q_first(&restart->q);
-                restart->length_a[ndx] = ent->offset - restart->offset_a[ndx];
-                ndx++;
-            }
-            ent = (globus_l_gsc_restart_ent_t *)
-                    globus_priority_q_dequeue(&restart->q);
-
-            restart->offset_a[ndx] = ent->offset + ent->length;
-            restart->length_a[ndx] = -1;
-            ndx++;
-
-            globus_free(ent);
-
-        }
-        restart->size = ndx;
-    }
-
-    if(restart->ndx >= restart->size)
-    {
-        return -1;
-    }
-    if(offset != NULL)
-    {
-        *offset = restart->offset_a[restart->ndx];
-    }
-    if(length != NULL)
-    {
-        *length = restart->length_a[restart->ndx];
-    }
-    restart->ndx++;
-
-    return 0;
-}
-
-void
-globus_i_gsc_restart_destroy(
-    globus_i_gsc_restart_t *                restart)
-{
-    if(restart)
-    {
-        if(restart->offset_a != NULL)
-        {
-            globus_free(restart->offset_a);
-        }
-        if(restart->length_a != NULL)
-        {
-            globus_free(restart->length_a);
-        }
-        globus_priority_q_destroy(&restart->q);
-        globus_free(restart);
-    }
-}
-
-void
-globus_l_gsc_send_restart_marker()
-{
-
-}
-
-static void
-globus_l_gsc_unreg_perf_marker(
-    void *                                  user_arg)
-{
-    globus_i_gsc_op_t *                     op;
-
-    op = (globus_i_gsc_op_t *) user_arg;
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        globus_l_gsc_op_destroy(op);
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-}
-
-static void
-globus_l_gsc_send_perf_marker_cb(
-    void *                                  user_arg)
-{
-    globus_i_gsc_op_t *                     op;
-
-    op = (globus_i_gsc_op_t *) user_arg;
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        if(!op->done)
-        {
-            globus_l_gsc_send_perf_marker(op);
-        }
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-}
-
-static void
-globus_l_gsc_send_perf_marker(
-    globus_i_gsc_op_t *                     op)
-{
-    char *                                  msg;
-    int                                     ctr;
-    struct timeval                          now;
-    globus_i_gsc_event_data_t *             event;
-
-    event = &op->event;
-    gettimeofday(&now, NULL);
-    for(ctr = 0; ctr < event->stripe_count; ctr++)
-    {
-        msg = globus_common_create_string(
-                "112-Perf Marker.\r\n"
-                " Timestamp:  %ld.%01ld\r\n"
-                " Stripe Index: %d\r\n"
-                " Stripe Bytes Transferred: %"GLOBUS_OFF_T_FORMAT"\r\n"
-                " Total Stripe Count: %d\r\n"
-                "112 End.\r\n",
-                    now.tv_sec, now.tv_usec / 100000,
-                    ctr,
-                    event->stripe_total_bytes[ctr],
-                    event->stripe_count);
-        globus_i_gsc_intermediate_reply(op, msg); 
-    }
-}
-
-globus_result_t
-globus_gridftp_server_control_update_bytes(
-    globus_gridftp_server_control_op_t      op,
-    int                                     stripe_ndx,
-    globus_off_t                            offset,
-    globus_off_t                            length)
-{
-    if(op == NULL)
-    {
-    }
-
-    if(op->event.stripe_total_bytes == NULL)
-    {
-    }
-    if(stripe_ndx > op->event.stripe_count || stripe_ndx < 0)
-    {
-    }
-
-    op->event.stripe_total_bytes[stripe_ndx] += length;
-
-    return GLOBUS_SUCCESS;
 }
