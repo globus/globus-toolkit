@@ -83,10 +83,15 @@ else
 ***************************************************************************
 
 Note: To complete setup of the GSI software you need to run the
-following script as root to configure your /etc/grid-security/
+following script as root to configure your security configuration
 directory:
 
 $setupdir/setup-gsi
+
+For further information on using the setup-gsi script, use the -help
+option.  The -default option sets this security configuration to be 
+the default, and -nonroot can be used on systems where root access is 
+not available.
 
 ***************************************************************************
 

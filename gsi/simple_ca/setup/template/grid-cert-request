@@ -101,11 +101,11 @@ CERTREQ="${bindir}/grid-cert-request"
 
 set_nondefaultca() {
  
-if [ "${nondefaultca}" == "true" ]; then
+if test "${nondefaultca}" = "true"; then
 
     INSTALLED_CERTS="`echo $trusted_certs_dir/*.0`"
 
-    if [ -z "${INSTALLED_CERTS}" ]; then
+    if test -z "${INSTALLED_CERTS}"; then
         echo "No CA's have been installed on this host!"
         echo "To run grid-cert-request, a CA must first"
 	echo "be installed"
@@ -131,8 +131,8 @@ if [ "${nondefaultca}" == "true" ]; then
     echo -n "Enter the index number of the CA you want to sign your cert request: "
     read CA_CHOSEN_INDEX
     
-    if [ $[ 0 < ${CA_CHOSEN_INDEX} ] == 0 ] ||
-       [ $[ $index > ${CA_CHOSEN_INDEX} ] == 0 ]; then
+    if test $[ 0 < ${CA_CHOSEN_INDEX} ] = 0 ||
+       test $[ $index > ${CA_CHOSEN_INDEX} ] = 0; then
         echo "${CA_CHOSEN_INDEX} is not a valid index!"
         exit 1
     fi
@@ -140,7 +140,7 @@ if [ "${nondefaultca}" == "true" ]; then
     eval "CA_SUBJECT=\${CA_SUBJECT${CA_CHOSEN_INDEX}}"
     eval "CA_HASH=\${CA_HASH${CA_CHOSEN_INDEX}}"
 
-elif [ ! -z "${nondefaultca}" ]; then
+elif test -n "${nondefaultca}"; then
     CA_HASH=${nondefaultca}
     TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
     eval "CA_SUBJECT=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
@@ -178,7 +178,7 @@ abort_cleanup () {
 readCommandLine () {
   # Expects $* from the shell invocation
 
-  while [ "X$1" !=  "X" ]
+  while test ! "X$1" =  "X"
   do
     case $1 in
       -\?|-h|-help|-usage)
@@ -235,8 +235,8 @@ readCommandLine () {
          shift
          ;;
      -ca)
-	     if [ ! -z "$2" ] && \
-            [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e "s|[^-]*||g"`" ]; then
+	     if test -n "$2" && \
+                test -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e \"s|[^-]*||g\"`"; then
             nondefaultca=$2
             shift
          else

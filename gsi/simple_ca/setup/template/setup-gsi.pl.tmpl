@@ -68,12 +68,12 @@ $ENV{TRUSTED_CA_DIR}    = "$trusted_certs_dir";
 
 if( ! -d $target_dir ) 
 {
-    mkdir $target_dir;
+    system("mkdir $target_dir");
 }
 
 if( ! -d $trusted_certs_dir ) 
 {
-    mkdir $trusted_certs_dir;
+    system("mkdir $trusted_certs_dir");
 }
 
 
@@ -286,7 +286,7 @@ if((! -l "$target_dir/grid-security.conf") && (-f "$target_dir/grid-security.con
     
     if($ca_install_index != -1)
     {
-        delete $trusted_ca_certs[$ca_install_index];
+        splice @trusted_ca_certs, $ca_install_index, 1;
     }
 
     # if no correct hash was found, but there's only one

@@ -1,5 +1,21 @@
 #! /bin/sh
 
+# catch the kill signal (ctrl-c) and do cleanup
+trap do_trap 1 2 3 6 9 13 15
+
+if test "`echo -n \"testecho\"`" = "testecho"; then
+    ECHOOPTION=" -n "
+    ECHOTAIL=""
+else
+    ECHOOPTION=""
+    ECHOTAIL='\c'
+fi
+
+recho() {
+
+    echo $ECHOOPTION $@ $ECHOTAIL
+}
+
 ############################################################
 # grid-ca-setup: Set up the CA configuration
 ############################################################
@@ -14,6 +30,7 @@ make_template_ca_setup() {
     template_package_file=${template_package_dir}/globus_simple_ca_setup_template.tar.gz
     tmp_ca_setup_dir=${GLOBUS_SH_TMP-/tmp/}/${USER}_tmp_ca_setup
     ${GLOBUS_SH_MKDIR-mkdir} ${tmp_ca_setup_dir}
+    current_dir=${PWD}
     cd ${tmp_ca_setup_dir}
     
     ${GLOBUS_SH_GZIP-gzip} -dc ${template_package_file} | ${GLOBUS_SH_TAR-tar} xf -
@@ -49,14 +66,14 @@ grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
 if test -d "${GRID_CA_DIR}"; then
     echo ""
     echo "ERROR: It looks like a CA has already been setup at this location."
-    echo -n "Do you want to overwrite this CA? (y/n) [n]: "
+    recho "Do you want to overwrite this CA? (y/n) [n]: "
     read tmp_answer
     overwrite_answer=${tmp_answer:-n}
-    if test `echo ${overwrite_answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1` != 'y'; then
+    if test ! `echo ${overwrite_answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1` = 'y'; then
 	exit;
     fi
 else
-    if [ ! -d "${HOME}/.globus" ]; then
+    if test ! -d "${HOME}/.globus"; then
 	${GLOBUS_SH_MKDIR-mkdir} ${HOME}/.globus
     fi
     ${GLOBUS_SH_MKDIR-mkdir} ${GRID_CA_DIR}
@@ -95,11 +112,11 @@ generate_unique_name() {
 
 tmp_hostname=`${GLOBUS_LOCATION}/bin/globus-hostname`
 
-if [ -z "${tmp_hostname}" ]; then
-    echo 
+if test -z "${tmp_hostname}"; then
+    echo "" 
     echo "The hostname of this machine is not set.  Set the"
     echo "hostname before running this script."
-    echo
+    echo ""
     exit 1
 fi
 
@@ -119,31 +136,31 @@ GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
 GSI_CA_NAME="Globus Simple CA"
 
 got_subject=""
-while [ -z "${got_subject}" ]; do
+while test -z "${got_subject}" ; do
 
     casubject="cn=${GSI_CA_NAME}, ${GSI_CA_BASE_DN}"
 	
-    echo 
+    echo ""
     echo "The unique subject name for this CA is:"
-    echo
+    echo ""
     echo "${casubject}"
-    echo
-    echo -n "Do you want to keep this as the CA subject (y/n) [y]: "
+    echo ""
+    recho "Do you want to keep this as the CA subject (y/n) [y]: "
 
     read _answer
     answer=${_answer:-y}
 
-    if [ "`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`" == 'n' ]; then
+    if test "`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`" = 'n'; then
     
-	echo 
-	echo -n "Enter a unique subject name for this CA: "
+	echo ""
+	recho "Enter a unique subject name for this CA: "
 	read casubject
-	echo
-	if [ ! -z "${casubject}" ]; then
+	echo ""
+	if test -n "${casubject}"; then
 	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/"`
 	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/"`
-	    if [ -z "${GSI_CA_NAME}" ] || [ -z "${GSI_CA_BASE_DN}" ]; then
-		echo 
+	    if test -z "${GSI_CA_NAME}" || test -z "${GSI_CA_BASE_DN}"; then
+		echo "" 
 		echo "The subject: ${casubject} is not a valid subject name"
 		echo "Use the default subject name if you don't know the correct"
 		echo "format to use"
@@ -158,13 +175,13 @@ while [ -z "${got_subject}" ]; do
 done
 
 get_ca_email=""
-while [ -z ${get_ca_email} ]; do
+while test -z "${get_ca_email}"; do
 
-    echo 
+    echo ""
     echo "Enter the email of the CA (this is the email where certificate"
-    echo -n "requests will be sent to be signed by the CA): "
+    recho "requests will be sent to be signed by the CA): "
     read GSI_CA_EMAIL_ADDR
-    if [ ! -z ${GSI_CA_EMAIL_ADDR} ]; then
+    if test -n ${GSI_CA_EMAIL_ADDR}; then
 	get_ca_email="done"
     fi
 done
@@ -180,7 +197,7 @@ by re-running this setup script.  Enter the number of DAYS
 the CA certificate should last before it expires.
 EOF
 
-echo -n "[default: 5 years (1825 days)]: "
+recho "[default: 5 years (1825 days)]: "
 read _CA_CERT_DAYS
 CA_CERT_DAYS=${_CA_CERT_DAYS:-${CA_CERT_DAYS}}
 echo
@@ -348,7 +365,7 @@ RET=$?
 
 ${GLOBUS_SH_RM-rm} -f ${CA_REQ_INPUT}
 
-if [ ${RET} -eq 0 ] ; then
+if test ${RET} -eq 0; then
     ${GLOBUS_SH_CLEAR-clear}
 else
     echo "Error number ${RET} was returned by " 1>&2
@@ -389,15 +406,37 @@ ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 This file must be distributed to any host wishing to request
 certificates from this CA.
 
-To install this package, run:
+CA setup complete.
+
+The following commands will now be run to setup the security
+configuration files for this CA:
 
 \$GLOBUS_LOCATION/sbin/globus-build -install-only \\
 ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-CA setup complete.
+\$GLOBUS_LOCATION/setup/globus-postinstall.sh
+
+-------------------------------------------------------------------
+
 
 EOF
 
+}
+
+############################################################
+# install_security_config: run globus-build on the security
+#                          configuration package associated
+#                          with the CA
+#
+############################################################
+install_security_config() {
+
+    cd ${current_dir}
+
+    ${GLOBUS_LOCATION}/sbin/globus-build -install-only \
+    ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
+
+    ${GLOBUS_LOCATION}/setup/globus-postinstall.sh
 }
 
 ############################################################
@@ -459,8 +498,8 @@ generate_setup_file "Makefile.in"
 generate_setup_file "/pkgdata/pkg_data_src.gpt.in"
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/globus-ssl.conf.tmpl" "${tmp_ca_setup_dir}/globus-ssl.conf"
 
-echo
-echo -n "creating CA config package..."
+echo ""
+recho "creating CA config package..."
 
 cd ${tmp_ca_setup_dir}
 
@@ -473,7 +512,7 @@ make dist
 
 CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.3.tar.gz
 
-if [ ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ]; then
+if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""
     echo "Building the CA package failed."
     echo ""
@@ -488,6 +527,27 @@ ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 echo "done."
 echo
 
+}
+
+############################################################
+# do_trap:  catches any abortive signals and does cleanup
+############################################################
+do_trap() {
+
+    echo ""
+    echo "Normal program execution interrupted.  You will"
+    echo "need to rerun the script:"
+    echo ""
+    echo "\${GLOBUS_LOCATION}/setup/globus/setup-simple-ca"
+    echo ""
+    echo "to setup the simple CA."
+    echo ""
+
+    ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+
+    cd ${current_dir}
+    
+    exit 1
 }
 
 
@@ -524,5 +584,7 @@ save_ca_settings
 generate_ca_certificate
 generate_utils_package
 emit_directions
+install_security_config
+
 
 exit
