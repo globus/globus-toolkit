@@ -18,19 +18,11 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-/* see if an mp proto is available and use one */
-
-#include "globus_mp_inx.h"
-#ifndef GLOBUS_MP_HAS_INX_PROTO
-#include "globus_mp_mpl.h"
-#ifndef GLOBUS_MP_HAS_MPL_PROTO
-#include "globus_mp_mpi.h"
-#endif
-#endif
-
-#if defined(GLOBUS_MP_HAS_INX_PROTO) || defined(GLOBUS_MP_HAS_MPL_PROTO) || defined(GLOBUS_MP_HAS_MPI_PROTO)
 
 #include "globus_gram_myjob.h"
+
+#ifdef GLOBUS_GRAM_MYJOB_USES_MP
+
 #include "globus_common.h"
 
 
@@ -275,4 +267,4 @@ globus_gram_myjob_kill()
     return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
 }
 
-#endif /* if (some version of mp) */
+#endif /* GLOBUS_GRAM_MYJOB_USES_MP */
