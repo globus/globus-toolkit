@@ -458,6 +458,7 @@ globus_l_gsc_read_cb(
             /* these only happen if result cam back an error, in which case
                 we will jump around this part */
             case GLOBUS_L_GSC_STATE_STOPPING:
+                break;
 
             /* should never be in stopped state while a read is posted */
             case GLOBUS_L_GSC_STATE_STOPPED:
@@ -757,6 +758,7 @@ globus_l_gsc_parse_command(
     int                                     argc)
 {
     char *                                  start_ptr;
+    char *                                  tmp_ptr;
     char **                                 cmd_a = NULL;
     int                                     ctr;
     int                                     ndx;
@@ -800,6 +802,11 @@ globus_l_gsc_parse_command(
             else if(ctr == argc - 1)
             {
                 cmd_a[ctr] = globus_libc_strdup(start_ptr);
+                tmp_ptr = strstr(cmd_a[ctr], "\r\n");
+                if(tmp_ptr != NULL)
+                {
+                    *tmp_ptr = '\0';
+                }
             }
             else
             {
