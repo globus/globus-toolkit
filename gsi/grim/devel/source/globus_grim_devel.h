@@ -193,15 +193,11 @@ globus_grim_assertion_init(
  *
  *  @param buffer
  *         A memory buffer containing the entire assertion xml assertion.
- *
- *  @param buffer_length
- *         The length of the above buffer.
  */
 globus_result_t
 globus_grim_assertion_init_from_buffer(
     globus_grim_assertion_t *               assertion,
-    char *                                  buffer,
-    int                                     buffer_length);
+    char *                                  buffer);
 
 /**
  *  @ingroup globus_grim_assertion

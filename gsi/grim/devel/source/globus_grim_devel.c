@@ -70,7 +70,7 @@ globus_l_grim_parse_conf_file(
 globus_result_t
 globus_l_grim_parse_assertion(
     struct globus_l_grim_assertion_s *      info,
-    char *                                  out_string);
+    char *                                  string);
 
 globus_result_t
 globus_l_grim_build_assertion(
@@ -206,9 +206,9 @@ globus_grim_assertion_init(
 globus_result_t
 globus_grim_assertion_init_from_buffer(
     globus_grim_assertion_t *               assertion,
-    char *                                  buffer,
-    int                                     buffer_length)
+    char *                                  buffer)
 {
+    globus_result_t                         res;
     struct globus_l_grim_assertion_s *      ass;
     
     if(assertion == NULL)
@@ -227,14 +227,6 @@ globus_grim_assertion_init_from_buffer(
                        GLOBUS_NULL,
                        "[globus_grim_devel]:: buffer parameter NULL."));
     }
-    if(buffer_length <= 0)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_GRIM_DEVEL_MODULE,
-                       GLOBUS_NULL,
-                       "[globus_grim_devel]:: invalid buffer_length."));
-    }
 
     ass = (struct globus_l_grim_assertion_s *)
                 globus_malloc(sizeof(struct globus_l_grim_assertion_s));
@@ -247,7 +239,9 @@ globus_grim_assertion_init_from_buffer(
                        "[globus_grim_devel]:: malloc failed."));
     }
 
-    return GLOBUS_SUCCESS;
+    res = globus_l_grim_parse_assertion(ass, buffer);
+
+    return res;
 }
     
 /*
@@ -1443,15 +1437,17 @@ globus_l_grim_build_assertion(
     globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
     buffer = globus_malloc(sizeof(char) * buffer_size);
 
-    GrowString(buffer, buffer_size, "<GrimAssertion>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, 
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, "<GRIMAssertion>\n", buffer_ndx);
     GrowString(buffer, buffer_size, "    <Version>", buffer_ndx);
     GrowString(buffer, buffer_size, GRIM_ASSERTION_FORMAT_VERSION, buffer_ndx);
-    GrowString(buffer, buffer_size, "    </Version>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, "</Version>\n", buffer_ndx);
     GrowString(buffer, buffer_size,
         "    <ServiceGridId Format=\"#X509SubjectName\">",
         buffer_ndx);
     GrowString(buffer, buffer_size, subject, buffer_ndx);
-    GrowString(buffer, buffer_size, "</ServerGridId>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, "</ServiceGridId>\n", buffer_ndx);
     GrowString(buffer, buffer_size,
         "    <ServiceLocalId Format=\"#UnixAccountName\" \n",
         buffer_ndx);
@@ -1465,7 +1461,7 @@ globus_l_grim_build_assertion(
     for(ctr = 0; dna != NULL && dna[ctr] != NULL; ctr++)
     {
         GrowString(buffer, buffer_size,
-            "<authorizedClientId Format=\"#X509SubjectName\">",
+            "    <AuthorizedClientId Format=\"#X509SubjectName\">",
             buffer_ndx);
         GrowString(buffer, buffer_size, dna[ctr], buffer_ndx);
         GrowString(buffer, buffer_size, "</AuthorizedClientId>\n", buffer_ndx);
@@ -1474,9 +1470,9 @@ globus_l_grim_build_assertion(
     /* add in port_types */
     for(ctr = 0; port_types != NULL && port_types[ctr] != NULL; ctr++)
     {
-        GrowString(buffer, buffer_size, "<authorizedPortType>", buffer_ndx);
+        GrowString(buffer, buffer_size, "    <AuthorizedPortType>", buffer_ndx);
         GrowString(buffer, buffer_size, port_types[ctr], buffer_ndx);
-        GrowString(buffer, buffer_size, "</authorizedPortType>\n", buffer_ndx);
+        GrowString(buffer, buffer_size, "</AuthorizedPortType>\n", buffer_ndx);
     }
 
     GrowString(buffer, buffer_size, "</GRIMAssertion>\n", buffer_ndx);
@@ -1512,7 +1508,7 @@ globus_l_grim_assertion_start(
     info = (struct globus_l_grim_assertion_s *) data;
 
     info->parse_state = GLOBUS_L_GRIM_PARSE_NONE;
-    if(strcmp(el, "ServerGridId") == 0)
+    if(strcmp(el, "ServiceGridId") == 0)
     {
         info->parse_state = GLOBUS_L_GRIM_PARSE_GRID_ID;
     }
@@ -1532,11 +1528,11 @@ globus_l_grim_assertion_start(
     {
         info->parse_state = GLOBUS_L_GRIM_PARSE_VERSION;
     }
-    else if(strcmp(el, "authorizedClientId") == 0)
+    else if(strcmp(el, "AuthorizedClientId") == 0)
     {
         info->parse_state = GLOBUS_L_GRIM_PARSE_CLIENT_ID;
     }
-    else if(strcmp(el, "authorizedPortType") == 0)
+    else if(strcmp(el, "AuthorizedPortType") == 0)
     {
         info->parse_state = GLOBUS_L_GRIM_PARSE_PORT_TYPE;
     }
@@ -1635,29 +1631,31 @@ globus_l_grim_parse_assertion(
                             (globus_list_size(info->dna_list) + 1)
                                  * sizeof(char *));
 
-    ctr = 0;
+    ctr = globus_list_size(info->dna_list);
+    info->dna[ctr] = NULL;
+    ctr--;
     for(list = info->dna_list; 
         !globus_list_empty(list);
         list = globus_list_rest(list))
     {
         info->dna[ctr] = globus_list_first(list);
-        ctr++;
+        ctr--;
     }
-    info->dna[ctr] = NULL;
     globus_list_free(info->dna_list);
 
     info->port_types = (char **) globus_malloc(
                                     (globus_list_size(info->pt_list) + 1)
                                         * sizeof(char *));
-    ctr = 0;
+    ctr = globus_list_size(info->pt_list);
+    info->port_types[ctr] = NULL;
+    ctr--;
     for(list = info->pt_list; 
         !globus_list_empty(list);
         list = globus_list_rest(list))
     {
         info->port_types[ctr] = globus_list_first(list);
-        ctr++;
+        ctr--;
     }
-    info->port_types[ctr] = NULL;
     globus_list_free(info->pt_list);
 
   exit:
