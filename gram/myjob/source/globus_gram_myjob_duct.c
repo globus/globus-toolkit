@@ -18,6 +18,8 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#if GLOBUS_GRAM_MYJOB_DUCT
+
 #include "globus_common.h"
 
 #include <assert.h>
@@ -28,7 +30,6 @@ CVS Information:
 #include "nexus.h"
 #include "globus_duct_runtime.h"
 
-#if GLOBUS_GRAM_MYJOB_DUCT
 
 /******************************************************************************
 		       Define module specific variables

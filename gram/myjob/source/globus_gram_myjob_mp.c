@@ -18,11 +18,20 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#if GLOBUS_GRAM_MYJOB_MP
+
 #include "globus_gram_myjob.h"
-#include "globus_gram_myjob_mp.h"
+
+#ifdef GLOBUS_GRAM_MYJOB_MP_INX
+#include "globus_mp_inx.h"
+#elsif GLOBUS_GRAM_MYJOB_MP_MPL
+#include "globus_mp_mpl.h"
+#elsif GLOBUS_GRAM_MYJOB_MP_MPI
+#include "globus_mp_mpi.h"
+#endif
+
 #include "globus_common.h"
 
-#if GLOBUS_GRAM_MYJOB_MP
 
 /******************************************************************************
 		       Define module specific variables
