@@ -1164,6 +1164,9 @@ globus_rsl_eval (globus_rsl_t *ast_node,
         rsl_substitution_flag = globus_rsl_is_relation_attribute_equal(
                                    ast_node,
                                    "rsl_substitution");
+        rsl_substitution_flag |= globus_rsl_is_relation_attribute_equal(
+                                   ast_node,
+                                   "rslsubstitution");
 
         while (! globus_list_empty(tmp_value_list))
         {
@@ -1190,7 +1193,7 @@ globus_rsl_eval (globus_rsl_t *ast_node,
                         (globus_rsl_value_t *) globus_list_replace_first
                              (tmp_value_list,
                              (void *) globus_rsl_value_make_literal
-                                  (string_value)));
+                                  (globus_libc_strdup(string_value))));
                 }
             }
             else
