@@ -78,6 +78,40 @@ if($? != 0)
 # Create service
 $cmd = "$libexecdir/globus-job-manager-service-add -m pbs -s \"$name\" $force";
 system("$cmd >/dev/null 2>/dev/null");
+if($? != 0)
+{
+    print STDERR "Error creating service entry $name. Aborting!\n";
+    exit 3;
+}
+
+open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-rsl-validation/pbs.rvf");    
+
+print VALIDATION_FILE <<EOF;
+Attribute: email_address
+Description: "Set the email address to receive notifications. See the
+             email_on_abort, email_on_execution, and emailontermination attributes."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: email_on_abort
+Description: "Send email to the job submitter (or the address specified in the
+             email_address RSL attribute if present) if the job is aborted by the
+	     scheduler."
+Values: yes no
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: email_on_execution
+Description: "Send email to the job submitter (or the address specified in the
+             email_address RSL attribute if present) when the job begins execution."
+Values: yes no
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: email_on_termination
+Description: "Send email to the job submitter (or the address specified in the
+             email_address RSL attribute if present) when the job terminates."
+Values: yes no
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+EOF
 
 if($validate_queues)
 {
@@ -100,25 +134,15 @@ if($validate_queues)
 
     if(@queues)
     {
-	open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-rsl-validation/pbs.rvf");    
-
 	print VALIDATION_FILE "Attribute: queue\n";
 	print VALIDATION_FILE join(" ", "Values:", @queues);
 
-	close VALIDATION_FILE;
     }
 }
+close VALIDATION_FILE;
 
 
-if($? == 0)
-{
-    $metadata->finish();
-}
-else
-{
-    print STDERR "Error creating service entry $name. Aborting!\n";
-    exit 3;
-}
+$metadata->finish();
 
 sub usage
 {

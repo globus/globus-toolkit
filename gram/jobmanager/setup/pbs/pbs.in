@@ -44,21 +44,12 @@ sub submit
     my $queue;
     my $job_id;
     my $rsh_env;
+    my $script_url;
+    my @arguments;
+    my $email_when = "";
 
     $self->log("Entering pbs submit");
 
-    # verify existence of queue
-    if(defined($description->queue()))
-    {
-        $queue = $description->queue();
-
-	system("$qstat -Q $queue >/dev/null 2>/dev/null");
-	if($? != 0)
-	{
-	    $self->log("Queue $queue not found.");
-	    return Globus::GRAM::Error::INVALID_QUEUE;
-	}
-    }
     # check jobtype
     if(defined($description->jobtype()))
     {
@@ -99,8 +90,9 @@ sub submit
 
     $self->log('Building job script');
 
-    system("globus-gass-cache -add -n $tag/pbs_job_script.$$ file:/dev/null");
-    $pbs_job_script_name = `globus-gass-cache -query $tag/pbs_job_script.$$`;
+    $script_url = "$tag/pbs_job_script.$$"; 
+    system("globus-gass-cache -add -t $tag -n $script_url file:/dev/null");
+    $pbs_job_script_name = `globus-gass-cache -query $script_url`;
     chomp($pbs_job_script_name);
     if($pbs_job_script_name eq "")
     {
@@ -115,6 +107,28 @@ sub submit
 #
 #PBS -S /bin/sh
 EOF
+
+    if($description->email_address() ne '')
+    {
+        $pbs_job_script->print("#PBS -M " . $description->email_address() . "\n");
+    }
+    if($description->emailonabort() eq 'yes')
+    {
+        $email_when .= 'a';
+    }
+    if($description->emailonexecution() eq 'yes')
+    {
+        $email_when .= 'b';
+    }
+    if($description->emailontermination() eq 'yes')
+    {
+        $email_when .= 'e';
+    }
+    if($email_when eq '')
+    {
+	$email_when = 'n';
+    }
+    $pbs_job_script->print("#PBS -m $email_when\n");
 
     if(defined($queue))
     {
@@ -191,9 +205,18 @@ EOF
     $pbs_job_script->print("\n#Change to directory requested by user\n");
     $pbs_job_script->print('cd ' . $description->directory() . "\n");
 
-    if($description->arguments())
+    @arguments = $description->arguments();
+
+    foreach(@arguments)
     {
-	$args = join(' ', $description->arguments());
+        if(ref($_))
+	{
+	    return Globus::GRAM::Error::RSL_ARGUMENTS;
+	}
+    }
+    if($arguments[0])
+    {
+	$args = join(' ', @arguments);
     }
     else
     {
@@ -264,7 +287,7 @@ EOF
         # truncate off the domain name
 	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
 
-	system("globus-gass-cache -cleanup-url $tag/pbs_job_script.$$");
+	system("globus-gass-cache -cleanup-url $script_url");
 
 	return {JOB_ID => $job_id};
     }
