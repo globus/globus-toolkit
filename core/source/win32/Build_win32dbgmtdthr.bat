@@ -47,7 +47,7 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 

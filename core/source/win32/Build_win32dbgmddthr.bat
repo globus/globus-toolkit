@@ -47,7 +47,7 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Dynamic Debug Threaded Libraries (win32dbgmddthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 

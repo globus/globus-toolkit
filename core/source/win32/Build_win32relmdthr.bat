@@ -47,7 +47,7 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Dynamic Release Threaded Libraries (win32relmdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmdthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32relmdthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 

@@ -47,7 +47,7 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Static Release Threaded Libraries (win32relmtthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmtthr 13.2
+WinCVSBuild.pl %GlobusLocation% win32relmtthr 14.2
 call WinCVSBuildLibs
 call WinCVSBuildExes
 
