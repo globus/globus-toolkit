@@ -116,7 +116,7 @@ test_dashn( char *   value,
     char *         p;
     int            res = 0;
 
-    for (p=value; p && !res; ++p)
+    for (p=value; (*p) && !res; ++p)
     {
 	if (!strchr("sclturwoe",*p))
 	{
@@ -276,7 +276,7 @@ int main(int argc, char **argv)
 	    insecure = GLOBUS_TRUE;
 	    break;
 	case arg_n:
-	    for (p=instance->values[0]; p; ++p)
+	    for (p=instance->values[0]; (*p); ++p)
 	    {
 		switch(*p)
 		{
