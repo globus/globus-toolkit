@@ -97,15 +97,19 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 
 
 #define GlobusGridFTPServerOpSetUserArg(_in_op, _in_arg)                    \
-{                                                                           \
     (_in_op)->user_arg = (_in_arg);                                         \
-}
 
 #define GlobusGridFTPServerOpGetUserArg(_in_op)                             \
     ((_in_op)->user_arg)
 
 #define GlobusGridFTPServerOpGetServer(_in_op)                              \
     ((_in_op)->server)
+
+#define GlobusGridFTPServerOpGetPModArg(_in_op)                             \
+    ((_in_op)->pmod_arg)
+
+#define GlobusGridFTPServerOpSetPModArg(_in_op, _in_arg)                    \
+    (_in_op)->pmod_arg = (_in_arg);                                         \
 
 struct globus_i_gs_attr_s;
 
@@ -124,7 +128,6 @@ typedef enum
     GLOBUS_L_GS_STATE_NONE,
     GLOBUS_L_GS_STATE_OPEN,
     GLOBUS_L_GS_STATE_AUTH,
-    GLOBUS_L_GS_STATE_USER_AUTH,
     GLOBUS_L_GS_STATE_STOPPED,
     GLOBUS_L_GS_STATE_STOPPING,
     GLOBUS_L_GS_STATE_ERROR,
@@ -221,7 +224,9 @@ typedef struct globus_i_gs_op_s
     globus_i_gs_cmd_ent_t *                 cmd_ent;
     globus_result_t                         res;
     globus_gridftp_server_pmod_command_cb_t cb;
+
     void *                                  user_arg;
+    void *                                  pmod_arg;
 
     char *                                  str_arg;
 

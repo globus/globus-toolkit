@@ -179,6 +179,7 @@ globus_l_gsp_959_handle_create()
     handle->ref = 1; /* i for start call and 1 for read about to post */
     handle->state = GLOBUS_L_GSP_959_STATE_OPEN;
     globus_fifo_init(&handle->read_q);
+    handle->stop_cb = NULL;
 
     globus_hashtable_init(
         &handle->cmd_table,
@@ -403,6 +404,7 @@ globus_l_gsp_959_process_next_cmd(
             {
                 handle->ref--;
             }
+            globus_free(read_ent);
         }
         else
         {
@@ -417,6 +419,7 @@ globus_l_gsp_959_process_next_cmd(
             if(res != GLOBUS_SUCCESS)
             {
                 globus_l_gsp_959_panic(read_ent->handle, res);
+                globus_free(read_ent);
             }
         }
     }
@@ -467,7 +470,7 @@ globus_l_gsp_959_read_callback(
                 /*
                  *  parse out the command name
                  */
-                command_name = (char *) globus_malloc(len);
+                command_name = (char *) globus_malloc(len + 1);
                 sc = sscanf(buffer, "%s", command_name);
                 /* stack will make sure this never happens */
                 globus_assert(sc > 0);
@@ -859,6 +862,9 @@ globus_gs_pmod_959_finished_op(
         }
     }
     globus_mutex_unlock(&handle->mutex);
+
+    globus_free(read_ent->command);
+    globus_free(read_ent);
 }
 
 /*
@@ -964,7 +970,9 @@ globus_l_gsp_959_reply(
 {
     globus_result_t                         res;
     char *                                  code_str;
+    char *                                  tmp_ptr;
     globus_xio_iovec_t *                    iov;
+    globus_size_t                           tmp_len;
     GlobusGridFTPServerName(globus_l_gsp_959_reply);
 
     globus_mutex_lock(&handle->mutex);
@@ -987,12 +995,16 @@ globus_l_gsp_959_reply(
             globus_free(code_str);
             goto err;
         }
+        tmp_len = strlen(message);
         iov[0].iov_base = (globus_byte_t *) code_str;
         iov[0].iov_len = strlen(code_str);
-        iov[1].iov_len = strlen(message) + 2;
-        iov[1].iov_base = globus_malloc(iov[1].iov_len);
-        strcpy((char *)iov[1].iov_base, message);
-        strcat((char *)iov[1].iov_base, "\r\n");
+        iov[1].iov_len = tmp_len + 2;
+        tmp_ptr = globus_malloc(iov[1].iov_len);
+        memcpy(tmp_ptr, message, tmp_len);
+        tmp_ptr[tmp_len] = '\r';
+        tmp_ptr[tmp_len+1] = '\n';
+        iov[1].iov_base = tmp_ptr;
+
         res = globus_xio_register_writev(
                 handle->xio_handle,
                 iov,

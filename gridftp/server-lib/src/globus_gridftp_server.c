@@ -177,13 +177,13 @@ globus_gridftp_server_init(
     memset(i_server, '\0', sizeof(globus_i_gs_server_t));
     globus_mutex_init(&i_server->mutex, NULL);
     i_server->state = GLOBUS_L_GS_STATE_STOPPED;
-
+/*
     globus_hashtable_init(
         &i_server->command_table,
         64,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
-
+*/
     *server = i_server;
 
     return GLOBUS_SUCCESS;
@@ -322,7 +322,6 @@ globus_gridftp_server_stop(
 
             case GLOBUS_L_GS_STATE_OPEN:
             case GLOBUS_L_GS_STATE_AUTH:
-            case GLOBUS_L_GS_STATE_USER_AUTH:
             case GLOBUS_L_GS_STATE_ERROR:
                 /* remove the referebce the server has to itself */
                 i_server->ref--;
@@ -367,7 +366,7 @@ globus_l_gs_proto_cmd_kickout(
         (globus_gridftp_server_t) i_op->server,
         i_op->res,
         i_op->cmd_ent->name,
-        i_op->user_arg);
+        i_op->pmod_arg);
 
     globus_l_gs_callback_return(i_op->server);
 
@@ -469,7 +468,7 @@ globus_l_gs_operation_create(
     i_op->server = server;
     i_op->cb = cb;
     i_op->res = GLOBUS_SUCCESS;
-    i_op->user_arg = user_arg;
+    i_op->pmod_arg = user_arg;
     i_op->arg_list = globus_list_copy(arg_list);
 
     *out_op = i_op;
@@ -828,7 +827,7 @@ globus_gridftp_server_set_authentication(
 
     globus_mutex_lock(&i_server->mutex);
     {
-        if(i_server->state != GLOBUS_L_GS_STATE_USER_AUTH)
+        if(i_server->state != GLOBUS_L_GS_STATE_AUTH)
         {
             res = GlobusGridFTPServerErrorParameter("server");
         }
@@ -924,7 +923,6 @@ globus_l_gs_callback_return(
             /* nothing to do in this  state */
             case GLOBUS_L_GS_STATE_OPEN:
             case GLOBUS_L_GS_STATE_AUTH:
-            case GLOBUS_L_GS_STATE_USER_AUTH:
             case GLOBUS_L_GS_STATE_ERROR:
                 break;
                                                                                 
@@ -1041,7 +1039,6 @@ globus_gridftp_server_pmod_command(
              *  the command is ok pre auth.  If so fall through to
              *  open, otherwise send error reply and break switch
              */
-            case GLOBUS_L_GS_STATE_USER_AUTH:
             case GLOBUS_L_GS_STATE_AUTH:
             case GLOBUS_L_GS_STATE_OPEN:
 
@@ -1107,7 +1104,6 @@ globus_gridftp_server_pmod_done(
         switch(i_server->state)
         {
             case GLOBUS_L_GS_STATE_OPEN:
-            case GLOBUS_L_GS_STATE_USER_AUTH:
             case GLOBUS_L_GS_STATE_AUTH:
                 i_server->cached_res = result;
                 i_server->state = GLOBUS_L_GS_STATE_ERROR;

@@ -164,10 +164,21 @@ globus_l_gs_pmod_959_cmd_type(
     globus_list_insert(&list, (void *)ch);
     globus_gridftp_server_pmod_command(
         server,
-        "MODE",
+        "TYPE",
         globus_l_gs_pmod_959_cmd_basic_cb,
         wrapper,
         list);
+}
+
+
+static void
+globus_l_gs_pmod_959_cmd_quit(
+    globus_gs_pmod_959_handle_t             handle,
+    globus_gs_pmod_959_op_t                 op,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
 }
 
 /*
@@ -285,6 +296,12 @@ globus_i_gs_pmod_959_add_commands(
         handle,
         "TYPE", 
         globus_l_gs_pmod_959_cmd_type,
+        cmd_handle);
+
+    globus_gs_pmod_959_command_add(
+        handle,
+        "QUIT", 
+        globus_l_gs_pmod_959_cmd_quit,
         cmd_handle);
 
     globus_gs_pmod_959_command_add(

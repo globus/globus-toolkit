@@ -2,18 +2,6 @@
 
 #include <stdarg.h>
 
-/*
- *  local command types.  Set in command structure to make decisions on
- *  that commadn is what easier.
- */
-enum
-{
-    GLOBUS_L_GS_COMMAND_MODE,
-    GLOBUS_L_GS_COMMAND_TYPE,
-    GLOBUS_L_GS_COMMAND_CWD,
-};
-
-
 /*************************************************************************
  *      Authentication functions
  *      ------------------------
@@ -147,7 +135,6 @@ globus_l_gs_simple_cmd(
     globus_list_t *                         list)
 {
     globus_i_gs_server_t *                  i_server;
-    globus_i_gs_cmd_ent_t *                 cmd_ent;
     int                                     ch;
     globus_i_gs_op_t *                      i_op;
     globus_result_t                         res;
@@ -155,39 +142,35 @@ globus_l_gs_simple_cmd(
 
     i_op = (globus_i_gs_op_t *) op;
     i_server = (globus_i_gs_server_t *) server;
-    cmd_ent = i_op->cmd_ent;
 
-    switch(cmd_ent->type)
+    ch = (int) globus_list_first(list);
+    if(strcmp(command_name, "MODE") == 0)
     {
-        case GLOBUS_L_GS_COMMAND_MODE:
-            ch = (int) globus_list_first(list);
-            if(ch != 'E' && ch != 'S')
-            {
-                res = GlobusGridFTPServerErrorParameter("mode");
-            }
-            else
-            {
-                res = globus_gridftp_server_set_mode(server, ch);
-            }
-
-            break;
-
-        case GLOBUS_L_GS_COMMAND_TYPE:
-            ch = (int) globus_list_first(list);
-            if(ch != 'A' && ch != 'I')
-            {
-                res = GlobusGridFTPServerErrorParameter("type");
-            }
-            else
-            {
-                res = globus_gridftp_server_set_type(server, ch);
-            }
-            break;
-
-        default:
-            globus_assert(0 && "possible memory corrupiton");
-            break;
+        if(ch != 'E' && ch != 'S')
+        {
+            res = GlobusGridFTPServerErrorParameter(command_name);
+        }
+        else
+        {
+            res = globus_gridftp_server_set_mode(server, ch);
+        }
     }
+    else if(strcmp(command_name, "TYPE") == 0)
+    {
+        if(ch != 'I' && ch != 'A')
+        {
+            res = GlobusGridFTPServerErrorParameter(command_name);
+        }
+        else
+        {
+            res = globus_gridftp_server_set_type(server, ch);
+        }
+    }
+    else
+    {
+        globus_assert(0 && "possible memory curroption");
+    }
+
     if(res != GLOBUS_SUCCESS)
     {
         goto err;
@@ -248,64 +231,6 @@ globus_l_gs_port_cmd(
     globus_list_t *                         list)
 {
     return GLOBUS_SUCCESS;
-}
-/*
- *  user calls back in when stat is finished.
- */
-void
-globus_gridftp_server_finished_resource(
-    globus_gridftp_server_operation_t       op,
-    globus_result_t                         result,
-    globus_gridftp_server_stat_t *          stat_info_array,
-    int                                     stat_count)
-{
-    globus_result_t                         res;
-    globus_i_gs_server_t *                  i_server;
-    globus_i_gs_cmd_ent_t *                 cmd_ent;
-    char *                                  tmp_s;
-    char **                                 out_string;
-    globus_i_gs_op_t *                      i_op;
-    GlobusGridFTPServerName(globus_gridftp_server_finished_resource);
-
-    i_op = (globus_i_gs_op_t *) op;
-    i_server = i_op->server;
-    cmd_ent = i_op->cmd_ent;
-
-    switch(cmd_ent->type)
-    {
-        case GLOBUS_L_GS_COMMAND_CWD:
-            if(result != GLOBUS_SUCCESS || stat_count < 1)
-            {
-                res = GlobusGridFTPServerErrorParameter("out_string");
-            }
-            else
-            {
-                out_string = (char **) 
-                    globus_list_first(i_op->arg_list);
-                /* allow the user to get away with pushing in multiple
-                    stats by only looking at the first one */
-                if(!S_ISDIR(stat_info_array[0].st_rdev))
-                {
-                    *out_string = NULL;
-                    res = GlobusGridFTPServerErrorParameter("out_string");
-                }
-                else
-                {
-                    tmp_s = i_server->pwd;
-                    i_server->pwd = 
-                        globus_common_create_string(
-                            "%s/%s", tmp_s, i_op->str_arg);
-                    globus_free(tmp_s);
-                    *out_string = i_server->pwd;
-                }
-            }
-            break;
-
-        default:
-            globus_assert(0 && "Possible memory cooruption.");
-            break;
-    }
-    globus_gridftp_server_finished_cmd(op, res, GLOBUS_TRUE);
 }
 
 globus_result_t
