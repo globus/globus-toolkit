@@ -712,9 +712,17 @@ http_test_client_request(
             attr,
             target);
 
+    if (result == GLOBUS_SUCCESS)
+    {
+        target = NULL;
+    }
+
 destroy_attr_exit:
     globus_xio_attr_destroy(attr);
-    globus_xio_target_destroy(target);
+    if (target)
+    {
+        globus_xio_target_destroy(target);
+    }
 free_url_exit:
     globus_libc_free(url);
 error_exit:
