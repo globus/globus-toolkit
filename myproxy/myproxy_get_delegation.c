@@ -70,8 +70,13 @@ main(int argc, char *argv[])
     myproxy_response_t     *server_response;
     
     socket_attrs = malloc(sizeof(*socket_attrs));
+    memset(socket_attrs, 0, sizeof(*socket_attrs));
+
     client_request = malloc(sizeof(*client_request));
+    memset(client_request, 0, sizeof(*client_request));
+
     server_response = malloc(sizeof(*server_response));
+    memset(server_response, 0, sizeof(*server_response));
 
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
@@ -82,8 +87,7 @@ main(int argc, char *argv[])
     client_request->username = malloc(strlen(username)+1);
     strcpy(client_request->username, username);
 
-
-    client_request->hours    = MYPROXY_DEFAULT_HOURS; 
+    client_request->hours = MYPROXY_DEFAULT_PROXY_HOURS; 
  
     socket_attrs->psport = MYPROXYSERVER_PORT;
     socket_attrs->pshost = malloc(strlen(MYPROXYSERVER_HOST) + 1);
@@ -98,7 +102,7 @@ main(int argc, char *argv[])
     /* Allow user to provide a passphrase */
     if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1,
                                        MIN_PASS_LEN, MAX_PASS_LEN) < 0) {
-        fprintf(stderr, "error in myproxy_extras_read_passphrase()\n");
+        fprintf(stderr, "error in read_passphrase()\n");
         exit(1);
     }
     
@@ -108,10 +112,15 @@ main(int argc, char *argv[])
         exit(1);
     }
     
+     /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+        fprintf(stderr, "error in myproxy_authenticate_init()\n");
+        exit(1);
+    }
+
     /* Serialize client request object */
     requestlen = myproxy_serialize_request(client_request, 
                                            request_buffer, sizeof(request_buffer));
-    
     if (requestlen < 0) {
         fprintf(stderr, "error in myproxy_serialize_request()\n");
         exit(1);
@@ -123,9 +132,14 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+    /* Accept delegated credentials from client */
+    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile)) < 0) {
+        fprintf(stderr, "error in myproxy_accept_delegation()\n");
+	exit(1);
+    }      
+
     /* Receive a response from the server */
-    responselen = myproxy_recv(socket_attrs, 
-                               response_buffer, sizeof(response_buffer));
+    responselen = myproxy_recv(socket_attrs, response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
         fprintf(stderr, "error in myproxy_recv_response()\n");
         exit(1);
@@ -145,15 +159,10 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
     case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_string);
+        fprintf(stderr, "Received ERROR: %s\n", server_response->error_string);
         break;
     case MYPROXY_OK_RESPONSE:
-        /* Accept delegated credentials from client */
-        if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile)) < 0) {
-            fprintf(stderr, "error in myproxy_accept_delegation()\n");
-            exit(1);
-        }   
-        
+        printf("proxy was succesfully retrieved for user %s.\n", client_request->username);
         break;
     default:
         fprintf(stderr, "Received unknown response type\n");
@@ -231,7 +240,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
 
     /* Get user's passphrase */    
     do {
-        printf("Enter password to protect proxy on  myproxy-server:\n");
+        printf("Enter password to retrieve proxy on  myproxy-server:\n");
         
         if (!(fgets(pass, passlen, stdin))) {
             fprintf(stderr,"Failed to read password from stdin\n");   
