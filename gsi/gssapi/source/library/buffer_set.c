@@ -203,6 +203,11 @@ GSS_CALLCONV gss_add_buffer_set_member(
 
 
 /**
+ * @name Free Buffer Set
+ * @ingroup globus_gsi_gssapi_buffer_set
+ */
+/* @{ */
+/**
  * Free all memory associated with a buffer set.
  *
  * This function will free all memory associated with a buffer
