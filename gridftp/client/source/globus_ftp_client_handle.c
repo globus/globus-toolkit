@@ -1707,7 +1707,7 @@ globus_i_ftp_client_cache_remove(
         node =
 	    globus_list_search_pred(*cache,
 				    globus_l_ftp_client_compare_canonically,
-				    &searcher);
+				    &parsed_url);
         if(node)
         {
 	    cache_entry = (globus_i_ftp_client_cache_entry_t *) node->datum;

@@ -222,7 +222,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }
 
-            if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
+            if (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
             {
                 context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
                 /*

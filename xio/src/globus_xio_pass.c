@@ -527,6 +527,7 @@ globus_xio_driver_finished_close(
     globus_i_xio_context_t *            context;
     globus_i_xio_op_entry_t *           my_op;
     globus_result_t                     res;
+    globus_bool_t                       destroy_context = GLOBUS_FALSE;
     globus_callback_space_t             space =
                             GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_xio_driver_finished_close);
@@ -547,6 +548,10 @@ globus_xio_driver_finished_close(
         GlobusXIOContextStateChange(my_context,
             GLOBUS_XIO_CONTEXT_STATE_CLOSED);
         context->ref--;
+        if(context->ref == 0)
+        {
+            destroy_context = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&context->mutex);
 
@@ -582,6 +587,10 @@ globus_xio_driver_finished_close(
         globus_l_xio_driver_op_close_kickout(op);
     }
     
+    if(destroy_context)
+    {
+        globus_i_xio_context_destroy(context);
+    }
     GlobusXIODebugInternalExit();
 }
 

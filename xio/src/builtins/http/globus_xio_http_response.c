@@ -124,7 +124,7 @@ globus_i_xio_http_response_copy(
     }
 
     dest->callback = src->callback;
-    dest->callback_arg = src->callback_arg;
+    dest->callback = src->callback_arg;
     dest->read_operation = src->read_operation;
 
     return res;

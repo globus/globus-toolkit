@@ -627,9 +627,8 @@ globus_l_xio_driver_purge_read_eof(
             tmp_op->_op_handle,
             globus_l_xio_driver_op_read_kickout,
            (void *)tmp_op,
-            (tmp_op->blocking || !tmp_op->_op_handle)
-                ? GLOBUS_CALLBACK_GLOBAL_SPACE
-                : tmp_op->_op_handle->space);
+            tmp_op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: 
+                                tmp_op->_op_handle->space);
     }
     GlobusXIODebugInternalExit();
 }
@@ -704,12 +703,11 @@ globus_i_xio_driver_start_close(
         if(op->ref == 0)
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
-        }
-        
-        context->ref--;
-        if(context->ref == 0)
-        {
-            destroy_context = GLOBUS_TRUE;
+            context->ref--;
+            if(context->ref == 0)
+            {
+                destroy_context = GLOBUS_TRUE;
+            }
         }
     }
     globus_mutex_unlock(&context->mutex);
