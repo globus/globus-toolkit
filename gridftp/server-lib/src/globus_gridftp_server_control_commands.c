@@ -1328,7 +1328,7 @@ globus_l_gsc_cmd_opts(
             {
                 opts->send_buf = tmp_i;
             }
-            else if(0 && sscanf(tmp_ptr, "StripeLayout=%s;", tmp_s) == 1)
+            else if(sscanf(tmp_ptr, "StripeLayout=%s;", tmp_s) == 1)
             {
                 /* XXX can't scan for strings like that */
             }
