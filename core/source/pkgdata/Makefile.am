@@ -39,3 +39,11 @@ $(FILELIST_FILES): sort_filelist
 sort_filelist: all_filelists
 	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist
 
+distclean-local:
+	@if test -f master.filelist; then \
+		rm *.filelist; \
+	fi; \
+	if test -f pkg_data_src.gpt; then \
+		rm pkg_data_*.gpt; \
+	fi
+
