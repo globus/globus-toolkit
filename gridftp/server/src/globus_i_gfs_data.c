@@ -13,6 +13,7 @@ typedef enum
     GLOBUS_L_GFS_DATA_CONNECTING,
     GLOBUS_L_GFS_DATA_CONNECTED,
     GLOBUS_L_GFS_DATA_ABORTING,
+    GLOBUS_L_GFS_DATA_ABORT_CLOSING,
     GLOBUS_L_GFS_DATA_FINISH,
     GLOBUS_L_GFS_DATA_COMPLETING,
     GLOBUS_L_GFS_DATA_COMPLETE
@@ -546,7 +547,7 @@ void
 globus_l_gfs_data_abort_kickout(
     void *                              user_arg)
 {
-    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       start_finish = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
@@ -563,28 +564,36 @@ globus_l_gfs_data_abort_kickout(
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        op->ref--;
-        if(op->ref == 0)
+        switch(op->state)
         {
-            globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING);
-            destroy_op = GLOBUS_TRUE;
+            /* if finished was called while waiting for this */
+            case GLOBUS_L_GFS_DATA_FINISH:
+                start_finish = GLOBUS_TRUE;
+                break;
+
+            case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
+                break;
+
+            case GLOBUS_L_GFS_DATA_CONNECTING:
+            case GLOBUS_L_GFS_DATA_CONNECTED:
+            case GLOBUS_L_GFS_DATA_REQUESTING:
+            case GLOBUS_L_GFS_DATA_ABORTING:
+            case GLOBUS_L_GFS_DATA_COMPLETING:
+            case GLOBUS_L_GFS_DATA_COMPLETE:
+            default:
+                globus_assert(0 && "bad state, possible memory corruption");
+                break;
         }
+        op->state = GLOBUS_L_GFS_DATA_ABORTING;
+
+        op->ref--;
+        globus_assert(op->ref > 0);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
-    if(destroy_op)
+    if(start_finish)
     {
-        /* pass the complete event */
-        if(globus_l_gfs_dsi->trev_func &&
-            op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
-        {
-            globus_l_gfs_dsi->trev_func(
-                op->transfer_id,
-                GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
-                op->session_handle->session_arg);
-        }
-        /* destroy the op */
-        globus_l_gfs_data_operation_destroy(op);
+        globus_l_gfs_data_end_transfer_kickout(op);
     }
 }
 
@@ -619,6 +628,10 @@ globus_l_gfs_data_destroy_cb(
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
 
     data_handle = (globus_l_gfs_data_handle_t *) callback_arg;
+    if(data_handle->is_mine)
+    {
+        globus_ftp_control_handle_destroy(&data_handle->data_channel);
+    }
 
     globus_free(data_handle);
 }
@@ -680,6 +693,11 @@ globus_i_gfs_data_destroy_handle(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_INVALID:
+                if(data_handle->is_mine)
+                {
+                    globus_ftp_control_handle_destroy(
+                        &data_handle->data_channel);
+                }
                 globus_free(data_handle);
                 break;
 
@@ -1393,6 +1411,7 @@ globus_l_gfs_data_begin_cb(
                 is esstablished.  it could be in this state
                 depending on how quickly the abort process happens.  */
             case GLOBUS_L_GFS_DATA_ABORTING:
+            case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
             case GLOBUS_L_GFS_DATA_FINISH:
                 op->ref--;
                 globus_assert(op->ref > 0);
@@ -1856,7 +1875,7 @@ globus_l_gfs_data_start_abort(
 
         case GLOBUS_L_GFS_DATA_CONNECTING:
         case GLOBUS_L_GFS_DATA_CONNECTED:
-            op->state = GLOBUS_L_GFS_DATA_ABORTING;
+            op->state = GLOBUS_L_GFS_DATA_ABORT_CLOSING;
             op->ref++;
             if(op->data_handle->is_mine)
             {
@@ -1890,6 +1909,7 @@ globus_l_gfs_data_start_abort(
         case GLOBUS_L_GFS_DATA_COMPLETE:
             break;
 
+        case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
         case GLOBUS_L_GFS_DATA_ABORTING:
             /* do nothing cause it has already been done */
             break;
@@ -2468,6 +2488,10 @@ globus_gridftp_server_begin_transfer(
                 }
                 break;
 
+            /* we are waiting for the force close callback to return */
+            case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
+                break;
+
             /* nothing to do here, finishing is in the works */
             case GLOBUS_L_GFS_DATA_FINISH:
                 break;
@@ -2603,6 +2627,12 @@ globus_gridftp_server_finished_transfer(
                     NULL,
                     globus_l_gfs_data_end_transfer_kickout,
                     op);
+                break;
+
+            /* waiting for a force close callback to return.  will switch
+                to the finished state, when the force close callback comes
+                back it will continue the finish process */
+            case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
                 break;
 
             case GLOBUS_L_GFS_DATA_CONNECTING:
