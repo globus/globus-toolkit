@@ -399,6 +399,7 @@ globus_xio_data_descriptor_init(
     globus_mutex_lock(&context->mutex);
     {
         GlobusXIOOperationCreate(op, context);
+        op->ref = 1;
         if(op != NULL)
         {
             op->type = GLOBUS_XIO_OPERATION_TYPE_DD;
@@ -436,8 +437,8 @@ globus_xio_data_descriptor_destroy(
     globus_result_t                         tmp_res;
     globus_i_xio_op_t *                     op;
     globus_i_xio_handle_t *                 handle;
-    globus_bool_t                           destroy_handle;
-    globus_bool_t                           destroy_context;
+    globus_bool_t                           destroy_handle = GLOBUS_FALSE;
+    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_data_descriptor_destroy);
 
     GlobusXIODebugEnter();
@@ -449,16 +450,15 @@ globus_xio_data_descriptor_destroy(
     }
 
     op = (globus_i_xio_op_t *) data_desc;
-    if(op->type != GLOBUS_XIO_OPERATION_TYPE_DD)
-    {
-        res = GlobusXIOErrorInvalidState(op->type);
-        goto err;
-    }
     handle = op->_op_handle;
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+        op->ref--;
+        if(op->ref == 0)
+        {
+            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+        }
     }
     globus_mutex_unlock(&handle->context->mutex);
 

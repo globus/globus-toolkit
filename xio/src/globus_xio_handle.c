@@ -1717,12 +1717,13 @@ globus_xio_register_read(
             goto exit;
         }
         ref = 1;
+        op->ref = 0;
     }
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->_op_handle = handle;
-    op->ref = 1;
+    op->ref++;
     op->_op_context = handle->context;
     op->_op_data_cb = cb;
     op->_op_iovec_cb = NULL;
@@ -1796,13 +1797,14 @@ globus_xio_register_readv(
             goto exit;
         }
         ref = 1;
+        op->ref = 0;
     }
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->_op_handle = handle;
     op->_op_context = handle->context;
-    op->ref = 1;
+    op->ref++;
     op->_op_data_cb = NULL;
     op->_op_iovec_cb = cb;
     op->_op_iovec = iovec;
@@ -1877,11 +1879,12 @@ globus_xio_register_write(
             goto exit;
         }
         ref = 1;
+        op->ref = 0;
     }
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref = 1;
+    op->ref++;
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -1959,13 +1962,14 @@ globus_xio_register_writev(
             goto exit;
         }
         ref = 1;
+        op->ref = 0;
     }
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->entry[0].prev_ndx = -1;
 
-    op->ref = 1;
+    op->ref++;
     op->_op_handle = handle;
     op->_op_context = handle->context;
     op->_op_data_cb = NULL;
@@ -2509,6 +2513,7 @@ globus_xio_read(
             goto param_error;
         }
         ref = 1;
+        op->ref = 0;
     }
 
     info = globus_i_xio_blocking_alloc();
@@ -2520,7 +2525,7 @@ globus_xio_read(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref = 1;
+    op->ref++;
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -2631,6 +2636,7 @@ globus_xio_readv(
             goto param_error;
         }
         ref = 1;
+        op->ref = 0;
     }
 
     info = globus_i_xio_blocking_alloc();
@@ -2642,7 +2648,7 @@ globus_xio_readv(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_READ;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref = 1;
+    op->ref++;
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -2753,6 +2759,7 @@ globus_xio_write(
             goto param_error;
         }
         ref = 1;
+        op->ref = 0;
     }
 
     info = globus_i_xio_blocking_alloc();
@@ -2764,7 +2771,7 @@ globus_xio_write(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref = 1;
+    op->ref++;
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
@@ -2874,6 +2881,7 @@ globus_xio_writev(
             goto param_error;
         }
         ref = 1;
+        op->ref = 0;
     }
 
     info = globus_i_xio_blocking_alloc();
@@ -2885,7 +2893,7 @@ globus_xio_writev(
     /* set up the operation */
     op->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
-    op->ref = 1;
+    op->ref++;
     op->entry[0].prev_ndx = -1;
 
     op->_op_handle = handle;
