@@ -207,6 +207,17 @@ typedef struct globus_i_xio_context_entry_s
 {
     globus_xio_driver_t *                       driver;
     void *                                      driver_handle;
+
+    /* each level must implement the entire state machine */
+    globus_i_xio_handle_state_t                 state;
+    int                                         outstanding_operations;
+    globus_mutex_t                              mutex;
+
+    globus_i_xio_op_t *                         open_op;
+    globus_i_xio_op_t *                         close_op;
+    globus_list_t *                             write_op_list;
+    globus_list_t *                             read_op_list;
+
 } globus_i_xio_context_entry_t;
 
 /* 
@@ -214,7 +225,6 @@ typedef struct globus_i_xio_context_entry_s
  */
 typedef struct globus_i_xio_context_s
 {
-    globus_mutex_t                              mutex;
     int                                         ref;
     int                                         stack_size;
     globus_i_xio_context_entry_t                entry[1];

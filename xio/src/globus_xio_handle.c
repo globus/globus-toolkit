@@ -261,8 +261,9 @@ globus_i_xio_open_close_callback(
     globus_mutex_lock(&xio_handle->mutex);
     {   
         /* insist the proper state */
-        assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPENING || 
-                xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING);
+        globus_assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPENING || 
+            xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
+            xio_handle->state == GLOBUS_XIO_HANDLE_STATE_DELIVERED_AND_CLOSING);
 
         /*
          *  if an error occured we will set both to FAILED.  This introduces
@@ -1265,7 +1266,6 @@ globus_l_xio_register_writev(
             globus_l_xio_timeout_callback,
             &l_handle->open_timeout_period);
     }
-    globus_list_insert(&xio_handle->write_op_list, op);
 
     /* wrap pass with in_register flag */
     op->in_register = GLOBUS_TRUE;
@@ -1280,6 +1280,7 @@ globus_l_xio_register_writev(
 
     /* add outstanding op */
     xio_handle->outstanding_operations++;
+    globus_list_insert(&xio_handle->write_op_list, op);
 
     return GLOBUS_SUCCESS;
 
