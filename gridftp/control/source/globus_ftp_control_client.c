@@ -2492,6 +2492,7 @@ globus_l_ftp_control_send_cmd_cb(
     char *                                      radix_buf;
     char *                                      error_str;
     OM_uint32                                   max_input_size[2];
+    OM_uint32                                   pbsz;
 
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_l_ftp_control_send_cmd_cb() entering\n"));
@@ -2988,17 +2989,21 @@ globus_l_ftp_control_send_cmd_cb(
 		    1<<30,
 		    &max_input_size[1]);
 
-
-	    if(max_input_size[0] > max_input_size[1] && max_input_size[1] != 0)
-	    {
-		globus_ftp_control_local_pbsz(handle,
-					      max_input_size[1]);
-	    }
-	    else
-	    {
-		globus_ftp_control_local_pbsz(handle,
-					      max_input_size[0]);
-	    }
+            /* establish a max of 1M.. this is only necessary because some
+             * naive implementations will attempt to allocate this entire
+             * buffer all at once (read: wuftp)
+             */
+            pbsz = 1024 *1024;
+            if(max_input_size[0] < pbsz)
+            {
+                pbsz = max_input_size[0];
+            }
+            if(max_input_size[1] && max_input_size[1] < pbsz)
+            {
+                pbsz = max_input_size[1];
+            }
+            
+	    globus_ftp_control_local_pbsz(handle, pbsz);
 
 	    if(handle->cc_handle.auth_info.user != GLOBUS_NULL)
 	    {
