@@ -37,6 +37,8 @@ BUNDLE gt4-c-ws-core
         globus_libxml2
 
 BUNDLE gt4-c-ws-core-test
+        globus_java_ws_core_test_base
+        globus_java_ws_core_test_interop
         globus_c_wsrf_core_test_interop_bindings
         globus_c_wsrf_core_test_interop_client_test
         globus_c_wsrf_providers_test_service_bindings
@@ -54,6 +56,7 @@ BUNDLE gt4-c-deps-cgen
         globus_c_wsrf_sample_counter_bindings
         globus_c_wsrf_sample_counter_bindings
         globus_c_gram_client_bindings
+        globus_c_wsrf_core_registry_bindings
         globus_c_delegation_client_bindings
         globus_c_wsrf_core_test_interop_bindings
         globus_c_wsrf_providers_test_service_bindings
