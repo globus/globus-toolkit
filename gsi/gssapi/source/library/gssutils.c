@@ -105,15 +105,19 @@ gss_create_and_fill_context(
     gss_cred_id_t                       output_cred_handle= NULL;
     int                                 j;
 
-    context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
-    if (context == NULL)
+    if(*context_handle_P == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_CREATE_FILL, GSSERR_R_OUT_OF_MEMORY);
-        return GSS_S_FAILURE;
+        context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
+        if (context == NULL)
+        {
+            GSSerr(GSSERR_F_CREATE_FILL, GSSERR_R_OUT_OF_MEMORY);
+            return GSS_S_FAILURE;
+        }
+        
+        *context_handle_P = context;
+        context->ctx_flags = 0;
     }
-
-    *context_handle_P = context;
-  
+    
     context->target_name = NULL;
     context->source_name = NULL; 
     context->cred_handle = (gss_cred_id_desc*) NULL ;
@@ -128,6 +132,7 @@ gss_create_and_fill_context(
     context->dpkey = NULL;
     context->dcert = NULL;
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
+    context->ctx_flags |= GSS_I_CTX_INITIALIZED;
     
     proxy_verify_ctx_init(&(context->pvxd));
     proxy_verify_init(&(context->pvd), &(context->pvxd));

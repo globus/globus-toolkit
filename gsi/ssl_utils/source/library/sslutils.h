@@ -298,7 +298,7 @@ typedef struct proxy_cred_desc_struct
     char *                              certfile;
     int                                 num_null_enc_ciphers;
     int                      	        type;  /* for gsi error messages */
-    int              			        owner; /* for gsi error messages */
+    int                                 owner; /* for gsi error messages */
 } proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */

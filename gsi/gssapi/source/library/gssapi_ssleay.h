@@ -40,8 +40,9 @@ CVS Information:
                                Define constants
 **********************************************************************/
 
-#define GSS_I_DISALLOW_ENCRYPTION 1
-#define GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION 2
+#define GSS_I_CTX_INITIALIZED                       1
+#define GSS_I_DISALLOW_ENCRYPTION                   2
+#define GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION 4
 
 
 #define GSS_C_QOP_GLOBUS_GSSAPI_SSLEAY_BIG 1
@@ -306,8 +307,8 @@ typedef struct gss_ctx_id_desc_struct{
     BIO *                               gs_wbio;
     BIO *                               gs_sslbio;
     gs_con_st_t                         gs_state;
-    gs_delegation_state_t               delegation_state; 
     int                                 locally_initiated;
+    time_t                              goodtill;
     /* following used during delegation */
 
     /* new key for delegated proxy - do we need this now that we have
@@ -315,7 +316,9 @@ typedef struct gss_ctx_id_desc_struct{
      */
     EVP_PKEY *                          dpkey;
     /* delegated cert */
-    X509 *                              dcert;    
+    X509 *                              dcert;
+    /* delegation state */
+    gs_delegation_state_t               delegation_state;
 } gss_ctx_id_desc ;
 
 /**********************************************************************

@@ -217,8 +217,7 @@ GSS_CALLCONV gss_accept_delegation(
             X509_gmtime_adj(asn1_time,0);
             time_now = ASN1_UTCTIME_mktime(asn1_time);
             time_after = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(
-                    ((gss_cred_id_desc *) delegated_cred_handle)->pcd->ucert));
+                X509_get_notAfter(dcert));
             *time_rec = (OM_uint32) time_after - time_now;
             ASN1_UTCTIME_free(asn1_time);
         }

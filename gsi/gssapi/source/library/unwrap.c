@@ -80,6 +80,19 @@ GSS_CALLCONV gss_unwrap(
     {
         return GSS_S_NO_CONTEXT;
     }
+
+    if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
+    {
+        time_t                          current_time;
+
+        current_time = time(NULL);
+
+        if(current_time > context->goodtill)
+        {
+            return GSS_S_CONTEXT_EXPIRED;
+        }
+    }
+
     
     if (qop_state)
     {

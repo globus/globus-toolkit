@@ -79,6 +79,7 @@ gss_set_sec_context_option(
     else
     {
         /* unknown option */
+        major_status = GSS_S_FAILURE;
     }
 
     return major_status;

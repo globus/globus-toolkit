@@ -71,10 +71,13 @@ GSS_CALLCONV gss_init_sec_context(
     OM_uint32 		                inv_major_status = 0;
     X509_REQ *                          reqp = NULL;
     X509 *                              ncert = NULL;
+    X509 *                              current_cert = NULL;
     int  			        rc;
     char 			        cbuf[1];
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
+    time_t                              goodtill = 0;
+    int                                 cert_count = 0;
 
 #ifdef DEBUG
     fprintf(stderr, "init_sec_context:\n") ;
@@ -85,7 +88,9 @@ GSS_CALLCONV gss_init_sec_context(
 
     context = *context_handle_P;
 
-    if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT))
+    
+    if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
+        !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
 #if defined(DEBUG) || defined(DEBUGX)
         fprintf(stderr, 
@@ -407,6 +412,44 @@ GSS_CALLCONV gss_init_sec_context(
     {
         major_status |=GSS_S_CONTINUE_NEEDED;
     }
+    else if(major_status == GSS_S_COMPLETE)
+    {
+        current_cert = context->cred_handle->pcd->ucert;
+
+        if(context->cred_handle->pcd->cert_chain)
+        {
+            cert_count = sk_X509_num(context->cred_handle->pcd->cert_chain);
+        }
+        
+        while(current_cert)
+        {
+            goodtill = ASN1_UTCTIME_mktime(
+                X509_get_notAfter(current_cert));
+
+            if (context->goodtill == 0 || goodtill < context->goodtill)
+            {
+                context->goodtill = goodtill;
+            }
+            
+            if(context->cred_handle->pcd->cert_chain && cert_count)
+            {
+                cert_count--;
+                current_cert = sk_X509_value(
+                    context->cred_handle->pcd->cert_chain,
+                    cert_count);
+            }
+            else
+            {
+                current_cert = NULL;
+            }
+        }
+
+        if(context->goodtill > context->pvxd.goodtill)
+        {
+            context->goodtill = context->pvxd.goodtill;
+        }
+    }
+    
     if (ret_flags != NULL)
     {
         *ret_flags = context->ret_flags;
