@@ -401,10 +401,12 @@ ssh_gssapi_server_mechanisms() {
 	mechs=xmalloc(buffer_len(&buf));
 	buffer_get(&buf,mechs,buffer_len(&buf));
 	buffer_free(&buf);
-	if (strlen(mechs)==0)
-	   return(NULL);
-	else
-	   return(mechs);
+	if (strlen(mechs)==0) {
+	    options.gss_authentication = 0; /* no mechs. skip gss auth. */
+	    return(NULL);
+	} else {
+	    return(mechs);
+	}
 }
 
 /* Return the OID that corresponds to the given context name */
