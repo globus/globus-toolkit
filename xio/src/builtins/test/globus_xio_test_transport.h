@@ -24,7 +24,7 @@ typedef enum globus_xio_test_failure_e
     GLOBUS_XIO_TEST_FAIL_PASS_WRITE,
     GLOBUS_XIO_TEST_FAIL_FINISH_WRITE,
     GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT,
-    GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT,
+    GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT
 } globus_xio_test_failure_t;
 
 enum
@@ -34,7 +34,7 @@ enum
     GLOBUS_XIO_TEST_SET_USECS,
     GLOBUS_XIO_TEST_READ_EOF_BYTES,
     GLOBUS_XIO_TEST_CHUNK_SIZE,
-    GLOBUS_XIO_TEST_RANDOM,
+    GLOBUS_XIO_TEST_RANDOM
 };
 
 globus_module_descriptor_t       globus_i_xio_test_module;

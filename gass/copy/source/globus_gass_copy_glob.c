@@ -1,5 +1,3 @@
-#include <glob.h>
-#include <fnmatch.h>
 #include "globus_gass_copy.h"
 #include "version.h"
 
@@ -177,7 +175,7 @@ globus_gass_copy_glob_expand_url(
     }
     else
     {
-        url_copy = url;
+        url_copy = (char *) url;
     }
     if(glob)
     {
@@ -884,7 +882,7 @@ globus_l_gass_copy_ftp_client_list_read_callback(
 
     if(info->list_buffer == GLOBUS_NULL && eof && offset == 0)
     {
-        info->list_buffer = buffer;
+        info->list_buffer = (char *) buffer;
         info->buffer_length = length;
         buffer = GLOBUS_NULL;
     }
@@ -892,7 +890,7 @@ globus_l_gass_copy_ftp_client_list_read_callback(
     {
         if((length + offset) > info->buffer_length)
         {
-            temp_p = (globus_byte_t *) 
+            temp_p = (char *) 
                 globus_realloc(info->list_buffer, length + offset);
             if(temp_p == GLOBUS_NULL)
             {

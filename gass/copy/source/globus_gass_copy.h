@@ -26,7 +26,8 @@
 #include "globus_gass_transfer.h"
 #include "globus_ftp_client.h"
 #include "globus_io.h"
-
+#include <glob.h>
+#include <fnmatch.h>
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 #define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H

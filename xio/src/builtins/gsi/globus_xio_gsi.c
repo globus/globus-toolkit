@@ -864,7 +864,8 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
         {
             *bytes_read += handle->unwrapped_buffer_length -
                 handle->unwrapped_buffer_offset;
-            memcpy(handle->user_iovec[handle->user_iovec_index].iov_base +
+            memcpy((globus_byte_t *) 
+                   handle->user_iovec[handle->user_iovec_index].iov_base +
                    handle->user_iovec_offset,
                    &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
                    handle->unwrapped_buffer_length -
@@ -881,7 +882,8 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
         /* else fill it and continue */
         else
         {
-            memcpy(handle->user_iovec[handle->user_iovec_index].iov_base +
+            memcpy((globus_byte_t *)
+                   handle->user_iovec[handle->user_iovec_index].iov_base +
                    handle->user_iovec_offset,
                    &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
                    handle->user_iovec[handle->user_iovec_index].iov_len -
@@ -2673,7 +2675,8 @@ globus_l_xio_gsi_write(
         
         do
         { 
-            plaintext_buffer.value = iovec[i].iov_base + iovec_offset;
+            plaintext_buffer.value = (globus_byte_t *) 
+                iovec[i].iov_base + iovec_offset;
             
             if(iovec[i].iov_len - iovec_offset > handle->max_wrap_size)
             {

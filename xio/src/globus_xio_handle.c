@@ -544,8 +544,8 @@ globus_l_xio_deactivate()
 
     GlobusXIODebugInternalExit();
 
-//    GlobusDebugDestroy(GLOBUS_XIO);
-    
+/*    GlobusDebugDestroy(GLOBUS_XIO);
+*/    
     return rc;
 }
 

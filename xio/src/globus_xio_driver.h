@@ -130,7 +130,7 @@ do                                                                          \
 {                                                                           \
     if((_in_op)->entry[(_in_op)->ndx - 1].dd != NULL)                       \
     {                                                                       \
-        (void *) _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;           \
+       /* (void *)*/ _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;           \
     }                                                                       \
     else if((_in_op)->is_user_dd || _force_create)                          \
     {                                                                       \
