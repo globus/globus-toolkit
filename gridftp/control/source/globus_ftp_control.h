@@ -933,20 +933,6 @@ typedef struct  globus_ftp_control_command_allo_s
     int                                       record_size;
 } globus_ftp_control_command_allo_t;
 
-typedef struct  globus_ftp_control_command_eret_s
-{
-    globus_ftp_control_command_code_t         code;
-    char *                                    raw_command;
-    char *                                    arg;
-} globus_ftp_control_command_eret_t;
-
-typedef struct  globus_ftp_control_command_esto_s
-{
-    globus_ftp_control_command_code_t         code;
-    char *                                    raw_command;
-    char *                                    arg;
-} globus_ftp_control_command_esto_t;
-
 typedef struct globus_ftp_control_command_sbuf_s
 {
     globus_ftp_control_command_code_t         code;
@@ -1071,6 +1057,12 @@ globus_ftp_control_command_stou_t;
 typedef globus_ftp_control_command_str_t      
 globus_ftp_control_command_rest_t;
 
+typedef globus_ftp_control_command_str_t      
+globus_ftp_control_command_eret_t;
+
+typedef globus_ftp_control_command_str_t      
+globus_ftp_control_command_esto_t;
+
 /*
  * no string commands
  */
@@ -1103,6 +1095,8 @@ globus_ftp_control_command_pwd_t;
 
 typedef globus_ftp_control_command_str_t      
 globus_ftp_control_command_adat_t;
+
+
 
 
 typedef union globus_ftp_control_command_u

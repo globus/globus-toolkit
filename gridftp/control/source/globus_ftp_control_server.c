@@ -13,8 +13,19 @@
 
 static globus_list_t * globus_l_ftp_server_handle_list=GLOBUS_NULL;
 static globus_mutex_t  globus_l_ftp_server_handle_list_mutex;
+static globus_hashtable_t globus_l_ftp_control_parse_table;
 
 #ifndef GLOBUS_SEPARATE_DOCS
+
+typedef globus_result_t (*globus_l_ftp_control_parse_command_t)(
+	globus_ftp_control_command_t *      command);
+
+typedef struct globus_ftp_l_command_hash_entry_s
+{
+	globus_l_ftp_control_parse_command_t    parse_func;
+	globus_ftp_control_command_code_t       code;
+}
+globus_ftp_l_command_hash_entry_t;
 
 static void 
 globus_l_ftp_control_listen_cb(
@@ -66,6 +77,39 @@ globus_l_ftp_control_auth_read_cb(
     globus_result_t                           result,
     globus_byte_t *                           buf, 
     globus_size_t                             nbytes);
+
+globus_result_t globus_l_ftp_control_parse_sbuf_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_allo_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_port_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_spor_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_type_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_stru_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_auth_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_mode_cmd(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_opts_cmd(
+	globus_ftp_control_command_t *      command);	
+
+globus_result_t globus_l_ftp_control_parse_string_arg(
+	globus_ftp_control_command_t *      command);
+
+globus_result_t globus_l_ftp_control_parse_no_arg(
+	globus_ftp_control_command_t *      command);
 
 #endif
 
@@ -425,51 +469,50 @@ globus_ftp_control_command_init(
     length=strlen(raw_command);
 
     command->noop.raw_command=
-	(char *) globus_libc_malloc(length+1);
+		(char *) globus_libc_malloc(length+1);
 
     if(command->noop.raw_command == GLOBUS_NULL)
     {
-	return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CONTROL_MODULE,
-		GLOBUS_NULL,
-		"globus_ftp_control_command_init: malloc failed")
-	    );
+		return globus_error_put(
+			globus_error_construct_string(
+				GLOBUS_FTP_CONTROL_MODULE,
+				GLOBUS_NULL,
+				"globus_ftp_control_command_init: malloc failed")
+			);
     }
 
     j=0;
 
     for(i=0;i<length;i++)
     {
-	if(raw_command[i] == GLOBUS_I_TELNET_IAC)
-	{
-	    i++;
-	}
-	else
-	{
-	    command->noop.raw_command[j]=raw_command[i];  
-	    j++;
-	}
+		if(raw_command[i] == GLOBUS_I_TELNET_IAC)
+		{
+			i++;
+		}
+		else
+		{
+			command->noop.raw_command[j]=raw_command[i];  
+			j++;
+		}
     }
     command->noop.raw_command[j]='\0';
 
     
     rc=globus_i_ftp_control_decode_command(command->noop.raw_command,
-					   &decoded_cmd,
-					   auth_info);
+										   &decoded_cmd,
+										   auth_info);
     
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_libc_free(command->noop.raw_command);
-	return rc;
+		globus_libc_free(command->noop.raw_command);
+		return rc;
     }
     
     if(decoded_cmd != GLOBUS_NULL)
     {
-	globus_libc_free(command->noop.raw_command);
-	command->noop.raw_command=decoded_cmd;
+		globus_libc_free(command->noop.raw_command);
+		command->noop.raw_command = decoded_cmd;
     }
-
 
     /* convert command to upper case */
 
@@ -481,1029 +524,13 @@ globus_ftp_control_command_init(
     
     while(cmd[i] != '\0')
     {
-	cmd[i]=toupper(cmd[i]);
-	i++;
-    }
-
-
-    if(length > 5)
-    {
-	if(!strcmp(cmd,"SBUF"))
-	{
-	    command->code = GLOBUS_FTP_CONTROL_COMMAND_SBUF;
-            
-            if(sscanf(command->noop.raw_command,
-                      "%*s %d", &command->sbuf.buffer_size) < 1)
-            {
-                goto parse_error; 
-            }
-            return GLOBUS_SUCCESS;
-        }
-
-	if(!strcmp(cmd,"SIZE"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_SIZE;
-	    command->size.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->size.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->size.string_arg) < 1)
-	    {
-		globus_libc_free(command->size.string_arg);
-		command->size.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-        }
-
-	if(!strcmp(cmd,"STOR"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_STOR;
-	    command->stor.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->stor.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->stor.string_arg) < 1)
-	    {
-		globus_libc_free(command->stor.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"ADAT"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_ADAT;
-
-	    command->adat.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->adat.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->adat.string_arg) < 1)
-	    {
-		globus_libc_free(command->adat.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"RETR"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_RETR;
-	    command->retr.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->retr.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-	    
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->retr.string_arg) < 1)
-	    {
-		globus_libc_free(command->retr.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"ERET"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_ERET;
-
-            tmp_ptr = strstr(command->eret.raw_command, "ERET");
-            if(tmp_ptr == GLOBUS_NULL)
-            {
-                globus_free(command->eret.arg);
-                command->eret.arg = GLOBUS_NULL;
-
-                return GLOBUS_SUCCESS;
-            }
-
-            /* trim off ERET and while space */ 
-            tmp_ptr += 4;
-            while(isspace(*tmp_ptr))
-            {
-                tmp_ptr++;
-            }
-            command->eret.arg = (char *) globus_libc_strdup(tmp_ptr);
-	    if(command->eret.arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->eret.raw_command);
-		goto malloc_error;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	}
-
-        if(!strcmp(cmd,"ESTO"))
-        {
-            command->code=GLOBUS_FTP_CONTROL_COMMAND_ESTO;
-
-            tmp_ptr = strstr(command->esto.raw_command, "ESTO");
-            if(tmp_ptr == GLOBUS_NULL)
-            {
-                globus_free(command->esto.arg);
-                command->eret.arg = GLOBUS_NULL;
-
-                return GLOBUS_SUCCESS;
-            }
-
-            /* trim off ERET and while space */
-            tmp_ptr += strlen("ESTO");
-            while(isspace(*tmp_ptr))
-            {
-                tmp_ptr++;
-            }
-            command->esto.arg = (char *) globus_libc_strdup(tmp_ptr);
-            if(command->esto.arg == GLOBUS_NULL)
-            {
-                globus_libc_free(command->esto.raw_command);
-                goto malloc_error;
-            }
-
-            return GLOBUS_SUCCESS;
-        }
-
-	if(!strcmp(cmd,"USER"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_USER;
-	    command->user.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->user.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-	    
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->user.string_arg) < 1)
-	    {
-		globus_libc_free(command->user.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"STOU"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_STOU;
-	    command->stou.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->stou.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-	    
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->stou.string_arg) < 1)
-	    {
-		globus_libc_free(command->stou.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"DELE"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_DELE;
-	    command->dele.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->dele.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-	    
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->dele.string_arg) < 1)
-	    {
-		globus_libc_free(command->dele.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"ACCT"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_ACCT;
-	    command->acct.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->acct.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->acct.string_arg) < 1)
-	    {
-		globus_libc_free(command->acct.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"SITE"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_SITE;
-	    command->site.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->site.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->site.string_arg) < 1)
-	    {
-		globus_libc_free(command->site.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"RNFR"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_RNFR;
-	    command->rnfr.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->rnfr.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->rnfr.string_arg) < 1)
-	    {
-		globus_libc_free(command->rnfr.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"RNTO"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_RNTO;
-	    command->rnto.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->rnto.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->rnto.string_arg) < 1)
-	    {
-		globus_libc_free(command->rnto.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"APPE"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_APPE;
-	    command->appe.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->appe.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->appe.string_arg) < 1)
-	    {
-		globus_libc_free(command->appe.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"REST"))
-	{
-	    
-	    /* may need to be modified for e-block mode */
-
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_REST;
-	    command->rest.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->rest.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->rest.string_arg) < 1)
-	    {
-		globus_libc_free(command->rest.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"ALLO"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_ALLO;
-	    command->allo.record_size=0;
-	    if(sscanf(command->noop.raw_command,"%*s %d R %d",
-		      &(command->allo.size),
-		      &(command->allo.record_size))<1)
-	    {
-		command->allo.size=0;
-		command->allo.record_size=0;
-	    }
-	    
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"SMNT"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_SMNT;
-	    command->smnt.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->smnt.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->smnt.string_arg) < 1)
-	    {
-		globus_libc_free(command->smnt.string_arg);
-		command->smnt.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"OPTS"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_OPTS;
-	    command->opts.cmd_name =
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->opts.cmd_name == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    command->opts.cmd_opts = 
-		(char *) globus_libc_malloc(length);
-	    if(command->opts.cmd_opts == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		globus_libc_free(command->opts.cmd_name);
-		goto malloc_error;
-	    }
-	    
-	    if(sscanf(command->noop.raw_command,"%*s %s %s",
-		      command->opts.cmd_name, command->opts.cmd_opts) < 2)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		globus_libc_free(command->opts.cmd_name);
-		globus_libc_free(command->opts.cmd_opts);
-		command->opts.cmd_name=GLOBUS_NULL;
-		command->opts.cmd_opts=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"PORT"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_PORT;
-
-	    if(sscanf(command->noop.raw_command,
-		      "%*s %u,%u,%u,%u,%u,%u",
-		      &(command->port.host_port.host[0]),
-		      &(command->port.host_port.host[1]),
-		      &(command->port.host_port.host[2]),
-		      &(command->port.host_port.host[3]),
-		      &port[0],
-		      &port[1]) < 6)
-	    {
-		goto parse_error;
-	    }
-
-	    if((command->port.host_port.host)[0] > 255 ||
-	       (command->port.host_port.host)[1] > 255 ||
-	       (command->port.host_port.host)[2] > 255 ||
-	       (command->port.host_port.host)[3] > 255 ||
-	       port[0] > 255 ||
-	       port[1] > 255)
-	    {
-		goto parse_error;
-	    }
-	    
-	    command->port.host_port.port= (short) 256*port[0]+port[1];
-	    
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"SPOR"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_SPOR;
-
-	    start=strstr(command->noop.raw_command,"SPOR");
-	    
-	    i=0;
-	    
-	    while(start != &(command->noop.raw_command[i]))
-	    {
+		cmd[i]=toupper(cmd[i]);
 		i++;
-	    }
-
-	    arg_start=i+4;
-
-	    i=arg_start;
-	    
-	    j=0;
-
-	    /* figure out how many host/port arguments there are */
-
-	    while(command->noop.raw_command[i])
-	    {
-		if(isspace(command->noop.raw_command[i]))
-		{
-		    i++;
-		    while(command->noop.raw_command[i] &&
-			  isspace(command->noop.raw_command[i]))
-		    {
-			i++;
-		    }
-		    
-		    if(command->noop.raw_command[i])
-		    {
-			j++;
-		    }
-		}
-		else
-		{
-		    i++;
-		}
-	    }
-	    
-	    /* allocate memory for them */
-
-	    command->spor.host_port = (globus_ftp_control_host_port_t*)
-		globus_libc_malloc(j*sizeof(globus_ftp_control_host_port_t));
-	    
-	    if(command->spor.host_port == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    command->spor.num_args = j;
-	    
-	    i=arg_start;
-	    j=0;
-	    
-	    while(command->noop.raw_command[i])
-	    {
-		if(!isspace(command->noop.raw_command[i]))
-		{
-		    if(sscanf(&(command->noop.raw_command[i]),
-			      "%u,%u,%u,%u,%u,%u",
-			      &(command->spor.host_port[j].host[0]),
-			      &(command->spor.host_port[j].host[1]),
-			      &(command->spor.host_port[j].host[2]),
-			      &(command->spor.host_port[j].host[3]),
-			      &port[0],
-			      &port[1]) < 6)
-		    {
-			globus_libc_free(command->spor.host_port);
-			goto parse_error;
-		    }
-		    
-		    if((command->spor.host_port[j].host)[0] > 255 ||
-		       (command->spor.host_port[j].host)[1] > 255 ||
-		       (command->spor.host_port[j].host)[2] > 255 ||
-		       (command->spor.host_port[j].host)[3] > 255 ||
-		       port[0] > 255 ||
-		       port[1] > 255)
-		    {
-			globus_libc_free(command->spor.host_port);
-			goto parse_error;
-		    }
-		    
-		    command->spor.host_port[j].port= 
-			(short) 256*port[0]+port[1];
-		    
-		    i++;
-		    while(command->noop.raw_command[i] &&
-			  !isspace(command->noop.raw_command[i]))
-		    {
-			i++;
-		    }
-		    
-		    if(command->noop.raw_command[i])
-		    {
-			j++;
-		    }
-		}
-		else
-		{
-		    i++;
-		}
-	    }
-	    
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"TYPE"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_TYPE;
-	    command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
-	    command->type.bytesize=0;
-
-	    if(sscanf(command->noop.raw_command,"%*s %c",tmp) < 1)
-	    {
-		command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
-	    }
-	    
-	    switch(tmp[0])
-	    {
-	    case 'A':
-	    case 'a':
-		command->type.type=GLOBUS_FTP_CONTROL_TYPE_ASCII;
-				
-		if(sscanf(command->noop.raw_command,
-			  "%*s %*c %c",tmp) > 0)
-		{
-		    switch(tmp[0])
-		    {
-		    case 'N':
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_N;
-			return GLOBUS_SUCCESS;
-		    case 'T':
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_T;
-			return GLOBUS_SUCCESS;
-		    case 'C':
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_C;
-			return GLOBUS_SUCCESS;
-		    default:
-			command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
-			return GLOBUS_SUCCESS;
-		    }
-		}
-		return GLOBUS_SUCCESS;
-		
-	    case 'E':
-	    case 'e':
-		command->type.type=GLOBUS_FTP_CONTROL_TYPE_EBCDIC;
-				
-		if(sscanf(command->noop.raw_command,
-			  "%*s %*c %c",tmp) > 0)
-		{
-		    switch(tmp[0])
-		    {
-		    case 'N':
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_N;
-			return GLOBUS_SUCCESS;
-		    case 'T':
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_T;
-			return GLOBUS_SUCCESS;
-		    case 'C':
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_C;
-			return GLOBUS_SUCCESS;
-		    default:
-			command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
-			command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
-			return GLOBUS_SUCCESS;
-		    }
-		}
-		return GLOBUS_SUCCESS;
-
-	    case 'I':
-	    case 'i':
-		command->type.type=GLOBUS_FTP_CONTROL_TYPE_IMAGE;
-		return GLOBUS_SUCCESS;
-	    case 'L':
-	    case 'l':
-		command->type.type=GLOBUS_FTP_CONTROL_TYPE_LOCAL;
-		if(sscanf(command->noop.raw_command,"%*s %*c %u",
-			  &command->type.bytesize) < 1)
-		{
-		    command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
-		    command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
-		    return GLOBUS_SUCCESS;
-		}
-		return GLOBUS_SUCCESS;
-	    default:
-		command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
-		return GLOBUS_SUCCESS;
-	    }
-	}
-	if(!strcmp(cmd,"STRU"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_STRU;
-	    command->stru.structure=
-		GLOBUS_FTP_CONTROL_STRUCTURE_NONE;
-	    if(sscanf(command->noop.raw_command,"%*s %c",tmp) < 1)
-	    {
-		return GLOBUS_SUCCESS;
-	    }
-	    
-	    switch(tmp[0])
-	    {
-	    case 'F':
-	    case 'f':
-		command->stru.structure=
-		    GLOBUS_FTP_CONTROL_STRUCTURE_FILE;
-		return GLOBUS_SUCCESS;
-	    case 'R':
-	    case 'r':
-		command->stru.structure=
-		    GLOBUS_FTP_CONTROL_STRUCTURE_RECORD;
-		return GLOBUS_SUCCESS;
-	    case 'P':
-	    case 'p':
-		command->stru.structure=
-		    GLOBUS_FTP_CONTROL_STRUCTURE_PAGE;
-		return GLOBUS_SUCCESS;
-	    default:
-		return GLOBUS_SUCCESS;
-	    }
-	}
-
-	if(!strcmp(cmd,"AUTH"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_AUTH;
-	    command->auth.type=GLOBUS_FTP_CONTROL_AUTH_UNKNOWN;
-	    
-	    if(sscanf(command->noop.raw_command,"%*s %7s",tmp) < 1)
-	    {
-		return GLOBUS_SUCCESS;
-	    }
-	    
-	    i=0;
-
-	    while(tmp[i] != '\0')
-	    {
-		tmp[i]=toupper(tmp[i]);
-		i++;
-	    }
-	    
-	    if(strcmp("GSSAPI",tmp) == 0)
-	    {
-		command->auth.type=GLOBUS_FTP_CONTROL_AUTH_GSSAPI;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	    
-	}
-	
-	if(!strcmp(cmd,"MODE"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_MODE;
-	    if(sscanf(command->noop.raw_command,"%*s %c",tmp) < 1)
-	    {
-		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_NONE;
-		return GLOBUS_SUCCESS;
-	    }
-	    
-	    switch(tmp[0])
-	    {
-	    case 'S':
-	    case 's':
-		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_STREAM;
-		return GLOBUS_SUCCESS;
-	    case 'B':
-	    case 'b':
-		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_BLOCK;
-		return GLOBUS_SUCCESS;
-	    case 'C':
-	    case 'c':
-		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_COMPRESSED;
-		return GLOBUS_SUCCESS;
-	    case 'E':
-	    case 'e':
-		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
-		return GLOBUS_SUCCESS;
-	    default:
-		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_NONE;
-		return GLOBUS_SUCCESS;
-	    }
-	}
-
-    }
-    
-    if(length > 4)
-    {
-	if(!strcmp(cmd,"CWD"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_CWD;
-	    command->cwd.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->cwd.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->cwd.string_arg) < 1)
-	    {
-		globus_libc_free(command->cwd.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-
-        if(!strcmp(cmd,"PASS"))
-        {
-            command->code=GLOBUS_FTP_CONTROL_COMMAND_PASS;
-            command->pass.string_arg=
-                (char *) globus_libc_malloc(length);
-
-            if(command->pass.string_arg == GLOBUS_NULL)
-            {
-                globus_libc_free(command->noop.raw_command);
-                goto malloc_error;
-            }
-
-            if(sscanf(command->noop.raw_command,"%*s %s",
-                      command->pass.string_arg) < 1)
-            {
-                 command->pass.string_arg[0] = '\0';
-/*                globus_libc_free(command->pass.string_arg);
-                command->stor.string_arg=GLOBUS_NULL;
-  */        }
-            return GLOBUS_SUCCESS;
-        }
-
-	if(!strcmp(cmd,"RMD"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_RMD;
-	    command->rmd.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->rmd.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->rmd.string_arg) < 1)
-	    {
-		globus_libc_free(command->rmd.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"MKD"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_MKD;
-	    command->mkd.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->mkd.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->mkd.string_arg) < 1)
-	    {
-		globus_libc_free(command->mkd.string_arg);
-		command->stor.string_arg=GLOBUS_NULL;
-	    }
-	    return GLOBUS_SUCCESS;
-	}
-	
-    }
-    
-    if(length > 3)
-    {
-	if(!strcmp(cmd,"CDUP"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_CDUP;
-	    command->cdup.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"QUIT"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_QUIT;
-	    command->quit.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"REIN"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_REIN;
-	    command->rein.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"PASV"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_PASV;
-	    command->pasv.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"SPAS"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_SPAS;
-	    command->pasv.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"ABOR"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_ABOR;
-	    command->abor.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"CDUP"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_CDUP;
-	    command->cdup.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"SYST"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_SYST;
-	    command->syst.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-	
-	if(!strcmp(cmd,"NOOP"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_NOOP;
-	    command->noop.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
-
-        if(!strcmp(cmd,"FEAT"))
-        {
-            command->code=GLOBUS_FTP_CONTROL_COMMAND_FEAT;
-            command->noop.string_arg=GLOBUS_NULL;
-            return GLOBUS_SUCCESS;
-        }
-	
-	if(!strcmp(cmd,"LIST"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_LIST;
-	    command->list.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->list.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->list.string_arg) < 1)
-	    {
-		globus_libc_free(command->list.string_arg);
-		command->list.string_arg=GLOBUS_NULL;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"NLST"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_NLST;
-	    command->nlst.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->nlst.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->nlst.string_arg) < 1)
-	    {
-		globus_libc_free(command->nlst.string_arg);
-		command->nlst.string_arg=GLOBUS_NULL;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"STAT"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_STAT;
-	    command->stat.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->stat.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->stat.string_arg) < 1)
-	    {
-		globus_libc_free(command->stat.string_arg);
-		command->stat.string_arg=GLOBUS_NULL;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	}
-
-	if(!strcmp(cmd,"HELP"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_HELP;
-	    command->help.string_arg=
-		(char *) globus_libc_malloc(length);
-	    
-	    if(command->help.string_arg == GLOBUS_NULL)
-	    {
-		globus_libc_free(command->noop.raw_command);
-		goto malloc_error;
-	    }
-
-	    if(sscanf(command->noop.raw_command,"%*s %s",
-		      command->help.string_arg) < 1)
-	    {
-		globus_libc_free(command->help.string_arg);
-		command->help.string_arg=GLOBUS_NULL;
-	    }
-
-	    return GLOBUS_SUCCESS;
-	}
-
-    }
-    
-    if(length > 2)
-    {
-	if(!strcmp(cmd,"PWD"))
-	{
-	    command->code=GLOBUS_FTP_CONTROL_COMMAND_PWD;
-	    command->pwd.string_arg=GLOBUS_NULL;
-	    return GLOBUS_SUCCESS;
-	}
     }
 
-
-parse_error:
-
-    command->code=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
-    
-    return GLOBUS_SUCCESS;
-
-malloc_error:
-
-    return globus_error_put(
-	globus_error_construct_string(
-	    GLOBUS_FTP_CONTROL_MODULE,
-	    GLOBUS_NULL,
-	    "globus_ftp_control_command_init: malloc failed")
-	);
-
+	return ((globus_ftp_l_command_hash_entry_t *)
+			globus_hashtable_lookup(&globus_l_ftp_control_parse_table,
+									(void *) cmd))->parse_func(command);
 }
 
 /**
@@ -4078,8 +3105,278 @@ globus_i_ftp_control_encode_reply(
 globus_result_t
 globus_i_ftp_control_server_activate(void)
 {
+	globus_ftp_l_command_hash_entry_t * entries;
+	
     globus_mutex_init(
 	&(globus_l_ftp_server_handle_list_mutex), GLOBUS_NULL);
+
+	globus_hashtable_init(&globus_l_ftp_control_parse_table,
+						  64,
+						  globus_hashtable_string_hash,
+						  globus_hashtable_string_keyeq);
+
+	/* the size of this array needs to be adjusted */
+	
+	entries = (globus_ftp_l_command_hash_entry_t *)
+		globus_libc_malloc(42 * sizeof(globus_ftp_l_command_hash_entry_t));
+
+	entries[0].code = GLOBUS_FTP_CONTROL_COMMAND_SBUF;
+	entries[0].parse_func = globus_l_ftp_control_parse_sbuf_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SBUF",
+							&entries[0]);
+
+	entries[1].code = GLOBUS_FTP_CONTROL_COMMAND_SIZE;
+	entries[1].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SIZE",
+							&entries[1]);
+
+	entries[2].code = GLOBUS_FTP_CONTROL_COMMAND_STOR;
+	entries[2].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"STOR",
+							&entries[2]);
+
+	entries[3].code = GLOBUS_FTP_CONTROL_COMMAND_ADAT;
+	entries[3].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"ADAT",
+							&entries[3]);
+
+	entries[4].code = GLOBUS_FTP_CONTROL_COMMAND_RETR;
+	entries[4].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"RETR",
+							&entries[4]);
+
+	entries[5].code = GLOBUS_FTP_CONTROL_COMMAND_ERET;
+	entries[5].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"ERET",
+							&entries[5]);
+
+	entries[6].code = GLOBUS_FTP_CONTROL_COMMAND_ESTO;
+	entries[6].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"ESTO",
+							&entries[6]);
+
+	entries[7].code = GLOBUS_FTP_CONTROL_COMMAND_USER;
+	entries[7].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"USER",
+							&entries[7]);
+
+	entries[8].code = GLOBUS_FTP_CONTROL_COMMAND_STOU;
+	entries[8].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"STOU",
+							&entries[8]);
+
+	entries[9].code = GLOBUS_FTP_CONTROL_COMMAND_DELE;
+	entries[9].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"DELE",
+							&entries[9]);
+
+	entries[10].code = GLOBUS_FTP_CONTROL_COMMAND_ACCT;
+	entries[10].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"ACCT",
+							&entries[10]);
+
+	entries[11].code = GLOBUS_FTP_CONTROL_COMMAND_SITE;
+	entries[11].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SITE",
+							&entries[11]);
+
+	entries[12].code = GLOBUS_FTP_CONTROL_COMMAND_RNFR;
+	entries[12].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"RNFR",
+							&entries[12]);
+
+	entries[13].code = GLOBUS_FTP_CONTROL_COMMAND_RNTO;
+	entries[13].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"RNTO",
+							&entries[13]);
+
+	entries[14].code = GLOBUS_FTP_CONTROL_COMMAND_APPE;
+	entries[14].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"APPE",
+							&entries[14]);
+
+	entries[15].code = GLOBUS_FTP_CONTROL_COMMAND_REST;
+	entries[15].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"REST",
+							&entries[15]);
+
+	entries[16].code = GLOBUS_FTP_CONTROL_COMMAND_ALLO;
+	entries[16].parse_func = globus_l_ftp_control_parse_allo_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"ALLO",
+							&entries[16]);
+
+	entries[17].code = GLOBUS_FTP_CONTROL_COMMAND_SMNT;
+	entries[17].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SMNT",
+							&entries[17]);
+	
+	entries[18].code = GLOBUS_FTP_CONTROL_COMMAND_OPTS;
+	entries[18].parse_func = globus_l_ftp_control_parse_opts_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"OPTS",
+							&entries[18]);
+
+	entries[19].code = GLOBUS_FTP_CONTROL_COMMAND_PORT;
+	entries[19].parse_func = globus_l_ftp_control_parse_port_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"PORT",
+							&entries[19]);
+
+	entries[20].code = GLOBUS_FTP_CONTROL_COMMAND_SPOR;
+	entries[20].parse_func = globus_l_ftp_control_parse_spor_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SPOR",
+							&entries[20]);
+
+	entries[21].code = GLOBUS_FTP_CONTROL_COMMAND_TYPE;
+	entries[21].parse_func = globus_l_ftp_control_parse_type_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"TYPE",
+							&entries[21]);
+
+	entries[22].code = GLOBUS_FTP_CONTROL_COMMAND_STRU;
+	entries[22].parse_func = globus_l_ftp_control_parse_stru_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"STRU",
+							&entries[22]);
+
+	entries[23].code = GLOBUS_FTP_CONTROL_COMMAND_AUTH;
+	entries[23].parse_func = globus_l_ftp_control_parse_auth_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"AUTH",
+							&entries[23]);
+
+	entries[24].code = GLOBUS_FTP_CONTROL_COMMAND_MODE;
+	entries[24].parse_func = globus_l_ftp_control_parse_mode_cmd;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"MODE",
+							&entries[24]);
+
+	entries[25].code = GLOBUS_FTP_CONTROL_COMMAND_CWD;
+	entries[25].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"CWD",
+							&entries[25]);
+
+	entries[26].code = GLOBUS_FTP_CONTROL_COMMAND_PASS;
+	entries[26].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"PASS",
+							&entries[26]);
+	
+	entries[27].code = GLOBUS_FTP_CONTROL_COMMAND_RMD;
+	entries[27].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"RMD",
+							&entries[27]);
+
+	entries[28].code = GLOBUS_FTP_CONTROL_COMMAND_MKD;
+	entries[28].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"MKD",
+							&entries[28]);
+
+	entries[29].code = GLOBUS_FTP_CONTROL_COMMAND_CDUP;
+	entries[29].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"CDUP",
+							&entries[29]);
+
+	entries[30].code = GLOBUS_FTP_CONTROL_COMMAND_QUIT;
+	entries[30].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"QUIT",
+							&entries[30]);
+
+	entries[31].code = GLOBUS_FTP_CONTROL_COMMAND_REIN;
+	entries[31].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"REIN",
+							&entries[31]);
+
+	entries[32].code = GLOBUS_FTP_CONTROL_COMMAND_PASV;
+	entries[32].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"PASV",
+							&entries[32]);
+
+	entries[33].code = GLOBUS_FTP_CONTROL_COMMAND_SPAS;
+	entries[33].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SPAS",
+							&entries[33]);
+
+	entries[34].code = GLOBUS_FTP_CONTROL_COMMAND_ABOR;
+	entries[34].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"ABOR",
+							&entries[34]);
+
+	entries[35].code = GLOBUS_FTP_CONTROL_COMMAND_SYST;
+	entries[35].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"SYST",
+							&entries[35]);
+
+	entries[36].code = GLOBUS_FTP_CONTROL_COMMAND_NOOP;
+	entries[36].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"NOOP",
+							&entries[36]);
+
+	entries[37].code = GLOBUS_FTP_CONTROL_COMMAND_FEAT;
+	entries[37].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"FEAT",
+							&entries[37]);
+
+	entries[38].code = GLOBUS_FTP_CONTROL_COMMAND_PWD;
+	entries[38].parse_func = globus_l_ftp_control_parse_no_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"PWD",
+							&entries[38]);
+
+	entries[39].code = GLOBUS_FTP_CONTROL_COMMAND_LIST;
+	entries[39].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"LIST",
+							&entries[39]);
+
+	entries[40].code = GLOBUS_FTP_CONTROL_COMMAND_NLST;
+	entries[40].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"NLST",
+							&entries[40]);
+
+	entries[41].code = GLOBUS_FTP_CONTROL_COMMAND_STAT;
+	entries[41].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"STAT",
+							&entries[41]);
+
+	entries[42].code = GLOBUS_FTP_CONTROL_COMMAND_HELP;
+	entries[42].parse_func = globus_l_ftp_control_parse_string_arg;
+	globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+							"HELP",
+							&entries[42]);
 
     return GLOBUS_SUCCESS;
 }
@@ -4134,5 +3431,481 @@ globus_i_ftp_control_server_deactivate(void)
 
     globus_mutex_destroy(&globus_l_ftp_server_handle_list_mutex);
 
+
+	/* free all command hash memory */
+	
+	globus_libc_free(globus_hashtable_lookup(
+		&globus_l_ftp_control_parse_table,
+		"SBUF"));
+
+	globus_hashtable_destroy(&globus_l_ftp_control_parse_table);
+	
     return GLOBUS_SUCCESS;
+}
+
+globus_result_t globus_l_ftp_control_parse_sbuf_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	if(sscanf(command->noop.raw_command,
+			  "%*s %d", &command->sbuf.buffer_size) < 1)
+	{
+		command->code=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
+	}
+	return GLOBUS_SUCCESS;
+}
+
+globus_result_t globus_l_ftp_control_parse_string_arg(
+	globus_ftp_control_command_t *      command)
+{
+	int                                 length;
+	int                                 arg_start;
+	
+	length = strlen(command->noop.raw_command);
+	
+	command->size.string_arg =
+		(char *) globus_libc_malloc(length);
+	
+	if(command->size.string_arg == GLOBUS_NULL)
+	{
+		return globus_error_put(
+			globus_error_construct_string(
+				GLOBUS_FTP_CONTROL_MODULE,
+				GLOBUS_NULL,
+				"globus_ftp_control_command_init: malloc failed"));
+	}
+	
+	sscanf(command->noop.raw_command,"%*s%n",
+		   &arg_start);
+		
+	while(isspace(command->noop.raw_command[arg_start]))
+	{
+		arg_start++;
+	}
+
+	while(isspace(command->noop.raw_command[length-1]))
+	{
+		length--;
+	}
+
+	command->noop.raw_command[length]='\0';	
+
+	strcpy(command->eret.string_arg,
+		   &command->noop.raw_command[arg_start]);
+	
+	return GLOBUS_SUCCESS;
+
+}
+
+globus_result_t globus_l_ftp_control_parse_no_arg(
+	globus_ftp_control_command_t *      command)
+{
+	command->cdup.string_arg=GLOBUS_NULL;	
+	return GLOBUS_SUCCESS;
+}
+
+
+globus_result_t globus_l_ftp_control_parse_allo_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	command->allo.record_size = 0;
+	if(sscanf(command->noop.raw_command,"%*s %d R %d",
+			  &(command->allo.size),
+			  &(command->allo.record_size))<1)
+	{
+		command->allo.size = 0;
+		command->allo.record_size = 0;
+	}
+	
+	return GLOBUS_SUCCESS;
+}
+
+globus_result_t globus_l_ftp_control_parse_opts_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	int                                 length;
+
+	length = strlen(command->noop.raw_command);
+
+	command->opts.cmd_name =
+		(char *) globus_libc_malloc(length);
+	    
+	if(command->opts.cmd_name == GLOBUS_NULL)
+	{
+		return globus_error_put(
+			globus_error_construct_string(
+				GLOBUS_FTP_CONTROL_MODULE,
+				GLOBUS_NULL,
+				"globus_ftp_control_command_init: malloc failed"));
+	}
+
+	command->opts.cmd_opts = 
+		(char *) globus_libc_malloc(length);
+
+	if(command->opts.cmd_opts == GLOBUS_NULL)
+	{
+		globus_libc_free(command->opts.cmd_name);
+		return globus_error_put(
+			globus_error_construct_string(
+				GLOBUS_FTP_CONTROL_MODULE,
+				GLOBUS_NULL,
+				"globus_ftp_control_command_init: malloc failed"));
+	}
+	    
+	if(sscanf(command->noop.raw_command,"%*s %s %s",
+			  command->opts.cmd_name, command->opts.cmd_opts) < 2)
+	{
+		globus_libc_free(command->opts.cmd_name);
+		globus_libc_free(command->opts.cmd_opts);
+		command->opts.cmd_name=GLOBUS_NULL;
+		command->opts.cmd_opts=GLOBUS_NULL;
+	}
+	return GLOBUS_SUCCESS;
+}
+
+
+globus_result_t globus_l_ftp_control_parse_port_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	int                                 port[2];
+		
+	if(sscanf(command->noop.raw_command,
+			  "%*s %u,%u,%u,%u,%u,%u",
+			  &(command->port.host_port.host[0]),
+			  &(command->port.host_port.host[1]),
+			  &(command->port.host_port.host[2]),
+			  &(command->port.host_port.host[3]),
+			  &port[0],
+			  &port[1]) < 6)
+	{
+		command->code=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
+		return GLOBUS_SUCCESS;
+	}
+	
+	if((command->port.host_port.host)[0] > 255 ||
+	   (command->port.host_port.host)[1] > 255 ||
+	   (command->port.host_port.host)[2] > 255 ||
+	   (command->port.host_port.host)[3] > 255 ||
+	   port[0] > 255 ||
+	   port[1] > 255)
+	{
+		command->code=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
+		return GLOBUS_SUCCESS;
+	}
+	
+	command->port.host_port.port= (short) 256*port[0]+port[1];
+	
+	return GLOBUS_SUCCESS;
+}
+
+globus_result_t globus_l_ftp_control_parse_spor_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	char *                              start;
+	int                                 i;
+	int                                 j;
+	int                                 arg_start;
+	int                                 port[2];
+	
+	start=strstr(command->noop.raw_command,"SPOR");
+	    
+	i=0;
+	    
+	while(start != &(command->noop.raw_command[i]))
+	{
+		i++;
+	}
+
+	arg_start = i+4;
+	
+	i = arg_start;
+	    
+	j = 0;
+	
+	/* figure out how many host/port arguments there are */
+	
+	while(command->noop.raw_command[i])
+	{
+		if(isspace(command->noop.raw_command[i]))
+		{
+			i++;
+			while(command->noop.raw_command[i] &&
+				  isspace(command->noop.raw_command[i]))
+			{
+				i++;
+			}
+		    
+			if(command->noop.raw_command[i])
+			{
+				j++;
+			}
+		}
+		else
+		{
+			i++;
+		}
+	}
+	
+	/* allocate memory for them */
+	
+	command->spor.host_port = (globus_ftp_control_host_port_t*)
+		globus_libc_malloc(j*sizeof(globus_ftp_control_host_port_t));
+	
+	if(command->spor.host_port == GLOBUS_NULL)
+	{
+		return globus_error_put(
+			globus_error_construct_string(
+				GLOBUS_FTP_CONTROL_MODULE,
+				GLOBUS_NULL,
+				"globus_ftp_control_command_init: malloc failed"));
+	}
+	
+	command->spor.num_args = j;
+	
+	i = arg_start;
+	j = 0;
+	
+	while(command->noop.raw_command[i])
+	{
+		if(!isspace(command->noop.raw_command[i]))
+		{
+			if(sscanf(&(command->noop.raw_command[i]),
+					  "%u,%u,%u,%u,%u,%u",
+					  &(command->spor.host_port[j].host[0]),
+					  &(command->spor.host_port[j].host[1]),
+					  &(command->spor.host_port[j].host[2]),
+					  &(command->spor.host_port[j].host[3]),
+					  &port[0],
+					  &port[1]) < 6)
+			{
+				globus_libc_free(command->spor.host_port);
+				command->code=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
+				return GLOBUS_SUCCESS;
+			}
+			
+			if((command->spor.host_port[j].host)[0] > 255 ||
+			   (command->spor.host_port[j].host)[1] > 255 ||
+			   (command->spor.host_port[j].host)[2] > 255 ||
+			   (command->spor.host_port[j].host)[3] > 255 ||
+			   port[0] > 255 ||
+			   port[1] > 255)
+			{
+				globus_libc_free(command->spor.host_port);
+				command->code=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
+				return GLOBUS_SUCCESS;
+			}
+		    
+			command->spor.host_port[j].port= 
+				(short) 256*port[0]+port[1];
+		    
+			i++;
+			while(command->noop.raw_command[i] &&
+				  !isspace(command->noop.raw_command[i]))
+			{
+				i++;
+			}
+			
+			if(command->noop.raw_command[i])
+			{
+				j++;
+			}
+		}
+		else
+		{
+			i++;
+		}
+	}
+	
+	return GLOBUS_SUCCESS;
+}
+
+globus_result_t globus_l_ftp_control_parse_type_cmd(
+	globus_ftp_control_command_t *      command)	
+
+{
+	char                                tmp;
+	
+	command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
+	command->type.bytesize=0;
+
+	if(sscanf(command->noop.raw_command,"%*s %c",&tmp) < 1)
+	{
+		command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
+	}
+	    
+	switch(tmp)
+	{
+	case 'A':
+	case 'a':
+		command->type.type=GLOBUS_FTP_CONTROL_TYPE_ASCII;
+				
+		if(sscanf(command->noop.raw_command,
+				  "%*s %*c %c",&tmp) > 0)
+		{
+			switch(tmp)
+			{
+			case 'N':
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_N;
+				return GLOBUS_SUCCESS;
+			case 'T':
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_T;
+				return GLOBUS_SUCCESS;
+			case 'C':
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_C;
+				return GLOBUS_SUCCESS;
+			default:
+				command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
+				return GLOBUS_SUCCESS;
+			}
+		}
+		return GLOBUS_SUCCESS;
+		
+	case 'E':
+	case 'e':
+		command->type.type=GLOBUS_FTP_CONTROL_TYPE_EBCDIC;
+		
+		if(sscanf(command->noop.raw_command,
+				  "%*s %*c %c",&tmp) > 0)
+		{
+			switch(tmp)
+			{
+			case 'N':
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_N;
+				return GLOBUS_SUCCESS;
+			case 'T':
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_T;
+				return GLOBUS_SUCCESS;
+			case 'C':
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_OPTION_C;
+				return GLOBUS_SUCCESS;
+			default:
+				command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
+				command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
+				return GLOBUS_SUCCESS;
+			}
+		}
+		return GLOBUS_SUCCESS;
+
+	case 'I':
+	case 'i':
+		command->type.type=GLOBUS_FTP_CONTROL_TYPE_IMAGE;
+		return GLOBUS_SUCCESS;
+	case 'L':
+	case 'l':
+		command->type.type=GLOBUS_FTP_CONTROL_TYPE_LOCAL;
+		if(sscanf(command->noop.raw_command,"%*s %*c %u",
+				  &command->type.bytesize) < 1)
+		{
+			command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
+			command->type.option=GLOBUS_FTP_CONTROL_TYPE_NO_OPTION;
+			return GLOBUS_SUCCESS;
+		}
+		return GLOBUS_SUCCESS;
+	default:
+		command->type.type=GLOBUS_FTP_CONTROL_TYPE_NONE;
+		return GLOBUS_SUCCESS;
+	}
+}
+
+
+globus_result_t globus_l_ftp_control_parse_stru_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	char                                tmp;
+	
+	command->stru.structure=
+		GLOBUS_FTP_CONTROL_STRUCTURE_NONE;
+	if(sscanf(command->noop.raw_command,"%*s %c",&tmp) < 1)
+	{
+		return GLOBUS_SUCCESS;
+	}
+	    
+	switch(tmp)
+	{
+	case 'F':
+	case 'f':
+		command->stru.structure=
+			GLOBUS_FTP_CONTROL_STRUCTURE_FILE;
+		return GLOBUS_SUCCESS;
+	case 'R':
+	case 'r':
+		command->stru.structure=
+			GLOBUS_FTP_CONTROL_STRUCTURE_RECORD;
+		return GLOBUS_SUCCESS;
+	case 'P':
+	case 'p':
+		command->stru.structure=
+			GLOBUS_FTP_CONTROL_STRUCTURE_PAGE;
+		return GLOBUS_SUCCESS;
+	default:
+		return GLOBUS_SUCCESS;
+	}
+}
+
+
+globus_result_t globus_l_ftp_control_parse_auth_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	char                                tmp[10];
+	int                                 i;
+	
+	command->auth.type=GLOBUS_FTP_CONTROL_AUTH_UNKNOWN;
+	
+	if(sscanf(command->noop.raw_command,"%*s %7s",tmp) < 1)
+	{
+		return GLOBUS_SUCCESS;
+	}
+	
+	i = 0;
+	
+	while(tmp[i] != '\0')
+	{
+		tmp[i] = toupper(tmp[i]);
+		i++;
+	}
+	
+	if(strcmp("GSSAPI",tmp) == 0)
+	{
+		command->auth.type=GLOBUS_FTP_CONTROL_AUTH_GSSAPI;
+	}
+	
+	return GLOBUS_SUCCESS;
+	
+}
+
+globus_result_t globus_l_ftp_control_parse_mode_cmd(
+	globus_ftp_control_command_t *      command)	
+{
+	char                                tmp;
+	
+	command->code=GLOBUS_FTP_CONTROL_COMMAND_MODE;
+	
+	if(sscanf(command->noop.raw_command,"%*s %c",&tmp) < 1)
+	{
+		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_NONE;
+		return GLOBUS_SUCCESS;
+	}
+	    
+	switch(tmp)
+	{
+	case 'S':
+	case 's':
+		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_STREAM;
+		return GLOBUS_SUCCESS;
+	case 'B':
+	case 'b':
+		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_BLOCK;
+		return GLOBUS_SUCCESS;
+	case 'C':
+	case 'c':
+		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_COMPRESSED;
+		return GLOBUS_SUCCESS;
+	case 'E':
+	case 'e':
+		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
+		return GLOBUS_SUCCESS;
+	default:
+		command->mode.mode=GLOBUS_FTP_CONTROL_MODE_NONE;
+		return GLOBUS_SUCCESS;
+	}
 }
