@@ -688,6 +688,7 @@ globus_ftp_control_command_copy(
     case GLOBUS_FTP_CONTROL_COMMAND_RNFR:
     case GLOBUS_FTP_CONTROL_COMMAND_RNTO:
     case GLOBUS_FTP_CONTROL_COMMAND_REST:
+    case GLOBUS_FTP_CONTROL_COMMAND_QUIT:
 
         dest->noop.string_arg = GLOBUS_NULL;
         
