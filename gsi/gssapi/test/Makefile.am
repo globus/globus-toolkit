@@ -16,6 +16,8 @@ Sources= \
 	globus_gsi_gss_constants.h
 #	gssapi_group_test.c \
 
+AM_CFLAGS += $(GPT_CFLAGS) 
+
 INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
