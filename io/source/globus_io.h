@@ -13,6 +13,8 @@ extern globus_module_descriptor_t       globus_l_io_module;
 
 typedef struct globus_l_io_handle_s *   globus_io_handle_t;
 typedef struct globus_l_io_attr_s *     globus_io_attr_t;
+/*** XXXX ***/
+typedef struct blah_s *                 globus_netlogger_handle_t;
 
 typedef void
 (*globus_io_callback_t)(

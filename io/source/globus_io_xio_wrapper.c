@@ -517,7 +517,6 @@ globus_io_fileattr_init(
     GlobusIOName(globus_io_fileattr_init);
     
     GlobusLIOCheckNullParam(attr);
-    *attr = GLOBUS_NULL;
     
     result = GlobusLIOMalloc(iattr, globus_l_io_attr_t);
     if(result != GLOBUS_SUCCESS)
@@ -542,6 +541,7 @@ error_attr:
     globus_free(iattr);
     
 error_alloc:
+    *attr = GLOBUS_NULL;
     return result;
 }
 
@@ -558,6 +558,7 @@ globus_io_fileattr_destroy(
     
     globus_xio_attr_destroy(iattr->attr);
     globus_free(iattr);
+    *attr = GLOBUS_NULL;
     
     return GLOBUS_SUCCESS;
 }
@@ -601,7 +602,6 @@ globus_io_tcpattr_init(
     GlobusIOName(globus_io_tcpattr_init);
     
     GlobusLIOCheckNullParam(attr);
-    *attr = GLOBUS_NULL;
     
     result = GlobusLIOMalloc(iattr, globus_l_io_attr_t);
     if(result != GLOBUS_SUCCESS)
@@ -626,6 +626,7 @@ error_attr:
     globus_free(iattr);
     
 error_alloc:
+    *attr = GLOBUS_NULL;
     return result;
 }
 
@@ -642,7 +643,8 @@ globus_io_tcpattr_destroy(
     
     globus_xio_attr_destroy(iattr->attr);
     globus_free(iattr);
-
+    *attr = GLOBUS_NULL;
+    
     return GLOBUS_SUCCESS;
 }
 
@@ -1474,8 +1476,9 @@ globus_io_tcp_create_listener(
     {
         goto error_push;
     }
-    
-    result = globus_xio_server_init(&ihandle->xio_server, iattr->attr, stack);
+ 
+    result = globus_xio_server_create(
+        &ihandle->xio_server, iattr->attr, stack);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_server;
@@ -1516,7 +1519,7 @@ globus_io_tcp_create_listener(
     return GLOBUS_SUCCESS;
 
 error_server_cntl:
-    globus_xio_server_destroy(ihandle->xio_server);
+    globus_xio_server_close(ihandle->xio_server);
     
 error_server:
 error_push:
@@ -2731,11 +2734,12 @@ globus_l_io_bounce_close_cb(
 
 static
 void
-globus_l_io_oneshot_close_cb(
+globus_l_io_server_close_cb(
+    globus_xio_server_t                 xio_server,
     void *                              user_arg)
 {
     globus_l_io_bounce_t *              bounce_info;
-    GlobusIOName(globus_l_io_oneshot_close_cb);
+    GlobusIOName(globus_l_io_server_close_cb);
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     
@@ -2762,6 +2766,7 @@ globus_io_register_close(
     GlobusLIOCheckNullParam(callback);
     GlobusLIOCheckHandle(handle, 0);
     ihandle = *handle;
+    *handle = GLOBUS_NULL;
     
     result = GlobusLIOMalloc(bounce_info, globus_l_io_bounce_t);
     if(result != GLOBUS_SUCCESS)
@@ -2780,8 +2785,9 @@ globus_io_register_close(
             GLOBUS_NULL,
             globus_l_io_bounce_close_cb,
             bounce_info);
+        ihandle->xio_handle = GLOBUS_NULL;
     }
-    else
+    else if(ihandle->xio_server)
     {
         if(ihandle->xio_attr)
         {
@@ -2795,32 +2801,35 @@ globus_io_register_close(
             ihandle->xio_target = GLOBUS_NULL;
         }
         
-        if(ihandle->xio_server)
-        {
-            globus_xio_server_destroy(ihandle->xio_server);
-            ihandle->xio_server = GLOBUS_NULL;
-        }
-        
-        result = globus_callback_register_oneshot(
-            GLOBUS_NULL,
-            GLOBUS_NULL,
-            globus_l_io_oneshot_close_cb,
+        result = globus_xio_server_register_close(
+            ihandle->xio_server,
+            globus_l_io_server_close_cb,
             bounce_info);
+        ihandle->xio_server = GLOBUS_NULL;
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_io_error_construct_not_initialized(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                (char *) _io_name));
     }
     
     if(result != GLOBUS_SUCCESS)
     {
         goto error_register;
     }
-        
+    
     return GLOBUS_SUCCESS;
 
 error_register:
     globus_free(bounce_info);
     
 error_alloc:
-    globus_free(*handle);
-    *handle = GLOBUS_NULL;
+    globus_free(ihandle);
     return result;
 }
 
@@ -2862,7 +2871,6 @@ globus_io_close(
         goto error_register;
     }
     
-    *handle = GLOBUS_NULL;
     return GLOBUS_SUCCESS;
     
 error_register:
