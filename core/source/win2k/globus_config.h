@@ -8,8 +8,8 @@
 /*
  * flavor dependent macros
  */
-#define BUILD_LITE                  1
-#define GLOBUS_USE_NO_THREADS       1
+//#define BUILD_LITE                  1
+#define HAVE_WINDOWS_THREADS
 
 /*
  * configure macros
@@ -19,6 +19,8 @@
 #define HAVE_MEMMOVE                1
 #define HAVE_STDARG_H               1
 #define HAVE_SYS_TYPES_H            1
+#define HAVE_SYS_STAT_H
+#define HAVE_STRERROR
 
 #define MAXPATHLEN                  128
 #define MAXHOSTNAMELEN              128
@@ -55,4 +57,15 @@
 #define HAVE_STRING_H 1
 
 #define _FILE_OFFSET_BITS 64
+#define GLOBUS_TRUE	    1
+#define GLOBUS_FALSE	0
+#define GLOBUS_NULL  	0
+#define GLOBUS_FAILURE  1
+#define GLOBUS_SUCCESS  0
+
+// POSIX error code remapping
+// FOR NOW- leave it here
+// TODO- MOVE THIS DEFINITION TO AN APPROPRIATE PLACE
+#define EWOULDBLOCK EAGAIN
+
 #endif /*GLOBUS_CONFIG_H*/
