@@ -1331,6 +1331,16 @@ globus_io_attr_netlogger_set_handle(
     globus_netlogger_handle_t *         nl_handle);
 
 globus_result_t
+globus_netlogger_set_desc(
+    globus_netlogger_handle_t *       nl_handle,
+    const char *                      desc);
+
+globus_result_t
+globus_io_attr_netlogger_copy_handle(
+    globus_netlogger_handle_t *              src,
+    globus_netlogger_handle_t *              dst);
+
+globus_result_t
 globus_netlogger_add_attribute_string(
     globus_netlogger_handle_t *       nl_handle,
     const char *                      attribute_name,

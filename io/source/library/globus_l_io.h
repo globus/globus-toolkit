@@ -61,6 +61,7 @@
 struct globus_netlogger_handle_s
 {   
     char *                                nl_event_str;
+    char *                                desc;
     NLhandle *                            nl_handle;
 };
 

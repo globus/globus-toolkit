@@ -5,7 +5,7 @@
 #include "../support/ftp.h"
 #include <syslog.h>
 
-
+extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
@@ -21,10 +21,15 @@ extern globus_ftp_control_dcau_t                g_dcau;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
-
-static int                                      g_blksize = 65536;
+static int                                      g_window_size;
 
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
+
+#ifdef BUFFER_SIZE
+static globus_size_t                            g_blksize = BUFFER_SIZE;
+#else
+static globus_size_t                            g_blksize = BUFSIZ;
+#endif
 
 /*
  *  globals used for netlogger times
@@ -716,14 +721,14 @@ g_send_data(
     time_t                                          t2;
 #endif
 
-    blksize = g_blksize;
-
     G_ENTER();
 
     error_buf[0] = '\0';
 #ifdef THROUGHPUT
     throughput_calc(name, &bps, &bpsmult);
 #endif
+
+    blksize = g_blksize;
 
     wu_monitor_reset(&g_monitor);
     g_monitor.fname = name;
@@ -1256,7 +1261,7 @@ data_write_callback(
             &g_perf_end_tv,
             &g_perf_address,
             g_blksize,
-            g_blksize,
+            TCPwindowsize,
             monitor->fname,
             monitor->all_transferred,
             226,
@@ -1712,7 +1717,7 @@ data_read_callback(
                     &g_perf_end_tv,
                     &g_perf_address,
                     g_blksize,
-                    g_blksize,
+                    TCPwindowsize,
                     monitor->fname,
                     monitor->all_transferred,
                     226,
@@ -2003,8 +2008,6 @@ g_set_tcp_buffer(int size)
 
     if(size != 0)
     {
-        g_blksize = size;
-
 	tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
 	tcpbuffer.fixed.size = size;
 

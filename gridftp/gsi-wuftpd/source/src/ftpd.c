@@ -5054,7 +5054,9 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = g_receive_data(&g_data_handle, fout, tmp_restart, name);
+        TransferIncomplete = g_receive_data(
+                                 &g_data_handle, fout, 
+                                 tmp_restart, name);
     }
 #   else
     {

@@ -139,6 +139,7 @@ globus_ftp_control_handle_init(
     handle->cc_handle.close_result = GLOBUS_NULL;
     handle->cc_handle.quit_response.response_buffer = GLOBUS_NULL;
     handle->cc_handle.signal_deactivate = GLOBUS_FALSE;
+    handle->cc_handle.nl_handle_set = GLOBUS_FALSE;
     globus_cond_init(&handle->cc_handle.cond, GLOBUS_NULL);
     
     globus_io_tcpattr_init(&handle->cc_handle.io_attr);
@@ -256,6 +257,10 @@ globus_ftp_control_handle_destroy(
 	globus_libc_free(handle->cc_handle.read_buffer);
 
         globus_io_tcpattr_destroy(&handle->cc_handle.io_attr);
+        if(handle->cc_handle.nl_handle_set)
+        {
+            globus_netlogger_handle_destroy(&handle->cc_handle.nl_handle);
+        }
 
 	if(handle->cc_handle.close_result != GLOBUS_SUCCESS)
 	{
@@ -297,9 +302,16 @@ globus_i_ftp_control_client_set_netlogger(
 
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {
+        globus_io_attr_netlogger_copy_handle(nl_handle, 
+            &handle->cc_handle.nl_handle);
+
+        globus_netlogger_set_desc(
+            &handle->cc_handle.nl_handle,
+            "FTP_CONTROL");
+
         globus_io_attr_netlogger_set_handle(
                 &handle->cc_handle.io_attr,
-                nl_handle);
+                &handle->cc_handle.nl_handle);
     }
     globus_mutex_unlock(&(handle->cc_handle.mutex));
 

@@ -563,6 +563,8 @@ globus_ftp_control_rw_queue_element_t;
 typedef struct globus_ftp_cc_handle_s
 {
     globus_io_attr_t                                 io_attr;
+    globus_netlogger_handle_t                        nl_handle;
+    globus_bool_t                                    nl_handle_set;
 
     globus_fifo_t                                    readers;
     globus_fifo_t                                    writers;
@@ -654,7 +656,8 @@ typedef struct globus_i_ftp_dc_handle_s
     globus_ftp_control_callback_t               close_callback;
     void *                                      close_callback_arg;
 
-    globus_netlogger_handle_t *                 nl_handle;
+    globus_netlogger_handle_t                   nl_handle;
+    globus_bool_t                               nl_handle_set;
 
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
@@ -1424,6 +1427,12 @@ globus_ftp_control_data_get_total_data_channels(
     globus_ftp_control_handle_t *               handle,
     unsigned int *                              num_channels,
     unsigned int                                stripe_ndx);
+
+globus_result_t
+globus_ftp_control_data_get_remote_hosts(
+    globus_ftp_control_handle_t *               handle,
+    globus_ftp_control_host_port_t *            address,
+    int *                                       addr_count);
 
 globus_result_t
 globus_ftp_control_get_parallelism(
