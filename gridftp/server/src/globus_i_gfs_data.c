@@ -79,6 +79,9 @@ typedef struct globus_l_gfs_data_operation_s
     char *                              rnfr_pathname;    
     /**/
     
+    int                                 transfer_id; 
+    int                                 event_mask;
+    
     globus_i_gfs_data_callback_t        callback;
     globus_i_gfs_data_event_callback_t  event_callback;
     void *                              user_arg;
@@ -1142,7 +1145,7 @@ globus_l_gfs_data_list_stat_cb(
         goto error;
     }
     
-    globus_gridftp_server_begin_transfer(op);
+    globus_gridftp_server_begin_transfer(op, 0, NULL);
     
     result = globus_gridftp_server_register_write(
         op,
@@ -1479,10 +1482,6 @@ globus_l_gfs_data_transfer_event_kickout(
             globus_range_list_remove(
                 bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
         }
-        if(bounce_info->event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
-        {
-            /* destroy the transfer op here */
-        }
     }
     globus_mutex_unlock(&bounce_info->op->lock);
         
@@ -1509,10 +1508,12 @@ globus_i_gfs_data_request_transfer_event(
     GlobusGFSName(globus_i_gfs_data_kickoff_event);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
+    op = (globus_l_gfs_data_operation_t *) transfer_id;
+    
     if(globus_l_gfs_dsi->trev_func != NULL)
     {
         globus_l_gfs_dsi->trev_func(
-            transfer_id, event_type, session_handle->session_arg);
+            op->transfer_id, event_type, session_handle->session_arg);
         if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
             /* destroy the transfer op here */
@@ -1527,7 +1528,6 @@ globus_i_gfs_data_request_transfer_event(
                 break;
             
             case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-                op = (globus_l_gfs_data_operation_t *) transfer_id;
                 globus_mutex_lock(&op->lock);
                 {    
                     op->state = GLOBUS_L_GFS_DATA_ABORTING;
@@ -1938,11 +1938,16 @@ error_alloc:
 
 void
 globus_gridftp_server_begin_transfer(
-    globus_gfs_operation_t              op)
+    globus_gfs_operation_t              op,
+    int                                 event_mask,
+    void *                              event_arg)
 {
     globus_result_t                     result;
-    globus_gfs_ipc_event_reply_t *            event_reply;   
+    globus_gfs_ipc_event_reply_t *      event_reply;   
     GlobusGFSName(globus_gridftp_server_begin_transfer);
+    
+    op->event_mask = event_mask;
+    op->transfer_id = (int) event_arg;
     
     if(op->sending)
     {
@@ -2200,6 +2205,16 @@ globus_gridftp_server_operation_event(
     globus_gfs_event_info_t *           event_info)
 {
     event_info->id = op->id;
+
+    switch(event_info->type)
+    {
+        case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
+            op->transfer_id = event_info->transfer_id; 
+            event_info->transfer_id = (int) op;
+            break;
+        default:
+            break;
+    }        
 
     if(op->event_callback != NULL)
     {

@@ -198,6 +198,8 @@ typedef struct globus_gfs_event_info_s
     int                                 id;
     /** unique key of transfer op that event is related to */
     int                                 transfer_id;
+    /** mask of events that should be passed in */
+    int                                 event_mask;
     /** number of bytes received for current transfer */
     globus_off_t                        recvd_bytes;
     /** ranges of bytes received for current transfer */
@@ -522,7 +524,9 @@ globus_gridftp_server_operation_event(
  */ 
 void
 globus_gridftp_server_begin_transfer(
-    globus_gfs_operation_t              op);
+    globus_gfs_operation_t              op,
+    int                                 event_mask,
+    void *                              event_arg);
 
 /*
  * finished transfer

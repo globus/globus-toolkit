@@ -89,6 +89,7 @@ typedef struct globus_l_gfs_remote_stripe_info_s
     char *                              cs;
     int                                 data_handle_id;
     int                                 transfer_id;
+    int                                 event_mask;
 } globus_l_gfs_remote_stripe_info_t;
 
 
@@ -262,6 +263,7 @@ globus_l_gfs_ipc_event_cb(
                 if(stripe_info->ipc_handle == ipc_handle)
                 {
                     stripe_info->transfer_id = reply->transfer_id;
+                    stripe_info->event_mask = reply->event_mask;
                 }
             }        
             break;
@@ -271,6 +273,12 @@ globus_l_gfs_ipc_event_cb(
     if(!bounce_info->event_pending)
     {        
         reply->transfer_id = (int) bounce_info->stripe_list;
+        reply->event_mask = 
+            GLOBUS_GFS_EVENT_TRANSFER_ABORT | 
+            GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
+            GLOBUS_GFS_EVENT_BYTES_RECVD |
+            GLOBUS_GFS_EVENT_RANGES_RECVD;
+
         globus_gridftp_server_operation_event(
             bounce_info->op,
             GLOBUS_SUCCESS,

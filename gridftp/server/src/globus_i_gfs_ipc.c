@@ -983,6 +983,7 @@ globus_l_gfs_ipc_unpack_event_reply(
     {
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
             GFSDecodeUInt32(buffer, len, reply->transfer_id);
+            GFSDecodeUInt32(buffer, len, reply->event_mask);
             break;
             
         case GLOBUS_GFS_EVENT_DISCONNECTED:
@@ -2113,6 +2114,8 @@ globus_gfs_ipc_reply_event(
                 case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, reply->transfer_id);
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, reply->event_mask);
                     break;
                     
                 case GLOBUS_GFS_EVENT_DISCONNECTED:
