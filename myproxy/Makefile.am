@@ -116,7 +116,8 @@ pkgdata_DATA = README INSTALL LICENSE VERSION \
                etc.init.d.myproxy etc.xinetd.myproxy
 
 EXTRA_DIST = $(Scripts) LICENSE VERSION myproxy-server.config \
-               etc.services.modifications etc.inetd.conf.modifications
+               etc.services.modifications etc.inetd.conf.modifications \
+               etc.init.d.myproxy etc.xinetd.myproxy
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
