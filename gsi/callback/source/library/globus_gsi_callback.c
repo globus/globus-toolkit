@@ -32,7 +32,7 @@
 #endif
 #endif
 
-globus_mutex_t                          globus_l_gsi_callback_oldgaa_mutex;
+static globus_mutex_t                   globus_l_gsi_callback_oldgaa_mutex;
 
 static int globus_l_gsi_callback_activate(void);
 static int globus_l_gsi_callback_deactivate(void);
@@ -93,8 +93,22 @@ globus_l_gsi_callback_activate(void)
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
-    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+    result = globus_module_activate(GLOBUS_COMMON_MODULE);
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+    
+    result = globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
+    globus_mutex_init(&globus_l_gsi_callback_oldgaa_mutex, NULL);
+    
     OpenSSL_add_all_algorithms();
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -119,7 +133,10 @@ globus_l_gsi_callback_deactivate(void)
 
     EVP_cleanup();
 
+    globus_mutex_destroy(&globus_l_gsi_callback_oldgaa_mutex);
+    
     globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
 
