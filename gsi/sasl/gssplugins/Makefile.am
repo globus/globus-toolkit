@@ -1,16 +1,19 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
+sasllibdir = ${GLOBUS_LOCATION}/lib/sasl
+
 SUBDIRS= \
 	pkgdata \
 	doxygen
 
 Sources= \
-	gssapi.c
+	gssapi.c \
+	gssname.c
 
 INCLUDES += $(GPT_INCLUDES)
 
-lib_LTLIBRARIES = libgssapiv2_gsi_$(GLOBUS_FLAVOR_NAME).la
+sasllib_LTLIBRARIES = libgssapiv2_gsi_$(GLOBUS_FLAVOR_NAME).la
 
 libgssapiv2_gsi___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

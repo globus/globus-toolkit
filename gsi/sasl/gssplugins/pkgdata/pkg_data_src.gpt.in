@@ -25,7 +25,7 @@
       <cflags>@GPT_CFLAGS@</cflags>
       <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-      <pkg_libs> -lgssapiv2_gsi.la -lgssapiv2_gsi -lgssapiv2_gsi</pkg_libs>
+      <pkg_libs></pkg_libs>
     </Build_Environment>
 
   </src_pkg>

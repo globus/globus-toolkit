@@ -21,6 +21,28 @@ CPPFLAGS="$CPPFLAGS $GPT_INCLUDES"
 
 AC_DEFINE(HAVE_GSSAPI_H)
 
+AC_ARG_WITH(name,
+        [ --with-name=<FL>     Specify a plugin name ie. <name>-GSSAPI  ],
+
+        [
+        case $withval in
+        no)
+                echo "Please specify a name" >&2
+                exit 1
+                ;;
+        yes)
+                echo "Please specify a name" >&2
+                exit 1
+                ;;
+        *)
+                $srcdir/mkgssname gssplugin > $srcdir/gssname.c
+                ;;
+        esac
+        ]
+)
+ 
+
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
