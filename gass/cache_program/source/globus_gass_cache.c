@@ -870,10 +870,17 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
-	    globus_gass_cache_add_done(&cache_handle,
-				url,
-				tag,
-				timestamp);
+	    /*
+	      globus_gass_cache_add_done(&cache_handle,
+				       url,
+				       tag,
+				       timestamp);
+	    */
+	    globus_gass_cache_delete(&cache_handle,
+				     url,
+				     tag,
+				     timestamp,
+				     GLOBUS_TRUE);
 	    globus_libc_printf("%s\n",local_filename);
 	}
 	else if(rc == GLOBUS_GASS_CACHE_URL_NOT_FOUND)
