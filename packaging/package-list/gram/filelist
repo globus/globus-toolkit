@@ -1,7 +1,0 @@
-etc/rips.providers
-etc/ripsConfig.xml
-etc/globus-gram-pbs-provider
-etc/databaseSchema/jm_database_schema.sql
-etc/globus-gram-fork-provider
-etc/test.xml
-gars/gram.gar
