@@ -4,7 +4,8 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = pkgdata
 
 setup_SCRIPTS = \
-    fork.pm \
+    fork.in \
+    find-fork-tools \
     setup-globus-job-manager-fork \
     setup-globus-job-manager-fork.pl
 

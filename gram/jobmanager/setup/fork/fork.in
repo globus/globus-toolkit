@@ -13,7 +13,7 @@ my ($mpirun);
 
 BEGIN
 {
-    $mpirun = '';
+    $mpirun = '@MPIRUN@';
 }
 
 sub new
@@ -56,6 +56,10 @@ sub submit
 	$multi_output = 1 if $count > 1;
     }
     elsif($description->jobtype() eq 'single')
+    {
+	$count = 1;
+    }
+    elsif($description->jobtype() eq 'mpi' && $mpirun ne 'no')
     {
 	$count = 1;
     }
@@ -120,7 +124,23 @@ sub submit
 	    open(STDOUT, ">>$job_stdout");
 	    open(STDERR, ">>$job_stderr");
 
-	    if(defined($description->arguments()))
+	    if($description->jotype() eq 'mpi' &&
+	       defined($description->arguments()))
+	    {
+		exec ($mpirun, '-np',
+		      $description->count(),
+		      $description->executable(),
+		      $description->arguments())
+		    || die "Error starting mpirun";
+	    }
+	    elsif($description->jobtype() eq 'mpi')
+	    {
+		exec ($mpirun, '-np',
+		      $description->count(),
+		      $description->executable())
+		    || die "Error starting mpirun";
+	    }
+	    elsif(defined($description->arguments()))
 	    {
 		exec ($description->executable(),
 		      $description->arguments())

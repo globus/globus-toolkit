@@ -27,6 +27,8 @@ else
     $force = '';
 }
 
+print `./find-fork-tools`;
+
 $cmd = "$libexecdir/globus-add-job-manager-service -m fork -s \"$name\" $force";
 system("$cmd >/dev/null 2>/dev/null");
 

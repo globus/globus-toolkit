@@ -16,4 +16,7 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
 
+autoconf find-fork-tools.in > find-fork-tools
+chmod 755 find-fork-tools
+
 exit 0
