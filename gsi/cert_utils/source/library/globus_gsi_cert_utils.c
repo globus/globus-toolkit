@@ -1,5 +1,6 @@
 
 #include "globus_i_gsi_cert_utils.h"
+#include "globus_openssl.h"
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
 #include "version.h"
