@@ -12,8 +12,17 @@
 #include "includes.h"
 RCSID("$OpenBSD: servconf.c,v 1.91 2001/11/12 18:17:07 markus Exp $");
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB4)
 #include <krb.h>
+#endif
+#if defined(KRB5)
+#ifdef HEIMDAL
+#include <krb.h>
+#else
+/* Bodge - but then, so is using the kerberos IV KEYFILE to get a Kerberos V
+ * keytab */
+#define KEYFILE "/etc/krb5.keytab"
+#endif
 #endif
 #ifdef AFS
 #include <kafs.h>
@@ -74,6 +83,12 @@ initialize_server_options(ServerOptions *options)
 	options->hostbased_uses_name_from_packet_only = -1;
 	options->rsa_authentication = -1;
 	options->pubkey_authentication = -1;
+#ifdef GSSAPI
+	options->gss_authentication=-1;
+	options->gss_keyex=-1;
+	options->gss_use_session_ccache = -1;
+	options->gss_cleanup_creds = -1;
+#endif
 #if defined(KRB4) || defined(KRB5)
 	options->kerberos_authentication = -1;
 	options->kerberos_or_local_passwd = -1;
@@ -178,6 +193,16 @@ fill_default_server_options(ServerOptions *options)
 		options->rsa_authentication = 1;
 	if (options->pubkey_authentication == -1)
 		options->pubkey_authentication = 1;
+#ifdef GSSAPI
+	if (options->gss_authentication == -1)
+		options->gss_authentication = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex =1;
+	if (options->gss_use_session_ccache == -1)
+		options->gss_use_session_ccache = 1;
+	if (options->gss_cleanup_creds == -1)
+		options->gss_cleanup_creds = 1;
+#endif
 #if defined(KRB4) || defined(KRB5)
 	if (options->kerberos_authentication == -1)
 		options->kerberos_authentication = (access(KEYFILE, R_OK) == 0);
@@ -240,6 +265,9 @@ typedef enum {
 	sPort, sHostKeyFile, sServerKeyBits, sLoginGraceTime, sKeyRegenerationTime,
 	sPermitRootLogin, sLogFacility, sLogLevel,
 	sRhostsAuthentication, sRhostsRSAAuthentication, sRSAAuthentication,
+#ifdef GSSAPI
+	sGssAuthentication, sGssKeyEx, sGssUseSessionCredCache, sGssCleanupCreds,
+#endif
 #if defined(KRB4) || defined(KRB5)
 	sKerberosAuthentication, sKerberosOrLocalPasswd, sKerberosTicketCleanup,
 #endif
@@ -289,6 +317,13 @@ static struct {
 	{ "rsaauthentication", sRSAAuthentication },
 	{ "pubkeyauthentication", sPubkeyAuthentication },
 	{ "dsaauthentication", sPubkeyAuthentication },			/* alias */
+#ifdef GSSAPI
+	{ "gssapiauthentication", sGssAuthentication },
+	{ "gssapikeyexchange", sGssKeyEx },
+	{ "gssusesessionccache", sGssUseSessionCredCache },
+	{ "gssapiusesessioncredcache", sGssUseSessionCredCache },
+	{ "gssapicleanupcreds", sGssCleanupCreds },
+#endif
 #if defined(KRB4) || defined(KRB5)
 	{ "kerberosauthentication", sKerberosAuthentication },
 	{ "kerberosorlocalpasswd", sKerberosOrLocalPasswd },
@@ -614,6 +649,20 @@ parse_flag:
 		case sPubkeyAuthentication:
 			intptr = &options->pubkey_authentication;
 			goto parse_flag;
+#ifdef GSSAPI
+		case sGssAuthentication:
+			intptr = &options->gss_authentication;
+			goto parse_flag;
+		case sGssKeyEx:
+			intptr = &options->gss_keyex;
+			goto parse_flag;
+		case sGssUseSessionCredCache:
+			intptr = &options->gss_use_session_ccache;
+			goto parse_flag;
+		case sGssCleanupCreds:
+			intptr = &options->gss_cleanup_creds;
+			goto parse_flag;
+#endif
 #if defined(KRB4) || defined(KRB5)
 		case sKerberosAuthentication:
 			intptr = &options->kerberos_authentication;
