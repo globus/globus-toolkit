@@ -62,10 +62,10 @@ my $thread = "pthr";
 
 my ($install, $buildjava, $buildc, $anonymous, $noupdates, $force,
     $help, $man, $verbose, $skippackage, $skipbundle, $faster,
-    $paranoia, $version) =
+    $paranoia, $version, $uncool) =
    (0, 1, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
-    0, "1.0");
+    0, "1.0", 0);
 
 my @user_bundles;
 my @user_packages;
@@ -88,6 +88,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'trees=s' => \@cvs_build_list,
 	    'paranoia!' => \$paranoia,
 	    'version=s' => \$version,
+	    'uncool!' => \$uncool,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -945,7 +946,7 @@ sub package_source_tar()
 	log_system("touch $destdir/INSTALL", "$pkglog/$package");
 	paranoia "touch $destdir/INSTALL failed";
 
-	if ( -e "$destdir/pkgdata/pkg_data_src.gpt" )
+	if ( -e "$destdir/pkgdata/pkg_data_src.gpt" and not $uncool)
 	{
 	    log_system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in",
 		       "$pkglog/$package");
