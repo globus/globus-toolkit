@@ -1,12 +1,12 @@
-The GSI-OpenSSH development team announces the release of version 3.2 of
-the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.2 is based
-on OpenSSH 3.8p1 and NCSA's latest GSI patch for that version of
+The GSI-OpenSSH development team announces the release of version 3.3 of
+the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.3 is based
+on OpenSSH 3.8.1p1 and NCSA's latest GSI patch for that version of
 OpenSSH.  A summary of the major changes found in this version is given
 at the end of this document.
 
-GSI-OpenSSH 3.2 is available for download from
+GSI-OpenSSH 3.3 is available for download from
 
-  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.2/>
+  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.3/>
 
 For installation instructions, please see
 
@@ -18,16 +18,23 @@ team.  This bugzilla system is located at:
 
    <https://bugzilla.ncsa.uiuc.edu/index.cgi>
 
-GSI-OpenSSH 3.2 Major changes
+GSI-OpenSSH 3.3 Major changes
 
    New features
 
-      * Source globus-user-env.sh prior to running post-install script
-        to guarantee the proper environment exists for executing
-        commands.
+      * Migrated to OpenSSH 3.8.1p1 codebase.
 
    Bugs fixed
 
-      * Provided workaround for AIX 5.2 platform build error.
+      * Added configure.ac fix for Darwin build.
 
-      * Fixed problem in proper creation of man pages.
+      * Fixed GSSAPI key exchange to not abort when given a limited
+        GSI proxy but to complete successfully and simply not accept
+        the limited GSI proxy for user authentication, falling back to
+        non-GSI user authentication methods.
+        https://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=236
+
+      * Pass variants on LD_LIBRARY_PATH (LIBPATH,
+        SHLIB_PATH, LD_LIBRARYN32_PATH, LD_LIBRARY64_PATH) to child
+        processes to find GSI shared libraries on different platforms.
+	https://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=238
