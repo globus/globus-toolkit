@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+
+<gpt_package_metadata Name="globus_trusted_ca_setup" Format_Version="0.02">
+<Aging_Version Major="2" Minor="0" Age="0"/>
+<Description>
+</Description>
+<Version_Stability Release="experimental"/>
+<setup_pkg Name=trusted_ca>
+<Aging_Version Major="1" Minor="0" Age="0"/>
+
+<Filelist Dir="setup/globus" Flavored="no">
+<File>setup_globus_ca</File>
+<File>42864e48.0</File>
+<File>42864e48.signing_policy</File>
+</Filelist>
+
+<Setup_Requirements_Message>
+$GLOBUS_LOCATION/setup/globus/setup_globus_ca needs to be run to complete this installation.
+<Setup_Requirements_Message>
+
+</setup_pkg>
+</gpt_package_metadata>
+
+
