@@ -31,8 +31,11 @@
     free(a);                                                \
 }
 
-typedef globus_grim_config_t void *;
-typedef globus_grim_assertion_t void *;
+#define GLOBUS_GRIM_DEVEL_MODULE (&globus_i_grim_devel_module)
+extern globus_module_descriptor_t globus_i_grim_devel_module;
+
+typedef void * globus_grim_config_t;
+typedef void * globus_grim_assertion_t;
 
 /*************************************************************************
  *                   external api functions
@@ -245,7 +248,7 @@ globus_result_t
 globus_grim_devel_port_type_file_parse(
     FILE *                                  fptr,
     char *                                  username,
-    char **                                 groups;
+    char **                                 groups,
     char ***                                port_types);
 
 /**
