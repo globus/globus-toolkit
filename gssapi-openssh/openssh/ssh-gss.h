@@ -32,19 +32,16 @@
 
 #include <gssapi.h>
 
-#ifndef MECHGLUE
 #ifdef KRB5
 #ifndef HEIMDAL
 #include <gssapi_generic.h>
 
 /* MIT Kerberos doesn't seem to define GSS_NT_HOSTBASED_SERVICE */
-
 #ifndef GSS_C_NT_HOSTBASED_SERVICE
 #define GSS_C_NT_HOSTBASED_SERVICE gss_nt_service_name
 #endif /* GSS_C_NT_... */
 #endif /* !HEIMDAL */
 #endif /* KRB5 */
-#endif /* !MECHGLUE */
 
 /* draft-ietf-secsh-gsskeyex-03 */
 #define SSH2_MSG_KEXGSS_INIT				30
@@ -91,7 +88,7 @@ typedef struct {
 	OM_uint32	minor; /* both */
 	gss_ctx_id_t	context; /* both */
 	gss_name_t	name; /* both */
-	gss_OID		oid; /* both */
+	gss_OID		oid; /* client */
 	gss_cred_id_t	creds; /* server */
 	gss_name_t	client; /* server */
 	gss_cred_id_t	client_creds; /* server */
@@ -143,18 +140,6 @@ void ssh_gssapi_do_child(char ***envp, u_int *envsizep);
 void ssh_gssapi_cleanup_creds(void *ignored);
 void ssh_gssapi_storecreds();
 char *ssh_gssapi_server_mechanisms();
-
-#ifdef GSI
-int gsi_gridmap(char *subject_name, char **mapped_name);
-#endif
-
-#ifdef MECHGLUE
-gss_cred_id_t __gss_get_mechanism_cred
-   (gss_cred_id_t,	/* union_cred */
-    gss_OID		/* mech_type */
-   );
-#endif
-
 #endif /* GSSAPI */
 
 #endif /* _SSH_GSS_H */

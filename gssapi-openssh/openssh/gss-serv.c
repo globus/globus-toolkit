@@ -122,7 +122,7 @@ ssh_gssapi_server_mechanisms() {
 
 		if (present) {
 		    if (!GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx,
-					   &supported_mechs[i]->oid)))) {
+					    &supported_mechs[i]->oid)))) {
 			/* Append gss_group1_sha1_x to our list */
 			if (first++!=0)
 				buffer_put_char(&buf,',');
@@ -141,7 +141,7 @@ ssh_gssapi_server_mechanisms() {
         	} else {
 		    debug("GSSAPI mechanism %s not supported",
 			  supported_mechs[i]->name);
-		}
+        	}
         	ssh_gssapi_delete_ctx(&ctx);
         	i++;
 	}
@@ -198,7 +198,7 @@ ssh_gssapi_get_ctype(Gssctxt *ctxt) {
 			ctxt->oid->elements,ctxt->oid->length)==0)) {
 		return supported_mechs[i];
 	    }
-	    i++;
+	   i++;
 	}
 	return NULL;
 }

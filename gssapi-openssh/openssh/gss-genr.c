@@ -38,7 +38,6 @@
 #include "log.h"
 #include "compat.h"
 #include "monitor_wrap.h"
-#include "canohost.h"
 
 #include <netdb.h>
 
@@ -251,7 +250,7 @@ ssh_gssapi_last_error(Gssctxt *ctxt,
 	/* The GSSAPI error */
         do {
         	gss_display_status(&lmin, ctxt->major,
-        			   GSS_C_GSS_CODE, ctxt->oid,
+        			   GSS_C_GSS_CODE, GSS_C_NULL_OID,
         		           &ctx, &msg);
 
         	buffer_append(&b,msg.value,msg.length);
@@ -263,7 +262,7 @@ ssh_gssapi_last_error(Gssctxt *ctxt,
         /* The mechanism specific error */
         do {
         	gss_display_status(&lmin, ctxt->minor,
-        			   GSS_C_MECH_CODE, ctxt->oid,
+        			   GSS_C_MECH_CODE, GSS_C_NULL_OID,
         			   &ctx, &msg);
         	
         	buffer_append(&b,msg.value,msg.length);
@@ -302,15 +301,12 @@ ssh_gssapi_build_ctx(Gssctxt **ctx)
 void
 ssh_gssapi_delete_ctx(Gssctxt **ctx)
 {
-#if !defined(MECHGLUE)
 	OM_uint32 ms;
-#endif
 	
 	/* Return if there's no context */
 	if ((*ctx)==NULL)
 		return;
 		
-#if !defined(MECHGLUE) /* mechglue has some memory management issues */
 	if ((*ctx)->context != GSS_C_NO_CONTEXT) 
 		gss_delete_sec_context(&ms,&(*ctx)->context,GSS_C_NO_BUFFER);
 	if ((*ctx)->name != GSS_C_NO_NAME)
@@ -326,7 +322,6 @@ ssh_gssapi_delete_ctx(Gssctxt **ctx)
 		gss_release_name(&ms,&(*ctx)->client);	
 	if ((*ctx)->client_creds != GSS_C_NO_CREDENTIAL)
 		gss_release_cred(&ms,&(*ctx)->client_creds);
-#endif
 	
 	xfree(*ctx);
 	*ctx=NULL; 
@@ -373,24 +368,14 @@ ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
 OM_uint32
 ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	gss_buffer_desc gssbuf;
-	char *xhost;
-	
-	/* Make a copy of the host name, in case it was returned by a
-	 * previous call to gethostbyname(). */	
-	xhost = xstrdup(host);
 
-	/* Make sure we have the FQDN. Some GSSAPI implementations don't do
-	 * this for us themselves */
-	resolve_localhost(&xhost);
-	
-        gssbuf.length = sizeof("host@")+strlen(xhost);
+        gssbuf.length = sizeof("host@")+strlen(host);
 
         gssbuf.value = xmalloc(gssbuf.length);
         if (gssbuf.value == NULL) {
-		xfree(xhost);
 		return(-1);
         }
-        snprintf(gssbuf.value,gssbuf.length,"host@%s",xhost);
+        snprintf(gssbuf.value,gssbuf.length,"host@%s",host);
         if ((ctx->major=gss_import_name(&ctx->minor,
                                    	&gssbuf,
                                         GSS_C_NT_HOSTBASED_SERVICE,
@@ -398,7 +383,6 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 		ssh_gssapi_error(ctx);
 	}
 	
-	xfree(xhost);
 	xfree(gssbuf.value);
 	return(ctx->major);
 }
@@ -443,19 +427,6 @@ ssh_gssapi_acquire_cred(Gssctxt *ctx) {
 OM_uint32
 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, gss_buffer_desc *hash) {
 	
-	/* ssh1 needs to exchange the hash of the keys */
-	/* will us this hash to return it */
-	if (!compat20) {
-		if ((ctx->major=gss_wrap(&ctx->minor,ctx->context,
-					 0,
-					 GSS_C_QOP_DEFAULT,
-					 buffer,
-					 NULL,
-					 hash)))
-		    ssh_gssapi_error(ctx);
-	}
-	else
-
 	if ((ctx->major=gss_get_mic(&ctx->minor,ctx->context,
 				    GSS_C_QOP_DEFAULT, buffer, hash))) {
 		ssh_gssapi_error(ctx);

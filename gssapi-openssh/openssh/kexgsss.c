@@ -70,14 +70,14 @@ kexgss_server(Kex *kex)
 	debug2("%s: Identifying %s",__func__,kex->name);
 	oid=ssh_gssapi_server_id_kex(kex->name);
 	if (oid==NULL) {
-	   packet_disconnect("Unknown gssapi mechanism");
+	   fatal("Unknown gssapi mechanism");
 	}
 	
 	debug2("%s: Acquiring credentials",__func__);
 	
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt,oid)))) {
 		kex_gss_send_error(ctxt);
-        	packet_disconnect("Unable to acquire credentials for the server");
+        	fatal("Unable to acquire credentials for the server");
         }
                                                                                                                                 
 	do {
@@ -86,14 +86,14 @@ kexgss_server(Kex *kex)
 		switch(type) {
 		case SSH2_MSG_KEXGSS_INIT:
 			if (dh_client_pub!=NULL) 
-				packet_disconnect("Received KEXGSS_INIT after initialising");
+				fatal("Received KEXGSS_INIT after initialising");
 			recv_tok.value=packet_get_string(&slen);
 			recv_tok.length=slen; /* int vs. size_t */
 
 		        dh_client_pub = BN_new();
 		        
 		        if (dh_client_pub == NULL)
-        			packet_disconnect("dh_client_pub == NULL");
+        			fatal("dh_client_pub == NULL");
 		  	packet_get_bignum2(dh_client_pub);
 		  	
 		  	/* Send SSH_MSG_KEXGSS_HOSTKEY here, if we want */
@@ -112,12 +112,6 @@ kexgss_server(Kex *kex)
 
 		gss_release_buffer(&min_status,&recv_tok);
 		
-#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-                if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
-                        packet_disconnect("Limited proxy is not allowed in gssapi key exchange.");
-                }
-#endif
-
 		if (maj_status!=GSS_S_COMPLETE && send_tok.length==0) {
 			fatal("Zero length token output when incomplete");
 		}
@@ -143,15 +137,15 @@ kexgss_server(Kex *kex)
 			packet_send();
 			packet_write_wait();
 		}	
-		packet_disconnect("gssapi key exchange handshake failed");
+		fatal("accept_ctx died");
 	}
 	
 	debug("gss_complete");
 	if (!(ret_flags & GSS_C_MUTUAL_FLAG))
-		packet_disconnect("gssapi_mutual authentication failed");
+		fatal("mutual authentication flag wasn't set");
 		
 	if (!(ret_flags & GSS_C_INTEG_FLAG))
-		packet_disconnect("gssapi channel integrity not established");
+		fatal("Integrity flag wasn't set");
 			
 	dh = dh_new_group1();
 	dh_gen_key(dh, kex->we_need * 8);

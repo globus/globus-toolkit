@@ -117,9 +117,9 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 	if (!client || !client->creds) {
 	    return;
 	}
-
+	
 	major_status = gss_export_cred(&minor_status,
-				       client->creds,
+					 client->creds,
 				       GSS_C_NO_OID,
 				       1,
 				       &export_cred);
@@ -131,8 +131,8 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 	    ssh_gssapi_set_oid(ctx, &gssapi_gsi_mech.oid);
 	    ssh_gssapi_error(ctx);
 	    ssh_gssapi_delete_ctx(&ctx);
-	    return;
-	}
+				return;
+			}
 	
 	p = strchr((char *) export_cred.value, '=');
 	if (p == NULL) {
@@ -140,23 +140,23 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 		(char *)export_cred.value);
 	    gss_release_buffer(&minor_status, &export_cred);
 	    return;
-	}
+			}
 	*p++ = '\0';
 	if (strcmp((char *)export_cred.value,"X509_USER_DELEG_PROXY") == 0) {
 	    client->store.envvar = strdup("X509_USER_PROXY");
 	} else {
 	    client->store.envvar = strdup((char *)export_cred.value);
-	}
+		}
 	client->store.envval = strdup(p);
 #ifdef USE_PAM
 	do_pam_putenv(client->store.envvar, client->store.envval);
 #endif
 	if (strncmp(p, "FILE:", 5) == 0) {
 	    p += 5;
-	}
+		}
 	if (access(p, R_OK) == 0) {
 	    client->store.filename = strdup(p);
-	}
+	}	
 	gss_release_buffer(&minor_status, &export_cred);
 }
 
