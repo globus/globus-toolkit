@@ -32,7 +32,7 @@
 	    <Build_Step>cp etc/indexservice.providers INSTALLDIR_GPTMACRO/etc </Build_Step>
 	    <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/gars </Build_Step>
 	    <Build_Step>cp lib/mds-index.gar INSTALLDIR_GPTMACRO/gars </Build_Step>
-	    <Build_Step>ant -f INSTALLDIR_GPTMACRO/build.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/mds-index.gar</Build_Step>
+	    <Build_Step>ant -f INSTALLDIR_GPTMACRO/build.xml deploy -Dgar.name=INSTALLDIR_GPTMACRO/gars/mds-index.gar</Build_Step>
 
     </Build_Instructions>
 

@@ -29,7 +29,7 @@
 
 	    <Build_Step> ant gar -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> cp build/lib/sdb.gar INSTALLDIR_GPTMACRO/gars</Build_Step>
-	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/sdb.gar</Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deploy -Dgar.name=INSTALLDIR_GPTMACRO/gars/sdb.gar</Build_Step>
 
     </Build_Instructions>
 
