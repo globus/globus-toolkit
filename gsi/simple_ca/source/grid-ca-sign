@@ -117,7 +117,7 @@ else
         recho ""
     fi
 
-    TMP_REQ_FILE=${INPUT_REQ_FILE}
+    ${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
 fi
 
 recho ""
@@ -152,7 +152,8 @@ wrong_password=`${GLOBUS_SH_GREP-grep} "unable to load CA private key" ${tmp_out
 if [ ! -z "${wrong_password}" ]; then
     
     recho ""
-    recho "ERROR: Incorrect password for CA key."
+    recho "ERROR: The CA private key could not be loaded."
+    recho "Possibly an incorrect password for the CA key was used."
     recho ""
     exit 1
 fi

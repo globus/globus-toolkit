@@ -1,8 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-Scripts = grid-ca-sign \
-          grid-default-ca 
+Scripts = grid-ca-sign 
 
 bin_SCRIPTS = $(Scripts)
 
