@@ -2219,30 +2219,31 @@ Description:
     X509_USER_PROXY_FILE is used to generate the default
     proxy file name.
 
-        In other words:
+    In other words:
 
-        proxy_get_filenames() is used by grid-proxy-init, wgpi, grid-proxy-info and 
-        Indirectly by gss_acquire_creds. For grid-proxy-init and wgpi, the proxy_in is 0, 
-        for acquire_creds its 1. This is used to signal how the proxy file is to be 
-        used, 1 for input 0 for output. 
+    proxy_get_filenames() is used by grid-proxy-init, wgpi, grid-proxy-info and
+    Indirectly by gss_acquire_creds. For grid-proxy-init and wgpi, the proxy_in
+    is 0, for acquire_creds its 1. This is used to signal how the proxy file is
+    to be used, 1 for input 0 for output.
         
-        The logic for output is to use the provided input parameter, registry,
-        environment, or default name for the proxy. Wgpi calls this multiple times
-        as the options window is updated. The file will be created if needed.   
+    The logic for output is to use the provided input parameter, registry,
+    environment, or default name for the proxy. Wgpi calls this multiple times
+    as the options window is updated. The file will be created if needed.
         
-        The logic for input is to use the provided input parameter, registry, environment
-        variable. But only use the default file if it exists, is owned by the user, 
-        and has something in it. But not when run as root. 
+    The logic for input is to use the provided input parameter, registry,
+    environment variable. But only use the default file if it exists, is owned
+    by the user, and has something in it. But not when run as root.
         
-        Then on input if there is a proxy, the user_cert and user_key are set to 
-        use the proxy. 
+    Then on input if there is a proxy, the user_cert and user_key are set to
+    use the proxy.
 
     Smart card support using PKCS#11 is controled by the USE_PKCS11 flag.
 
-    If the filename for the user key starts with SC: then it is assumed to be of
-    the form SC:card:label where card is the name of a smart card, and label is the 
-    label of the key on the card. The card must be using Cryptoki (PKCS#11)
-    This code has been developed using the DataKey implementation under Windows 95. 
+    If the filename for the user key starts with SC: then it is assumed to be
+    of the form SC:card:label where card is the name of a smart card, and label
+    is the label of the key on the card. The card must be using Cryptoki
+    (PKCS#11) This code has been developed using the DataKey implementation
+    under Windows 95.
 
     This will allow the cert to have the same form, with the same label as well
     in the future.  
