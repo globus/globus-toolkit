@@ -29,10 +29,11 @@
 
 /* DEBUG MACROS */
 
-#ifdef BUILD_DEBUG
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_ERROR 1
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_DEBUG 2
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE 3
+
+#ifdef BUILD_DEBUG
 extern int                              globus_i_gsi_authz_gaa_callout_debug_level;
 
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG(_LEVEL_) \
@@ -113,7 +114,7 @@ extern int                              globus_i_gsi_authz_gaa_callout_debug_lev
 
 
 #else
-
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG(_LEVEL_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF2(_LEVEL_, _ONE_, _TWO_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF3(_LEVEL_, _ONE_, _TWO_, _THREE_) {}
@@ -121,8 +122,8 @@ extern int                              globus_i_gsi_authz_gaa_callout_debug_lev
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF5(_LEVEL_, _ONE_, _TWO_, _THREE_, _FOUR_, _FIVE_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_PRINT(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) {}
-#define GLOBUS_I_GSI_AUTHZ_GAA_CALLBACK_DEBUG_ENTER() {}
-#define GLOBUS_I_GSI_AUTHZ_GAA_CALLBACK_DEBUG_EXIT() {}
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLBACK_DEBUG_ENTER {}
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLBACK_DEBUG_EXIT {}
 #endif
 
 typedef struct globus_i_gsi_authz_handle_s
