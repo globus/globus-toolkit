@@ -12,7 +12,6 @@
  * going to get its own thread
  */
 #define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 5000  /* 5ms */
-#define GLOBUS_L_CALLBACK_MAX_TIMEOUT 10000
 
 extern pid_t                        globus_l_callback_main_thread;
 
@@ -2164,7 +2163,7 @@ globus_callback_get_timeout(
         
     if(!restart_info || restart_info->own_thread)
     {
-        GlobusTimeReltimeSet(*time_left, 0, GLOBUS_L_CALLBACK_MAX_TIMEOUT);
+        GlobusTimeReltimeCopy(*time_left, globus_i_reltime_infinity);
 
         return GLOBUS_FALSE;
     }
