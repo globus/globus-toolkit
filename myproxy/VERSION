@@ -3,6 +3,16 @@ This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+XXXX
+  - write temp proxy to /tmp/myproxy-proxy.<pid> instead of
+    /tmp/myproxy-proxy.<uid> so we can run more than one myproxy-init
+    in an account at a time
+  - increased myproxy-server's listen(2) backlog for improved
+    scalability
+  - add myproxy-test -performance option for performance testing
+  - fixed potential logging race condition when running myproxy-server
+    in verbose mode
+
 v0.6.4 4 Jan 2005 (GPT package version 1.16)
   - fixed file permission bug in myproxy-admin-load-credential
 
