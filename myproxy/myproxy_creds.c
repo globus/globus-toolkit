@@ -961,8 +961,10 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
     return return_code;
 }
 
-/* Retrieves info about all credentials. Verifies username and remaining lifetime if specified.
-   If query is username or lifetime based, username should be specified in creds->username
+/* Retrieves info about all credentials. Verifies username and
+   remaining lifetime if specified.
+   If query is username or lifetime based, username should be
+   specified in creds->username
    and remaining lifetime in creds->end_time
 */
 int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
@@ -971,9 +973,14 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     DIR *dir;
     struct dirent *de;
     int return_code = -1;
-
     char *username = NULL;
-    time_t time_left = 0;
+    time_t end_time = 0, now;
+
+    now = time(0);
+
+    if (check_storage_directory() == -1) {
+        goto error;
+    }
 
     /*
      * cur_cred always points to the last valid credential in the list.
@@ -989,15 +996,14 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 
     new_cred = creds; /* new_cred is what we're filling in */
 
-    if (creds->username)
-    {
-	username = strdup (creds->username);
-	free (creds->username);
+    if (creds->username) {
+	username = strdup(creds->username);
+	free(creds->username);
+	creds->username = NULL;
     }
 
-    if (creds->end_time)
-    {
-	time_left = creds->end_time;
+    if (creds->end_time) {
+	end_time = creds->end_time;
 	creds->end_time = 0;
     }
 
@@ -1010,18 +1016,16 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
        default credentials */
 
     while ((de = readdir(dir)) != NULL) {
-	    if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
+	if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
 	    char *credname = NULL, *dot, *dash;
-	    time_t now;
 
-	    now = time(0);
 	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
 
 	    dot = strchr(de->d_name, '.');
 	    *dot = '\0';
 
 	    if (dash) /*Credential with a name */
-	    	credname = strdup(dash+1);  /* copy things beyond '-' */
+	    	credname = dash+1;
 
 	    if (new_cred->username) free(new_cred->username);
 	    if (new_cred->credname) free(new_cred->credname);
@@ -1041,25 +1045,23 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 		new_cred->credname = NULL;
 
 	    if (myproxy_creds_retrieve(new_cred) == 0) {
-	    
-		if (time_left > 0) /* check time_left if specified */
-		    if (time_left < (new_cred->end_time-now))
-			goto skip;
-
-		    if (cur_cred) cur_cred->next = new_cred;
-		    cur_cred = new_cred;
-		    new_cred = malloc(sizeof(struct myproxy_creds));
-
-		    skip:;
-		    memset(new_cred, 0, sizeof(struct myproxy_creds));
+		if (end_time == 0 || end_time < new_cred->end_time) {
+			if (cur_cred) cur_cred->next = new_cred;
+			cur_cred = new_cred;
+			new_cred = malloc(sizeof(struct myproxy_creds));
+			memset(new_cred, 0, sizeof(struct myproxy_creds));
+		} else {
+			myproxy_creds_free_contents(new_cred);
 		}
 	    }
 	}
+    }
     closedir(dir);
 
     return_code = 0;
 
  error:
+    if (username) free(username);
     if (cur_cred && new_cred) {
 	myproxy_creds_free_contents(new_cred);
 	free(new_cred);
