@@ -1,0 +1,11 @@
+-----------------------------------------------
+Installing Globus Core on a Windows 200 Machine
+-----------------------------------------------
+
+The enviroment variable GLOBUS_LOCATION must be set to a 
+directory the user owns.
+
+1) copy the file globus_config.h to %GLOBUS_LOCATION%\include
+
+All higher level libraries will expect to find this file in that
+location.
