@@ -43,6 +43,12 @@ int
 globus_l_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *	request);
 
+static
+void
+globus_l_gram_job_manager_state_log_rsl(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			label);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -274,6 +280,12 @@ globus_gram_job_manager_state_machine(
 	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+
+	globus_gram_job_manager_request_log(
+		request,
+		"Pre-parsed RSL string: %s\n",
+		request->rsl_spec);
+
 	request->rsl = globus_rsl_parse(request->rsl_spec);
 
 	if(!request->rsl)
@@ -283,6 +295,9 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+
+	globus_l_gram_job_manager_state_log_rsl(request, "Job Request RSL");
+
 	/* Build symbol table for RSL evaluation */
 	globus_symboltable_insert(&request->symbol_table,
                                 (void *) "HOME",
@@ -326,6 +341,11 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+
+	globus_l_gram_job_manager_state_log_rsl(
+		request,
+		"Job Request RSL (canonical)");
+
 	rc = globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
 		request);
 	if(rc != GLOBUS_SUCCESS)
@@ -338,6 +358,10 @@ globus_gram_job_manager_state_machine(
 	
 	if(globus_gram_job_manager_rsl_need_restart(request))
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Job Request is a Job Restart\n");
+
 	    /* Need to do this before unique id is set */
 	    rc = globus_gram_job_manager_rsl_eval_one_attribute(
 		    request,
@@ -359,6 +383,10 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
 	    }
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Will try to restart job %s\n",
+		    request->jm_restart);
 	}
 
 	/* This sets request->job_contact and request->uniq_id */
@@ -377,6 +405,11 @@ globus_gram_job_manager_state_machine(
 
 	if(request->scratch_dir_base)
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "JM default scratch dir: %s\n",
+		    request->scratch_dir_base);
+
 	    rc = globus_gram_job_manager_rsl_eval_string(
 		    request,
 		    request->scratch_dir_base,
@@ -391,6 +424,10 @@ globus_gram_job_manager_state_machine(
 	    }
 	    globus_libc_free(request->scratch_dir_base);
 	    request->scratch_dir_base = tmp_str;
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "JM default scratch dir (post-eval): %s\n",
+		    request->scratch_dir_base);
 	}
 	else
 	{
@@ -417,6 +454,11 @@ globus_gram_job_manager_state_machine(
 			request->rsl,
 			GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM)))
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Poorly-formed RSL gass_cache attribute: %s\n",
+		    tmp_str);
+
 	    request->failure_code = 
 		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
 	    request->jobmanager_state = 
@@ -425,6 +467,14 @@ globus_gram_job_manager_state_machine(
 	}
         if(tmp_str != NULL)
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Overriding system gass_cache location %s "
+		    " with RSL-supplied %s\n",
+		    request->cache_location
+		        ? request->cache_location : "NULL",
+		    tmp_str);
+	    
 	    if(request->cache_location != NULL)
 	    {
 		globus_libc_free(request->cache_location);
@@ -433,6 +483,11 @@ globus_gram_job_manager_state_machine(
         }
 	if(request->cache_location != NULL)
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "gass_cache location: %s\n",
+		    request->cache_location);
+
 	    rc = globus_gram_job_manager_rsl_eval_string(
 		    request,
 		    request->cache_location,
@@ -447,6 +502,11 @@ globus_gram_job_manager_state_machine(
 	    }
 	    globus_libc_free(request->cache_location);
 	    request->cache_location = tmp_str;
+	    tmp_str = NULL;
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "gass_cache location (post-eval): %s\n",
+		    request->cache_location);
 	}
 
 	rc = globus_gass_cache_open(request->cache_location,
@@ -496,6 +556,10 @@ globus_gram_job_manager_state_machine(
 
 	if(request->jm_restart)
 	{
+	    globus_l_gram_job_manager_state_log_rsl(
+		    request,
+		    "Restart RSL");
+
 	    rc = globus_rsl_eval(request->rsl, &request->symbol_table);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
@@ -506,6 +570,9 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
 	    }
+	    globus_l_gram_job_manager_state_log_rsl(
+		    request,
+		    "Restart RSL (post-eval)");
 
 	    rc = globus_gram_job_manager_validate_rsl(
 		    request,
@@ -518,6 +585,9 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
 	    }
+	    globus_l_gram_job_manager_state_log_rsl(
+		    request,
+		    "Restart RSL (post-validate)");
 	    /*
 	     * Eval after validating, as validation may insert
 	     * RSL substitions when processing default values of
@@ -533,6 +603,10 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
 	    }
+	    globus_l_gram_job_manager_state_log_rsl(
+		    request,
+		    "Restart RSL (post-validate-eval)");
+
 	    /* Free the restart RSL spec. Make room for the job
 	     * request RSL which we'll read from the state file
 	     */
@@ -568,6 +642,11 @@ globus_gram_job_manager_state_machine(
 		break;
 	    }
 
+	    globus_gram_job_manager_request_log(
+		request,
+		"Pre-parsed Original RSL string: %s\n",
+		request->rsl_spec);
+
 	    original_rsl = globus_rsl_parse(request->rsl_spec);
 	    if(!original_rsl)
 	    {
@@ -575,6 +654,18 @@ globus_gram_job_manager_state_machine(
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
 		break;
+	    }
+	    tmp_str = globus_rsl_unparse(original_rsl);
+
+	    if(tmp_str)
+	    {
+		globus_gram_job_manager_request_log(
+			request,
+			"<<<<<original Job RSL\n%s\n"
+			">>>>>original Job RSL\n",
+			tmp_str);
+		globus_libc_free(tmp_str);
+		tmp_str = NULL;
 	    }
 	    restart_rsl = request->rsl;
 
@@ -588,6 +679,10 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
 		break;
 	    }
+	    globus_l_gram_job_manager_state_log_rsl(
+		    request,
+		    "Original Job RSL (canonical)");
+
 	    /* Remove the two-phase commit from the original RSL; if the
 	     * new client wants it, they can put it in their RSL
 	     */
@@ -606,6 +701,9 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
 		break;
 	    }
+	    globus_l_gram_job_manager_state_log_rsl(
+		    request,
+		    "Merged Job RSL");
 	}
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR;
@@ -642,12 +740,18 @@ globus_gram_job_manager_state_machine(
 	if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
 		!request->scratchdir)
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Evaluating scratch directory RSL\n");
 	    rc = globus_gram_job_manager_rsl_eval_one_attribute(
 		    request,
 		    GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
 		    &tmp_str);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
+		globus_gram_job_manager_request_log(
+			request,
+			"Evaluation of scratch directory RSL failed\n");
 		request->failure_code = rc;
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
@@ -655,12 +759,20 @@ globus_gram_job_manager_state_machine(
 	    }
 	    else if(tmp_str == GLOBUS_NULL)
 	    {
+		globus_gram_job_manager_request_log(
+			request,
+			"Evaluation of scratch directory RSL didn't "
+			"yield string\n");
 		/* scratch_dir did not evaluate to a string */
 		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCRATCH;
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		break;
 	    }
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Scratch Directory RSL -> %s\n",
+		    tmp_str);
 
 	    rc = globus_gram_job_manager_script_make_scratchdir(
 		    request,
@@ -684,6 +796,11 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
 	if(request->scratchdir)
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Adding scratch dir to symbol table and env: %s\n",
+		    request->scratchdir);
+
 	    globus_symboltable_insert(
 		&request->symbol_table,
 		"SCRATCH_DIRECTORY",
@@ -695,6 +812,9 @@ globus_gram_job_manager_state_machine(
 	}
 	else if(globus_gram_job_manager_rsl_need_scratchdir(request))
 	{
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "Failed to create scratch dir\n");
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
@@ -706,6 +826,10 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 
+	globus_l_gram_job_manager_state_log_rsl(
+		request,
+		"Job RSL");
+
 	rc = globus_rsl_eval(request->rsl, &request->symbol_table);
 	if(rc != GLOBUS_SUCCESS)
 	{
@@ -715,6 +839,9 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+	globus_l_gram_job_manager_state_log_rsl(
+		request,
+		"Job RSL (post-eval)");
 
 	rc = globus_gram_job_manager_validate_rsl(
 		request,
@@ -726,6 +853,10 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+	globus_l_gram_job_manager_state_log_rsl(
+		request,
+		"Job RSL (post-validation)");
+
 	rc = globus_rsl_eval(request->rsl, &request->symbol_table);
 	if(rc != GLOBUS_SUCCESS)
 	{
@@ -735,6 +866,10 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+	globus_l_gram_job_manager_state_log_rsl(
+		request,
+		"Job RSL (post-validation-eval)");
+
 	if(!request->jm_restart)
 	{
 	    request->cache_tag = globus_libc_strdup(request->job_contact);
@@ -1233,6 +1368,11 @@ globus_gram_job_manager_state_machine(
 	if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL &&
 	   query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE)
 	{
+	    globus_gram_job_manager_request_log(
+		request,
+		"Parsing query RSL: %s\n",
+		query->signal_arg);
+
 	    query->rsl = globus_rsl_parse(query->signal_arg);
 	    if(!query->rsl)
 	    {
@@ -2179,6 +2319,31 @@ globus_l_gram_job_manager_set_restart_state(
     return changed;
 }
 /* globus_l_gram_job_manager_set_restart_state() */
+
+static
+void
+globus_l_gram_job_manager_state_log_rsl(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			label)
+{
+    char *				tmp_str;
+
+    tmp_str = globus_rsl_unparse(request->rsl);
+
+    if(tmp_str)
+    {
+	globus_gram_job_manager_request_log(
+		request,
+		"\n<<<<<%s\n%s\n"
+		">>>>>%s\n",
+		label,
+		tmp_str,
+		label);
+
+	globus_libc_free(tmp_str);
+    }
+}
+/* globus_l_gram_job_manager_state_log_rsl() */
 
 #ifdef BUILD_DEBUG
 static
