@@ -128,7 +128,7 @@ client_main(
     int                                 status_code;
     char *                              reason_phrase;
     globus_xio_data_descriptor_t        descriptor;
-    char                                buffer[0];
+    char                                buffer[1];
     globus_hashtable_t                  headers;
 
     rc = globus_mutex_init(&mutex, NULL);

@@ -1,3 +1,9 @@
+#include "globus_utp.h"
+#include "globus_common.h"
+#include "globus_xio.h"
+#include "globus_xio_http.h"
+#include "globus_xio_tcp_driver.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -5,11 +11,6 @@
 #include <sys/utsname.h>
 #include <string.h>
 #include "http_performance_common.h"
-#include "globus_utp.h"
-#include "globus_common.h"
-#include "globus_xio.h"
-#include "globus_xio_http.h"
-#include "globus_xio_tcp_driver.h"
 
 typedef struct
 {
@@ -520,7 +521,7 @@ http_l_test_server_open_callback(
     void *                              user_arg)
 {
     http_test_server_t *                test_server = user_arg;
-    char                                buffer[0];
+    char                                buffer[1];
 
     /* Processing is done in the request callback */
     result = globus_xio_register_read(

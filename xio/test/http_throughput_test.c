@@ -21,14 +21,14 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "globus_common.h"
 #include "http_performance_common.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_utp.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define HTTP_1_0 "HTTP/1.0"
 #define HTTP_1_1 "HTTP/1.1"

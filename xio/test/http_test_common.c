@@ -496,7 +496,7 @@ http_l_test_server_open_callback(
     void *                              user_arg)
 {
     http_test_server_t *                test_server = user_arg;
-    static char                         buffer[0];
+    static char                         buffer[1];
 
     result = globus_xio_register_read(
             handle,

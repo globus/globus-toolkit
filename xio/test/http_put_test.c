@@ -110,7 +110,7 @@ client_main(
     char                                content_length_buffer[64];
     globus_xio_http_header_t            headers[2];
     globus_xio_data_descriptor_t        descriptor;
-    char                                buffer[0];
+    char                                buffer[1];
     globus_xio_handle_t                 handle;
     int                                 status_code;
     char *                              reason_phrase;

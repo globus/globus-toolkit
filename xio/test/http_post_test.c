@@ -116,7 +116,7 @@ client_main(
     globus_xio_handle_t                 handle;
     int                                 i;
     globus_xio_data_descriptor_t        descriptor;
-    char                                buffer[0];
+    char                                buffer[1];
     int                                 status_code;
     char *                              reason_phrase;
 
