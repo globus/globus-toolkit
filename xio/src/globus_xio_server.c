@@ -1912,7 +1912,6 @@ globus_xio_contact_info_to_encoded_string(
     
     if(encode_chars)
     {
-        contact_info = &local_info;
         memset(&local_info, 0, sizeof(local_info));
         local_info.resource = globus_l_xio_encode_hex(
             contact_info->resource, encode_chars->resource);
@@ -1928,6 +1927,7 @@ globus_xio_contact_info_to_encoded_string(
             contact_info->pass, encode_chars->pass);   
         local_info.subject = globus_l_xio_encode_hex(
             contact_info->subject, encode_chars->subject);
+        contact_info = &local_info;
     }
 
     if(contact_info->resource &&
