@@ -466,3 +466,8 @@ globus_gfs_ipc_init(
     globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_handle_t                 xio_handle);
+
+globus_result_t
+globus_gfs_ipc_destroy(
+    globus_gfs_ipc_handle_t             ipc_handle);
+
