@@ -51,14 +51,14 @@ Authctxt *x_authctxt = NULL;
 /* methods */
 
 extern Authmethod method_none;
-#ifdef GSSAPI
-extern Authmethod method_external;
-extern Authmethod method_gssapi;
-#endif
 extern Authmethod method_pubkey;
 extern Authmethod method_passwd;
 extern Authmethod method_kbdint;
 extern Authmethod method_hostbased;
+#ifdef GSSAPI
+extern Authmethod method_external;
+extern Authmethod method_gssapi;
+#endif
 
 Authmethod *authmethods[] = {
 	&method_none,
