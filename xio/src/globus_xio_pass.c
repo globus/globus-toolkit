@@ -307,7 +307,7 @@ globus_xio_driver_open_delivered(
             close_op->cached_obj = NULL;
             if(close_op->entry[close_op->ndx - 1].prev_ndx == 0 &&
                     !close_op->blocking &&
-                op->_op_handle != NULL)
+                close_op->_op_handle != NULL)
             {
                 space = close_op->_op_handle->space;
             }
