@@ -14,35 +14,33 @@
 #include <string.h>
 #include <assert.h>
 
-#define MYPROXY_DEFAULT_HOURS   84 /* lifetime on myproxy-server */  
-
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-get-delegation [-h hours] [-l username] ...\n"\
+"Syntax: myproxy-get-delegation [-t hours] [-l username] ...\n"\
 "        myproxy-get-delegation [--usage|--help] [-v|--version]\n"\
 "\n"\
 "    Options\n"\
-"    --help | --usage            Displays usage\n"\
-"    -v | -version             Displays version\n"\
-"    -l | -username <username> Specifies the username for the delegated proxy\n"\
-"    -h | -hours    <hours>    Specifies the lifetime of the delegated proxy\n"\
-"    -s | -pshost   <hostname> Specifies the hostname of the myproxy-server\n"\
-"    -p | -psport   #          Specifies the port of the myproxy-server\n"\
+"    --help | --usage                  Displays usage\n"\
+"    -v | -version                     Displays version\n"\
+"    -l | -username         <username> Specifies the username for the delegated proxy\n"\
+"    -t | -portal_lifetime  <hours>    Specifies the lifetime of the delegated proxy\n"\
+"    -s | -pshost           <hostname> Specifies the hostname of the myproxy-server\n"\
+"    -p | -psport           <port #>   Specifies the port of the myproxy-server\n"\
 "\n";
 
 struct option long_options[] =
 {
-    {"help",             no_argument, NULL, 'u'},
-    {"pshost",     required_argument, NULL, 's'},
-    {"psport",     required_argument, NULL, 'p'},
-    {"hours",      required_argument, NULL, 'h'},
-    {"usage",            no_argument, NULL, 'u'},
-    {"username",   required_argument, NULL, 'l'},
-    {"version",          no_argument, NULL, 'v'},
+    {"help",                   no_argument, NULL, 'u'},
+    {"pshost",           required_argument, NULL, 's'},
+    {"psport",           required_argument, NULL, 'p'},
+    {"portal_lifetime",  required_argument, NULL, 'h'},
+    {"usage",                  no_argument, NULL, 'u'},
+    {"username",         required_argument, NULL, 'l'},
+    {"version",                no_argument, NULL, 'v'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "us:p:l:h:v";
+static char short_options[] = "us:p:l:t:v";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -90,7 +88,7 @@ main(int argc, char *argv[])
 	strcpy(socket_attrs->pshost, pshost);
     }
 
-    client_request->lifetime_seconds = 60*60*MYPROXY_DEFAULT_HOURS;
+    client_request->portal_lifetime = 60*60*MYPROXY_DEFAULT_PORTAL_HOURS;
  
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 
@@ -166,8 +164,8 @@ init_arguments(int argc,
     {
         switch(arg) 
         {
-	case 'h':       /* Specify lifetime in seconds */
-	  request->lifetime_seconds = 60*60*atoi(gnu_optarg);
+	case 't':       /* Specify portal lifetime in seconds */
+	  request->portal_lifetime = 60*60*atoi(gnu_optarg);
 	  break;
         case 's': 	/* pshost name */
             attrs->pshost = malloc(strlen(gnu_optarg) + 1);

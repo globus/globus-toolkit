@@ -127,7 +127,7 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
 }
 
 int
-myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime_seconds)
+myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime)
 {
   
   char error_string[1024];
@@ -138,7 +138,7 @@ myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, co
   if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
 				     delegfile,  /* delegation file */
 				     0,          /* flags */
-				     0,          /* lifetime */
+				     lifetime,   /* lifetime */
 				     NULL        /* restrictions */) == GSI_SOCKET_ERROR) {
     
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
@@ -199,7 +199,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
     len = snprintf(&data[totlen], datalen - totlen, 
-                 "%s%d\n", MYPROXY_LIFETIME_STRING, request->lifetime_seconds);
+                 "%s%d\n", MYPROXY_LIFETIME_STRING, request->portal_lifetime);
     if (len < 0)
       return -1;
     totlen += len;
@@ -259,7 +259,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     len = convert_message(data, MYPROXY_LIFETIME_STRING, 
                           lifetime_str, sizeof(lifetime_str));
     if (len > 0) {
-      request->lifetime_seconds = atoi(lifetime_str);
+      request->portal_lifetime = atoi(lifetime_str);
     } else {
       return -1;
     }

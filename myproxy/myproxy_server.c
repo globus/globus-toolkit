@@ -113,7 +113,7 @@ static int become_daemon(myproxy_server_context_t *server_context);
 
 static int debug = 0;
 
-static int numclients = 0;
+int numclients = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -189,7 +189,8 @@ main(int argc, char *argv[])
         socket_attrs->socket_fd = accept(listenfd,
 					 (struct sockaddr *) &client_addr,
 					 &client_addr_len);
-
+	numclients++;
+	myproxy_log("Connection from %s, total clients=%d", inet_ntoa(client_addr.sin_addr), numclients);
         if (socket_attrs->socket_fd < 0) {
             if (errno == EINTR) {
                 continue; 
@@ -197,9 +198,6 @@ main(int argc, char *argv[])
                 myproxy_log_perror("Error in accept()");
             }
         }
-
-	myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
-	
 	if (!debug)
 	{
 	    childpid = fork();
@@ -211,7 +209,6 @@ main(int argc, char *argv[])
 	    else if (childpid != 0)
 	    {
 		/* Parent */
-
 		/* parent closes connected socket */
 		close(socket_attrs->socket_fd);
 
@@ -226,8 +223,6 @@ main(int argc, char *argv[])
 	    }
 	    close(listenfd);
 	}
-	numclients++;
-	myproxy_log("Client has connected, total clients=%d", numclients);
 	if (handle_client(socket_attrs, server_context) < 0) {
 	    my_failure("error in handle_client()");
 	} 
@@ -362,7 +357,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Location is %s", client_creds->location);
-	myproxy_debug("  Lifetime is %d seconds", client_request->lifetime_seconds);
+	myproxy_debug("  Lifetime is %d seconds", client_request->portal_lifetime);
 
 	/* return server response */
 	send_response(attrs, server_response, client_name);
@@ -373,10 +368,10 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	/* log request type */
         myproxy_log("Received PUT request from %s", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
-	myproxy_debug("  Lifetime is %d seconds", client_request->lifetime_seconds);
+	myproxy_debug("  Lifetime is %d seconds", client_request->portal_lifetime);
 
 	/* Set lifetime of credentials on myproxy-server */ 
-	client_creds->lifetime = client_request->lifetime_seconds;
+	client_creds->lifetime = client_request->portal_lifetime;
 
 	/* return server response */
 	send_response(attrs, server_response, client_name);
@@ -591,7 +586,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     int min_lifetime;
   
     /* Delegate credentials to client */
-    min_lifetime = MIN(creds->lifetime, request->lifetime_seconds);
+    min_lifetime = MIN(creds->lifetime, request->portal_lifetime);
 
     if (myproxy_init_delegation(attrs, creds->location, min_lifetime) < 0) {
         myproxy_log_verror();
@@ -701,10 +696,10 @@ void
 sig_chld(int signo) {
     pid_t pid;
     int   stat;
-
+    
+    numclients--;
     while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
         myproxy_debug("child %d terminated", pid);
-    numclients--;
     return;
 } 
 
