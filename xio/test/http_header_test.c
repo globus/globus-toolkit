@@ -30,8 +30,6 @@
 #include "globus_xio_tcp_driver.h"
 #include "http_test_common.h"
 
-globus_mutex_t                          mutex;
-globus_cond_t                           cond;
 globus_xio_http_header_t *              test_headers;
 globus_size_t                           test_headers_length;
 int                                     done = 0;
@@ -131,26 +129,11 @@ client_main(
     char                                buffer[1];
     globus_hashtable_t                  headers;
 
-    rc = globus_mutex_init(&mutex, NULL);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Error initializing mutex\n");
-        rc = 27;
-        goto error_exit;
-    }
-    rc = globus_cond_init(&cond, NULL);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Error initializing cond\n");
-        rc = 28;
-        goto destroy_mutex_exit;
-    }
-
     rc = read_test_file(filename);
 
     if (rc != 0)
     {
-        goto destroy_cond_exit;
+        goto error_exit;
     }
 
     result = http_test_client_request(
@@ -168,7 +151,7 @@ client_main(
     if (result != GLOBUS_SUCCESS)
     {
         rc = 40;
-        goto destroy_cond_exit;
+        goto error_exit;
     }
 
     /* READ RESPONSE */
@@ -233,12 +216,6 @@ close_exit:
         fprintf(stdout, "Test failed\n");
         rc = 100;
     }
-    globus_mutex_unlock(&mutex);
-
-destroy_cond_exit:
-    globus_cond_destroy(&cond);
-destroy_mutex_exit:
-    globus_mutex_destroy(&mutex);
 error_exit:
     return rc;
 }

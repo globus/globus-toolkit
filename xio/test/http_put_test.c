@@ -35,8 +35,6 @@
 
 #include "http_test_common.h"
 
-globus_mutex_t                          mutex;
-globus_cond_t                           cond;
 int                                     done = 0;
 char *                                  message_body;
 long                                    file_size;
@@ -633,21 +631,6 @@ main(
     {
         goto error_exit;
     }
-    rc = globus_mutex_init(&mutex, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing mutex\n");
-        goto cleanup_exit;
-    }
-
-    rc = globus_cond_init(&cond, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing cond\n");
-        goto destroy_mutex_exit;
-    }
 
     if (server)
     {
@@ -662,10 +645,6 @@ main(
                 version);
     }
 
-    globus_cond_destroy(&cond);
-destroy_mutex_exit:
-    globus_mutex_destroy(&mutex);
-cleanup_exit:
     globus_xio_stack_destroy(stack);
     globus_xio_driver_unload(http_driver);
     globus_xio_driver_unload(tcp_driver);

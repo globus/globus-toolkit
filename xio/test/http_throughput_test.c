@@ -162,8 +162,8 @@ client_test(
     result = globus_xio_read(
             handle,
             info->buffer,
-            1,
-            1,
+            0,
+            0,
             NULL,
             descriptor);
     if (result != GLOBUS_SUCCESS)
@@ -197,12 +197,12 @@ client_test(
             1,
             &nbytes,
             NULL);
-    if (!http_is_eof(result))
+    if (result && !http_is_eof(result))
     {       
-        fprintf(stderr, "Error reading eof from http\n");
+        fprintf(stderr, "Error reading eof from http: %s\n",
+                globus_error_print_friendly(globus_error_get(result)));
     }
 
-    globus_mutex_unlock(&info->mutex);
 close_exit:
     globus_xio_close(handle, NULL);
     globus_utp_stop_timer(timer);
@@ -323,9 +323,10 @@ globus_l_xio_test_server_request_callback(
 	    &nbytes,
 	    NULL);
 
-    if (!http_is_eof(result))
+    if (result && !http_is_eof(result))
     {
-        fprintf(stderr, "Error reading eof from http\n");
+        fprintf(stderr, "Error reading eof from http: %s\n",
+                globus_error_print_friendly(globus_error_get(result)));
     }
 
     if (info->transfer_encoding != NULL)
@@ -506,21 +507,6 @@ main(
     {
         goto error_exit;
     }
-    rc = globus_mutex_init(&info->mutex, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing mutex\n");
-        goto cleanup_exit;
-    }
-
-    rc = globus_cond_init(&info->cond, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing cond\n");
-        goto destroy_mutex_exit;
-    }
 
     if (server)
     {
@@ -550,9 +536,6 @@ main(
 	performance_write_timers(&perf);
     }
 
-    globus_cond_destroy(&info->cond);
-destroy_mutex_exit:
-    globus_mutex_destroy(&info->mutex);
 cleanup_exit:
     globus_xio_stack_destroy(info->stack);
     globus_xio_driver_unload(info->tcp_driver);

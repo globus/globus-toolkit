@@ -15,8 +15,6 @@ typedef struct
     globus_size_t			size;
     int					iterations;
     int					temp_iterations;
-    globus_mutex_t			mutex;
-    globus_cond_t			cond;
     int                                 done;
     globus_xio_http_version_t           version;
     char *				contact;

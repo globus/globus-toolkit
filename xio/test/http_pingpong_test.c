@@ -205,7 +205,6 @@ client_test(
         {
             break;
         }
-        globus_mutex_unlock(&info->mutex);
     }
 
 close_exit:
@@ -589,21 +588,6 @@ main(
     {
         goto error_exit;
     }
-    rc = globus_mutex_init(&info->mutex, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing mutex\n");
-        goto cleanup_exit;
-    }
-
-    rc = globus_cond_init(&info->cond, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing cond\n");
-        goto destroy_mutex_exit;
-    }
 
     if (server)
     {
@@ -633,10 +617,6 @@ main(
 	performance_write_timers(&perf);
     }
 
-    globus_cond_destroy(&info->cond);
-destroy_mutex_exit:
-    globus_mutex_destroy(&info->mutex);
-cleanup_exit:
     globus_xio_stack_destroy(info->stack);
     globus_xio_driver_unload(info->tcp_driver);
     globus_xio_driver_unload(info->http_driver);

@@ -867,7 +867,6 @@ performance_start_slave(
     http_test_info_t *       info)
 {
     int                      timer = 0;
-    char *                   namebuf;
 
     info->buffer = globus_malloc(THROUGHPUT_MAX_SIZE);
     fill_buffer(info->buffer, THROUGHPUT_MAX_SIZE);
@@ -950,9 +949,6 @@ prep_timers(
     globus_utp_set_attribute("num-iterations","","%d",iterations);
     globus_utp_set_attribute("num-sizes","","%d",sizes);
     globus_utp_set_attribute("sysname","","%s",name.sysname);
-    /* redundant with hostname defined by utp
-    globus_utp_set_attribute("nodename","","%s",name.nodename);
-    */
     globus_utp_set_attribute("release","","%s",name.release);
     globus_utp_set_attribute("version","","%s",name.version);
     globus_utp_set_attribute("machine","","%s",name.machine);
@@ -964,15 +960,8 @@ performance_write_timers(
     performance_t *           perf)
 {
     char                      namebuf[50];
-    FILE *                    fp;
-    char                      buf[50];
 
     sprintf(namebuf, "%s-timings.txt", perf->name);
     globus_utp_write_file(namebuf);
-/*    fp = fopen(namebuf, "r");
-    while(fgets(buf, 50, fp) != NULL)
-    {
-         printf("%s",buf);
-    } */
     globus_module_deactivate(GLOBUS_UTP_MODULE);
 }
