@@ -9,6 +9,7 @@
  *
  *  Scheme for grim assertion format:
  *
+ *  @code
  *  <element name="GRIMAssertion">
  *      <!-- A version since one always regrets leaving out a version -->
  *      <element name="Version" type="integer">
@@ -23,6 +24,7 @@
  *      <element name="AuthorizedPortType" type="QName"
  *            maxOccurs="unbounded"/>
  *  </element>
+ *  @endcode
  *
  *  <b>The GRIM configuration file:</b>
  * 
@@ -33,6 +35,7 @@
  *  $HOME/.globus/grim-conf.xml.  If no configuration file is found
  *  all default values are used. The default values follow:
  *
+ *  @code
  *      gridmap file:           /etc/grid-security/grid-mapfile
  *      ca_cert_directory       /etc/grid-security/certificates/
  *      certficate file         /etc/grid-security/hostcert.pem
@@ -41,8 +44,9 @@
  *      max time                14400 [10 days in minutes]
  *      default time            1440  [1 day in minutes]
  *      key bits                512
- *
+ *  @endcode
  *  example config file:
+ *  @code
  *      <?xml version="1.0" encoding="UTF-8"?>
  *      <grim_conf>
  *          <conf max_time="240"/>
@@ -53,6 +57,7 @@
  *          <conf gridmap_filename="/etc/grid-security/grid-mapfile"/>
  *          <conf port_type_filename="/etc/grid-security/port_type.xml"/>
  *      </grim_conf>
+ *  @endcode
  *
  *
  *  <b>Port type file:</b>
@@ -62,6 +67,7 @@
  *
  *  example port type file:
  *
+ *  @code
  *      <?xml version="1.0" encoding="UTF-8"?>
  *      <authorized_port_types>
  *          <port_type username="bresnaha">port type.html</port_type>
@@ -72,6 +78,7 @@
  *          <port_type username="bresnaha">port type again</port_type>
  *          <port_type username="bresnaha">port type.html last</port_type>
  *      </authorized_port_types>
+ *  @endcode
  *
  *  
  */
