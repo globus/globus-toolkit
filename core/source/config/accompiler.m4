@@ -605,19 +605,21 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
+                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
@@ -702,19 +704,21 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
+                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
