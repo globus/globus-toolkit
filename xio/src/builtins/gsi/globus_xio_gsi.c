@@ -2445,7 +2445,13 @@ globus_l_xio_gsi_write_cb(
         }
     }
 
-    globus_xio_driver_finished_write(op, result, nbytes);
+    if(result != GLOBUS_SUCCESS &&
+       nbytes != GlobusXIOOperationGetWaitFor(op))
+    {
+        handle->bytes_written = 0;
+    }
+    
+    globus_xio_driver_finished_write(op, result, handle->bytes_written);
     GlobusXIOGSIDebugInternalExit();
     return;
 }
