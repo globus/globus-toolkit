@@ -1,6 +1,6 @@
 diff -r -u openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
 --- openssl-0.9.6c/Configure	Thu Dec  6 07:11:39 2001
-+++ openssl-0.9.6c-patched/Configure	Thu Jan 31 18:27:55 2002
++++ openssl-0.9.6c-patched/Configure	Thu Jan 31 20:06:49 2002
 @@ -329,8 +329,8 @@
  # The intel boxes :-), It would be worth seeing if bsdi-gcc can use the
  # bn86-elf.o file file since it is hand tweaked assembler.
@@ -24,7 +24,7 @@ diff -r -u openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
  "aix-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::(unknown)::BN_LLONG RC4_CHAR:::",
 -"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
 -"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
-+"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::-qthreaded -D_THREAD_SAFE::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-shared:-G:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::-qthreaded -D_THREAD_SAFE::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-shared::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 +"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::-D_REENTRANT::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-gcc-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 +"aix43-cc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
 +"aix43-mpcc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
@@ -126,7 +126,7 @@ diff -r -u openssl-0.9.6c/Makefile openssl-0.9.6c-patched/Makefile
  	fi
 diff -r -u openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 --- openssl-0.9.6c/Makefile.org	Wed Nov 14 04:44:11 2001
-+++ openssl-0.9.6c-patched/Makefile.org	Thu Jan 31 18:27:55 2002
++++ openssl-0.9.6c-patched/Makefile.org	Thu Jan 31 20:10:39 2002
 @@ -231,33 +231,42 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -216,16 +216,22 @@ diff -r -u openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  		libs="$$libs -l$$i"; \
  		done; \
  	fi
-@@ -414,9 +423,9 @@
+@@ -409,14 +418,14 @@
+ #  HP/UX-64bit: /usr/ccs/bin/ld
+ #  AIX:		$(CC)
+ ALLSYMSFLAG=-bnogc
+-SHAREDFLAGS=-G -bE:lib$$i.exp -bM:SRE
++SHAREDFLAGS=-G -bE:lib$${i}.exp -bM:SRE
+ SHAREDCMD=$(CC)
  do_aix-shared:
  	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
  	( set -x; \
 -	  ld -r -o $$i.o $(ALLSYMSFLAG) lib$$i.a && \
 -	  ( nm -Pg lib$$i.o | grep ' [BD] ' | cut -f1 -d' ' > lib$$i.exp; \
 -	    $(SHAREDCMD) $(SHAREDFLAG) -o lib$$i.so lib$$i.o \
-+	  ld -r -o $${i}.o $(ALLSYMSFLAG) lib$${i}.a && \
++	  ld -r -o lib$${i}.o $(ALLSYMSFLAG) lib$${i}.a && \
 +	  ( nm -Pg lib$${i}.o | grep ' [BD] ' | cut -f1 -d' ' > lib$${i}.exp; \
-+	    $(SHAREDCMD) $(SHAREDFLAG) -o lib$${i}.so lib$${i}.o \
++	    $(SHAREDCMD) $(SHAREDFLAGS) -o lib$${i}.so lib$${i}.o \
  		$$libs ${EX_LIBS} ) ) \
  	|| exit 1; \
  	libs="$$libs -l$$i"; \
