@@ -1730,7 +1730,7 @@ int
 mm_answer_gss_setup_ctx(int socket, Buffer *m) {
         gss_OID_desc oid;
         OM_uint32 major;
-	int len;
+        u_int len;
 
         oid.elements=buffer_get_string(m,&len);
 	oid.length=len;
