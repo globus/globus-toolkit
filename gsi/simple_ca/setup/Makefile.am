@@ -12,6 +12,8 @@ SUBDIRS = pkgdata
 EXTRA_DIST = $(Scripts) template_list \
 	     globus_simple_ca_setup_template.tar.gz
 
+globus_simple_ca_setup_template.tar.gz:
+	tar cvf - -C template `cat template_list` | gzip -c > globus_simple_ca_setup_template.tar.gz
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-include $(top_srcdir)/globus_automake_simpleca_post_top
