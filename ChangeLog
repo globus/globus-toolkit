@@ -1,5 +1,7 @@
 2000-09-22  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* myproxy_read_pass.c myproxy_read_pass.h: Added these files.
+	
 	* myproxy_log.c (myproxy_log_verror): Avoid logging a NULL verror
 	string.
 	
