@@ -128,4 +128,7 @@ globus_wsrf_mds_webmds_file_source          ws-mds/webmds/xmlSources/file
 globus_wsrf_mds_webmds_xml_dom_source       ws-mds/webmds/xmlSources/xmlDomNode 
 globus_wsrf_mds_webmds_resource_property_source  ws-mds/webmds/xmlSources/resourceProperties 
 
+globus_rendezvous                           ws-gram/client/c/rendezvous/source
+globus_rendezvous_test                      ws-gram/client/c/rendezvous/test 
+
 globus_database_common                      database/java/common/source
