@@ -99,6 +99,3 @@ X11Forwarding yes
 
 # override default of no subsystems
 Subsystem	sftp	/usr/libexec/sftp-server
-
-# where to store the pid of sshd process
-#PidFile		/var/run/sshd.pid
