@@ -1918,7 +1918,7 @@ void user(char *name)
     }
     syslog(LOG_INFO, "authenticated identity is %s, authz identity is %s",
 	   gssapi_audit_identity(), gssapi_identity());
-#endif (defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION))
+#endif /*(defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION)) */
 
 #ifdef GSSAPI
     if (gssapi_authentication_required)
