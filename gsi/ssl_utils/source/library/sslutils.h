@@ -330,7 +330,7 @@ struct proxy_verify_desc_struct {
     int                                 proxy_depth;
     int                                 cert_depth;
     int                                 limited_proxy;
-      STACK_OF(X509) *                    cert_chain; /*  X509 */
+    STACK_OF(X509) *                    cert_chain; /*  X509 */
     int                                 multiple_limited_proxy_ok;
     proxy_verify_extension_callback_t   extension_cb;
     void *                              extension_oids;
@@ -418,6 +418,14 @@ proxy_verify_init(
 void
 proxy_verify_release(
     proxy_verify_desc *                 pvd);
+
+void 
+proxy_verify_ctx_init(
+    proxy_verify_ctx_desc *             pvxd);
+
+void 
+proxy_verify_ctx_release(
+    proxy_verify_ctx_desc *             pvxd);
 
 int
 proxy_check_proxy_name(

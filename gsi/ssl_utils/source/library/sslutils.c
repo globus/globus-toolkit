@@ -2139,6 +2139,7 @@ proxy_verify_callback(
         fprintf(stderr,"proxy_verify_callback:overriding:%d\n\n",
                 ctx->error);
 #endif
+        /* don't really understand why we clear the error - Sam */
         ctx->error = 0;
         return(ok);
     }
@@ -2164,7 +2165,7 @@ proxy_verify_callback(
     }
     if (ret > 0)
     {  /* Its a proxy */
-        if (ret == 2)
+        if (ret == GLOBUS_LIMITED_PROXY)
         {
             /*
              * If its a limited proxy, it means it use has been limited 
