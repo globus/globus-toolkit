@@ -25,6 +25,14 @@
       <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>
 
+    <Source_Setup_Dependency PkgType="rtl">
+        <Setup_Dependency Name="globus_scheduler_event_generator_fork_setup">
+            <Version>
+                <Simple_Version Major="0"/>
+            </Version>
+        </Setup_Dependency>
+    </Source_Setup_Dependency>
+
     <Build_Environment >
       <cflags >@GPT_PKG_CFLAGS@</cflags>
       <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>

@@ -193,6 +193,11 @@ globus_l_fork_module_activate(void)
         goto free_logfile_state_buffer_error;
     }
 
+    if (logfile_state->start_timestamp == 0)
+    {
+        logfile_state->start_timestamp = time(NULL);
+    }
+
     /* Convert timestamp to filename */
     rc = globus_l_fork_find_logfile(logfile_state);
 
@@ -416,7 +421,9 @@ globus_l_fork_find_logfile(
     if (state->path == NULL)
     {
         SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE, ("allocating path\n"));
-        state->path = globus_libc_strdup(logfile);
+
+        globus_common_get_attribute_from_config_file(NULL,
+                "etc/globus-fork.conf", "log_path", &state->path);
 
         if (state->path == NULL)
         {
@@ -424,7 +431,6 @@ globus_l_fork_find_logfile(
             goto error;
         }
     }
-
 
     do
     {
