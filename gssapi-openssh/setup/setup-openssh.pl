@@ -847,7 +847,7 @@ sub copySSHDConfigFile
     # set the sftp directive
     #
 
-    $text = "Subsystem\tsftp\t$gpath/libxec/sftp-server";
+    $text = "Subsystem\tsftp\t$gpath/libexec/sftp-server";
     $data =~ s:^[\s|#]*Subsystem\s+sftp\s+.*$:$text:gm;
 
     #
