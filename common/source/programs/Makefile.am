@@ -1,0 +1,16 @@
+include $(top_srcdir)/globus_automake_pre
+
+bin_SCRIPTS = globus-sh-exec
+sbin_SCRIPTS = globus-update-doxygen-index
+libexec_PROGRAMS = globus-libc-hostname
+
+EXTRA_DIST = $(sbin_SCRIPTS) $(bin_SCRIPTS)
+
+INCLUDES = -I$(top_srcdir)/library $(GPT_INCLUDES) 
+
+globus_libc_hostname_SOURCES = globus_libc_hostname.c
+
+globus_libc_hostname_LDADD = ../library/libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
+
+include $(top_srcdir)/globus_automake_post
+
