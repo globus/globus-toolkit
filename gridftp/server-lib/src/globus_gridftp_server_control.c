@@ -4284,6 +4284,13 @@ globus_gridftp_server_control_begin_transfer(
             res = globus_i_gsc_intermediate_reply(
                 op, _FSMSL("125 Begining transfer; reusing existing data connection.\r\n"));
         }
+
+        if(op->event.event_mask != 0)
+        {
+            /* this has to be delayed until here */
+            globus_i_gsc_event_start_perf_restart(op);
+        }
+        op->transfer_started = GLOBUS_TRUE;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -4440,8 +4447,11 @@ globus_gridftp_server_control_events_enable(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        /* TODO: determine if cached */
         globus_i_gsc_event_start(op, event_mask, event_cb, user_arg);
+        if(op->transfer_started)
+        {
+            globus_i_gsc_event_start_perf_restart(op);
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 

@@ -553,4 +553,8 @@ globus_i_gsc_cmd_intermediate_reply(
     globus_i_gsc_op_t *                 op,
     char *                              reply_msg);
 
+void
+globus_i_gsc_event_start_perf_restart(
+    globus_i_gsc_op_t *                 op);
+
 #endif
