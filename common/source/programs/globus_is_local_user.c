@@ -28,9 +28,10 @@ int main(int argc, char * argv[])
     int              exit_code = 1;
     int              rc;
     char             buf[1024];
+	#if !defined(TARGET_ARCH_WIN32)
     struct passwd    pwd;
     struct passwd *  result;
-
+    #endif
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
@@ -59,11 +60,20 @@ int main(int argc, char * argv[])
     }
     else
     {
+	// ToDo: This call is not defined in common\globus_libc.c for Win32 
+    //       Do we need to add this to coommon?
+	#if !defined(TARGET_ARCH_WIN32)
 	rc = globus_libc_getpwnam_r( argv[1],
 				     &pwd,
 				     buf,
 				     1024,
 				     &result );
+	#else
+	globus_libc_fprintf(stderr,
+			    "NOTE: globus_libc_getpwnam_r not supported on Windowsn\n");
+	/* leave return code as undisturbed from previous tests */
+	#endif
+	// ~ToDo
 
 	if (rc == GLOBUS_SUCCESS)
 	    exit_code = 0;

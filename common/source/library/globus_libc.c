@@ -914,13 +914,40 @@ globus_libc_gethostname(char *name, int len)
     globus_libc_unlock();
     
     globus_mutex_lock(&gethostname_mutex);
-    
+
+    // ToDo: This change should perhaps be applied to unix side as well?
+    #ifdef WIN32
+        /*
+     * If the environment variable is set, always return that.
+     * Otherwise, we can drop through to the caching code.
+     */
+    if ((env = globus_libc_getenv("GLOBUS_HOSTNAME")) != GLOBUS_NULL)
+    {
+        size_t hlen = strlen(env);
+    	if (hlen < (size_t) len)
+    	{
+    	    size_t i;
+    	    strcpy(name, env);
+    	    for (i=0; i < hlen; i++)
+    		name[i] = tolower(name[i]);
+    	    globus_mutex_unlock(&gethostname_mutex);
+    	    return 0;
+    	}
+    	else
+    	{
+    	    globus_mutex_unlock(&gethostname_mutex);
+    	    errno=EFAULT;
+    	    return(-1);
+    	}
+    }
+    #else    
     if (hostname_length == 0U &&
         (env = globus_libc_getenv("GLOBUS_HOSTNAME")) != GLOBUS_NULL)
     {
         strncpy(hostname, env, MAXHOSTNAMELEN);
         hostname_length = strlen(hostname);
     }
+    #endif
     if (hostname_length == 0U)
     {
         struct hostent *                hp_ptr = GLOBUS_NULL;

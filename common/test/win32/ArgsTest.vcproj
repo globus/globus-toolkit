@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="ArgsTest"
+	Name="CommonArgsTest"
 	ProjectGUID="{78DA3328-5644-458D-B1AB-094C1ADA0401}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\threaded"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -111,10 +111,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\nonthreaded;$(CORE)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="0"
@@ -126,8 +126,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="globus_common_win32dbgthr.lib Ws2_32.lib"
-				OutputFile="$(OutDir)/ArgsTestThr.exe"
+				AdditionalDependencies="libglobus_common_win32dbgthr.lib Ws2_32.lib"
+				OutputFile="$(OutDir)/ArgsTest.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"
 				GenerateDebugInformation="TRUE"
@@ -137,9 +137,13 @@
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
+copy $(OutDir)\$(TargetName).pdb \bin\*.*
+"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				CommandLine="SET CORE=N:\"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool

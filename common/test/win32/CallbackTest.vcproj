@@ -2,7 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="CallbackTest">
+	Name="CommonPollTest"
+	ProjectGUID="{7ED990B2-8D46-4415-8677-81D0EA4AD54C}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
@@ -17,7 +18,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
+				AdditionalIncludeDirectories="..\..\source\library;..\..\..\core\source\win32\nonthreaded;..\..\source\win32\nonthreaded;..\..\source\win32;&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -112,10 +113,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include\&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\nonthreaded"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="0"
@@ -127,8 +128,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="globus_common_win32dbgthr.lib Ws2_32.lib"
-				OutputFile="$(OutDir)/CallbackTestThr.exe"
+				AdditionalDependencies="libglobus_common_win32dbgthr.lib Ws2_32.lib"
+				OutputFile="$(OutDir)/CallbackTest.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib\"
@@ -140,7 +141,10 @@
 				Name="VCMIDLTool"
 				TargetEnvironment="1"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(OutDir)\*.exe \bin\*.*
+copy $(OutDir)\*.pdb \bin\*.*
+"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

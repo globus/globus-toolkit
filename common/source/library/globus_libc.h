@@ -149,6 +149,7 @@ extern void globus_libc_closedir(DIR *dirp);
 #    define globus_libc_write           _write
 #           define globus_libc_writev(fd,iov,iovcnt) \
 	            write(fd,iov[0].iov_base,iov[0].iov_len)
+#   define uid_t int
 
 /*
  * these are only on windows for now
