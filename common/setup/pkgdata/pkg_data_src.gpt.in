@@ -27,7 +27,7 @@
     </Post_Install_Message>
 
     <Post_Install_Program >
-      globus/setup-globus-common
+      setup-globus-common
     </Post_Install_Program>
 
     <Setup Name="common_setup" >

@@ -24,7 +24,7 @@
     </Post_Install_Message>
 
     <Post_Install_Program >
-      globus/setup-globus-core
+      setup-globus-core
     </Post_Install_Program>
 
     <Setup Name="core_setup" >
