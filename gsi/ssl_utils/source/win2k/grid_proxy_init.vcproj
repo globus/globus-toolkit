@@ -19,7 +19,7 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)/include; ../library/"
+					IncludePaths="$(SolutionDir)\..\library;$(SolutionDir)\..\library\oldgaa;$(SolutionDir);$(GLOBUS_LOCATION)/include"
 					Defines="WIN32;_DEBUG;_WINDOWS"
 					MinimalRebuild="FALSE"
 					FullRuntimeChecks="TRUE"

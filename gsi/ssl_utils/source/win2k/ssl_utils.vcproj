@@ -18,7 +18,7 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)\include;$(ProjFileName)\oldgaa"
+					IncludePaths="$(SolutionDir)\..\library\oldgaa;$(GLOBUS_LOCATION)\include;..\win2k"
 					Defines="WIN32;_DEBUG;_CONSOLE"
 					MinimalRebuild="TRUE"
 					FullRuntimeChecks="TRUE"
@@ -102,7 +102,7 @@
 			Name="Header Files"
 			Filter="h">
 			<File
-				RelativePath="..\library\config.h">
+				RelativePath="config.h">
 			</File>
 			<File
 				RelativePath="..\library\oldgaa\oldgaa_utils.h">
