@@ -156,17 +156,17 @@ g_end()
               &g_data_handle,
               data_close_callback,
               (void*)&monitor);
-    /*
-     *  wait for all the callbacks and the close callback 
-     */
-    globus_mutex_lock(&monitor.mutex);
-    {   
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&monitor.mutex);
+        {   
+            while(!monitor.done)
+            {
+                globus_cond_wait(&monitor.cond, &monitor.mutex);
+            }
         }
+        globus_mutex_unlock(&monitor.mutex);
     }
-    globus_mutex_unlock(&monitor.mutex);
 
     globus_ftp_control_handle_destroy(&g_data_handle);
     globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
