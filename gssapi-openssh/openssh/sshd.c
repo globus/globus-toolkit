@@ -1119,8 +1119,10 @@ main(int ac, char **av)
 	chdir("/");
 
 #ifndef HAVE_CYGWIN
+#ifndef GSI /* GSI gets configuration from environment! */
 	/* Clear environment */
 	environ[0] = NULL;
+#endif
 #endif
 
 	/* ignore SIGPIPE */
