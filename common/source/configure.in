@@ -21,7 +21,7 @@ AC_SUBST(GLOBUS_THREADS)
 
 AC_OUTPUT(
 	Makefile
-	build_parameters_$FL:build_parameters.in
+	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
 	library/globus_common.h
 	library/Makefile
 	tests/run-tests
