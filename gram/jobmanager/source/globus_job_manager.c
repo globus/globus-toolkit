@@ -512,7 +512,10 @@ main(int argc,
     globus_symboltable_insert(symbol_table,
                             (void *) "USER",
                             (void *) my_env_user);
-
+    globus_symboltable_insert(symbol_table,
+			    (void *) "GLOBUS_PREFIX",
+			    (void *) GLOBUS_PREFIX);
+    
     globus_rsl_eval(description_tree, symbol_table);
 
     /*
@@ -642,7 +645,7 @@ main(int argc,
 				    cache_size);
 	globus_gass_cache_close(&cache_handle);
     }
-    globus_rsl_free_recursively(description_tree);
+    globus_rsl_free_recursive(description_tree);
 
     nexus_disallow_attach(my_port);
 
@@ -918,7 +921,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     if (tmp_param[0])
         params->dir = tmp_param[0];
     else
-        params->dir, graml_my_env_home;
+        params->dir = graml_my_env_home;
 
     /********************************** 
      *  GET STDIN PARAM
@@ -1026,39 +1029,6 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     else
         params->gram_myjob = GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB;
 
-
-    /*
-     * Substitute $(GLOBUS_PREFIX) with the Globus prefix directory
-     */
-    if (strncmp(params->pgm, "$(GLOBUS_PREFIX)", 16) == 0)
-    {
-	char				str[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
-	int				prefix_len;
-	int				str_len;
-
-	grami_fprintf( grami_log_fp, 
-		       "JM: PGM before subst %s\n",
-		       params->pgm);
-
-	strcpy(str, params->pgm + 16);
-	str_len = strlen(str);
-	prefix_len = strlen(GLOBUS_PREFIX);
-	
-	if (str_len + prefix_len + 1 > GLOBUS_GRAM_CLIENT_PARAM_SIZE)
-	{
-	    return (GLOBUS_GRAM_CLIENT_ERROR_NO_RESOURCES);
-	}
-
-        params->pgm = (char *) globus_malloc (sizeof(char *) *
-                                              str_len +
-                                              prefix_len + 1);
-	strcpy(params->pgm, GLOBUS_PREFIX);
-	strcat(params->pgm, str);
-
-    	grami_fprintf( grami_log_fp, 
-		       "JM: PGM after subst %s\n",
-		       params->pgm);
-    }
 
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
