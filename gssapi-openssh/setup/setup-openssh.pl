@@ -29,7 +29,7 @@ my $globusdir = $gpath;
 my $setupdir = "$globusdir/setup/globus";
 my $myname = "setup-openssh.pl";
 
-print "$myname: Configuring package 'gsi-openssh'\n";
+print "$myname: Configuring package 'gsi_openssh'...\n";
 
 #
 # Set up path prefixes for use in the path translations
@@ -190,3 +190,5 @@ runkeygen();
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
+
+print "$myname: Finished configuring package 'gsi_openssh'.\n";
