@@ -51,7 +51,7 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            "%s failed.",                                                    \
+            _XIOSL("%s failed.",)                                                    \
             (failed_func)))
 
 
@@ -64,7 +64,7 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            "Peer specified lower protection level"))
+            _XIOSL("Peer specified lower protection level")))
 
 #define GlobusXioGSIErrorEmptyTargetName()                                   \
     globus_error_put(                                                        \
@@ -75,7 +75,7 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            "Identity authorization requested, but no target name set"))
+            _XIOSL("Identity authorization requested, but no target name set")))
 
 #define GlobusXioGSIErrorEmptyHostName()                                     \
     globus_error_put(                                                        \
@@ -86,7 +86,7 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            "Host authorization requested, but no host name set"))
+            _XIOSL("Host authorization requested, but no host name set")))
 
 #define GlobusXioGSIAuthorizationFailed(_peer_name, _expected_name)          \
     globus_error_put(                                                        \
@@ -97,8 +97,8 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            "The peer authenticated to %s. Expected the peer "               \
-            "to authenticate as %s", (_peer_name), (_expected_name)))
+            _XIOSL("The peer authenticated to %s. Expected the peer "               \
+            "to authenticate as %s"), (_peer_name), (_expected_name)))
 
 
 /* XIO debug stuff */
@@ -114,32 +114,32 @@ GlobusDebugDeclare(GLOBUS_XIO_GSI);
 #define GlobusXIOGSIDebugEnter()                                            \
     GlobusXIOGSIDebugPrintf(                                                \
         GLOBUS_XIO_GSI_DEBUG_TRACE,                                         \
-        ("[%s] Entering\n", _xio_name))
+        (_XIOSL("[%s] Entering\n"), _xio_name))
 
 #define GlobusXIOGSIDebugExit()                                             \
     GlobusXIOGSIDebugPrintf(                                                \
         GLOBUS_XIO_GSI_DEBUG_TRACE,                                         \
-        ("[%s] Exiting\n", _xio_name))
+        (_XIOSL("[%s] Exiting\n"), _xio_name))
 
 #define GlobusXIOGSIDebugExitWithError()                                    \
     GlobusXIOGSIDebugPrintf(                                                \
         GLOBUS_XIO_GSI_DEBUG_TRACE,                                         \
-        ("[%s] Exiting with error\n", _xio_name))
+        (_XIOSL("[%s] Exiting with error\n"), _xio_name))
 
 #define GlobusXIOGSIDebugInternalEnter()                                    \
     GlobusXIOGSIDebugPrintf(                                                \
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,                                \
-        ("[%s] I Entering\n", _xio_name))
+        (_XIOSL("[%s] I Entering\n"), _xio_name))
 
 #define GlobusXIOGSIDebugInternalExit()                                     \
     GlobusXIOGSIDebugPrintf(                                                \
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,                                \
-        ("[%s] I Exiting\n", _xio_name))
+        (_XIOSL("[%s] I Exiting\n"), _xio_name))
 
 #define GlobusXIOGSIDebugInternalExitWithError()                            \
     GlobusXIOGSIDebugPrintf(                                                \
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,                                \
-        ("[%s] I Exiting with error\n", _xio_name))
+        (_XIOSL("[%s] I Exiting with error\n"), _xio_name))
 
 /*
  *  attribute structure

@@ -75,7 +75,7 @@ globus_xio_contact_info_to_encoded_string(
         __FILE__,                                                           \
         _xio_name,                                                          \
         __LINE__,							    \
-        "Operation was canceled")                                          
+        _XIOSL("Operation was canceled"))                                          
                                                                             
 #define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
@@ -85,7 +85,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "An end of file occurred")                                           
+            _XIOSL("An end of file occurred"))                                
                                                                             
 #define GlobusXIOErrorEOF()                                                 \
     globus_error_put(                                                       \
@@ -100,7 +100,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "An invalid command (%d) was issued",                           \
+            _XIOSL("An invalid command (%d) was issued"),                   \
             (cmd_number)))                             
                                                                             
 #define GlobusXIOErrorContactString(reason)                                 \
@@ -112,7 +112,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Contact string invalid. %s",                                   \
+            _XIOSL("Contact string invalid. %s"),                           \
             (reason)))                                 
                                                                             
 #define GlobusXIOErrorParameter(param_name)                                 \
@@ -124,7 +124,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Bad parameter, %s",                                            \
+            _XIOSL("Bad parameter, %s"),                                    \
             (param_name)))                             
                                                                             
 #define GlobusXIOErrorObjMemory(mem_name)                                   \
@@ -135,7 +135,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Memory allocation failed on %s",                               \
+            _XIOSL("Memory allocation failed on %s"),                       \
             (mem_name))                               
                                                                             
 #define GlobusXIOErrorMemory(mem_name_obj)                                  \
@@ -151,7 +151,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "System error in %s",                                           \
+            _XIOSL("System error in %s"),                                   \
             (system_func)))                            
                                                                             
 #define GlobusXIOErrorSystemResource(reason)                                \
@@ -163,7 +163,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "System resource error, %s",                                    \
+            _XIOSL("System resource error, %s"),                            \
             (reason)))                                 
                                                                             
 #define GlobusXIOErrorInvalidStack(reason)                                  \
@@ -175,7 +175,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Invalid stack, %s",                                            \
+            _XIOSL("Invalid stack, %s"),                                    \
             (reason)))                                 
                                                                             
 #define GlobusXIOErrorInvalidDriver(reason)                                 \
@@ -187,7 +187,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Invalid Driver, %s",                                           \
+            _XIOSL("Invalid Driver, %s"),                                   \
             (reason)))                                 
                                                                             
 #define GlobusXIOErrorPass()                                                \
@@ -199,7 +199,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Operation passed too far"))                                           
+            _XIOSL("Operation passed too far")))                                   
                                                                             
 #define GlobusXIOErrorAlreadyRegistered()                                   \
     globus_error_put(                                                       \
@@ -210,7 +210,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Operation already registered"))                                           
+            _XIOSL("Operation already registered")))                                    
                                                                             
 #define GlobusXIOErrorInvalidState(state)                                   \
     globus_error_put(                                                       \
@@ -221,7 +221,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Unexpected state, %d",                                         \
+            _XIOSL("Unexpected state, %d"),                                 \
             (state)))                                  
                                                                             
 #define GlobusXIOErrorWrapFailed(failed_func, result)                       \
@@ -233,7 +233,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "%s failed.",                                                   \
+            _XIOSL("%s failed."),                                           \
             (failed_func)))                            
                                                                             
 #define GlobusXIOErrorNotRegistered()                                       \
@@ -245,7 +245,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Not registered."))                            
+            _XIOSL("Not registered.")))                            
 
 #define GlobusXIOErrorNotActivated()                                        \
     globus_error_put(                                                       \
@@ -256,7 +256,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Module not activated."))
+            _XIOSL("Module not activated.")))
                                                                             
 #define GlobusXIOErrorUnloaded()                                            \
     globus_error_put(                                                       \
@@ -267,7 +267,7 @@ globus_xio_contact_info_to_encoded_string(
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Driver in handle has been unloaded."))
+            _XIOSL("Driver in handle has been unloaded.")))
                                                                             
 #define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \
     do                                                                      \
