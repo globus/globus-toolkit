@@ -928,29 +928,29 @@ globus_l_gfs_file_dispatch_read(
     globus_byte_t *                     buffer;
     GlobusGFSName(globus_l_gfs_file_dispatch_read);
     
-    if(monitor->pending_read == 0 && !monitor->eof)
+    if(monitor->pending_read == 0 && !monitor->eof && 
+        !globus_list_empty(monitor->buffer_list))
     {
         buffer = globus_list_remove(
             &monitor->buffer_list, monitor->buffer_list);
-        if(buffer)
+        globus_assert(buffer);
+        
+        result = globus_xio_register_read(
+            monitor->file_handle,
+            buffer,
+            monitor->block_size,
+            monitor->block_size,
+            GLOBUS_NULL,
+            globus_l_gfs_file_read_cb,
+            monitor);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = globus_xio_register_read(
-                monitor->file_handle,
-                buffer,
-                monitor->block_size,
-                monitor->block_size,
-                GLOBUS_NULL,
-                globus_l_gfs_file_read_cb,
-                monitor);
-            if(result != GLOBUS_SUCCESS)
-            {
-                result = GlobusGFSErrorWrapFailed(
-                    "globus_xio_register_read", result);
-                goto error_register;
-            }
-            
-            monitor->pending_read++;
+            result = GlobusGFSErrorWrapFailed(
+                "globus_xio_register_read", result);
+            goto error_register;
         }
+        
+        monitor->pending_read++;
     }
     globus_mutex_unlock(&monitor->lock);
     
