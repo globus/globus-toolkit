@@ -173,6 +173,12 @@ g_end()
 }
 
 void
+g_port()
+{
+
+}
+
+void
 g_passive()
 {
     globus_result_t                             res;
