@@ -1001,7 +1001,7 @@ globus_l_gass_copy_performance_cb(
     float                                           avg_throughput)
 {
     globus_libc_fprintf(stdout,
-        " %" GLOBUS_OFF_T_FORMAT " bytes -- average %.2f KB/sec -- instantaneous %.2f KB/sec\r",
+        " %12" GLOBUS_OFF_T_FORMAT " bytes %12.2f KB/sec avg %12.2f KB/sec inst\r",
         total_bytes,
         avg_throughput / 1024,
         instantaneous_throughput / 1024);
