@@ -3,8 +3,8 @@ include $(top_srcdir)/globus_automake_pre_top
 
 setup_SCRIPTS = \
 	findshelltools \
-	setup_globus_core \
-	setup_globus_core.pl
+	setup-globus-core \
+	setup-globus-core.pl
 
 setup_DATA = \
 	globus-script-initializer \
@@ -13,8 +13,8 @@ setup_DATA = \
 SUBDIRS = pkgdata
 
 EXTRA_DIST = findshelltools \
-	setup_globus_core \
-	setup_globus_core.pl \
+	setup-globus-core \
+	setup-globus-core.pl \
 	globus-script-initializer \
 	globus-sh-tools.sh.in
 
