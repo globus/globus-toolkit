@@ -47,4 +47,5 @@ all -a \
         replica\
         side_tools\
         testing\
-        user_env
+        user_env\
+        mpich_g2
