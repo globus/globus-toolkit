@@ -1,6 +1,11 @@
 #!/bin/sh
 #
-# Usage: ./make-src-bundle <pathToSourcePackages>
+# Usage:
+#
+#   1) Run the src-bundle creation script, passing as its only argument the path to the
+#      directory containing all of the source packages to be included in the source bundle:
+#
+#        ./make-src-bundle <pathToSourcePackages>
 #
 
 NAME="gsi_openssh_bundle-2.1-src.tar.gz"

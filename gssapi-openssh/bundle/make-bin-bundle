@@ -1,6 +1,13 @@
 #!/bin/sh
 #
-# Usage: ./make-bin-bundle
+# Usage:
+#
+#   1) Verify that your GLOBUS_LOCATION is set to the installation from which you
+#      wish to create a binary bundle.
+#
+#   2) Run the bin-bundle creation script:
+#
+#        ./make-bin-bundle
 #
 
 NAME="gsi_openssh_bundle-2.1-i686-pc-linux-gnu.tar.gz"
