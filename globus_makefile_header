@@ -1,0 +1,20 @@
+globus_prefix   = $(GLOBUS_INSTALL_PATH)
+GSI_FLAVOR      = gcc32dbgpthr
+SSL_DIR         = $(globus_prefix)
+
+BASE_CFLAGS     = -g
+BASE_LDFLAGS    = 
+SHARED_LDFLAGS  =
+
+INSTALL_LIBDIR  = -L$(globus_prefix)/lib
+INSTALL_INCLUDE = -I$(globus_prefix)/include -I$(globus_prefix)/include/$(GSI_FLAVOR)
+
+LDFLAGS         = $(BASE_LDFLAGS) $(SHARED_LDFLAGS) $(INSTALL_LIBDIR)
+
+SSL_CFLAGS              = -I$(SSL_DIR)/include/$(GSI_FLAVOR)/openssl
+SSL_LDFLAGS             = -L$(SSL_DIR)/lib -static
+SSL_LIBS                = -lssl_$(GSI_FLAVOR) -lcrypto_$(GSI_FLAVOR)
+
+GLOBUS_GSSAPI_CFLAGS    = $(SSL_CFLAGS) $(GLOBUS_GAA_CFLAGS)
+GLOBUS_GSSAPI_LDFLAGS   = $(SSL_LDFLAGS) $(GLOBUS_GAA_LDFLAGS) -static
+GLOBUS_GSSAPI_LIBS      = -lglobus_gss_assist_$(GSI_FLAVOR) -lglobus_gssapi_gsi_$(GSI_FLAVOR) -lglobus_ssl_utils_$(GSI_FLAVOR) $(SSL_LIBS)
