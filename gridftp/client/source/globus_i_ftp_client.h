@@ -125,6 +125,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               read_all;
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
     void *                                      read_all_intermediate_callback_arg;
+    globus_bool_t				rfc1738_url;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -165,6 +166,12 @@ typedef struct globus_i_ftp_client_handleattr_t
      * ftp operations.
      */
     globus_bool_t                               cache_all;
+
+    /**
+     * parse all URLs for caching with RFC1738 compliant parser
+     */
+
+    globus_bool_t				rfc1738_url;
 
     /** 
      * List of cached URLs.
@@ -225,6 +232,7 @@ globus_ftp_client_handle_state_t;
 typedef enum
 {
     GLOBUS_FTP_CLIENT_IDLE,
+    GLOBUS_FTP_CLIENT_CHMOD,
     GLOBUS_FTP_CLIENT_DELETE,
     GLOBUS_FTP_CLIENT_MKDIR,
     GLOBUS_FTP_CLIENT_RMDIR,
@@ -232,11 +240,13 @@ typedef enum
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
     GLOBUS_FTP_CLIENT_MLSD,
+    GLOBUS_FTP_CLIENT_MLST,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER,
     GLOBUS_FTP_CLIENT_MDTM,
     GLOBUS_FTP_CLIENT_SIZE,
+    GLOBUS_FTP_CLIENT_CKSM,
     GLOBUS_FTP_CLIENT_FEAT
 }
 globus_i_ftp_client_operation_t;
@@ -258,6 +268,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_MODE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_SIZE,
     GLOBUS_FTP_CLIENT_TARGET_SIZE,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM,
+    GLOBUS_FTP_CLIENT_TARGET_CKSM,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU,
     GLOBUS_FTP_CLIENT_TARGET_DCAU,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PBSZ,
@@ -283,12 +295,15 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PUT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_DEST,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MKDIR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNFR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_MLST,
+    GLOBUS_FTP_CLIENT_TARGET_MLST,
     GLOBUS_FTP_CLIENT_TARGET_LIST,
     GLOBUS_FTP_CLIENT_TARGET_RETR,
     GLOBUS_FTP_CLIENT_TARGET_STOR,
@@ -528,8 +543,23 @@ typedef struct globus_i_ftp_client_handle_t
     /** Pointer to user's features buffer */
     globus_i_ftp_client_features_t *		features_pointer;
 
+    /** Pointer to user's MLST fact string buffer */
+    globus_byte_t **		                mlst_buffer_pointer;
+    globus_size_t *                             mlst_buffer_length_pointer;
+
+    /** file mode for CHMOD **/
+    int                                         chmod_file_mode;
+    
     /** Thread safety */
     globus_mutex_t                              mutex;
+
+    /** cksm pointer**/
+    char * 					checksum;
+    
+    /** checksum parameters **/
+    globus_off_t                                checksum_offset;
+    globus_off_t                                checksum_length;
+    char *                                      checksum_alg;
 
     /** User pointer
      * @see globus_ftp_client_handle_set_user_pointer(),
@@ -674,6 +704,7 @@ typedef struct globus_i_ftp_client_plugin_t
      */
     globus_ftp_client_plugin_destroy_t		destroy_func; 
 
+    globus_ftp_client_plugin_chmod_t	        chmod_func;
     globus_ftp_client_plugin_delete_t		delete_func;
     globus_ftp_client_plugin_mkdir_t		mkdir_func;
     globus_ftp_client_plugin_rmdir_t		rmdir_func;
@@ -682,6 +713,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
     globus_ftp_client_plugin_machine_list_t     machine_list_func;
     globus_ftp_client_plugin_list_t		list_func;
+    globus_ftp_client_plugin_mlst_t		mlst_func;
     globus_ftp_client_plugin_get_t		get_func;
     globus_ftp_client_plugin_put_t		put_func;
     globus_ftp_client_plugin_third_party_transfer_t
@@ -690,6 +722,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_modification_time_t
 						modification_time_func;
     globus_ftp_client_plugin_size_t		size_func;
+    globus_ftp_client_plugin_cksm_t		cksm_func;
     globus_ftp_client_plugin_abort_t		abort_func;
     globus_ftp_client_plugin_connect_t		connect_func;
     globus_ftp_client_plugin_authenticate_t	authenticate_func;
@@ -782,12 +815,14 @@ globus_i_ftp_client_can_reuse_data_conn(
 globus_result_t
 globus_i_ftp_client_cache_add(
     globus_list_t **				cache,
-    const char *				url);
+    const char *				url,
+    globus_bool_t				rfc1738_url);
 
 globus_result_t
 globus_i_ftp_client_cache_remove(
     globus_list_t **				cache,
-    const char *				url);
+    const char *				url,
+    globus_bool_t                               rfc1738_url);
 
 globus_result_t
 globus_i_ftp_client_cache_destroy(
@@ -835,6 +870,28 @@ void
 globus_i_ftp_client_plugin_notify_machine_list(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+    
+void
+globus_i_ftp_client_plugin_notify_mlst(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_chmod(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    int                                         mode,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_cksm(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_off_t                                offset,
+    globus_off_t                                length,
+    const char *                                algorithm,
     globus_i_ftp_client_operationattr_t *	attr);
 
 void

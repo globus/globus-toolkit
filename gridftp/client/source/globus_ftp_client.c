@@ -310,6 +310,8 @@ globus_i_ftp_op_to_string(
     static const char * list     = "GLOBUS_FTP_CLIENT_LIST";
     static const char * nlst     = "GLOBUS_FTP_CLIENT_NLST";
     static const char * mlsd     = "GLOBUS_FTP_CLIENT_MLSD";
+    static const char * mlst     = "GLOBUS_FTP_CLIENT_MLST";    
+    static const char * chmod    = "GLOBUS_FTP_CLIENT_CHMOD";
     static const char * delete   = "GLOBUS_FTP_CLIENT_DELETE";
     static const char * mkdir    = "GLOBUS_FTP_CLIENT_MKDIR";
     static const char * rmdir    = "GLOBUS_FTP_CLIENT_RMDIR";
@@ -319,6 +321,7 @@ globus_i_ftp_op_to_string(
     static const char * transfer = "GLOBUS_FTP_CLIENT_TRANSFER";
     static const char * mdtm     = "GLOBUS_FTP_CLIENT_MDTM";
     static const char * size     = "GLOBUS_FTP_CLIENT_SIZE";
+    static const char * cksm     = "GLOBUS_FTP_CLIENT_CKSM";
     static const char * idle     = "GLOBUS_FTP_CLIENT_IDLE";
     static const char * invalid  = "INVALID OPERATION";
 
@@ -336,12 +339,18 @@ globus_i_ftp_op_to_string(
 	return mdtm;
     case GLOBUS_FTP_CLIENT_SIZE:
 	return size;
+    case GLOBUS_FTP_CLIENT_CKSM:
+	return cksm;
     case GLOBUS_FTP_CLIENT_LIST:
 	return list;
     case GLOBUS_FTP_CLIENT_NLST:
 	return nlst;
     case GLOBUS_FTP_CLIENT_MLSD:
 	return mlsd;
+    case GLOBUS_FTP_CLIENT_MLST:
+	return mlst;
+    case GLOBUS_FTP_CLIENT_CHMOD:
+	return chmod;
     case GLOBUS_FTP_CLIENT_DELETE:
 	return delete;
     case GLOBUS_FTP_CLIENT_GET:
@@ -390,6 +399,8 @@ globus_i_ftp_target_state_to_string(
     static const char * mode                    = "MODE";
     static const char * setup_size              = "SETUP_SIZE";
     static const char * size                    = "SIZE";
+    static const char * setup_cksm              = "SETUP_CKSM";
+    static const char * cksm                    = "CKSM";
     static const char * setup_dcau              = "SETUP_DCAU";
     static const char * dcau                    = "DCAU";
     static const char * setup_pbsz              = "SETUP_PBSZ";
@@ -416,12 +427,15 @@ globus_i_ftp_target_state_to_string(
     static const char * setup_transfer_source   = "SETUP_TRANSFER_SOURCE";
     static const char * setup_transfer_dest     = "SETUP_TRANSFER_DEST";
     static const char * setup_delete            = "SETUP_DELETE";
+    static const char * setup_chmod             = "SETUP_CHMOD";
     static const char * setup_mkdir             = "SETUP_MKDIR";
     static const char * setup_rmdir             = "SETUP_RMDIR";
     static const char * setup_rnfr              = "SETUP_RNFR";
     static const char * setup_rnto              = "SETUP_RNTO";
     static const char * setup_mdtm              = "SETUP_MDTM";
     static const char * list                    = "LIST";
+    static const char * setup_mlst              = "SETUP_MLST";
+    static const char * mlst                    = "MLST";
     static const char * retr                    = "RETR";
     static const char * stor                    = "STOR";
     static const char * mdtm                    = "MDTM";
@@ -483,6 +497,12 @@ globus_i_ftp_target_state_to_string(
         case GLOBUS_FTP_CLIENT_TARGET_SIZE:
             return size;
             break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM:
+            return setup_cksm;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_CKSM:
+            return cksm;
+            break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU:
             return setup_dcau;
             break;
@@ -543,6 +563,12 @@ globus_i_ftp_target_state_to_string(
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION:
             return setup_operation;
             break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_MLST:
+            return setup_mlst;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_MLST:
+            return mlst;
+            break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST:
             return setup_list;
             break;
@@ -557,6 +583,9 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_DEST:
             return setup_transfer_dest;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_CHMOD:
+            return setup_chmod;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_DELETE:
             return setup_delete;

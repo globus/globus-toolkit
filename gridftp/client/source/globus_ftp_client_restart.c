@@ -77,6 +77,8 @@ globus_i_ftp_client_restart_register_oneshot(
     }
 
     if(handle->op == GLOBUS_FTP_CLIENT_GET    ||
+       handle->op == GLOBUS_FTP_CLIENT_CHMOD  ||
+       handle->op == GLOBUS_FTP_CLIENT_CKSM   ||
        handle->op == GLOBUS_FTP_CLIENT_DELETE ||
        handle->op == GLOBUS_FTP_CLIENT_MDTM   ||
        handle->op == GLOBUS_FTP_CLIENT_SIZE   ||
@@ -86,6 +88,7 @@ globus_i_ftp_client_restart_register_oneshot(
        handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
        handle->op == GLOBUS_FTP_CLIENT_NLST   ||
        handle->op == GLOBUS_FTP_CLIENT_MLSD   ||
+       handle->op == GLOBUS_FTP_CLIENT_MLST   ||
        handle->op == GLOBUS_FTP_CLIENT_LIST)
     {
 	result = globus_callback_register_oneshot(
@@ -693,6 +696,8 @@ globus_i_ftp_client_restart(
     case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET:
     case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST:
 	if(handle->op == GLOBUS_FTP_CLIENT_GET    ||
+	   handle->op == GLOBUS_FTP_CLIENT_CHMOD  ||
+	   handle->op == GLOBUS_FTP_CLIENT_CKSM   ||
 	   handle->op == GLOBUS_FTP_CLIENT_DELETE ||
 	   handle->op == GLOBUS_FTP_CLIENT_FEAT   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
@@ -700,6 +705,7 @@ globus_i_ftp_client_restart(
 	   handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
 	   handle->op == GLOBUS_FTP_CLIENT_NLST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MLSD   ||
+	   handle->op == GLOBUS_FTP_CLIENT_MLST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_LIST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_SIZE   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MDTM
