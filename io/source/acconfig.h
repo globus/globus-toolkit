@@ -6,3 +6,5 @@
 
 #undef HAVE_STRING_H
 #undef HAVE_DCE_CMA_UX_H
+
+#undef GLOBUS_BUILD_WITH_NETLOGGER
