@@ -65,14 +65,15 @@ AC_SUBST(GLOBUS_THREADS)
 
 AC_OUTPUT(
 	Makefile
-	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
-	pkg_data_src.gpt
+	pkgdata/Makefile
+	pkgdata/master.filelist
+	pkgdata/pkg_data_src.gpt
 	library/Makefile
 	tests/run-tests
 	tests/globus_thread_test.sh
 	tests/Makefile
 	,
-	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkg_data_src.gpt" \
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkgdata/pkg_data_src.gpt" \
 	--flavor=$GLOBUS_FLAVOR_NAME
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME

@@ -2,6 +2,7 @@ include $(top_srcdir)/globus_automake_targets
 
 SUBDIRS= \
 	library \
+	pkgdata \
 	tests
 
 
