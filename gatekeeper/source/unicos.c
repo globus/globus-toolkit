@@ -542,8 +542,20 @@ unicos_init()
 
     memset (&usrv, 0, sizeof(USRV));
     memset (&sysv, 0, sizeof(SYSV));
-  
+
+/*
+ * Don't set SecureSys.  sysconf() implies that MLS is enabled, but
+ * on golden.sdsc.edu it effectively isn't (meaning that we can safely
+ * ignore it).  This avoids a bug in the fsecstat() system call.
+ * SDSC Remedy ticket [0021093]
+ * SGI/Cray Ticket 157765, RTA 2675
+ * Globus Req #2366
+ */
+
+#if 0
     SecureSys = sysconf(_SC_CRAY_SECURE_SYS);
+#endif
+
     if (SecureSys) {
 	use_priv = (sysconf(_SC_CRAY_RELEASE) >= 8000);
 	SecureMAC = sysconf(_SC_CRAY_SECURE_MAC);
