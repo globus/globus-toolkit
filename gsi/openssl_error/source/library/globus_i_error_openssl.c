@@ -204,7 +204,10 @@ globus_i_openssl_error_handle_destroy(
 
     if(handle != NULL)
     {
-        if(handle->data)
+        if(handle->data && 
+           (handle->flags & ERR_TXT_MALLOCED) && 
+           (handle->flags & ERR_TXT_STRING))
+               
         {
             free(handle->data);
         }
