@@ -4140,7 +4140,8 @@ globus_i_ftp_control_client_activate(void)
     
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_i_ftp_control_client_activate() entering\n"));
-        
+
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_mutex_init(
         &(globus_l_ftp_cc_handle_list_mutex), GLOBUS_NULL);
 
@@ -4195,7 +4196,7 @@ globus_i_ftp_control_client_deactivate(void)
     
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_i_ftp_control_client_deactivate() entering\n"));
-        
+
     globus_mutex_lock(&globus_l_ftp_cc_handle_list_mutex);
     {
 	while(!globus_list_empty(globus_l_ftp_cc_handle_list))
@@ -4269,6 +4270,8 @@ globus_i_ftp_control_client_deactivate(void)
 
     fclose(globus_i_ftp_control_devnull);
     
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_i_ftp_control_client_deactivate() exiting\n"));
         
