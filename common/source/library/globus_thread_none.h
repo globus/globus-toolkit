@@ -84,7 +84,7 @@ typedef int globus_thread_once_t;
     (globus_callback_space_reference(*(C)) ? 1 : 0))
     
 #define globus_macro_cond_destroy(C) \
-    (globus_callback_space_destroy(*(C)),(*(C) = GLOBUS_NULL_HANDLE))
+    (globus_callback_space_destroy(*(C)), *(C) = GLOBUS_NULL_HANDLE, 0)
     
 #define globus_macro_cond_wait(C,M) \
     ( ((*(M)) = 0), \
@@ -121,25 +121,28 @@ typedef int globus_thread_once_t;
     ((*(S) = *(A)), 0)
 
 #define globus_macro_thread_create(T,A,F,U) \
-    (-1)
+    ((T) ? (*((int *)(T)) = -1) : -1)
 
-#define globus_macro_thread_yield()
+#define globus_macro_thread_yield() \
+    (globus_poll_nonblocking())
 
 #define globus_macro_thread_key_create(K,D) \
-     ((*(K)=GLOBUS_NULL),0)
+     (*(K) = GLOBUS_NULL, 0)
 
 
 #define globus_macro_thread_setspecific(K,V) \
-    (((K)=(void*)V),0)
+    ((K) = (void *) (V), 0)
 
 #define globus_macro_thread_getspecific(K) \
     (K)
 
-#define globus_macro_thread_key_delete(K) 0
+#define globus_macro_thread_key_delete(K) \
+    ((K) = GLOBUS_NULL, 0)
     
 #define globus_macro_thread_once(C, R) \
-    ((C == NULL || R == NULL) ? GLOBUS_FAILURE : \
-    (*(C) == GLOBUS_THREAD_ONCE_INIT) ? (*C = GLOBUS_THREAD_ONCE_CALLED), R(), 0 :  0)
+    (((C) == NULL || (R) == NULL) ? GLOBUS_FAILURE : \
+    (*(C) == GLOBUS_THREAD_ONCE_INIT) ? \
+    (*(C) = GLOBUS_THREAD_ONCE_CALLED), (R)(), 0 : 0)
 
 
 #define globus_macro_thread_self() \
