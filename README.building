@@ -1,8 +1,7 @@
 First, you need to install GPT and the Globus Toolkit packages
 required for Myproxy.  Probably the easiest way to do that is to
-follow the instructions at
-<http://www.ncsa.uiuc.edu/Divisions/ACES/MyProxy/> to install the
-latest MyProxy release.  That will include all the Globus Toolkit
+follow the instructions at <http://myproxy.ncsa.uiuc.edu/> to install
+the latest MyProxy release.  That will include all the Globus Toolkit
 packages needed by MyProxy.
 
 Second, you need special versions of the GNU autotools for working
