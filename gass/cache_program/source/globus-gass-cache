@@ -26,6 +26,8 @@ my %Options =
     );
 my $Program = $0;
 my $ProgramC = $Globus::Core::Paths::libexecdir . '/globus-gass-cache-util';
+my $verbose = 0;
+
 
 # Option flags
 my $OptionLong = 0;
@@ -83,6 +85,10 @@ foreach my $ArgNo ( 0 .. $#ARGV )
     elsif ( $Arg eq "-long" )
     {
 	$OptionLong = 1;
+    }
+    elsif ( $Arg eq "-v" )
+    {
+	$verbose++;
     }
     elsif ( $Arg =~ /^($CprogFlagsRE)$/ )
     {
@@ -150,7 +156,7 @@ sub GassCacheList ( )
     die "No LOCAL root" if ( ! defined $RootDirs{LOCAL} );
 
     # Now, let's do the real fun...
-    print "Scanning the global entries in $RootDirs{GLOBAL}\n";
+    print "Scanning the global entries in $RootDirs{GLOBAL}\n" if($verbose);
     my %Global;
     $Cmd = "find $RootDirs{GLOBAL} -name 'data*' -print";
     foreach my $FullPath (`$Cmd` )
@@ -190,7 +196,7 @@ sub GassCacheList ( )
     close( FIND );
 
     # Scan through the local directory, now..
-    print "Scanning the local entries in $RootDirs{LOCAL}\n";
+    print "Scanning the local entries in $RootDirs{LOCAL}\n" if($verbose);
     my @Local;
     $Cmd = "find $RootDirs{LOCAL} -name 'data*' -print";
     foreach my $FullPath (`$Cmd` )
@@ -343,15 +349,13 @@ sub GassCacheCleanupUrl ( $ )
     my $FullGlobalDir = "$RootDirs{GLOBAL}/$Mangled";
     if ( ! -d $FullGlobalDir )
     {
-	print STDERR "Global directory for URL '$Url' does not exist\n";
-	print STDERR "Should be '$FullGlobalDir'\n";
+	print STDERR "Could not clean up file because the URL was not found in the GASS cache.\n";
 	exit 1;
     }
     my $FullGlobalData = "$FullGlobalDir/data";
     if ( ! -f $FullGlobalData )
     {
-	print STDERR "Global data file for URL '$Url' does not exist\n";
-	print STDERR "Should be '$FullGlobalData'\n";
+	print STDERR "Could not clean up file because the URL was not found in the GASS cache.\n";
 	exit 1;
     }
     my $FullGlobalDataInode = -1;
@@ -367,7 +371,7 @@ sub GassCacheCleanupUrl ( $ )
     }
 
     # Tell the user...
-    print "Found global data file @ $FullGlobalData\n";
+    print "Found global data file @ $FullGlobalData\n" if($verbose);
 
     # Scan through the local directory, now..
     my %Local;
@@ -375,7 +379,7 @@ sub GassCacheCleanupUrl ( $ )
     $Cmd =
 	"find $RootDirs{LOCAL} -inum $FullGlobalDataInode -print";
     open( FIND, "$Cmd|" ) || die "Can't run '$Cmd'";
-    print "Scanning the local entries in $RootDirs{LOCAL}\n";
+    print "Scanning the local entries in $RootDirs{LOCAL}\n" if($verbose);
     while( <FIND> )
     {
 	chomp;
@@ -425,33 +429,33 @@ sub GassCacheCleanupUrl ( $ )
     close( FIND );
 
     # Print results to the user...
-    if ( $LocalCount <= 0 )
+    if($verbose)
     {
-	print "No local links found\n";
-    }
-    else
-    {
-	print "Found $LocalCount local links:\n";
-	foreach my $Dir ( keys %Local )
+	if ( $LocalCount <= 0 )
 	{
-	    foreach my $FileRec ( @{$Local{$Dir}} )
+	    print "No local links found\n";
+	}
+	else
+	{
+	    print "Found $LocalCount local links:\n";
+	    foreach my $Dir ( keys %Local )
 	    {
-		my $File = $FileRec->{File};
-		my $Tag = $FileRec->{Tag};
-		if ( $Tag eq "" )
+		foreach my $FileRec ( @{$Local{$Dir}} )
 		{
-		    print "\t$Dir/$File\n";
-		}
-		else
-		{
-		    print "\t$Tag\n";
+		    my $File = $FileRec->{File};
+		    my $Tag = $FileRec->{Tag};
+		    if ( $Tag eq "" )
+		    {
+			print "\t$Dir/$File\n";
+		    }
+		    else
+		    {
+			print "\t$Tag\n";
+		    }
 		}
 	    }
 	}
     }
-
-    print "Remove all of these? "; $_ = <>; chomp;
-    exit 0 if ( ! ( $_ =~ /^y/ ) );
 
     # Clean it all up...
     foreach my $Dir ( keys %Local )
@@ -477,7 +481,7 @@ sub GassCacheCleanupUrl ( $ )
     # And, remove the global dir
     {
 	my $Dir = $FullGlobalDir;
-	print "Global.. ";
+	print "Global.. " if($verbose);
 	unlink "$Dir/data";
 	unlink "$Dir/url";
 
@@ -486,10 +490,10 @@ sub GassCacheCleanupUrl ( $ )
 	{
 	    my $Dir = join ('/', @Dirs );
 	    last if ( ! rmdir( $Dir ) );
-	    print "\n\t$Dir ";
+	    print "\n\t$Dir " if($verbose);
 	    pop @Dirs;
 	}
-	print "\n";
+	print "\n" if($verbose);
     }
 
 }
