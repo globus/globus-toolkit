@@ -199,7 +199,7 @@ static char *   libexecdir = NULL;
 static char *   libexecdirr = GLOBUS_LIBEXECDIR;
 static char *   service_name = NULL;
 static char *   grid_services = "etc/grid-services";
-static char *   globusmap = "etc/globusmap";
+static char *   gridmap = "etc/gridmap";
 static char *   globuskmap = "etc/globuskmap";
 static char *   globuspwd = NULL;
 static char *   globuscertdir = "cert";
@@ -572,10 +572,10 @@ main(int xargc,
             grami_setenv("GLOBUSID", argv[i+1],1);
             i++;
         }
-        else if ((strcmp(argv[i], "-globusmap") == 0)
+        else if ((strcmp(argv[i], "-gridmap") == 0)
                  && (i + 1 < argc))
         {
-            globusmap = argv[i+1];
+            gridmap = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-globuspwd") == 0)
@@ -657,7 +657,7 @@ main(int xargc,
                     "{-c parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
                     "[-home path] [-l logfile] [-e path] ",
 					"[-grid_services file] ",
-                    "[-globusid globusid] [-globusmap file] [-globuspwd file]",
+                    "[-globusid globusid] [-gridmap file] [-globuspwd file]",
                     "[-x509_cert_dir path] [-x509_cert_file file]",
                     "[-x509_user_cert file] [-x509_user_key file]",
                     "[-x509_user_proxy file]",
@@ -710,7 +710,7 @@ main(int xargc,
 		grami_setenv("GLOBUS_DEPLOY_PATH",gatekeeperhome,1);
 	}
 	
-    grami_setenv("GLOBUSMAP", genfilename(gatekeeperhome,globusmap,NULL),1);
+    grami_setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
     if (globuspwd) 
     {
         grami_setenv("GLOBUSPWD", genfilename(gatekeeperhome,globuspwd,NULL),1);
@@ -1174,7 +1174,7 @@ static void doit()
     ok_to_send_errmsg = 1;
 
     /* client_name is the globusID of the client, we need to check 
-     * the globusmap file to see which local ID this is and if the
+     * the gridmap file to see which local ID this is and if the
      * the user is authorized.
      */
 
@@ -1182,14 +1182,14 @@ static void doit()
 
     /*
      * now do authorization  i.e. globus userid must be in the 
-     * in the globusmap file. 
+     * in the gridmap file. 
      */
 
-    rc = globus_gss_assist_globusmap(client_name, &userid);
+    rc = globus_gss_assist_gridmap(client_name, &userid);
 
     if (rc != 0)
     {
-        failure2("globus_gss_assist_globusmap() failed authorization."
+        failure2("globus_gss_assist_gridmap() failed authorization."
                  " rc = %d", rc);
  
     }
@@ -1515,7 +1515,7 @@ static void doit()
 	 * Leave the X509_CERT_DIR of trusted certs
 	 * for the user to use. 
 	 */
-	grami_unsetenv("GLOBUSMAP"); /* unset it */
+	grami_unsetenv("GRIDMAP"); /* unset it */
 	grami_unsetenv("GLOBUSCERTDIR"); /* unset it */
 	grami_unsetenv("GLOBUSKEYDIR"); /* unset it */
 	grami_unsetenv("X509_USER_KEY"); /* unset it */
