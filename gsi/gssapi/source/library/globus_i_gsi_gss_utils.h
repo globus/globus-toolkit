@@ -243,7 +243,7 @@ globus_i_gsi_gss_create_cred(
     OM_uint32 *                         minor_status,
     const gss_cred_usage_t              cred_usage,
     gss_cred_id_t *                     output_cred_handle_P,
-    globus_gsi_cred_handle_t            cred_handle);
+    globus_gsi_cred_handle_t *          cred_handle);
 
 int globus_i_gsi_gss_verify_extensions_callback(
     globus_gsi_callback_data_t          callback_data,

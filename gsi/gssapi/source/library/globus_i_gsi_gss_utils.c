@@ -1259,7 +1259,7 @@ globus_i_gsi_gss_cred_read_bio(
     major_status = globus_i_gsi_gss_create_cred(&local_minor_status,
                                                 cred_usage,
                                                 cred_id_handle, 
-                                                local_cred_handle);
+                                                &local_cred_handle);
     
     if(GSS_ERROR(major_status))
     {
@@ -1269,8 +1269,6 @@ globus_i_gsi_gss_cred_read_bio(
         major_status = GSS_S_FAILURE;
         goto exit;
     }
-
-    local_cred_handle = NULL;
 
  exit:
 
@@ -1324,7 +1322,7 @@ globus_i_gsi_gss_cred_read(
     major_status = globus_i_gsi_gss_create_cred(&local_minor_status,
                                                 cred_usage,
                                                 cred_handle, 
-                                                local_cred_handle);
+                                                &local_cred_handle);
     if(GSS_ERROR(major_status))
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1333,8 +1331,6 @@ globus_i_gsi_gss_cred_read(
         major_status = GSS_S_FAILURE;
         goto exit;
     }
-
-    local_cred_handle = NULL;
     
  exit:
 
@@ -1430,7 +1426,7 @@ globus_i_gsi_gss_cred_set(
     major_status = globus_i_gsi_gss_create_cred(&local_minor_status,
                                                 cred_usage,
                                                 cred_handle, 
-                                                local_cred_handle);
+                                                &local_cred_handle);
     if(GSS_ERROR(major_status))
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1439,8 +1435,6 @@ globus_i_gsi_gss_cred_set(
         major_status = GSS_S_FAILURE;
         goto exit;
     }
-
-    local_cred_handle = NULL;
     
  exit:
 
@@ -1477,7 +1471,7 @@ globus_i_gsi_gss_create_cred(
     OM_uint32 *                         minor_status,
     const gss_cred_usage_t              cred_usage,
     gss_cred_id_t *                     output_cred_handle_P,
-    globus_gsi_cred_handle_t            cred_handle)
+    globus_gsi_cred_handle_t *          cred_handle)
 {
     gss_cred_id_desc **                 output_cred_handle = 
         (gss_cred_id_desc **) output_cred_handle_P;
@@ -1520,7 +1514,7 @@ globus_i_gsi_gss_create_cred(
     memset(newcred->globusid, 0, sizeof(gss_name_desc));
     newcred->globusid->name_oid = GSS_C_NO_OID;
 
-    if(!cred_handle)
+    if(!cred_handle || !*cred_handle)
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
@@ -1531,7 +1525,8 @@ globus_i_gsi_gss_create_cred(
         goto error_exit;
     }
 
-    newcred->cred_handle = cred_handle;
+    newcred->cred_handle = *cred_handle;
+    *cred_handle = NULL;
 
     major_status = globus_i_gsi_gssapi_init_ssl_context(
         &local_minor_status,
