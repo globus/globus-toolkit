@@ -1525,6 +1525,7 @@ globus_io_fd_tablesize()
  * @see globus_io_register_read(), globus_io_register_write()
  * @ingroup event
  */
+#ifndef TARGET_ARCH_WIN32
 globus_result_t
 globus_io_register_select(
     globus_io_handle_t *		handle,
@@ -1646,6 +1647,7 @@ globus_io_register_select(
 
     return rc;
 }
+#endif /* TARGET_ARCH_WIN32 */
 /* globus_io_register_select() */
 
 /* the entire globus io cancel method has been completely complicated by the
@@ -2347,6 +2349,10 @@ globus_l_io_handle_events(
     globus_i_io_debug_printf(5,
         (stderr, "%s(): entering\n", myname));
 
+	// TESTING!!!
+	n_ready= -1; // because of the Runtime checks
+	// END TESTING
+
     done = GLOBUS_FALSE;
     while(!done && !globus_l_io_shutdown_called)
     {
@@ -2460,6 +2466,9 @@ globus_l_io_handle_events(
 		 * will allow this race condition to have effect.
 		 */
 #if !defined(TARGET_ARCH_WIN32) || defined(BUILD_LITE)
+		// TESTING!!!
+		//fprintf( stderr, "globus_l_io_fd_num_set is %d\n", globus_l_io_fd_num_set );
+		// END TESTING
         if (globus_l_io_fd_num_set <= 0)
         {
             done = GLOBUS_TRUE;
@@ -2667,7 +2676,7 @@ globus_l_io_handle_events(
 									 // a listening socket has an
 									 // incoming connection request
 					// TESTING!!!
-					//fprintf( stderr, "state is WinIoListening\n" );
+					fprintf( stderr, "state is WinIoListening\n" );
 					// END TESTING
 					// first, check whether we're still interested in
 					// this socket operation
@@ -2738,6 +2747,14 @@ globus_l_io_handle_events(
 							
 							globus_l_io_pending_count++;
 						}
+						// if there are no other operations pending,
+						// reset the n_ready flag so that the loop ends
+						fprintf( stderr, 
+						 "listening socket is not readable, globus_l_io_fd_num_set is %d\n", 
+						 globus_l_io_fd_num_set );
+						
+						//if ( globus_l_io_fd_num_set == 1 )
+							//n_ready= 0;
 					}
 					else // a fatal error occurred
 					{
@@ -2770,7 +2787,7 @@ globus_l_io_handle_events(
 					break;
 				case WinIoConnecting:
 					// TESTING!!!
-					//fprintf( stderr, "state is WinIoConnecting\n" );
+					fprintf( stderr, "state is WinIoConnecting\n" );
 					// END TESTING
 					// this operation must trigger a callback registered
 					// as a write operation
@@ -2810,37 +2827,27 @@ globus_l_io_handle_events(
 					break;
 				case WinIoAccepting:
 					// TESTING!!!
-					//fprintf( stderr, "state is WinIoAccepting\n" );
+					fprintf( stderr, "state is WinIoAccepting\n" );
 					// END TESTING
-					/* WARNING: For now, this state occurs only after
-					 *	a call to accept() has succeeded and the socket
-					 *	does not authenticate. The callback was
-					 *	registered in globus_io_tcp_register_accept()
+					/* WARNING: The callback was registered in 
+					 *  globus_io_tcp_register_accept()
 					 *	as a write operation, so we must use the
 					 *	appropriate callback according to the "write"
 					 *  blocking attribute. (Sorry, no pun intended)
 					 */
 					if ( !FD_ISSET( handle->io_handle, 
-					 globus_l_io_write_fds ) )
+					 globus_l_io_read_fds ) )
 						break; // we don't care about this handle any longer
                     globus_i_io_debug_printf(5,
                         (stderr, "%s(): accept, fd=%d\n", myname, handle->fd));
 
 					select_info = globus_l_io_fd_table[handle->fd];
-                    operation_info = select_info->write;
+                    operation_info = select_info->read;
                                                        
-					/* WARNING: For now, this state occurs only after
-					 *	a call to accept() has succeeded and the socket
-					 *	does not authenticate. The callback was
-					 *	registered in globus_io_tcp_register_accept()
-					 *	as a write operation, so we must use the
-					 *	appropriate callback according to the "write"
-					 *  blocking attribute. (Sorry, no pun intended)
-					 */ 
-					operation_info->result= GLOBUS_SUCCESS;
+					operation_info->result= result;
 
                     result = globus_i_io_unregister_operation(
-                        handle, GLOBUS_FALSE, GLOBUS_I_IO_WRITE_OPERATION);
+                        handle, GLOBUS_FALSE, GLOBUS_I_IO_READ_OPERATION);
                     globus_assert(result == GLOBUS_SUCCESS);
                     
                     result = globus_callback_space_register_abstime_oneshot(
@@ -2848,7 +2855,7 @@ globus_l_io_handle_events(
                         &time_now,
                         globus_l_io_kickout_cb,
                         operation_info,
-                        handle->blocking_write
+                        handle->blocking_read
                             ? GLOBUS_CALLBACK_GLOBAL_SPACE
                             : handle->socket_attr.space);
                     globus_assert(result == GLOBUS_SUCCESS);
@@ -2860,7 +2867,7 @@ globus_l_io_handle_events(
 					/*
 					fprintf( stderr, "state is WinIoReading\n" );
 					if ( result == GLOBUS_SUCCESS &&
-					 handle->winIoOperation.operationAttempted == 1 )
+					 handle->winIoOperation_read.operationAttempted == 1 )
 						fprintf( stderr, "Read completed; number of bytes read is %d\n", numberOfBytes );
 					else
 						fprintf( stderr, "fake read completed\n" );
@@ -3124,6 +3131,15 @@ globus_l_io_handle_events(
 
 handle_abort:
     globus_i_io_debug_printf(5, (stderr, "%s(): exiting\n",myname));
+	// TESTING!!!
+	/*
+	fprintf( stderr, "exiting globus_l_io_handle_events; " );
+	if ( handled_something )
+		fprintf( stderr, "something was handled, n_ready was %d\n", n_ready );
+	else
+		fprintf( stderr, "nothing was handled, n_ready was %d\n", n_ready );
+	*/
+	// END TESTING
     return handled_something;
 }
 /* globus_l_io_handle_events */
@@ -3186,7 +3202,10 @@ globus_l_io_poll(
 {
     int                                 events_handled=0;
     globus_reltime_t                    time_left;
-    
+
+	// TESTING!!!
+	//fprintf( stderr, "entering globus_l_io_poll()\n" );
+	// END TESTING
     if(globus_time_abstime_is_infinity(time_stop))
     {
         GlobusTimeReltimeCopy(time_left, globus_i_reltime_infinity);
@@ -3229,6 +3248,9 @@ globus_l_io_poll(
         }
     }
 #   endif
+	// TESTING!!!
+	//fprintf( stderr, "exiting globus_l_io_poll()\n" );
+	// END TESTING
 
     globus_i_io_mutex_unlock();
 }

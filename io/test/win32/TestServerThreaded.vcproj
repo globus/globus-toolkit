@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="TestClient"
-	ProjectGUID="{D4AFEDF4-A4BB-4BD7-A3CC-CE6A6D9BF9A3}"
+	Name="TestServerThreaded"
+	ProjectGUID="{5044B073-1800-4C38-B740-8E71E40A745F}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,12 +19,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
+				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -34,12 +33,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib Mswsock.lib libeay32.lib ssleay32.lib globus_common_win32dbg.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbg.lib"
-				OutputFile="$(OutDir)/TestClient.exe"
+				AdditionalDependencies="ws2_32.lib Mswsock.lib libeay32.lib ssleay32.lib globus_common_win32dbgthr.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbgthr.lib"
+				OutputFile="$(OutDir)/TestServerThreaded.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/TestClient.pdb"
+				ProgramDatabaseFile="$(OutDir)/TestServerThreaded.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
@@ -80,7 +79,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestClient.exe"
+				OutputFile="$(OutDir)/TestServerThreaded.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				SubSystem="1"
@@ -111,7 +110,7 @@
 				RelativePath="..\getoptWin.c">
 			</File>
 			<File
-				RelativePath="..\globus_io_tcp_test_client.c">
+				RelativePath="..\globus_io_tcp_test_server.c">
 			</File>
 		</Filter>
 		<Filter

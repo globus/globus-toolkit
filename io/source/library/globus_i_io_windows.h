@@ -41,7 +41,8 @@ int globus_i_io_windows_write(
 	globus_io_handle_t * handle,
 	globus_byte_t * buf,
 	globus_size_t max_nbytes,
-	int asynchronous );
+	int asynchronous,
+	int flags );
 
 int globus_i_io_windows_file_write( 
 	globus_io_handle_t * handle, 

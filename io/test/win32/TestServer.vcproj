@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib libeay32.lib ssleay32.lib globus_common_win32dbg.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbg.lib"
+				AdditionalDependencies="ws2_32.lib Mswsock.lib libeay32.lib ssleay32.lib globus_common_win32dbg.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbg.lib"
 				OutputFile="$(OutDir)/TestServer.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"

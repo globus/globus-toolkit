@@ -925,6 +925,7 @@ globus_io_cancel(
     globus_io_handle_t *		handle,
     globus_bool_t			perform_callbacks);
 
+#ifndef TARGET_ARCH_WIN32
 globus_result_t 
 globus_io_register_select( 
     globus_io_handle_t *		handle, 
@@ -934,6 +935,7 @@ globus_io_register_select(
     void *				write_callback_arg,
     globus_io_callback_t		except_callback_func, 
     void *				except_callback_arg);
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 /**
@@ -1340,11 +1342,13 @@ globus_io_file_seek(
     globus_io_off_t			offset,
     globus_io_whence_t			whence);
 
+#ifndef TARGET_ARCH_WIN32
 globus_result_t
 globus_io_file_posix_convert(
     int fd,
     globus_io_attr_t * attr,
     globus_io_handle_t * handle);
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 /**

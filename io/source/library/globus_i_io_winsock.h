@@ -22,8 +22,11 @@ int globus_i_io_winsock_will_io_succeed( SOCKET socket,
 int globus_i_io_winsock_read( globus_io_handle_t * handle, char * buffer, 
  int numberOfBytes, int asynchronous );
 int globus_i_io_winsock_write( globus_io_handle_t * handle, char * buffer, 
- int numberOfBytes, int asynchronous );
+ int numberOfBytes, int asynchronous, int flags );
 void globus_i_io_winsock_close( globus_io_handle_t * handle );
 int globus_i_io_winsock_get_last_error( void );
+int globus_i_io_winsock_accept( globus_io_handle_t * listenerHandle );
+int globus_i_io_winsock_store_addresses( globus_io_handle_t * handle,
+ globus_io_handle_t * listenerHandle );
 
 #endif /* GLOBUS_I_IO_WINSOCK_H */

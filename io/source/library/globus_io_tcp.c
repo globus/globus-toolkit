@@ -714,6 +714,22 @@ globus_io_tcp_create_listener(
     *port = ntohs(my_addr.sin_port);
 
     handle->state = GLOBUS_IO_HANDLE_STATE_LISTENING;
+
+#ifdef TARGET_ARCH_WIN32
+	// create a buffer to hold addresses obtained when accepting
+	handle->winIoOperation_structure.addressInfo= globus_malloc( 
+	 2 * sizeof(SOCKADDR_IN) + 32 );
+	if ( handle->winIoOperation_structure.addressInfo == NULL )
+	{
+        err = globus_io_error_construct_system_failure(
+               GLOBUS_IO_MODULE,
+	           GLOBUS_NULL,
+	           handle,
+			   ERROR_OUTOFMEMORY );
+
+		goto error_exit;    
+	}
+#endif
     
     globus_i_io_debug_printf(3,
 			     (stderr, "%s(): exiting\n", myname));
@@ -883,6 +899,23 @@ globus_io_tcp_register_accept(
 	}
     }
 
+#ifdef TARGET_ARCH_WIN32
+	// make sure that the user called a Globus listen function
+	// successfully before calling this function
+	if ( listener_handle->winIoOperation_structure.acceptedSocket ==
+		INVALID_SOCKET )
+	{
+		err = globus_io_error_construct_not_initialized(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			"listener_handle",
+			1,
+			myname);
+
+		goto error_exit;
+	}
+#endif
+
     /* Keep a copy of the listener's defaults, so we can restore once
      * we're done with this accept.
      */
@@ -991,41 +1024,9 @@ globus_io_tcp_register_accept(
 	}
     }
 #else
-
-    /* make the new socket by calling accept() */
-	// NOTE: For now, this function will loop continuously if the
-	// call to accept() fails with WSAEWOULDBLOCK
-    while(!proceed)
-    {
-		SOCKET newSocket;		
-		newSocket= accept( (SOCKET)listener_handle->io_handle,
-				 &addr,
-				 &addrlen);
-		if( newSocket == INVALID_SOCKET )
-		{			
-			globus_i_io_winsock_get_last_error();
-			save_errno = errno;
-			if( save_errno != EWOULDBLOCK )
-			{
-				globus_i_io_debug_printf(2,
-						("globus_io_tcp_accept(): "
-						"accept() failed\n"));
-
-				err = globus_io_error_construct_system_failure(
-						GLOBUS_IO_MODULE,
-						GLOBUS_NULL,
-						new_handle,
-						save_errno);
-
-				goto restore_listener_error_exit;
-			}
-		}
-		else
-		{
-			new_handle->io_handle= (HANDLE)newSocket;
-			proceed = GLOBUS_TRUE;
-		}
-    }
+	new_handle->io_handle= (HANDLE)
+	 listener_handle->winIoOperation_structure.acceptedSocket;
+	globus_i_io_winsock_store_addresses( new_handle, listener_handle );
 #endif
 
     /* The new socket is nearly ready now. We now restore the listener
@@ -1110,7 +1111,7 @@ globus_io_tcp_register_accept(
 			// post a packet in order to trigger the callback
 			returnCode= globus_i_io_windows_post_completion( 
 						new_handle, 
-						WinIoAccepting );
+						WinIoWriting );
 			if ( returnCode ) // a fatal error occurred
 			{
 				// unregister the quick write operation

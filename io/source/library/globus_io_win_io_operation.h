@@ -32,6 +32,8 @@ typedef struct win_io_operation
 	int numberOfBytesProcessed;
 	WSABUF wsaBuf;
 	DWORD flags;
+	SOCKET acceptedSocket; // used only to hack the Globus listen() functions
+	char * addressInfo; // needed for sockets created by AcceptEx()
 } WinIoOperation;
 
 #endif // GLOBUS_IO_WIN_IO_OPERATION_H

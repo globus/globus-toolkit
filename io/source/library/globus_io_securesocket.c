@@ -2668,7 +2668,7 @@ continue_write:
 		rc= globus_i_io_windows_write( handle, 
 			mysteryBuffer, 
 			numberOfBytes, 
-			1 );
+			1, 0 );
 		if ( rc == -1 ) // a fatal error occurred
 		{
 			// unregister the write; NOTE: if we post the write before

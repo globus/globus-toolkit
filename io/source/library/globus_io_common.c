@@ -463,6 +463,20 @@ globus_io_register_listen(
 	goto error_exit;
     }
     
+#ifdef TARGET_ARCH_WIN32
+	// check to make sure that no accepted socket exists from a previous
+	// call to listen
+	if ( handle->winIoOperation_structure.acceptedSocket != 
+	 INVALID_SOCKET )
+	{
+		err = globus_io_error_construct_registration_error (
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle );
+		goto error_exit;
+	}
+#endif
+
     rc = globus_i_io_register_quick_operation(
         handle,
         callback,
@@ -474,10 +488,8 @@ globus_io_register_listen(
 #ifdef TARGET_ARCH_WIN32
 	if ( rc == GLOBUS_SUCCESS )
 	{
-		// post a packet in order to trigger the callback
-		returnCode= globus_i_io_windows_post_completion( 
-					handle, 
-					WinIoListening );
+		// post an accept
+		returnCode= globus_i_io_winsock_accept( handle );
 		if ( returnCode ) // a fatal error occurred
 		{
 			// unregister the quick read operation

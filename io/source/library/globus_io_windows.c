@@ -44,6 +44,8 @@ void globus_l_io_windows_init_io_operation(
 	winIoOperation->overlapped.hEvent= 0;
 	winIoOperation->state= WinIoUnknown;
 	winIoOperation->flags= 0;
+	winIoOperation->acceptedSocket= INVALID_SOCKET;
+	winIoOperation->addressInfo= NULL;
 }
 
 /* globus_i_io_windows_read()
@@ -158,13 +160,14 @@ int globus_i_io_windows_write(
 	globus_io_handle_t * handle,
 	globus_byte_t * buf,
 	globus_size_t max_nbytes,
-	int asynchronous )
+	int asynchronous,
+	int flags )
 {
 	if ( handle->type != GLOBUS_IO_HANDLE_TYPE_FILE && 
 		handle->type != GLOBUS_IO_HANDLE_TYPE_INTERNAL )
 	/* must be a socket */
 		return globus_i_io_winsock_write( handle, buf, max_nbytes,
-		 asynchronous );
+		 asynchronous, flags );
 	else
 		return globus_i_io_windows_file_write( handle, buf, max_nbytes, 
 		 asynchronous );

@@ -13,6 +13,7 @@
  */
 
 #include "globus_l_io.h"
+#include <mswsock.h>
 
 
 /* globus_i_io_winsock_socket_is_readable()
@@ -215,7 +216,7 @@ int globus_i_io_winsock_read( globus_io_handle_t * handle, char * buffer,
 */
 
 int globus_i_io_winsock_write( globus_io_handle_t * handle, char * buffer, 
- int numberOfBytes, int asynchronous )
+ int numberOfBytes, int asynchronous, int flags )
 {
 	int rc;
 	DWORD numberOfBytesSent;
@@ -227,6 +228,7 @@ int globus_i_io_winsock_write( globus_io_handle_t * handle, char * buffer,
 	// set the I/O operation state
 	handle->winIoOperation_write.state= WinIoWriting;
 	handle->winIoOperation_write.operationAttempted= 1;
+	handle->winIoOperation_write.flags= flags;
 
 	if ( asynchronous )
 	{
@@ -303,6 +305,10 @@ void globus_i_io_winsock_close( globus_io_handle_t * handle )
 	shutdown( (SOCKET)handle->io_handle, SD_SEND );
 	/* we should loop within a recv, but this is bubble gum and shoestring code */
 	closesocket( (SOCKET)handle->io_handle );
+
+	// free any memory allocated for storing address info
+	if ( handle->winIoOperation_structure.addressInfo != NULL )
+		free( handle->winIoOperation_structure.addressInfo );
 }
 
 int globus_i_io_winsock_get_last_error( void )
@@ -319,4 +325,78 @@ int globus_i_io_winsock_get_last_error( void )
 
 	return error; // return the Windows error code! If we need the 
 				  // POSIX error code, just get errno
+}
+
+/* globus_i_io_winsock_accept()
+*
+*	Calls AcceptEx() asynchronously. The result of the operation must 
+*   be obtained using GetQueuedCompletionStatus(). If the call is
+*	successful, it returns 0. Otherwise, it returns the Winsock error
+*	code and sets errno to an appropriate value.
+*
+*/
+
+int globus_i_io_winsock_accept( globus_io_handle_t * listenerHandle )
+{
+	BOOL acceptRC;
+	DWORD numberOfBytes;
+
+	// set the I/O operation state
+	listenerHandle->winIoOperation_structure.state= WinIoAccepting;
+	listenerHandle->winIoOperation_structure.operationAttempted= 1;
+
+	// create a new socket for AcceptEx
+	if( ( (SOCKET)listenerHandle->winIoOperation_structure.acceptedSocket
+	 = socket( AF_INET, SOCK_STREAM, 0 ) ) == INVALID_SOCKET )
+		return globus_i_io_winsock_get_last_error();
+
+	acceptRC= AcceptEx( (SOCKET)listenerHandle->io_handle, 
+	 listenerHandle->winIoOperation_structure.acceptedSocket, 
+	 listenerHandle->winIoOperation_structure.addressInfo,
+	 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16,
+	 &numberOfBytes, 
+	 &(listenerHandle->winIoOperation_structure.overlapped) );
+	if ( acceptRC == FALSE )
+	{
+		int error;
+		error= globus_i_io_winsock_get_last_error();
+		if ( error != ERROR_IO_PENDING )
+		{
+			// cleanup
+			closesocket( (SOCKET)
+			 listenerHandle->winIoOperation_structure.acceptedSocket );
+			listenerHandle->winIoOperation_structure.acceptedSocket= 
+			 INVALID_SOCKET;
+
+			return error;
+		}
+	}
+
+	return 0;
+} /* globus_i_io_winsock_accept() */
+
+int globus_i_io_winsock_store_addresses( globus_io_handle_t * handle,
+ globus_io_handle_t * listenerHandle )
+{
+	int rc;
+
+	if ( listenerHandle != NULL )
+		rc= setsockopt( (SOCKET)handle->io_handle, SOL_SOCKET, 
+		 SO_UPDATE_ACCEPT_CONTEXT, (char *)&listenerHandle->io_handle, 
+		 sizeof(listenerHandle->io_handle) );
+	else
+		rc= setsockopt( (SOCKET)handle->io_handle, SOL_SOCKET, 
+		 SO_UPDATE_ACCEPT_CONTEXT, NULL, 0 );
+
+	if ( rc == SOCKET_ERROR )
+	{
+		int error= globus_i_io_winsock_get_last_error();
+		// TESTING!!!
+		fprintf( stderr, "cannot update adddres info, error is %d\n",
+			error );
+		// END TESTING
+		return error;
+	}
+
+	return 0;
 }
