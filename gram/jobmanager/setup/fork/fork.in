@@ -228,8 +228,17 @@ sub submit
             }
             else
             {
-                push(@job_stdout, $description->stdout());
-                push(@job_stderr, $description->stderr());
+                if (defined($description->stdout)) {
+                    push(@job_stdout, $description->stdout());
+                } else {
+                    push(@job_stdout, '/dev/null');
+                }
+
+                if (defined($description->stderr)) {
+                    push(@job_stderr, $description->stderr());
+                } else {
+                    push(@job_stderr, '/dev/null');
+                }
             }
         }
 
