@@ -250,7 +250,7 @@ globus_io_register_write(
     globus_i_io_mutex_lock();
     
     globus_i_io_debug_printf(3,
-			     ("%s(): entering, "
+			     (stderr, "%s(): entering, "
 			      "fd=%d, nbytes=%lu\n",
 			      myname,
 			      handle->fd,
@@ -341,7 +341,7 @@ globus_io_register_write(
     globus_i_io_mutex_unlock();
 
     globus_i_io_debug_printf(3,
-			     ("globus_io_register_write(): exiting\n"));
+			    (stderr, "globus_io_register_write(): exiting\n"));
     return GLOBUS_SUCCESS;
 
   error_exit:
@@ -437,7 +437,7 @@ globus_io_register_send(
     globus_i_io_mutex_lock();
     
     globus_i_io_debug_printf(3,
-			     ("%s(): entering, "
+			     (stderr, "%s(): entering, "
 			      "fd=%d, nbytes=%lu\n",
 			      myname,
 			      handle->fd,
@@ -541,7 +541,7 @@ globus_io_register_send(
     globus_i_io_mutex_unlock();
 
     globus_i_io_debug_printf(3,
-			     ("globus_io_register_write(): exiting\n"));
+			    (stderr, "globus_io_register_write(): exiting\n"));
     return GLOBUS_SUCCESS;
 
   error_exit:
@@ -650,7 +650,7 @@ globus_io_register_writev(
     }
 
     globus_i_io_debug_printf(3,
-                             ("globus_io_register_writev(): entering\n"));
+                          (stderr, "globus_io_register_writev(): entering\n"));
 
 
     globus_i_io_mutex_lock();
@@ -734,7 +734,8 @@ globus_io_register_writev(
 
     globus_i_io_mutex_unlock();
 
-    globus_i_io_debug_printf(3, ("nexus_fd_register_for_writev(): exiting\n"));
+    globus_i_io_debug_printf(3, 
+        (stderr, "nexus_fd_register_for_writev(): exiting\n"));
 
     return GLOBUS_SUCCESS;
 
@@ -1545,7 +1546,7 @@ globus_i_io_try_write(
         if(handle->nl_handle) 
         {
             sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_NBYTES=%ld",
+                "SOCK=%d GLOBUS_IO_NBYTES=%d",
                 handle->fd,
                 n_written);
             globus_netlogger_write(
@@ -1560,7 +1561,7 @@ globus_i_io_try_write(
 
 	globus_i_io_debug_printf(
 	    5,
-	    ("globus_i_io_try_write(): write returned n_written=%d\n",
+	    (stderr, "globus_i_io_try_write(): write returned n_written=%d\n",
 	      (int) n_written));
 
 	/*
@@ -1588,7 +1589,7 @@ globus_i_io_try_write(
 	{
 	    globus_i_io_debug_printf(
 		5,
-		("globus_i_io_try_write(): write returned -1 with errno=%d\n",
+        (stderr, "globus_i_io_try_write(): write returned -1 with errno=%d\n",
 		 (int) save_errno));
 	    
 	    if (save_errno == EINTR)
@@ -1662,7 +1663,7 @@ globus_l_io_try_send(
 	
 	globus_i_io_debug_printf(
 	    5,
-	    ("globus_i_io_try_write(): write returned n_written=%d\n",
+	    (stderr, "globus_i_io_try_write(): write returned n_written=%d\n",
 	      (int) n_written));
 	
 	/*
@@ -1771,7 +1772,7 @@ globus_i_io_try_writev(
 	    iov,
 	    count_used);
 
-        sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%ld",
+        sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%d",
             handle->fd,
             n_written);
         globus_netlogger_write(
@@ -1785,7 +1786,7 @@ globus_i_io_try_writev(
 	
 	globus_i_io_debug_printf(
 	    5,
-	    ("globus_i_io_try_writev(): writev returned n_written=%d\n",
+	    (stderr, "globus_i_io_try_writev(): writev returned n_written=%d\n",
 	      (int) n_written));
 	
 	/*
@@ -1888,7 +1889,7 @@ globus_i_io_try_sendmsg(
 	
 	globus_i_io_debug_printf(
 	    5,
-	    ("globus_i_io_try_sendmsg(): sendmsg returned n_written=%d\n",
+	 (stderr, "globus_i_io_try_sendmsg(): sendmsg returned n_written=%d\n",
 	      (int) n_written));
 	
 	/*
