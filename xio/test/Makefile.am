@@ -26,7 +26,7 @@ test_PROGRAMS=                          \
 
 framework_test_SOURCES = $(Sources)
 framework_test_LDFLAGS = $(GPT_LDFLAGS)
-framework_test_LDADD = $(GPT_PGM_LINKS)
+framework_test_LDADD = $(GPT_PGM_LINKS) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

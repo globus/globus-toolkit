@@ -280,65 +280,66 @@ globus_i_xio_close_handles(
     globus_mutex_lock(&globus_l_mutex);
     {
         tmp_list = globus_list_copy(globus_l_outstanding_handles_list);
-        for(list = tmp_list;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
+    for(list = tmp_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        handle = (globus_xio_handle_t) globus_list_first(list);
+
+        /* recursive mutex */
+        globus_mutex_lock(&handle->context->mutex);
         {
-            handle = (globus_xio_handle_t) globus_list_first(list);
-
-            /* recursive mutex */
-            globus_mutex_lock(&handle->context->mutex);
+            if(!handle->sd_monitor != NULL)
             {
-                if(!handle->sd_monitor != NULL)
+                found = GLOBUS_FALSE;
+                for(ctr = 0; 
+                    ctr < handle->context->stack_size && !found; 
+                    ctr++)
                 {
-                    found = GLOBUS_FALSE;
-                    for(ctr = 0; 
-                        ctr < handle->context->stack_size && !found; 
-                        ctr++)
+                    /* cancel on al handles */
+                    if((driver == NULL || 
+                        handle->context->entry[ctr].driver == driver) &&
+                        handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
                     {
-                        /* cancel on al handles */
-                        if((driver == NULL || 
-                            handle->context->entry[ctr].driver == driver) &&
-                            handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
+                        GlobusXIODebugPrintf(
+                            GLOBUS_XIO_DEBUG_INFO, 
+                            ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
+                                handle, handle->state));
+
+                        found = GLOBUS_TRUE;
+
+                        handle->sd_monitor = &monitor;
+                        monitor.count++;
+                        if(handle->state 
+                            != GLOBUS_XIO_HANDLE_STATE_CLOSING &&
+                           handle->state 
+                            != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
                         {
-                            GlobusXIODebugPrintf(
-                                GLOBUS_XIO_DEBUG_INFO, 
-                                ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
-                                    handle, handle->state));
+                            res = globus_l_xio_hande_pre_close(
+                                handle, NULL, NULL, NULL);
+                            globus_assert(res == GLOBUS_SUCCESS);
 
-                            found = GLOBUS_TRUE;
-
-                            handle->sd_monitor = &monitor;
-                            monitor.count++;
-                            if(handle->state 
-                                != GLOBUS_XIO_HANDLE_STATE_CLOSING &&
-                               handle->state 
-                                != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
+                            if(handle->state
+                            != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
                             {
-                                res = globus_l_xio_hande_pre_close(
-                                    handle, NULL, NULL, NULL);
-                                globus_assert(res == GLOBUS_SUCCESS);
-
-                                if(handle->state
-                                != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
-                                {
-                                    globus_list_insert(&c_handles, handle);
-                                    GlobusXIODebugPrintf(
-                                        GLOBUS_XIO_DEBUG_INFO, 
-                                        ("[globus_i_xio_close_handles] : "
-                                        "registersing close on handle @0x%x\n", 
-                                            handle));
-                                }
+                                globus_list_insert(&c_handles, handle);
+                                GlobusXIODebugPrintf(
+                                    GLOBUS_XIO_DEBUG_INFO, 
+                                    ("[globus_i_xio_close_handles] : "
+                                    "registersing close on handle @0x%x\n", 
+                                        handle));
                             }
                         }
                     }
                 }
             }
-            globus_mutex_unlock(&handle->context->mutex);
         }
-        globus_list_free(tmp_list);
+        globus_mutex_unlock(&handle->context->mutex);
     }
-    globus_mutex_unlock(&globus_l_mutex);
+    globus_list_free(tmp_list);
 
     for(list = c_handles; 
         !globus_list_empty(list); 
@@ -459,11 +460,12 @@ globus_l_xio_deactivate()
     globus_i_xio_load_destroy();
     globus_l_xio_active = GLOBUS_FALSE;
 
-    GlobusDebugDestroy(GLOBUS_XIO);
-    
     rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
+
     GlobusXIODebugInternalExit();
 
+    GlobusDebugDestroy(GLOBUS_XIO);
+    
     return rc;
 }
 
@@ -2614,8 +2616,9 @@ globus_xio_open(
     }
     globus_mutex_unlock(&info->mutex);
 
+    res = info->res;
     globus_i_xio_blocking_destroy(info);
-    if(info->res != GLOBUS_SUCCESS)
+    if(res != GLOBUS_SUCCESS)
     {
         res = info->res;
         goto register_err;
@@ -2752,12 +2755,12 @@ globus_xio_read(
         *nbytes = info->nbytes;
     }
 
-    if(info->res != GLOBUS_SUCCESS)
+    res = info->res;
+    globus_i_xio_blocking_destroy(info);
+    if(res != GLOBUS_SUCCESS)
     {
-        res = info->res;
         goto alloc_error;
     }
-    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
@@ -2874,12 +2877,12 @@ globus_xio_readv(
         *nbytes = info->nbytes;
     }
 
-    if(info->res != GLOBUS_SUCCESS)
+    res = info->res;
+    globus_i_xio_blocking_destroy(info);
+    if(res != GLOBUS_SUCCESS)
     {
-        res = info->res;
         goto alloc_error;
     }
-    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
@@ -3000,12 +3003,12 @@ globus_xio_write(
         *nbytes = info->nbytes;
     }
 
-    if(info->res != GLOBUS_SUCCESS)
+    res = info->res;
+    globus_i_xio_blocking_destroy(info);
+    if(res != GLOBUS_SUCCESS)
     {
-        res = info->res;
         goto alloc_error;
     }
-    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
@@ -3121,12 +3124,12 @@ globus_xio_writev(
         *nbytes = info->nbytes;
     }
 
-    if(info->res != GLOBUS_SUCCESS)
+    res = info->res;
+    globus_i_xio_blocking_destroy(info);
+    if(res != GLOBUS_SUCCESS)
     {
-        res = info->res;
         goto alloc_error;
     }
-    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
@@ -3215,13 +3218,12 @@ globus_xio_close(
     }
     globus_mutex_unlock(&info->mutex);
 
-    if(info->res != GLOBUS_SUCCESS)
+    res = info->res;
+    globus_i_xio_blocking_destroy(info);
+    if(res != GLOBUS_SUCCESS)
     {
-        res = info->res;
         goto alloc_error;
     }
-
-    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;

@@ -56,16 +56,14 @@ globus_l_xio_timer_unregister_cb(
     }
     globus_mutex_unlock(&timer->mutex);
 
-    GlobusXIODebugInternalExit();
+    /* GlobusXIODebugInternalExit(); having this in can cause core dumps */
 }
-
 
 void
 globus_i_xio_timer_destroy(
     globus_i_xio_timer_t *                          timer)
 {
     globus_result_t                                 res;
-    globus_bool_t                                   active;
     GlobusXIOName(globus_i_xio_timer_destroy);
 
     GlobusXIODebugInternalEnter();
@@ -78,14 +76,11 @@ globus_i_xio_timer_destroy(
                 timer->periodic_handle,
                 globus_l_xio_timer_unregister_cb,
                 (void *)timer,
-                &active);
+                NULL);
         globus_assert(res == GLOBUS_SUCCESS);
-//        if(active)
+        while(timer->running)
         {
-            while(timer->running)
-            {
-                globus_cond_wait(&timer->cond, &timer->mutex);
-            }
+            globus_cond_wait(&timer->cond, &timer->mutex);
         }
     }
     globus_mutex_unlock(&timer->mutex);
