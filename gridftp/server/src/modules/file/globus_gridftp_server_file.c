@@ -8,6 +8,7 @@
 typedef struct
 {
     globus_mutex_t                      lock;
+    globus_memory_t                     mem;
     globus_priority_q_t                 queue;
     globus_list_t *                     buffer_list;
     globus_gfs_operation_t              op;
@@ -26,7 +27,8 @@ typedef struct
     globus_bool_t                       first_read;
     globus_bool_t                       eof;
     globus_bool_t                       aborted;
-    globus_byte_t                       buffer_block[1];
+    int                                 concurrency_check;
+    int                                 concurrency_check_interval;
 } globus_l_file_monitor_t;
 
 
@@ -73,15 +75,24 @@ globus_l_gfs_file_monitor_init(
 {
     globus_l_file_monitor_t *           monitor;
     globus_result_t                     result;
+    int                                 rc;
     GlobusGFSName(globus_l_gfs_file_monitor_init);
     
     monitor = (globus_l_file_monitor_t *) globus_malloc(
-        sizeof(globus_l_file_monitor_t) - 1 + (block_size * optimal_count));
+        sizeof(globus_l_file_monitor_t));
     if(!monitor)
     {
-        result = GlobusGFSErrorMemory("monitor/buffer");
+        result = GlobusGFSErrorMemory("monitor");
         goto error_alloc;
     }
+       
+    rc = globus_memory_init(&monitor->mem, block_size, optimal_count);
+    if(!rc)
+    {
+        globus_free(monitor);
+        result = GlobusGFSErrorMemory("buffer");
+        goto error_alloc;
+    } 
     
     globus_mutex_init(&monitor->lock, GLOBUS_NULL);
     globus_priority_q_init(
@@ -99,15 +110,9 @@ globus_l_gfs_file_monitor_init(
     monitor->error = GLOBUS_NULL;
     monitor->eof = GLOBUS_FALSE;
     monitor->aborted = GLOBUS_FALSE;
-
-    while(optimal_count--)
-    {
-        globus_byte_t *                 buffer;
+    monitor->concurrency_check = 2;
+    monitor->concurrency_check_interval = 2;
         
-        buffer = monitor->buffer_block + (optimal_count * block_size);
-        globus_list_insert(&monitor->buffer_list, buffer);
-    }
-    
     *u_monitor = monitor;
     
     return GLOBUS_SUCCESS;
@@ -132,6 +137,8 @@ globus_l_gfs_file_monitor_destroy(
     globus_l_file_monitor_t *           monitor)
 {
     globus_l_buffer_info_t *            buf_info;
+    globus_list_t *                     list;
+    globus_byte_t *                     buffer;
     
     if(monitor->file_handle)
     {
@@ -148,11 +155,25 @@ globus_l_gfs_file_monitor_destroy(
             globus_priority_q_dequeue(&monitor->queue);
         if(buf_info)
         {
+            if(buf_info->buffer)
+            {
+                globus_memory_push_node(&monitor->mem, buf_info->buffer);
+            }
             globus_free(buf_info);
         }
     }
+    
+    for(list = monitor->buffer_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        buffer = (globus_byte_t *) globus_list_first(list);
+        globus_memory_push_node(&monitor->mem, buffer);
+    }
+    
     globus_priority_q_destroy(&monitor->queue);
     globus_list_free(monitor->buffer_list);
+    globus_memory_destroy(&monitor->mem);
     globus_mutex_destroy(&monitor->lock);
     globus_free(monitor);
 }
@@ -745,13 +766,17 @@ globus_l_gfs_file_write_cb(
             
             monitor->pending_reads++;
         }
+        else
+        {
+            globus_memory_push_node(&monitor->mem, buffer);
+        }
         
         result = globus_l_gfs_file_dispatch_write(monitor);
         if(result != GLOBUS_SUCCESS)
         {
             monitor->error = GlobusGFSErrorObjWrapFailed(
                 "globus_l_gfs_file_dispatch_write", result);
-            goto error;
+            goto error_dispatch;
         }
         
         if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
@@ -772,6 +797,8 @@ globus_l_gfs_file_write_cb(
     return;
 
 error:
+    globus_memory_push_node(&monitor->mem, buffer);
+error_dispatch:
     if(monitor->pending_reads != 0 || monitor->pending_writes != 0)
     {
         /* there are still outstanding callbacks, wait for them */
@@ -837,16 +864,76 @@ globus_l_gfs_file_dispatch_write(
             }
             
             monitor->pending_writes++;
+            
             globus_free(buf_info);
         }
     }
     
     return GLOBUS_SUCCESS;
 
-error_seek:
 error_register:
+error_seek:
+    if(buf_info->buffer)
+    {
+        globus_memory_push_node(&monitor->mem, buf_info->buffer);
+    }
     globus_free(buf_info);
     return result;
+}
+
+/* called locked */
+static
+void
+globus_l_gfs_file_update_concurrency(
+    globus_l_file_monitor_t *           monitor)
+{
+    globus_result_t                     result;
+    int                                 optimal_count;
+    int                                 extra;
+    GlobusGFSName(globus_l_gfs_file_update_concurrency);
+
+    monitor->concurrency_check = monitor->concurrency_check_interval;
+    monitor->concurrency_check_interval *= 2;
+    if(monitor->concurrency_check_interval > 1024)
+    {
+        monitor->concurrency_check_interval = 1024;
+    }
+    
+    globus_gridftp_server_get_optimal_concurrency(
+        monitor->op, &optimal_count);
+    extra = optimal_count - monitor->optimal_count;
+    
+    if(extra <= 0)
+    {
+        return;
+    }
+    
+    monitor->optimal_count = optimal_count;
+    while(extra--)
+    {
+        globus_byte_t *             buffer;
+        
+        buffer = globus_memory_pop_node(&monitor->mem);
+        result = globus_gridftp_server_register_read(
+            monitor->op,
+            buffer,
+            monitor->block_size,
+            globus_l_gfs_file_server_read_cb,
+            monitor);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_memory_push_node(&monitor->mem, buffer);
+            result = GlobusGFSErrorWrapFailed(
+                "globus_gridftp_server_register_read", result);
+            goto error_register;
+        }
+        
+        monitor->pending_reads++;
+    }
+    return;
+
+error_register:
+    return;
 }
 
 static
@@ -870,7 +957,6 @@ globus_l_gfs_file_server_read_cb(
     globus_mutex_lock(&monitor->lock);
     {
         monitor->pending_reads--;
-        
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
             monitor->error = GlobusGFSErrorObjWrapFailed("callback", result);
@@ -908,6 +994,12 @@ globus_l_gfs_file_server_read_cb(
                 "globus_priority_q_enqueue failed");
             goto error_enqueue;
         }
+
+        monitor->concurrency_check--;
+        if(monitor->concurrency_check == 0)
+        {
+            globus_l_gfs_file_update_concurrency(monitor);
+        }        
         
         result = globus_l_gfs_file_dispatch_write(monitor);
         if(result != GLOBUS_SUCCESS)
@@ -931,6 +1023,7 @@ error_enqueue:
     
 error_alloc:
 error:
+    globus_memory_push_node(&monitor->mem, buffer);
     if(monitor->pending_reads != 0 || monitor->pending_writes != 0)
     {
         /* there are still outstanding callbacks, wait for them */
@@ -977,7 +1070,7 @@ globus_l_gfs_file_open_write_cb(
         {
             globus_byte_t *             buffer;
             
-            buffer = monitor->buffer_block + (optimal_count * block_size);
+            buffer = globus_memory_pop_node(&monitor->mem);
             result = globus_gridftp_server_register_read(
                 monitor->op,
                 buffer,
@@ -986,6 +1079,7 @@ globus_l_gfs_file_open_write_cb(
                 monitor);
             if(result != GLOBUS_SUCCESS)
             {
+                globus_memory_push_node(&monitor->mem, buffer);
                 result = GlobusGFSErrorWrapFailed(
                     "globus_gridftp_server_register_read", result);
                 goto error_register;
@@ -1263,6 +1357,7 @@ globus_l_gfs_file_dispatch_read(
             monitor);
         if(result != GLOBUS_SUCCESS)
         {
+            globus_list_insert(&monitor->buffer_list, buffer);
             result = GlobusGFSErrorWrapFailed(
                 "globus_xio_register_read", result);
             goto error_register;
@@ -1295,6 +1390,7 @@ globus_l_gfs_file_server_write_cb(
     globus_mutex_lock(&monitor->lock);
     { 
         monitor->pending_writes--;
+        globus_list_insert(&monitor->buffer_list, buffer);
 
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
@@ -1304,8 +1400,6 @@ globus_l_gfs_file_server_write_cb(
         {
             goto error;
         }
-        
-        globus_list_insert(&monitor->buffer_list, buffer);
         
         result = globus_l_gfs_file_dispatch_read(monitor);
         if(result != GLOBUS_SUCCESS)
@@ -1379,6 +1473,7 @@ globus_l_gfs_file_read_cb(
         }
         if(monitor->error != GLOBUS_NULL)
         {
+            globus_list_insert(&monitor->buffer_list, buffer);
             goto error;
         }
         
@@ -1394,6 +1489,7 @@ globus_l_gfs_file_read_cb(
                 monitor);
             if(result != GLOBUS_SUCCESS)
             {
+                globus_list_insert(&monitor->buffer_list, buffer);
                 monitor->error = GlobusGFSErrorObjWrapFailed(
                     "globus_gridftp_server_register_write", result);
                 goto error;
@@ -1521,7 +1617,14 @@ globus_l_gfs_file_send(
         result = GlobusGFSErrorWrapFailed(
             "globus_l_gfs_file_monitor_init", result);
         goto error_alloc;
-    }           
+    }
+          
+    while(optimal_count--)
+    {
+        globus_byte_t *                 buffer;
+        buffer = globus_memory_pop_node(&monitor->mem);
+        globus_list_insert(&monitor->buffer_list, buffer);
+    }
 
     monitor->op = op;
     open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;

@@ -3942,6 +3942,21 @@ globus_gridftp_server_get_optimal_concurrency(
     int *                               count)
 {
     GlobusGFSName(globus_gridftp_server_get_optimal_concurrency);
+
+    if(!op->writing)
+    {
+        /* query number of currently connected streams and update
+            data_info (only if recieving) */
+        globus_ftp_control_data_query_channels(
+            &op->data_handle->data_channel,
+            &op->data_handle->info.nstreams,
+            0);
+            
+        if(op->data_handle->info.nstreams == 0)
+        {
+            op->data_handle->info.nstreams = 1;
+        }
+    }
     
     *count = op->data_handle->info.nstreams * op->stripe_count * 2;
 }
