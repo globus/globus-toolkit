@@ -272,10 +272,6 @@ main(int argc,
                               (unsigned long) getpid(),
                               (unsigned long) time(0));
     }
-/*
-    tmp_ptr = description;
-    description_tree = gram_specification_parse(tmp_ptr);
-*/
     description_tree = gram_specification_parse(description);
 
     /*
@@ -283,8 +279,6 @@ main(int argc,
      * send error status.
      */
     job_status = grami_jm_job_request(job_contact, description_tree);
-
-    fprintf(log_fp,"after grami_jm_job_request\n");
 
     if (job_status == 0)
     {
@@ -312,7 +306,6 @@ main(int argc,
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
 */
-    fprintf(log_fp,"after send_rsr\n");
     fprintf(log_fp,"job status = %d\n", job_status);
 
     if (job_status == 0)
@@ -326,7 +319,6 @@ main(int argc,
 	    nexus_usleep(1000000);
     	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, 
                                    &message_handled);
-    fprintf(log_fp,"before grami_jm_poll\n");
 	    grami_jm_poll(); 
         } /* endwhile */
 /*
@@ -506,13 +498,12 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
     nexus_buffer_destroy(buffer);
 
     fprintf(log_fp, "confidence passed = %f\n", confidence);
+    fprintf(log_fp, "callback contact = %s\n", callback_contact);
 
     grami_jm_job_start_time(callback_contact,
                             confidence,
                             &estimate,
                             &interval_size);
-
-    fprintf(log_fp, "after grami_jm_job_start_time\n");
 
     size  = nexus_sizeof_int(1);
     size += nexus_sizeof_int(1);
