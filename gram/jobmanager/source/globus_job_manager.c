@@ -37,6 +37,10 @@ CVS Information:
 #include "globus_gass_file.h"
 #include "globus_gass_cache.h"
 #include "globus_gass_client.h"
+#define  USE_DUCT
+#ifdef USE_DUCT
+#include "globus_duct_control.h"
+#endif /* USE_DUCT */
 
 /******************************************************************************
                                Type definitions
@@ -202,6 +206,18 @@ main(int argc,
 	fprintf(stderr, "gass_file activation failed with rc=%d\n", rc);
 	exit(1);
     }
+
+#ifdef USE_DUCT
+    rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "%s activation failed with rc=%d\n",
+		GLOBUS_DUCT_CONTROL_MODULE->module_name,
+		rc);
+	exit(1);
+    }
+
+#endif /* USE_DUCT */
 
     nexus_enable_fault_tolerance(NULL, NULL);
 
@@ -635,6 +651,16 @@ main(int argc,
 
     grami_fprintf( grami_log_fp, "JM: exiting gram_job_request\n");
 
+#ifdef USE_DUCT
+    rc = globus_module_deactivate(GLOBUS_DUCT_CONTROL_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "%s deactivation failed with rc=%d\n",
+		GLOBUS_DUCT_CONTROL_MODULE->module_name,
+		rc);
+	exit(1);
+    }
+#endif /* USE_DUCT */
     
     rc = globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
     if (rc != GLOBUS_SUCCESS)
