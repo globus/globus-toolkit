@@ -27,4 +27,6 @@ myproxy-destroy
 myproxy-get-delegation
 myproxy-info
 myproxy-init
+myproxy-retrieve
 myproxy-server
+myproxy-store
