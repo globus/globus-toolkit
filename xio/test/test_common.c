@@ -34,12 +34,29 @@ failed_exit(
     
 void
 test_res(
+    int                                     location,
     globus_result_t                         res,
     int                                     line)
 {
     if(res != GLOBUS_SUCCESS)
     {
+        if(location != GLOBUS_XIO_TEST_FAIL_NONE &&
+            globus_error_match(
+                globus_error_peek(res),
+                GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE,
+                location))
+        {
+            fprintf(stdout, "Success: failed in the correct spot.\n");
+            exit(0);
+        }
+
         failed_exit("error at line %d.", line);
+    }
+    else if(location == globus_l_test_info.failure &&
+            location != GLOBUS_XIO_TEST_FAIL_NONE)
+    {
+        failed_exit("Should have failed at point %d on line %d.", 
+            location, line);
     }
 }
 
@@ -50,7 +67,8 @@ parse_parameters(
     globus_xio_driver_t                     driver,
     globus_xio_attr_t                       attr)
 {   
-    int                                     failure = 0;
+    int                                     failure = 
+                                    GLOBUS_XIO_TEST_FAIL_NONE;
     globus_bool_t                           inline_finish = GLOBUS_FALSE;
     globus_result_t                         res;
     int                                     chunk_size = -1;
@@ -117,9 +135,10 @@ parse_parameters(
         }
     }
 
+    globus_l_test_info.failure = failure;
     globus_l_test_info.write_count = write_count;
     globus_l_test_info.read_count = read_count;
-    globus_l_test_info.buffer = 0x10;
+    globus_l_test_info.buffer = (void *)0x10;
     globus_l_test_info.buffer_length = buffer_length;
     globus_l_test_info.chunk_size = chunk_size;
     globus_mutex_init(&globus_l_test_info.mutex, NULL);
@@ -139,34 +158,34 @@ parse_parameters(
             driver,
             GLOBUS_XIO_TEST_SET_INLINE,
             inline_finish);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_attr_cntl(
             attr,
             driver,
             GLOBUS_XIO_TEST_SET_FAILURES,
             failure);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_attr_cntl(
             attr,
             driver,
             GLOBUS_XIO_TEST_SET_USECS,
             delay);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_attr_cntl(
             attr,
             driver,
             GLOBUS_XIO_TEST_CHUNK_SIZE,
             chunk_size);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_attr_cntl(
             attr,
             driver,
             GLOBUS_XIO_TEST_READ_EOF_BYTES,
             eof_bytes);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 }
 

@@ -21,6 +21,7 @@ typedef struct test_info_s
     globus_size_t                           total_write_bytes;
     globus_size_t                           total_read_bytes;
 
+    int                                     failure;
     int                                     closed;
     globus_bool_t                           write_done;
     globus_bool_t                           read_done;
@@ -38,6 +39,7 @@ failed_exit(
     ...);
 void
 test_res(
+    int                                     location,
     globus_result_t                         res,
     int                                     line);
 

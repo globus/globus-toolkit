@@ -905,7 +905,9 @@ globus_l_xio_register_open(
         /* handle should always have a reference left at this point */
         globus_assert(!destroy_handle);
     }
+    handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
     GlobusIXIOHandleDec(destroy_handle, handle);
+    op->_op_context->ref = 0;
     globus_i_xio_context_destroy(op->_op_context);
     if(destroy_handle)
     {

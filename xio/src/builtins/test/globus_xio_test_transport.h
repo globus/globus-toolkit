@@ -3,9 +3,18 @@
 
 #include "globus_common.h"
 
+#define GlobusXIOErrorTestError(location)                               \
+    globus_error_put(                                                   \
+        globus_error_construct_error(                                   \
+            GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE,                    \
+            NULL,                                                       \
+            location,                                                   \
+            "I am soooo lazy"))
+
+
 typedef enum globus_xio_test_failure_e
 {
-    GLOBUS_XIO_TEST_FAIL_PASS_NONE,
+    GLOBUS_XIO_TEST_FAIL_NONE,
     GLOBUS_XIO_TEST_FAIL_PASS_OPEN,
     GLOBUS_XIO_TEST_FAIL_FINISH_OPEN,
     GLOBUS_XIO_TEST_FAIL_PASS_CLOSE,

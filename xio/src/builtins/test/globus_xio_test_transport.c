@@ -12,14 +12,6 @@
     ow->nbytes = nb;                                                    \
 }
 
-#define GlobusXIOErrorLazy()                                            \
-    globus_error_put(                                                   \
-        globus_error_construct_error(                                   \
-            GLOBUS_XIO_MODULE,                                          \
-            NULL,                                                       \
-            5000000,                                                    \
-            "I am soooo lazy"))
-
 static int
 globus_l_xio_test_activate();
 
@@ -290,13 +282,13 @@ globus_l_xio_test_accept(
 
     server = (globus_l_xio_test_handle_t *) driver_server;
 
-    if(server->failure & GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT)
+    if(server->failure == GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT)
     {
-        return GlobusXIOErrorLazy();
+        return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT);
     }
-    else if(server->failure & GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT)
+    else if(server->failure == GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT)
     {
-        res = GlobusXIOErrorLazy();
+        res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT);
     }
 
     if(server->inline_finish)
@@ -365,13 +357,13 @@ globus_l_xio_test_open(
     globus_l_xio_test_attr_copy((void **)&dh, attr);
     dh->context = context;
 
-    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
+    if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
     {
-        return GlobusXIOErrorLazy();
+        return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_OPEN);
     }
-    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_OPEN)
+    else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_OPEN)
     {
-        res = GlobusXIOErrorLazy();
+        res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_FINISH_OPEN);
     }
 
     if(dh->inline_finish)
@@ -411,13 +403,13 @@ globus_l_xio_test_close(
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
-    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
+    if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
     {
-        return GlobusXIOErrorLazy();
+        return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_CLOSE);
     }
-    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE)
+    else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE)
     {
-        res = GlobusXIOErrorLazy();
+        res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE);
     }
 
     if(dh->inline_finish)
@@ -460,13 +452,13 @@ globus_l_xio_test_read(
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
-    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_READ)
+    if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_READ)
     {
-        return GlobusXIOErrorLazy();
+        return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_READ);
     }
-    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_READ)
+    else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_READ)
     {
-        res = GlobusXIOErrorLazy();
+        res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_FINISH_READ);
     }
 
     nbytes = dh->chunk_size;
@@ -518,13 +510,13 @@ globus_l_xio_test_write(
     
     dh = (globus_l_xio_test_handle_t *) driver_handle;
     
-    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
+    if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
     {
-        return GlobusXIOErrorLazy();
+        return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_WRITE);
     }
-    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_WRITE)
+    else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_WRITE)
     {
-        res = GlobusXIOErrorLazy();
+        res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_FINISH_WRITE);
     }
 
     nbytes = dh->chunk_size;

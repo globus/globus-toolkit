@@ -7,7 +7,6 @@ static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
 static globus_bool_t                    globus_l_close_called = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
-static globus_bool_t                    globus_l_write = GLOBUS_TRUE;
 
 #define OP_COUNT                            8
 #define SLEEP_TIME                          3
@@ -48,7 +47,7 @@ data_cb(
                     NULL,
                     close_cb,
                     user_arg);
-            test_res(res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
@@ -102,7 +101,7 @@ open_cb(
                     data_cb,
                     user_arg);
         }
-        test_res(res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
 }
 
@@ -127,7 +126,7 @@ main(
     driver = globus_xio_driver_test_transport_get_driver();
 
     res = globus_xio_attr_init(&attr);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     parse_parameters(argc, argv, driver, attr);
 
@@ -135,13 +134,13 @@ main(
     globus_cond_init(&globus_l_cond, NULL);
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_stack_push_driver(stack, driver);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     res = globus_xio_register_open(
             &handle,
@@ -149,7 +148,7 @@ main(
             target,
             open_cb,
             NULL);
-    test_res(res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {
