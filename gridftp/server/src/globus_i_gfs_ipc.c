@@ -2535,6 +2535,7 @@ globus_l_gfs_ipc_unpack_data(
     GFSDecodeUInt32(buffer, len, data_info->stripe_blocksize);
     GFSDecodeChar(buffer, len, data_info->prot);
     GFSDecodeChar(buffer, len, data_info->dcau);
+    GFSDecodeString(buffer, len, data_info->subject);
     GFSDecodeUInt32(buffer, len, data_info->max_cs);
 
     GFSDecodeUInt32(buffer, len, data_info->cs_count);
@@ -2601,7 +2602,7 @@ globus_l_gfs_ipc_unpack_data_destroy(
     int                                 id;
 
     GFSDecodeUInt32(buffer, len, id);
-    *data_arg = id;
+    *data_arg = (void *) id;
 
     return 0;
 
@@ -2630,7 +2631,7 @@ globus_l_gfs_ipc_unpack_event_request(
     event_info = (globus_gfs_event_info_t *) 
         globus_calloc(1, sizeof(globus_gfs_event_info_t));
     event_info->type = type;
-    event_info->event_arg = arg;
+    event_info->event_arg = (void *) arg;
     switch(event_info->type)
     {
         case GLOBUS_GFS_EVENT_FINAL_EOF_COUNT:
@@ -4736,6 +4737,7 @@ globus_l_gfs_ipc_pack_data(
 
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->prot);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->dcau);
+    GFSEncodeString(buffer, ipc->buffer_size, ptr, data_info->subject);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->max_cs);
 
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->cs_count);
