@@ -130,8 +130,7 @@ int main(int argc, char *argv[])
 
 		if (!use_empty_passwd && !my_creds->passphrase) {
 			my_creds->passphrase = (char *) malloc ((MAX_PASS_LEN+1)*sizeof(char));
-			if (myproxy_read_verified_passphrase(my_creds->passphrase,
-							     MAX_PASS_LEN) == -1) {
+			if (myproxy_read_verified_passphrase(my_creds->passphrase, MAX_PASS_LEN, NULL) == -1) {
 		     	    fprintf(stderr, "%s\n", verror_get_string());
 		    	    goto cleanup;
 		    	}
