@@ -113,6 +113,7 @@ typedef struct
 typedef struct
 {
     gss_name_t                          target_name;
+    globus_l_attr_t *                   attr;
     /* init or accept flag */
     globus_bool_t                       init;
 } globus_l_target_t;
