@@ -932,9 +932,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     struct dirent *de;
     int return_code = -1, numcreds=0;
     char *username = NULL, *credname = NULL;
-    time_t end_time = 0, start_time = 0, now;
-
-    now = time(0);
+    time_t end_time = 0, start_time = 0;
 
     if (check_storage_directory() == -1) {
         goto error;
