@@ -187,8 +187,8 @@ init_arguments(int argc,
     int arg;
     int arg_error = 0;
 
-    while((arg = getopt_long(argc, argv, short_options, 
-			     long_options, NULL)) != EOF) 
+    while((arg = gnu_getopt_long(argc, argv, short_options, 
+				 long_options, NULL)) != EOF) 
     {
 	switch(arg) 
 	{
