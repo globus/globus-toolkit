@@ -166,8 +166,14 @@ globus_l_gfs_control_ipc_error_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_i_gfs_server_instance_t *    instance;
+
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+
     globus_i_gfs_log_result(
         "IPC ERROR", result);
+    globus_gfs_ipc_close(ipc_handle, NULL, NULL);
+    globus_l_gfs_done_cb(instance->u.control.server, result, instance);
     
     return;
 }

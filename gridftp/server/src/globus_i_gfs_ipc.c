@@ -179,6 +179,7 @@ do                                                                      \
 do                                                                      \
 {                                                                       \
     int                                 _ctr;                           \
+    int                                 _strlen;                        \
     /* make sure that strip in terminated properly */                   \
     for(_ctr = 0; _ctr < _len && _buf[_ctr] != '\0'; _ctr++);           \
     if(_buf[_ctr] != '\0')                                              \
@@ -186,8 +187,9 @@ do                                                                      \
         goto decode_err;                                                \
     }                                                                   \
     _w = strdup(_buf);                                                  \
-    _buf += strlen(_buf) + 1;                                           \
-    _len -= strlen(_buf) + 1;                                           \
+    _strlen = strlen(_w) + 1;                                           \
+    _buf += _strlen;                                                    \
+    _len -= _strlen;                                                    \
 } while(0)
 
 /*** XXX  this will eventually determine if the data node is part of a
@@ -1165,7 +1167,7 @@ globus_l_gfs_ipc_read_body_cb(
     return;
 
   err:
-    globus_free(buffer);
+    //globus_free(buffer);
     globus_free(request);
     if(new_buf != NULL)
     {
@@ -1278,7 +1280,7 @@ globus_l_gfs_ipc_read_header_cb(
   err:
     if(buffer != NULL)
     {
-        globus_free(buffer);
+        //globus_free(buffer);
     }
     if(ipc->error_cb != NULL)
     {
@@ -1867,7 +1869,7 @@ globus_l_gfs_ipc_transfer_pack(
     buffer = globus_malloc(ipc->buffer_size);
     ptr = buffer;
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, type);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, id);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
     size_ptr = ptr;
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
     /* pack the body */
@@ -1879,7 +1881,7 @@ globus_l_gfs_ipc_transfer_pack(
 
     /* pack range list */
     range_size = globus_range_list_size(trans_state->range_list);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, id);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
     for(ctr = 0; ctr < range_size; ctr++)
     {
         globus_range_list_at(trans_state->range_list, ctr, &offset, &length);
@@ -2130,7 +2132,7 @@ globus_gfs_ipc_request_command(
             ptr = buffer;
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_COMMAND);
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, id);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
             size_ptr = ptr;
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
@@ -2218,7 +2220,7 @@ globus_l_gfs_ipc_pack_data(
     buffer = globus_malloc(ipc->buffer_size);
     ptr = buffer;
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, type);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, id);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
     size_ptr = ptr;
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
@@ -2607,7 +2609,7 @@ globus_gfs_ipc_data_destroy(
 
 globus_result_t
 globus_gfs_ipc_close(
-    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg)
 {

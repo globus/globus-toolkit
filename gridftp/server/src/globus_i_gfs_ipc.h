@@ -412,7 +412,7 @@ globus_gfs_ipc_handle_create(
 
 globus_result_t
 globus_gfs_ipc_close(
-    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg);
 
