@@ -3343,6 +3343,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
         result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home, &status);
         if(result != GLOBUS_SUCCESS)
         {
+	    home = NULL;
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
@@ -3454,6 +3455,11 @@ globus_gsi_sysconfig_get_cert_dir_unix(
 
  done:
 
+    if(home != NULL)
+    {
+	free(home);
+    }
+    
     if(env_cert_dir && (env_cert_dir != (*cert_dir)))
     {
         globus_libc_free(env_cert_dir);
