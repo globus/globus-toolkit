@@ -220,76 +220,34 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
    return attrs->socket_fd;
 }
     
-/* If *host is a name for the loopback interface, try to change
-   it to local hostname (not necessarily fully-qualified). */
+/* The Globus standard is to resolve the hostname we're given on the
+   command-line with gethostbyname(), ignoring concerns about DNS
+   spoofing.
+*/
 static void
-resolve_localhost(char **host)
+resolve_hostname(char **host)
 {
     struct hostent *hostinfo;
 
     hostinfo = gethostbyname(*host);
-    if (hostinfo &&
-	hostinfo->h_addrtype == AF_INET) {
+    if (hostinfo == NULL || hostinfo->h_name == NULL) {
+	myproxy_debug("gethostbyname(%s) failed", *host);
+	return;
+    }
+    if (hostinfo->h_addrtype == AF_INET) { /* check for localhost */
 	struct in_addr addr;
 	addr = *(struct in_addr *)(hostinfo->h_addr);
 	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
 	    char buf[MAXHOSTNAMELEN];
-	    if (gethostname(buf, sizeof(buf)) == 0) {
-		free(*host);
-		*host = strdup(buf);
+	    if (gethostname(buf, sizeof(buf)) < 0) {
+		myproxy_debug("gethostname() failed");
+		return;
 	    }
+	    hostinfo = gethostbyname(buf);
 	}
     }
-}
-
-/* A (hopefully) portable way to make a fully-qualified hostname for
-   GSSAPI authentication without relying on a potentially remote,
-   untrusted resolver.
-   Note: getdomainname() is not portable.
-*/
-static void
-make_fqhn(char **host)
-{
-    char *domainname = NULL, *fqhn = NULL, myhn[MAXHOSTNAMELEN];
-    struct hostent *hent = NULL;
-    int i;
-
-    if (strchr(*host, '.')) {
-	return;			/* already fully qualified */
-    }
-
-    /* Otherwise, figure out our local domainname without using
-       getdomainname(). */
-    if (gethostname(myhn, sizeof(myhn)) < 0) {
-	myproxy_debug("gethostname() failed, can't convert %s to fqhn", *host);
-	return;
-    }
-    if ((domainname = strchr(myhn, '.')) == NULL) {
-	
-	/* Resolving our local hostname should be secure
-	   (unlike resolving a remote hostname). */
-	if ((hent = gethostbyname(myhn)) != NULL) {
-	    if ((domainname = strchr(hent->h_name, '.')) == NULL) {
-		for (i=0;
-		     hent->h_aliases[i] &&
-			 (domainname =
-			  strchr(hent->h_aliases[i], '.')) == NULL;
-		     i++);
-	    }
-	}
-    }
-
-    if (domainname) {
-	domainname++;
-	fqhn = malloc(strlen(*host)+strlen(domainname)+2);
-	sprintf(fqhn, "%s.%s", *host, domainname);
-	free(*host);
-	*host = fqhn;
-	return;
-    }
-
-    myproxy_debug("unable to determine fully-qualified local hostname");
-    return;
+    free(*host);
+    *host = strdup(hostinfo->h_name);
 }
 
 int 
@@ -321,8 +279,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    } else {
        char *fqhn, *buf;
        fqhn = strdup(attrs->pshost);
-       resolve_localhost(&fqhn);
-       make_fqhn(&fqhn);
+       resolve_hostname(&fqhn);
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
        sprintf(buf, "myproxy@%s", fqhn);
        accepted_peer_names[0] = buf;
