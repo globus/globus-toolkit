@@ -171,7 +171,7 @@ globus_gsi_proxy_sign_req(
  * @param proxy_credential
  *        This parameter will contain the assembled credential upon
  *        successful return.
- * @param output_bio
+ * @param input_bio
  *        A BIO to read a signed certificate and corresponding
  *        certificate chain from.
  * @return

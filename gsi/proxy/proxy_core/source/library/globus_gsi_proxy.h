@@ -13,19 +13,20 @@
  * Any program that uses Globus GSI Proxy functions must include
  * "globus_gsi_proxy.h". 
  *
- * We envision the API to be used in the following manner:
+ * We envision the API being used in the following manner:
  *
- * Delegator:                           Delegatee:
- *                                      set desired cert info
- *                                      extension by usinf the handle
- *                                      set functions.
- *                                      globus_gsi_proxy_create_req
- * globus_gsi_proxy_inquire_req
- * modify cert info extension by using
- * handle set/get/clear functions.
- * globus_gsi_proxy_sign_req
- *                                      globus_gsi_proxy_assemble_cred
- *
+ * <TABLE>
+ * <TR><TD>Delegator:</TD>                     <TD>Delegatee:</TD></TR>
+ * <TR><TD></TD>                               <TD>set desired cert info extension
+ *                                                 in the handle by using the handle
+ *                                                 set functions.</TD></TR> 
+ * <TR><TD></TD>                               <TD>globus_gsi_proxy_create_req</TD></TR>
+ * <TR><TD>globus_gsi_proxy_inquire_req</TD>   <TD></TD></TR>
+ * <TR><TD>modify cert info extension by using
+ *         handle set/get/clear functions.</TD><TD></TD></TR>
+ * <TR><TD>globus_gsi_proxy_sign_req</TD>      <TD></TD></TR>
+ * <TR><TD></TD>                               <TD>globus_gsi_proxy_assemble_cred</TD></TR>
+ *</TABLE>
  * @htmlonly
  * <a href="main.html" target="_top">View documentation without frames</a><br>
  * <a href="index.html" target="_top">View documentation with frames</a><br>
@@ -95,7 +96,7 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module;
  *
  * An GSI Proxy handle is used to associate state with a group of
  * operations. Handles can have
- * @ref globus_gsi_proxy_handleattr_t "attributes"
+ * @ref globus_gsi_proxy_handle_attrs_t "attributes"
  * associated with them. All proxy @link
  * globus_gsi_proxy_operations operations @endlink take a handle pointer
  * as a parameter.

@@ -79,6 +79,10 @@ globus_gsi_proxy_handle_destroy(
  *
  * @param handle
  *        The handle to be modified.
+ * @param policy
+ *        The policy data.
+ * @param policy_NID
+ *        The NID of the policy language.
  * @return
  *        GLOBUS_SUCCESS
  *
@@ -109,6 +113,10 @@ globus_gsi_proxy_handle_set_policy(
  *
  * @param handle
  *        The handle to be interrogated.
+ * @param policy
+ *        The policy data.
+ * @param policy_NID
+ *        The NID of the policy language.
  * @return
  *        GLOBUS_SUCCESS
  *
@@ -138,6 +146,10 @@ globus_gsi_proxy_handle_get_policy(
  *
  * @param handle
  *        The handle to be modified.
+ * @param group
+ *        The group identifier.
+ * @param attached
+ *        The attachment state of the group
  * @return
  *        GLOBUS_SUCCESS
  *
@@ -168,6 +180,10 @@ globus_gsi_proxy_handle_set_group(
  *
  * @param handle
  *        The handle to be interrogated.
+ * @param group
+ *        The group identifier.
+ * @param attached
+ *        The attachment state of the group
  * @return
  *        GLOBUS_SUCCESS
  *
@@ -198,6 +214,8 @@ globus_gsi_proxy_handle_get_group(
  *
  * @param handle
  *        The handle to be modified.
+ * @param pathlen
+ *        The maximum allowable path length
  * @return
  *        GLOBUS_SUCCESS
  *
@@ -227,6 +245,8 @@ globus_gsi_proxy_handle_set_pathlen(
  *
  * @param handle
  *        The handle to be interrogated.
+ * @param pathlen
+ *        The maximum allowable path length
  * @return
  *        GLOBUS_SUCCESS
  *
