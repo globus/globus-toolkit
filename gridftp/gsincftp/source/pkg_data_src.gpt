@@ -32,7 +32,7 @@
 
 	<With_Flavors build="yes" />
 
-	<Version_Label>1.0.0</Version_Label>
+	<Version_Label>3.0.3</Version_Label>
 
 	<Build_Instructions>
 	    <Build_Step>
@@ -50,7 +50,6 @@
 	    <Build_Step>
 		MAKE_GPTMACRO DESTDIR_GPTMACRO install
 	    </Build_Step>
-	    <Build_Step>RUN_FLAVOR_INSTALL_GPTMACRO</Build_Step>
 
 	</Build_Instructions>
     </src_pkg >

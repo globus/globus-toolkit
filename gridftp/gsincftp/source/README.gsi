@@ -1,0 +1,99 @@
+README.GSI
+
+Grid Security Infrastructure gsincftp (Version 3.0beta11-GSI0.1)
+
+See the file INSTALL.GSI for information on building.
+
+--------------
+Latest Version
+--------------
+
+See the following url for the latest version of this software, build
+directions and more information:
+
+http://www.globus.org/security/v1.1/ftp/install.html
+
+----------------------
+Copyrights and Credits
+----------------------
+
+This code was originally taken from the nftp 3.0beta21 distribution
+modified by the Globus development team (http://www.globus.org)
+to support the SSLeay GSSAPI library.
+
+The standard version of ncftp is Copyright (c) Mike Gleason (ncftp@ncftp.com)
+
+-----
+About
+-----
+
+This package implements a ftp client that supports
+authentication using the Globus GSSAPI library to provide a
+libraries provide a secure means of authentication over
+an open network.
+
+--------
+Building
+--------
+
+See the file INSTALL.GSI for details on building.
+
+-------------
+Other Changes
+-------------
+
+Automatic Username Determination
+--------------------------------
+
+In addition to supporting the GSI GSSAPI library, the ftp client
+has been modified to allow automatic determination
+of a user's remote account. What this means is that you don't
+need to know your remote account name on the target system, the
+daemon, using your Distinguished Name (DN), will determine it
+automatically from the gridmap file.
+
+This is accomplished by having the client send over the string
+":globus-mapping:" instead of a username. The daemon looks for this
+string, and if detected gets the user's local name from the
+gridmap file.
+
+ChangeLog
+---------
+
+2000-02-23  joe bester  <bester@penny.mcs.anl.gov>
+
+	* /home/globdev/CVS/gsi_clients/ncftp/autoconf/configure.in, /home/globdev/CVS/gsi_clients/ncftp/autoconf/aclocal.m4, /home/globdev/CVS/gsi_clients/ncftp/configure, /home/globdev/CVS/gsi_clients/ncftp/configure.in:
+	Configure changes to use GLOBUS_INSTALL path if set
+
+2000-02-22  joe bester  <bester@penny.mcs.anl.gov>
+
+	* /home/globdev/CVS/gsi_clients/ncftp/doc/man/gsincftpget.1, /home/globdev/CVS/gsi_clients/ncftp/doc/man/gsincftpls.1, /home/globdev/CVS/gsi_clients/ncftp/doc/man/gsincftpput.1, /home/globdev/CVS/gsi_clients/ncftp/doc/man/gsincftp.1, /home/globdev/CVS/gsi_clients/ncftp/doc/man/gsincftpbatch.1, /home/globdev/CVS/gsi_clients/ncftp/doc/manifest, /home/globdev/CVS/gsi_clients/ncftp/doc/manifest.txt:
+	Added gsincftp manual pages
+
+	* /home/globdev/CVS/gsi_clients/ncftp/ncftp/cmds.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/pref.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/pref.h, /home/globdev/CVS/gsi_clients/ncftp/ncftp/util.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/util.h, /home/globdev/CVS/gsi_clients/ncftp/libncftp/ncftp.h, /home/globdev/CVS/gsi_clients/ncftp/libncftp/open.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/bookmark.c:
+	Documented changes from stock ncftp, added delegation, added "authenticated" protection mode
+
+	* /home/globdev/CVS/gsi_clients/ncftp/libncftp/ncftp.h, /home/globdev/CVS/gsi_clients/ncftp/libncftp/open.c, /home/globdev/CVS/gsi_clients/ncftp/libncftp/rcmd.c, /home/globdev/CVS/gsi_clients/ncftp/libncftp/util.h:
+	Added comments describing changes to source code from standard ncftp source
+
+	* /home/globdev/CVS/gsi_clients/ncftp/libncftp/util.c, /home/globdev/CVS/gsi_clients/ncftp/libncftp/syshdrs.h:
+	Added TCP_RFC1323 support for AIX
+
+	* /home/globdev/CVS/gsi_clients/ncftp/libncftp/open.c:
+	explanatory comments
+
+	* /home/globdev/CVS/gsi_clients/ncftp/libncftp/open.c:
+	QueryFeatures was failing to do HELP SITE if FEAT was not implemented.
+	Fixed to always do SITE HELP so that we can detect buffer size extensions.
+
+	* /home/globdev/CVS/gsi_clients/ncftp/configure:
+	missed one ncftp->gsincftp conversion
+
+2000-02-21  joe bester  <bester@penny.mcs.anl.gov>
+
+	* /home/globdev/CVS/gsi_clients/ncftp/ncftp/getline.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/util.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/util.h, /home/globdev/CVS/gsi_clients/ncftp/sh_util/Makefile.in, /home/globdev/CVS/gsi_clients/ncftp/sio/config.h.in, /home/globdev/CVS/gsi_clients/ncftp/vis/Makefile.in, /home/globdev/CVS/gsi_clients/ncftp/libncftp/radix.c, /home/globdev/CVS/gsi_clients/ncftp/libncftp/rcmd.c, /home/globdev/CVS/gsi_clients/ncftp/libncftp/util.h, /home/globdev/CVS/gsi_clients/ncftp/ncftp/bookmark.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/cmds.c, /home/globdev/CVS/gsi_clients/ncftp/ncftp/Makefile.in, /home/globdev/CVS/gsi_clients/ncftp/autoconf/configure.in, /home/globdev/CVS/gsi_clients/ncftp/doc/manifest, /home/globdev/CVS/gsi_clients/ncftp/doc/manifest.txt, /home/globdev/CVS/gsi_clients/ncftp/libncftp/config.h.in, /home/globdev/CVS/gsi_clients/ncftp/libncftp/io.c, /home/globdev/CVS/gsi_clients/ncftp/libncftp/Makefile.in, /home/globdev/CVS/gsi_clients/ncftp/libncftp/ncftp.h, /home/globdev/CVS/gsi_clients/ncftp/libncftp/open.c, /home/globdev/CVS/gsi_clients/ncftp/autoconf/acconfig.h, /home/globdev/CVS/gsi_clients/ncftp/autoconf/aclocal.m4, /home/globdev/CVS/gsi_clients/ncftp/configure, /home/globdev/CVS/gsi_clients/ncftp/configure.in, /home/globdev/CVS/gsi_clients/ncftp/config.h.in:
+	initial port to gsiftp protocol
+
+	* /home/globdev/CVS/gsi_clients/ncftp/win/bmed/bmedDlg.cpp, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/bmedDlg.h, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/bmed.dsp, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/bmed.rc, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/bookmark.c, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/bookmark.h, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/BookmarkProperties.cpp, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/BookmarkProperties.h, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/res/bmed.ico, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/res/bmed.rc2, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/resource.h, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/StdAfx.cpp, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/StdAfx.h, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/syshdrs.h, /home/globdev/CVS/gsi_clients/ncftp/win/bmed/util.h:
+
+
