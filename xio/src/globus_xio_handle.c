@@ -1916,6 +1916,7 @@ typedef struct globus_l_xio_blocking_s
     globus_size_t                           nbytes;
     globus_i_xio_op_t *                     op;
     globus_xio_data_descriptor_t            data_desc;
+    globus_result_t                         res;
 } globus_l_xio_blocking_t;
 
 
@@ -1954,6 +1955,7 @@ globus_l_xio_blocking_cb(
 
     globus_mutex_lock(&info->mutex);
     {
+        info->res = result;
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->signal);
     }
@@ -1976,6 +1978,7 @@ globus_l_xio_blocking_data_cb(
 
     globus_mutex_lock(&info->mutex);
     {
+        info->res = result;
         info->data_desc = data_desc;
         info->nbytes = nbytes;
         info->done = GLOBUS_TRUE;
@@ -2137,6 +2140,12 @@ globus_xio_open(
     }
     globus_mutex_unlock(&info->mutex);
 
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto register_err;
+    }
+
     *user_handle = handle;
 
     GlobusXIODebugExit();
@@ -2266,6 +2275,13 @@ globus_xio_read(
 
     globus_l_xio_blocking_destroy(info);
 
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto alloc_error;
+    }
+
+
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
@@ -2379,6 +2395,12 @@ globus_xio_readv(
     }
 
     globus_l_xio_blocking_destroy(info);
+
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto alloc_error;
+    }
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
@@ -2498,6 +2520,12 @@ globus_xio_write(
 
     globus_l_xio_blocking_destroy(info);
 
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto alloc_error;
+    }
+
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
@@ -2611,6 +2639,12 @@ globus_xio_writev(
 
     globus_l_xio_blocking_destroy(info);
 
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto alloc_error;
+    }
+
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
@@ -2722,6 +2756,12 @@ globus_xio_close(
         }
     }
     globus_mutex_unlock(&info->mutex);
+
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+        goto alloc_error;
+    }
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;

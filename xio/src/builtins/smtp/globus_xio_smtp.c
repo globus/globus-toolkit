@@ -25,7 +25,7 @@ typedef enum
 typedef struct l_smtp_info_s
 {
     l_smtp_state_t                          state;
-    char *                                  return_address;
+    char *                                  return_address[256];
     char                                    to_address[256];
     char                                    message[1024];
     int                                     buf_len;
@@ -73,7 +73,7 @@ l_smtp_create_new_info()
     info->buf_len = 1024;
     info->iovec.iov_base = info->message;
     info->iovec.iov_len = info->buf_len;
-    info->return_address = NULL;
+    sprintf(info->return_address, "%s", globus_l_return_address);
 
     return info;
 }
@@ -181,6 +181,7 @@ next_state(
 
         case SMTP_MESSAGE:
             GlobusXIODriverFinishedOpen(context, info, op, GLOBUS_SUCCESS);
+            return;
             break;
     }
 
@@ -242,9 +243,10 @@ globus_l_xio_smtp_read_header_cb(
             int                             response_code;
 
             sscanf(info->message, "%d", &response_code);
+            info->read_offset = 0;
 
             /* if a bad response code was recieved */
-            if(response_code > 299 || response_code < 200)
+            if(response_code > 399 || response_code < 200)
             {
                 res = globus_error_put(
                     globus_error_construct_string(
@@ -255,7 +257,6 @@ globus_l_xio_smtp_read_header_cb(
 
 
                 GlobusXIODriverFinishedOpen(context, info, op, res);
-                globus_xio_driver_context_close(context);
             }
             /* ,ove to next state */
             else
@@ -505,7 +506,7 @@ globus_l_xio_smtp_activate(void)
     pw_ent = getpwuid(getuid());
     globus_libc_gethostname(globus_l_hostname, MAXHOSTNAMELEN);
 
-    globus_l_return_address = globus_malloc(strlen(globus_l_hostname) + 1 + 
+    globus_l_return_address = globus_malloc(strlen(globus_l_hostname) + 2 + 
                                 strlen(pw_ent->pw_name));
     sprintf(globus_l_return_address, "%s@%s",
         pw_ent->pw_name, globus_l_hostname);
