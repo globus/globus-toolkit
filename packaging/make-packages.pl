@@ -68,12 +68,12 @@ my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
-    $deps, $graph ) =
+    $deps, $graph, $listpack, $listbun ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
-    0, 0);
+    0, 0, 0, 0);
 
 my @user_bundles;
 my @user_packages;
@@ -103,6 +103,8 @@ GetOptions( 'i|install=s' => \$install,
 	    'doxygen!' => \$doxygen,
 	    'd|deps!' => \$deps,
 	    'graph!' => \$graph,
+	    'lp|list-packages!' => \$listpack,
+	    'lb|list-bundles!' => \$listbun,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -136,6 +138,8 @@ cleanup();
 mkdir $log_dir;
 setup_environment();
 generate_dependency_tree();
+
+exit if ( $listpack or $listbun );
 
 if ( not $noupdates )
 {
@@ -479,7 +483,7 @@ sub populate_package_list
 	}
 
 	$package_list{$pkg} = [ $tree, $subdir, $custom, $pnb ];
-
+	print "$pkg\n" if $listpack;
     }
 }
 
@@ -505,6 +509,7 @@ sub populate_bundle_list
 	if ( $pkg eq "BUNDLE" )
 	{
 	    $bundle = $bun;
+	    print "Bundle $bundle\n" if $listbun;
 
 	    # Process threading and gpt-build flags (like -static)
 	    if ( $threaded eq "THREADED" )
