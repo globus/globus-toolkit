@@ -76,13 +76,13 @@ globus_gass_cache_t:
 typedef struct
 {
     void*          init;   /* to know if this cache has been opened/init.    */
-    char           cache_directory_path[MAXPATHLEN+1];
+    char           cache_directory_path[FILENAME_MAX+1];
     
     /* just to not have to biuld them every time: */
-    char           state_file_path[MAXPATHLEN+1];
+    char           state_file_path[FILENAME_MAX+1];
     int            state_file_fd;
-    char           state_file_lock_path[MAXPATHLEN+1];   
-    char           temp_file_path[MAXPATHLEN+1];
+    char           state_file_lock_path[FILENAME_MAX+1];   
+    char           temp_file_path[FILENAME_MAX+1];
     int            temp_file_fd;
     FILE*          log_FILE;
     int            nb_entries;
