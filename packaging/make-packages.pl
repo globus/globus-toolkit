@@ -1347,7 +1347,12 @@ sub inplace_build()
     my $build_args = "";
     $build_args .= " CONFIGOPTS_GPTMACRO=--enable-doxygen " if $doxygen;
     $build_args .= " -verbose " if $verbose;
-    $build_args .= " -force " if $force;
+#    $build_args .= " -force " if $force;
+
+    if($force)
+    {
+	log_system("make distclean", "$pkglog/$package");
+    }
 
     log_system("$ENV{GPT_LOCATION}/sbin/gpt-build $build_args $flavor", "$pkglog/$package");
     paranoia("Inplace build of $package in $subdir failed!");
