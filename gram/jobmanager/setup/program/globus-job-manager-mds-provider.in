@@ -127,7 +127,7 @@ else
        print LDIFFILE "args: -conf $globusdir/etc/globus-job-manager.conf -type $manager_type -rdn $servicename -dmdn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
        print LDIFFILE "cachetime: 30\n";
        print LDIFFILE "timelimit: 20\n";
-       print LDIFFILE "sizelimit: 20\n\n";
+       print LDIFFILE "sizelimit: 100\n\n";
 
        print LDIFFILE "# generate globus-gram-rsl-reporter $manager_type info every 28800 seconds\n";
        print LDIFFILE "dn: Mds-Software-deployment=$servicename, Mds-Host-hn=${hostname}, Mds-Vo-name=local, o=grid\n";
@@ -139,8 +139,8 @@ else
        print LDIFFILE "base: globus-gram-rsl-reporter\n";
        print LDIFFILE "args: -gl $globusdir -type $manager_type -dn Mds-Software-deployment=$servicename,Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
        print LDIFFILE "cachetime: 28800\n";
-       print LDIFFILE "timelimit: 28800\n";
-       print LDIFFILE "sizelimit: 28800\n";
+       print LDIFFILE "timelimit: 20\n";
+       print LDIFFILE "sizelimit: 100\n";
        print LDIFFILE "# END $manager_type $servicename\n";
        close(LDIFFILE);
    }
