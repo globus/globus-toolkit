@@ -97,7 +97,6 @@ logger.debug("load in client: " + load);
             logger.debug("perf log start [finished]");
         }
         this.perfLog.start();
-        long startTime = System.currentTimeMillis();
 
         //maintain load
         while (!this.harness.isDurationElapsed()) {
@@ -137,14 +136,10 @@ logger.debug("load in client: " + load);
         }
 
         //stop timing actual duration
-        long actualDuration = System.currentTimeMillis() - startTime;
         this.perfLog.stop("finished");
 
-        double durationInMinutes = ((double)actualDuration) / 60000;
-        double jobsPerMinute = Math.round(
-            this.completedCount / durationInMinutes);
-        logger.info("Client #" + this.clientIndex
-                    + " Jobs Per Minute: " + jobsPerMinute);
+        //pass total number of jobs completed by this client back to harness
+        this.harness.notifyCompleted(this.clientIndex, this.completedCount);
     }
 
     protected void addJob() throws GramException, GSSException {

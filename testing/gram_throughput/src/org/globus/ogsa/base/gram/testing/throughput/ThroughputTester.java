@@ -28,6 +28,7 @@ public class ThroughputTester {
     long duration = 1;
     ClientThread[] clients = null;
     int completedCount = 0;
+    int jobGrandTotal = 0;
     boolean durationElapsed = false;
 
     PerformanceLog perfLog = new PerformanceLog(
@@ -61,6 +62,9 @@ public class ThroughputTester {
         }
         this.rsl = rslBuffer.toString();
 
+        //start timing actual duration
+        long startTime = System.currentTimeMillis();
+
         this.clients = new ClientThread[this.parallelism];
         for (int index=0; index<this.clients.length; index++) {
             this.clients[index] = new ClientThread(this);
@@ -71,6 +75,22 @@ public class ThroughputTester {
         QuitTimerTask quitTimerTask = new QuitTimerTask(this);
         Timer quitTimer = new Timer();
         quitTimer.schedule(quitTimerTask, this.duration);
+
+        try {
+            //wait for all clients to checkin with their job totals
+            wait();
+        } catch (Exception e) {
+            logger.error("wait() canceled unexpectedly", e);
+        }
+
+        //calculate actual duration and jobs per minute across all clients
+        long actualDuration = System.currentTimeMillis() - startTime;
+        double durationInMinutes = ((double)actualDuration) / 60000;
+        double jobsPerMinute = Math.round(
+            this.completedCount / durationInMinutes);
+        logger.info("Jobs Per Minute: " + jobsPerMinute);
+
+        System.exit(0);
     }
 
     synchronized void notifyError() {
@@ -78,12 +98,16 @@ public class ThroughputTester {
         System.exit(1);
     }
 
-    synchronized void notifyCompleted(int clientIndex) {
+    synchronized void notifyCompleted(int clientIndex, int jobTotal) {
         if (logger.isDebugEnabled()) {
             logger.debug("got completed signal from client #" + clientIndex);
         }
         this.completedCount++;
-        notifyAll();
+        this.jobGrandTotal += jobTotal;
+
+        if (this.completedCount == this.clients.length) {
+            notify(); //notify wait() at end of run()
+        }
     }
 
     public void setFactoryUrl(URL factoryUrl) {
