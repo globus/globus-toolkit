@@ -103,6 +103,8 @@ GetOptions( 'i|install=s' => \$install,
 	    't2|gt2-tag=s' => \$cvs_archives{gt2}[3],
 	    'd3|gt3-dir=s' => \$gt3dir,
 	    't3|gt3-tag=s' => \$cvs_archives{gt3}[3],
+	    'd4|gt4-dir=s' => \$cvs_archives{gt4}[2],
+	    't4|gt4-tag=s' => \$cvs_archives{gt4}[3],
 	    'v|verbose!' => \$verbose,
 	    'skippackage!' => \$skippackage,
 	    'skipbundle!' => \$skipbundle,
@@ -1819,8 +1821,10 @@ Options:
     --flavor=<flv>         Set flavor base.  Default gcc32dbg
     --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
     --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
+    --gt4-tag (-t4)        Set GT4 tags.  Default HEAD
     --gt2-dir (-d2)        Set GT2 and autotools CVS directory.
     --gt3-dir (-d3)        Set GT3 and cbindings CVS directory.
+    --gt4-dir (-d4)        Set GT4 CVS directory.
     --verbose              Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
