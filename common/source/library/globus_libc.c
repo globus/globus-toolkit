@@ -71,12 +71,17 @@ globus_mutex_t globus_libc_mutex;
 /******************************************************************************
 		      Module specific function prototypes
 ******************************************************************************/
-static void globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
-					              char *buffer,
-					              size_t buflen);
-static void globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
-						  char *buffer,
-						  size_t buflen);
+static int
+globus_l_libc_copy_hostent_data_to_buffer(
+    struct hostent *                    h,
+    char *                              buffer,
+    size_t                              buflen);
+
+static void
+globus_l_libc_copy_pwd_data_to_buffer(
+    struct passwd *                     pwd,
+    char *                              buffer,
+    size_t                              buflen);
 
 /******************************************************************************
 Function: globus_libc_lock()
@@ -1257,8 +1262,18 @@ globus_libc_gethostbyname_r(
 	if(hp != GLOBUS_NULL)
 	{
             memcpy(result, hp, sizeof(struct hostent));
-            globus_l_libc_copy_hostent_data_to_buffer(result, buffer, (size_t) buflen);
-	    hp = result;
+            if(globus_l_libc_copy_hostent_data_to_buffer(
+                   result,
+                   buffer,
+                   (size_t) buflen) == -1)
+            {
+                hp = GLOBUS_NULL;
+            }
+            else
+            { 
+                hp = result;
+            }
+            
 	    if (h_errnop != GLOBUS_NULL)
 	    {
 		*h_errnop = 0;
@@ -1275,24 +1290,31 @@ globus_libc_gethostbyname_r(
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
     {
 	    rc = gethostbyname_r(hostname,
-			     result,
-			     &hp_data);
+                                 result,
+                                 &hp_data);
         if(rc == 0)
-	    {
-            globus_l_libc_copy_hostent_data_to_buffer(result, buffer, (size_t) buflen);
-	        hp = result;
-	        if(h_errnop != GLOBUS_NULL)
-	        {
-		        *h_errnop = h_errno;
-	        }
+        {
+            if(globus_l_libc_copy_hostent_data_to_buffer(
+                   result, buffer, (size_t) buflen) == -1)
+            {
+                hp = GLOBUS_NULL;
+            }
+            else
+            { 
+                hp = result;
+            }
+            if(h_errnop != GLOBUS_NULL)
+            {
+                *h_errnop = h_errno;
+            }
         }
-	    else
-	    {
-	        hp = GLOBUS_NULL;
-	        if(h_errnop != GLOBUS_NULL)
-	        {
-		        *h_errnop = h_errno;
-	        }
+        else
+        {
+            hp = GLOBUS_NULL;
+            if(h_errnop != GLOBUS_NULL)
+            {
+                *h_errnop = h_errno;
+            }
         }
     }
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_5)
@@ -1390,9 +1412,15 @@ globus_libc_gethostbyaddr_r(char *addr,
 	if(hp != GLOBUS_NULL)
 	{
             memcpy(result, hp, sizeof(struct hostent));
-            globus_l_libc_copy_hostent_data_to_buffer(result, buffer, buflen);
-
-	    hp = result;
+            if(globus_l_libc_copy_hostent_data_to_buffer(
+                   result, buffer, buflen) == -1)
+            {
+                hp = GLOBUS_NULL;
+            }
+            else
+            { 
+                hp = result;
+            }
 	    if (h_errnop != GLOBUS_NULL)
 	    {
 		*h_errnop = h_errno;
@@ -1415,9 +1443,16 @@ globus_libc_gethostbyaddr_r(char *addr,
 			     &hp_data);
         if(rc == 0)
 	{
-            globus_l_libc_copy_hostent_data_to_buffer(result, buffer, buflen);
-
-	    hp = result;
+            if(globus_l_libc_copy_hostent_data_to_buffer(
+                   result, buffer, buflen) == -1)
+            {
+                hp = GLOBUS_NULL;
+            }
+            else
+            {
+                hp = result;
+            }
+            
 	    if (h_errnop != GLOBUS_NULL)
 	    {
 		*h_errnop = h_errno;
@@ -1687,16 +1722,17 @@ Parameters:
 
 Returns:
 ******************************************************************************/
-static void
-globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
-					  char *buffer,
-					  size_t buflen)
+static int
+globus_l_libc_copy_hostent_data_to_buffer(
+    struct hostent *                    h,
+    char *                              buffer,
+    size_t                              buflen)
 {
-    size_t offset=0U;
-    char **ptr;
-    char **ptr_buffer = (char **) buffer;
-    int num_ptrs=0;
-
+    size_t                              offset=0U;
+    char **                             ptr;
+    char **                             ptr_buffer = (char **) buffer;
+    int                                 num_ptrs=0;
+    
    /* list of addresses from name server */
     if(h->h_addr_list != GLOBUS_NULL)
     {
@@ -1719,53 +1755,51 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
     
     offset += num_ptrs * sizeof(char *);
 
-    /* official hostname of host */
-    if(offset < buflen)
+    if(offset > buflen)
     {
-	size_t     cp_len;
+        return -1;
+    }
+    
+    /* official hostname of host */
+    if(h->h_name != NULL)
+    { 
 	size_t     name_len;
 	
 	name_len = strlen(h->h_name);
-	if(name_len < buflen-offset)
+	if(name_len + 1 + offset > buflen)
 	{
-	    cp_len = name_len;
+            return -1;
 	}
-	else
-	{
-	    cp_len = buflen - offset;
-	}
-        strncpy(&buffer[offset], h->h_name, cp_len);
-	buffer[offset + cp_len] = '\0';
+
+        strncpy(&buffer[offset], h->h_name, name_len);
+	buffer[offset + name_len] = '\0';
 	h->h_name = &buffer[offset];
-        offset += cp_len + 1;
+        offset += name_len + 1;
     }
 
-   /* list of addresses from name server */
+    /* list of addresses from name server */
     if(h->h_addr_list != GLOBUS_NULL)
     {
-	/* expect all addresses to be inet addresses */
-	size_t addrsize = sizeof(struct in_addr);
+	size_t addrsize = h->h_length;
 
 	ptr = h->h_addr_list;
 	h->h_addr_list = ptr_buffer;
 	
 	for(; (*ptr) != GLOBUS_NULL; ptr++)
 	{
-	    if(addrsize >= buflen - offset)
+	    if(offset + addrsize > buflen)
 	    {
-		(*ptr)[offset] = '\0';
+                return -1;
 	    }
-	    else if(offset < buflen)
-	    {
-		memcpy(&buffer[offset], *ptr, addrsize);
-		*ptr_buffer = &buffer[offset];
-		ptr_buffer++;
-		offset += strlen(*ptr) + addrsize;
-	    }
+
+            memcpy(&buffer[offset], *ptr, addrsize);
+            *ptr_buffer = &buffer[offset];
+            ptr_buffer++;
+            offset += addrsize;
 	}
 	*ptr_buffer = GLOBUS_NULL;
 	ptr_buffer++;
-   }
+    } 
 
     if(h->h_aliases != GLOBUS_NULL)
     {
@@ -1775,21 +1809,20 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
 	/* host aliases */
 	for(; *ptr != GLOBUS_NULL; ptr++)
 	{
-	    if(strlen(*ptr) > buflen - offset)
+	    if(strlen(*ptr) + offset + 1 > buflen)
 	    {
-		(*ptr)[buflen-offset-1] = '\0';
+                return -1;
 	    }
-	    if(offset < buflen)
-	    {
-		strcpy(&buffer[offset], *ptr);
-		*ptr_buffer = &buffer[offset];
-		ptr_buffer++;
-		offset += strlen(*ptr) + 1;
-	    }
+            
+            strcpy(&buffer[offset], *ptr);
+            *ptr_buffer = &buffer[offset];
+            ptr_buffer++;
+            offset += strlen(*ptr) + 1;
 	}
 	*ptr_buffer = GLOBUS_NULL;
 	ptr_buffer++;
     }
+    return 0;
 } /* globus_l_libc_copy_hostent_data_to_buffer() */
 
 
