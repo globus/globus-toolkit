@@ -20,8 +20,120 @@ CVS Information:
 #include <stdio.h>
 #include <stdlib.h>
 
-extern char *optarg;
-extern int optind, opterr, optopt;
+
+static char *  oneline_usage
+   =  "globus-gass-server [-help][-{s,l,t,u,r,w,c,o,e}][-p port]";
+
+static char *  long_usage = \
+"\n" \
+"Syntax: globus-gass-server [options]\n"\
+"        globus-gass-server -version\n"\
+"        globus-gass-server -help\n"\
+"\n" \
+"    Options\n"\
+"    -help | -usage\n"\
+"        Displays usage\n"
+"    -version\n"
+"        Displays version\n"
+"    -s | -silent\n"
+"        Enable silent mode (Don't output server URL)\n"
+"    -l | -linebuffer\n"
+"        Enable line buffering (multiple writers will be line-interleaved)\n"
+"    -t | -tilde-expand\n"
+"        Expand ~ in <URL>/~/filename\n"
+"    -u | -user-expand\n"
+"        Expand ~username in <URL>/~username/filename\n"
+"    -r | -read\n"
+"        Enable read access to the local file system\n"
+"    -w | -write\n"
+"        Enable write access to the local file system\n"
+"    -c | -client-shutdown\n"
+"        Allow client to trigger shutdown the GASS server\n"
+"    -o\n"
+"        Writes to <base URL>/dev/stdout will be forwarded to stdout\n"
+"    -e\n"
+"        Writes to <base URL>/dev/stderr will be forwarded to stderr\n"
+"    -p <port>\n"
+"        Start the GASS server using the specified TCP port.\n"
+"    -n <options>\n"
+"        Disable <options>, which is a string consisting of one or many of\n"
+"        the letters \"sclturwoe\"\n\n";
+
+
+
+
+const enum { arg_c = 1, arg_s, arg_l, arg_t, arg_u, arg_r, arg_w, arg_o,
+	     arg_e, arg_n, arg_p, arg_num=arg_p };
+
+#define listname(x) x##_aliases
+#define namedef(id,alias1,alias2) \
+static char * listname(id)[] = { alias1, alias2, GLOBUS_NULL }
+
+#define defname(x) x##_definition
+#define flagdef(id,alias1,alias2) \
+namedef(id,alias1,alias2); \
+static globus_args_option_descriptor_t defname(id) = { id, listname(id), 0, \
+						GLOBUS_NULL, GLOBUS_NULL }
+#define funcname(x) x##_predicate_test
+#define oneargdef(id,alias1,alias2,testfunc) \
+namedef(id,alias1,alias2); \
+static globus_args_valid_predicate_t funcname(id)[] = { testfunc }; \
+globus_args_option_descriptor_t defname(id) = \
+    { (int) id, (char **) listname(id), 1, funcname(id), GLOBUS_NULL }
+
+flagdef(arg_c, "-c", "-client-shutdown");
+flagdef(arg_s, "-s", "-silent");
+flagdef(arg_l, "-l", "-linebuffer");
+flagdef(arg_t, "-t", "-tilde-expand");
+flagdef(arg_u, "-u", "-user-expand");
+flagdef(arg_r, "-r", "-read");
+flagdef(arg_w, "-w", "-write");
+flagdef(arg_o, "-o", GLOBUS_NULL);
+flagdef(arg_e, "-e", GLOBUS_NULL);
+
+int
+test_dashp( char *   value,
+	    void *   ignored,
+	    char **  errmsg )
+{
+    int  res = (atoi(value) <= 0);
+    if (res)
+	*errmsg = globus_libc_strdup("argument is not a positive integer");
+    return res;
+}
+
+int
+test_dashn( char *   value,
+	    void *   ignored,
+	    char **  errmsg )
+{
+    globus_bool_t  b = GLOBUS_TRUE;
+    char *         p;
+    int            res = 0;
+
+    for (p=value; p && !res; ++p)
+    {
+	if (!strchr("sclturwoe",p))
+	{
+	    *errmsg =globus_libc_strdup("other characters than \"sclturwoe\"");
+	    res = 1;
+	}
+    }
+    return res;
+}
+
+oneargdef(arg_n, "-n", GLOBUS_NULL, test_dashn);
+oneargdef(arg_p, "-p", "-port", test_dashp);
+
+static globus_args_option_descriptor_t args_options[arg_num];
+
+#define setupopt(id) args_options[id-1] = defname(id)
+
+#define globus_i_gass_server_args_init() \
+    setupopt(arg_c); setupopt(arg_s); setupopt(arg_l); setupopt(arg_t); \
+    setupopt(arg_u); setupopt(arg_r); setupopt(arg_w); setupopt(arg_o); \
+    setupopt(arg_e); setupopt(arg_n); setupopt(arg_p);
+
 
 static globus_bool_t done = GLOBUS_FALSE;
 #define GASSD_DEFAULT_OPTIONS (GLOBUS_GASS_SERVER_EZ_LINE_BUFFER |\
@@ -56,130 +168,118 @@ void client_shutdown_callback()
 
 int main(int argc, char **argv)
 {
-    unsigned short port = 0U;
-    char *url;
-    globus_bool_t silent=GLOBUS_FALSE;
-    unsigned long default_options=GASSD_DEFAULT_OPTIONS;
-    unsigned long options=0UL;
-    signed char c;
-    int rc;
+    unsigned short                     port            = 0U;
+    globus_bool_t                      silent          = GLOBUS_FALSE;
+    unsigned long                      default_options = GASSD_DEFAULT_OPTIONS;
+    unsigned long                      options         = 0UL;
+    globus_list_t *                    options_found   = GLOBUS_NULL;
+    globus_list_t *                    list            = GLOBUS_NULL;
+    globus_args_option_instance_t *    instance        = GLOBUS_NULL;
+    char *                             p;
+    char *                             url;
+    int                                rc;
     
     globus_module_activate(GLOBUS_NEXUS_MODULE);
 
     globus_mutex_init(&mutex, NULL);
     globus_cond_init(&cond, NULL);
-    
-    while((c = getopt(argc, argv, "vcp:slturwoen:h")) != EOF)
+
+    globus_i_gass_server_args_init();
+
+    if ( 0 > globus_args_scan( &argc,
+			       &argv,
+			       arg_num,
+			       args_options,
+			       oneline_usage,
+			       long_usage,
+			       &options_found,
+			       GLOBUS_NULL   ) )  /* error to stderr */
+    {	 
+	globus_module_deactivate_all();
+	exit(1);
+    }
+
+    for (list = options_found; 
+	 !globus_list_empty(list); 
+	 list = globus_list_rest(list))
     {
-	switch (c)
+	instance = globus_list_first(list);
+	
+	switch(instance->id_number)
 	{
-	case 'p':
-	    port = (unsigned short) atoi(optarg);
-	    break;
-	case 's':
-	    silent = GLOBUS_TRUE;
-	    break;
-	case 'l':
-	    options |= GLOBUS_GASS_SERVER_EZ_LINE_BUFFER;
-	    break;
-	case 't':
-	    options |= GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND;
-	    break;
-	case 'u':
-	    options |= GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND;
-	    break;
-	case 'r':
-	    options |= GLOBUS_GASS_SERVER_EZ_READ_ENABLE;
-	    break;
-	case 'w':
-	    options |= GLOBUS_GASS_SERVER_EZ_WRITE_ENABLE;
-	    break;
-	case 'o':
-	    options |= GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE;
-	    break;
-	case 'e':
-	    options |= GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE;
-	    break;
-	case 'c':
+	case arg_c:
 	    options |= GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE;
 	    break;
-	case 'v':
-	    if(GLOBUS_RELEASE_NOT_BETA)
+	case arg_s:
+	    silent = GLOBUS_TRUE;
+	    break;
+	case arg_l:
+	    options |= GLOBUS_GASS_SERVER_EZ_LINE_BUFFER;
+	    break;
+	case arg_t:
+	    options |= GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND;
+	    break;
+	case arg_u:
+	    options |= GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND;
+	    break;
+	case arg_r:
+	    options |= GLOBUS_GASS_SERVER_EZ_READ_ENABLE;
+	    break;
+	case arg_w:
+	    options |= GLOBUS_GASS_SERVER_EZ_WRITE_ENABLE;
+	    break;
+	case arg_o:
+	    options |= GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE;
+	    break;
+	case arg_e:
+	    options |= GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE;
+	    break;
+	case arg_p:
+	    port = (unsigned short) atoi(instance->values[0]);	    
+	    break;
+	case arg_n:
+	    for (p=instance->values[0]; p; ++p)
 	    {
-		globus_libc_printf("Globus Version %d.%d.%d\n"
-				   "GASS Protocol Version %d\n",
-				   globus_release_major(),
-				   globus_release_minor(),
-				   globus_release_patch(),
-				   GLOBUS_GASS_PROTO_VERSION);
-	    }
-	    else
-	    {
-		globus_libc_printf("Globus Version %d.%d.%db%d\n"
-				   "GASS Protocol Version %d\n",
-				   globus_release_major(),
-				   globus_release_minor(),
-				   globus_release_patch(),
-				   globus_release_beta(),
-				   GLOBUS_GASS_PROTO_VERSION);
-	    }
-	    return 0;
-	case 'n':
-	    switch(optarg[0])
-	    {
-	    case 's':
-		silent = GLOBUS_FALSE;
-		break;
-	    case 'l':
-		options &= ~GLOBUS_GASS_SERVER_EZ_LINE_BUFFER;
-		break;
-	    case 't':
-		options &= ~GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND;
-		break;
-	    case 'u':
-		options &= ~GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND;
-		break;
-	    case 'r':
-		options &= ~GLOBUS_GASS_SERVER_EZ_READ_ENABLE;
-		break;
-	    case 'w':
-		options &= ~GLOBUS_GASS_SERVER_EZ_WRITE_ENABLE;
-		break;
-	    case 'o':
-		options &= ~GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE;
-		break;
-	    case 'e':
-		options &= ~GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE;
-		break;
-	    case 'c':
-		options &= ~GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE;
-		break;
-	    default:
-		globus_libc_printf("Disabling unknown option %s\n", optarg);
+		switch(p[0])
+		{
+		case 's':
+		    silent = GLOBUS_FALSE;
+		    break;
+		case 'l':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_LINE_BUFFER;
+		    break;
+		case 't':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND;
+		    break;
+		case 'u':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND;
+		    break;
+		case 'r':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_READ_ENABLE;
+		    break;
+		case 'w':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_WRITE_ENABLE;
+		    break;
+		case 'o':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE;
+		    break;
+		case 'e':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE;
+		    break;
+		case 'c':
+		    options &= ~GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE;
+		    break;
+		}
 	    }
 	    break;
-	case 'h':
-	case '?':
-	    globus_libc_printf("usage: %s\n"
-		   "\t-p port\t\t\tSpecify port for server\n"
-		   "\t-s silent mode\t\tDon't output server URL\n"
-		   "\t-l line buffer\t\tLine buffer files when writing\n"
-		   "\t-t tilde expand\t\tExpand URLs starting with ~ to $HOME\n"
-		   "\t-u user expand\t\tExpand URLs starting with ~user to user's home\n"
-		   "\t-r read enable\t\tEnable read access to the local file systems\n"
-		   "\t-w write enable\t\tEnable write access to the local file system\n"
-		   "\t-c client shutdown\tEnable client to shutdown gassd\n"
-		   "\t   enable\n"
-		   "\t-o stdout enable\tAllow writes to /dev/stdout\n"
-		   "\t-e stderr enable\tAllow writes to /dev/stderr\n"
-		   "\t-n [sclturwoe]\t\tDisable the specified option\n", argv[0]);
-	    exit(0);
 	}
     }
+
+    globus_args_option_instance_list_free( &options_found );
+
     if(options == 0)
-    {
-        options = default_options;
-    }
+	options = default_options;
+
     
 #   if defined(BUILD_LITE)
     {
