@@ -188,6 +188,7 @@ extern char * globus_i_xio_handle_state_name_table[];
 
 typedef enum globus_i_xio_handle_state_e
 {
+    GLOBUS_XIO_HANDLE_STATE_NONE,
     GLOBUS_XIO_HANDLE_STATE_OPENING,
     GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED,
     GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING,
@@ -200,6 +201,7 @@ extern char * globus_i_xio_op_state_name_table[];
 
 typedef enum globus_i_xio_op_state_e
 {
+    GLOBUS_XIO_OP_STATE_NONE,
     GLOBUS_XIO_OP_STATE_OPERATING,
     GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING,
     GLOBUS_XIO_OP_STATE_FINISH_WAITING,
@@ -208,6 +210,7 @@ typedef enum globus_i_xio_op_state_e
 
 typedef enum globus_xio_server_state_e
 {
+    GLOBUS_XIO_SERVER_STATE_NONE,
     GLOBUS_XIO_SERVER_STATE_OPEN,
     GLOBUS_XIO_SERVER_STATE_ACCEPTING,
     GLOBUS_XIO_SERVER_STATE_COMPLETING,
@@ -218,6 +221,7 @@ typedef enum globus_xio_server_state_e
 
 typedef enum globus_xio_target_type_e
 {
+    GLOBUS_XIO_TARGET_TYPE_NONE,
     GLOBUS_XIO_TARGET_TYPE_SERVER,
     GLOBUS_XIO_TARGET_TYPE_CLIENT,
 } globus_xio_target_type_t;

@@ -71,6 +71,7 @@ do                                                                          \
 
 char * globus_i_xio_handle_state_name_table[] =
 {
+    "GLOBUS_XIO_HANDLE_STATE_NONE",
     "GLOBUS_XIO_HANDLE_STATE_OPENING",
     "GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED",
     "GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING",
@@ -81,6 +82,7 @@ char * globus_i_xio_handle_state_name_table[] =
 
 char * globus_i_xio_op_state_name_table[] =
 {
+    "GLOBUS_XIO_OP_STATE_NONE",
     "GLOBUS_XIO_OP_STATE_OPERATING",
     "GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING",
     "GLOBUS_XIO_OP_STATE_FINISH_WAITING",
@@ -89,6 +91,7 @@ char * globus_i_xio_op_state_name_table[] =
 
 char * globus_i_xio_context_state_name_table[] =
 {
+    "GLOBUS_XIO_CONTEXT_STATE_NONE",
     "GLOBUS_XIO_CONTEXT_STATE_OPENING",
     "GLOBUS_XIO_CONTEXT_STATE_OPEN",
     "GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED",
@@ -97,7 +100,7 @@ char * globus_i_xio_context_state_name_table[] =
     "GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING",
     "GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING",
     "GLOBUS_XIO_CONTEXT_STATE_CLOSING",
-    "GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING""",
+    "GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING",
     "GLOBUS_XIO_CONTEXT_STATE_CLOSED",
 };
 
