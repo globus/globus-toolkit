@@ -34,7 +34,6 @@ if(0 != system("grid-proxy-info -exists -hours 2") / 256)
     print "Security proxy required to run the tests.\n";
     exit 1;
 }
-chdir "$globus_location/test";
 
 print "Running sanity check\n";
 my ($source_host, $source_file, $local_copy1) = setup_remote_source();
