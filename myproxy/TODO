@@ -1,11 +1,19 @@
 
 TODO list for myproxy:
 
- * myproxy-server daemon still spits messages to stdout/stderr.
+ * myproxy-server daemon still spits messages to stdout/stderr. 
+	(hope that's fixed)
 
- * Add a MYPROXY_SERVER environment variable for myproxy-init
+ * Add a MYPROXY_SERVER environment variable for myproxy-init 
+	(done; also did the same for myproxy-get-delegation and myproxy-destroy)
 
  * myproxy-get-delegation not handling bad pass phrase
+	(that should be fixed now)
 
  * delegation lifetime fubar
+	(proposed fix has been implemented)
+
+
+ * myproxy-get-delegation should move delegated proxy to better named place
+
 
