@@ -140,7 +140,7 @@ mlsd(
         globus_location(&gl);
         if(gl)
         {
-            snprintf(abs_path, sizeof(abs_path), "%s/ftpmlsd %%s", gl);
+            snprintf(abs_path, sizeof(abs_path), "%s/bin/ftpmlsd %%s", gl);
             abs_path[sizeof(abs_path) - 1] = 0;
             cmd = abs_path;
             free(gl);
