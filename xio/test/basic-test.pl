@@ -35,7 +35,7 @@ push(@drivers, "-D debug -D bounce");
 push(@drivers, "-D null -D null");
 push(@drivers, "-D bounce -D debug");
 push(@drivers, "-D null -D bounce -D debug");
-push(@drivers, "-D bounce -D null -D bounce");
+push(@drivers, "-D bounce -D null_pass -D bounce");
 
 sub basic_tests
 {

@@ -284,16 +284,10 @@ globus_l_xio_driver_op_write_kickout(
     handle = op->_op_handle;
     context = handle->context;
 
-    /* if no user callback check for restart, otherwise fall to bottom */
-    if(my_op->_op_ent_data_cb == NULL)
+    if(ndx == 0)
     {
-        if(op->restarted)
-        {
-            globus_l_xio_op_restarted(op);
-        }
-    }
-    else if(ndx == 0)
-    {
+        /* at top level the callback should never be null */
+        globus_assert(my_op->_op_ent_data_cb != NULL);
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
             (void *) op,
@@ -312,8 +306,16 @@ globus_l_xio_driver_op_write_kickout(
     }
     else
     {
-        my_op->_op_ent_data_cb(op, op->cached_res,
-            my_op->_op_ent_nbytes, my_op->user_arg);
+        if(my_op->_op_ent_data_cb == NULL)
+        {
+            globus_xio_driver_finished_write(op, op->cached_res, 
+                my_op->_op_ent_nbytes);
+        }
+        else
+        {
+            my_op->_op_ent_data_cb(op, op->cached_res,
+                my_op->_op_ent_nbytes, my_op->user_arg);
+        }
         if(op->restarted)
         {        
             globus_l_xio_op_restarted(op);
@@ -386,16 +388,10 @@ globus_l_xio_driver_op_read_kickout(
     handle = op->_op_handle;
     context = handle->context;
 
-   /* if no user callback check for restart, otherwise fall to bottom */
-    if(my_op->_op_ent_data_cb == NULL)
+    if(ndx == 0)
     {
-        if(op->restarted)
-        {
-            globus_l_xio_op_restarted(op);
-        }
-    }
-    else if(ndx == 0)
-    {
+        /* at top level the callback should never be null */
+        globus_assert(my_op->_op_ent_data_cb != NULL);
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
             (void *) op,
@@ -412,8 +408,16 @@ globus_l_xio_driver_op_read_kickout(
     }
     else
     {
-        my_op->_op_ent_data_cb(op, op->cached_res,
-            my_op->_op_ent_nbytes, my_op->user_arg);
+        if(my_op->_op_ent_data_cb == NULL)
+        {
+            globus_xio_driver_finished_read(op, op->cached_res,
+                my_op->_op_ent_nbytes);
+        }
+        else
+        {
+            my_op->_op_ent_data_cb(op, op->cached_res,
+                my_op->_op_ent_nbytes, my_op->user_arg);
+        }
         if(op->restarted)
         {
             globus_l_xio_op_restarted(op);
@@ -497,7 +501,7 @@ globus_i_xio_driver_start_close(
  *  when in a register the finish function kicks this out as a oneshot
  */
 void
-globus_l_xio_driver_op_kickout(
+globus_l_xio_driver_op_close_kickout(
     void *                                  user_arg)
 {
     globus_i_xio_op_t *                     op;
@@ -509,12 +513,54 @@ globus_l_xio_driver_op_kickout(
 
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->prev_ndx;
-    my_op->cb(
-        op,
-        op->cached_res,
-        my_op->user_arg);
+
+    if(my_op->cb != NULL)
+    {
+        my_op->cb(
+            op,
+            op->cached_res,
+            my_op->user_arg);
+    }
+    else
+    {
+        GlobusXIODriverFinishedClose(op, op->cached_res);
+    }
     GlobusXIODebugInternalExit();
 }
+
+/*
+ *  driver callback kickout
+ *
+ *  when in a register the finish function kicks this out as a oneshot
+ */
+void
+globus_l_xio_driver_op_accept_kickout(
+    void *                                  user_arg)
+{
+    globus_i_xio_op_t *                     op;
+    globus_i_xio_op_entry_t *               my_op;
+    GlobusXIOName(globus_l_xio_driver_op_kickout);
+                                                                                
+    GlobusXIODebugInternalEnter();
+    op = (globus_i_xio_op_t *) user_arg;
+                                                                                
+    my_op = &op->entry[op->ndx - 1];
+    op->ndx = my_op->prev_ndx;
+                                                                                
+    if(my_op->cb != NULL)
+    {
+        my_op->cb(
+            op,
+            op->cached_res,
+            my_op->user_arg);
+    }
+    else
+    {
+        GlobusXIODriverFinishedAccept(op, NULL, op->cached_res);
+    }
+    GlobusXIODebugInternalExit();
+}
+
 
 void
 globus_l_xio_driver_open_op_kickout(
@@ -540,16 +586,10 @@ globus_l_xio_driver_open_op_kickout(
     handle = op->_op_handle;
     context = handle->context;
 
-   /* if no user callback check for restart, otherwise fall to bottom */
-    if(my_op->cb == NULL)
+    if(ndx == 0)
     {
-        if(op->restarted)
-        {
-            globus_l_xio_op_restarted(op);
-        }
-    }
-    else if(ndx == 0)
-    {
+        /* at top level the callback should never be null */
+        globus_assert(my_op->cb != NULL);
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
             (void *) op,
@@ -565,7 +605,14 @@ globus_l_xio_driver_open_op_kickout(
     }
     else
     {
-        my_op->cb(op, op->cached_res, my_op->user_arg);
+        if(my_op->cb == NULL)
+        {
+            globus_xio_driver_finished_open(NULL, NULL, op, op->cached_res);
+        }
+        else
+        {
+            my_op->cb(op, op->cached_res, my_op->user_arg);
+        }
         if(op->restarted)
         {
             globus_l_xio_op_restarted(op);

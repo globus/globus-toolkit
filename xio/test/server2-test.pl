@@ -27,6 +27,7 @@ push(@drivers, "-D debug -D bounce");
 push(@drivers, "-D bounce -D debug");
 push(@drivers, "-D debug -D bounce -D verify");
 push(@drivers, "-D bounce -D debug -D bounce");
+push(@drivers, "-D null_pass -D bounce");
 
 my $test_name="server2";
 sub basic_tests

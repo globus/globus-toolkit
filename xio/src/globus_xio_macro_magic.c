@@ -290,7 +290,7 @@ globus_xio_driver_open_deliver_DEBUG(
             }
             globus_i_xio_register_oneshot(
                 _handle,
-                globus_l_xio_driver_op_kickout,
+                globus_l_xio_driver_op_close_kickout,
                 (void *)_close_op,
                 _space);
         }
@@ -451,14 +451,13 @@ globus_xio_driver_finished_close_DEBUG(
         GlobusXIODebugInregisterOneShot();
         globus_i_xio_register_oneshot(
             _op->_op_handle,
-            globus_l_xio_driver_op_kickout,
+            globus_l_xio_driver_op_close_kickout,
             (void *)_op,
             _space);
     }
     else
     {
-        _op->ndx = _my_op->prev_ndx;
-        _my_op->cb(_op, _op->cached_res, _my_op->user_arg);
+        globus_l_xio_driver_op_close_kickout(_op);
     }
     GlobusXIODebugInternalExit();
 }
@@ -1158,14 +1157,13 @@ globus_xio_driver_finished_accept_DEBUG(
         GlobusXIODebugInregisterOneShot();
         globus_i_xio_register_oneshot(
             NULL,
-            globus_l_xio_driver_op_kickout,
+            globus_l_xio_driver_op_accept_kickout,
             (void *)_op,
             _space);
     }
     else
     {
-        _op->ndx = _my_op->prev_ndx;
-        _my_op->cb(_op, _op->cached_res, _my_op->user_arg);
+        globus_l_xio_driver_op_accept_kickout(_op);
     }
     GlobusXIODebugInternalExit();
 }

@@ -531,7 +531,11 @@ globus_i_xio_driver_start_close(
     globus_bool_t                           can_fail);
 
 void
-globus_l_xio_driver_op_kickout(
+globus_l_xio_driver_op_close_kickout(
+    void *                                  user_arg);
+
+void
+globus_l_xio_driver_op_accept_kickout(
     void *                                  user_arg);
 
 void
