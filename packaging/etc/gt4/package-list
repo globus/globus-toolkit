@@ -59,7 +59,7 @@ globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
 globus_wsrf_mds_hawkeye                     ws-mds/hawkeye/source
 globus_wsrf_servicegroup                    ws-mds/servicegroup/source
 globus_wsrf_servicegroup_schema             ws-mds/servicegroup/schema
-globus_ws_core_schema                       wsrf/schema
+globus_ws_core_schema                       wsrf/schema/ tar
 globus_wsrf_xindice                         wsrf/java/xindice
 globus_java_ws_core_common                  wsrf/java/common/source
 globus_java_ws_core_tools                   wsrf/java/tools/source
@@ -95,6 +95,7 @@ globus_c_wsrf_providers_test_wsdl           wsrf/c/core/providers/test_wsdl gpt
 globus_c_wsrf_provider_test                 wsrf/c/core/providers/test gpt
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
 globus_c_wsrf_resource_test                 wsrf/c/resource/test gpt
+globus_c_ws_security                        wsrf/c/core/security/source gpt
 globus_globusrun_ws                         ws-gram/client/c/source gpt
 globus_c_gram_client_bindings               ws-gram/client/c/bindings tar
 globus_c_delegation_client_bindings         ws-delegation/client/c/bindings tar

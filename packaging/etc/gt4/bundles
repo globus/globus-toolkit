@@ -29,6 +29,7 @@ BUNDLE gt4-c-ws-core
         globus_xio_buffer
         globus_c_wsrf_providers
         globus_notification_consumer
+        globus_c_ws_security
 
 BUNDLE gt4-c-ws-core-test
         globus_c_wsrf_core_test_interop_bindings
