@@ -6,6 +6,7 @@ include $(top_srcdir)/globus_automake_pre_top
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
 	pkgdata  \
+	doxygen \
 	scripts
 
 # Sources contains all of the source files in the directory.
