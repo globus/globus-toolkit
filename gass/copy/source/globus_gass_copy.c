@@ -486,7 +486,7 @@ globus_gass_copy_get_status(
 {
     if(handle != GLOBUS_NULL)
     {
-	status = handle->status;
+	*status = handle->status;
 	return GLOBUS_SUCCESS;
     }
     else
