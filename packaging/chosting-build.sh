@@ -46,7 +46,7 @@ cd $BASEDIR/source-trees/gt2-cvs
 cvs -d$GT2CVS co $GT2PKGS
 if test ! $? = 0; then
 	echo ""
-	echo "cvs checkout of $GT2PKGS failed"
+	echo "cvs checkout of $GT2PKGS failed. check CVSROOT env."
 	echo ""
 	exit 1
 fi
@@ -89,6 +89,8 @@ if test ! $? = 0; then
 	echo ""
 	exit 1
 fi
+
+echo "GLOBUS LOCATION IS: :$GLOBUS_LOCATION:"
 
 if test -z "$GLOBUS_LOCATION"; then
 	echo ""
