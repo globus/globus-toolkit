@@ -1,0 +1,18 @@
+#! @PERL@
+
+use strict;
+use Test::Harness;
+require 5.005;
+use vars qw(@tests);
+
+@tests = qw( globus_common_args_test.pl
+	     globus_common_error_test.pl
+	     globus_common_mem_test.pl
+	     globus_common_module_test.pl
+	     globus_common_poll_test.pl
+	     globus_common_thread_test.pl
+	     globus_common_timedwait_test.pl
+	     globus_common_url_test.pl
+	     );
+
+runtests(@tests);
