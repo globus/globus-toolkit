@@ -106,7 +106,9 @@ typedef struct globus_l_gfs_data_operation_s
     int                                 node_count;
     int                                 node_ndx;
     int                                 write_stripe;
-    
+
+    int                                 stripe_connections_pending;
+       
     int                                 write_delta;
     int                                 stripe_chunk;
     globus_range_list_t                 stripe_range_list;
@@ -1904,11 +1906,15 @@ globus_l_gfs_data_begin_cb(
                         globus_error_put(globus_object_copy(error));
                     goto err_lock;
                 }
-                /* everything is well, send the begin event */
-                op->state = GLOBUS_L_GFS_DATA_CONNECTED;
-                connect_event = GLOBUS_TRUE;
                 op->ref--;
+                op->stripe_connections_pending--;
                 globus_assert(op->ref > 0);
+                if(!op->stripe_connections_pending)
+                {
+                    /* everything is well, send the begin event */
+                    op->state = GLOBUS_L_GFS_DATA_CONNECTED;
+                    connect_event = GLOBUS_TRUE;
+                }
                 break;
 
             /* this happens when a transfer is aborted before a connection
@@ -3219,7 +3225,18 @@ globus_gridftp_server_begin_transfer(
                 }
                 else
                 {
-                    op->ref++; /* for the begin callback on success */
+                    /* for the begin callback on success */
+                    if(op->writing && op->data_handle->is_mine)
+                    {
+                        op->ref += op->stripe_count;
+                        op->stripe_connections_pending = 
+                            op->stripe_count;
+                    }
+                    else
+                    {
+                        op->ref++;
+                        op->stripe_connections_pending = 1;                        
+                    }
                 }
                 break;
 

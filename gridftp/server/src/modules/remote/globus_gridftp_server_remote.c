@@ -15,6 +15,7 @@ typedef struct globus_l_gfs_remote_ipc_bounce_s
     void *                              state;
     globus_l_gfs_remote_handle_t *      my_handle;
     int                                 stripes_pending;
+    int                                 begin_event_pending;
     int                                 event_pending;
     globus_list_t *                     stripe_list;
 } globus_l_gfs_remote_ipc_bounce_t;
@@ -394,7 +395,7 @@ globus_l_gfs_ipc_event_cb(
     switch(reply->type)
     {
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
-            bounce_info->event_pending--;
+            bounce_info->begin_event_pending--;
             for(list = bounce_info->stripe_list;
                 !globus_list_empty(list);
                 list = globus_list_rest(list))
@@ -407,20 +408,31 @@ globus_l_gfs_ipc_event_cb(
                     stripe_info->event_mask = reply->event_mask;
                 }
             }        
+            if(!bounce_info->begin_event_pending)
+            {        
+                reply->transfer_id = (int) bounce_info->stripe_list;
+                reply->event_mask = 
+                    GLOBUS_GFS_EVENT_TRANSFER_ABORT | 
+                    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
+                    GLOBUS_GFS_EVENT_BYTES_RECVD |
+                    GLOBUS_GFS_EVENT_RANGES_RECVD;
+        
+                globus_gridftp_server_operation_event(
+                    bounce_info->op,
+                    GLOBUS_SUCCESS,
+                    reply);
+            }
+            break;
+        case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
+            bounce_info->event_pending--;
             break;
         default:
             break;
-    }        
+    }       
     if(!bounce_info->event_pending || 
         reply->type == GLOBUS_GFS_EVENT_DISCONNECTED)
     {        
         reply->transfer_id = (int) bounce_info->stripe_list;
-        reply->event_mask = 
-            GLOBUS_GFS_EVENT_TRANSFER_ABORT | 
-            GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
-            GLOBUS_GFS_EVENT_BYTES_RECVD |
-            GLOBUS_GFS_EVENT_RANGES_RECVD;
-
         globus_gridftp_server_operation_event(
             bounce_info->op,
             GLOBUS_SUCCESS,
@@ -456,6 +468,7 @@ globus_l_gfs_remote_init_bounce_info(
     bounce_info->stripe_list = NULL;
     bounce_info->stripes_pending = 0;
     bounce_info->event_pending = 0;
+    bounce_info->begin_event_pending = 0;
 
     *bounce = bounce_info;
     
@@ -624,6 +637,7 @@ globus_l_gfs_remote_list(
     transfer_info->node_ndx = 0;
     transfer_info->node_count = 1;
     bounce_info->event_pending = 1;
+    bounce_info->begin_event_pending = 1;
     bounce_info->stripes_pending = 1;
     
     result = globus_gfs_ipc_request_list(
@@ -687,6 +701,7 @@ globus_l_gfs_remote_recv(
 
         bounce_info->stripes_pending++;
         bounce_info->event_pending++;
+        bounce_info->begin_event_pending++;
         
         result = globus_gfs_ipc_request_recv(
             stripe_info->ipc_handle,
@@ -750,6 +765,7 @@ globus_l_gfs_remote_send(
                             
         bounce_info->stripes_pending++;
         bounce_info->event_pending++;
+        bounce_info->begin_event_pending++;
         
         result = globus_gfs_ipc_request_send(
             stripe_info->ipc_handle,
