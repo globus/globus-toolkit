@@ -249,7 +249,9 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc ecc CC c++)
                 AC_PATH_PROGS(lac_cv_F77, $F77 ifort efc f77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 ifort efc f90)
-                lac_CFLAGS="$lac_CFLAGS -restrict"
+                # should really check that we really are dealing 
+                # with intel compiler 
+                lac_CFLAGS="$lac_CFLAGS -no-gcc -restrict"
             fi
         fi
         CC="$lac_cv_CC"
@@ -729,8 +731,10 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc CC c++)
                 AC_PATH_PROGS(lac_cv_F77, $F77 ifort ifc f77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 ifort ifc f90)
+                # should really check that we really are dealing 
+                # with intel compiler 
+                lac_CFLAGS="$lac_CFLAGS -no-gcc"                
             fi
-            
         fi
         CC="$lac_cv_CC"
       ;;
