@@ -9,7 +9,7 @@ include $(top_srcdir)/globus_automake_pre_top
 #cacertdir = /etc/grid-security/certificates
 ## cacert = [ DATA ]
 
-setup_SCRIPTS = \
+Scripts = \
 	setup-ssl-utils-sh-scripts \
 	setup-ssl-utils \
 	setup-ssl-utils.pl \
@@ -17,6 +17,9 @@ setup_SCRIPTS = \
 	setup-gsi.pl \
 	grid-cert-request-config.in \
 	grid-security-config.in
+
+
+setup_SCRIPTS = $(Scripts)
 
 setup_DATA = \
 	globus-ssl.conf \
@@ -36,11 +39,7 @@ setup_DATA = \
 SUBDIRS = pkgdata
 
 EXTRA_DIST = \
-	setup-ssl-utils-sh-scripts \
-	setup-ssl-utils \
-	setup-ssl-utils.pl \
-	grid-cert-request-config.in \
-	grid-security-config.in \
+	$(Scripts) \
 	grid-security.conf \
 	globus-ssl.conf \
 	42864e48.0 \
