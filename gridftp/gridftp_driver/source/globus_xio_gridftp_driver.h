@@ -173,6 +173,24 @@ typedef enum
     GLOBUS_XIO_GRIDFTP_GET_HANDLE,
 
     /** GlobusVarArgEnum(attr)
+     * Enable or disable opening the file in append mode.
+     * @ingroup gridftp_driver_cntls
+     *
+     * @param append
+     *      GLOBUS_TRUE to enable, GLOBUS_FALSE to disable (default).
+     */
+    GLOBUS_XIO_GRIDFTP_SET_APPEND,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the append flag on the attr.
+     * @ingroup gridftp_driver_cntls
+     *
+     * @param append_out
+     *	    The append flag will be stored here.
+     */
+    GLOBUS_XIO_GRIDFTP_GET_APPEND,
+
+    /** GlobusVarArgEnum(attr)
      * Enable or disable partial transfer (associate a transfer with each 
      * read/write) on the gridftp handle.
      * @ingroup gridftp_driver_cntls

@@ -51,6 +51,7 @@ typedef struct
     globus_ftp_client_handle_t *        ftp_handle;
     globus_ftp_client_operationattr_t   ftp_operation_attr;
     globus_bool_t                       partial_xfer;
+    globus_bool_t			append;
 
 } globus_l_xio_gridftp_attr_t;
 
@@ -59,6 +60,7 @@ static globus_l_xio_gridftp_attr_t      globus_l_xio_gridftp_attr_default =
     GLOBUS_NULL,
     GLOBUS_NULL,
     GLOBUS_FALSE,
+    GLOBUS_FALSE
 };
 
 typedef struct
@@ -173,7 +175,7 @@ GlobusXIODefineModule(gridftp) =
     &local_version
 };
 
-#define GlobusXIOGridftpErrorSeek()                                         \
+#define GlobusXIOGridftpErrorSeek(reason)                                   \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GlobusXIOMyModule(gridftp),                                     \
@@ -182,7 +184,7 @@ GlobusXIODefineModule(gridftp) =
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Seek error: operation is outstanding"))
+            "Seek error: %s", (reason)))
 
 #define GlobusXIOGridftpErrorOutstandingRead()                              \
     globus_error_put(                                                       \
@@ -580,6 +582,10 @@ globus_l_xio_gridftp_open_cb(
     else
     {
         globus_mutex_lock(&handle->mutex);
+	if (handle->attr->append && error == GLOBUS_SUCCESS) 
+	{
+	    handle->offset = handle->size;
+	}
         handle->state = GLOBUS_XIO_GRIDFTP_OPEN;
         globus_mutex_unlock(&handle->mutex);
         globus_xio_driver_finished_open(
@@ -1558,13 +1564,9 @@ globus_i_xio_gridftp_register_write(
         offset = offset + iovec[i].iov_len;
     }
     /* 
-     * The updated offset might be less than handle->offset if user pass an
-     * offset (via dd) that is less than handle->offset - length of buffer
+     * I do not modify handle->offset if globus_ftp_client_register_write
+     * fails because the failure indicates that something is wrong anyways
      */
-    if (offset > handle->offset)
-    {
-        handle->offset = offset; 
-    }
     GlobusXIOGridftpDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -1586,6 +1588,7 @@ globus_l_xio_gridftp_write(
     globus_i_xio_gridftp_requestor_t *  requestor;
     globus_result_t                     result;
     globus_off_t                        offset;
+    int					i;
     GlobusXIOName(globus_l_xio_gridftp_write);
 
     GlobusXIOGridftpDebugEnter();
@@ -1637,6 +1640,20 @@ globus_l_xio_gridftp_write(
     requestor->finished_count = 0;
     requestor->iovec_count = iovec_count;
     requestor->saved_error = GLOBUS_NULL;
+    for (i = 0; i < iovec_count; i++)
+    {
+	offset += iovec[i].iov_len;
+    }
+    /*
+     * The updated offset might be less than handle->offset if user pass an
+     * offset (via dd) that is less than handle->offset - length of buffer.
+     * I update the handle->offset here so that it gets updated for the 
+     * requests that we put in the pending q as well.
+     */
+    if (offset > handle->offset)
+    {
+        handle->offset = offset;
+    }
     switch (handle->state)
     {   
         case GLOBUS_XIO_GRIDFTP_OPEN:
@@ -1808,6 +1825,12 @@ globus_l_xio_gridftp_cntl(
         {
             /* seek is always from the start of the file */
             globus_off_t seek_offset;   
+	    if (handle->attr->append)
+	    {
+		result = GlobusXIOGridftpErrorSeek(
+					"file opened in append mode"); 
+		goto error; 
+	    }
             seek_offset = va_arg(ap, globus_off_t);
             if (handle->offset != seek_offset)
             {
@@ -1816,7 +1839,8 @@ globus_l_xio_gridftp_cntl(
                     case GLOBUS_XIO_GRIDFTP_IO_DONE:
                         if (handle->attr->partial_xfer)
                         {
-                            result = GlobusXIOGridftpErrorSeek(); 
+                            result = GlobusXIOGridftpErrorSeek(
+						"operation is outstanding"); 
                             goto error; 
                         }
                         globus_i_xio_gridftp_abort_io(handle);
@@ -1831,8 +1855,9 @@ globus_l_xio_gridftp_cntl(
                         break;
                     default:
                         /* seek not allowed in state's other than above */
-                        result = GlobusXIOGridftpErrorSeek(); 
-                        break;
+                        result = GlobusXIOGridftpErrorSeek(
+				"operation is outstanding / invalid state"); 
+                        goto error; 
                 }
             }   
             break;
@@ -2009,6 +2034,15 @@ globus_l_xio_gridftp_attr_cntl(
             *ftp_handle = attr->ftp_handle;
             break;
         }
+	case GLOBUS_XIO_GRIDFTP_SET_APPEND:
+	    attr->append = va_arg(ap, globus_bool_t);
+	    break;
+	case GLOBUS_XIO_GRIDFTP_GET_APPEND:
+	{
+	    globus_bool_t * append = va_arg(ap, globus_bool_t*);
+	    *append = attr->append;
+	    break;
+	}
         /* Each read/write maps to a single partial xfer */ 
         case GLOBUS_XIO_GRIDFTP_SET_PARTIAL_TRANSFER:
         {

@@ -53,6 +53,7 @@ main(
     globus_bool_t                           user_handle = GLOBUS_FALSE;
     globus_bool_t                           partial_xfer = GLOBUS_FALSE;
     globus_bool_t                           seek = GLOBUS_FALSE;
+    globus_bool_t                           append = GLOBUS_FALSE;
     int                                     rc;
     char                                    filename[FILE_NAME_LEN];
     FILE *                                  fp;
@@ -128,6 +129,10 @@ main(
         {
             seek = GLOBUS_TRUE;
         }
+        else if(strcmp(argv[ctr], "-a") == 0)
+        {
+            append = GLOBUS_TRUE;
+        }
         else
         {
             help();
@@ -152,6 +157,12 @@ main(
     {
         res = globus_xio_attr_cntl(attr, gridftp_driver, 
             GLOBUS_XIO_GRIDFTP_SET_PARTIAL_TRANSFER, GLOBUS_TRUE);
+        test_res(res);
+    }
+    if (append)
+    {
+        res = globus_xio_attr_cntl(attr, gridftp_driver, 
+            GLOBUS_XIO_GRIDFTP_SET_APPEND, GLOBUS_TRUE);
         test_res(res);
     }
     res = globus_xio_open(xio_handle, cs, attr);
