@@ -125,7 +125,7 @@ main(int argc, char *argv[])
     }
 
     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
 		verror_get_string());
         exit(1);

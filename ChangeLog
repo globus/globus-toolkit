@@ -1,3 +1,8 @@
+2000-10-10  Von Welch  <vwelch@ncsa.uiuc.edu>
+
+	* myproxy_destroy.c (main): Bug fix - use created proxy file for
+	authentication and not default proxy.
+
 2000-10-09  Von Welch  <vwelch@ncsa.uiuc.edu>
 
 	* verror.c (my_vsnprintf): Fixed inverted logic in checking of
