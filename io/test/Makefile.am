@@ -32,6 +32,7 @@ INCLUDES += $(GPT_INCLUDES)
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
 bin_PROGRAMS= \
+	globus_io_authorization_test \
 	globus_io_tcp_test \
 	globus_io_tcp_test_server \
 	globus_io_tcp_test_client \
@@ -40,133 +41,37 @@ bin_PROGRAMS= \
 	globus_io_udp_test_client \
 	globus_io_udp_test 
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_tcp_test_SOURCES = globus_io_tcp_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_tcp_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_tcp_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_tcp_test_server_SOURCES = globus_io_tcp_test_server.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_tcp_test_server_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_tcp_test_server_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_tcp_test_client_SOURCES = globus_io_tcp_test_client.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_tcp_test_client_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_tcp_test_client_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_file_test_SOURCES = globus_io_file_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_file_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_file_test_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_udp_test_server_SOURCES = globus_io_udp_test_server.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_udp_test_server_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_udp_test_server_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_udp_test_client_SOURCES = globus_io_udp_test_client.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_udp_test_client_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_udp_test_client_LDADD = $(GPT_PGM_LINKS)
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 globus_io_udp_test_SOURCES = globus_io_udp_test.c
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_udp_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 globus_io_udp_test_LDADD = $(GPT_PGM_LINKS)
 
-
+globus_io_authorization_test_SOURCES = globus_io_authorization_test.c
+globus_io_authorization_test_LDFLAGS = $(GPT_LDFLAGS)
+globus_io_authorization_test_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
