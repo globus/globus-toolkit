@@ -43,8 +43,11 @@
 #else
    /* not Globus 2.0 */
 
+#  include <stdio.h> /* needed by ssl.h -- yuk! */
 #  include <ssl.h>
 #  include <x509.h>
+#  include <pem.h>
+#  include <err.h>
 #  if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #    include <x509v3.h>
 #  endif
