@@ -22,7 +22,7 @@ globus_l_callback_deactivate();
 
 globus_module_descriptor_t              globus_i_callback_module =
 {
-    "globus_callback_nonthreaded",
+    "globus_callback_threaded",
     globus_l_callback_activate,
     globus_l_callback_deactivate,
     GLOBUS_NULL,
