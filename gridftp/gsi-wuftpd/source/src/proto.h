@@ -127,6 +127,24 @@ globus_i_wu_free_ranges(globus_fifo_t * ranges);
 
 #endif /* USE_GLOBUS_DATA_CODE */
 
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+int
+ftp_check_authorization(char * object,
+                        char * action);
+
+int 
+ftp_authorization_initialize();
+
+int 
+ftp_authorization_initialize_sc(gss_ctx_id_t ctx);
+
+void 
+ftp_authorization_cleanup(void);
+
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+
 /*
    ** acl.c
  */

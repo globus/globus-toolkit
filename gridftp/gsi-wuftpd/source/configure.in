@@ -210,6 +210,20 @@ INCLUDE_GLOBUS_MAKEFILE_HEADER=""
 dnl Macro from aclocal.m4
 GSSAPI_CONFIG   
 
+if test "$gssapi_type" = "globus"; then
+	AC_MSG_CHECKING(Globus Authorization usage)
+	AC_ARG_WITH(globus-authorization,
+		[  --with-globus-authorization   Use Globus authorization libraries],
+	[ globus_authorization=$withval ],
+	[ globus_authorization="no"])
+	AC_MSG_RESULT($globus_authorization)
+fi
+
+if test "$globus_authorization" = "yes"; then
+	AC_DEFINE(GLOBUS_AUTHORIZATION)
+	# XXX Need to add libraries to GSSAPI_LIBS
+fi	
+	
 AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)

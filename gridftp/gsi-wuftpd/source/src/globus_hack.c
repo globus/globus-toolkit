@@ -5,6 +5,10 @@
 #include "../support/ftp.h"
 #include <syslog.h>
 
+#ifdef GLOBUS_AUTHORIZATION
+#include "globus-auth.h"
+#endif /* GLOBUS_AUTHORIZATION */
+
 extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
@@ -22,6 +26,11 @@ extern globus_ftp_control_dcau_t                g_dcau;
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
 static int                                      g_window_size;
+
+#ifdef GLOBUS_AUTHORIZATION
+static globus_authorization_handle_t globus_auth_handle;
+extern char chroot_path[];   /* from ftpd.c */
+#endif /* GLOBUS_AUTHORIZATION */
 
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
 
@@ -2148,3 +2157,116 @@ g_write_to_log_file(
 }
 
 #endif /* USE_GLOBUS_DATA_CODE */
+
+#ifdef GLOBUS_AUTHORIZATION
+
+/*
+ * ftp_check_authorization()
+ *
+ * calls globus_authorization routines to evaluate requests
+ *
+ * Parameters:  object - The full path to the file or directory which will be
+ *                       accessed.
+ *
+ *              action - ftp protocol command which describes the requested
+ *                       action on the file
+ * returns:    1 if authorization is ok
+ *             0 otherwise
+ */
+ 
+int ftp_check_authorization(char * object,
+                            char * action)
+{
+    char                realname[MAXPATHLEN];
+    
+    
+    if (object[0] != '\0')
+    {
+        /*
+         * I believe this function basically just appends object to
+         * chroot and returns the result in realname.
+         * It will return NULL on error (buffer overflow).
+         */
+        if (wu_realpath(object, realname, chroot_path) == NULL)
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        strcpy(realname, object);
+    }
+
+    if (globus_authorization_eval(globus_auth_handle,
+                                  realname,
+                                  "file",
+                                  action) != GLOBUS_SUCCESS)
+    {
+        return 0;
+    }
+    
+    return 1;
+}
+
+/*
+ * ftp_authorization_initialize()
+ *
+ * Initializes the globus authorization handle
+ *
+ * Parameters: globus authorization config file  
+ * 
+ * returns:    1  success
+ *             0  failure
+ */
+
+int ftp_authorization_initialize(char *cffile)
+{
+    if (globus_authorization_handle_init(&globus_auth_handle,
+                                         cffile) != GLOBUS_SUCCESS)
+    {
+        return 0;
+    }
+    
+    return 1;
+}
+
+/*
+ * ftp_authorization_initialize_sc()
+ *
+ * Initializes the globus authorization handle with the security context
+ * of the most recent gss authenticated client
+ *
+ * Parameters: ctx - a gss security context  
+ *
+ * returns:    1  success
+ *             0  failure
+ */ 
+
+int ftp_authorization_initialize_sc(gss_ctx_id_t ctx)
+{
+    if (globus_authorization_handle_set_gss_ctx(globus_auth_handle,
+                                                ctx) != GLOBUS_SUCCESS)
+    {
+        return 0;
+    }
+    
+    return 1;
+}
+
+/*
+ * ftp_authorization_clean_up()
+ *
+ * de-allocates the internal globus_auth structure  
+ *
+ * parameters: none
+ *
+ * returns: nothing 
+ *
+ */ 
+
+void ftp_authorization_cleanup(void)
+{
+    globus_authorization_handle_destroy(&globus_auth_handle);
+}
+
+#endif /* GLOBUS_AUTHORIZATION */

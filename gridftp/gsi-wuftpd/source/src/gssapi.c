@@ -1068,4 +1068,23 @@ gssapi_unsetenv(const char *var)
 #endif /* HAVE_UNSETENV */
 }
 
+
+#ifdef GLOBUS_AUTHORIZATION
+/*
+ * gssapi_get_gss_ctx_id_t()
+ * 
+ * Used by globus Authorization functions
+ *
+ * Arguments: none
+ * Returns: the gss security context
+ *
+ */
+
+gss_ctx_id_t
+gssapi_get_gss_ctx_id_t(void)
+{
+    return gcontext;
+}
+#endif /* GLOBUS_AUTHORIZATION */
+
 #endif /* GSSAPI */

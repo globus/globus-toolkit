@@ -237,6 +237,11 @@
 #undef GRIDMAP_WITH_KRB5
 
 /*
+ * Globus Authorization/Restricted Proxy support
+ */
+#undef GLOBUS_AUTHORIZATION
+
+/*
  *  LBL striped server
  */
 #undef STRIPED_SERVER_BACKEND
