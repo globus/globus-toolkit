@@ -528,7 +528,7 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
 
     globus_libc_lock();
     sprintf(spec,
-	    "&(executable=$(GLOBUS_PREFIX)/bin/globus-gass-cache)"
+	    "&(executable=$(GLOBUS_SERVICES_PREFIX)/bin/globus-gass-cache)"
 	    " (stdout=%s/dev/stdout)"
 	    " (stderr=%s/dev/stdout)"
 	    " (stdin=/dev/null)"
