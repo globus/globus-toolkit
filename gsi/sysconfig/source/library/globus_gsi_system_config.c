@@ -4831,7 +4831,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         goto exit;
     }
 
-    while((tmp_entry = globus_libc_readdir(dir_handle)) != NULL)
+    while((tmp_entry = globus_libc_readdir_r(dir_handle)) != NULL)
     {
         file_length = strlen(tmp_entry->d_name);
         /* check the following:
@@ -4906,7 +4906,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
         goto exit;
     }
 
-    while((dir_entry = globus_libc_readdir(secure_tmp_dir)))
+    while((dir_entry = globus_libc_readdir_r(secure_tmp_dir)))
     {
         if((default_filename && 
             !strcmp(dir_entry->d_name, default_filename)) ||

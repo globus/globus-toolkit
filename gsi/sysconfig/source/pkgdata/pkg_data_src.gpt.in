@@ -9,7 +9,6 @@
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
     <src_pkg>
-
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_core">
                 <Version>
