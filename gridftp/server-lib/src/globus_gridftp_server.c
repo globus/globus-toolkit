@@ -366,7 +366,7 @@ globus_l_gs_proto_cmd_kickout(
     i_op->cb(
         (globus_gridftp_server_t) i_op->server,
         i_op->res,
-        i_op->command_name,
+        i_op->cmd_ent->name,
         i_op->user_arg);
 
     globus_l_gs_callback_return(i_op->server);
@@ -390,7 +390,7 @@ globus_l_gs_user_op_kickout(
     va_copy(ap, i_op->ap);
     res = i_op->cmd_ent->func(
         (globus_gridftp_server_t)i_op->server, 
-        i_op->command_name,
+        i_op->cmd_ent->name,
         (globus_gridftp_server_operation_t) i_op,
         ap);
     va_end(ap);
@@ -419,6 +419,7 @@ globus_l_gs_next_command(
     {
         cmd_ent = (globus_i_gs_cmd_ent_t *) globus_list_first(op->cmd_list);
         op->cmd_list = globus_list_rest(op->cmd_list);
+        op->cmd_ent = cmd_ent;
 
         /*
          * if we have not yet authenticated and we require 
@@ -434,7 +435,6 @@ globus_l_gs_next_command(
             /*
              *  call the function associated with this command
              */
-            op->cmd_ent = cmd_ent;
             res = globus_callback_space_register_oneshot(
                 NULL,
                 NULL,
@@ -446,6 +446,11 @@ globus_l_gs_next_command(
         }
     }
 
+    if(res != GLOBUS_SUCCESS)
+    {
+        op->res = res;
+        GlobusGSProtoCmdKickout(op);
+    }
 }
 
 globus_result_t

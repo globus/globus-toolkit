@@ -227,8 +227,6 @@ typedef struct globus_i_gs_op_s
 
     globus_list_t *                         cmd_list;
 
-    char *                                  command_name;
-
     va_list                                 ap;
 
     int                                     mask;

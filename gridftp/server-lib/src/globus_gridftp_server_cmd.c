@@ -107,13 +107,20 @@ globus_l_gs_cmd_auth(
     auth_info->del_cred = (gss_cred_id_t) va_arg(ap, gss_cred_id_t);
 
     GlobusGridFTPServerOpSetUserArg(op, auth_info);
-    /* call user callback */
-    auth_cb(
-        op, 
-        auth_info->username, 
-        auth_info->pw, 
-        auth_info->cred, 
-        auth_info->del_cred);
+    if(auth_cb != NULL)
+    {
+        /* call user callback */
+        auth_cb(
+            op, 
+            auth_info->username, 
+            auth_info->pw, 
+            auth_info->cred, 
+            auth_info->del_cred);
+    }
+    else
+    {
+        globus_gridftp_server_finished_auth(op, GLOBUS_SUCCESS);
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -356,7 +363,7 @@ globus_i_gs_cmd_add_builtins(
             "AUTH",
             globus_l_gs_cmd_auth,
             NULL,
-            GLOBUS_TRUE,
+            GLOBUS_FALSE,
             GLOBUS_TRUE);
     if(res != GLOBUS_SUCCESS)
     {

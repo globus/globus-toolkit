@@ -1066,6 +1066,34 @@ globus_gs_pmod_959_command_add(
 }
 
 globus_result_t
+globus_gs_pmod_959_get_cred(
+    globus_gs_pmod_959_handle_t             handle,
+    gss_cred_id_t *                         out_cred,
+    gss_cred_id_t *                         out_del_cred)
+{
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_gs_pmod_959_get_cred);
+
+    if(handle == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("handle");
+        return res;
+    }
+
+    if(out_cred != NULL)
+    {
+        *out_cred = NULL;
+    }
+
+    if(out_del_cred != NULL)
+    {
+        *out_del_cred = NULL;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_gs_pmod_959_get_server(
     globus_gridftp_server_t *               out_server,
     globus_gs_pmod_959_handle_t             handle)
