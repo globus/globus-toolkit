@@ -179,7 +179,7 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
                     lac_CFLAGS="-DB_ENDIAN"
                 ;;
                 *sun4u*)
-                    lac_CFLAGS="$lac_CFLAGS -DB_ENDIAN -DULTRASPARC"
+                    lac_CFLAGS="$lac_CFLAGS -DB_ENDIAN -DOPENSSL_SYSNAME_ULTRASPARC"
                 ;;
                 *x86*)
                     if test "$GCC" = "yes"; then
@@ -215,10 +215,10 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
             fi
         ;;
         *-ibm-aix*)
-            lac_CFLAGS="$lac_CFLAGS -DAIX -DB_ENDIAN"
+            lac_CFLAGS="$lac_CFLAGS -DOPENSSL_SYSNAME_AIX -DB_ENDIAN"
         ;;
         *-darwin*)
-            lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DB_ENDIAN"
+            lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DB_ENDIAN -DOPENSSL_SYSNAME_MACOSX"
         ;;
     esac
 ])
