@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
+
+echo "generating findshelltools"
+autoconf setup-common-sh-scripts.in > setup-common-sh-scripts || error
+chmod 755 setup-common-sh-scripts
+
+exit 0

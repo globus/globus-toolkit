@@ -5,6 +5,14 @@
 # in all cases.  It also servers to return just the
 # domainname
 
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
 PROGRAM_VERSION=`echo '$Revision$' | ${GLOBUS_SH_CUT-cut} -d' ' -f2`
 
@@ -43,15 +51,11 @@ ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
 EOF
 }
 
-# Inserted by configure.
-@globus_script_initializer@
-@globus_args_parser_header@
+. ${GLOBUS_LOCATION}/libexec/globus-args-parser-header
 
 if [ -n "$1" ]; then
     globus_args_unrecognized_option "$1"
 fi
-
-globus_source ${sysconfdir}/globus-localdomain.conf
  
 _hostname="${GLOBUS_HOSTNAME}"
 _domainname="`echo ${_hostname}|${GLOBUS_SH_CUT-cut} -s -d '.' -f '2-'`"
