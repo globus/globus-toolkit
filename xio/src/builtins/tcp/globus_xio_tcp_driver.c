@@ -2093,7 +2093,8 @@ globus_l_xio_tcp_write(
     
     GlobusXIOTcpDebugEnter();
     handle = (globus_l_handle_t *) driver_specific_handle;
-    GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
+    attr = (globus_l_attr_t *)
+        GlobusXIOOperationGetDataDescriptor(op, GLOBUS_FALSE);
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {

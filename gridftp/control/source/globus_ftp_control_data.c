@@ -7617,11 +7617,6 @@ globus_l_ftp_stream_accept_connect_callback(
         stripe = callback_info->stripe;
         transfer_handle = stripe->whos_my_daddy;
 
-        /*
-         * since conncet came back dec ref
-         */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
-
         control_handle = dc_handle->whos_my_daddy;
         callback = data_conn->callback;
         user_arg = data_conn->user_arg;
@@ -7697,6 +7692,11 @@ globus_l_ftp_stream_accept_connect_callback(
         {
             dc_handle->connect_error = globus_object_copy(error);
         }
+        
+        /*
+         * since conncet came back dec ref
+         */
+        globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
