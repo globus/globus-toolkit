@@ -6,9 +6,6 @@
 #include <string.h>
 
 /* cert: *.h */
-#include <err.h>
-#include <rand.h>
-#include <bio.h>
 #include "ssl_utils.h"
 #include "gsi_proxy.h"
 

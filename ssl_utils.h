@@ -6,8 +6,7 @@
 #ifndef _SSL_UTILS_H
 #define _SSL_UTILS_H
 
-#include <stdio.h> /* required by <x509.h> -- yuk! */
-#include <x509.h>
+#include "sslutil.h"
 
 struct _ssl_credentials;
 typedef struct _ssl_credentials SSL_CREDENTIALS;

@@ -22,14 +22,6 @@
 #include "ssl_utils.h"
 #include "gsi_proxy.h"
 
-#include <ssl.h>
-#include <x509.h>
-#include <pem.h>
-#include <err.h>
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-#  include <x509v3.h>
-#endif
-
 #if SSLEAY_VERSION_NUMBER > 0x0903
 
 /* OpenSSL 0.9.4 */

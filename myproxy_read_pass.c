@@ -7,8 +7,6 @@
 #include "myproxy_read_pass.h"
 #include "verror.h"
 
-#include <des.h>	/* From SSLeay */
-
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
