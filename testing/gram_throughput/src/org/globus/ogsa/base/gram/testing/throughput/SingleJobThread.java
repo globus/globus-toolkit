@@ -69,7 +69,7 @@ public class SingleJobThread
 
     ThroughputTester harness = null;
     String factoryUrl = null;
-    String rslFile = null;
+    Element rsl = null;
     ManagedJobServiceGridLocator mjsLocator = null;
     NotificationSinkManager notificationSinkManager = null;
     String notificationSinkId = null;
@@ -83,7 +83,17 @@ public class SingleJobThread
         this.harness = harness;
         this.jobIndex = jobIndex;
         this.factoryUrl = this.harness.getFactoryUrl();
-        this.rslFile = this.harness.getRslFile();
+
+        //retrieve, parse, and validate the RSL
+        File file = new File(this.harness.getRslFile());
+        RslParser rslParser = RslParserFactory.newRslParser();
+        try {
+            this.rsl = rslParser.parse(new FileReader(file));
+        } catch (Exception e) {
+            logger.error("unable to read RSL file", e);
+            this.harness.notifyError();
+            jobIndex = -1;
+        }
     }
 
     public int getIndex() {
@@ -92,32 +102,48 @@ public class SingleJobThread
 
     // This method is invoked once each time the stress target is run
     // with this class
-    public void run() {
+    synchronized public void run() {
         if (logger.isDebugEnabled()) {
             logger.debug("running job thread");
         }
-        //retrieve, parse, and validate the RSL
-        File file = new File(rslFile);
-        RslParser rslParser = RslParserFactory.newRslParser();
-        Element rsl = null;
+
+        //create service
         try {
-            rsl = rslParser.parse(new FileReader(file));
+            createService();
         } catch (Exception e) {
-            logger.error("unable to read RSL file", e);
+            logger.error("unable to create MJS instance", e);
             this.harness.notifyError();
             jobIndex = -1;
             return;
         }
 
-        //setup factory stub
-        OGSIServiceGridLocator factoryLocator = new OGSIServiceGridLocator();
-        Factory factory = null;
+        //do actual start call on job
         try {
-            factory = factoryLocator.getFactoryPort(new URL(factoryUrl));
+            startService();
         } catch (Exception e) {
-            logger.error("unable to get factory port", e);
+            logger.error("unable to start MJS instance", e);
+            this.harness.notifyError();
+            jobIndex = -1;
             return;
         }
+
+        cleanup();
+    }
+
+    protected void createService() throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("creating job");
+        }
+
+        //START TIMMING createService
+        if (logger.isDebugEnabled()) {
+            logger.debug("perf log start [createService]");
+        }
+        this.perfLog.start();
+
+        //setup factory stub
+        OGSIServiceGridLocator factoryLocator = new OGSIServiceGridLocator();
+        Factory factory = factoryLocator.getFactoryPort(new URL(factoryUrl));
         ((Stub)factory)._setProperty(Constants.GSI_SEC_MSG,
                                      Constants.SIGNATURE);
         ((Stub)factory)._setProperty(Constants.GRIM_POLICY_HANDLER,
@@ -127,68 +153,134 @@ public class SingleJobThread
         GridServiceFactory gridServiceFactory
             = new GridServiceFactory(factory);
 
-        //start timming start()
-        this.perfLog.start();
-
         //create MJS instance
         if (logger.isDebugEnabled()) {
             logger.debug("creating job");
         }
-        try {
-            ExtensibilityType creationParameters
-                = AnyHelper.getExtensibility(rsl);
-            LocatorType gshHolder
-                = gridServiceFactory.createService(creationParameters);
-            this.mjsLocator = new ManagedJobServiceGridLocator();
-            //This next step caches the GSR in the locator for use later
-            ManagedJobPortType managedJob
-                = this.mjsLocator.getManagedJobPort(gshHolder);
-        } catch (Exception e) {
-            logger.error("unable to create MJS instance", e);
-            this.harness.notifyError();
-            jobIndex = -1;
-            return;
-        }
+
+        ExtensibilityType creationParameters
+            = AnyHelper.getExtensibility(rsl);
+        LocatorType gshHolder
+            = gridServiceFactory.createService(creationParameters);
+        this.mjsLocator = new ManagedJobServiceGridLocator();
+        //This next step caches the GSR in the locator for use later
+        ManagedJobPortType managedJob
+            = this.mjsLocator.getManagedJobPort(gshHolder);
 
         try {
             subscribeForNotifications();
         } catch (Exception e) {
-            logger.error("unable to subscribe for MJS notifications", e);
+            throw new Exception("unable to subscribe for MJS notifications", e);
+        }
+
+        //STOP TIMMING createService
+        this.perfLog.stop("createService");
+
+        this.harness.notifyCreated(this.jobIndex);
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifyed harness of creation");
+        }
+
+        //wait for start signal
+        if (logger.isDebugEnabled()) {
+            logger.debug("waiting for signal to start");
+        }
+        try {
+            this.wait();
+        } catch (Exception e) {
+            logger.error("unable to wait", e);
+        }
+    }
+
+    protected void startService() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting job");
+        }
+
+        //START TIMMING start
+        if (logger.isDebugEnabled()) {
+            logger.debug("perf log start [start]");
+        }
+        this.perfLog.start();
+
+        //setup MJS stub
+        ManagedJobPortType managedJob = null;
+        try {
+            managedJob = this.mjsLocator.getManagedJobPort(
+                this.mjsLocator.getGSR().getHandle());
+        } catch (Exception e) {
+            logger.error("unable to get MJS reference", e);
+            return;
+        }
+        ((Stub)managedJob)._setProperty(Constants.GSI_SEC_CONV,
+                                        Constants.SIGNATURE);
+        ((Stub)managedJob)._setProperty(GSIConstants.GSI_MODE,
+                                        GSIConstants.GSI_MODE_FULL_DELEG);
+        ((Stub)managedJob)._setProperty(Constants.AUTHORIZATION,
+                                        NoAuthorization.getInstance());
+        ((Stub)managedJob)._setProperty(Constants.GRIM_POLICY_HANDLER,
+                                        new IgnoreProxyPolicyHandler());
+
+        //start job
+        JobStatusType jobStatus = null;
+        try {
+            jobStatus = managedJob.start();
+        } catch (Exception e) {
+            logger.error("unable to start MJS instance", e);
             this.harness.notifyError();
             jobIndex = -1;
             return;
         }
 
+        //STOP TIMMING start
+        this.perfLog.stop("start");
 
-        //stop timming createService()
-        this.perfLog.stop("createService");
+        this.harness.notifyStarted(this.jobIndex);
         if (logger.isDebugEnabled()) {
-            logger.debug("notifying harness of creation...");
-        }
-        synchronized (this) {
-            this.harness.notifyCreated();
-            if (logger.isDebugEnabled()) {
-                logger.debug("notifyed harness of creation");
-            }
-
-            //wait for start signal
-            if (logger.isDebugEnabled()) {
-                logger.debug("waiting for signal to start");
-            }
-            try {
-                this.wait();
-            } catch (Exception e) {
-                logger.error("unable to wait", e);
-                return;
-            }
+            logger.debug("notifyed harness of start");
         }
 
+        //wait for Active signal
         if (logger.isDebugEnabled()) {
-            logger.debug("job created");
+            logger.debug("waiting for signal to start timming complete");
+        }
+        try {
+            this.wait();
+        } catch (Exception e) {
+            logger.error("unable to wait", e);
+            return;
         }
 
-        //do actual start call on job
-        start0();
+        //START TIMMING complete
+        if (logger.isDebugEnabled()) {
+            logger.debug("perf log start [complete]");
+        }
+        this.perfLog.start();
+
+        //wait for Done or Failed signal
+        if (logger.isDebugEnabled()) {
+            logger.debug("waiting for signal to stop timming complete");
+        }
+        try {
+            this.wait();
+        } catch (Exception e) {
+            logger.error("unable to wait", e);
+            return;
+        }
+
+        //STOP TIMMING complete
+        this.perfLog.stop("complete");
+
+        //wait for stop signal
+        if (logger.isDebugEnabled()) {
+            logger.debug("waiting for signal to stop");
+        }
+        try {
+            this.wait();
+        } catch (Exception e) {
+            logger.error("unable to wait", e);
+            return;
+        }
     }
 
     void subscribeForNotifications() throws Exception {
@@ -225,100 +317,19 @@ public class SingleJobThread
     }
 
     public void start() {
-        //non-blocking job start (see run() and start0())
+        //non-blocking job start (see Thread.wait() in createService())
         synchronized (this) {
             this.notify();
         }
     }
 
     public void stop() {
-        //non-blocking job start (see run() and start0())
+        //non-blocking job start (see Thread.waite() in startService())
         synchronized (this) {
             if (logger.isDebugEnabled()) {
                 logger.debug("stopping job thread");
             }
             this.notify();
-        }
-    }
-
-    protected void start0() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting job");
-        }
-        //setup MJS stub
-        ManagedJobPortType managedJob = null;
-        try {
-            managedJob = this.mjsLocator.getManagedJobPort(
-                this.mjsLocator.getGSR().getHandle());
-        } catch (Exception e) {
-            logger.error("unable to get MJS reference", e);
-            return;
-        }
-        ((Stub)managedJob)._setProperty(Constants.GSI_SEC_CONV,
-                                        Constants.SIGNATURE);
-        ((Stub)managedJob)._setProperty(GSIConstants.GSI_MODE,
-                                        GSIConstants.GSI_MODE_FULL_DELEG);
-        ((Stub)managedJob)._setProperty(Constants.AUTHORIZATION,
-                                        NoAuthorization.getInstance());
-        ((Stub)managedJob)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                        new IgnoreProxyPolicyHandler());
-
-        //start timming start()
-        this.perfLog.start();
-
-        //start job
-        JobStatusType jobStatus = null;
-        try {
-            jobStatus = managedJob.start();
-        } catch (Exception e) {
-            logger.error("unable to start MJS instance", e);
-            this.harness.notifyError();
-            jobIndex = -1;
-            return;
-        }
-
-        //stop timming start()
-        this.perfLog.stop("start");
-        if (logger.isDebugEnabled()) {
-            logger.debug("notifying harness of start...");
-        }
-        this.harness.notifyStarted();
-        if (logger.isDebugEnabled()) {
-            logger.debug("notifyed harness of start");
-        }
-
-        //start timming Active
-        if (logger.isDebugEnabled()) {
-            JobStateType jobState = jobStatus.getJobState();
-            logger.debug("perf log start [" + jobState.toString() + "]");
-        }
-        this.perfLog.start();
-
-        //wait for stop signal
-        synchronized (this) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("waiting for signal to stop");
-            }
-            try {
-                this.wait();
-            } catch (Exception e) {
-                logger.error("unable to wait", e);
-                return;
-            }
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("job completed");
-        }
-
-        cleanup();
-
-        this.perfLog.stop("complete");
-
-        this.harness.notifyStopped();
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("job stopped");
         }
     }
 
@@ -337,23 +348,20 @@ public class SingleJobThread
             logger.debug("received state notification: " + jobState);
         }
 
+        if (jobState.equals(JobStateType.Active)) {
+            synchronized (this) {
+                this.notifyAll();
+            }
+        } else
         if (   jobState.equals(JobStateType.Done)
             || jobState.equals(JobStateType.Failed)) {
-            //stop timming Active
             if (!completed) {
+                synchronized (this) {
+                    this.notifyAll();
+                }
                 this.harness.notifyCompleted(this.jobIndex);
                 completed = true;
             }
-        } else
-        if (jobState.equals(JobStateType.Active)) {
-            //start timming Active
-            this.perfLog.stop("Pending");
-
-            //start timming Active
-            if (logger.isDebugEnabled()) {
-                logger.debug("perf log start [Active]");
-            }
-            this.perfLog.start();
         }
     }
 
@@ -386,10 +394,6 @@ public class SingleJobThread
                 this.mjsLocator.getGSR().getHandle());
             ((Stub)managedJob)._setProperty(Constants.GSI_SEC_CONV,
                                             Constants.SIGNATURE);
-            /*
-            ((Stub)managedJob)._setProperty(GSIConstants.GSI_MODE,
-                                            GSIConstants.GSI_MODE_FULL_DELEG);
-                                            */
             ((Stub)managedJob)._setProperty(Constants.AUTHORIZATION,
                                             NoAuthorization.getInstance());
             ((Stub)managedJob)._setProperty(Constants.GRIM_POLICY_HANDLER,
@@ -397,6 +401,11 @@ public class SingleJobThread
             managedJob.destroy();
         } catch (RemoteException re) {
             logger.error("unable to destroy MJS instance", re);
+        }
+
+        this.harness.notifyStopped(this.jobIndex);
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifyed harness of stop");
         }
     }
 }
