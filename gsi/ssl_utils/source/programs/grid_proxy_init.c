@@ -88,6 +88,9 @@ static char *  LONG_USAGE = \
 "    -key      <keyfile>       Non-standard location of user key\n" \
 "    -certdir  <certdir>       Non-standard location of trusted cert dir\n" \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
+"\n" \
+"    -restriction <file>       Insert a restriction extension into the\n" \
+"                              generated proxy.\n" \  
 "\n";
 
 
