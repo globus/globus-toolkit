@@ -60,7 +60,7 @@ CHECK_NEED_LNSL
 
 # Need to determine if we need -ldl or -ldld
 # maybe should be replaced with the libtool dl library
-CHECK_NEED_LDL
+# CHECK_NEED_LDL
 
 
 GPT_SET_LIBS([[$EXTERNAL_LIBS]])	
