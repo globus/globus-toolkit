@@ -21,12 +21,14 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/wait.h> 
+#include <arpa/inet.h> 
 #include <netinet/in.h>
 #include <unistd.h>
 #include <netdb.h> 
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 
 static char usage[] = \
 "\n"\
@@ -84,8 +86,9 @@ void send_response(myproxy_socket_attrs_t *server_attrs,
 		   char *client_name);
 
 void get_proxy(myproxy_socket_attrs_t *server_attrs, 
-	      myproxy_creds_t *creds, 
-	      myproxy_response_t *response);
+	       myproxy_creds_t *creds,
+	       myproxy_request_t *request,
+	       myproxy_response_t *response);
 
 void put_proxy(myproxy_socket_attrs_t *server_attrs, 
 	      myproxy_creds_t *creds, 
@@ -110,7 +113,7 @@ static int numclients = 0;
 int
 main(int argc, char *argv[]) 
 {    
-    int   fd, listenfd;
+    int   listenfd;
     pid_t childpid;  
 
     myproxy_socket_attrs_t         *socket_attrs;
@@ -171,7 +174,7 @@ main(int argc, char *argv[])
     my_signal(SIGINT,  sig_exit); 
 
     /* Set up server socket attributes */
-    listenfd = myproxy_init_server(socket_attrs, MYPROXYSERVER_PORT);
+    listenfd = myproxy_init_server(socket_attrs, MYPROXY_SERVER_PORT);
 
     /* Set up concurrent server */
     while (1) {
@@ -211,13 +214,11 @@ main(int argc, char *argv[])
 	    }
 
 	    /* child process */
-	    fd = open("/dev/tty",O_RDWR);
-	    if (fd >= 0) {
-		ioctl(fd, TIOCNOTTY, 0);
-		close(fd);
-	    }
-	    fclose(stdin);
 	    close(0);
+	    close(1);
+	    if (!debug) {
+		close(2);
+	    }
 	    close(listenfd);
 	}
 	numclients++;
@@ -235,10 +236,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 {
     char  error_string[1024];
     char  client_name[1024];
-    char  client_buffer[1024], server_buffer[1024];
-    int   requestlen, responselen;
+    char  client_buffer[1024];
+    int   requestlen;
     int   authorization_ok = 0;
-    int   rc;
     
     myproxy_creds_t *client_creds;          
     myproxy_request_t *client_request;
@@ -246,6 +246,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     client_creds    = malloc(sizeof(*client_creds));
     memset(client_creds, 0, sizeof(*client_creds));
+
+    /* Set default lifetime of credentials on myproxy-server */
+    client_creds->lifetime = 60*60*MYPROXY_SERVER_MAX_CRED_HOURS;
 
     client_request  = malloc(sizeof(*client_request));
     memset(client_request, 0, sizeof(*client_request));
@@ -285,9 +288,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if (requestlen < 0) {
 	respond_with_error_and_die(attrs, "Error in myproxy_recv_response()");
     }
-
-    /* Log client request */
-    myproxy_log("Received client %s buffer %s", client_name, client_buffer); 
    
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
@@ -311,7 +311,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     strcpy(client_creds->user_name, client_request->username);
     client_creds->pass_phrase = malloc(strlen(client_request->passphrase) + 1);
     strcpy(client_creds->pass_phrase, client_request->passphrase);
-
+    
     /* Check authorization for request */
     switch (client_request->command_type)	
     {	
@@ -350,32 +350,54 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY:
 	/* log request type */
-        myproxy_log("Received client %s command: GET");
+        myproxy_log("Received GET request from %s", client_name);
+
+	/* double check that request->lifetime < creds->lifetime */
+	if (client_request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS) {
+	  myproxy_log("client %s Lifetime (sec.) specified %d greater than allowed maximum %d", client_name, client_request->lifetime_seconds, 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS);
+	  respond_with_error_and_die(attrs, "Lifetime specified greater than allowed maximum.\n");
+	}
+
+	/* Check that passphrase matches and that creds. can be retrieved */
+	if (myproxy_creds_retrieve(client_creds) < 0) {
+	    myproxy_log_verror();
+	    respond_with_error_and_die(attrs, "Unable to retrieve credentials.\n");
+	}
+
+	myproxy_debug("  Username is \"%s\"", client_request->username);
+	myproxy_debug("  Location is %s", client_creds->location);
+	myproxy_debug("  Lifetime is %d seconds", client_request->lifetime_seconds);
+
 	/* return server response */
 	send_response(attrs, server_response, client_name);
-
-        /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
-        client_creds->lifetime = 60*60*client_request->hours; 
-        get_proxy(attrs, client_creds, server_response);
+	
+        get_proxy(attrs, client_creds, client_request, server_response);
         break;
     case MYPROXY_PUT_PROXY:
 	/* log request type */
-        myproxy_log("Received client %s command: PUT");
+        myproxy_log("Received PUT request from %s", client_name);
+	myproxy_debug("  Username is \"%s\"", client_request->username);
+	myproxy_debug("  Lifetime is %d seconds", client_request->lifetime_seconds);
+	/* double check that request->lifetime < creds->lifetime */
+	if (client_request->lifetime_seconds > client_creds->lifetime) {
+	  myproxy_log("client %s Lifetime specified %d greater than allowed maximum %d", client_request->lifetime_seconds, client_creds->lifetime);
+	  respond_with_error_and_die(attrs, "Lifetime specified greater than allowed maximum.\n");
+	}
+
 	/* return server response */
 	send_response(attrs, server_response, client_name);
-
-        /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
-        client_creds->lifetime = 60*60*client_request->hours; 
         put_proxy(attrs, client_creds, server_response);
         break;
     case MYPROXY_INFO_PROXY:
 	/* log request type */
-        myproxy_log("Received client %s command: INFO");
+        myproxy_log("Received client %s command: INFO", client_name);
+	myproxy_debug("  Username is \"%s\"", client_request->username);
         info_proxy(client_creds, server_response);
         break;
     case MYPROXY_DESTROY_PROXY:
 	/* log request type */
-        myproxy_log("Received client %s command: DESTROY");
+        myproxy_log("Received client %s command: DESTROY", client_name);
+	myproxy_debug("  Username is \"%s\"", client_request->username);
         destroy_proxy(client_creds, server_response);
         break;
     default:
@@ -409,7 +431,6 @@ init_arguments(int argc, char *argv[],
                myproxy_server_context_t *context) 
 {   
     extern char *gnu_optarg;
-    extern int gnu_optind;
 
     int arg;
     int arg_error = 0;
@@ -554,9 +575,13 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, 
         my_failure("error in myproxy_serialize_response()");
     }
 
-    /* Log request */
-    myproxy_log("Send client %s server response %s", client_name, server_buffer);
- 
+    /* Log response */
+    if (response->response_type == MYPROXY_OK_RESPONSE) {
+      myproxy_debug("Sending OK response to client %s", client_name);
+    } else if (response->response_type == MYPROXY_ERROR_RESPONSE) {
+      myproxy_debug("Sending ERROR response \"%s\" to client %s", response->error_string, client_name);
+    }
+
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
         my_failure("error in myproxy_send()\n");
 	myproxy_log_verror();
@@ -566,26 +591,13 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, 
 }
 
 void get_proxy(myproxy_socket_attrs_t *attrs, 
-	       myproxy_creds_t *creds, 
+	       myproxy_creds_t *creds,
+	       myproxy_request_t *request,
 	       myproxy_response_t *response) 
 {
-    myproxy_debug("Retrieving credentials for username \"%s\"",
-		  creds->user_name);
-    
-    /* Retrieve credentials */
-    if (myproxy_creds_retrieve(creds) < 0) {
-	myproxy_log_verror();
-        response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to retrieve credentials.\n");
-	return;
-    }
- 
-    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
-    myproxy_debug("  Location is %s", creds->location);
-    myproxy_debug("  Lifetime is %d seconds", creds->lifetime);
     
     /* Delegate credentials to client */
-    if (myproxy_init_delegation(attrs, creds->location, creds->lifetime) < 0) {
+    if (myproxy_init_delegation(attrs, creds->location, request->lifetime_seconds) < 0) {
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
