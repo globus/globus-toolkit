@@ -99,10 +99,10 @@ ssh_gssapi_client_mechanisms(char *host) {
 		    ssh_gssapi_check_mechanism(&(supported->elements[i]),host)) {
 
 			/* Earlier versions of this code interpreted the
-			* spec incorrectly with regard to OID encoding. They
-			* also mis-encoded the krb5 OID. The following
-			* _temporary_ code interfaces with these broken
-			* servers */
+			 * spec incorrectly with regard to OID encoding. They
+			 * also mis-encoded the krb5 OID. The following
+			 * _temporary_ code interfaces with these broken
+			 * servers */
 
 			if (datafellows & SSH_BUG_GSSAPI_BER) {
 				char *bodge=NULL;
@@ -143,8 +143,8 @@ ssh_gssapi_client_mechanisms(char *host) {
 			EVP_DigestInit(&md, evp_md);
 			EVP_DigestUpdate(&md,deroid,2);
 			EVP_DigestUpdate(&md,
-					supported->elements[i].elements,
-					supported->elements[i].length);
+					 supported->elements[i].elements,
+					 supported->elements[i].length);
 			EVP_DigestFinal(&md, digest, NULL);
 			
 			/* Base64 encode it */
@@ -376,11 +376,11 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	char *xhost;
 	
 	/* Make a copy of the host name, in case it was returned by a
-	* previous call to gethostbyname(). */	
+	 * previous call to gethostbyname(). */	
 	xhost = xstrdup(host);
 
 	/* Make sure we have the FQDN. Some GSSAPI implementations don't do
-	* this for us themselves */
+	 * this for us themselves */
 	resolve_localhost(&xhost);
 	
         gssbuf.length = sizeof("host@")+strlen(xhost);
@@ -426,7 +426,7 @@ ssh_gssapi_acquire_cred(Gssctxt *ctx) {
 	}
 	
 	if ((ctx->major=gss_acquire_cred(&ctx->minor,
-				    ctx->name,
+			 	    ctx->name,
 				    0,
 				    oidset,
 				    GSS_C_ACCEPT,

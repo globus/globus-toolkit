@@ -48,9 +48,9 @@ kexgss_server(Kex *kex)
 	OM_uint32 maj_status, min_status;
 	
 	/* Some GSSAPI implementations use the input value of ret_flags (an
- 	* output variable) as a means of triggering mechanism specific 
- 	* features. Initializing it to zero avoids inadvertently 
- 	* activating this non-standard behaviour.*/
+ 	 * output variable) as a means of triggering mechanism specific 
+ 	 * features. Initializing it to zero avoids inadvertently 
+ 	 * activating this non-standard behaviour.*/
 
 	OM_uint32 ret_flags = 0;
 	gss_buffer_desc gssbuf,send_tok,recv_tok,msg_tok;
@@ -68,7 +68,7 @@ kexgss_server(Kex *kex)
 	/* Initialise GSSAPI */
 
 	debug2("%s: Identifying %s",__func__,kex->name);
-	oid=ssh_gssapi_id_kex(ctxt,kex->name);
+	oid=ssh_gssapi_server_id_kex(kex->name);
 	if (oid==NULL) {
 	   packet_disconnect("Unknown gssapi mechanism");
 	}
@@ -99,8 +99,6 @@ kexgss_server(Kex *kex)
 		  	/* Send SSH_MSG_KEXGSS_HOSTKEY here, if we want */
 			break;
 		case SSH2_MSG_KEXGSS_CONTINUE:
-			if (dh_client_pub == NULL)
-				packet_disconnect("Received KEXGSS_CONTINUE without initialising");
 			recv_tok.value=packet_get_string(&slen);
 			recv_tok.length=slen; /* int vs. size_t */
 			break;
@@ -110,7 +108,7 @@ kexgss_server(Kex *kex)
 		}
 		
 		maj_status=PRIVSEP(ssh_gssapi_accept_ctx(ctxt,&recv_tok, 
-							&send_tok, &ret_flags));
+							 &send_tok, &ret_flags));
 
 		gss_release_buffer(&min_status,&recv_tok);
 		
@@ -120,8 +118,14 @@ kexgss_server(Kex *kex)
                 }
 #endif
 
-		if ((maj_status & GSS_S_CONTINUE_NEEDED) ||
-		    (GSS_ERROR(maj_status) && send_tok.length>0)) {
+		if (maj_status!=GSS_S_COMPLETE && send_tok.length==0) {
+			fatal("Zero length token output when incomplete");
+		}
+
+		if (dh_client_pub == NULL)
+			fatal("No client public key");
+		
+		if (maj_status & GSS_S_CONTINUE_NEEDED) {
 			debug("Sending GSSAPI_CONTINUE");
 			packet_start(SSH2_MSG_KEXGSS_CONTINUE);
 			packet_put_string(send_tok.value,send_tok.length);
@@ -133,6 +137,12 @@ kexgss_server(Kex *kex)
 
 	if (GSS_ERROR(maj_status)) {
 		kex_gss_send_error(ctxt);
+		if (send_tok.length>0) {
+			packet_start(SSH2_MSG_KEXGSS_CONTINUE);
+			packet_put_string(send_tok.value,send_tok.length);
+			packet_send();
+			packet_write_wait();
+		}	
 		packet_disconnect("gssapi key exchange handshake failed");
 	}
 	
@@ -206,7 +216,7 @@ kexgss_server(Kex *kex)
 	gss_release_buffer(&min_status, &send_tok);	
 
 	/* If we've got a context, delete it. It may be NULL if we've been
-	* using privsep */
+	 * using privsep */
 	ssh_gssapi_delete_ctx(&ctxt);
 	
 	DH_free(dh);

@@ -93,7 +93,8 @@ ssh_gssapi_mech* supported_mechs[]= {
  * that stores the results (in an expanded Gssctxt structure), which are
  * then used by the first calls if that key exchange mechanism is chosen.
  */
- 
+
+/* Unpriviledged */ 
 char * 
 ssh_gssapi_server_mechanisms() {
 	gss_OID_set 	supported;
@@ -156,6 +157,7 @@ ssh_gssapi_server_mechanisms() {
 	   return(mechs);
 }
 
+/* Unpriviledged */
 void ssh_gssapi_supported_oids(gss_OID_set *oidset) {
 	int i =0;
 	OM_uint32 maj_status,min_status;
@@ -184,6 +186,8 @@ void ssh_gssapi_supported_oids(gss_OID_set *oidset) {
 /* Find out which GSS type (out of the list we define in ssh-gss.h) a
  * particular connection is using 
  */
+
+/* Priviledged (called ssh_gssapi_accept_ctx -> ssh_gssapi_getclient ->) */
 ssh_gssapi_mech *
 ssh_gssapi_get_ctype(Gssctxt *ctxt) {
 	int i=0;
@@ -199,11 +203,11 @@ ssh_gssapi_get_ctype(Gssctxt *ctxt) {
 	return NULL;
 }
 
-/* Set the GSS context's OID to the oid indicated by the given key exchange
- * name. */
+/* Return the OID that corresponds to the given context name */
  
+/* Unpriviledged */
 gss_OID 
-ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
+ssh_gssapi_server_id_kex(char *name) {
   int i=0;
   
   if (strncmp(name, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1) !=0) {
@@ -213,14 +217,12 @@ ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
   name+=sizeof(KEX_GSS_SHA1)-1; /* Move to the start of the MIME string */
   
   while (supported_mechs[i]->name!=NULL &&
-  	strcmp(name,supported_mechs[i]->enc_name)!=0) {
+  	 strcmp(name,supported_mechs[i]->enc_name)!=0) {
   	i++;
   }
 
   if (supported_mechs[i]->name==NULL)
      return (NULL);
-
-  if (ctx) ssh_gssapi_set_oid(ctx,&supported_mechs[i]->oid);
 
   debug("using GSSAPI mechanism %s (%s%s)", supported_mechs[i]->name,
 	KEX_GSS_SHA1, supported_mechs[i]->enc_name);
@@ -228,11 +230,12 @@ ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
   return &supported_mechs[i]->oid;
 }
 
-/* Wrapper arround accept_sec_context
+/* Wrapper around accept_sec_context
  * Requires that the context contains:
  *    oid		
  *    credentials	(from ssh_gssapi_acquire_cred)
  */
+/* Priviledged */
 OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 				gss_buffer_desc *send_tok, OM_uint32 *flags) 
 {
@@ -261,13 +264,13 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 	}
 
 	/* FIXME: We should check that the me
-	* the one that we asked for (in ctx->oid) */
+	 * the one that we asked for (in ctx->oid) */
 
 	status=ctx->major;
 	
 	/* Now, if we're complete and we have the right flags, then
-	* we flag the user as also having been authenticated
-	*/
+	 * we flag the user as also having been authenticated
+	 */
 	
 	if (((flags==NULL) || ((*flags & GSS_C_MUTUAL_FLAG) && 
 	                       (*flags & GSS_C_INTEG_FLAG))) &&
@@ -285,6 +288,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 /* Extract the client details from a given context. This can only reliably
  * be called once for a context */
 
+/* Priviledged (called from accept_secure_ctx) */
 OM_uint32 
 ssh_gssapi_getclient(Gssctxt *ctx, ssh_gssapi_mech **type,
 		     gss_buffer_desc *name, gss_cred_id_t *creds) {
@@ -296,14 +300,15 @@ ssh_gssapi_getclient(Gssctxt *ctx, ssh_gssapi_mech **type,
 	}
 	
 	/* This is icky. There appears to be no way to copy this structure,
-	* rather than the pointer to it, so we simply copy the pointer and
-	* mark the originator as empty so we don't destroy it. 
-	*/
+	 * rather than the pointer to it, so we simply copy the pointer and
+	 * mark the originator as empty so we don't destroy it. 
+	 */
 	*creds=ctx->client_creds;
 	ctx->client_creds=GSS_C_NO_CREDENTIAL;
 	return(ctx->major);
 }
 
+/* As user - called through fatal cleanup hook */
 void
 ssh_gssapi_cleanup_creds(void *ignored)
 {
@@ -314,6 +319,7 @@ ssh_gssapi_cleanup_creds(void *ignored)
 	}
 }
 
+/* As user */
 void 
 ssh_gssapi_storecreds()
 {
@@ -329,10 +335,8 @@ ssh_gssapi_storecreds()
 
 /* This allows GSSAPI methods to do things to the childs environment based
  * on the passed authentication process and credentials.
- *
- * Question: If we didn't use userauth_external for some reason, should we
- * still delegate credentials?
  */
+/* As user */
 void 
 ssh_gssapi_do_child(char ***envp, u_int *envsizep) 
 {
@@ -347,6 +351,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 	}
 }
 
+/* Priviledged */
 int
 ssh_gssapi_userok(char *user)
 {
@@ -363,6 +368,7 @@ ssh_gssapi_userok(char *user)
 	return(0);
 }
 
+/* Priviledged */
 int
 ssh_gssapi_localname(char **user)
 {

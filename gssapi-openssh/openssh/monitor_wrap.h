@@ -71,6 +71,7 @@ int mm_ssh_gssapi_localname(char **user);
 OM_uint32 mm_gss_indicate_mechs(OM_uint32 *minor_status,
 				gss_OID_set *mech_set);
 char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
+
 #endif
 
 #ifdef GSI

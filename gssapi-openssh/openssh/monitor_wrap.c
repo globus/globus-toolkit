@@ -1084,30 +1084,6 @@ mm_ssh_gssapi_userok(char *user) {
         return(authenticated);
 }
 
-int
-mm_ssh_gssapi_localname(char **lname)
-{
-        Buffer m;
-
-	buffer_init(&m);
-
-        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSLOCALNAME, &m);
-
-        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSLOCALNAME,
-                                  &m);
-
-	*lname = buffer_get_string(&m, NULL);
-
-        buffer_free(&m);
-	if (lname[0] == '\0') {
-	    debug3("%s: gssapi identity mapping failed", __func__);
-	} else {
-	    debug3("%s: gssapi identity mapped to %s", __func__, *lname);
-	}
-	
-        return(0);
-}
-
 OM_uint32
 mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash) {
         Buffer m;
@@ -1150,35 +1126,58 @@ mm_ssh_gssapi_last_error(Gssctxt *ctx, OM_uint32 *major, OM_uint32 *minor) {
 	
 	return(errstr);
 }	
-	
+
 OM_uint32
 mm_gss_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
 {
         Buffer m;
-	OM_uint32 major, lmajor, lminor;
-	int i=0, count;
-
+	OM_uint32 major,minor;
+	int count;
+	gss_OID_desc oid;
 	buffer_init(&m);
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSMECHS, &m);
-
         mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSMECHS,
 				  &m);
         major=buffer_get_int(&m);
-	lmajor=gss_create_empty_oid_set(&lminor, mech_set);
 	count=buffer_get_int(&m);
-	for (i=0; i < count; i++) {
-	    gss_OID_desc member_oid;
+	
+        gss_create_empty_oid_set(&minor,mech_set);
+	while(count-->0) {
 	    u_int length;
-	    member_oid.elements=buffer_get_string(&m, &length);
-	    member_oid.length=length;
-	    lmajor=gss_add_oid_set_member(&lminor, &member_oid, mech_set);
+	    oid.elements=buffer_get_string(&m,&length);
+	    oid.length=length;
+	    gss_add_oid_set_member(&minor,&oid,mech_set);
 	}
 
 	buffer_free(&m);
 	
         return(major);
 }
+
+int
+mm_ssh_gssapi_localname(char **lname)
+{
+        Buffer m;
+
+	buffer_init(&m);
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSLOCALNAME, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSLOCALNAME", __func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSLOCALNAME,
+                                  &m);
+
+	*lname = buffer_get_string(&m, NULL);
+
+        buffer_free(&m);
+	if (lname[0] == '\0') {
+	    debug3("%s: gssapi identity mapping failed", __func__);
+	} else {
+	    debug3("%s: gssapi identity mapped to %s", __func__, *lname);
+	}
+	
+        return(0);
+}	
 #endif /* GSSAPI */
 
 #ifdef GSI

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,7 +82,7 @@ kexgss_client(Kex *kex)
     	}
     		
 	token_ptr = GSS_C_NO_BUFFER;
-			
+			 
 	do {
 		debug("Calling gss_init_sec_context");
 		
@@ -92,8 +92,14 @@ kexgss_client(Kex *kex)
 					       &ret_flags);
 
 		if (GSS_ERROR(maj_status)) {
+			if (send_tok.length!=0) {
+				/* Hmmm - not sure about this */
+				packet_start(SSH2_MSG_KEXGSS_CONTINUE);
+				packet_put_string(send_tok.value,
+						  send_tok.length);
+			}			  
 			fatal("gss_init_context failed");
-		} 
+		}
 
 		/* If we've got an old receive buffer get rid of it */
 		if (token_ptr != GSS_C_NO_BUFFER)
@@ -171,14 +177,18 @@ kexgss_client(Kex *kex)
 				min_status=packet_get_int();
 				msg=packet_get_string(NULL);
 				lang=packet_get_string(NULL);
-				fatal(msg);
+				fprintf(stderr,"GSSAPI Error: \n%s",msg);
 			default:
 				packet_disconnect("Protocol error: didn't expect packet type %d",
 		    		type);
 			}
 			token_ptr=&recv_tok;
+		} else {
+			/* No data, and not complete */
+			if (maj_status!=GSS_S_COMPLETE) {
+				fatal("Not complete, and no token output");
+			}
 		}
-
     	} while (maj_status & GSS_S_CONTINUE_NEEDED);
     	
     	/* We _must_ have received a COMPLETE message in reply from the 

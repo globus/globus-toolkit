@@ -230,10 +230,11 @@ int	userauth_hostbased(Authctxt *);
 #ifdef GSSAPI
 int	userauth_external(Authctxt *authctxt);
 int	userauth_gssapi(Authctxt *authctxt);
-void	input_gssapi_response(int type, u_int32_t plen, void *ctxt);
-void	input_gssapi_token(int type, u_int32_t plen, void *ctxt);
-void	input_gssapi_hash(int type, u_int32_t plen, void *ctxt);
+void	input_gssapi_response(int type, u_int32_t, void *);
+void	input_gssapi_token(int type, u_int32_t, void *);
+void	input_gssapi_hash(int type, u_int32_t, void *);
 void	input_gssapi_error(int, u_int32_t, void *);
+void	input_gssapi_errtok(int, u_int32_t, void *);
 #endif
 
 void	userauth(Authctxt *, char *);
@@ -511,16 +512,16 @@ userauth_gssapi(Authctxt *authctxt)
 	int ok=0;
 
 	/* Things work better if we send one mechanism at a time, rather
-	* than them all at once. This means that if we fail at some point
-	* in the middle of a negotiation, we can come back and try something
-	* different. */
+	 * than them all at once. This means that if we fail at some point
+	 * in the middle of a negotiation, we can come back and try something
+	 * different. */
 
 	if (datafellows & SSH_OLD_GSSAPI) return 0;
 	
 	/* Before we offer a mechanism, check that we can support it. Don't
-	* bother trying to get credentials - as the standard fallback will
-	* deal with that kind of failure.
-	*/
+	 * bother trying to get credentials - as the standard fallback will
+	 * deal with that kind of failure.
+	 */
 
 	if (supported==NULL) gss_indicate_mechs(&min, &supported);
 	
@@ -530,12 +531,12 @@ userauth_gssapi(Authctxt *authctxt)
 		ssh_gssapi_set_oid(gssctxt,&supported->elements[mech]);
 
 		/* The DER encoding below only works for lengths<128,
-		* so check this here 
-		*/
+		 * so check this here 
+		 */
 		if (supported->elements[mech].length<128 &&
 		    !GSS_ERROR(ssh_gssapi_import_name(gssctxt,
 						      authctxt->host))) {
-			ok = 1; /* Mechanism works */
+		 	ok = 1; /* Mechanism works */
 		} else {
 			mech++;
 		}
@@ -553,8 +554,8 @@ userauth_gssapi(Authctxt *authctxt)
 	packet_put_int(1);
 
 	/* The newest gsskeyex draft stipulates that OIDs should
-	* be DER encoded, so we need to add the object type and
-	* length information back on */
+	 * be DER encoded, so we need to add the object type and
+	 * length information back on */
 	if (datafellows & SSH_BUG_GSSAPI_BER) {
 		packet_put_string(supported->elements[mech].elements,
 			  	  supported->elements[mech].length);
@@ -572,6 +573,7 @@ userauth_gssapi(Authctxt *authctxt)
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE,&input_gssapi_response);
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,&input_gssapi_token);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERROR,&input_gssapi_error);
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK,&input_gssapi_errtok);
 	
 	mech++; /* Move along to next candidate */
 
@@ -619,6 +621,12 @@ input_gssapi_response(int type, u_int32_t plen, void *ctxt)
 				     GSS_C_NO_BUFFER, &send_tok, 
 				     NULL);
 	if (GSS_ERROR(status)) {
+		if (send_tok.length>0) {
+			packet_start(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK);
+			packet_put_string(send_tok.value,send_tok.length);
+			packet_send();
+			packet_write_wait();
+		}
 		/* Start again with next method on list */
 		debug("Trying to start again");
 		clear_auth_state(authctxt);
@@ -656,6 +664,12 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 	packet_check_eom();
 	
 	if (GSS_ERROR(status)) {
+		if (send_tok.length>0) {
+			packet_start(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK);
+			packet_put_string(send_tok.value,send_tok.length);
+			packet_send();
+			packet_write_wait();
+		}
 		/* Start again with the next method in the list */
 		clear_auth_state(authctxt);
 		userauth(authctxt,NULL);
@@ -675,6 +689,35 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 		packet_send();
 		packet_write_wait();
 	}
+}
+
+void
+input_gssapi_errtok(int type, u_int32_t plen, void *ctxt)
+{
+	Authctxt *authctxt = ctxt;
+	Gssctxt *gssctxt;
+	gss_buffer_desc send_tok,recv_tok;
+	OM_uint32 status;
+	
+	if (authctxt == NULL)
+		fatal("input_gssapi_response: no authentication context");
+	gssctxt = authctxt->methoddata;
+	
+	recv_tok.value=packet_get_string(&recv_tok.length);
+
+	/* Stick it into GSSAPI and see what it says */
+	status=ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
+				   &recv_tok, &send_tok, NULL);
+
+	packet_check_eom();
+	
+	/* We can't send a packet to the server */
+
+	/* The draft says that we should wait for the server to fail 
+	 * before starting the next authentication. So, we clear the
+	 * state, but don't do anything else */
+	clear_auth_state(authctxt);
+	return;
 }
 
 void
