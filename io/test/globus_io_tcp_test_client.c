@@ -118,7 +118,10 @@ test1(int argc, char **argv)
 	GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
 	&auth_data);
 
-    while (( c = getopt(argc, argv, "Hi:gsch:p:")) != EOF)
+    globus_io_attr_set_tcp_restrict_port(
+	&attr,
+	GLOBUS_FALSE);
+    while (( c = getopt(argc, argv, "rHi:gsch:p:I:")) != EOF)
     {
 	switch(c)
 	{
@@ -156,6 +159,16 @@ test1(int argc, char **argv)
 	        &attr,
 	        GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
 	        &auth_data);
+            break;
+          case 'r':
+            globus_io_attr_set_tcp_restrict_port(
+		&attr,
+                GLOBUS_TRUE);
+	    break;
+          case 'I':
+            globus_io_attr_set_tcp_interface(
+		&attr,
+                optarg);
             break;
 	  default:
 	    printf("unknown flag -%c\n",(char) c);
