@@ -99,6 +99,7 @@ int main(
     globus_result_t			result;
     globus_ftp_client_handleattr_t	handle_attr;
     char *				src;
+    char *                              dst;
     globus_ftp_client_features_t        features;
     int                                 i;
     
@@ -114,7 +115,7 @@ int main(
 		    &handle_attr,
 		    &attr,
 		    &src,
-		    NULL);
+		    &dst);
     
     globus_ftp_client_handleattr_set_cache_all(&handle_attr, GLOBUS_TRUE);
     globus_ftp_client_handle_init(&handle,  &handle_attr);
