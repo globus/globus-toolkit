@@ -13,7 +13,7 @@
    <Source_Dependencies Type="compile" >
       <Dependency Name="globus_core"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_common"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_nexus"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_nexus"><Version><Simple_Version Major="6"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_duroc_control"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gram_client"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gass_server_ez"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
@@ -29,7 +29,7 @@
       <Dependency Name="globus_rsl_assist"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gass_server_ez"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_duroc_control"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_nexus"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_nexus"><Version><Simple_Version Major="6"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
    </Source_Dependencies>
 
