@@ -27,6 +27,7 @@ my @test_cases=qw(
     submit031 submit032 submit033 submit034 submit035
     submit036 submit037 submit038 submit039 submit040
     submit041 submit042 submit043 submit044 submit045
+    submit046 submit047 submit048 submit049
 );
 
 my @todo_cases=qw(
