@@ -159,8 +159,11 @@ fi
 
 if [ ! -d "${secconfdir}" ] || [ ! -d "${trusted_certs_dir}" ]; then
     echo 
-    echo "The gsi config files have not been setup correctly."
-    echo "Run ${GLOBUS_LOCATION}/setup/globus_simple_ca___CA_HASH___setup/setup-gsi"
+    echo "There does not appear to be a valid grid security onfiguration"
+    echo "located at ${secconfdir}."
+    echo "To specify a different location where the grid security"
+    echo "configuration files where installed, use the -dir option or"
+    echo "set the GRID_SECURITY_DIR environment variable."
     echo
     exit 1
 fi

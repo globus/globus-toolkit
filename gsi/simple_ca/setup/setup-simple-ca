@@ -472,7 +472,7 @@ CA setup complete.
 The following commands will now be run to setup the security
 configuration files for this CA:
 
-\$GPT_LOCATION/sbin/globus-build -install-only \\
+\$GPT_LOCATION/sbin/gpt-build -install-only \\
 ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
 \$GPT_LOCATION/sbin/gpt-postinstall
@@ -498,7 +498,7 @@ install_security_config() {
         GPT_LOCATION=${GLOBUS_LOCATION}
     fi
 
-    ${GPT_LOCATION}/sbin/globus-build -force -install-only \
+    ${GPT_LOCATION}/sbin/gpt-build -force \
     ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
     finish_simple_ca_setup

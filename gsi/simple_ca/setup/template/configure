@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.2.2.5 
+# From configure.in Revision: 1.2.2.7 
 
 
 
@@ -755,6 +755,16 @@ fi
 	rm ./tmpfile.gpt
 	GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
 
+        # Determine if GPT is version 2.x
+
+        GPT_IS_2="no"
+
+        if test -f "$GPT_LOCATION/sbin/gpt-build"; then
+                GPT_IS_2="yes"
+        fi
+
+        
+
 	#Default to shared, before checking static-only
 	GPT_LINKTYPE="shared"
 	# We have to figure out if we're linking only static before build_config
@@ -791,8 +801,8 @@ fi
 # The following variables are used to manage the build enviroment
 # GPT_CFLAGS, GPT_INCLUDES, GPT_PGM_LINKS, GPT_LIB_LINKS, and GPT_LDFLAGS
 # are the variables used in the Makefile.am's
-# GPT_PKG_CFLAGS, GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored as 
-# build data in the packaging metadata file.
+# GPT_PKG_CFLAGS, GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored 
+# as build data in the packaging metadata file.
 # GPT_CONFIG_FLAGS, GPT_CONFIG_INCLUDES, GPT_CONFIG_PGM_LINKS, and 
 # GPT_CONFIG_LIB_LINKS are returned by gpt_build_config and contain build
 # environment data from the dependent packages.
@@ -936,7 +946,7 @@ ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:940: checking for a BSD compatible install" >&5
+echo "configure:950: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -989,7 +999,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 echo $ac_n "checking whether build environment is sane""... $ac_c" 1>&6
-echo "configure:993: checking whether build environment is sane" >&5
+echo "configure:1003: checking whether build environment is sane" >&5
 # Just in case
 sleep 1
 echo timestamp > conftestfile
@@ -1046,7 +1056,7 @@ test "$program_suffix" != NONE &&
 test "$program_transform_name" = "" && program_transform_name="s,x,x,"
 
 echo $ac_n "checking whether ${MAKE-make} sets \${MAKE}""... $ac_c" 1>&6
-echo "configure:1050: checking whether ${MAKE-make} sets \${MAKE}" >&5
+echo "configure:1060: checking whether ${MAKE-make} sets \${MAKE}" >&5
 set dummy ${MAKE-make}; ac_make=`echo "$2" | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_prog_make_${ac_make}_set'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1092,7 +1102,7 @@ EOF
 
 missing_dir=`cd $ac_aux_dir && pwd`
 echo $ac_n "checking for working aclocal""... $ac_c" 1>&6
-echo "configure:1096: checking for working aclocal" >&5
+echo "configure:1106: checking for working aclocal" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1105,7 +1115,7 @@ else
 fi
 
 echo $ac_n "checking for working autoconf""... $ac_c" 1>&6
-echo "configure:1109: checking for working autoconf" >&5
+echo "configure:1119: checking for working autoconf" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1118,7 +1128,7 @@ else
 fi
 
 echo $ac_n "checking for working automake""... $ac_c" 1>&6
-echo "configure:1122: checking for working automake" >&5
+echo "configure:1132: checking for working automake" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1131,7 +1141,7 @@ else
 fi
 
 echo $ac_n "checking for working autoheader""... $ac_c" 1>&6
-echo "configure:1135: checking for working autoheader" >&5
+echo "configure:1145: checking for working autoheader" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1144,7 +1154,7 @@ else
 fi
 
 echo $ac_n "checking for working makeinfo""... $ac_c" 1>&6
-echo "configure:1148: checking for working makeinfo" >&5
+echo "configure:1158: checking for working makeinfo" >&5
 # Run test in a subshell; some versions of sh will print an error if
 # an executable is not found, even if stderr is redirected.
 # Redirect stdin to placate older versions of autoconf.  Sigh.
@@ -1163,7 +1173,7 @@ do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1167: checking for $ac_word" >&5
+echo "configure:1177: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_TAR'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1325,7 +1335,6 @@ ac_given_INSTALL="$INSTALL"
 trap 'rm -fr `echo "Makefile
         pkgdata/Makefile
         pkgdata/pkg_data_src.gpt
-        grid-cert-request
 " | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
@@ -1362,6 +1371,7 @@ s%@MAINTAINER_MODE_TRUE@%$MAINTAINER_MODE_TRUE%g
 s%@MAINTAINER_MODE_FALSE@%$MAINTAINER_MODE_FALSE%g
 s%@MAINT@%$MAINT%g
 s%@GPT_LOCATION@%$GPT_LOCATION%g
+s%@GPT_IS_2@%$GPT_IS_2%g
 s%@GPT_CFLAGS@%$GPT_CFLAGS%g
 s%@GPT_PKG_CFLAGS@%$GPT_PKG_CFLAGS%g
 s%@GPT_INCLUDES@%$GPT_INCLUDES%g
@@ -1462,7 +1472,6 @@ cat >> $CONFIG_STATUS <<EOF
 CONFIG_FILES=\${CONFIG_FILES-"Makefile
         pkgdata/Makefile
         pkgdata/pkg_data_src.gpt
-        grid-cert-request
 "}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
