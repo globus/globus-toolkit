@@ -345,6 +345,31 @@ void
 globus_l_gfs_ipc_handle_destroy(
     globus_i_gfs_ipc_handle_t *         ipc)
 {
+    if(ipc->connection_info.community)
+    {
+        globus_free(ipc->connection_info.community);
+    }
+    if(ipc->connection_info.version)
+    {
+        globus_free(ipc->connection_info.version);
+    }
+    if(ipc->connection_info.cookie)
+    {
+        globus_free(ipc->connection_info.cookie);
+    }
+    if(ipc->connection_info.username)
+    {
+        globus_free(ipc->connection_info.username);
+    }
+    if(ipc->connection_info.subject)
+    {
+        globus_free(ipc->connection_info.subject);
+    }
+    if(ipc->connection_info.host_id)
+    {
+        globus_free(ipc->connection_info.host_id);
+    }
+
     globus_mutex_destroy(&ipc->mutex);
     globus_handle_table_destroy(&ipc->call_table);
     globus_hashtable_destroy(&ipc->reply_table);
@@ -1894,7 +1919,7 @@ globus_l_gfs_ipc_handle_connect(
         globus_hashtable_int_keyeq);
 
     ipc->connection_info.version = strdup(globus_l_gfs_local_version);
-    ipc->connection_info.community = community->name;
+    ipc->connection_info.community = strdup(community->name);
     ipc->connection_info.cookie = NULL;
     ipc->connection_info.subject = 
         session_info->subject ? strdup(session_info->subject) : NULL;

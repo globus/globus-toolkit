@@ -451,36 +451,6 @@ globus_l_gfs_data_auth_init_cb(
         goto error;
     }
 
-    if(session_info->del_cred != NULL)
-    {    
-        maj_stat = gss_export_cred(
-            &min_stat, session_info->del_cred, NULL, 0, &buffer);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_export_cred", min_stat);
-            goto error;
-        }
-        maj_stat = gss_import_cred(
-            &min_stat, 
-            &session_info->del_cred, 
-            GSS_C_NO_OID, 
-            0, 
-            &buffer, 
-            0, 
-            NULL);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
-            goto error_import;
-        }
-        maj_stat = gss_release_buffer(&min_stat, &buffer);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
-            goto error_import;
-        }
-    }
-
     if(op->session_handle->dsi->init_func != NULL)
     {
         op->session_handle->dsi->init_func(op, session_info);
@@ -4600,45 +4570,17 @@ globus_i_gfs_data_request_set_cred(
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
 
+    if(del_cred != NULL)
+    {    
+        session_handle->del_cred = del_cred;
+    }
     if(session_handle->dsi->set_cred_func != NULL)
     {
         session_handle->dsi->set_cred_func(
             del_cred, session_handle->session_arg);
     }
-    /* XXX how to free old cred? */
-    if(del_cred != NULL)
-    {    
-        maj_stat = gss_export_cred(
-            &min_stat, del_cred, NULL, 0, &buffer);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_export_cred", min_stat);
-            goto error;
-        }
-        maj_stat = gss_import_cred(
-            &min_stat, 
-            &session_handle->del_cred, 
-            GSS_C_NO_OID, 
-            0, 
-            &buffer, 
-            0, 
-            NULL);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
-            goto error_import;
-        }
-        maj_stat = gss_release_buffer(&min_stat, &buffer);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
-            goto error_import;
-        }
-    }
     return;
 
-error_import:
-    gss_release_buffer(&min_stat, &buffer);
 error:
     return;
 }    
