@@ -9,16 +9,54 @@
 
 #define _SERVER "test_server_string"
 #define _TARGET "test_target_string"
+#define CHUNK_SIZE 2048
 
 typedef struct l_http_info_s
 {
+    globus_xio_iovec_t     iovec;
+
     char *                 uri;
-    globus_hashtable_t     headers;
+    char *                 http_standard;
+    char *                 request_type;
+    globus_hashtable_t     recv_headers;
+    char *                 buffer;
+    char *                 remainder;
+    int                    buffer_offset;
+
+    int                    header_written;
+    char *                 exit_code;
+    char *                 exit_text;
 } l_http_info_t;
     
 /*
  *  used as attr and handle
  */
+
+l_http_info_t *
+l_http_create_new_info()
+{
+    l_http_info_t *                         info;
+
+    info = (l_http_info_t *) globus_malloc(sizeof(l_http_info_t));
+    info->iovec.iov_base = 0;
+    info->iovec.iov_len = 0;
+
+    info->uri = 0;
+    info->http_standard = 0;
+    info->request_type = 0;
+    info->buffer = 0;
+   info->remainder = 0;
+    info->buffer_offset = 0;
+    info->header_written = 0;
+    info->exit_code = 0;
+    info->exit_text = 0;
+    globus_hashtable_init(&info->recv_headers,
+                          16,  /*XXX how to decide this size? */
+                          globus_hashtable_string_hash,
+                          globus_hashtable_string_keyeq);
+
+    return info;
+}
 
 globus_result_t
 globus_l_xio_http_target_destroy(
@@ -27,15 +65,6 @@ globus_l_xio_http_target_destroy(
     return GLOBUS_SUCCESS;
 }
 
-l_http_info_t *
-l_http_create_new_info()
-{
-    l_http_info_t *                         info;
-
-    info = (l_http_info_t *) globus_malloc(sizeof(l_http_info_t));
-
-    return info;
-}
 
 static globus_result_t
 globus_l_xio_http_attr_init(
@@ -73,23 +102,33 @@ globus_l_xio_http_handle_cntl(
     va_list                             ap)
 {
     globus_hashtable_t *user_table;
-    char *user_uri;
+    char *user_str;
+    l_http_info_t *info = driver_handle;
 
     if(cmd == GLOBUS_XIO_HTTP_GET_HEADERS)
     {
         user_table = (globus_hashtable_t *) va_arg(ap, globus_hashtable_t *);
         globus_hashtable_lookup(user_table, "Content-Length"); 
         globus_hashtable_copy(user_table, 
-                              &((l_http_info_t *)driver_handle)->headers,
+                              &((l_http_info_t *)driver_handle)->recv_headers,
                               globus_l_xio_http_handle_copy_element);
         globus_hashtable_lookup(user_table, "Content-Length"); 
     }
     else if(cmd == GLOBUS_XIO_HTTP_GET_CONTACT)
-    {
-        user_uri = (char *)va_arg(ap, char *);
-        strcpy(user_uri, ((l_http_info_t *)driver_handle)->uri);
-    }
-
+        {
+            user_str = (char *)va_arg(ap, char *);
+            strcpy(user_str, info->uri);
+        }
+    else if(cmd == GLOBUS_XIO_HTTP_SET_EXIT_CODE)
+        {
+            user_str = (char *)va_arg(ap, char *);
+            info->exit_code = strdup(user_str);
+        }
+    else if(cmd == GLOBUS_XIO_HTTP_SET_EXIT_TEXT)
+        {
+            user_str = (char *)va_arg(ap, char *);
+            info->exit_text = strdup(user_str);
+        }
     return GLOBUS_SUCCESS;
 }
 
@@ -119,6 +158,73 @@ globus_l_xio_http_attr_destroy(
     return GLOBUS_SUCCESS;
 }
 
+int
+globus_l_xio_http_parse_header( l_http_info_t * info) 
+{
+    char *uri_start, *uri_end, *current_location, *line, *colon_loc,
+        *key, *value, *line_end, *needs_null;
+
+    current_location = info->buffer + info->buffer_offset;
+    if(!info->uri) {
+        //first word is GET or POST
+        if( strstr(current_location, "GET") )
+            {
+                info->request_type = strdup("GET");
+            }
+        else if(strstr(current_location, "POST") )
+            {
+                info->request_type = strdup("POST");
+            }
+        else
+            {
+                return GLOBUS_XIO_HTTP_PARSE_FAILED;
+            }
+
+        //next get the path
+        uri_start = strstr(current_location, " ") + 1;
+        uri_end = strstr(uri_start, " ");
+        info->uri = strndup(uri_start, uri_end - uri_start);
+
+        //and the version of http we're speaking
+        info->http_standard = strdup(uri_end+1);
+        current_location = strstr(uri_end, "\r\n") + 2;
+        printf("uri: %s, http: %s\n", info->uri, info->http_standard);
+    }
+
+    //process the rest of the recv_headers
+    while( strstr(current_location, "\r\n") != current_location )
+        {
+            //check if we have an unterminated line
+            if( !strstr(current_location, "\r\n" ) )
+            {
+                info->buffer_offset = index(current_location, '\0') - 
+                    info->buffer;
+                return GLOBUS_XIO_HTTP_NEED_MORE;
+            }
+
+            //we know we have a line, process it.
+            line_end = strstr(current_location, "\r\n");
+            colon_loc = index(current_location, ':');
+            if(!colon_loc || colon_loc > line_end)
+                {
+                    return GLOBUS_XIO_HTTP_PARSE_FAILED;
+                }
+            else
+                {
+                    key = strndup(current_location, colon_loc - current_location);
+                    value = strndup(colon_loc, line_end - colon_loc);
+                    printf("key: %s, value: %s\n", key, value);
+                    globus_hashtable_insert(&info->recv_headers, key, value);
+                    current_location = line_end + 2;
+                } 
+        }
+    if(strlen(current_location) > 0)
+        {
+            info->remainder = strdup(current_location);
+        }
+    return GLOBUS_SUCCESS;        
+}
+
 
 /*
  *  read
@@ -130,8 +236,27 @@ globus_l_xio_http_read_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    printf("readcb\n");
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    int parse_result;
+
+    globus_xio_context_t                    context;
+    l_http_info_t *info = (l_http_info_t *)user_arg;
+    context = GlobusXIOOperationGetContext(op);
+    printf("nbytes: %d\n", nbytes);
+
+
+    parse_result = globus_l_xio_http_parse_header(info);
+    switch(parse_result) {
+    case GLOBUS_XIO_HTTP_NEED_MORE:  //header not complete, read some more
+        break;
+    case GLOBUS_XIO_HTTP_PARSE_FAILED:  //error parsing header
+        result = GLOBUS_XIO_HTTP_PARSE_FAILED;
+        break;
+    default:
+        result = GLOBUS_SUCCESS;
+    }
+
+    GlobusXIODriverFinishedOpen(context, info, op, result);
+    //GlobusXIODriverFinishedRead(op, result, nbytes);
 }
 
 static
@@ -148,7 +273,7 @@ globus_l_xio_http_read(
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
     GlobusXIODriverPassRead(res, op, (void*)iovec, iovec_count, wait_for, \
-        globus_l_xio_http_read_cb, NULL);
+        NULL, NULL);
 
     return res;
 }
@@ -166,47 +291,21 @@ globus_l_xio_http_open_cb(
 {
     globus_xio_context_t                    context;
     l_http_info_t                           *handle;
-    char                                   buffer[2048]; //XXX fixed size?  not cool
     int                                     buffer_offset=0;
     int                                     nbytes=0;
     globus_result_t                         res;
-    globus_xio_iovec_t                      read_iovec;
     globus_xio_operation_t                  driver_op;
     context = GlobusXIOOperationGetContext(op);
 
-    //Parse the headers
+    //Parse the recv_headers
     nbytes = 2048;
-    buffer[0]='\0';
-    handle = (l_http_info_t *) globus_malloc(sizeof(l_http_info_t));
-    strcpy(buffer, "this is an uninteresting string");
-    while(strstr((char*)buffer, "\n\n") == 0 && buffer_offset < 2048) 
-        {
-            res = globus_xio_driver_operation_create(
-                                                     &driver_op, context);
-            read_iovec.iov_len = 2048;
-            read_iovec.iov_base = buffer;
-            GlobusXIODriverPassRead(result, driver_op, &read_iovec, 1, 1, \
-                                    globus_l_xio_http_read_cb, handle);
-            if(res != GLOBUS_SUCCESS) {
-                printf("oops\n");
-                fprintf(stderr, "ERROR: %s\n", globus_error_print_chain(
-                                                                        globus_error_peek(res)));
-            }
-            strcpy((char *)0, "bob");
-            printf("read: %s - %d\n", buffer, nbytes);
-            buffer_offset ++;
-        }
+    handle = l_http_create_new_info();
+    handle->buffer = (char*)globus_malloc(CHUNK_SIZE);
     
-
-    handle->uri = (char*)globus_malloc(512);
-    strcpy(handle->uri, "rw2 needs to put a real uri here");
-    globus_hashtable_init(&handle->headers,
-                          16,  /*XXX how to decide this size? */
-                          globus_hashtable_string_hash,
-                          globus_hashtable_string_keyeq);
-    globus_hashtable_insert(&handle->headers, "Content-Length", "1024");
-    GlobusXIODriverFinishedOpen(context, handle, op, result);
-
+    handle->iovec.iov_len = 2048;
+    handle->iovec.iov_base = handle->buffer + handle->buffer_offset;
+    GlobusXIODriverPassRead(result, op, &(handle->iovec), 1, 5, \
+                            globus_l_xio_http_read_cb, handle);
 }
 
 static
@@ -284,13 +383,49 @@ globus_l_xio_http_write(
     globus_result_t                         res;
     globus_size_t                           wait_for;
     l_http_info_t *                         info;
+    char *                                  header_str;
+    char *                                  buffer_to_send;
 
     info = (l_http_info_t *) driver_handle;
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, (void*)iovec, iovec_count, wait_for, \
-        globus_l_xio_http_write_cb, NULL);
+    if(!info->header_written)
+        { 
+            //create a header to prepend to the user buffer
+            //header_str = strdup("");
+            if(!info->exit_code && !info->exit_text)
+                {
+                    GlobusXIODriverFinishedWrite(op, 
+                                                 GLOBUS_XIO_HTTP_INSUFFICIENT_HEADER, 
+                                                 0);
+                }
+            header_str = (char*)globus_malloc(strlen("HTTP/1.1 ")+
+                                              strlen(info->exit_code)+
+                                              info->exit_text + 10);
+            sprintf(header_str, 
+                    "%s %s %s\r\n\r\n", 
+                    "HTTP/1.1 ", 
+                    info->exit_code, 
+                    info->exit_text);
+
+            buffer_to_send = (char *)globus_malloc(strlen(header_str + 
+                                                          iovec->iov_len));
+            strcpy(buffer_to_send, header_str);
+            memcpy(buffer_to_send+strlen(header_str), 
+                   iovec->iov_base, 
+                   iovec->iov_len);
+            info->iovec.iov_base = buffer_to_send;
+            info->iovec.iov_len = strlen(header_str) + 
+                                   iovec->iov_len;
+            GlobusXIODriverPassWrite(res, op, (void*)&(info->iovec), 1, info->iovec.iov_len, \
+                                     globus_l_xio_http_write_cb, driver_handle);
+        }
+    else
+        {
+            GlobusXIODriverPassWrite(res, op, (void*)iovec, iovec_count, wait_for, \
+                                     globus_l_xio_http_write_cb, driver_handle);
+        }
 
     return res;
 }
