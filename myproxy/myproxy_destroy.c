@@ -183,7 +183,7 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
     case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", (server_response->data).error_str);
+        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_str);
         break;
     case MYPROXY_OK_RESPONSE:
         printf("proxy was succesfully destroyed for user %s.\n", client_request->username); 

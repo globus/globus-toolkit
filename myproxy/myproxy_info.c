@@ -176,29 +176,29 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
     case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", (server_response->data).error_str);
+        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_str);
         break;
     case MYPROXY_OK_RESPONSE:
-	for (i = 0; i < (server_response->data).creds.num_creds; i ++)
+	for (i = 0; i < server_response->num_creds; i ++)
 	{
-		if ((server_response->data).creds.info_creds[i].credname)
-			printf ("Credential Name: %s\n", (server_response->data).creds.info_creds[i].credname);
+		if (server_response->info_creds[i].credname)
+			printf ("Credential Name: %s\n", server_response->info_creds[i].credname);
 
-		if ((server_response->data).creds.info_creds[i].creddesc)
-			printf ("Credential Description: %s\n", (server_response->data).creds.info_creds[i].creddesc);
+		if (server_response->info_creds[i].creddesc)
+			printf ("Credential Description: %s\n", server_response->info_creds[i].creddesc);
 
-		printf ("Credential Owner: %s\n", (server_response->data).creds.info_creds[i].cred_owner);
+		printf ("Credential Owner: %s\n", server_response->info_creds[i].cred_owner);
 
-		if ((server_response->data).creds.info_creds[i].retriever_str)
-			printf ("Retrievers : %s\n", (server_response->data).creds.info_creds[i].retriever_str);
+		if (server_response->info_creds[i].retriever_str)
+			printf ("Retrievers : %s\n", server_response->info_creds[i].retriever_str);
 
-		if ((server_response->data).creds.info_creds[i].renewer_str)
-			printf ("Renewers: %s\n", (server_response->data).creds.info_creds[i].renewer_str);
+		if (server_response->info_creds[i].renewer_str)
+			printf ("Renewers: %s\n", server_response->info_creds[i].renewer_str);
 		
-		if ((server_response->data).creds.info_creds[i].cred_end_time == 0)
+		if (server_response->info_creds[i].cred_end_time == 0)
 			continue;
 
-		time_diff = (server_response->data).creds.info_creds[i].cred_end_time - time(NULL);
+		time_diff = server_response->info_creds[i].cred_end_time - time(NULL);
 
 		printf("timeleft       : %ld:%02ld:%02ld\n", 
 	    		   	(long)(time_diff / 3600),
