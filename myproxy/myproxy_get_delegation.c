@@ -106,10 +106,11 @@ main(int argc, char *argv[])
        /* Allow user to provide a passphrase */
 	int rval;
 	if (read_passwd_from_stdin) {
-	    rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase));
+	    rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase), NULL);
 	} else {
 	    rval = myproxy_read_passphrase(client_request->passphrase,
-					   sizeof(client_request->passphrase));
+					   sizeof(client_request->passphrase),
+					   NULL);
 	}
 	if (rval == -1) {
 	    fprintf(stderr, "Error reading passphrase\n");
