@@ -328,6 +328,9 @@ typedef struct
     globus_gass_cache_t			cache_handle;
     char *				cache_tag;
 
+    globus_rsl_t *                      stdout_position_hack;
+    globus_rsl_t *                      stderr_position_hack;
+
     globus_symboltable_t		symbol_table;
     char *				rsl_spec;
     globus_rsl_t *			rsl;
@@ -647,6 +650,16 @@ int
 globus_gram_job_manager_rsl_remove_attribute(
     globus_gram_jobmanager_request_t *	request,
     char *				attribute);
+
+globus_rsl_t *
+globus_gram_job_manager_rsl_extract_relation(
+    globus_rsl_t *	                rsl,
+    char *				attribute);
+
+void
+globus_gram_job_manager_rsl_add_relation(
+    globus_rsl_t *	                rsl,
+    globus_rsl_t *	                relation);
 
 int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(

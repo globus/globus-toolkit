@@ -439,7 +439,7 @@ sub stage_in
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
     my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my ($remote, $local, $cached);
+    my ($remote, $local, $local_resolved, $cached);
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
     {
@@ -467,10 +467,15 @@ sub stage_in
 
 	if($local !~ m|^/|)
 	{
-	    $local = $description->directory() . '/' . $local;
+	    $local_resolved = $description->directory() . '/' . $local;
 	}
+        else
+        {
+            $local_resolved = $local;
+        }
 
-	if(system("$url_copy $remote file://$local >/dev/null 2>&1") != 0)
+	if(system("$url_copy $remote file://$local_resolved >/dev/null 2>&1")
+            != 0)
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
 	}
@@ -486,13 +491,17 @@ sub stage_in
 
 	if($local !~ m|^/|)
 	{
-	    $local = $description->directory() . '/' . $local;
+	    $local_resolved = $description->directory() . '/' . $local;
 	}
+        else
+        {
+            $local_resolved = $local;
+        }
 
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") == 0)
 	{
 	    chomp($cached = `$cache_pgm -query -t $tag $remote`);
-	    symlink($cached, $local);
+	    symlink($cached, $local_resolved);
 	}
 	else
 	{

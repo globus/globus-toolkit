@@ -701,6 +701,21 @@ globus_gram_job_manager_state_machine(
 			request,
 			GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
 
+            /*
+             * Remove stdout_position and stderr_position before merging.
+             * They aren't valid for job submission RSLs, but are for
+             * restart RSLs. They will be reinserted after validation.
+             */
+            request->stdout_position_hack =
+                globus_gram_job_manager_rsl_extract_relation(
+                    restart_rsl,
+                    GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM);
+
+            request->stderr_position_hack = 
+                globus_gram_job_manager_rsl_extract_relation(
+                    restart_rsl,
+                    GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM);
+
 	    request->rsl = globus_gram_job_manager_rsl_merge(
 			original_rsl,
 			restart_rsl);
@@ -864,6 +879,25 @@ globus_gram_job_manager_state_machine(
 	globus_l_gram_job_manager_state_log_rsl(
 		request,
 		"Job RSL (post-validation)");
+
+        /*
+         * Insert stdout_position and stderr_position back to rsl if they were
+         * present in restart RSL
+         */
+        if(request->stdout_position_hack != NULL)
+        {
+            globus_gram_job_manager_rsl_add_relation(
+                request->rsl,
+                request->stdout_position_hack);
+            request->stdout_position_hack = NULL;
+        }
+        if(request->stderr_position_hack != NULL)
+        {
+            globus_gram_job_manager_rsl_add_relation(
+                request->rsl,
+                request->stderr_position_hack);
+            request->stderr_position_hack = NULL;
+        }
 
 	rc = globus_rsl_eval(request->rsl, &request->symbol_table);
 	if(rc != GLOBUS_SUCCESS)

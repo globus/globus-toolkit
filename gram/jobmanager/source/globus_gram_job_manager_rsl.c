@@ -223,6 +223,50 @@ globus_gram_job_manager_rsl_need_restart(
     }
 }
 /* globus_gram_job_manager_rsl_need_restart() */
+
+globus_rsl_t *
+globus_gram_job_manager_rsl_extract_relation(
+    globus_rsl_t *                      rsl,
+    char *                              attribute)
+{
+    globus_list_t **			operand_ref;
+    globus_list_t *			node;
+
+    if(! globus_rsl_is_boolean_and(rsl))
+    {
+        return GLOBUS_NULL;
+    }
+    operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
+    node = globus_list_search_pred(*operand_ref,
+				   globus_l_gram_job_manager_rsl_match,
+				   attribute);
+    if(node)
+    {
+        globus_rsl_t *                  relation;
+
+        relation = globus_list_remove(operand_ref, node);
+
+        return relation;
+    }
+    return GLOBUS_NULL;
+}
+/* globus_gram_job_manager_rsl_extract_relation() */
+
+void
+globus_gram_job_manager_rsl_add_relation(
+    globus_rsl_t *                      rsl,
+    globus_rsl_t *                      relation)
+{
+    globus_list_t **			operand_ref;
+
+    if(! globus_rsl_is_boolean_and(rsl))
+    {
+	return;
+    }
+    operand_ref = globus_rsl_boolean_get_operand_list_ref(rsl);
+    globus_list_insert(operand_ref, relation);
+}
+
 int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
     globus_gram_jobmanager_request_t *	request)
