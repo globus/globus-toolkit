@@ -162,7 +162,7 @@ globus_i_xio_server_accept_callback(
         else
         {
             /* if there is an outstanding accept callback */
-            if(xio_op->accept_timeout != NULL)
+            if(xio_op->timeout_cb != NULL)
             {
                 if(globus_i_xio_timer_unregister_timeout(xio_op))
                 {
@@ -195,7 +195,7 @@ globus_l_xio_accept_timeout_callback(
     globus_i_xio_server_t *                     xio_server;
     globus_bool_t                               rc;
     globus_bool_t                               accept;
-    globus_bool_t                               timeout;
+    globus_bool_t                               timeout = GLOBUS_FALSE;
 
     xio_op = (globus_i_xio_op_t *) user_arg;
     xio_server = xio_op->xio_server;
@@ -240,6 +240,7 @@ globus_l_xio_accept_timeout_callback(
                 globus_assert(!xio_op->progress);
                 globus_assert(xio_op->timeout_cb != NULL);
 
+                timeout = GLOBUS_TRUE;
                 /* we don't need to cache the server object in local stack
                    because state insures that it will not go away */
 
@@ -285,16 +286,6 @@ globus_l_xio_accept_timeout_callback(
         {
             accept = GLOBUS_TRUE;
             rc = GLOBUS_TRUE;
-
-            /* set the rext state based on the result code */
-            if(xio_op->cached_res == GLOBUS_SUCCESS)
-            {
-                xio_op->state = GLOBUS_XIO_OP_STATE_SERVER;
-            }
-            else
-            {
-                xio_op->state = GLOBUS_XIO_OP_STATE_CLOSED;
-            }
         }
         /* if no accept is waiting, set state back to operating */
         else
@@ -436,9 +427,8 @@ globus_xio_server_init(
             /* no sense bothering if attr is NULL */
             if(server_attr != NULL)
             {
-                ds_attr = globus_i_xio_attr_get_ds(
-                                server_attr,
-                                xio_server->entry[ctr].driver);
+                GlobusIXIOAttrGetDS(ds_attr, server_attr,               \
+                    xio_server->entry[ctr].driver);
             }
             /* call the driver init function */
             res = xio_server->entry[ctr].driver->server_init_func(
@@ -578,10 +568,8 @@ globus_xio_server_register_accept(
                     correct place */
                 for(ctr = 0; ctr < xio_op->stack_size; ctr++)
                 {
-                    xio_op->entry[ctr].accept_attr = 
-                        globus_i_xio_attr_get_ds(
-                            accept_attr,
-                            xio_server->entry[ctr].driver);
+                    GlobusIXIOAttrGetDS(xio_op->entry[ctr].accept_attr,     \
+                        accept_attr, xio_server->entry[ctr].driver);
                 }
 
                 /*i deal with timeout if there is one */
@@ -889,9 +877,9 @@ globus_xio_target_init(
                                         globus_list_first(list);
 
         /* pull driver specific info out of target attr */
-        driver_attr = globus_i_xio_attr_get_ds(
-                        target_attr,
-                        xio_target->entry[ndx].driver);
+
+        GlobusIXIOAttrGetDS(driver_attr, target_attr,                   \
+            xio_target->entry[ndx].driver);
 
         GlobusXIODriverTargetInit(
             res,

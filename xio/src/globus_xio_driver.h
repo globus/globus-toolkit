@@ -258,12 +258,6 @@ typedef globus_result_t
  *  @param driver_attr
  *         A server attr if the user specified any driver specific 
  *         attributes.  This may be NULL.
- *
- *  @param stack
- *         The stack object.  This contains information explaining
- *         the stack of drivers that the user wished to use.  I can be used
- *         to create contexts and will be valid until server_destroy is 
- *         called.  TODO: or should we copy it?
  */
 typedef globus_result_t
 (*globus_xio_driver_server_init_t)(

@@ -489,3 +489,68 @@ globus_xio_data_descriptor_copy(
 
     return GLOBUS_SUCCESS;
 }
+
+/************************************************************************
+ *                  stack functions
+ ***********************************************************************/
+globus_result_t
+globus_xio_stack_init(
+    globus_xio_stack_t *                        stack,
+    globus_xio_attr_t                           stack_attr)
+{
+    globus_i_xio_stack_t *                      xio_stack;
+
+    if(stack == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_stack_init");
+    }
+
+    xio_stack = globus_malloc(sizeof(globus_i_xio_stack_t));
+    memset(xio_stack, '\0', sizeof(globus_i_xio_stack_t));
+
+    *stack = xio_stack;
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_xio_stack_push_driver(
+    globus_xio_stack_t                          stack,
+    globus_xio_driver_t                         driver)
+{
+    globus_i_xio_stack_t *                      xio_stack;
+
+    if(stack == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_stack_push_driver");
+    }
+    if(driver == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_stack_push_driver");
+    }
+
+    xio_stack = (globus_i_xio_stack_t *) stack;
+
+    xio_stack->size++;
+    globus_list_insert(&xio_stack->driver_stack, driver);
+    if(xio_stack->size == 1)
+    {
+        xio_transport_driver = driver;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_xio_stack_destroy(
+    globus_xio_stack_t                          stack)
+{
+    if(stack == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_stack_destroy");
+    }
+
+    globus_list_free(&stack->driver_stack)
+
+    return GLOBUS_SUCCESS;
+}

@@ -117,6 +117,7 @@ do                                                                  \
             globus_memory_pop_node(&_h->op_memory);                 \
                                                                     \
     _op->op_type = (type);                                          \
+    _op->state = GLOBUS_XIO_OP_STATE_OPERATING;                     \
     _op->data_cb = NULL;                                            \
     _op->iovec_cb = NULL;                                           \
     _op->cb = NULL;                                                 \
@@ -145,39 +146,31 @@ do                                                                  \
     globus_memory_push_node(&_op->xio_handle->op_memory, _op);      \
 } while(0)
 
+#define GlobusIXIOHandleDec(free, h)                                    \
+{                                                                       \
+    globus_i_xio_handle_t *                         _h;                 \
+                                                                        \
+    _h = (h);                                                           \
+    _h->ref--;                                                          \
+    if(_h->ref == 0)                                                    \
+    {                                                                   \
+        /* if the handle ref gets down to zero we must be in one        \
+         * of the followninf staes.  The statement is that the handle   \
+         * only goes away when it is closed or a open fails             \
+         */                                                             \
+        globus_assert(                                                  \
+            xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPEN_FAILED || \
+            xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);       \
+        free = GLOBUS_TRUE;                                             \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        free = GLOBUS_FALSE;                                            \
+    }                                                                   \
+}
 /********************************************************************
  *                      Internal functions 
  *******************************************************************/
-
-/*
- *   this is called locked
- *
- *   if RETURNS true then the user should free the structure
- */
-globus_bool_t
-globus_i_xio_handle_dec(
-    globus_i_xio_handle_t *                     xio_handle)
-{
-    xio_handle->ref--;
-    if(xio_handle->ref == 0)
-    {
-        /* if the handle ref gets down to zero we must be in one
-         * of the followninf staes.  The statement is that the handle
-         * only goes away when it is closed or a open fails
-         */
-        assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPEN_FAILED ||
-            xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);
-
-        /* insist that if there are no references then there are no
-           outstanding operations */
-        assert(xio_handle->outstanding_operation == 0);
-
-        /* TODO: dec context ref */
-        return GLOBUS_TRUE;
-    }
-
-    return GLOBUS_FALSE;
-}
 
 /*
  *  kickout for the close operation.
@@ -201,14 +194,15 @@ globus_l_xio_start_close_failure_kickout(
  */
 void
 globus_i_xio_open_close_callback(
-    globus_i_xio_operation_t *                  op,
+    globus_i_xio_op_t *                         xio_op,
     globus_result_t                             result,
     void *                                      user_arg)
 {
     globus_bool_t                               destroy_handle = GLOBUS_FALSE;
     globus_i_xio_handle_t *                     xio_handle;
+    globus_bool_t                               fire_callback;
 
-    xio_handle = op->xio_handle;
+    xio_handle = xio_op->handle;
 
     globus_mutex_lock(&xio_handle->mutex);
     {   
@@ -248,24 +242,33 @@ globus_i_xio_open_close_callback(
         }
 
         /* set to finished for the sake of the timeout */
-        op->op_type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
-        if(op->timeout_cb != NULL)
+        if(xio_op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)
         {
-            /* 
-             * unregister the cancel
-             */
-            op->timeout_set = GLOBUS_FALSE;
-
-            /* if the unregister fails we will get the callback */
-            if(globus_i_xio_timer_unregister_timeout(op))
+            fire_operation = GLOBUS_FALSE;
+            xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPT_WAITING;
+        }
+        else
+        {
+            fire_operation = GLOBUS_TRUE;
+            if(xio_op->timeout_cb != NULL)
             {
-                /* at this point we know timeout won't happen */
-                op->ref--;
-            }
+                /* 
+                 * unregister the cancel
+                 */
+                /* if the unregister fails we will get the callback */
+                if(globus_i_xio_timer_unregister_timeout(xio_op))
+                {
+                    /* at this point we know timeout won't happen */
+                    xio_op->ref--;
+                    /* since we have no yet deced for the callbacl this
+                       cannot be zero */
+                    globus_assert(xio_op->ref > 0);
+                }
         }
 
         /* remove the operation from the list */
 
+        xio_op->cached_res = result;
         /* 
          *  when at the top don't worry about the cancel
          *  just act as though we missed it
@@ -273,26 +276,28 @@ globus_i_xio_open_close_callback(
     }
     globus_mutex_unlock(&xio_handle->mutex);
 
-    /*
-     *  if in a space or within the register call stack
-     *  we must register a one shot
-     */
-    op->cached_res = result;
-    if(op->space != GLOBUS_CALLBACK_GLOBAL_SPACE || 
-       op->in_register)
+    if(fire_callback)
     {
-        /* register a oneshot callback */
-        globus_callback_space_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_xio_open_close_callback_kickout,
-            (void *)op,
-            op->space);
-    } 
-    /* in all other cases we can just call callback */
-    else
-    {
-        globus_l_xio_open_close_callback_kickout((void *)op);
+        /*
+         *  if in a space or within the register call stack
+         *  we must register a one shot
+         */
+        if(xio_op->space != GLOBUS_CALLBACK_GLOBAL_SPACE || 
+           xio_op->in_register)
+        {
+            /* register a oneshot callback */
+            globus_callback_space_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_xio_open_close_callback_kickout,
+                (void *)xio_op,
+                xio_op->space);
+        } 
+        /* in all other cases we can just call callback */
+        else
+        {
+            globus_l_xio_open_close_callback_kickout((void *)xio_op);
+        }
     }
 }
 
@@ -306,31 +311,32 @@ void
 globus_l_xio_open_close_callback_kickout(
     void *                                      user_arg)
 {
-    globus_i_xio_operation_t *                  op;
+    globus_i_xio_op_t *                         xio_op;
     globus_i_xio_handle_t *                     xio_handle;
 
-    op = (globus_i_xio_operation_t *) user_arg;
+    xio_op = (globus_i_xio_operation_t *) user_arg;
     xio_handle = op->xio_handle;
 
     /* call the users callback */
-    if(op->cb != NULL)
+    if(xio_op->cb != NULL)
     {
-        op->cb(xio_handle, op->cached_res, op->user_arg);
+        xio_op->cb(xio_handle, op->cached_res, op->user_arg);
     }
 
     globus_mutex_lock(&xio_handle->mutex);
     {
          /* insist the state machine is in the following 2 states */
-        assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED ||
+        globus_assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED ||
             xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPEN);
+        globus_assert(xio_op->state == GLOBUS_XIO_OP_STATE_FINISH_WAITING);
 
         /* decrement reference for the operation */
-        op->ref--;
-        if(op->ref == 0)
+        xio_op->ref--;
+        if(xio_op->ref == 0)
         {
-            GlobusXIOOperationDestroy(op);
+            GlobusXIOOperationDestroy(xio_op);
             /* remove refrence for operation */
-            destroy_handle = globus_i_xio_handle_dec(xio_handle);
+            GlobusIXIOHandleDec(destroy_handle, xio_handle);
             /* destroy handle cannot possibly be true yet 
                 the handle stll has its own reference */
             assert(!destroy_handle);
@@ -344,18 +350,18 @@ globus_l_xio_open_close_callback_kickout(
          */
         if(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED)
         {
-            destroy_handle = globus_i_xio_handle_dec(xio_handle);
+            GlobusIXIOHandleDec(destroy_handle, xio_handle);
 
             /* we can remove both open and close since this branch
                only enters if open failed or close happened.  in either
                case both are removed */
-            op->close_op = NULL;
-            op->open_op = NULL;
+            xio_op->close_op = NULL;
+            xio_op->open_op = NULL;
         }
         else if(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPENED)    
         {
             /* this state is the only other choice, remove open op */
-            op->open_op = NULL;
+            xio_op->open_op = NULL;
         }
     }
     globus_mutex_unlock(&xio_handle->mutex);
@@ -482,7 +488,7 @@ globus_l_xio_write_callback_kickout(
         {
             GlobusXIOOperationDestroy(op);
             /* remove refrence for operation */
-            destroy_handle = globus_i_xio_handle_dec(xio_handle);
+            GlobusIXIOHandleDec(destroy_handle, xio_handle);
             /* destroy handle cannot possibly be true yet 
                 the handle stll has its own reference */
             assert(!destroy_handle);
@@ -729,7 +735,7 @@ globus_l_xio_read_callback_kickout(
         {
             GlobusXIOOperationDestroy(op);
             /* remove refrence for operation */
-            destroy_handle = globus_i_xio_handle_dec(xio_handle);
+            GlobusIXIOHandleDec(destroy_handle, xio_handle);
             /* destroy handle cannot possibly be true yet 
                 the handle stll has its own reference */
             assert(!destroy_handle);
@@ -845,83 +851,167 @@ globus_bool_t
 globus_l_xio_timeout_callback(
     void *                                      user_arg)
 {
-    globus_i_xio_operation_t *                  op;
-    globus_bool_t                               rc = GLOBUS_FALSE;
-    globus_bool_t                               punt;
+    globus_i_xio_op_t *                         xio_op;
+    globus_i_xio_server_t *                     xio_server;
+    globus_bool_t                               rc;
+    globus_bool_t                               fire_callback;
     globus_bool_t                               destroy_handle = GLOBUS_FALSE;
-    globus_i_xio_handle_t *                     xio_handle;
-
-    op = (globus_i_xio_operation_t *) user_arg;
-    xio_handle = op->xio_handle;
+    globus_bool_t                               timeout = GLOBUS_FALSE;
+    
+    xio_op = (globus_i_xio_op_t *) user_arg;
+    xio_handle = xio_op->handle;
 
     globus_mutex_lock(&xio_handle->mutex);
     {
-        /* user alread got finished callback, nothing to cancel */
-        if(op->op_type == GLOBUS_L_XIO_OPERATION_TYPE_FINISHED)
+        switch(xio_op->state)
         {
-            rc = GLOBUS_TRUE;
-            punt = GLOBUS_TRUE;
+            /* 
+             * this case happens when a serverwas successfully created but 
+             * we were unable to unregister the callback and when the first
+             * pass fails and we are unable to cancel the timeout callback
+             */
+            case GLOBUS_XIO_OP_STATE_FINISHED:
 
-            /* if finished we will not call callback but we need to doc
-               the reference and free the operation.  if the handle is
-               in the open failed or close state we may need to 
-               free the memory associated with it */
-            op->ref--;
-            if(op->ref == 0)
-            {
-                GlobusXIOOperationDestroy(op);
-                destroy_handle = globus_i_xio_handle_dec(xio_handle);
-            }
-        }
-        else if(op->block_timeout)
-        {
-            rc = GLOBUS_FALSE;
-            punt = GLOBUS_TRUE;
+                /* decerement the reference for the timeout callback */
+                xio_op->ref--;
+                if(xio_op->ref == 0)
+                {
+                    /* remove the reference for the target on the server */
+                    xio_handle->ref--;
+                    if(xio_handle->ref == 0)
+                    {
+                        GlobusXIOOperationDestroy(op);
+                        GlobusIXIOHandleDec(destroy_handle, xio_handle);
+                    }
+                }
+
+                /* remove it from the timeout list */
+                rc = GLOBUS_TRUE;
+                break;
+
+            /* this case happens when we actually want to cancel the operation
+                The timeout code should insure that prograess is false if this
+                gets called in this state */
+            case GLOBUS_XIO_OP_STATE_OPERATING:
+                /* it is up to the timeout callback to set this to true */
+                rc = GLOBUS_FALSE;
+                /* cancel the sucker */
+                globus_assert(!xio_op->progress);
+                globus_assert(xio_op->timeout_cb != NULL);
+
+                /* if the driver has blocked the timeout don't call it */
+                if(!op->block_timeout)
+                {
+                    timeout = GLOBUS_TRUE;
+                    /* put in canceling state to delay the accept callback */
+                    xio_op->state = GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING;
+                }
+                break;
+
+            /* fail on any ohter case */
+            default:
+                globus_assert(0);
         }
     }
     globus_mutex_unlock(&xio_handle->mutex);
 
-    if(destroy_handle)
+    /* if in cancel state, verfiy with user that they want to cancel */
+    if(timeout)
     {
-        GlobusXIOHandleDestroy(xio_handle);
+        cancel = xio_op->timeout_cb(xio_handle);
     }
-
-    if(punt)
+    /* all non time out casses can just return */
+    else
     {
+        /* wait until outside of lock to free the handle */
+        if(destroy_handle)
+        {
+            globus_free(xio_handle);
+        }
         return rc;
     }
 
-    /* if we get here there beter be user interest */
-    assert(op->user_timeout_callback != NULL);
-
-    if(op->user_timeout_callback(
-            op->xio_handle, 
-            op->op_type, 
-            op->user_timeout_arg))
+    globus_mutex_lock(&xio_server->mutex);
     {
-        /*  
-         * lock the op for the duration of the cancel notification
-         * process.  The driver notificaiotn callback os called locked
-         * this insures that the driver will not receive a callback 
-         * once CancelDisallow is called 
-         */
-        globus_mutex_lock(&xio_handle->cancel_mutex);
+        /* if canceling set the res and we will remove this timer event */
+        if(cancel)
         {
-            globus_l_xio_operation_cancel(op);
+            xio_op->cached_res = GlouxXIOErrorCanceled();
+            rc = GLOBUS_TRUE;
+            xio_op->canceled = GLOBUS_TRUE;
+            if(xio_op->cancel_cb)
+            {
+                xio_op->cancel_cb(xio_op);
+            }
         }
-        globus_mutex_unlock(&xio_handle->cancel_mutex);
 
-        /* remove timeouts reference to the operation */
-        rc = GLOBUS_FALSE;
-        globus_mutex_lock(&xio_handle->mutex);
+        /* if callback has already arriverd set flag to later
+            call accept callback and set rc to remove timed event */
+        if(xio_op->state == GLOBUS_XIO_OP_STATE_FINISH_WAITING)
         {
+            fire_callback = GLOBUS_TRUE;
+            rc = GLOBUS_TRUE;
         }
-        globus_mutex_unlock(&xio_handle->mutex);
+        /* if no accept is waiting, set state back to operating */
+        else
+        {
+            fire_callback = GLOBUS_FALSE;
+            xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+        }
+
+        /* if we are remvoing the timed event */
+        if(rc)
+        {
+            /* decremenet the target reference count and insist that it is
+               not zero yet */
+            xio_op->ref--;
+            globus_assert(xio_op->ref > 0);
+        }
+    }
+    globus_mutex_unlock(&xio_server->mutex);
+
+    /* if the accpet was pending we must call it */
+    if(fire_callback)
+    {
+        switch(xio_op->type)
+        {
+            case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+            case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
+                delayed_cb = globus_l_xio_open_close_callback_kickout;
+                break;
+
+            case GLOBUS_XIO_OPERATION_TYPE_READ:
+                break;
+
+            case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+                break;
+
+            default:
+                globus_assert(0);
+                break;
+
+        }
+
+        if(xio_op->space != GLOBUS_CALLBACK_GLOBAL_SPACE ||
+           xio_op->in_register)
+        {
+            /* register a oneshot callback */
+            globus_callback_space_register_oneshot(
+                NULL,
+                NULL,
+                delayed_cb,
+                (void *)xio_op,
+                xio_op->space);
+        }
+        /* in all other cases we can just call callback */
+        else
+        {
+            delayed_cb((void *)xio_op);
+        }
     }
 
     return rc;
 }
-
 
 /*
  *  internal open function
@@ -1007,7 +1097,7 @@ globus_l_xio_register_open(
 
     /* wrap pass with in_register flag for same stack call backs */
     op->in_register = GLOBUS_TRUE;
-    Globus_XIO_Driver_Pass_Open(res, tmp_context, \
+    GlobusXIODriverPassOpen(res, tmp_context, \
         globus_i_xio_open_close_callback, cb, user_arg);
     op->in_register = GLOBUS_FALSE;
 
@@ -1029,7 +1119,7 @@ globus_l_xio_register_open(
         {
             GlobusXIOOperationDestroy(op);
             /* remove the operations reference to the handle */
-            destroy_handle = globus_i_xio_handle_dec(xio_handle); 
+            GlobusIXIOHandleDec(destroy_handle, xio_handle);
             /* handle should always have a reference left at this point */
             assert(!destroy_handle);
         }
@@ -1100,7 +1190,7 @@ globus_l_xio_register_writev(
     {
         GlobusXIOOperationDestroy(op);
         /* remove the operations reference to the handle */
-        destroy_handle = globus_i_xio_handle_dec(xio_handle); 
+        GlobusIXIOHandleDec(destroy_handle, xio_handle);
         /* handle should always have a reference left at this point */
         assert(!destroy_handle);
     }
@@ -1170,7 +1260,7 @@ globus_l_xio_register_readv(
     {
         GlobusXIOOperationDestroy(op);
         /* remove the operations reference to the handle */
-        destroy_handle = globus_i_xio_handle_dec(xio_handle);
+        GlobusIXIOHandleDec(destroy_handle, xio_handle);
         /* handle should always have a reference left at this point */
         assert(!destroy_handle);
     }
@@ -1499,7 +1589,7 @@ globus_xio_register_open(
   err:
     if(xio_handle != NULL)
     {
-        destroy_handle = globus_i_xio_handle_dec(xio_handle);
+        GlobusIXIOHandleDec(destroy_handle, xio_handle);
 
         /* at this point all references must be gone */
         assert(destroy_handle);
