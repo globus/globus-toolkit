@@ -825,7 +825,7 @@ globus_l_condor_parse_event(
             /* Boolean false value */
             p += 10;
             pu.type = CONDOR_BOOLEAN;
-            pu.b.b = GLOBUS_TRUE;
+            pu.b.b = GLOBUS_FALSE;
         }
         else if (strncmp(p, "<r>", 3) == 0)
         {
