@@ -197,6 +197,9 @@
 /* User has passed all GSSAPI authentication and authorization checks */
 int gssapi_user_is_good = 0;
 
+/* User must perform GSSAPI authentication */
+int gssapi_authentication_required = 1;
+
 #endif /* GSSAPI */
 
 #ifdef FTP_SECURITY_EXTENSIONS
@@ -983,14 +986,10 @@ int main(int argc, char **argv, char **envp)
     virtual_banner[0] = '\0';
 #endif
 
-<<<<<<< ftpd.c
 #ifdef GSSAPI
     gssapi_setup_environment();
 #endif /* GSSAPI */
 
-
-    setup_paths();
-=======
     setup_paths();
 
 #ifdef OTHER_PASSWD
@@ -1000,7 +999,6 @@ int main(int argc, char **argv, char **envp)
 #endif
 #endif
 
->>>>>>> 1.1.1.2
     access_init();
 
 #ifdef DAEMON
@@ -1780,6 +1778,20 @@ void user(char *name)
     DenyLoginAfterPassword = 0;
     DelayedMessageFile[0] = '\0';
 #endif
+
+#ifdef GSSAPI
+    if (gssapi_authentication_required)
+    {
+	/*
+	 * Disallow login unless gssapi authentication has been done.
+	 */
+	if (gssapi_identity() == NULL)
+	{
+	    reply(530, "Must perform GSSAPI authentication");
+	    return;
+	}
+    }
+#endif /* GSSAPI */
 
 #ifdef GSSAPI_GLOBUS
     /*
