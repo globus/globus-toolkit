@@ -50,7 +50,7 @@ GSS_CALLCONV gss_init_delegation(
     output_token->length = 0;
     time_req = GSS_C_INDEFINITE;
     context = (gss_ctx_id_desc *) context_handle;
-
+    cred = (gss_cred_id desc *) cred_handle;
 
     /* input parameter checking needs to go here */
 
@@ -106,6 +106,25 @@ GSS_CALLCONV gss_init_delegation(
         }
 
         /* TODO add the restrictions here */
+
+        if ()
+        {
+            if ((ex = proxy_extension_restriction_create()) 
+                == NULL)
+            {
+                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
+                major_status = GSS_S_FAILURE;
+                return major_status;
+            }
+            
+            
+            if (!sk_X509_EXTENSION_push(extensions, ex))
+            {
+                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
+                major_status = GSS_S_FAILURE;
+                return major_status;
+            }
+        }
         
         proxy_sign_ext(0,
                        cred->pcd->ucert,
@@ -127,9 +146,44 @@ GSS_CALLCONV gss_init_delegation(
 #ifdef DEBUG
         X509_print_fp(stderr,ncert);
 #endif
+
+        /* push the proxy cert */
+        
         i2d_X509_bio(context->gs_sslbio,ncert);
-        context->gs_state = GS_DELEGATION_START /* we're done, reset
-                                                   the state machine */
+
+        /* push the number of certs in the cert chain */
+        
+        i2d_integer_bio(context->gs_sslbio,
+                        sk_X509_num(cred->pcd->cert_chain) + 1);
+        for(i=sk_X509_num(cert_chain)-1;i>=0;i--)
+        {
+            cert = sk_X509_value(cert_chain,i);
+            
+            /*
+             * add additional certs, but not our cert, or the 
+             * proxy cert, or any self signed certs or write all
+             * certs? 
+             */
+
+#ifdef DEBUG
+            {
+                char * s;
+                s = X509_NAME_oneline(X509_get_subject_name(cert),
+                                      NULL,
+                                      0);
+                fprintf(stderr,"  cert:%s\n",s);
+                free(s);
+            }
+#endif
+            i2d_X509_bio(context->gs_sslbio,cert);
+        }
+
+        /* push the cert used to sign the proxy */
+        
+        i2d_X509_bio(context->gs_sslbio,cred->pcd->ucert);
+        
+        context->gs_state = GS_DELEGATION_START; /* reset state
+                                                    machine */
         X509_free(ncert);
         ncert = NULL;
         break;

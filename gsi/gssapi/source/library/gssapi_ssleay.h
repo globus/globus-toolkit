@@ -81,6 +81,8 @@ CVS Information:
 #define GSSERR_F_EXPORT_CRED           122
 #define GSSERR_F_READ                  123
 #define GSSERR_F_WRITE                 124
+#define GSSERR_F_INIT_DELEGATION       125
+#define GSSERR_F_ACCEPT_DELEGATION     126
 
 /* 
  * defines for reasons 
@@ -110,6 +112,7 @@ CVS Information:
 #define GSSERR_R_CERT_EXPIRED          119  
 #define GSSERR_R_BAD_DATE              120
 #define GSSERR_R_BAD_MECH              121
+#define GSSERR_R_ADD_EXT               122
 
 /*
  * we need to distinguish between a token
@@ -286,5 +289,6 @@ ERR_user_lib_gsserr_num();
 
 int
 ERR_load_gsserr_strings(int);
+
 
 #endif /* _GSSAPI_SSLEAY_H */

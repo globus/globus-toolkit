@@ -823,6 +823,13 @@ GSS_CALLCONV GSS_FUNC(gss_duplicate_name)
     * these to Kerberos as mods, and submitting them to the IETF
     */
 
+
+typedef struct gss_buffer_set_desc_struct {
+    size_t                              count;
+    gss_buffer_desc *                   elements;
+} gss_buffer_set_desc, *gss_buffer_set_t;
+
+
    GSS_MAKE_TYPEDEF
    OM_uint32 
    GSS_CALLCONV GSS_FUNC(gss_import_cred)
@@ -871,6 +878,16 @@ GSS_CALLCONV GSS_FUNC(gss_duplicate_name)
                const gss_buffer_t,
                gss_buffer_t
               );
+
+   GSS_MAKE_TYPEDEF
+   OM_uint32
+   GSS_CALLCONV GSS_FUNC(gss_inquire_sec_context_by_oid)
+              (OM_uint32 *                         minor_status,
+               const gss_ctx_id_t                  context_handle,
+               const gss_OID                       desired_object,
+               gss_buffer_set_t                    data_set
+              );
+
 
 #endif /* GSI_EXTENDED_GSSAPI */
 
