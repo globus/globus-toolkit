@@ -20,6 +20,9 @@ static
 int
 globus_l_xio_http_deactivate(void);
 
+static void
+globus_l_xio_http_handle_destroy_element(void *datum);
+
 static globus_module_descriptor_t  globus_i_xio_http_module =
 {
     "globus_xio_http", //module name
@@ -60,6 +63,19 @@ typedef struct l_http_info_s
 /*
  *  used as attr and handle
  */
+
+static void
+l_http_destroy_info(l_http_info_t *info ) 
+{
+    globus_hashtable_destroy_all(info, globus_l_xio_http_handle_destroy_element);
+    globus_free(info->uri);
+    globus_free(info->http_standard);
+    globus_free(info->request_type);
+    globus_free(info->buffer);
+    globus_free(info->exit_code);
+    globus_free(info->exit_text);
+    globus_free(info->user_headers);
+}
 
 static l_http_info_t *
 l_http_create_new_info()
@@ -121,6 +137,13 @@ globus_l_xio_http_handle_copy_element(
 {
     *dest_key = globus_libc_strdup(src_key);
     *dest_datum = globus_libc_strdup(src_datum);
+}
+
+static void
+globus_l_xio_http_handle_destroy_element(
+    void *                              datum)
+{
+    globus_free(datum);
 }
 
 static globus_result_t
@@ -289,7 +312,6 @@ globus_l_xio_http_read_cb(
         GlobusXIODriverFinishedOpen(context, info, op, result);
     }
 
-    //GlobusXIODriverFinishedRead(op, result, nbytes);
 }
 
 static
@@ -370,7 +392,7 @@ globus_l_xio_http_close_cb(
     context = GlobusXIOOperationGetContext(op);
     GlobusXIODriverFinishedClose(op, result);
     globus_xio_driver_context_close(context);
-}   
+}
 
 /*
  *  simply pass the close on down
