@@ -2227,11 +2227,31 @@ globus_l_gass_copy_transfer_start(
     if(handle->err)
     {
 	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-
-        /* clean up the source side since it was already opened..... */
-        globus_gass_copy_cancel(handle, NULL, NULL);
 	err = handle->err;
 	handle->err = GLOBUS_NULL;
+
+        /* clean up the source side since it was already opened..... */
+	globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+	globus_cond_init(&monitor.cond, GLOBUS_NULL);
+	monitor.done = GLOBUS_FALSE;
+	monitor.err = GLOBUS_NULL;
+	monitor.use_err = GLOBUS_FALSE;
+        handle->user_callback = GLOBUS_NULL;
+        globus_gass_copy_cancel(
+	    handle,
+	    globus_l_gass_copy_monitor_callback,
+	    (void *) &monitor);
+	/* wait for the cancel to complete before returning to user */
+	globus_mutex_lock(&monitor.mutex);
+	{
+	    while(!monitor.done)
+	    {
+		globus_cond_wait(&monitor.cond, &monitor.mutex);
+	    }
+	}
+	globus_mutex_unlock(&monitor.mutex);
+	globus_mutex_destroy(&monitor.mutex);
+	globus_cond_destroy(&monitor.cond);
 	return globus_error_put(err);
     }
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -2672,7 +2692,9 @@ wakeup_state:
 	state->dest.status = GLOBUS_I_GASS_COPY_TARGET_FAILED;
     handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 
+/*
     globus_gass_transfer_request_destroy(request);
+*/
     state->monitor.done = 1;
     globus_cond_signal(&state->monitor.cond);
     globus_mutex_unlock(&state->monitor.mutex);
@@ -5716,7 +5738,8 @@ globus_l_gass_copy_target_cancel(
 	    globus_libc_fprintf(stderr,
                    "target_cancel: gass_request_status = %d\n", req_status);
 #endif
-	    if(req_status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED)
+	    if(req_status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED &&
+               req_status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED)
             {
 		rc = globus_gass_transfer_fail(
                       target->data.gass.request,
