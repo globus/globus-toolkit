@@ -3325,7 +3325,7 @@ globus_gridftp_server_control_restart_get(
         }
     }
 
-    if(restart->ndx >= size)
+    if(restart->ndx >= restart->size)
     {
         return -1;
     }
