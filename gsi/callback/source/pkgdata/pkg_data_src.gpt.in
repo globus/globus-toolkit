@@ -17,6 +17,7 @@
       <Dependency Name="globus_openssl_module"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>        
       <Dependency Name="globus_gsi_openssl_error"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
       <Dependency Name="globus_gsi_cert_utils"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gsi_sysconfig"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_proxy_ssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       </Source_Dependencies>
 
@@ -26,8 +27,9 @@
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
       <Dependency Name="globus_openssl_module"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
       <Dependency Name="globus_gsi_openssl_error"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
-      <Dependency Name="globus_gsi_cert_utils"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
     </Source_Dependencies>
+      <Dependency Name="globus_gsi_cert_utils"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
+      <Dependency Name="globus_gsi_sysconfig"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>  
 
     <With_Flavors build="yes" />
 
