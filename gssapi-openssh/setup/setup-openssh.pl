@@ -218,7 +218,7 @@ sub fixpaths
     # Files on which to perform path translations
     #
 
-    %files = (
+    @files = (
         "${sysconfdir}/ssh_config" => 0,
         "${sysconfdir}/sshd_config" => 0,
         "${sysconfdir}/moduli" => 0,
@@ -233,7 +233,7 @@ sub fixpaths
         "${mandir}/${mansubdir}1/sftp.1" => 0,
         );
 
-    for my $f (keys %files)
+    for my $f (@files)
     {
         $f =~ /(.*\/)*(.*)$/;
 
@@ -297,8 +297,6 @@ sub fixpaths
         chown($uid, $gid, $f);
     } # for $f
 
-    print "complete.\n";
-
     return 0;
 }
 
@@ -342,16 +340,6 @@ $metadata->finish();
 
 print "\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
-print "\n";
-print "You are required to set the following variables in your environment\n";
-print "to ensure that the gsi_ssh package works correctly:\n";
-print "\n";
-print "\GSI_SCP_LOC=\"${bindir}/scp.real\"\n";
-print "\GSI_SFTP_LOC=\"${bindir}/sftp.real\"\n";
-print "\GSI_SSH_LOC=\"${bindir}/ssh\"\n";
-print "\GSI_SSHD_LOC=\"${sbindir}/sshd.real\"\n";
-print "\GSI_SSH_CONFIG_LOC=\"${sysconfdir}/ssh_config\"\n";
-print "\GSI_SSHD_CONFIG_LOC=\"${sysconfdir}/sshd_config\"\n";
 print "---------------------------------------------------------------\n";
 
 #
