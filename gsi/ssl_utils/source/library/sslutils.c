@@ -1649,7 +1649,7 @@ proxy_marshal_bp(
          * proxy cert, or any self signed certs
          */
 
-        for(i=sk_X509_num(cert_chain)-1;i>=0;i--)
+        for(i=0;i<sk_X509_num(cert_chain);i++)
         {
             cert = sk_X509_value(cert_chain,i);
             if (!(!X509_NAME_cmp_no_set(X509_get_subject_name(cert),
