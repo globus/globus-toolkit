@@ -1,19 +1,33 @@
 #ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
 #define GLOBUS_XIO_GSI_DRIVER_INCLUDE
 
-#include "globus_xio_system.h"
+typedef enum
+{
+    GLOBUS_XIO_GSI_SET_CREDENTIAL,
+    GLOBUS_XIO_GSI_GET_CREDENTIAL,
+    GLOBUS_XIO_GSI_SET_GSSAPI_REQ_FLAGS,
+    GLOBUS_XIO_GSI_GET_GSSAPI_REQ_FLAGS,
+    GLOBUS_XIO_GSI_SET_ALLOW_LIMITED_PROXY,
+    GLOBUS_XIO_GSI_SET_ALLOW_LIMITED_PROXY_MANY,
+    GLOBUS_XIO_GSI_SET_DELEGATE_LIMITED_PROXY,
+    GLOBUS_XIO_GSI_SET_DELEGATE_FULL_PROXY,
+    GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE,
+    GLOBUS_XIO_GSI_SET_ANON,
+    GLOBUS_XIO_GSI_SET_WRAP_MODE,
+    GLOBUS_XIO_GSI_GET_WRAP_MODE,
+    GLOBUS_XIO_GSI_SET_BUFFER_SIZE,
+    GLOBUS_XIO_GSI_GET_BUFFER_SIZE,
+    GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+    GLOBUS_XIO_GSI_GET_PROTECTION_LEVEL,
+    GLOBUS_XIO_GSI_GET_TARGET_NAME,
+    GLOBUS_XIO_GSI_SET_TARGET_NAME
+} globus_xio_gsi_cmd_t;
 
-#define GlobusXIOErrorWrapGSSFailed(failed_func, major_status, minor_status) \
-    globus_error_put(                                                        \
-        globus_error_wrap_gssapi_error(                                      \
-            GLOBUS_XIO_MODULE,                                               \
-            major_status,                                                    \
-            minor_status,                                                    \
-            GLOBUS_XIO_ERROR_WRAPPED,                                        \
-            "[%s:%d] %s failed.",                                            \
-            _xio_name, __LINE__, (failed_func)))                            
-                                                                     
-
-
+typedef enum
+{
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE,
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY
+} globus_xio_gsi_protection_level_t;
 
 #endif

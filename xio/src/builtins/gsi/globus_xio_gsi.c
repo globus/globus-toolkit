@@ -5,26 +5,9 @@
 #include "globus_xio_gsi.h"
 #include "version.h"
 #include "gssapi.h"
+#include "globus_error_gssapi.h"
 
 #define GLOBUS_XIO_GSI_DRIVER_MODULE &globus_i_xio_gsi_module
-
-static int
-globus_l_xio_gsi_activate();
-
-static int
-globus_l_xio_gsi_deactivate();
-
-
-static globus_module_descriptor_t  globus_i_xio_gsi_module =
-{
-    "globus_xio_gsi",
-    globus_l_xio_gsi_activate,
-    globus_l_xio_gsi_deactivate,
-    GLOBUS_NULL,
-    GLOBUS_NULL,
-    &local_version
-};
-
 
 #define GlobusLXioGsiCreateHeader(__iovec, __length)              \
     {                                                             \
@@ -49,6 +32,51 @@ static globus_module_descriptor_t  globus_i_xio_gsi_module =
     }
 
 
+#define GlobusXIOErrorWrapGSSFailed(failed_func, major_status, minor_status) \
+    globus_error_put(                                                        \
+        globus_error_wrap_gssapi_error(                                      \
+            GLOBUS_XIO_MODULE,                                               \
+            major_status,                                                    \
+            minor_status,                                                    \
+            GLOBUS_XIO_ERROR_WRAPPED,                                        \
+            "[%s:%d] %s failed.",                                            \
+            _xio_name, __LINE__, (failed_func)))                            
+
+
+static
+void
+globus_l_xio_gsi_read_token_cb(
+    struct globus_i_xio_op_s *              op,
+    globus_result_t                         result,
+    globus_size_t                           nbytes,
+    void *                                  user_arg);
+
+
+static
+void
+globus_l_xio_gsi_close_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+static int
+globus_l_xio_gsi_activate();
+
+static int
+globus_l_xio_gsi_deactivate();
+
+
+static globus_module_descriptor_t  globus_i_xio_gsi_module =
+{
+    "globus_xio_gsi",
+    globus_l_xio_gsi_activate,
+    globus_l_xio_gsi_deactivate,
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
+};
+
+
 /*
  *  attribute structure
  */
@@ -62,8 +90,27 @@ typedef struct
     globus_bool_t                       wrap_tokens;
     globus_size_t                       buffer_size;
     globus_xio_gsi_protection_level_t   prot_level;
-}
-globus_l_attr_t;
+} globus_l_attr_t;
+
+static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
+{
+    GSS_C_NO_CREDENTIAL,
+    GSS_C_MUTUAL_FLAG,
+    0,
+    GSS_C_NO_OID,
+    GSS_C_NO_CHANNEL_BINDINGS,
+    GLOBUS_FALSE,
+    131072, /* 128K default read buffer */
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE
+};
+
+typedef struct
+{
+    gss_name_t                          target_name;
+    /* init or accept flag */
+    globus_bool_t                       init;
+} globus_l_target_t;
+
 
 typedef struct
 {
@@ -77,7 +124,7 @@ typedef struct
     gss_OID                             mech_used;
     gss_name_t                          source_name;
     size_t                              write_iovec_count;
-    globus_xio_iovec_t                  write_iovec[];
+    globus_xio_iovec_t *                write_iovec;
     globus_bool_t                       frame_writes;
     size_t                              write_header_count;
     unsigned char *                     write_headers;
@@ -85,22 +132,15 @@ typedef struct
     unsigned char                       header[4];
     unsigned char *                     read_buffer;
     globus_size_t                       bytes_read;
+    globus_xio_iovec_t *                user_iovec;
+    size_t                              user_iovec_count;
     unsigned char *                     unwrapped_buffer;
     globus_size_t                       unwrapped_buffer_length;
     globus_size_t                       unwrapped_buffer_offset;
     globus_size_t                       bytes_returned;
     globus_bool_t                       done;
     globus_result_t                     result;
-}
-globus_l_handle_t;
-
-typedef struct
-{
-    gss_name_t                          target_name;
-    /* init or accept flag */
-    globus_bool_t                       init;
-}
-globus_l_target_t;
+} globus_l_handle_t;
 
 
 /*
@@ -126,11 +166,11 @@ globus_l_xio_gsi_attr_init(
     }
     
     attr->credential = GSS_C_NO_CREDENTIAL;
-    attr->req_flags = GSS_C_MUTUAL;
+    attr->req_flags = GSS_C_MUTUAL_FLAG;
     attr->time_req = 0;
     attr->mech_type = GSS_C_NO_OID;
     attr->channel_bindings = GSS_C_NO_CHANNEL_BINDINGS;
-    attr->wrap = GLOBUS_FALSE;
+    attr->wrap_tokens = GLOBUS_FALSE;
     attr->buffer_size = 131072; /* 128K default read buffer */
     attr->prot_level = GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE;
     *out_attr = attr;
@@ -157,6 +197,7 @@ globus_l_xio_gsi_attr_cntl(
     globus_bool_t *                     out_bool;
     globus_xio_gsi_protection_level_t * out_prot_level;
     globus_result_t                     result;
+    globus_size_t *                     out_size;
     GlobusXIOName(globus_l_xio_gsi_attr_cntl);
 
     attr = (globus_l_attr_t *) driver_attr;
@@ -170,17 +211,17 @@ globus_l_xio_gsi_attr_cntl(
         break;
       case GLOBUS_XIO_GSI_GET_CREDENTIAL:
         out_cred = va_arg(ap, gss_cred_id_t *);
-        *out_cred = *credential;
+        *out_cred = attr->credential;
         break;
         
         /**
          * GSSAPI flags
          */
       case GLOBUS_XIO_GSI_SET_GSSAPI_REQ_FLAGS:
-        attr->req_flags = va_arg(ap, OM_uin32);
+        attr->req_flags = va_arg(ap, OM_uint32);
         break;
       case GLOBUS_XIO_GSI_GET_GSSAPI_REQ_FLAGS:
-        out_flags = va_arg(ap, OM_uin32 *);
+        out_flags = va_arg(ap, OM_uint32 *);
         *out_flags = attr->req_flags;
         break;
         /* allow setting of flags one by one */
@@ -194,36 +235,36 @@ globus_l_xio_gsi_attr_cntl(
         attr->req_flags |= (GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
                             GSS_C_DELEG_FLAG);
         attr->req_flags &= ~GSS_C_GLOBUS_SSL_COMPATIBLE;
-        attr->wrap = GLOBUS_TRUE;
+        attr->wrap_tokens = GLOBUS_TRUE;
         break;
       case GLOBUS_XIO_GSI_SET_DELEGATE_FULL_PROXY:
         attr->req_flags |= GSS_C_DELEG_FLAG;
         attr->req_flags &= ~(GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
                              GSS_C_GLOBUS_SSL_COMPATIBLE);
-        attr->wrap = GLOBUS_TRUE;
+        attr->wrap_tokens = GLOBUS_TRUE;
         break;
       case GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE:
         attr->req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
         attr->req_flags &= ~(GSS_C_DELEG_FLAG |
                              GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
-        attr->wrap = GLOBUS_FALSE;
+        attr->wrap_tokens = GLOBUS_FALSE;
         break;
       case GLOBUS_XIO_GSI_SET_ANON:
         attr->req_flags |= GSS_C_ANON_FLAG;
         attr->req_flags &= ~(GSS_C_DELEG_FLAG |
                              GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
-        attr->wrap = GLOBUS_FALSE;
+        attr->wrap_tokens = GLOBUS_FALSE;
         break;
 
         /**
          * Wrap mode
          */
       case GLOBUS_XIO_GSI_SET_WRAP_MODE:
-        attr->wrap = va_arg(ap, globus_bool_t);
+        attr->wrap_tokens = va_arg(ap, globus_bool_t);
         break;
       case GLOBUS_XIO_GSI_GET_WRAP_MODE:
         out_bool = va_arg(ap, globus_bool_t *);
-        *out_bool = attr->wrap;
+        *out_bool = attr->wrap_tokens;
         break;
 
         /**
@@ -272,7 +313,6 @@ globus_l_xio_gsi_attr_cntl(
         break;
     }
 
- error_memory:
  error_invalid:
     return result;
 }
@@ -362,6 +402,7 @@ globus_l_xio_gsi_target_cntl(
 {
     globus_l_target_t *                 target;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    gss_name_t *                        out_name;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     GlobusXIOName(globus_l_xio_gsi_target_cntl);
@@ -377,7 +418,7 @@ globus_l_xio_gsi_target_cntl(
         *out_name = target->target_name;
         break;
       case GLOBUS_XIO_GSI_SET_TARGET_NAME:
-        if(target_name != GSS_C_NO_NAME)
+        if(target->target_name != GSS_C_NO_NAME)
         {
             gss_release_name(&minor_status,
                              target->target_name);
@@ -416,8 +457,10 @@ globus_l_xio_gsi_target_destroy(
     OM_uint32                           minor_status;
     
     GlobusXIOName(globus_l_xio_gsi_target_destroy);
+
+    target = (globus_l_target_t *) driver_target;
     
-    if(target_name != GSS_C_NO_NAME)
+    if(target->target_name != GSS_C_NO_NAME)
     {
         gss_release_name(&minor_status,
                          target->target_name);
@@ -442,7 +485,7 @@ globus_l_xio_gsi_accept_cb(
         goto error;
     }
 
-    result = globus_l_xio_gsi_target_init(&target, NULL, NULL);
+    result = globus_l_xio_gsi_target_init((void **) &target, NULL, NULL);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -469,7 +512,6 @@ globus_l_xio_gsi_accept(
     globus_xio_operation_t              accept_op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_l_attr_t *                   attr;
     
     GlobusXIOName(globus_l_xio_gsi_accept);
     
@@ -512,9 +554,9 @@ globus_l_xio_gsi_handle_destroy(
     }
 
     
-    if(handle->read_iovec[1].io_base != handle->read_buffer)
+    if(handle->read_iovec[1].iov_base != handle->read_buffer)
     {
-        free(handle->read_iovec[1].io_base);
+        free(handle->read_iovec[1].iov_base);
     }
 
     if(handle->write_iovec != NULL)
@@ -545,7 +587,7 @@ globus_l_xio_gsi_is_ssl_token(
 {
     unsigned char * t = (unsigned char *) token;
 
-    GlobusXIOName(globus_l_xio_gsi_is_ssl_packet);
+    GlobusXIOName(globus_l_xio_gsi_is_ssl_token);
 
     if((t[0] >= 20 &&
         t[0] <= 26 &&
@@ -562,16 +604,13 @@ globus_l_xio_gsi_is_ssl_token(
         *length |= ((globus_size_t) (*((t)++))) << 16;
         *length |= ((globus_size_t) (*((t)++))) << 8;
         *length |= ((globus_size_t) (*((t)++)));
-        GlobusLXioGsiGetTokenLength(token);
         return GLOBUS_FALSE;
     }
 }
 
 static globus_result_t
 globus_l_xio_gsi_unwrapped_buffer_to_iovec(
-    globus_l_handle_t *                 handle
-    const globus_xio_iovec_t *          iovec,
-    int                                 iovec_count,
+    globus_l_handle_t *                 handle,
     globus_size_t *                     bytes_read)
 {
     int                                 i;
@@ -581,14 +620,14 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
     
     *bytes_read = 0;
     
-    for(i = 0;i < iovec_count;i++)
+    for(i = 0;i < handle->user_iovec_count;i++)
     {
-        if(iovec[i].iov_len >= handle->unwrapped_buffer_length -
+        if(handle->user_iovec[i].iov_len >= handle->unwrapped_buffer_length -
            handle->unwrapped_buffer_offset)
         {
             *bytes_read += handle->unwrapped_buffer_length -
                 handle->unwrapped_buffer_offset;
-            memcpy(iovec[i].iov_base,
+            memcpy(handle->user_iovec[i].iov_base,
                    &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
                    *bytes_read);
             handle->unwrapped_buffer_offset = 0;
@@ -598,11 +637,11 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
         }
         else
         {
-            memcpy(iovec[i].iov_base,
+            memcpy(handle->user_iovec[i].iov_base,
                    &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
-                   iovec[i].iov_len);
-            *bytes_read += iovec[i].iov_len;
-            handle->unwrapped_buffer_offset += iovec[i].iov_len;
+                   handle->user_iovec[i].iov_len);
+            *bytes_read += handle->user_iovec[i].iov_len;
+            handle->unwrapped_buffer_offset += handle->user_iovec[i].iov_len;
         }
     }
 
@@ -614,8 +653,6 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
 static globus_result_t
 globus_l_xio_gsi_wrapped_buffer_to_iovec(
     globus_l_handle_t *                 handle,
-    const globus_xio_iovec_t *          iovec,
-    int                                 iovec_count,
     globus_size_t *                     bytes_read,
     globus_size_t                       offset,
     globus_size_t                       frame_length)
@@ -652,8 +689,6 @@ globus_l_xio_gsi_wrapped_buffer_to_iovec(
     handle->unwrapped_buffer_length = unwrapped_buf.length;
     
     return globus_l_xio_gsi_unwrapped_buffer_to_iovec(handle,
-                                                      iovec,
-                                                      iovec_count,
                                                       bytes_read);
 }
 
@@ -682,7 +717,7 @@ globus_l_xio_gsi_write_token_cb(
         goto error_pass_close;
     }
     
-    free(handle->read_iovec[1].io_base);
+    free(handle->read_iovec[1].iov_base);
 
     handle->read_iovec[1].iov_base = handle->read_buffer;
     handle->read_iovec[1].iov_len = handle->attr->buffer_size;
@@ -768,7 +803,7 @@ globus_l_xio_gsi_read_token_cb(
         input_token.length = handle->bytes_read + nbytes;
         input_token.value = &(handle->read_buffer[4]);
     }
-    else if(globus_l_xio_gsi_is_ssl_packet(handle->read_iovec[1].iov_base,
+    else if(globus_l_xio_gsi_is_ssl_token(handle->read_iovec[1].iov_base,
                                            &wait_for) ==
             GLOBUS_FALSE)
     {
@@ -856,7 +891,7 @@ globus_l_xio_gsi_read_token_cb(
                 &minor_status,
                 handle->context,
                 handle->attr->prot_level ==
-                GLOBUS_XIO_PROTECTION_LEVEL_PRIVACY,
+                GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
                 GSS_C_QOP_DEFAULT,
                 (4294967295U),
                 &handle->max_wrap_size);
@@ -884,7 +919,7 @@ globus_l_xio_gsi_read_token_cb(
                                               handle->attr->credential,
                                               &input_token,
                                               handle->attr->channel_bindings,
-                                              &handle->source_name;
+                                              &handle->source_name,
                                               &handle->mech_used,
                                               &output_token,
                                               &handle->ret_flags,
@@ -902,7 +937,7 @@ globus_l_xio_gsi_read_token_cb(
             else
             {
                 handle->result = result;
-                handle->done = GLOBUS_TRUE
+                handle->done = GLOBUS_TRUE;
             }
         }
         else if(major_status == GSS_S_COMPLETE)
@@ -913,7 +948,7 @@ globus_l_xio_gsi_read_token_cb(
                 &minor_status,
                 handle->context,
                 handle->attr->prot_level ==
-                GLOBUS_XIO_PROTECTION_LEVEL_PRIVACY,
+                GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
                 GSS_C_QOP_DEFAULT,
                 (4294967295U),
                 &handle->max_wrap_size);
@@ -937,7 +972,7 @@ globus_l_xio_gsi_read_token_cb(
 
     if(output_token.length != 0)
     {
-        if(handle->attr->wrap == GLOBUS_TRUE)
+        if(handle->attr->wrap_tokens == GLOBUS_TRUE)
         {
             iovec = handle->read_iovec;
             iovec_count = 2;
@@ -1063,7 +1098,7 @@ globus_l_xio_gsi_open_cb(
             else
             {
                 handle->result = result;
-                handle->done = GLOBUS_TRUE
+                handle->done = GLOBUS_TRUE;
             }
         }
         else if(major_status == GSS_S_COMPLETE)
@@ -1074,7 +1109,7 @@ globus_l_xio_gsi_open_cb(
                 &minor_status,
                 handle->context,
                 handle->attr->prot_level ==
-                GLOBUS_XIO_PROTECTION_LEVEL_PRIVACY,
+                GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
                 GSS_C_QOP_DEFAULT,
                 (4294967295U),
                 &handle->max_wrap_size);
@@ -1096,7 +1131,7 @@ globus_l_xio_gsi_open_cb(
             }
         }
         
-        if(handle->attr->wrap == GLOBUS_TRUE)
+        if(handle->attr->wrap_tokens == GLOBUS_TRUE)
         {
             iovec = handle->read_iovec;
             iovec_count = 2;
@@ -1179,6 +1214,7 @@ globus_l_xio_gsi_open(
     
     GlobusXIOName(globus_l_xio_gsi_open);
 
+    context = GlobusXIOOperationGetContext(op);
     target = (globus_l_target_t *) driver_target;
     attr = (globus_l_attr_t *) 
         (driver_attr ? driver_attr : &globus_l_xio_gsi_attr_default);
@@ -1194,7 +1230,7 @@ globus_l_xio_gsi_open(
     memset(handle, 0, sizeof(globus_l_handle_t));
     
     handle->target = target;
-    result = globus_l_xio_gsi_attr_copy(&handle->attr, attr);
+    result = globus_l_xio_gsi_attr_copy((void **) &handle->attr, attr);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -1219,10 +1255,10 @@ globus_l_xio_gsi_open(
         goto error;
     }
 
-    handle->read_iovec[0].io_len = 4;
-    handle->read_iovec[0].io_base = handle->header;
-    handle->read_iovec[1].io_len = handle->attr->buffer_size;
-    handle->read_iovec[1].io_base = handle->read_buffer;
+    handle->read_iovec[0].iov_len = 4;
+    handle->read_iovec[0].iov_base = handle->header;
+    handle->read_iovec[1].iov_len = handle->attr->buffer_size;
+    handle->read_iovec[1].iov_base = handle->read_buffer;
     
     if(target->init == GLOBUS_FALSE)
     {
@@ -1253,8 +1289,11 @@ globus_l_xio_gsi_close_cb(
     void *                              user_arg)
 {   
     globus_l_handle_t *                 handle;
+    globus_xio_context_t                context;
     
     GlobusXIOName(globus_l_xio_gsi_close_cb);
+
+    context = GlobusXIOOperationGetContext(op);
 
     handle = (globus_l_handle_t *) user_arg;
 
@@ -1313,7 +1352,7 @@ globus_l_xio_gsi_read_cb(
     
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    if(handle->attrs->prot_level == GLOBUS_XIO_PROTECTION_LEVEL_NONE)
+    if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {        
         goto done;
     }
@@ -1325,7 +1364,14 @@ globus_l_xio_gsi_read_cb(
     ssl_record = globus_l_xio_gsi_is_ssl_token(handle->read_buffer,
                                                &frame_length);
 
-    ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+    if(ssl_record == GLOBUS_TRUE)
+    {
+        header = 0;
+    }
+    else
+    {
+        header = 4;
+    }
             
     while(frame_length + offset + header < handle->bytes_read &&
           wait_for > 0 &&
@@ -1334,7 +1380,7 @@ globus_l_xio_gsi_read_cb(
         offset += header;
         
         local_result = globus_l_xio_gsi_wrapped_buffer_to_iovec(
-            handle, iovec, iovec_count, &bytes_read, offset,
+            handle, &bytes_read, offset,
             frame_length);
         if(local_result != GLOBUS_SUCCESS)
         {
@@ -1354,7 +1400,14 @@ globus_l_xio_gsi_read_cb(
             ssl_record = globus_l_xio_gsi_is_ssl_token(
                 &handle->read_buffer[offset],
                 &frame_length);
-            ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+            if(ssl_record == GLOBUS_TRUE)
+            {
+                header = 0;
+            }
+            else
+            {
+                header = 4;
+            }
         }
         else
         {
@@ -1373,7 +1426,7 @@ globus_l_xio_gsi_read_cb(
     
     if(result == GLOBUS_SUCCESS && wait_for > 0)
     {
-        if(no_header = GLOBUS_TRUE)
+        if(no_header == GLOBUS_TRUE)
         {
             wait_for = 5 - handle->bytes_read;
         }
@@ -1453,7 +1506,7 @@ globus_l_xio_gsi_read(
         return result;
     }
 
-    if(handle->attrs->prot_level == GLOBUS_XIO_PROTECTION_LEVEL_NONE)
+    if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {        
         GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_cb, handle);
@@ -1461,11 +1514,13 @@ globus_l_xio_gsi_read(
     }
 
     handle->bytes_returned = 0;
+    handle->user_iovec = iovec;
+    handle->user_iovec_count = iovec_count;
 
     if(handle->unwrapped_buffer_length != 0)
     {
         result = globus_l_xio_gsi_unwrapped_buffer_to_iovec(
-            handle, iovec, iovec_count,&bytes_read);
+            handle,&bytes_read);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -1491,8 +1546,14 @@ globus_l_xio_gsi_read(
             
             ssl_record = globus_l_xio_gsi_is_ssl_token(handle->read_buffer,
                                                        &frame_length);
-
-            ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+            if(ssl_record == GLOBUS_TRUE)
+            {
+                header = 0;
+            }
+            else
+            {
+                header = 4;
+            }
             
             while(frame_length + offset + header < handle->bytes_read &&
                   wait_for > 0 &&
@@ -1500,8 +1561,7 @@ globus_l_xio_gsi_read(
             {
                 offset += header;
                 result = globus_l_xio_gsi_wrapped_buffer_to_iovec(
-                    handle, iovec, iovec_count, &bytes_read, offset,
-                    frame_length);
+                    handle, &bytes_read, offset, frame_length);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusXIOErrorWrapFailed(
@@ -1520,7 +1580,14 @@ globus_l_xio_gsi_read(
                     ssl_record = globus_l_xio_gsi_is_ssl_token(
                         &handle->read_buffer[offset],
                         &frame_length);
-                    ssl_record == GLOBUS_TRUE ? header = 0 : header = 4;
+                    if(ssl_record == GLOBUS_TRUE)
+                    { 
+                        header = 0;
+                    }
+                    else
+                    { 
+                        header = 4;
+                    }
                 }
                 else
                 {
@@ -1539,7 +1606,7 @@ globus_l_xio_gsi_read(
     
     if(wait_for > 0)
     {
-        if(no_header = GLOBUS_TRUE)
+        if(no_header == GLOBUS_TRUE)
         {
             wait_for = 5 - handle->bytes_read;
         }
@@ -1600,7 +1667,7 @@ globus_l_xio_gsi_write_cb(
 
     handle = (globus_l_handle_t *) user_arg;
 
-    if(handle->frame_write == GLOBUS_FALSE)
+    if(handle->frame_writes == GLOBUS_FALSE)
     { 
         for(i = 0;i < handle->write_iovec_count;i++)
         {
@@ -1644,6 +1711,7 @@ globus_l_xio_gsi_write(
     int                                 j;
     int                                 conf_state;
     globus_size_t                       iovec_offset;
+    size_t                              write_iovec_count;
     
     GlobusXIOName(globus_l_xio_gsi_write);
 
@@ -1680,7 +1748,7 @@ globus_l_xio_gsi_write(
     major_status = gss_wrap(&minor_status,
                             handle->context,
                             handle->attr->prot_level
-                            == GLOBUS_XIO_PROTECTION_LEVEL_PRIVACY,
+                            == GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
                             GSS_C_QOP_DEFAULT,
                             &plaintext_buffer,
                             &conf_state,
@@ -1798,7 +1866,7 @@ globus_l_xio_gsi_write(
             major_status = gss_wrap(&minor_status,
                                     handle->context,
                                     handle->attr->prot_level
-                                    == GLOBUS_XIO_PROTECTION_LEVEL_PRIVACY,
+                                    == GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY,
                                     GSS_C_QOP_DEFAULT,
                                     &plaintext_buffer,
                                     &conf_state,
