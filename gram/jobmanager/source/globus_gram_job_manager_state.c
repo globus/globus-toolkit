@@ -456,8 +456,7 @@ globus_gram_job_manager_state_machine(
 	{
 	    globus_gram_job_manager_request_log(
 		    request,
-		    "Poorly-formed RSL gass_cache attribute: %s\n",
-		    tmp_str);
+		    "Poorly-formed RSL gass_cache attribute\n");
 
 	    request->failure_code = 
 		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
