@@ -11,7 +11,7 @@ links: $(opensslinclude_HEADERS) $(Test_Sources)
 	fi;
 	@for i in $(SUBDIRS) ""; do \
 		if test -n "$$i"; then \
-		(cd $$i; $(MAKE) links ); \
+			(cd $$i; $(MAKE) links ); \
 		fi; \
 	done;
 
