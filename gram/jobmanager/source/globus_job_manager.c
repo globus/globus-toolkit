@@ -2382,11 +2382,6 @@ int main(int argc,
 	globus_callback_unregister(gass_poll_handle);
     } /* endif */
 
-    if (request->save_state == GLOBUS_TRUE)
-    {
-	globus_callback_unregister(ttl_update_handle);
-    }
-
     globus_jobmanager_log( request->jobmanager_log_fp,
           "JM: we're done.  doing cleanup\n");
 
@@ -2454,6 +2449,11 @@ int main(int argc,
 
 	globus_l_gram_delete_file_list(&globus_l_gram_stderr_files);
 	globus_gass_close(globus_l_gram_stderr_fd);
+    }
+
+    if (request->save_state == GLOBUS_TRUE)
+    {
+	globus_callback_unregister(ttl_update_handle);
     }
 
     /* set the failure code for the callback */
@@ -2600,7 +2600,9 @@ int main(int argc,
 	 * current time since we're about to exit.
 	 */
 	if ( graml_job_state_file != NULL ) {
+	    GRAM_UNLOCK;
 	    globus_l_gram_ttl_update( NULL, (void *)0 );
+	    GRAM_LOCK;
 	}
 
     }
