@@ -63,6 +63,7 @@ my %bundle_list;
 # Which of the bundles defined should I build?
 my @bundle_build_list;
 my %package_build_hash;
+my @package_build_list;
 
 # Which of the CVS trees should I operate on?
 my @cvs_build_list;
@@ -186,7 +187,7 @@ if ( $flavor =~ /64/ ) {
 cleanup();
 mkdir $log_dir;
 setup_environment();
-generate_dependency_tree();
+generate_build_list();
 
 exit if ( $listpack or $listbun );
 
@@ -262,7 +263,7 @@ if ( $binary )
 exit 0;
 
 # --------------------------------------------------------------------
-sub generate_dependency_tree()
+sub generate_build_list()
 # --------------------------------------------------------------------
 {
     print "Generating package build list ...\n";
@@ -271,7 +272,7 @@ sub generate_dependency_tree()
 
     if ( not defined(@cvs_build_list) )
     {
-	@cvs_build_list = ("autotools", "gt2", "gt3", "gt4", "cbindings");
+	@cvs_build_list = ("autotools", "gt2", "gt3", "gt4");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -318,6 +319,44 @@ sub generate_dependency_tree()
         }
 
 	@bundle_build_list = ( "custom-deps" );
+    }
+
+    if($deporder || $inplace)
+    {
+        my @plist = keys %package_build_hash;
+        @package_build_list = dep_sort_packages(\@plist);
+    } else {
+        @package_build_list = keys %package_build_hash;
+    }
+
+    if($restart_package)
+    {
+        my $ind = 0;
+        for my $p (@package_build_list)
+        {
+            if($restart_package eq $p)
+            {
+                last;
+            }
+            $ind++;
+        }
+
+        @package_build_list = splice(@package_build_list, $ind);
+        
+        if(scalar(@package_build_list) == 0)
+        {
+            print "ERROR: -restart option specified $restart_package, which is not in the package list\n\n";
+            exit 1;
+        }
+    }
+
+    if ( $listpack )
+    {
+       print "Final package build list:\n";
+       foreach my $pack ( @package_build_list )
+       {
+            print "$pack\n";
+       }
     }
 }
 
@@ -674,16 +713,9 @@ sub populate_package_build_hash()
 	@temp_build_list = keys %package_list;
     }
 
-    # Eliminate duplicates in the package_build_list
+    # Eliminate duplicates in the temporary build list
     # A "Perl Idiom".
     %package_build_hash = map { $_ => 1 } @temp_build_list;
-    if ( $listpack )
-    {
-       foreach my $pack ( keys(%package_build_hash) )
-       {
-            print "$pack\n";
-       }
-    }
 }
 
 # --------------------------------------------------------------------
@@ -1180,40 +1212,7 @@ sub package_sources()
     mkdir $source_output;
     mkdir $package_output;
 
-    my @package_list = undef;
-
-    if($deporder || $inplace)
-    {
-        my @plist = keys %package_build_hash;
-        @package_list = dep_sort_packages(\@plist);
-
-        if($restart_package)
-        {
-            my $ind = 0;
-            for my $p (@package_list)
-            {
-                if($restart_package eq $p)
-                {
-                    last;
-                }
-                $ind++;
-            }
-
-            @package_list = splice(@package_list, $ind);
-            
-            if(scalar(@package_list) == 0)
-            {
-                print "ERROR: -restart option specified $restart_package, which is not in the package list\n\n";
-                exit 1;
-            }
-        }
-    }
-    else
-    {
-        @package_list = keys %package_build_hash;
-    }
-
-    for my $package ( @package_list )
+    for my $package ( @package_build_list )
     {
 	my ($tree, $subdir, $custom) = ($package_list{$package}[0],
 					$package_list{$package}[1], 
@@ -1271,7 +1270,8 @@ sub package_sources()
 	} elsif ( $custom eq "tar" ) { 
 	    package_source_tar($package, $subdir);
 	} else {
-	    print "ERROR: Unknown custom packaging type '$custom' for $package.\n";
+            print "You probably listed --trees, and need a package not from your list:\n";
+	    die "ERROR: Unknown custom packaging type '$custom' for $package.\n";
 	}
     }
     
