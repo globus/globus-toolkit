@@ -6,14 +6,14 @@
 # adapted from 'fixpath', located in the openssh-3.0.2p1 package
 #
 
-my $gpath = $ENV{GPT_LOCATION};
+require Grid::GPT::Setup;
+
+my $metadata = new Grid::GPT::Setup(package_name => "gsi-openssh-setup");
+
+$gpath = $ENV{GLOBUS_LCATION};
 if (!defined($gpath))
 {
-    $gpath = $ENV{GLOBUS_LCATION};
-}
-if (!defined($gpath))
-{
-    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+    die "GLOBUS_LOCATION needs to be set before running this script"
 }
 
 #
@@ -90,7 +90,7 @@ sub fixpaths
         $f =~ /(.*\/)*(.*)$/;
         $g = "$f.tmp";
 
-        $result = system("cp $f $g");
+        $result = system("mv $f $g");
         if ($result != 0)
         {
             die "Failed to copy $f to $g!\n";
@@ -160,4 +160,4 @@ sub runkeygen
 fixpaths();
 runkeygen();
 
-exit 0;
+$metadata->finish();
