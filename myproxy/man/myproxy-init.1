@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2002-09-04" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2002-11-06" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -27,6 +27,33 @@ retrieved by
 .BR myproxy-get-delegation (1)
 using the MyProxy passphrase.
 The default behavior can be overridden by options specified below.
+.PP
+The
+.B myproxy-init
+command can also upload a credential to a
+.BR myproxy-server (8)
+to support credential renewal.
+Renewal allows a trusted service (for example, a batch job scheduler)
+to obtain a new credential for a user
+before the existing credential it has for that user expires.
+The 
+.B -R
+argument to 
+.B myproxy-init
+configures the credential for renewal by the specified service.
+Renewal requires two authentications.
+The renewing service must authenticate with its own credentials, matching
+the distinquished name specified by the 
+.B -R
+argument, and must also authenticate with an existing credential that
+matches the distinguished name of the stored credential, to retrieve a
+new credential.
+.PP
+A credential may be used either for retrieval or renewal but not both.
+If both are desired, upload a different credential for each use, with
+a different name using the 
+.B -k
+option.
 .PP
 The hostname where the 
 .BR myproxy-server (8)
@@ -84,12 +111,12 @@ using the stored credential.  Default: 2 hours
 .TP
 .B -n, --no_passphrase
 Disables passphrase authentication for the stored credential.
-If specified, the command will not prompt for a passphrase, and 
+If specified, the command will not prompt for a passphrase, 
+the credential will not be encrypted by a passphrase in the repository, and
 the credential will not be retrievable using passphrase authentication
 with
 .BR myproxy-get-delegation (1).
-The credential retrieval policy must allow some other authentication
-mechanism (for example, certificate-based authentication) for retrieval.
+This option is required for storing renewable credentials.
 .TP
 .B -d, --dn_as_username
 Use the proxy certificate subject (DN) as the default username, instead
@@ -131,20 +158,13 @@ Basney") instead.
 Allow the specified entity to renew credentials.
 By default, the
 argument will be matched against the common name (CN) of the client
-(for example: "Jim Basney").  Specify
+(for example: "condorg/modi4.ncsa.uiuc.edu").  Specify
 .B -x 
 before this option to match against the full distinguished name (DN)
-(for example: "/C=US/O=National Computational Science Alliance/CN=Jim
-Basney") instead.
-Credential renewal requires two authentications.
-The client must authenticate with its own credentials, matching
-the specified
-.I dn
-argument, and must also authenticate with an existing credential that
-matches the distinguished name of the stored credential, to retrieve a
-new credential.  This is intended to allow a trusted service to
-authenticate with its own credential and a credential that is about to
-expire to obtain a new credential with an extended lifetime.
+(for example: "/C=US/O=National Computational Science Alliance/CN=condorg/modi4.ncsa.uiuc.edu") instead.
+This option implies 
+.B -n
+since passphrase authentication is not used for credential renewal.
 .TP
 .B -x, --regex_dn_match
 Specifies that the DN used by options 
