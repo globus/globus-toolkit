@@ -1,5 +1,10 @@
 #! /usr/bin/env perl
 
+BEGIN
+{
+    push(@INC, ${GLOBUS_LOCATION} . '/lib/perl');
+}
+
 use Globus::Core::Paths;
 use IO::File;
 use Sys::Hostname;
