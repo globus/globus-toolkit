@@ -113,7 +113,7 @@ static nexus_handler_t graml_handlers[] =
 #endif  /* BUILD_LITE */
 };
 
-static char * graml_my_env_home;
+static char * graml_env_home;
 static char graml_callback_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
 static char graml_job_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
 static char graml_my_globusid[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
@@ -181,6 +181,8 @@ main(int argc,
     globus_symboltable_t * symbol_table; 
     char *                 my_env_path;
     char *                 my_env_user;
+    char *                 my_globus_prefix;
+    char *                 tmp_env_var;
 
     /* Initialize modules that I use */
     rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
@@ -277,12 +279,16 @@ main(int argc,
         }
     }
 
-    graml_my_env_home = (char *) getenv("HOME");
-    if (!graml_my_env_home)
+    tmp_env_var = (char *) getenv("HOME");
+    if (!tmp_env_var)
     {
         fprintf(stderr, "ERROR: unable to get HOME from the environment.\n");
 	exit(1);
     }
+
+    graml_env_home = (char *) globus_malloc(sizeof(char *) * 
+                                            strlen(tmp_env_var) + 1);
+    strcpy(graml_env_home, tmp_env_var);
 
     if (print_debug_flag)
     {
@@ -290,7 +296,7 @@ main(int argc,
          * Open the gram logfile just for testing!
          */
         sprintf(tmp_buffer, "%s/gram_job_mgr_%lu.log",
-                graml_my_env_home,
+                graml_env_home,
                 (unsigned long) getpid());
 
         if ((grami_log_fp = fopen(tmp_buffer, "a")) == NULL)
@@ -317,22 +323,30 @@ main(int argc,
     grami_fprintf( grami_log_fp, "-----------------------------------------\n");
     grami_fprintf( grami_log_fp, "JM: Entering gram_job_manager main()\n");
 
-    grami_fprintf( grami_log_fp, "JM: HOME = %s\n", graml_my_env_home);
+    grami_fprintf( grami_log_fp, "JM: HOME = %s\n", graml_env_home);
 
-    my_env_path = (char *) getenv("PATH");
-    if (!my_env_path)
+    tmp_env_var = (char *) getenv("PATH");
+    if (!tmp_env_var)
     {
         grami_fprintf( grami_log_fp, 
                        "ERROR: unable to get PATH from the environment.\n");
     }
+    my_env_path = (char *) globus_malloc(sizeof(char *) * 
+                                            strlen(tmp_env_var) + 1);
+    strcpy(my_env_path, tmp_env_var);
+
     grami_fprintf( grami_log_fp, "JM: PATH = %s\n", my_env_path);
 
-    my_env_user = (char *) getenv("USER");
-    if (!my_env_user)
+    tmp_env_var = (char *) getenv("USER");
+    if (!tmp_env_var)
     {
         grami_fprintf( grami_log_fp, 
                        "ERROR: unable to get USER from the environment.\n");
     }
+    my_env_user = (char *) globus_malloc(sizeof(char *) * 
+                                            strlen(tmp_env_var) + 1);
+    strcpy(my_env_user, tmp_env_var);
+
     grami_fprintf( grami_log_fp, "JM: USER = %s\n", my_env_user);
 
     if (jm_home_dir)
@@ -498,6 +512,11 @@ main(int argc,
     printf("\n------------  after parse  ---------------\n\n");
     globus_rsl_print_recursive(description_tree);
 
+    my_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
+                                            strlen(GLOBUS_PREFIX) + 1);
+    strcpy(my_globus_prefix, GLOBUS_PREFIX);
+
+
     symbol_table = (globus_symboltable_t *) globus_malloc 
                             (sizeof(globus_symboltable_t));
 
@@ -509,7 +528,7 @@ main(int argc,
 
     globus_symboltable_insert(symbol_table,
                             (void *) "HOME",
-                            (void *) graml_my_env_home);
+                            (void *) graml_env_home);
     globus_symboltable_insert(symbol_table,
                             (void *) "PATH",
                             (void *) my_env_path);
@@ -518,7 +537,7 @@ main(int argc,
                             (void *) my_env_user);
     globus_symboltable_insert(symbol_table,
 			    (void *) "GLOBUS_PREFIX",
-			    (void *) GLOBUS_PREFIX);
+			    (void *) my_globus_prefix);
     
     if (globus_rsl_eval(description_tree, symbol_table) != 0)
     {
@@ -924,7 +943,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     if (tmp_param[0])
         params->dir = tmp_param[0];
     else
-        params->dir = graml_my_env_home;
+        params->dir = graml_env_home;
 
     /********************************** 
      *  GET STDIN PARAM
