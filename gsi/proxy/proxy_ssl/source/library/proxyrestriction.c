@@ -305,7 +305,7 @@ unsigned char * PROXYRESTRICTION_get_policy(
     int *                               length)
 {
     (*length) = restriction->policy->length;
-    if(length > 0 && restriction->policy->data)
+    if(*length > 0 && restriction->policy->data)
     {
         unsigned char *                 copy = malloc(*length);
         memcpy(copy, restriction->policy->data, *length);
