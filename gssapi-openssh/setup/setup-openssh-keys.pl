@@ -1,8 +1,6 @@
 #
 # setup-openssh-keys.pl:
-#   Adapts the installed gsi-ssh environment to the current machine,
-#   performing actions that originally occurred during the package's
-#   'make install' phase.
+#   Generates the host keys for the openssh install.
 #
 # Send comments/fixes/suggestions to:
 # Chase Phillips <cphillip@ncsa.uiuc.edu>
@@ -36,13 +34,6 @@ print "$myname: Configuring keys for package 'gsi_openssh'...\n";
 $prefix = ${globusdir};
 $exec_prefix = "${prefix}";
 $bindir = "${exec_prefix}/bin";
-$mandir = "${prefix}/man";
-$mansubdir = "man";
-$libexecdir = "${exec_prefix}/libexec";
-$sysconfdir = "${prefix}/etc";
-$piddir = "/var/run";
-$xauth_path = "/usr/bin/X11/xauth";
-
 $sysconfdir = "/etc";
 
 sub runkeygen
@@ -81,11 +72,4 @@ sub runkeygen
     return 0;
 }
 
-fixpaths();
 runkeygen();
-
-my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
-
-$metadata->finish();
-
-print "$myname: Finished configuring package 'gsi_openssh'.\n";

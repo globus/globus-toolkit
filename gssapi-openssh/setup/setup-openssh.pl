@@ -38,6 +38,7 @@ print "$myname: Configuring package 'gsi_openssh'...\n";
 $prefix = ${globusdir};
 $exec_prefix = "${prefix}";
 $bindir = "${exec_prefix}/bin";
+$sbindir = "${exec_prefix}/sbin";
 $mandir = "${prefix}/man";
 $mansubdir = "man";
 $libexecdir = "${exec_prefix}/libexec";
@@ -67,6 +68,10 @@ sub fixpaths
         "/usr/bin:/bin:/usr/sbin:/sbin" => "/usr/bin:/bin:/usr/sbin:/sbin:${bindir}",
         "/path/to/scp.real" => "${bindir}/scp.real",
         "/path/to/ssh" => "${bindir}/ssh",
+        "/path/to/sftp.real" => "${bindir}/sftp.real",
+        "/path/to/sshd.real" => "${sbindir}/sshd.real",
+        "/path/to/ssh_config" => "${sysconfdir}/ssh_config",
+        "/path/to/sshd_config" => "${sysconfdir}/sshd_config",
         );
 
     #
@@ -75,6 +80,8 @@ sub fixpaths
 
     @files = (
         "${bindir}/scp",
+        "${bindir}/sftp",
+        "${sbindir}/sshd",
         "${sysconfdir}/ssh_config",
         "${sysconfdir}/sshd_config",
         "${sysconfdir}/moduli",
@@ -148,44 +155,17 @@ sub fixpaths
     return 0;
 }
 
-sub runkeygen
-{
-    print "Generating ssh keys (if necessary)...\n";
-    if ( -e "${sysconfdir}/ssh_host_key" )
-    {
-        print "${sysconfdir}/ssh_host_key already exists, skipping.\n";
-    }
-    else
-    {
-        # if $sysconfdir/ssh_host_key doesn't exist..
-        system("$bindir/ssh-keygen -t rsa1 -f $sysconfdir/ssh_host_key -N \"\"");
-    }
-
-    if ( -e "${sysconfdir}/ssh_host_dsa_key" )
-    {
-        print "${sysconfdir}/ssh_host_dsa_key already exists, skipping.\n";
-    }
-    else
-    {
-        # if $sysconfdir/ssh_host_dsa_key doesn't exist..
-        system("$bindir/ssh-keygen -t dsa -f $sysconfdir/ssh_host_dsa_key -N \"\"");
-    }
-
-    if ( -e "${sysconfdir}/ssh_host_rsa_key" )
-    {
-        print "${sysconfdir}/ssh_host_rsa_key already exists, skipping.\n";
-    }
-    else
-    {
-        # if $sysconfdir/ssh_host_rsa_key doesn't exist..
-        system("$bindir/ssh-keygen -t rsa -f $sysconfdir/ssh_host_rsa_key -N \"\"");
-    }
-
-    return 0;
-}
-
 fixpaths();
-runkeygen();
+
+print "---------------------------------------------------------------------\n";
+print "If you would also like to run the sshd binary that came with this\n";
+print "package and you do not have host keys located in /etc, run (as root):\n";
+print "\n";
+print "  $setupdir/setup-openssh-keys\n";
+print "\n";
+print "This script creates machine-specific host keys in /etc that are\n";
+print "required by sshd.\n";
+print "---------------------------------------------------------------------\n";
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
