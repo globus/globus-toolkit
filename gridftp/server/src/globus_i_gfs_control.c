@@ -894,7 +894,6 @@ globus_l_gfs_request_recv(
     recv_state->partial_offset = op_attr->partial_offset;
     recv_state->partial_length = op_attr->partial_length;
     recv_state->range_list = range_list;
-    recv_state->control_op = op;
     recv_state->data_handle_id = (int) data_handle;
     instance->op = op;
 

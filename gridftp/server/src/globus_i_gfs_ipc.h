@@ -181,9 +181,6 @@ typedef struct globus_gfs_transfer_state_s
     globus_range_list_t                 range_list;
     
     int                                 data_handle_id;
-    
-    /* yeah yeah, this don't belong, need it for list and events (for now) */    
-    globus_gridftp_server_control_op_t  control_op;
 } globus_gfs_transfer_state_t;
 
 typedef struct globus_gfs_command_state_s
