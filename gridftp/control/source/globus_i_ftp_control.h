@@ -194,6 +194,22 @@ extern const char * globus_i_ftp_server_welcome;
 extern const char * globus_i_ftp_server_user_reply;
 extern const char * globus_i_ftp_server_pass_reply;
 
+extern int globus_i_ftp_control_debug_level;
+
+#ifdef BUILD_DEBUG
+#define globus_i_ftp_control_debug(Level)                   \
+    (globus_i_ftp_control_debug_level >= (Level))
+
+#define globus_i_ftp_control_debug_printf(level, message)   \
+do {                                                        \
+    if (globus_i_ftp_control_debug(level))                  \
+    {                                                       \
+	globus_libc_fprintf message;                        \
+    }                                                       \
+} while (0)
+
+#define globus_i_ftp_control_debug_printf(level, message)
+#endif
 
 
 #endif
