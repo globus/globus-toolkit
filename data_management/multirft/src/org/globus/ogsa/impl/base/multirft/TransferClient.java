@@ -200,7 +200,7 @@ public class TransferClient {
      *
      *@param  status  The new status value
      */
-    public void setStatus( int status ) {
+    synchronized public void setStatus( int status ) {
         this.status = status;
     }
 
@@ -551,7 +551,7 @@ public class TransferClient {
      *
      *@return    DOCUMENT ME!
      */
-    public int getStatus() {
+    synchronized public int getStatus() {
 
         return this.status;
     }
@@ -757,7 +757,7 @@ public class TransferClient {
             this.destinationHost,this.destinationPath,false,this.markerListener);
             logger.debug( "Transfer done" );
             this.markerListener = null;
-            status = 0;
+            setStatus( 0 );
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );
 

@@ -59,25 +59,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 
-public class RFTClient extends ServicePropertiesImpl
-                    implements NotificationSinkCallback {
-
-    public Boolean monitor = new Boolean(false);
-
-    public RFTClient() {
-    }
-
-    public void deliverNotification(ExtensibilityType message) {
-        System.out.println("received notification");
-        synchronized (this) {
-            this.notifyAll();
-        }
-    }
-
+public class RFTClient {
     /**
-     *  DOCUMENT ME!
+     * Command line client for RFT Service   
      *
-     *@param  args  DOCUMENT ME!
+     *
      */
     public static void main( String[] args ) {
         System.out.println( "Multifile RFT command line client" );
@@ -138,15 +124,15 @@ public class RFTClient extends ServicePropertiesImpl
                 (String)requestData.elementAt(i++)).booleanValue());
             int concurrency = Integer.valueOf(
                 (String)requestData.elementAt(i++)).intValue();
-            String destinationSubjectName = (String)requestData.elementAt(i++);
-            if (destinationSubjectName != null) {
-                multirftOptions.setDestinationSubjectName(
-                    destinationSubjectName);
-            }
             String sourceSubjectName = (String)requestData.elementAt(i++);
             if (sourceSubjectName != null) {
                 multirftOptions.setSourceSubjectName(
                     sourceSubjectName);
+            }
+            String destinationSubjectName = (String)requestData.elementAt(i++);
+            if (destinationSubjectName != null) {
+                multirftOptions.setDestinationSubjectName(
+                    destinationSubjectName);
             }
             System.out.println(
                     "Request Data Size " + requestData.size() + " " +
@@ -179,16 +165,6 @@ public class RFTClient extends ServicePropertiesImpl
             Factory factory = factoryService.getFactoryPort(new URL(handle));
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
 
-            /*
-            ((Stub)factory)._setProperty(Constants.AUTHORIZATION, 
-                                         NoAuthorization.getInstance());
-            ((Stub)factory)._setProperty(GSIConstants.GSI_MODE,
-                                         GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)factory)._setProperty(Constants.GSI_SEC_CONV, 
-                                         Constants.SIGNATURE);
-            ((Stub)factory)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                         new IgnoreProxyPolicyHandler());
-                                         */
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
@@ -203,56 +179,9 @@ public class RFTClient extends ServicePropertiesImpl
             ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
                                          new IgnoreProxyPolicyHandler());
 
-            NotificationSinkManager notificationSinkManager
-                = NotificationSinkManager.getManager();
-            HashMap notificationSinkProperties = new HashMap();
-            notificationSinkProperties.put(
-                Constants.GSI_SEC_CONV,
-                Constants.SIGNATURE);
-            notificationSinkProperties.put(
-                Constants.AUTHORIZATION,
-                NoAuthorization.getInstance());
-            /*
-            notificationSinkProperties.put(
-                GSIConstants.GSI_MODE, 
-                GSIConstants.GSI_MODE_FULL_DELEG);
-                */
-            notificationSinkProperties.put(
-                GSIConstants.GSI_MODE, 
-                GSIConstants.GSI_MODE_LIMITED_DELEG);
-            notificationSinkProperties.put(
-                Constants.GRIM_POLICY_HANDLER,
-                new IgnoreProxyPolicyHandler());
-            notificationSinkManager.init(notificationSinkProperties);
-            //notificationSinkManager.setService(loc);
-            notificationSinkManager.startListening(
-                NotificationSinkManager.MAIN_THREAD);
-            RFTClient client = new RFTClient();
-            try {
-                String notificationSinkId = notificationSinkManager.addListener(
-                    new QName("SingleFileTransferStatus"),
-                    null,
-                    loc.getGSR().getHandle(),
-                    client);
-            } catch (Exception e) {
-                System.out.println("Oh shit! " + e.getMessage());
-            }
-
-
-            /* WSDLReferenceType ref = (WSDLReferenceType) locator.getReference()[0];
-             opts.setOptions( ((Stub)factory));
-             //AnyHelper.setAny(extension,requestElement);
-            //  extension.set_any(any); 
-            */
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
-
             
-            synchronized (client) {
-                client.wait();
-            }
-          
-
         } catch (Exception e) {
             System.err.println(MessageUtils.toString(e));
         }

@@ -136,6 +136,8 @@ public class URLExpander extends Thread {
                         logger.debug( "This is a file : " + f.getFileName() );
                         String newSourceUrl = "gsiftp://"
                                  + this.sourceGlobusUrl.getHost()
+                                 + ":"
+                                 + this.sourceGlobusUrl.getPort()
                                  + currentUrl + File.separator
                                  + f.getFileName();
                         int temp = currentUrl.lastIndexOf( "//" );
@@ -146,6 +148,8 @@ public class URLExpander extends Thread {
                         }
                         String newDestinationUrl = "gsiftp://"
                                  + this.destinationGlobusUrl.getHost()
+                                 + ":"
+                                 + this.destinationGlobusUrl.getPort()
                                  + this.destinationPath
                                  + File.separator + mkdir
                                  + File.separator + f.getFileName();
@@ -156,8 +160,8 @@ public class URLExpander extends Thread {
                         transferType.setDestinationUrl( newDestinationUrl );
                         TransferJob transferJob = new
                                 TransferJob( transferType, 0, 4 );
-						this.transferJobVector.add( transferJob );
-                       // this.dbAdapter.storeTransferJob( transferJob );
+				//		this.transferJobVector.add( transferJob );
+                        this.dbAdapter.storeTransferJob( transferJob );
                     }
                 }
                 currentUrl = (String) this.sourceUrlsEx.elementAt( 0 );
@@ -177,7 +181,7 @@ public class URLExpander extends Thread {
         if ( this.sourceUrlsEx.size() == 0 ) {
             logger.debug( "UrlExpander is done" );
 			try {
-				int storeSuccess=this.dbAdapter.storeTransferJobs( transferJobVector );
+				//int storeSuccess=this.dbAdapter.storeTransferJobs( transferJobVector );
 			} catch(Exception ee) {
 			logger.debug("Exception while storing transfer jobs",ee);
 			}

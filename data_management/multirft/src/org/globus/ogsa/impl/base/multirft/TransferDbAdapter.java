@@ -613,7 +613,6 @@ public class TransferDbAdapter {
             query.append( "SELECT * FROM transfer where request_id=" );
             query.append( requestId );
 
-            //   query.append(" AND status=3 or status=4" );
             logger.debug(
                     "Getting TransferJob from Database:" + query.toString() );
 

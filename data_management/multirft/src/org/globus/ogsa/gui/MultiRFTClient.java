@@ -64,7 +64,8 @@ import java.rmi.RemoteException;
 import org.globus.ogsa.wsdl.GSR;
 import org.gridforum.ogsi.ServiceDataValuesType;
 
-public class MultiRFTClient extends ServicePropertiesImpl implements NotificationSinkCallback {
+public class MultiRFTClient 
+    extends ServicePropertiesImpl implements NotificationSinkCallback {
 
     /**
      * DOCUMENT ME!
@@ -83,7 +84,8 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
 	this.args = args;
 	this.requests = new HashMap();
 	HashMap map = new HashMap();
-	map.put(GSIConstants.GSI_AUTHORIZATION, org.globus.gsi.gssapi.auth.NoAuthorization.getInstance());
+	map.put(GSIConstants.GSI_AUTHORIZATION, 
+        org.globus.gsi.gssapi.auth.NoAuthorization.getInstance());
 	map.put(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
 	map.put(Constants.GSI_SEC_CONV, Constants.SIGNATURE);
     map.put(Constants.GRIM_POLICY_HANDLER, new IgnoreProxyPolicyHandler());
@@ -138,29 +140,38 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
             } catch (java.io.IOException ioe) {
             }
 
-            transferCount = (requestData.size() - 7) / 2;
+            transferCount = (requestData.size() - 9) / 2;
             TransferType[] transfers1 = new TransferType[transferCount];
             RFTOptionsType multirftOptions = new RFTOptionsType();
+            int i=0;
             multirftOptions.setBinary(Boolean.valueOf(
-                                              (String)requestData.elementAt(0)).booleanValue());
+                (String)requestData.elementAt(i++)).booleanValue());
             multirftOptions.setBlockSize(Integer.valueOf(
-                                                 (String)requestData.elementAt(
-                                                         1)).intValue());
+                (String)requestData.elementAt(i++)).intValue());
             multirftOptions.setTcpBufferSize(Integer.valueOf(
-                                                     (String)requestData.elementAt(
-                                                             2)).intValue());
+                (String)requestData.elementAt(i++)).intValue());
             multirftOptions.setNotpt(Boolean.valueOf(
-                                             (String)requestData.elementAt(3)).booleanValue());
+                (String)requestData.elementAt(i++)).booleanValue());
             multirftOptions.setParallelStreams(Integer.valueOf(
-                                                       (String)requestData.elementAt(
-                                                               4)).intValue());
+                (String)requestData.elementAt(i++)).intValue());
             multirftOptions.setDcau(Boolean.valueOf(
-                                            (String)requestData.elementAt(5)).booleanValue());
+                (String)requestData.elementAt(i++)).booleanValue());
+            int concurrency = Integer.valueOf(
+                (String)requestData.elementAt(i++)).intValue();
+            String sourceSubjectName = (String)requestData.elementAt(i++);
+            if (sourceSubjectName != null) {
+                multirftOptions.setSourceSubjectName(
+                    sourceSubjectName);
+            }
+            String destinationSubjectName = (String)requestData.elementAt(i++);
+            if (destinationSubjectName != null) {
+                multirftOptions.setDestinationSubjectName(
+                    destinationSubjectName);
+            } 
             System.out.println(
                     "Request Data Size " + requestData.size() + " " + 
                     transferCount);
 
-            int i = 7;
 
             for (int j = 0; j < transfers1.length; j++) {
                 transfers1[j] = new TransferType();
@@ -168,21 +179,19 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
                 transfers1[j].setSourceUrl((String)requestData.elementAt(i++));
                 transfers1[j].setDestinationUrl(
                         (String)requestData.elementAt(i++));
-                transfers1[j].setRftOptions(multirftOptions);
 
-		requests.put(transfers1[j].getDestinationUrl(), TransferStatusType.Pending);
+		        requests.put(transfers1[j].getDestinationUrl(), TransferStatusType.Pending);
             }
 
             TransferRequestType transferRequest = new TransferRequestType();
             transferRequest.setTransferArray(transfers1);
-            int concurrency = Integer.valueOf(
-                (String)requestData.elementAt(6)).intValue();
             if(concurrency>transfers1.length) {
                 System.out.println("Concurrency should be less than the number of transfers in the request");
                 System.exit(0);
             }
 
-            transferRequest.setConcurrency(concurrency);
+            transferRequest.setRftOptions( multirftOptions );
+            transferRequest.setConcurrency( concurrency );
 
             TransferRequestElement requestElement = new TransferRequestElement();
             requestElement.setTransferRequest(transferRequest);
@@ -197,8 +206,8 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
-	    GSR reference = GSR.newInstance(locator);
-	    sink = nm.addListener("SingleFileTransferStatus", null, reference.getHandle(), this);
+    	    GSR reference = GSR.newInstance(locator);
+	        sink = nm.addListener("SingleFileTransferStatus", null, reference.getHandle(), this);
 
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
@@ -214,8 +223,8 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
 
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
-	    System.in.read();
-	    printAndExit();
+	        System.in.read();
+	        printAndExit();
 
         } catch (Exception e) {
             System.err.println(MessageUtils.toString(e));
@@ -223,60 +232,64 @@ public class MultiRFTClient extends ServicePropertiesImpl implements Notificatio
     }
 
     public synchronized void printAndExit() {
-	int finished = 0;
-	int retrying = 0;
-	int failed = 0;
-	int active = 0;
-	int pending = 0;
-	int cancelled = 0;
+	    int finished = 0;
+	    int retrying = 0;
+	    int failed = 0;
+	    int active = 0;
+	    int pending = 0;
+	    int cancelled = 0;
 
-	try {
-	    nm.removeListener(sink);
-	} catch (Exception e) {
-	    System.out.println("Unable to remove listener");
-	}
-
-	Set keySet = requests.keySet();
-	for (Iterator iter = keySet.iterator(); iter.hasNext(); ) {
-	    TransferStatusType status = (TransferStatusType)requests.get((String) iter.next());
-	    if (status == TransferStatusType.Finished)
-		finished++;
-	    else if (status == TransferStatusType.Retrying)
-		retrying++;
-	    else if (status == TransferStatusType.Failed)
-		failed++;
-	    else if (status == TransferStatusType.Active)
-		active++;
-	    else if (status == TransferStatusType.Pending)
-		pending++;
-	    else if (status == TransferStatusType.Cancelled)
-		cancelled++;
-	}
-	System.out.println("Total transfers: " + transferCount);
-	System.out.println("Num finished: " + finished);
-	System.out.println("Num retrying: " + retrying);
-	System.out.println("Num failed: " + failed);
-	System.out.println("Num active: " + active);
-	System.out.println("Num pending: " + pending);
-	System.out.println("Num cancelled: " + cancelled);
-	System.exit(0);
-    }
-
-    public void deliverNotification(ExtensibilityType ext) throws RemoteException {
-	ServiceDataValuesType serviceData = (ServiceDataValuesType)AnyHelper.getAsServiceDataValues(ext);
-	FileTransferStatusElement sftse = (FileTransferStatusElement)AnyHelper.getAsSingleObject(serviceData, FileTransferStatusElement.class);
-	FileTransferJobStatusType jstat = sftse.getRequestStatus();
-	TransferStatusType status = jstat.getStatus();
-	String destination = jstat.getDestinationUrl();
-	synchronized(requests) {
-	    requests.put(destination, status);
-	    if (status == TransferStatusType.Finished || status == TransferStatusType.Failed || status == TransferStatusType.Cancelled) {
-		numDone++;
+	    try {
+	        nm.removeListener(sink);
+	    } catch (Exception e) {
+	        System.out.println("Unable to remove listener");
 	    }
-	}
-	if (numDone == transferCount) {
-	    printAndExit();
-	}
+
+	    Set keySet = requests.keySet();
+	    for (Iterator iter = keySet.iterator(); iter.hasNext(); ) {
+	        TransferStatusType status = (TransferStatusType)requests.get((String) iter.next());
+	        if (status == TransferStatusType.Finished)
+		    finished++;
+	        else if (status == TransferStatusType.Retrying)
+		    retrying++;
+	        else if (status == TransferStatusType.Failed)
+		    failed++;
+	        else if (status == TransferStatusType.Active)
+		    active++;
+	        else if (status == TransferStatusType.Pending)
+		    pending++;
+	        else if (status == TransferStatusType.Cancelled)
+		    cancelled++;
+	    }
+	    System.out.println("Total transfers: " + transferCount);
+	    System.out.println("Num finished: " + finished);
+	    System.out.println("Num retrying: " + retrying);
+	    System.out.println("Num failed: " + failed);
+	    System.out.println("Num active: " + active);
+	    System.out.println("Num pending: " + pending);
+	    System.out.println("Num cancelled: " + cancelled);
+	    System.exit(0);
+   }
+    
+    public void deliverNotification(ExtensibilityType ext) throws RemoteException {
+    	ServiceDataValuesType serviceData = (ServiceDataValuesType)
+            AnyHelper.getAsServiceDataValues(ext);
+	    FileTransferStatusElement sftse = (FileTransferStatusElement)
+            AnyHelper.getAsSingleObject(serviceData, FileTransferStatusElement.class);
+	    FileTransferJobStatusType jstat = sftse.getRequestStatus();
+    	TransferStatusType status = jstat.getStatus();
+	    String destination = jstat.getDestinationUrl();
+    	synchronized(requests) {
+	        requests.put(destination, status);
+	        if (status == TransferStatusType.Finished || 
+                status == TransferStatusType.Failed || 
+                status == TransferStatusType.Cancelled) {
+		    numDone++;
+	        }
+	    }
+	    if (numDone == transferCount) {
+	        printAndExit();
+	    }
     }
 
     public static void main(String[] args) {

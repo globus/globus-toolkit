@@ -185,10 +185,13 @@ public class RftImpl
                         TransferJob.STATUS_PENDING,
                         0 );
                 processURLs( transferJob );
+                transferJob.setTransferId(transferCount);
+                dbAdapter.update(transferJob);
                 TransferThread transferThread = new TransferThread( transferJob );
                 transferThread.start();
                 activeTransferThreads.add( transferThread );
                 temp = temp + 1;
+                transferCount = transferCount + 1;
             }
         } catch ( Exception e ) {
             logger.error( "Error in start " + e.toString(), e );
@@ -819,17 +822,19 @@ public class RftImpl
                             } catch ( InterruptedException ie ) {
                             }
                         }
-                        TransferJob newTransferJob1 = dbAdapter.getTransferJob(
-                                requestId );
-                        if ( newTransferJob1 == null ) {
-                            logger.debug( "No more transfers " );
-                        } else {
-                            transferThread = new TransferThread( newTransferJob1 );
-                            transferThread.start();
-                            newTransferJob1.setStatus( TransferJob.STATUS_ACTIVE );
-                            statusChanged( newTransferJob1 );
-                        }
-                    }
+						int tempConc = 0;
+                        
+                        TransferJob newTransferJob1 = dbAdapter.getTransferJob(requestId);
+                    	if ( newTransferJob1 == null ) {
+                            	logger.debug( "No more transfers " );
+                        	} else {
+                            	transferThread = new TransferThread( newTransferJob1 );
+                            	transferThread.start();
+                            	newTransferJob1.setStatus( TransferJob.STATUS_ACTIVE );
+                            	statusChanged( newTransferJob1 );
+                        	}
+
+					}
                 }
             } catch ( Exception ioe ) {
                 logger.error( "Error in Transfer Thread" + ioe.toString(), ioe );
