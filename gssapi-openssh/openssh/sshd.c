@@ -1494,7 +1494,7 @@ do_ssh1_kex(void)
     Buffer buf;
     unsigned char *data;
     unsigned int data_len;
-    extern unsigned char ssh_key_digest[];      /* in auth_gssapi.c */
+    extern unsigned char ssh1_key_digest[];      /* in gss-serv.c */
 
 
     debug("Calculating MD5 hash of server and host keys...");
@@ -1517,7 +1517,7 @@ do_ssh1_kex(void)
     /* And hash it */
     MD5_Init(&md5context);
     MD5_Update(&md5context, data, data_len);
-    MD5_Final(ssh_key_digest, &md5context);
+    MD5_Final(ssh1_key_digest, &md5context);
 
     /* Clean up */
     buffer_clear(&buf);
