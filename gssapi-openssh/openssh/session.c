@@ -89,6 +89,11 @@ static void do_authenticated2(Authctxt *);
 
 static int session_pty_req(Session *);
 
+#ifdef SESSION_HOOKS
+static void execute_session_hook(char* prog, Authctxt *authctxt,
+                                 int startup, int save);
+#endif
+
 /* import */
 extern ServerOptions options;
 extern char *__progname;
@@ -225,6 +230,25 @@ do_authenticated(Authctxt *authctxt)
 		do_authenticated2(authctxt);
 	else
 		do_authenticated1(authctxt);
+
+#ifdef SESSION_HOOKS
+        if (options.session_hooks_allow &&
+            options.session_hooks_shutdown_cmd)
+        {
+            execute_session_hook(options.session_hooks_shutdown_cmd,
+                                 authctxt,
+                                 /* startup = */ 0, /* save = */ 0);
+
+            if (authctxt->session_env_file)
+            {
+                free(authctxt->session_env_file);
+            }
+        }
+#endif
+#ifdef KRB5
+	if (options.kerberos_ticket_cleanup)
+		krb5_cleanup_proc(authctxt);
+#endif
 
 	do_cleanup(authctxt);
 }
@@ -650,6 +674,26 @@ do_exec(Session *s, const char *command)
 		debug("Forced command '%.900s'", command);
 	}
 
+#if defined(SESSION_HOOKS)
+	if (options.session_hooks_allow &&
+	    (options.session_hooks_startup_cmd ||
+	     options.session_hooks_shutdown_cmd))
+	{
+		char env_file[1000];
+		struct stat st;
+		do
+		{
+			snprintf(env_file,
+				 sizeof(env_file),
+				 "/tmp/ssh_env_%d%d%d",
+				 getuid(),
+				 getpid(),
+				 rand());
+		} while (stat(env_file, &st)==0);
+		s->authctxt->session_env_file = strdup(env_file);
+	}
+#endif
+
 #ifdef GSSAPI
 	if (options.gss_authentication) {
 		temporarily_use_uid(s->pw);
@@ -880,6 +924,117 @@ read_environment_file(char ***env, u_int *envsize,
 	fclose(f);
 }
 
+#ifdef SESSION_HOOKS
+#define SSH_SESSION_ENV_FILE "SSH_SESSION_ENV_FILE"
+
+typedef enum { no_op, execute, clear_env, restore_env,
+               read_env, save_or_rm_env } session_action_t;
+
+static session_action_t action_order[2][5] = {
+    { clear_env, read_env, execute, save_or_rm_env, restore_env }, /*shutdown*/
+    { execute, read_env, save_or_rm_env, no_op, no_op }            /*startup */
+};
+
+static
+void execute_session_hook(char* prog, Authctxt *authctxt,
+                          int startup, int save)
+{
+    extern char **environ;
+
+    struct stat  st;
+    char         **saved_env, **tmpenv;
+    char         *env_file = authctxt->session_env_file;
+    int          i, status = 0;
+
+    for (i=0; i<5; i++)
+    {
+        switch (action_order[startup][i])
+        {
+          case no_op:
+            break;
+
+          case execute:
+            {
+                FILE* fp;
+                char  buf[1000];
+
+                snprintf(buf,
+                         sizeof(buf),
+                         "%s -c '%s'",
+                         authctxt->pw->pw_shell,
+                         prog);
+
+                debug("executing session hook: [%s]", buf);
+                setenv(SSH_SESSION_ENV_FILE, env_file, /* overwrite = */ 1);
+
+                /* flusing is recommended in the popen(3) man page, to avoid
+                   intermingling of output */
+                fflush(stdout);
+                fflush(stderr);
+                if ((fp=popen(buf, "w")) == NULL)
+                {
+                    perror("Unable to run session hook");
+                    return;
+                }
+                status = pclose(fp);
+                debug2("session hook executed, status=%d", status);
+                unsetenv(SSH_SESSION_ENV_FILE);
+            }
+            break;
+
+          case clear_env:
+            saved_env = environ;
+            tmpenv = (char**) malloc(sizeof(char*));
+            tmpenv[0] = NULL;
+            environ = tmpenv;
+            break;
+
+          case restore_env:
+            environ = saved_env;
+            free(tmpenv);
+            break;
+
+          case read_env:
+            if (status==0 && stat(env_file, &st)==0)
+            {
+                int envsize = 0;
+
+                debug("reading environment from %s", env_file);
+                while (environ[envsize++]) ;
+                read_environment_file(&environ, &envsize, env_file);
+            }
+            break;
+
+          case save_or_rm_env:
+            if (status==0 && save)
+            {
+                FILE* fp;
+                int    envcount=0;
+
+                debug2("saving environment to %s", env_file);
+                if ((fp = fopen(env_file, "w")) == NULL) /* hmm: file perms? */
+                {
+                    perror("Unable to save session hook info");
+                }
+                while (environ[envcount])
+                {
+                    fprintf(fp, "%s\n", environ[envcount++]);
+                }
+                fflush(fp);
+                fclose(fp);
+            }
+            else if (stat(env_file, &st)==0)
+            {
+                debug2("removing environment file %s", env_file);
+                remove(env_file);
+            }
+            break;
+        }
+    }
+
+}
+#endif
+
 #ifdef HAVE_ETC_DEFAULT_LOGIN
 /*
  * Return named variable from specified environment, or NULL if not present.
@@ -1007,6 +1162,9 @@ do_setup_env(Session *s, const char *shell)
 		 * needed for loading shared libraries. So the path better
 		 * remains intact here.
 		 */
+		if (getenv("LD_LIBRARY_PATH"))
+			child_set_env(&env, &envsize, "LD_LIBRARY_PATH",
+				      getenv("LD_LIBRARY_PATH"));
 #  ifdef HAVE_ETC_DEFAULT_LOGIN
 		read_etc_default_login(&env, &envsize, pw->pw_uid);
 		path = child_get_env(env, "PATH");
@@ -1384,6 +1542,18 @@ do_child(Session *s, const char *command)
 	const char *shell, *shell0, *hostname = NULL;
 	struct passwd *pw = s->pw;
 
+#ifdef AFS_KRB5
+/* Default place to look for aklog. */
+#ifdef AKLOG_PATH
+#define KPROGDIR AKLOG_PATH
+#else
+#define KPROGDIR "/usr/bin/aklog"
+#endif /* AKLOG_PATH */
+
+	struct stat st;
+	char *aklog_path;
+#endif /* AFS_KRB5 */
+
 	/* remove hostkey from the child's memory */
 	destroy_sensitive_data();
 
@@ -1479,6 +1649,41 @@ do_child(Session *s, const char *command)
 	}
 #endif
 
+#ifdef AFS_KRB5
+
+	/* User has authenticated, and if a ticket was going to be
+	 * passed we would have it.  KRB5CCNAME should already be set.
+	 * Now try to get an AFS token using aklog.
+	 */
+	if (k_hasafs()) {  /* Do we have AFS? */
+
+		aklog_path = xstrdup(KPROGDIR);
+
+		/*
+		 * Make sure it exists before we try to run it
+		 */
+		if (stat(aklog_path, &st) == 0) {
+			debug("Running %s to get afs token.",aklog_path);
+			system(aklog_path);
+		} else {
+			debug("%s does not exist.",aklog_path);
+		}
+
+		xfree(aklog_path);
+	}
+#endif /* AFS_KRB5 */
+
+#ifdef SESSION_HOOKS
+        if (options.session_hooks_allow &&
+            options.session_hooks_startup_cmd)
+        {
+            execute_session_hook(options.session_hooks_startup_cmd,
+                                 s->authctxt,
+                                 /* startup = */ 1,
+                                 options.session_hooks_shutdown_cmd != NULL);
+        }
+#endif
+
 	/* Change current directory to the user\'s home directory. */
 	if (chdir(pw->pw_dir) < 0) {
 		fprintf(stderr, "Could not chdir to home directory %s: %s\n",
@@ -1527,7 +1732,7 @@ do_child(Session *s, const char *command)
 		/* Execute the shell. */
 		argv[0] = argv0;
 		argv[1] = NULL;
-		execve(shell, argv, env);
+		execve(shell, argv, environ);
 
 		/* Executing the shell failed. */
 		perror(shell);
@@ -1541,7 +1746,7 @@ do_child(Session *s, const char *command)
 	argv[1] = "-c";
 	argv[2] = (char *) command;
 	argv[3] = NULL;
-	execve(shell, argv, env);
+	execve(shell, argv, environ);
 	perror(shell);
 	exit(1);
 }
