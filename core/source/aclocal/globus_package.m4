@@ -34,9 +34,9 @@ if test "x$GLOBUS_INSTALL_PATH" = "x"; then
 fi
 
 # get the environment scripts
-. $GLOBUS_INSTALL_PATH/etc/globus-sh-tools.sh
+. $GLOBUS_INSTALL_PATH/libexec/globus-sh-tools.sh
 
-. $GLOBUS_INSTALL_PATH/etc/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+. $GLOBUS_INSTALL_PATH/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 
 prefix='$(GLOBUS_INSTALL_PATH)'
 exec_prefix='$(GLOBUS_INSTALL_PATH)'
