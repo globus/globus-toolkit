@@ -308,7 +308,7 @@ g_send_data(
         transflag = 0;
         retrieve_is_data = 1;
 
-        goto clean_exit;
+        goto data_err;
     }
     transflag++;
     switch (type) 
@@ -713,17 +713,18 @@ g_send_data(
               handle,
               data_close_callback,
               (void*)&monitor);
-    /*
-     *  wait for all the callbacks and the close callback 
-     */
-    globus_mutex_lock(&monitor.mutex);
-    {   
-        while(!monitor.done || monitor.count < cb_count)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&monitor.mutex);
+        {   
+            while(!monitor.done || monitor.count < cb_count)
+            {
+                globus_cond_wait(&monitor.cond, &monitor.mutex);
+            }
         }
+        globus_mutex_unlock(&monitor.mutex);
     }
-    globus_mutex_unlock(&monitor.mutex);
+
     if(buf != GLOBUS_NULL)
     {
         globus_free(buf);
@@ -748,21 +749,6 @@ g_send_data(
 
   clean_exit:
 
-/*
-    monitor.done = GLOBUS_FALSE;
-    res = globus_ftp_control_data_force_close(
-              handle,
-              data_close_callback,
-              (void*)&monitor);
-    globus_mutex_lock(&monitor.mutex);
-    {   
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
-        }
-    }
-    globus_mutex_unlock(&monitor.mutex);
-*/
     wu_monitor_destroy(&monitor);
     return (1);
 }
@@ -826,7 +812,7 @@ g_receive_data(
     int                                      netfd;
     int                                      filefd;
     globus_bool_t                            eof = GLOBUS_FALSE;
-    globus_i_wu_montor_t                     monitor;
+    globus_i_wu_montor_t *                   monitor;
     globus_result_t                          res;
     int                                      ctr;
     int                                      cb_count = 0;
@@ -836,34 +822,33 @@ g_receive_data(
     size_t                                   buffer_size = BUFSIZ;
 #endif
 
-    wu_monitor_init(&monitor);
+monitor = globus_malloc(sizeof(globus_i_wu_montor_t));
+    wu_monitor_init(monitor);
 
     res = globus_ftp_control_data_connect_read(
               handle,
               connect_callback,
-              (void *)&monitor);
+              (void *)monitor);
     if(res != GLOBUS_SUCCESS)
     {
+        goto data_err;
     }
 
-    globus_mutex_lock(&monitor.mutex);
+    globus_mutex_lock(&monitor->mutex);
     {
-        while(!monitor.done)
+        while(!monitor->done)
         {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
+            globus_cond_wait(&monitor->cond, &monitor->mutex);
         }
     }
-    globus_mutex_unlock(&monitor.mutex);
+    globus_mutex_unlock(&monitor->mutex);
 
     if (wu_setjmp(urgcatch))
     {
         alarm(0);
         transflag = 0;
-        if (buf)
-        {
-            (void) free(buf);
-        }
-        return (-1);
+ 
+        goto data_err;
     }
     transflag++;
     switch (type) 
@@ -880,10 +865,10 @@ g_receive_data(
         (void) signal(SIGALRM, g_alarm_signal);
         alarm(timeout_data);
 
-        monitor.count = 0;
-        monitor.done = GLOBUS_FALSE;
-        monitor.fd = filefd;
-        /* TODO: serval outstanding reads at once */
+        monitor->count = 0;
+        monitor->done = GLOBUS_FALSE;
+        monitor->fd = filefd;
+        cb_count = 0;
         for(ctr = 0; ctr < OUTSTANDING_READ_COUNT; ctr++)
         {
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
@@ -897,7 +882,7 @@ g_receive_data(
                       buf,
                       buffer_size,
                       data_read_callback,
-                      (void *)&monitor);
+                      (void *)monitor);
             if(res != GLOBUS_SUCCESS)
             {
                 globus_free(buf);
@@ -906,17 +891,17 @@ g_receive_data(
             cb_count++;
         }
 
-        globus_mutex_lock(&monitor.mutex);
+        globus_mutex_lock(&monitor->mutex);
         {
-            while(!monitor.done && monitor.count < cb_count)
+            while(!monitor->done && monitor->count < cb_count)
             {
-                globus_cond_wait(&monitor.cond, &monitor.mutex);
+                globus_cond_wait(&monitor->cond, &monitor->mutex);
             }
         }
-        globus_mutex_unlock(&monitor.mutex);
+        globus_mutex_unlock(&monitor->mutex);
         
    
-        if(monitor.done || g_timeout_occured)
+        if(monitor->done || g_timeout_occured)
         {
             goto data_err;
         }
@@ -950,23 +935,23 @@ g_receive_data(
     /*
      *  force close the data connection
      */
-    monitor.done = GLOBUS_FALSE;
+    monitor->done = GLOBUS_FALSE;
     res = globus_ftp_control_data_force_close(
               handle,
               data_close_callback,
-              (void*)&monitor);
+              (void*)monitor);
 
-    /*
-     *  wait for all the callbacks and the close callback 
-     */
-    globus_mutex_lock(&monitor.mutex);
-    {   
-        while(!monitor.done || monitor.count < cb_count)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_mutex_lock(&monitor->mutex);
+        {   
+            while(!monitor->done || monitor->count < cb_count)
+            {
+                globus_cond_wait(&monitor->cond, &monitor->mutex);
+            }
         }
+        globus_mutex_unlock(&monitor->mutex);
     }
-    globus_mutex_unlock(&monitor.mutex);
 
     alarm(0);
     transflag = 0;
@@ -980,7 +965,7 @@ g_receive_data(
     return (-1);
 
   clean_exit:
-    wu_monitor_destroy(&monitor);
+    wu_monitor_destroy(monitor);
     return (0);
 }
 
@@ -1030,6 +1015,7 @@ data_read_callback(
     {
         if(error != GLOBUS_NULL)
         {
+            monitor->count++;
             monitor->done = GLOBUS_TRUE;
             globus_cond_signal(&monitor->cond);
             globus_mutex_unlock(&monitor->mutex);
