@@ -1,4 +1,3 @@
-share/Ssh.bin
 bin/ssh
 bin/scp
 bin/scp.real
@@ -9,7 +8,6 @@ bin/ssh-keyscan
 bin/sftp
 bin/sftp.real
 sbin/sshd
-sbin/sshd.real
 man/man1/ssh.1
 man/man1/scp.1
 man/man1/ssh-add.1
