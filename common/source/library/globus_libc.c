@@ -2009,6 +2009,35 @@ globus_libc_gethomedir(char *result, int bufsize)
 
 #endif /* TARGET_ARCH_WIN32 */
 
+globus_byte_t *
+globus_libc_memrchr(
+    globus_byte_t *                         s,
+    globus_byte_t                           c,
+    globus_size_t                           n)
+{
+    globus_byte_t *                         tmp_ptr;
+
+    tmp_ptr = &s[n];
+    while(tmp_ptr != s)
+    {
+        if(*tmp_ptr == c)
+        {
+            return tmp_ptr;
+        }
+        tmp_ptr--;
+    }
+
+    return NULL;
+}
+
+char *
+globus_libc_strtok(
+    char *                                  s,
+    const char *                            delim)
+{
+    return strtok(s, delim);
+}
+
 char *
 globus_libc_strdup(const char * string)
 {
@@ -2048,6 +2077,44 @@ globus_libc_strdup(const char * string)
     return ns;
 }
 /* globus_libc_strdup */
+
+char *
+globus_libc_strndup(const char * string, globus_size_t length)
+{
+    static globus_mutex_t   strdup_mutex;
+    static int              initialized = GLOBUS_FALSE;
+    char *                  ns;
+    int                     i;
+
+    globus_libc_lock();
+    if (!initialized)
+    {
+        globus_mutex_init(&strdup_mutex, (globus_mutexattr_t *) GLOBUS_NULL);
+        initialized = GLOBUS_TRUE;
+    }
+    globus_libc_unlock();
+
+    globus_mutex_lock(&strdup_mutex);
+
+    ns = GLOBUS_NULL;
+
+    if (string)
+    {
+        ns = globus_malloc (sizeof(char *) * (length + 1));
+
+        if (ns)
+        {
+            for (i=0; i<length; i++)
+                ns[i] = string[i];
+                                                                                
+            ns[length] = '\0';
+        }
+    }
+
+    globus_mutex_unlock(&strdup_mutex);
+    return ns;
+}
+/* globus_libc_strndup */
 
 
 /*

@@ -197,6 +197,12 @@ extern void *globus_libc_alloca(size_t bytes);
 extern void *alloca(size_t bytes);
 #endif /* TARGET_ARCH_CRAYT3E */
 
+globus_byte_t *
+globus_libc_memrchr(
+    globus_byte_t *                         s,
+    globus_byte_t                           c,
+    globus_size_t                           n);
+
 /* Never a macro because globus_off_t must match largefile definition */
 extern int globus_libc_lseek(int fd, globus_off_t offset, int whence);
 
@@ -251,6 +257,20 @@ char *globus_libc_system_error_string(int the_error);
 
 char *
 globus_libc_strdup(const char * source);
+
+char *
+globus_libc_strndup(const char * string, globus_size_t length);
+
+char *
+globus_libc_strtok(
+    char *                                  s, 
+    const char *                            delim);
+
+#define globus_libc_strcmp strcmp
+#define globus_libc_strlen strlen
+
+globus_size_t
+globus_libc_strlen(const char * string);
 
 int
 globus_libc_vprintf_length(const char * fmt, va_list ap);
