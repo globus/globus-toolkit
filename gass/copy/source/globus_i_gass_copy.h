@@ -49,7 +49,7 @@ typedef struct
 {
     globus_byte_t *                     bytes;
     globus_size_t                       nbytes;
-    globus_size_t                       offset;
+    globus_off_t                        offset;
     globus_bool_t                       last_data;
 } globus_i_gass_copy_buffer_t;
 
@@ -131,13 +131,13 @@ typedef struct globus_i_gass_copy_state_target_s
     /**
      * The total number of bytes transfered
      */
-    unsigned long                               n_bytes_transfered;
+    globus_off_t                                n_bytes_transfered;
 
     /**
      * The total number of bytes transfered in this time period.
      * Used to determine the transfer rate.
      */
-    int                                         n_bytes_in_period;
+    globus_off_t                                n_bytes_in_period;
 
     /**
      * signifies the target has been successfully setup

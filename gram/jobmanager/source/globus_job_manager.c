@@ -59,8 +59,8 @@ CVS Information:
 
 typedef struct globus_l_gram_output_s
 {
-    off_t            last_written;
-    off_t            last_size;
+    globus_off_t            last_written;
+    globus_off_t            last_size;
     char *           cache_file;
     globus_bool_t    ok;
     int              poll_frequency;
@@ -3552,8 +3552,8 @@ globus_i_filename_callback_func(int stdout_flag)
         return GLOBUS_NULL;
     }
 
-    output_handle->last_written = (off_t) 0;
-    output_handle->last_size = (off_t) 0;
+    output_handle->last_written = (globus_off_t) 0;
+    output_handle->last_size = (globus_off_t) 0;
     output_handle->ok = GLOBUS_TRUE;
     output_handle->poll_frequency = 1;
     output_handle->poll_counter = 1;
@@ -3650,8 +3650,8 @@ globus_l_gram_check_file(int out_fd,
     if(file_status.st_size != output->last_size)
     {
         char tmp_char;
-        off_t loc;
-        off_t last_nl = (off_t) output->last_written;
+        globus_off_t loc;
+        globus_off_t last_nl = (globus_off_t) output->last_written;
         file_changed = 1;
         fd = globus_libc_open(output->cache_file,
                               O_RDONLY);
@@ -3678,7 +3678,7 @@ globus_l_gram_check_file(int out_fd,
         }
 
         if ((output->last_size - output->last_written > 4096) &&
-            (last_nl == (off_t) output->last_written))
+            (last_nl == (globus_off_t) output->last_written))
         {
             last_nl = output->last_size;
         }
@@ -3686,7 +3686,7 @@ globus_l_gram_check_file(int out_fd,
         /* read the file until the newline above, writing as we go */
         if(last_nl != output->last_written)
         {
-            off_t amt_to_write = last_nl - output->last_written;
+            globus_off_t amt_to_write = last_nl - output->last_written;
             lseek(fd,
                   output->last_written,
                   SEEK_SET);
@@ -3796,7 +3796,7 @@ globus_l_gram_delete_file_list(int output_fd, globus_list_t **handle_list)
 
         if(output->last_written != file_status.st_size)
         {
-            off_t amt_to_write = file_status.st_size - output->last_written;
+            globus_off_t amt_to_write = file_status.st_size - output->last_written;
 
             fd = globus_libc_open(output->cache_file,
                                   O_RDONLY);

@@ -646,7 +646,7 @@ globus_l_gass_copy_ftp_read_callback(
     globus_object_t *               error,
     globus_byte_t *                 bytes,
     globus_size_t                   nbytes,
-    globus_size_t                   offset,
+    globus_off_t                    offset,
     globus_bool_t		    eof);
 
 globus_result_t
@@ -720,7 +720,7 @@ globus_l_gass_copy_ftp_write_callback(
     globus_object_t *            error,
     globus_byte_t *              bytes,
     globus_size_t                nbytes,
-    globus_size_t                offset,
+    globus_off_t                 offset,
     globus_bool_t		 eof);
 
 globus_result_t
@@ -2379,7 +2379,7 @@ globus_l_gass_copy_generic_read_callback(
     globus_gass_copy_handle_t *    handle,
     globus_byte_t *                 bytes,
     globus_size_t                   nbytes,
-    globus_size_t                   offset,
+    globus_off_t                    offset,
     globus_bool_t                   last_data)
 {
     globus_gass_copy_state_t *    state = handle->state;
@@ -2472,7 +2472,7 @@ globus_l_gass_copy_ftp_read_callback(
     globus_object_t *               error,
     globus_byte_t *                 bytes,
     globus_size_t                   nbytes,
-    globus_size_t                   offset,
+    globus_off_t                    offset,
     globus_bool_t		    eof)
 {
     globus_gass_copy_handle_t * copy_handle
@@ -2542,7 +2542,7 @@ globus_l_gass_copy_gass_read_callback(
     globus_size_t                   nbytes,
     globus_bool_t                   last_data)
 {
-    globus_size_t offset;
+    globus_off_t offset;
     int req_status;
     globus_object_t * err;
     static char * myname="globus_l_gass_copy_gass_read_callback";
@@ -2633,7 +2633,7 @@ globus_l_gass_copy_io_read_callback(
     globus_byte_t *                 bytes,
     globus_size_t                   nbytes)
 {
-    globus_size_t offset;
+    globus_off_t offset;
     globus_object_t * err = GLOBUS_NULL;
     globus_bool_t last_data=GLOBUS_FALSE;
     globus_gass_copy_handle_t * handle
@@ -2720,9 +2720,9 @@ globus_l_gass_copy_io_read_callback(
 void
 globus_l_gass_copy_generic_write_callback(
     globus_gass_copy_handle_t *    handle,
-    globus_byte_t *                 bytes,
-    globus_size_t                   nbytes,
-    globus_size_t                   offset)
+    globus_byte_t *                bytes,
+    globus_size_t                  nbytes,
+    globus_off_t                   offset)
 {
     globus_gass_copy_state_t * state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
@@ -3058,7 +3058,7 @@ globus_l_gass_copy_ftp_write_callback(
     globus_object_t *            error,
     globus_byte_t *              bytes,
     globus_size_t                nbytes,
-    globus_size_t                offset,
+    globus_off_t                 offset,
     globus_bool_t		 eof)
 {
     globus_gass_copy_handle_t * copy_handle
