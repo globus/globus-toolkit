@@ -20,8 +20,8 @@ static char *rcsid = "$Id$";
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
 /**
- * @defgroup globus_gsi_gssapi_buffer_set 
- * Functions for manipulating a buffer set
+ * @defgroup globus_gsi_gssapi_buffer_set Functions for manipulating a buffer set
+ *
  */
 
 /**

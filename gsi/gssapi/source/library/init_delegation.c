@@ -20,6 +20,10 @@
 static char *rcsid = "$Id$";
 
 /**
+ * @name Init Delegation
+ */
+/*@{*/
+/**
  * Initiate the delegation of a credential.
  *
  * This functions drives the initiating side of the credential

@@ -18,6 +18,10 @@ static char *rcsid = "$Id$";
 
 #include "globus_gsi_cert_utils.h"
 
+/**
+ * @name Init Sec Context
+ */
+/*@{*/
 OM_uint32 
 GSS_CALLCONV gss_init_sec_context(
     OM_uint32 *                         minor_status,
