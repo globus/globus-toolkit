@@ -64,11 +64,19 @@ esac
 
 AC_SUBST(GLOBUS_THREADS)
 
+LAC_DOXYGEN(["Globus Common"],
+	    ["../library"])
+
+GLOBUS_FINALIZE
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
+	doxygen/Makefile
+	doxygen/Doxyfile 
+	doxygen/Doxyfile-internal	
 	tests/run-tests
 	tests/globus_thread_test.sh
 	tests/Makefile
@@ -79,4 +87,3 @@ AC_OUTPUT(
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
 
 )
-

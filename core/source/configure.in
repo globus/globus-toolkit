@@ -12,6 +12,7 @@ AC_ARG_WITH(
     [globus_cv_flavor="$withval"],
     [globus_cv_flavor="notset"])
 
+
 if test "$globus_cv_flavor" = "notset" \
      -o "$globus_cv_flavor" = "no" \
      -o "$globus_cv_flavor" = "yes" ; then
@@ -73,6 +74,7 @@ AC_OUTPUT(Makefile
 	scripts/globus_build_config.pl
 	aclocal/Makefile
 	config/Makefile
+	doxygen/Makefile
 	tests/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt

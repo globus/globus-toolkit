@@ -61,6 +61,7 @@
 
 #undef GLOBUS_OFF_T
 #undef GLOBUS_OFF_T_FORMAT
+#undef SIZEOF_OFF_T
 
 #undef GLOBUS_TIMESPEC_EXISTS
 

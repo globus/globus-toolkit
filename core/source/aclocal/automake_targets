@@ -12,6 +12,9 @@ pkgdir = $(GLOBUS_INSTALL_PATH)/etc/globus_packages/$(PACKAGE)
 aclocaldir = $(GLOBUS_INSTALL_PATH)/share/globus_aclocal
 ## aclocal = [ DATA ]
 
+doxygendir = $(GLOBUS_INSTALL_PATH)/share/doxygen
+## doxygen = [ DATA ]
+
 docdir = $(GLOBUS_INSTALL_PATH)/share/doc
 ## doc = [ DATA ]
 

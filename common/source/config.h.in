@@ -73,6 +73,7 @@
 
 #undef GLOBUS_OFF_T
 #undef GLOBUS_OFF_T_FORMAT
+#undef SIZEOF_OFF_T
 
 #undef GLOBUS_TIMESPEC_EXISTS
 
@@ -90,9 +91,6 @@
 
 /* The number of bytes in a long long.  */
 #undef SIZEOF_LONG_LONG
-
-/* The number of bytes in a off_t.  */
-#undef SIZEOF_OFF_T
 
 /* The number of bytes in a short.  */
 #undef SIZEOF_SHORT

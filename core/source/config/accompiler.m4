@@ -25,6 +25,7 @@ dnl   ARFLAGS
 dnl   RANLIB
 dnl   CXX_WORKS
 dnl   CROSS
+dnl   INSURE
 dnl   F77
 dnl   F77FLAGS
 dnl   F90
@@ -52,6 +53,7 @@ dnl   lac_cv_ARFLAGS
 dnl   lac_cv_RANLIB
 dnl   lac_cv_CXX_WORKS
 dnl   lac_cv_CROSS
+dnl   lac_cv_INSURE
 dnl   lac_cv_F77
 dnl   lac_cv_F77FLAGS
 dnl   lac_cv_F90
@@ -78,6 +80,41 @@ AC_ARG_ENABLE(64bit,
 	[  --enable-64bit                build 64-bit objects (SGI Irix 6.x and HP HPUX 11.x only)],
 	[lac_cv_build_64bit="$enableval"],
 	[lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
+
+AC_ARG_ENABLE(insure,
+ 	changequote(<<, >>)dnl	
+  <<--enable-insure[=PATH]	use Insure++ [default=insure]>>,
+	changequote([, ])dnl
+	[
+		if test "$enableval" = "yes"; then
+			lac_cv_INSURE="insure"
+		else
+			lac_cv_INSURE="$enableval"
+		fi 
+	],
+	[
+		lac_cv_INSURE=""
+	])
+
+AC_ARG_ENABLE(doxygen,
+ 	changequote(<<, >>)dnl	
+  <<--enable-doxygen[=PATH]	use Doxygen to generate documentation>>,
+	changequote([, ])dnl
+	[
+		if test "$enableval" = "yes"; then
+			AC_PATH_PROG(lac_cv_DOXYGEN,
+				doxygen,
+				[
+					AC_MSG_ERROR(Doxygen installation not found)
+				])
+		else
+			lac_cv_DOXYGEN="$enableval"
+		fi 
+	],
+	[
+		lac_cv_DOXYGEN=""
+	])
+		 
 
 AC_ARG_WITH(mp,
 	[  --with-mp=protocol            include the IBM SP MPL, MPI, or Paragon INX protocols],
@@ -218,6 +255,8 @@ LAC_SUBSTITUTE_COMPILER_VAR(LIBS)
 LAC_SUBSTITUTE_COMPILER_VAR(AR)
 LAC_SUBSTITUTE_COMPILER_VAR(ARFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(RANLIB)
+LAC_SUBSTITUTE_COMPILER_VAR(INSURE)
+LAC_SUBSTITUTE_COMPILER_VAR(DOXYGEN)
 LAC_SUBSTITUTE_COMPILER_VAR(F77)
 LAC_SUBSTITUTE_COMPILER_VAR(CROSS)
 LAC_SUBSTITUTE_COMPILER_VAR(F77FLAGS)
