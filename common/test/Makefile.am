@@ -81,9 +81,11 @@ test_DATA = $(Data)
 # You can also use any directory defined by a macro of the form
 # <directory_name>dir
 test_SCRIPTS = $(Scripts)
+
 # EXTRA_DIST is used to include files in 
 # a source distribution that automake fails to detect.
-EXTRA_DIST = $(Scripts)
+EXTRA_DIST = $(Scripts) $(Data)
+
 # bin_PROGRAMS is an automake macro which contains
 # a list of programs that are to be installed in a certain directory.
 # bin is $prefix/bin
