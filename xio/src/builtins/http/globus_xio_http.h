@@ -1,6 +1,10 @@
 #if !defined GLOBUS_XIO_DRIVER_HTTP_H
 #define GLOBUS_XIO_DRIVER_HTTP_H 1
 
+#include "globus_xio.h"
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup http_api Globus XIO/HTTP API
  */
@@ -338,4 +342,6 @@ typedef void (*globus_xio_http_response_ready_callback_t) (
     globus_xio_http_version_t           version,
     globus_hashtable_t                  headers);
 
-#endif
+EXTERN_C_END
+
+#endif /* GLOBUS_XIO_DRIVER_HTTP_H */
