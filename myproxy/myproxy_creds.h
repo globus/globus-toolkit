@@ -83,6 +83,19 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
 int myproxy_creds_delete(const struct myproxy_creds *creds);
 
 /*
+ * myproxy_creds_change_passphrase()
+ *
+ * Change the passphrase of the credential specified by the username
+ * and credential name to new_passphrase.
+ * The current passphrase must be present in the myproxy_creds struct.
+ *
+ * Returns -1 on error, 0 on success
+ */
+
+int myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
+				    const char *new_passphrase);
+ 
+/*
  * myproxy_creds_exist()
  *
  * Check to see if the given user already has credentials stored.

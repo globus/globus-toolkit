@@ -26,6 +26,7 @@
 #define MYPROXY_COMMAND_STRING      "COMMAND="
 #define MYPROXY_USERNAME_STRING     "USERNAME="
 #define MYPROXY_PASSPHRASE_STRING   "PASSPHRASE="
+#define MYPROXY_NEW_PASSPHRASE_STRING "NEW_PHRASE="
 #define MYPROXY_LIFETIME_STRING     "LIFETIME="
 #define MYPROXY_RETRIEVER_STRING     "RETRIEVER="
 #define MYPROXY_RENEWER_STRING     "RENEWER="
@@ -54,7 +55,8 @@ typedef enum
     MYPROXY_GET_PROXY,
     MYPROXY_PUT_PROXY,
     MYPROXY_INFO_PROXY,
-    MYPROXY_DESTROY_PROXY
+    MYPROXY_DESTROY_PROXY,
+    MYPROXY_CHANGE_CRED_PASSPHRASE
 } myproxy_proto_request_type_t;
 
 /* server response codes */
@@ -90,6 +92,7 @@ typedef struct
     char                         *version;
     char                         *username;
     char                         passphrase[MAX_PASS_LEN+1];
+    char                         new_passphrase[MAX_PASS_LEN+1];
     myproxy_proto_request_type_t command_type;
     int                          proxy_lifetime;
     char                         *retrievers;

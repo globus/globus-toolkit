@@ -493,8 +493,8 @@ copy_file(const char *source,
 /*
  * write_data_file()
  *
- * Write the data in the myproxy_creds() structure out the the
- * file name given, creating it if needed with the given mode.
+ * Write the data in the myproxy_creds structure to the
+ * file name given, creating the file if needed with the given mode.
  *
  * Returns 0 on success, -1 on error.
  */
@@ -1112,6 +1112,76 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     return_code = 0;
     
   error:
+    return return_code;
+}
+
+int
+myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
+				const char *new_passphrase)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    mode_t data_file_mode = FILE_MODE;
+    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
+    int return_code = -1;
+    SSL_CREDENTIALS *ssl_creds;
+    
+    if ((creds == NULL) || (creds->username == NULL) ||
+	(creds->passphrase == NULL)) {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+    
+    if (get_storage_locations(creds->username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path),
+			      creds->credname) == -1) {
+        goto error;
+    }
+
+    if ((ssl_creds = ssl_credentials_new()) == NULL) {
+	goto error;
+    }
+
+    if (ssl_proxy_load_from_file(ssl_creds, creds_path, creds->passphrase) !=
+	SSL_SUCCESS) {
+	goto error;
+    }
+
+    if (read_data_file(&tmp_creds, data_path) == -1) {
+        goto error;
+    }
+   
+    /* Remove and rewrite with modified password.  Crude but works */ 
+    if (unlink(data_path) == -1) {
+        verror_put_errno(errno);
+        verror_put_string("deleting credentials data file %s", data_path);
+        goto error;
+    }
+    if (ssl_proxy_file_destroy(creds_path) == SSL_ERROR) {
+        verror_put_string("deleting credentials data file %s", creds_path);
+        goto error;
+    }
+
+    /* overwrite old passphrase with new */
+    tmp_creds.passphrase = strdup(new_passphrase);
+
+    if (write_data_file(&tmp_creds, data_path, data_file_mode) == -1) {
+	verror_put_string ("Error writing data file");
+       	goto error;
+    }
+    if (ssl_proxy_store_to_file(ssl_creds, creds_path, new_passphrase) !=
+	SSL_SUCCESS) {
+	goto error;
+    }
+
+    /* Success */
+    return_code = 0;
+    
+  error:
+    myproxy_creds_free_contents(&tmp_creds);
+    ssl_credentials_destroy(ssl_creds);
+
     return return_code;
 }
 

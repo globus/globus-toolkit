@@ -113,6 +113,9 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
+void change_passwd(myproxy_creds_t *creds, char *new_passphrase,
+		   myproxy_response_t *response);
+
 static void failure(const char *failure_message); 
 
 static void my_failure(const char *failure_message);
@@ -463,6 +466,15 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_debug("  Username is \"%s\"", client_request->username);
         destroy_proxy(client_creds, server_response);
         break;
+
+    case MYPROXY_CHANGE_CRED_PASSPHRASE:
+	/* change credential passphrase*/
+	myproxy_log("Received client %s command: CHANGE_PASS", client_name);
+	myproxy_debug("  Username is \"%s\"", client_request->username);
+
+	change_passwd(client_creds, client_request->new_passphrase,
+		      server_response);
+
     default:
         server_response->error_string = strdup("Unknown command.\n");
         break;
@@ -760,6 +772,22 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
  
 }
 
+void change_passwd(myproxy_creds_t *creds, char *new_passphrase,
+		   myproxy_response_t *response) {
+    
+    myproxy_debug("Changing passphrase for username \"%s\"", creds->username);
+    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
+    
+    if (myproxy_creds_change_passphrase(creds, new_passphrase) < 0) { 
+	myproxy_log_verror();
+        response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        response->error_string = strdup("Unable to change passphrase.\n"); 
+    } else {
+	response->response_type = MYPROXY_OK_RESPONSE;
+    }
+ 
+}
+
 /*
  * my_signal
  *
@@ -925,7 +953,10 @@ become_daemon(myproxy_server_context_t *context)
  * INFO:
  *   Client DN must match accepted_credentials.
  *   Ownership checking done in info_proxy().
- *   
+ * CHANGE_CRED_PASSPHRASE:
+ *   Client DN must match accepted_credentials.
+ *   Client DN must match credential owner.
+ *   Passphrase in request must match passphrase for credentials.
  */
 static int
 myproxy_authorize_accept(myproxy_server_context_t *context,
@@ -1047,14 +1078,14 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
        if (credentials_exist == -1) {
 	   myproxy_log_verror();
-	   verror_put_string("%s","Error checking credential existence");
+	   verror_put_string("Error checking credential existence");
 	   goto end;
        }
 
        if (credentials_exist == 1) {
 	   client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_request->credname, client_name);
 	   if (client_owns_credentials == -1) {
-	       verror_put_string("%s","Error checking credential ownership");
+	       verror_put_string("Error checking credential ownership");
 	       goto end;
 	   }
 
@@ -1085,7 +1116,66 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
           stored under this username. */
 
        break;
+
+   case MYPROXY_CHANGE_CRED_PASSPHRASE:
+       /* Is this client authorized to store credentials here? */
+       authorization_ok =
+	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
+       if (authorization_ok != 1) {
+	   verror_put_string("\"%s\" not authorized to store credentials on this server", client_name);
+	   goto end;
+       }
+
+       credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
+       if (credentials_exist == 0) {
+	   verror_put_string("credential does not exist");
+	   goto end;
+       } else if (credentials_exist == -1) {
+	   verror_put_string("error checking credential existence");
+	   goto end;
+       }
+
+       client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_request->credname, client_name);
+       if (client_owns_credentials == 0) {
+	   verror_put_string("'%s' does not own the credentials",
+			     client_name);
+	   goto end;
+       } else if (client_owns_credentials == -1) {
+	   verror_put_string("Error checking credential ownership");
+	   goto end;
+       }
+
+       /* Initialize authorization data with current passphrase. */
+       if (get_client_authdata(attrs, client_request, client_name,
+                               &auth_data) < 0) {
+           verror_put_string("Unable to get client authorization data");
+           goto end;
+       }
+
+       /* get information about credential */
+       creds.username = strdup(client_request->username);
+       if (client_request->credname) {
+	   creds.credname = strdup(client_request->credname);
+       }
+       if (myproxy_creds_retrieve(&creds) < 0) {
+	   verror_put_string("Unable to retrieve credential information");
+	   goto end;
+       }
+
+       /* Does passphrase match? */
+       if (auth_data.method != AUTHORIZETYPE_PASSWD) {
+	   verror_put_string("current passphrase required when changing passphrase");
+	   goto end;
+       } else {
+	   authorization_ok = authorization_check(&auth_data, &creds, client_name);
+	   if (authorization_ok != 1) {
+	       verror_put_string("invalid pass phrase");
+	       goto end;
+	   }
+       }
+       break;
    }
+
    if (authorization_ok == -1) {
       verror_put_string("Error checking authorization");
       goto end;

@@ -1,0 +1,278 @@
+/*
+ * myproxy-cp
+ *
+ * Webserver program to change credential password stored on myproxy server
+ */
+
+#include "myproxy.h"
+#include "myproxy_log.h"
+#include "ssl_utils.h"
+#include "gnu_getopt.h"
+#include "version.h"
+#include "verror.h"
+#include "myproxy_read_pass.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/param.h>
+#include <fcntl.h> 
+#include <assert.h>
+#include <errno.h>
+#include <unistd.h>
+
+static char usage[] = \
+"\n"
+"Syntax: myproxy-cp [-l username] [-k credname] ... \n"
+"        myproxy-cp [-usage|-help] [-version]\n"
+"\n"
+"   Options\n"
+"       -h | --help                       Displays usage\n"
+"       -u | --usage                                    \n"
+"                                                      \n"
+"       -v | --verbose                    Display debugging messages\n"
+"       -V | --version                    Displays version\n"
+"       -l | --username        <username> Username for the target proxy\n"
+"       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
+"       -p | --psport          <port #>   Port of the myproxy-server\n"
+"       -d | --dn_as_username             Use the proxy certificate subject\n"
+"                                         (DN) as the default username,\n"
+"                                         instead of the LOGNAME env. var.\n"
+"       -k | --credname        <name>     Specify credential name\n"
+"\n";
+
+struct option long_options[] =
+{
+    {"help",                   no_argument, NULL, 'h'},
+    {"pshost",           required_argument, NULL, 's'},
+    {"psport",           required_argument, NULL, 'p'},
+    {"usage",                  no_argument, NULL, 'u'},
+    {"username",         required_argument, NULL, 'l'},
+    {"verbose",                no_argument, NULL, 'v'},
+    {"version",                no_argument, NULL, 'V'},
+    {"dn_as_username",   no_argument, NULL, 'd'},
+    {"credname",	 required_argument, NULL, 'k'},
+    {0, 0, 0, 0}
+};
+
+static char short_options[] = "hus:p:l:t:vVdk:";
+
+static char version[] =
+"myproxy-cp version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
+
+void 
+init_arguments(int argc, char *argv[], 
+	       myproxy_socket_attrs_t *attrs,
+	       myproxy_request_t *request); 
+
+/*
+ * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
+ * setlinebuf().
+ */
+#define my_setlinebuf(stream)	setvbuf((stream), (char *) NULL, _IOLBF, 0)
+
+static int dn_as_username = 0;
+
+int
+main(int argc, char *argv[]) 
+{    
+    char *pshost;
+    int requestlen, responselen; 
+    char request_buffer[1024], response_buffer[1024];
+    myproxy_socket_attrs_t *socket_attrs;
+    myproxy_request_t      *client_request;
+    myproxy_response_t     *server_response;
+
+    my_setlinebuf(stdout);
+    my_setlinebuf(stderr);
+
+    socket_attrs = malloc(sizeof(*socket_attrs));
+    memset(socket_attrs, 0, sizeof(*socket_attrs));
+
+    client_request = malloc(sizeof(*client_request));
+    memset(client_request, 0, sizeof(*client_request));
+
+    server_response = malloc(sizeof(*server_response));
+    memset(server_response, 0, sizeof(*server_response));
+
+    client_request->version = malloc(strlen(MYPROXY_VERSION) +1);
+    strcpy (client_request->version, MYPROXY_VERSION);
+    client_request->command_type = MYPROXY_CHANGE_CRED_PASSPHRASE;
+
+    pshost = getenv ("MYPROXY_SERVER");
+
+    if (pshost != NULL) {
+	socket_attrs->pshost = strdup(pshost);
+    }
+
+    client_request->proxy_lifetime = 0;
+    socket_attrs->psport = MYPROXY_SERVER_PORT;
+
+    /* Initialize client arguments and create client request object */
+    init_arguments(argc, argv, socket_attrs, client_request);
+
+    /*Accept credential passphrase*/
+    fprintf (stdout, "Credential Passphrase:\n");
+    if (myproxy_read_passphrase(client_request->passphrase,
+				sizeof(client_request->passphrase)) == -1) {
+	fprintf(stderr, "Error reading passphrase\n");
+	return 1;
+    }
+
+    /* Accept new passphrase */
+    fprintf (stdout, "\nNew Passphrase:\n");
+    if (myproxy_read_verified_passphrase (client_request->new_passphrase,
+			    sizeof(client_request->new_passphrase)) == -1) {
+	fprintf (stderr, "%s\n", verror_get_string());
+	return 1;
+    }
+
+    /* Set up client socket attributes */
+    if (myproxy_init_client(socket_attrs) < 0) {
+        fprintf(stderr, "error in myproxy_init_client(): %s\n",
+                verror_get_string());
+        return 1;
+    }
+
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
+        fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
+                verror_get_string());
+        return 1;
+    }
+
+    if (client_request->username == NULL) { /* set default username */
+        char *username = NULL;
+        if (dn_as_username) {
+            if (ssl_get_base_subject_file(NULL,
+                                          &username)) {
+                fprintf(stderr,
+                        "Cannot get subject name from your certificate\n");
+                return 1;
+            }
+        } else {
+            if (!(username = getenv("LOGNAME"))) {
+                fprintf(stderr, "Please specify a username.\n");
+                return 1;
+            }
+        }
+        client_request->username = strdup(username);
+     }
+
+    /*Serialize client request object */
+    requestlen = myproxy_serialize_request (client_request, request_buffer,
+		    			sizeof (request_buffer));
+
+    if (requestlen < 0) {
+	    	fprintf (stderr, "Error: %s", verror_get_string());
+		exit(1);
+    }
+
+    /* Send request to myproxy-server*/
+    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
+	    fprintf (stderr, "%s\n", verror_get_string());
+	    return 1;
+    }
+
+    /* Receive response from server */
+    responselen = myproxy_recv (socket_attrs, response_buffer,
+		    		sizeof (response_buffer));
+
+    if (responselen < 0) {
+	    	fprintf (stderr, "%s\n", verror_get_string());
+		return 1;
+    }
+
+    if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
+	    fprintf (stderr, "%s\n", verror_get_string());
+	    exit (1);
+    }
+
+    /*Check version */
+    if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
+	    	fprintf (stderr, "Invalid version number received from server\n");
+    }
+
+    /*Check response */
+    switch (server_response->response_type) {
+	    case MYPROXY_ERROR_RESPONSE:
+		    fprintf (stderr, "Receiver ERROR_RESPONSE: %s\n", 
+			     server_response->error_string);
+		    break;
+
+	    case MYPROXY_OK_RESPONSE:
+    		    printf("Passphrase changed\n");
+		    break;
+	
+	    default:
+		    fprintf (stderr, "Invalid response type received.\n");
+		    break;
+	}
+    verror_clear();
+
+    /* free memory allocated */
+    myproxy_free(socket_attrs, client_request, server_response);
+    return 0;
+}
+
+void 
+init_arguments(int argc, 
+	       char *argv[], 
+	       myproxy_socket_attrs_t *attrs,
+	       myproxy_request_t *request) 
+{   
+    extern char *gnu_optarg;
+    int arg;
+
+    while((arg = gnu_getopt_long(argc, argv, short_options, 
+				 long_options, NULL)) != EOF) 
+    {
+        switch(arg) 
+        {
+	case 'h': 	/* print help and exit */
+            fprintf(stderr, usage);
+            exit(1);
+            break;
+        case 'u': 	/* print usage and exit*/
+            fprintf(stderr, usage);
+            exit(1);
+            break;
+	case 'v':
+	    myproxy_debug_set_level(1);
+	    break;
+        case 'V':       /* print version and exit */
+            fprintf(stderr, version);
+            exit(1);
+            break;
+        case 'l':	/* username */
+            request->username = strdup(gnu_optarg);
+            break;
+        case 's': 	/* pshost name */
+	    attrs->pshost = strdup(gnu_optarg);
+            break;
+        case 'p': 	/* psport */
+            attrs->psport = atoi(gnu_optarg);
+            break;
+	case 'k':   /* credential name */
+	    request->credname = strdup (gnu_optarg);
+	    break;
+        case 'd':   /* use the certificate subject (DN) as the default
+                       username instead of LOGNAME */
+            dn_as_username = 1;
+            break;
+        default:        /* print usage and exit */ 
+	    fprintf(stderr, usage);
+	    exit(1);
+	    break;	
+        }
+    }
+
+    /* Check to see if myproxy-server specified */
+    if (attrs->pshost == NULL) {
+	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
+	exit(1);
+    }
+    return;
+}
