@@ -102,12 +102,8 @@ sub Wanted {
     $u->debug("file -> $_");
     $u->debug("directory -> $File::Find::dir");
 
-    if ($_ eq "TESTS.pl") {
-        $u->command("./TESTS.pl");        
-    }
-    else {
-        return;
-    }
+    /^TESTS\.pl\z/s && $u->command("./TESTS.pl") ||
+        /^(vendor|g)cc(32|64).*\z/s && ($File::Find::prune = 1);
 }
 
 # ------------------------------------------------------------------
