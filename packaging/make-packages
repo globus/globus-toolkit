@@ -296,6 +296,7 @@ if [ x$package != "x" ]; then
 	fi
 	source package-list/$package/build-info
 	make_source_package
+	mkdir -p package-output
 	tar czf package-output/${name}-0.2.tar.gz ${name}*-src
 	# make_binary_package
 	exit
