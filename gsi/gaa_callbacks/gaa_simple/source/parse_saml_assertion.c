@@ -182,7 +182,7 @@ parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion)
 
 
 assertionPtr
-parseSAMLassertion(char *filename) {
+parseSAMLassertion(char *saml_assertion) {
   xmlDocPtr doc;
   xmlNsPtr ns;
   xmlNodePtr cur;
@@ -199,7 +199,7 @@ parseSAMLassertion(char *filename) {
   /*
    * build an XML tree from a saml file;
    */
-  doc = xmlParseFile(filename);
+  doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
   if (doc == NULL) return(NULL);
 
   /*

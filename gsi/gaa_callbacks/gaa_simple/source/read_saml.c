@@ -36,16 +36,17 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
 {
   gaa_status	status = GAA_S_SUCCESS;
   char				ebuf[2048];
+  char				*eptr = 0;
   char 				type[50];
   char        auth[128], *auth_p = 0;
   char        val[256],  *val_p = 0;
-  static int	i = 0;
+/*  static int	i = 0; */
   gaa_policy_right *right = 0;
   gaa_condition    *cond = 0;
   int					pri = -1;
   int					num = -1;
   int         valid = 0;
-  char        *filename = 0;
+  char        *saml_assertion = 0;
 
   assertionPtr Assertion = 0;
   adsPtr cur_ads = 0;
@@ -56,26 +57,22 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
     return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
   }
 
-  if ((filename = *(char **)params) == 0)  {
-    gaa_set_callback_err("gaa_simple_read_saml: called with null saml file name");
-    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
-  }
-  
-  /**
-  if (strlen(filename) + strlen(object) + 2 >= sizeof(buf))    {
-    gaa_set_callback_err("gaa_simple_read_saml: object name too long");
+  if ((saml_assertion = *(char **)params) == 0)  {
+    gaa_set_callback_err("gaa_simple_read_saml: called with null saml string");
     return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
   }
 
-  sprintf(buf, "%s/%s", dirname, object);
-  **/
-  
-  Assertion = parseSAMLassertion(filename);
+printf("%s\n", saml_assertion);
+  Assertion = parseSAMLassertion(saml_assertion);
 
   if (!Assertion) {
-    snprintf(ebuf, sizeof(ebuf), "gaa_simple_read_saml: Error parsing SAML assertion file %s\n", filename);
-    gaa_set_callback_err(ebuf);
-    return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
+      if ((eptr = malloc(strlen(saml_assertion) + 60)) == 0) {
+	  eptr = "gaa_simple_read_saml: Error parsing SAML assertion";
+      } else {
+	  sprintf(eptr, "gaa_simple_read_saml: Error parsing SAML assertion %s\n", saml_assertion);
+      }
+      gaa_set_callback_err(eptr);
+      return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
   }
 
   if ((status = gaa_new_policy(policy)) != GAA_S_SUCCESS)
@@ -100,11 +97,11 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
       if (right) {
         if ((status = gaa_add_policy_entry((*policy), right, pri, num))
             != GAA_S_SUCCESS) {
-          snprintf(ebuf, sizeof(ebuf),
-                   "gaa_simple_read_eacl: failed to add right at line %d: %s\n",
-                   i, gaa_x_majstat_str(status));
-          gaa_set_callback_err(ebuf);
-          return (status);
+	    snprintf(ebuf, sizeof(ebuf),
+		     "gaa_simple_read_eacl: failed to add right in saml assertion: %s\n",
+		     gaa_x_majstat_str(status));
+	    gaa_set_callback_err(ebuf);
+	    return (status);
         }
         right = 0;
       }
@@ -121,9 +118,13 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
         gaa_new_policy_right(gaa, &right, gaa_neg_access_right, auth_p, val_p);
       }
       else { // Indeterminate or something else
-        snprintf(ebuf, sizeof(ebuf), "gaa_simple_read_saml: Wrong decision value in SAML assertion file %s\n", filename);
-        gaa_set_callback_err(ebuf);
-        return(GAA_STATUS(GAA_S_INVALID_POLICY_RIGHT_HNDL, 0));
+	  if ((eptr = malloc(strlen(cur_ads->decision) + 60)) == 0) {
+	      eptr = "Unrecognized decision value in SAML assertion";
+	  } else {
+	      sprintf(eptr, "gaa_simple_read_saml: Unrecognized decision value in SAML assertion: \"%s\"\n", cur_ads->decision);
+	  }
+	  gaa_set_callback_err(eptr);
+	  return(GAA_STATUS(GAA_S_INVALID_POLICY_RIGHT_HNDL, 0));
       }
       num++;
   
@@ -181,7 +182,7 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
     if ((status = gaa_add_policy_entry((*policy), right, pri,
                                        num)) != GAA_S_SUCCESS)    {
 	    snprintf(ebuf, sizeof(ebuf),
-               "gaa_simple_read_eacl: failed to add right at line %d: %s\n", i,
+               "gaa_simple_read_saml: failed to add right: %s\n",
                gaa_x_majstat_str(status));
 	    gaa_set_callback_err(ebuf);
 	    return (status);
@@ -190,10 +191,10 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
   /** If there was no resource name that matches the object name,
       something must be wrong.  **/
   if (valid == 0) {
-    snprintf(ebuf, sizeof(ebuf),
-             "gaa_simple_read_eacl: No matching object (%s) found in the SAML assertion: %s\n", object, gaa_x_majstat_str(status));
-    gaa_set_callback_err(ebuf);
-    return(GAA_STATUS(GAA_S_NO_MATCHING_ENTRIES, 0));
+      snprintf(ebuf, sizeof(ebuf),
+	       "gaa_simple_read_saml: No matching object (%s) found in the SAML assertion: %s\n", object, gaa_x_majstat_str(status));
+      gaa_set_callback_err(ebuf);
+      return(GAA_STATUS(GAA_S_NO_MATCHING_ENTRIES, 0));
   }
   
   freeAssertion(Assertion);
