@@ -428,8 +428,6 @@ globus_usage_stats_vsend(
     memcpy(globus_l_usage_stats_data + data_length, host, count);
     data_length += count;
 
-    globus_libc_free(contact);
-
     GlobusTimeAbstimeGetCurrent(stamp);
     nstamp = htonl(stamp.tv_sec);
     memcpy(globus_l_usage_stats_data + data_length, 
