@@ -1,5 +1,8 @@
 2000-10-04  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* myproxy_server.c (main): Print strerror() when failure occurs
+	opening configuration file.
+
 	* myproxy.c(parse_command): Fixed command_value type.
 
 2000-10-03  Von Welch  <vwelch@ncsa.uiuc.edu>
