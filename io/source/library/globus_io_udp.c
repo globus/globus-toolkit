@@ -949,7 +949,7 @@ globus_io_udp_bind(
 
     globus_l_io_udp_set_socket_size(handle); 
 
-    handle->state = GLOBUS_IO_HANDLE_STATE_UDP_BIND;
+    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
 
     globus_i_io_debug_printf(3,
 			    (stderr, "%s(): exiting\n", myname));
@@ -1028,6 +1028,15 @@ globus_io_udp_connect(
                 GLOBUS_NULL,
                 handle,
                 errno));
+    }
+    
+    if(host)
+    {
+        handle->type = GLOBUS_IO_HANDLE_TYPE_UDP_CONNECTED;
+    }
+    else
+    {
+        handle->type = GLOBUS_IO_HANDLE_TYPE_UDP_UNCONNECTED;
     }
     
     return GLOBUS_SUCCESS;
