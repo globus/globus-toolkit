@@ -19,7 +19,6 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_rsl" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
@@ -30,7 +29,6 @@
 
     <Source_Dependencies Type="pgm_link" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_rsl" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
