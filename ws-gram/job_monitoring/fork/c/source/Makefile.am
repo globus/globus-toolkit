@@ -28,7 +28,7 @@ INCLUDES = $(GPT_INCLUDES)
 lib_LTLIBRARIES = libglobus_seg_fork_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_seg_fork___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_seg_fork___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_seg_fork___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) -module
 libglobus_seg_fork___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST= version.h.in
