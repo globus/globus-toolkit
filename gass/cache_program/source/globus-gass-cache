@@ -4,7 +4,8 @@ BEGIN
 {
     push(@INC, "$ENV{GLOBUS_LOCATION}" . '/lib/perl');
 }
-use warnings;
+
+#use warnings;
 use strict;
 use Globus::Core::Paths;
 
@@ -70,7 +71,8 @@ if ( $#ARGV < 0 )
     exec ( "$ProgramC", @ARGV );
 }
 my @JobList;
-foreach my $ArgNo ( 0 .. $#ARGV )
+my $ArgNo;
+for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
 {
     my $Arg = $ARGV[$ArgNo];
 
@@ -98,7 +100,7 @@ foreach my $ArgNo ( 0 .. $#ARGV )
     elsif ( $Arg =~ /^($CprogArgsRE)$/ )
     {
 	# Skip next arg...
-	my $ArgNo++;
+        $ArgNo++;
     }
     elsif ( $Arg =~ /^-/ )
     {
