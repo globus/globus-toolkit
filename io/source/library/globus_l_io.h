@@ -28,9 +28,15 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#if defined(HAVE_SYS_XTI_H)
+#   include <sys/xti.h>
+#endif
+
 #if defined(HAVE_NETINET_TCP_H)
 #   include <netinet/tcp.h>
 #endif
+
 #include <netdb.h>
 #include <stdlib.h>
 
