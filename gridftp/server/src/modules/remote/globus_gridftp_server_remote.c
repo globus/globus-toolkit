@@ -229,16 +229,17 @@ globus_l_gfs_ipc_finished_cb(
     
     node_info = globus_list_remove(
         &bounce_info->node_list, bounce_info->node_list);
-    
+
     if(node_info->info && node_info->info_needs_free)
     {
         globus_free(node_info->info);
     }
-    globus_free(bounce_info);
 
     result = globus_l_gfs_remote_node_release(
         bounce_info->my_handle,
         node_info);
+
+    globus_free(bounce_info);
 
     return;
 }
