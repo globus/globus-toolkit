@@ -19,7 +19,7 @@ library which a programmer can use. These are
 - globus_ftp_client_handleattr_set_cache_all() and
   globus_ftp_client_handleattr_get_cache_all()
 - globus_ftp_client_handleattr_add_cached_url() and
-  globus_ftp_client_handleattr_remove_cached_url
+  globus_ftp_client_handleattr_remove_cached_url()
 
 The first pair tells the client library to create or remove a cache entry in
 the handle. When a cache entry is created, no connection is made to the URL.
@@ -50,7 +50,7 @@ applies to this attribute.
 
 In the client library implementation, information about control connections is
 encapsulated in the globus_i_ftp_client_target_t. This structure contains
-the @ref globus_i_ftp_control_handle_t "control handle" associated with the
+the @ref globus_ftp_control_handle_t "control handle" associated with the
 connection, as well as various state information about the connection.
 
 A target can be linked into a control handle in one of two ways. It is either
@@ -63,7 +63,7 @@ When a new operation begins, the client library calls the internal
 function globus_i_ftp_client_target_find(), which will either pull an existing
 target out of the handle's cache, or create a new one. Additionally, if the
 cache_all attribute is set on the handle and no cache entry exists for the
-given URL, a new cache entry will be created then.
+given URL, a new cache entry will be created.
 If globus_i_ftp_client_target_find() returns a new target
 (target->state == GLOBUS_FTP_CLIENT_TARGET_START),
 it will be connected to the URL server, otherwise (target->state ==
@@ -72,7 +72,7 @@ to verify the connection is still valid. If the NOOP fails or returns a
 negative response, a new target is created (again calling
 globus_i_ftp_client_target_find()) and a new connection is started.
 
-<em>Note: I'm not positive that the case where NOOP fails has been tested very much"</em>
+<em>Note: I'm not positive that the case where NOOP fails has been tested very much</em>
 
 When an operation completes, globus_i_ftp_client_target_release() is called
 with each target. If the operation completed without invalidating the target
