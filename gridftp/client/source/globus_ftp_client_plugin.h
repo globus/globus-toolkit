@@ -225,6 +225,41 @@ typedef void (*globus_ftp_client_plugin_delete_t)(
     globus_bool_t				restart);
 
 /**
+ * Plugin feat notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a feat is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a feat, and when a plugin restarts the currently
+ * active feat request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the feat will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the feat operation.
+ * @param url
+ *        The url to be feat'd.
+ * @param attr
+ *        The attributes to be used during this operation.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current feat operation;
+ *	  otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_feat_t)(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t				restart);
+
+/**
  * Plugin mkdir notification callback.
  * @ingroup globus_ftp_client_plugins
  *
@@ -878,6 +913,13 @@ globus_ftp_client_plugin_restart_delete(
     const globus_abstime_t *            	when);
 
 globus_result_t
+globus_ftp_client_plugin_restart_feat(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
+
+globus_result_t
 globus_ftp_client_plugin_restart_mkdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
@@ -990,6 +1032,11 @@ globus_result_t
 globus_ftp_client_plugin_set_delete_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_delete_t		delete_func);
+
+globus_result_t
+globus_ftp_client_plugin_set_feat_func(
+    globus_ftp_client_plugin_t *		plugin,
+    globus_ftp_client_plugin_feat_t		feat_func);
 
 globus_result_t
 globus_ftp_client_plugin_set_mkdir_func(

@@ -222,6 +222,18 @@ globus_ftp_client_feat(
         goto free_url;
     }
     
+    globus_i_ftp_client_plugin_notify_feat(
+        handle, handle->source_url, handle->source->attr);
+    if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT)
+    {
+	error = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+	goto abort;
+    }
+    else if(handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+	goto restart;
+    }
+    			   
     if(handle->source->features)
     {
         int                             i;

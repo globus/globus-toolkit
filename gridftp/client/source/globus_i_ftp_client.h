@@ -678,6 +678,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_mkdir_t		mkdir_func;
     globus_ftp_client_plugin_rmdir_t		rmdir_func;
     globus_ftp_client_plugin_move_t		move_func;
+    globus_ftp_client_plugin_feat_t		feat_func;
     globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
     globus_ftp_client_plugin_machine_list_t     machine_list_func;
     globus_ftp_client_plugin_list_t		list_func;
@@ -838,6 +839,12 @@ globus_i_ftp_client_plugin_notify_machine_list(
 
 void
 globus_i_ftp_client_plugin_notify_delete(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_feat(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr);

@@ -314,8 +314,11 @@ globus_i_ftp_op_to_string(
     static const char * mkdir    = "GLOBUS_FTP_CLIENT_MKDIR";
     static const char * rmdir    = "GLOBUS_FTP_CLIENT_RMDIR";
     static const char * move     = "GLOBUS_FTP_CLIENT_MOVE";
+    static const char * feat     = "GLOBUS_FTP_CLIENT_FEAT";
     static const char * put      = "GLOBUS_FTP_CLIENT_PUT";
     static const char * transfer = "GLOBUS_FTP_CLIENT_TRANSFER";
+    static const char * mdtm     = "GLOBUS_FTP_CLIENT_MDTM";
+    static const char * size     = "GLOBUS_FTP_CLIENT_SIZE";
     static const char * idle     = "GLOBUS_FTP_CLIENT_IDLE";
     static const char * invalid  = "INVALID OPERATION";
 
@@ -327,6 +330,12 @@ globus_i_ftp_op_to_string(
 	return rmdir;
     case GLOBUS_FTP_CLIENT_MOVE:
 	return move;
+    case GLOBUS_FTP_CLIENT_FEAT:
+	return feat;
+    case GLOBUS_FTP_CLIENT_MDTM:
+	return mdtm;
+    case GLOBUS_FTP_CLIENT_SIZE:
+	return size;
     case GLOBUS_FTP_CLIENT_LIST:
 	return list;
     case GLOBUS_FTP_CLIENT_NLST:

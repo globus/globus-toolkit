@@ -76,19 +76,11 @@ globus_i_ftp_client_restart_register_oneshot(
 	GlobusTimeReltimeSet(when, 0, 0);
     }
 
-    globus_assert(handle->op == GLOBUS_FTP_CLIENT_GET    ||
-		  handle->op == GLOBUS_FTP_CLIENT_PUT    ||
-		  handle->op == GLOBUS_FTP_CLIENT_LIST   ||
-		  handle->op == GLOBUS_FTP_CLIENT_NLST   ||
-		  handle->op == GLOBUS_FTP_CLIENT_MLSD   ||
-		  handle->op == GLOBUS_FTP_CLIENT_DELETE ||
-		  handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
-		  handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
-		  handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
-		  handle->op == GLOBUS_FTP_CLIENT_TRANSFER);
-		      
     if(handle->op == GLOBUS_FTP_CLIENT_GET    ||
        handle->op == GLOBUS_FTP_CLIENT_DELETE ||
+       handle->op == GLOBUS_FTP_CLIENT_MDTM   ||
+       handle->op == GLOBUS_FTP_CLIENT_SIZE   ||
+       handle->op == GLOBUS_FTP_CLIENT_FEAT   ||
        handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
        handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
        handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
@@ -118,7 +110,11 @@ globus_i_ftp_client_restart_register_oneshot(
 	    globus_l_ftp_client_restart_transfer_callback,
 	    handle);
     }
-
+    else
+    {
+        globus_assert(0 && "Unexpected operation");
+    }
+    
     return result;
 }
 /* globus_i_ftp_client_restart_register_oneshot() */
@@ -698,6 +694,7 @@ globus_i_ftp_client_restart(
     case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST:
 	if(handle->op == GLOBUS_FTP_CLIENT_GET    ||
 	   handle->op == GLOBUS_FTP_CLIENT_DELETE ||
+	   handle->op == GLOBUS_FTP_CLIENT_FEAT   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
 	   handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
 	   handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
