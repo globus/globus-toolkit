@@ -3,7 +3,7 @@ dnl Set TARGET_ARCH_*
 dnl
 AC_DEFUN(LAC_TARGET_ARCH,
 [
-case "$target" in
+case "$host" in
   *sunos4* | *solaris1* )
     AC_DEFINE(TARGET_ARCH_SUNOS41)
   ;;
