@@ -178,7 +178,7 @@
         _context->ref++;                                                    \
     }                                                                       \
                                                                             \
-    if(_op->ndx == 0 && !_op->blocking)                                     \
+    if(_my_op->caller_ndx == 0 && !_op->blocking)                           \
     {                                                                       \
         _space = _op->_op_handle->space;                                    \
     }                                                                       \
@@ -255,7 +255,7 @@
         else                                                                \
         {                                                                   \
             _op->cached_res = GLOBUS_SUCCESS;                               \
-            if(_op->ndx == 0 && !_op->blocking)                             \
+            if(_my_op->caller_ndx == 0 && !_op->blocking)                   \
             {                                                               \
                 _space = _op->_op_handle->space;                            \
             }                                                               \
@@ -409,7 +409,7 @@
                                                                             \
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */  \
     _op->cached_res = _res;                                                 \
-    if(_op->ndx == 0 && !_op->blocking)                                     \
+    if(_my_op->caller_ndx == 0 && !_op->blocking)                           \
     {                                                                       \
         _space = _op->_op_handle->space;                                    \
     }                                                                       \
@@ -632,7 +632,7 @@
             globus_free(_my_op->_op_ent_fake_iovec);                        \
             _my_op->_op_ent_fake_iovec = NULL;                              \
         }                                                                   \
-        if(_op->ndx == 0 && !_op->blocking)                                 \
+        if(_my_op->caller_ndx == 0 && !_op->blocking)                       \
         {                                                                   \
             _space = _op->_op_handle->space;                                \
         }                                                                   \
@@ -645,7 +645,7 @@
                 NULL,                                                       \
                 globus_l_xio_driver_op_write_kickout,                       \
                 (void *)_op,                                                \
-                _space);                              \
+                _space);                                                    \
         }                                                                   \
         else                                                                \
         {                                                                   \
@@ -952,7 +952,7 @@
             _my_op->_op_ent_fake_iovec = NULL;                              \
         }                                                                   \
                                                                             \
-        if(_op->ndx == 0 && !_op->blocking)                                 \
+        if(_my_op->caller_ndx == 0 && !_op->blocking)                       \
         {                                                                   \
             _space = _op->_op_handle->space;                                \
         }                                                                   \
@@ -1162,7 +1162,7 @@
                                                                             \
     _my_op->target = (_in_target);                                          \
                                                                             \
-    if(_op->ndx == 0 && !_op->blocking)                                     \
+    if(_my_op->caller_ndx == 0 && !_op->blocking)                           \
     {                                                                       \
         _space = _op->_op_handle->space;                                    \
     }                                                                       \

@@ -199,6 +199,10 @@ globus_xio_attr_cntl(
                 attr->accept_timeout_cb = server_timeout_cb;
                 GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
                 break;
+
+            case GLOBUS_XIO_ATTR_SET_SPACE:
+                attr->space = va_arg(ap, globus_callback_space_t);
+                break;
         } 
 
         res = GLOBUS_SUCCESS;

@@ -87,6 +87,11 @@ close_cancel_main(
     int                                     argc,
     char **                                 argv);
 
+int
+space_main(
+    int                                     argc,
+    char **                                 argv);
+
 void
 test_common_end();
 

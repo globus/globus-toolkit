@@ -365,6 +365,10 @@ main(
         &globus_l_test_hash, 
         "close_cancel",
         close_cancel_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "space",
+        space_main);
 
     for(ctr = 1; ctr < argc && !done; ctr++)
     {
@@ -443,6 +447,7 @@ main(
     globus_hashtable_remove(&globus_l_test_hash, "cancel");
     globus_hashtable_remove(&globus_l_test_hash, "attr");
     globus_hashtable_remove(&globus_l_test_hash, "close_cancel");
+    globus_hashtable_remove(&globus_l_test_hash, "space");
     globus_hashtable_destroy(&globus_l_test_hash);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);

@@ -73,6 +73,7 @@ typedef enum
     GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
     GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
     GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT,
+    GLOBUS_XIO_ATTR_SET_SPACE,
 } globus_xio_attr_cmd_t;
 
 typedef enum

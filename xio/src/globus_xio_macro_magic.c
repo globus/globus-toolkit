@@ -171,7 +171,7 @@ globus_xio_driver_finished_open_DEBUG(
         _context->ref++;
     }
 
-    if(_op->ndx == 0 && !_op->blocking)
+    if(_my_op->caller_ndx == 0 && !_op->blocking)
     {
         _space = _op->_op_handle->space;
     }
@@ -245,7 +245,7 @@ globus_xio_driver_open_deliver_DEBUG(
         else
         {
             _op->cached_res = GLOBUS_SUCCESS;
-            if(_op->ndx == 0 && !_op->blocking)
+            if(_my_op->caller_ndx == 0 && !_op->blocking)
             {
                 _space = _op->_op_handle->space;
             }
@@ -392,7 +392,7 @@ globus_xio_driver_finished_close_DEBUG(
 
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */
     _op->cached_res = _res;
-    if(_op->ndx == 0 && !_op->blocking)
+    if(_my_op->caller_ndx == 0 && !_op->blocking)
     {
         _space = _op->_op_handle->space;
     }
@@ -607,7 +607,7 @@ globus_xio_driver_finished_write_DEBUG(
             globus_free(_my_op->_op_ent_fake_iovec);
             _my_op->_op_ent_fake_iovec = NULL;
         }
-        if(_op->ndx == 0 && !_op->blocking)
+        if(_my_op->caller_ndx == 0 && !_op->blocking)
         {
             _space = _op->_op_handle->space;
         }
@@ -917,7 +917,7 @@ globus_xio_driver_finished_read_DEBUG(
             _my_op->_op_ent_fake_iovec = NULL;
         }
 
-        if(_op->ndx == 0 && !_op->blocking)
+        if(_my_op->caller_ndx == 0 && !_op->blocking)
         {
             _space = _op->_op_handle->space;
         }
@@ -1117,7 +1117,7 @@ globus_xio_driver_finished_accept_DEBUG(
 
     _my_op->target = (_in_target);
 
-    if(_op->ndx == 0 && !_op->blocking)
+    if(_my_op->caller_ndx == 0 && !_op->blocking)
     {
         _space = _op->_op_handle->space;
     }

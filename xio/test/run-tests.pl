@@ -25,6 +25,7 @@ unlink("test_results.txt");
             server-test.pl
             verify-test.pl
             attr-test.pl
+            space-test.pl
             );
 
 my $runserver;

@@ -7,6 +7,7 @@ SUBDIRS= \
 Sources=                                \
 	test_common.c                       \
 	framework_test.c                    \
+	space_test.c                        \
 	timeout_test.c                      \
     close_barrier_test.c                \
     close_cancel_test.c                 \
