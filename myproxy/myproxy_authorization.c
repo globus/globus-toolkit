@@ -187,7 +187,6 @@ int auth_cert_check_client (authorization_data_t *auth_data,
    unsigned char *p;
    unsigned int signature_len;
    char * authorization_subject = NULL;
-   X509 *cert = NULL;
    int return_status = 0;
 
    p = auth_data->client_data;
@@ -211,11 +210,12 @@ int auth_cert_check_client (authorization_data_t *auth_data,
       goto end;
    }
 
-   if (ssl_verify_gsi_chain(chain, &cert) == SSL_ERROR)
+   if (ssl_verify_gsi_chain(chain) == SSL_ERROR)
       goto end;
 
-   globus_gsi_cert_utils_get_base_name(X509_get_subject_name(cert));
-   authorization_subject = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
+   if (ssl_get_base_subject(chain, &authorization_subject) == SSL_ERROR)
+       goto end;
+
    return_status = (strcmp(authorization_subject, creds->owner_name) == 0);
    
 end:
@@ -223,8 +223,6 @@ end:
       ssl_credentials_destroy(chain);
    if (authorization_subject)
       free(authorization_subject);
-   if (cert)
-      X509_free(cert);
 
    return return_status;
 }

@@ -2311,11 +2311,9 @@ ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
 int
 ssl_get_base_subject_file(const char *proxyfile, char **subject)
 {
-   FILE       *cert_file = NULL;
-   X509       *cert = NULL;
-   char       client[1024];
-   X509_NAME  *client_subject = NULL;
-   char       path[MAXPATHLEN];
+   SSL_CREDENTIALS	*creds = NULL;
+   int			return_value = SSL_ERROR;
+   char			path[MAXPATHLEN];
 
    if (proxyfile == NULL) {
       char *user_cert = NULL;
@@ -2324,31 +2322,48 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
 						  GLOBUS_PROXY_FILE_INPUT);
       strncpy(path, user_cert, sizeof(path));
       free(user_cert);
-   } else
+   } else {
       strncpy(path, proxyfile, sizeof(path));
-
-   cert_file = fopen(path, "r");
-   if (cert_file == NULL)
-      return -1;
-
-   if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL) {
-      fclose(cert_file);
-      return -1;
    }
 
-   client_subject = X509_NAME_dup(X509_get_subject_name(cert));
+   creds = ssl_credentials_new();
+
+   if (ssl_certificate_load_from_file(creds, path) != SSL_SUCCESS)
+       goto error;
+
+   if (ssl_get_base_subject(creds, subject) != SSL_SUCCESS)
+       goto error;
+
+   return_value = SSL_SUCCESS;
+
+   error:
+   if (creds) ssl_credentials_destroy(creds);
+   return return_value;
+}
+
+int
+ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject)
+{
+   char       client[1024];
+   X509_NAME  *client_subject = NULL;
+    
+   client_subject = X509_NAME_dup(X509_get_subject_name(creds->certificate));
    if (client_subject == NULL) {
-      fclose(cert_file);
-      return -1;
+      return SSL_ERROR;
    }
 
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* gotta love API changes */
+   globus_gsi_cert_utils_get_base_name(client_subject,
+				       creds->certificate_chain);
+#else   
    globus_gsi_cert_utils_get_base_name(client_subject);
+#endif
+
    X509_NAME_oneline(client_subject, client, sizeof(client));
    *subject = strdup(client);
-   X509_free(cert);
    X509_NAME_free(client_subject);
-   fclose(cert_file);
-   return 0;
+
+   return SSL_SUCCESS;
 }
 
 int
@@ -2436,7 +2451,7 @@ ssl_verify(unsigned char *data, int length,
 
 /* Chain verifying is inspired by proxy_verify_chain() from GSI. */
 int
-ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
+ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
 {
    int                   return_status = SSL_ERROR;
    int                   i,j;
@@ -2510,9 +2525,6 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
       ssl_error_to_verror();
       goto end;
    }
-
-   if (peer) 
-      *peer = X509_dup(chain->certificate);
 
    return_status = SSL_SUCCESS;
 

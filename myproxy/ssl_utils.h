@@ -276,6 +276,15 @@ int ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS *restrictions,
 int
 ssl_get_base_subject_file(const char *proxyfile, char **subject);
 
+/* ssl_get_base_subject()
+ *
+ * Get user's subject name from SSL_CREDENTIALS.
+ *
+ * Returns 0 on success or -1 on error
+ */
+int
+ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject);
+
 /* 
  * ssl_creds_to_buffer()
  *
@@ -319,13 +328,11 @@ int ssl_verify(unsigned char *data, int length, SSL_CREDENTIALS *creds,
 /*
  * int ssl_verify_gsi_chain()
  *
- * Verify that supplied chain is valid for GSI authentication. On success peer
- * contains the client's certificate (the first certificate from the certificate
- * chain).
+ * Verify that supplied chain is valid for GSI authentication.
  *
  * Returns SSL_SUCCESS or SSL_ERROR
  */
-int ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer);
+int ssl_verify_gsi_chain(SSL_CREDENTIALS *chain);
 
 
 /*
