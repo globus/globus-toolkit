@@ -1,5 +1,5 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_automake_pre_top
 
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
@@ -168,7 +168,5 @@ globus_io_udp_test_LDADD = $(GPT_PGM_LINKS)
 
 
 
-
-include $(top_srcdir)/globus_automake_rules
-include $(top_srcdir)/globus_automake_top_rules
-
+include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_automake_post_top

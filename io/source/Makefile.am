@@ -1,11 +1,10 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
 	library \
 	pkgdata \
 	doxygen
 
-
-include $(top_srcdir)/globus_automake_rules
-include $(top_srcdir)/globus_automake_top_rules
+include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_automake_post_top
