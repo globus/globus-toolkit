@@ -222,10 +222,13 @@ main(int argc,
 
     if (gram_print_debug)
     {
+        char * home;
+        home = getenv("HOME");
         /*
          * Open the gram logfile just for testing!
          */
-        sprintf(gram_logfile, "gram_job_mgr_%lu.log",
+        sprintf(gram_logfile, "%s/gram_job_mgr_%lu.log",
+                home,
                 (unsigned long) getpid());
 
         if ((gram_log_fp = fopen(gram_logfile, "a")) == NULL)
@@ -366,6 +369,7 @@ main(int argc,
                               my_port,
                               (unsigned long) getpid(),
                               (unsigned long) time(0));
+        grami_setenv("GRAM_JOB_CONTACT", job_contact, 1);
     }
     description_tree = gram_specification_parse(description);
 
@@ -622,6 +626,8 @@ grami_jm_request_params(gram_specification_t * description_tree,
     *(params->std_out)   = '\0';
     *(params->paradyn)   = '\0';
     *(params->std_err)   = '\0';
+    *(params->jobtype)    = '\0';
+    *(params->gram_myjob) = '\0';
     *pgm_maxtime         = '\0';
     *pgm_count           = '\0';
 
@@ -636,6 +642,8 @@ grami_jm_request_params(gram_specification_t * description_tree,
     grami_jm_param_get(description_tree, GRAM_MAXTIME_PARAM, pgm_maxtime);
 
     grami_jm_param_get(description_tree, GRAM_PARADYN_PARAM, params->paradyn);
+    grami_jm_param_get(description_tree, GRAM_JOBTYPE_PARAM, params->jobtype);
+    grami_jm_param_get(description_tree, GRAM_MYJOB_PARAM, params->gram_myjob);
 
     if (grami_is_paradyn_job(params))
     {
@@ -643,6 +651,16 @@ grami_jm_request_params(gram_specification_t * description_tree,
 	{
             return (GRAM_ERROR_INVALID_PARADYN);
 	}
+    }
+
+    if (strlen(params->jobtype) == 0)
+    {
+       strcpy(params->jobtype, GRAM_DEFAULT_JOBTYPE);
+    }
+
+    if (strlen(params->gram_myjob) == 0)
+    {
+       strcpy(params->gram_myjob, GRAM_DEFAULT_MYJOB);
     }
 
     /*
