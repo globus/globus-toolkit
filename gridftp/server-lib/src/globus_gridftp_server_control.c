@@ -1234,10 +1234,6 @@ globus_l_gsc_parse_command(
         /* move to the next blank, verify parameter is alpha numeric */
         for(ndx = 0; !isspace(start_ptr[ndx]) && start_ptr[ndx] != '\r'; ndx++)
         {
-            if(!isalnum(start_ptr[ndx]))
-            {
-                goto err;
-            }
             *tmp_ptr = start_ptr[ndx];
             tmp_ptr++;
         }
@@ -1250,10 +1246,6 @@ globus_l_gsc_parse_command(
             /* copy in the rest of the command */
             while(start_ptr[ndx] != '\r')
             {
-                if(!isprint(start_ptr[ndx]))
-                {
-                    goto err;
-                }
                 *tmp_ptr = start_ptr[ndx];
                 tmp_ptr++;
                 ndx++;
