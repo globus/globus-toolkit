@@ -134,7 +134,7 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_PROCESS_CERTS, "unable to access trusted certificates in:"},
     {PRXYERR_R_PROCESS_PROXY, "processing user proxy cert"},
     {PRXYERR_R_NO_TRUSTED_CERTS, "check X509_CERT_DIR and X509_CERT_FILE"},
-    {PRXYERR_R_PROBLEM_KEY_FILE, "Problems with security of private key"},
+    {PRXYERR_R_PROBLEM_KEY_FILE, "Bad file system permissions on private key"},
     {PRXYERR_R_PROBLEM_NOKEY_FILE, "Private key not found"},
     {PRXYERR_R_PROBLEM_NOCERT_FILE, "Certificate not found"},
     {PRXYERR_R_CERT_EXPIRED, "Cert has expired"},
