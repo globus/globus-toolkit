@@ -26,10 +26,8 @@ sub test_gridftp_local
 
     $u->announce("Testing GridFTP locally");
 
-    my $subject = `grid-proxy-info -subject`;
+    my $subject = `grid-proxy-info -identity`;
     chomp($subject);
-
-    $subject =~ s|(/CN=proxy)*||g;
     
     $ENV{GRIDMAP}="gridmap";
     
