@@ -284,21 +284,12 @@ globus_hashtable_string_keyeq(
     {
         return 0;
     }
-    else if ( (((char *) string1)[0] == '\0') 
-                && (((char *) string2)[0] == '\0') ) 
-        {
-            return 1;
-        }
-    else if ( ((char *) string1)[0] 
-                    == ((char *) string2)[0]) 
-        {
-        return globus_hashtable_string_keyeq (((char *) string1) + 1, 
-                                          ((char *) string2) + 1);
-    }
-    else 
+    else if (strcmp(string1,string2) == 0) 
     {
-        return 0;
+        return 1;
     }
+    
+    return 0;
 }
 
 int 
