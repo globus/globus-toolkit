@@ -64,8 +64,8 @@ globus_result_get_error_type(
 globus_auth_result_t
 globus_result_get_error_string(
         globus_auth_result_t                 result,
-        char *                               errstr,
-        int                                  errstr_len);
+        char **                         errstr);
 
 
-#endif /* __GLOBUS_AUTH_ERROR_H_ */
+#endif __GLOBUS_AUTH_ERROR_H_
+

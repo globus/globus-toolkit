@@ -119,8 +119,6 @@ globus_result_get_error_type(
  *          input globus_auth_result_t structure
  * @param   errstr
  *          output error string associated with result
- * @param   errstr_len
- *          length of errstr buffer
  *
  * @retval  GLOBUS_SUCCESS
  *          sucess
@@ -129,7 +127,7 @@ globus_result_get_error_type(
  *
  * @note
  *          The function fills in "GLOBUS SUCCESS" for errstr if 
- *          result was null, and the errstr from result otherwise.
+ *          result was null, and the errstr from result otherwise
  */
 
 /* should it be changed to accept int * and char *? */
@@ -137,32 +135,24 @@ globus_result_get_error_type(
 globus_auth_result_t
 globus_result_get_error_string(
         globus_auth_result_t                 result,
-        char *                               errstr,
-        int                                  errstr_len)
+        char **                         errstr)
    
 {
-    /* Check arguments */
-    if (errstr == NULL)
+    
+    if(!result)
     {
+        *errstr = strdup("GLOBUS SUCCESS");
         return(globus_result_set(
-                   GLOBUS_AUTH_INVALID_ARGUMENT,
-                   "invalid error string argument"));
+            GLOBUS_AUTH_INVALID_ARGUMENT,
+            "invalid result structure"));
     }
     
-    if(result == NULL)
-    {
-        snprintf(errstr, errstr_len, "GLOBUS SUCCESS");
-        return(globus_result_set(
-                   GLOBUS_AUTH_INVALID_ARGUMENT,
-                   "invalid result structure"));
-    }
-    
-    snprintf(errstr, errstr_len, "%s", result->errstr);
+    *errstr = strdup((const char *)result->errstr);
 
     return GLOBUS_SUCCESS;
 
 }
-
+    
 /** globus_result_duplicate()
  *
  * Copy an error structure 

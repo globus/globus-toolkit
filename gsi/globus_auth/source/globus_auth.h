@@ -90,4 +90,4 @@ globus_authorization_eval(
     char * service_type, /* e.g. "file" */
     char * action);      /* e.g. "read", "write", ... */
  
-#endif  /* __GLOBUS_AUTH_H_ */
+ #endif  __GLOBUS_AUTH_H_
