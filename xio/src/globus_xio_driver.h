@@ -913,6 +913,12 @@ typedef globus_result_t
     int                                     cmd,
     va_list                                 ap);
 
+
+globus_result_t
+globus_xio_driver_merge_handle(
+    globus_xio_driver_handle_t              dst_driver_handle,
+    globus_xio_driver_handle_t              src_driver_handle);
+
 /**********************************************************************
  *                          Close
  *********************************************************************/

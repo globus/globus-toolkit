@@ -1438,6 +1438,69 @@ globus_i_xio_driver_handle_cntl(
 }
 
 globus_result_t
+globus_xio_driver_merge_handle(
+    globus_xio_driver_handle_t              dst_driver_handle,
+    globus_xio_driver_handle_t              src_driver_handle)
+{
+    int                                     ctr;
+    globus_result_t                         res;
+    globus_i_xio_context_t *                dst_context;
+    globus_i_xio_context_t *                src_context;
+    GlobusXIOName(globus_xio_driver_merge_handle);
+
+    GlobusXIODebugEnter();
+    if(dst_driver_handle == NULL)
+    {
+        res = GlobusXIOErrorParameter("dst_driver_handle");
+        goto err;
+    }
+    if(src_driver_handle == NULL)
+    {
+        res = GlobusXIOErrorParameter("src_driver_handle");
+        goto err;
+    }
+
+    /*
+     *  if they are the same just indicate success
+     */
+    if(dst_driver_handle == src_driver_handle)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    dst_context = dst_driver_handle->whos_my_daddy;
+    src_context = src_driver_handle->whos_my_daddy;
+
+    if(dst_context->stack_size != src_context->stack_size)
+    {
+        res = GlobusXIOErrorParameter("src_driver_handle");
+        goto err;
+    }
+
+    for(ctr = 0; ctr < dst_context->stack_size; ctr++)
+    {
+        /* verify that the drivers are compatible */
+        if(dst_context->entry[ctr].driver != src_context->entry[ctr].driver)
+        {
+            res = GlobusXIOErrorParameter("src_driver_handle");
+            goto err;
+        }
+        dst_context->entry[ctr].whos_my_daddy = dst_context;
+        dst_context->entry[ctr].driver_handle = 
+            src_context->entry[ctr].driver_handle;
+        GlobusXIOContextStateChange(&dst_context->entry[ctr],
+            GLOBUS_XIO_CONTEXT_STATE_OPENING);
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
 globus_xio_driver_handle_cntl(
     globus_xio_driver_handle_t              driver_handle,
     globus_xio_driver_t                     driver,
