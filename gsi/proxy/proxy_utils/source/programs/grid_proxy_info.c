@@ -570,6 +570,7 @@ main(
         else if (strcmp(argp, "-path") == 0)
         {
             printf("%s\n", proxy_filename);
+            print_all = GLOBUS_FALSE;
         }
     }
 
