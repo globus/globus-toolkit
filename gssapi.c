@@ -1,7 +1,7 @@
 /* GSSAPI SASL plugin
  * Leif Johansson
  * Rob Siemborski (SASL v2 Conversion)
- * $Id: gssapi.c,v 1.2 2004/07/22 15:42:22 jbasney Exp $
+ * $Id: gssapi.c,v 1.3 2004/07/22 17:53:17 jbasney Exp $
  */
 /* 
  * Copyright (c) 2001 Carnegie Mellon University.  All rights reserved.
@@ -87,11 +87,13 @@
 # include "saslgssapi.h"
 #endif /* WIN32 */
 
+#ifndef KRB5_LIB_NAME
 #define KRB5_LIB_NAME "libgssapi_krb5.so"
-    
+#endif /* KRB5_LIB_NAME */
+
 /*****************************  Common Section  *****************************/
 
-static const char plugin_id[] = "$Id: gssapi.c,v 1.2 2004/07/22 15:42:22 jbasney Exp $";
+static const char plugin_id[] = "$Id: gssapi.c,v 1.3 2004/07/22 17:53:17 jbasney Exp $";
 
 #ifndef HAVE_GSS_C_NT_HOSTBASED_SERVICE
 extern gss_OID gss_nt_service_name;
