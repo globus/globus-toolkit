@@ -448,8 +448,12 @@ globus_l_gfs_data_handle_init(
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
     handle->op = NULL;
 
-    if(!globus_l_gfs_data_is_remote_node)
+    if(0 && !globus_l_gfs_data_is_remote_node)
     {
+        /* this is too restrictive... if they connect to the server via ipv6
+         * doesnt mean they know about ipv6 servers... this ends up requiring
+         * that they use ipv6 commands
+         */
         result = globus_ftp_control_data_set_interface(
             &handle->data_channel, handle->info.interface);
         if(result != GLOBUS_SUCCESS)
