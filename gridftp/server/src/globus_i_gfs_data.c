@@ -436,9 +436,6 @@ globus_l_gfs_data_auth_init_cb(
     void *                              user_arg,
     globus_result_t                     result)
 {
-    gss_buffer_desc                     buffer;
-    OM_uint32                           maj_rc;
-    OM_uint32                           min_rc;    
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_session_info_t *         session_info;
     GlobusGFSName(globus_l_gfs_data_auth_init_cb);
@@ -476,9 +473,6 @@ globus_l_gfs_data_auth_init_cb(
     }    
 
     return;
-
-error_import:
-    gss_release_buffer(&min_rc, &buffer);
 
 error:
     if(op->callback == NULL)
@@ -4562,10 +4556,6 @@ globus_i_gfs_data_request_set_cred(
     gss_cred_id_t                       del_cred)
 {
     globus_l_gfs_data_session_t *       session_handle;  
-    globus_result_t                     result;  
-    gss_buffer_desc                     buffer;
-    OM_uint32                           maj_rc;
-    OM_uint32                           min_rc;    
     GlobusGFSName(globus_i_gfs_data_request_set_cred);
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
@@ -4579,9 +4569,6 @@ globus_i_gfs_data_request_set_cred(
         session_handle->dsi->set_cred_func(
             del_cred, session_handle->session_arg);
     }
-    return;
-
-error:
     return;
 }    
 
