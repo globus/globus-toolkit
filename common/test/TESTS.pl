@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
 
-exit system('./run-common-tests.pl');
-
+my $res = system('./run-common-tests.pl');
+exit ( $res != 0 );
 
