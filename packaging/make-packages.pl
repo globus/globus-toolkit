@@ -964,10 +964,10 @@ sub cvs_checkout_subdir
 
     if ( ! -d "$dir" ) 
     { 
-	log_system("cvs -d $cvsroot co $cvsopts $dir",
+	log_system("cvs -d $cvsroot co $cvsopts -P $dir",
 		   "$cvs_logs/" . $locallog . ".log");
     } else { 
-	log_system("cvs -d $cvsroot update $dir", 
+	log_system("cvs -d $cvsroot update -dP $dir", 
 		   "$cvs_logs/" . $locallog . ".log");
     }
 }
@@ -1524,22 +1524,14 @@ sub install_bundles
 sub install_packages
 # --------------------------------------------------------------------
 {
-    chdir $package_output;
+   chdir $package_output;
 
-    if ( $deps )
-    {
-	print "Installing all dependencies in flavor $flavor pulled in.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-bundle -srcdir=. -bn=deps -all");
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose deps-*.tar.gz $flavor");
-    } else 
-    {
-	for my $pkg ( @user_packages )
-	{
-	    print "Installing user requested package $pkg to $install using flavor $flavor.\n";
-	    system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose ${pkg}-*.tar.gz $flavor");
-	    paranoia("Building of $pkg failed.\n");
-	}
-    }
+   for my $pkg ( @user_packages )
+   {
+       print "Installing user requested package $pkg to $install using flavor $flavor.\n";
+       system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose ${pkg}-*.tar.gz $flavor");
+       paranoia("Building of $pkg failed.\n");
+   }
 }
 
 # --------------------------------------------------------------------
