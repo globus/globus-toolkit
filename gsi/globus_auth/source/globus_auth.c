@@ -1,6 +1,6 @@
 #include "globus_auth.h"
 #include "globus_auth_error.h"
-
+#include <string.h>
 
 /** globus_authorization_handle_init()
  *
