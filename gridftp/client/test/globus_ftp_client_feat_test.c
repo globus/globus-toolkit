@@ -84,13 +84,6 @@ int main(
 
     globus_ftp_client_handle_t handle;
     globus_ftp_client_handleattr_t attr;
-    
-    if(argc < 2)
-    {
-        fprintf(stderr, "missing url\n");
-	exit(-1);
-    }
-    
     char* url=argv[1];
     globus_ftp_client_tristate_t answer;
     int i;
@@ -100,7 +93,13 @@ int main(
 
     printf("Initiated features");
     printf("(before connecting):\n");
-
+    
+    if(argc < 2)
+    {
+        fprintf(stderr, "missing url\n");
+	exit(-1);
+    }
+    
     for (i=0; i<GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
     {
         result=globus_ftp_client_is_feature_supported(
