@@ -36,6 +36,36 @@ globus_range_list_init(
     return GLOBUS_SUCCESS;
 }
 
+int
+globus_range_list_merge(
+    globus_range_list_t                 dest,
+    globus_range_list_t                 src)
+{
+    int                                 size;
+    int                                 rc;
+    int                                 i;
+    globus_off_t                        offset;
+    globus_off_t                        length;
+
+    size = globus_range_list_size(src);
+    for(i = 0; i < size; i++)
+    {
+        rc = globus_range_list_at(src, i, &offset, &length);
+        if(rc != 0)
+        {
+            return -1;
+        }
+        rc = globus_range_list_insert(dest, offset, length);
+        if(rc != 0)
+        {
+            return -1;
+        }
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+
 void
 globus_range_list_destroy(
     globus_range_list_t                 range_list)

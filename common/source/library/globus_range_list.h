@@ -19,6 +19,11 @@ typedef enum
 typedef struct globus_l_range_list_s *  globus_range_list_t;
 
 int
+globus_range_list_merge(
+    globus_range_list_t                 dest,
+    globus_range_list_t                 src);
+
+int
 globus_range_list_init(
     globus_range_list_t *               range_list);
 
