@@ -26,8 +26,10 @@ AC_DEFUN(LAC_ASM,
     LAC_ASM_ARGS
 
     # disable asm if debug is turned on
+    # or if flavor is mpi based
 
-    if test "$GLOBUS_DEBUG" = "yes"; then
+    if test "$GLOBUS_DEBUG" = "yes" || echo $GLOBUS_FLAVOR_NAME | grep mpicc 
+    then
         lac_asm="no"
     fi
 
