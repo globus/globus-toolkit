@@ -1,0 +1,112 @@
+#! /bin/sh
+
+#  CVS Information:
+#     $Source$
+#     $Date$
+#     $Revision$
+#     $Author$
+ 
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libexecdir=@libexecdir@
+bindir=@bindir@
+
+
+# defaults list of machine to clean
+TARGETS=${HOME}/.globus/my-contacts
+
+# command to list it, will be replaced with a simple echo if one machine specified
+CAT_TARGETS="@CAT@ ${TARGETS}"
+
+###############################################################################
+# USAGE
+Usage()
+{
+    exit 1
+}
+ 
+###############################################################################
+clean_one()
+{
+
+TARGET_MACH_FORK="${1}"
+
+TMPSCRIPT="/tmp/cdscript$$"
+@RM@ -rf $TMPSCRIPT > /dev/null 2>&1
+@CAT@ > $TMPSCRIPT  <<MYEND
+
+(\${GLOBUS_SH_SLEEP} 5; \${GLOBUS_SH_RM}  -rf .globus/.gass_cache)> /dev/null 2>&1 < /dev/null&
+
+\${GLOBUS_SH_ECHO} successfull
+exit 0
+ 
+MYEND
+
+RESULT=`${bindir}globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+
+if [ $? -ne 0 ]
+then
+    @ECHO@ "Cleaning failed: " 1>&2
+    @ECHO@ "$RESULT" 1>&2
+    @RM@ -rf $TMPSCRIPT > /dev/null 2>&1
+    exit 1
+fi
+
+@RM@ -rf $TMPSCRIPT > /dev/null 2>&1
+
+if [ "x$RESULT" != "xsuccessfull" ]
+then
+    @ECHO@ "globus-gass-cache-destroy: $RESULT" 1>&2
+fi
+
+}
+
+
+
+###############################################################################
+# main
+###############################################################################
+ 
+#save the arguments
+allargs="$@"
+ 
+while [ $# -ge 1 ]; do
+    arg="$1"
+    case "${arg}" in
+        -f ) 
+                shift
+                if [ $# -ge 1 ]
+                then
+                        TARGETS="$1"
+                        shift
+                else
+                        Usage
+                fi
+        ;;
+	-t ) 
+                shift
+                if [ $# -ge 1 ]
+                then
+                        CAT_TARGETS="@ECHO@ $1"
+                        shift
+                else
+                        Usage
+                fi
+        ;;
+        -h )
+                Usage
+        ;;
+    esac
+done
+
+
+eval $CAT_TARGETS  | @EGREP@ '(fork|poe)' | @AWK@ -F: '{print $1}' | @SORT@ | @UNIQ@ | while read TARGET; do
+
+
+TARGET_FORK=`${bindir}/globus-hostname2contacts -t fork,poe ${TARGET}`
+
+clean_one "${TARGET_FORK}"
+
+done
+
+
