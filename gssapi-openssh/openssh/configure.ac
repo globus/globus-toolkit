@@ -617,6 +617,7 @@ if test "x$gsi_path" != "xno" ; then
 	AC_MSG_RESULT(yes)
 
 	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+	LIBS="$LIBS $GSI_LIBS"
 
 	AC_MSG_CHECKING(that Globus linkline works)
 	# test that we got the libraries OK
@@ -932,7 +933,7 @@ AC_ARG_WITH(ssl-dir,
 )
 
 if test -z "$GSI_LIBS" ; then
-LIBS="$LIBS -lcrypto"
+	LIBS="$LIBS -lcrypto"
 fi
 
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
