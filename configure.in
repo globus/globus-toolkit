@@ -96,6 +96,18 @@ fi
 AC_MSG_RESULT($GSI_DEV_PATH)
 AC_SUBST(GSI_DEV_PATH)
 
+AC_ARG_ENABLE(anonymous-auth,
+	[ --disable-anonymous-auth  Disable support for SSL anonymous authentication],
+	if test "$enableval" = yes ; then
+	   AC_MSG_RESULT([SSL anonymous authentication support enabled])
+	   AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
+	else
+	   AC_MSG_RESULT([SSL anonymous authentication support disabled])
+	fi,
+	AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
+	AC_MSG_RESULT([SSL anonymous authentication support enabled]))
+
+
 dnl
 dnl Figure out which regular expression parser to use.
 dnl  (taken from krb5/lib/krb5/os/configure.in)
@@ -136,6 +148,14 @@ dnl
 dnl Check for vsnprintf()
 dnl
 AC_CHECK_FUNCS(vsnprintf)
+dnl
+dnl Check for mkstemp()
+dnl
+AC_CHECK_FUNCS(mkstemp)
+dnl
+dnl Check for setenv()
+dnl
+AC_CHECK_FUNCS(setenv)
 dnl
 dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
 dnl
