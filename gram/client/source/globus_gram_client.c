@@ -244,7 +244,7 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     }
     
     *gatekeeper_url = globus_libc_malloc(strlen(host) +
-					 5 + 
+					 10 + 
 					 strlen("https://:/"));
 
     globus_libc_sprintf(*gatekeeper_url, "https://%s:%d/",
