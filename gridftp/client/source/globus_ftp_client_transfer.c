@@ -4559,11 +4559,13 @@ globus_l_ftp_client_list_op(
 	err = globus_error_get(result);
 	goto free_url_exit;
     }
-    /* force stream/ASCII/no parallelism, unless we are allowing mode e lists */
+    
+    /* force stream/ASCII/no parallelism, 
+        unless we are allowing lists in the current data mode */
 
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
      
-    if(i_attr && i_attr->list_mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
+    if(!i_attr || !i_attr->list_uses_data_mode)
     {        
         result = globus_ftp_client_operationattr_set_mode(
             &local_attr,

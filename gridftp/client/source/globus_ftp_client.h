@@ -824,14 +824,14 @@ globus_ftp_client_operationattr_get_mode(
     globus_ftp_control_mode_t *			mode);
 
 globus_result_t
-globus_ftp_client_operationattr_set_list_mode(
-    globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_control_mode_t			mode);
+globus_ftp_client_operationattr_set_list_uses_data_mode(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t        			list_uses_data_mode);
 
 globus_result_t
-globus_ftp_client_operationattr_get_list_mode(
+globus_ftp_client_operationattr_get_list_uses_data_mode(
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_control_mode_t *			mode);
+    globus_bool_t *     			list_uses_data_mode);
 
 globus_result_t
 globus_ftp_client_operationattr_set_dcau(

@@ -118,7 +118,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_ftp_control_auth_info_t              auth_info;
     globus_ftp_control_type_t                   type;
     globus_ftp_control_mode_t                   mode;
-    globus_ftp_control_mode_t                   list_mode;
+    globus_bool_t                               list_uses_data_mode;
     globus_bool_t                               append;
     globus_ftp_control_dcau_t                   dcau;
     globus_ftp_control_protection_t             data_prot;
@@ -600,7 +600,6 @@ typedef struct globus_i_ftp_client_target_s
     globus_ftp_control_type_t			type;
     globus_ftp_control_tcpbuffer_t		tcp_buffer;
     globus_ftp_control_mode_t			mode;
-    globus_ftp_control_mode_t			list_mode;
     globus_ftp_control_structure_t		structure;
     globus_ftp_control_layout_t			layout;
     globus_ftp_control_parallelism_t		parallelism;

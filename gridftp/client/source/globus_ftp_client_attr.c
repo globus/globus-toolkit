@@ -635,7 +635,7 @@ globus_ftp_client_operationattr_init(
     i_attr->buffer.mode			= GLOBUS_FTP_CONTROL_TCPBUFFER_DEFAULT;
     i_attr->type			= GLOBUS_FTP_CONTROL_TYPE_IMAGE;
     i_attr->mode			= GLOBUS_FTP_CONTROL_MODE_STREAM;
-    i_attr->list_mode			= GLOBUS_FTP_CONTROL_MODE_STREAM;
+    i_attr->list_uses_data_mode		= GLOBUS_FALSE;
     i_attr->append			= GLOBUS_FALSE;
     i_attr->dcau.mode			= GLOBUS_FTP_CONTROL_DCAU_DEFAULT;
     i_attr->data_prot			= GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
@@ -1372,45 +1372,29 @@ error_exit:
 /* globus_ftp_client_operationattr_get_mode() */
 
 /**
- * Set/Get the transfer mode attribute for list data for an ftp client
- * attribute set.
+ * Set/Get whether or not list data will use the current data mode
  * @ingroup globus_ftp_client_operationattr
  *
- * This attribute allows the user to choose the data channel protocol
- * used to transfer list data.  There are two modes supported by this
- * library: stream mode and extended block mode.
- *
- * Stream mode is a file transfer mode where all data is sent over a
- * single TCP socket, without any data framing. In stream mode, data
- * will arrive in sequential order. This mode is supported
- * by nearly all FTP servers.
- *
- * Extended block mode is a file transfer mode where data can be sent
- * over multiple parallel connections and to multiple data storage
- * nodes to provide a high-performance data transfer. In extended
- * block mode, data may arrive out-of-order. ASCII type files are not
- * supported in extended block mode.
+ * This attribute allows the user to allow list data to be transferred using
+ * the current data channel mode.  
  *
  * @param attr
  *        The attribute set to query or modify.
- * @param layout
- *        The value of mode attribute
+ * @param list_uses_data_mode
+ *        globus_bool_t
  *
- * @see #globus_ftp_control_mode_t,
- *      globus_ftp_client_operationattr_set_parallelism(),
- *      globus_ftp_client_operationattr_set_layout()
  *
- * @note Extended block mode is a Grid-FTP extension, and may not be
- *       supported on all FTP servers.
+ * @note List data transfers in nonstandard modes is a Grid-FTP extension,
+ * and may not be supported on all FTP servers.
  */
 globus_result_t
-globus_ftp_client_operationattr_set_list_mode(
-    globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_control_mode_t			mode)
+globus_ftp_client_operationattr_set_list_uses_data_mode(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t        			list_uses_data_mode)
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    GlobusFuncName(globus_ftp_client_operationattr_set_list_mode);
+    GlobusFuncName(globus_ftp_client_operationattr_set_list_uses_data_mode);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1418,33 +1402,25 @@ globus_ftp_client_operationattr_set_list_mode(
 
 	goto error_exit;
     }
-    if(mode == GLOBUS_FTP_CONTROL_MODE_NONE ||
-       mode == GLOBUS_FTP_CONTROL_MODE_BLOCK ||
-       mode == GLOBUS_FTP_CONTROL_MODE_COMPRESSED)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("mode");
-
-	goto error_exit;
-    }
-
+    
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
 
-    i_attr->list_mode = mode;
+    i_attr->list_uses_data_mode = list_uses_data_mode;
 
     return GLOBUS_SUCCESS;
 error_exit:
     return globus_error_put(err);
 }
-/* globus_ftp_client_operationattr_set_list_mode() */
+/* globus_ftp_client_operationattr_set_list_uses_data_mode() */
 
 globus_result_t
-globus_ftp_client_operationattr_get_list_mode(
+globus_ftp_client_operationattr_get_list_uses_data_mode(
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_control_mode_t *			mode)
+    globus_bool_t *     			list_uses_data_mode)
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t * i_attr;
-    GlobusFuncName(globus_ftp_client_operationattr_get_list_mode);
+    GlobusFuncName(globus_ftp_client_operationattr_get_list_uses_data_mode);
 
     if(attr == GLOBUS_NULL)
     {
@@ -1452,21 +1428,15 @@ globus_ftp_client_operationattr_get_list_mode(
 
 	goto error_exit;
     }
-    if(mode == GLOBUS_NULL)
-    {
-	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mode");
-
-	goto error_exit;
-    }
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
 
-    *mode = i_attr->list_mode;
+    *list_uses_data_mode = i_attr->list_uses_data_mode;
 
     return GLOBUS_SUCCESS;
 error_exit:
     return globus_error_put(err);
 }
-/* globus_ftp_client_operationattr_get_list_mode() */
+/* globus_ftp_client_operationattr_get_list_uses_data_mode() */
 /* @} */
 
 

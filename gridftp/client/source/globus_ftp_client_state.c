@@ -670,7 +670,6 @@ redo:
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
 	    target->mode = target->attr->mode;
-	    target->list_mode = target->attr->list_mode;
 	    result = globus_ftp_control_local_mode(target->control_handle,
 						   target->mode);
 	    if(result != GLOBUS_SUCCESS)
@@ -1799,9 +1798,19 @@ redo:
 	     */
 	    if(globus_l_ftp_client_can_cache_data_connection(target))
 	    {
+                if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+                   client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
+                   client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+                {
+        	    target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_GET;
+                }
+                else
+                {
+                    target->cached_data_conn.operation = client_handle->op;
+                }
+                      
 		target->cached_data_conn.source = client_handle->source;
 		target->cached_data_conn.dest = client_handle->dest;
-		target->cached_data_conn.operation = client_handle->op;
 	    }
 	    /* In a 3rd party transfer, we need to clear the peer's
 	     * data connection cache if we've called passive on the
@@ -1863,9 +1872,19 @@ redo:
 	{
 	    if(globus_l_ftp_client_can_cache_data_connection(target))
 	    {
+                if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+                   client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
+                   client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+                {
+        	    target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_GET;
+                }
+                else
+                {
+                    target->cached_data_conn.operation = client_handle->op;
+                }
+                      
 		target->cached_data_conn.source = client_handle->source;
 		target->cached_data_conn.dest = client_handle->dest;
-		target->cached_data_conn.operation = client_handle->op;
 	    }
 
 	skip_port:

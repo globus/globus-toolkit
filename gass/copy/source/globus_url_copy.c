@@ -72,7 +72,7 @@ typedef struct
     globus_bool_t			rfc1738;
     globus_off_t			partial_offset;
     globus_off_t			partial_length;
-    globus_ftp_control_mode_t           list_mode;
+    globus_bool_t                       list_uses_data_mode;
 
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -239,7 +239,7 @@ const char * long_usage =
 "  -r | -recurse\n" 
 "       Copy files in subdirectories\n"
    
-"  -elm | -extended-list-mode\n" 
+"  -dml | -list-uses-data-mode\n" 
 "       Use MODE E for list data connections when -p is used.\n"
    
 "  -q | -quiet \n"
@@ -371,7 +371,7 @@ enum
     arg_partial_offset,
     arg_partial_length,
     arg_rfc1738,
-    arg_elm,
+    arg_dml,
     arg_striped,
     arg_num = arg_striped
 };
@@ -407,7 +407,7 @@ flagdef(arg_data_private, "-dcpriv", "-data-channel-private");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
-flagdef(arg_elm, "-elm", "-extended-list-mode");
+flagdef(arg_dml, "-dml", "-list-uses-data-mode");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -452,7 +452,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_partial_offset);	\
     setupopt(arg_partial_length);	\
     setupopt(arg_rfc1738);	\
-    setupopt(arg_elm);	\
+    setupopt(arg_dml);	\
     setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
@@ -1293,7 +1293,7 @@ globus_l_guc_parse_arguments(
     guc_info->partial_offset = -1;
     guc_info->partial_length = -1;
     guc_info->rfc1738 = GLOBUS_FALSE;
-    guc_info->list_mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
+    guc_info->list_uses_data_mode = GLOBUS_FALSE;
 
     /* determine the program name */
     
@@ -1413,8 +1413,8 @@ globus_l_guc_parse_arguments(
                 &guc_info->partial_length,
                 GLOBUS_NULL);
 	    break;
-	case arg_elm:
-	    guc_info->list_mode = GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
+	case arg_dml:
+	    guc_info->list_uses_data_mode = GLOBUS_TRUE;
 	    break;
 
         default:
@@ -1931,9 +1931,9 @@ globus_l_guc_gass_attr_init(
                 ftp_attr,
                 &parallelism); 
             
-            globus_ftp_client_operationattr_set_list_mode(
+            globus_ftp_client_operationattr_set_list_uses_data_mode(
                 ftp_attr,
-                guc_info->list_mode);
+                guc_info->list_uses_data_mode);
 	}
 
 	if (guc_info->striped)

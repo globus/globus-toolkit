@@ -805,7 +805,6 @@ globus_l_ftp_client_target_new(
     target->tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_DEFAULT;
     target->tcp_buffer.fixed.size = 0;
     target->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
-    target->list_mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
     target->structure = GLOBUS_FTP_CONTROL_STRUCTURE_NONE;
     target->layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
     target->parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
@@ -1518,7 +1517,7 @@ globus_i_ftp_client_restart_info_delete(
  * in extended block mode with compatible attributes.
  *
  * Currently, data connection caching is only supported for GET, PUT,
- * and 3rd party transfers.
+ * 3rd party transfers, and list data transfers.
  *
  * @param client_handle
  *        The handle to check.
@@ -1538,9 +1537,12 @@ globus_i_ftp_client_can_reuse_data_conn(
     switch(client_handle->op)
     {
     case GLOBUS_FTP_CLIENT_GET:
+    case GLOBUS_FTP_CLIENT_LIST:
+    case GLOBUS_FTP_CLIENT_NLST:
+    case GLOBUS_FTP_CLIENT_MLSD:
 	if(source == source->cached_data_conn.source &&
 	   source->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
-	   source->cached_data_conn.operation == client_handle->op)
+	   source->cached_data_conn.operation == GLOBUS_FTP_CLIENT_GET)
 	{
 	    return GLOBUS_TRUE;
 	}
@@ -1568,20 +1570,10 @@ globus_i_ftp_client_can_reuse_data_conn(
 	    return GLOBUS_TRUE;
 	}
 	break;
-      case GLOBUS_FTP_CLIENT_LIST:
-      case GLOBUS_FTP_CLIENT_NLST:
-      case GLOBUS_FTP_CLIENT_MLSD:
-	if(source == source->cached_data_conn.source &&
-	   source->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
-	   source->attr->list_mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
-	   source->cached_data_conn.operation == client_handle->op)
-	{
-	    return GLOBUS_TRUE;
-	}
-	break;
-	
+
     default:
-	;
+        return GLOBUS_TRUE;
+        
     }
     return GLOBUS_FALSE;
 }
