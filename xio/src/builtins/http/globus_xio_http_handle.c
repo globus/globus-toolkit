@@ -127,7 +127,7 @@ globus_i_xio_http_handle_destroy(
 
     globus_i_xio_http_request_destroy(&http_handle->request_info);
     globus_i_xio_http_response_destroy(&http_handle->response_info);
-    globus_i_xio_http_target_destroy(&http_handle->target_info);
+    globus_i_xio_http_target_destroy_internal(&http_handle->target_info);
 
     if (http_handle->header_iovec != NULL)
     {

@@ -501,6 +501,11 @@ globus_result_t
 globus_i_xio_http_target_destroy(
     void *                              driver_target);
 
+extern
+globus_result_t
+globus_i_xio_http_target_destroy_internal(
+    globus_i_xio_http_target_t *        target);
+
 /* globus_xio_http_request_t */
 extern
 globus_result_t

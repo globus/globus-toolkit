@@ -207,8 +207,20 @@ globus_result_t
 globus_i_xio_http_target_destroy(
     void *                              driver_target)
 {
-    globus_i_xio_http_target_t *        http_target = driver_target;
-    GlobusXIOName(globus_l_xio_http_target_destroy);
+
+    globus_i_xio_http_target_destroy_internal(driver_target);
+    globus_libc_free(driver_target);
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_i_xio_http_target_destroy() */
+
+extern
+globus_result_t
+globus_i_xio_http_target_destroy_internal(
+    globus_i_xio_http_target_t *        target)
+{
+    globus_i_xio_http_target_t *        http_target = target;
 
     if (http_target->host != NULL)
     {
@@ -220,8 +232,6 @@ globus_i_xio_http_target_destroy(
         globus_libc_free(http_target->uri);
     }
 
-    globus_libc_free(http_target);
-
     return GLOBUS_SUCCESS;
 }
-/* globus_i_xio_http_target_destroy() */
+/* globus_i_xio_http_target_destroy_internal() */
