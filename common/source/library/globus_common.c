@@ -167,9 +167,15 @@ globus_l_common_i18n_get_string_by_module(
 		globus_module_descriptor_t * module,
 		char * key)
 {
-    if (module != GLOBUS_NULL)
+    if (module != GLOBUS_NULL && 
+        globus_common_i18n_get_string_by_key != GLOBUS_NULL)
     {
-	return globus_common_i18n_get_string_by_key(locale, module->module_name, key);
+	return globus_common_i18n_get_string_by_key(
+	    locale, module->module_name, key);
+    }
+    else
+    {
+        return key;
     }
 }
 
