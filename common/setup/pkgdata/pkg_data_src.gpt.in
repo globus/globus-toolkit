@@ -40,7 +40,9 @@
       increment the minor version number.
       <Aging_Version Age="0" Major="2" Minor="0" />
     </Setup>
-
+	<Source_Dependencies Type="compile" >
+	     <Dependency Name="globus_core"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
+	</Source_Dependencies>
   </src_pkg>
 
 </gpt_package_metadata>
