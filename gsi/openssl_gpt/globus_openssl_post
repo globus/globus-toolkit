@@ -1,12 +1,18 @@
 
 links: $(opensslinclude_HEADERS) $(Test_Sources)
-	@$(PERL) $(top_srcdir)/util/mklink.pl \
-		$(top_srcdir)/include/openssl/  \
-		$(opensslinclude_HEADERS)
-	@$(PERL) $(top_srcdir)/util/mklink.pl \
-		$(top_srcdir)/test $(Test_Sources)
-	@for i in $(SUBDIRS); do \
+	@if test -n "$(opensslinclude_HEADERS)"; then \
+		$(PERL) $(top_srcdir)/util/mklink.pl \
+			$(top_srcdir)/include/openssl/  \
+			$(opensslinclude_HEADERS); \
+	fi;
+	@if test -n $(Test_Sources); then \
+		$(PERL) $(top_srcdir)/util/mklink.pl \
+		$(top_srcdir)/test $(Test_Sources); \
+	fi;
+	@for i in $(SUBDIRS) ""; do \
+		if test -n "$$i"; then \
 		(cd $$i; $(MAKE) links ); \
+		fi; \
 	done;
 
 
