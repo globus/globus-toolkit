@@ -10,6 +10,7 @@ AC_MSG_CHECKING(for -lsocket)
 
 AC_TRY_LINK(
     [
+	#include <sys/types.h>
 	#include <sys/socket.h>
     ],
     [
@@ -58,4 +59,6 @@ AC_TRY_LINK(
 AC_MSG_RESULT($lac_cv_lnsl)
 
 ])
+
+
 
