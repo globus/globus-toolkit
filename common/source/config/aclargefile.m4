@@ -112,4 +112,4 @@ int main(int argc, char ** argv)
     if(sprintf(buf, "%$2", foo) == 1)
         return 0;
     return 1;
-}], $1_FORMAT=$2, $1_FORMAT="unknown")])
+}], $1_FORMAT=$2, $1_FORMAT="unknown", $1_FORMAT="unknown")])
