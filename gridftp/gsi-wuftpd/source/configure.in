@@ -1041,6 +1041,40 @@ AC_SUBST(STATIC_FLAGS)
 AC_DEFINE(USE_ETC)
 
 dnl ===========================================================================
+dnl hubbard 7/29/02, adding version info from GPT and dirt.sh
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+    export GPT_LOCATION
+fi
+
+$GPT_LOCATION/sbin/gpt_extract_data --name --version $srcdir/pkg_data_src.gpt > tmpfile.gpt
+. ./tmpfile.gpt
+rm ./tmpfile.gpt
+
+GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
+
+dnl export version information
+dnl branch id 99999 means that timestamp refers to build time
+if test -f $srcdir/dirt.sh ; then
+    . $srcdir/dirt.sh
+else
+    DIRT_TIMESTAMP=`perl -e 'print time'`
+    DIRT_BRANCH_ID=99999
+fi
+
+dnl GPT_MAJOR_VERSION and GPT_MINOR_VERSION provided by GPT_INIT
+AC_SUBST(GPT_MAJOR_VERSION)
+AC_SUBST(GPT_MINOR_VERSION)
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
+
+dnl end of hubbard changes, except for addition of version.h below
+dnl ===========================================================================
 dnl Write results...
 dnl ============================================================================
 
@@ -1050,4 +1084,4 @@ if test ! -d util ; then
 	mkdir util
 fi
 
-AC_OUTPUT(Makefile Doxyfile src/Makefile support/Makefile util/privatepw/Makefile src/pathnames.h)
+AC_OUTPUT(Makefile Doxyfile src/Makefile support/Makefile util/privatepw/Makefile src/pathnames.h src/version.h)

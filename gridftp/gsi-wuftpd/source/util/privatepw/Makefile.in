@@ -54,13 +54,10 @@ $(BINDIR)/privatepw: privatepw
 $(mandir)/privatepw.8:
 	$(INSTALL) -o bin -g bin -m 644 $(srcdir)/privatepw.8 $(mandir)/man8/privatepw.8
 
-vers.c: 
-	(sh $(srcdir)/../../src/newvers.sh)
-
 clean:
 	rm -f core *.o *.lint .depend edit
 	rm -f privatepw 
 
 distclean: clean
 	rm -f Makefile
-	rm -f vers.c
+
