@@ -24,9 +24,6 @@ Data = \
 	$(CACERT_HASH).0 \
 	$(CACERT_HASH).signing_policy
 
-bin_SCRIPTS = \
-        grid-default-ca
-
 gcs_setup_SCRIPTS = $(Scripts)
 
 gcs_setup_DATA = $(Data)
@@ -38,10 +35,7 @@ SUBDIRS = pkgdata
 EXTRA_DIST = \
 	$(Scripts) \
         $(Data) \
-	grid-default-ca \
 	setup-ssl-utils.$(CACERT_HASH) 
-
-TAR=@TAR@
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
