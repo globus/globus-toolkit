@@ -320,6 +320,7 @@ globus_xio_attr_copy(
     /* copy all general attrs */
     xio_attr_dst->max = xio_attr_src->max;
     xio_attr_dst->ndx = xio_attr_src->ndx;
+    xio_attr_dst->space = xio_attr_src->space;
  
     for(ctr = 0; ctr < xio_attr_dst->ndx; ctr++)
     {
