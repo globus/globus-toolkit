@@ -202,9 +202,13 @@ globus_uuid_create(
         GlobusTimeAbstimeGetCurrent(current_time);
         if(globus_abstime_cmp(&current_time, &globus_l_uuid_last_time) <= 0)
         {
-            /* either we're generating these too fast or someone changed
-             * clock on us, get new sequence number */
-            globus_l_uuid_sequence = ((uint16_t) rand() & 0x3fff) | 0x8000;
+            sequence = globus_l_uuid_sequence;
+            do
+            {
+                /* either we're generating these too fast or someone changed
+                 * clock on us, get new sequence number */
+                globus_l_uuid_sequence = ((uint16_t) rand() & 0x3fff) | 0x8000;
+            } while(globus_l_uuid_sequence == sequence);
             memcpy(&globus_l_uuid_last_time,
                 &current_time, sizeof(current_time));
         }

@@ -749,11 +749,19 @@ globus_extension_lookup(
                 if(entry->owner)
                 {
                     entry->owner->ref++;
-                  
+                    
+                    globus_assert(
+                        (entry->owner != (globus_l_extension_module_t *)
+                            globus_thread_getspecific(
+                                globus_l_extension_owner_key)) &&
+                   "You can not lookup something owned by the calling module");
+                        
                     GlobusExtensionDebugPrintf(
                         GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
                         (_GCSL("[%] Accessing entry %s within %s\n"),
-                            _globus_func_name, symbol, entry->owner->name));
+                            _globus_func_name,
+                            registry->user_hashing ? "" : symbol,
+                            entry->owner->name));
                 }
                 
                 *handle = entry;
