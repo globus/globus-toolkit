@@ -800,7 +800,8 @@ globus_result_t globus_gsi_cred_read_proxy(
  *        GLOBUS_SUCCESS unless an error occurred, in which
  *        case an error object is returned
  */
-globus_result_t globus_gsi_cred_read_proxy_bio(
+globus_result_t
+globus_gsi_cred_read_proxy_bio(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio)
 {
@@ -957,7 +958,8 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
-globus_result_t globus_gsi_cred_read_key(
+globus_result_t
+globus_gsi_cred_read_key(
     globus_gsi_cred_handle_t            handle,
     char *                              key_filename,
     int                                 (*pw_cb)())
@@ -1015,6 +1017,28 @@ globus_result_t globus_gsi_cred_read_key(
         goto exit;
     }
 
+    if (handle->key->type == EVP_PKEY_RSA)
+    {
+        /* add in key as random data too */
+        /* not sure if this is kosher */
+          
+        if (handle->key->pkey.rsa != NULL)
+        {
+            if(handle->key->pkey.rsa->p != NULL)
+            {
+                RAND_add((void*)handle->key->pkey.rsa->p->d,
+                         BN_num_bytes(handle->key->pkey.rsa->p),
+                         BN_num_bytes(handle->key->pkey.rsa->p)/2);
+            }
+            if(handle->key->pkey.rsa->q != NULL)
+            {
+                RAND_add((void*)handle->key->pkey.rsa->q->d,
+                         BN_num_bytes(handle->key->pkey.rsa->q),
+                         BN_num_bytes(handle->key->pkey.rsa->q)/2);
+            }
+        }
+    }
+    
     BIO_free(key_bio);
 
     result = GLOBUS_SUCCESS;
