@@ -29,6 +29,8 @@ CVS Information:
 #include "grami_fprintf.h"
 #include "gram_rsl.h"
 #include "grami_jm.h"
+#include "gass_file.h"
+#include "gass_cache.h"
 
 /******************************************************************************
                                Type definitions
@@ -157,7 +159,9 @@ main(int argc,
     nexus_buffer_t         reply_buffer;
     nexus_startpoint_t     reply_sp;
     gram_specification_t * description_tree;
-
+    gass_cache_t           cache_handle;
+    gass_cache_entry_t   * cache_entries;
+    int                    cache_size;
 
     /* Initialize nexus */
     rc = nexus_init(&argc,
@@ -523,6 +527,35 @@ main(int argc,
         }
     }
 
+    /* clear any other cache entries which contain this job contact as
+       the tag
+     */
+    grami_fprintf( grami_log_fp,
+		   "JM: Cleaning GASS cache\n");
+    rc = gass_cache_open(NULL,
+			 &cache_handle);
+    if(rc == GLOBUS_SUCCESS)
+    {
+	rc = gass_cache_list(&cache_handle,
+			     &cache_entries,
+			     &cache_size);
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    for(i=0; i<cache_size; i++)
+	    {
+		grami_fprintf(grami_log_fp,
+			      "Trying to clean up with <url=%s> <tag=%s>\n",
+		       cache_entries[i].url,
+		       graml_job_contact);
+		gass_cache_cleanup_tag(&cache_handle,
+				       cache_entries[i].url,
+				       graml_job_contact);
+	    }
+	}
+	gass_cache_list_free(cache_entries,
+			     cache_size);
+	gass_cache_close(&cache_handle);
+    }
     graml_tree_free(description_tree);
 
     nexus_disallow_attach(my_port);
