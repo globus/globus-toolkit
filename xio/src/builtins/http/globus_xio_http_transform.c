@@ -1274,21 +1274,18 @@ globus_l_xio_http_server_close_kickout(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_result_t                     result;
-    globus_xio_operation_t              op;
-
-    op = http_handle->close_operation;
 
     result = globus_xio_driver_pass_close(
-            op,
+            http_handle->close_operation,
             globus_i_xio_http_close_callback,
-            http_handle->handle);
-
-    http_handle->user_close = GLOBUS_FALSE;
-    http_handle->close_operation = GLOBUS_NULL;
+            http_handle);
 
     if (result != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_close(op, result);
+        globus_i_xio_http_close_callback(
+                http_handle->close_operation,
+                result,
+                user_arg);
     }
 }
 /* globus_l_xio_http_server_close_kickout() */
