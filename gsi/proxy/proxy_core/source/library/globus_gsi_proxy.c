@@ -785,7 +785,7 @@ globus_gsi_proxy_sign_req(
         pci_DER_string->length = pci_DER_length;
         
         /* set the extensions's critical value */
-        if(PROXYCERTINFO_get_restriction(handle->proxy_cert_info) &&
+        if(PROXYCERTINFO_get_restriction(handle->proxy_cert_info) ||
            PROXYCERTINFO_get_group(handle->proxy_cert_info))
         {
             pci_critical = 1;

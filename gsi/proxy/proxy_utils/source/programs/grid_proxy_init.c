@@ -46,10 +46,11 @@ static char *  LONG_USAGE = \
 "    -key      <keyfile>       Non-standard location of user key\n" \
 "    -certdir  <certdir>       Non-standard location of trusted cert dir\n" \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
-"\n" ;
+"\n";
 /*
-"    -restriction <file>       Insert a restriction extension into the\n" \
+"    -policy      <file>       Insert a restriction extension into the\n" \
 "                              generated proxy.\n" \
+"    -policy-language, -pl     Name of the policy language to use\n"
 "    -trusted-subgroup <grp>   Insert a trusted group extension into the\n" \
 "                              generated proxy.\n" \
 "    -untrusted-subgroup <grp> Insert a untrusted group extension into the\n" \
@@ -159,15 +160,19 @@ main(
     BIO *                               pem_proxy_bio = NULL;
     time_t                              goodtill;
     time_t                              lifetime;
+/*
     char *                              restriction_buf = NULL;
     size_t                              restriction_buf_len = 0;
     char *                              restriction_filename = NULL;
     char *                              policy_language = NULL;
     int                                 policy_NID;
+*/
     int                                 (*pw_cb)() = NULL;
+/*
     char *                              trusted_subgroup = NULL;
     char *                              untrusted_subgroup = NULL;
     char *                              subgroup = NULL;
+*/
     int                                 return_value = 0;
     
     if(globus_module_activate(GLOBUS_GSI_PROXY_MODULE) != (int)GLOBUS_SUCCESS)
@@ -313,6 +318,7 @@ main(
         {
             pw_cb = globus_i_gsi_proxy_utils_pwstdin_callback;
         }
+/*
         else if(strcmp(argp, "-policy") == 0)
         {
             args_verify_next(arg_index, argp, 
@@ -320,7 +326,7 @@ main(
             restriction_filename = argv[++arg_index];
 	    proxy_type = GLOBUS_RESTRICTED_PROXY;
         }
-        else if(strcmp(argp, "-pl") == 0 &&
+        else if(strcmp(argp, "-pl") == 0 ||
                 strcmp(argp, "-policy-language") == 0)
         {
             args_verify_next(arg_index, argp, "policy language missing");
@@ -351,6 +357,7 @@ main(
             untrusted_subgroup = argv[++arg_index];
             proxy_type = GLOBUS_RESTRICTED_PROXY;
         }
+*/
         else
         {
             args_error(arg_index, argp, "unrecognized option");
@@ -732,12 +739,21 @@ main(
         exit(1);
     }
 
-    /* add restrictions now */
+/* ALL proxy RESTRICTION/GROUP currently disabled
     if(restriction_filename)
     {
         int                             restriction_buf_size = 0;
         FILE *                          restriction_fp = NULL;
+
+        PROXYCERTINFO *                 certinfo;
+
+        certinfo = PROXYCERTINFO_new();
+        globus_gsi_proxy_handle_set_proxy_cert_info(
+            proxy_handle,
+            certinfo);
         
+        PROXYCERTINFO_free(certinfo);
+
         restriction_fp = fopen(restriction_filename, "r");
         if(!restriction_fp)
         {
@@ -751,7 +767,7 @@ main(
         {
             restriction_buf_size += 512;
             
-            /* First time through this is a essentially a malloc() */
+            * First time through this is a essentially a malloc() *
             restriction_buf = realloc(restriction_buf,
                                       restriction_buf_size);
 
@@ -767,13 +783,13 @@ main(
                 fread(&restriction_buf[restriction_buf_len], 1, 
                       512, restriction_fp);
 
-            /*
+            *
              * If we read 512 bytes then restriction_buf_len and
              * restriction_buf_size will be equal and there is
              * probably more to read. Even if there isn't more
              * to read, no harm is done, we just allocate 512
              * bytes we don't end up using.
-             */
+             *
         }
         while (restriction_buf_len == restriction_buf_size);
         
@@ -827,6 +843,7 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
     }
+*/
 
     if (!quiet)
     {
