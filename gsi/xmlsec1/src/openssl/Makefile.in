@@ -222,6 +222,7 @@ INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+        -I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
 	$(OPENSSL_CFLAGS) \
 	$(LIBXSLT_CFLAGS) \
@@ -252,14 +253,9 @@ libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	$(NULL)
 
 
-libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	$(GPT_LIB_LINKS) \
-	$(OPENSSL_LIBS) \
-	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
-	$(NULL)
 
-
+#	$(LIBXML_LIBS) \
+#	$(NULL)
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	-version-info @XMLSEC_VERSION_INFO@ \
 	$(GPT_LDFLAGS) \
@@ -271,7 +267,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
-libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES =
+libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD =
 am__objects_1 =
 am_libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_OBJECTS = app.lo bn.lo \
 	ciphers.lo crypto.lo digests.lo evp.lo hmac.lo kw_aes.lo \

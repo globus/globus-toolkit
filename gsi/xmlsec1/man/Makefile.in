@@ -453,10 +453,35 @@ link: link-recursive
 unlink: unlink-recursive 
 	:
 
-.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-am
+.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-am filelist-man1 
 
-filelist: filelist-recursive 
+filelist: filelist-recursive  filelist-man1 
 	:
+
+
+
+
+
+
+filelist-man1: $(man1_MANS) $(man_MANS)
+	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
+	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
+	for i in $$l2; do \
+	  case "$$i" in \
+	    *.1*) list="$$list $$i" ;; \
+	  esac; \
+	done; \
+	for i in $$list; do \
+	  if test -f $(srcdir)/$$i; then file=$(srcdir)/$$i; \
+	  else file=$$i; fi; \
+	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
+	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
+	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
+	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
+	  echo $(DESTDIR)$(man1dir)/$$inst >> $(FILELIST_FILE); \
+	done
+
+
 
 link-recursive unlink-recursive filelist-recursive:
 	@set fnord $(MAKEFLAGS); amf=$$2; \

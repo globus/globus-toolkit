@@ -241,6 +241,7 @@ INCLUDES = \
 	-DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+	-I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
 	$(LIBXSLT_CFLAGS) \
 	$(LIBXML_CFLAGS) \
@@ -295,10 +296,10 @@ libxmlsec1___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	$(NULL)
 
 
-libxmlsec1___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@
 
-
+#	$(LIBXML_LIBS) \
+#	$(XMLSEC_DL_LIBS) \
+#	$(NULL)
 libxmlsec1___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@
 
@@ -323,7 +324,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
-libxmlsec1___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES =
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_LIBADD =
 am__objects_1 =
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE@am__objects_2 = $(am__objects_1)
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE@am__objects_2 = xmlsec-ltdl.lo \
@@ -646,9 +647,6 @@ uninstall-info: uninstall-info-recursive
 	uninstall-am uninstall-info-am uninstall-info-recursive \
 	uninstall-libLTLIBRARIES uninstall-recursive
 
-	$(LIBXSLT_LIBS) \
-	$(XMLSEC_DL_LIBS) \
-	$(NULL)
 	-version-info @XMLSEC_VERSION_INFO@ \
 	$(NULL)
 
