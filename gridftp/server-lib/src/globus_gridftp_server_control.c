@@ -2239,12 +2239,12 @@ globus_gridftp_server_control_start(
     }
     /* default options */
     strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQL");
-    server_handle->opts.send_buf = -1; 
+    server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.restart_frequency = 5;
-    server_handle->opts.receive_buf = -1;
+    server_handle->opts.receive_buf = 0;
     server_handle->opts.parallelism = 1;
-    server_handle->opts.packet_size = -1;
+    server_handle->opts.packet_size = 0;
     server_handle->opts.delayed_passive = GLOBUS_FALSE;
     server_handle->opts.passive_only = GLOBUS_FALSE;
 
