@@ -55,8 +55,6 @@ static
 int
 globus_l_gsi_proxy_activate(void)
 {
-    X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
-    int                                 pci_NID;
     char *                              tmpstring = NULL;
     int                                 result = (int) GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -115,17 +113,6 @@ globus_l_gsi_proxy_activate(void)
         goto exit;
     }
 
-    /* create the proxycertinfo object identifier and add it to the
-     * database of oids
-     */
-    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
-
-    /* this sets the pci NID in the static X509V3_EXT_METHOD struct */
-    pci_x509v3_ext_meth->ext_nid = pci_NID;
-
-    X509V3_EXT_add(pci_x509v3_ext_meth);
-
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
 
  exit:
@@ -145,8 +132,6 @@ globus_l_gsi_proxy_deactivate(void)
         "globus_i_gsi_proxy_deactivate";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    OBJ_cleanup();
 
     globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
 
