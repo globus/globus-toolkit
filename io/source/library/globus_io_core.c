@@ -1438,7 +1438,7 @@ globus_i_io_register_cancel(
 	    cancel_info->read_destructor = select_info->read_destructor;
 	    cancel_info->read_arg = select_info->read_arg;
 	}
-        else if(select_info->read_destructor)
+        else if(select_info->read_destructor && select_info->read_arg)
         {
             select_info->read_destructor(select_info->read_arg);
     	}
@@ -1480,7 +1480,7 @@ globus_i_io_register_cancel(
 	    cancel_info->write_destructor = select_info->write_destructor;
 	    cancel_info->write_arg = select_info->write_arg;
 	}
-        else if(select_info->write_destructor)
+        else if(select_info->write_destructor && select_info->write_arg)
         {
             select_info->write_destructor(select_info->write_arg);
     	}
@@ -2706,6 +2706,12 @@ globus_l_io_deactivate(void)
                 {
                     globus_l_io_pending_count--;
                 }
+                
+                select_info->read_callback = GLOBUS_NULL;
+                if(select_info->read_destructor && select_info->read_arg)
+                {
+                    select_info->read_destructor(select_info->read_arg);
+            	}
             }
             if(select_info->write_callback)
             {
@@ -2719,6 +2725,13 @@ globus_l_io_deactivate(void)
                 {
                     globus_l_io_pending_count--;
                 }
+                
+                select_info->write_callback = GLOBUS_NULL;
+                
+                if(select_info->write_destructor && select_info->write_arg)
+                {
+                    select_info->write_destructor(select_info->write_arg);
+            	}
             }
             if(select_info->except_callback)
             {
@@ -2732,6 +2745,8 @@ globus_l_io_deactivate(void)
                 {
                     globus_l_io_pending_count--;
                 }
+                
+                select_info->except_callback = GLOBUS_NULL;
             }
         }
     }
