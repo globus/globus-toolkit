@@ -67,13 +67,16 @@ for (@libs_reversed) {
 
   if (defined($lib_dir_map{$_})) {
     if ($lib_dir_map{$_} ne $currentlib_dir) {
-      $add_libdir = $currentlib_dir = $lib_dir_map{$_};
+      $add_libdir = $currentlib_dir;
+      $currentlib_dir = $lib_dir_map{$_};
     }    
   }
 
   $resulting_libline = "$add_libdir $_ $resulting_libline";
   $added_libs{$_} = 1;
 }
+
+$resulting_libline = "$currentlib_dir $resulting_libline";
 
 print "$resulting_libline\n";
 
