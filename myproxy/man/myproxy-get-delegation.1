@@ -59,7 +59,11 @@ The MyProxy username need not correspond to a real Unix username.
 Use the certificate subject (DN) as the default username, instead
 of the 
 .B LOGNAME 
-environment variable.
+environment variable.  When used with the
+.B -a
+option, the certificate subject of the authorization credential is
+used.  Otherwise, the certificate subject of the default credential is
+used.
 .TP
 .BI -t " hours, " --proxy_lifetime " hours"
 Specifies the lifetime of credentials retrieved from the
