@@ -438,47 +438,15 @@ globus_gridftp_server_control_stop(
  *  setters and getters
  */
 globus_result_t
-globus_gridftp_server_control_set_mode(
-    globus_gridftp_server_control_t         server,
-    char                                    mode);
-
-globus_result_t
-globus_gridftp_server_control_set_type(
-    globus_gridftp_server_control_t         server,
-    char                                    mode);
-
-globus_result_t
-globus_gridftp_server_control_get_client_id(
-    globus_gridftp_server_control_t         server,
-    uid_t *                                 uid);
-
-globus_result_t
-globus_gridftp_server_control_get_banner(
-    globus_gridftp_server_control_t         server,
-    char **                                 banner);
-
-globus_result_t
-globus_gridftp_server_control_set_buffer_size(
-    globus_gridftp_server_control_t         server,
-    int                                     recv_bs,
-    int                                     send_bs);
-
-/* -1 == system defaults */
-globus_result_t
 globus_gridftp_server_control_get_buffer_size(
     globus_gridftp_server_control_op_t      op,
-    int *                                   out_recv_bs,
-    int *                                   out_send_bs);
+    globus_size_t *                         out_recv_bs,
+    globus_size_t *                         out_send_bs);
 
 globus_result_t
 globus_gridftp_server_control_get_parallelism(
     globus_gridftp_server_control_op_t      op,
     int *                                   out_parallelism);
-
-globus_result_t
-globus_gridftp_server_control_set_parallelism(
-    globus_gridftp_server_control_t         server,
-    int                                     parallelism);
 
 globus_result_t
 globus_gridftp_server_control_get_mode(
@@ -494,11 +462,6 @@ globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string);
-
-globus_result_t
-globus_gridftp_server_control_set_cwd(
-    globus_gridftp_server_control_t         server,
-    char *                                  cwd_string);
 
 globus_bool_t
 globus_gridftp_server_control_authenticated(

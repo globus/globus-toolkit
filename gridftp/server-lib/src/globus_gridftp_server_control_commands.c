@@ -441,8 +441,7 @@ globus_l_gsc_cmd_stat(
                 NULL);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_command_panic(op);
-            goto err;
+            globus_i_gsc_finished_command(op, "500 Command not supported.\r\n");
         }
     }
 
@@ -554,11 +553,13 @@ globus_l_gsc_cmd_quit(
     int                                     argc,
     void *                                  user_arg)
 {
+    globus_i_gsc_server_handle_t *          server_handle;
+
+    server_handle = op->server_handle;
+
     globus_i_gsc_finished_command(op, "221 Goodbye.\r\n");
 
-    /* TODO: deal with telling user about close */
-    /* need terminate without abort here */
-    globus_i_gsc_terminate(op->server_handle);
+    globus_i_gsc_terminate(server_handle, 1);
 }
 
 /*************************************************************************
@@ -1847,6 +1848,8 @@ globus_l_gsc_ls_line(
     globus_gridftp_server_control_stat_t *  stat_info,
     char *                                  path)
 {
+    char *                                  username;
+    char *                                  grpname;
     struct passwd *                         pw;
     struct group *                          gr;
     struct tm *                             tm;
@@ -1860,7 +1863,23 @@ globus_l_gsc_ls_line(
 
     tm = localtime(&stat_info->mtime);
     pw = getpwuid(stat_info->uid);
+    if(pw == NULL)
+    {
+        username = "(null)";
+    }
+    else
+    {
+        username = pw->pw_name;
+    }
     gr = getgrgid(stat_info->gid);
+    if(pw == NULL)
+    {
+        grpname = "(null)";
+    }
+    else
+    {
+        grpname = gr->gr_name;
+    }
 
     if(S_ISDIR(stat_info->mode))
     {
@@ -1924,8 +1943,8 @@ globus_l_gsc_ls_line(
         " %s %d %s %s %ld %s %2d %02d:%02d %s\r\n",
         perms,
         stat_info->nlink,
-        pw->pw_name,
-        gr->gr_name,
+        username,
+        grpname,
         stat_info->size,
         month_lookup[tm->tm_mon],
         tm->tm_mday,

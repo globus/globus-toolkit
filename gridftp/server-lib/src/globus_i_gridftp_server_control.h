@@ -203,7 +203,8 @@ typedef void
 
 typedef struct globus_i_gsc_data_s
 {
-    void *                                  user_arg;
+    void *                                  user_handle;
+    globus_gridftp_server_control_data_dir_t dir;
 } globus_i_gsc_data_t;
 
 typedef enum globus_i_gsc_op_type_e
@@ -234,6 +235,9 @@ typedef struct globus_i_gsc_op_s
     globus_i_gsc_auth_cb_t                  auth_cb;
     globus_i_gsc_resource_cb_t              stat_cb;
 
+    globus_gridftp_server_control_stat_t *  stat_info;
+    int                                     stat_count;
+
     uid_t                                   uid;
 
     /* stuff for resource */
@@ -246,6 +250,8 @@ typedef struct globus_i_gsc_op_s
     int                                     net_prt;
     globus_i_gsc_passive_cb_t               passive_cb;
     globus_i_gsc_port_cb_t                  port_cb;
+
+    void *                                  old_data_obj;
 
     char *                                  command;
 
@@ -399,7 +405,8 @@ typedef struct globus_i_gsc_server_handle_s
 
 void
 globus_i_gsc_terminate(
-    globus_i_gsc_server_handle_t *          server_handle);
+    globus_i_gsc_server_handle_t *          server_handle,
+    globus_bool_t                           nice);
 
 char *
 globus_i_gsc_get_help(
@@ -440,7 +447,7 @@ globus_result_t
 globus_i_gsc_resource_query(
     globus_i_gsc_op_t *                     op,
     const char *                            path,
-    int                                     mask,
+    globus_gridftp_server_control_resource_mask_t mask,
     globus_i_gsc_resource_cb_t              cb,
     void *                                  user_arg);
 

@@ -45,6 +45,44 @@ globus_l_done_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
+static void
+globus_l_resource_cb(
+    globus_gridftp_server_control_op_t      op,
+    const char *                            path,
+    globus_gridftp_server_control_resource_mask_t mask)
+{
+    globus_result_t                         res;
+    globus_gridftp_server_control_stat_t    stat_info;
+    struct stat                             st;
+
+    if(stat(path, &st) < 0)
+    {
+        globus_gridftp_server_control_finished_resource(
+            op,
+            globus_error_put(GLOBUS_ERROR_NO_INFO),
+            NULL,
+            0);
+        return;
+    }
+
+    stat_info.mode = st.st_mode;
+    stat_info.nlink = st.st_nlink;
+    stat_info.uid = st.st_uid;
+    stat_info.gid = st.st_gid;
+    stat_info.size = st.st_size;
+    stat_info.atime = st.st_atime;
+    stat_info.ctime = st.st_ctime;
+    stat_info.mtime = st.st_mtime;
+    strcpy(stat_info.name, path);
+
+    res = globus_gridftp_server_control_finished_resource(
+        op,
+        GLOBUS_SUCCESS,
+        &stat_info,
+        1);
+    globus_assert(res == GLOBUS_SUCCESS);
+}
+
 void
 auth_func(
     globus_gridftp_server_control_op_t      op,
@@ -74,6 +112,7 @@ main(
     globus_xio_driver_t                     tcp_driver;
     globus_xio_driver_t                     ftp_driver;
     globus_xio_stack_t                      stack;
+    globus_xio_attr_t                       xio_attr;
     globus_xio_handle_t                     xio_handle;
     globus_xio_server_t                     xio_server;
     globus_result_t                         res;
@@ -90,14 +129,14 @@ main(
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
 
-    res = globus_xio_driver_load("gssapi_ftp", &ftp_driver);
+    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res, __LINE__);
-/*    res = globus_xio_stack_push_driver(stack, ftp_driver);
+    res = globus_xio_stack_push_driver(stack, ftp_driver);
     test_res(res, __LINE__);
-*/
+
     res = globus_xio_server_create(&xio_server, NULL, stack);
     test_res(res, __LINE__);
 
@@ -109,7 +148,12 @@ main(
     test_res(res, __LINE__);
 
     fprintf(stdout, "opening handle\n");
-    res = globus_xio_open(xio_handle, NULL, NULL);
+    res = globus_xio_attr_init(&xio_attr);
+    test_res(res, __LINE__);
+    res = globus_xio_attr_cntl(
+        xio_attr, ftp_driver, GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+    test_res(res, __LINE__);
+    res = globus_xio_open(xio_handle, NULL, xio_attr);
     test_res(res, __LINE__);
 
     /*
@@ -122,6 +166,10 @@ main(
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_auth(ftp_attr, auth_func);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_resource(
+        ftp_attr, globus_l_resource_cb);
     test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
