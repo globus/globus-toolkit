@@ -218,6 +218,10 @@ globus_l_xio_gssapi_ftp_handle_create()
     handle->write_iov_size = 2;
     handle->write_iov = (globus_xio_iovec_t *) 
         globus_malloc(sizeof(globus_xio_iovec_t) * handle->write_iov_size);
+    handle->write_buffer_ndx = 0;
+    handle->write_buffer_length = GSSAPI_FTP_DEFAULT_BUFSIZE;
+    handle->write_buffer = globus_malloc(GSSAPI_FTP_DEFAULT_BUFSIZE);
+
 
     return handle;
 }
@@ -585,6 +589,7 @@ globus_l_xio_gssapi_ftp_encode(
     encoded_buf[gss_out_buf.length+4]='\r';
     encoded_buf[gss_out_buf.length+5]='\n';
     encoded_buf[gss_out_buf.length+6]='\0';
+    *out_buffer = encoded_buf;
 
     gss_release_buffer(&min_stat, &gss_out_buf);
 
@@ -1263,6 +1268,7 @@ globus_l_xio_gssapi_ftp_client_reply(
                         goto err;
                     }
                 }
+                handle->state = GSSAPI_FTP_STATE_OPEN;
                 done = GLOBUS_TRUE;
             }
             /* if we still need to send more adats, but all is well */
@@ -1608,6 +1614,7 @@ globus_l_xio_gssapi_ftp_write(
     }
     else
     {
+        ctr = 0;
         buf = handle->write_buffer;
         handle->write_sent_length = 0;
         while(tmp_ptr != NULL)
@@ -1632,7 +1639,8 @@ globus_l_xio_gssapi_ftp_write(
             {
                 handle->write_iov_size *= 2;
                 handle->write_iov = globus_libc_realloc(
-                    handle->write_iov, handle->write_iov_size);
+                    handle->write_iov, 
+                    handle->write_iov_size * (sizeof(globus_xio_iovec_t)));
             }
         }
         handle->write_iov_count = ctr;
@@ -1698,7 +1706,7 @@ globus_l_xio_gssapi_ftp_load(
         driver,
         globus_l_xio_gssapi_ftp_open,
         globus_l_xio_gssapi_ftp_close,
-        globus_l_xio_gssapi_ftp_read,
+        /*globus_l_xio_gssapi_ftp_read, */ NULL,
         globus_l_xio_gssapi_ftp_write,
         NULL);
 

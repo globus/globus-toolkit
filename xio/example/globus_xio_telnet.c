@@ -17,6 +17,34 @@ test_res(
     globus_assert(0);
 }
 
+void 
+globus_l_xio_read_cb(
+    globus_xio_handle_t                     handle,
+    globus_result_t                         result,
+    globus_byte_t *                         buffer,
+    globus_size_t                           len,
+    globus_size_t                           nbytes,
+    globus_xio_data_descriptor_t            data_desc,
+    void *                                  user_arg)
+{
+    int                                     ctr;
+    globus_result_t                         res;
+
+    for(ctr = 0; ctr < nbytes; ctr++)
+    {
+        if(isprint(buffer[ctr]) || buffer[ctr] == '\n')
+        {
+            fprintf(stdout, "%c", buffer[ctr]);
+        }
+    }
+    fflush(stdout);
+
+    res = globus_xio_register_read(handle, buffer, 
+            LINE_LEN, 1, NULL, 
+            globus_l_xio_read_cb, NULL);
+    test_res(res);
+}
+
 void
 help()
 {
@@ -44,9 +72,10 @@ main(
     char *                                  cs;
     globus_result_t                         res;
     char                                    line[LINE_LEN];
+    char                                    read_buffer[LINE_LEN];
     int                                     ctr;
     globus_bool_t                           done = GLOBUS_FALSE;
-    globus_size_t                           nbytes;
+    int                                     ndx;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
 
@@ -82,28 +111,25 @@ main(
     res = globus_xio_open(&xio_handle, NULL, target);
     test_res(res);
 
-    fprintf(stderr, "SUccessfully opened.\n");
+    fprintf(stderr, "Successfully opened.\n");
+    res = globus_xio_register_read(xio_handle, read_buffer, 
+            LINE_LEN, 1, NULL, 
+            globus_l_xio_read_cb, NULL);
+    test_res(res);
 
     while(!done)
     {
-        res = globus_xio_read(xio_handle, line,
-                sizeof(line), 1, &nbytes, NULL);
-        test_res(res);
-        for(ctr = 0; ctr < nbytes; ctr++)
-        {
-            if(isprint(line[ctr]) || line[ctr] == '\n')
-            {
-                fprintf(stdout, "%c", line[ctr]);
-            }
-        }
-        fflush(stdout);
-
+        globus_poll();
         if(fgets(line, LINE_LEN, stdin) == NULL)
         {
             done = GLOBUS_TRUE;
         }
         else
         {
+            ndx = strlen(line);
+            line[ndx] = '\r';
+            line[ndx+1] = '\n';
+            line[ndx+2] = '\0';
             res = globus_xio_write(xio_handle, line, 
                     sizeof(line), strlen(line), NULL, NULL);
             test_res(res);
