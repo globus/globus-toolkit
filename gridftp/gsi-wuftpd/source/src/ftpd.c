@@ -587,11 +587,6 @@ int port_allowed(char *remoteaddr);
 int fclose(FILE *);
 #endif
 
-int
-file_seek(
-    int                                      offset,
-    FILE *                                   fin);
-
 static SIGNAL_TYPE alarm_signal(int sig)
 {
 }
@@ -4181,89 +4176,49 @@ void retrieve(char *cmd, char *name, int offset, int length)
     wu_realpath(name, realname, chroot_path);
 
     if (cmd == NULL && (stat_ret = stat(name, &st)) == 0)
-    {
 	/* there isn't a command and the file exists */
-	if (use_accessfile && checknoretrieve(name)) 
-        {	/* see above.  _H */
+	if (use_accessfile && checknoretrieve(name)) {	/* see above.  _H */
 	    if (log_security)
-            {
 		if (anonymous)
-                {
-		    syslog(LOG_NOTICE, 
-                       "anonymous(%s) of %s tried to download %s (noretrieve)",
-	                guestpw, remoteident, realname);
-                }
+		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to download %s (noretrieve)",
+			   guestpw, remoteident, realname);
 		else
-                {
-		    syslog(LOG_NOTICE, 
-                        "%s of %s tried to download %s (noretrieve)",
+		    syslog(LOG_NOTICE, "%s of %s tried to download %s (noretrieve)",
 			   pw->pw_name, remoteident, realname);
-                }
-            }
 	    return;
 	}
-    }
 
 #ifdef TRANSFER_COUNT
 #ifdef TRANSFER_LIMIT
     if (retrieve_is_data)
-    {
-	if (((file_limit_data_out > 0) && 
-             (file_count_out >= file_limit_data_out))
-	    || ((file_limit_data_total > 0) && 
-                (file_count_total >= file_limit_data_total))
-	    || ((data_limit_data_out > 0) && 
-                ( (data_count_out + st.st_size) >= data_limit_data_out))
-	    || ((data_limit_data_total > 0) && 
-                ( (data_count_total + st.st_size) >= data_limit_data_total))) 
-        {
+	if (((file_limit_data_out > 0) && (file_count_out >= file_limit_data_out))
+	    || ((file_limit_data_total > 0) && (file_count_total >= file_limit_data_total))
+	    || ((data_limit_data_out > 0) && ( (data_count_out + st.st_size) >= data_limit_data_out))
+	    || ((data_limit_data_total > 0) && ( (data_count_total + st.st_size) >= data_limit_data_total))) {
 	    if (log_security)
-            {
 		if (anonymous)
-                {
-		    syslog(LOG_NOTICE, 
-         "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
+		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
 			   guestpw, remoteident, realname);
-                }
 		else
-                {
-		    syslog(LOG_NOTICE, 
-         "%s of %s tried to retrieve %s (Transfer limits exceeded)",
+		    syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
 			   pw->pw_name, remoteident, realname);
-                }
-            }
 	    reply(553, "Permission denied on server. (Transfer limits exceeded)");
 	    return;
 	}
-    }
-    if (((file_limit_raw_out > 0) && 
-         (xfer_count_out >= file_limit_raw_out))
-	|| ((file_limit_raw_total > 0) && 
-            (xfer_count_total >= file_limit_raw_total))
-	|| ((data_limit_raw_out > 0) && 
-            (byte_count_out >= data_limit_raw_out))
-	|| ((data_limit_raw_total > 0) && 
-            (byte_count_total >= data_limit_raw_total))) 
-    {
+    if (((file_limit_raw_out > 0) && (xfer_count_out >= file_limit_raw_out))
+	|| ((file_limit_raw_total > 0) && (xfer_count_total >= file_limit_raw_total))
+	|| ((data_limit_raw_out > 0) && (byte_count_out >= data_limit_raw_out))
+	|| ((data_limit_raw_total > 0) && (byte_count_total >= data_limit_raw_total))) {
 	if (log_security)
-        {
 	    if (anonymous)
-            {
-		syslog(LOG_NOTICE, 
-      "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
+		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
 		       guestpw, remoteident, realname);
-            }
 	    else
-            {
-		syslog(LOG_NOTICE, 
-                   "%s of %s tried to retrieve %s (Transfer limits exceeded)",
+		syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
 		       pw->pw_name, remoteident, realname);
-            }
-        }
 	reply(553, "Permission denied on server. (Transfer limits exceeded)");
 	return;
     }
-
 #ifdef RATIO
     if (retrieve_is_data && (upload_download_rate > 0) )
 	if( freefile = is_downloadfree(name) ) {
@@ -4285,12 +4240,10 @@ void retrieve(char *cmd, char *name, int offset, int length)
 
 
     logname = (char *) NULL;
-    if (cmd == NULL && stat_ret != 0) 
-    {		/* file does not exist */
+    if (cmd == NULL && stat_ret != 0) {		/* file does not exist */
 	char *ptr;
 
-	for (cptr = cvtptr; cptr != NULL; cptr = cptr->next) 
-        {
+	for (cptr = cvtptr; cptr != NULL; cptr = cptr->next) {
 	    if (!(mangleopts & O_COMPRESS) && (cptr->options & O_COMPRESS))
 		continue;
 	    if (!(mangleopts & O_UNCOMPRESS) && (cptr->options & O_UNCOMPRESS))
@@ -4298,8 +4251,7 @@ void retrieve(char *cmd, char *name, int offset, int length)
 	    if (!(mangleopts & O_TAR) && (cptr->options & O_TAR))
 		continue;
 
-	    if ((cptr->stripfix) && (cptr->postfix)) 
-            {
+	    if ((cptr->stripfix) && (cptr->postfix)) {
 		int pfxlen = strlen(cptr->postfix);
 		int sfxlen = strlen(cptr->stripfix);
 		int namelen = strlen(name);
@@ -4317,8 +4269,7 @@ void retrieve(char *cmd, char *name, int offset, int length)
 		if (stat(fnbuf, &st) != 0)
 		    continue;
 	    }
-	    else if (cptr->postfix) 
-            {
+	    else if (cptr->postfix) {
 		int pfxlen = strlen(cptr->postfix);
 		int namelen = strlen(name);
 
@@ -4331,31 +4282,25 @@ void retrieve(char *cmd, char *name, int offset, int length)
 		if (stat(fnbuf, &st) != 0)
 		    continue;
 	    }
-	    else if (cptr->stripfix) 
-            {
+	    else if (cptr->stripfix) {
 		(void) strcpy(fnbuf, name);
 		(void) strcat(fnbuf, cptr->stripfix);
 		if (stat(fnbuf, &st) != 0)
 		    continue;
 	    }
-	    else 
-            {
+	    else {
 		continue;
 	    }
 
-	    if (S_ISDIR(st.st_mode)) 
-            {
-		if (!cptr->types || !(cptr->types & T_DIR)) 
-                {
+	    if (S_ISDIR(st.st_mode)) {
+		if (!cptr->types || !(cptr->types & T_DIR)) {
 		    reply(550, "Cannot %s directories.", cptr->name);
 		    return;
 		}
-		if ((cptr->options & O_TAR)) 
-                {
+		if ((cptr->options & O_TAR)) {
 		    strcpy(namebuf, fnbuf);
 		    strcat(namebuf, "/.notar");
-		    if (stat(namebuf, &junk) == 0) 
-                    {
+		    if (stat(namebuf, &junk) == 0) {
 			if (log_security)
 			    if (anonymous)
 				syslog(LOG_NOTICE, "anonymous(%s) of %s tried to tar %s (.notar)",
@@ -4413,13 +4358,11 @@ void retrieve(char *cmd, char *name, int offset, int length)
 	}
     }
 
-    if (cmd == NULL) 
-    {		/* no command */
+    if (cmd == NULL) {		/* no command */
 	fin = fopen(name, "r"), closefunc = fclose;
 	st.st_size = 0;
     }
-    else 
-    {			/* run command */
+    else {			/* run command */
 	static char line[BUFSIZ];
 
 	(void) snprintf(line, sizeof line, cmd, name), name = line;
@@ -4429,9 +4372,7 @@ void retrieve(char *cmd, char *name, int offset, int length)
 	st.st_blksize = BUFSIZ;
 #endif
     }
-
-    if (fin == NULL) 
-    {
+    if (fin == NULL) {
 	if (errno != 0)
 	    perror_reply(550, name);
 	if ((errno == EACCES) || (errno == EPERM))
@@ -4445,94 +4386,65 @@ void retrieve(char *cmd, char *name, int offset, int length)
 	return;
     }
     if (cmd == NULL &&
-	(fstat(fileno(fin), &st) < 0 || (st.st_mode & S_IFMT) != S_IFREG)) 
-    {
+	(fstat(fileno(fin), &st) < 0 || (st.st_mode & S_IFMT) != S_IFREG)) {
 	reply(550, "%s: not a plain file.", name);
 	goto done;
     }
 
+
+    /* added by JB */
+    if(restart_point)
+    {
+        tmp_restart = restart_point;
+    }
+    else if(offset != -1)
+    {
+        tmp_restart = offset;
+    }
+    else
+    {
+        tmp_restart = 0;
+    }
+
+    if (tmp_restart) {
+	if (type == TYPE_A) {
+	    register int i, n, c;
+
+	    n = tmp_restart;
+	    i = 0;
+	    while (i++ < n) {
+		if ((c = getc(fin)) == EOF) {
+		    perror_reply(550, name);
+		    goto done;
+		}
+		if (c == '\n')
+		    i++;
+	    }
+	}
+	else if (lseek(fileno(fin), tmp_restart, SEEK_SET) < 0) {
+	    perror_reply(550, name);
+	    goto done;
+	}
+    }
+
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        int                                         connect_rc;
-        int                                         restart_offset[1];
-        int                                         restart_length[1];
-        int                                         restart_count = 1;
-        int                                         ctr;
-
-        connect_rc = g_connect_write(fin, &g_data_handle);
-        if(connect_rc != 0)
-        {
-            goto done;
-        }
- 
-        if(restart_point)
-        {
-            restart_offset[0] = restart_point;
-        }
-        else if(offset != -1)
-        {
-            restart_offset[0] = offset;
-        }
-        else
-        {
-            restart_offset[0] = 0;
-        }
-        restart_length[0] = length;
-
-        for(ctr = 0; ctr < restart_count; ctr++)
-        {
-            if(file_seek(restart_offset[ctr], fin) != 0)
-            {
-	        perror_reply(550, name);
-                goto done;
-            }
-
-#           ifdef BUFFER_SIZE
-                TransferComplete = G_SEND_DATA(name, fin, 
-                                       &g_data_handle, restart_offset[ctr], 
-                                       BUFFER_SIZE, restart_length[ctr]);
+#       ifdef BUFFER_SIZE
+            TransferComplete = G_SEND_DATA(name, fin, 
+                                   g_control_channel, offset, 
+                                   BUFFER_SIZE, length);
+#       else
+#           ifdef HAVE_ST_BLKSIZE
+                TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
+                                       offset, st.st_blksize * 2, length);
 #           else
-#               ifdef HAVE_ST_BLKSIZE
-                    TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
-                                           restart_offset[ctr], 
-                                           st.st_blksize * 2, 
-                                           restart_length[ctr]);
-
-        
-#               else
-                    TransferComplete = G_SEND_DATA(name, fin, &g_data_handle,
-                                           restart_offset[ctr], BUFSIZ, 
-                                           restart_length[ctr]);
-#               endif
+                TransferComplete = G_SEND_DATA(name, fin, 
+                                       &g_data_handle, offset, BUFSIZ, length);
 #           endif
-        }
+#       endif
     }
 #   else
     {
-        /*
-         *  handle restarts
-         */
-        if(restart_point)
-        {
-            tmp_restart = restart_point;
-        }
-        else if(offset != -1)
-        {
-            tmp_restart = offset;
-        }
-        else
-        {
-            tmp_restart = 0;
-        }
-
-        if (tmp_restart) 
-        {
-            if(file_seek(tmp_restart, fin) != 0)
-            {
-	        perror_reply(550, name);
-                goto done;
-            }
-        }
         dout = dataconn(name, st.st_size, "w");
         if (dout == NULL)
         {
@@ -4545,7 +4457,7 @@ void retrieve(char *cmd, char *name, int offset, int length)
                 TransferComplete = SEND_DATA(name, fin, dout, 
                                        st.st_blksize * 2, length);
 #           else
-                TransferComplete = SEND_DATA(name, fin, dout, BUFSIZ, length);
+                TransferComplete = SEND_DATA(name, fin, dout, BUFSIZ);
 #           endif
 #       endif
        (void) fclose(dout);
@@ -4625,42 +4537,6 @@ void retrieve(char *cmd, char *name, int offset, int length)
   done:
     if (closefunc)
 	(*closefunc) (fin);
-}
-
-/*
- *  added by JB
- */
-int
-file_seek(
-    int                                      offset,
-    FILE *                                   fin)
-{
-    register int                             i;
-    register int                             n;
-    register int                             c;
-
-    if (type == TYPE_A) 
-    {
-        n = offset;
-        i = 0;
-        while (i++ < n) 
-        {
-	    if ((c = getc(fin)) == EOF) 
-            {
-   	        return -1;
-  	    }
-	    if (c == '\n')
-            {
-	        i++;
-            }
-        }
-    }
-    else if (lseek(fileno(fin), offset, SEEK_SET) < 0) 
-    {
-        return -1;
-    }
-
-    return 0;
 }
 
 /*

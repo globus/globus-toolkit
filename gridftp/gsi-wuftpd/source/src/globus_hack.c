@@ -356,78 +356,6 @@ g_alarm_signal(
     globus_mutex_unlock(&g_monitor.mutex);
 }
 
-int
-g_connect_write(
-    FILE *                                          instr,
-    globus_ftp_control_handle_t *                   handle)
-{
-    globus_result_t                                 res;
-    globus_bool_t                                   l_timed_out = GLOBUS_FALSE;
-
-    wu_monitor_reset(&g_monitor);
-
-    (void) signal(SIGALRM, g_alarm_signal);
-    alarm(timeout_connect);
-
-    if(mode == MODE_E)
-    {
-	if(g_layout.mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
-	{
-	    if(!retrieve_is_data)
-	    {
-		struct stat s;
-
-		fstat(fileno(instr), &s);
-		
-		g_layout.partitioned.size = s.st_size;
-
-		globus_ftp_control_local_layout(handle, &g_layout, 0);
-	    }
-	}
-	else
-	{
-	    globus_ftp_control_local_layout(handle, &g_layout, 0);
-	}
-	globus_ftp_control_local_parallelism(handle,
-					     &g_parallelism);
-    }
-    res = globus_ftp_control_data_connect_write(
-              handle,
-              connect_callback,
-              (void *)&g_monitor);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto data_err;
-    }
-
-    globus_mutex_lock(&g_monitor.mutex);
-    {
-        while(!g_monitor.done)
-        {
-            globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
-        }
-        l_timed_out = g_monitor.timed_out;
-    }
-    globus_mutex_unlock(&g_monitor.mutex);
-
-    if(l_timed_out)
-    {
-        return -1;
-    }
-
-    return 0;
-
-  /* 
-   *  DATA_ERR
-   */
-  data_err:
-    alarm(0);
-    transflag = 0;
-
-    retrieve_is_data = 1;
-
-    return -1;
-}
 
 /*
  *  globusified send data routine
@@ -480,6 +408,58 @@ g_send_data(
     if(offset == -1)
     {
         offset = 0;
+    }
+    /*
+     *  perhaps a time out should be added here
+     */
+    (void) signal(SIGALRM, g_alarm_signal);
+    alarm(timeout_connect);
+
+    if(mode == MODE_E)
+    {
+	if(g_layout.mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
+	{
+	    if(!retrieve_is_data)
+	    {
+		struct stat s;
+
+		fstat(fileno(instr), &s);
+		
+		g_layout.partitioned.size = s.st_size;
+
+		globus_ftp_control_local_layout(handle, &g_layout, 0);
+	    }
+	}
+	else
+	{
+	    globus_ftp_control_local_layout(handle, &g_layout, 0);
+	}
+	globus_ftp_control_local_parallelism(handle,
+					     &g_parallelism);
+
+    }
+    res = globus_ftp_control_data_connect_write(
+              handle,
+              connect_callback,
+              (void *)&g_monitor);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto data_err;
+    }
+
+    globus_mutex_lock(&g_monitor.mutex);
+    {
+        while(!g_monitor.done)
+        {
+            globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
+        }
+        l_timed_out = g_monitor.timed_out;
+    }
+    globus_mutex_unlock(&g_monitor.mutex);
+
+    if(l_timed_out)
+    {
+        goto data_err;
     }
 
     transflag++;
@@ -583,6 +563,12 @@ g_send_data(
                 }
             }
             globus_mutex_unlock(&g_monitor.mutex);
+
+            /*
+             *  reset the alarm  when data comes in
+            (void) signal(SIGALRM, g_alarm_signal);
+            alarm(timeout_data);
+             */
 
             byte_count += cnt;
 #           ifdef TRANSFER_COUNT
@@ -812,6 +798,7 @@ data_write_callback(
     {
         monitor->count--;
         globus_cond_signal(&monitor->cond);
+
     }
     globus_mutex_unlock(&monitor->mutex);
 
