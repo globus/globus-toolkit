@@ -38,7 +38,6 @@
 #include <gssapi_generic.h>
 
 /* MIT Kerberos doesn't seem to define GSS_NT_HOSTBASED_SERVICE */
-
 #ifndef GSS_C_NT_HOSTBASED_SERVICE
 #define GSS_C_NT_HOSTBASED_SERVICE gss_nt_service_name
 #endif /* GSS_C_NT_... */
