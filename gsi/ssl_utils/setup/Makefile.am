@@ -13,6 +13,8 @@ setup_SCRIPTS = \
 	setup-ssl-utils-sh-scripts \
 	setup-ssl-utils \
 	setup-ssl-utils.pl \
+	setup-gsi \
+	setup-gsi.pl \
 	grid-cert-request-config.in \
 	grid-security-config.in
 
