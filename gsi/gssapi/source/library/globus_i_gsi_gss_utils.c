@@ -1599,7 +1599,7 @@ globus_i_gsi_gss_create_cred(
             goto error_exit;
         }
         
-        sk_X509_push(cert_chain,proxy);
+        sk_X509_unshift(cert_chain,proxy);
         
         /* now strip off any /CN=proxy entries */
         local_result = globus_gsi_cert_utils_get_base_name(
