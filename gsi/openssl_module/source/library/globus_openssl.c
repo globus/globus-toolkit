@@ -12,6 +12,7 @@
 #include "proxycertinfo.h"
 #include "version.h"
 #include "openssl/crypto.h"
+#include "openssl/err.h"
 
 static int
 globus_l_openssl_activate(void);
