@@ -962,6 +962,7 @@ globus_l_gsc_cmd_opts(
     void *                                  user_arg)
 {
     int                                     tmp_i;
+    char                                    tmp_s[1024];
     char *                                  msg;
     char *                                  tmp_ptr;
     globus_i_gsc_handle_opts_t *            opts;
@@ -981,7 +982,7 @@ globus_l_gsc_cmd_opts(
     else if(strcmp("RETR", cmd_a[1]) == 0)
     {
         msg = "200 OPTS Command Successful.\r\n";
-        if(sscanf(cmd_a[2], "Parallelism=%d,%*d,%*d;", &tmp_i)==1)
+        if(sscanf(cmd_a[2], "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
         {
             opts->parallelism = tmp_i;
         }
@@ -992,6 +993,12 @@ globus_l_gsc_cmd_opts(
         else if(sscanf(cmd_a[2], "WindowSize=%d;", &tmp_i) == 1)
         {
             opts->send_buf = tmp_i;
+        }
+        else if(sscanf(cmd_a[2], "StripeLayout=%s;", tmp_s) == 1)
+        {
+        }
+        else if(sscanf(cmd_a[2], "BlockSize=%d;", &tmp_i) == 1)
+        {
         }
         else
         {
@@ -1362,6 +1369,11 @@ globus_l_gsc_cmd_pasv_cb(
             }
             else
             {
+                /* allow SPAS to work until real striping gets done */
+                if(addr_count == -1)
+                {
+                    addr_count = 1;
+                }
                 msg =  globus_common_create_string(
                     "%d-Entering Striped Passive Mode.\r\n", 
                     wrapper->reply_code);
@@ -1394,7 +1406,7 @@ globus_l_gsc_cmd_pasv_cb(
                     msg = tmp_ptr;
                 }
                 tmp_ptr = globus_common_create_string("%s%d End\r\n", 
-                    wrapper->reply_code, msg);
+                    msg, wrapper->reply_code);
                 if(tmp_ptr == NULL)
                 {
                     goto err;
@@ -2592,4 +2604,5 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
+//    globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
 }

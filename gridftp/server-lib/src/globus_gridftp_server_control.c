@@ -8,7 +8,7 @@
 #include <version.h>
 
 #define GLOBUS_L_GSC_DEFAULT_220   "220 GridFTP Server.\r\n"
-#define GLOBUS_XIO_CLOSE_NO_CANCEL 1
+#define GLOBUS_XIO_CLOSE_NO_CANCEL 34433
 
 /*
  *  This File

@@ -807,7 +807,7 @@ globus_l_gfs_file_open(
 
 error_register:
     globus_xio_close(*file_handle, GLOBUS_NULL);
-    
+    *file_handle = GLOBUS_NULL;
 error_create:
 error_push:
     globus_xio_stack_destroy(stack);
