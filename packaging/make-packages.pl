@@ -80,13 +80,13 @@ my $thread = "pthr";
 
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
-    $skipbundle, $faster, $paranoia, $version, $uncool,
+    $skipbundle, $faster, $paranoia, $version, $uncool, $avoid_bootstrap,
     $binary, $deporder, $inplace, $restart_package, $gt3dir, $doxygen,
     $deps, $graph, $listpack, $listbun, $cvsuser,
     $autotools, $gpt, $core, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
-    0, 0, 1, "1.0", 0, 
+    0, 0, 1, "1.0", 0, 0,
     0, 0, "no", 0, "", 0,
     0, 0, 0, 0, "",
     1, 1, 1, "");
@@ -100,6 +100,7 @@ GetOptions( 'i|install=s' => \$install,
             'force' => \$force,
             'n|no-updates!' => \$noupdates,
             'faster!' => \$faster,
+            'ab|avoid-bootstrap!' => \$avoid_bootstrap,
             'flavor=s' => \$flavor,
             'd2|gt2-dir=s' => \$cvs_archives{gt2}[2],
             't2|gt2-tag=s' => \$cvs_archives{gt2}[3],
@@ -954,7 +955,9 @@ sub install_globus_core()
         my $dir = $cvs_archives{gt2}[2];
         my $_cwd = cwd();
         chdir $dir . "/core/source";
-        system("./bootstrap");
+        if ( !$avoid_bootstrap || ! -e 'configure') {
+           system("./bootstrap");
+        }
         system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor");
         chdir $_cwd;
     } else {
@@ -1342,8 +1345,11 @@ sub inplace_build()
     print "Inplace build: $package.\n";
 
     chdir $subdir;
-    log_system("./bootstrap", "$pkglog/$package");
-    paranoia("Inplace bootstrap of $package in $subdir failed!");
+    if ( !$avoid_bootstrap || ! -e 'configure')
+    {
+        log_system("./bootstrap", "$pkglog/$package");
+        paranoia("Inplace bootstrap of $package in $subdir failed!");
+    }
     my $build_args = "";
     $build_args .= " CONFIGOPTS_GPTMACRO=--enable-doxygen " if $doxygen;
     $build_args .= " -verbose " if $verbose;
@@ -1407,7 +1413,9 @@ sub package_source_bootstrap()
     system("mkdir -p $pkglog");
 
     if ( $custom eq "gpt" ){
-       log_system("./bootstrap", "$pkglog/$package");
+       if ( !$avoid_bootstrap || ! -e 'configure') {
+           log_system("./bootstrap", "$pkglog/$package");
+       }
     } elsif ( $custom eq "pnb" ){
        patch_package($package);
     } elsif ( $custom eq "tar" ) {
@@ -1435,14 +1443,16 @@ sub package_source_gpt()
 
         print "Following GPT packaging for $package.\n";
 
+        if ( !$avoid_bootstrap || ! -e 'configure') {
+            log_system("./bootstrap", "$pkglog/$package");
+            paranoia("$package bootstrap failed.");
+        }
+
         if ( -e 'Makefile' )
         {
            log_system("make distclean", "$pkglog/$package");
            paranoia("make distclean failed for $package");
         }
-
-        log_system("./bootstrap", "$pkglog/$package");
-        paranoia("$package bootstrap failed.");
 
         #TODO: make function out of "NB" part of PNB, call it here.
         if ( $package eq "globus_gridftp_server" or $package eq "gsincftp") 
