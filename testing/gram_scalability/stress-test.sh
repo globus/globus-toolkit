@@ -2,6 +2,15 @@
 
 factory=$1
 max=$2
+if [ -z $factory ]; then
+    echo "ERROR: No contact string specified"
+    exit
+fi
+if [ -z $max ]; then
+    echo "ERROR: No max job count specified"
+    exit
+fi
+
 count=1
 begin_time=0
 end_time=0

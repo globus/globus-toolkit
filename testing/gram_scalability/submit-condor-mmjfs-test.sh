@@ -11,6 +11,6 @@ if [ -z $port ]; then
     port=8080
 fi
 
-factory="$host:$port/ogsa/services/base/gram/MasterCondorManagedJobFactoryService"
+factory="$host:$port/ogsa/services/base/gram/MasterCondorIntelLinuxManagedJobFactoryService"
 
 ./submit-test.sh $factory ./date.xml

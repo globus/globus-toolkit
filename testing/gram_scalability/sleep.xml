@@ -17,10 +17,7 @@
     </gram:executable>
     <gram:arguments>
         <rsl:stringArray>
-            <!--
             <rsl:string><rsl:stringElement value="7200"/></rsl:string>
-            -->
-            <rsl:string><rsl:stringElement value="10"/></rsl:string>
         </rsl:stringArray>
     </gram:arguments>
     <gram:stdout>
