@@ -43,12 +43,19 @@ typedef struct
     globus_ftp_control_handle_t         data_channel;
 } globus_l_gfs_data_handle_t;  
 
+typedef struct
+{
+    int                                 data_handle_id;
+    globus_bool_t                       is_real;
+} globus_l_gfs_data_handle_wrapper_t;
+
 typedef struct globus_l_gfs_data_operation_s
 {
     globus_l_gfs_data_state_t           state;
     globus_bool_t                       writing;
     globus_mutex_t                      mutex;
     globus_l_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
     globus_bool_t                       own_data_handle;
     
     globus_l_gfs_data_session_t *       session_handle;
@@ -620,9 +627,11 @@ globus_i_gfs_data_destroy_handle(
     globus_result_t                     result;
     globus_l_gfs_data_handle_t *        handle;
     globus_l_gfs_data_session_t *       session_handle;    
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
+    wrapper = (globus_l_gfs_data_handle_wrapper_t *) data_connection_id;
     
     session_handle->data_handle = NULL;
     
@@ -633,7 +642,7 @@ globus_i_gfs_data_destroy_handle(
     }
     else
     {
-        handle = (globus_l_gfs_data_handle_t *) data_connection_id;
+        handle = (globus_l_gfs_data_handle_t *) wrapper->data_handle_id;
         if(handle == GLOBUS_NULL)
         {
             goto error;
@@ -658,9 +667,15 @@ globus_l_gfs_data_passive_kickout(
 {
     globus_l_gfs_data_passive_bounce_t * bounce_info;
     globus_gfs_ipc_reply_t *            reply;   
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
     
     bounce_info = (globus_l_gfs_data_passive_bounce_t *) user_arg;
 
+    wrapper = (globus_l_gfs_data_handle_wrapper_t *) 
+        globus_calloc(1, sizeof(globus_l_gfs_data_handle_wrapper_t));
+    wrapper->data_handle_id = (int) bounce_info->handle;
+    wrapper->is_real = GLOBUS_TRUE;
+        
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
     reply->info.data.contact_strings = (const char **) 
@@ -669,7 +684,7 @@ globus_l_gfs_data_passive_kickout(
     reply->type = GLOBUS_GFS_OP_PASSIVE;
     reply->id = bounce_info->id;
     reply->result = GLOBUS_SUCCESS;
-    reply->info.data.data_handle_id = (int) bounce_info->handle;
+    reply->info.data.data_handle_id = (int) wrapper;
     reply->info.data.bi_directional = bounce_info->bi_directional;
     reply->info.data.cs_count = 1;
     *reply->info.data.contact_strings = (const char *) 
@@ -823,16 +838,22 @@ globus_l_gfs_data_active_kickout(
 {
     globus_l_gfs_data_active_bounce_t * bounce_info;
     globus_gfs_ipc_reply_t *            reply;   
-    
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
+
     bounce_info = (globus_l_gfs_data_active_bounce_t *) user_arg;
 
+    wrapper = (globus_l_gfs_data_handle_wrapper_t *) 
+        globus_calloc(1, sizeof(globus_l_gfs_data_handle_wrapper_t));
+    wrapper->data_handle_id = (int) bounce_info->handle;
+    wrapper->is_real = GLOBUS_TRUE;
+    
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
 
     reply->type = GLOBUS_GFS_OP_ACTIVE;
     reply->id = bounce_info->id;
     reply->result = GLOBUS_SUCCESS;
-    reply->info.data.data_handle_id = (int) bounce_info->handle;
+    reply->info.data.data_handle_id = (int) wrapper;
     reply->info.data.bi_directional = bounce_info->bi_directional;
     
     if(bounce_info->callback != NULL)
@@ -1000,11 +1021,12 @@ globus_i_gfs_data_request_recv(
     globus_result_t                     result;
     globus_l_gfs_data_handle_t *        data_handle;
     globus_l_gfs_data_session_t *       session_handle;    
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
     GlobusGFSName(globus_i_gfs_data_recv_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-    data_handle = (globus_l_gfs_data_handle_t *)
-        recv_info->data_handle_id;
+    wrapper = (globus_l_gfs_data_handle_wrapper_t *) recv_info->data_handle_id;
+    data_handle = (globus_l_gfs_data_handle_t *) wrapper->data_handle_id;
 
     if(data_handle == NULL)
     {
@@ -1019,13 +1041,14 @@ globus_i_gfs_data_request_recv(
         goto error_op;
     }
 
-    op->own_data_handle = GLOBUS_TRUE; /* DO THIS RIGHT!! XXX */
+    op->own_data_handle = wrapper->is_real; /* DO THIS RIGHT!! XXX */
     op->ipc_handle = ipc_handle;    
     op->session_handle = session_handle;
     op->ref = 1;
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->writing = GLOBUS_FALSE;
+    op->wrapper = wrapper;
     op->data_handle = data_handle;
     op->range_list = recv_info->range_list;
     op->partial_offset = recv_info->partial_offset;
@@ -1061,11 +1084,12 @@ globus_i_gfs_data_request_send(
     globus_result_t                     result;
     globus_l_gfs_data_handle_t *        data_handle;
     globus_l_gfs_data_session_t *       session_handle;    
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
     GlobusGFSName(globus_i_gfs_data_send_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-    data_handle = (globus_l_gfs_data_handle_t *)
-        send_info->data_handle_id;
+    wrapper = (globus_l_gfs_data_handle_wrapper_t *) send_info->data_handle_id;
+    data_handle = (globus_l_gfs_data_handle_t *) wrapper->data_handle_id;
 
     if(data_handle == NULL)
     {
@@ -1079,13 +1103,14 @@ globus_i_gfs_data_request_send(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-    op->own_data_handle = GLOBUS_TRUE; /* DO THIS RIGHT!! XXX */
+    op->own_data_handle = wrapper->is_real; /* DO THIS RIGHT!! XXX */
     op->ipc_handle = ipc_handle;
     op->session_handle = session_handle;
     op->ref = 1;
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->writing = GLOBUS_TRUE;
+    op->wrapper = wrapper;
     op->data_handle = data_handle;
     op->range_list = send_info->range_list;
     op->partial_length = send_info->partial_length;
@@ -1198,11 +1223,12 @@ globus_i_gfs_data_request_list(
     globus_l_gfs_data_handle_t *        data_handle;
     globus_gfs_stat_info_t *            stat_info;
     globus_l_gfs_data_session_t *       session_handle;    
+    globus_l_gfs_data_handle_wrapper_t * wrapper;
     GlobusGFSName(globus_i_gfs_data_list_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-    data_handle = (globus_l_gfs_data_handle_t *)
-        list_info->data_handle_id;
+    wrapper = (globus_l_gfs_data_handle_wrapper_t *) list_info->data_handle_id;
+    data_handle = (globus_l_gfs_data_handle_t *) wrapper->data_handle_id;
 
     if(data_handle == NULL)
     {
@@ -1218,13 +1244,14 @@ globus_i_gfs_data_request_list(
         goto error_op;
     }
 
-    data_op->own_data_handle = GLOBUS_TRUE; /* DO THIS RIGHT!! XXX */
+    data_op->own_data_handle = wrapper->is_real; /* DO THIS RIGHT!! XXX */
     data_op->ipc_handle = ipc_handle;    
     data_op->session_handle = session_handle;
     data_op->ref = 1;
     data_op->id = id;
     data_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     data_op->writing = GLOBUS_TRUE;
+    data_op->wrapper = wrapper;
     data_op->data_handle = data_handle;
     data_op->list_type = list_info->list_type;
     data_op->uid = getuid();
@@ -1417,7 +1444,7 @@ globus_l_gfs_data_end_transfer_kickout(
     {
     }
     event_reply->id = op->id;
-    event_reply->data_handle_id = (int) op->data_handle;
+    event_reply->data_handle_id = (int) op->wrapper;
 
     if(op->data_handle->info.mode != 'E')
     {
@@ -2577,6 +2604,19 @@ globus_gridftp_server_operation_finished(
                     (void *) finished_info->session_id;
             }
             finished_info->session_id = (int) op->session_handle;
+            break;
+        case GLOBUS_GFS_OP_PASSIVE:
+        case GLOBUS_GFS_OP_ACTIVE:
+            {
+                globus_l_gfs_data_handle_wrapper_t * wrapper;
+                wrapper = (globus_l_gfs_data_handle_wrapper_t *) 
+                    globus_calloc(
+                        1, sizeof(globus_l_gfs_data_handle_wrapper_t));
+                wrapper->data_handle_id = 
+                    (int) finished_info->info.data.data_handle_id;
+                wrapper->is_real = GLOBUS_FALSE;
+                finished_info->info.data.data_handle_id = (int) wrapper;
+            }
             break;
         default:
             break;
