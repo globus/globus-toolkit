@@ -96,3 +96,4 @@ globus_module_get_module_pointer(
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
 
+

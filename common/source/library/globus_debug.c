@@ -122,3 +122,4 @@ globus_implement_debug_interface_output_functions (gram)
 globus_implement_debug_interface_output_functions (globus_thread)
 
 /* ADD ADDITIONAL MODULE OUTPUT FUNCTION INSTANTIATIONS HERE... */
+

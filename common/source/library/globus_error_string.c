@@ -112,3 +112,4 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_STRING_DEFINITION
 	globus_l_error_string_printable);
 
 
+

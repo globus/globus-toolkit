@@ -157,3 +157,4 @@ int globus_url_get_scheme(const char *url_string,
 EXTERN_C_END
 #endif
 
+

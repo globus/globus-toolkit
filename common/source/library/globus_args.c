@@ -598,3 +598,4 @@ globus_validate_filename( char *    value,
     return GLOBUS_SUCCESS;
 }
 
+

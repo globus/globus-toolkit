@@ -452,3 +452,4 @@ globus_i_thread_id(globus_thread_t *Thread_ID)
 {
     *Thread_ID = 0;
 }
+

@@ -259,3 +259,4 @@ globus_fifo_move(
 
     return 0;
 }
+

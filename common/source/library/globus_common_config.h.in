@@ -301,6 +301,8 @@
 /* Name of package */
 #undef PACKAGE
 
+#undef HAVE_PWD_H
+
 /* Version number of package */
 #undef VERSION
 

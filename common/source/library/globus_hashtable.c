@@ -321,3 +321,4 @@ globus_hashtable_ulong_keyeq(
 {
     return ((unsigned long) integer1) == ((unsigned long) integer2);
 }
+

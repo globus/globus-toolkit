@@ -329,3 +329,4 @@ globus_i_thread_start(
     }
     globus_mutex_unlock(&globus_l_thread_pool_q_mutex);
 }
+

@@ -87,3 +87,4 @@ EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_PRIORITY_Q_H */
 
+

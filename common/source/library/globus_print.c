@@ -291,3 +291,4 @@ globus_get_unique_session_string(void)
 
     return result;
 } /* globus_get_unique_session_string() */
+

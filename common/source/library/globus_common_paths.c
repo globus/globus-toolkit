@@ -253,3 +253,4 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
 
     return GLOBUS_SUCCESS;
 }
+
