@@ -121,7 +121,7 @@ grim_write_proxy(
 
 int
 grim_parse_port_type_file(
-    char *                                  port_type_filename,
+    FILE *                                  fptr,
     char *                                  username,
     char ***                                port_types);
 
@@ -136,6 +136,12 @@ grim_parse_conf_file(
     char *                                  out_gridmap_filename,
     char *                                  out_port_type_filename);
 
+char *
+grim_build_assertion(
+    char *                                  subject,
+    char *                                  username,
+    char **                                 dna,
+    char **                                 port_types);
 /*
  *  like printf for the log messages.
  *
@@ -278,6 +284,8 @@ main(
     port_type_fptr = fopen(port_type_filename, "r");
     if(port_type_fptr == NULL)
     {
+        grim_write_log("Error failed to open port type file: %s.\n",
+            port_type_filename);
         goto exit;
     }
 
@@ -805,8 +813,8 @@ grim_write_proxy(
     res = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("\n\nERROR: Couldn't initialize "
-                       "the proxy handle attributes.\n");
+        grim_write_log("ERROR: Couldn't initialize the proxy handle attributes.\n");
+        return 1;
     }
 
     /* 
@@ -818,7 +826,7 @@ grim_write_proxy(
               valid);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("\n\nERROR: Couldn't set the validity time "
+        grim_write_log("ERROR: Couldn't set the validity time "
                        "of the proxy cert to %d minutes.\n", valid);
         return 1;
     }
@@ -834,7 +842,7 @@ grim_write_proxy(
     if(res != GLOBUS_SUCCESS)
     {
         grim_write_log(
-                            "\n\nERROR: Couldn't set the key bits for "
+                            "ERROR: Couldn't set the key bits for "
                             "the private key of the proxy certificate\n");
         return 1;
     }
@@ -876,10 +884,10 @@ grim_write_proxy(
               proxy_handle,
               assertion,
               strlen(assertion),
-              policy_NID);
+              888888);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("ERROR" could not set the assertion.\n");
+        grim_write_log("ERROR could not set the assertion.\n");
         free(assertion);
         return 1;
     }
@@ -890,7 +898,7 @@ grim_write_proxy(
     res = globus_gsi_proxy_handle_init(&proxy_handle, proxy_handle_attrs);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("\n\nERROR: Couldn't initialize the proxy handle\n");
+        grim_write_log("ERROR: Couldn't initialize the proxy handle\n");
         return 1;
     }
 
@@ -1046,7 +1054,6 @@ grim_parse_port_type_file(
     char *                                  username,
     char ***                                port_types)
 {
-    FILE *                                  fptr;
     char                                    buffer[512];
     size_t                                  len;
     XML_Parser                              p;  
@@ -1302,13 +1309,6 @@ grim_parse_conf_file(
     offset += strlen(new);                              \
 }
 
-char *
-grim_grow_string(
-    char *                                  buffer,
-    char *                                  add)
-{
-    if(strlen(add) 
-}
 
 /*************************************************************************
  *
@@ -1321,9 +1321,10 @@ grim_build_assertion(
     char **                                 port_types)
 {
     char *                                  buffer;
+    int                                     ctr;
     int                                     buffer_size = 1024;
     int                                     buffer_ndx = 0;
-    char *                                  hostname[MAXHOSTNAMELEN];
+    char                                    hostname[MAXHOSTNAMELEN];
 
     globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
     buffer = globus_malloc(sizeof(char) * buffer_size);
@@ -1338,7 +1339,7 @@ grim_build_assertion(
     GrowString(buffer, "</ServerGridId>\n", buffer_ndx);
     GrowString(buffer, "    <ServiceLocalId Format=\"#UnixAccountName\" \n", 
         buffer_ndx);
-    GrowString(buffer, "        NameQualifier=\", buffer_ndx);
+    GrowString(buffer, "        NameQualifier=\"", buffer_ndx);
     GrowString(buffer, hostname, buffer_ndx);
     GrowString(buffer, "\">", buffer_ndx);
     GrowString(buffer, username, buffer_ndx);
