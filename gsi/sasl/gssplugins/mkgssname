@@ -6,7 +6,7 @@
 #
 # Create a gssname.c file
 #
-PACKAGE=GSSAPI
+PACKAGE=GSI-GSSAPI
 VERSION=unknown
 while :
 	do case "$1" in
