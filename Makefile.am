@@ -47,9 +47,17 @@ Scripts= \
 
 sbin_SCRIPTS = $(Scripts)
 
-# flavorinclude_HEADERS= \
-# 	myproxy.h \
-# 	myproxy_creds.h
+flavorinclude_HEADERS= \
+	myproxy.h \
+	myproxy_constants.h \
+	myproxy_authorization.h \
+	myproxy_protocol.h \
+	myproxy_creds.h \
+	myproxy_delegation.h \
+	myproxy_log.h \
+	myproxy_read_pass.h \
+	myproxy_server.h \
+	verror.h
 
 lib_LTLIBRARIES = libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
