@@ -91,6 +91,7 @@ globus_range_list_insert(
 
     prev = NULL;
     ent = range_list->head;
+    range_list->size = 1;
     while(ent != NULL && !done)
     {
         ent_end = ent->offset + ent->length;
@@ -134,6 +135,7 @@ globus_range_list_insert(
         {
             prev = ent;
             ent = ent->next;
+            range_list->size++;
         }
     }
     /* must be last entry */
@@ -257,6 +259,8 @@ globus_range_list_remove_at(
         prev->next = i->next;
     }
 
+    range_list->size--;
+    
     *offset = i->offset;
     *length = i->length;
     globus_free(i);
