@@ -231,15 +231,17 @@ case ${host}--$1 in
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
             if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)            
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC ecc cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC ecc CC c++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 efc f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 efc f90)
                 lac_CFLAGS="$lac_CFLAGS -restrict"
             fi
-            
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
         ;;
