@@ -136,6 +136,8 @@ If the passphrase is acceptable, the program should exit with status 0.
 Otherwise, it should exit with non-zero status, causing the operation
 in progress (credential load, passphrase change) to fail with the error
 message provided by the program's stdout.
+Note: You must specify the full path to the external program.
+$GLOBUS_LOCATION can't be used in the myproxy-server.config file.
 .SH FILES
 .TP
 .I /etc/myproxy-server.config
