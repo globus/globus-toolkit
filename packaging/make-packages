@@ -7,6 +7,8 @@
 # make_source_package will create a GPT package containing subdir
 # with the metadata in pkg_data_src.gpt
 
+version="0.2"
+
 usage () {
 	echo $0: Usage:  $0 [-p package] [-t tag] [-n] [-h]
 	echo
@@ -111,9 +113,13 @@ install_gt2() {
 }
 
 install_cdeps() {
-	CVSROOT=/home/globdev/CVS/globus-packages
-	export CVSROOT
-
+	if [ -d /home/globdev/CVS/globus-packages ]; then
+		export CVSROOT=/home/globdev/CVS/globus-packages
+	else
+		export CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
+		export CVS_RSH=ssh
+	fi
+		
 	pushd ogsa-cvs/ogsa-c/build_tools
 	cvs -d$CVSROOT co side_tools/build-autotools
 	./side_tools/build-autotools
@@ -170,7 +176,7 @@ make_binary_package() {
 # Go to subdir, run the build script.
 # Copy gar if one is specified.
 make_source_package() {
-	export destdir=`pwd`/gt3-${name}-src/
+	export destdir=`pwd`/${name}-0.2-src/
 
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
@@ -181,8 +187,15 @@ make_source_package() {
 		echo Creating source package for $name;
 
 		pushd ogsa-cvs/$subdir
-		echo Running ant clean ...
-		ant clean
+
+		if [ -f build.xml ]; then
+			echo Running ant cleanAll ...
+			ant cleanAll
+		elif [ -f impl/java/build.xml ]; then
+			echo Running ant cleanAll ...
+			ant -f impl/java/build.xml cleanAll
+		fi
+
 		popd
 
 		echo Copying source dir to $destdir
@@ -191,12 +204,12 @@ make_source_package() {
 
 		if [ -f package-list/$name/pkg_data_src.gpt ]; then
 			echo Copying in source metadata
-			cp package-list/$name/pkg_data_src.gpt gt3-${name}-src
+			cp package-list/$name/pkg_data_src.gpt $destdir
 		fi
 
 		if [ -f package-list/$name/filelist ]; then
 			echo Copying in filelist
-			cp package-list/$name/filelist gt3-${name}-src
+			cp package-list/$name/filelist $destdir
 		fi
 
 		touch $destdir/${name}/INSTALL
@@ -213,10 +226,12 @@ unset_env() {
 
 dir_iter() {
 	for f in $1/*; do
-		source $f/build-info
-		make_source_package
-		# make_binary_package
-		unset_env
+		if [ -e $f/build-info ]; then
+			source $f/build-info
+			make_source_package
+			# make_binary_package
+			unset_env
+		fi
 	done
 }
 
@@ -225,9 +240,11 @@ collate_packages() {
 		mkdir package-output
 	fi
 
-	for f in gt3-*; do
+	for f in *-src; do
 		tar czf package-output/$f.tar.gz $f
 	done
+
+	$GPT_LOCATION/sbin/gpt-bundle -srcdir=package-output -all
 
 	cp fait_accompli/* package-output
 	cp install-alpha2-src package-output
