@@ -113,7 +113,7 @@ struct Kex {
 	Buffer	peer;
 	int	done;
 	int	flags;
-	char	*host;
+	char 	*host;
 	char	*client_version_string;
 	char	*server_version_string;
 	int	(*verify_host_key)(Key *);

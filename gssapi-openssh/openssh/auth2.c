@@ -232,12 +232,13 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	}
 	/* reset state */
 	auth2_challenge_stop(authctxt);
-	authctxt->postponed = 0;
 
 #ifdef GSSAPI
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
 #endif
+
+	authctxt->postponed = 0;
 
 	/* try to authenticate user */
 	m = authmethod_lookup(method);

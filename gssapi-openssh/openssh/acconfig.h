@@ -201,7 +201,7 @@
 /* Define if you want Kerberos 5 support */
 #undef KRB5
 
-/* Define this if you are using Heimdal version of Kerberos V5 */
+/* Define this if you are using the Heimdal version of Kerberos V5 */
 #undef HEIMDAL
 
 /* Define if you want Kerberos 4 support */
