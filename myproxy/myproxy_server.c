@@ -46,6 +46,7 @@ static char usage[] = \
 "       -d | --debug               Turns on debugging\n"\
 "       -c | --config              Specifies configuration file to use\n"\
 "       -p | --port <portnumber>   Specifies the port to run on\n"\
+"       -s | --storage <directory> Specifies the credential storage directory\n"\
 "\n";
 
 struct option long_options[] =
@@ -298,6 +299,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         return -1;
     }
 
+#if !defined(CONDITIONAL_ENCRYPTION)
     if (GSI_SOCKET_set_encryption(attrs->gsi_socket, 1) == GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
@@ -305,6 +307,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	myproxy_log("Error enabling encryption: %s\n", error_string);
 	return -1;
     }
+#endif
 
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
@@ -597,6 +600,13 @@ init_arguments(int argc, char *argv[],
             fprintf(stderr, version);
             exit(1);
             break;
+        case 's': /* set the credential storage directory */
+            { char *s;
+            s=(char *) malloc(strlen(gnu_optarg) + 1);
+            strcpy(s,gnu_optarg);
+            myproxy_set_storage_dir(s);
+            break;
+            }
 	case 'u': /* print version and exit */
             fprintf(stderr, usage);
             exit(1);
@@ -703,9 +713,11 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, 
     }
 
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
-        my_failure("error in myproxy_send()\n");
 	myproxy_log_verror();
+        my_failure("error in myproxy_send()\n");
     } 
+    free(response->version);
+    response->version = NULL;
 
     return;
 }
