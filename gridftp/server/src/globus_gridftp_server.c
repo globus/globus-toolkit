@@ -777,8 +777,8 @@ globus_l_gfs_be_daemon(void)
             goto server_error;
         }
 
-        globus_free(contact_string);
         globus_libc_printf("Server listening at %s\n", contact_string);
+        globus_free(contact_string);
     }
     
     result = globus_xio_server_register_accept(

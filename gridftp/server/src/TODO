@@ -52,7 +52,11 @@ cleanup:
 
 -----------------------------------------------------------------------
 known bugs:
-
+-- on zero byte sends, file module calls begin, and immediately calls finished 
+with success.  this results in server sending 226 and never 150 since the
+begin_cb hasn't happened yet.  need to delay the transfer finished until
+after the transfer_connected.  (the client lib seems to handle this fine,
+but it causes problems when trying a striped transfer of 0 bytes). 
 
 
 

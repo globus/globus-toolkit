@@ -2516,7 +2516,8 @@ globus_l_gfs_data_end_read_kickout(
     event_reply.id = op->id;
     event_reply.recvd_bytes = op->recvd_bytes;
     event_reply.recvd_ranges = op->recvd_ranges;
-                                                                            
+    event_reply.node_ndx = op->node_ndx;
+    
     event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
     if(op->event_callback != NULL)
     {
