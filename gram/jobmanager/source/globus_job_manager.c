@@ -473,30 +473,51 @@ status_file_gen(char * my_job_status)
 {
     char               status_file[256];
     FILE *             status_fp;
+    struct stat        statbuf;
 
     fprintf(log_fp, "in status_file_gen\n");
 
-    sprintf(status_file, "%s/%s_%d_%s_%lu",
+    sprintf(status_file, "%s/%s_%lu",
             STATUS_FILE_DIR,
-            my_globusid,
-            my_count,
-            my_job_status,
-            (unsigned long) time(0) );
-    fprintf(log_fp, "status_file = %s\n", status_file);
+            STATUS_FILE_PREFIX,
+            (unsigned long) getpid(0) );
 
-    if ((status_fp = fopen(status_file, "a")) == NULL)
+    if (stat(status_file, &statbuf) == 0)
     {
-        fprintf(log_fp, "\n--------------------------\n");
-        fprintf(log_fp, "Cannot open status file --> %s\n", status_file);
-        fprintf(log_fp, "job contact = %s\n", job_contact);
-        fprintf(log_fp, "MDS will NOT be updated!!!\n");
-        fprintf(log_fp, "--------------------------\n\n");
-        return(1);
+        if (remove(status_file) != 0)
+        {
+            fprintf(log_fp, "\n--------------------------\n");
+            fprintf(log_fp, "Error: Cannot remove status file --> %s\n", status_file);
+            fprintf(log_fp, "--------------------------\n\n");
+            return(1);
+        }
     }
-    else
+ 
+    /*
+     *  don't output a status file when the job has terminated
+     */
+    if ( (strcmp(my_job_status, "DONE") != 0) && 
+         (strcmp(my_job_status, "FAILED") != 0) )
     {
-        fprintf(status_fp, "%s\n", job_contact);
-        fclose(status_fp);
+
+        if ((status_fp = fopen(status_file, "a")) == NULL)
+        {
+            fprintf(log_fp, "\n--------------------------\n");
+            fprintf(log_fp, "Cannot open status file --> %s\n", status_file);
+            fprintf(log_fp, "job contact = %s\n", job_contact);
+            fprintf(log_fp, "MDS will NOT be updated!!!\n");
+            fprintf(log_fp, "--------------------------\n\n");
+            return(1);
+        }
+        else
+        {
+            fprintf(status_fp, "%s;%s;%s;%d\n",
+                my_globusid,
+                my_job_status,
+                job_contact,
+                my_count);
+            fclose(status_fp);
+        }
     }
 
     return(0);
