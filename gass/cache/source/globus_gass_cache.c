@@ -702,7 +702,6 @@ globus_l_gass_cache_write_nb_entries(
 	        CACHE_TRACE("Error writing state file");
 	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
             }
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
 	}
     }
 
