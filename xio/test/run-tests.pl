@@ -30,6 +30,8 @@ unlink("test_results.txt");
             block-barrier-test.pl
             stack-test.pl
             unload-test.pl
+            http-header-test.pl
+            http-post-test.pl
             );
 
 my $runserver;

@@ -24,15 +24,31 @@ INCLUDES += $(GPT_INCLUDES)
 
 test_PROGRAMS=                          \
 	framework_test			\
-	http_header_test
+	http_header_test		\
+	http_post_test
+
+pkgdata_DATA =				\
+	headers				\
+	multi-line-header		\
+	long-headers			\
+	multi-headers			\
+	large-file
+
+test_SCRIPTS = http-header-test.pl
 
 framework_test_SOURCES = $(Sources)
 framework_test_LDFLAGS = $(GPT_LDFLAGS)
 framework_test_LDADD = $(GPT_PGM_LINKS) 
 
-http_header_test_SOURCES = http_header_test.c
+HTTP_COMMON_Sources = http_test_common.h http_test_common.c
+
+http_header_test_SOURCES = http_header_test.c $(HTTP_COMMON_Sources)
 http_header_test_LDFLAGS = $(GPT_LDFLAGS)
 http_header_test_LDADD = $(GPT_PGM_LINKS) 
+
+http_post_test_SOURCES = http_post_test.c $(HTTP_COMMON_Sources)
+http_post_test_LDFLAGS = $(GPT_LDFLAGS)
+http_post_test_LDADD = $(GPT_PGM_LINKS) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

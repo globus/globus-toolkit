@@ -1,7 +1,8 @@
 /**
  * @file http_header_test.c HTTP Header test
  *
- * Test that clients can send arbitrary HTTP headers to servers.
+ * Test that clients can send arbitrary HTTP headers to servers, and servers
+ * can send arbitrary HTTP headers to clients.
  *
  * Test cases are read from a file passed on the command line.
  * File contains pseudo-xml sequences
@@ -9,7 +10,7 @@
  * <value>header-value</value>
  * so that we can test handling of whitespace in header names and values
  *
- * The test client will send the HEAD request for the /header-test URI and
+ * The test client will send a HEAD request for the /header-test URI and
  * set all of the headers in the test file in the request attributes.
  *
  * The test server will 
@@ -27,33 +28,28 @@
 #include "globus_xio.h"
 #include "globus_xio_http.h"
 #include "globus_xio_tcp_driver.h"
+#include "http_test_common.h"
 
-globus_xio_driver_t                     tcp_driver;
-globus_xio_driver_t                     http_driver;
-globus_xio_attr_t                       server_attr;
-globus_xio_handle_t                     server_handle;
 globus_mutex_t                          mutex;
 globus_cond_t                           cond;
-globus_hashtable_t                      hashtable;
+globus_xio_http_header_t *              test_headers;
+globus_size_t                           test_headers_length;
 int                                     done = 0;
 
 static
 int
 read_test_file(
-    const char *                        filename,
-    globus_hashtable_t *                hashtable);
+    const char *                        filename);
 
 static
-void
-globus_l_xio_test_server_accept_callback(
-    globus_xio_server_t                 server,
-    globus_xio_target_t                 target,
-    globus_result_t                     result,
-    void *                              user_arg);
+globus_bool_t
+headers_match(
+    globus_hashtable_t                  headers);
 
 static
 void
 globus_l_xio_test_server_request_callback(
+    void *                              user_arg,
     globus_result_t                     result,
     const char *                        method,
     const char *                        uri,
@@ -63,6 +59,7 @@ globus_l_xio_test_server_request_callback(
 static 
 void
 globus_l_xio_test_client_response_callback(
+    void *                              user_arg,
     globus_result_t                     result,
     int                                 status_code,
     const char *                        reason_phrase,
@@ -70,64 +67,80 @@ globus_l_xio_test_client_response_callback(
     globus_hashtable_t                  headers);
 
 static
-void
-globus_l_xio_test_server_open_callback(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    void *                              user_arg);
-
-static
-globus_bool_t
-headers_match(
-    globus_hashtable_t                  headers);
-
 int
-main(
-    int                                 argc,
-    char *                              argv[])
+server_main(
+    const char *                        filename,
+    globus_xio_driver_t                 tcp_driver,
+    globus_xio_driver_t                 http_driver,
+    globus_xio_stack_t                  stack)
 {
     int                                 rc;
     globus_result_t                     result;
-    char *                              local_contact;
-    globus_xio_stack_t                  stack;
-    globus_xio_server_t                 server;
-    globus_xio_attr_t                   attr;
-    char *                              contact_string;
-    globus_xio_target_t                 target;
-    globus_xio_http_header_t *          current_header;
-    globus_xio_handle_t                 handle;
+    http_test_server_t                  test_server;
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    rc = read_test_file(filename);
+
     if (rc != 0)
     {
-        rc = 1;
+        goto error_exit;
+    }
 
-        fprintf(stderr, "Error activation GLOBUS_COMMON\n");
+    result = http_test_server_init(
+            &test_server,
+            tcp_driver,
+            http_driver,
+            stack);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = 29;
 
         goto error_exit;
     }
 
-    rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    if (rc != 0)
-    {
-        fprintf(stderr, "Error activating GLOBUS_XIO\n");
-        rc = 2;
+    result = http_test_server_register_handler(
+            &test_server,
+            "/header-test",
+            globus_l_xio_test_server_request_callback,
+            &test_server);
 
-        goto deactivate_exit;
-    }
-    if (argc != 2)
-    {
-        fprintf(stderr, "Usage: %s header-test-filename\n", argv[0]);
+    printf("%s\n", test_server.contact);
 
-        rc = 3;
-        goto deactivate_exit;
+    fflush(stdout);
+
+    result = http_test_server_run(&test_server);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = 30;
+
+        goto error_exit;
     }
+    http_test_server_destroy(&test_server);
+
+error_exit:
+    return rc;
+}
+
+static
+int
+client_main(
+    const char *                        filename,
+    const char *                        contact,
+    globus_xio_driver_t                 tcp_driver,
+    globus_xio_driver_t                 http_driver,
+    globus_xio_stack_t                  stack)
+{
+    int                                 rc;
+    globus_xio_handle_t                 handle;
+    globus_result_t                     result;
+
     rc = globus_mutex_init(&mutex, NULL);
     if (rc != 0)
     {
         fprintf(stderr, "Error initializing mutex\n");
         rc = 27;
-        goto deactivate_exit;
+        goto error_exit;
     }
     rc = globus_cond_init(&cond, NULL);
     if (rc != 0)
@@ -136,239 +149,32 @@ main(
         rc = 28;
         goto destroy_mutex_exit;
     }
-    rc = read_test_file(argv[1], &hashtable);
+
+    rc = read_test_file(filename);
 
     if (rc != 0)
     {
         goto destroy_cond_exit;
     }
 
-    result = globus_xio_driver_load("tcp", &tcp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error loading tcp driver: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-
-        rc = 10;
-
-        goto deactivate_exit;
-    }
-    result = globus_xio_driver_load("http", &http_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error loading http driver: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-
-        rc = 11;
-
-        goto unload_tcp_exit;
-    }
-
-    result = globus_xio_stack_init(&stack, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error initializing xio stack: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 12;
-
-        goto unload_http_exit;
-    }
-    result = globus_xio_stack_push_driver(
-            stack,
-            tcp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error pushing tcp onto stack: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 13;
-
-        goto destroy_stack_exit;
-    }
-
-    result = globus_xio_stack_push_driver(
-            stack,
-            http_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error pushing http onto stack: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 14;
-
-        goto destroy_stack_exit;
-    }
-    result = globus_xio_attr_init(&server_attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error pushing http onto stack: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 25;
-
-        goto destroy_stack_exit;
-    }
-    result = globus_xio_attr_cntl(
-            server_attr,
-            http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_CALLBACK,
-            globus_l_xio_test_server_request_callback,
-            NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error setting server request callback: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 26;
-
-        goto destroy_server_attr_exit;
-    }
-
-    result = globus_xio_server_create(
-            &server,
-            server_attr,
-            stack);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error creating http server: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 15;
-        goto destroy_server_attr_exit;
-    }
-
-    result = globus_xio_server_cntl(
-            server,
+    result = http_test_client_request(
+            &handle,
             tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
-            &local_contact);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error getting http server contact: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 16;
-        goto destroy_server_exit;
-    }
-    result = globus_xio_server_register_accept(
-            server,
-            NULL,
-            globus_l_xio_test_server_accept_callback,
-            NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error registering http server accept: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 17;
-        goto destroy_server_exit;
-    }
-    contact_string = globus_libc_malloc(
-            strlen("http:///%2fheader-test") + strlen(local_contact) + 1);
-    if (contact_string == NULL)
-    {
-        fprintf(stderr,
-                "Error allocating contact string: %s\n",
-                strerror(errno));
-        rc = 18;
-        goto destroy_server_exit;
-    }
-    sprintf(contact_string,
-            "http://%s/%%2fheader-test",
-            local_contact);
-    result = globus_xio_target_init(
-            &target,
-            NULL,
-            contact_string,
-            stack);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error initializing target: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 19;
-        goto free_contact_exit;
-    }
-
-    result = globus_xio_attr_init(&attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error initializing attr: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 20;
-        goto free_target_exit;
-    }
-
-    result = globus_xio_attr_cntl(
-            attr,
             http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_METHOD,
-            "HEAD");
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error setting http method in attr: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 21;
-        goto free_attr_exit;
-    }
-
-    result = globus_xio_attr_cntl(
-            attr,
-            http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK,
+            stack,
+            contact,
+            "%2fheader-test",
+            "HEAD",
+            GLOBUS_XIO_HTTP_VERSION_UNSET,
+            test_headers,
+            test_headers_length,
             globus_l_xio_test_client_response_callback,
             NULL);
 
     if (result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr,
-                "Error setting response callback: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 24;
-
-        goto free_attr_exit;
-    }
-    current_header = globus_hashtable_first(&hashtable);
-
-    while (current_header != NULL)
-    {
-        result = globus_xio_attr_cntl(
-                attr,
-                http_driver,
-                GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
-                current_header->name,
-                current_header->value);
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr,
-                    "Error setting header: %s\n",
-                    globus_object_printable_to_string(
-                        globus_error_peek(result)));
-            rc = 22;
-
-            goto free_attr_exit;
-        }
-
-        current_header = globus_hashtable_next(&hashtable);
-    }
-    result = globus_xio_open(
-            &handle,
-            attr,
-            target);
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr,
-                "Error opening HTTP stream: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-        rc = 23;
-
-        goto free_attr_exit;
+        rc = 40;
+        goto destroy_cond_exit;
     }
 
     globus_mutex_lock(&mutex);
@@ -376,6 +182,8 @@ main(
     {
         globus_cond_wait(&cond, &mutex);
     }
+
+    globus_xio_close(handle, NULL);
 
     if (done == 1)
     {
@@ -389,28 +197,10 @@ main(
     }
     globus_mutex_unlock(&mutex);
 
-free_attr_exit:
-    globus_xio_attr_destroy(attr);
-free_target_exit:
-    globus_xio_target_destroy(target);
-free_contact_exit:
-    globus_libc_free(contact_string);
-destroy_server_exit:
-    globus_xio_server_close(server);
-destroy_server_attr_exit:
-    globus_xio_attr_destroy(server_attr);
-destroy_stack_exit:
-    globus_xio_stack_destroy(stack);
-unload_http_exit:
-    globus_xio_driver_unload(http_driver);
-unload_tcp_exit:
-    globus_xio_driver_unload(tcp_driver);
 destroy_cond_exit:
     globus_cond_destroy(&cond);
 destroy_mutex_exit:
     globus_mutex_destroy(&mutex);
-deactivate_exit:
-    globus_module_deactivate_all();
 error_exit:
     return rc;
 }
@@ -419,8 +209,7 @@ error_exit:
 static
 int
 read_test_file(
-    const char *                        filename,
-    globus_hashtable_t *                hashtable)
+    const char *                        filename)
 {
     int                                 rc;
     long                                file_size;
@@ -428,11 +217,14 @@ read_test_file(
     char *                              token;
     char *                              token_end;
     FILE *                              file;
+    globus_hashtable_t                  hashtable;
     globus_xio_http_header_t *          header;
+    globus_xio_http_header_t *          current_header;
+    int                                 i;
 
     rc = globus_hashtable_init(
-            hashtable,
-            16,
+            &hashtable,
+            512,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
 
@@ -518,10 +310,28 @@ read_test_file(
 
         header->value = token;
 
-        globus_hashtable_insert(hashtable, header->name, header);
+        globus_hashtable_insert(&hashtable, header->name, header);
         buffer = token_end+1;
     }
+
     fclose(file);
+
+    test_headers_length = globus_hashtable_size(&hashtable);
+    test_headers = globus_libc_malloc(
+            test_headers_length *
+            sizeof(globus_xio_http_header_t));
+
+    current_header = globus_hashtable_first(&hashtable);
+    i=0;
+
+    while (current_header != NULL)
+    {
+        test_headers[i].name = current_header->name;
+        test_headers[i].value = current_header->value;
+
+        current_header = globus_hashtable_next(&hashtable);
+        i++;
+    }
 
     return 0;
 
@@ -534,124 +344,42 @@ error_exit:
 
 static
 void
-globus_l_xio_test_server_accept_callback(
-    globus_xio_server_t                 server,
-    globus_xio_target_t                 target,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-    result = globus_xio_register_open(
-            &server_handle,
-            server_attr,
-            target,
-            globus_l_xio_test_server_open_callback,
-            NULL);
-    return;
-
-error_exit:
-    globus_xio_target_destroy(target);
-}
-/* globus_l_xio_test_server_accept_callback() */
-
-static
-void
-globus_l_xio_test_server_open_callback(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    /* Do nothing here */
-}
-/* globus_l_xio_test_server_open_callback() */
-
-static
-void
 globus_l_xio_test_server_request_callback(
+    void *                              user_arg,
     globus_result_t                     result,
     const char *                        method,
     const char *                        uri,
     globus_xio_http_version_t           http_version,
     globus_hashtable_t                  headers)
 {
-    globus_xio_http_header_t *          current_header;
+    http_test_server_t *                test_server = user_arg;
+    int                                 rc;
 
-    if (method && uri)
+    if (result == GLOBUS_SUCCESS && headers_match(headers))
     {
-        if (strcmp(method, "HEAD") != 0)
-        {
-            fprintf(stderr, "Unexpected method: %s\n", method);
-        }
-        if (strcmp(uri, "/header-test") != 0)
-        {
-            fprintf(stderr, "Unexpected uri: %s\n", uri);
-        }
-
-        if (headers_match(headers))
-        {
-            current_header = globus_hashtable_first(&hashtable);
-
-            while (current_header != NULL)
-            {
-                result = globus_xio_handle_cntl(
-                        server_handle,
-                        http_driver,
-                        GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_HEADER,
-                        current_header->name,
-                        current_header->value);
-
-                if (result != GLOBUS_SUCCESS)
-                {
-                    fprintf(stderr,
-                            "Error setting header: %s\n",
-                            globus_object_printable_to_string(
-                                globus_error_peek(result)));
-
-                    globus_xio_handle_cntl(
-                        server_handle,
-                        http_driver,
-                        GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_STATUS_CODE,
-                        404);
-                    break;
-                }
-
-                current_header = globus_hashtable_next(&hashtable);
-            }
-        }
-        else
-        {
-            globus_xio_handle_cntl(
-                server_handle,
-                http_driver,
-                GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_STATUS_CODE,
-                404);
-        }
+        rc = 200;
     }
     else
     {
-        fprintf(stderr, "Invalid request\n");
-
-        globus_xio_handle_cntl(
-            server_handle,
-            http_driver,
-            GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_STATUS_CODE,
-            404);
+        rc = 404;
     }
+    http_test_server_respond(
+            test_server,
+            rc,
+            NULL,
+            rc == 200 ? test_headers : NULL,
+            rc == 200 ? test_headers_length: 0);
+    http_test_server_close_handle(test_server);
+    http_test_server_shutdown(test_server);
 
-    globus_xio_handle_cntl(
-        server_handle,
-        http_driver,
-        GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY);
-
+    return;
 }
 /* globus_l_xio_test_server_request_callback() */
 
 static 
 void
 globus_l_xio_test_client_response_callback(
+    void *                              user_arg,
     globus_result_t                     result,
     int                                 status_code,
     const char *                        reason_phrase,
@@ -665,7 +393,8 @@ globus_l_xio_test_client_response_callback(
     }
     else
     {
-        fprintf(stderr, "Invalid response\n");
+        fprintf(stderr,
+                "Invalid response: %d %s\n", status_code, reason_phrase);
 
         done = -1;
     }
@@ -679,25 +408,24 @@ globus_bool_t
 headers_match(
     globus_hashtable_t                  headers)
 {
+    int                                 i;
     globus_xio_http_header_t *          current_header;
-    globus_xio_http_header_t *          current_header_orig;
     char *                              src_value;
     char *                              dst_value;
 
-    current_header = globus_hashtable_first(&hashtable);
 
-    while (current_header != NULL)
+    for (i = 0; i < test_headers_length; i++)
     {
-        current_header_orig = globus_hashtable_lookup(
+        current_header = globus_hashtable_lookup(
                 &headers,
-                current_header->name);
+                test_headers[i].name);
 
-        if (current_header_orig == NULL)
+        if (current_header == NULL)
         {
             fprintf(stderr, "Header \"%s\" not found\n", current_header->name);
             return GLOBUS_FALSE;
         }
-        src_value = current_header_orig->value;
+        src_value = test_headers[i].value;
         dst_value = current_header->value;
 
         while (src_value != NULL && dst_value != NULL &&
@@ -732,7 +460,81 @@ headers_match(
         {
             return GLOBUS_FALSE;
         }
-        current_header = globus_hashtable_next(&hashtable);
     }
     return GLOBUS_TRUE;
+}
+
+void usage(char * argv0)
+{
+    fprintf(stderr,
+            "Usage: %s [-c|-s] -f filename\n"
+            "  If -c is used, stdin should contain the contact string of the\n"
+            "  server process.",
+            argv0);
+}
+
+int main(int argc, char * argv[])
+{
+    int                                 rc;
+    char *                              filename = NULL;
+    globus_bool_t                       server = GLOBUS_FALSE;
+    char *                              contact = NULL;
+    globus_xio_driver_t                 tcp_driver;
+    globus_xio_driver_t                 http_driver;
+    globus_xio_stack_t                  stack;
+    char                                gets_buffer[1024];
+
+    while ((rc = getopt(argc, argv, "hf:cs")) != EOF)
+    {
+        switch (rc)
+        {
+            case 'f':
+                filename = optarg;
+                break;
+            case 'c':
+                server = GLOBUS_FALSE;
+                contact = gets(gets_buffer);
+                break;
+            case 's':
+                server = GLOBUS_TRUE;
+                contact = NULL;
+                break;
+            case 'h':
+                usage(argv[0]);
+                exit(0);
+            default:
+                usage(argv[0]);
+                exit(1);
+        }
+    }
+
+    if (((!server) && (contact == NULL)) || (filename == NULL))
+    {
+        usage(argv[0]);
+        exit(1);
+    }
+
+    rc = http_test_initialize(&tcp_driver, &http_driver, &stack);
+
+    if (rc != 0)
+    {
+        goto error_exit;
+    }
+
+    if (server)
+    {
+        rc = server_main(filename, tcp_driver, http_driver, stack);
+    }
+    else
+    {
+        rc = client_main(filename, contact, tcp_driver, http_driver, stack);
+    }
+
+    globus_xio_stack_destroy(stack);
+    globus_xio_driver_unload(tcp_driver);
+    globus_xio_driver_unload(http_driver);
+    globus_module_deactivate_all();
+
+error_exit:
+    return rc;
 }
