@@ -83,6 +83,7 @@ static int * graml_child_pid_head = NULL;
 static char * graml_script_arg_file = NULL;
 static char * graml_env_krb5ccname;
 static char * graml_env_nlspath;
+static char * graml_env_lang;
 static char * graml_env_logname;
 static char * graml_env_home;
 static char * graml_env_tz;
@@ -184,6 +185,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
 
     graml_env_krb5ccname = (char *) getenv("KRB5CCNAME");
     graml_env_nlspath    = (char *) getenv("NLSPATH");
+    graml_env_lang       = (char *) getenv("LANG");
     graml_env_logname    = (char *) getenv("LOGNAME");
     graml_env_home       = (char *) getenv("HOME");
     graml_env_tz         = (char *) getenv("TZ");
@@ -1181,6 +1183,7 @@ globus_l_gram_environment_get(char *** env, FILE * log_fp)
 
     if ( graml_env_krb5ccname ) jm_env_num++;
     if ( graml_env_nlspath ) jm_env_num++;
+    if ( graml_env_lang ) jm_env_num++;
     if ( graml_env_logname ) jm_env_num++;
     if ( graml_env_home ) jm_env_num++;
     if ( graml_env_tz ) jm_env_num++;
@@ -1240,6 +1243,18 @@ globus_l_gram_environment_get(char *** env, FILE * log_fp)
                                     strlen(graml_env_nlspath) + 2));
             sprintf((new_env)[j], "%s=%s", "NLSPATH",
                                            graml_env_nlspath);
+            j++;
+        }
+    }
+
+    if (graml_env_lang)
+    {
+        if (globus_l_gram_env_not_set("LANG", env))
+        {
+            (new_env)[j] = (char *) globus_libc_malloc ( sizeof(char *) *
+                                   (strlen("LANG") +
+                                    strlen(graml_env_lang) + 2));
+            sprintf((new_env)[j], "%s=%s", "LANG", graml_env_lang);
             j++;
         }
     }
