@@ -4706,6 +4706,10 @@ globus_gridftp_server_control_finished_transfer(
             globus_range_list_destroy(op->range_list);
         }
         globus_i_gsc_event_end(op);
+        if(op->type == GLOBUS_L_GSC_OP_TYPE_RECV)
+        {
+            op->server_handle->allocated_bytes = 0;
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 

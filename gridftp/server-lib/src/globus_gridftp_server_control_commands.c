@@ -57,13 +57,6 @@ globus_l_gsc_cmd_all(
     int                                 argc,
     void *                              user_arg)
 {
-    /* XXX could make this a switched based on user_arg */
-    if(strcmp(cmd_a[0], "STOR") != 0 &&
-        strcmp(cmd_a[0], "ESTO") != 0)
-    {
-        op->server_handle->allocated_bytes = 0;
-    }
-
     /* do logging here */
     globus_gsc_959_finished_command(op, NULL);
 }
