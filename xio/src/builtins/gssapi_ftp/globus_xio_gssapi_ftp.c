@@ -39,16 +39,6 @@ GlobusDebugDefine(GLOBUS_XIO_GSSAPI_FTP);
         GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE,                               \
         ("[%s] passing write\n", _xio_name))
 
-#define GlobusXIOGssapiftpDebugFinishRead()                             \
-    GlobusXIOGssapiftpDebugPrintf(                                         \
-        GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE,                               \
-        ("[%s] finished read\n", _xio_name))
-
-#define GlobusXIOGssapiftpDebugFinishWrite()                             \
-    GlobusXIOGssapiftpDebugPrintf(                                         \
-        GLOBUS_L_XIO_GSSAPI_FTP_DEBUG_TRACE,                               \
-        ("[%s] finish write\n", _xio_name))
-
 #define GlobusXIOGssapiftpDebugChangeState(_h, _new)                        \
 do                                                                          \
 {                                                                           \
@@ -319,6 +309,7 @@ globus_l_xio_gssapi_ftp_handle_create()
     handle->auth_read_iov.iov_base = (void *) 0x10;
     handle->auth_read_iov.iov_len = 1;
     handle->gssapi_context = GSS_C_NO_CONTEXT;
+    handle->cred_handle = GSS_C_NO_CREDENTIAL;
     handle->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
     handle->encrypt = GLOBUS_FALSE;
     handle->host = NULL;
@@ -363,6 +354,14 @@ globus_l_xio_gssapi_ftp_handle_destroy(
     if(handle->target_name != GSS_C_NO_NAME)
     {
         gss_release_name(&min_stat, &handle->target_name);
+    }
+    if(handle->cred_handle != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &handle->cred_handle);
+    }
+    if(handle->delegated_cred_handle != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&min_stat, &handle->delegated_cred_handle);
     }
     if(handle->gssapi_context != GSS_C_NO_CONTEXT)
     {
@@ -654,10 +653,10 @@ globus_l_xio_gssapi_ftp_decode_adat(
                 res = GlobusXIOGssapiFTPAllocError();
                 goto err;
             }
-
             handle->auth_gssapi_subject =
                 globus_libc_strndup(subject_buf.value, subject_buf.length);
-                                                                                
+            globus_free(subject_buf.value);
+
             if(handle->auth_gssapi_subject == NULL)
             {
                 gss_release_buffer(&min_stat, &send_tok);
@@ -1096,6 +1095,7 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                 handle->auth_read_iov.iov_len,
                 GLOBUS_FALSE,
                 &cmd_a);
+        globus_free(handle->auth_read_iov.iov_base);
         if(cmd_a == NULL)
         {
             res = GlobusXIOGssapiFTPAllocError();
@@ -1170,7 +1170,6 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                 handle->read_iov[0].iov_base = out_buf;
                 handle->read_iov[0].iov_len = strlen(out_buf);
 
-                GlobusXIOGssapiftpDebugFinishRead();
                 globus_xio_driver_finished_read(
                     op, GLOBUS_SUCCESS, handle->read_iov[0].iov_len);
 
@@ -1200,6 +1199,7 @@ globus_l_xio_gssapi_ftp_server_read_cb(
         }
 
         globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
+        
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -1208,7 +1208,6 @@ globus_l_xio_gssapi_ftp_server_read_cb(
 
   err:
     globus_mutex_unlock(&handle->mutex);
-                GlobusXIOGssapiftpDebugFinishRead();
     globus_xio_driver_finished_read(op, res, 0);
     GlobusXIOGssapiftpDebugExitWithError();
 }
@@ -1296,7 +1295,6 @@ globus_l_xio_gssapi_ftp_auth_server_write_cb(
   err:
     globus_assert(0);
     /* XXX TODO odds are this did not come from a write */
-    GlobusXIOGssapiftpDebugFinishWrite();
     globus_xio_driver_finished_write(op, res, nbytes);
     globus_mutex_unlock(&handle->mutex);
     GlobusXIOGssapiftpDebugExitWithError();
@@ -2437,7 +2435,6 @@ globus_l_xio_gssapi_ftp_read(
             {
                 iovec->iov_base = handle->banner;
                 iovec->iov_len = handle->banner_length;
-                GlobusXIOGssapiftpDebugFinishRead();
                 globus_xio_driver_finished_read(
                     op, GLOBUS_SUCCESS, handle->banner_length);
                 handle->banner = NULL;
