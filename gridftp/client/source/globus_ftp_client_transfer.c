@@ -3786,6 +3786,8 @@ globus_ftp_client_abort(
     handle = *u_handle;
     globus_i_ftp_client_handle_lock(handle);
     
+    globus_i_ftp_client_debug_states(2, handle);
+        
     if(handle->op == GLOBUS_FTP_CLIENT_IDLE)
     {
 	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE("handle");
@@ -4014,6 +4016,7 @@ globus_ftp_client_abort(
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_ftp_client_abort() exiting\n"));
+    globus_i_ftp_client_debug_states(2, handle);
 
     return GLOBUS_SUCCESS;
 unlock_error:
@@ -4021,6 +4024,7 @@ unlock_error:
 error:
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_ftp_client_abort() exiting with error\n"));
+    globus_i_ftp_client_debug_states(2, handle);
 
     return globus_error_put(err);
 }
@@ -4341,7 +4345,9 @@ globus_i_ftp_client_force_close_callback(
 
     target->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
 
-    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
+    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+        !(client_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_CLOSED &&
+        client_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_CLOSED))
     {
 	if((client_handle->source->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED &&
 	    client_handle->source->state != GLOBUS_FTP_CLIENT_TARGET_START &&

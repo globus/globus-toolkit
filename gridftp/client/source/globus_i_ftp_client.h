@@ -82,8 +82,23 @@ do { \
 	globus_libc_fprintf message; \
     } \
 } while (0)
+
+#define globus_i_ftp_client_debug_states(level, handle)                     \
+    globus_i_ftp_client_debug_printf(level, (stderr,                        \
+        "   handle state = %s\n"                                            \
+        "   source state = %s\n"                                            \
+        "   dest   state = %s\n",                                           \
+        globus_i_ftp_handle_state_to_string(handle->state),                 \
+        handle->source                                                      \
+            ? globus_i_ftp_target_state_to_string(handle->source->state)    \
+            : "NULL",                                                       \
+        handle->dest                                                        \
+            ? globus_i_ftp_target_state_to_string(handle->dest->state)      \
+            : "NULL"))
+            
 #else
 #define globus_i_ftp_client_debug_printf(level, message)
+#define globus_i_ftp_client_debug_states(level, handle)
 #endif
 
 /*

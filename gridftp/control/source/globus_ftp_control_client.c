@@ -26,13 +26,6 @@ globus_l_ftp_control_send_cmd_cb(
     globus_ftp_control_response_t *           ftp_response);
 
 static void 
-globus_l_ftp_control_connect_cb(
-    void *                                    arg, 
-    globus_io_handle_t *                      handle,
-    globus_result_t                           result);
-
-
-static void 
 globus_l_ftp_control_data_close_cb(
     void *                                      arg,
     struct globus_ftp_control_handle_s *        handle,
@@ -380,45 +373,51 @@ globus_ftp_control_connect(
     struct hostent *                            hp;
     globus_ftp_control_rw_queue_element_t *     element;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_connect() entering\n"));
 
     if(handle == GLOBUS_NULL)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: NULL handle argument")
             ); 
+        goto error_exit;
     }
 
     if(host == GLOBUS_NULL)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: NULL host argument")
             ); 
+	goto error_exit;
     }
 
     if(port > 65536)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: Port argument greater than 64k")
             ); 
+	goto error_exit;
     }
 
     if(callback == GLOBUS_NULL)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: NULL callback argument")
             ); 
+	goto error_exit;
     }
 
 
@@ -427,12 +426,13 @@ globus_ftp_control_connect(
     
     if(element == GLOBUS_NULL)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: malloc failed")
             ); 
+        goto error_exit;
     }
 
     element->callback=callback;
@@ -445,6 +445,7 @@ globus_ftp_control_connect(
            handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_UNCONNECTED &&
            handle->cc_handle.signal_deactivate == GLOBUS_FALSE)
         {
+	    handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_CONNECTING;
             globus_fifo_enqueue(&handle->cc_handle.readers,
                                 element);
             handle->cc_handle.cb_count++;
@@ -453,12 +454,13 @@ globus_ftp_control_connect(
         {
             globus_mutex_unlock(&(handle->cc_handle.mutex));
             globus_libc_free(element);
-            return globus_error_put(
+	    rc = globus_error_put(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
                     "globus_ftp_control_connect: Other operation already in progress")
                 ); 
+            goto error_exit;
         }
     }
     globus_mutex_unlock(&(handle->cc_handle.mutex));
@@ -477,12 +479,13 @@ globus_ftp_control_connect(
 
     if(hp == GLOBUS_NULL)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: globus_libc_gethostbyname_r failed")
             ); 
+	goto error_exit;
     }
  
     hp=globus_libc_gethostbyname_r(
@@ -495,12 +498,13 @@ globus_ftp_control_connect(
     
     if(hp == GLOBUS_NULL)
     {
-        return globus_error_put(
+	rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_connect: globus_libc_gethostbyname_r failed")
             ); 
+	goto error_exit;
     }
 
     globus_io_attr_set_tcp_nodelay(&handle->cc_handle.io_attr, 
@@ -517,6 +521,10 @@ globus_ftp_control_connect(
     {
         globus_mutex_lock(&(handle->cc_handle.mutex));
         {
+	    if(handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTING)
+	    {
+	        handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
+	    }
             globus_fifo_dequeue(&handle->cc_handle.readers);
             globus_libc_free(element);
             handle->cc_handle.cb_count--;
@@ -532,10 +540,19 @@ globus_ftp_control_connect(
         {
             globus_i_ftp_control_call_close_cb(handle);
         }
-        return rc;
+	goto error_exit;
     }
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_connect() exiting\n"));
+        
     return GLOBUS_SUCCESS;
+error_exit:
+
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_connect() exiting with error\n"));
+    
+    return rc;
 }
 
 #ifdef GLOBUS_INTERNAL_DOC
@@ -579,6 +596,10 @@ globus_l_ftp_control_connect_cb(
     globus_result_t                           rc;
     globus_ftp_control_rw_queue_element_t *   element;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
+    globus_bool_t                             closing = GLOBUS_FALSE;
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_connect_cb() entering\n"));
     
     c_handle=(globus_ftp_control_handle_t *) arg;
 
@@ -590,20 +611,31 @@ globus_l_ftp_control_connect_cb(
     if(result != GLOBUS_SUCCESS)
     {
         error=globus_error_get(result);
-        goto return_error;
+	goto return_no_connect;
     }
 
     globus_mutex_lock(&(cc_handle->mutex));
     {
-        if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_UNCONNECTED)
+	if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_CONNECTING)
         {
             cc_handle->cc_state = GLOBUS_FTP_CONTROL_CONNECTED;
         }
+	else if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_CLOSING)
+	{
+	    closing = GLOBUS_TRUE;
+	}
     }
     globus_mutex_unlock(&(cc_handle->mutex));
-    
 
+    if(closing)
+    {
+        error = globus_error_construct_string(
+            GLOBUS_FTP_CONTROL_MODULE,
+            GLOBUS_NULL,
+            "globus_l_ftp_control_connect_cb: connection forced closed");
 
+        goto return_error;
+    }
 
     rc=globus_io_register_read(handle,
                                cc_handle->read_buffer,
@@ -617,7 +649,20 @@ globus_l_ftp_control_connect_cb(
         goto return_error;
     }
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_connect_cb() exiting\n"));
     return;
+
+return_no_connect:
+    
+    globus_mutex_lock(&(cc_handle->mutex));
+    {
+        if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_CONNECTING)
+        {
+            cc_handle->cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
+        }
+    }
+    globus_mutex_unlock(&(cc_handle->mutex));
 
 return_error:
 
@@ -643,10 +688,11 @@ return_error:
         globus_i_ftp_control_call_close_cb(c_handle);
     }
 
-
     globus_libc_free(element);
     globus_object_free(error);
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_connect_cb() exiting with error\n"));
     return;
 }
 
@@ -708,6 +754,9 @@ globus_l_ftp_control_read_cb(
     globus_bool_t                             queue_empty;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_read_cb() entering\n"));
+        
     c_handle=(globus_ftp_control_handle_t *) arg;
     cc_handle=&(c_handle->cc_handle);
 
@@ -873,7 +922,7 @@ globus_l_ftp_control_read_cb(
             
             if(queue_empty == GLOBUS_TRUE)
             {
-                return;
+		goto do_return;
             }
             else
             {
@@ -909,7 +958,9 @@ globus_l_ftp_control_read_cb(
         error=globus_error_get(rc);
         goto return_error;
     }
-    
+do_return:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_read_cb() exiting\n"));
     return;
 
 return_error:
@@ -946,6 +997,8 @@ return_error:
         globus_l_ftp_control_read_next(c_handle);
     }
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_read_cb() exiting with error\n"));
     return;
 }
 
@@ -1410,48 +1463,54 @@ globus_ftp_control_authenticate(
     globus_result_t                             result;
     globus_i_ftp_passthru_cb_arg_t *            auth_cb_arg;
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_authenticate() entering\n"));
 
     if(handle == GLOBUS_NULL)
     {
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_authenticate: handle argument is NULL")
             );
+	goto error;
     }
 
     if(auth_info == GLOBUS_NULL)
     {
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_authenticate: auth_info argument is NULL")
             );
+	goto error;
     }
 
     if(handle->cc_handle.auth_info.auth_gssapi_context != 
        GSS_C_NO_CONTEXT &&
        use_auth == GLOBUS_TRUE)
     {
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_authenticate: Already authenticated")
             );
+	goto error;
     }
 
     if(use_auth == GLOBUS_FALSE &&
        auth_info->user == GLOBUS_NULL)
     {
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_authenticate: No user supplied")
             );
+	goto error;
     }
 
 
@@ -1460,12 +1519,13 @@ globus_ftp_control_authenticate(
         if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED)
         {
             globus_mutex_unlock(&(handle->cc_handle.mutex));
-            return globus_error_put(
+	    result = globus_error_put(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
                     "globus_ftp_control_authenticate: Handle not connected")
                 );
+            goto error;
         }
     }
     globus_mutex_unlock(&(handle->cc_handle.mutex));
@@ -1526,10 +1586,15 @@ globus_ftp_control_authenticate(
         goto error;
     }
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_authenticate() exiting\n"));
     
     return GLOBUS_SUCCESS;
     
 error:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_authenticate() exiting with error\n"));
+        
     return result;
 }
 
@@ -1593,15 +1658,18 @@ globus_ftp_control_send_command(
     va_list                                     ap;
     int                                         arglength;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_send_command() entering\n"));
 
     if(handle == GLOBUS_NULL)
     {
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_send command: handle argument is NULL")
             );
+	goto error; 
     }
 
 #ifdef HAVE_STDARG_H
@@ -1770,9 +1838,15 @@ globus_ftp_control_send_command(
         }
     }
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_send_command() exiting\n"));
+        
     return GLOBUS_SUCCESS;
 
 error:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_send_command() exiting with error\n"));
+        
     return result;
 }
 
@@ -1826,6 +1900,9 @@ globus_l_ftp_control_write_cb(
     globus_bool_t                             read_queue_empty;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_write_cb() entering\n"));
+        
     c_handle=(globus_ftp_control_handle_t *) arg;
     cc_handle=&(c_handle->cc_handle);
 
@@ -1919,6 +1996,9 @@ globus_l_ftp_control_write_cb(
         globus_libc_free(element);
     }
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_write_cb() exiting\n"));
+        
     return;
     
 return_error:
@@ -1933,6 +2013,10 @@ return_error:
 
     globus_libc_free(element);
     globus_object_free(error);
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_write_cb() exiting with error\n"));
+        
     return;
 }
 
@@ -1995,7 +2079,8 @@ globus_ftp_control_abort(
     globus_bool_t                               queue_empty;
     globus_fifo_t                               abort_queue;
 
-
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_abort() entering\n"));
 
     globus_fifo_init(&abort_queue);
     
@@ -2039,12 +2124,13 @@ globus_ftp_control_abort(
     {
         globus_libc_free(element_ip->write_buf);
         globus_libc_free(element_ip);
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_abort: malloc failed")
             ); 
+	goto return_error;
     }
 
     result = globus_l_ftp_control_queue_element_init(
@@ -2076,12 +2162,13 @@ globus_ftp_control_abort(
         globus_libc_free(element_ip);
         globus_libc_free(element_synch->write_buf);
         globus_libc_free(element_synch);
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_abort: malloc failed")
             ); 
+	goto return_error; 
     }
 
     result = globus_l_ftp_control_queue_element_init(
@@ -2202,12 +2289,15 @@ globus_ftp_control_abort(
         }
     }
 
-
-
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_abort() exiting\n"));
 
     return GLOBUS_SUCCESS;
 
 return_error:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_abort() exiting with error\n"));
+        
     return result;
 }
 
@@ -2263,17 +2353,21 @@ globus_ftp_control_quit(
     globus_result_t                             result;
     globus_i_ftp_passthru_cb_arg_t *            quit_cb_arg;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_quit() entering\n"));
+        
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {
         if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED)
         {
             globus_mutex_unlock(&(handle->cc_handle.mutex));
-            return globus_error_put(
+	    result = globus_error_put(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
                     "globus_ftp_control_quit: Handle not connected")
                 );
+            goto return_error;
         }
         else
         {
@@ -2313,9 +2407,15 @@ globus_ftp_control_quit(
         goto return_error;
     }
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_quit() exiting\n"));
+        
     return GLOBUS_SUCCESS;
     
 return_error:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_quit() exiting with error\n"));
+        
     return result;
 }
 
@@ -2377,6 +2477,9 @@ globus_l_ftp_control_send_cmd_cb(
     char *                                      error_str;
     OM_uint32                                   max_input_size[2];
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_send_cmd_cb() entering\n"));
+        
     cb_arg = (globus_i_ftp_passthru_cb_arg_t *) callback_arg;
     chan_bindings=&(handle->cc_handle.auth_info.chan_bindings);
 
@@ -2601,7 +2704,7 @@ globus_l_ftp_control_send_cmd_cb(
                 goto return_error;
             }
 
-            return;
+	    break;
 
         case GLOBUS_FTP_UNKNOWN_REPLY:
         case GLOBUS_FTP_POSITIVE_COMPLETION_REPLY:
@@ -2615,8 +2718,9 @@ globus_l_ftp_control_send_cmd_cb(
                               ftp_response);
             
             globus_libc_free(cb_arg);
-            return;     
+	    break;
         }
+	break;
     case GLOBUS_I_FTP_ADAT:
         
         switch(ftp_response->response_class)
@@ -2738,7 +2842,7 @@ globus_l_ftp_control_send_cmd_cb(
                 goto return_error;
             }
 
-            return;
+	    break;
             
         case GLOBUS_FTP_POSITIVE_COMPLETION_REPLY:
 
@@ -2804,7 +2908,7 @@ globus_l_ftp_control_send_cmd_cb(
                 goto return_error;
             }
 
-            return;
+	    break;
 
         case GLOBUS_FTP_UNKNOWN_REPLY:
         case GLOBUS_FTP_POSITIVE_PRELIMINARY_REPLY:
@@ -2817,9 +2921,11 @@ globus_l_ftp_control_send_cmd_cb(
                               ftp_response);
             
             globus_libc_free(cb_arg);
-            return;     
+	    break;
         }
         
+	break;
+	
     case GLOBUS_I_FTP_USER:
         switch(ftp_response->response_class)
         {
@@ -2854,7 +2960,7 @@ globus_l_ftp_control_send_cmd_cb(
                 goto return_error;
             }
             
-            return;
+	    break;
         case GLOBUS_FTP_POSITIVE_COMPLETION_REPLY:
             if(handle->cc_handle.auth_info.authenticated == GLOBUS_TRUE)
             {
@@ -2871,8 +2977,11 @@ globus_l_ftp_control_send_cmd_cb(
                               ftp_response);
             
             globus_libc_free(callback_arg);
-            return;     
+	    break;	
         }
+	
+	break;
+	
     case GLOBUS_I_FTP_PASS:
         switch(ftp_response->response_class)
         {
@@ -2895,7 +3004,7 @@ globus_l_ftp_control_send_cmd_cb(
                                   ftp_response);
                 
                 globus_libc_free(callback_arg);
-                return; 
+		break;	
                 
             }
 
@@ -2905,7 +3014,7 @@ globus_l_ftp_control_send_cmd_cb(
                 goto return_error;
             }
             
-            return;
+	    break;
             
         case GLOBUS_FTP_UNKNOWN_REPLY:
         case GLOBUS_FTP_POSITIVE_PRELIMINARY_REPLY: 
@@ -2919,8 +3028,11 @@ globus_l_ftp_control_send_cmd_cb(
                               ftp_response);
             
             globus_libc_free(callback_arg);
-            return;     
+	    break;
         }
+	
+	break;
+	
     case GLOBUS_I_FTP_QUIT:
         
         if(ftp_response != GLOBUS_NULL)
@@ -2941,8 +3053,10 @@ globus_l_ftp_control_send_cmd_cb(
             {
                 handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_CLOSING;
                 
+		/* do this in call_close_cb 
                 globus_i_ftp_control_auth_info_destroy(
                     &(handle->cc_handle.auth_info));
+                 */
 
                 handle->cc_handle.cb_count++;
 
@@ -2994,9 +3108,12 @@ globus_l_ftp_control_send_cmd_cb(
 
         globus_libc_free(cb_arg);
         
-        return; 
+	break;	
     }
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_send_cmd_cb() exiting\n"));
+        
     return;
 
 return_error:
@@ -3008,6 +3125,10 @@ return_error:
 
     globus_object_free(error_obj);
     globus_libc_free(callback_arg);
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_send_cmd_cb() exiting with error\n"));
+        
     return;
     
 }
@@ -3049,6 +3170,9 @@ globus_l_ftp_control_data_close_cb(
     globus_result_t                             rc;
     globus_bool_t                               call_close_cb = GLOBUS_FALSE;
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_data_close_cb() entering\n"));
+        
     rc=globus_io_register_close(&handle->cc_handle.io_handle,
                                 globus_l_ftp_control_close_cb,
                                 arg);
@@ -3071,6 +3195,9 @@ globus_l_ftp_control_data_close_cb(
             globus_i_ftp_control_call_close_cb(handle); 
         } 
     }
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_data_close_cb() exiting\n"));
     return;
 }
 
@@ -3112,6 +3239,8 @@ globus_l_ftp_control_close_cb(
     globus_ftp_control_handle_t *             c_handle;
     globus_bool_t                             call_close_cb = GLOBUS_FALSE;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_close_cb() entering\n"));
 
     c_handle=(globus_ftp_control_handle_t *) arg;
     cc_handle=&(c_handle->cc_handle);
@@ -3132,6 +3261,9 @@ globus_l_ftp_control_close_cb(
         globus_i_ftp_control_call_close_cb(c_handle);
     }
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_close_cb() exiting\n"));
+        
     return;
 }
 
@@ -3177,23 +3309,39 @@ globus_ftp_control_force_close(
     void *                                      callback_arg)
 {
     globus_result_t                             rc;
+    globus_bool_t                               connected;
+
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_force_close() entering\n"));
 
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {
-        if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED)
+	if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED &&
+	    handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTING)
         {
             globus_mutex_unlock(&(handle->cc_handle.mutex));
-            return globus_error_put(
+	    rc = globus_error_put(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
                     "globus_ftp_control_force_close: Handle is not connected")
                 );
+            goto return_error;
+	}
+	else
+	{
+	    if(handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTED)
+	    {
+	        connected = GLOBUS_TRUE;
         }
         else
         {
+	        connected = GLOBUS_FALSE;
+	    }
+	    /* do this in call_close_cb 
             globus_i_ftp_control_auth_info_destroy(
                 &(handle->cc_handle.auth_info));
+             */
             handle->cc_handle.close_cb = callback;
             handle->cc_handle.close_cb_arg = callback_arg;
             handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_CLOSING;
@@ -3202,13 +3350,16 @@ globus_ftp_control_force_close(
     }
     globus_mutex_unlock(&(handle->cc_handle.mutex));
 
+    if(connected)
+    {
     rc=globus_ftp_control_data_force_close(
         handle,
         globus_l_ftp_control_data_close_cb,
         (void *) handle);
+    }
     
     
-    if(rc != GLOBUS_SUCCESS)
+    if(!connected || rc != GLOBUS_SUCCESS)
     {
         rc=globus_io_register_close(&handle->cc_handle.io_handle,
                                     globus_l_ftp_control_close_cb,
@@ -3217,6 +3368,9 @@ globus_ftp_control_force_close(
         {
             globus_mutex_lock(&(handle->cc_handle.mutex));
             {
+	        globus_i_ftp_control_auth_info_destroy(
+                    &(handle->cc_handle.auth_info));
+                
                 handle->cc_handle.cb_count--;
                 handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
                 
@@ -3228,11 +3382,21 @@ globus_ftp_control_force_close(
                 }
             }
             globus_mutex_unlock(&(handle->cc_handle.mutex));
+	    
+	    goto return_error;
         }
-        return rc;
     }
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_force_close() exiting\n"));
+        
     return GLOBUS_SUCCESS;
+
+return_error:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_ftp_control_force_close() exiting with error\n"));
+        
+    return rc;
 }
 
 
@@ -3395,41 +3559,11 @@ globus_ftp_control_auth_info_init(
     {
         auth_info->credential_handle = GSS_C_NO_CREDENTIAL;
     }
-    if(subject != GLOBUS_NULL)
-    {
-        auth_info->auth_gssapi_subject = subject;
-    }
-    else
-    {
-        auth_info->auth_gssapi_subject = GLOBUS_NULL;
-    }
 
-    if(user != GLOBUS_NULL)
-    {
+    auth_info->auth_gssapi_subject = subject;
         auth_info->user = user;
-    }
-    else
-    {
-        auth_info->user = GLOBUS_NULL;
-    }
-
-    if(password != GLOBUS_NULL)
-    {
         auth_info->password = password;
-    }
-    else
-    {
-        auth_info->password = GLOBUS_NULL;
-    }
-    
-    if(account != GLOBUS_NULL)
-    {
         auth_info->account = account;
-    }
-    else
-    {
-        auth_info->account = GLOBUS_NULL;
-    }
 
     auth_info->prev_cmd=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
     auth_info->auth_gssapi_context = GSS_C_NO_CONTEXT;
@@ -3682,9 +3816,9 @@ globus_i_ftp_control_auth_info_destroy(
             
             auth_info->delegated_credential_handle = GSS_C_NO_CREDENTIAL;
         }
-    }
 
     auth_info->authenticated = GLOBUS_FALSE;
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -4028,6 +4162,11 @@ globus_i_ftp_control_encode_command(
 globus_result_t
 globus_i_ftp_control_client_activate(void)
 {
+    globus_result_t                     result;
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_i_ftp_control_client_activate() entering\n"));
+        
     globus_mutex_init(
         &(globus_l_ftp_cc_handle_list_mutex), GLOBUS_NULL);
 
@@ -4035,15 +4174,25 @@ globus_i_ftp_control_client_activate(void)
 
     if (globus_i_ftp_control_devnull == NULL)
     {
-        return globus_error_put(
+	result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_i_ftp_control_client_activate: Failed to open /dev/null")
             );
+	goto return_error;
     }
     
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_i_ftp_control_client_activate() exiting\n"));
+        
     return GLOBUS_SUCCESS;
+
+return_error:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_i_ftp_control_client_activate() exiting with error\n"));
+    
+    return result;
 }
 
 #ifdef GLOBUS_INTERNAL_DOC
@@ -4070,6 +4219,9 @@ globus_i_ftp_control_client_deactivate(void)
 {
     globus_ftp_cc_handle_t *            cc_handle;
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_i_ftp_control_client_deactivate() entering\n"));
+        
     globus_mutex_lock(&globus_l_ftp_cc_handle_list_mutex);
     {
         while(!globus_list_empty(globus_l_ftp_cc_handle_list))
@@ -4083,7 +4235,8 @@ globus_i_ftp_control_client_deactivate(void)
             
             if(cc_handle->cc_state != GLOBUS_FTP_CONTROL_UNCONNECTED)
             {
-                if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_CONNECTED)
+		if(cc_handle->cc_state == GLOBUS_FTP_CONTROL_CONNECTED ||
+		    cc_handle->cc_state == GLOBUS_FTP_CONTROL_CONNECTING)
                 {
                     if(cc_handle->cb_count)
                     {
@@ -4140,6 +4293,9 @@ globus_i_ftp_control_client_deactivate(void)
 
     fclose(globus_i_ftp_control_devnull);
 
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_i_ftp_control_client_deactivate() exiting\n"));
+        
     return GLOBUS_SUCCESS;
 }
 
@@ -4387,6 +4543,9 @@ globus_i_ftp_control_call_close_cb(
     
     globus_mutex_lock(&handle->cc_handle.mutex);
     {
+        globus_i_ftp_control_auth_info_destroy(
+            &(handle->cc_handle.auth_info));
+                
         handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
         
         if(handle->cc_handle.signal_deactivate == GLOBUS_TRUE)

@@ -755,7 +755,7 @@ globus_i_ftp_client_restart(
 
 		rc = globus_callback_register_oneshot(
 			GLOBUS_NULL,
-			&globus_i_reltime_infinity,
+			&globus_i_reltime_zero,
 			globus_l_ftp_client_restart_no_connection,
 			handle->source,
 			GLOBUS_NULL,
