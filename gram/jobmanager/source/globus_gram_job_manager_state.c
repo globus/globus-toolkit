@@ -2416,10 +2416,7 @@ globus_l_gram_job_manager_reply(
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
     }
-    gss_delete_sec_context(&minor_status,
-			   &request->response_context,
-			   NULL);
-    request->response_context = GSS_C_NO_CONTEXT;
+
     if(rc != GLOBUS_SUCCESS)
     {
 	request->failure_code = rc;
