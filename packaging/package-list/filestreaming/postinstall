@@ -1,1 +1,0 @@
-ant -f $GT3_LOCATION/build.xml deployClientServer -Dgar.name=gars/filestreaming.gar
