@@ -17,6 +17,7 @@
 #include <pwd.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/times.h>
 #include "version.h"
 
 #ifndef DEFAULT_SECURE_TMP_DIR
