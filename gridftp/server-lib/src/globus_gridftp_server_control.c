@@ -1455,9 +1455,13 @@ globus_l_gsc_close_cb(
     globus_result_t                         result,
     void *                                  user_arg)
 {
+    globus_i_gsc_server_handle_t *          server_handle;
     GlobusGridFTPServerName(globus_l_gsc_close_cb);
 
     GlobusGridFTPServerDebugInternalEnter();
+
+    server_handle = (globus_i_gsc_server_handle_t *) user_arg;
+    server_handle->cached_res = result;
 
     globus_l_gsc_user_close_kickout(user_arg);
     GlobusGridFTPServerDebugInternalExit();
