@@ -63,7 +63,8 @@ checkout_cvs() {
 		cd ogsa-cvs
 		cvs co $cvs_opts all 
 	else
-		echo "Updating CVS checkout, ignoring tag (if any)"
+		echo "Updating CVS checkout."
+		cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
 		cd ogsa-cvs
 		for f in *; do
 			cd $f
@@ -299,8 +300,8 @@ fi
 
 install_gt2
 
-echo Building C-dependent packages
-install_cdeps
+# echo Building C-dependent packages
+# install_cdeps
 # dir_iter package-list-cdeps
 
 collate_packages
