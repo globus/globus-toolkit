@@ -459,7 +459,6 @@ grami_jm_callback(int state, int errorcode)
     {
         if (state == GRAM_JOB_STATE_ACTIVE)
         {
-           status_file_gen("INIT");
            status_file_gen("ACTIVE");
         }
         else if (state == GRAM_JOB_STATE_PENDING)
