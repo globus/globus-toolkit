@@ -1,8 +1,11 @@
-This is MyProxy v0.6.3 22 Nov 2004.
+This is MyProxy v0.6.4 4 Jan 2005.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.6.4 4 Jan 2005 (GPT package version 1.16)
+  - fixed file permission bug in myproxy-admin-load-credential
+
 v0.6.3 22 Nov 2004 (GPT package version 1.15)
   - updated GPT packaging for compatibility with GT 3.9.3
     (globus_gssapi_gsi-4.0)
