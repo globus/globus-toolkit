@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.2 
+# From configure.in Revision: 1.1 
 
 
 
@@ -31,41 +31,11 @@
 
 
 
-# libtool.m4 - Configure libtool for the host system. -*-Shell-script-*-
 
-# serial 46 AC_PROG_LIBTOOL
-
+# serial 40 AC_PROG_LIBTOOL
 
 
 
-# _LT_AC_CHECK_DLFCN
-# --------------------
-# _LT_AC_CHECK_DLFCN
-
-# AC_LIBTOOL_SYS_GLOBAL_SYMBOL_PIPE
-# ---------------------------------
- # AC_LIBTOOL_SYS_GLOBAL_SYMBOL_PIPE
-
-# _LT_AC_LIBTOOL_SYS_PATH_SEPARATOR
-# ---------------------------------
-# _LT_AC_LIBTOOL_SYS_PATH_SEPARATOR
-
-# _LT_AC_PROG_ECHO_BACKSLASH
-# --------------------------
-# Add some code to the start of the generated configure script which
-# will find an echo command which doesn;t interpret backslashes.
-# _LT_AC_PROG_ECHO_BACKSLASH
-
-# _LT_AC_TRY_DLOPEN_SELF (ACTION-IF-TRUE, ACTION-IF-TRUE-W-USCORE,
-#                           ACTION-IF-FALSE, ACTION-IF-CROSS-COMPILING)
-# ------------------------------------------------------------------
-# _LT_AC_TRY_DLOPEN_SELF
-
-# AC_LIBTOOL_DLOPEN_SELF
-# -------------------
-# AC_LIBTOOL_DLOPEN_SELF
-
-# _LT_AC_LTCONFIG_HACK
 
 # AC_LIBTOOL_DLOPEN - enable checks for dlopen support
 
@@ -98,36 +68,11 @@
 #   `yes'.
 
 
-# AC_DISABLE_FAST_INSTALL - set the default to --disable-fast-install
-
-
-# AC_LIBTOOL_PICMODE - implement the --with-pic flag
-# Usage: AC_LIBTOOL_PICMODE[(MODE)]
-#   Where MODE is either `yes' or `no'.  If omitted, it defaults to
-#   `both'.
-
-
-
-# AC_PATH_TOOL_PREFIX - find a file program which can recognise shared library
-
-
-
-# AC_PATH_MAGIC - find a file program which can recognise a shared library
-
+# AC_ENABLE_FAST_INSTALL - set the default to --disable-fast-install
 
 
 # AC_PROG_LD - find the path to the GNU or non-GNU linker
 
-
-# AC_PROG_LD_GNU -
-
-
-# AC_PROG_LD_RELOAD_FLAG - find reload flag for linker
-#   -- PORTME Some linkers may need a different reload flag.
-
-
-# AC_DEPLIBS_CHECK_METHOD - how to check for library dependencies
-#  -- PORTME fill in with the dynamic library characteristics
 
 
 
@@ -162,16 +107,6 @@
 # In the future, this macro may have to be called after AC_PROG_LIBTOOL.
 
 
-# old names
-
-
-
-
-
-
-
-
-# This is just to silence aclocal about the macro not being used
 
 
 # Do all the work for Automake.  This macro actually does too much --
