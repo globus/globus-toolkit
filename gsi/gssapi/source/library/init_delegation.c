@@ -476,9 +476,7 @@ proxy_extension_create(
         /* set some sort of error */
         goto err;
     }
-    asn1_oct_string = NULL;
 
-    return ex;
 
 err:
     if (asn1_oct_string)
@@ -491,5 +489,5 @@ err:
         ASN1_OBJECT_free(asn1_obj);
     }
     
-    return NULL;
+    return ex;
 }
