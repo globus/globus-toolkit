@@ -1159,6 +1159,16 @@ globus_gram_job_manager_state_machine(
 		    request->x509_user_proxy);
 		rc = globus_gram_job_manager_gsi_register_proxy_timeout(
 			request);
+		if (rc != GLOBUS_SUCCESS)
+		{
+		    request->jobmanager_state = 
+			GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		    globus_gram_job_manager_request_log( request,
+				   "JM: error setting proxy timeout--"
+                                   "proxy too short-lived\n");
+		    break;
+		}
 	    }
 	}
 
