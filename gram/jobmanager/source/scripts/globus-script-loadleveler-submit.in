@@ -38,6 +38,8 @@ cat=${GLOBUS_SH_CAT-cat}
 sed=${GLOBUS_SH_SED-sed}
 rm=${GLOBUS_SH_RM-rm}
 date=${GLOBUS_SH_DATE-date}
+date=${GLOBUS_SH_DATE-date}
+poe=${GLOBUS_SH_POE-poe}
 ################################################
 
 arg_file=$1
@@ -235,7 +237,11 @@ createScript () {
    echo "#@ queue" 
    echo "#" 
 
-   echo "${grami_program} ${grami_args}" 
+   if [ $grami_job_type = "0" -o $grami_job_type = "2" ] ; then
+        echo "${poe} ${grami_program} ${grami_args}"
+   else
+        echo "${grami_program} ${grami_args}"
+   fi
 
    echo "#" 
    echo "# end command file"
