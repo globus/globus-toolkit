@@ -554,8 +554,12 @@ globus_error_initialize_openssl_error(
          * openssl error chain
          */
         globus_i_openssl_error_handle_destroy(openssl_error_handle);
-        globus_object_free(error);
-        error = base_cause;
+        if(base_cause)
+        {
+            globus_object_free(error);
+            error = base_cause;
+        }
+        
         goto done;
     }
 
