@@ -842,10 +842,22 @@ globus_l_lsf_parse_events(
                     {
                         tmp--;
                     }
-                    sscanf(tmp, "%d", &exit_status);
+                    sscanf(tmp, " %d", &exit_status);
+                    tmp--;
+                    while (isdigit(*tmp))
+                    {
+                        tmp--;
+                    }
+                    tmp--;
+                    while (isdigit(*tmp))
+                    {
+                        tmp--;
+                    }
 
                     if (exit_status == 0)
                     {
+                        sscanf(tmp, " %d", &exit_status);
+                        exit_status = (exit_status & 0xff00) >> 8;
                         rc = globus_scheduler_event_done(event_timestamp,
                                 job_id_buffer,
                                 exit_status);

@@ -253,11 +253,24 @@ EOF
     }
     elsif($description->jobtype() eq 'multiple')
     {
+        print JOB "pids=''\n";
+        print JOB "exit_code=0\n";
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
 	    print JOB $description->executable(), " $args &\n";
+	    print JOB "pids=\"\$pids \$!\"\n";
 	}
-	print JOB "wait\n";
+
+        print JOB <<EOF;
+        for x in \$pids; do
+            wait \$x
+            tmp_exit_code=\$?
+            if [ \$exit_code = 0 -a \$tmp_exit_code != 0 ]; then
+                exit_code=\$tmp_exit_code
+            fi
+        done
+        exit \$exit_code
+EOF
     }
     else
     {
