@@ -535,8 +535,10 @@ main(int argc,
      */
     rsl_tree = globus_rsl_parse(rsl_spec);
 
+/*
         printf("\n------------  after parse  ---------------\n\n");
         globus_rsl_print_recursive(rsl_tree);
+*/
 
     my_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
                                             strlen(GLOBUS_PREFIX) + 1);
@@ -577,13 +579,13 @@ main(int argc,
     }
     else
     {
+/*
             printf("\n------------  after eval  ---------------\n\n");
             globus_rsl_print_recursive(rsl_tree);
+*/
 
         graml_rsl_tree = rsl_tree;
 
-            printf("\n------------  after assignment ---------------\n\n");
-            globus_rsl_print_recursive(graml_rsl_tree);
         /*
          * Start the job.  If successful reply with graml_job_contact else
          * send error status.
@@ -974,9 +976,6 @@ graml_status_file_gen(int job_status)
              */
             fprintf(status_fp, "---___start___---\n");
 
-        printf("\n------------  in add data to rsl ---------------\n\n");
-        globus_rsl_print_recursive(graml_rsl_tree);
-
             if ((request_string = globus_rsl_unparse(graml_rsl_tree)) == NULL)
             {
                 fprintf(status_fp, "Job data unknown\n"); 
@@ -985,7 +984,8 @@ graml_status_file_gen(int job_status)
             {
                 fprintf(status_fp, "%s\n", request_string);
 
-                grami_fprintf(grami_log_fp, "=== REQUEST STRING ===\n\n%s\n", request_string);
+                grami_fprintf(grami_log_fp, "=== REQUEST STRING ===\n\n%s\n",
+                          request_string);
             }
 
             fprintf(status_fp, "---___end___---\n");
