@@ -538,6 +538,7 @@ globus_l_cache_name_arg(char *name)
     {
 	arg[0]='\0';
     }
+    return arg;
 } /* globus_l_cache_name_arg() */
 
 /******************************************************************************
