@@ -181,6 +181,33 @@ else
     $DEBUG_ECHO "JM_SCRIPT: using $cpu_time minutes for max cpu time" >> $grami_logfile
 fi
 
+#       Determining memory limit
+#	min memory is *NOT* supported
+#       Globus default RSL attribute memory units are in Mbytes
+#       LSF default memory attribute units are in Kbytes...
+#       so a conversion from Mbytes to Kbytes must be made
+
+Kb=1024
+
+$DEBUG_ECHO "JM_SCRIPT: testing for maximum memory limit" >> $grami_logfile
+if [ $grami_max_memory -eq 0 ] ; then
+    max_memory=0
+    $DEBUG_ECHO "JM_SCRIPT: no maximum memory requested specified" >> $grami_log_file
+else
+    max_memory=`expr "$grami_max_memory" \* "$Kb"`
+    $DEBUG_ECHO "JM_SCRIPT: requested $grami_max_memory Mb for maximum memory" >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: converting Mb to LSF default unit of Kb" >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: using $max_memory Kb for maximum memory" >> $grami_logfile
+fi
+
+$DEBUG_ECHO "JM_SCRIPT: testing for minimum memory limit" >> $grami_logfile
+if [ $grami_min_memory -eq 0 ] ; then
+    $DEBUG_ECHO "JM_SCRIPT: no minimum memory requested specified" >> $grami_log_file
+else
+    $DEBUG_ECHO "JM_SCRIPT: requested $grami_min_memory Mb for minimum memory" >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: minimum memory request is not supported" >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: minimum memory request is being ignored" >> $grami_logfile
+fi
 
 #         Start building job script
 
@@ -202,6 +229,12 @@ fi
 if [ $cpu_time -ne 0 ] ; then
     echo "#BSUB -c $cpu_time" >> $LSF_JOB_SCRIPT
 fi
+
+if [ $max_memory -ne 0 ] ; then
+    echo "#BSUB -M $max_memory" >> $LSF_JOB_SCRIPT
+fi
+
+
 echo "#BSUB -i $grami_stdin" >> $LSF_JOB_SCRIPT
 echo "#BSUB -o $grami_stdout" >> $LSF_JOB_SCRIPT
 echo "#BSUB -e $grami_stderr" >> $LSF_JOB_SCRIPT
