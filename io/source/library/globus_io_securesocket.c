@@ -389,7 +389,7 @@ globus_i_io_securesocket_register_accept(
     if(handle->securesocket_attr.channel_mode ==
        GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)
     {
-        accept_info->ret_flags = GSS_C_GLOBUS_SSL_COMPATABLE;
+        accept_info->ret_flags = GSS_C_GLOBUS_SSL_COMPATIBLE;
     }
     if(handle->securesocket_attr.protection_mode == GLOBUS_IO_SECURE_PROTECTION_MODE_PRIVATE)
     {
@@ -520,7 +520,7 @@ globus_i_io_securesocket_register_connect_callback(
     switch(handle->securesocket_attr.channel_mode)
     {
     case GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP:
-        flags |= GSS_C_GLOBUS_SSL_COMPATABLE;
+        flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
         break;
     default:
         break;
@@ -2658,14 +2658,14 @@ globus_l_io_is_ssl_packet(void * token)
 static
 globus_result_t
 globus_l_io_read_input_token(
-    globus_io_handle_t *    handle,
-    globus_io_input_token_t *   input_token)
+    globus_io_handle_t *                handle,
+    globus_io_input_token_t *           input_token)
 {
-    globus_result_t     result;
-    globus_size_t       amt_read;
-    globus_object_t *       err;
-    int             save_errno;
-    static int          count=0;
+    globus_result_t                     result;
+    globus_size_t                       amt_read;
+    globus_object_t *                   err;
+    int                                 save_errno;
+    static int                          count=0;
 
     count++;
     
@@ -2851,13 +2851,14 @@ globus_io_register_init_delegation(
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
     OM_uint32                           time_req,
-    globus_io_delegation_callback_t callback,
-    void *              callback_arg)
+    globus_io_delegation_callback_t     callback,
+    void *                              callback_arg)
 {
     globus_io_authentication_info_t *   init_info;
     globus_result_t                     rc = GLOBUS_SUCCESS;
     int                                 save_errno;
-    static char *           myname= "globus_io_register_init_delegation";
+    static char *                       myname =
+        "globus_io_register_init_delegation";
 
     /* argument checking goes here */
 
@@ -2991,8 +2992,8 @@ globus_io_init_delegation(
     const gss_buffer_set_t              restriction_buffers,
     OM_uint32                           time_req)
 {
-    globus_i_io_monitor_t       monitor;
-    globus_result_t         rc;
+    globus_i_io_monitor_t               monitor;
+    globus_result_t                     rc;
 
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -3081,13 +3082,14 @@ globus_io_register_accept_delegation(
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
     OM_uint32                           time_req,
-    globus_io_delegation_callback_t callback,
-    void *              callback_arg)
+    globus_io_delegation_callback_t     callback,
+    void *                              callback_arg)
 {
     globus_io_authentication_info_t *   accept_info;
     globus_result_t                     rc = GLOBUS_SUCCESS;
     int                                 save_errno;
-    static char *           myname= "globus_io_register_accept_delegation";
+    static char *                       myname =
+        "globus_io_register_accept_delegation";
     
     /* argument checking goes here */
 
@@ -3210,9 +3212,10 @@ globus_io_accept_delegation(
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec)
 {
-    globus_i_io_monitor_t       monitor;
-    globus_result_t         rc;
-    static char *           myname= "globus_io_accept_delegation";
+    globus_i_io_monitor_t               monitor;
+    globus_result_t                     rc;
+    static char *                       myname =
+        "globus_io_accept_delegation";
 
     if(delegated_cred == GLOBUS_NULL)
     {
@@ -3284,12 +3287,12 @@ globus_io_accept_delegation(
 static
 void 
 globus_l_io_init_delegation(
-    void *              arg,
-    globus_io_handle_t *        handle,
-    globus_result_t         result)
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result) 
 {
     globus_io_authentication_info_t *   init_info;
-    globus_object_t *           err;
+    globus_object_t *                   err;
     gss_buffer_desc *                   token_ptr;
     gss_buffer_desc                     input_token;
     gss_buffer_desc                     output_token; 
@@ -3317,6 +3320,7 @@ globus_l_io_init_delegation(
         init_info->restriction_oids,
         init_info->restriction_buffers,
         token_ptr,
+        init_info->flags,
         init_info->time_req,
         &output_token);
 
@@ -3406,12 +3410,12 @@ error_exit:
 static
 void 
 globus_l_io_accept_delegation(
-    void *              arg,
-    globus_io_handle_t *        handle,
-    globus_result_t         result)
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result)
 {
     globus_io_authentication_info_t *   accept_info;
-    globus_object_t *           err;
+    globus_object_t *                   err;
     gss_buffer_desc *                   token_ptr;
     gss_buffer_desc                     input_token;
     gss_buffer_desc                     output_token;
@@ -3440,6 +3444,7 @@ globus_l_io_accept_delegation(
         accept_info->restriction_oids,
         accept_info->restriction_buffers,
         token_ptr,
+        accept_info->flags,
         accept_info->time_req,
         &accept_info->time_rec,
         &accept_info->cred_handle,
@@ -3532,9 +3537,9 @@ error_exit:
 static
 void
 globus_l_io_delegation_cb_wrapper(
-    void *              arg,
-    globus_io_handle_t *        handle,
-    globus_result_t         result,
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
     globus_io_authentication_info_t *   auth_info)
 {
     (auth_info->delegation_callback)(arg,
@@ -3548,14 +3553,14 @@ globus_l_io_delegation_cb_wrapper(
 static
 void
 globus_l_io_delegation_cb(
-    void *              arg,
-    globus_io_handle_t *        handle,
-    globus_result_t         result,
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
     gss_cred_id_t                       delegated_cred,
     OM_uint32                           time_rec)
 {
-    globus_i_io_monitor_t *     monitor;
-    globus_object_t *           err;
+    globus_i_io_monitor_t *             monitor;
+    globus_object_t *                   err;
 
     err = globus_error_get(result);
 
