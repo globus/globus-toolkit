@@ -293,7 +293,11 @@ install-files: scard-install
 	fi
 
 #
-# gpt-install-files is install-files minus
+# When a new version of OpenSSH is imported into the repository, it may just be more
+# useful to pitch the text in the gpt-install-files target here and replicate the
+# install-files target above, keeping in mind that gpt-install-files is install-files
+# minus:
+#
 #   o copying the configuration files
 #   o copying the configuration file man pages
 #   o the scard-install target
