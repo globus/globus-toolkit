@@ -163,8 +163,6 @@ globus_l_thread_activate()
 
     preemptive_threads = GLOBUS_TRUE;
 
-    globus_thread_set_diagnostics_file(GLOBUS_NULL);
-    
     concurrency_var = globus_module_getenv("GLOBUS_THREAD_CONCURRENCY");
 
     if(concurrency_var != GLOBUS_NULL)

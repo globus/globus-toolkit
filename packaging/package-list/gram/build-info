@@ -1,5 +1,0 @@
-name=gram
-subdir=program_execution/gram
-build="rmdir \$destdir;
-cd ..
-cp -Rp gram \$destdir;"

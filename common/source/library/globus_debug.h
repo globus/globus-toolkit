@@ -2,54 +2,102 @@
 #ifndef GLOBUS_DEBUG_H
 #define GLOBUS_DEBUG_H
 
-
 #include "globus_common_include.h"
 
- 
-EXTERN_C_BEGIN
- 
+#ifdef BUILD_DEBUG
 
-/* MACRO to instantiate a module-specific debug interface declaration */
-/* each module will get a set of functions:
- *   extern void module_name_set_diagnostics_file (FILE *fp);
- *   extern int  module_name_diagnostics_vprintf (const char *format,
- *                                                va_list ap);
- *   extern int  module_name_diagnostics_printf (const char *format,
- *                                               ...); */
-#define globus_declare_debug_interface(module_name)                        \
-extern void                                                                \
-module_name##_set_diagnostics_file (FILE *file);                           \
-extern int                                                                 \
-module_name##_diagnostics_vprintf (const char *format, va_list ap);        \
-extern int                                                                 \
-module_name##_diagnostics_printf (const char *format, /* args */ ...);
+void
+globus_debug_init(
+    const char *                        env_name,
+    const char *                        level_names,
+    int *                               debug_level,
+    FILE **                             out_file,
+    globus_bool_t *                     using_file,
+    globus_bool_t *                     show_tids);
+    
+/* call in same file as module_activate func (before (de)activate funcs) */
+#define GlobusDebugDefine(module_name)                                      \
+    static FILE * globus_i_##module_name##_debug_file;                      \
+    static globus_bool_t globus_i_##module_name##_using_file;               \
+    static globus_bool_t globus_i_##module_name##_print_threadids;          \
+    void globus_i_##module_name##_debug_printf(const char * fmt, ...)       \
+    {                                                                       \
+        va_list ap;                                                         \
+        va_start(ap, fmt);                                                  \
+        if(globus_i_##module_name##_print_threadids)                        \
+        {                                                                   \
+            char buf[4096]; /* XXX better not use a fmt bigger than this */ \
+            sprintf(                                                        \
+                buf, "%lu::%s", (unsigned long) globus_thread_self(), fmt); \
+            vfprintf(globus_i_##module_name##_debug_file, buf, ap);         \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            vfprintf(globus_i_##module_name##_debug_file, fmt, ap);         \
+        }                                                                   \
+        va_end(ap);                                                         \
+    }                                                                       \
+    int globus_i_##module_name##_debug_level
 
-/* for all *_set_diagnostic_file (FILE *file) routines:
+/* call this in a header file (if needed externally) */
+#define GlobusDebugDeclare(module_name)                                     \
+    extern void globus_i_##module_name##_debug_printf(const char *, ...);   \
+    extern int globus_i_##module_name##_debug_level
+
+/* call this in module activate func
  *
- * default at process start is same as file==stderr
- * send messages after call returns to  file
- * file==NULL means disable diagnostics
+ * 'levels' is a space separated list of level names that can be used in env
+ *    they will map to a 2^i value (so, list them in same order as value)
+ *
+ * will look in env for {module_name}_DEBUG whose value is:
+ * <levels> [ , [ <file name> ] [ , <show tids>] ]
+ * where <levels> can be a single numeric or '|' separated level names
+ * <file name> is a debug output file... can be empty.  stderr by default
+ * <show tids> is 0 or 1 to show thread ids on all messages.  0 by default
  */
+#define GlobusDebugInit(module_name, levels)                                \
+    globus_debug_init(                                                      \
+        #module_name "_DEBUG",                                              \
+        #levels,                                                            \
+        &globus_i_##module_name##_debug_level,                              \
+        &globus_i_##module_name##_debug_file,                               \
+        &globus_i_##module_name##_using_file,                               \
+        &globus_i_##module_name##_print_threadids)
 
-globus_declare_debug_interface(globus)
+/* call this in module deactivate func */
+#define GlobusDebugDestroy(module_name)                                     \
+    do                                                                      \
+    {                                                                       \
+        if(globus_i_##module_name##_using_file)                             \
+        {                                                                   \
+            fclose(globus_i_##module_name##_debug_file);                    \
+        }                                                                   \
+    } while(0)
 
-globus_declare_debug_interface(duroc_runtime)
-globus_declare_debug_interface(duroc_control)
-globus_declare_debug_interface(duroc_bootstrap)
-globus_declare_debug_interface(duroc)
+/* most likely wrap this with your own macro,
+ * so you dont need to pass module_name all the time
+ * 'message' needs to be wrapped with parens and contains a format and
+ * possibly var args
+ */
+#define GlobusDebugPrintf(module_name, level, message)                      \
+    do                                                                      \
+    {                                                                       \
+        if(globus_i_##module_name##_debug_level & (level))                  \
+        {                                                                   \
+            globus_i_##module_name##_debug_printf message;                  \
+        }                                                                   \
+    } while(0)
 
-globus_declare_debug_interface(gram_client)
-globus_declare_debug_interface(gram)
+#else
 
-globus_declare_debug_interface(globus_thread)
+#define GlobusDebugDeclare(module_name)
+#define GlobusDebugDefine(module_name)
+#define GlobusDebugInit(module_name, levels)
+#define GlobusDebugDestroy(module_name)
+#define GlobusDebugPrintf(module_name, level, message)
 
-/* ADD ADDITIONAL MODULE INTERFACES HERE... */
-
+#endif
 
 EXTERN_C_END
 
-
 #endif /* GLOBUS_DEBUG_H */
-
-
-

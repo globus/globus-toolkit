@@ -777,6 +777,11 @@ globus_result_t globus_gsi_cred_read(
         free(key);
     }
     
+    if(service_name)
+    {
+        free(service_name);
+    }
+
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }

@@ -283,16 +283,17 @@
 #define SSL_NOT_EXP		0x00000001L
 #define SSL_EXPORT		0x00000002L
 
-#define SSL_STRONG_MASK		0x0000007cL
-#define SSL_EXP40		0x00000004L
+#define SSL_STRONG_MASK		0x000000fcL
+#define SSL_STRONG_NONE		0x00000004L
+#define SSL_EXP40		0x00000008L
 #define SSL_MICRO		(SSL_EXP40)
-#define SSL_EXP56		0x00000008L
+#define SSL_EXP56		0x00000010L
 #define SSL_MINI		(SSL_EXP56)
-#define SSL_LOW			0x00000010L
-#define SSL_MEDIUM		0x00000020L
-#define SSL_HIGH		0x00000040L
+#define SSL_LOW			0x00000020L
+#define SSL_MEDIUM		0x00000040L
+#define SSL_HIGH		0x00000080L
 
-/* we have used 0000007f - 25 bits left to go */
+/* we have used 000000ff - 24 bits left to go */
 
 /*
  * Macros to check the export status and cipher strength for export ciphers.
@@ -499,7 +500,7 @@ STACK_OF(SSL_CIPHER) *ssl_get_ciphers_by_id(SSL *s);
 int ssl_verify_alarm_type(long type);
 
 int ssl2_enc_init(SSL *s, int client);
-void ssl2_generate_key_material(SSL *s);
+int ssl2_generate_key_material(SSL *s);
 void ssl2_enc(SSL *s,int send_data);
 void ssl2_mac(SSL *s,unsigned char *mac,int send_data);
 SSL_CIPHER *ssl2_get_cipher_by_char(const unsigned char *p);
