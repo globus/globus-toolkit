@@ -72,7 +72,11 @@
  *  globus code added by JB
  */
 #ifdef USE_GLOBUS_DATA_CODE
-extern globus_ftp_control_handle_t               g_data_handle;
+extern globus_ftp_control_handle_t              g_data_handle;
+globus_list_t *					host_port_list = NULL;
+globus_ftp_control_layout_t			g_layout;
+globus_ftp_control_parallelism_t		g_parallelism;
+globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 #endif
 
 extern int dolreplies;
@@ -151,7 +155,6 @@ static struct in_addr cliaddr;
 static int cmd_type;
 static int cmd_form;
 static int cmd_bytesz;
-
 #ifndef FTP_BUFSIZE
 #define FTP_BUFSIZE	512
 #endif /* FTP_BUFSIZE */
@@ -175,9 +178,10 @@ struct tab {
 
 extern struct tab cmdtab[];
 extern struct tab sitetab[];
-
+extern char * feattab[];
 static void toolong(int);
 void help(struct tab *ctab, char *s);
+void feat(char *tab[]);
 struct tab *lookup(register struct tab *p, char *cmd);
 int yylex(void);
 
@@ -192,7 +196,7 @@ extern int port_allowed(const char *remoteaddr);
     A   B   C   E   F   I
     L   N   P   R   S   T
 
-    SP  CRLF    COMMA   STRING  NUMBER   BIGNUM
+    SP  CRLF    COMMA  SEMICOLON EQUALS STRING  NUMBER   BIGNUM
 
     USER    PASS    ACCT    REIN    QUIT    PORT
     PASV    TYPE    STRU    MODE    RETR    STOR
@@ -204,11 +208,14 @@ extern int port_allowed(const char *remoteaddr);
 
     AUTH    ADAT    PROT    PBSZ    CCC
 
-    ESTO    ERET
+    ESTO    ERET    SPAS    SPOR    FEAT    OPTS
 
     UMASK   IDLE    CHMOD   GROUP   GPASS   NEWER
     MINFO   INDEX   EXEC    ALIAS   CDPATH  GROUPS
     CHECKMETHOD     CHECKSUM        BUFSIZE
+
+    STRIPELAYOUT    PARTITIONED BLOCKED BLOCKSIZE
+    PARALLELISM
 
     LEXERR
 
@@ -220,17 +227,20 @@ extern int port_allowed(const char *remoteaddr);
 	long long offset;
 	long long length;
     } estor_eret;
-
+    struct {
+	struct in_addr addr;
+	unsigned short port;
+    } address;
     long long Bignum;
 }
 
 %type <String>  STRING password pathname pathstring username method
-%type <Number>  NUMBER byte_size check_login form_code 
+%type <Number>  NUMBER byte_size check_login form_code
 %type <Number>  struct_code mode_code octal_number
 %type <Number>  prot_code bufsize
 %type <estor_eret> esto_mode eret_mode
 %type <Bignum>	BIGNUM OFFSET LENGTH
-
+%type <address> host_port
 %start  cmd_list
 
 %%
@@ -329,6 +339,61 @@ cmd: USER SP username CRLF
 #endif
 	    }
 	}
+    | SPOR check_login host_port_list CRLF
+	=	{
+#if defined(USE_GLOBUS_DATA_CODE)
+	    if (log_commands)
+		syslog(LOG_INFO, "SPOR");
+	    if ($2) 
+            {
+#ifndef DISABLE_PORT
+		globus_list_t * tmp;
+		globus_ftp_control_host_port_t * hp;
+		int i,size;
+		globus_result_t                   res = GLOBUS_SUCCESS;
+
+		tmp = host_port_list;
+		size = globus_list_size(tmp);
+
+		hp = globus_libc_malloc(size * 
+					sizeof(globus_ftp_control_host_port_t));
+		for(i = 0; i < size; i++)
+		{
+		    memcpy(&hp[i], globus_list_first(tmp), 
+			   sizeof(globus_ftp_control_host_port_t));
+		    globus_libc_free(globus_list_first(tmp));
+		    tmp = globus_list_rest(tmp);
+		}
+		globus_list_free(host_port_list);
+		host_port_list = GLOBUS_NULL;
+		
+
+		res = globus_ftp_control_local_spor( &g_data_handle,
+						     hp,
+						     size);
+		globus_libc_free(hp);
+		if(res != GLOBUS_SUCCESS)
+		{
+		    memset(&data_dest, 0, sizeof(data_dest));
+		    syslog(LOG_WARNING, "refused SPOR %s,%d from %s",
+			   inet_ntoa(cliaddr), ntohs(cliport), remoteident);
+		    reply(500, "Illegal SPOR Command");
+		}
+#endif
+	    }
+	    usedefault = 0;
+	    if (pdata >= 0) 
+	    {
+		(void) close(pdata);
+		pdata = -1;
+	    }
+	    data_dest.sin_family = AF_INET;
+	    data_dest.sin_addr = cliaddr;
+	    data_dest.sin_port = cliport;
+	    reply(200, "SPOR command successful.");
+#endif
+	}
+
     | PASV check_login CRLF
 	=	{
 /* Require login for PASV, too.  This actually fixes a bug -- telnet to an
@@ -343,7 +408,7 @@ cmd: USER SP username CRLF
                  */
 #               if defined(USE_GLOBUS_DATA_CODE)
                 {
-		    g_passive();
+		    g_passive(GLOBUS_FALSE);
                 }
 #               else
                 {
@@ -353,6 +418,25 @@ cmd: USER SP username CRLF
 
 #else
 		reply(425, "Cannot open passive connection");
+#endif
+	}
+    | SPAS check_login CRLF
+	=	{
+#if defined(USE_GLOBUS_DATA_CODE)
+	    if (log_commands)
+		syslog(LOG_INFO, "SPAS");
+	    if ($2)
+#if (defined (DISABLE_PORT) || !defined (DISABLE_PASV))
+
+                /*
+                 *  globus code added by JB
+                 */
+                {
+		    g_passive(GLOBUS_TRUE);
+                }
+#else
+		reply(425, "Cannot open passive connection");
+#endif
 #endif
 	}
     | PROT SP prot_code CRLF
@@ -455,8 +539,11 @@ cmd: USER SP username CRLF
 	}
     | MODE check_login SP mode_code CRLF
 	=	{
+#           if defined(USE_GLOBUS_DATA_CODE)
             globus_result_t                            res;
-
+	    g_send_restart_info = GLOBUS_FALSE;
+#           endif
+	    
 	    if (log_commands)
 		syslog(LOG_INFO, "MODE %s", modenames[$4]);
 	    if ($2)
@@ -474,7 +561,9 @@ cmd: USER SP username CRLF
                               GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
                     if(res == GLOBUS_SUCCESS)
                     {
+			g_send_restart_info = GLOBUS_TRUE;
 		        reply(200, "MODE E ok.");
+			
                     }
                     else
                     {
@@ -695,6 +784,13 @@ cmd: USER SP username CRLF
 		    help(cmdtab, $4);
 	    if ($4 != NULL)
 		free($4);
+	}
+    | FEAT check_login CRLF
+	=	{
+	    if (log_commands)
+		syslog(LOG_INFO, "FEAT");
+	    if ($2)
+		feat(feattab);
 	}
     | NOOP check_login CRLF
 	=	{
@@ -1067,6 +1163,11 @@ cmd: USER SP username CRLF
 #endif /* FTP_SECURITY_EXTENSIONS */
 	free((char *) $3);
     }
+    | OPTS check_login opts CRLF
+    =
+    {
+	reply(200, "Opts successful.");
+    }
     | QUIT CRLF
 	=	{
 	    if (log_commands)
@@ -1202,10 +1303,98 @@ password: /* empty */
 byte_size: NUMBER
     ;
 
+opts: SP RETR SP retr_option_list 
+    ;
+
+retr_option_list: 
+    retr_option retr_option_list
+    | retr_option
+    ;
+
+retr_option:
+    STRIPELAYOUT EQUALS PARTITIONED SEMICOLON
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
+	}
+#       endif
+    }
+    | STRIPELAYOUT EQUALS BLOCKED SEMICOLON
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
+	}
+#       endif
+    }
+    | BLOCKSIZE EQUALS NUMBER SEMICOLON
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    g_layout.round_robin.block_size = $3;
+	}
+#       endif
+    }
+    | PARALLELISM EQUALS NUMBER COMMA NUMBER COMMA NUMBER SEMICOLON
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+	    g_parallelism.fixed.size = $3;
+	}
+#       endif
+    }
+    ;
+host_port_list:
+    SP host_port host_port_list =
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    globus_ftp_control_host_port_t * host_port;
+	    unsigned char * a;
+	    
+	    host_port = globus_libc_malloc(sizeof(globus_ftp_control_host_port_t));
+	    a = (unsigned char*) &$2.addr;
+	    
+	    host_port->host[0] = (int)a[0];
+	    host_port->host[1] = (int)a[1];
+	    host_port->host[2] = (int)a[2];
+	    host_port->host[3] = (int)a[3];
+	    host_port->port = ntohs($2.port);
+	    
+	    globus_list_insert(&host_port_list, host_port);
+	}
+#       endif
+    }
+    | SP host_port =
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    globus_ftp_control_host_port_t * host_port;
+	    unsigned char * a;
+	    
+	    host_port_list = NULL;
+	    
+	    host_port = globus_libc_malloc(sizeof(globus_ftp_control_host_port_t));
+	    a = (unsigned char *) &$2.addr;
+	    
+	    host_port->host[0] = (int)a[0];
+	    host_port->host[1] = (int)a[1];
+	    host_port->host[2] = (int)a[2];
+	    host_port->host[3] = (int)a[3];
+	    host_port->port = ntohs($2.port);
+	    
+	    globus_list_insert(&host_port_list, host_port);
+	}
+#       endif
+    }
+    ;
+
 host_port: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER
 	=	{
 	    register char *a, *p;
-
+		   
 	    a = (char *) &cliaddr;
 	    a[0] = $1;
 	    a[1] = $3;
@@ -1214,6 +1403,9 @@ host_port: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMB
 	    p = (char *) &cliport;
 	    p[0] = $9;
 	    p[1] = $11;
+
+	    $$.addr = cliaddr;
+	    $$.port = cliport;
 	}
     ;
 
@@ -1499,7 +1691,9 @@ extern jmp_buf errcatch;
 #define EARGS4 15		/* NUMBER SP NUMBER SP STRING */
 #define EARGS5 17		/* SP NUMBER SP STRING */
 #define EARGS6 18		/* NUMBER SP STRING */
-
+#define NEWARGS 19		/* miscellaneous word/number
+				 * arguments, with punctuation */
+#define OPTSARGS 20             /* a command token, followed by newargs */
 struct tab cmdtab[] =
 {				/* In order defined in RFC 765 */
     {"USER", USER, STR1, 1, "<sp> username"},
@@ -1558,7 +1752,12 @@ struct tab cmdtab[] =
     {"MDTM", MDTM, OSTR, 1, "<sp> path-name"},
     { "ESTO", ESTO, ESTOARGS, 1, "<sp> A <sp> <offset> <sp> <filename>" },
     { "ERET", ERET, ERETARGS, 1, "<sp> P <sp> <offset> <sp> size <sp> <filename>" },
-
+#ifdef USE_GLOBUS_DATA_CODE
+    { "SPAS", SPAS, ARGS, 1, "(set server in striped passive mode"},
+    { "SPOR", SPOR, ARGS, 1, "<sp> h1,h2,h2,h3,p1,p2..."},
+#endif
+    { "FEAT", FEAT, ARGS, 1, "(return list of FTP extensions supported)"},
+    { "OPTS", OPTS, OPTSARGS, 1, "(set operation-specific options)"},
     {NULL, 0, 0, 0, 0}
 };
 
@@ -1583,6 +1782,18 @@ struct tab sitetab[] =
     {NULL, 0, 0, 0, 0}
 };
 
+char * feattab[] =
+{
+    "REST STREAM",
+    "ESTO",
+    "ERET",
+    "MDTM",
+    "SIZE",
+#ifdef USE_GLOBUS_DATA_CODE
+    "PARALLEL",
+#endif
+    NULL
+};
 struct tab *lookup(register struct tab *p, char *cmd)
 {
     for (; p->name != NULL; p++)
@@ -1839,7 +2050,7 @@ int yylex(void)
 		state = p->state;
 		yylval.String = p->name;
 		return (p->token);
-	    }
+		}
 	    state = CMD;
 	    break;
 
@@ -2062,6 +2273,98 @@ int yylex(void)
 		    return (BIGNUM);
 		}
 		break;
+	    case OPTSARGS:
+		if (cbuf[cpos] == ' ') {
+		    cpos++;
+		    return (SP);
+		}
+		cp = &cbuf[cpos];
+		if ((cp2 = strpbrk(cp, " \n")))
+		    cpos = cp2 - cbuf;
+		c = cbuf[cpos];
+		cbuf[cpos] = '\0';
+		upper(cp);
+		p = lookup(cmdtab, cp);
+		cbuf[cpos] = c;
+		if (p != 0) {
+		    state = NEWARGS;
+		    /* NOTREACHED */
+		}
+		state = NEWARGS;
+		yylval.String = p->name;
+		return (p->token);
+	
+	    case NEWARGS:
+	    if (isdigit(cbuf[cpos])) {
+		cp = &cbuf[cpos];
+		while (isdigit(cbuf[++cpos]));
+		c = cbuf[cpos];
+		cbuf[cpos] = '\0';
+		yylval.Number = atoi(cp);
+		cbuf[cpos] = c;
+		return (NUMBER);
+	    }
+
+	    switch (cbuf[cpos]) {
+
+	    case '\n':
+		state = CMD;
+		cpos++;
+		return (CRLF);
+
+	    case ' ':
+		cpos++;
+		return (SP);
+
+	    case ',':
+		cpos++;
+		return (COMMA);
+	    case ';':
+		cpos++;
+		return (SEMICOLON);
+	    case '=':
+		cpos++;
+		return EQUALS;
+	    }
+	    /* must be a word of some sort */
+	    cp = &cbuf[cpos];
+	    while(isalnum(cbuf[++cpos]));
+
+	    c = cbuf[cpos];
+	    cbuf[cpos] = '\0';
+
+	    if(strcasecmp(cp, "stripelayout") == 0)
+	    {
+		cbuf[cpos] = c;
+		return STRIPELAYOUT;
+	    }
+	    else if(strcasecmp(cp, "partitioned") == 0)
+	    {
+		cbuf[cpos] = c;
+		return PARTITIONED;
+	    }
+	    else if(strcasecmp(cp, "blocked") == 0)
+	    {
+		cbuf[cpos] = c;
+		return BLOCKED;
+	    }
+	    else if(strcasecmp(cp, "blocksize") == 0)
+	    {
+		cbuf[cpos] = c;
+		return BLOCKSIZE;
+	    }
+	    else if(strcasecmp(cp, "parallelism") == 0)
+	    {
+		cbuf[cpos] = c;
+		return PARALLELISM;
+	    }
+	    else
+	    {
+		yylval.String = copy(cp);
+		cbuf[cpos] = c;
+		return STRING;
+	    }
+
 	default:
 	    fatal("Unknown state in scanner.");
 	}
@@ -2172,6 +2475,23 @@ void help(struct tab *ctab, char *s)
     else
 	reply(214, "%s%-*s\t%s; unimplemented.", type, width,
 	      c->name, c->help);
+}
+
+void feat(char *tab[])
+{
+    int i;
+
+    if(tab[0] == NULL)
+    {
+	reply(211, "No features supported");
+	return;
+    }
+    lreply(211, "Extensions supported:");
+    for(i = 0; tab[i] != NULL; i++)
+    {
+	lreply(0, " %s", feattab[i]);
+    }
+    reply(211, "END");
 }
 
 void sizecmd(char *filename)

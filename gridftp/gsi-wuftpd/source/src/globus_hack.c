@@ -5,8 +5,19 @@
 #include "config.h"
 #include "proto.h"
 #include "../support/ftp.h"
+#include <syslog.h>
 
 #if defined(USE_GLOBUS_DATA_CODE)
+extern globus_ftp_control_layout_t		g_layout;
+extern globus_ftp_control_parallelism_t		g_parallelism;
+extern globus_bool_t				g_send_restart_info;
+
+typedef struct
+{
+    globus_size_t		offset;
+    globus_size_t		length;
+}
+globus_l_wu_range_t;
 
 typedef struct globus_i_wu_montor_s
 {
@@ -20,6 +31,8 @@ typedef struct globus_i_wu_montor_s
     int                        fd;
 
     int                        offset;
+    time_t		       last_update;
+    globus_fifo_t	       ranges;
 } globus_i_wu_montor_t;
 
 /*
@@ -88,6 +101,13 @@ data_close_callback(
     struct globus_ftp_control_handle_s *        handle,
     globus_object_t *                           error);
 
+static void
+globus_l_wu_insert_range(globus_fifo_t * ranges,
+			 globus_size_t offset,
+			 globus_size_t length);
+static char *
+globus_l_wu_create_range_string(globus_fifo_t * ranges);
+
 /*************************************************************
  *   global vairables 
  ************************************************************/
@@ -107,6 +127,8 @@ wu_monitor_reset(
     mon->count = 0;
     mon->offset = -1;
     mon->fd = -1;
+    mon->last_update = 0;
+    globus_fifo_init(&mon->ranges);
 }
 
 void
@@ -125,6 +147,8 @@ wu_monitor_destroy(
 {
     globus_mutex_destroy(&mon->mutex);
     globus_cond_destroy(&mon->cond);
+
+    globus_fifo_destroy(&mon->ranges);
 }
 
 static int
@@ -140,14 +164,13 @@ g_start()
 {
     char *                            a;
     globus_ftp_control_host_port_t    host_port;
-    globus_result_t                   res;
+    int			              rc;
     globus_reltime_t                  delay_time;
     globus_reltime_t                  period_time;
-    globus_ftp_control_parallelism_t  par;
+    globus_result_t		      res;
 
-
-    res = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
-    assert(res == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    assert(rc == GLOBUS_SUCCESS);
 
     wu_monitor_init(&g_monitor);
 
@@ -163,11 +186,14 @@ g_start()
               &g_data_handle,
               &host_port);
     assert(res == GLOBUS_SUCCESS);
-    par.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
-    par.fixed.size = 1;
+
+    g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+    g_parallelism.fixed.size = 1;
+    g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
+
     globus_ftp_control_local_parallelism(
               &g_data_handle,
-              &par);
+              &g_parallelism);
 
     GlobusTimeReltimeSet(delay_time, 0, 0);
     GlobusTimeReltimeSet(period_time, 0, timeout_connect / 2);
@@ -233,7 +259,7 @@ g_abort()
 }
 
 void
-g_passive()
+g_passive(globus_bool_t spas)
 {
     globus_result_t                             res;
     globus_ftp_control_host_port_t              host_port;
@@ -268,13 +294,29 @@ g_passive()
     hi = host_port.port / 256;
     low = host_port.port % 256;
 
-    reply(227, "Entering Passive Mode (%d,%d,%d,%d,%d,%d)", 
-          host_port.host[0],
-          host_port.host[1],
-          host_port.host[2],
-          host_port.host[3],
-          hi,
-          low);
+    if(spas)
+    {
+	lreply(229, "Entering Striped Passive Mode");
+	lreply(0, " %d,%d,%d,%d,%d,%d",
+	       host_port.host[0],
+	       host_port.host[1],
+	       host_port.host[2],
+	       host_port.host[3],
+	       hi,
+	       low);
+	reply(229, "End");
+
+    }
+    else
+    {
+	reply(227, "Entering Passive Mode (%d,%d,%d,%d,%d,%d)", 
+	      host_port.host[0],
+	      host_port.host[1],
+	      host_port.host[2],
+	      host_port.host[3],
+	      hi,
+	      low);
+    }
 }
 
 
@@ -354,6 +396,26 @@ g_send_data(
      */
     (void) signal(SIGALRM, g_alarm_signal);
     alarm(timeout_connect);
+
+    if(g_layout.mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
+    {
+	if(!retrieve_is_data)
+	{
+	    struct stat s;
+
+	    fstat(fileno(instr), &s);
+	    
+	    g_layout.partitioned.size = s.st_size;
+
+	    globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
+	}
+    }
+    else
+    {
+	globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
+    }
+    globus_ftp_control_local_parallelism(&g_data_handle,
+					 &g_parallelism);
 
     res = globus_ftp_control_data_connect_write(
               handle,
@@ -707,6 +769,7 @@ data_write_callback(
     {
         monitor->count--;
         globus_cond_signal(&monitor->cond);
+
     }
     globus_mutex_unlock(&monitor->mutex);
 
@@ -960,6 +1023,38 @@ data_read_callback(
 #           endif
         }
 
+	if(g_send_restart_info)
+	{
+	    struct timeval			tv;
+	    time_t				t;
+	    struct tm *			tm;
+	    unsigned char *			a;
+	    char *				range_str;
+
+	    gettimeofday(&tv, NULL);
+	    t = tv.tv_sec;
+
+	    globus_l_wu_insert_range(&monitor->ranges, offset, length);
+
+	    if(t - monitor->last_update > 1)
+	    {
+		tm = gmtime(&t);
+		    
+		a = (unsigned char *)&ctrl_addr.sin_addr;
+		    
+		range_str =
+		    globus_l_wu_create_range_string(&monitor->ranges);
+		    
+		reply(111,
+		      "Range Marker %04d%02d%02d%02d%02d%02d.%06d %d.%d.%d.%d: %s",
+		      tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+		      tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec,
+		      (int)a[0], (int)a[1], (int)a[2], (int)a[3],
+		      range_str);
+		globus_libc_free(range_str);
+		monitor->last_update = t;
+	    }
+	}
         if(eof)
         {
             monitor->count++;
@@ -990,6 +1085,142 @@ data_read_callback(
         alarm(timeout_data);
     }
     globus_mutex_unlock(&monitor->mutex);
+}
+
+static
+void
+globus_l_wu_insert_range(
+    globus_fifo_t *				ranges,
+    globus_size_t				offset,
+    globus_size_t				length)
+{
+    globus_fifo_t				tmp;
+    globus_l_wu_range_t *			range;
+    globus_l_wu_range_t *			newrange;
+	    
+    globus_fifo_move(&tmp, ranges);
+
+    while(!globus_fifo_empty(&tmp))
+    {
+	range = globus_fifo_dequeue(&tmp);
+	if(offset < range->offset)
+	{
+	    if(offset + length < range->offset)
+	    {
+		newrange = globus_malloc(sizeof(globus_l_wu_range_t));
+		newrange->offset = offset;
+		newrange->length = length;
+
+		globus_fifo_enqueue(ranges, newrange);
+		globus_fifo_enqueue(ranges, range);
+		goto copy_rest;
+	    }
+	    else if(offset+length == range->offset)
+	    {
+		range->offset = offset;
+		range->length += length;
+		globus_fifo_enqueue(ranges, range);
+		goto copy_rest;
+	    }
+	    else
+	    {
+		int newlength;
+
+		/* weird.... overlapping data */
+		newlength = range->offset + range->length - offset;
+		if(newlength < length)
+		{
+		    newlength = length;
+		}
+		range->offset = offset;
+		range->length = newlength;
+
+		globus_fifo_enqueue(ranges, range);
+		goto copy_rest;
+	    }
+	}
+	else
+	{
+	    if(range->offset + range->length < offset)
+	    {
+		globus_fifo_enqueue(ranges, range);
+	    }
+	    else if(range->offset + range->length == offset)
+	    {
+		range->length += length;
+		globus_fifo_enqueue(ranges, range);
+		goto copy_rest;
+	    }
+	    else
+	    {
+		int newlength;
+
+		newlength = offset + length - range->offset;
+		if(newlength < range->length)
+		{
+		    newlength = range->length;
+		}
+		range->length = newlength;
+		globus_fifo_enqueue(ranges, range);
+		goto copy_rest;
+	    }
+	}
+    }
+
+    newrange = globus_malloc(sizeof(globus_l_wu_range_t));
+    newrange->offset = offset;
+    newrange->length = length;
+    globus_fifo_enqueue(ranges, newrange);
+copy_rest:
+    while(! globus_fifo_empty(&tmp))
+    {
+	globus_fifo_enqueue(ranges, globus_fifo_dequeue(&tmp));
+    }
+}
+
+static int
+globus_l_wu_count_digits(int num)
+{
+    int digits = 1;
+
+    if(num < 0)
+    {
+	digits++;
+	num = -num;
+    }
+    while(0 < (num = (num / 10))) digits++;
+
+    return digits;
+}
+
+static char *
+globus_l_wu_create_range_string(globus_fifo_t * ranges)
+{
+    int					length = 0, mylen;
+    char *				buf = GLOBUS_NULL;
+    globus_fifo_t *			tmp;
+    globus_l_wu_range_t *		range;
+
+    tmp = globus_fifo_copy(ranges);
+
+    while(! globus_fifo_empty(tmp))
+    {
+	range = globus_fifo_dequeue(tmp);
+
+	mylen = globus_l_wu_count_digits(range->offset);
+	mylen++;
+	mylen += globus_l_wu_count_digits(range->offset+range->length);
+	mylen++;
+
+	buf = realloc(buf, length + mylen + 1);
+	sprintf(buf + length,
+		"%d-%d,", 
+		range->offset, range->offset+range->length);
+	length += mylen;
+    }
+    buf[strlen(buf)-1] = '\0';
+
+    return buf;
 }
 
 #endif /* USE_GLOBUS_DATA_CODE */
