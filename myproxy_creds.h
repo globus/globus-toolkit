@@ -15,17 +15,21 @@
 
 struct myproxy_creds {
     char *username;
-    char *passphrase;
-    char *owner_name;
     char *location;
-    char *retrievers;
-    char *renewers;
+
+    /* the following items are stored in the credential data file */
+    char *passphrase; /* stored crypt()'ed */
+    char *owner_name;
     int lifetime;
     char *credname;
     char *creddesc;
-    int force_credential_overwrite;
+    char *retrievers;
+    char *renewers;
+
+    /* start_time and end_time are set from the certificates in the cred */
     time_t start_time;
     time_t end_time;
+
     struct myproxy_creds *next;
 };
 
@@ -35,18 +39,23 @@ typedef struct myproxy_creds myproxy_creds_t;
  * myproxy_creds_store()
  *
  * Store the given credentials. The caller should allocate and fill in
- * the myproxy_creds structure.
+ * the myproxy_creds structure.  The passphrase in the myproxy_creds
+ * structure will be crypt()'ed before it is written.
+ *
+ * If overwrite is 0, existing credentials will not be overwritten.
  *
  * Returns -1 on error, 0 on success.
  */
-int myproxy_creds_store(const struct myproxy_creds *creds);
+int myproxy_creds_store(const struct myproxy_creds *creds,
+			int overwrite);
 
 /*
  * myproxy_creds_retrieve()
  *
  * Retrieve the credentials associated with the username and
- * credential namein the given myproxy_creds structure.
+ * credential name in the given myproxy_creds structure.
  * Note: No checking on the passphrase or owner name is done.
+ * Note: The passphrase in the myproxy_creds structure is crypt()'ed.
  *
  * Returns -1 on error, 0 on success.  */
 int myproxy_creds_retrieve(struct myproxy_creds *creds);
@@ -60,6 +69,7 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
  * a linked-list using the next field in the given myproxy_creds
  * structure.  The default credential (i.e., with no credname) will be
  * first in the list, if one exists.
+ * Note: The passphrase in the myproxy_creds structure is crypt()'ed.
  *
  * Returns -1 on error, 0 on success.
  */
@@ -69,9 +79,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
  * myproxy_creds_delete()
  *
  * Delete any stored credentials held for the given user as indiciated
- * by the username field in the given myproxy_creds structure.
- * Either the passphrase or the owner_name field in the structure should
- * be filled in and match those in the credentials.
+ * by the username and credname fields in the given myproxy_creds structure.
  *
  * Returns -1 on error, 0 on success.
  */
