@@ -488,9 +488,9 @@ globus_gridftp_server_control_attr_data_functions(
     attr = (globus_i_gsc_attr_t *) server_attr;
 
     attr->funcs.passive_cb = passive_cb;
-    attr->funcs.passive_arg = passive_cb;
+    attr->funcs.passive_arg = passive_arg;
     attr->funcs.active_cb = active_cb;
-    attr->funcs.active_arg = passive_arg;
+    attr->funcs.active_arg = active_arg;
     attr->funcs.data_destroy_cb = destroy_cb;
     attr->funcs.data_destroy_arg = destroy_arg;
 
