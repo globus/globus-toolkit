@@ -7,7 +7,7 @@
 #define __MYPROXY_CREDS_H
 
 #define REGULAR_EXP 1
-#define NON_REGULAR_EXP 0
+#define MATCH_CN_ONLY 0
 
 struct myproxy_creds {
     char *user_name;

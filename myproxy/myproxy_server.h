@@ -22,7 +22,9 @@ typedef struct
   char  *config_file;            /* configuration file */     
   char **accepted_credential_dns;/* List of creds that can be stored */
   char **authorized_retriever_dns;/* List of DNs we'll delegate to */
+  char **default_retriever_dns;/* List of DNs we'll delegate to */
   char **authorized_renewer_dns; /* List of DNs that can renew creds */
+  char **default_renewer_dns; /* List of DNs that can renew creds */
 } myproxy_server_context_t;
 
 
@@ -64,7 +66,7 @@ int myproxy_server_check_cred(myproxy_server_context_t *context,
  * -1 on error, setting verror.
  */
 int myproxy_server_check_retriever(myproxy_server_context_t *context,
-				   const char *service_name, int comp_type);
+				   const char *service_name);
 
 /*
  * myproxy_server_check_renewer()
@@ -76,7 +78,7 @@ int myproxy_server_check_retriever(myproxy_server_context_t *context,
  * -1 on error, setting verror.
  */
 int myproxy_server_check_renewer(myproxy_server_context_t *context,
-				 const char *service_name, int comp_type);
+				 const char *service_name);
 
 
 

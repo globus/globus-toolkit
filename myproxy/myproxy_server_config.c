@@ -159,6 +159,27 @@ line_parse_callback(void *context_arg,
 	}
     }
     
+    if((strcmp(directive, "default_retrievers") == 0))
+    {
+	int index = 1; /* Skip directive */
+	
+	matched = 1;
+	
+	while(tokens[index] != NULL)
+	{
+	    context->default_retriever_dns =
+		add_entry(context->default_retriever_dns,
+			  tokens[index]);
+	    
+	    if (context->default_retriever_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
     if (strcmp(directive, "authorized_renewers") == 0)
     {
 	int index = 1; /* Skip directive */
@@ -172,6 +193,27 @@ line_parse_callback(void *context_arg,
 			  tokens[index]);
 	    
 	    if (context->authorized_renewer_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
+    if (strcmp(directive, "default_renewers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	matched = 1;
+	
+	while(tokens[index] != NULL)
+	{
+	    context->default_renewer_dns =
+		add_entry(context->default_renewer_dns,
+			  tokens[index]);
+	    
+	    if (context->default_renewer_dns == NULL)
 	    {
 		goto error;
 	    }
@@ -332,7 +374,7 @@ regex_compare(const char *regex,
  */
 static int
 is_name_in_list(const char **list,
-		const char *name, int comp_type)
+		const char *name)
 {
     int return_code = -1;
 
@@ -349,10 +391,7 @@ is_name_in_list(const char **list,
     {
 	int rc;
 
-	if (comp_type == REGULAR_EXP)	
 	  rc = regex_compare(*list, name);
-	else
-	  rc = !strcmp (*list, name);   //strcmp returns 0 on success
 	
 	if (rc != 0)
 	{
@@ -465,7 +504,7 @@ myproxy_server_check_cred(myproxy_server_context_t *context,
 
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->accepted_credential_dns,
-				  client_name, REGULAR_EXP);
+				  client_name);
 
   error:
     return return_code;
@@ -474,7 +513,7 @@ myproxy_server_check_cred(myproxy_server_context_t *context,
 
 int
 myproxy_server_check_retriever(myproxy_server_context_t *context,
-			       const char *service_name, int comp_type)
+			       const char *service_name)
 {
     int return_code = -1;
     
@@ -487,7 +526,7 @@ myproxy_server_check_retriever(myproxy_server_context_t *context,
 
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->authorized_retriever_dns,
-				  service_name, comp_type);
+				  service_name);
 
   error:
     return return_code;
@@ -495,7 +534,7 @@ myproxy_server_check_retriever(myproxy_server_context_t *context,
 
 int
 myproxy_server_check_renewer(myproxy_server_context_t *context,
-			   const char *service_name, int comp_type)
+			   const char *service_name)
 {
     int return_code = -1;
     
@@ -508,7 +547,7 @@ myproxy_server_check_renewer(myproxy_server_context_t *context,
 
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->authorized_renewer_dns,
-				  service_name, comp_type);
+				  service_name);
 
   error:
     return return_code;

@@ -28,9 +28,7 @@
 #define MYPROXY_PASSPHRASE_STRING   "PASSPHRASE="
 #define MYPROXY_LIFETIME_STRING     "LIFETIME="
 #define MYPROXY_RETRIEVER_STRING     "RETRIEVER="
-#define MYPROXY_RETRIEVER_EXPR_TYPE_STRING     "RETRIEVER_EXPR_TYPE="
 #define MYPROXY_RENEWER_STRING     "RENEWER="
-#define MYPROXY_RENEWER_EXPR_TYPE_STRING     "RENEWER_EXPR_TYPE="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
 #define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
@@ -70,7 +68,7 @@ typedef struct
 
 /* A client request object */
 #define REGULAR_EXP 1
-#define NON_REGULAR_EXP 0
+#define MATCH_CN_ONLY 0
 
 typedef struct
 {
@@ -82,9 +80,7 @@ typedef struct
     char                         **authorized_service_dns;
     char                         **authorized_client_dns;
     char                         *retrievers;
-    int 			 retriever_expr_type;
     char                         *renewers;
-    int 			 renewer_expr_type;
 } myproxy_request_t;
 
 /* A server response object */

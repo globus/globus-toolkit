@@ -120,7 +120,7 @@ static int become_daemon(myproxy_server_context_t *server_context);
 static int myproxy_authorize_accept(myproxy_server_context_t *context,
                                     myproxy_socket_attrs_t *attrs,
 				    myproxy_request_t *client_request,
-				    char *client_name, int comp_type);
+				    char *client_name);
 
 static int get_client_authdata(myproxy_socket_attrs_t *attrs,
                                myproxy_request_t *client_request,
@@ -154,6 +154,7 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+   myproxy_log ("Server context retriever = %s renewers = %s", server_context->default_retriever_dns, server_context->default_renewer_dns);
    if (server_context->config_file == NULL)
     {
         server_context->config_file = strdup(default_config_file);
@@ -352,7 +353,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 				   "error in myproxy_deserialize_request()");
     }
 
-    printf ("Client_request++++ = %d\n", client_request->retriever_expr_type);
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
 	myproxy_log("client %s Invalid version number (%s) received",
@@ -391,32 +391,27 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_creds->user_name   = strdup(client_request->username);
     client_creds->pass_phrase = strdup(client_request->passphrase);
     
-    /*copy renewers and retrievers if they are present*/
     if (client_request->retrievers != NULL)
     {
        client_creds->retrievers = strdup(client_request->retrievers);
-       client_creds->retriever_expr_type = client_request->retriever_expr_type;
     }
-    else
+    else   //copy defaults
     {
-       client_creds->retrievers = NULL;
-       client_creds->retriever_expr_type = NON_REGULAR_EXP; //default
-    } 
+	client_creds->retrievers = NULL;
+    }
 
     if (client_request->renewers != NULL)
     {
        client_creds->renewers = strdup(client_request->renewers);
-       client_creds->renewer_expr_type = client_request->renewer_expr_type;
     }
-    else
+    else   //copy defaults
     {
-       client_creds->renewers = NULL;
-       client_creds->renewer_expr_type = NON_REGULAR_EXP;  //default
+	client_creds->renewers = NULL;
     }
-    
+
     /* First level authorization checking happens here. */
     if (myproxy_authorize_accept(context, attrs, 
-	                         client_request, client_name, REGULAR_EXP) < 0) {
+	                         client_request, client_name) < 0) {
        myproxy_log("authorization failed - server-wide policy failure");
        respond_with_error_and_die(attrs, verror_get_string());
     }
@@ -436,10 +431,62 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
         myproxy_log("Retriever = ", client_creds->retrievers);
 
-
-    if (client_creds->retrievers != NULL)  /* retrievers specified*/
+    /*if retrievers are specified use them else use defaults for second level check*/
+    if (client_creds->retrievers == NULL) // copy defaults
     {
-	/* Check if dns is present in per-user regular expression*/
+	char *str = NULL;  //we need a comma separated string of retriever dns
+
+	int len = 0, str_num = 0; 
+	while (context->default_retriever_dns[str_num] != NULL)
+	{
+	  str = (char *) realloc (str, len+strlen(context->default_retriever_dns[str_num])+1);  
+
+	  if (str_num != 0) //first string omit comma
+	  {
+	    strcpy (str+len, ",");
+	    len++;
+	  }
+	  strcpy (str+len, context->default_retriever_dns[str_num]);
+ 	  len+= strlen (context->default_retriever_dns[str_num++]); // +1 is for the comma separator
+	}
+
+	if (str == NULL)
+	{
+	  myproxy_log ("No default retriver dns specified. Using *");
+          client_creds->retrievers = strdup ("*");
+	}
+	else
+          client_creds->retrievers = strdup (str);
+    } 
+
+    /*if renewers are specified use them else use defaults for second level check*/
+    if (client_creds->renewers == NULL)  // use defaults
+    {
+	char *str = NULL;  //we need a comma separated string of renewer dns
+	int len = 0, str_num = 0; 
+	while (context->default_renewer_dns[str_num] != NULL)
+	{
+	  str = (char *) realloc (str, len+strlen(context->default_renewer_dns[str_num])+1 );  //+1 is for the comma-separator
+
+	 if (str_num != 0) //first string omit comma
+	 {
+	  strcpy (str+len, ",");
+	  len ++;
+	 }
+	  strcpy (str+len, context->default_renewer_dns[str_num]);
+	  len += strlen(context->default_renewer_dns[str_num++]);
+	}
+
+	if (str == NULL)
+	{
+	  myproxy_log ("No default renewer dns specified. Using *");
+          client_creds->renewers = strdup ("*");
+	}
+	else
+          client_creds->renewers = strdup (str);
+    }
+
+	// parse retriever DNS
 	memcpy (client_context, context, sizeof (context));
 	num_strings = parse_string (&(client_context->authorized_retriever_dns),client_creds->retrievers)  ;  
 
@@ -449,20 +496,22 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	
   	client_context->authorized_retriever_dns[num_strings] = NULL; // end of sequence indicator
 
+	// parse renewer DNS
+	num_strings = parse_string (&(client_context->authorized_renewer_dns),client_creds->renewers)  ;  
+
+        if (num_strings < 0){
+	    respond_with_error_and_die(attrs, verror_get_string());
+	}
+	
+  	client_context->authorized_renewer_dns[num_strings] = NULL; // end of sequence indicator
+
     /* Second level (per-user) authorization checking happens here. */
 
-    if (client_creds->retriever_expr_type == REGULAR_EXP || client_creds->retriever_expr_type == NON_REGULAR_EXP) {
       if (myproxy_authorize_accept(client_context, attrs, 
-	                         client_request, client_name, client_creds->retriever_expr_type) < 0) {
+	                         client_request, client_name) < 0) {
        myproxy_log("authorization failed - per-user policy failure");
        respond_with_error_and_die(attrs, verror_get_string());
       }
-    } 
-    else  {
-      myproxy_log ("authorization failed : invalid retriever expression type");
-      respond_with_error_and_die(attrs, verror_get_string());
-    }
-   }
     
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Location is %s", client_creds->location);
@@ -747,7 +796,6 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
     myproxy_debug (" Retrievers = %s Renewers = %s", creds->retrievers, creds->renewers); 
-    myproxy_debug (" Retriever expr type  = %d", creds->retriever_expr_type); 
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log_verror();
@@ -962,7 +1010,7 @@ static int
 myproxy_authorize_accept(myproxy_server_context_t *context,
                          myproxy_socket_attrs_t *attrs,
 			 myproxy_request_t *client_request,
-			 char *client_name, int comp_type)
+			 char *client_name)
 {
    int   credentials_exist = 0;
    int   client_owns_credentials = 0;
@@ -987,13 +1035,13 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        case AUTHORIZETYPE_PASSWD:
 	   /* Is the client authorized to retrieve creds with a passphrase? */
 	   authorization_ok = myproxy_server_check_retriever(context,
-							     client_name, comp_type);
+							     client_name);
 	   
 	   break;
        case AUTHORIZETYPE_CERT:
 	   /* Is the client authorized to renew existing credentials? */
 	   authorization_ok = myproxy_server_check_renewer(context,
-							   client_name, comp_type);
+							   client_name);
 	   break;
        }
        if (!(authorization_ok == 1)) break;

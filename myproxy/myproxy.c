@@ -334,19 +334,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
       totlen += len;
 
-    if (encode_integer(request->retriever_expr_type,
-			expr_type_string,
-			sizeof(expr_type_string)) == -1)
-    {
-	return -1;
-    }
-			
-      len = concatenate_strings(data, datalen, MYPROXY_RETRIEVER_EXPR_TYPE_STRING,
-			      expr_type_string, "\n", NULL); 
-      if (len < 0)
-        return -1;
-
-      totlen += len;
     }
 
     if (request->renewers != NULL)
@@ -358,19 +345,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
       totlen += len;
 
-    if (encode_integer(request->renewer_expr_type,
-			expr_type_string,
-			sizeof(expr_type_string)) == -1)
-    {
-	return -1;
-    }
-			
-      len = concatenate_strings(data, datalen, MYPROXY_RENEWER_EXPR_TYPE_STRING,
-			      expr_type_string, "\n", NULL); 
-      if (len < 0)
-        return -1;
-
-      totlen += len;
     }
 
     printf ("ok");
@@ -520,24 +494,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
       }
     }
 
-    len = convert_message(data, datalen,
-			  MYPROXY_RETRIEVER_EXPR_TYPE_STRING,
-			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  buf, sizeof(buf));
-
-    if (len == -2)  /*-2 indicates string not found*/
-       request->retriever_expr_type = NON_REGULAR_EXP;
-    else
-    if (len <= -1)
-    {
-	verror_prepend_string("Error parsing retriever expression type from client request");
-	return -1;
-    }
-    else
-     if (parse_integer(buf, &request->retriever_expr_type) == -1)
-	return -1;
-
-    printf ("Retriever expr type = %d\n", request->retriever_expr_type);
 
     len = convert_message(data, datalen,
 			  MYPROXY_RENEWER_STRING,
@@ -563,25 +519,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	  return -1;
          }
        }
-
-
-    len = convert_message(data, datalen,
-			  MYPROXY_RENEWER_EXPR_TYPE_STRING,
-			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  buf, sizeof(buf));
-
-    if (len == -2)  /*-2 indicates string not found*/
-       request->renewer_expr_type = NON_REGULAR_EXP;
-    else
-    if (len <= -1)
-    {
-	verror_prepend_string("Error parsing renewer expression type from client request");
-	return -1;
-    }
-    else
-     if (parse_integer(buf, &request->renewer_expr_type) == -1)
-	return -1;
-
 
     len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,

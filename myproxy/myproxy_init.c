@@ -115,8 +115,6 @@ main(int argc, char *argv[])
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_PUT_PROXY;
-    client_request->retriever_expr_type = NON_REGULAR_EXP;
-    client_request->renewer_expr_type = NON_REGULAR_EXP;
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
@@ -268,7 +266,7 @@ init_arguments(int argc,
 	       int *cred_lifetime) 
 {   
     extern char *gnu_optarg;
-    int expr_type = NON_REGULAR_EXP;  //default
+    int expr_type = MATCH_CN_ONLY;  //default
 
     int arg;
 
@@ -313,28 +311,40 @@ init_arguments(int argc,
 	    dn_as_username = 1;
 	    break;
 	case 'r':   /* retrievers list */
-	    request->retrievers = strdup (gnu_optarg);
-	    request->retriever_expr_type = expr_type;
+	    if (expr_type == REGULAR_EXP)  //copy as is
+	      request->retrievers = strdup (gnu_optarg);
+	    else   //prepend a "*/CN=" string
+	    {
+		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
+		strcpy (request->retrievers, "*/CN=");
+		printf ("gnu-optarg  %s\n", gnu_optarg);
+		request->retrievers = strcat (request->retrievers,gnu_optarg);
+	    }
 	    break;
 	case 'R':   /* renewers list */
-	    request->renewers = strdup (gnu_optarg);
-	    request->renewer_expr_type = expr_type;
+	    if (expr_type == REGULAR_EXP)  //copy as is
+	      request->renewers = strdup (gnu_optarg);
+	    else   //prepend a "*/CN=" string
+	    {
+		request->renewers = (char *) malloc (strlen (gnu_optarg) + 5);
+		strcpy (request->renewers, "*/CN=");
+		printf ("gnu-optarg  %s\n", gnu_optarg);
+		request->renewers = strcat (request->renewers,gnu_optarg);
+	    }
 	    break;
 	case 'x':   /*set expression type to regex*/
 	    expr_type = REGULAR_EXP;
 	    printf ("expr-type = %d\n", expr_type);
 	    break;
 	case 'X':   /*set expression type to common name*/
-	    expr_type = NON_REGULAR_EXP;
+	    expr_type = MATCH_CN_ONLY;
 	    printf ("expr-type = %d\n", expr_type);
 	    break;
 	case 'a':  /*allow anonymous retrievers*/
 	    request->retrievers = strdup ("*");
-	    request->retriever_expr_type = REGULAR_EXP;
 	    break;
 	case 'A':  /*allow anonymous renewers*/
 	    request->renewers = strdup ("*");
-	    request->renewer_expr_type = REGULAR_EXP;
 	    break;
         default:  
 	    fprintf(stderr, usage);
